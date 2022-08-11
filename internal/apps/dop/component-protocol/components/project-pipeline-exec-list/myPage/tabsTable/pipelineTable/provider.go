@@ -246,7 +246,7 @@ func (p *provider) pipelineToRow(exec *pb.PipelineExecHistory) table.Row {
 			}).Build(),
 			ColumnApplicationName: table.NewTextCell(exec.AppName).Build(),
 			ColumnBranch:          table.NewTextCell(exec.Branch).Build(),
-			ColumnExecutor:        table.NewUserCell(commodel.User{ID: exec.Executor}).Build(),
+			ColumnExecutor:        table.NewUserCell(commodel.User{ID: p.getPipelineHistoryExecutor(exec)}).Build(),
 			ColumnStartTimeOrder:  table.NewTextCell(timeFormatFromProtobuf(exec.TimeBegin)).Build(),
 			ColumnOwner:           table.NewUserCell(commodel.User{ID: exec.Owner}).Build(),
 			ColumnTriggerMode:     table.NewTextCell(util.DisplayTriggerModeText(p.sdk.Ctx, exec.TriggerMode)).Build(),
@@ -255,6 +255,13 @@ func (p *provider) pipelineToRow(exec *pb.PipelineExecHistory) table.Row {
 			table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
 		},
 	}
+}
+
+func (p *provider) getPipelineHistoryExecutor(exec *pb.PipelineExecHistory) string {
+	if exec.TriggerMode == apistructs.PipelineTriggerModeCron.String() {
+		return ""
+	}
+	return exec.Executor
 }
 
 func timeFormatFromProtobuf(t *timestamppb.Timestamp) string {

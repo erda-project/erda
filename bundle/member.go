@@ -264,7 +264,7 @@ func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDReques
 	hc := b.hc
 
 	var memberResp apistructs.MemberRoleListResponse
-	resp, err := hc.Get(host).Path("/api/members/actions/list-roles").
+	resp, err := hc.Get(host).Path("/core/api/members/actions/list-roles").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
 		Header(httputil.LangHeader, locale).

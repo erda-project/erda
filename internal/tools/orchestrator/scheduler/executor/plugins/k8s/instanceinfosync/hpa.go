@@ -24,16 +24,16 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 )
 
 func buildHPAEventInfo(bdl *bundle.Bundle, hpa autoscalingv2beta2.HorizontalPodAutoscaler, errorinfo string, errorinfo_human string, tp string) {
-	dedupid := fmt.Sprintf("%s-%s-%s", hpa.Labels[hpatypes.ErdaHPAObjectRuntimeIDLabel], hpa.Labels[hpatypes.ErdaHPAObjectRuntimeServiceNameLabel], tp)
+	dedupid := fmt.Sprintf("%s-%s-%s", hpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel], hpa.Labels[pstypes.ErdaPAObjectRuntimeServiceNameLabel], tp)
 	if err := bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
 		ErrorLog: apistructs.ErrorLog{
 			ResourceType:   apistructs.RuntimeError,
 			Level:          apistructs.ErrorLevel,
-			ResourceID:     hpa.Labels[hpatypes.ErdaHPAObjectRuntimeIDLabel],
+			ResourceID:     hpa.Labels[pstypes.ErdaPAObjectRuntimeIDLabel],
 			OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
 			HumanLog:       errorinfo_human,
 			PrimevalLog:    errorinfo,

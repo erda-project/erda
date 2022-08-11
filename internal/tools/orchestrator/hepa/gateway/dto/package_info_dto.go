@@ -14,7 +14,10 @@
 
 package dto
 
-import "github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
+import (
+	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+)
 
 type PackageInfoDto struct {
 	Id       string `json:"id"`
@@ -29,11 +32,19 @@ func (list SortBySceneList) Len() int { return len(list) }
 func (list SortBySceneList) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
 
 func (list SortBySceneList) Less(i, j int) bool {
-	if list[i].Scene == "unity" {
-		return true
+	if list[i].Scene == list[j].Scene {
+		if list[i].Scene == orm.HubScene {
+			return list[i].Name < list[j].Name
+		}
+		return list[i].CreateAt > list[j].CreateAt
 	}
-	if list[j].Scene == "unity" {
-		return false
+	for _, scene := range []string{orm.UnityScene, orm.HubScene, orm.WebapiScene, orm.OpenapiScene} {
+		if list[i].Scene == scene {
+			return true
+		}
+		if list[j].Scene == scene {
+			return false
+		}
 	}
 	return list[i].CreateAt > list[j].CreateAt
 }

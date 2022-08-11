@@ -22,6 +22,7 @@ import (
 	"github.com/gorilla/schema"
 
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/services/activity"
@@ -29,7 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/approve"
 	"github.com/erda-project/erda/internal/core/legacy/services/audit"
 	"github.com/erda-project/erda/internal/core/legacy/services/errorbox"
-	"github.com/erda-project/erda/internal/core/legacy/services/filesvc"
 	"github.com/erda-project/erda/internal/core/legacy/services/label"
 	"github.com/erda-project/erda/internal/core/legacy/services/manual_review"
 	"github.com/erda-project/erda/internal/core/legacy/services/mbox"
@@ -41,7 +41,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/subscribe"
 	"github.com/erda-project/erda/internal/core/legacy/services/user"
 	"github.com/erda-project/erda/internal/core/org"
-	identity "github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -55,7 +54,7 @@ type Endpoints struct {
 	etcdStore          *etcd.Store
 	ossClient          *oss.Client
 	db                 *dao.DBClient
-	uc                 identity.Interface
+	uc                 userpb.UserServiceServer
 	bdl                *bundle.Bundle
 	project            *project.Project
 	approve            *approve.Approve
@@ -72,7 +71,6 @@ type Endpoints struct {
 	queryStringDecoder *schema.Decoder
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
-	fileSvc            *filesvc.FileService
 	user               *user.User
 	subscribe          *subscribe.Subscribe
 	tokenService       tokenpb.TokenServiceServer
@@ -114,7 +112,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithUCClient 配置 UC Client
-func WithUCClient(uc identity.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(e *Endpoints) {
 		e.uc = uc
 	}
@@ -237,12 +235,6 @@ func WithErrorBox(errorbox *errorbox.ErrorBox) Option {
 	}
 }
 
-func WithFileSvc(svc *filesvc.FileService) Option {
-	return func(e *Endpoints) {
-		e.fileSvc = svc
-	}
-}
-
 func WithUserSvc(svc *user.User) Option {
 	return func(e *Endpoints) {
 		e.user = svc
@@ -285,14 +277,14 @@ func (e *Endpoints) UserSvc() *user.User {
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		// health check
-		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
+		{Path: "/core/_api/health", Method: http.MethodGet, Handler: e.Health},
 
 		// the interface of project
-		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
+		{Path: "/core/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
 		{Path: "/api/projects/{projectID}", Method: http.MethodPut, Handler: e.UpdateProject},
-		{Path: "/api/projects/{projectID}", Method: http.MethodGet, Handler: e.GetProject},
-		{Path: "/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
-		{Path: "/api/projects", Method: http.MethodGet, Handler: e.ListProject},
+		{Path: "/core/api/projects/{projectID}", Method: http.MethodGet, Handler: e.GetProject},
+		{Path: "/core/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
+		{Path: "/core/api/projects", Method: http.MethodGet, Handler: e.ListProject},
 		{Path: "/api/projects/resource/{resourceType}/actions/list-usage-histogram", Method: http.MethodGet, Handler: e.ListProjectResourceUsage},
 		{Path: "/api/projects/actions/list-my-projects", Method: http.MethodGet, Handler: e.ListMyProject},
 		{Path: "/api/projects/actions/list-public-projects", Method: http.MethodGet, Handler: e.ListPublicProject},
@@ -320,10 +312,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/quota-records", Method: http.MethodGet, Handler: e.ListQuotaRecords},
 
 		// the interface of application
-		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
-		{Path: "/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
+		{Path: "/core/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
+		{Path: "/core/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodGet, Handler: e.GetApplication},
-		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
+		{Path: "/core/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
 		{Path: "/api/applications", Method: http.MethodGet, Handler: e.ListApplication},
 		{Path: "/api/applications/actions/list-my-applications", Method: http.MethodGet, Handler: e.ListMyApplication},
 		{Path: "/api/applications/{applicationID}/actions/pin", Method: http.MethodPut, Handler: e.PinApplication},
@@ -346,7 +338,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/members/actions/destroy", Method: http.MethodPost, Handler: e.DestroyMember},
 		{Path: "/api/members", Method: http.MethodGet, Handler: e.ListMember},
 		{Path: "/api/members/actions/get-by-token", Method: http.MethodGet, Handler: e.GetMemberByToken},
-		{Path: "/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
+		{Path: "/core/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
 		{Path: "/api/members/actions/list-user-roles", Method: http.MethodGet, Handler: e.ListMemberRolesByUser},
 		{Path: "/api/members/actions/get-all-organizational", Method: http.MethodGet, Handler: e.GetAllOrganizational},
 		{Path: "/api/members/actions/update-userinfo", Method: http.MethodPut, Handler: e.UpdateMemberUserInfo},
@@ -428,11 +420,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/core/api/approves/actions/list-approves", Method: http.MethodGet, Handler: e.ListApproves},
 
 		// the interface of file
-		{Path: "/api/files", Method: http.MethodPost, Handler: e.UploadFile},
-		{Path: "/api/files", Method: http.MethodGet, WriterHandler: e.DownloadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodGet, WriterHandler: e.DownloadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodHead, WriterHandler: e.HeadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodDelete, Handler: e.DeleteFile},
 		{Path: "/api/images/actions/upload", Method: http.MethodPost, Handler: e.UploadImage},
 
 		// the interface of user

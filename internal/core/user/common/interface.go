@@ -14,11 +14,10 @@
 
 package common
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"github.com/erda-project/erda-proto-go/core/user/pb"
+)
 
 type Interface interface {
-	FindUsers(ids []string) ([]User, error)
-	FindUsersByKey(key string) ([]User, error)
-	GetUser(userID string) (*User, error)
-	GetUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error)
+	pb.UserServiceServer
 }

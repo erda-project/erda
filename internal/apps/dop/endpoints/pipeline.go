@@ -128,6 +128,7 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 	reqPipeline.DefinitionID = definitionID
+	reqPipeline.NormalLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeManual.String()
 
 	// update CmsNsConfigs
 	if err = e.UpdateCmsNsConfigs(identityInfo.UserID, app.OrgID); err != nil {

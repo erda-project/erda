@@ -35,9 +35,9 @@ func ReverseString(s string) string {
 	if n <= 1 {
 		return s
 	}
-	var b = make([]byte, n)
+	var b = []rune(s)
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
-		b[i], b[j] = s[j], s[i]
+		b[i], b[j] = b[j], b[i]
 	}
 	return string(b)
 }

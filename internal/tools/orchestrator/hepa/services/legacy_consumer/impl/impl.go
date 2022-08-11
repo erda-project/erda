@@ -248,7 +248,7 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 		}
 		kongAdapter = kong.NewKongAdapterForProject(az, env, projectId)
 		if kongAdapter == nil || !kongAdapter.KongExist() {
-			err = errors.Errorf("no kong in az[%s]", az)
+			err = errors.Errorf("no kong in projectID=%s, env=%s, az=%s", projectId, env, az)
 			ret = KONG_NOT_EXIST
 			goto errorHappened
 		}

@@ -121,6 +121,19 @@ service EndpointApiService {
       path: "/api/gateway/openapi/crontabs",
     };
   }
+
+  rpc ListPackageApis(ListPackageApisReq) returns (ListPackageApisResp) {
+    option(google.api.http) = {
+      get: "/api/gateway/openapi/package-apis",
+    };
+  }
+
+  // +publish path: "/api/gateway/openapi/package-apis"
+  rpc DeletePackageApis(ListPackageApisReq) returns (DeletePackageApiResp) {
+    option(google.api.http) = {
+      delete: "/api/gateway/openapi/package-apis",
+    };
+  }
 }
 
 message ChangeEndpointRootResponse {
@@ -305,4 +318,34 @@ message ListAllCrontabsRespItem {
   string lastTime = 3;
   string nextTime = 4;
   uint64 execTimes = 5;
+}
+message ListPackageApisReq {
+  string projectId = 1;
+  string env = 2;
+  string domain = 3;
+  string deleteMode = 4;
+  repeated ListPackageApiItem paths = 5;
+  string address = 6;
+}
+
+message ListPackageApiItem {
+  string path = 1;
+  string address = 2;
+}
+
+message ListPackageApisResp {
+  string packageId = 1;
+  uint64 total = 2;
+  repeated EndpointApi list = 3;
+}
+
+message DeletePackageApiResp {
+  string packageId = 1;
+  uint64 total = 2;
+  repeated DeletePackageApiRespPath list = 3;
+}
+
+message DeletePackageApiRespPath {
+  EndpointApi api = 1;
+  bool success = 2;
 }

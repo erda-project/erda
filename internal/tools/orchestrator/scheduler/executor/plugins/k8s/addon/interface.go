@@ -73,7 +73,7 @@ type ServiceUtil interface {
 type NamespaceUtil interface {
 	Exists(ns string) error
 	Create(ns string, labels map[string]string) error
-	Delete(ns string) error
+	Delete(ns string, force ...bool) error
 }
 
 type SecretUtil interface {

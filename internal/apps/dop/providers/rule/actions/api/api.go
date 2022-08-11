@@ -17,6 +17,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"reflect"
 	"time"
@@ -39,36 +40,74 @@ type Interface interface {
 
 type provider struct {
 	Cfg            *config
-	TemplateParser jsonnet.Engine
+	TemplateParser *jsonnet.Engine
 }
 
 type API struct {
-	URL    string
-	Header Header
-	// api request body jsonnet snippet
+	URL string
+	// api request config jsonnet snippet
 	Snippet string
-	// request body jsonnet top level arguments, key: TLA key, value: TLA value
+	// request jsonnet top level arguments, key: TLA key, value: TLA value
 	TLARaw map[string]interface{}
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.TemplateParser = jsonnet.Engine{
+	p.TemplateParser = &jsonnet.Engine{
 		JsonnetVM: gojsonnet.MakeVM(),
 	}
 	return nil
 }
 
-type Header struct {
-	Key   string
-	Value string
+type APIConfig struct {
+	Method  string                 `json:"method"`
+	URL     string                 `json:"url"`
+	Headers http.Header            `json:"header"`
+	Body    map[string]interface{} `json:"body"`
+	IsHTTPS bool                   `json:"https"`
 }
 
 // outgoing API
 func (a *provider) Send(api *API) (string, error) {
+	apiConfig, err := a.getAPIConfig(api)
+	if err != nil {
+		return "", err
+	}
+
+	parsed, err := url.Parse(apiConfig.URL)
+	if err != nil {
+		return "", err
+	}
+
+	// call outgoing API
+	keepalive := time.Duration(a.Cfg.DailerKeepAliveSeconds) * time.Second
+	req := httpclient.New(httpclient.WithDialerKeepAlive(keepalive)).Method(apiConfig.Method, parsed.Host)
+	if apiConfig.IsHTTPS {
+		req = httpclient.New(httpclient.WithHTTPS(), httpclient.WithDialerKeepAlive(keepalive)).Method(apiConfig.Method, parsed.Host)
+	}
+	req = req.
+		Path(parsed.Path).
+		Params(parsed.Query()).
+		Headers(apiConfig.Headers).
+		Header("Content-Type", "application/json;charset=utf-8").
+		JSONBody(apiConfig.Body)
+
+	var buf bytes.Buffer
+	resp, err := req.Do().Body(&buf)
+	responseBody := buf.String()
+	if err != nil {
+		return "", errors.Errorf("Outgoing api: %v, err:%v, body:%v", api.URL, err, responseBody)
+	}
+	if !resp.IsOK() {
+		return "", errors.Errorf("Outgoing api: %v, httpcode:%d, body:%v", api.URL, resp.StatusCode(), responseBody)
+	}
+	return responseBody, nil
+}
+
+func (a *provider) getAPIConfig(api *API) (*APIConfig, error) {
 	// parse content with jsonnet
 	b, err := json.Marshal(api.TLARaw)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	configs := make([]jsonnet.TLACodeConfig, 0)
 	configs = append(configs, jsonnet.TLACodeConfig{
@@ -78,35 +117,18 @@ func (a *provider) Send(api *API) (string, error) {
 
 	jsonStr, err := a.TemplateParser.EvaluateBySnippet(api.Snippet, configs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// get request body from json string
-	res := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(jsonStr), &res); err != nil {
-		return "", err
+	// get API config from json string
+	var apiConfig APIConfig
+	if err := json.Unmarshal([]byte(jsonStr), &apiConfig); err != nil {
+		return nil, err
 	}
-
-	// call outgoing API
-	parsed, err := url.Parse(api.URL)
-	if err != nil {
-		return "", err
+	if apiConfig.URL == "" {
+		apiConfig.URL = api.URL
 	}
-	var buf bytes.Buffer
-	resp, err := httpclient.New(httpclient.WithHTTPS(), httpclient.WithDialerKeepAlive(time.Duration(a.Cfg.DailerKeepAliveSeconds)*time.Second)).
-		Post(parsed.Host).
-		Path(parsed.Path).
-		Params(parsed.Query()).
-		Header("Content-Type", "application/json;charset=utf-8").
-		JSONBody(res).Do().
-		Body(&buf)
-	if err != nil {
-		return "", errors.Errorf("Outgoing api: %v, err:%v", api.URL, err)
-	}
-	if !resp.IsOK() {
-		return "", errors.Errorf("Outgoing api: %v, httpcode:%d", api.URL, resp.StatusCode())
-	}
-	return buf.String(), nil
+	return &apiConfig, nil
 }
 
 func init() {

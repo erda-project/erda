@@ -1,10 +1,14 @@
 name: GIT SYNC
 
-on: [ push, delete ]
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+  push:
+  delete:
 
 jobs:
-  build:
-    if: github.repository == 'erda-project/erda'
+  git-sync:
+    if: github.repository == 'erda-project/erda' && (github.event_name == 'push' ||  github.event_name == 'delete')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -13,4 +17,30 @@ jobs:
       - name: add remote
         run: git remote add mirror https://${{ secrets.ERDA_CLOUD_MIRROR_GIT_USERNAME }}:${{ secrets.ERDA_CLOUD_MIRROR_GIT_PASSWORD }}@erda.cloud/erda/dop/erda-project/erda
       - name: push
-        run: git push --tags --force --prune mirror "refs/remotes/origin/*:refs/heads/*"
+        run: git push --tags --force mirror "refs/remotes/origin/*:refs/heads/*"
+  git-sync-pr:
+    if: github.repository == 'erda-project/erda' && github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to sync')
+    runs-on: ubuntu-latest
+    steps:
+      - name: list open pull requests in last 24 hours
+        id: list
+        uses: andrea-armstrong/github-list-pull-requests@v1.0.0
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          state: 'open'
+          window: '24'
+      - uses: actions/checkout@v2
+      - name: unshallow
+        run: |
+          git fetch --unshallow origin
+          ss=${{ steps.list.outputs.pullRequestNumbers }}
+          ss=${ss:1:${#ss}-2}
+          IFS=', ' read -r -a arr <<< "$ss"
+          for id in ${arr[@]}
+          do
+          git fetch origin "refs/pull/${id}/head:refs/remotes/origin/feature/pr/${id}"
+          done
+      - name: add remote
+        run: git remote add mirror https://${{ secrets.ERDA_CLOUD_MIRROR_GIT_USERNAME }}:${{ secrets.ERDA_CLOUD_MIRROR_GIT_PASSWORD }}@erda.cloud/erda/dop/erda-project/erda
+      - name: push
+        run: git push --tags --force mirror "refs/remotes/origin/*:refs/heads/*"

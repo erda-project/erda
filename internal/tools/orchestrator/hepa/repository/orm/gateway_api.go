@@ -32,5 +32,6 @@ type GatewayApi struct {
 	RedirectType     string `json:"redirect_type" xorm:"not null default 'url' comment('转发类型') VARCHAR(32)"`
 	RuntimeServiceId string `json:"runtime_service_id" xorm:"not null default '' comment('关联的service的id') VARCHAR(32)"`
 	Swagger          []byte `json:"swagger" xorm:"comment('swagger文档') BLOB"`
+	Domains          string `json:"domains" xorm:"not null default '' comment('gateway api 的域名列表, 逗号隔开') VARCHAR(1024)"`
 	BaseRow          `xorm:"extends"`
 }

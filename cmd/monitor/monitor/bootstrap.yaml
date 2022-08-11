@@ -64,6 +64,12 @@ clickhouse:
   username: "${CLICKHOUSE_USERNAME:default}"
   password: "${CLICKHOUSE_PASSWORD:default}"
   conn_open_strategy: "round_robin"
+  conn_max_lifetime: "${CLICKHOUSE_CONN_MAX_LIFETIME:1m}"
+  max_idle_conns: "${CLICKHOUSE_MAX_IDLE_CONNS:10}"
+  max_open_conns: "${CLICKHOUSE_MAX_OPEN_CONNS:20}"
+  dail_timeout: "${CLICKHOUSE_DAIL_TIMEOUT:1s}"
+  debug: ${CLICKHOUSE_DEBUG:false}
+
 
 clickhouse.table.loader@log:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
@@ -81,12 +87,17 @@ log-storage-clickhouse:
 
 metric-storage-clickhouse:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  query_timeout: "${QUERY_METRIC_FROM_CLICKHOUSE_TIMEOUT:1m}"
+  query_max_threads: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_THREADS:0}"
+  query_max_memory: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_MEMORY:0}"
+  runtime_settings: "${QUERY_METRIC_FROM_CLICKHOUSE_RUNTIME_SETTINGS}"
   keypass:
-    name: ${QUERY_METRIC_FROM_CLICKHOUSE_KEY_PASS_NAME:["kubernetes_*", "etcd"]}
+    name: ${QUERY_METRIC_FROM_CLICKHOUSE_KEY_PASS_NAME:[kubernetes_*, etcd]}
 
 clickhouse.table.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
   table_prefix: "metrics"
+  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadWithCache}"
   default_search_table: "metrics_all"
   cache_key_prefix: "clickhouse-table-metric"
 
@@ -254,6 +265,7 @@ erda.core.monitor.metric:
       - "index"
       - "file"
       - "database"
+      - "clickhouse"
     group_files:
       - "conf/metricmeta/groups/org.yml"
       - "conf/metricmeta/groups/micro_service.yml"
@@ -290,6 +302,8 @@ entity-storage-elasticsearch:
 erda.oap.entity:
 
 erda.core.monitor.alertdetail:
+  query_metric_from_clickhouse: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  debug_sql: ${DEBUG:false}
 
 #logs-index-query:
 #  query_back_es: ${LOGS_QUERY_BACK_ES:false}
@@ -340,6 +354,8 @@ monitor.dashboard.report.apis.v1:
   cluster_name: "${DICE_CLUSTER_NAME}"
 
 org-apis:
+  query_metric_from_clickhouse: "${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}"
+  debug_sql: "${DEBUG:false}"
   offline_timeout: "${DASHBOARD_OFFLINE_TIMEOUT:3s}"
   offline_sleep: "${DASHBOARD_OFFLINE_SLEEP:3m}"
 runtime-apis:

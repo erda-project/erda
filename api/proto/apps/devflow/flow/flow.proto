@@ -5,6 +5,7 @@ package erda.apps.devflow.flow;
 import "common/openapi.proto";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "openapiv1/gittar/gittar.proto";
@@ -29,18 +30,18 @@ service FlowService {
     }
     rpc OperationMerge(OperationMergeRequest) returns (OperationMergeResponse) {
         option(google.api.http) = {
-            put: "/api/devflow/{mergeID}/actions/operation-merge",
+            put: "/api/devflow/{devFlowID}/actions/operation-merge",
         };
         option(erda.common.openapi) = {
-            path: "/api/devflow/{mergeID}/actions/operation-merge",
+            path: "/api/devflow/{devFlowID}/actions/operation-merge",
         };
     }
     rpc DeleteFlowNode(DeleteFlowNodeRequest) returns (DeleteFlowNodeResponse) {
         option(google.api.http) = {
-            delete: "/api/devflow/{mergeID}",
+            delete: "/api/devflow/{devFlowID}",
         };
         option(erda.common.openapi) = {
-            path: "/api/devflow/{mergeID}",
+            path: "/api/devflow/{devFlowID}",
         };
     }
     rpc Reconstruction(ReconstructionRequest) returns (ReconstructionResponse) {
@@ -57,6 +58,11 @@ service FlowService {
         };
         option(erda.common.openapi) = {
             path: "/api/devflow/actions/info",
+        };
+    }
+    rpc FlowCallBack(FlowCallbackRequest) returns (FlowCallbackResponse) {
+        option(google.api.http) = {
+            post: "/api/devflow/actions/callback",
         };
     }
 }
@@ -87,19 +93,34 @@ message DevFlowNode {
 message CreateFlowNodeRequest {
     uint64 issueID = 1 [(validate.rules).uint64.gt = 0];
     uint64 appID = 2 [(validate.rules).uint64.gt = 0];
-    string sourceBranch = 3 [(validate.rules).string.min_len = 1];
-    string targetBranch = 4 [(validate.rules).string.min_len = 1];
-    string currentBranch = 5 [(validate.rules).string.min_len = 1];
+    string flowRuleName = 3 [(validate.rules).string.min_len = 1];
+    string currentBranch = 4 [(validate.rules).string.min_len = 1];
 }
 
 message CreateFlowNodeResponse {
-    uint64 repoMergeID = 1;
-    uint64 mergeID = 2;
+    DevFlow data = 1;
+}
+
+
+message DevFlow {
+    string ID = 1 [json_name = "id"];
+    uint64 orgID = 2;
+    string orgName = 3;
+    string creator = 4;
+    string branch = 5;
+    uint64 issueID = 6;
+    string flowRuleName = 7;
+    uint64 appID = 8;
+    string appName = 9;
+    string joinTempBranchStatus = 10;
+    bool isJoinTempBranch = 11;
+    google.protobuf.Timestamp createdAt = 12;
+    google.protobuf.Timestamp updatedAt = 13;
 }
 
 message OperationMergeRequest {
-    uint64 mergeID = 1;
-    google.protobuf.BoolValue enable = 2;
+    string devFlowID = 1 [(validate.rules).string.min_len = 1];
+    google.protobuf.BoolValue enable = 2 [(validate.rules).message.required = true];
 }
 
 message OperationMergeResponse {
@@ -107,8 +128,8 @@ message OperationMergeResponse {
 
 // DeleteFlowNode
 message DeleteFlowNodeRequest {
-    uint64 mergeID = 1;
-    uint64 issueID = 2;
+    string devFlowID = 1 [(validate.rules).string.min_len = 1];
+    bool deleteBranch = 2;
 }
 
 message DeleteFlowNodeResponse {
@@ -126,37 +147,62 @@ message PipelineStepInfo {
     string status = 1;
     uint64 pipelineID = 2;
     string ymlName = 3;
+    bool hasOnPushBranch = 4;
+    string inode = 5;
+    string pInode = 6;
 }
 
 message GetDevFlowInfoRequest {
     uint64 issueID = 1;
-    uint64 projectID = 2;
-    uint64 mergeID = 3;
+    uint64 appID = 2;
+    string branch = 3;
 }
 
 message ChangeBranch {
     Commit commit = 1;
     string branchName = 2;
     string status = 3;
-    uint64 repoMergeID = 4;
 }
 
 message DevFlowInfo {
-    DevFlowNode devFlowNode = 1;
+    DevFlow devFlow = 1;
+    bool hasPermission = 2;
+    CodeNode codeNode = 3;
+    TempMergeNode tempMergeNode = 4;
+    PipelineNode pipelineNode = 5;
+    MergeRequestNode mergeRequestNode = 6;
+}
 
-    repeated ChangeBranch changeBranch = 2;
-    repeated PipelineStepInfo pipelineStepInfos = 3;
-    string commit = 4;
-    bool hasPermission = 5;
-    string inode = 6;
-    string pInode = 7;
-    bool hasOnPushBranch = 8;
-    string devFlowRuleName = 9;
+message CodeNode {
+    string currentBranch = 1;
+    Commit commit = 2;
+    bool isJoinTempBranch = 3;
+    string joinTempBranchStatus = 4;
+    bool canJoin = 5;
+    bool exist = 6;
+    string sourceBranch = 7;
+}
+
+message TempMergeNode {
+    string tempBranch = 1;
+    Commit baseCommit = 2;
+    repeated ChangeBranch changeBranch = 3;
+}
+
+message PipelineNode {
+    repeated PipelineStepInfo pipelineStepInfos = 1;
+}
+
+message MergeRequestNode {
+    string currentBranch = 1;
+    string targetBranch = 2;
+    string title = 3;
+    string desc = 4;
+    openapiv1.gittar.MergeRequestInfo mergeRequestInfo = 5;
 }
 
 message GetDevFlowInfoResponse {
-    string status = 1;
-    repeated DevFlowInfo devFlowInfos = 2;
+    repeated DevFlowInfo devFlowInfos = 1;
 }
 
 message Commit {
@@ -172,3 +218,24 @@ message Signature {
     string name = 2;
     google.protobuf.Timestamp When = 3;
 }
+
+message FlowCallbackRequest {
+    FlowEventData content = 1;
+    string projectID = 2;
+    string orgID = 3;
+    string applicationID = 4;
+}
+
+message FlowEventData {
+    map<string, google.protobuf.Value> params = 1;
+    uint64 issueID = 2;
+    string operator = 3;
+    string tempBranch = 4;
+    string sourceBranch = 5;
+    string targetBranch = 6;
+    string appName = 7;
+    string projectName = 8;
+    string isJoinTempBranch = 9;
+}
+
+message FlowCallbackResponse {}

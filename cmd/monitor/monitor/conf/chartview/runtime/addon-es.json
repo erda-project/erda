@@ -1,0 +1,941 @@
+{
+  "id": "addon-es",
+  "name": "ES监控",
+  "version": "v2",
+  "desc": "",
+  "scope": "org",
+  "scopeId": "terminus",
+  "viewConfig": [{
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 0,
+    "i": "view-gWKZuKdd",
+    "view": {
+      "title": "索引存储量",
+      "i18n": {
+        "title": {
+          "zh": "索引存储量",
+          "en": "Store Size"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_indices"],
+          "resultFilters": [{
+            "alias": "表达式-64",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filteroycEOQoc",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeOv3I4Hyq",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_indices-node_name::tag",
+            "key": "typeCve4vNZ4",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-63",
+            "expr": "max(store_size_in_bytes::field)",
+            "key": "valuexKDDdnja",
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_indices"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeOv3I4Hyq",
+            "expr": "time()"
+          }, {
+            "alias": "typeCve4vNZ4",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valuexKDDdnja",
+            "expr": "max(store_size_in_bytes::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 0,
+    "i": "view-KzNzNAoG",
+    "view": {
+      "title": "文档数量",
+      "i18n": {
+        "title": {
+          "zh": "文档数量",
+          "en": "Docs Count"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_indices"],
+          "resultFilters": [{
+            "alias": "表达式-66",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filtereUQFnauW",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type6apubzU4",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_indices-node_name::tag",
+            "key": "typeoJgm3B7a",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-65",
+            "expr": "max(docs_count::field)",
+            "key": "valueg43UFBUZ",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_indices"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "type6apubzU4",
+            "expr": "time()"
+          }, {
+            "alias": "typeoJgm3B7a",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valueg43UFBUZ",
+            "expr": "max(docs_count::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 9,
+    "i": "view-4S1bAEAS",
+    "view": {
+      "title": "Segment数量",
+      "i18n": {
+        "title": {
+          "zh": "Segment数量",
+          "en": "Segments Count"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_indices"],
+          "resultFilters": [{
+            "alias": "表达式-69",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filteri60XSG16",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeCyFasuvm",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_indices-node_name::tag",
+            "key": "typeiG9iJLWR",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-68",
+            "expr": "max(segments_count::field)",
+            "key": "value8WjHWisL",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_indices"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeCyFasuvm",
+            "expr": "time()"
+          }, {
+            "alias": "typeiG9iJLWR",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "value8WjHWisL",
+            "expr": "max(segments_count::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 9,
+    "i": "view-8XZORjFm",
+    "view": {
+      "title": "Http连接数",
+      "i18n": {
+        "title": {
+          "zh": "Http连接数",
+          "en": "Number Of Http Connects"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_http"],
+          "resultFilters": [{
+            "alias": "表达式-71",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterfRe9Nkfm",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeQwQZ09Oa",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_http-node_name::tag",
+            "key": "typemLBWGTfE",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-70",
+            "expr": "max(current_open::field)",
+            "key": "value0rp3P2pl",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_http"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeQwQZ09Oa",
+            "expr": "time()"
+          }, {
+            "alias": "typemLBWGTfE",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "value0rp3P2pl",
+            "expr": "max(current_open::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 18,
+    "i": "view-ZnXHItrE",
+    "view": {
+      "title": "Transport连接数",
+      "i18n": {
+        "title": {
+          "zh": "Transport连接数",
+          "en": "Transport Server Open"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_transport"],
+          "resultFilters": [{
+            "alias": "表达式-73",
+            "expr": "addon_id::tag='{{addonId}}' ",
+            "key": "filterXBeSBFpx",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeV1DheUl6",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_transport-node_name::tag",
+            "key": "typeYStfgV6z",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-72",
+            "expr": "max(server_open::field)",
+            "key": "valueV4WcmVDe",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_transport"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeV1DheUl6",
+            "expr": "time()"
+          }, {
+            "alias": "typeYStfgV6z",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valueV4WcmVDe",
+            "expr": "max(server_open::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}' "]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 18,
+    "i": "view-cGSQBqzD",
+    "view": {
+      "title": "JVM堆内存",
+      "i18n": {
+        "title": {
+          "zh": "JVM堆内存",
+          "en": "Jvm Mem Heap Used"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_jvm"],
+          "resultFilters": [{
+            "alias": "表达式-75",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filteraA85ixWG",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typevqzCAakv",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_jvm-node_name::tag",
+            "key": "typeccPiyBTh",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-74",
+            "expr": "max(mem_heap_used_in_bytes::field)",
+            "key": "valueJxtXlDmf",
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_jvm"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typevqzCAakv",
+            "expr": "time()"
+          }, {
+            "alias": "typeccPiyBTh",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valueJxtXlDmf",
+            "expr": "max(mem_heap_used_in_bytes::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 27,
+    "i": "view-3H5F0vpU",
+    "view": {
+      "title": "老年代GC次数",
+      "i18n": {
+        "title": {
+          "zh": "老年代GC次数",
+          "en": "Old GC Count"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_jvm"],
+          "resultFilters": [{
+            "alias": "表达式-77",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterloiiGH8W",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeULrXhB1W",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_jvm-node_name::tag",
+            "key": "typerMDiZDhT",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-76",
+            "expr": "diffps(gc_collectors_old_collection_count::field)",
+            "key": "valueyTFpiO4P",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_jvm"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeULrXhB1W",
+            "expr": "time()"
+          }, {
+            "alias": "typerMDiZDhT",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valueyTFpiO4P",
+            "expr": "diffps(gc_collectors_old_collection_count::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 27,
+    "i": "view-LLeipQYU",
+    "view": {
+      "title": "年轻代GC次数",
+      "i18n": {
+        "title": {
+          "zh": "年轻代GC次数",
+          "en": "Young GC Count"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_jvm"],
+          "resultFilters": [{
+            "alias": "表达式-79",
+            "expr": "addon_id::tag='{{addonId}}' ",
+            "key": "filtervJ5UWtUK",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeOoinew1F",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_jvm-node_name::tag",
+            "key": "type13DEQPj9",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-78",
+            "expr": "diffps(gc_collectors_young_collection_count::field)",
+            "key": "valueTbfrTe7W",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_jvm"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeOoinew1F",
+            "expr": "time()"
+          }, {
+            "alias": "type13DEQPj9",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valueTbfrTe7W",
+            "expr": "diffps(gc_collectors_young_collection_count::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}' "]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 36,
+    "i": "view-2O1WfGlC",
+    "view": {
+      "title": "Search次数",
+      "i18n": {
+        "title": {
+          "zh": "Search次数",
+          "en": "Search Query Total"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_indices"],
+          "resultFilters": [{
+            "alias": "表达式-81",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterZy8bGyqH",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeEVL0Pesi",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_indices-node_name::tag",
+            "key": "typebjelZsC7",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-80",
+            "expr": "diffps(search_query_total::field)",
+            "key": "valueYneI1kNy",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_indices"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeEVL0Pesi",
+            "expr": "time()"
+          }, {
+            "alias": "typebjelZsC7",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valueYneI1kNy",
+            "expr": "diffps(search_query_total::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 36,
+    "i": "view-tGgk0lwo",
+    "view": {
+      "title": "Index次数",
+      "i18n": {
+        "title": {
+          "zh": "Index次数",
+          "en": "Indexing Index Total"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_indices"],
+          "resultFilters": [{
+            "alias": "表达式-83",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterzfBf2hlG",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeaA2iqb21",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_indices-node_name::tag",
+            "key": "typeUAA2bBww",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-82",
+            "expr": "diffps(indexing_index_total::field)",
+            "key": "value23dNnvNz",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_indices"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeaA2iqb21",
+            "expr": "time()"
+          }, {
+            "alias": "typeUAA2bBww",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "value23dNnvNz",
+            "expr": "diffps(indexing_index_total::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 45,
+    "i": "view-wbJ0G5P7",
+    "view": {
+      "title": "Merges次数",
+      "i18n": {
+        "title": {
+          "zh": "Merges次数",
+          "en": "Merges Total"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_indices"],
+          "resultFilters": [{
+            "alias": "表达式-85",
+            "expr": "addon_id::tag='{{addonId}}' ",
+            "key": "filterq8o22End",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeoY3nxEVE",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_indices-node_name::tag",
+            "key": "typejMGH7Y0x",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-84",
+            "expr": "diffps(merges_total::field)",
+            "key": "value9GJU2dSL",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_indices"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typeoY3nxEVE",
+            "expr": "time()"
+          }, {
+            "alias": "typejMGH7Y0x",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "value9GJU2dSL",
+            "expr": "diffps(merges_total::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}' "]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 45,
+    "i": "view-2VSw3oui",
+    "view": {
+      "title": "Refresh次数",
+      "i18n": {
+        "title": {
+          "zh": "Refresh次数",
+          "en": "Refresh Total"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_elasticsearch", "project_addon_elasticsearch_indices"],
+          "resultFilters": [{
+            "alias": "表达式-87",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterTbfivSJ4",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typearGmxeaE",
+            "type": "time"
+          }, {
+            "alias": "Node Name",
+            "field": "elasticsearch_indices-node_name::tag",
+            "key": "typefQCA9OLa",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-86",
+            "expr": "diffps(refresh_total::field)",
+            "key": "valueZmxxgV8B",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": " /s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["elasticsearch_indices"],
+          "groupby": ["time()", "node_name::tag"],
+          "select": [{
+            "alias": "typearGmxeaE",
+            "expr": "time()"
+          }, {
+            "alias": "typefQCA9OLa",
+            "expr": "node_name::tag"
+          }, {
+            "alias": "valueZmxxgV8B",
+            "expr": "diffps(refresh_total::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }]
+}

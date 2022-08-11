@@ -31,10 +31,10 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/ecp/services/kubernetes"
-	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/k8sclient/apis/openyurt/v1alpha1"
 )
 
 const (

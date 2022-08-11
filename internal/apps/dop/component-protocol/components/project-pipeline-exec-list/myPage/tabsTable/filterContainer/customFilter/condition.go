@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/project-pipeline-exec-list/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/util"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/condition"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/condition"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 

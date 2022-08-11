@@ -15,6 +15,7 @@
 package elasticsearch
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/golang/mock/gomock"
@@ -116,18 +117,18 @@ func (mr *MockQueryMockRecorder) OrgName() *gomock.Call {
 }
 
 // ParseResult mocks base method.
-func (m *MockQuery) ParseResult(resp interface{}) (*model.Data, error) {
+func (m *MockQuery) ParseResult(ctx context.Context, resp interface{}) (*model.Data, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseResult", resp)
+	ret := m.ctrl.Call(m, "ParseResult", ctx, resp)
 	ret0, _ := ret[0].(*model.Data)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ParseResult indicates an expected call of ParseResult.
-func (mr *MockQueryMockRecorder) ParseResult(resp interface{}) *gomock.Call {
+func (mr *MockQueryMockRecorder) ParseResult(ctx, resp interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseResult", reflect.TypeOf((*MockQuery)(nil).ParseResult), resp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseResult", reflect.TypeOf((*MockQuery)(nil).ParseResult), ctx, resp)
 }
 
 // SearchSource mocks base method.
@@ -238,6 +239,34 @@ func (mr *MockParserMockRecorder) Build() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockParser)(nil).Build))
 }
 
+// GetOrgName mocks base method.
+func (m *MockParser) GetOrgName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrgName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetOrgName indicates an expected call of GetOrgName.
+func (mr *MockParserMockRecorder) GetOrgName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgName", reflect.TypeOf((*MockParser)(nil).GetOrgName))
+}
+
+// GetTerminusKey mocks base method.
+func (m *MockParser) GetTerminusKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTerminusKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetTerminusKey indicates an expected call of GetTerminusKey.
+func (mr *MockParserMockRecorder) GetTerminusKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTerminusKey", reflect.TypeOf((*MockParser)(nil).GetTerminusKey))
+}
+
 // Metrics mocks base method.
 func (m *MockParser) Metrics() ([]string, error) {
 	m.ctrl.T.Helper()
@@ -254,18 +283,18 @@ func (mr *MockParserMockRecorder) Metrics() *gomock.Call {
 }
 
 // ParseQuery mocks base method.
-func (m *MockParser) ParseQuery(kind string) ([]es_tsql.Query, error) {
+func (m *MockParser) ParseQuery(ctx context.Context, kind string) ([]es_tsql.Query, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseQuery", kind)
+	ret := m.ctrl.Call(m, "ParseQuery", ctx, kind)
 	ret0, _ := ret[0].([]es_tsql.Query)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ParseQuery indicates an expected call of ParseQuery.
-func (mr *MockParserMockRecorder) ParseQuery(kind interface{}) *gomock.Call {
+func (mr *MockParserMockRecorder) ParseQuery(ctx, kind interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseQuery", reflect.TypeOf((*MockParser)(nil).ParseQuery), kind)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseQuery", reflect.TypeOf((*MockParser)(nil).ParseQuery), ctx, kind)
 }
 
 // SetFilter mocks base method.

@@ -80,15 +80,11 @@ stages:
             cross_cluster: "true"
             dice_yml: ${{ dirs.erda }}/erda.yml
             image:
-              action-runner-scheduler: ${{ outputs.build-erda.image }}
               erda-server: ${{ outputs.build-erda.image }}
               cluster-agent: ${{ outputs.build-agent.image }}
               cluster-manager: ${{ outputs.build-erda.image }}
               cmp: ${{ outputs.build-erda.image }}
               collector: ${{ outputs.build-erda.image }}
-              dop: ${{ outputs.build-erda.image }}
-              ecp: ${{ outputs.build-erda.image }}
-              eventbox: ${{ outputs.build-erda.image }}
               gittar: ${{ outputs.build-erda.image }}
               hepa: ${{ outputs.build-erda.image }}
               log-service: ${{ outputs.build-erda.image }}
@@ -96,8 +92,6 @@ stages:
               msp: ${{ outputs.build-erda.image }}
               orchestrator: ${{ outputs.build-erda.image }}
               pipeline: ${{ outputs.build-erda.image }}
-              scheduler: ${{ outputs.build-erda.image }}
               streaming: ${{ outputs.build-erda.image }}
-              uc-adaptor: ${{ outputs.build-erda.image }}
             migration_type: erda
             migration_dir: ${{ dirs.erda }}/.erda/migrations

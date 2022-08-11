@@ -21,8 +21,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/issueFilter"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
-	"github.com/erda-project/erda/internal/pkg/component-protocol/issueFilter"
 )
 
 type GSHelper struct {

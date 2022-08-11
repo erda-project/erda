@@ -30,13 +30,13 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	stream "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/core"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	perm "github.com/erda-project/erda/pkg/common/permission"
@@ -57,7 +57,7 @@ type provider struct {
 	issueService *IssueService
 	Stream       stream.Interface
 	Query        query.Interface
-	Identity     user.Interface
+	Identity     userpb.UserServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

@@ -21,9 +21,11 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/common/transaction"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -98,11 +100,22 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		Statement: statement,
 		Params:    queryParams,
 	}
-	response, err := t.Metric.QueryWithInfluxFormat(ctx, request)
+
+	metricQueryCtx := apis.GetContext(t.SdkCtx, func(header *transport.Header) {
+		header.Set("terminus_key", t.TenantId)
+	})
+
+	response, err := t.Metric.QueryWithInfluxFormat(metricQueryCtx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	table.Total = response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
+
+	if response != nil && len(response.Results) > 0 && len(response.Results[0].Series) > 0 &&
+		len(response.Results[0].Series[0].Rows) > 0 && len(response.Results[0].Series[0].Rows[0].Values) > 0 {
+		table.Total = response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
+	} else {
+		return table, nil
+	}
 
 	// query list items
 	statement = fmt.Sprintf("SELECT "+
@@ -132,9 +145,13 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		Statement: statement,
 		Params:    queryParams,
 	}
-	response, err = t.Metric.QueryWithInfluxFormat(ctx, request)
+	response, err = t.Metric.QueryWithInfluxFormat(metricQueryCtx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
+	}
+
+	if response == nil || len(response.Results) == 0 || len(response.Results[0].Series) == 0 || response.Results[0].Series[0].Rows == nil {
+		return table, nil
 	}
 	for _, row := range response.Results[0].Series[0].Rows {
 		transRow := &TransactionTableRow{

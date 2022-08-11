@@ -45,6 +45,56 @@ func (c *SQLColumnHandler) getValue(currentRow map[string]interface{}) (interfac
 	return c.getAggFieldExprValue(currentRow, c.field.Expr)
 }
 
+func (c *SQLColumnHandler) getALLValue(current map[string]interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	result["name"] = current["metric_group"].(string)
+	result["timestamp"] = current["timestamp"].(int64)
+
+	if err := getArray(current, tagSuffix, "tag", result); err != nil {
+		fmt.Println(err)
+	}
+	if err := getArray(current, fieldSuffix, "number_field", result); err != nil {
+		fmt.Println(err)
+	}
+	if err := getArray(current, fieldSuffix, "string_field", result); err != nil {
+		fmt.Println(err)
+	}
+	return result, nil
+}
+
+const (
+	tagSuffix   = "::tag"
+	fieldSuffix = "::field"
+)
+
+func getArray(cur map[string]interface{}, suffix string, operator string, result map[string]interface{}) error {
+	operatorK, ok := cur[fmt.Sprintf("%s_keys", operator)]
+	if !ok {
+		return fmt.Errorf("no operator key: %s", operator)
+	}
+	operatorV, ok := cur[fmt.Sprintf("%s_values", operator)]
+	if !ok {
+		return fmt.Errorf("no operator value: %s", operator)
+	}
+	k, ok := operatorK.([]string)
+	if !ok {
+		return fmt.Errorf("unknown key type :%T", operatorK)
+	}
+	switch v := operatorV.(type) {
+	case []string:
+		for i := 0; i < len(k); i++ {
+			result[(k)[i]+suffix] = (v)[i]
+		}
+	case []float64:
+		for i := 0; i < len(k); i++ {
+			result[(k)[i]+suffix] = (v)[i]
+		}
+	default:
+		return fmt.Errorf("unknown value type :%T", operatorV)
+	}
+	return nil
+}
+
 func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, exprr influxql.Expr) (interface{}, error) {
 	switch expr := exprr.(type) {
 	case *influxql.Call:
@@ -115,12 +165,7 @@ func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, expr
 	case *influxql.ParenExpr:
 		return c.getAggFieldExprValue(row, expr.Expr)
 	case *influxql.VarRef:
-		key := expr.Val
-
-		if expr == c.field.Expr {
-			v := c.field.Expr.(*influxql.VarRef)
-			key = v.Val
-		}
+		key := expr.String()
 		return getGetValueFromFlatMap(row, key, "."), nil
 	default:
 		v, ok, err := getLiteralValue(c.ctx, expr)

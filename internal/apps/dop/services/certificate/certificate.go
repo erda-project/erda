@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/model"
+	"github.com/erda-project/erda/internal/core/file/filetypes"
 )
 
 // Certificate 资源对象操作封装
@@ -126,7 +127,7 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 				return nil, errors.Errorf("failed to read debug.keystore file, (%+v)", err)
 			}
 
-			var uploadFileReq = apistructs.FileUploadRequest{
+			var uploadFileReq = filetypes.FileUploadRequest{
 				FileNameWithExt: "debug.keystore",
 				Creator:         userID,
 				ByteSize:        int64(len(fileByte)),

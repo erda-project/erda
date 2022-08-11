@@ -19,9 +19,13 @@ import (
 	"net/http"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-proto-go/common/pb"
+	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -120,7 +124,7 @@ func (t *TestPlan) GetRel(relID uint64) (*apistructs.TestPlanCaseRel, error) {
 	rel := t.ConvertRel(dbRel, tc)
 
 	// relation issue bugs
-	issueCaseRels, err := t.db.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{
+	issueCaseRels, err := t.issueDBClient.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{
 		TestPlanCaseRelID: rel.ID,
 	})
 	if err != nil {
@@ -135,11 +139,11 @@ func (t *TestPlan) GetRel(relID uint64) (*apistructs.TestPlanCaseRel, error) {
 
 	issueIDs = strutil.DedupUint64Slice(issueIDs, true)
 	var issueStatusSlice []int64
-	var issueMap = map[uint64]*apistructs.Issue{}
+	var issueMap = map[uint64]*issuepb.Issue{}
 	for _, issueID := range issueIDs {
-		issue, err := t.issueSvc.GetIssue(apistructs.IssueGetRequest{ID: issueID})
+		issue, err := t.issueSvc.GetIssue(int64(issueID), &pb.IdentityInfo{})
 		if err == nil {
-			var rels []apistructs.TestPlanCaseRel
+			var rels []*issuepb.TestPlanCaseRel
 			rels, err = t.getTestPlanCaseRels(issueID)
 			issue.TestPlanCaseRels = rels
 		}
@@ -168,11 +172,11 @@ func (t *TestPlan) GetRel(relID uint64) (*apistructs.TestPlanCaseRel, error) {
 	for k, issue := range issueMap {
 		testPlanCaseRelIssueBug := apistructs.TestPlanCaseRelIssueBug{
 			IssueRelationID: issueRelationIDMap[k],
-			IssueID:         uint64(issue.ID),
+			IssueID:         uint64(issue.Id),
 			IterationID:     issue.IterationID,
 			Title:           issue.Title,
-			Priority:        issue.Priority,
-			CreatedAt:       issue.CreatedAt,
+			Priority:        apistructs.IssuePriority(issue.Priority.String()),
+			CreatedAt:       issue.CreatedAt.AsTime(),
 		}
 
 		if issueStatusMap != nil {
@@ -188,10 +192,10 @@ func (t *TestPlan) GetRel(relID uint64) (*apistructs.TestPlanCaseRel, error) {
 	return rel, nil
 }
 
-func (t *TestPlan) getTestPlanCaseRels(issueID uint64) ([]apistructs.TestPlanCaseRel, error) {
+func (t *TestPlan) getTestPlanCaseRels(issueID uint64) ([]*issuepb.TestPlanCaseRel, error) {
 	// 查询关联的测试计划用例
-	testPlanCaseRels := make([]apistructs.TestPlanCaseRel, 0)
-	issueTestCaseRels, err := t.db.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{IssueID: issueID})
+	testPlanCaseRels := make([]*issuepb.TestPlanCaseRel, 0)
+	issueTestCaseRels, err := t.issueDBClient.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{IssueID: issueID})
 	if err != nil {
 		return nil, err
 	}
@@ -207,10 +211,27 @@ func (t *TestPlan) getTestPlanCaseRels(issueID uint64) ([]apistructs.TestPlanCas
 		}
 
 		for _, rel := range rels {
-			testPlanCaseRels = append(testPlanCaseRels, rel)
+			testPlanCaseRels = append(testPlanCaseRels, ToPbTestPlanCaseRel(rel))
 		}
 	}
 	return testPlanCaseRels, nil
+}
+
+func ToPbTestPlanCaseRel(t apistructs.TestPlanCaseRel) *issuepb.TestPlanCaseRel {
+	return &issuepb.TestPlanCaseRel{
+		Id:         t.ID,
+		Name:       t.Name,
+		Priority:   string(t.Priority),
+		TestPlanID: t.TestPlanID,
+		TestSetID:  t.TestSetID,
+		TestCaseID: t.TestCaseID,
+		ExecStatus: string(t.ExecStatus),
+		Creator:    t.CreatorID,
+		UpdaterID:  t.UpdaterID,
+		ExecutorID: t.ExecutorID,
+		CreatedAt:  timestamppb.New(t.CreatedAt),
+		UpdatedAt:  timestamppb.New(t.UpdatedAt),
+	}
 }
 
 func (t *TestPlan) batchGetIssueState(issueStatusSlice []int64) (results map[int64]apistructs.IssueStatus, err error) {
@@ -267,7 +288,7 @@ func (t *TestPlan) BatchUpdateTestPlanCaseRels(req apistructs.TestPlanCaseRelBat
 	// 删除
 	if req.Delete {
 		// 删除 缺陷和测试计划用例关联
-		if err := t.db.DeleteIssueTestCaseRelationsByTestPlanCaseRelIDs(req.RelationIDs); err != nil {
+		if err := t.issueDBClient.DeleteIssueTestCaseRelationsByTestPlanCaseRelIDs(req.RelationIDs); err != nil {
 			return apierrors.ErrBatchUpdateTestPlanCaseRels.InternalError(err)
 		}
 		// 删除测试计划用例
@@ -320,7 +341,7 @@ func (t *TestPlan) RemoveTestPlanCaseRelIssueRelations(req apistructs.TestPlanCa
 	}
 
 	// 删除
-	if err := t.db.DeleteIssueTestCaseRelationsByIDs(req.IssueTestCaseRelationIDs); err != nil {
+	if err := t.issueDBClient.DeleteIssueTestCaseRelationsByIDs(req.IssueTestCaseRelationIDs); err != nil {
 		return apierrors.ErrRemoveTestPlanCaseRelIssueRelation.InternalError(err)
 	}
 
@@ -356,33 +377,31 @@ func (t *TestPlan) AddTestPlanCaseRelIssueRelations(req apistructs.TestPlanCaseR
 	}
 
 	// 新增
-	var issues []apistructs.Issue
+	var issues []*issuepb.Issue
 	for _, issueID := range req.IssueIDs {
-		issue, err := t.issueSvc.GetIssue(apistructs.IssueGetRequest{
-			ID: issueID,
-		})
+		issue, err := t.issueSvc.GetIssue(int64(issueID), &pb.IdentityInfo{})
 		if err == nil {
-			var rels []apistructs.TestPlanCaseRel
+			var rels []*issuepb.TestPlanCaseRel
 			rels, err = t.getTestPlanCaseRels(issueID)
 			issue.TestPlanCaseRels = rels
 		}
 		if err != nil {
 			return err
 		}
-		issues = append(issues, *issue)
+		issues = append(issues, issue)
 	}
 	// 批量创建关联
-	var issueCaseRels []dao.IssueTestCaseRelation
+	var issueCaseRels []issuedao.IssueTestCaseRelation
 	for _, issue := range issues {
-		issueCaseRels = append(issueCaseRels, dao.IssueTestCaseRelation{
-			IssueID:           uint64(issue.ID),
+		issueCaseRels = append(issueCaseRels, issuedao.IssueTestCaseRelation{
+			IssueID:           uint64(issue.Id),
 			TestPlanID:        rel.TestPlanID,
 			TestPlanCaseRelID: rel.ID,
 			TestCaseID:        rel.TestCaseID,
 			CreatorID:         req.UserID,
 		})
 	}
-	if err := t.db.BatchCreateIssueTestCaseRelations(issueCaseRels); err != nil {
+	if err := t.issueDBClient.BatchCreateIssueTestCaseRelations(issueCaseRels); err != nil {
 		return apierrors.ErrBatchCreateIssueTestCaseRel.InternalError(err)
 	}
 
@@ -402,7 +421,7 @@ func (t *TestPlan) AddTestPlanCaseRelIssueRelations(req apistructs.TestPlanCaseR
 func (t *TestPlan) InternalRemoveTestPlanCaseRelIssueRelationsByIssueID(issueID uint64) error {
 	// 无需查询 issue 是否存在，若 issue 不存在，关联关系本就应该被删除
 
-	if err := t.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{issueID}); err != nil {
+	if err := t.issueDBClient.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{issueID}); err != nil {
 		return apierrors.ErrRemoveTestPlanCaseRelIssueRelation.InternalError(err)
 	}
 	return nil

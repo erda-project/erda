@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -29,6 +30,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/common/custom"
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/common/model"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/math"
 )
 
@@ -205,30 +207,34 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		serviceId := p.ServiceInParams.InParamsPtr.ServiceId
 		instanceId := p.ServiceInParams.InParamsPtr.InstanceId
 
+		ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+			header.Set("terminus_key", tenantId)
+		})
+
 		switch sdk.Comp.Name {
 		case nodejsMemoryHeap:
-			graph, err := p.getMemoryHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getMemoryHeapLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryHeap, structure.Storage, structure.KB, graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case nodejsMemoryNonHeap:
-			graph, err := p.getMemoryNonHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getMemoryNonHeapLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryNonHeap, structure.Storage, structure.KB, graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case nodejsCluster:
-			graph, err := p.getClusterCountLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getClusterCountLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsCluster, structure.String, "pcsUnit", graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case nodejsAsyncResource:
-			graph, err := p.getAsyncResourcesLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getAsyncResourcesLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}

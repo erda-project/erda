@@ -39,6 +39,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
@@ -50,6 +51,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/resourceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -134,6 +136,11 @@ func init() {
 			return nil, errors.Errorf("get http client err %v", err)
 		}
 
+		k8sClient, err := k8sclient.New(clustername)
+		if err != nil {
+			return nil, errors.Errorf("get k8s client err %v", err)
+		}
+
 		regAddr, ok := options["REGADDR"]
 		if !ok {
 			return nil, errors.Errorf("not found dice registry addr in env variables")
@@ -146,7 +153,7 @@ func init() {
 			logrus.Errorf("executor(%s) call eventbox new api error: %v", name, err)
 			return nil, err
 		}
-		resourceInfo := resourceinfo.New(kubeAddr, kubeClient)
+		resourceInfo := resourceinfo.New(k8sClient.ClientSet)
 
 		edas := &EDAS{
 			name:            name,
@@ -488,6 +495,25 @@ func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, e
 	runtime, ok := specObj.(apistructs.ServiceGroup)
 	if !ok {
 		return nil, errors.New("edas k8s inspect: invalid runtime spec")
+	}
+
+	if serviceName, ok := runtime.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"]; ok && serviceName != "" {
+		ns := defaultNamespace
+		pods, err := e.getPods(ns, serviceName)
+		if err != nil {
+			return nil, fmt.Errorf("get pods for servicegroup %+v failed: %v", runtime, err)
+		}
+
+		if runtime.Extra == nil {
+			runtime.Extra = make(map[string]string)
+		}
+
+		podsBytes, err := json.Marshal(pods)
+		if err != nil {
+			return nil, fmt.Errorf("json marshall edas service pods in ns %s for service %s err: %v", ns, serviceName, err)
+		}
+		runtime.Extra[serviceName] = string(podsBytes)
+		return &runtime, nil
 	}
 
 	// Metadata information is passed in from the upper layer, here you only need to get the state of the runtime and assemble it into the runtime to return
@@ -1393,6 +1419,8 @@ func (e *EDAS) getDeploymentStatus(group string, srv *apistructs.Service) (apist
 	}
 
 	dps := dep.Status
+	status.DesiredReplicas = dps.Replicas
+	status.ReadyReplicas = dps.ReadyReplicas
 	// this would not happen in theory
 	if len(dps.Conditions) == 0 {
 		status.Status = apistructs.StatusUnknown
@@ -2034,6 +2062,32 @@ func (e *EDAS) getPodsStatus(namespace string, label string) ([]k8sapi.PodItem, 
 	return pi, nil
 }
 
+func (e *EDAS) getPods(namespace string, label string) ([]apiv1.Pod, error) {
+	var b bytes.Buffer
+
+	resp, err := e.kubeClient.Get(e.kubeAddr).
+		Path("/api/v1/namespaces/"+namespace+"/pods").
+		Param("labelSelector", "app="+label).
+		JSONBody(&deleteOptions).
+		Do().
+		Body(&b)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "k8s get pods by label(%s) err: %v", err, label)
+	}
+
+	if !resp.IsOK() {
+		return nil, errors.Errorf("k8s get pods by label(%s) status code: %d, resp body: %v", label, resp.StatusCode(), b.String())
+	}
+
+	var pl apiv1.PodList
+	if err := json.Unmarshal(b.Bytes(), &pl); err != nil {
+		return nil, err
+	}
+
+	return pl.Items, nil
+}
+
 // Confirm whether to delete the service list
 // The conditions are as follows:
 // 1.Deleted service
@@ -2120,6 +2174,12 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 	sg, ok := specObj.(apistructs.ServiceGroup)
 	if !ok {
 		errMsg := fmt.Sprintf("edas k8s scale: invalid service group spec")
+		logrus.Errorf(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	if _, ok = sg.Labels[pstypes.ErdaPALabelKey]; ok {
+		errMsg := fmt.Sprintf("edas k8s scale: not support sg with label %s", pstypes.ErdaPALabelKey)
 		logrus.Errorf(errMsg)
 		return nil, errors.New(errMsg)
 	}

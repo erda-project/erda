@@ -34,6 +34,7 @@ import (
 const (
 	EnvStdErrRegexpList = "ACTIONAGENT_STDERR_REGEXP_LIST"
 	EnvMaxCacheFileMB   = "ACTIONAGENT_MAX_CACHE_FILE_MB"
+	EnvDefaultShell     = "ACTIONAGENT_DEFAULT_SHELL"
 )
 
 // 对于 custom action，需要将 commands 转换为 script 来执行
@@ -70,8 +71,8 @@ func (agent *Agent) prepare() {
 	}
 
 	// 2. create custom script
-	if len(agent.Arg.Commands) > 0 {
-		if err := agent.setupScript(); err != nil {
+	if agent.Arg.Commands != nil {
+		if err := agent.setupCommandScript(); err != nil {
 			agent.AppendError(err)
 			return
 		}
@@ -132,23 +133,37 @@ func (agent *Agent) prepare() {
 	go agent.ListenSignal()
 }
 
-func (agent *Agent) setupScript() error {
-	var buf bytes.Buffer
-	for _, command := range agent.Arg.Commands {
-		escaped := fmt.Sprintf("%q", command)
-		escaped = strings.Replace(escaped, `$`, `\$`, -1)
-		buf.WriteString(fmt.Sprintf(
-			traceScript,
-			escaped,
-			command,
-		))
+func (agent *Agent) convertCustomCommands() []string {
+	if agent.Arg.Commands == nil {
+		return nil
 	}
-	script := fmt.Sprintf(
-		buildScript,
-		buf.String(),
-	)
+	switch agent.Arg.Commands.(type) {
+	case string:
+		return []string{strings.TrimSuffix(agent.Arg.Commands.(string), "\n")}
+	case []string:
+		return agent.Arg.Commands.([]string)
+	case []interface{}:
+		cmds := agent.Arg.Commands.([]interface{})
+		var res []string
+		for _, cmd := range cmds {
+			res = append(res, fmt.Sprintf("%v", cmd))
+		}
+		return res
+	default:
+		return []string{fmt.Sprintf("%+v", agent.Arg.Commands)}
+	}
+}
 
-	if err := filehelper.CreateFile(agent.EasyUse.RunScript, script, 0777); err != nil {
+func (agent *Agent) setupCommandScript() error {
+	var buf bytes.Buffer
+	commands := agent.convertCustomCommands()
+	for _, command := range commands {
+		escaped := fmt.Sprintf("%s", command)
+		buf.WriteString(fmt.Sprintf(traceScript, escaped))
+	}
+	script := buf.String()
+
+	if err := filehelper.CreateFile(agent.EasyUse.CommandScript, script, 0777); err != nil {
 		return err
 	}
 
@@ -164,8 +179,5 @@ set -e
 
 // traceScript is a helper script which is added to the
 // generated script to trace each command.
-const traceScript = `
-echo + %s
-%s || ((echo "- FAIL! exit code: $?") && false)
-echo
+const traceScript = `%s
 `

@@ -21,10 +21,10 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
-	identity "github.com/erda-project/erda/internal/core/user/common"
 )
 
 func Test_checkCreateParam(t *testing.T) {
@@ -55,8 +55,8 @@ func Test_CheckPermission(t *testing.T) {
 }
 
 func Test_checkUCUserInfo(t *testing.T) {
-	emptyUsers := make([]identity.User, 0)
-	emptyUsers = append(emptyUsers, identity.User{})
+	emptyUsers := make([]*userpb.User, 0)
+	emptyUsers = append(emptyUsers, &userpb.User{})
 	m := New()
 	err := m.checkUCUserInfo(emptyUsers)
 	assert.Equal(t, "failed to get user info", err.Error())

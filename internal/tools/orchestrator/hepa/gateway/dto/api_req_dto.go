@@ -57,6 +57,7 @@ type ApiDto struct {
 	IsInner          int         `json:"-"`
 	Swagger          interface{} `json:"-"`
 	DaoId            string      `json:"-"`
+	KongInfoEndpoint string      `json:"-"`
 }
 
 type ApiReqOptionDto struct {

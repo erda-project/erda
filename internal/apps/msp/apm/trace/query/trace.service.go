@@ -31,6 +31,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/pkg/set"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -115,9 +116,9 @@ func getSpanProcessAnalysisDashboard(metricType string) string {
 	}
 }
 
-func (s *TraceService) getServiceInstanceType(startTime, endTime int64, tenantId, serviceInstanceId string) (string, error) {
+func (s *TraceService) getServiceInstanceType(ctx context.Context, startTime, endTime int64, tenantId, serviceInstanceId string) (string, error) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
 	for _, metricType := range query.ProcessMetrics {
@@ -149,7 +150,7 @@ func (s *TraceService) getServiceInstanceType(startTime, endTime int64, tenantId
 }
 
 func (s *TraceService) getSpanServiceAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
-	instanceType, err := s.getServiceInstanceType(req.StartTime, req.EndTime, req.TenantID, req.ServiceInstanceID)
+	instanceType, err := s.getServiceInstanceType(ctx, req.StartTime, req.EndTime, req.TenantID, req.ServiceInstanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +191,9 @@ func (s *TraceService) GetSpanDashboards(ctx context.Context, req *pb.GetSpanDas
 	if err != nil {
 		s.p.Log.Error(err)
 	}
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+		header.Set("terminus_key", req.TenantID)
+	})
 	// relate service analysis
 	serviceAnalysis, err := s.getSpanServiceAnalysis(ctx, req)
 	if err != nil {
@@ -634,11 +638,16 @@ func (s *TraceService) convertToTraceDebugHistory(ctx context.Context, dbHistory
 func (s *TraceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventRequest) (*pb.SpanEventResponse, error) {
 	startTime, endTime := s.getSpanEventQueryTime(req)
 	req.StartTime = req.StartTime - int64((time.Minute*15)/time.Millisecond)
-	statement := "select * from apm_span_event where span_id = $span_id order by timestamp asc limit 1000"
+	statement := "select * from apm_span_event where span_id::tag = $span_id order by timestamp asc limit 1000"
 	queryParams := map[string]*structpb.Value{
 		"span_id": structpb.NewStringValue(req.SpanID),
 	}
-	queryCtx, _ := context.WithTimeout(ctx, time.Minute)
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+	})
+
+	queryCtx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	queryRequest := &metricpb.QueryWithTableFormatRequest{
 		Start:     strconv.FormatInt(startTime, 10),
 		End:       strconv.FormatInt(endTime, 10),
@@ -666,7 +675,7 @@ func (s *TraceService) handleSpanEventResponse(table *metricpb.TableResult) []*p
 	spanEvents := make([]*pb.SpanEvent, 0)
 	eventNames := make(map[string]string)
 	for _, col := range table.Cols {
-		if col.Flag == "tag" {
+		if strings.HasSuffix(col.Key, "::tag") {
 			key := strings.Replace(col.Key, "::tag", "", -1)
 			if EventFieldSet.Contains(key) {
 				eventNames[key] = col.Key

@@ -15,13 +15,14 @@
 package user
 
 import (
-	"reflect"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	transport "github.com/erda-project/erda-infra/pkg/transport"
+	pb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
 	"github.com/erda-project/erda/internal/core/user/impl/kratos"
 	"github.com/erda-project/erda/internal/core/user/impl/uc"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
@@ -29,33 +30,45 @@ type config struct {
 }
 
 type provider struct {
-	Cfg *config
-	Log logs.Logger
+	Cfg      *config
+	Log      logs.Logger
+	Register transport.Register
 
 	Kratos kratos.Interface
 	Uc     uc.Interface
 
-	common.Interface
+	userService common.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Cfg.OryEnabled {
-		p.Interface = p.Kratos
+		p.userService = p.Kratos
 		p.Log.Info("use kratos as user")
 	} else {
-		p.Interface = p.Uc
+		p.userService = p.Uc
 		p.Log.Info("use uc as user")
+	}
+
+	if p.Register != nil {
+		pb.RegisterUserServiceImp(p.Register, p.userService, apis.Options())
 	}
 	return nil
 }
 
-type Interface common.Interface
+func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	switch {
+	case ctx.Service() == "erda.core.user.UserService" || ctx.Type() == pb.UserServiceServerType() || ctx.Type() == pb.UserServiceHandlerType():
+		return p.userService
+	}
+	return p
+}
 
 func init() {
 	servicehub.Register("erda.core.user", &servicehub.Spec{
-		Services:   []string{"erda.core.user"},
-		Types:      []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
-		ConfigFunc: func() interface{} { return &config{} },
+		Services:             pb.ServiceNames(),
+		Types:                pb.Types(),
+		OptionalDependencies: []string{"service-register"},
+		ConfigFunc:           func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

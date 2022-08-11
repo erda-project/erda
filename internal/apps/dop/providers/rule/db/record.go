@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/dop/rule/pb"
-	"github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 type DBClient struct {

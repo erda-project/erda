@@ -761,7 +761,7 @@ func (impl GatewayDomainServiceImpl) TouchPackageDomain(orgId, packageId, cluste
 		if err != nil {
 			return nil, err
 		}
-		if pack.Scene != orm.UNITY_SCENE {
+		if pack.Scene != orm.UnityScene && pack.Scene != orm.HubScene {
 
 			for _, domainObj := range domainList {
 				switch domainObj.Type {

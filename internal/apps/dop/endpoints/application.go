@@ -186,7 +186,7 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 	e.deleteExtraInfo(appDto.Extra, identity)
 
 	// delete issue
-	if err = e.db.DeleteIssueAppRelationsByApp(applicationID); err != nil {
+	if err = e.issueDBClient.DeleteIssueAppRelationsByApp(applicationID); err != nil {
 		logrus.Warnf("failed to delete mr relations, %v", err)
 	}
 

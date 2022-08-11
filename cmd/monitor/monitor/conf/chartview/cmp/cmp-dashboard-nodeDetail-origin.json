@@ -1,0 +1,938 @@
+{
+  "id": "cmp-dashboard-nodeDetail-origin",
+  "name": "node detail",
+  "version": "v2",
+  "desc": "",
+  "scope": "org",
+  "scopeId": "erda",
+  "viewConfig": [{
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 0,
+    "i": "view-Z1Ifi1lC",
+    "view": {
+      "title": "CPU Usage",
+      "i18n": {
+        "title": {
+          "zh": "CPU使用率",
+          "en": "CPU Usage"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_cpu"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "host_summary-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filterGvTPZ8Uu",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "host_summary-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filterqL3CeQsH",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeC2GcRIE2",
+            "type": "time"
+          }],
+          "valueDimensions": [{
+            "alias": "CPU使用率",
+            "i18n": {
+              "alias": {
+                "zh": "CPU使用率",
+                "en": "CPU Usage"
+              }
+            },
+            "key": "valueaDR0UJMN",
+            "resultType": "number",
+            "expr": "max(cpu_usage_active::field)",
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            },
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["host_summary"],
+          "groupby": ["time()"],
+          "select": [{
+            "alias": "typeC2GcRIE2",
+            "expr": "time()"
+          }, {
+            "alias": "valueaDR0UJMN",
+            "expr": "max(cpu_usage_active::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 0,
+    "i": "view-oNMEwT4Y",
+    "view": {
+      "title": "Memory Usage",
+      "i18n": {
+        "title": {
+          "zh": "内存使用率",
+          "en": "Memory Usage"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_mem"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "host_summary-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filterV5csxQRr",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "host_summary-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filtermnmfWDUP",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeGQP7E5Y2",
+            "type": "time"
+          }],
+          "valueDimensions": [{
+            "alias": "内存使用率",
+            "i18n": {
+              "alias": {
+                "zh": "内存使用率",
+                "en": "Memory Usage"
+              }
+            },
+            "expr": "max(mem_used_percent::field)",
+            "key": "value1xPEiz2R",
+            "resultType": "number",
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            },
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["host_summary"],
+          "groupby": ["time()"],
+          "select": [{
+            "alias": "typeGQP7E5Y2",
+            "expr": "time()"
+          }, {
+            "alias": "value1xPEiz2R",
+            "expr": "max(mem_used_percent::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 9,
+    "i": "view-22EGqQa1",
+    "view": {
+      "title": "System Load",
+      "i18n": {
+        "title": {
+          "zh": "系统load值",
+          "en": "System Load"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_load"],
+          "resultFilters": [{
+            "alias": "机器IP",
+            "field": "host_summary-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filterpoXIfBqV",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "集群名",
+            "field": "host_summary-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filterTKg5aAN4",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeTHL9iJwi",
+            "type": "time"
+          }],
+          "valueDimensions": [{
+            "alias": "Load1",
+            "expr": "max(load1::field)",
+            "key": "value0Q08Om4z",
+            "resultType": "number",
+            "type": "expr",
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
+          }, {
+            "alias": "Load5",
+            "expr": "max(load5::field)",
+            "key": "valueoFCGDC2z",
+            "resultType": "number",
+            "type": "expr",
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
+          }, {
+            "alias": "Load15",
+            "expr": "max(load15::field)",
+            "key": "valueIM4bbBPz",
+            "resultType": "number",
+            "type": "expr",
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["host_summary"],
+          "groupby": ["time()"],
+          "select": [{
+            "alias": "typeTHL9iJwi",
+            "expr": "time()"
+          }, {
+            "alias": "value0Q08Om4z",
+            "expr": "max(load1::field)"
+          }, {
+            "alias": "valueoFCGDC2z",
+            "expr": "max(load5::field)"
+          }, {
+            "alias": "valueIM4bbBPz",
+            "expr": "max(load15::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 9,
+    "i": "view-q3PVfrID",
+    "view": {
+      "title": "Disk Usage",
+      "i18n": {
+        "title": {
+          "zh": "磁盘使用率",
+          "en": "Disk Usage"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_disk", "machine_disk@disk"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "disk-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filterCeDKIdQD",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "disk-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filterM3K00zP8",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typetbwrgJDG",
+            "type": "time"
+          }, {
+            "alias": "设备",
+            "field": "disk-device::tag",
+            "key": "typex2srNQm7",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "使用率",
+            "expr": "max(used_percent::field)",
+            "key": "valueaMRmaQ90",
+            "resultType": "number",
+            "type": "expr",
+            "unit": {
+              "type": "PERCENT",
+              "unit": "%"
+            },
+            "optionProps": {
+              "isConnectNulls": true,
+              "isMoreThanOneDay": false
+            }
+          }]
+        },
+        "optionProps": {
+          "isConnectNulls": false,
+          "isLabel": false,
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["disk"],
+          "groupby": ["time()", "device::tag"],
+          "select": [{
+            "alias": "typetbwrgJDG",
+            "expr": "time()"
+          }, {
+            "alias": "typex2srNQm7",
+            "expr": "device::tag"
+          }, {
+            "alias": "valueaMRmaQ90",
+            "expr": "max(used_percent::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "neq_type": "netdata",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 18,
+    "i": "view-TVGGcoqQ",
+    "view": {
+      "title": "Disk Read",
+      "i18n": {
+        "title": {
+          "zh": "磁盘读",
+          "en": "Disk Read"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_disk", "machine_disk@diskio"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "diskio-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filter36suQJHZ",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "diskio-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filterbMpMLYZy",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeDKi3dfsQ",
+            "type": "time"
+          }],
+          "valueDimensions": [{
+            "alias": "读速率",
+            "i18n": {
+              "alias": {
+                "zh": "读速率",
+                "en": "Read Rate"
+              }
+            },
+            "expr": "max(read_rate::field)",
+            "key": "valueatobTv1W",
+            "resultType": "number",
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["diskio"],
+          "groupby": ["time()"],
+          "select": [{
+            "alias": "typeDKi3dfsQ",
+            "expr": "time()"
+          }, {
+            "alias": "valueatobTv1W",
+            "expr": "max(read_rate::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 18,
+    "i": "view-tEUEBO5Q",
+    "view": {
+      "title": "Disk Write",
+      "i18n": {
+        "title": {
+          "zh": "磁盘写",
+          "en": "Disk Write"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_disk", "machine_disk@diskio"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "diskio-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filtervRgo89HF",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "diskio-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filterColPf3wm",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typepp8MAbxt",
+            "type": "time"
+          }],
+          "valueDimensions": [{
+            "alias": "写速率",
+            "i18n": {
+              "alias": {
+                "zh": "写速率",
+                "en": "Write Rate"
+              }
+            },
+            "expr": "max(write_rate::field)",
+            "key": "valuejCwcXZjY",
+            "resultType": "number",
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["diskio"],
+          "groupby": ["time()"],
+          "select": [{
+            "alias": "typepp8MAbxt",
+            "expr": "time()"
+          }, {
+            "alias": "valuejCwcXZjY",
+            "expr": "max(write_rate::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 27,
+    "i": "view-zwC7uVgs",
+    "view": {
+      "title": "Disk Used",
+      "i18n": {
+        "title": {
+          "zh": "磁盘使用量",
+          "en": "Disk Used"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_disk", "machine_disk@disk"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "disk-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filterCg1NvZ9i",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "disk-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filterWTD7WuyZ",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeJM9bGjUw",
+            "type": "time"
+          }, {
+            "alias": "设备",
+            "field": "disk-device::tag",
+            "key": "typeWzuOgV8N",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "使用量",
+            "expr": "max(used::field)",
+            "key": "valueaiAJjZ7a",
+            "resultType": "number",
+            "type": "expr",
+            "unit": {
+              "type": "CAPACITY",
+              "unit": "B"
+            }
+          }]
+        },
+        "optionProps": {
+          "isLabel": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["disk"],
+          "groupby": ["time()", "device::tag"],
+          "select": [{
+            "alias": "typeJM9bGjUw",
+            "expr": "time()"
+          }, {
+            "alias": "typeWzuOgV8N",
+            "expr": "device::tag"
+          }, {
+            "alias": "valueaiAJjZ7a",
+            "expr": "max(used::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "neq_type": "netdata",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 27,
+    "i": "view-prc9Xfvt",
+    "view": {
+      "title": "Network Send",
+      "i18n": {
+        "title": {
+          "zh": "网络发送",
+          "en": "Network Send"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_net"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "net-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filter4eQAGnU9",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "net-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filteruOoG33Kn",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "Interface",
+            "field": "net-interface::tag",
+            "filter": {
+              "operation": "!=",
+              "value": ""
+            },
+            "key": "filter4OrdaICO",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeHyR2pb19",
+            "type": "time"
+          }, {
+            "alias": "Interface",
+            "field": "net-interface::tag",
+            "key": "typeq8bgdSsi",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "Send Rate",
+            "expr": "max(send_rate::field)",
+            "key": "valuevPkwhAiW",
+            "resultType": "number",
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["net"],
+          "groupby": ["time()", "interface::tag"],
+          "select": [{
+            "alias": "typeHyR2pb19",
+            "expr": "time()"
+          }, {
+            "alias": "typeq8bgdSsi",
+            "expr": "interface::tag"
+          }, {
+            "alias": "valuevPkwhAiW",
+            "expr": "max(send_rate::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'",
+            "interface::tag!=''"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 36,
+    "i": "view-Xy1MCOie",
+    "view": {
+      "title": "Network Receive",
+      "i18n": {
+        "title": {
+          "zh": "网络接收",
+          "en": "Network Receive"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["machine", "machine_net"],
+          "resultFilters": [{
+            "alias": "集群名",
+            "field": "net-cluster_name::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{clusterName}}"
+            },
+            "key": "filteri4EDEbWI",
+            "resultType": "string",
+            "type": "filter"
+          }, {
+            "alias": "机器IP",
+            "field": "net-host_ip::tag",
+            "filter": {
+              "operation": "=",
+              "value": "{{hostIP}}"
+            },
+            "key": "filtersu79moNV",
+            "resultType": "string",
+            "type": "filter"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type7LfxfNy0",
+            "type": "time"
+          }, {
+            "alias": "Interface",
+            "field": "net-interface::tag",
+            "key": "typeoQZdp6ej",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "Recv Rate",
+            "expr": "max(recv_rate::field)",
+            "key": "valuetNxGdnVd",
+            "resultType": "number",
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["net"],
+          "groupby": ["time()", "interface::tag"],
+          "select": [{
+            "alias": "type7LfxfNy0",
+            "expr": "time()"
+          }, {
+            "alias": "typeoQZdp6ej",
+            "expr": "interface::tag"
+          }, {
+            "alias": "valuetNxGdnVd",
+            "expr": "max(recv_rate::field)"
+          }],
+          "where": [
+            "cluster_name::tag='{{clusterName}}'",
+            "host_ip::tag='{{hostIP}}'"
+          ]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }]
+}

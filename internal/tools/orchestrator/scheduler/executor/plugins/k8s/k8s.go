@@ -27,15 +27,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscaling "k8s.io/api/autoscaling/v1"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	vpatypes "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	vpa_clientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 
 	papb "github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	eventboxapi "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
@@ -63,7 +66,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/pod"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/resourceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/scaledobject"
-	kedav1alpha1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/scaledobject/keda/v1alpha1"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
@@ -76,6 +78,7 @@ import (
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	kedav1alpha1 "github.com/erda-project/erda/pkg/k8sclient/apis/keda/v1alpha1"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
@@ -141,7 +144,7 @@ func init() {
 		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
 		bdl := bundle.New(bundle.WithErdaServer())
-		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event, k.hpa)
+		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event, k.hpa, k.scaledObject)
 
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
 		k.instanceinfoSyncCancelFunc = cancelSyncInstanceinfo
@@ -315,6 +318,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		return nil, errors.Errorf("parse rest.config error: %v", err)
 	}
 
+	vpaClient := vpa_clientset.NewForConfigOrDie(rc)
 	rc.Timeout = conf.ExecutorClientTimeout()
 
 	k8sClient, err := k8sclient.NewForRestConfig(rc, k8sclient.WithSchemes(scheme.LocalSchemeBuilder...))
@@ -363,14 +367,14 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	job := job.New(job.WithCompleteParams(addr, client))
 	ds := ds.New(ds.WithCompleteParams(addr, client))
 	ing := ingress.New(ingress.WithCompleteParams(addr, client))
-	ns := namespace.New(namespace.WithCompleteParams(addr, client))
+	ns := namespace.New(namespace.WithKubernetesClient(k8sClient.ClientSet))
 	svc := k8sservice.New(k8sservice.WithCompleteParams(addr, client))
 	pvc := persistentvolumeclaim.New(persistentvolumeclaim.WithCompleteParams(addr, client))
 	pv := persistentvolume.New(persistentvolume.WithCompleteParams(addr, client))
-	scaleObj := scaledobject.New(scaledobject.WithCompleteParams(addr, client))
+	scaleObj := scaledobject.New(scaledobject.WithCompleteParams(addr, client), scaledobject.WithVPAClient(vpaClient))
 	hpa := erdahpa.New(erdahpa.WithCompleteParams(addr, client))
 	sts := statefulset.New(statefulset.WithCompleteParams(addr, client))
-	k8spod := pod.New(pod.WithCompleteParams(addr, client))
+	k8spod := pod.New(pod.WithK8sClient(k8sClient.ClientSet))
 	k8ssecret := secret.New(secret.WithCompleteParams(addr, client))
 	k8sstorageclass := storageclass.New(storageclass.WithCompleteParams(addr, client))
 	sa := serviceaccount.New(serviceaccount.WithCompleteParams(addr, client))
@@ -383,7 +387,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 			name, clusterName, err)
 	}
-	resourceInfo := resourceinfo.New(addr, client)
+	resourceInfo := resourceinfo.New(k8sClient.ClientSet)
 
 	var istioEngine istioctl.IstioEngine
 	rawData, err := clusterInfo.Get()
@@ -569,11 +573,11 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 		}
 		return nil
 	} else {
-		if value, ok := runtime.Labels[hpatypes.ErdaPALabelKey]; ok && value == hpatypes.ErdaHPALabelValueCancel {
-			logrus.Infof("delete keda scaledObject in runtime %s on namespace %s", runtime.ID, runtime.ProjectNamespace)
-			_, err = k.cancelErdaHPARules(*runtime)
+		if value, ok := runtime.Labels[pstypes.ErdaPALabelKey]; ok && value == pstypes.ErdaHPALabelValueCancel {
+			logrus.Infof("delete pod autoscaler objects in runtime %s on namespace %s", runtime.ID, runtime.ProjectNamespace)
+			err = k.cancelErdaPARules(*runtime)
 			if err != nil {
-				logrus.Errorf("failed to delete runtime resource, delete runtime's keda scaledObjects error: %v", err)
+				logrus.Errorf("failed to delete runtime resource, delete runtime's pod autoscaler objects error: %v", err)
 				return err
 			}
 		}
@@ -674,6 +678,13 @@ func (k *Kubernetes) Inspect(ctx context.Context, specObj interface{}) (interfac
 		return k.InspectStateful(runtime)
 	}
 
+	if serviceName, ok := runtime.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"]; ok && serviceName != "" {
+		err = k.getStatelessPodsStatus(runtime, serviceName)
+		if err != nil {
+			return nil, fmt.Errorf("get pods for servicegroup %+v failed: %v", runtime, err)
+		}
+		return runtime, nil
+	}
 	// Metadata information is passed in from the upper layer, here you only need to get the state of the runtime and assemble it into the runtime to return
 	status, err := k.Status(ctx, specObj)
 	if err != nil {
@@ -1105,6 +1116,8 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 
 			return status, err
 		}
+		sg.Services[i].ReadyReplicas = status.ReadyReplicas
+		sg.Services[i].DesiredReplicas = status.DesiredReplicas
 		if status.Status == apistructs.StatusFailed {
 			isReady = false
 			isFailed = true
@@ -1139,6 +1152,66 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		resultStatus.LastMessage = failedReason
 	}
 	return resultStatus, nil
+}
+
+func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName string) error {
+
+	var ns = MakeNamespace(sg)
+	if sg.ProjectNamespace != "" {
+		ns = sg.ProjectNamespace
+		k.setProjectServiceName(sg)
+	}
+
+	pods, err := k.pod.ListNamespacePods(ns)
+	if err != nil {
+		return fmt.Errorf("list pods in ns %s err: %v", ns, err)
+	}
+
+	serviceToPods := make(map[string][]apiv1.Pod)
+	for i := range sg.Services {
+		if sg.Services[i].Name != svcName {
+			continue
+		}
+
+		for _, pod := range pods.Items {
+			if pod.Labels == nil {
+				continue
+			}
+
+			serviceName := ""
+			if _, ok := pod.Labels["DICE_SERVICE_NAME"]; !ok {
+				serviceName = pod.Labels["DICE_SERVICE"]
+			} else {
+				serviceName = pod.Labels["DICE_SERVICE_NAME"]
+			}
+			if serviceName == "" {
+				continue
+			}
+
+			if serviceName == sg.Services[i].Name {
+				if _, ok := serviceToPods[serviceName]; !ok {
+					serviceToPods[serviceName] = make([]apiv1.Pod, 0)
+				}
+				serviceToPods[serviceName] = append(serviceToPods[serviceName], pod)
+			}
+		}
+
+		if _, ok := serviceToPods[sg.Services[i].Name]; ok {
+			if sg.Extra == nil {
+				sg.Extra = make(map[string]string)
+			}
+			podsBytes, err := json.Marshal(serviceToPods[sg.Services[i].Name])
+			if err != nil {
+				return fmt.Errorf("json marshall service pods in ns %s for service %s err: %v", ns, sg.Services[i].Name, err)
+			}
+
+			sg.Extra[sg.Services[i].Name] = string(podsBytes)
+		}
+
+		break
+	}
+
+	return nil
 }
 
 func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
@@ -1273,20 +1346,26 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 		return nil, errors.Errorf("invalid servicegroup spec: %#v", spec)
 	}
 
-	value, ok := sg.Labels[hpatypes.ErdaPALabelKey]
+	value, ok := sg.Labels[pstypes.ErdaPALabelKey]
 	if !ok {
 		return k.manualScale(ctx, spec)
 	}
 
 	switch value {
-	case hpatypes.ErdaHPALabelValueCreate:
+	case pstypes.ErdaHPALabelValueCreate:
 		return k.createErdaHPARules(spec)
-	case hpatypes.ErdaHPALabelValueApply:
+	case pstypes.ErdaHPALabelValueApply:
 		return k.applyErdaHPARules(sg)
-	case hpatypes.ErdaHPALabelValueCancel:
+	case pstypes.ErdaHPALabelValueCancel:
 		return k.cancelErdaHPARules(sg)
-	case hpatypes.ErdaHPALabelValueReApply:
-		return k.reApplylErdaHPARules(sg)
+	case pstypes.ErdaHPALabelValueReApply:
+		return k.reApplyErdaHPARules(sg)
+	case pstypes.ErdaVPALabelValueApply:
+		return k.applyErdaVPARules(sg)
+	case pstypes.ErdaVPALabelValueCancel:
+		return k.cancelErdaVPARules(sg)
+	case pstypes.ErdaVPALabelValueReApply:
+		return k.reApplyErdaVPARules(sg)
 	default:
 		return nil, errors.Errorf("unknown task scale action")
 	}
@@ -1306,6 +1385,142 @@ func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{},
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
 		if err = k.scaledObject.Create(scaledObj); err != nil {
+			return sg, err
+		}
+	}
+
+	return sg, nil
+}
+
+func (k *Kubernetes) applyErdaVPARules(sg apistructs.ServiceGroup) (interface{}, error) {
+	for svc, sc := range sg.Extra {
+		scaledObject := papb.RuntimeServiceVPAConfig{}
+		err := json.Unmarshal([]byte(sc), &scaledObject)
+		if err != nil {
+			return sg, errors.Errorf("apply vpa for serviceGroup service %s failed: %v", svc, err)
+		}
+
+		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" || scaledObject.ScaleTargetRef.Name == "" {
+			return sg, errors.Errorf("apply vpa for serviceGroup service %s failed: [rule name: %s] or [namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
+		}
+
+		scaledObj := convertToVPAObject(scaledObject)
+		if err = k.scaledObject.CreateVPA(scaledObj); err != nil {
+			return sg, err
+		}
+	}
+
+	return sg, nil
+}
+
+func convertToVPAObject(scaledObject papb.RuntimeServiceVPAConfig) *vpatypes.VerticalPodAutoscaler {
+	orgID := fmt.Sprintf("%d", scaledObject.OrgID)
+	updateMode := vpatypes.UpdateModeAuto
+	switch scaledObject.UpdateMode {
+	case pstypes.ErdaVPAUpdaterModeRecreate:
+		updateMode = vpatypes.UpdateModeRecreate
+	case pstypes.ErdaVPAUpdaterModeInitial:
+		updateMode = vpatypes.UpdateModeInitial
+	case pstypes.ErdaVPAUpdaterModeOff:
+		updateMode = vpatypes.UpdateModeOff
+	default:
+		updateMode = vpatypes.UpdateModeAuto
+	}
+
+	maxCpu := fmt.Sprintf("%.fm", scaledObject.MaxResources.Cpu*1000)
+	maxMemory := fmt.Sprintf("%.dMi", scaledObject.MaxResources.Mem)
+
+	minCpu := fmt.Sprintf("%.fm", pstypes.ErdaVPAMinResourceCPU*1000)
+	minMemory := fmt.Sprintf("%.dMi", pstypes.ErdaVPAMinResourceMemory)
+
+	crps := make([]vpatypes.ContainerResourcePolicy, 0)
+	crps = append(crps, vpatypes.ContainerResourcePolicy{
+		ContainerName: "*",
+		MinAllowed: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(minCpu),
+			apiv1.ResourceMemory: resource.MustParse(minMemory),
+		},
+		MaxAllowed: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(maxCpu),
+			apiv1.ResourceMemory: resource.MustParse(maxMemory),
+		},
+		ControlledResources: &[]apiv1.ResourceName{apiv1.ResourceCPU, apiv1.ResourceMemory},
+	})
+
+	return &vpatypes.VerticalPodAutoscaler{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "VerticalPodAutoscaler",
+			APIVersion: "autoscaling.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      scaledObject.RuleName + "-" + strutil.ToLower(scaledObject.ScaleTargetRef.Kind) + "-" + scaledObject.ScaleTargetRef.Name,
+			Namespace: scaledObject.RuleNameSpace,
+			Labels: map[string]string{
+				pstypes.ErdaPAObjectRuntimeServiceNameLabel: scaledObject.ServiceName,
+				pstypes.ErdaPAObjectRuntimeIDLabel:          fmt.Sprintf("%d", scaledObject.RuntimeID),
+				pstypes.ErdaPAObjectRuleIDLabel:             scaledObject.RuleID,
+				pstypes.ErdaPAObjectOrgIDLabel:              orgID,
+				pstypes.ErdaPALabelKey:                      "yes",
+			},
+		},
+		Spec: vpatypes.VerticalPodAutoscalerSpec{
+			TargetRef: &autoscaling.CrossVersionObjectReference{
+				Name:       scaledObject.ScaleTargetRef.Name,
+				APIVersion: scaledObject.ScaleTargetRef.ApiVersion,
+				Kind:       scaledObject.ScaleTargetRef.Kind,
+			},
+			UpdatePolicy: &vpatypes.PodUpdatePolicy{
+				UpdateMode: &updateMode,
+			},
+			ResourcePolicy: &vpatypes.PodResourcePolicy{
+				ContainerPolicies: crps,
+			},
+		},
+	}
+}
+
+func (k *Kubernetes) cancelErdaVPARules(sg apistructs.ServiceGroup) (interface{}, error) {
+	for svc, sc := range sg.Extra {
+		scaledObject := papb.RuntimeServiceVPAConfig{}
+		err := json.Unmarshal([]byte(sc), &scaledObject)
+		if err != nil {
+			return sg, errors.Errorf("cancel vpa for serviceGroup service %s failed: %v", svc, err)
+		}
+
+		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
+			return sg, errors.Errorf("cancel vpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+		}
+
+		_, err = k.scaledObject.GetVPA(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name)
+		if err == k8serror.ErrNotFound {
+			logrus.Warnf("No need to cancel vpa rule for svc %s, not found scaledObjects for this service", svc)
+			continue
+		}
+
+		if err = k.scaledObject.DeleteVPA(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name); err != nil {
+			return sg, err
+		}
+	}
+
+	return sg, nil
+}
+
+func (k *Kubernetes) reApplyErdaVPARules(sg apistructs.ServiceGroup) (interface{}, error) {
+	for svc, sc := range sg.Extra {
+		scaledObject := papb.RuntimeServiceVPAConfig{}
+		err := json.Unmarshal([]byte(sc), &scaledObject)
+		if err != nil {
+			return sg, errors.Errorf("re-apply vpa for sg %#v service %s failed: %v", sg, svc, err)
+		}
+
+		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
+			return sg, errors.Errorf("re-apply vpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+		}
+
+		scaledObj := convertToVPAObject(scaledObject)
+
+		err = k.scaledObject.PatchVPA(scaledObj.Namespace, scaledObj.Name, scaledObj)
+		if err != nil {
 			return sg, err
 		}
 	}
@@ -1344,11 +1559,11 @@ func convertToKedaScaledObject(scaledObject papb.ScaledConfig) *kedav1alpha1.Sca
 			Name:      scaledObject.RuleName + "-" + strutil.ToLower(scaledObject.ScaleTargetRef.Kind) + "-" + scaledObject.ScaleTargetRef.Name,
 			Namespace: scaledObject.RuleNameSpace,
 			Labels: map[string]string{
-				hpatypes.ErdaHPAObjectRuntimeServiceNameLabel: scaledObject.ServiceName,
-				hpatypes.ErdaHPAObjectRuntimeIDLabel:          fmt.Sprintf("%d", scaledObject.RuntimeID),
-				hpatypes.ErdaHPAObjectRuleIDLabel:             scaledObject.RuleID,
-				hpatypes.ErdaHPAObjectOrgIDLabel:              orgID,
-				hpatypes.ErdaPALabelKey:                       "yes",
+				pstypes.ErdaPAObjectRuntimeServiceNameLabel: scaledObject.ServiceName,
+				pstypes.ErdaPAObjectRuntimeIDLabel:          fmt.Sprintf("%d", scaledObject.RuntimeID),
+				pstypes.ErdaPAObjectRuleIDLabel:             scaledObject.RuleID,
+				pstypes.ErdaPAObjectOrgIDLabel:              orgID,
+				pstypes.ErdaPALabelKey:                      "yes",
 			},
 		},
 		Spec: kedav1alpha1.ScaledObjectSpec{
@@ -1443,7 +1658,46 @@ func (k *Kubernetes) cancelErdaHPARules(sg apistructs.ServiceGroup) (interface{}
 	return sg, nil
 }
 
-func (k *Kubernetes) reApplylErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
+// only call by when delete runtime
+func (k *Kubernetes) cancelErdaPARules(sg apistructs.ServiceGroup) error {
+	hpaSg := make(map[string]string)
+	vpaSg := make(map[string]string)
+
+	for svcName, sc := range sg.Extra {
+		if strings.HasPrefix(svcName, pstypes.ErdaHPAPrefix) {
+			subStr := strings.Split(svcName, pstypes.ErdaHPAServiceSepStr)
+			if len(subStr) == 2 {
+				hpaSg[subStr[1]] = sc
+				continue
+			}
+		}
+
+		if strings.HasPrefix(svcName, pstypes.ErdaVPAPrefix) {
+			subStr := strings.Split(svcName, pstypes.ErdaVPAServiceSepStr)
+			if len(subStr) == 2 {
+				vpaSg[subStr[1]] = sc
+			}
+		}
+	}
+
+	sg.Extra = hpaSg
+	_, err := k.cancelErdaHPARules(sg)
+	if err != nil {
+		logrus.Infof("delete HPA error: %v", err)
+		return err
+	}
+
+	sg.Extra = vpaSg
+	_, err = k.cancelErdaVPARules(sg)
+	if err != nil {
+		logrus.Infof("delete VPA error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
 	for svc, sc := range sg.Extra {
 		scaledObject := papb.ScaledConfig{}
 		err := json.Unmarshal([]byte(sc), &scaledObject)
@@ -1532,7 +1786,7 @@ func (k *Kubernetes) manualScale(ctx context.Context, spec interface{}) (interfa
 }
 
 func (k *Kubernetes) createErdaHPARules(spec interface{}) (interface{}, error) {
-	hpaObjects := make(map[string]hpatypes.ErdaHPAObject)
+	hpaObjects := make(map[string]pstypes.ErdaHPAObject)
 	sg, err := ValidateRuntime(spec, "TaskScale")
 
 	if err != nil {
@@ -1560,7 +1814,7 @@ func (k *Kubernetes) createErdaHPARules(spec interface{}) (interface{}, error) {
 				logrus.Error(err)
 				return nil, err
 			}
-			hpaObjects[groupedSG.Services[0].Name] = hpatypes.ErdaHPAObject{
+			hpaObjects[groupedSG.Services[0].Name] = pstypes.ErdaHPAObject{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: sts.APIVersion,
 					Kind:       sts.Kind,
@@ -1587,7 +1841,7 @@ func (k *Kubernetes) createErdaHPARules(spec interface{}) (interface{}, error) {
 					logrus.Error(err)
 					return nil, err
 				}
-				hpaObjects[sg.Services[index].Name] = hpatypes.ErdaHPAObject{
+				hpaObjects[sg.Services[index].Name] = pstypes.ErdaHPAObject{
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: dp.APIVersion,
 						Kind:       dp.Kind,

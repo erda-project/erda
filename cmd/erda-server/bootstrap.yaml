@@ -28,8 +28,15 @@ i18n:
   common: # core-services
     - conf/i18n/cs-i18n.yml # core-services
     - conf/i18n/i18n.yaml # core-services
+    - conf/i18n/cp/common.yaml # dop
+    - common-conf/i18n/common.yml # dop
   files:
     - conf/i18n/gallery.yaml
+    - conf/i18n/resource-trans.yaml # dop
+    - conf/i18n/issue-manage.yaml # dop
+    - conf/i18n/project-pipeline.yaml # dop
+    - conf/i18n/api-management-trans.yaml # dop
+    - conf/i18n/contribution.yaml # dop
 
 gorm.v2:
   host: "${MYSQL_HOST}"
@@ -64,6 +71,7 @@ erda.core.org: { }
 erda.core.user: { }
 erda.core.user.kratos: { }
 erda.core.user.uc: { }
+erda.core.file: { }
 
 ############# dicehub
 dicehub: { }
@@ -168,7 +176,6 @@ openapi-v1-routes:
   component-protocol:
     scenario-proxy-binds:
       - app: dop
-        addr: ${DOP_COMPONENT_PROTOCOL_ADDR:dop:9527}
         scenarios:
           - issue-manage
           - issue-dashboard
@@ -261,3 +268,79 @@ erda-discover:
   urls:
     example: "http://localhost:8080"
     erda.example: "http://localhost:8080"
+
+uc-adaptor:
+
+########### dop
+dop: { }
+i18n@cp:
+  common:
+    - conf/i18n/cp/common.yaml
+    - common-conf/i18n/common.yml
+  files:
+    - conf/i18n/cp/scenarios/
+erda.core.dop.taskerror: { }
+erda.dop.qa.unittest: { }
+erda.dop.search: { }
+# pipeline cms
+grpc-client@erda.core.pipeline.cms:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
+erda.core.pipeline.cms-client: { }
+grpc-client@erda.core.pipeline.definition:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
+erda.core.pipeline.definition-client: { }
+grpc-client@erda.core.pipeline.source:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
+erda.core.pipeline.source-client: { }
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
+erda.core.pipeline.cron-client:
+grpc-client@erda.cmp.dashboard.resource:
+  addr: "${CMP_GRPC_ADDR:cmp:9029}"
+  block: false
+erda.cmp.dashboard.resource-client: { }
+#grpc-client@erda.core.dicehub.release:
+#  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+#erda.core.dicehub.release-client: {}
+## orchestrator addon mysql
+grpc-client@erda.orchestrator.addon.mysql:
+  addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
+  block: false
+erda.orchestrator.addon.mysql-client: { }
+#grpc-client@erda.core.services.errorbox:
+#  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+#erda.core.services.errorbox-client: {}
+#grpc-client@erda.core.token:
+#  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+#erda.core.token-client: {}
+erda.core.dop.autotest.testplan: { }
+erda.dop.projecthome: { }
+erda.dop.contribution: { }
+erda.dop.projectpipeline: { }
+erda.dop.issue.core: { }
+erda.dop.issue.core.query: { }
+erda.dop.issue.stream: { }
+erda.dop.issue.stream.core: { }
+erda.dop.issue.sync: { }
+erda.dop.apim: { }
+erda.dop.guide: { }
+erda.dop.cms: { }
+erda.apps.devflow.flow: { }
+erda.apps.devflow.issuerelation: { }
+erda.dop.devFlowRule: { }
+erda.dop.pipelinetemplate: { }
+metricq-client:
+  endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"
+erda.dop.rule: { }
+erda.dop.rule.action.api: { }
+#grpc-client@erda.core.user:
+#  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+#erda.core.user-client: {}
+#grpc-client@erda.core.org:
+#  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+#erda.core.org-client: {}
+#erda.core.org: {}

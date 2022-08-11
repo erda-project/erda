@@ -219,8 +219,14 @@ func (m *Manager) MetricGroup(langCodes i18n.LanguageCodes, scope, scopeID, id, 
 
 func getFieldKeyWithFormat(format, key, typ string) string {
 	if format == InfluxFormat {
+		if strings.HasSuffix(key, "::"+typ) {
+			return key
+		}
 		return key + "::" + typ
 	} else if format == DotFormat || typ == "tag" {
+		if strings.HasSuffix(key, "s."+typ) {
+			return key
+		}
 		return typ + "s." + key
 	}
 	return key

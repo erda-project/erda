@@ -25,6 +25,7 @@ type DBService interface {
 	FindLastDeployment(id uint64) (*dbclient.Deployment, error)
 	FindDomainsByRuntimeId(id uint64) ([]dbclient.RuntimeDomain, error)
 	GetRuntimeHPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeHPA, error)
+	GetRuntimeVPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeVPA, error)
 	GetRuntime(id uint64) (*dbclient.Runtime, error)
 	UpdateRuntime(runtime *dbclient.Runtime) error
 }

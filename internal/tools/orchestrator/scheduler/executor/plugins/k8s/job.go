@@ -261,6 +261,7 @@ func (k *Kubernetes) getJobStatusFromMap(service *apistructs.Service, ns string)
 	} else {
 		statusDesc.Status = apistructs.StatusUnknown
 	}
+	statusDesc.ReadyReplicas = list.Items[0].Status.Active
 	return statusDesc, nil
 }
 func getjobName(service *apistructs.Service) string {

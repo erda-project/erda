@@ -45,7 +45,7 @@ func (b *Bundle) GetProjectWithSetter(id uint64, requestSetter ...httpclient.Req
 	hc := b.hc
 
 	var fetchResp apistructs.ProjectDetailResponse
-	r := hc.Get(host, httpclient.RetryOption{}).Path(fmt.Sprintf("/api/projects/%d", id)).
+	r := hc.Get(host, httpclient.RetryOption{}).Path(fmt.Sprintf("/core/api/projects/%d", id)).
 		Header(httputil.InternalHeader, "bundle")
 	for _, setter := range requestSetter {
 		setter(r)
@@ -94,7 +94,7 @@ func (b *Bundle) ListProject(userID string, req apistructs.ProjectListRequest) (
 	hc := b.hc
 
 	var rsp apistructs.ProjectListResponse
-	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/projects")).
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/core/api/projects")).
 		Param("orgId", strconv.FormatUint(req.OrgID, 10)).
 		Param("q", req.Query).
 		Param("name", req.Name).
@@ -451,7 +451,7 @@ func (b *Bundle) CreateProject(req apistructs.ProjectCreateRequest, userID strin
 	hc := b.hc
 
 	var fetchResp apistructs.ProjectCreateResponse
-	resp, err := hc.Post(host).Path("/api/projects").
+	resp, err := hc.Post(host).Path("/core/api/projects").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		JSONBody(&req).Do().JSON(&fetchResp)
@@ -474,7 +474,7 @@ func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.Pro
 	hc := b.hc
 
 	var fetchResp apistructs.ProjectDeleteResponse
-	resp, err := hc.Delete(host).Path(fmt.Sprintf("/api/projects/%d", id)).
+	resp, err := hc.Delete(host).Path(fmt.Sprintf("/core/api/projects/%d", id)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).

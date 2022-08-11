@@ -24,13 +24,14 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/internal/apps/dop/types"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (e *Endpoints) RegisterWebhooks() error {
-	for _, callback := range eventCallbacks {
+	for _, callback := range types.EventCallbacks {
 		hook := apistructs.CreateHookRequest{
 			Name:   callback.Name,
 			Events: callback.Events,

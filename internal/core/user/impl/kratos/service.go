@@ -15,9 +15,10 @@
 package kratos
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	"context"
+
+	"github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/internal/core/user/common"
-	"github.com/erda-project/erda/internal/core/user/util"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -25,9 +26,10 @@ func (p *provider) oryKratosPrivateAddr() string {
 	return p.baseURL
 }
 
-func (p *provider) FindUsers(ids []string) ([]common.User, error) {
+func (p *provider) FindUsers(ctx context.Context, req *pb.FindUsersRequest) (*pb.FindUsersResponse, error) {
+	ids := req.IDs
 	if len(ids) == 0 {
-		return nil, nil
+		return &pb.FindUsersResponse{}, nil
 	}
 	sysOpExist := strutil.Exist(ids, common.SystemOperator)
 	if sysOpExist {
@@ -52,7 +54,11 @@ func (p *provider) FindUsers(ids []string) ([]common.User, error) {
 	if sysOpExist {
 		users = append(users, common.SystemUser)
 	}
-	return users, nil
+	userList := make([]*pb.User, 0, len(users))
+	for _, i := range users {
+		userList = append(userList, common.ToPbUser(i))
+	}
+	return &pb.FindUsersResponse{Data: userList}, nil
 }
 
 func (p *provider) ConvertUserIDs(ids []string) ([]string, map[string]string, error) {
@@ -95,18 +101,34 @@ func (p *provider) GetUserIDMapping(ids []string) ([]UserIDModel, error) {
 }
 
 // FindUsersByKey 根据key查找用户，key可匹配用户名/邮箱/手机号
-func (p *provider) FindUsersByKey(key string) ([]common.User, error) {
+func (p *provider) FindUsersByKey(ctx context.Context, req *pb.FindUsersByKeyRequest) (*pb.FindUsersByKeyResponse, error) {
+	key := req.Key
 	if key == "" {
-		return nil, nil
+		return &pb.FindUsersByKeyResponse{}, nil
 	}
-	return getUserByKey(p.oryKratosPrivateAddr(), key)
+	users, err := getUserByKey(p.oryKratosPrivateAddr(), key)
+	if err != nil {
+		return nil, err
+	}
+	userList := make([]*pb.User, 0, len(users))
+	for _, i := range users {
+		userList = append(userList, common.ToPbUser(i))
+	}
+	return &pb.FindUsersByKeyResponse{Data: userList}, nil
 }
 
 // GetUser 获取用户详情
-func (p *provider) GetUser(userID string) (*common.User, error) {
+func (p *provider) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+	userID := req.UserID
+	if userID == "" {
+		return &pb.GetUserResponse{}, nil
+	}
 	userIDs, userMap, err := p.ConvertUserIDs([]string{userID})
-	if err != nil || len(userIDs) == 0 {
+	if err != nil {
 		return nil, err
+	}
+	if len(userIDs) == 0 {
+		return &pb.GetUserResponse{}, nil
 	}
 	user, err := getUserByID(p.oryKratosPrivateAddr(), userIDs[0])
 	if err != nil {
@@ -115,13 +137,7 @@ func (p *provider) GetUser(userID string) (*common.User, error) {
 	if userID, ok := userMap[user.ID]; ok {
 		user.ID = userID
 	}
-	return user, nil
-}
-
-func (p *provider) GetUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error) {
-	users, err := p.FindUsers(IDs)
-	if err != nil {
-		return nil, err
-	}
-	return util.Densensitize(IDs, users, needDesensitize), nil
+	return &pb.GetUserResponse{
+		Data: common.ToPbUser(*user),
+	}, nil
 }

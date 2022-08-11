@@ -27,6 +27,8 @@ const (
 	// in-use
 	nameDockerContainerSummary = "docker_container_summary"
 
+	groupHostSummary = "host_summary"
+
 	timestamp       = "timestamp"
 	id              = "id"
 	labels          = "labels"
@@ -65,7 +67,9 @@ const (
 	cluster               = "cluster"
 	clusterName           = "cluster_name"
 	hostIP                = "host_ip"
+	hostName              = "hostname"
 	cpus                  = "cpus"
+	ncpus                 = "n_cpus"
 	mem                   = "mem"
 	host                  = "host"
 	containerID           = "container_id"
@@ -101,6 +105,24 @@ const (
 	fieldsMemRequest      = fieldsPrefix + memRequest
 	fieldsMemLimit        = fieldsPrefix + memLimit
 	fieldsDiskUsage       = fieldsPrefix + diskUsage
+
+	cpuCoresUsage     = "cpu_cores_usage"
+	cpuRequestTotal   = "cpu_request_total"
+	cpuLimitTotal     = "cpu_limit_total"
+	cpuOriginTotal    = "cpu_origin_total"
+	cpuAllocatable    = "cpu_allocatable"
+	memUsed           = "mem_used"
+	memRequestTotal   = "mem_request_total"
+	memLimitTotal     = "mem_limit_total"
+	memOriginTotal    = "mem_origin_total"
+	memAllocatable    = "mem_allocatable"
+	diskUsed          = "disk_used"
+	cpuUsageActive    = "cpu_usage_active"
+	memUsedPercent    = "mem_used_percent"
+	diskUsedPercent   = "disk_used_percent"
+	cpuRequestPercent = "cpu_request_percent"
+	memRequestPercent = "mem_request_percent"
+	taskContainers    = "task_containers"
 
 	tags                = "tags"
 	tagsPrefix          = tags + "."

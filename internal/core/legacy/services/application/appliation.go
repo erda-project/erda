@@ -26,12 +26,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
-	"github.com/erda-project/erda/internal/core/user"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/gittarutil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -40,7 +40,7 @@ import (
 // Application 应用操作封装
 type Application struct {
 	db  *dao.DBClient
-	uc  user.Interface
+	uc  userpb.UserServiceServer
 	bdl *bundle.Bundle
 	cms cmspb.CmsServiceServer
 }
@@ -65,7 +65,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc user.Interface) Option {
+func WithUCClient(uc userpb.UserServiceServer) Option {
 	return func(a *Application) {
 		a.uc = uc
 	}
@@ -173,10 +173,11 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 	}
 
 	// 新增应用管理员至admin_members表
-	users, err := a.uc.FindUsers([]string{userID})
+	resp, err := a.uc.FindUsers(context.Background(), &userpb.FindUsersRequest{IDs: []string{userID}})
 	if err != nil {
 		logrus.Warnf("failed to get user info, (%v)", err)
 	}
+	users := resp.Data
 	if len(users) > 0 {
 		member := model.Member{
 			ScopeType:     apistructs.AppScope,

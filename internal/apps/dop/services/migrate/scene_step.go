@@ -67,7 +67,11 @@ func (svc *Service) createOneSimpleSceneStep(sceneBaseInfo *SceneBaseInfo, caseN
 func (svc *Service) updateValueForStepCustomScript(step *dao.AutoTestSceneStep, action *pipelineyml.Action, caseNode *CaseNodeWithAncestors) error {
 	var value apistructs.AutoTestRunCustom
 	value.Image = action.Image
-	value.Commands = action.Commands
+	cmds, err := action.GetSliceCommands()
+	if err != nil {
+		return err
+	}
+	value.Commands = cmds
 	valueByte, err := json.Marshal(&value)
 	if err != nil {
 		return err

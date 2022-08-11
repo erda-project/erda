@@ -28,7 +28,7 @@ type Executor struct {
 	API api.Interface
 }
 
-func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
+func (e *Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 	if req == nil {
 		return nil, errors.New("empty req")
 	}
@@ -75,15 +75,18 @@ func (e Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 	return results, nil
 }
 
-func (e Executor) DingTalkAction(content map[string]interface{}, params db.ActionParams) (string, error) {
+func (e *Executor) DingTalkAction(content map[string]interface{}, params db.ActionParams) (string, error) {
 	if len(params.Nodes) == 0 {
-		return "", nil
+		return "no valid action nodes", nil
 	}
 	// TODO: multiple nodes concurrency
 	node := params.Nodes[0]
 	d := node.DingTalk
 	if d == nil {
-		return "", nil
+		return e.API.Send(&api.API{
+			Snippet: node.Snippet,
+			TLARaw:  content,
+		})
 	}
 	target := apistructs.Target{
 		Receiver: d.Webhook,

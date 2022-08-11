@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
-	patypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
@@ -258,6 +258,10 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 		logrus.Warnf("[GetRuntime] get hpa rules for runtimeId %d failed.", runtime.ID)
 	}
 
+	vpaRules, err := r.db.GetRuntimeVPARulesByRuntimeId(runtime.ID)
+	if err != nil {
+		logrus.Warnf("[GetRuntime] get vpa rules for runtimeId %d failed.", runtime.ID)
+	}
 	if err = r.checkRuntimeScopePermission(userID, runtime, apistructs.GetAction); err != nil {
 		return nil, err
 	}
@@ -297,7 +301,7 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	if deployment.Status == apistructs.DeploymentStatusDeploying {
 		updateStatusWhenDeploying(ri)
 	}
-	updateHPARuleEnabledStatusToDisplay(hpaRules, ri)
+	updatePARuleEnabledStatusToDisplay(hpaRules, vpaRules, ri)
 
 	return ri, nil
 }
@@ -395,7 +399,7 @@ func fillInspectDataWithServiceGroup(data *pb.RuntimeInspect, targetService dice
 
 		for _, v := range sg.Services {
 			statusServiceMap[v.Name] = string(v.StatusDesc.Status)
-			replicaMap[v.Name] = v.Scale
+			replicaMap[v.Name] = int(v.ReadyReplicas)
 			resourceMap[v.Name] = &pb.Resources{
 				Cpu:  v.Resources.Cpu,
 				Mem:  int64(int(v.Resources.Mem)),
@@ -454,6 +458,9 @@ func fillInspectDataWithServiceGroup(data *pb.RuntimeInspect, targetService dice
 			Type:        "job",
 			Status:      statusServiceMap[k],
 			Deployments: &pb.Deployments{Replicas: 1},
+		}
+		if sgReplicas, ok := replicaMap[k]; ok {
+			runtimeInspectService.Deployments.Replicas = uint64(sgReplicas)
 		}
 		data.Services[k] = runtimeInspectService
 	}
@@ -521,19 +528,26 @@ func (r *Service) inspectDomains(id uint64) (map[string][]string, error) {
 	return domainMap, nil
 }
 
-// 显示 service 对应是否开启 HPA
-func updateHPARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, runtime *pb.RuntimeInspect) {
+// 显示 service 对应是否开启 HPA, VPA
+func updatePARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, vpaRules []dbclient.RuntimeVPA, runtime *pb.RuntimeInspect) {
 	if runtime == nil {
 		return
 	}
 
 	for svc := range runtime.Services {
-		runtime.Services[svc].AutoscalerEnabled = patypes.RuntimeHPARuleCanceled
+		runtime.Services[svc].HpaEnabled = pstypes.RuntimePARuleCanceled
+		runtime.Services[svc].VpaEnabled = pstypes.RuntimePARuleCanceled
 	}
 
 	for _, rule := range hpaRules {
-		if rule.IsApplied == patypes.RuntimeHPARuleApplied {
-			runtime.Services[rule.ServiceName].AutoscalerEnabled = patypes.RuntimeHPARuleApplied
+		if rule.IsApplied == pstypes.RuntimePARuleApplied {
+			runtime.Services[rule.ServiceName].HpaEnabled = pstypes.RuntimePARuleApplied
+		}
+	}
+
+	for _, rule := range vpaRules {
+		if rule.IsApplied == pstypes.RuntimePARuleApplied {
+			runtime.Services[rule.ServiceName].VpaEnabled = pstypes.RuntimePARuleApplied
 		}
 	}
 }

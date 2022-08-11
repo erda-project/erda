@@ -164,6 +164,17 @@ func (impl *GatewayKongInfoServiceImpl) GetByAny(cond *orm.GatewayKongInfo) (*or
 	return dao, nil
 }
 
+func (impl *GatewayKongInfoServiceImpl) SelectByAny(cond *orm.GatewayKongInfo) ([]orm.GatewayKongInfo, error) {
+	if cond == nil {
+		return nil, errors.New(ERR_INVALID_ARG)
+	}
+	var result []orm.GatewayKongInfo
+	if err := orm.SelectByAny(impl.engine, &result, cond); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (impl *GatewayKongInfoServiceImpl) GetTenantId(projectId, env, az string) (string, error) {
 	kongInfo, err := impl.GetByAny(&orm.GatewayKongInfo{
 		ProjectId: projectId,

@@ -18,16 +18,19 @@ package iteration
 import (
 	"github.com/jinzhu/gorm"
 
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
-	"github.com/erda-project/erda/internal/apps/dop/services/issue"
 )
 
 // Iteration 迭代操作封装
 type Iteration struct {
-	db    *dao.DBClient
-	issue *issue.Issue
+	db            *dao.DBClient
+	issue         query.Interface
+	issueDBClient *issuedao.DBClient
 }
 
 // Option 定义 Iteration 配置选项
@@ -49,10 +52,15 @@ func WithDBClient(db *dao.DBClient) Option {
 	}
 }
 
-// WithIssue 配置 issue service
-func WithIssue(is *issue.Issue) Option {
+func WithIssueDBClient(db *issuedao.DBClient) Option {
 	return func(itr *Iteration) {
-		itr.issue = is
+		itr.issueDBClient = db
+	}
+}
+
+func WithIssueQuery(q query.Interface) Option {
+	return func(itr *Iteration) {
+		itr.issue = q
 	}
 }
 
@@ -132,14 +140,12 @@ func (itr *Iteration) Delete(id uint64) error {
 	}
 
 	// 检查 iteration 下是否有需求/任务/bug; 若有，不可删除
-	issueReq := apistructs.IssuePagingRequest{
-		IssueListRequest: apistructs.IssueListRequest{
-			ProjectID:   iteration.ProjectID,
-			IterationID: int64(id),
-			External:    true,
-		},
-		PageNo:   1,
-		PageSize: 1,
+	issueReq := pb.PagingIssueRequest{
+		ProjectID:   iteration.ProjectID,
+		IterationID: int64(id),
+		External:    true,
+		PageNo:      1,
+		PageSize:    1,
 	}
 	issues, _, err := itr.issue.Paging(issueReq)
 	if err != nil {
@@ -177,40 +183,6 @@ func (itr *Iteration) Paging(req apistructs.IterationPagingRequest) ([]dao.Itera
 	return iterations, total, nil
 }
 
-func (itr *Iteration) GetIssueSummary(iterationID int64, projectID uint64) (apistructs.ISummary, error) {
-	var taskState, bugState, requirementState []int64
-	states, err := itr.db.GetIssuesStatesByProjectID(projectID, apistructs.IssueTypeTask)
-	if err != nil {
-		return apistructs.ISummary{}, err
-	}
-	// 获取每个类型的已完成状态ID
-	for _, v := range states {
-		if v.Belong == apistructs.IssueStateBelongDone {
-			taskState = append(taskState, int64(v.ID))
-		}
-	}
-	states, err = itr.db.GetIssuesStatesByProjectID(projectID, apistructs.IssueTypeBug)
-	if err != nil {
-		return apistructs.ISummary{}, err
-	}
-	for _, v := range states {
-		if v.Belong == apistructs.IssueStateBelongClosed {
-			bugState = append(bugState, int64(v.ID))
-		}
-	}
-	states, err = itr.db.GetIssuesStatesByProjectID(projectID, apistructs.IssueTypeRequirement)
-	if err != nil {
-		return apistructs.ISummary{}, err
-	}
-	for _, v := range states {
-		if v.Belong == apistructs.IssueStateBelongDone {
-			requirementState = append(requirementState, int64(v.ID))
-		}
-	}
-
-	return itr.db.GetIssueSummary(iterationID, taskState, bugState, requirementState), nil
-}
-
 func (itr *Iteration) SetIssueSummaries(projectID uint64, iterationMap map[int64]*apistructs.Iteration) error {
 	if projectID == 0 {
 		return apierrors.ErrPagingIterations.InvalidParameter("missing projectID")
@@ -223,7 +195,7 @@ func (itr *Iteration) SetIssueSummaries(projectID uint64, iterationMap map[int64
 		iterationIDS = append(iterationIDS, iteration.ID)
 		iterationMap[iteration.ID] = iteration
 	}
-	summaryStates, err := itr.db.ListIssueSummaryStates(projectID, iterationIDS)
+	summaryStates, err := itr.issueDBClient.ListIssueSummaryStates(projectID, iterationIDS)
 	if err != nil {
 		return err
 	}
@@ -270,7 +242,7 @@ func (itr *Iteration) SetIssueSummaries(projectID uint64, iterationMap map[int64
 }
 
 func (itr *Iteration) getDoneStateIDSByType(projectID uint64, issueType apistructs.IssueType) ([]int64, error) {
-	states, err := itr.db.GetIssuesStatesByProjectID(projectID, issueType)
+	states, err := itr.issueDBClient.GetIssuesStatesByProjectID(projectID, string(issueType))
 	if err != nil {
 		return nil, err
 	}
@@ -278,11 +250,11 @@ func (itr *Iteration) getDoneStateIDSByType(projectID uint64, issueType apistruc
 	for _, v := range states {
 		switch issueType {
 		case apistructs.IssueTypeTask, apistructs.IssueTypeRequirement:
-			if v.Belong == apistructs.IssueStateBelongDone {
+			if v.Belong == string(apistructs.IssueStateBelongDone) {
 				stateIDS = append(stateIDS, int64(v.ID))
 			}
 		case apistructs.IssueTypeBug:
-			if v.Belong == apistructs.IssueStateBelongClosed {
+			if v.Belong == string(apistructs.IssueStateBelongClosed) {
 				stateIDS = append(stateIDS, int64(v.ID))
 			}
 		default:

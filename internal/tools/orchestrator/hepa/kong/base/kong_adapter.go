@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
 )
 
@@ -99,6 +100,13 @@ func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDt
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
 	req.Adjust(Versioning(impl))
+	for i := 0; i < len(req.Paths); i++ {
+		pth, err := hepautils.RenderKongUri(req.Paths[i])
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to render service path")
+		}
+		req.Paths[i] = pth
+	}
 	url := impl.KongAddr + RouteRoot + req.RouteId
 	code, body, err := util.DoCommonRequest(impl.Client, "PATCH", url, req)
 	if err != nil {
@@ -128,6 +136,13 @@ func (impl *KongAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRou
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
 	req.Adjust(Versioning(impl))
+	for i := 0; i < len(req.Paths); i++ {
+		pth, err := hepautils.RenderKongUri(req.Paths[i])
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to render service path")
+		}
+		req.Paths[i] = pth
+	}
 	url := impl.KongAddr + RouteRoot
 	method := "POST"
 	if len(req.RouteId) != 0 {
@@ -216,6 +231,11 @@ func (impl *KongAdapterImpl) CreateOrUpdateService(req *KongServiceReqDto) (*Kon
 	if req == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
+	pth, err := hepautils.RenderKongUri(req.Path)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to render service path")
+	}
+	req.Path = pth
 	url := impl.KongAddr + ServiceRoot
 	method := "POST"
 	if len(req.ServiceId) != 0 {

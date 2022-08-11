@@ -20,9 +20,11 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 	"github.com/erda-project/erda/pkg/time"
@@ -45,7 +47,12 @@ func (p *provider) maxReqDomainTop5(sdk *cptype.SDK) ([]topn.Item, error) {
 		Statement: statement,
 		Params:    params,
 	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -88,7 +95,12 @@ func (p *provider) maxReqPageTop5(sdk *cptype.SDK) ([]topn.Item, error) {
 		Statement: statement,
 		Params:    params,
 	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -131,7 +143,11 @@ func (p *provider) slowReqPageTop5(sdk *cptype.SDK) ([]topn.Item, error) {
 		Statement: statement,
 		Params:    params,
 	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -177,7 +193,12 @@ func (p *provider) slowReqRegionTop5(sdk *cptype.SDK) ([]topn.Item, error) {
 		Statement: statement,
 		Params:    params,
 	}
-	response, err := p.Metric.QueryWithInfluxFormat(sdk.Ctx, request)
+
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", p.InParamsPtr.TenantId)
+	})
+
+	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

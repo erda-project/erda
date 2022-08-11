@@ -39,6 +39,8 @@ rendering:
       state:
         - name: "addTest"
           value: "{{ addButton.addTest }}"
+        - name: "isUpdate"
+          value: "{{ addButton.isUpdate }}"
 
   __DefaultRendering__:
     - name: autoTestPlan

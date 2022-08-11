@@ -32,9 +32,10 @@ import (
 type parserName string
 
 const (
-	oapSpan    parserName = "oapspan"
-	spotSpan   parserName = "spotspan"
-	spotMetric parserName = "spotmetric"
+	oapSpan      parserName = "oapspan"
+	oapSpanEvent parserName = "oapspanevent"
+	spotSpan     parserName = "spotspan"
+	spotMetric   parserName = "spotmetric"
 )
 
 type config struct {
@@ -79,6 +80,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		invokeFunc = p.parseSpotSpan()
 	case spotMetric:
 		invokeFunc = p.parseSpotMetric()
+	case oapSpanEvent:
+		invokeFunc = p.parseOapSpanEvent()
 	default:
 		return fmt.Errorf("invalide parser: %q", p.parser)
 	}
@@ -89,6 +92,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	}
 	return nil
+}
+
+func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFunc {
+	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
+		return oapspan.ParseOapSpanEvent(value, func(m []*metric.Metric) error {
+			if len(m) > 0 {
+				for i := 0; i < len(m); i++ {
+					p.consumer(m[i])
+				}
+			}
+			return nil
+		})
+	}
 }
 
 func (p *provider) parseOapSpan() kafkaInf.ConsumerFunc {

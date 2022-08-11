@@ -24,22 +24,23 @@ type QASonar struct {
 	CreatedAt time.Time `xorm:"created" json:"createdAt"`
 	UpdatedAt time.Time `xorm:"updated" json:"updatedAt"`
 
-	ApplicationID    int64  `xorm:"app_id" json:"applicationId"`
-	ProjectID        int64  `xorm:"project_id" json:"projectId" validate:"required"`
-	BuildID          int64  `xorm:"build_id" json:"buildId"`
-	LogID            string `xorm:"log_id" json:"logId"`
-	ApplicationName  string `xorm:"app_name" json:"applicationName"`
-	OperatorID       string `xorm:"operator_id" json:"operatorId" validate:"required"`
-	CommitID         string `xorm:"commit_id" json:"commitId"`
-	Branch           string `xorm:"branch" json:"branch" validate:"required"`
-	GitRepo          string `xorm:"git_repo" json:"gitRepo" validate:"required"`
-	Key              string `xorm:"not null VARCHAR(255)" json:"key,omitempty"`
-	Bugs             string `xorm:"longtext" json:"bugs,omitempty"`
-	CodeSmells       string `xorm:"longtext" json:"code_smells,omitempty"`
-	Vulnerabilities  string `xorm:"longtext" json:"vulnerabilities,omitempty"`
-	Coverage         string `xorm:"longtext" json:"coverage,omitempty"`
-	Duplications     string `xorm:"longtext" json:"duplications,omitempty"`
-	IssuesStatistics string `xorm:"text" json:"issues_statistics,omitempty"`
+	ApplicationID     int64  `xorm:"app_id" json:"applicationId"`
+	ProjectID         int64  `xorm:"project_id" json:"projectId" validate:"required"`
+	BuildID           int64  `xorm:"build_id" json:"buildId"`
+	LogID             string `xorm:"log_id" json:"logId"`
+	ApplicationName   string `xorm:"app_name" json:"applicationName"`
+	OperatorID        string `xorm:"operator_id" json:"operatorId" validate:"required"`
+	CommitID          string `xorm:"commit_id" json:"commitId"`
+	Branch            string `xorm:"branch" json:"branch" validate:"required"`
+	GitRepo           string `xorm:"git_repo" json:"gitRepo" validate:"required"`
+	Key               string `xorm:"not null VARCHAR(255)" json:"key,omitempty"`
+	Bugs              string `xorm:"longtext" json:"bugs,omitempty"`
+	CodeSmells        string `xorm:"longtext" json:"code_smells,omitempty"`
+	Vulnerabilities   string `xorm:"longtext" json:"vulnerabilities,omitempty"`
+	Coverage          string `xorm:"longtext" json:"coverage,omitempty"`
+	Duplications      string `xorm:"longtext" json:"duplications,omitempty"`
+	IssuesStatistics  string `xorm:"text" json:"issues_statistics,omitempty"`
+	QualityGateResult string `xorm:"text" json:"quality_gate_result,omitempty"`
 }
 
 // TableName QASonar对应的数据库表qa_sonar

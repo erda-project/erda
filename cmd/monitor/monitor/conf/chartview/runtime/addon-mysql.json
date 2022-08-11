@@ -1,0 +1,1290 @@
+{
+  "id": "addon-mysql",
+  "name": "Mysql 监控",
+  "version": "v2",
+  "desc": "",
+  "scope": "org",
+  "scopeId": "terminus",
+  "viewConfig": [{
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 0,
+    "i": "view-rDAO6YTb",
+    "view": {
+      "title": " 当前打开连接数",
+      "i18n": {
+        "title": {
+          "zh": "当前打开连接数",
+          "en": "Threads Connected"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "isSqlMode": false,
+          "resultFilters": [{
+            "alias": "表达式-6",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filter2K5WXNP6",
+            "type": "expr"
+          }],
+          "sortDimensions": [],
+          "sql": {
+            "from": "mysql",
+            "fromSource": ["all", "all@mysql"],
+            "groupBy": "",
+            "select": "com_create_server::field",
+            "where": "addon_id::tag='{{addonId}}'"
+          },
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typecGuHgPDX",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typex2sP9qbZ",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-5",
+            "expr": "max(threads_connected::field)",
+            "key": "valuelLnjsyoi",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typecGuHgPDX",
+            "expr": "time()"
+          }, {
+            "alias": "typex2sP9qbZ",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuelLnjsyoi",
+            "expr": "max(threads_connected::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 0,
+    "i": "view-mCxqAan4",
+    "view": {
+      "title": "慢查询频率",
+      "i18n": {
+        "title": {
+          "zh": "慢查询频率",
+          "en": "Slow Queries"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "isSqlMode": false,
+          "resultFilters": [{
+            "alias": "表达式-490",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterhIEJj11m",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeSUwAjjtU",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typedYkXDW8a",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-489",
+            "expr": "diffps(slow_queries::field)",
+            "key": "valuePHwj3IlY",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeSUwAjjtU",
+            "expr": "time()"
+          }, {
+            "alias": "typedYkXDW8a",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuePHwj3IlY",
+            "expr": "diffps(slow_queries::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 9,
+    "i": "view-QSVOBbmx",
+    "view": {
+      "title": "查询频率",
+      "i18n": {
+        "title": {
+          "zh": "查询频率",
+          "en": "Queries"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-2",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterpfglN4DT",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type1eNcqxkm",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typeRP6Z4rQ4",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-1",
+            "expr": "diffps(queries::field)",
+            "key": "valueiQzTllJV",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "type1eNcqxkm",
+            "expr": "time()"
+          }, {
+            "alias": "typeRP6Z4rQ4",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueiQzTllJV",
+            "expr": "diffps(queries::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 9,
+    "i": "view-zVygT7LU",
+    "view": {
+      "title": "QPS",
+      "i18n": {
+        "title": {
+          "zh": "QPS",
+          "en": "QPS"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-4",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filter86lEgl1Q",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeDEVwPt93",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typeUG0Ab5Gj",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-3",
+            "expr": "diffps(com_delete::field+com_insert::field+com_select::field+com_update::field)",
+            "key": "valuel3XyepFD",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeDEVwPt93",
+            "expr": "time()"
+          }, {
+            "alias": "typeUG0Ab5Gj",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuel3XyepFD",
+            "expr": "diffps(com_delete::field+com_insert::field+com_select::field+com_update::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 18,
+    "i": "view-cQwOslhU",
+    "view": {
+      "title": "TPS",
+      "i18n": {
+        "title": {
+          "zh": "TPS",
+          "en": "TPS"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-6",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterpQ7lmi27",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typemRmQOhBa",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typedUtiGq4q",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-5",
+            "expr": "diffps(com_commit::field+com_rollback::field)",
+            "key": "valuenfG7vyLk",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typemRmQOhBa",
+            "expr": "time()"
+          }, {
+            "alias": "typedUtiGq4q",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuenfG7vyLk",
+            "expr": "diffps(com_commit::field+com_rollback::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 18,
+    "i": "view-irBX1iID",
+    "view": {
+      "title": "网络接收数据量",
+      "i18n": {
+        "title": {
+          "zh": "网络接收数据量",
+          "en": "Bytes Received"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-8",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterJILzTL8o",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typevCl87EAT",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typeDKO2PmNT",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-7",
+            "expr": "diffps(bytes_received::field)",
+            "key": "valuel7mqB4aI",
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typevCl87EAT",
+            "expr": "time()"
+          }, {
+            "alias": "typeDKO2PmNT",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuel7mqB4aI",
+            "expr": "diffps(bytes_received::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 27,
+    "i": "view-HuIfFYxX",
+    "view": {
+      "title": "网络发送数据量",
+      "i18n": {
+        "title": {
+          "zh": "网络发送数据量",
+          "en": "Bytes Sent"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-11",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterQ79kgrti",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeUQph6gnY",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typelSa3hpt0",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-10",
+            "expr": "diffps(bytes_sent::field)",
+            "key": "valueSZaBwcTv",
+            "type": "expr",
+            "unit": {
+              "type": "TRAFFIC",
+              "unit": "B/S"
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeUQph6gnY",
+            "expr": "time()"
+          }, {
+            "alias": "typelSa3hpt0",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueSZaBwcTv",
+            "expr": "diffps(bytes_sent::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 27,
+    "i": "view-DTIiYmkL",
+    "view": {
+      "title": "打开的表个数",
+      "i18n": {
+        "title": {
+          "zh": "打开的表个数",
+          "en": "Open Tables"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-13",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterfpUBDsHh",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typehgE1nC10",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typeSG3RmpcU",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-12",
+            "expr": "max(open_tables::field)",
+            "key": "valuebQZdZW5I",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typehgE1nC10",
+            "expr": "time()"
+          }, {
+            "alias": "typeSG3RmpcU",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuebQZdZW5I",
+            "expr": "max(open_tables::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 36,
+    "i": "view-iH4XBwBF",
+    "view": {
+      "title": "当前线程数",
+      "i18n": {
+        "title": {
+          "zh": "当前线程数",
+          "en": "Threads Running"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-15",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterkrtQlQSH",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type0UfChg6u",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typevzXb1ICY",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-14",
+            "expr": "max(threads_running::field)",
+            "key": "valueqXkS8udi",
+            "type": "expr"
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "type0UfChg6u",
+            "expr": "time()"
+          }, {
+            "alias": "typevzXb1ICY",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueqXkS8udi",
+            "expr": "max(threads_running::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 36,
+    "i": "view-5sfFEIsE",
+    "view": {
+      "title": "INNODB删除行数量",
+      "i18n": {
+        "title": {
+          "zh": "INNODB删除行数量",
+          "en": "InnoDB Rows Deleted"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-17",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterwfxHHZhU",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typehboNbi7L",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typeC0EJEC7X",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-16",
+            "expr": "diffps(innodb_rows_deleted::field)",
+            "key": "valuenEDyrXL5",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typehboNbi7L",
+            "expr": "time()"
+          }, {
+            "alias": "typeC0EJEC7X",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuenEDyrXL5",
+            "expr": "diffps(innodb_rows_deleted::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 45,
+    "i": "view-08NE92Du",
+    "view": {
+      "title": "INNODB插入行数量",
+      "i18n": {
+        "title": {
+          "zh": "INNODB插入行数量",
+          "en": "InnoDB Rows Inserted"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-19",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterZ6pfkFST",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "type4EV3Fhbs",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typehdfweHGz",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-18",
+            "expr": "diffps(innodb_rows_inserted::field)",
+            "key": "valueh7gYoJ3m",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "type4EV3Fhbs",
+            "expr": "time()"
+          }, {
+            "alias": "typehdfweHGz",
+            "expr": "server::tag"
+          }, {
+            "alias": "valueh7gYoJ3m",
+            "expr": "diffps(innodb_rows_inserted::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 45,
+    "i": "view-14eaHdpz",
+    "view": {
+      "title": "INNODB更新行数量",
+      "i18n": {
+        "title": {
+          "zh": "INNODB更新行数量",
+          "en": "InnoDB Rows Updated"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-21",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filteraNSFMdE7",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typexkFO75Tl",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "type96qOKYrJ",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-20",
+            "expr": "diffps(innodb_rows_updated::field)",
+            "key": "valued3V5ZNHH",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typexkFO75Tl",
+            "expr": "time()"
+          }, {
+            "alias": "type96qOKYrJ",
+            "expr": "server::tag"
+          }, {
+            "alias": "valued3V5ZNHH",
+            "expr": "diffps(innodb_rows_updated::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 54,
+    "i": "view-SVqVhO3k",
+    "view": {
+      "title": "INNODB读取行数量",
+      "i18n": {
+        "title": {
+          "zh": "INNODB读取行数量",
+          "en": "InnoDB Rows Read"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": {},
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-23",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterKbRrkKnm",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeWtoAZ0Dn",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typeAptixUn7",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-22",
+            "expr": "diffps(innodb_rows_read::field)",
+            "key": "value2F4UJ0uI",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
+          }]
+        },
+        "optionProps": {
+          "isMoreThanOneDay": false
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeWtoAZ0Dn",
+            "expr": "time()"
+          }, {
+            "alias": "typeAptixUn7",
+            "expr": "server::tag"
+          }, {
+            "alias": "value2F4UJ0uI",
+            "expr": "diffps(innodb_rows_read::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 54,
+    "i": "view-WtogQyAZ",
+    "view": {
+      "title": "INNODB读速度",
+      "i18n": {
+        "title": {
+          "zh": "INNODB读速度",
+          "en": "InnoDB Read Speed"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-26",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterrEJY4qMI",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typeENVnc1XF",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typevbwt0PfQ",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-25",
+            "expr": "diffps(innodb_data_read::field)",
+            "key": "value0p63Twua",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typeENVnc1XF",
+            "expr": "time()"
+          }, {
+            "alias": "typevbwt0PfQ",
+            "expr": "server::tag"
+          }, {
+            "alias": "value0p63Twua",
+            "expr": "diffps(innodb_data_read::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 0,
+    "y": 63,
+    "i": "view-olQbPwa3",
+    "view": {
+      "title": "INNODB写速度",
+      "i18n": {
+        "title": {
+          "zh": "INNODB写速度",
+          "en": "InnoDB Write Speed"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-28",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterJg0LF2NU",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typek7VhH56n",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typevTlTHnWu",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-27",
+            "expr": "diffps(innodb_data_written::field)",
+            "key": "valuepKc9YRcZ",
+            "type": "expr",
+            "unit": {
+              "type": "CUSTOM",
+              "unit": "Row/s"
+            }
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typek7VhH56n",
+            "expr": "time()"
+          }, {
+            "alias": "typevTlTHnWu",
+            "expr": "server::tag"
+          }, {
+            "alias": "valuepKc9YRcZ",
+            "expr": "diffps(innodb_data_written::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }, {
+    "w": 12,
+    "h": 9,
+    "x": 12,
+    "y": 63,
+    "i": "view-aSeWx5cW",
+    "view": {
+      "title": "需要等待获取表锁的次数",
+      "i18n": {
+        "title": {
+          "zh": "需要等待获取表锁的次数",
+          "en": "Table Locks Waited"
+        }
+      },
+      "description": "",
+      "chartType": "chart:area",
+      "dataSourceType": "api",
+      "staticData": null,
+      "config": {
+        "dataSourceConfig": {
+          "activedMetricGroups": ["project", "project_addon", "project_addon_mysql", "project_addon_mysql_metrics"],
+          "resultFilters": [{
+            "alias": "表达式-30",
+            "expr": "addon_id::tag='{{addonId}}'",
+            "key": "filterkEUDZ046",
+            "type": "expr"
+          }],
+          "typeDimensions": [{
+            "alias": "时间",
+            "key": "typepSbZOtQZ",
+            "type": "time"
+          }, {
+            "alias": "Server",
+            "field": "mysql-server::tag",
+            "key": "typePAnMCbHh",
+            "resultType": "string",
+            "type": "field"
+          }],
+          "valueDimensions": [{
+            "alias": "表达式-29",
+            "expr": "diffps(table_locks_waited::field)",
+            "key": "value2zn53n0Z",
+            "type": "expr"
+          }]
+        }
+      },
+      "api": {
+        "body": {
+          "from": ["mysql"],
+          "groupby": ["time()", "server::tag"],
+          "select": [{
+            "alias": "typepSbZOtQZ",
+            "expr": "time()"
+          }, {
+            "alias": "typePAnMCbHh",
+            "expr": "server::tag"
+          }, {
+            "alias": "value2zn53n0Z",
+            "expr": "diffps(table_locks_waited::field)"
+          }],
+          "where": ["addon_id::tag='{{addonId}}'"]
+        },
+        "method": "post",
+        "query": {
+          "end": "{{endTime}}",
+          "epoch": "ms",
+          "format": "chartv2",
+          "ql": "influxql:ast",
+          "start": "{{startTime}}",
+          "type": "_"
+        },
+        "url": "/api/orgCenter/metrics-query"
+      },
+      "controls": null
+    }
+  }]
+}

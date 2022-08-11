@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sschema "k8s.io/client-go/kubernetes/scheme"
 
-	openyurtv1alpha1 "github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
+	openyurtv1alpha1 "github.com/erda-project/erda/pkg/k8sclient/apis/openyurt/v1alpha1"
 )
 
 // LocalSchemeBuilder register crd scheme

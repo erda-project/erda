@@ -52,7 +52,7 @@ func (p *provider) workerOnceReportHeartbeat(ctx context.Context, w worker.Worke
 	}
 	// update lastProbeAt
 	nowSec := time.Now().Round(0).Unix()
-	if _, err := p.EtcdClient.Put(ctx, p.makeEtcdWorkerHeartbeatKey(w.GetID()), strutil.String(nowSec)); err != nil {
+	if _, err := p.EtcdClient.Put(hctx, p.makeEtcdWorkerHeartbeatKey(w.GetID()), strutil.String(nowSec)); err != nil {
 		return fmt.Errorf("failed to update last heartbeat time into etcd, workerID: %s, err: %v", w.GetID(), err)
 	}
 	p.Log.Debugf("worker heartbeat reported, workerID: %s", w.GetID())

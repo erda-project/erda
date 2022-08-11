@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	hpatypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/task"
@@ -114,7 +114,7 @@ func (s ServiceGroupImpl) Delete(namespace string, name, force string, sgExtra m
 		if sg.Labels == nil {
 			sg.Labels = make(map[string]string)
 		}
-		sg.Labels[hpatypes.ErdaPALabelKey] = hpatypes.ErdaHPALabelValueCancel
+		sg.Labels[pstypes.ErdaPALabelKey] = pstypes.ErdaHPALabelValueCancel
 		if sg.Extra == nil {
 			sg.Extra = make(map[string]string)
 		}
@@ -215,42 +215,70 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (interface{}, erro
 		sg.ProjectNamespace = oldSg.ProjectNamespace
 	}
 
-	value, ok := sg.Labels[hpatypes.ErdaPALabelKey]
+	value, ok := sg.Labels[pstypes.ErdaPALabelKey]
 	switch ok {
 	// auto scale
 	case true:
 		switch value {
-		case hpatypes.ErdaHPALabelValueCreate:
+		case pstypes.ErdaHPALabelValueCreate:
 			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectCreate)
 			if err != nil {
 				logrus.Errorf("create erda hpa scale rules for serviceGroup failed, error: %v", err)
 				return *sg, err
 			}
 			return sgHPAObjects.Extra, nil
-		case hpatypes.ErdaHPALabelValueApply:
+		case pstypes.ErdaHPALabelValueApply:
 			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectApply)
 			if err != nil {
 				logrus.Errorf("apply erda hpa scale rules for serviceGroup failed, error: %v", err)
 				return *sg, err
 			}
 			return sgHPAObjects.Extra, nil
-		case hpatypes.ErdaHPALabelValueCancel:
+		case pstypes.ErdaHPALabelValueCancel:
 			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectCancel)
 			if err != nil {
 				logrus.Errorf("cancel erda hpa scale rules for serviceGroup failed, error: %v", err)
 				return *sg, err
 			}
 			return sgHPAObjects.Extra, nil
-		case hpatypes.ErdaHPALabelValueReApply:
+		case pstypes.ErdaHPALabelValueReApply:
 			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectReApply)
 			if err != nil {
 				logrus.Errorf("cancel erda hpa scale rules for serviceGroup failed, error: %v", err)
 				return *sg, err
 			}
 			return sgHPAObjects.Extra, nil
+		case pstypes.ErdaVPALabelValueCreate:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskKedaScaledObjectCreate)
+			if err != nil {
+				logrus.Errorf("create erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
+		case pstypes.ErdaVPALabelValueApply:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskVPAObjectApply)
+			if err != nil {
+				logrus.Errorf("apply erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
+		case pstypes.ErdaVPALabelValueReApply:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskVPAObjectReApply)
+			if err != nil {
+				logrus.Errorf("cancel erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
+		case pstypes.ErdaVPALabelValueCancel:
+			sgHPAObjects, err := s.handleServiceGroup(context.Background(), sg, task.TaskVPAObjectCancel)
+			if err != nil {
+				logrus.Errorf("cancel erda hpa scale rules for serviceGroup failed, error: %v", err)
+				return *sg, err
+			}
+			return sgHPAObjects.Extra, nil
 		default:
-			logrus.Errorf("processing erda hpa scale rules for sg %#v failed, invalid value [%s] for set sg label for autoscaler, valid value:[%s, %s]", *sg, value, hpatypes.ErdaHPALabelValue, hpatypes.ErdaVPALabelValue)
-			err := errors.Errorf("processing erda hpa scale rules for serviceGroup failed, invalid value [%s] for set sg label for autoscaler, valid value:[%s, %s]", value, hpatypes.ErdaHPALabelValue, hpatypes.ErdaVPALabelValue)
+			logrus.Errorf("processing erda hpa scale rules for sg %#v failed, invalid value [%s] for set sg label for autoscaler, valid value:[%s, %s]", *sg, value, pstypes.ErdaHPALabelValue, pstypes.ErdaVPALabelValue)
+			err := errors.Errorf("processing erda hpa scale rules for serviceGroup failed, invalid value [%s] for set sg label for autoscaler, valid value:[%s, %s]", value, pstypes.ErdaHPALabelValue, pstypes.ErdaVPALabelValue)
 			return *sg, err
 		}
 
@@ -354,4 +382,33 @@ func (s ServiceGroupImpl) InspectServiceGroupWithTimeout(namespace, name string)
 	case <-time.After(time.Duration(conf.InspectServiceGroupTimeout()) * time.Second):
 		return nil, fmt.Errorf("timeout for invoke getServiceGroup for namesapce %s name %s", namespace, name)
 	}
+}
+
+func (s ServiceGroupImpl) InspectRuntimeServicePods(namespace, name, serviceName string) (*apistructs.ServiceGroup, error) {
+	var (
+		sg  apistructs.ServiceGroup
+		err error
+	)
+
+	if err = s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
+		return &sg, err
+	}
+
+	if sg.Labels == nil {
+		sg.Labels = make(map[string]string)
+	}
+
+	sg.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"] = serviceName
+	result, err := s.handleServiceGroup(context.Background(), &sg, task.TaskInspect)
+	if err != nil {
+		return &sg, err
+	}
+	if result.Extra == nil {
+		err = errors.Errorf("Cannot get servicegroup(%v/%v) pod info from TaskInspect", sg.Type, sg.ID)
+		logrus.Error(err.Error())
+		return &sg, err
+	}
+
+	newSG := result.Extra.(*apistructs.ServiceGroup)
+	return newSG, nil
 }

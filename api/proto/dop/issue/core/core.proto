@@ -542,6 +542,7 @@ message BatchUpdateIssueSubscriberRequest {
   int64 issueID = 2 [json_name = "-"];
   common.IdentityInfo identityInfo = 3 [json_name = "-"];
   string id = 4;
+  bool isIncrementalUpdate = 5;
 }
 
 message BatchUpdateIssueSubscriberResponse {
@@ -872,6 +873,7 @@ message PagingIssueRequest {
   uint64 pageSize = 39;
   int64 orgID = 40;
   repeated uint64 projectIDs = 41;
+  repeated string participant = 42;
 }
 
 message IssueListRequest {

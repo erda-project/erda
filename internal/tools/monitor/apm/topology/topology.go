@@ -658,8 +658,8 @@ const (
 	ExceptionCountSortStrategy = "count"
 )
 
-func (topology *provider) GetExceptionTypes(language i18n.LanguageCodes, params ServiceParams) ([]string, interface{}) {
-	descriptions, err := topology.GetExceptionDescription(language, params, 50, "", "")
+func (topology *provider) GetExceptionTypes(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) ([]string, interface{}) {
+	descriptions, err := topology.GetExceptionDescription(ctx, language, params, 50, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -711,7 +711,7 @@ type ReadWriteBytesSpeed struct {
 	WriteBytesSpeed float64 `json:"writeBytesSpeed"` // unit: b/s
 }
 
-func (topology *provider) GetProcessDiskIo(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+func (topology *provider) GetProcessDiskIo(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
@@ -726,7 +726,7 @@ func (topology *provider) GetProcessDiskIo(language i18n.LanguageCodes, params S
 	} else {
 		statement = fmt.Sprintf(statement, "")
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -750,7 +750,7 @@ func (topology *provider) GetProcessNetIo(language i18n.LanguageCodes, params Se
 	} else {
 		statement = fmt.Sprintf(statement, "")
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(context.Background(), "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -805,9 +805,9 @@ func calculateSpeed(curr, next float64, currTime, nextTime int64) float64 {
 	return 0
 }
 
-func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
+func (topology *provider) GetExceptionMessage(ctx context.Context, language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
 	result := []ExceptionDescription{}
-	descriptions, err := topology.GetExceptionDescription(language, params, limit, sort, exceptionType)
+	descriptions, err := topology.GetExceptionDescription(ctx, language, params, limit, sort, exceptionType)
 	if exceptionType != "" {
 		for _, description := range descriptions {
 			if description.ExceptionType == exceptionType {
@@ -824,7 +824,7 @@ func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, param
 	return result, nil
 }
 
-func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
+func (topology *provider) GetExceptionDescription(ctx context.Context, language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
 	if limit <= 0 || limit > 50 {
 		limit = 10
 	}
@@ -856,11 +856,7 @@ func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, p
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.StartTime, 10))
 	options.Set("end", strconv.FormatInt(params.EndTime, 10))
-	source, err := topology.metricq.Query(
-		metricq.InfluxQL,
-		sql,
-		paramMap,
-		options)
+	source, err := topology.metricq.Query(ctx, metricq.InfluxQL, sql, paramMap, options)
 	if err != nil {
 		return nil, err
 	}
@@ -889,19 +885,19 @@ type InstanceInfo struct {
 	HostIP string `json:"hostIp"`
 }
 
-func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+func (topology *provider) GetServiceInstanceIds(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
 	// instance list
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 
 	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true'),host_ip::tag FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
+		"WHERE terminus_key=$terminus_key AND service_id::tag =$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 		"service_id":   params.ServiceId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -909,7 +905,7 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 
 	// instance status
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	instanceListForStatus := topology.handleInstanceInfo(response)
 
 	filterInstance(instanceList, instanceListForStatus)
@@ -950,7 +946,7 @@ func (topology *provider) handleInstanceInfo(response *model.ResultSet) []*Insta
 	return instanceIds
 }
 
-func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+func (topology *provider) GetServiceInstances(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
@@ -961,7 +957,7 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 		"terminus_key": params.ScopeId,
 		"service_id":   params.ServiceId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -980,7 +976,7 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
 	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state FROM application_service_node " +
 		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
-	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1005,14 +1001,14 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	return result, nil
 }
 
-func (topology *provider) GetServiceRequest(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+func (topology *provider) GetServiceRequest(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 	var translations []RequestTransaction
 	for _, metricName := range ReqMetricNames {
 
-		translation, err := topology.serviceReqInfo(metricName, topology.t.Text(language, metricName+"_request"), params, metricsParams)
+		translation, err := topology.serviceReqInfo(ctx, metricName, topology.t.Text(language, metricName+"_request"), params, metricsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -1021,7 +1017,7 @@ func (topology *provider) GetServiceRequest(language i18n.LanguageCodes, params 
 	return translations, nil
 }
 
-func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+func (topology *provider) GetServiceOverview(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
 	dashboardData := make([]map[string]interface{}, 0, 10)
 	serviceOverviewMap := make(map[string]interface{})
 	metricsParams := url.Values{}
@@ -1039,7 +1035,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 		"service_name": params.ServiceName,
 		"service_id":   params.ServiceId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, instanceMetricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, instanceMetricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1068,7 +1064,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	// error req count
 	errorCount := 0.0
 	for _, metricName := range ReqMetricNames {
-		count, err := topology.serviceReqErrorCount(metricName, params, metricsParams)
+		count, err := topology.serviceReqErrorCount(ctx, metricName, params, metricsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -1079,7 +1075,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 
 	// exception count
 	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id"
-	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1094,7 +1090,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 		"terminus_key": params.ScopeId,
 		"service_name": params.ServiceName,
 	}
-	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1107,7 +1103,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	return dashboardData, nil
 }
 
-func (topology *provider) GetOverview(language i18n.LanguageCodes, params GlobalParams) (interface{}, error) {
+func (topology *provider) GetOverview(ctx context.Context, language i18n.LanguageCodes, params GlobalParams) (interface{}, error) {
 	result := make(map[string]interface{})
 	dashboardData := make([]map[string]interface{}, 0, 10)
 	overviewMap := make(map[string]interface{})
@@ -1120,7 +1116,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1140,7 +1136,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
-	response, err = topology.metricq.Query("influxql", statement, queryParams, instanceMetricsParams)
+	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, instanceMetricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1156,7 +1152,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	// error request count
 	errorCount := 0.0
 	for _, errorReqMetricName := range ReqMetricNames {
-		count, err := topology.globalReqCount(errorReqMetricName, params, metricsParams)
+		count, err := topology.globalReqCount(ctx, errorReqMetricName, params, metricsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -1169,7 +1165,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
-	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1182,7 +1178,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
-	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1196,13 +1192,13 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	return result, nil
 }
 
-func (topology *provider) globalReqCount(metricScopeName string, params GlobalParams, metricsParams url.Values) (float64, error) {
+func (topology *provider) globalReqCount(ctx context.Context, metricScopeName string, params GlobalParams, metricsParams url.Values) (float64, error) {
 	statement := fmt.Sprintf("SELECT sum(errors_sum::field) FROM %s WHERE target_terminus_key::tag=$terminus_key", metricScopeName)
 	queryParams := map[string]interface{}{
 		"metric":       metricScopeName,
 		"terminus_key": params.ScopeId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return 0, err
 	}
@@ -1219,7 +1215,7 @@ func toTwoDecimalPlaces(num float64) float64 {
 	return temp
 }
 
-func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc string, params ServiceParams, metricsParams url.Values) (*RequestTransaction, error) {
+func (topology *provider) serviceReqInfo(ctx context.Context, metricScopeName, metricScopeNameDesc string, params ServiceParams, metricsParams url.Values) (*RequestTransaction, error) {
 	var requestTransaction RequestTransaction
 	metricType := "target_service_name"
 	tkType := "target_terminus_key"
@@ -1236,7 +1232,7 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 		"service_name": params.ServiceName,
 		"service_id":   params.ServiceId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1257,7 +1253,7 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 	return &requestTransaction, nil
 }
 
-func (topology *provider) serviceReqErrorCount(metricScopeName string, params ServiceParams, metricsParams url.Values) (float64, error) {
+func (topology *provider) serviceReqErrorCount(ctx context.Context, metricScopeName string, params ServiceParams, metricsParams url.Values) (float64, error) {
 	metricType := "target_service_name"
 	tkType := "target_terminus_key"
 	serviceIdType := "target_service_id"
@@ -1273,7 +1269,7 @@ func (topology *provider) serviceReqErrorCount(metricScopeName string, params Se
 		"service_name": params.ServiceName,
 		"service_id":   params.ServiceId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return 0, err
 	}
@@ -1292,7 +1288,7 @@ func (topology *provider) GetSearchTags(r *http.Request) []SearchTag {
 	}
 }
 
-func searchApplicationTag(topology *provider, scopeId string, startTime, endTime int64) ([]string, error) {
+func searchApplicationTag(ctx context.Context, topology *provider, scopeId string, startTime, endTime int64) ([]string, error) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(startTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(endTime, 10))
@@ -1300,7 +1296,7 @@ func searchApplicationTag(topology *provider, scopeId string, startTime, endTime
 	queryParams := map[string]interface{}{
 		"terminus_key": scopeId,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1314,6 +1310,11 @@ func searchApplicationTag(topology *provider, scopeId string, startTime, endTime
 
 func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*Node, error) {
 	lang := api.Language(r)
+
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.TerminusKey)
+	})
+
 	nodes := []*Node{}
 	if topology.Cfg.TopologyFromClickHouse {
 		if v, err := topology.GetTopologyV2(api.OrgName(r), lang, params); err != nil {
@@ -1325,8 +1326,9 @@ func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*No
 		nodes = topology.GetTopology(lang, params)
 	}
 
+
 	// instance count info
-	instances, err := topology.GetInstances(api.Language(r), params)
+	instances, err := topology.GetInstances(ctx, api.Language(r), params)
 	if err != nil {
 		return nil, err
 	}
@@ -1386,7 +1388,7 @@ type ServiceInstance struct {
 	LastHeartbeatTime   string `json:"lastHeartbeatTime,omitempty"`
 }
 
-func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (map[string][]ServiceInstance, error) {
+func (topology *provider) GetInstances(ctx context.Context, language i18n.LanguageCodes, params Vo) (map[string][]ServiceInstance, error) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
@@ -1394,7 +1396,7 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	queryParams := map[string]interface{}{
 		"terminus_key": params.TerminusKey,
 	}
-	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	response, err := topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
@@ -1426,9 +1428,14 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 }
 
 func (topology *provider) GetSearchTagv(r *http.Request, tag, scopeId string, startTime, endTime int64) ([]string, error) {
+
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", scopeId)
+	})
+
 	switch tag {
 	case ApplicationSearchTag.Tag:
-		return searchApplicationTag(topology, scopeId, startTime, endTime)
+		return searchApplicationTag(ctx, topology, scopeId, startTime, endTime)
 	default:
 		return nil, errors.New("search tag not support")
 	}
@@ -1891,6 +1898,11 @@ func findNodeBuckets(bucketKeyItems []*elastic.AggregationBucketKeyItem, field *
 
 // http/rpc
 func (topology *provider) translation(r *http.Request, params translation) interface{} {
+
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.TerminusKey)
+	})
+
 	if params.Layer != "http" && params.Layer != "rpc" {
 		return api.Errors.Internal(errors.New("not supported layer name"))
 	}
@@ -1912,11 +1924,7 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	sql := fmt.Sprintf("SELECT %s,sum(elapsed_count::field),count(error::tag),format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM application_%s WHERE target_service_id::tag=$serviceId AND target_service_name::tag=$filterServiceName "+
 		"AND target_terminus_key::tag=$terminusKey %s GROUP BY %s", field, params.Layer, where.String(), field+orderBy)
-	source, err := topology.metricq.Query(
-		metricq.InfluxQL,
-		sql,
-		param,
-		options)
+	source, err := topology.metricq.Query(ctx, metricq.InfluxQL, sql, param, options)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -1939,16 +1947,12 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 		itemResult["avg_elapsed"] = r[3]
 		sql = fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE target_service_id::tag=$serviceId "+
 			"AND target_service_name::tag=$filterServiceName AND %s=$field AND target_terminus_key::tag=$terminusKey ", params.Layer, field)
-		slowElapsedCount, err := topology.metricq.Query(
-			metricq.InfluxQL,
-			sql,
-			map[string]interface{}{
-				"field":             conv.ToString(r[0]),
-				"terminusKey":       params.TerminusKey,
-				"filterServiceName": params.FilterServiceName,
-				"serviceId":         params.ServiceId,
-			},
-			options)
+		slowElapsedCount, err := topology.metricq.Query(ctx, metricq.InfluxQL, sql, map[string]interface{}{
+			"field":             conv.ToString(r[0]),
+			"terminusKey":       params.TerminusKey,
+			"filterServiceName": params.FilterServiceName,
+			"serviceId":         params.ServiceId,
+		}, options)
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
@@ -2001,26 +2005,31 @@ func (topology *provider) middlewareTransaction(r *http.Request, params translat
 		return api.Errors.Internal(errors.New("not supported layer name"))
 	}
 	lang := api.Language(r)
-	result, err := topology.middlewareStrategy(lang, params)
+
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.TerminusKey)
+	})
+
+	result, err := topology.middlewareStrategy(ctx, lang, params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
 	return api.Success(result)
 }
 
-func (topology *provider) middlewareStrategy(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
+func (topology *provider) middlewareStrategy(ctx context.Context, lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
 	switch params.Layer {
 	case "db":
-		return topology.dbOrCacheTranslation(lang, params)
+		return topology.dbOrCacheTranslation(ctx, lang, params)
 	case "cache":
-		return topology.dbOrCacheTranslation(lang, params)
+		return topology.dbOrCacheTranslation(ctx, lang, params)
 	case "mq":
-		return topology.mqTranslation(lang, params)
+		return topology.mqTranslation(ctx, lang, params)
 	}
 	return nil, errors.New("no support middleware type")
 }
 
-func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
+func (topology *provider) dbOrCacheTranslation(ctx context.Context, lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -2047,11 +2056,7 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
 		"source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
 		params.Layer, where.String(), orderby)
-	source, err := topology.metricq.Query(
-		metricq.InfluxQL,
-		sql,
-		param,
-		options)
+	source, err := topology.metricq.Query(ctx, metricq.InfluxQL, sql, param, options)
 	if err != nil {
 		return nil, err
 	}
@@ -2078,15 +2083,11 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 		itemResult["avg_elapsed"] = r[5]
 		sql := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
 			"AND db_statement::tag=$field AND source_terminus_key::tag=$terminusKey", params.Layer)
-		slowElapsedCount, err := topology.metricq.Query(
-			metricq.InfluxQL,
-			sql,
-			map[string]interface{}{
-				"field":       conv.ToString(r[0]),
-				"terminusKey": params.TerminusKey,
-				"serviceId":   params.ServiceId,
-			},
-			options)
+		slowElapsedCount, err := topology.metricq.Query(ctx, metricq.InfluxQL, sql, map[string]interface{}{
+			"field":       conv.ToString(r[0]),
+			"terminusKey": params.TerminusKey,
+			"serviceId":   params.ServiceId,
+		}, options)
 		if err != nil {
 			return nil, err
 		}
@@ -2099,12 +2100,12 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 	return result, nil
 }
 
-func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
+func (topology *provider) mqTranslation(ctx context.Context, lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
 	options, param, sql := topology.composeMqTranslationCondition(params)
 
-	response, err := topology.metricq.Query(metricq.InfluxQL, sql, param, options)
+	response, err := topology.metricq.Query(ctx, metricq.InfluxQL, sql, param, options)
 	result := make(map[string]interface{}, 0)
-	data, err := topology.handleMQTranslationResponse(lang, params, response, options)
+	data, err := topology.handleMQTranslationResponse(ctx, lang, params, response, options)
 	if err != nil {
 		return nil, err
 	}
@@ -2149,7 +2150,7 @@ func (topology *provider) composeMqTranslationCondition(params translation) (url
 	return options, param, sql
 }
 
-func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, params translation, result *model.ResultSet, options url.Values) ([]map[string]interface{}, error) {
+func (topology *provider) handleMQTranslationResponse(ctx context.Context, lang i18n.LanguageCodes, params translation, result *model.ResultSet, options url.Values) ([]map[string]interface{}, error) {
 	data := make([]map[string]interface{}, 0)
 	if result.Data == nil {
 		return []map[string]interface{}{}, nil
@@ -2166,8 +2167,8 @@ func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, p
 			"serviceId":   params.ServiceId,
 		}
 		slowCount := 0
-		slowElapsedCountProducer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, paramsM, options)
-		slowElapsedCountConsumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, paramsM, options)
+		slowElapsedCountProducer, err := topology.metricq.Query(ctx, metricq.InfluxQL, sqlProducer, paramsM, options)
+		slowElapsedCountConsumer, err := topology.metricq.Query(ctx, metricq.InfluxQL, sqlConsumer, paramsM, options)
 		if err != nil {
 			return nil, err
 		}
@@ -2228,16 +2229,20 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
+
+	ctx := api.GetContext(r, func(header *http.Header) {
+		header.Add("terminus_key", params.TerminusKey)
+	})
+
 	sql := fmt.Sprintf("SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),format_duration(trace_duration::field,'',2) "+
 		"FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey "+
 		"AND (http_paths::field=$operation OR rpc_methods::field=$operation OR db_statements::field=$operation OR topics::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
-	details, err := topology.metricq.Query(metricq.InfluxQL, sql,
-		map[string]interface{}{
-			"serviceName": params.ServiceName,
-			"terminusKey": params.TerminusKey,
-			"operation":   params.Operation,
-			"serviceId":   params.ServiceId,
-		}, options)
+	details, err := topology.metricq.Query(ctx, metricq.InfluxQL, sql, map[string]interface{}{
+		"serviceName": params.ServiceName,
+		"terminusKey": params.TerminusKey,
+		"operation":   params.Operation,
+		"serviceId":   params.ServiceId,
+	}, options)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}

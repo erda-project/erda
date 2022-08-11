@@ -44,6 +44,9 @@ const (
 	TaskKedaScaledObjectApply
 	TaskKedaScaledObjectCancel
 	TaskKedaScaledObjectReApply
+	TaskVPAObjectApply
+	TaskVPAObjectCancel
+	TaskVPAObjectReApply
 )
 
 var (
@@ -228,7 +231,8 @@ func (t *Task) Run(ctx context.Context) TaskResponse {
 		return TaskResponse{
 			err: err,
 		}
-	case TaskScale, TaskKedaScaledObjectCreate, TaskKedaScaledObjectApply, TaskKedaScaledObjectCancel, TaskKedaScaledObjectReApply:
+	case TaskScale, TaskKedaScaledObjectCreate, TaskKedaScaledObjectApply, TaskKedaScaledObjectCancel,
+		TaskKedaScaledObjectReApply, TaskVPAObjectApply, TaskVPAObjectCancel, TaskVPAObjectReApply:
 		r, err := executor.Scale(ctx, t.Spec)
 		return TaskResponse{
 			err:   err,

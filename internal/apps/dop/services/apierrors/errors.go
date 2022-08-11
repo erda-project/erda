@@ -418,17 +418,6 @@ var (
 	ErrListQuoteCertificate   = err("ErrListQuoteCertificate", "获取应用的证书列表失败")
 	ErrPushCertificateConfigs = err("ErrPushCertificateConfigs", "推送证书配置到配置管理失败")
 
-	ErrUploadFile          = err("ErrUploadFile", "上传文件失败")
-	ErrUploadFileEncrypt   = err("ErrUploadFileEncrypt", "加密上传文件失败")
-	ErrUploadTooLargeFile  = err("ErrUploadTooLargeFile", "上传的文件超过限制大小")
-	ErrDownloadFile        = err("ErrDownloadFile", "下载文件失败")
-	ErrDownloadFileDecrypt = err("ErrDownloadFileDecrypt", "解密下载文件失败")
-	ErrCleanExpiredFile    = err("ErrCleanExpiredFile", "清理过期文件失败")
-	ErrDeleteFile          = err("ErrDeleteFile", "删除文件失败")
-	ErrBackup              = err("ErrBackup", "备份失败")
-	ErrInvalidRef          = err("ErrInvalidRef", "invalid ref")
-	ErrUploadImage         = err("ErrUploadImage", "上传图片失败")
-
 	ErrGetWorkBenchData = err("ErrGetWorkBenchData", "failed to query workbench data")
 
 	ErrGetNexusUserRecord    = err("ErrGetNexusUserRecord", "查询 nexus user 失败")
@@ -555,6 +544,15 @@ var (
 	ErrDeleteDevFlowRule = err("ErrDeleteDevFlowRule", "删除研发工作流失败")
 
 	ErrNotFoundPipelineCron = err("ErrNotFoundPipelineCron", "未找到流水线定时配置")
+
+	// pipeline template
+	ErrCreatePipelineTemplate        = err("ErrCreateTemplate", "添加模板失败")
+	ErrQueryPipelineTemplate         = err("ErrQueryTemplate", "查询模板失败")
+	ErrCreatePipelineTemplateVersion = err("ErrCreateTemplateVersion", "添加模板版本失败")
+	ErrQueryPipelineTemplateVersion  = err("ErrQueryTemplateVersion", "查询模板版本失败")
+	ErrRenderPipelineTemplate        = err("ErrQueryTemplateVersion", "模板渲染失败")
+
+	ErrGlobalSearch = err("ErrGlobalSearch", "全局搜索失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

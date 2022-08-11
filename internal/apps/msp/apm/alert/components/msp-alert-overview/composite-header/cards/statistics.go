@@ -21,12 +21,14 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	messengerpb "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/alert/components/msp-alert-overview/common"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -45,8 +47,11 @@ func (p *provider) alertTriggerCount(sdk *cptype.SDK) (*kv.KV, error) {
 		"scope_id": structpb.NewStringValue(inParams.ScopeId),
 		"trigger":  structpb.NewStringValue("alert"),
 	}
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", inParams.ScopeId)
+	})
 
-	result, err := p.doQuerySql(sdk.Ctx, inParams.StartTime, inParams.EndTime, statement, params)
+	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +76,10 @@ func (p *provider) alertRecoverCount(sdk *cptype.SDK) (*kv.KV, error) {
 		"scope_id": structpb.NewStringValue(inParams.ScopeId),
 		"trigger":  structpb.NewStringValue("recover"),
 	}
-
-	result, err := p.doQuerySql(sdk.Ctx, inParams.StartTime, inParams.EndTime, statement, params)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", inParams.ScopeId)
+	})
+	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +104,11 @@ func (p *provider) alertReduceCount(sdk *cptype.SDK) (*kv.KV, error) {
 		"scope_id": structpb.NewStringValue(inParams.ScopeId),
 	}
 
-	result, err := p.doQuerySql(sdk.Ctx, inParams.StartTime, inParams.EndTime, statement, params)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", inParams.ScopeId)
+	})
+
+	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +133,11 @@ func (p *provider) alertSilenceCount(sdk *cptype.SDK) (*kv.KV, error) {
 		"scope_id": structpb.NewStringValue(inParams.ScopeId),
 	}
 
-	result, err := p.doQuerySql(sdk.Ctx, inParams.StartTime, inParams.EndTime, statement, params)
+	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
+		header.Set("terminus_key", inParams.ScopeId)
+	})
+
+	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)
 	if err != nil {
 		return nil, err
 	}
