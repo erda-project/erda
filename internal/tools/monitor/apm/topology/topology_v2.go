@@ -21,6 +21,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	apm "github.com/erda-project/erda/internal/tools/monitor/apm/common"
 	"github.com/erda-project/erda/internal/tools/monitor/apm/topology/clickhousesource"
@@ -201,7 +202,7 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 				return nil, fmt.Errorf("do query: %w", err)
 			}
 
-			topology.parseToTypologyNodeV2(lang, timeRange, rows, tg)
+			topology.parseToTypologyNodeV2(lang, rows, tg)
 		}
 	}
 
@@ -220,7 +221,7 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 	return nodes, nil
 }
 
-func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, timeRange int64, rows driver.Rows, tg *graphTopo) {
+func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows driver.Rows, tg *graphTopo) {
 	for rows.Next() {
 		cnode := chNodeEdge{}
 		err := rows.ScanStruct(&cnode)
@@ -253,10 +254,6 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, timeRan
 		}
 
 		if sourceNode.Valid() {
-			sourceNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(sourceNode.Type))
-			sourceNode.Metric = edge.Metric
-			tg.nodes[sourceNode.Id] = sourceNode
-
 			tg.adj[targetNode.Id][sourceNode.Id] = struct{}{}
 		}
 	}

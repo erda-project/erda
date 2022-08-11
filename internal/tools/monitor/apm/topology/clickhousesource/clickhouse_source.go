@@ -16,6 +16,7 @@ package clickhousesource
 
 import (
 	"fmt"
+
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 
@@ -122,12 +123,10 @@ func mergeNodeType(target, source *NodeType) exp.SelectClauses {
 	sc := exp.NewSelectClauses()
 	// 针对target特殊处理
 	sc = sc.SetSelect(exp.NewColumnListExpression(goqu.L("?", target.Type).As("target_type")))
-	//sc = sc.SelectAppend(exp.NewColumnListExpression(buildID(target.GroupByField).As("target_id")))
 	sc = sc.WhereAppend(goqu.C(ckhelper.TrimTags(target.GroupByField[0])).Neq(""))
 
 	// 针对source特殊处理
 	sc = sc.SelectAppend(exp.NewColumnListExpression(goqu.L("?", source.Type).As("source_type")))
-	//sc = sc.SelectAppend(exp.NewColumnListExpression(buildID(source.GroupByField).As("source_id")))
 
 	cmap, gmap, aggmap := map[string]struct{}{}, map[string]struct{}{}, map[string]struct{}{}
 	for _, item := range []*NodeType{target, source} {

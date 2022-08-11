@@ -15,12 +15,11 @@
 package topology
 
 import (
-	"github.com/erda-project/erda-infra/providers/clickhouse"
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
@@ -28,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 type provider struct {

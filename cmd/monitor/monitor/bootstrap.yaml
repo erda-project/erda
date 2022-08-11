@@ -313,7 +313,7 @@ erda.core.monitor.alertdetail:
 #apm providers
 apm-runtime:
 apm-topology:
-  topology_from_click_house: ${TOPOLOGY_QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  topology_from_click_house: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
 #apm-report:
 
 erda.core.monitor.alert:

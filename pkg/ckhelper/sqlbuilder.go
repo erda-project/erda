@@ -15,9 +15,10 @@
 package ckhelper
 
 import (
+	"strings"
+
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
-	"strings"
 )
 
 const (
@@ -30,7 +31,7 @@ func FromTimestampMilli(ts int64) exp.SQLFunctionExpression {
 	return goqu.Func("fromUnixTimestamp64Milli", goqu.Func("toInt64", ts))
 }
 
-// FromTagsKey convert tags.key_1 to tag_values[indexOf(tag_keys, 'key')]
+// FromTagsKey convert tags.key to tag_values[indexOf(tag_keys, 'key')]
 func FromTagsKey(key string) exp.LiteralExpression {
 	return goqu.L("tag_values[indexOf(tag_keys, ?)]", TrimTags(key))
 }
