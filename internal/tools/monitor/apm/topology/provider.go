@@ -15,6 +15,8 @@
 package topology
 
 import (
+	"github.com/erda-project/erda-infra/providers/clickhouse"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -36,6 +38,9 @@ type provider struct {
 	ctx     servicehub.Context
 	metricq metricq.Queryer
 	t       i18n.Translator
+
+	Loader     loader.Interface     `autowired:"clickhouse.table.loader@metric" optional:"true"`
+	Clickhouse clickhouse.Interface `autowired:"clickhouse" optional:"true"`
 }
 
 type define struct{}
@@ -54,7 +59,9 @@ func (d *define) Creator() servicehub.Creator {
 	}
 }
 
-type config struct{}
+type config struct {
+	TopologyFromClickHouse bool `file:"topology_from_click_house"`
+}
 
 func (topology *provider) Init(ctx servicehub.Context) (err error) {
 	topology.ctx = ctx
