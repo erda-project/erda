@@ -21,7 +21,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -35,7 +35,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -52,7 +52,7 @@
               {
                 "alias": "集群名",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "集群名",
                     "en": "Cluster Name"
                   }
@@ -71,7 +71,7 @@
               {
                 "alias": "时间",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "时间",
                     "en": "time"
                   }
@@ -82,7 +82,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -97,15 +97,15 @@
               {
                 "alias": "CPU使用率",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "CPU 使用率",
                     "en": "CPU Usage Percent"
                   }
                 },
-                "field": "host_summary-cpu_usage_active::field",
                 "key": "valuet7zCXJIE",
+                "expr": "max(cpu_usage_active::field)",
+                "type": "expr",
                 "resultType": "number",
-                "type": "field",
                 "unit": {
                   "type": "PERCENT",
                   "unit": "%"
@@ -145,7 +145,7 @@
               },
               {
                 "alias": "valuet7zCXJIE",
-                "expr": "round_float(cpu_usage_active::field, 2)"
+                "expr": "max(cpu_usage_active::field)"
               }
             ],
             "where": [
@@ -182,7 +182,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -196,7 +196,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -213,7 +213,7 @@
               {
                 "alias": "集群名",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "集群名",
                     "en": "Cluster Name"
                   }
@@ -232,7 +232,7 @@
               {
                 "alias": "时间",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "时间",
                     "en": "time"
                   }
@@ -243,7 +243,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -258,15 +258,15 @@
               {
                 "alias": "内存使用率",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "内存使用率",
                     "en": "Memory Usage"
                   }
                 },
-                "field": "host_summary-mem_used_percent::field",
+                "expr": "max(mem_used_percent::field)",
                 "key": "valueyCdPr8Ju",
                 "resultType": "number",
-                "type": "field",
+                "type": "expr",
                 "unit": {
                   "type": "PERCENT",
                   "unit": "%"
@@ -306,7 +306,7 @@
               },
               {
                 "alias": "valueyCdPr8Ju",
-                "expr": "round_float(mem_used_percent::field, 2)"
+                "expr": "max(mem_used_percent::field)"
               }
             ],
             "where": [
@@ -343,7 +343,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -357,7 +357,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -374,7 +374,7 @@
               {
                 "alias": "集群名",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "集群名",
                     "en": "Cluster Name"
                   }
@@ -393,7 +393,7 @@
               {
                 "alias": "时间",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "时间",
                     "en": "time"
                   }
@@ -404,7 +404,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -419,15 +419,15 @@
               {
                 "alias": "5分钟平均负载",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "5分钟平均负载",
                     "en": "load rate5"
                   }
                 },
-                "field": "host_summary-load5::field",
+                "field": "max(load5::field)",
                 "key": "value8uMdDg94",
                 "resultType": "number",
-                "type": "field"
+                "type": "expr"
               }
             ]
           },
@@ -463,7 +463,7 @@
               },
               {
                 "alias": "value8uMdDg94",
-                "expr": "round_float(load5::field, 2)"
+                "expr": "max(load5::field)"
               }
             ],
             "where": [
@@ -500,7 +500,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -515,7 +515,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -532,7 +532,7 @@
               {
                 "alias": "集群名",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "集群名",
                     "en": "Cluster Name"
                   }
@@ -551,41 +551,28 @@
               {
                 "alias": "时间",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "时间",
                     "en": "time"
                   }
                 },
                 "key": "typehfH9nOdE",
                 "type": "time"
-              },
-              {
-                "alias": "机器IP",
-                "i18n": {
-                  "title": {
-                    "zh": "机器IP",
-                    "en": "Machine IP"
-                  }
-                },
-                "field": "diskio-host_ip::tag",
-                "key": "typeAj9DABjK",
-                "resultType": "string",
-                "type": "field"
               }
             ],
             "valueDimensions": [
               {
                 "alias": "写速率",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "写速率",
                     "en": "Write Rate"
                   }
                 },
-                "field": "diskio-write_rate::field",
+                "expr": "max(write_rate::field)",
                 "key": "valueI5H6xYdH",
                 "resultType": "number",
-                "type": "field",
+                "type": "expr",
                 "unit":{
                   "type":"TRAFFIC",
                   "unit":"B/S"
@@ -594,15 +581,15 @@
               {
                 "alias": "读速率",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "读速率",
                     "en": "Read Rate"
                   }
                 },
-                "field": "diskio-read_rate::field",
+                "field": "max(read_rate::field)",
                 "key": "value02MlFDkE",
                 "resultType": "number",
-                "type": "field",
+                "type": "expr",
                 "unit":{
                   "type":"TRAFFIC",
                   "unit":"B/S"
@@ -632,8 +619,7 @@
               "diskio"
             ],
             "groupby": [
-              "time()",
-              "host_ip::tag"
+              "time()"
             ],
             "select": [
               {
@@ -641,16 +627,12 @@
                 "expr": "time()"
               },
               {
-                "alias": "typeAj9DABjK",
-                "expr": "host_ip::tag"
-              },
-              {
                 "alias": "valueI5H6xYdH",
-                "expr": "round_float(write_rate::field, 2)"
+                "expr": "max(write_rate::field)"
               },
               {
                 "alias": "value02MlFDkE",
-                "expr": "round_float(read_rate::field, 2)"
+                "expr": "max(read_rate::field)"
               }
             ],
             "where": [
@@ -687,7 +669,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -701,7 +683,7 @@
               {
                 "alias": "机器IP",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "机器IP",
                     "en": "Machine IP"
                   }
@@ -718,7 +700,7 @@
               {
                 "alias": "集群名",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "集群名",
                     "en": "Cluster Name"
                   }
@@ -748,41 +730,28 @@
               {
                 "alias": "时间",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "时间",
                     "en": "time"
                   }
                 },
                 "key": "typeqaZyRKB1",
                 "type": "time"
-              },
-              {
-                "alias": "机器IP",
-                "i18n": {
-                  "title": {
-                    "zh": "机器IP",
-                    "en": "Machine IP"
-                  }
-                },
-                "field": "net-host_ip::tag",
-                "key": "typedjeVmaw4",
-                "resultType": "string",
-                "type": "field"
               }
             ],
             "valueDimensions": [
               {
                 "alias": "Send Rate",
                 "i18n": {
-                  "title": {
-                    "zh": "网路发送速率",
+                  "alias": {
+                    "zh": "网络发送速率",
                     "en": "Send Rate"
                   }
                 },
-                "field": "net-send_rate::field",
+                "field": "max(send_rate::field)",
                 "key": "valueIkitNor3",
                 "resultType": "number",
-                "type": "field",
+                "type": "expr",
                 "unit": {
                   "type": "TRAFFIC",
                   "unit": "B/S"
@@ -791,15 +760,15 @@
               {
                 "alias": "Recv Rate",
                 "i18n": {
-                  "title": {
-                    "zh": "网路接收速率",
+                  "alias": {
+                    "zh": "网络接收速率",
                     "en": "Recv Rate"
                   }
                 },
-                "field": "net-recv_rate::field",
+                "field": "max(recv_rate::field)",
                 "key": "valueNzyV8YAm",
                 "resultType": "number",
-                "type": "field",
+                "type": "expr",
                 "unit": {
                   "type": "TRAFFIC",
                   "unit": "B/S"
@@ -829,8 +798,7 @@
               "net"
             ],
             "groupby": [
-              "time()",
-              "host_ip::tag"
+              "time()"
             ],
             "select": [
               {
@@ -838,16 +806,12 @@
                 "expr": "time()"
               },
               {
-                "alias": "typedjeVmaw4",
-                "expr": "host_ip::tag"
-              },
-              {
                 "alias": "valueIkitNor3",
-                "expr": "round_float(send_rate::field, 2)"
+                "expr": "max(send_rate::field)"
               },
               {
                 "alias": "valueNzyV8YAm",
-                "expr": "round_float(recv_rate::field, 2)"
+                "expr": "max(recv_rate::field)"
               }
             ],
             "where": [
