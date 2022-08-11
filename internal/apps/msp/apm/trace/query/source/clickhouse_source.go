@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
+	"github.com/erda-project/erda/pkg/ckhelper"
 	"github.com/erda-project/erda/pkg/math"
 )
 
@@ -251,7 +252,7 @@ func (chs *ClickhouseSource) GetSpans(ctx context.Context, req *pb.GetSpansReque
 		"tenant_id": req.ScopeID,
 		"trace_id":  req.TraceID,
 		// there may be some timing skewing between different data source
-		"start_time": goqu.Op{"gte": fromTimestampMilli(req.StartTime - (15 * time.Minute).Milliseconds())},
+		"start_time": goqu.Op{"gte": ckhelper.FromTimestampMilli(req.StartTime - (15 * time.Minute).Milliseconds())},
 	}).Order(goqu.C("start_time").Asc()).Limit(uint(req.Limit))
 
 	sqlstr, err := chs.toSQL(sql)
@@ -371,10 +372,6 @@ func GetInterval(duration int64) (int64, string, int64) {
 	}
 }
 
-func fromTimestampMilli(ts int64) exp.SQLFunctionExpression {
-	return goqu.Func("fromUnixTimestamp64Milli", goqu.Func("toInt64", ts))
-}
-
 type filter struct {
 	StartTime, EndTime                                                   int64 // ms
 	DurationMin, DurationMax                                             int64 // nano
@@ -386,8 +383,8 @@ func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
 	sel = sel.Where(goqu.Ex{
 		"org_name":   f.OrgName,
 		"tenant_id":  f.TenantID,
-		"start_time": goqu.Op{"gte": fromTimestampMilli(f.StartTime)},
-		"end_time":   goqu.Op{"lte": fromTimestampMilli(f.EndTime)},
+		"start_time": goqu.Op{"gte": ckhelper.FromTimestampMilli(f.StartTime)},
+		"end_time":   goqu.Op{"lte": ckhelper.FromTimestampMilli(f.EndTime)},
 	})
 
 	// optional condition
