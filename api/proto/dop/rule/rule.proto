@@ -127,7 +127,7 @@ message Rule {
   string code = 6;
   ActionParams params = 7;
   bool enabled = 8;
-  string updator = 9;
+  string actor = 9;
   google.protobuf.Timestamp createdAt = 10;
   google.protobuf.Timestamp updatedAt = 11;
 }
@@ -155,6 +155,7 @@ message UpdateRuleRequest {
   optional bool enabled = 6;
   string name = 7;
   ActionParams params = 8;
+  string actor = 9;
 }
 
 message UpdateRuleResponse {}
@@ -165,7 +166,7 @@ message ListRulesRequest {
   string eventType = 3;
   optional bool enabled = 4;
   string name = 5;
-  string updator = 6;
+  string actor = 6;
   int64 pageNo = 7;
   int64 pageSize = 8;
 }
@@ -216,4 +217,5 @@ message RuleExecHistory {
   google.protobuf.Value env = 7;
   bool succeed = 8;
   string actionOutput = 9;
+  string actor = 10;
 }
