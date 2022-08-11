@@ -41,7 +41,7 @@ type provider struct {
 	bdl        *bundle.Bundle
 	db         *dao.DBClient
 	I18n       i18n.Translator `translator:"issue-manage"`
-	CPTran     i18n.I18n       `autowired:"i18n@cp"`
+	CPTran     i18n.I18n       `autowired:"i18n"`
 	commonTran i18n.Translator
 	Identity   userpb.UserServiceServer
 	Org        org.Interface
