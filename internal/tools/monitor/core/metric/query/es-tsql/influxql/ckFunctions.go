@@ -145,12 +145,16 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 			func(ctx *Context, p *Parser, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				var f string
 				if lit != nil {
-					f = field.Val
+					if litExpression, ok := lit.(exp.LiteralExpression); ok {
+						f = litExpression.Literal()
+					} else {
+						return goqu.MIN(lit).As(id), nil
+					}
 				} else {
 					f, _ = p.ckGetKeyName(field, influxql.AnyField)
 					f = fmt.Sprintf("if(%s == 0,null,%s)", f, f)
 				}
-				return goqu.L(fmt.Sprintf("argMin(%s,%s)", f, ctx.TimeKey())).As(id), nil
+				return goqu.L(fmt.Sprintf("Min(%s)", f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				if v == nil {
@@ -177,15 +181,18 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		New: newCkUnaryFunction(
 			"diffps",
 			func(ctx *Context, p *Parser, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
-
 				var f string
 				if lit != nil {
-					f = field.Val
+					if litExpression, ok := lit.(exp.LiteralExpression); ok {
+						f = litExpression.Literal()
+					} else {
+						return goqu.MIN(lit).As(id), nil
+					}
 				} else {
 					f, _ = p.ckGetKeyName(field, influxql.AnyField)
 					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
 				}
-				return goqu.L(fmt.Sprintf("argMin(%s,%s)", f, ctx.TimeKey())).As(id), nil
+				return goqu.L(fmt.Sprintf("Min(%s)", f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				if v == nil {
