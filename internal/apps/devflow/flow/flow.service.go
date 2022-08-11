@@ -187,6 +187,7 @@ func (s *Service) findBranchPolicyByName(ctx context.Context, projectID uint64, 
 	for _, v := range devFlowRule.Data.Flows {
 		if v.Name == flowRuleName {
 			findBranch = v.TargetBranch
+			break
 		}
 	}
 	if findBranch == "" {
@@ -500,26 +501,7 @@ func (s *Service) DeleteFlowNode(ctx context.Context, req *pb.DeleteFlowNodeRequ
 	}
 
 	if devFlow.IsJoinTempBranch {
-		devFlow.IsJoinTempBranch = false
-		if err = s.p.dbClient.UpdateDevFlow(devFlow); err != nil {
-			return nil, err
-		}
-
-		branchPolicy, err := s.findBranchPolicyByName(ctx, app.ProjectID, devFlow.FlowRuleName)
-		if err != nil {
-			return nil, err
-		}
-
-		var sourceBranch, tempBranch, targetBranch string
-		if branchPolicy.Policy != nil {
-			sourceBranch = branchPolicy.Policy.SourceBranch
-			tempBranch = branchPolicy.Policy.TempBranch
-			if branchPolicy.Policy.TargetBranch != nil {
-				targetBranch = branchPolicy.Policy.TargetBranch.MergeRequest
-			}
-		}
-		err = s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
-		if err != nil {
+		if err = s.UpdateDevFlowAndDoRejoin(ctx, devFlow, app); err != nil {
 			return nil, err
 		}
 	}
@@ -536,6 +518,38 @@ func (s *Service) DeleteFlowNode(ctx context.Context, req *pb.DeleteFlowNodeRequ
 		return nil, err
 	}
 	return &pb.DeleteFlowNodeResponse{}, nil
+}
+
+func (s *Service) UpdateDevFlowAndDoRejoin(ctx context.Context, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
+	if !devFlow.IsJoinTempBranch {
+		return nil
+	}
+	devFlow.IsJoinTempBranch = false
+	err := s.p.dbClient.Transaction(func(tx *gorm.DB) error {
+		return s.updateDevFlowAndDoRejoin(ctx, &db.Client{DB: tx}, devFlow, app)
+	})
+	return err
+}
+
+func (s *Service) updateDevFlowAndDoRejoin(ctx context.Context, dbClient *db.Client, devFlow *db.DevFlow, app *apistructs.ApplicationDTO) error {
+	if err := dbClient.UpdateDevFlow(devFlow); err != nil {
+		return err
+	}
+
+	branchPolicy, err := s.findBranchPolicyByName(ctx, app.ProjectID, devFlow.FlowRuleName)
+	if err != nil {
+		return err
+	}
+
+	var sourceBranch, tempBranch, targetBranch string
+	if branchPolicy.Policy != nil {
+		sourceBranch = branchPolicy.Policy.SourceBranch
+		tempBranch = branchPolicy.Policy.TempBranch
+		if branchPolicy.Policy.TargetBranch != nil {
+			targetBranch = branchPolicy.Policy.TargetBranch.MergeRequest
+		}
+	}
+	return s.RejoinTempBranch(ctx, tempBranch, sourceBranch, targetBranch, devFlow, app)
 }
 
 // Reconstruction todo impl
@@ -622,11 +636,14 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 			targetBranch := ruleNameBranchPolicyMap[devFlow.FlowRuleName].targetBranch
 
 			repoPath := makeGittarRepoPath(&app)
-
-			currentBranchExists, err := s.JudgeBranchIsExists(ctx, repoPath, currentBranch)
-			if err != nil {
-				return err
+			var currentBranchExists bool
+			if currentBranch != "" {
+				currentBranchExists, err = s.JudgeBranchIsExists(ctx, repoPath, currentBranch)
+				if err != nil {
+					return err
+				}
 			}
+
 			var currentBranchCommit, baseCommit *apistructs.Commit
 			if currentBranchExists {
 				branchDetail, err := s.p.bdl.GetGittarBranchDetail(repoPath, apis.GetOrgID(ctx), currentBranch, apis.GetUserID(ctx))
@@ -635,7 +652,7 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				}
 				currentBranchCommit = branchDetail.Commit
 			}
-			if devFlow.IsJoinTempBranch && currentBranchExists {
+			if devFlow.IsJoinTempBranch && currentBranchExists && currentBranch != "" && tempBranch != "" {
 				baseCommit, err = s.p.bdl.GetMergeBase(apis.GetUserID(ctx), apistructs.GittarMergeBaseRequest{
 					SourceBranch: currentBranch,
 					TargetBranch: tempBranch,
@@ -658,9 +675,12 @@ func (s *Service) GetDevFlowInfo(ctx context.Context, req *pb.GetDevFlowInfoRequ
 				}
 			}
 
-			mrInfo, err := s.getMrInfo(ctx, devFlow.AppID, currentBranch, targetBranch)
-			if err != nil {
-				return err
+			var mrInfo *apistructs.MergeRequestInfo
+			if currentBranch != "" && targetBranch != "" {
+				mrInfo, err = s.getMrInfo(ctx, devFlow.AppID, currentBranch, targetBranch)
+				if err != nil {
+					return err
+				}
 			}
 
 			devFlowInfo.CodeNode = &pb.CodeNode{
