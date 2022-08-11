@@ -85,6 +85,10 @@ type Node struct {
 	Parents         []*Node `json:"parents"`
 }
 
+func (n *Node) Valid() bool {
+	return n.Id != ""
+}
+
 const (
 	topologyNodeService   = "topology_node_service"
 	topologyNodeGateway   = "topology_node_gateway"
@@ -517,6 +521,9 @@ func toEsAggregation(nodeRelations []*NodeRelation) map[string]*elastic.FilterAg
 
 // encode
 func encodeTypeToKey(nodeType string) string {
+	if nodeType == apm.Sep1 { // 特殊处理空节点
+		return ""
+	}
 	md := sha256.New()
 	md.Write([]byte(nodeType))
 	mdSum := md.Sum(nil)
@@ -1308,7 +1315,16 @@ func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*No
 		header.Add("terminus_key", params.TerminusKey)
 	})
 
-	nodes := topology.GetTopology(lang, params)
+	nodes := []*Node{}
+	if topology.Cfg.TopologyFromClickHouse {
+		if v, err := topology.GetTopologyV2(api.OrgName(r), lang, params); err != nil {
+			return nil, fmt.Errorf("nodes from clickhouse: %w", err)
+		} else {
+			nodes = v
+		}
+	} else {
+		nodes = topology.GetTopology(lang, params)
+	}
 
 	// instance count info
 	instances, err := topology.GetInstances(ctx, api.Language(r), params)
@@ -1756,7 +1772,9 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 	//	TypeNoticeCenter   = "NoticeCenter"
 	//	TypeElasticsearch  = "Elasticsearch"
 
-	node := Node{}
+	node := Node{
+		Parents: []*Node{},
+	}
 	tags := nodeRelation.Tags
 
 	switch nodeType {
