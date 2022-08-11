@@ -236,6 +236,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 	var updates, adds, dels []orm.GatewayUpstreamApi
 	oldApis := map[string]orm.GatewayUpstreamApi{}
 	newApis := map[string]orm.GatewayUpstreamApi{}
+	missingApis := make(map[string]orm.GatewayUpstreamApi)
 	backupApis := map[string]orm.GatewayUpstreamApi{}
 
 	l = l.WithField("upstream.id", upstream.Id).
@@ -268,19 +269,37 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 	}
 	// get the apis for the deleted part for the registerId and defer recover them.
 	if oldValidId == validId {
-		newApis, err = impl.getUpstreamMissingApis(upstream.Id, validId)
+		missingApis, err = impl.getUpstreamMissingApis(upstream.Id, validId)
 		if err != nil {
 			return err
 		}
-		l.WithField("len(newApis)", len(newApis)).
+		if oFlag == gw.OFlagAppend {
+			newApis, err = impl.getUpstreamApis(upstream.Id, validId)
+			if err != nil {
+				return err
+			}
+			for k := range newApis {
+				if _, ok := missingApis[k]; ok {
+					delete(missingApis, k)
+				}
+			}
+			for k := range missingApis {
+				if _, ok := newApis[k]; !ok {
+					newApis[k] = missingApis[k]
+				}
+			}
+		} else {
+			newApis = missingApis
+		}
+		l.WithField("len(missingApis)", len(missingApis)).
 			Infoln("oldValidId == validId, get the apis for the deleted part for the registerId and defer recover them")
 		if len(newApis) == 0 {
-			l.Infof("no need to update api, since valid id %s is latest, and no api missing", validId)
+			l.Infof("no need to update api, since valid id %s is latest, and no new api no missing api", validId)
 			return nil
 		}
 		defer func() {
 			if err == nil {
-				for _, api := range newApis {
+				for _, api := range missingApis {
 					err = impl.upstreamApiDb.Recover(api.Id)
 					if err != nil {
 						l.Errorf("api recover failed, id:%s", api.Id)
