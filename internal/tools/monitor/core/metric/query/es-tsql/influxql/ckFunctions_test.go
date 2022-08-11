@@ -1,3 +1,17 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package esinfluxql
 
 import (
@@ -15,14 +29,12 @@ func TestAggregationFunction(t *testing.T) {
 	tests := []struct {
 		name     string
 		function string
-		id       string
 		stmt     influxql.Call
 		want     string
 	}{
 		{
 			name:     "test diffps",
 			function: "diffps",
-			id:       "0e4b5b1082a11703",
 			stmt: influxql.Call{
 				Name: "diffps",
 				Args: []influxql.Expr{
@@ -37,7 +49,6 @@ func TestAggregationFunction(t *testing.T) {
 		{
 			name:     "test diff",
 			function: "diff",
-			id:       "0e4b5b1082a11703",
 			stmt: influxql.Call{
 				Name: "diffps",
 				Args: []influxql.Expr{
@@ -49,6 +60,132 @@ func TestAggregationFunction(t *testing.T) {
 			},
 			want: "SELECT Min(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')])) AS \"0e4b5b1082a11703\" FROM \"table\"",
 		},
+		{
+			name:     "test max",
+			function: "max",
+			stmt: influxql.Call{
+				Name: "max",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'com_delete')]) AS \"1af26e55a4a29af8\" FROM \"table\"",
+		},
+		{
+			name:     "test min",
+			function: "min",
+			stmt: influxql.Call{
+				Name: "min",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT MIN(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')])) AS \"92b276ffba2e062b\" FROM \"table\"",
+		},
+		{
+			name:     "test avg",
+			function: "avg",
+			stmt: influxql.Call{
+				Name: "diffps",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT AVG(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')])) AS \"0e4b5b1082a11703\" FROM \"table\"",
+		},
+		{
+			name:     "test count",
+			function: "count",
+			stmt: influxql.Call{
+				Name: "count",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT COUNT(if(indexOf(number_field_keys,'com_delete') = 1,1,null)) AS \"e1910da5a36c4a26\" FROM \"table\"",
+		},
+		{
+			name:     "test distinct",
+			function: "distinct",
+			stmt: influxql.Call{
+				Name: "distinct",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT count(distinct(number_field_values[indexOf(number_field_keys,'com_delete')])) AS \"f316cf2c588e6404\" FROM \"table\"",
+		},
+		{
+			name:     "test rateps",
+			function: "rateps",
+			stmt: influxql.Call{
+				Name: "distinct",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'com_delete')]) AS \"f316cf2c588e6404\" FROM \"table\"",
+		},
+		{
+			name:     "test value",
+			function: "value",
+			stmt: influxql.Call{
+				Name: "value",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'com_delete')]) AS \"f18a4b3b5bedb176\" FROM \"table\"",
+		},
+		{
+			name:     "test first",
+			function: "first",
+			stmt: influxql.Call{
+				Name: "distinct",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT argMin(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')]),timestamp) AS \"f316cf2c588e6404\" FROM \"table\"",
+		},
+		{
+			name:     "test last",
+			function: "last",
+			stmt: influxql.Call{
+				Name: "distinct",
+				Args: []influxql.Expr{
+					&influxql.VarRef{
+						Val:  "com_delete",
+						Type: influxql.AnyField,
+					},
+				},
+			},
+			want: "SELECT argMax(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')]),timestamp) AS \"f316cf2c588e6404\" FROM \"table\"",
+		},
 	}
 
 	for _, test := range tests {
@@ -58,8 +195,9 @@ func TestAggregationFunction(t *testing.T) {
 				t.Errorf("should by implemented diffps")
 			}
 			ctx := Context{}
-
-			define, err := p.New(&ctx, test.id, &test.stmt)
+			ctx.timeKey = "timestamp"
+			id := ctx.GetFuncID(&test.stmt, influxql.AnyField)
+			define, err := p.New(&ctx, id, &test.stmt)
 			require.NoError(t, err)
 			parser := Parser{}
 
@@ -68,7 +206,7 @@ func TestAggregationFunction(t *testing.T) {
 
 			require.Equal(t, 1, len(aggs))
 
-			v, ok := aggs[test.id]
+			v, ok := aggs[id]
 			require.True(t, ok)
 			expr := goqu.From("table")
 			expr = expr.Select(v)

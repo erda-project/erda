@@ -62,6 +62,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					return goqu.MIN(lit).As(id), nil
 				}
 				f, _ := p.ckGetKeyName(field, influxql.AnyField)
+				f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
 				return goqu.MIN(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -78,6 +79,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					return goqu.AVG(lit).As(id), nil
 				}
 				f, _ := p.ckGetKeyName(field, influxql.AnyField)
+				f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
 				return goqu.AVG(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -113,7 +115,6 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.COUNT(lit).As(id), nil
 				}
-				// count(if(indexOf(number_field_keys, 'grpc_server_handled_total') = 1, 1, null))
 				return goqu.COUNT(goqu.L(fmt.Sprintf("if(%s = 1,1,null)", p.ckColumn(field)))).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -267,11 +268,18 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		New: newCkUnaryFunction(
 			"value",
 			func(ctx *Context, p *Parser, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+				var f string
 				if lit != nil {
-					return goqu.MAX(lit).As(id), nil
+					if litExpression, ok := lit.(exp.LiteralExpression); ok {
+						f = litExpression.Literal()
+					} else {
+						return goqu.MIN(lit).As(id), nil
+					}
+				} else {
+					f, _ = p.ckGetKeyName(field, influxql.AnyField)
+					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
-				return goqu.MAX(goqu.L(f)).As(id), nil
+				return goqu.L(fmt.Sprintf("argMin(%s,%s)", f, ctx.TimeKey())).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -284,11 +292,18 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		New: newCkUnaryFunction(
 			"value",
 			func(ctx *Context, p *Parser, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
+				var f string
 				if lit != nil {
-					return goqu.MAX(lit).As(id), nil
+					if litExpression, ok := lit.(exp.LiteralExpression); ok {
+						f = litExpression.Literal()
+					} else {
+						return goqu.MAX(lit).As(id), nil
+					}
+				} else {
+					f, _ = p.ckGetKeyName(field, influxql.AnyField)
+					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
-				return goqu.MAX(goqu.L(f)).As(id), nil
+				return goqu.L(fmt.Sprintf("argMax(%s,%s)", f, ctx.TimeKey())).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
