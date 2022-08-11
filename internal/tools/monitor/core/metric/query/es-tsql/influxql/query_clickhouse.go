@@ -276,6 +276,8 @@ func pretty(data interface{}) interface{} {
 		return **v
 	case *time.Time:
 		return v.UnixNano()
+	case **time.Time:
+		return (*v).UnixNano()
 	case *[]string:
 		return *v
 	case *[]float64:
