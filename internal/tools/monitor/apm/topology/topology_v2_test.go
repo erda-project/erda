@@ -34,10 +34,10 @@ func Test_queryConditionsV2(t *testing.T) {
 		{
 			name: "without ApplicationName",
 			args: args{
-				params:  Vo{
+				params: Vo{
 					TerminusKey: "123",
-					StartTime: 1660192621035,
-					EndTime: 1660196221035,
+					StartTime:   1660192621035,
+					EndTime:     1660196221035,
 				},
 				tagInfo: &TagInfo{},
 			},

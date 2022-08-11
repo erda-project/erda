@@ -146,7 +146,7 @@ func (gt *graphTopo) toNodes() []*Node {
 	nodes := make([]*Node, 0, len(gt.adj))
 	for id, set := range gt.adj {
 		n := gt.nodes[id]
-		for pid, _ := range set {
+		for pid := range set {
 			pnode := gt.nodes[pid]
 			n.Parents = append(n.Parents, &Node{
 				Id:              pnode.Id,
@@ -232,6 +232,9 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows dr
 
 		edge := cnode.ToTopologyNodeRelation()
 		targetNode, sourceNode := columnsParser(cnode.TargetType, edge), columnsParser(cnode.SourceType, edge)
+		if cnode.TargetType == TargetOtherNode && targetNode.Type == TypeInternal {
+			continue
+		}
 
 		if targetNode.Valid() {
 			targetNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(targetNode.Type))

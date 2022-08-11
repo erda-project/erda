@@ -1326,7 +1326,6 @@ func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*No
 		nodes = topology.GetTopology(lang, params)
 	}
 
-
 	// instance count info
 	instances, err := topology.GetInstances(ctx, api.Language(r), params)
 	if err != nil {

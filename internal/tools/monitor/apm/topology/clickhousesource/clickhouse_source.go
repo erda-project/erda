@@ -199,7 +199,7 @@ func init() {
 	TargetAddonNodeType = &NodeType{
 		Type:         TargetAddonNode,
 		GroupByField: []string{apm.TagsTargetAddonType, apm.TagsTargetAddonId},
-		ColumnFields: []string{apm.TagsTargetAddonType, apm.TagsTargetAddonId, apm.TagsTargetAddonGroup},
+		ColumnFields: []string{apm.TagsTargetAddonType, apm.TagsTargetAddonId, apm.TagsTargetAddonGroup, apm.TagsComponent},
 		Filter:       goqu.L(fmt.Sprintf("has(tag_keys, '%s') == 1", ckhelper.TrimTags(apm.TagsTargetAddonType))),
 		Aggregation:  nodeAggregation,
 	}
@@ -220,7 +220,7 @@ func init() {
 	TargetOtherNodeType = &NodeType{
 		Type:         TargetOtherNode,
 		GroupByField: []string{apm.TagsHttpUrl, apm.TagsPeerServiceScope},
-		ColumnFields: []string{apm.TagsPeerServiceScope, apm.TagsHttpUrl},
+		ColumnFields: []string{apm.TagsPeerServiceScope, apm.TagsHttpUrl, apm.TagsComponent},
 		Filter:       goqu.L(fmt.Sprintf("has(tag_keys, '%s') == 0", ckhelper.TrimTags(apm.TagsTargetAddonType))),
 		Aggregation:  nodeAggregation,
 	}
@@ -247,7 +247,7 @@ func init() {
 	OtherNodeType = &NodeType{
 		Type:         OtherNode,
 		GroupByField: []string{apm.TagsServiceId, apm.TagsServiceName},
-		ColumnFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId},
+		ColumnFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId, apm.TagsComponent},
 		Filter:       goqu.L(fmt.Sprintf("has(tag_keys, '%s') == 1", ckhelper.TrimTags(apm.TagsServiceId))),
 	}
 
