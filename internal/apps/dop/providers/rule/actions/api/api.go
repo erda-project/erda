@@ -139,6 +139,9 @@ func (a *provider) getAPIConfig(api *API) (*APIConfig, error) {
 // reset headers for security
 func resetHeaders(config *APIConfig, actor string) {
 	delete(config.Headers, httputil.InternalHeader)
+	if config.Headers == nil {
+		config.Headers = make(http.Header)
+	}
 	config.Headers[httputil.UserHeader] = []string{actor}
 }
 
