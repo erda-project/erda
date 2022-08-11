@@ -37,7 +37,7 @@ type Rule struct {
 	Enabled       *bool
 	Code          string
 	Params        ActionParams
-	Updator       string
+	Actor         string
 	SoftDeletedAt uint64
 }
 
@@ -107,7 +107,7 @@ func (db *DBClient) ListRules(req *pb.ListRulesRequest, withSystem bool) ([]Rule
 		ScopeID:   req.ScopeID,
 		EventType: req.EventType,
 		Enabled:   req.Enabled,
-		Updator:   req.Updator,
+		Actor:     req.Actor,
 	}
 	var total int64
 	offset := (req.PageNo - 1) * req.PageSize

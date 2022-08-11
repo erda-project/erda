@@ -42,6 +42,7 @@ type RuleConfig struct {
 	RuleID string
 	Code   string
 	Action db.ActionParams
+	Actor  string
 }
 
 func (e *ExprExecutor) Exec(r *RuleConfig, env map[string]interface{}) (bool, error) {
@@ -85,6 +86,7 @@ func (e *ExprExecutor) BuildRuleEnv(req *rulepb.FireRequest) (*RuleEnv, error) {
 			RuleID: r.ID,
 			Code:   r.Code,
 			Action: r.Params,
+			Actor:  r.Actor,
 		})
 	}
 
@@ -106,6 +108,7 @@ type RecordConfig struct {
 	Results       []bool
 	RuleConfigs   []*RuleConfig
 	ActionOutputs []string
+	Actors        []string
 }
 
 func (e *ExprExecutor) AddExecutionRecords(r *RecordConfig) error {
@@ -119,6 +122,7 @@ func (e *ExprExecutor) AddExecutionRecords(r *RecordConfig) error {
 			Env:          r.Env,
 			Succeed:      &r.Results[i],
 			ActionOutput: r.ActionOutputs[i],
+			Actor:        r.Actors[i],
 		})
 	}
 	return e.DB.BatchCreateRuleExecRecords(records)

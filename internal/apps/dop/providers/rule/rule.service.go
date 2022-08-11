@@ -39,6 +39,8 @@ func (s *ruleService) Fire(ctx context.Context, req *pb.FireRequest) (*pb.FireRe
 	}, err
 }
 
+const systemOperator = "system"
+
 func (s *ruleService) CreateRule(ctx context.Context, req *pb.CreateRuleRequest) (*pb.CreateRuleResponse, error) {
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
@@ -54,7 +56,7 @@ func (s *ruleService) CreateRule(ctx context.Context, req *pb.CreateRuleRequest)
 		Params:    db.ActionParams(*req.Params),
 		EventType: req.EventType,
 		Enabled:   &req.Enabled,
-		Updator:   userID,
+		Actor:     systemOperator,
 		Name:      req.Name,
 	}
 	if req.Code != nil {
@@ -73,7 +75,7 @@ func (s *ruleService) GetRule(ctx context.Context, req *pb.GetRuleRequest) (*pb.
 	}
 	return &pb.GetRuleResponse{
 		Data:    ToPbRule(*r),
-		UserIDs: []string{r.Updator},
+		UserIDs: []string{r.Actor},
 	}, nil
 }
 
@@ -91,7 +93,7 @@ func (s *ruleService) UpdateRule(ctx context.Context, req *pb.UpdateRuleRequest)
 		EventType: req.EventType,
 		Enabled:   req.Enabled,
 		Name:      req.Name,
-		Updator:   userID,
+		Actor:     req.Actor,
 	}
 	if req.Params != nil {
 		r.Params = db.ActionParams(*req.Params)
@@ -116,7 +118,7 @@ func ToPbRule(r db.Rule) *pb.Rule {
 		CreatedAt: timestamppb.New(r.CreatedAt),
 		UpdatedAt: timestamppb.New(r.UpdatedAt),
 		Enabled:   *r.Enabled,
-		Updator:   r.Updator,
+		Actor:     r.Actor,
 	}
 }
 
@@ -140,7 +142,7 @@ func (s *ruleService) ListRules(ctx context.Context, req *pb.ListRulesRequest) (
 	userIDs := make([]string, len(r))
 	for i, obj := range r {
 		res[i] = ToPbRule(obj)
-		userIDs[i] = obj.Updator
+		userIDs[i] = obj.Actor
 	}
 
 	return &pb.ListRulesResponse{
@@ -202,5 +204,6 @@ func ToPbRuleExecHistory(r db.RuleExecRecord) *pb.RuleExecHistory {
 		CreatedAt:    timestamppb.New(r.CreatedAt),
 		Succeed:      *r.Succeed,
 		ActionOutput: r.ActionOutput,
+		Actor:        r.Actor,
 	}
 }

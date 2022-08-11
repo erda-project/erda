@@ -30,10 +30,10 @@ func (a *MockAPI) Send(api *api.API) (string, error) {
 	return "ok", nil
 }
 
-func TestExecutor_DingTalkAction(t *testing.T) {
+func TestExecutor_Do(t *testing.T) {
 	type args struct {
 		content map[string]interface{}
-		params  db.ActionParams
+		config  *RuleConfig
 	}
 	tests := []struct {
 		name    string
@@ -46,6 +46,7 @@ func TestExecutor_DingTalkAction(t *testing.T) {
 				content: map[string]interface{}{
 					"k": "v",
 				},
+				config: &RuleConfig{},
 			},
 			want: "no valid action nodes",
 		},
@@ -54,10 +55,12 @@ func TestExecutor_DingTalkAction(t *testing.T) {
 				content: map[string]interface{}{
 					"k": "v",
 				},
-				params: db.ActionParams{
-					Nodes: []*pb.ActionNode{{
-						Snippet: "123",
-					}},
+				config: &RuleConfig{
+					Action: db.ActionParams{
+						Nodes: []*pb.ActionNode{{
+							Snippet: "123",
+						}},
+					},
 				},
 			},
 			want: "ok",
@@ -68,13 +71,13 @@ func TestExecutor_DingTalkAction(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := e.DingTalkAction(tt.args.content, tt.args.params)
+			got, err := e.Do(tt.args.content, tt.args.config)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Executor.DingTalkAction() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Executor.Do() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("Executor.DingTalkAction() = %v, want %v", got, tt.want)
+				t.Errorf("Executor.Do() = %v, want %v", got, tt.want)
 			}
 		})
 	}

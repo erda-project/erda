@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
-	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 )
 
 type Executor struct {
@@ -40,6 +39,7 @@ func (e *Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 	configs := ruleEnv.Configs
 	results := make([]bool, len(configs))
 	actionOutputs := make([]string, len(configs))
+	actors := make([]string, len(configs))
 	for i, v := range configs {
 		res, err := e.Exec(v, ruleEnv.Env)
 		if err != nil {
@@ -50,7 +50,7 @@ func (e *Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 			continue
 		}
 		var output string
-		actionRes, err := e.DingTalkAction(ruleEnv.Env, v.Action)
+		actionRes, err := e.Do(ruleEnv.Env, v)
 		if err != nil {
 			output = err.Error()
 		} else {
@@ -58,6 +58,7 @@ func (e *Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 		}
 		actionOutputs[i] = output
 		results[i] = res
+		actors[i] = v.Actor
 	}
 
 	err = e.AddExecutionRecords(&RecordConfig{
@@ -67,6 +68,7 @@ func (e *Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 		RuleConfigs:   configs,
 		Env:           ruleEnv.Env,
 		ActionOutputs: actionOutputs,
+		Actors:        actors,
 	})
 	if err != nil {
 		return nil, err
@@ -75,7 +77,8 @@ func (e *Executor) Fire(req *pb.FireRequest) ([]bool, error) {
 	return results, nil
 }
 
-func (e *Executor) DingTalkAction(content map[string]interface{}, params db.ActionParams) (string, error) {
+func (e *Executor) Do(content map[string]interface{}, config *RuleConfig) (string, error) {
+	params := config.Action
 	if len(params.Nodes) == 0 {
 		return "no valid action nodes", nil
 	}
@@ -86,6 +89,7 @@ func (e *Executor) DingTalkAction(content map[string]interface{}, params db.Acti
 		return e.API.Send(&api.API{
 			Snippet: node.Snippet,
 			TLARaw:  content,
+			Actor:   config.Actor,
 		})
 	}
 	target := apistructs.Target{
@@ -100,5 +104,6 @@ func (e *Executor) DingTalkAction(content map[string]interface{}, params db.Acti
 		URL:     url,
 		Snippet: node.Snippet,
 		TLARaw:  content,
+		Actor:   config.Actor,
 	})
 }

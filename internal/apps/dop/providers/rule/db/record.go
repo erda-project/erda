@@ -42,6 +42,7 @@ type RuleExecRecord struct {
 	Succeed       *bool
 	ActionOutput  string
 	SoftDeletedAt uint64
+	Actor         string
 }
 
 func (RuleExecRecord) TableName() string {

@@ -50,22 +50,26 @@ func (e *Endpoints) IssueCallback(ctx context.Context, r *http.Request, vars map
 
 	logrus.Printf("action:%s StreamType:%s StreamParams:%s title:%s content:%s", req.Action, req.Content.StreamType, string(marshal), req.Content.Title, req.Content.Content)
 
-	err := e.processIssueEvent(req)
-	if err != nil {
-		logrus.Errorf("failed to process issue event, (%+v)", err)
-		return apierrors.ErrIssueCallback.InvalidParameter(err).ToResp(), nil
-	}
+	go func() {
+		err := e.processIssueEvent(req)
+		if err != nil {
+			logrus.Errorf("failed to process issue event, (%+v)", err)
+		}
+	}()
 
-	env := map[string]interface{}{
-		"content": req.Content,
-	}
-	if err := e.FireRule(ctx, env, EventInfo{
-		Scope:       "project",
-		ScopeID:     req.ProjectID,
-		EventHeader: req.EventHeader,
-	}); err != nil {
-		logrus.Errorf("failed to fire rule event: %v, err, (%+v)", req.Event, err)
-	}
+	go func() {
+		env := map[string]interface{}{
+			"content": req.Content,
+		}
+		if err := e.FireRule(ctx, env, EventInfo{
+			Scope:       "project",
+			ScopeID:     req.ProjectID,
+			EventHeader: req.EventHeader,
+		}); err != nil {
+			logrus.Errorf("failed to fire rule event: %v, err, (%+v)", req.Event, err)
+		}
+	}()
+
 	return httpserver.OkResp("")
 }
 
