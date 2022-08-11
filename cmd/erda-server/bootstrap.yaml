@@ -22,8 +22,6 @@ health:
 # component-protocol framework
 component-protocol:
 
-i18n@personal-workbench:
-
 i18n:
   common: # core-services
     - conf/i18n/cs-i18n.yml # core-services
@@ -31,6 +29,7 @@ i18n:
     - conf/i18n/cp/common.yaml # dop
     - common-conf/i18n/common.yml # dop
   files:
+    - conf/i18n/cp/scenarios/
     - conf/i18n/gallery.yaml
     - conf/i18n/resource-trans.yaml # dop
     - conf/i18n/issue-manage.yaml # dop
@@ -273,12 +272,6 @@ uc-adaptor:
 
 ########### dop
 dop: { }
-i18n@cp:
-  common:
-    - conf/i18n/cp/common.yaml
-    - common-conf/i18n/common.yml
-  files:
-    - conf/i18n/cp/scenarios/
 erda.core.dop.taskerror: { }
 erda.dop.qa.unittest: { }
 erda.dop.search: { }
