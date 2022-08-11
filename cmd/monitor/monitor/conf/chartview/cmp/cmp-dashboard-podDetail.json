@@ -20,7 +20,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -112,10 +112,10 @@
                   "zh": "CPU 使用率",
                   "en": "CPU Usage Rate"
                 },
-                "field": "docker_container_summary-cpu_usage_percent::field",
+                "field": "max(cpu_usage_percent::field)",
                 "key": "valuezgzhW6F4",
                 "resultType": "number",
-                "type": "field",
+                "type": "expr",
                 "unit": {
                   "type": "PERCENT",
                   "unit": "%"
@@ -156,7 +156,7 @@
               },
               {
                 "alias": "valuezgzhW6F4",
-                "expr": "round_float(cpu_usage_percent::field, 2)"
+                "expr": "max(cpu_usage_percent::field)"
               }
             ],
             "where": [
@@ -195,7 +195,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -283,10 +283,10 @@
             "valueDimensions": [
               {
                 "alias": "Mem Usage Percent",
-                "field": "docker_container_summary-mem_usage_percent::field",
+                "field": "max(mem_usage_percent::field)",
                 "key": "valuenSjy6RH4",
                 "resultType": "number",
-                "type": "field",
+                "type": "expr",
                 "unit": {
                   "type": "PERCENT",
                   "unit": "%"
@@ -327,7 +327,7 @@
               },
               {
                 "alias": "valuenSjy6RH4",
-                "expr": "round_float(mem_usage_percent::field, 2)"
+                "expr": "max(mem_usage_percent::field)"
               }
             ],
             "where": [
@@ -366,7 +366,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -512,8 +512,7 @@
               "docker_container_summary"
             ],
             "groupby": [
-              "time()",
-              "container_image::tag"
+              "time()"
             ],
             "select": [
               {
@@ -569,7 +568,7 @@
           }
         },
         "description": "",
-        "chartType": "chart:line",
+        "chartType": "chart:area",
         "dataSourceType": "api",
         "staticData": {},
         "config": {
@@ -710,8 +709,7 @@
               "docker_container_summary"
             ],
             "groupby": [
-              "time()",
-              "container_image::tag"
+              "time()"
             ],
             "select": [
               {
