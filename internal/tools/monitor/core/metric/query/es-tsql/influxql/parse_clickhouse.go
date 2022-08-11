@@ -42,12 +42,6 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 
 	expr = p.appendTimeKeyByExpr(expr)
 
-	// add parser filter to expr
-	expr, err = p.filterOnExpr(expr)
-	if err != nil {
-		return nil, errors.Wrap(err, "select stmt parse to filter is error")
-	}
-
 	expr, err = p.conditionOnExpr(expr, s)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to condition is error")
@@ -202,10 +196,10 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 
 	for column, asName := range columns {
 		if len(asName) <= 0 {
-			expr = expr.SelectAppend(goqu.L(column))
+			expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", column)))
 			continue
 		}
-		expr = expr.SelectAppend(goqu.L(column).As(asName))
+		expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", column)).As(asName))
 	}
 	return expr, handlers, columns, nil
 }
@@ -452,7 +446,7 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 		return p.parseFiledRefByExpr(expr.Expr, cols)
 	case *influxql.VarRef:
 		c, _ := p.ckGetKeyName(expr, influxql.AnyField)
-		cols[c] = expr.Val
+		cols[c] = expr.String()
 	case *influxql.Wildcard:
 		cols["*"] = ""
 	}
@@ -487,14 +481,17 @@ func (p *Parser) from(sources influxql.Sources) ([]*model.Source, error) {
 	return list, nil
 }
 
-func filterToExpr(filters []*model.Filter, expr *goqu.SelectDataset) (*goqu.SelectDataset, error) {
+func (p *Parser) filterToExpr(filters []*model.Filter, expr exp.ExpressionList) (exp.ExpressionList, error) {
 	or := goqu.Or()
 	expressionList := goqu.And()
 	for _, item := range filters {
 		key := item.Key
 		keyArr := strings.Split(key, ".")
 		if len(keyArr) > 1 && keyArr[0] == "tags" {
-			key = ckTagKey(keyArr[1])
+			key, _ = p.ckGetKeyName(&influxql.VarRef{
+				Val:  keyArr[1],
+				Type: influxql.Tag,
+			}, influxql.Tag)
 		}
 
 		switch item.Operator {
@@ -542,24 +539,21 @@ func filterToExpr(filters []*model.Filter, expr *goqu.SelectDataset) (*goqu.Sele
 		}
 	}
 
-	if !or.IsEmpty() {
-		expr = expr.Where(goqu.Or(
-			expressionList,
-			or,
-		))
-		return expr, nil
-	}
 	if !expressionList.IsEmpty() {
-		expr = expr.Where(expressionList)
+		expr = goqu.And(expr, expressionList)
+	}
+
+	if !or.IsEmpty() {
+		expr = goqu.And(expr, or)
 	}
 
 	return expr, nil
 }
 
-func (p *Parser) filterOnExpr(expr *goqu.SelectDataset) (*goqu.SelectDataset, error) {
+func (p *Parser) filterOnExpr(expr exp.ExpressionList) (exp.ExpressionList, error) {
 	var err error
 	if len(p.filter) > 0 {
-		expr, err = filterToExpr(p.filter, expr)
+		expr, err = p.filterToExpr(p.filter, expr)
 		if err != nil {
 			return nil, fmt.Errorf("parse filter to expr error: %v", err)
 		}
@@ -575,6 +569,13 @@ func (p *Parser) conditionOnExpr(expr *goqu.SelectDataset, s *influxql.SelectSta
 		if err != nil {
 			return nil, err
 		}
+
+		// add parser filter to expr
+		exprList, err = p.filterOnExpr(exprList)
+		if err != nil {
+			return nil, errors.Wrap(err, "select stmt parse to filter is error")
+		}
+
 		expr = expr.Where(exprList)
 	}
 	return expr, nil
@@ -694,6 +695,10 @@ func (p *Parser) ckGetKeyName(ref *influxql.VarRef, deftyp influxql.DataType) (s
 }
 
 func (p *Parser) ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataType) (string, bool, model.ColumnFlag) {
+	if newColumn, ok := originColumn[ref.Val]; ok {
+		return newColumn, false, model.ColumnFlagNone
+	}
+
 	if ref.Type == influxql.Unknown {
 		if ref.Val == model.TimestampKey || ref.Val == model.TimeKey {
 			return model.TimestampKey, false, model.ColumnFlagTimestamp
@@ -711,6 +716,10 @@ func (p *Parser) ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataT
 }
 
 func (p *Parser) ckColumn(ref *influxql.VarRef) string {
+	if newColumn, ok := originColumn[ref.Val]; ok {
+		return newColumn
+	}
+
 	if ref.Type == influxql.Tag {
 		return ckTag(ref.Val)
 	}
@@ -733,9 +742,6 @@ var originColumn = map[string]string{
 
 // ckField return clickhouse column, and is number
 func (p *Parser) ckField(key string) (string, bool) {
-	if newColumn, ok := originColumn[key]; ok {
-		return fmt.Sprintf("indexOf(string_field_values,'%s')", newColumn), false
-	}
 	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
 }
 

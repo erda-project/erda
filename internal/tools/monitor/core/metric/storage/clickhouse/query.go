@@ -22,6 +22,7 @@ import (
 	cksdk "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -48,7 +49,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	table, _ := p.Loader.GetSearchTable(q.OrgName())
 
 	if len(q.OrgName()) > 0 {
-		expr = expr.Where(goqu.C("org_name").Eq(q.OrgName()))
+		expr = expr.Where(goqu.C("org_name").In(q.OrgName(), "erda"))
 	}
 	if len(q.TerminusKey()) > 0 {
 		expr = expr.Where(goqu.C("tenant_id").Eq(q.TerminusKey()))
@@ -133,8 +134,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 
 	if err != nil {
 		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
-		p.Log.Error("clickhouse metric query is error ", sql, err)
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to parse result: %s", sql))
 	}
 	return result, nil
 }
@@ -154,9 +154,27 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 		settings["max_memory_usage"] = p.Cfg.QueryMaxMemory
 		span.SetAttributes(attribute.Int64("settings.max_memory_usage", p.Cfg.QueryMaxMemory))
 	}
+
+	if len(p.Cfg.RuntimeSettings) > 0 {
+		for _, set := range p.Cfg.RuntimeSettings {
+			setting := strings.Split(set, ":")
+			if len(setting) >= 2 {
+				k, v := setting[0], setting[1]
+
+				settings[k] = v
+				span.SetAttributes(attribute.String(fmt.Sprintf("settings.%s", k), v))
+			}
+		}
+	}
+
 	if len(settings) == 0 {
 		return ctx
 	}
+
+	queryUUID, _ := uuid.NewRandom()
+	queryId := queryUUID.String()
+
+	span.SetAttributes(attribute.String("query_id", queryId))
 
 	ctx = cksdk.Context(ctx,
 		cksdk.WithSettings(settings),
@@ -200,7 +218,7 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 			)
 		}),
 		cksdk.WithSpan(span.SpanContext()),
-		cksdk.WithQueryID(span.SpanContext().TraceID().String()))
+		cksdk.WithQueryID(queryId))
 	return ctx
 }
 

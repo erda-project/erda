@@ -165,12 +165,7 @@ func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, expr
 	case *influxql.ParenExpr:
 		return c.getAggFieldExprValue(row, expr.Expr)
 	case *influxql.VarRef:
-		key := expr.Val
-
-		if expr == c.field.Expr {
-			v := c.field.Expr.(*influxql.VarRef)
-			key = v.Val
-		}
+		key := expr.String()
 		return getGetValueFromFlatMap(row, key, "."), nil
 	default:
 		v, ok, err := getLiteralValue(c.ctx, expr)

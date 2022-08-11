@@ -35,6 +35,7 @@ type (
 		QueryTimeout    time.Duration `file:"query_timeout" default:"1m"`
 		QueryMaxThreads int           `file:"query_max_threads" default:"0"`
 		QueryMaxMemory  int64         `file:"query_max_memory" default:"0"`
+		RuntimeSettings []string      `file:"runtime_settings"`
 	}
 	provider struct {
 		Cfg    *config
