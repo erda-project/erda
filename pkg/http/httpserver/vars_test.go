@@ -15,6 +15,7 @@
 package httpserver
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -74,11 +75,15 @@ func Test_getVars(t *testing.T) {
 			wantVars: map[string]string{"id": "1"},
 		},
 		{
-			name: "vars encoded",
+			name: "vars url escaped",
 			args: args{
 				r: func() *http.Request {
 					r := &http.Request{}
-					r = mux.SetURLVars(r, map[string]string{"id": url.QueryEscape("Asia/Shanghai")})
+					escapedVar := url.QueryEscape("Asia/Shanghai")
+					if escapedVar != "Asia%2FShanghai" {
+						panic(fmt.Errorf("just to prove `escapedVar` is truly escaped"))
+					}
+					r = mux.SetURLVars(r, map[string]string{"id": escapedVar})
 					return r
 				}(),
 			},
