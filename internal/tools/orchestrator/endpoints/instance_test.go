@@ -138,7 +138,7 @@ func TestEndpoints_getPodStatusFromK8s(t *testing.T) {
 		Uid:           "a645a65d-84fa-446f-b2c3-f062a0db9bc3",
 		IPAddress:     "10.112.227.92",
 		Host:          "10.0.6.51",
-		Phase:         "Running",
+		Phase:         "Healthy",
 		Message:       "Ok",
 		StartedAt:     "2022-08-02T11:40:15+08:00",
 		Service:       "test",
