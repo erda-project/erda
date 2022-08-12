@@ -168,11 +168,11 @@
   scope: org
   resource: monitor_org_alert
   action: GET
-- role: Manager,Ops,Support,Guest,EdgeOps
+- role: Manager,Ops,Support,Guest,EdgeOps,Lead,Dev,QA
   scope: org
   resource: monitor_org_center
   action: LIST
-- role: Manager,Ops,Support,Guest,EdgeOps
+- role: Manager,Ops,Support,Guest,EdgeOps,Lead,Dev,QA
   scope: org
   resource: monitor_org_center
   action: GET
