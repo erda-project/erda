@@ -129,10 +129,13 @@ func (p *Publisher) Create(userID string, createReq *apistructs.PublisherCreateR
 		managerIDs = append(managerIDs, user.UserID)
 	}
 
-	// 保证 nexus ${repoFormat}-hosted-repo 存在
-	if err = p.ensureNexusHostedRepo(publisher); err != nil {
-		return 0, err
-	}
+	// do not block, it is a non-core process
+	go func() {
+		// ensure nexus ${repoFormat}-hosted-repo exists
+		if err = p.ensureNexusHostedRepo(publisher); err != nil {
+			logrus.Errorf("failed to ensure nexus hosted repo, orgID: %d, publisherID: %d, err: %v", createReq.OrgID, publisher.ID, err)
+		}
+	}()
 
 	return int64(publisher.ID), nil
 }
