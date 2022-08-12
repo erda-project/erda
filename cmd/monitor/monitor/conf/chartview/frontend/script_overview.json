@@ -1,0 +1,263 @@
+{
+  "id": "script_overview",
+  "name": "Script Overview",
+  "scope": "micro_service",
+  "desc": "",
+  "version": "v2",
+  "viewConfig": [
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 0,
+      "i": "view-S42AlyrH",
+      "view": {
+        "title": "JavaScript 报错次数",
+        "i18n": {
+          "title": {
+            "zh": "JavaScript 报错次数",
+            "en": "Number of JavaScript errors"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_error"
+            ],
+            "isSqlMode": false,
+            "limit": 4,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_error-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filterFaGi2LPU",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "sortDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "count",
+                "field": "ta_error-count::field",
+                "key": "sortoWFowzbb",
+                "resultType": "number",
+                "sort": "DESC",
+                "type": "sort"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typepsbws9VS",
+                "type": "time"
+              },
+              {
+                "alias": "error",
+                "field": "ta_error-error::tag",
+                "key": "typeSH3FiyL2",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "count",
+                "field": "ta_error-count::field",
+                "key": "valueeQySN6BL",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_error"
+            ],
+            "groupby": [
+              "time()",
+              "error::tag"
+            ],
+            "limit": 4,
+            "orderby": [
+              {
+                "dir": "DESC",
+                "expr": "count(count::field)"
+              }
+            ],
+            "select": [
+              {
+                "alias": "typepsbws9VS",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeSH3FiyL2",
+                "expr": "error::tag"
+              },
+              {
+                "alias": "valueeQySN6BL",
+                "expr": "round_float(count(count::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "filter_terminus_key": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 9,
+      "i": "view-A8Wx1cN8",
+      "view": {
+        "title": "浏览器报错次数",
+        "i18n": {
+          "title": {
+            "zh": "浏览器报错次数",
+            "en": "Number of brower erros"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_error"
+            ],
+            "isSqlMode": false,
+            "limit": 4,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_error-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filterlbMCJ3qT",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "sortDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "count",
+                "field": "ta_error-count::field",
+                "key": "sort6vHVJH4z",
+                "resultType": "number",
+                "sort": "DESC",
+                "type": "sort"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeZEy4B2z9",
+                "type": "time"
+              },
+              {
+                "alias": "browser",
+                "field": "ta_error-browser::tag",
+                "key": "typePOYC5nWK",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "count",
+                "field": "ta_error-count::field",
+                "key": "value1jDPrKKB",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_error"
+            ],
+            "groupby": [
+              "time()",
+              "browser::tag"
+            ],
+            "limit": 4,
+            "orderby": [
+              {
+                "dir": "DESC",
+                "expr": "count(count::field)"
+              }
+            ],
+            "select": [
+              {
+                "alias": "typeZEy4B2z9",
+                "expr": "time()"
+              },
+              {
+                "alias": "typePOYC5nWK",
+                "expr": "browser::tag"
+              },
+              {
+                "alias": "value1jDPrKKB",
+                "expr": "round_float(count(count::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    }
+  ]
+}
