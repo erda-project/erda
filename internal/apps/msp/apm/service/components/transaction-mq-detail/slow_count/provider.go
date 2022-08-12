@@ -47,7 +47,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
 		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
 
-		chart, err := p.DataSource.GetChart(context.WithValue(context.Background(), common.LangKey, lang),
+		chart, err := p.DataSource.GetChart(context.WithValue(sdk.Ctx, common.LangKey, lang),
 			pb.ChartType_SlowCount,
 			startTime,
 			endTime,
