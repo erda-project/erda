@@ -166,6 +166,12 @@ func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, expr
 		return c.getAggFieldExprValue(row, expr.Expr)
 	case *influxql.VarRef:
 		key := expr.String()
+
+		colKey, _ := getKeyNameAndFlag(expr, influxql.AnyField)
+		if expr == c.field.Expr {
+			c.col.Key = colKey
+		}
+
 		return getGetValueFromFlatMap(row, key, "."), nil
 	default:
 		v, ok, err := getLiteralValue(c.ctx, expr)

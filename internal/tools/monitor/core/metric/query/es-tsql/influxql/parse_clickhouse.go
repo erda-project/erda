@@ -195,6 +195,10 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 	}
 
 	for column, asName := range columns {
+		if column == "*" {
+			expr = expr.Select("*")
+			continue
+		}
 		if len(asName) <= 0 {
 			expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", column)))
 			continue

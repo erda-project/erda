@@ -17,6 +17,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	cksdk "github.com/ClickHouse/clickhouse-go/v2"
@@ -48,7 +49,15 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	}
 	table, _ := p.Loader.GetSearchTable(q.OrgName())
 
-	if len(q.OrgName()) > 0 {
+	header := ctx.Value("header")
+	isOrgCenterQuery := false
+	if v, ok := header.(http.Header); ok && v != nil {
+		if v.Get("org-center") == "true" {
+			isOrgCenterQuery = true
+		}
+	}
+
+	if len(q.OrgName()) > 0 && isOrgCenterQuery == false {
 		expr = expr.Where(goqu.C("org_name").In(q.OrgName(), "erda"))
 	}
 	if len(q.TerminusKey()) > 0 {
@@ -56,6 +65,7 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	}
 
 	span.SetAttributes(attribute.String("org_name", q.OrgName()))
+	span.SetAttributes(attribute.Bool("is_org_center_query", isOrgCenterQuery))
 	span.SetAttributes(attribute.String("tenant_id", q.TerminusKey()))
 	span.SetAttributes(attribute.String("table", table))
 

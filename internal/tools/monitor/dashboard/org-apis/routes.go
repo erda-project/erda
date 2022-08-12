@@ -32,11 +32,11 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		permission.ScopeOrg, p.checkOrgMetrics,
 		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
-	routes.GET("/api/orgCenter/metrics/query", p.metricq.Handle, permission.Intercepter(
+	routes.GET("/api/orgCenter/metrics/query", p.getCmpMetricQuery, permission.Intercepter(
 		permission.ScopeOrg, p.checkOrgMetrics,
 		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
-	routes.POST("/api/orgCenter/metrics/query", p.metricq.Handle, permission.Intercepter(
+	routes.POST("/api/orgCenter/metrics/query", p.getCmpMetricQuery, permission.Intercepter(
 		permission.ScopeOrg, p.checkOrgMetrics,
 		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
@@ -65,6 +65,11 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
 	return nil
+}
+
+func (p *provider) getCmpMetricQuery(request *http.Request) interface{} {
+	request.Header.Set("org-center", "true")
+	return p.metricq.Handle(request)
 }
 
 func (p *provider) getHostTypesMethod() func(*http.Request, struct {
