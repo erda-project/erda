@@ -58,7 +58,7 @@ func Initialize(p *provider) error {
 		return err
 	}
 
-	server := httpserver.NewSingleton("")
+	server := httpserver.New("")
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("dicehub"))
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(ep.Routes())
