@@ -402,9 +402,6 @@ services:
       - port: 9027
         protocol: "TCP"
         l4_protocol: "TCP"
-      - port: 9028
-        protocol: "TCP"
-        l4_protocol: "TCP"
       - port: 9029
         protocol: "TCP"
         l4_protocol: "TCP"

@@ -42,7 +42,7 @@ erda.core.org-client: {}
 erda.core.org: {}
 
 http-server:
-  addr: ":9028"
+  addr: ":9027"
   allow_cors: true
 grpc-server:
   addr: ":9029"
