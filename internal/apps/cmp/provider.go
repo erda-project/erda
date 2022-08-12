@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
@@ -54,6 +55,7 @@ type provider struct {
 	Register    transport.Register             `autowired:"service-register" optional:"true"`
 	CronService cronpb.CronServiceServer       `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	Router      httpserver.Router              `autowired:"http-router"`
 
 	Metrics         *metrics.Metric
 	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`

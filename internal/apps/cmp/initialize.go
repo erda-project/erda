@@ -78,8 +78,7 @@ func (p *provider) initialize(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	return server.ListenAndServe()
+	return server.RegisterToNewHttpServerRouter(p.Router)
 }
 
 func initKlog() {
