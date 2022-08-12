@@ -270,6 +270,9 @@ func (impl GatewayApiServiceImpl) CreateUpstreamBindApi(ctx context.Context, con
 	if upstreamApi == nil {
 		return "", errors.New(ERR_INVALID_ARG)
 	}
+	if gatewayApi, _ := impl.apiDb.GetById(upstreamApi.ApiId); gatewayApi != nil {
+		return gatewayApi.Id, impl.UpdateUpstreamBindApi(ctx, consumer, appName, srvName, upstreamApi, aliasPath)
+	}
 	if runtimeServiceId == "" {
 		return impl.createUpstreamBindApiWithoutRuntimeService(ctx, consumer, appName, srvName, upstreamApi, aliasPath)
 	}
