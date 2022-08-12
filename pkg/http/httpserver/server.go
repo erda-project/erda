@@ -30,6 +30,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/goroutine_context"
@@ -156,6 +157,9 @@ func (s *Server) internal(handler func(context.Context, *http.Request, map[strin
 
 		// Manual decoding url var
 		muxVars := mux.Vars(r)
+		if muxVars == nil {
+			muxVars = infrahttpserver.Vars(r)
+		}
 		for k, v := range muxVars {
 			decodedVar, err := url.QueryUnescape(v)
 			if err != nil {
