@@ -74,7 +74,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		manager.WithClusterSvc(p.ClusterSvc),
 		manager.WithOrg(p.Org),
 	)
-	server := httpserver.NewSingleton("")
+	server := httpserver.New("")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(admin.Routers())
 	return server.RegisterToNewHttpServerRouter(p.Router)

@@ -8,13 +8,13 @@ import "google/protobuf/timestamp.proto";
 service ImageService {
   rpc GetImage (ImageGetRequest) returns (ImageGetResponse)  {
     option (google.api.http) = {
-      get: "/api/images/{imageIDOrImage}",
+      get: "/core/api/images/{imageIDOrImage}",
     };
   }
 
   rpc ListImage (ImageListRequest) returns (ImageListResponse)  {
     option (google.api.http) = {
-      get: "/api/images",
+      get: "/core/api/images",
     };
   }
 }

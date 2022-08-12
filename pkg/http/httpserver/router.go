@@ -36,7 +36,26 @@ func (s *Server) RegisterToNewHttpServerRouter(newRouter httpserver.Router) erro
 		}
 		return fmt.Errorf("duplicate routes found")
 	}
-	registerOnce.Do(func() { newRouter.Any("/*", s.router) })
+	err := s.router.Walk(func(route *mux.Route, _ *mux.Router, _ []*mux.Route) error {
+		pathTml, err := route.GetPathTemplate()
+		if err != nil {
+			return err
+		}
+		methods, err := route.GetMethods()
+		if err != nil {
+			return nil
+		}
+		for _, method := range methods {
+			err := newRouter.Add(method, pathTml, route.GetHandler(), httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

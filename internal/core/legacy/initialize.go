@@ -76,7 +76,7 @@ func (p *provider) Initialize() error {
 
 	go ep.UserSvc().UcUserMigration()
 
-	server := httpserver.NewSingleton("")
+	server := httpserver.New("")
 	server.RegisterEndpoint(ep.Routes())
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// Add auth middleware
