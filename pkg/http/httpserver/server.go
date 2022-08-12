@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/http/pprof"
-	"net/url"
 	"strings"
 	"time"
 
@@ -154,16 +153,7 @@ func (s *Server) internal(handler func(context.Context, *http.Request, map[strin
 		// clear all global context
 		defer goroutine_context.ClearContext()
 
-		// Manual decoding url var
-		muxVars := mux.Vars(r)
-		for k, v := range muxVars {
-			decodedVar, err := url.QueryUnescape(v)
-			if err != nil {
-				continue
-			}
-			muxVars[k] = decodedVar
-		}
-		response, err := handler(ctx, r, muxVars)
+		response, err := handler(ctx, r, getVars(r))
 		if err == nil && s.localeLoader != nil {
 			response = response.GetLocaledResp(locale)
 		}
@@ -226,7 +216,7 @@ func (s *Server) internalWriterHandler(handler func(context.Context, http.Respon
 
 		handleRequest(r)
 
-		err := handler(ctx, w, r, mux.Vars(r))
+		err := handler(ctx, w, r, getVars(r))
 		if err != nil {
 			logrus.Errorf("failed to handle request: %s (%v)", r.URL.String(), err)
 
@@ -255,7 +245,7 @@ func (s *Server) internalReverseHandler(handler func(context.Context, *http.Requ
 
 			handleRequest(r)
 
-			err := handler(ctx, r, mux.Vars(r))
+			err := handler(ctx, r, getVars(r))
 			if err != nil {
 				logrus.Errorf("failed to handle request: %s (%v)", r.URL.String(), err)
 				return
