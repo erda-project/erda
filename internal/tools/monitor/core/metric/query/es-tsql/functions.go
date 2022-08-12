@@ -76,6 +76,9 @@ var CkBuildInFunctions = map[string]func(ctx Context, args ...interface{}) (inte
 		if err != nil {
 			return nil, err
 		}
+		if args[0] == nil {
+			return 0, nil
+		}
 		var v float64
 		switch val := args[0].(type) {
 		case float32:

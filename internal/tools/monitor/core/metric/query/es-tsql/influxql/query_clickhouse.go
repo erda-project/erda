@@ -23,6 +23,7 @@ import (
 
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
+	"github.com/influxdata/influxql"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -117,6 +118,12 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 			c.col = &model.Column{
 				Name: getColumnName(c.field),
 			}
+			key, flag := getExprStringAndFlag(c.field.Expr, influxql.AnyField)
+			c.col.Flag = flag
+			if q.ctx.dimensions[key] {
+				c.col.Flag |= model.ColumnFlagGroupBy
+			}
+
 			// delete *
 			if c.AllColumns() {
 				continue
@@ -264,11 +271,13 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case **string:
 		if *v == nil {
-			return nil
+			return ""
 		}
 		return **v
 	case *time.Time:
 		return v.UnixNano()
+	case **time.Time:
+		return (*v).UnixNano()
 	case *[]string:
 		return *v
 	case *[]float64:
