@@ -78,7 +78,8 @@ func (p *provider) initialize(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return server.RegisterToNewHttpServerRouter(p.Router)
+	p.Router.Any("/**", server.Router().ServeHTTP)
+	return nil
 }
 
 func initKlog() {
