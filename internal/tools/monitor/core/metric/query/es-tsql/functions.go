@@ -161,6 +161,16 @@ var CkBuildInFunctions = map[string]func(ctx Context, args ...interface{}) (inte
 		}
 		return time.Duration(int64(v)).String(), nil
 	},
+	"tostring": func(ctx Context, args ...interface{}) (interface{}, error) {
+		err := MustFuncArgsNum("tostring", len(args), 1)
+		if err != nil {
+			return nil, err
+		}
+		if args[0] == nil {
+			return "", nil
+		}
+		return fmt.Sprint(args[0]), nil
+	},
 }
 
 // BuildInFunctions is custom functions in SELECT
