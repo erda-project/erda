@@ -184,7 +184,7 @@ func TestAggregationFunction(t *testing.T) {
 					},
 				},
 			},
-			want: "SELECT argMax(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')]),timestamp) AS \"f316cf2c588e6404\" FROM \"table\"",
+			want: "SELECT anyLast(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')])) AS \"f316cf2c588e6404\" FROM \"table\"",
 		},
 	}
 

@@ -289,7 +289,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 		// last value
 		Flag: FuncFlagSelect,
 		New: newCkUnaryFunction(
-			"value",
+			"last",
 			func(ctx *Context, p *Parser, id string, field *influxql.VarRef, lit exp.Expression, flags ...FuncFlag) (exp.Expression, error) {
 				var f string
 				if lit != nil {
@@ -301,7 +301,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				} else {
 					f = p.ckColumnByOnlyExistingColumn(field)
 				}
-				return goqu.L(fmt.Sprintf("argMax(%s,%s)", f, ctx.TimeKey())).As(id), nil
+				return goqu.L(fmt.Sprintf("anyLast(%s)", f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
