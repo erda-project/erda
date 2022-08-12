@@ -97,7 +97,6 @@ func (s *SimpleChart) getUnRecoverAlertEventsChart() (*Chart, error) {
 	}
 
 	ctx := apis.GetContext(s.sdk.Ctx, func(header *transport.Header) {
-		header.Set("terminus_key", inParams.ScopeId)
 	})
 
 	response, err := s.Metric.QueryWithInfluxFormat(ctx, request)

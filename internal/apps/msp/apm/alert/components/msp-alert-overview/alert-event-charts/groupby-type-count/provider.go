@@ -87,7 +87,6 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 		Params:    params,
 	}
 	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
-		header.Set("terminus_key", inParams.ScopeId)
 	})
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {

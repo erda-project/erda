@@ -16,6 +16,7 @@ package spotmetric
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
@@ -55,6 +56,10 @@ func (uw *unmarshalWork) Unmarshal() {
 	}
 	if v, ok := data.Tags[lib.OrgNameKey]; ok {
 		data.OrgName = v
+	}
+
+	if strings.IndexAny(data.Name, "-") != -1 {
+		data.Name = strings.ReplaceAll(data.Name, "-", "_")
 	}
 
 	if err := uw.callback(data); err != nil {

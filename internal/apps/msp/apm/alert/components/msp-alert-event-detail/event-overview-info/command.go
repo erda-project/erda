@@ -33,7 +33,6 @@ func (cp *ComponentEventOverviewInfo) countAlertEvents(ctx context.Context, even
 	}
 
 	ctx = apis.GetContext(ctx, func(header *transport.Header) {
-		header.Set("terminus_key", cp.sdk.InParams.String("scopeId"))
 	})
 
 	statement := fmt.Sprintf("SELECT count(timestamp) FROM analyzer_alert " +

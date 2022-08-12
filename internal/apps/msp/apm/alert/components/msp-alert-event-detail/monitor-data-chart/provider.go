@@ -152,7 +152,6 @@ func (p *provider) queryMetrics(sdk *cptype.SDK, inParams *common.InParams, aler
 	}
 
 	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
-		header.Set("terminus_key", inParams.ScopeId)
 	})
 
 	resp, err := p.Metric.QueryWithInfluxFormat(ctx, request)

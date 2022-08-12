@@ -58,7 +58,8 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	}
 
 	if len(q.OrgName()) > 0 && isOrgCenterQuery == false {
-		expr = expr.Where(goqu.C("org_name").In(q.OrgName(), "erda"))
+		// compatible erda and empty, erda components sometimes use empty and erda org
+		expr = expr.Where(goqu.C("org_name").In(q.OrgName(), "erda", ""))
 	}
 	if len(q.TerminusKey()) > 0 {
 		expr = expr.Where(goqu.C("tenant_id").Eq(q.TerminusKey()))
