@@ -768,7 +768,6 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 		},
 	}
 	ctx = apis.GetContext(ctx, func(header *transport.Header) {
-		//header.Set("terminus_key", req.)
 	})
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)

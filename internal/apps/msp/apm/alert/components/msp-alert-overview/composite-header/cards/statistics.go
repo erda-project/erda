@@ -48,7 +48,6 @@ func (p *provider) alertTriggerCount(sdk *cptype.SDK) (*kv.KV, error) {
 		"trigger":  structpb.NewStringValue("alert"),
 	}
 	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
-		header.Set("terminus_key", inParams.ScopeId)
 	})
 
 	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)
@@ -77,7 +76,6 @@ func (p *provider) alertRecoverCount(sdk *cptype.SDK) (*kv.KV, error) {
 		"trigger":  structpb.NewStringValue("recover"),
 	}
 	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
-		header.Set("terminus_key", inParams.ScopeId)
 	})
 	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)
 	if err != nil {
@@ -105,7 +103,6 @@ func (p *provider) alertReduceCount(sdk *cptype.SDK) (*kv.KV, error) {
 	}
 
 	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
-		header.Set("terminus_key", inParams.ScopeId)
 	})
 
 	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)
@@ -134,7 +131,6 @@ func (p *provider) alertSilenceCount(sdk *cptype.SDK) (*kv.KV, error) {
 	}
 
 	ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
-		header.Set("terminus_key", inParams.ScopeId)
 	})
 
 	result, err := p.doQuerySql(ctx, inParams.StartTime, inParams.EndTime, statement, params)

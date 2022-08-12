@@ -183,7 +183,6 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 	}
 
 	metricQueryCtx := apis.GetContext(ctx, func(header *transport.Header) {
-		header.Set("terminus_key", params.ScopeId)
 	})
 
 	for _, item := range events.Items {
