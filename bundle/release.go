@@ -41,7 +41,7 @@ func (b *Bundle) GetDiceYAML(releaseID string, workspace ...string) (*diceyml.Di
 	hc := b.hc
 
 	var buf bytes.Buffer
-	r, err := hc.Get(host).Path(fmt.Sprintf("/api/releases/%s/actions/get-dice", releaseID)).
+	r, err := hc.Get(host).Path(fmt.Sprintf("/core/api/releases/%s/actions/get-dice", releaseID)).
 		Header("Accept", "application/x-yaml").
 		Header("Internal-Client", "true").
 		Do().Body(&buf)
