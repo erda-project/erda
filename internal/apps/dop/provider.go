@@ -38,6 +38,7 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
@@ -60,6 +61,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/qa/unittest"
+	"github.com/erda-project/erda/internal/apps/dop/providers/queue"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
 	"github.com/erda-project/erda/internal/core/org"
@@ -88,6 +90,7 @@ type provider struct {
 	ErrorBoxSvc           errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
 	ProjectPipelineSvc    *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 	PipelineCron          cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	PipelineQueue         queuepb.QueueServiceServer              `autowired:"erda.core.pipeline.queue.QueueService" required:"true"`
 	QueryClient           query.MetricQuery                       `autowired:"metricq-client"`
 	CommentIssueStreamSvc *stream.CommentIssueStreamService       `autowired:"erda.dop.issue.stream.CommentIssueStreamService"`
 	IssueSyncSvc          *sync.IssueSyncService                  `autowired:"erda.dop.issue.sync.IssueSyncService"`
@@ -106,6 +109,7 @@ type provider struct {
 	Identity              userpb.UserServiceServer
 	RuleService           rulepb.RuleServiceServer
 	PipelineAction        pipeline.Interface
+	Queue                 queue.Interface
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n"`
