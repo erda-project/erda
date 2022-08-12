@@ -719,16 +719,21 @@ func (p *Parser) ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataT
 	return column, isNumber, model.ColumnFlagField
 }
 
-func (p *Parser) ckColumn(ref *influxql.VarRef) string {
+func (p *Parser) ckColumnByOnlyExistingColumn(ref *influxql.VarRef) string {
 	if newColumn, ok := originColumn[ref.Val]; ok {
 		return newColumn
 	}
 
+	expr := ref.Val
+	column := ref.Val
 	if ref.Type == influxql.Tag {
-		return ckTag(ref.Val)
+		expr = ckTag(ref.Val)
+		column = ckTagKey(ref.Val)
+	} else {
+		expr, _ = p.ckField(ref.Val)
+		column, _ = p.ckFieldKey(ref.Val)
 	}
-	column, _ := p.ckField(ref.Val)
-	return column
+	return fmt.Sprintf("if(%s == 0,null,%s)", expr, column)
 }
 
 func (p *Parser) ckFieldKey(key string) (string, bool) {
@@ -742,6 +747,7 @@ func (p *Parser) ckFieldKey(key string) (string, bool) {
 var originColumn = map[string]string{
 	"terminus_key": "tenant_id",
 	"org_name":     "org_name",
+	"timestamp":    "timestamp",
 }
 
 // ckField return clickhouse column, and is number

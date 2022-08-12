@@ -61,8 +61,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.MIN(lit).As(id), nil
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
-				f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
+				f := p.ckColumnByOnlyExistingColumn(field)
 				return goqu.MIN(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -78,8 +77,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.AVG(lit).As(id), nil
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
-				f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
+				f := p.ckColumnByOnlyExistingColumn(field)
 				return goqu.AVG(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -115,7 +113,8 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.COUNT(lit).As(id), nil
 				}
-				return goqu.COUNT(goqu.L(fmt.Sprintf("if(%s = 1,1,null)", p.ckColumn(field)))).As(id), nil
+				f := p.ckColumnByOnlyExistingColumn(field)
+				return goqu.COUNT(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true
@@ -130,7 +129,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.DISTINCT(lit).As(id), nil
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
+				f := p.ckColumnByOnlyExistingColumn(field)
 				// count(distinct(column))
 				return goqu.L(fmt.Sprintf("count(distinct(%s))", f)).As(id), nil
 			},
@@ -152,8 +151,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 						return goqu.MIN(lit).As(id), nil
 					}
 				} else {
-					f, _ = p.ckGetKeyName(field, influxql.AnyField)
-					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
+					f = p.ckColumnByOnlyExistingColumn(field)
 				}
 				return goqu.L(fmt.Sprintf("Min(%s)", f)).As(id), nil
 			},
@@ -190,8 +188,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 						return goqu.MIN(lit).As(id), nil
 					}
 				} else {
-					f, _ = p.ckGetKeyName(field, influxql.AnyField)
-					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
+					f = p.ckColumnByOnlyExistingColumn(field)
 				}
 				return goqu.L(fmt.Sprintf("Min(%s)", f)).As(id), nil
 			},
@@ -276,8 +273,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 						return goqu.MIN(lit).As(id), nil
 					}
 				} else {
-					f, _ = p.ckGetKeyName(field, influxql.AnyField)
-					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
+					f = p.ckColumnByOnlyExistingColumn(field)
 				}
 				return goqu.L(fmt.Sprintf("argMin(%s,%s)", f, ctx.TimeKey())).As(id), nil
 			},
@@ -300,8 +296,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 						return goqu.MAX(lit).As(id), nil
 					}
 				} else {
-					f, _ = p.ckGetKeyName(field, influxql.AnyField)
-					f = fmt.Sprintf("if(%s == 0,null,%s)", p.ckColumn(field), f)
+					f = p.ckColumnByOnlyExistingColumn(field)
 				}
 				return goqu.L(fmt.Sprintf("argMax(%s,%s)", f, ctx.TimeKey())).As(id), nil
 			},
