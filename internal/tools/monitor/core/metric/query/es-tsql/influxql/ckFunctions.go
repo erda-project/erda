@@ -81,6 +81,9 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				return goqu.AVG(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
+				if v == nil {
+					return 0, true
+				}
 				float64V, ok := v.(float64)
 				if ok && math.IsNaN(float64V) {
 					return 0, true
