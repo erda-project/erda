@@ -289,7 +289,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-3",
-            "expr": "diffps(com_delete::field+com_insert::field+com_select::field+com_update::field)",
+            "expr": "diffps(com_delete::field)+diffps(com_insert::field)+diffps(com_select::field)+diffps(com_update::field)",
             "key": "valuel3XyepFD",
             "type": "expr"
           }]
@@ -310,7 +310,7 @@
             "expr": "server::tag"
           }, {
             "alias": "valuel3XyepFD",
-            "expr": "diffps(com_delete::field+com_insert::field+com_select::field+com_update::field)"
+            "expr": "diffps(com_delete::field)+diffps(com_insert::field)+diffps(com_select::field)+diffps(com_update::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
@@ -367,7 +367,7 @@
           }],
           "valueDimensions": [{
             "alias": "表达式-5",
-            "expr": "diffps(com_commit::field+com_rollback::field)",
+            "expr": "diffps(com_commit::field)+diffps(com_rollback::field)",
             "key": "valuenfG7vyLk",
             "type": "expr"
           }]
@@ -388,7 +388,7 @@
             "expr": "server::tag"
           }, {
             "alias": "valuenfG7vyLk",
-            "expr": "diffps(com_commit::field+com_rollback::field)"
+            "expr": "diffps(com_commit::field)+diffps(com_rollback::field)"
           }],
           "where": ["addon_id::tag='{{addonId}}'"]
         },
