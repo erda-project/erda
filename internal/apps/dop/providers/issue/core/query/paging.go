@@ -182,6 +182,8 @@ func (p *provider) Paging(req pb.PagingIssueRequest) ([]*pb.Issue, uint64, error
 		}
 	}
 
+	// TODO batch add custom properties info
+
 	return issues, total, nil
 }
 

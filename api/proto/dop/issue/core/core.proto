@@ -583,6 +583,7 @@ message Issue {
   repeated uint64 relatedIssueIDs = 31;
   int32 reopenCount = 32;
   IssueTypeEnum.Type type = 33;
+  repeated IssuePropertyExtraProperty properties = 34;
 }
 
 message IssueStage {
