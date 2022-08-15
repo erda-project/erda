@@ -376,6 +376,11 @@ func TestSelect(t *testing.T) {
 		params map[string]interface{}
 	}{
 		{
+			name: "select tenant_id",
+			sql:  "select tenant_id from table",
+			want: "SELECT toNullable(tenant_id) AS \"tenant_id\" FROM \"table\"",
+		},
+		{
 			name: "select column",
 			sql:  "select column from table",
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"table\"",
