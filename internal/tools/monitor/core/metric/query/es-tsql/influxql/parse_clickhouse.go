@@ -748,9 +748,9 @@ func (p *Parser) ckFieldKey(key string) (string, bool) {
 }
 
 var originColumn = map[string]string{
-	"terminus_key": "tenant_id",
-	"org_name":     "org_name",
-	"timestamp":    "timestamp",
+	"tenant_id": "tenant_id",
+	"org_name":  "org_name",
+	"timestamp": "timestamp",
 }
 
 // ckField return clickhouse column, and is number

@@ -122,7 +122,7 @@ func (s *TraceService) getServiceInstanceType(ctx context.Context, startTime, en
 	defer cancel()
 
 	for _, metricType := range query.ProcessMetrics {
-		statement := fmt.Sprintf("SELECT terminus_key::tag FROM %s WHERE terminus_key=$terminus_key "+
+		statement := fmt.Sprintf("SELECT terminus_key::tag FROM %s WHERE terminus_key::tag=$terminus_key "+
 			"AND service_instance_id=$service_instance_id LIMIT 1", metricType)
 		queryParams := map[string]*structpb.Value{
 			"terminus_key":        structpb.NewStringValue(tenantId),
