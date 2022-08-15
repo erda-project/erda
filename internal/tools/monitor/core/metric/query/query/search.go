@@ -128,8 +128,8 @@ func (q *queryer) buildTSQLParser(ctx context.Context, ql, statement string, par
 			parser = parser.SetTerminusKey(v.Get("terminus_key"))
 		}
 	}
-	span.SetAttributes(attribute.String("org", parser.GetOrgName()))
-	span.SetAttributes(attribute.String("terminus_key", parser.GetTerminusKey()))
+	span.SetAttributes(attribute.String("header.org", parser.GetOrgName()))
+	span.SetAttributes(attribute.String("header.terminus_key", parser.GetTerminusKey()))
 
 	unit := options.Get("epoch") // Keep the same parameters as the influxdb.
 	if len(unit) > 0 {

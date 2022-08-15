@@ -344,14 +344,17 @@ func (p *Parser) getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.
 	case *influxql.UnsignedLiteral:
 		return strconv.FormatUint(expr.Val, 10)
 	case *influxql.StringLiteral, *influxql.NilLiteral, *influxql.TimeLiteral, *influxql.DurationLiteral, *influxql.RegexLiteral, *influxql.ListLiteral:
-		return expr.String()
+		return exprString(expr)
 	case *influxql.VarRef:
 		key, _, _ = p.ckGetKeyNameAndFlag(expr, deftyp)
 		return key
 	}
-	return expr.String()
+	return exprString(expr)
 }
 
+func exprString(expr influxql.Expr) string {
+	return strings.ReplaceAll(expr.String(), "\"", "")
+}
 func (p *Parser) parseQueryFieldsByExpr(fields influxql.Fields, columns map[string]string) (map[string]exp.Expression, []*SQLColumnHandler, error) {
 	aggs := make(map[string]exp.Expression)
 	var handlers []*SQLColumnHandler
@@ -450,7 +453,7 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 		return p.parseFiledRefByExpr(expr.Expr, cols)
 	case *influxql.VarRef:
 		c, _ := p.ckGetKeyName(expr, influxql.AnyField)
-		cols[c] = expr.String()
+		cols[c] = exprString(expr)
 	case *influxql.Wildcard:
 		cols["*"] = ""
 	}
@@ -719,16 +722,21 @@ func (p *Parser) ckGetKeyNameAndFlag(ref *influxql.VarRef, deftyp influxql.DataT
 	return column, isNumber, model.ColumnFlagField
 }
 
-func (p *Parser) ckColumn(ref *influxql.VarRef) string {
+func (p *Parser) ckColumnByOnlyExistingColumn(ref *influxql.VarRef) string {
 	if newColumn, ok := originColumn[ref.Val]; ok {
 		return newColumn
 	}
 
+	expr := ref.Val
+	column := ref.Val
 	if ref.Type == influxql.Tag {
-		return ckTag(ref.Val)
+		expr = ckTag(ref.Val)
+		column = ckTagKey(ref.Val)
+	} else {
+		expr, _ = p.ckField(ref.Val)
+		column, _ = p.ckFieldKey(ref.Val)
 	}
-	column, _ := p.ckField(ref.Val)
-	return column
+	return fmt.Sprintf("if(%s == 0,null,%s)", expr, column)
 }
 
 func (p *Parser) ckFieldKey(key string) (string, bool) {
@@ -742,6 +750,7 @@ func (p *Parser) ckFieldKey(key string) (string, bool) {
 var originColumn = map[string]string{
 	"terminus_key": "tenant_id",
 	"org_name":     "org_name",
+	"timestamp":    "timestamp",
 }
 
 // ckField return clickhouse column, and is number

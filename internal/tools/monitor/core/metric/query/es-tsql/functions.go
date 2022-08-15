@@ -131,6 +131,46 @@ var CkBuildInFunctions = map[string]func(ctx Context, args ...interface{}) (inte
 		}
 		return arrFloat[0] >= arrFloat[1], nil
 	},
+	"format_duration": func(ctx Context, args ...interface{}) (interface{}, error) {
+		if len(args) < 1 {
+			return nil, fmt.Errorf("function '%s' args must more than %d", "format_duration", 1)
+		}
+		v := conv.ToFloat64(args[0], 0)
+		unit := "ns"
+		if len(args) > 1 {
+			u, err := getStringArg("format_duration", 1, args[1])
+			if err != nil {
+				return nil, err
+			}
+			unit = u
+		}
+		switch unit {
+		case "ms":
+			v *= float64(time.Millisecond)
+		case "s":
+			v *= float64(time.Second)
+		case "m", "min":
+			v *= float64(time.Minute)
+		case "h":
+			v *= float64(time.Hour)
+		case "d":
+			v *= 24 * float64(time.Hour)
+		}
+		if len(args) > 2 {
+			return FormatDuration(time.Duration(v), conv.ToInt(args[2], 2)), nil
+		}
+		return time.Duration(int64(v)).String(), nil
+	},
+	"tostring": func(ctx Context, args ...interface{}) (interface{}, error) {
+		err := MustFuncArgsNum("tostring", len(args), 1)
+		if err != nil {
+			return nil, err
+		}
+		if args[0] == nil {
+			return "", nil
+		}
+		return fmt.Sprint(args[0]), nil
+	},
 }
 
 // BuildInFunctions is custom functions in SELECT
