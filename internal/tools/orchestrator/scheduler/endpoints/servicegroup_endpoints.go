@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -114,7 +115,21 @@ func (h *HTTPEndpoints) ServiceGroupDelete(ctx context.Context, r *http.Request,
 			}})
 	}
 
-	if err := h.ServiceGroupImpl.Delete(namespace, name, force, nil); err != nil {
+	var err error
+	forceDelete := false
+	if force != "" {
+		forceDelete, err = strconv.ParseBool(force)
+		if err != nil {
+			return mkResponse(apistructs.ServiceGroupDeleteV2Response{
+				apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				}},
+			)
+		}
+	}
+
+	if err := h.ServiceGroupImpl.Delete(namespace, name, forceDelete, nil); err != nil {
 		errstr := fmt.Sprintf("delete servicegroup fail: %v", err)
 		//h.metric.ErrorCounter.WithLabelValues(metric.ServiceRemoveError).Add(1)
 		if err.Error() == servicegroup.DeleteNotFound.Error() {
