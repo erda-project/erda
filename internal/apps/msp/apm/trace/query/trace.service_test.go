@@ -24,6 +24,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
 	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -1225,4 +1226,78 @@ func TestTraceService_GetSpanCount(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetServiceInstanceType(t *testing.T) {
+	service := TraceService{
+		p: &provider{
+			Metric: mockMetricService{
+				t: t,
+				checkQueryWithInfluxFormat: func(test *testing.T, request *metricpb.QueryWithInfluxFormatRequest) {
+					require.Equal(test, "SELECT terminus_key::tag FROM jvm_memory WHERE terminus_key::tag=$terminus_key AND service_instance_id=$service_instance_id LIMIT 1", request.Statement)
+					want := make(map[string]*structpb.Value)
+					want["service_instance_id"] = &structpb.Value{
+						Kind: &structpb.Value_StringValue{StringValue: "trace"},
+					}
+					want["terminus_key"] = &structpb.Value{
+						Kind: &structpb.Value_StringValue{StringValue: ""},
+					}
+
+					require.Equal(test, len(want), len(request.Params))
+					for wantK, wantV := range want {
+						require.Equal(test, wantV, request.Params[wantK])
+					}
+				},
+			},
+		},
+	}
+	instanceType, err := service.getServiceInstanceType(context.Background(), 0, 10, "", "trace")
+	require.NoError(t, err)
+	require.Equal(t, query.JavaMemoryMetricName, instanceType)
+}
+
+type mockMetricService struct {
+	t                          *testing.T
+	checkQueryWithInfluxFormat func(t *testing.T, request *metricpb.QueryWithInfluxFormatRequest)
+}
+
+func (m mockMetricService) QueryWithInfluxFormat(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	m.checkQueryWithInfluxFormat(m.t, request)
+
+	return &metricpb.QueryWithInfluxFormatResponse{
+		Results: []*metricpb.Result{
+			{
+				Series: []*metricpb.Serie{
+					{
+						Columns: []string{""},
+						Rows: []*metricpb.Row{
+							{
+								Values: nil,
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil
+}
+
+func (m mockMetricService) SearchWithInfluxFormat(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricService) QueryWithTableFormat(ctx context.Context, request *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricService) SearchWithTableFormat(ctx context.Context, request *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricService) GeneralQuery(ctx context.Context, request *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricService) GeneralSearch(ctx context.Context, request *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	return nil, nil
 }
