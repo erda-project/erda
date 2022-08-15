@@ -165,7 +165,7 @@ func (c *SQLColumnHandler) getAggFieldExprValue(row map[string]interface{}, expr
 	case *influxql.ParenExpr:
 		return c.getAggFieldExprValue(row, expr.Expr)
 	case *influxql.VarRef:
-		key := expr.String()
+		key := exprString(expr)
 
 		colKey, _ := getKeyNameAndFlag(expr, influxql.AnyField)
 		if expr == c.field.Expr {

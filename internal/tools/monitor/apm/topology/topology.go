@@ -891,7 +891,7 @@ func (topology *provider) GetServiceInstanceIds(ctx context.Context, language i1
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 
-	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true'),host_ip::tag FROM application_service_node " +
+	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-max(timestamp),300000000000),'false','true'),last(host_ip::tag) FROM application_service_node " +
 		"WHERE terminus_key=$terminus_key AND service_id::tag =$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -935,9 +935,13 @@ func (topology *provider) handleInstanceInfo(response *model.ResultSet) []*Insta
 		if err != nil {
 			status = false
 		}
+		ip := conv.ToString(row[1])
+		if len(ip) <= 0 {
+			continue
+		}
 		instance := InstanceInfo{
 			Id:     conv.ToString(row[0]),
-			Ip:     conv.ToString(row[1]),
+			Ip:     ip,
 			Status: status,
 			HostIP: conv.ToString(row[3]),
 		}

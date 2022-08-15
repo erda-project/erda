@@ -393,7 +393,12 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select distinct",
 			sql:  "select DISTINCT(service_id::tag) from table",
-			want: "SELECT count(distinct(tag_values[indexOf(tag_keys,'service_id')])) AS \"2e1cf76dc42cffe8\" FROM \"table\"",
+			want: "SELECT count(distinct(if(indexOf(tag_keys,'service_id') == 0,null,tag_values[indexOf(tag_keys,'service_id')]))) AS \"2e1cf76dc42cffe8\" FROM \"table\"",
+		},
+		{
+			name: "select origin distinct",
+			sql:  "select DISTINCT(timestamp) from table",
+			want: "SELECT count(distinct(timestamp)) AS \"05b05e5af080d601\" FROM \"table\"",
 		},
 		{
 			name: "select max",
@@ -406,9 +411,14 @@ func TestSelect(t *testing.T) {
 			want: "SELECT MIN(if(indexOf(tag_keys,'service_id') == 0,null,tag_values[indexOf(tag_keys,'service_id')])) AS \"b784dcb694669c75\" FROM \"table\"",
 		},
 		{
+			name: "select origin min",
+			sql:  "select min(timestamp) from table",
+			want: "SELECT MIN(timestamp) AS \"5636e73fd0aba08e\" FROM \"table\"",
+		},
+		{
 			name: "select count",
 			sql:  "select count(service_id::tag) from table",
-			want: "SELECT COUNT(if(indexOf(tag_keys,'service_id') = 1,1,null)) AS \"993567cffecb105e\" FROM \"table\"",
+			want: "SELECT COUNT(if(indexOf(tag_keys,'service_id') == 0,null,tag_values[indexOf(tag_keys,'service_id')])) AS \"993567cffecb105e\" FROM \"table\"",
 		},
 		{
 			name: "select sum(if:eq)",

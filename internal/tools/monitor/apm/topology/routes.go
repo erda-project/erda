@@ -87,7 +87,6 @@ type translation struct {
 
 func (topology *provider) exceptionTypes(r *http.Request, params ServiceParams) interface{} {
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 	types, err := topology.GetExceptionTypes(ctx, api.Language(r), params)
 	if err != nil {
@@ -101,7 +100,6 @@ func (topology *provider) exceptionTypes(r *http.Request, params ServiceParams) 
 
 func (topology *provider) processDiskIo(r *http.Request, params ServiceParams) interface{} {
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 	processDiskIo, err := topology.GetProcessDiskIo(ctx, api.Language(r), params)
 	if err != nil {
@@ -130,7 +128,6 @@ func (topology *provider) exceptionMessage(r *http.Request, params ServiceParams
 	ExceptionType string `query:"exceptionType"`
 }) interface{} {
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 	exceptionMessages, err := topology.GetExceptionMessage(ctx, api.Language(r), params, exceptionParams.Limit, exceptionParams.Sort, exceptionParams.ExceptionType)
 	if err != nil {
@@ -145,7 +142,6 @@ func (topology *provider) exceptionMessage(r *http.Request, params ServiceParams
 func (topology *provider) serviceInstanceIds(r *http.Request, params ServiceParams) interface{} {
 
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 
 	serviceInstanceIds, err := topology.GetServiceInstanceIds(ctx, api.Language(r), params)
@@ -159,7 +155,6 @@ func (topology *provider) serviceInstanceIds(r *http.Request, params ServicePara
 
 func (topology *provider) serviceInstances(r *http.Request, params ServiceParams) interface{} {
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 	reqTranslations, err := topology.GetServiceInstances(ctx, api.Language(r), params)
 	if err != nil {
@@ -172,7 +167,6 @@ func (topology *provider) serviceInstances(r *http.Request, params ServiceParams
 
 func (topology *provider) serviceRequest(r *http.Request, params ServiceParams) interface{} {
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 	reqTranslations, err := topology.GetServiceRequest(ctx, api.Language(r), params)
 	if err != nil {
@@ -185,7 +179,6 @@ func (topology *provider) serviceRequest(r *http.Request, params ServiceParams) 
 
 func (topology *provider) serviceOverview(r *http.Request, params ServiceParams) interface{} {
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 	overview, err := topology.GetServiceOverview(ctx, api.Language(r), params)
 	if err != nil {
@@ -198,7 +191,6 @@ func (topology *provider) serviceOverview(r *http.Request, params ServiceParams)
 
 func (topology *provider) overview(r *http.Request, params GlobalParams) interface{} {
 	ctx := api.GetContext(r, func(header *http.Header) {
-		header.Add("terminus_key", params.ScopeId)
 	})
 	overview, err := topology.GetOverview(ctx, api.Language(r), params)
 	if err != nil {
