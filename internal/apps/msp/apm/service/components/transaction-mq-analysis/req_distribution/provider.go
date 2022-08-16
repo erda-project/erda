@@ -47,7 +47,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		tenantId := p.InParamsPtr.TenantId
 		serviceId := p.InParamsPtr.ServiceId
 
-		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(context.Background(), common.LangKey, lang),
+		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(sdk.Ctx, common.LangKey, lang),
 			datasources.BubbleChartReqDistribution,
 			20,
 			startTime,
