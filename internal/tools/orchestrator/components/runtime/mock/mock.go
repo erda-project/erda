@@ -7,12 +7,11 @@ package mock
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
-
 	apistructs "github.com/erda-project/erda/apistructs"
 	dbclient "github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	events "github.com/erda-project/erda/internal/tools/orchestrator/events"
 	spec "github.com/erda-project/erda/internal/tools/orchestrator/spec"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockDBService is a mock of DBService interface.

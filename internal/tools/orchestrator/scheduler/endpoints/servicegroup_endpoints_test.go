@@ -21,11 +21,13 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/cap"
@@ -353,7 +355,7 @@ func TestHTTPEndpoints_ServiceGroupDelete(t *testing.T) {
 				Cap:               tt.fields.Cap,
 			}
 
-			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.serviceGroupImpl), "Delete", func(_ *servicegroup.ServiceGroupImpl, namespace string, name, force string, extra map[string]string) error {
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.serviceGroupImpl), "Delete", func(_ *servicegroup.ServiceGroupImpl, namespace, name string, force bool, extra map[string]string) error {
 				if tt.name == "Test_01" || tt.name == "Test_02" {
 					return nil
 				}
@@ -906,6 +908,102 @@ func TestHTTPEndpoints_ServiceGroupConfigUpdate(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ServiceGroupConfigUpdate() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_ServiceGroupDelete(t *testing.T) {
+	type args struct {
+		ctx  context.Context
+		r    func() (*http.Request, error)
+		vars map[string]string
+	}
+
+	parseBoolErr := strconv.NumError{
+		Func: "ParseBool",
+		Num:  "tue",
+		Err:  strconv.ErrSyntax,
+	}
+
+	ctx := context.Background()
+	tests := []struct {
+		name    string
+		args    args
+		want    httpserver.Responser
+		wantErr bool
+	}{
+		{
+			name: "case_01",
+			args: args{
+				ctx: ctx,
+				r: func() (*http.Request, error) {
+					req, err := http.NewRequest(http.MethodDelete, "/api/servicegroup?namespace=service&name=demo&force=true", nil)
+					if err != nil {
+						return nil, err
+					}
+					return req, nil
+				},
+			},
+			want: httpserver.HTTPResponse{
+				Status: http.StatusOK,
+				Content: apistructs.ServiceGroupDeleteV2Response{
+					Header: apistructs.Header{
+						Success: true,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "case_02",
+			args: args{
+				ctx: ctx,
+				r: func() (*http.Request, error) {
+					req, err := http.NewRequest(http.MethodDelete, "/api/servicegroup?namespace=service&name=demo&force=tue", nil)
+					if err != nil {
+						return nil, err
+					}
+					return req, nil
+				},
+			},
+			want: httpserver.HTTPResponse{
+				Status: http.StatusOK,
+				Content: apistructs.ServiceGroupDeleteV2Response{
+					Header: apistructs.Header{
+						Success: false,
+						Error: apistructs.ErrorResponse{
+							Msg: parseBoolErr.Error(),
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	sgi := &servicegroup.ServiceGroupImpl{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(sgi), "Delete", func(*servicegroup.ServiceGroupImpl, string, string, bool, map[string]string) error {
+		return nil
+	})
+
+	defer monkey.UnpatchAll()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &HTTPEndpoints{
+				ServiceGroupImpl: sgi,
+			}
+
+			req, err := tt.args.r()
+			assert.NoError(t, err)
+			got, err := h.ServiceGroupDelete(tt.args.ctx, req, tt.args.vars)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ServiceGroupDelete() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ServiceGroupDelete() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

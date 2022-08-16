@@ -875,22 +875,7 @@ func (fsm *DeployFSMContext) genProjectNamespace(prjIDStr string) map[string]str
 }
 
 func (fsm *DeployFSMContext) deployService() error {
-	// make sure runtime must have scheduleName
-	if fsm.Runtime.ScheduleName.Name == "" {
-		// if no scheduleName, we set it
-		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
-		resp, err := fsm.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: fsm.Runtime.ClusterName})
-		if err != nil {
-			return err
-		}
-		cluster := resp.Data
-		fsm.Runtime.InitScheduleName(cluster.Type)
-		if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
-			return err
-		}
-	}
-
-	// 计算项目预留资源，是否满足发布徐局
+	// project quota
 	deployNeedCpu, deployNeedMem, err := fsm.PrepareCheckProjectResource(fsm.App, fsm.App.ProjectID, fsm.Spec, fsm.Runtime)
 	if err != nil {
 		fsm.pushLog(err.Error())
@@ -920,6 +905,21 @@ func (fsm *DeployFSMContext) deployService() error {
 	}
 
 	projectECI := utils.IsProjectECIEnable(fsm.bdl, fsm.Runtime.ProjectID, fsm.Runtime.Workspace, fsm.Runtime.OrgID, fsm.Runtime.Creator)
+	// make sure runtime must have scheduleName
+	if fsm.Runtime.ScheduleName.Name == "" {
+		// if no scheduleName, we set it
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+		resp, err := fsm.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: fsm.Runtime.ClusterName})
+		if err != nil {
+			return err
+		}
+		cluster := resp.Data
+		fsm.Runtime.InitScheduleName(cluster.Type)
+		if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+			return err
+		}
+	}
+
 	// generate request
 	group := apistructs.ServiceGroupCreateV2Request{}
 	usedAddonInsMap, usedAddonTenantMap, err := fsm.generateDeployServiceRequest(&group, *projectAddons, projectAddonTenants, projectECI)

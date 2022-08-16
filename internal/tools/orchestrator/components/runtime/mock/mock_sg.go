@@ -8,9 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
-
 	apistructs "github.com/erda-project/erda/apistructs"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockServiceGroup is a mock of ServiceGroup interface.
@@ -80,7 +79,7 @@ func (mr *MockServiceGroupMockRecorder) Create(arg0 interface{}) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockServiceGroup) Delete(arg0, arg1, arg2 string, arg3 map[string]string) error {
+func (m *MockServiceGroup) Delete(arg0, arg1 string, arg2 bool, arg3 map[string]string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
