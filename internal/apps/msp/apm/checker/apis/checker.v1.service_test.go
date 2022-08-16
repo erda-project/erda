@@ -182,7 +182,7 @@ func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
 			})
 
 			var cv1s *checkerV1Service
-			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummary", func(cv1s *checkerV1Service, lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*checkerpb.DescribeItemV1) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummary", func(cv1s *checkerV1Service, ctx context.Context, lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*checkerpb.DescribeItemV1) error {
 				if metricID == -2 {
 					return errors.New("no metric")
 				}
