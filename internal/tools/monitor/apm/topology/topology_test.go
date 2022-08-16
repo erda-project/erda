@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/gofrs/uuid"
@@ -715,6 +716,18 @@ func TestGetProcessDiskIo(t *testing.T) {
 					require.Equal(t, wantV, params[wantK])
 				}
 			},
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							0,
+							time.Now(), //time
+							1,          // rxBytes
+							2,          // txBytes
+						},
+					},
+				},
+			},
 		},
 	}
 	response, err := service.GetProcessDiskIo(context.Background(), nil, ServiceParams{})
@@ -722,19 +735,380 @@ func TestGetProcessDiskIo(t *testing.T) {
 	require.Nil(t, response)
 }
 
+func TestGetProcessNetIo(t *testing.T) {
+	service := provider{
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+				require.Equal(t, "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(rx_bytes::field), 2),round_float(avg(tx_bytes::field), 2) FROM docker_container_summary WHERE terminus_key::tag=$terminus_key AND service_id=$service_id  GROUP BY time()", stmt)
+
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+				want["service_id"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							0,
+							time.Now(),
+							1,
+							2,
+						},
+					},
+				},
+			},
+		},
+	}
+	response, err := service.GetProcessNetIo(nil, ServiceParams{})
+	require.NoError(t, err)
+	require.Nil(t, response)
+}
+func TestGetServiceInstanceIds(t *testing.T) {
+	service := provider{
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+				require.Equal(t, "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-max(timestamp),300000000000),'false','true'),last(host_ip::tag) FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_id::tag =$service_id GROUP BY service_instance_id::tag", stmt)
+
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+				want["service_id"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							0,
+							"10.10.10.10",
+							true,
+							"30.30.30.30",
+						},
+					},
+				},
+			},
+		},
+	}
+	response, err := service.GetServiceInstanceIds(context.Background(), nil, ServiceParams{})
+	require.NoError(t, err)
+	require.ElementsMatch(t, []*InstanceInfo{
+		{
+			Id:     "0",
+			Ip:     "10.10.10.10",
+			Status: true,
+			HostIP: "30.30.30.30",
+		},
+	}, response)
+	//require.Equal(t, []*InstanceInfo{}, response)
+}
+
+func TestGetServiceInstances(t *testing.T) {
+	service := provider{
+		t: mockI18n{},
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+				wantStmt := make(map[string]byte)
+				wantStmt["SELECT service_instance_id::tag,service_agent_platform::tag,format_time(start_time_mean::field*1000000,'2006-01-02 15:04:05') AS start_time,format_time(timestamp,'2006-01-02 15:04:05') AS last_heartbeat_time FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
+				wantStmt["SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
+
+				if _, ok := wantStmt[stmt]; !ok {
+					t.Errorf("stmt should be %v, but is %s", wantStmt, stmt)
+					t.Log(stmt)
+				}
+
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+				want["service_id"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							0,
+							0,
+							0,
+							0,
+						},
+					},
+				},
+			},
+		},
+	}
+	response, err := service.GetServiceInstances(context.Background(), nil, ServiceParams{})
+	require.NoError(t, err)
+	require.ElementsMatch(t, []*ServiceInstance{
+		{
+			ApplicationName:     "",
+			ServiceId:           "",
+			ServiceName:         "",
+			ServiceInstanceName: "",
+			ServiceInstanceId:   "0",
+			InstanceState:       "serviceInstanceStateStopped",
+			PlatformVersion:     "0",
+			StartTime:           "0",
+			LastHeartbeatTime:   "0",
+		},
+	}, response)
+	//require.Equal(t, []*ServiceInstance{}, response)
+}
+
+func TestGetServiceOverview(t *testing.T) {
+	service := provider{
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+				wantStmt := make(map[string]byte)
+				wantStmt["sum(errors_sum) FROM application_http_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 0
+				wantStmt["SELECT service_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
+				wantStmt["SELECT sum(errors_sum) FROM application_http_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(errors_sum) FROM application_rpc_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(errors_sum) FROM application_cache_service WHERE source_terminus_key=$terminus_key AND source_service_name=$service_name AND source_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(errors_sum) FROM application_db_service WHERE source_terminus_key=$terminus_key AND source_service_name=$service_name AND source_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(errors_sum) FROM application_mq_service WHERE source_terminus_key=$terminus_key AND source_service_name=$service_name AND source_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(count) FROM error_count WHERE terminus_key::tag=$terminus_key AND service_name=$service_name AND service_id=$service_id"] = 1
+				wantStmt["SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key::tag=$terminus_key AND service_name=$service_name"] = 1
+
+				if _, ok := wantStmt[stmt]; !ok {
+					t.Errorf("stmt should be %v, but is %s", wantStmt, stmt)
+					t.Log(stmt)
+				}
+
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							"ServiceName",
+							"ServiceInstanceName",
+							"InstanceState",
+						},
+					},
+				},
+			},
+		},
+	}
+	response, err := service.GetServiceOverview(context.Background(), nil, ServiceParams{})
+	require.NoError(t, err)
+	require.Equal(t, []map[string]interface{}{
+		{
+			"alert_count":             "ServiceName",
+			"running_instances":       0,
+			"service_error_req_count": float64(0),
+			"service_exception_count": "ServiceName",
+			"stopped_instances":       0,
+		},
+	}, response)
+}
+
+func TestGetOverview(t *testing.T) {
+	service := provider{
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+
+				wantStmt := make(map[string]byte)
+				wantStmt["SELECT distinct(service_name::tag) FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_id::tag"] = 0
+				wantStmt["SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"] = 1
+				wantStmt["SELECT sum(errors_sum::field) FROM application_http_service WHERE target_terminus_key::tag=$terminus_key"] = 1
+				wantStmt["SELECT sum(errors_sum::field) FROM application_rpc_service WHERE target_terminus_key::tag=$terminus_key"] = 1
+				wantStmt["SELECT sum(errors_sum::field) FROM application_cache_service WHERE target_terminus_key::tag=$terminus_key"] = 1
+				wantStmt["SELECT sum(errors_sum::field) FROM application_db_service WHERE target_terminus_key::tag=$terminus_key"] = 1
+				wantStmt["SELECT sum(errors_sum::field) FROM application_mq_service WHERE target_terminus_key::tag=$terminus_key"] = 1
+				wantStmt["SELECT sum(count) FROM error_count WHERE terminus_key::tag=$terminus_key"] = 1
+				wantStmt["SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key::tag=$terminus_key"] = 1
+
+				if _, ok := wantStmt[stmt]; !ok {
+					t.Errorf("stmt should be %v, but is %s", wantStmt, stmt)
+				}
+
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							float64(0),
+							"running",
+						},
+					},
+				},
+			},
+		},
+	}
+	response, err := service.GetOverview(context.Background(), nil, GlobalParams{})
+	require.NoError(t, err)
+	require.Equal(t, map[string]interface{}{
+		"data": []map[string]interface{}{
+			{
+				"alert_count":                    float64(0),
+				"service_count":                  float64(0),
+				"service_error_req_count":        float64(0),
+				"service_exception_count":        float64(0),
+				"service_running_instance_count": float64(1),
+			},
+		},
+	}, response)
+}
+
+func TestGetServiceRequest(t *testing.T) {
+	service := provider{
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+				wantStmt := make(map[string]byte)
+				wantStmt["SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum),sum(errors_sum)/sum(count_sum) FROM application_http_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum),sum(errors_sum)/sum(count_sum) FROM application_rpc_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum),sum(errors_sum)/sum(count_sum) FROM application_cache_service WHERE source_terminus_key=$terminus_key AND source_service_name=$service_name AND source_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum),sum(errors_sum)/sum(count_sum) FROM application_db_service WHERE source_terminus_key=$terminus_key AND source_service_name=$service_name AND source_service_id=$service_id"] = 1
+				wantStmt["SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum),sum(errors_sum)/sum(count_sum) FROM application_mq_service WHERE source_terminus_key=$terminus_key AND source_service_name=$service_name AND source_service_id=$service_id"] = 1
+
+				if _, ok := wantStmt[stmt]; !ok {
+					t.Errorf("stmt should be %v, but is %s", wantStmt, stmt)
+					t.Log(stmt)
+				}
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+				want["service_id"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							float64(0),
+							float64(0),
+							float64(0),
+						},
+					},
+				},
+			},
+		},
+		t: mockI18n{},
+	}
+	response, err := service.GetServiceRequest(context.Background(), nil, ServiceParams{})
+	require.NoError(t, err)
+	require.ElementsMatch(t, []RequestTransaction{
+		{
+			RequestType:      "application_http_service_request",
+			RequestCount:     float64(0),
+			RequestAvgTime:   float64(0),
+			RequestErrorRate: float64(0),
+		},
+		{
+			RequestType:      "application_cache_service_request",
+			RequestCount:     float64(0),
+			RequestAvgTime:   float64(0),
+			RequestErrorRate: float64(0),
+		},
+		{
+			RequestType:      "application_rpc_service_request",
+			RequestCount:     float64(0),
+			RequestAvgTime:   float64(0),
+			RequestErrorRate: float64(0),
+		},
+		{
+			RequestType:      "application_mq_service_request",
+			RequestCount:     float64(0),
+			RequestAvgTime:   float64(0),
+			RequestErrorRate: float64(0),
+		},
+		{
+			RequestType:      "application_db_service_request",
+			RequestCount:     float64(0),
+			RequestAvgTime:   float64(0),
+			RequestErrorRate: float64(0),
+		},
+	}, response)
+}
+
+func TestGetInstances(t *testing.T) {
+	service := provider{
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+				require.Equal(t, "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag", stmt)
+
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+			data: &model.ResultSet{
+				Data: &model.Data{
+					Rows: [][]interface{}{
+						{
+							0,
+							0,
+							0,
+						},
+					},
+				},
+			},
+		},
+	}
+	response, err := service.GetInstances(context.Background(), nil, Vo{})
+	require.NoError(t, err)
+
+	require.Equal(t, map[string][]ServiceInstance{
+		"0": []ServiceInstance{
+			{
+				ApplicationName:     "",
+				ServiceId:           "0",
+				ServiceName:         "",
+				ServiceInstanceName: "0",
+				ServiceInstanceId:   "",
+				InstanceState:       "0",
+				PlatformVersion:     "",
+				StartTime:           "",
+				LastHeartbeatTime:   "",
+			},
+		},
+	}, response)
+}
+
 type mockMetricQuery struct {
+	data      *model.ResultSet
 	checkStmt func(stmt string, params map[string]interface{})
 }
 
 func (m mockMetricQuery) Query(ctx context.Context, tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
 	m.checkStmt(statement, params)
-	return &model.ResultSet{
-		Data: &model.Data{
-			Columns: []*model.Column{
-				{},
+	if m.data == nil {
+		return &model.ResultSet{
+			Data: &model.Data{
+				Rows: [][]interface{}{
+					{},
+				},
+				Columns: []*model.Column{
+					{},
+				},
 			},
-		},
-	}, nil
+		}, nil
+	}
+	return m.data, nil
 }
 
 func (m mockMetricQuery) QueryWithFormat(ctx context.Context, tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
@@ -796,4 +1170,19 @@ func (m mockMetricQuery) HandleV1(r *http.Request, params *metricq.QueryParams) 
 
 func (m mockMetricQuery) Charts(langCodes i18n.LanguageCodes, typ string) []*chartmeta.ChartMeta {
 	return nil
+}
+
+type mockI18n struct {
+}
+
+func (m mockI18n) Get(lang i18n.LanguageCodes, key, def string) string {
+	return def
+}
+
+func (m mockI18n) Text(lang i18n.LanguageCodes, key string) string {
+	return key
+}
+
+func (m mockI18n) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return key
 }

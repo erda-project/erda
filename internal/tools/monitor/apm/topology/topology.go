@@ -885,7 +885,7 @@ type InstanceInfo struct {
 	HostIP string `json:"hostIp"`
 }
 
-func (topology *provider) GetServiceInstanceIds(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+func (topology *provider) GetServiceInstanceIds(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
 	// instance list
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
@@ -950,7 +950,7 @@ func (topology *provider) handleInstanceInfo(response *model.ResultSet) []*Insta
 	return instanceIds
 }
 
-func (topology *provider) GetServiceInstances(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+func (topology *provider) GetServiceInstances(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
