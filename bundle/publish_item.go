@@ -59,7 +59,7 @@ func (b *Bundle) QueryMyPublishItem(userID string, req *apistructs.QueryPublishI
 	}
 	var values = make(url.Values)
 	req.ToValues(values)
-	request := b.hc.Get(host).Path("/api/my-publish-items").
+	request := b.hc.Get(host).Path("/core/api/my-publish-items").
 		Header("Internal-Client", "bundle").
 		Header("User-ID", userID).
 		Header(httputil.OrgHeader, strconv.FormatInt(req.OrgID, 10))
