@@ -1778,6 +1778,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 
 	node := Node{
 		Parents: []*Node{},
+		Metric:  &Metric{},
 	}
 	tags := nodeRelation.Tags
 
