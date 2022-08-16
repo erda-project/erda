@@ -36,7 +36,14 @@ func Test_mergeNodeType(t *testing.T) {
 				target: TargetServiceNodeType,
 				source: SourceServiceNodeType,
 			},
-			want: 1674,
+			want: 1732,
+		},
+		{
+			args: args{
+				target: nil,
+				source: nil,
+			},
+			want: 32,
 		},
 	}
 	for _, tt := range tests {
