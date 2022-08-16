@@ -561,13 +561,13 @@ func (r *Runtime) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*a
 	if !perm.Access {
 		return nil, apierrors.ErrDeployRuntime.AccessDenied()
 	}
-	deployment, err := r.db.FindLastDeployment(runtimeID)
+	deployment, err := r.db.FindLastSuccessDeployment(runtimeID)
 	if err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
 	}
 	if deployment == nil {
 		// it will happen, but it often implicit some errors
-		return nil, apierrors.ErrDeployRuntime.InvalidState("last deployment not found")
+		return nil, apierrors.ErrDeployRuntime.InvalidState("last success deployment not found")
 	}
 	if deployment.ReleaseId == "" {
 		return nil, apierrors.ErrDeployRuntime.InvalidState("抱歉，检测到不兼容的部署任务，请去重新构建")
