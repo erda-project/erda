@@ -72,6 +72,14 @@ type chNodeEdge struct {
 	PeerServiceScope string `ch:"peer_service_scope"`
 	PeerAddress      string `ch:"peer_address"`
 
+	// service-node related
+	ServiceID       string `ch:"service_id"`
+	ServiceName     string `ch:"service_name"`
+	ApplicationId   string `ch:"application_id"`
+	ApplicationName string `ch:"application_name"`
+	RuntimeId       string `ch:"runtime_id"`
+	RuntimeName     string `ch:"runtime_name"`
+
 	ErrorsSum  float64 `ch:"errors_sum"`
 	CountSum   float64 `ch:"count_sum"`
 	ElapsedSum float64 `ch:"elapsed_sum"`
@@ -118,12 +126,12 @@ func (cn *chNodeEdge) ToTopologyNodeRelation() *TopologyNodeRelation {
 			ProjectId:             "",
 			ProjectName:           "",
 			Workspace:             "",
-			ApplicationId:         "",
-			ApplicationName:       "",
-			RuntimeId:             "",
-			RuntimeName:           "",
-			ServiceName:           "",
-			ServiceId:             "",
+			ApplicationId:         cn.ApplicationId,
+			ApplicationName:       cn.ApplicationName,
+			RuntimeId:             cn.RuntimeId,
+			RuntimeName:           cn.RuntimeName,
+			ServiceName:           cn.ServiceName,
+			ServiceId:             cn.ServiceID,
 			ServiceInstanceId:     "",
 			ServiceIp:             "",
 			Type:                  cn.TargetType,
@@ -258,6 +266,13 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows dr
 
 		if sourceNode.Valid() {
 			tg.adj[targetNode.Id][sourceNode.Id] = struct{}{}
+			if n, ok := tg.nodes[sourceNode.Id]; ok {
+				if n.RuntimeId == "" {
+					n.RuntimeId = sourceNode.RuntimeId
+				}
+			} else {
+				tg.nodes[sourceNode.Id] = sourceNode
+			}
 		}
 	}
 }
