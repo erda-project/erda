@@ -31,10 +31,14 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/chartmeta"
+	query "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1"
 
 	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
@@ -695,4 +699,101 @@ func Test_provider_isExistTopologyNode(t *testing.T) {
 			assert.Equalf(t, tt.want, topology.isExistTopologyNode(tt.args.node, tt.args.topologyNodes), "isExistTopologyNode(%v, %v)", tt.args.node, tt.args.topologyNodes)
 		})
 	}
+}
+
+func TestGetProcessDiskIo(t *testing.T) {
+	service := provider{
+		metricq: mockMetricQuery{
+			checkStmt: func(stmt string, params map[string]interface{}) {
+				require.Equal(t, "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(blk_read_bytes::field), 2),round_float(avg(blk_write_bytes::field), 2) FROM docker_container_summary WHERE terminus_key::tag=$terminus_key AND service_id=$service_id  GROUP BY time()", stmt)
+
+				want := make(map[string]interface{})
+				want["terminus_key"] = ""
+				want["service_id"] = ""
+
+				for wantK, wantV := range want {
+					require.Equal(t, wantV, params[wantK])
+				}
+			},
+		},
+	}
+	response, err := service.GetProcessDiskIo(context.Background(), nil, ServiceParams{})
+	require.NoError(t, err)
+	require.Nil(t, response)
+}
+
+type mockMetricQuery struct {
+	checkStmt func(stmt string, params map[string]interface{})
+}
+
+func (m mockMetricQuery) Query(ctx context.Context, tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
+	m.checkStmt(statement, params)
+	return &model.ResultSet{
+		Data: &model.Data{
+			Columns: []*model.Column{
+				{},
+			},
+		},
+	}, nil
+}
+
+func (m mockMetricQuery) QueryWithFormat(ctx context.Context, tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
+	return nil, nil, nil
+}
+
+func (m mockMetricQuery) Client() *elastic.Client {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m mockMetricQuery) Indices(metrics []string, clusters []string, start, end int64) []string {
+	return nil
+}
+
+func (m mockMetricQuery) Handle(r *http.Request) interface{} {
+	return nil
+}
+
+func (m mockMetricQuery) MetricNames(langCodes i18n.LanguageCodes, scope, scopeID string) ([]*metricpb.NameDefine, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) MetricMeta(langCodes i18n.LanguageCodes, scope, scopeID string, pb ...string) ([]*metricpb.MetricMeta, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) GetSingleMetricsMeta(langCodes i18n.LanguageCodes, scope, scopeID, metric string) (*metricpb.MetricMeta, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) GetSingleAggregationMeta(langCodes i18n.LanguageCodes, mode, name string) (*metricpb.Aggregation, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) RegeistMetricMeta(scope, scopeID, group string, metrics ...*metricpb.MetricMeta) error {
+	return nil
+}
+
+func (m mockMetricQuery) UnregeistMetricMeta(scope, scopeID, group string, metrics ...string) error {
+	return nil
+}
+
+func (m mockMetricQuery) MetricGroups(langCodes i18n.LanguageCodes, scope, scopeID, mode string) ([]*metricpb.Group, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) MetricGroup(langCodes i18n.LanguageCodes, scope, scopeID, group, mode, format string, appendTags bool) (*metricpb.MetricGroup, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) QueryWithFormatV1(qlang, statement, format string, langCodes i18n.LanguageCodes) (*query.Response, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) HandleV1(r *http.Request, params *metricq.QueryParams) interface{} {
+	return nil
+}
+
+func (m mockMetricQuery) Charts(langCodes i18n.LanguageCodes, typ string) []*chartmeta.ChartMeta {
+	return nil
 }
