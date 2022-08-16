@@ -67,6 +67,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.Router.POST("/collect/:metric", p.collectMetric, p.auth.basicAuth())
 	p.Router.POST("/collect/logs/:source", p.collectLogs, p.auth.basicAuth())
+	p.Router.POST("/collect/logs-all", p.collectLogsAll, p.auth.basicAuth())
 	return nil
 }
 
