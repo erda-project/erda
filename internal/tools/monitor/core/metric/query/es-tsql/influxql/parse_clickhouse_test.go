@@ -338,6 +338,26 @@ func TestConditionToExpr(t *testing.T) {
 			},
 			want: "SELECT * FROM \"table\" WHERE ((tag_values[indexOf(tag_keys,'target_service_id')])=('2673_feature/test1_apm-demo-api') or (tag_values[indexOf(tag_keys,'target_service_id')])=('2673_feature/test1_apm-demo-dubbo') or (tag_values[indexOf(tag_keys,'target_service_id')])=('2673_feature/test1_apm-demo-ui'))",
 		},
+		{
+			name:      "key gt,lt",
+			originSql: "select * from table where column::tag > column2::tag  and (column::tag > 2 or column::tag < 3)",
+			want:      "SELECT * FROM \"table\" WHERE (tag_values[indexOf(tag_keys,'column')] > tag_values[indexOf(tag_keys,'column2')] AND ((tag_values[indexOf(tag_keys,'column')] > 2) OR (tag_values[indexOf(tag_keys,'column')] < 3)))",
+		},
+		{
+			name:      "key gte,lte",
+			originSql: "select * from table where column::tag >= column2::tag  and (column::tag >= 2 or column::tag <= 3)",
+			want:      "SELECT * FROM \"table\" WHERE (tag_values[indexOf(tag_keys,'column')] >= tag_values[indexOf(tag_keys,'column2')] AND ((tag_values[indexOf(tag_keys,'column')] >= 2) OR (tag_values[indexOf(tag_keys,'column')] <= 3)))",
+		},
+		{
+			name:      "regex",
+			originSql: "select * from table where column::tag =~/cpu[0-2]$/",
+			want:      "SELECT * FROM \"table\" WHERE extract(tag_values[indexOf(tag_keys,'column')],'cpu[0-2]$') != ''",
+		},
+		{
+			name:      "not equal",
+			originSql: "select * from table where column::tag = 123 and column::tag != 123",
+			want:      "SELECT * FROM \"table\" WHERE ((tag_values[indexOf(tag_keys,'column')] = 123) AND ((tag_values[indexOf(tag_keys,'column')] != 123) AND tag_values[indexOf(tag_keys,'column')] != '%!s(int64=123)'))",
+		},
 	}
 
 	for _, test := range tests {
@@ -450,10 +470,19 @@ func TestSelect(t *testing.T) {
 			sql:  "select round_float(avg(committed::field), 2) from table",
 			want: "SELECT AVG(if(indexOf(number_field_keys,'committed') == 0,null,number_field_values[indexOf(number_field_keys,'committed')])) AS \"cd848468318e898b\" FROM \"table\"",
 		},
+		{
+			name: "select time diff function",
+			sql:  "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state from table",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\" FROM \"table\"",
+		},
+		{
+			name: "select time diff function",
+			sql:  "SELECT service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'false','true') AS state from table",
+			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\" FROM \"table\"",
+		},
 	}
 
 	for _, test := range tests {
-		//parseQueryFieldsByExpr
 		t.Run(test.name, func(t *testing.T) {
 			p := Parser{
 				ctx: &Context{},
@@ -519,6 +548,16 @@ func TestGroupBy(t *testing.T) {
 			name: "no group",
 			sql:  "select max(http_status_code::tag) from table",
 			want: "SELECT MAX(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"61421335fd474c8e\" FROM \"table\"",
+		},
+		{
+			name: "group tostring function",
+			sql:  "select max(http_status_code::tag),tostring(timestamp) from table group by tostring(timestamp)",
+			want: "SELECT MAX(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"61421335fd474c8e\", toNullable(timestamp) AS \"timestamp\" FROM \"table\" GROUP BY \"timestamp\", '', tostring(timestamp)",
+		},
+		{
+			name: "group sub function",
+			sql:  "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') as state from table group by time()",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60)),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"service_instance_id::tag\", \"timestamp\", bucket_timestamp",
 		},
 	}
 
