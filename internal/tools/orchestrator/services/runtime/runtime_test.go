@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
@@ -584,4 +585,43 @@ func TestRuntime_GetOrg(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Redeploy_Deploying(t *testing.T) {
+	db, mock, err := dbclient.InitMysqlMock()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	bdl := bundle.New()
+
+	r := Runtime{
+		db: &dbclient.DBClient{
+			DBEngine: &dbengine.DBEngine{
+				DB: db,
+			},
+		},
+		bdl: bdl,
+	}
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetApp", func(*bundle.Bundle, uint64) (*apistructs.ApplicationDTO, error) {
+		return &apistructs.ApplicationDTO{
+			ID: 1,
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission",
+		func(*bundle.Bundle, *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+			return &apistructs.PermissionCheckResponseData{Access: true}, nil
+		},
+	)
+
+	defer monkey.UnpatchAll()
+
+	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"id", "workspace", "application_id", "deployment_id"}).
+		AddRow(1, "PROD", 1, 2)).RowsWillBeClosed()
+
+	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"id", "runtime_id", "status", "release_id"}).
+		AddRow(2, 1, apistructs.DeploymentStatusDeploying, "0.1")).RowsWillBeClosed()
+
+	_, _ = r.Redeploy("1", 1, 1)
 }

@@ -14,6 +14,84 @@
 
 package dbclient
 
+import (
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/database/dbengine"
+)
+
+func TestFindLastSuccessDeployment(t *testing.T) {
+	db, mock, err := InitMysqlMock()
+	assert.NoError(t, err)
+	dbClient := DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: db,
+		},
+	}
+
+	type fields struct {
+		db   *DBClient
+		mock sqlmock.Sqlmock
+	}
+
+	type args struct {
+		runtimeId uint64
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		mockFun func(db sqlmock.Sqlmock)
+		want    uint64
+		wantErr bool
+	}{
+		{
+			name: "case1",
+			args: args{
+				runtimeId: 851,
+			},
+			fields: fields{
+				db:   &dbClient,
+				mock: mock,
+			},
+			mockFun: func(s sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"id", "runtime_id", "status"}).
+					AddRow(2, 851, apistructs.DeploymentStatusOK)
+				s.ExpectQuery("SELECT").WithArgs(851, apistructs.DeploymentStatusOK).
+					WillReturnRows(rows).RowsWillBeClosed()
+			},
+			want:    2,
+			wantErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.mockFun(test.fields.mock)
+			got, err := test.fields.db.FindLastSuccessDeployment(test.args.runtimeId)
+			if (err != nil) != test.wantErr {
+				t.Errorf("FindLastSuccessDeployment() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if got == nil {
+				t.Error("FindLastSuccessDeployment() got = nil, want != nil")
+				return
+			}
+			if !assert.Equal(t, test.want, got.ID) {
+				t.Errorf("FindLastSuccessDeployment() got = %v, want %v", got.ID, test.want)
+			}
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
+}
+
 // func TestDBClient_CreateDeployment(t *testing.T) {
 // 	client := initDb(t)
 //
