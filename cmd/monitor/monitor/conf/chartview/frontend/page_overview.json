@@ -204,7 +204,6 @@
               "all@ta_timing"
             ],
             "isSqlMode": false,
-            "limit": 5,
             "sortDimensions": [
               {
                 "aggregation": "avg",
@@ -255,7 +254,6 @@
               "time()",
               "doc_path::tag"
             ],
-            "limit": 5,
             "orderby": [
               {
                 "dir": "DESC",
@@ -317,7 +315,6 @@
               "all@ta_timing"
             ],
             "isSqlMode": false,
-            "limit": 5,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -381,7 +378,6 @@
               "time()",
               "doc_path::tag"
             ],
-            "limit": 5,
             "orderby": [
               {
                 "dir": "DESC",

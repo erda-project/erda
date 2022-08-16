@@ -30,7 +30,6 @@
               "all@ta_timing"
             ],
             "isSqlMode": false,
-            "limit": 5,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -97,7 +96,6 @@
               "time()",
               "browser::tag"
             ],
-            "limit": 5,
             "orderby": [
               {
                 "dir": "DESC",
@@ -163,7 +161,6 @@
               "all@ta_timing"
             ],
             "isSqlMode": false,
-            "limit": 5,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -227,7 +224,6 @@
               "time()",
               "browser::tag"
             ],
-            "limit": 5,
             "orderby": [
               {
                 "dir": "DESC",
