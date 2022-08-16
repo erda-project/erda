@@ -12,16 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmp
+package servicegroup
 
 import (
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
-var CMP_ALERT_CONDITIONS = apis.ApiSpec{
-	Path:        "/api/cmp/alerts/conditions",
-	BackendPath: "/api/cmp/alerts/conditions",
-	Host:        "cmp.marathon.l4lb.thisdcos.directory:9028",
-	Scheme:      "http",
-	Method:      "GET",
+func Test_Delete(t *testing.T) {
+	js, err := jsonstore.New(jsonstore.UseMemStore())
+	assert.NoError(t, err)
+	sgi := ServiceGroupImpl{
+		Js: js,
+	}
+	assert.NoError(t, sgi.Delete("services", "service-1", true, map[string]string{
+		"HelloKey": "HelloValue",
+	}))
 }

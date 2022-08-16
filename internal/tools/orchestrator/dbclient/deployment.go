@@ -304,6 +304,22 @@ func (db *DBClient) FindLastDeployment(runtimeId uint64) (*Deployment, error) {
 	return &deployment, nil
 }
 
+// FindLastSuccessDeployment find last successful deployment
+func (db *DBClient) FindLastSuccessDeployment(runtimeId uint64) (*Deployment, error) {
+	var deployment Deployment
+	r := db.Where("runtime_id = ?", runtimeId).
+		Where("status = ?", apistructs.DeploymentStatusOK).
+		Order("id desc").Limit(1).
+		Find(&deployment)
+	if r.Error != nil {
+		if r.RecordNotFound() {
+			return nil, nil
+		}
+		return nil, errors.Wrapf(r.Error, "failed to find last deployment, runtimeId: %v", runtimeId)
+	}
+	return &deployment, nil
+}
+
 func (db *DBClient) FindTopDeployments(runtimeId uint64, limit int) ([]Deployment, error) {
 	var deployments []Deployment
 	if err := db.

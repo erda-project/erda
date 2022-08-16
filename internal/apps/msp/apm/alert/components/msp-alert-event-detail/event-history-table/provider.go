@@ -139,7 +139,6 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 	statement := fmt.Sprintf("SELECT count(timestamp) FROM analyzer_alert " +
 		"WHERE family_id::tag=$eventId AND alert_suppressed::tag='false' ")
 	ctx = apis.GetContext(ctx, func(header *transport.Header) {
-		header.Set("terminus_key", params.ScopeId)
 	})
 	resp, err := p.Metric.QueryWithInfluxFormat(ctx, &metricpb.QueryWithInfluxFormatRequest{
 		Start:     "0",

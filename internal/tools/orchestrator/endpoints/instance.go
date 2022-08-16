@@ -42,6 +42,11 @@ const (
 	INSTANCE_REQUEST_TYPE_APPLICATION InstanceRequestType = "application"
 	INSTANCE_REQUEST_TYPE_SERVICE     InstanceRequestType = "service"
 	INSTANCE_REQUEST_TYPE_RUNTIME     InstanceRequestType = "runtime"
+
+	PodStatusHealthy    string = "Healthy"
+	PodStatusUnHealthy  string = "UnHealthy"
+	PodStatusCreating   string = "Creating"
+	PodStatusTerminated string = "Terminated"
 )
 
 // ListServiceInstance 获取runtime 下服务实例列表
@@ -198,6 +203,17 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 	pods := make(apistructs.Pods, 0, len(podList))
 	for _, v := range podList {
 		startat := ""
+		podHealthy := PodStatusUnHealthy
+		switch v.Phase {
+		case string(apiv1.PodRunning):
+			podHealthy = PodStatusHealthy
+		case string(apiv1.PodPending):
+			podHealthy = PodStatusCreating
+		case string(apiv1.PodFailed), string(apiv1.PodUnknown):
+			podHealthy = PodStatusUnHealthy
+		case string(apiv1.PodSucceeded):
+			podHealthy = PodStatusTerminated
+		}
 		if v.StartedAt != nil {
 			startat = v.StartedAt.Format(time.RFC3339Nano)
 		}
@@ -223,7 +239,7 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 			Uid:           v.Uid,
 			IPAddress:     v.PodIP,
 			Host:          v.HostIP,
-			Phase:         v.Phase,
+			Phase:         podHealthy,
 			Message:       v.Message,
 			StartedAt:     startat,
 			Service:       v.ServiceName,
@@ -244,83 +260,126 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 	runtimeId, _ := strconv.ParseUint(runtimeID, 10, 64)
 	sg, err := e.runtime.GetRuntimeServiceCurrentPods(runtimeId, serviceName)
 	if err != nil {
-		logrus.Warnf("get runtimeId %d service %s current pods failed: %v", runtimeId, serviceName, err)
+		return currPods, errors.Errorf("get runtimeId %d service %s current pods GetRuntimeServiceCurrentPods failed:%v", runtimeId, serviceName, err)
 	}
-	if err == nil {
-		if _, ok := sg.Extra[serviceName]; ok {
-			var k8sPods []apiv1.Pod
-			if json.Unmarshal([]byte(sg.Extra[serviceName]), &k8sPods) == nil {
-				for _, pod := range k8sPods {
-					clusterName := ""
-					if _, ok := pod.Labels["DICE_CLUSTER_NAME"]; ok {
-						clusterName = pod.Labels["DICE_CLUSTER_NAME"]
-					}
-					message := "Ok"
-					if pod.Status.Message != "" {
-						message = pod.Status.Message
-					}
 
-					podRestartCount := int32(0)
-					containersResource := make([]apistructs.PodContainer, 0)
-					for _, podContainerStatus := range pod.Status.ContainerStatuses {
-						if podContainerStatus.RestartCount > podRestartCount {
-							podRestartCount = podContainerStatus.RestartCount
-						}
+	if _, ok := sg.Extra[serviceName]; !ok {
+		return currPods, errors.Errorf("get runtimeId %d service %s current pods failed: no pods found in sg.Extra for service", runtimeId, serviceName)
+	}
 
-						containerID := ""
-						if len(strings.Split(podContainerStatus.ContainerID, "://")) <= 1 {
-							return currPods, errors.Errorf("Pod status containerStatuses no containerID, neew pod for service %s is creating, please wait", serviceName)
-						} else {
-							containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
-						}
+	var k8sPods []apiv1.Pod
+	err = json.Unmarshal([]byte(sg.Extra[serviceName]), &k8sPods)
+	if err != nil {
+		return currPods, errors.Errorf("get runtimeId %d service %s current pods failed: %v", runtimeId, serviceName, err)
+	}
 
-						containerResource := apistructs.ContainerResource{}
+	for _, pod := range k8sPods {
+		if pod.Status.Phase != apiv1.PodPending && pod.Status.Phase != apiv1.PodRunning {
+			logrus.Warnf("Pod %s/%s had Status in terminated or unknown, ignoring it.", pod.Namespace, pod.Name)
+			continue
+		}
 
-						for _, container := range pod.Spec.Containers {
-							if container.Name == podContainerStatus.Name {
-								requestmem, _ := container.Resources.Requests.Memory().AsInt64()
-								limitmem, _ := container.Resources.Limits.Memory().AsInt64()
-								containerResource = apistructs.ContainerResource{
-									MemRequest: int(requestmem / 1024 / 1024),
-									MemLimit:   int(limitmem / 1024 / 1024),
-									CpuRequest: (container.Resources.Requests.Cpu().AsApproximateFloat64() * 1000) / 1000,
-									CpuLimit:   (container.Resources.Limits.Cpu().AsApproximateFloat64() * 1000) / 1000,
-								}
-								break
-							}
-						}
+		clusterName := ""
+		if _, ok := pod.Labels["DICE_CLUSTER_NAME"]; ok {
+			clusterName = pod.Labels["DICE_CLUSTER_NAME"]
+		}
+		message := "Ok"
+		if pod.Status.Message != "" {
+			message = pod.Status.Message
+		}
 
-						containersResource = append(containersResource, apistructs.PodContainer{
-							ContainerID:   containerID,
-							ContainerName: podContainerStatus.Name,
-							Image:         podContainerStatus.Image,
-							Resource:      containerResource,
-						})
-					}
+		podRestartCount := int32(0)
+		containersResource := make([]apistructs.PodContainer, 0)
 
-					if pod.UID == "" || pod.Status.PodIP == "" || pod.Status.HostIP == "" ||
-						pod.Status.Phase == "" || pod.Status.StartTime == nil || len(containersResource) == 0 {
-						return currPods, errors.Errorf("Pod status have no enough info for pod, pod for service %s is creating, please wait", serviceName)
-					}
+		podHealthy := PodStatusHealthy
+		switch pod.Status.Phase {
+		case apiv1.PodPending:
+			podHealthy = PodStatusCreating
+			containerResource := apistructs.ContainerResource{}
+			for _, container := range pod.Spec.Containers {
+				requestmem, _ := container.Resources.Requests.Memory().AsInt64()
+				limitmem, _ := container.Resources.Limits.Memory().AsInt64()
+				containerResource = apistructs.ContainerResource{
+					MemRequest: int(requestmem / 1024 / 1024),
+					MemLimit:   int(limitmem / 1024 / 1024),
+					CpuRequest: (container.Resources.Requests.Cpu().AsApproximateFloat64() * 1000) / 1000,
+					CpuLimit:   (container.Resources.Limits.Cpu().AsApproximateFloat64() * 1000) / 1000,
+				}
+				containersResource = append(containersResource, apistructs.PodContainer{
+					ContainerName: container.Name,
+					Image:         container.Image,
+					Resource:      containerResource,
+				})
+			}
 
-					currPods = append(currPods, apistructs.Pod{
-						Uid:           string(pod.UID),
-						IPAddress:     pod.Status.PodIP,
-						Host:          pod.Status.HostIP,
-						Phase:         string(pod.Status.Phase),
-						Message:       message,
-						StartedAt:     pod.Status.StartTime.Format(time.RFC3339Nano),
-						Service:       serviceName,
-						ClusterName:   clusterName,
-						PodName:       pod.Name,
-						K8sNamespace:  pod.Namespace,
-						RestartCount:  podRestartCount,
-						PodContainers: containersResource,
-					})
+		default:
+			for _, podCondition := range pod.Status.Conditions {
+				if podCondition.Status != apiv1.ConditionTrue {
+					podHealthy = PodStatusUnHealthy
+					break
 				}
 			}
+
+			for _, podContainerStatus := range pod.Status.ContainerStatuses {
+				if podContainerStatus.RestartCount > podRestartCount {
+					podRestartCount = podContainerStatus.RestartCount
+				}
+				containerID := ""
+				if len(strings.Split(podContainerStatus.ContainerID, "://")) <= 1 {
+					return currPods, errors.Errorf("Pod status containerStatuses no containerID, neew pod for service %s is creating, please wait", serviceName)
+				} else {
+					containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
+				}
+
+				containerResource := apistructs.ContainerResource{}
+				for _, container := range pod.Spec.Containers {
+					if container.Name == podContainerStatus.Name {
+						requestmem, _ := container.Resources.Requests.Memory().AsInt64()
+						limitmem, _ := container.Resources.Limits.Memory().AsInt64()
+						containerResource = apistructs.ContainerResource{
+							MemRequest: int(requestmem / 1024 / 1024),
+							MemLimit:   int(limitmem / 1024 / 1024),
+							CpuRequest: (container.Resources.Requests.Cpu().AsApproximateFloat64() * 1000) / 1000,
+							CpuLimit:   (container.Resources.Limits.Cpu().AsApproximateFloat64() * 1000) / 1000,
+						}
+						break
+					}
+				}
+
+				containersResource = append(containersResource, apistructs.PodContainer{
+					ContainerID:   containerID,
+					ContainerName: podContainerStatus.Name,
+					Image:         podContainerStatus.Image,
+					Resource:      containerResource,
+				})
+			}
+
+			if pod.UID == "" || pod.Status.PodIP == "" || pod.Status.HostIP == "" ||
+				pod.Status.Phase == "" || pod.Status.StartTime == nil || len(containersResource) == 0 {
+				return currPods, errors.Errorf("Pod status have no enough info for pod, pod for service %s is creating, please wait", serviceName)
+			}
 		}
+
+		if pod.Status.StartTime == nil {
+			pod.Status.StartTime = &pod.CreationTimestamp
+		}
+
+		currPods = append(currPods, apistructs.Pod{
+			Uid:           string(pod.UID),
+			IPAddress:     pod.Status.PodIP,
+			Host:          pod.Status.HostIP,
+			Phase:         podHealthy,
+			Message:       message,
+			StartedAt:     pod.Status.StartTime.Format(time.RFC3339Nano),
+			Service:       serviceName,
+			ClusterName:   clusterName,
+			PodName:       pod.Name,
+			K8sNamespace:  pod.Namespace,
+			RestartCount:  podRestartCount,
+			PodContainers: containersResource,
+		})
 	}
+
 	if len(currPods) == 0 {
 		return currPods, errors.Errorf("No pods get for service %s, pod may be is creating, please wait", serviceName)
 	}

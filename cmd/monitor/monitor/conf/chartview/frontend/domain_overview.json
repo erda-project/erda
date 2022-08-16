@@ -1,0 +1,445 @@
+{
+  "id": "domain_overview",
+  "name": "Domain Overview",
+  "scope": "micro_service",
+  "desc": "",
+  "version": "v2",
+  "viewConfig": [
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 0,
+      "i": "view-QM0WE5EC",
+      "view": {
+        "title": "性能区间",
+        "i18n": {
+          "title": {
+            "zh": "性能区间",
+            "en": "Performance range"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_timing"
+            ],
+            "isSqlMode": false,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_timing-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filterzWQGjB61",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "type5ZwiKsx7",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "avg",
+                "alias": "请求排队",
+                "field": "ta_timing-tcp::field",
+                "key": "valuetrfhbfX4",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ms"
+                },
+                "i18n": {
+                  "alias": {
+                    "zh": "请求排队",
+                    "en": "Request queuing"
+                  }
+                }
+              },
+              {
+                "aggregation": "avg",
+                "alias": "服务器响应",
+                "field": "ta_timing-srt::field",
+                "key": "valueoNQZp78R",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ms"
+                },
+                "i18n": {
+                  "alias": {
+                    "zh": "服务器响应",
+                    "en": "Server response"
+                  }
+                }
+              },
+              {
+                "aggregation": "avg",
+                "alias": "整页加载",
+                "field": "ta_timing-plt::field",
+                "key": "valueM8oAgff3",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ms"
+                },
+                "i18n": {
+                  "alias": {
+                    "zh": "整页加载",
+                    "en": "Page loading"
+                  }
+                }
+              },
+              {
+                "aggregation": "avg",
+                "alias": "资源加载",
+                "field": "ta_timing-rlt::field",
+                "key": "valueEwfAhvYQ",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ms"
+                },
+                "i18n": {
+                  "alias": {
+                    "zh": "资源加载",
+                    "en": "Resource loading"
+                  }
+                }
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_timing"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "type5ZwiKsx7",
+                "expr": "time()"
+              },
+              {
+                "alias": "valuetrfhbfX4",
+                "expr": "round_float(avg(tcp::field), 2)"
+              },
+              {
+                "alias": "valueoNQZp78R",
+                "expr": "round_float(avg(srt::field), 2)"
+              },
+              {
+                "alias": "valueM8oAgff3",
+                "expr": "round_float(avg(plt::field), 2)"
+              },
+              {
+                "alias": "valueEwfAhvYQ",
+                "expr": "round_float(avg(rlt::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 7,
+      "i": "view-OI7jzGYa",
+      "view": {
+        "title": "平均时间",
+        "i18n": {
+          "title": {
+            "zh": "平均时间",
+            "en": "Average Time"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_timing"
+            ],
+            "customTime": "1hour",
+            "isSqlMode": false,
+            "limit": 5,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_timing-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filter8h7b7Mex",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "sortDimensions": [
+              {
+                "alias": "表达式-3",
+                "expr": "avg(plt::field) desc",
+                "key": "sortCMG3qfny",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeVO4x3E46",
+                "type": "time"
+              },
+              {
+                "alias": "主机",
+                "field": "ta_timing-host::tag",
+                "key": "type67OhQX8Q",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "avg",
+                "alias": "plt",
+                "field": "ta_timing-plt::field",
+                "key": "valuehmSz18Zb",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ms"
+                }
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_timing"
+            ],
+            "groupby": [
+              "time()",
+              "host::tag"
+            ],
+            "limit": 5,
+            "orderby": [
+              {
+                "expr": "avg(plt::field) desc"
+              }
+            ],
+            "select": [
+              {
+                "alias": "typeVO4x3E46",
+                "expr": "time()"
+              },
+              {
+                "alias": "type67OhQX8Q",
+                "expr": "host::tag"
+              },
+              {
+                "alias": "valuehmSz18Zb",
+                "expr": "round_float(avg(plt::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "filter_terminus_key": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 16,
+      "i": "view-AYcaBYD3",
+      "view": {
+        "title": "吞吐量",
+        "i18n": {
+          "title": {
+            "zh": "吞吐量",
+            "en": "Throughput"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_timing"
+            ],
+            "isSqlMode": false,
+            "limit": 5,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_timing-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filterpB4v7ouT",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "sortDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "plt",
+                "field": "ta_timing-plt::field",
+                "key": "sortAWXMpakb",
+                "resultType": "number",
+                "sort": "DESC",
+                "type": "sort"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeFzDHMAsF",
+                "type": "time"
+              },
+              {
+                "alias": "主机",
+                "field": "ta_timing-host::tag",
+                "key": "typeinsFgdvH",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "吞吐量",
+                "field": "ta_timing-plt::field",
+                "key": "valueVv9WHy5y",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "CUSTOM",
+                  "unit": "cpm"
+                }
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_timing"
+            ],
+            "groupby": [
+              "time()",
+              "host::tag"
+            ],
+            "limit": 5,
+            "orderby": [
+              {
+                "dir": "DESC",
+                "expr": "count(plt::field)"
+              }
+            ],
+            "select": [
+              {
+                "alias": "typeFzDHMAsF",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeinsFgdvH",
+                "expr": "host::tag"
+              },
+              {
+                "alias": "valueVv9WHy5y",
+                "expr": "round_float(count(plt::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "filter_terminus_key": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    }
+  ]
+}

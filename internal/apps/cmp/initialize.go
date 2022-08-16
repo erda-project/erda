@@ -78,8 +78,8 @@ func (p *provider) initialize(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	return server.ListenAndServe()
+	p.Router.Any("/**", server.Router().ServeHTTP)
+	return nil
 }
 
 func initKlog() {

@@ -561,13 +561,13 @@ func (r *Runtime) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*a
 	if !perm.Access {
 		return nil, apierrors.ErrDeployRuntime.AccessDenied()
 	}
-	deployment, err := r.db.FindLastDeployment(runtimeID)
+	deployment, err := r.db.FindLastSuccessDeployment(runtimeID)
 	if err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
 	}
 	if deployment == nil {
 		// it will happen, but it often implicit some errors
-		return nil, apierrors.ErrDeployRuntime.InvalidState("last deployment not found")
+		return nil, apierrors.ErrDeployRuntime.InvalidState("last success deployment not found")
 	}
 	if deployment.ReleaseId == "" {
 		return nil, apierrors.ErrDeployRuntime.InvalidState("抱歉，检测到不兼容的部署任务，请去重新构建")
@@ -1269,10 +1269,7 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		}
 		req.Namespace = runtime.ScheduleName.Namespace
 		req.Name = runtime.ScheduleName.Name
-		forceDelete := "false"
-		if req.Force {
-			forceDelete = "true"
-		}
+		forceDelete := req.Force
 		delHPAObjects, delVPAObjects, err := r.AppliedScaledObjects(uniqueID)
 		if err != nil {
 			logrus.Warnf("[alert] failed delete group, error in get runtime hpa and vpa rules: %v, (%v)",
@@ -1285,7 +1282,7 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		for svcName, ruleJson := range delVPAObjects {
 			extra[pstypes.ErdaVPAPrefix+svcName] = ruleJson
 		}
-		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, extra); err != nil {
+		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, extra); err != nil && err != servicegroup.DeleteNotFound {
 			// TODO: we should return err if delete failed (even if err is group not exist?)
 			logrus.Errorf("[alert] failed delete group in scheduler: %v, (%v)",
 				runtime.ScheduleName, err)

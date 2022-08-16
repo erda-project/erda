@@ -1,0 +1,376 @@
+{
+  "id": "ajax_detail",
+  "name": "Ajax Detail",
+  "scope": "micro_service",
+  "desc": "",
+  "version": "v2",
+  "viewConfig": [
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 0,
+      "i": "view-LLSIxmV7",
+      "view": {
+        "title": "Ajax 性能趋势 PV",
+        "i18n": {
+          "title": {
+            "zh": "Ajax 性能趋势 PV",
+            "en": "Ajax performance trends PV"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_req"
+            ],
+            "isSqlMode": false,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_req-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filterjyYSMtrp",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "req_path",
+                "field": "ta_req-req_path::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{req_path}}"
+                },
+                "key": "filterZNQQn0Ht",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeGfhakmXQ",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "PV",
+                "field": "ta_req-tt::field",
+                "key": "value4BKZi6u0",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_req"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeGfhakmXQ",
+                "expr": "time()"
+              },
+              {
+                "alias": "value4BKZi6u0",
+                "expr": "round_float(count(tt::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'",
+              "req_path::tag='{{req_path}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "filter_terminus_key": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 9,
+      "i": "view-KaqTkIU1",
+      "view": {
+        "title": "Ajax 性能趋势 响应时间",
+        "i18n": {
+          "title": {
+            "zh": "Ajax 性能趋势 响应时间",
+            "en": "Ajax performance Rt"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_req"
+            ],
+            "isSqlMode": false,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_req-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filteryzNaWoIg",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "req_path",
+                "field": "ta_req-req_path::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{req_path}}"
+                },
+                "key": "filterYU27MXW3",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeq46yOPK3",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "avg",
+                "alias": "响应时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "响应时间",
+                    "en": "Rt"
+                  }
+                },
+                "field": "ta_req-tt::field",
+                "key": "valuejz7Huf8R",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ms"
+                }
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_req"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeq46yOPK3",
+                "expr": "time()"
+              },
+              {
+                "alias": "valuejz7Huf8R",
+                "expr": "round_float(avg(tt::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'",
+              "req_path::tag='{{req_path}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "filter_terminus_key": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 8,
+      "x": 0,
+      "y": 18,
+      "i": "view-lggoldNR",
+      "view": {
+        "title": "HTTP 状态",
+        "i18n": {
+          "title": {
+            "zh": "HTTP 状态",
+            "en": "HTTP status"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@ta_req"
+            ],
+            "isSqlMode": false,
+            "limit": 5,
+            "resultFilters": [
+              {
+                "alias": "tk",
+                "field": "ta_req-tk::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{tk}}"
+                },
+                "key": "filterC9OnOJI5",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "req_path",
+                "field": "ta_req-req_path::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{req_path}}"
+                },
+                "key": "filterdIF683Md",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "sortDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "req",
+                "field": "ta_req-req::field",
+                "key": "sortaHVHWl1y",
+                "resultType": "number",
+                "sort": "DESC",
+                "type": "sort"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "type0Yi3OLjw",
+                "type": "time"
+              },
+              {
+                "alias": "status_code",
+                "field": "ta_req-status_code::tag",
+                "key": "type23WC9Jqn",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "req",
+                "field": "ta_req-req::field",
+                "key": "value7Ke1xgF8",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "ta_req"
+            ],
+            "groupby": [
+              "time()",
+              "status_code::tag"
+            ],
+            "limit": 5,
+            "orderby": [
+              {
+                "dir": "DESC",
+                "expr": "count(req::field)"
+              }
+            ],
+            "select": [
+              {
+                "alias": "type0Yi3OLjw",
+                "expr": "time()"
+              },
+              {
+                "alias": "type23WC9Jqn",
+                "expr": "status_code::tag"
+              },
+              {
+                "alias": "value7Ke1xgF8",
+                "expr": "round_float(count(req::field), 2)"
+              }
+            ],
+            "where": [
+              "tk::tag='{{tk}}'",
+              "req_path::tag='{{req_path}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        }
+      }
+    }
+  ]
+}

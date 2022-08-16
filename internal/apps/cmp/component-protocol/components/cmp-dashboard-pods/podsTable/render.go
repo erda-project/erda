@@ -166,17 +166,17 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = p.State.PageNo
-	urlQuery["pageSize"] = p.State.PageSize
-	urlQuery["sorterData"] = p.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = p.State.PageNo
+	query["pageSize"] = p.State.PageSize
+	query["sorterData"] = p.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(jsonData)
-	p.State.PodsTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(data)
+	p.State.PodsTableURLQuery = encode
 	return nil
 }
 

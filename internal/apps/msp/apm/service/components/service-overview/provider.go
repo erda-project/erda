@@ -61,7 +61,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
-		ctx := context.Background()
+		ctx := sdk.Ctx
 		interval := (endTime - startTime) / 1e3
 
 		switch sdk.Comp.Name {

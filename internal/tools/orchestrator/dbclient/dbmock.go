@@ -12,17 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmp
+package dbclient
 
 import (
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jinzhu/gorm"
 )
 
-var CMP_ALERT_CONDITIONS_VALUE = apis.ApiSpec{
-	Path:        "/api/cmp/alerts/conditions/value",
-	BackendPath: "/api/cmp/alerts/conditions/value",
-	Host:        "cmp.marathon.l4lb.thisdcos.directory:9028",
-	CheckLogin:  true,
-	Scheme:      "http",
-	Method:      "POST",
+func InitMysqlMock() (*gorm.DB, sqlmock.Sqlmock, error) {
+	db, mock, err := sqlmock.New()
+	if nil != err {
+		return nil, nil, err
+	}
+	mdb, err := gorm.Open("mysql", db)
+	if err != nil {
+		return nil, nil, err
+	}
+	return mdb, mock, err
 }

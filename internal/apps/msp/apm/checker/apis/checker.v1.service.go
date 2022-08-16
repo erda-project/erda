@@ -501,7 +501,7 @@ func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(ctx context.Cont
 	return s.queryCheckerMetrics(ctx, lang, start, end, `
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
-	WHERE project_id=$projectID 
+	WHERE project_id::tag=$projectID 
 	GROUP BY time($interval), metric::tag, status_name::tag 
 	LIMIT 200`,
 		map[string]*structpb.Value{
@@ -768,7 +768,6 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 		},
 	}
 	ctx = apis.GetContext(ctx, func(header *transport.Header) {
-		//header.Set("terminus_key", req.)
 	})
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)

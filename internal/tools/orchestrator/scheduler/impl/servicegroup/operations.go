@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
-var DeleteNotFound error = errors.New("not found")
+var DeleteNotFound = errors.New("not found")
 
 // TODO: Compared with service_endpoints.go, should the returned content be changed?
 func (s ServiceGroupImpl) Cancel(namespace string, name string) error {
@@ -93,19 +93,18 @@ func convertServiceGroupCreateV2Request(req apistructs.ServiceGroupCreateV2Reque
 	return sg, nil
 }
 
-func (s ServiceGroupImpl) Delete(namespace string, name, force string, sgExtra map[string]string) error {
+func (s ServiceGroupImpl) Delete(namespace, name string, force bool, sgExtra map[string]string) error {
 	sg := apistructs.ServiceGroup{}
 	// force offline, first time not set status offline, delete etcd data; after set status, get and delete again, not return error
-	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
-		if force != "true" {
-			if err == jsonstore.NotFoundErr {
-				logrus.Errorf("not found runtime %s on namespace %s", name, namespace)
-				return DeleteNotFound
-			}
-			logrus.Errorf("get from etcd err: %v when delete runtime %s on namespace %s", err, name, namespace)
-			return err
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil && !force {
+		if err == jsonstore.NotFoundErr {
+			logrus.Errorf("not found runtime %s on namespace %s", name, namespace)
+			return DeleteNotFound
 		}
+		logrus.Errorf("get from etcd err: %v when delete runtime %s on namespace %s", err, name, namespace)
+		return err
 	}
+
 	ns := sg.ProjectNamespace
 	if ns == "" {
 		ns = sg.Type
@@ -123,15 +122,11 @@ func (s ServiceGroupImpl) Delete(namespace string, name, force string, sgExtra m
 		}
 	}
 	logrus.Infof("start to delete service group %s on namespace %s", sg.ID, ns)
-	if _, err := s.handleServiceGroup(context.Background(), &sg, task.TaskDestroy); err != nil {
-		if force != "true" {
-			return err
-		}
+	if _, err := s.handleServiceGroup(context.Background(), &sg, task.TaskDestroy); err != nil && !force {
+		return err
 	}
-	if err := s.Js.Remove(context.Background(), mkServiceGroupKey(namespace, name), nil); err != nil {
-		if force != "true" {
-			return err
-		}
+	if err := s.Js.Remove(context.Background(), mkServiceGroupKey(namespace, name), nil); err != nil && !force {
+		return err
 	}
 	logrus.Infof("delete service group %s on namespace %s successfully", sg.ID, ns)
 	return nil
