@@ -1269,10 +1269,7 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		}
 		req.Namespace = runtime.ScheduleName.Namespace
 		req.Name = runtime.ScheduleName.Name
-		forceDelete := "false"
-		if req.Force {
-			forceDelete = "true"
-		}
+		forceDelete := req.Force
 		delHPAObjects, delVPAObjects, err := r.AppliedScaledObjects(uniqueID)
 		if err != nil {
 			logrus.Warnf("[alert] failed delete group, error in get runtime hpa and vpa rules: %v, (%v)",
@@ -1285,7 +1282,7 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		for svcName, ruleJson := range delVPAObjects {
 			extra[pstypes.ErdaVPAPrefix+svcName] = ruleJson
 		}
-		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, extra); err != nil {
+		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, extra); err != nil && err != servicegroup.DeleteNotFound {
 			// TODO: we should return err if delete failed (even if err is group not exist?)
 			logrus.Errorf("[alert] failed delete group in scheduler: %v, (%v)",
 				runtime.ScheduleName, err)

@@ -360,6 +360,10 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 			}
 		}
 
+		if pod.Status.StartTime == nil {
+			pod.Status.StartTime = &pod.CreationTimestamp
+		}
+
 		currPods = append(currPods, apistructs.Pod{
 			Uid:           string(pod.UID),
 			IPAddress:     pod.Status.PodIP,
