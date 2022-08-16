@@ -112,6 +112,10 @@ func toAggregation(nodeRelations []*NodeRelation) []exp.SelectClauses {
 		if target == nil {
 			continue
 		}
+		if len(relation.Source) == 0 {
+			ss = append(ss, mergeNodeType(target, nil))
+			continue
+		}
 		for _, source := range relation.Source {
 			ss = append(ss, mergeNodeType(target, source))
 		}
@@ -122,14 +126,23 @@ func toAggregation(nodeRelations []*NodeRelation) []exp.SelectClauses {
 func mergeNodeType(target, source *NodeType) exp.SelectClauses {
 	sc := exp.NewSelectClauses()
 	// 针对target特殊处理
-	sc = sc.SetSelect(exp.NewColumnListExpression(goqu.L("?", target.Type).As("target_type")))
-	sc = sc.WhereAppend(goqu.C(ckhelper.TrimTags(target.GroupByField[0])).Neq(""))
+	if target != nil {
+		sc = sc.SetSelect(exp.NewColumnListExpression(goqu.L("?", target.Type).As("target_type")))
+		for _, g := range target.GroupByField {
+			sc = sc.WhereAppend(goqu.L("has(tag_keys, ?) == 1", ckhelper.TrimTags(g)))
+		}
+	}
 
 	// 针对source特殊处理
-	sc = sc.SelectAppend(exp.NewColumnListExpression(goqu.L("?", source.Type).As("source_type")))
+	if source != nil {
+		sc = sc.SelectAppend(exp.NewColumnListExpression(goqu.L("?", source.Type).As("source_type")))
+	}
 
 	cmap, gmap, aggmap := map[string]struct{}{}, map[string]struct{}{}, map[string]struct{}{}
 	for _, item := range []*NodeType{target, source} {
+		if item == nil {
+			continue
+		}
 		for k, v := range item.Aggregation {
 			if _, ok := aggmap[k]; ok {
 				continue
@@ -147,7 +160,6 @@ func mergeNodeType(target, source *NodeType) exp.SelectClauses {
 
 			// group column
 			col := exp.NewColumnListExpression(ckhelper.FromTagsKey(g).As(ckhelper.TrimTags(g)))
-
 			sc = sc.SelectAppend(col)
 		}
 		// filter
