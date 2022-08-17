@@ -165,6 +165,7 @@ type PodContainer struct {
 	ContainerName string            `json:"containerName"`
 	Image         string            `json:"image"`
 	Resource      ContainerResource `json:"resources"`
+	Message       string            `json:"message"`
 }
 type ContainerResource struct {
 	MemRequest int     `json:"memRequest"`
