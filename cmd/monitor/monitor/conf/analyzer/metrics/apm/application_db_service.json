@@ -55,7 +55,9 @@
       "source_service_name": "#source_service_name",
       "source_addon_id": "#source_addon_id",
       "source_addon_type": "#source_addon_type",
-      "source_runtime_id": "#source_runtime_id"
+      "source_runtime_id": "#source_runtime_id",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id"
     },
     "alias": "application_db_service",
     "outputs": [

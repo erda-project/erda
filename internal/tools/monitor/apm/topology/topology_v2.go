@@ -192,7 +192,7 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 				goqu.C("org_name").In(orgName, ""),
 				goqu.C("metric_group").In(typeIndices),
 			)
-			sd = queryConditionsV2(sd, param, tagInfo)
+			sd = queryConditionsV2(sd, param, tagInfo, key)
 			sd = sd.Select(agg.Select()).Where(agg.Where()).GroupBy(agg.GroupBy())
 
 			sqlstr, _, err := sd.ToSQL()
@@ -277,13 +277,22 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows dr
 	}
 }
 
-func queryConditionsV2(sd *goqu.SelectDataset, params Vo, tagInfo *TagInfo) *goqu.SelectDataset {
+func queryConditionsV2(sd *goqu.SelectDataset, params Vo, tagInfo *TagInfo, indexType string) *goqu.SelectDataset {
 	where := sd
 	where = where.Where(
-		goqu.C("tenant_id").Eq(params.TerminusKey),
+		goqu.C("tenant_id").In(params.TerminusKey, ""),
 		goqu.C("timestamp").Gte(ckhelper.FromTimestampMilli(params.StartTime)),
 		goqu.C("timestamp").Lte(ckhelper.FromTimestampMilli(params.EndTime)),
 	)
+	// in-case some metric don't have tenant_id
+	if ServiceNodeIndexType == indexType {
+		where = where.Where(ckhelper.FromTagsKey(apm.TagsTerminusKey).Eq(params.TerminusKey))
+	} else {
+		where = where.Where(goqu.Or(
+			ckhelper.FromTagsKey(apm.TagsTargetTerminusKey).Eq(params.TerminusKey),
+			ckhelper.FromTagsKey(apm.TagsSourceTerminusKey).Eq(params.TerminusKey),
+		))
+	}
 
 	//filter: RegisterCenter ConfigCenter NoticeCenter
 	where = where.Where(
