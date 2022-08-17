@@ -229,7 +229,6 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		instanceId := p.ServiceInParams.InParamsPtr.InstanceId
 
 		ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
-			header.Set("terminus_key", tenantId)
 		})
 
 		switch sdk.Comp.Name {

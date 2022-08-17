@@ -56,7 +56,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
 		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
-		ctx := context.WithValue(context.Background(), common.LangKey, lang)
+		ctx := context.WithValue(sdk.Ctx, common.LangKey, lang)
 
 		switch sdk.Comp.Name {
 		case totalCount:
