@@ -93,6 +93,7 @@ clickhouse.table.creator@log:
 
 clickhouse.table.loader@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
+  load_mode: ${QUERY_LOG_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "logs"
   default_search_table: "logs_all"
   cache_key_prefix: "clickhouse-table-log"
@@ -598,6 +599,7 @@ clickhouse.table.initializer@span:
 
 clickhouse.table.loader@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "spans"
   default_search_table: "spans_all"
   cache_key_prefix: "clickhouse-table-span"
@@ -664,6 +666,7 @@ clickhouse.table.creator@metric:
 
 clickhouse.table.loader@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "metrics"
   default_search_table: "metrics_all"
   cache_key_prefix: "clickhouse-table-metric"

@@ -245,6 +245,7 @@ erda.msp.apm.trace.query:
 
 clickhouse.table.loader@span:
   _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}
+  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "spans"
   default_search_table: "spans_all"
   cache_key_prefix: "clickhouse-table-span"
