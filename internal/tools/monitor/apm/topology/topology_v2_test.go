@@ -41,7 +41,7 @@ func Test_queryConditionsV2(t *testing.T) {
 				},
 				tagInfo: &TagInfo{},
 			},
-			wantsql: `SELECT * FROM "table" WHERE (("tenant_id" = '123') AND ("timestamp" >= fromUnixTimestamp64Milli(toInt64(1660192621035))) AND ("timestamp" <= fromUnixTimestamp64Milli(toInt64(1660196221035))) AND (tag_values[indexOf(tag_keys, 'component')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')) AND (tag_values[indexOf(tag_keys, 'target_addon_type')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')))`,
+			wantsql: `SELECT * FROM "table" WHERE (("tenant_id" IN ('123', '')) AND ("timestamp" >= fromUnixTimestamp64Milli(toInt64(1660192621035))) AND ("timestamp" <= fromUnixTimestamp64Milli(toInt64(1660196221035))) AND ((tag_values[indexOf(tag_keys, 'target_terminus_key')] = '123') OR (tag_values[indexOf(tag_keys, 'source_terminus_key')] = '123')) AND (tag_values[indexOf(tag_keys, 'component')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')) AND (tag_values[indexOf(tag_keys, 'target_addon_type')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')))`,
 		},
 		{
 			name: "with ApplicationName",
@@ -55,12 +55,12 @@ func Test_queryConditionsV2(t *testing.T) {
 					ApplicationName: "hello",
 				},
 			},
-			wantsql: `SELECT * FROM "table" WHERE (("tenant_id" = '123') AND ("timestamp" >= fromUnixTimestamp64Milli(toInt64(1660192621035))) AND ("timestamp" <= fromUnixTimestamp64Milli(toInt64(1660196221035))) AND (tag_values[indexOf(tag_keys, 'component')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')) AND (tag_values[indexOf(tag_keys, 'target_addon_type')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')) AND ((tag_values[indexOf(tag_keys, 'application_name')] = 'hello') OR (tag_values[indexOf(tag_keys, 'target_application_name')] = 'hello') OR (tag_values[indexOf(tag_keys, 'source_application_name')] = 'hello')))`,
+			wantsql: `SELECT * FROM "table" WHERE (("tenant_id" IN ('123', '')) AND ("timestamp" >= fromUnixTimestamp64Milli(toInt64(1660192621035))) AND ("timestamp" <= fromUnixTimestamp64Milli(toInt64(1660196221035))) AND ((tag_values[indexOf(tag_keys, 'target_terminus_key')] = '123') OR (tag_values[indexOf(tag_keys, 'source_terminus_key')] = '123')) AND (tag_values[indexOf(tag_keys, 'component')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')) AND (tag_values[indexOf(tag_keys, 'target_addon_type')] NOT IN ('registerCenter', 'configCenter', 'noticeCenter')) AND ((tag_values[indexOf(tag_keys, 'application_name')] = 'hello') OR (tag_values[indexOf(tag_keys, 'target_application_name')] = 'hello') OR (tag_values[indexOf(tag_keys, 'source_application_name')] = 'hello')))`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sd := queryConditionsV2(goqu.From("table"), tt.args.params, tt.args.tagInfo)
+			sd := queryConditionsV2(goqu.From("table"), tt.args.params, tt.args.tagInfo, HttpRecMircoIndexType)
 			sqlstr, _, err := sd.ToSQL()
 			if err != nil {
 				assert.Fail(t, "must not error: %s", err)
