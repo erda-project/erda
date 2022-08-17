@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package publish_item
+package publishitem
 
 import (
 	"fmt"
@@ -23,8 +23,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda-proto-go/dop/publishitem/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/providers/publishitem/db"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -34,9 +37,43 @@ const (
 	cookieSplitter                 = ", "
 )
 
+func discriminateReleaseAndBeta(l int, versions []db.PublishItemVersion) ([]db.PublishItemVersion, error) {
+	result := make([]db.PublishItemVersion, 2)
+	if l > 2 {
+		return nil, errors.Errorf("public version is over than 3")
+	}
+
+	if l == 0 {
+		return nil, nil
+	}
+
+	if l == 1 {
+		// 上架版本只有一个版本，为beta版本
+		if versions[0].VersionStates == string(apistructs.PublishItemBetaVersion) {
+			return nil, errors.Errorf("data error: only have one beta version %v", versions[0].Version)
+		}
+
+		return versions, nil
+	}
+
+	// 线上两个版本一样
+	if l == 2 && versions[0].VersionStates == versions[1].VersionStates {
+		return nil, errors.Errorf("public version have 2 same version")
+	}
+
+	// result[0] -- 正式版 result[1] -- 预览版
+	if versions[0].VersionStates == string(apistructs.PublishItemReleaseVersion) {
+		result[0], result[1] = versions[0], versions[1]
+	} else {
+		result[0], result[1] = versions[1], versions[0]
+	}
+
+	return result, nil
+}
+
 // GrayDistribution 根据用户身份进行和灰度设置进行灰度分发
-func (i *PublishItem) GrayDistribution(w http.ResponseWriter, r *http.Request, publisherItem dbclient.PublishItem,
-	distribution *apistructs.PublishItemDistributionData, mobileType apistructs.ResourceType, packageName string) error {
+func (i *PublishItemService) GrayDistribution(w http.ResponseWriter, r *http.Request, publisherItem db.PublishItem,
+	distribution *pb.PublishItemDistributionData, mobileType apistructs.ResourceType, packageName string) error {
 
 	// 获取已发布版本
 	total, tmpVersions, err := i.db.GetPublicVersion(int64(publisherItem.ID), mobileType, packageName)
@@ -89,8 +126,8 @@ func (i *PublishItem) GrayDistribution(w http.ResponseWriter, r *http.Request, p
 }
 
 // handleGrayVersion 返回灰度版本
-func handleGrayVersion(w http.ResponseWriter, publisherItemID uint64, distribution *apistructs.PublishItemDistributionData,
-	releaeVersion, betaVersion *apistructs.PublishItemVersion) {
+func handleGrayVersion(w http.ResponseWriter, publisherItemID uint64, distribution *pb.PublishItemDistributionData,
+	releaeVersion, betaVersion *pb.PublishItemVersion) {
 
 	// 设置默认版本为灰度版本
 	distribution.Default = betaVersion
@@ -98,7 +135,7 @@ func handleGrayVersion(w http.ResponseWriter, publisherItemID uint64, distributi
 	// 重新处理版本列表
 	// 1. 添加默认版本
 	// 2. 添加非灰度版本
-	newVersionList := []*apistructs.PublishItemVersion{betaVersion}
+	newVersionList := []*pb.PublishItemVersion{betaVersion}
 	for _, v := range distribution.Versions.List {
 		if v.ID != betaVersion.ID {
 			newVersionList = append(newVersionList, v)

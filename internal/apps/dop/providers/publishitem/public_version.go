@@ -12,22 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package publish_item
+package publishitem
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda-proto-go/dop/publishitem/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/publishitem/db"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
 // publicReleaseVersion 上架正式版
-func (i *PublishItem) publicReleaseVersion(total int, versions []dbclient.PublishItemVersion,
-	req apistructs.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
+func (s *PublishItemService) publicReleaseVersion(total int, versions []db.PublishItemVersion,
+	req *pb.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
 	// 无发布版本，上架正式版
 	if total == 0 {
-		if err := i.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
+		if err := s.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
 			"version_states": req.VersionStates, "gray_level_percent": 100, "public": true}); err != nil {
 			return err
 		}
@@ -37,19 +39,19 @@ func (i *PublishItem) publicReleaseVersion(total int, versions []dbclient.Publis
 
 	// 只有正式版，再次上架正式版
 	if total == 1 {
-		return errors.Errorf(local.Get("dicehub.publish.err.alreadyhaverelaseversion")+": %v", versions[0].Version)
+		return fmt.Errorf(local.Get("dicehub.publish.err.alreadyhaverelaseversion")+": %v", versions[0].Version)
 	}
 
 	// 已有内测版和正式版
 	if total == 2 {
 		// 修改线上正式版的灰度值
 		if req.PublishItemVersionID == int64(versions[0].ID) {
-			if err := i.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
 				"gray_level_percent": req.GrayLevelPercent}); err != nil {
 				return err
 			}
 
-			if err := i.db.UpdatePublicVersionByID(int64(versions[1].ID), map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(int64(versions[1].ID), map[string]interface{}{
 				"gray_level_percent": 100 - req.GrayLevelPercent}); err != nil {
 				return err
 			}
@@ -59,12 +61,12 @@ func (i *PublishItem) publicReleaseVersion(total int, versions []dbclient.Publis
 
 		// 内测版转正
 		if req.PublishItemVersionID == int64(versions[1].ID) {
-			if err := i.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
 				"version_states": "", "gray_level_percent": 0, "public": false}); err != nil {
 				return err
 			}
 			// 内测版转正
-			if err := i.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
 				"version_states": req.VersionStates, "gray_level_percent": 100, "public": true}); err != nil {
 				return err
 			}
@@ -79,12 +81,12 @@ func (i *PublishItem) publicReleaseVersion(total int, versions []dbclient.Publis
 }
 
 // unPublicReleaseVersion 下架正式版
-func (i *PublishItem) unPublicReleaseVersion(total int, versions []dbclient.PublishItemVersion,
-	req apistructs.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
+func (s *PublishItemService) unPublicReleaseVersion(total int, versions []db.PublishItemVersion,
+	req *pb.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
 	// 只有正式版，下架正式版
 	if total == 1 {
 		if req.PublishItemVersionID == int64(versions[0].ID) {
-			if err := i.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
 				"version_states": "", "gray_level_percent": 0, "public": false}); err != nil {
 				return err
 			}
@@ -100,8 +102,8 @@ func (i *PublishItem) unPublicReleaseVersion(total int, versions []dbclient.Publ
 }
 
 // publicBetaVersion 上架beta版本
-func (i *PublishItem) publicBetaVersion(total int, versions []dbclient.PublishItemVersion,
-	req apistructs.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
+func (s *PublishItemService) publicBetaVersion(total int, versions []db.PublishItemVersion,
+	req *pb.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
 	// 无发布版本，上架beta版
 	if total == 0 {
 		return errors.New(local.Get("dicehub.publish.err.noreleaseversiononline"))
@@ -113,12 +115,12 @@ func (i *PublishItem) publicBetaVersion(total int, versions []dbclient.PublishIt
 			return errors.New(local.Get("dicehub.publish.err.musthaveareleaseverison"))
 		}
 
-		if err := i.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
+		if err := s.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
 			"version_states": req.VersionStates, "gray_level_percent": req.GrayLevelPercent, "public": true}); err != nil {
 			return err
 		}
 
-		if err := i.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
+		if err := s.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
 			"gray_level_percent": 100 - req.GrayLevelPercent}); err != nil {
 			return err
 		}
@@ -135,12 +137,12 @@ func (i *PublishItem) publicBetaVersion(total int, versions []dbclient.PublishIt
 
 		// 修改线上beta版的灰度值
 		if req.PublishItemVersionID == int64(versions[1].ID) {
-			if err := i.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
 				"gray_level_percent": req.GrayLevelPercent}); err != nil {
 				return err
 			}
 
-			if err := i.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
 				"gray_level_percent": 100 - req.GrayLevelPercent}); err != nil {
 				return err
 			}
@@ -155,17 +157,17 @@ func (i *PublishItem) publicBetaVersion(total int, versions []dbclient.PublishIt
 }
 
 // unPublicBetaVersion 下架beta版本
-func (i *PublishItem) unPublicBetaVersion(total int, versions []dbclient.PublishItemVersion,
-	req apistructs.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
+func (s *PublishItemService) unPublicBetaVersion(total int, versions []db.PublishItemVersion,
+	req *pb.UpdatePublishItemVersionStatesRequset, local *i18n.LocaleResource) error {
 	// 已有正式版和内测版，下架内测版
 	if total == 2 {
 		if req.PublishItemVersionID == int64(versions[1].ID) {
-			if err := i.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(req.PublishItemVersionID, map[string]interface{}{
 				"version_states": "", "gray_level_percent": 0, "public": false}); err != nil {
 				return err
 			}
 
-			if err := i.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
+			if err := s.db.UpdatePublicVersionByID(int64(versions[0].ID), map[string]interface{}{
 				"gray_level_percent": 100}); err != nil {
 				return err
 			}
@@ -175,38 +177,4 @@ func (i *PublishItem) unPublicBetaVersion(total int, versions []dbclient.Publish
 	}
 
 	return nil
-}
-
-func discriminateReleaseAndBeta(l int, versions []dbclient.PublishItemVersion) ([]dbclient.PublishItemVersion, error) {
-	result := make([]dbclient.PublishItemVersion, 2)
-	if l > 2 {
-		return nil, errors.Errorf("public version is over than 3")
-	}
-
-	if l == 0 {
-		return nil, nil
-	}
-
-	if l == 1 {
-		// 上架版本只有一个版本，为beta版本
-		if versions[0].VersionStates == apistructs.PublishItemBetaVersion {
-			return nil, errors.Errorf("data error: only have one beta version %v", versions[0].Version)
-		}
-
-		return versions, nil
-	}
-
-	// 线上两个版本一样
-	if l == 2 && versions[0].VersionStates == versions[1].VersionStates {
-		return nil, errors.Errorf("public version have 2 same version")
-	}
-
-	// result[0] -- 正式版 result[1] -- 预览版
-	if versions[0].VersionStates == apistructs.PublishItemReleaseVersion {
-		result[0], result[1] = versions[0], versions[1]
-	} else {
-		result[0], result[1] = versions[1], versions[0]
-	}
-
-	return result, nil
 }

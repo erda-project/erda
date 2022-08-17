@@ -12,23 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dop
 
 import (
-	"net/http"
-
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 )
 
-var PUBLISH_ITEM_CREATE_OFFLINE_VERSION = apis.ApiSpec{
-	Path:        "/api/publish-items/<publishItemId>/versions/create-offline-version",
-	BackendPath: "/api/publish-items/<publishItemId>/versions/create-offline-version",
-	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:      "http",
-	Method:      http.MethodPost,
-	CheckLogin:  true,
-	CheckToken:  true,
-	IsOpenAPI:   true,
-	ChunkAPI:    true,
-	Doc:         "summary: 移动应用上传离线包",
+var PUBLISH_ITEM_VERSION_GET_LATEST = apis.ApiSpec{
+	Path:          "/api/publish-items/actions/latest-versions",
+	BackendPath:   "/api/publish-items/actions/latest-versions",
+	Host:          "erda-server.marathon.l4lb.thisdcos.directory:9095",
+	Scheme:        "http",
+	Method:        "POST",
+	CheckLogin:    false,
+	TryCheckLogin: true,
+	CheckToken:    true,
+	IsOpenAPI:     true,
+	ChunkAPI:      true,
+	RequestType:   apistructs.GetPublishItemLatestVersionRequest{},
+	ResponseType:  apistructs.GetPublishItemLatestVersionResponse{},
+	Doc:           "summary: 获取移动应用最新的版本",
 }

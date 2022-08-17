@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbclient
+package db
 
 import (
 	"encoding/json"
@@ -20,7 +20,10 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-proto-go/dop/publishitem/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -45,8 +48,8 @@ type PublishItemVersion struct {
 	PublishItemID    int64
 	MobileType       string `gorm:"column:mobile_type"` // ios, android, h5
 	Creator          string
-	VersionStates    apistructs.PublishItemVersionStates `gorm:"column:version_states"`
-	GrayLevelPercent int                                 `gorm:"column:gray_level_percent"` // 灰度百分比，0-100
+	VersionStates    string `gorm:"column:version_states"`
+	GrayLevelPercent int    `gorm:"column:gray_level_percent"` // 灰度百分比，0-100
 }
 
 // TableName 设置模型对应数据库表名称
@@ -78,21 +81,24 @@ func (publishItemVersion *PublishItemVersion) IsLater(version *PublishItemVersio
 	return v1 > v2
 }
 
-func (publishItemVersion *PublishItemVersion) ToApiData() *apistructs.PublishItemVersion {
+func (publishItemVersion *PublishItemVersion) ToApiData() *pb.PublishItemVersion {
 	var resourceData interface{}
 	if publishItemVersion.Resources != "" {
 		json.Unmarshal([]byte(publishItemVersion.Resources), &resourceData)
 	}
+	resourceDataPB, _ := structpb.NewValue(resourceData)
 	var metaData map[string]interface{}
 	if publishItemVersion.Meta != "" {
 		json.Unmarshal([]byte(publishItemVersion.Meta), &metaData)
 	}
+	metaDataPB, _ := structpb.NewValue(metaData)
 	var swaggerData interface{}
 	if publishItemVersion.Swagger != "" {
 		swaggerJson, _ := yaml.YAMLToJSON([]byte(publishItemVersion.Swagger))
 		json.Unmarshal(swaggerJson, &swaggerData)
 	}
-	return &apistructs.PublishItemVersion{
+	swaggerDataPB, _ := structpb.NewValue(swaggerData)
+	return &pb.PublishItemVersion{
 		ID:               publishItemVersion.ID,
 		Version:          publishItemVersion.Version,
 		BuildID:          publishItemVersion.BuildID,
@@ -101,17 +107,17 @@ func (publishItemVersion *PublishItemVersion) ToApiData() *apistructs.PublishIte
 		OrgID:            publishItemVersion.OrgID,
 		IsDefault:        publishItemVersion.IsDefault,
 		Desc:             publishItemVersion.Desc,
-		CreatedAt:        publishItemVersion.CreatedAt,
-		UpdatedAt:        publishItemVersion.UpdatedAt,
-		Resources:        resourceData,
-		Swagger:          swaggerData,
-		Meta:             metaData,
+		CreatedAt:        timestamppb.New(publishItemVersion.CreatedAt),
+		UpdatedAt:        timestamppb.New(publishItemVersion.UpdatedAt),
+		Resources:        resourceDataPB,
+		Swagger:          metaDataPB,
+		Meta:             swaggerDataPB,
 		Logo:             publishItemVersion.Logo,
 		Spec:             publishItemVersion.Spec,
 		Readme:           publishItemVersion.Readme,
 		MobileType:       publishItemVersion.MobileType,
 		VersionStates:    publishItemVersion.VersionStates,
-		GrayLevelPercent: publishItemVersion.GrayLevelPercent,
+		GrayLevelPercent: int64(publishItemVersion.GrayLevelPercent),
 	}
 }
 
@@ -125,7 +131,7 @@ func (client *DBClient) GetPublishItemVersion(id int64) (*PublishItemVersion, er
 }
 
 func (client *DBClient) GetPublishItemVersionByName(orgId int64, itemID int64, mobileType apistructs.ResourceType,
-	versionInfo apistructs.VersionInfo) (*PublishItemVersion, error) {
+	versionInfo *pb.VersionInfo) (*PublishItemVersion, error) {
 	// ios android 版本不应区分包名
 	packageName := versionInfo.PackageName
 	if mobileType != apistructs.ResourceTypeH5 {
@@ -194,7 +200,7 @@ func (client *DBClient) DeletePublishItemVersionsByItemID(itemID int64) error {
 	return client.Where("publish_item_id =?", itemID).Delete(&PublishItemVersion{}).Error
 }
 
-func (client *DBClient) QueryPublishItemVersions(request *apistructs.QueryPublishItemVersionRequest) (*apistructs.QueryPublishItemVersionData, error) {
+func (client *DBClient) QueryPublishItemVersions(request *pb.QueryPublishItemVersionRequest) (*pb.QueryPublishItemVersionData, error) {
 	var itemVersions []PublishItemVersion
 	var count int
 	query := client.Model(&PublishItemVersion{}).Where("publish_item_id = ?", request.ItemID)
@@ -227,12 +233,12 @@ func (client *DBClient) QueryPublishItemVersions(request *apistructs.QueryPublis
 	if err != nil {
 		return nil, err
 	}
-	results := []*apistructs.PublishItemVersion{}
+	results := make([]*pb.PublishItemVersion, 0)
 	for _, item := range itemVersions {
 		result := item.ToApiData()
 
 		if item.MobileType == string(apistructs.ResourceTypeH5) {
-			targetMobile := make(map[string][]string, 0)
+			targetMobile := make(map[string][]interface{}, 0)
 			targetRelations, err := client.GetTargetsByH5Version(item.ID)
 			if err != nil {
 				return nil, err
@@ -240,14 +246,19 @@ func (client *DBClient) QueryPublishItemVersions(request *apistructs.QueryPublis
 			for _, v := range targetRelations {
 				targetMobile[v.TargetMobileType] = append(targetMobile[v.TargetMobileType], v.TargetVersion)
 			}
-			result.TargetMobiles = targetMobile
+			targetMobilePB := make(map[string]*structpb.Value, 0)
+			for k, v := range targetMobile {
+				mobilePB, _ := structpb.NewValue(v)
+				targetMobilePB[k] = mobilePB
+			}
+			result.TargetMobiles = targetMobilePB
 		}
 
 		results = append(results, result)
 	}
 
-	return &apistructs.QueryPublishItemVersionData{
-		Total: count,
+	return &pb.QueryPublishItemVersionData{
+		Total: int64(count),
 		List:  results,
 	}, nil
 }
@@ -309,7 +320,7 @@ func (client *DBClient) MigrationFordice320(itemID int64) error {
 	}
 
 	releaseVersion = &versions[0]
-	releaseVersion.Public, releaseVersion.VersionStates, releaseVersion.GrayLevelPercent = true, apistructs.PublishItemReleaseVersion, 100-graylevel
+	releaseVersion.Public, releaseVersion.VersionStates, releaseVersion.GrayLevelPercent = true, string(apistructs.PublishItemReleaseVersion), 100-graylevel
 	if err := client.Save(releaseVersion).Error; err != nil {
 		return err
 	}
@@ -326,7 +337,7 @@ func (client *DBClient) MigrationFordice320(itemID int64) error {
 		}
 	}
 	if betaVersion != nil {
-		betaVersion.Public, betaVersion.VersionStates, betaVersion.GrayLevelPercent = true, apistructs.PublishItemBetaVersion, graylevel
+		betaVersion.Public, betaVersion.VersionStates, betaVersion.GrayLevelPercent = true, string(apistructs.PublishItemBetaVersion), graylevel
 		if err := client.Save(betaVersion).Error; err != nil {
 			return err
 		}

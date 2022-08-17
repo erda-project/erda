@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dop
 
-import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+)
 
-var PUBLISH_ITEM_GET = apis.ApiSpec{
-	Path:          "/api/publish-items/<id>",
-	BackendPath:   "/api/publish-items/<id>",
-	Host:          "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:        "http",
-	Method:        "GET",
-	TryCheckLogin: true,
-	Doc:           "summary: 查询发布内容",
+var PUBLISH_ITEM_DISTRIBUTION = apis.ApiSpec{
+	Path:         "/api/publish-items/<publishItemId>/distribution",
+	BackendPath:  "/api/publish-items/<publishItemId>/distribution",
+	Host:         "erda-server.marathon.l4lb.thisdcos.directory:9095",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   false,
+	CheckToken:   false,
+	ResponseType: apistructs.PublishItemDistributionResponse{},
+	Doc:          "summary: 发布下载信息",
 }

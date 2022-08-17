@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/endpoints"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/recycle"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/publish_item"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -106,10 +105,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		release.WithImageDBClient(p.ImageDB),
 	)
 
-	publishItem := publish_item.New(
-		publish_item.WithDBClient(db),
-		publish_item.WithBundle(bdl),
-	)
 	// 3.20 灰度逻辑迁移，3.21删除
 	// publishItem.Migration320()
 
@@ -124,7 +119,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		endpoints.WithDBClient(db),
 		endpoints.WithBundle(bdl),
 		endpoints.WithRelease(rl),
-		endpoints.WithPublishItem(publishItem),
 		endpoints.WithReleaseRule(releaseRule),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithOrg(p.Org),

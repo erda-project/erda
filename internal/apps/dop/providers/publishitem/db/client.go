@@ -12,21 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package db
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
-)
+import "github.com/erda-project/erda/pkg/database/dbengine"
 
-var PUBLISH_ITEM_VERSION_UPDATE = apis.ApiSpec{
-	Path:        "/api/publish-items/versions/actions/<action>",
-	BackendPath: "/api/publish-items/versions/actions/<action>",
-	Host:        "erda-server.marathon.l4lb.thisdcos.directory:9095",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	CheckToken:  true,
-	RequestType: apistructs.UpdatePublishItemVersionStatesRequset{},
-	Doc:         "summary: 上架/下架版本",
+type DBClient struct {
+	*dbengine.DBEngine
 }

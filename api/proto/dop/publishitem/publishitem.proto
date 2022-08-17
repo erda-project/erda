@@ -1,0 +1,631 @@
+syntax = "proto3";
+
+package erda.dop.publishitem;
+
+option go_package = "github.com/erda-project/erda-proto-go/dop/publishitem/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+import "common/openapi.proto";
+import "common/identity.proto";
+
+message CreateBranchRuleResponse {
+  optional google.protobuf.Value data = 1;
+}
+message CreatePublishItemRequest {
+  string name = 1;
+  string displayName = 2;
+  int64 publisherID = 3 [json_name = "publisherId"];
+  string type = 4;
+  string logo = 5;
+  bool public = 6;
+  string desc = 7;
+  int64 orgID = 8 [json_name = "-"];
+  string creator = 9 [json_name = "-"];
+  bool noJailbreak = 10;
+  double geofenceLon = 11;
+  double geofenceLat = 12;
+  double geofenceRadius = 13;
+  int64 grayLevelPercent = 14;
+  repeated string previewImages = 15;
+  string backgroundImage = 16;
+}
+message CreatePublishItemResponse {
+  PublishItem data = 1;
+}
+message CreatePublishItemVersionRequest {
+  string version = 1;
+  string buildID = 2;
+  string packageName = 3 [json_name = "package_name"];
+  bool public = 4;
+  bool isDefault = 5 [json_name = "is_default"];
+  string logo = 6;
+  string desc = 7;
+  string readme = 8;
+  string spec = 9;
+  string swagger = 10;
+  string releaseID = 11 [json_name = "releaseId"];
+  string mobileType = 12;
+  H5VersionInfo h5VersionInfo = 13;
+  int64 publishItemID = 14 [json_name = "-"];
+  int64 orgID = 15 [json_name = "-"];
+  uint64 appID = 16;
+  string creator = 17 [json_name = "-"];
+}
+message CreatePublishItemVersionResponse {
+    CreatePublishItemVersionData data = 1;
+}
+message CreatePublishItemVersionData {
+  PublishItemVersion data = 1;
+  PublishItem publishItem = 2;
+}
+message CreateUpdateDeleteReleaseRuleRequest {
+  uint64 orgID = 1;
+  uint64 projectID = 2;
+  uint64 userID = 3;
+  string ruleID = 4;
+  optional google.protobuf.Value body = 5;
+}
+message DeletePublishItemBlackListRequest {
+  uint64 publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+  uint64 blacklistId = 2; // generated from path variable: blacklistId. You should change the proto type if necessary.
+}
+message GetPublishItemBlackListRequest {
+  int64 publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+  uint64 pageNo = 2;
+  uint64 pageSize = 3;
+}
+message CreatePublishItemEraseRequest {
+  uint64 pageNo = 1;
+  uint64 pageSize = 2;
+  string userID = 3 [json_name = "userId"];
+  string userName = 4;
+  string deviceNo = 5;
+  uint64 publishItemId = 6 [json_name = "publishItemId"];
+  string operator = 7;
+}
+message GetPublishItemEraseRequest {
+  uint64 pageNo = 1;
+  uint64 pageSize = 2;
+  uint64 publishItemId = 3; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message ListPublishItemMonitorKeysRequest {
+  uint64 publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message ListPublishItemMonitorKeysResponse {
+  map<string, MonitorKeys> data = 1;
+}
+message MonitorKeys {
+  string aK = 1 [json_name = "ak"];
+  string aI = 2 [json_name = "ai"];
+  string env = 3;
+  int64 appID = 4 [json_name = "appId"];
+}
+message DeletePublishItemResponse {
+  PublishItem data = 1;
+}
+message GetPublishItemLatestVersionData {
+  optional PublishItemVersion appVersion = 1 [json_name = "appVerison"];
+  map<string, PublishItemVersion> h5Versions = 2;
+}
+message GetPublishItemLatestVersionRequest {
+  string ak = 1 [json_name = "ak"];
+  string ai = 2 [json_name = "ai"];
+  VersionInfo currentAppInfo = 3;
+  repeated VersionInfo currentH5Info = 4;
+  string mobileType = 5;
+  bool forceBetaH5 = 6;
+  bool check = 7;
+}
+message GetPublishItemLatestVersionResponse {
+  GetPublishItemLatestVersionData data = 1;
+}
+message H5VersionInfo {
+  VersionInfo versionInfo = 1;
+  map<string, google.protobuf.Value> targetMobiles = 2;
+}
+message CreatePublishItemOfflineRequest {
+  int64 publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message CreatePublishItemOfflineResponse {
+  string data = 1;
+}
+message DeletePublishItemRequest {
+  int64 publishItemId = 1;
+}
+message DistributePublishItemRequest {
+  int64 publishItemId = 1;
+  string mobileType = 2;
+  string packageName = 3;
+
+}
+message GetPublishItemH5PackageNameRequest {
+  int64 publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message GetPublishItemH5PackageNameResponse {
+  repeated string data = 1;
+}
+message GetPublishItemRequest {
+  int64 id = 1; // generated from path variable: id. You should change the proto type if necessary.
+}
+message GetPublishItemResponse {
+  PublishItem data = 1;
+}
+message GetPublicPublishItemVersionRequest {
+  int64 publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+  string mobileType = 2;
+  string packageName = 3;
+}
+message SetPublishItemVersionStatusRequest {
+  int64 publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+  int64 versionID = 2; // generated from path variable: versionID. You should change the proto type if necessary.
+  string action = 3; // generated from path variable: action. You should change the proto type if necessary.
+}
+message PublicItemAddEraseData {
+  PublishItem data = 1;
+  string deviceNo = 2;
+}
+message PublicItemAddEraseResponse {
+  PublicItemAddEraseData data = 1;
+}
+message PublishItem {
+  int64 ID = 1 [json_name = "id"];
+  string name = 2;
+  string displayName = 3;
+  string logo = 4;
+  int64 publisherID = 5 [json_name = "publisherId"];
+  string aK = 6 [json_name = "ak"];
+  string aI = 7 [json_name = "ai"];
+  string type = 8;
+  bool public = 9;
+  int64 orgID = 10 [json_name = "orgId"];
+  string desc = 11;
+  string creator = 12;
+  string downloadUrl = 13;
+  google.protobuf.Timestamp createdAt = 14;
+  google.protobuf.Timestamp updatedAt = 15;
+  bool noJailbreak = 16;
+  double geofenceLon = 17;
+  double geofenceLat = 18;
+  double geofenceRadius = 19;
+  int64 grayLevelPercent = 20;
+  string latestVersion = 21;
+  uint64 refCount = 22;
+  repeated string previewImages = 23;
+  string backgroundImage = 24;
+}
+message PublishItemAddBlacklistResponse {
+  PublishItem data = 1;
+}
+message PublishItemDeleteBlacklistResponse {
+  PublishItemUserListResponse data = 1;
+}
+message PublishItemDistributionData {
+  optional PublishItemVersion default = 1;
+  optional QueryPublishItemVersionData versions = 2;
+  string name = 3;
+  string displayName = 4;
+  string desc = 5;
+  string logo = 6;
+  google.protobuf.Timestamp createdAt = 7;
+  repeated string previewImages = 8;
+  string backgroundImage = 9;
+}
+message PublishItemDistributionResponse {
+  PublishItemDistributionData data = 1;
+}
+message PublishItemUserListResponse {
+  uint64 ID = 1 [json_name = "id"];
+  string userID = 2 [json_name = "userId"];
+  string userName = 3;
+  string eraseStatus = 4;
+  string deviceNo = 5;
+  uint64 publishItemID = 6 [json_name = "publishItemId"];
+  google.protobuf.Timestamp createdAt = 7;
+  string publishItemName = 8;
+}
+message PublishItemUserlistRequest {
+  uint64 pageNo = 1;
+  uint64 pageSize = 2;
+  string userID = 3 [json_name = "userId"];
+  string userName = 4;
+  string deviceNo = 5;
+  uint64 publishItemID = 6 [json_name = "publishItemId"];
+  string operator = 7;
+}
+message PublishItemUserListDataResponse {
+  PublishItemUserListData data = 2;
+}
+message PublishItemUserListData {
+  uint64 total = 1;
+  repeated PublishItemUserListResponse list = 2;
+}
+message PublishItemVersion {
+  uint64 ID = 1 [json_name = "id"];
+  string version = 2;
+  string buildID = 3 [json_name = "buildId"];
+  string packageName = 4;
+  bool public = 5;
+  bool isDefault = 6;
+  string desc = 7;
+  string logo = 8;
+  google.protobuf.Value resources = 9;
+  google.protobuf.Value meta = 10;
+  google.protobuf.Value swagger = 11;
+  int64 orgID = 12 [json_name = "orgId"];
+  google.protobuf.Timestamp createdAt = 13;
+  google.protobuf.Timestamp updatedAt = 14;
+  string spec = 15;
+  string readme = 16;
+  string mobileType = 17;
+  map<string, google.protobuf.Value> targetMobiles = 18;
+  string versionStates = 19;
+  int64 grayLevelPercent = 20;
+}
+message QueryPublishItemData {
+  repeated PublishItem list = 1;
+  int64 total = 2;
+}
+message QueryPublishItemRequest {
+  int64 pageNo = 1;
+  int64 pageSize = 2;
+  int64 publisherId = 3;
+  string name = 4;
+  string type = 5;
+  string public = 6;
+  string q = 7;
+  string ids = 8;
+  int64 orgID = 9 [json_name = "-"];
+}
+message QueryPublishItemResponse {
+  QueryPublishItemData data = 1;
+}
+message QueryPublishItemVersionData {
+  repeated PublishItemVersion list = 1;
+  int64 total = 2;
+}
+message QueryPublishItemVersionRequest {
+  string public = 1;
+  int64 pageNo = 2;
+  int64 pageSize = 3;
+  string mobileType = 4;
+  string packageName = 5;
+  int64 itemID = 6 [json_name = "-"];
+  int64 orgID = 7 [json_name = "-"];
+  string isDefault = 8 [json_name = "-"];
+  int64 publishItemId = 9; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message QueryPublishItemVersionResponse {
+  QueryPublishItemVersionData data = 1;
+}
+message UpdatePublishItemRequest {
+  int64 ID = 1 [json_name = "-"];
+  string displayName = 2;
+  string logo = 3;
+  bool public = 4;
+  string desc = 5;
+  bool noJailbreak = 6;
+  double geofenceLon = 7;
+  double geofenceLat = 8;
+  double geofenceRadius = 9;
+  int64 grayLevelPercent = 10;
+  repeated string previewImages = 11;
+  string backgroundImage = 12;
+  int64 publishItemId = 13; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message UpdatePublishItemResponse {
+  PublishItem data = 1;
+}
+message UpdatePublishItemVersionStatesRequset {
+  int64 publishItemID = 1;
+  int64 publishItemVersionID = 2;
+  string packageName = 3;
+  string versionStates = 4;
+  int64 grayLevelPercent = 5;
+  bool public = 6 [json_name = "-"];
+  string action = 7; // generated from path variable: action. You should change the proto type if necessary.
+}
+message VersionInfo {
+  string packageName = 1;
+  string version = 2;
+  string buildID = 3 [json_name = "buildId"];
+}
+
+service PublishItemService {
+  option (erda.common.openapi_service) = {
+    service: "dop",
+  };
+  rpc CreatePublishItemBlackList (PublishItemUserlistRequest) returns (PublishItemAddBlacklistResponse) {
+    option (google.api.http) = {
+      post: "/api/publish-items/{publishItemID}/blacklist",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemID}/blacklist",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 添加发布内容黑名单",
+    };
+  };
+  rpc DeletePublishItemBlackList (DeletePublishItemBlackListRequest) returns (PublishItemDeleteBlacklistResponse) {
+    option (google.api.http) = {
+      delete: "/api/publish-items/{publishItemId}/blacklist/{blacklistId}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/blacklist/{blacklistId}",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 删除发布内容黑名单",
+    };
+  };
+  rpc GetPublishItemBlackList (GetPublishItemBlackListRequest) returns (PublishItemUserListDataResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items/{publishItemId}/blacklist",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/blacklist",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 发布内容黑名单列表",
+    };
+  };
+  rpc CreatePublishItemErase (CreatePublishItemEraseRequest) returns (PublicItemAddEraseResponse) {
+    option (google.api.http) = {
+      post: "/api/publish-items/{publishItemId}/erase",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/erase",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 添加发布内容数据擦除",
+    };
+  };
+  rpc GetPublishItemErase (GetPublishItemEraseRequest) returns (PublishItemUserListDataResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items/{publishItemId}/erase",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/erase",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 发布内容数据擦除列表",
+    };
+  };
+  rpc ListPublishItemMonitorKeys (ListPublishItemMonitorKeysRequest) returns (ListPublishItemMonitorKeysResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items/{publishItemId}/list-monitor-keys",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/list-monitor-keys",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 获取发布内容的监控key列表",
+    };
+  };
+  rpc CreatePublishItem (CreatePublishItemRequest) returns (CreatePublishItemResponse) {
+    option (google.api.http) = {
+      post: "/api/publish-items",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 创建发布",
+    };
+  };
+  rpc DeletePublishItem (DeletePublishItemRequest) returns (DeletePublishItemResponse) {
+    option (google.api.http) = {
+      delete: "/api/publish-items/{publishItemId}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 删除发布",
+    };
+  };
+  rpc GetPublishItem (GetPublishItemRequest) returns (GetPublishItemResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items/{id}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{id}",
+      auth: {
+        no_check: false,
+        check_login: false,
+        try_check_login: true,
+        check_token: false,
+        check_basic_auth: false,
+      },
+      doc: "summary: 查询发布内容",
+    };
+  };
+  rpc GetPublishItemH5PackageName (GetPublishItemH5PackageNameRequest) returns (GetPublishItemH5PackageNameResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items/{publishItemId}/versions/actions/get-h5-packagename",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/versions/actions/get-h5-packagename",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 获取移动应用H5包名",
+    };
+  };
+  rpc QueryPublishItem (QueryPublishItemRequest) returns (QueryPublishItemResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items",
+      auth: {
+        no_check: false,
+        check_login: false,
+        try_check_login: true,
+        check_token: false,
+        check_basic_auth: false,
+      },
+      doc: "summary: 查询发布",
+    };
+  };
+  rpc UpdatePublishItem (UpdatePublishItemRequest) returns (UpdatePublishItemResponse) {
+    option (google.api.http) = {
+      put: "/api/publish-items/{publishItemId}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 更新发布",
+    };
+  };
+  rpc CreatePublishItemVersion (CreatePublishItemVersionRequest) returns (CreatePublishItemVersionResponse) {
+    option (google.api.http) = {
+      post: "/api/publish-items/{publishItemID}/versions",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemID}/versions",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 创建发布版本",
+    };
+  };
+  rpc GetPublicPublishItemVersion (GetPublicPublishItemVersionRequest) returns (QueryPublishItemVersionResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items/{publishItemId}/versions/actions/public-version",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/versions/actions/public-version",
+      auth: {
+        no_check: false,
+        check_login: false,
+        try_check_login: true,
+        check_token: false,
+        check_basic_auth: false,
+      },
+      doc: "summary: 获取线上已发布版本",
+    };
+  };
+  rpc QueryPublishItemVersion (QueryPublishItemVersionRequest) returns (QueryPublishItemVersionResponse) {
+    option (google.api.http) = {
+      get: "/api/publish-items/{publishItemId}/versions",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/versions",
+      auth: {
+        no_check: false,
+        check_login: false,
+        try_check_login: true,
+        check_token: false,
+        check_basic_auth: false,
+      },
+      doc: "summary: 查询发布版本",
+    };
+  };
+  rpc SetPublishItemVersionStatus (SetPublishItemVersionStatusRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/publish-items/{publishItemId}/versions/{versionID}/actions/{action}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/{publishItemId}/versions/{versionID}/actions/{action}",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 设置版本状态",
+    };
+  };
+  rpc UpdatePublishItemVersion (UpdatePublishItemVersionStatesRequset) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/publish-items/versions/actions/{action}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/publish-items/versions/actions/{action}",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 上架/下架版本",
+    };
+  };
+  rpc QueryMyPublishItem (QueryPublishItemRequest) returns(QueryPublishItemResponse) {
+    option (google.api.http) = {
+      get: "/api/my-publish-items",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/my-publish-items",
+      auth: {
+        no_check: false,
+        check_login: true,
+        try_check_login: false,
+        check_token: true,
+        check_basic_auth: false,
+      },
+      doc: "summary: 查询我的发布",
+    };
+  };
+}
