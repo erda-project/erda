@@ -57,7 +57,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
 		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
 
-		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
+		data, err := p.DataSource.GetTable(context.WithValue(sdk.Ctx, common.LangKey, lang),
 			&viewtable.TransactionTableBuilder{
 				BaseBuildParams: &viewtable.BaseBuildParams{
 					SdkCtx:    sdk.Ctx,

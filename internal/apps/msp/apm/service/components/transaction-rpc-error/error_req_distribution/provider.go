@@ -41,7 +41,7 @@ type provider struct {
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
-		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(context.Background(), common.LangKey, sdk.Lang),
+		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(sdk.Ctx, common.LangKey, sdk.Lang),
 			datasources.BubbleChartErrorReqDistribution,
 			60,
 			p.InParamsPtr.StartTime,

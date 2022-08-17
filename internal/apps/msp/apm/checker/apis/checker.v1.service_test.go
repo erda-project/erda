@@ -22,12 +22,15 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	checkerpb "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/checker/storage/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
@@ -182,7 +185,7 @@ func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
 			})
 
 			var cv1s *checkerV1Service
-			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummary", func(cv1s *checkerV1Service, lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*checkerpb.DescribeItemV1) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummary", func(cv1s *checkerV1Service, ctx context.Context, lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*checkerpb.DescribeItemV1) error {
 				if metricID == -2 {
 					return errors.New("no metric")
 				}
@@ -223,4 +226,60 @@ func Test_oldConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQueryCheckersLatencySummary(t *testing.T) {
+	service := checkerV1Service{
+		metricq: mockMetricQuery{
+			check: func(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) {
+				require.Equal(t, "org_name", apis.GetHeader(ctx, "org"))
+				require.Equal(t, `
+	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
+	FROM status_page 
+	WHERE metric::tag=$metric 
+	GROUP BY time($interval), metric::tag, status_name::tag 
+	LIMIT 200`, request.Statement)
+			},
+		},
+	}
+	header := transport.Header{}
+	header.Set("org", "org_name")
+	metrics := make(map[int64]*checkerpb.DescribeItemV1)
+	err := service.QueryCheckersLatencySummary(transport.WithHeader(context.Background(), header), nil, int64(100), "second", metrics)
+	require.NoError(t, err)
+}
+
+type mockMetricQuery struct {
+	check func(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest)
+}
+
+func (m mockMetricQuery) QueryWithInfluxFormat(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	m.check(ctx, request)
+	return &metricpb.QueryWithInfluxFormatResponse{
+		Results: []*metricpb.Result{
+			{Series: []*metricpb.Serie{
+				{Rows: []*metricpb.Row{}},
+			}},
+		},
+	}, nil
+}
+
+func (m mockMetricQuery) SearchWithInfluxFormat(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) QueryWithTableFormat(ctx context.Context, request *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) SearchWithTableFormat(ctx context.Context, request *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) GeneralQuery(ctx context.Context, request *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	return nil, nil
+}
+
+func (m mockMetricQuery) GeneralSearch(ctx context.Context, request *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	return nil, nil
 }

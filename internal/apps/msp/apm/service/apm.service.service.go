@@ -52,7 +52,7 @@ func (s *apmServiceService) GetServiceLanguage(ctx context.Context, req *pb.GetS
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 		"service_id":   structpb.NewStringValue(req.ServiceId),
 	}
-	sql := "SELECT distinct(service_id::tag) FROM %s WHERE terminus_key=$terminus_key AND service_id::tag=$service_id LIMIT 1"
+	sql := "SELECT distinct(service_id::tag) FROM %s WHERE terminus_key::tag=$terminus_key AND service_id::tag=$service_id LIMIT 1"
 	for key, language := range servicecommon.ProcessTypes {
 		statement := fmt.Sprintf(sql, key)
 		request := &metricpb.QueryWithInfluxFormatRequest{

@@ -715,7 +715,7 @@ func (topology *provider) GetProcessDiskIo(ctx context.Context, language i18n.La
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
-	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(blk_read_bytes::field), 2),round_float(avg(blk_write_bytes::field), 2) FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_id=$service_id %s GROUP BY time()"
+	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(blk_read_bytes::field), 2),round_float(avg(blk_write_bytes::field), 2) FROM docker_container_summary WHERE terminus_key::tag=$terminus_key AND service_id=$service_id %s GROUP BY time()"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 		"service_id":   params.ServiceId,
@@ -739,7 +739,7 @@ func (topology *provider) GetProcessNetIo(language i18n.LanguageCodes, params Se
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
-	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(rx_bytes::field), 2),round_float(avg(tx_bytes::field), 2) FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_id=$service_id %s GROUP BY time()"
+	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(rx_bytes::field), 2),round_float(avg(tx_bytes::field), 2) FROM docker_container_summary WHERE terminus_key::tag=$terminus_key AND service_id=$service_id %s GROUP BY time()"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 		"service_id":   params.ServiceId,
@@ -885,14 +885,14 @@ type InstanceInfo struct {
 	HostIP string `json:"hostIp"`
 }
 
-func (topology *provider) GetServiceInstanceIds(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+func (topology *provider) GetServiceInstanceIds(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
 	// instance list
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 
 	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-max(timestamp),300000000000),'false','true'),last(host_ip::tag) FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_id::tag =$service_id GROUP BY service_instance_id::tag"
+		"WHERE terminus_key::tag=$terminus_key AND service_id::tag =$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 		"service_id":   params.ServiceId,
@@ -950,13 +950,13 @@ func (topology *provider) handleInstanceInfo(response *model.ResultSet) []*Insta
 	return instanceIds
 }
 
-func (topology *provider) GetServiceInstances(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+func (topology *provider) GetServiceInstances(ctx context.Context, language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 	statement := "SELECT service_instance_id::tag,service_agent_platform::tag,format_time(start_time_mean::field*1000000,'2006-01-02 15:04:05') " +
 		"AS start_time,format_time(timestamp,'2006-01-02 15:04:05') AS last_heartbeat_time FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
+		"WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 		"service_id":   params.ServiceId,
@@ -979,7 +979,7 @@ func (topology *provider) GetServiceInstances(ctx context.Context, language i18n
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
 	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
+		"WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
@@ -1033,7 +1033,7 @@ func (topology *provider) GetServiceOverview(ctx context.Context, language i18n.
 	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
 
 	statement := "SELECT service_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"
+		"WHERE terminus_key::tag=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 		"service_name": params.ServiceName,
@@ -1078,7 +1078,7 @@ func (topology *provider) GetServiceOverview(ctx context.Context, language i18n.
 	serviceOverviewMap["service_error_req_count"] = errorCount
 
 	// exception count
-	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id"
+	statement = "SELECT sum(count) FROM error_count WHERE terminus_key::tag=$terminus_key AND service_name=$service_name AND service_id=$service_id"
 	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
@@ -1089,7 +1089,7 @@ func (topology *provider) GetServiceOverview(ctx context.Context, language i18n.
 	serviceOverviewMap["service_exception_count"] = expCount
 
 	// alert count
-	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key::tag=$terminus_key AND service_name=$service_name"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 		"service_name": params.ServiceName,
@@ -1116,7 +1116,7 @@ func (topology *provider) GetOverview(ctx context.Context, language i18n.Languag
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
-	statement := "SELECT distinct(service_name::tag) FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag"
+	statement := "SELECT distinct(service_name::tag) FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
@@ -1136,7 +1136,7 @@ func (topology *provider) GetOverview(ctx context.Context, language i18n.Languag
 	instanceMetricsParams := url.Values{}
 	instanceMetricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_instance_id::tag"
+	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
@@ -1165,7 +1165,7 @@ func (topology *provider) GetOverview(ctx context.Context, language i18n.Languag
 	overviewMap["service_error_req_count"] = errorCount
 
 	// service exception count
-	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key"
+	statement = "SELECT sum(count) FROM error_count WHERE terminus_key::tag=$terminus_key"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
@@ -1178,7 +1178,7 @@ func (topology *provider) GetOverview(ctx context.Context, language i18n.Languag
 	overviewMap["service_exception_count"] = expCount
 
 	// alert count
-	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key=$terminus_key"
+	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key::tag=$terminus_key"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
@@ -1296,7 +1296,7 @@ func searchApplicationTag(ctx context.Context, topology *provider, scopeId strin
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(startTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(endTime, 10))
-	statement := "SELECT application_name::tag FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY application_name::tag"
+	statement := "SELECT application_name::tag FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY application_name::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": scopeId,
 	}
@@ -1395,7 +1395,7 @@ func (topology *provider) GetInstances(ctx context.Context, language i18n.Langua
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_instance_id::tag"
+	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.TerminusKey,
 	}

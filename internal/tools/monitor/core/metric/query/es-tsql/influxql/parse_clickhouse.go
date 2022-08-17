@@ -251,13 +251,10 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 
 				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(%v)),9)", intervalSeconds)).As(timeBucketColumn))
 
-				// todo goqu order statement should be literal + asc, but with fill is order by `column` [asc/desc] with fill from %left to %right step %interval
-				// buck_timestamp with fill from  fromUnixTimestamp64Nano(cast(1657584000000000000, 'Int64')) to fromUnixTimestamp64Nano(cast(1657756800000000000, 'Int64')) step toDateTime64(86400,9)
 				tailExpr[timeBucketColumn] = fmt.Sprintf("%s with fill from fromUnixTimestamp64Nano(cast(%v, 'Int64')) to fromUnixTimestamp64Nano(cast(%v, 'Int64')) step  toDateTime64(%v,9)", timeBucketColumn, bucketStartTime, bucketEndTime, intervalSeconds)
 
 				exprList = append(exprList, timeBucketColumn)
 
-				// append to head
 				var newHandler []*SQLColumnHandler
 
 				newHandler = append(newHandler, &SQLColumnHandler{
@@ -284,36 +281,6 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 		exprList = append(exprList, script)
 	}
 	return exprSelect, exprList, tailExpr, nil
-}
-
-func (p *Parser) getExprArgsOnRange(expr *influxql.Call) ([][]int64, error) {
-	var arr [][]int64
-	var from interface{}
-	for i, item := range expr.Args[1:] {
-		val, ok, err := getLiteralValue(p.ctx, item)
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			return nil, fmt.Errorf("args[%d] is literal in 'range' function", i)
-		}
-		if i%2 == 0 {
-			from = val
-			continue
-		}
-		var rang []int64
-		rang = append(rang, from.(int64))
-		rang = append(rang, val.(int64))
-		arr = append(arr, rang)
-		from = nil
-	}
-	if from != nil {
-		var rang []int64
-		rang = append(rang, from.(int64))
-		arr = append(arr, rang)
-		from = nil
-	}
-	return arr, nil
 }
 
 func (p *Parser) getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.DataType) (key string) {
@@ -748,9 +715,9 @@ func (p *Parser) ckFieldKey(key string) (string, bool) {
 }
 
 var originColumn = map[string]string{
-	"terminus_key": "tenant_id",
-	"org_name":     "org_name",
-	"timestamp":    "timestamp",
+	"tenant_id": "tenant_id",
+	"org_name":  "org_name",
+	"timestamp": "timestamp",
 }
 
 // ckField return clickhouse column, and is number

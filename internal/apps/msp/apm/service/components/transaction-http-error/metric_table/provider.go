@@ -47,7 +47,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		pageNo, pagSize := error_transaction.GetPagingFromGlobalState(*sdk.GlobalState)
 		sorts := error_transaction.GetSortsFromGlobalState(*sdk.GlobalState)
 
-		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, sdk.Lang),
+		data, err := p.DataSource.GetTable(context.WithValue(sdk.Ctx, common.LangKey, sdk.Lang),
 			&viewtable.ErrorTransactionTableBuilder{
 				BaseBuildParams: &viewtable.BaseBuildParams{
 					TenantId:  p.InParamsPtr.TenantId,

@@ -389,7 +389,7 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			Status: StatusMiss,
 		}
 		language := apis.Language(ctx)
-		err = s.QueryCheckersLatencySummary(language, req.Id, req.Period, results)
+		err = s.QueryCheckersLatencySummary(ctx, language, req.Id, req.Period, results)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.metric/%d", req.Id), err)
 		}
@@ -511,13 +511,13 @@ func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(ctx context.Cont
 	)
 }
 
-func (s *checkerV1Service) QueryCheckersLatencySummary(lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummary(ctx context.Context, lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange(timeUnit, 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
-	return s.queryCheckerMetrics(context.Background(), lang, start, end, `
+	return s.queryCheckerMetrics(ctx, lang, start, end, `
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
-	WHERE metric=$metric 
+	WHERE metric::tag=$metric 
 	GROUP BY time($interval), metric::tag, status_name::tag 
 	LIMIT 200`, map[string]*structpb.Value{
 		"metric":   structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
