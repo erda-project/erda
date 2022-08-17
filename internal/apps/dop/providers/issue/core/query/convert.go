@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -312,11 +313,11 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 	for index, i := range issues {
 		planFinishedAt := ""
 		if i.PlanFinishedAt != nil {
-			planFinishedAt = i.PlanFinishedAt.AsTime().Format("2006-01-02 15:04:05")
+			planFinishedAt = i.PlanFinishedAt.AsTime().In(time.Local).Format("2006-01-02 15:04:05")
 		}
 		planStartedAt := ""
 		if i.PlanStartedAt != nil {
-			planStartedAt = i.PlanStartedAt.AsTime().Format("2006-01-02 15:04:05")
+			planStartedAt = i.PlanStartedAt.AsTime().In(time.Local).Format("2006-01-02 15:04:05")
 		}
 		iterationName := iterationMap[i.IterationID]
 		stage := IssueStage{
@@ -325,7 +326,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 		}
 		finishTime := ""
 		if i.FinishTime != nil {
-			finishTime = i.FinishTime.AsTime().Format("2006-01-02 15:04:05")
+			finishTime = i.FinishTime.AsTime().In(time.Local).Format("2006-01-02 15:04:05")
 		}
 
 		_, relatedIssueIDs, err := p.GetIssueRelationsByIssueIDs(uint64(i.Id), []string{apistructs.IssueRelationConnection})
@@ -373,7 +374,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 				pb.IssueTypeEnum_EPIC:        "史诗",
 			}[i.Type],
 			planFinishedAt,
-			i.CreatedAt.AsTime().Format("2006-01-02 15:04:05"),
+			i.CreatedAt.AsTime().In(time.Local).Format("2006-01-02 15:04:05"),
 			strings.Join(relatedIssueIDStrs, ","),
 			streamcommon.GetFormartTime(i.IssueManHour, "EstimateTime"),
 			finishTime,

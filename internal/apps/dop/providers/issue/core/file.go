@@ -718,7 +718,7 @@ func (i *IssueService) decodeFromExcelFile(req *pb.ImportExcelIssueRequest, r io
 		issue.Labels = strutil.Split(row[12], ",", true)
 		issue.Type = GetType(row[13])
 		if row[14] != "" {
-			finishedTime, err := time.Parse("2006-01-02 15:04:05", row[14])
+			finishedTime, err := time.ParseInLocation("2006-01-02 15:04:05", row[14], time.Local)
 			if err != nil {
 				falseExcel = append(falseExcel, i+1)
 				falseReason = append(falseReason, "无法解析任务截止时间, 正确格式: 2006-01-02 15:04:05")
@@ -749,7 +749,7 @@ func (i *IssueService) decodeFromExcelFile(req *pb.ImportExcelIssueRequest, r io
 
 		// row[19] plan start time
 		if len(row) >= 20 && row[19] != "" {
-			planStartAt, err := time.Parse("2006-01-02 15:04:05", row[19])
+			planStartAt, err := time.ParseInLocation("2006-01-02 15:04:05", row[19], time.Local)
 			if err != nil {
 				falseExcel = append(falseExcel, i+1)
 				falseReason = append(falseReason, fmt.Sprintf("failed to convert plan start time: %s, err: %v", row[19], err))
