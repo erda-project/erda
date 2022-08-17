@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
+	"github.com/erda-project/erda/apistructs"
 )
 
 const (
@@ -35,7 +35,7 @@ var getOpenAPILock sync.Once
 func (agent *Agent) getOpenAPIInfo() {
 	getOpenAPILock.Do(
 		func() {
-			pipelineAddr := os.Getenv(edgepipeline_register.EnvEdgePipelineAddr)
+			pipelineAddr := os.Getenv(apistructs.EnvEdgePipelineAddr)
 
 			// 判断是否是边缘集群
 			agent.isEdgeCluster()
@@ -61,8 +61,8 @@ func (agent *Agent) checkCallbackAddr() error {
 	}
 	if agent.EasyUse.PipelineAddr == "" && agent.EasyUse.IsEdgePipeline {
 		return errors.Errorf("failed to get pipeline addr, %s: %v, %s: %s",
-			edgepipeline_register.EnvIsEdgePipeline, agent.EasyUse.IsEdgePipeline,
-			edgepipeline_register.EnvEdgePipelineAddr, agent.EasyUse.PipelineAddr)
+			apistructs.EnvIsEdgePipeline, agent.EasyUse.IsEdgePipeline,
+			apistructs.EnvEdgePipelineAddr, agent.EasyUse.PipelineAddr)
 	}
 	return nil
 }
@@ -74,6 +74,6 @@ func (agent *Agent) isEdgeCluster() {
 }
 
 func (agent *Agent) isEdgePipeline() {
-	isEdgePipeline, _ := strconv.ParseBool(os.Getenv(edgepipeline_register.EnvIsEdgePipeline))
+	isEdgePipeline, _ := strconv.ParseBool(os.Getenv(apistructs.EnvIsEdgePipeline))
 	agent.EasyUse.IsEdgePipeline = isEdgePipeline
 }
