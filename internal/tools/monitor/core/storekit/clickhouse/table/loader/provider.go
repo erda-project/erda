@@ -103,10 +103,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	case LoadFromCacheOnly:
 		ctx.AddTask(p.runCacheTablesLoader, servicehub.WithTaskName("cache tables loader"))
 	case LoadWithCache:
-		p.Election.OnLeader(func(ctx context.Context) {
-			p.needSyncTablesToCache = true
-			_ = p.runClickhouseTablesLoader(ctx)
-		})
+		_ = p.runClickhouseTablesLoader(ctx)
 		ctx.AddTask(p.runCacheTablesLoader, servicehub.WithTaskName("cache tables loader"))
 	default:
 		return fmt.Errorf("invalid load_mode")
