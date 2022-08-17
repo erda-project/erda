@@ -260,7 +260,6 @@
               "all@ta_req"
             ],
             "isSqlMode": false,
-            "limit": 5,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -331,7 +330,6 @@
               "time()",
               "status_code::tag"
             ],
-            "limit": 5,
             "orderby": [
               {
                 "dir": "DESC",

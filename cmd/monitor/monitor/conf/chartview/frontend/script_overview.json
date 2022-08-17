@@ -30,7 +30,6 @@
               "all@ta_error"
             ],
             "isSqlMode": false,
-            "limit": 4,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -93,7 +92,6 @@
               "time()",
               "error::tag"
             ],
-            "limit": 4,
             "orderby": [
               {
                 "dir": "DESC",
@@ -159,7 +157,6 @@
               "all@ta_error"
             ],
             "isSqlMode": false,
-            "limit": 4,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -219,7 +216,6 @@
               "time()",
               "browser::tag"
             ],
-            "limit": 4,
             "orderby": [
               {
                 "dir": "DESC",

@@ -204,7 +204,6 @@
             ],
             "customTime": "1hour",
             "isSqlMode": false,
-            "limit": 5,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -268,7 +267,6 @@
               "time()",
               "host::tag"
             ],
-            "limit": 5,
             "orderby": [
               {
                 "expr": "avg(plt::field) desc"
@@ -333,7 +331,6 @@
               "all@ta_timing"
             ],
             "isSqlMode": false,
-            "limit": 5,
             "resultFilters": [
               {
                 "alias": "tk",
@@ -400,7 +397,6 @@
               "time()",
               "host::tag"
             ],
-            "limit": 5,
             "orderby": [
               {
                 "dir": "DESC",

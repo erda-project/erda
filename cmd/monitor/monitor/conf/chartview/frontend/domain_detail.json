@@ -325,7 +325,6 @@
               "all@ta_timing"
             ],
             "isSqlMode": false,
-            "limit": null,
             "resultFilters": [
               {
                 "alias": "tk",
