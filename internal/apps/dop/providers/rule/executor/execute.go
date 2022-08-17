@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/dingtalkworknotice"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -28,6 +29,7 @@ type Executor struct {
 	RuleExecutor
 	API      api.Interface
 	Pipeline pipeline.Interface
+	DingTalk dingtalkworknotice.Interface
 }
 
 func (e *Executor) Fire(req *pb.FireRequest) ([]bool, error) {
@@ -109,6 +111,12 @@ func (e *Executor) Do(content map[string]interface{}, config *RuleConfig) string
 			results = addToResults(res, err, results)
 		case "pipeline":
 			res, err := e.Pipeline.CreatePipeline(content)
+			results = addToResults(res, err, results)
+		case "dingtalkworknotice":
+			res, err := e.DingTalk.Send(&dingtalkworknotice.JsonnetParam{
+				Snippet: node.Snippet,
+				TLARaw:  content,
+			})
 			results = addToResults(res, err, results)
 		default:
 			results = addToResults("", errors.New("invalid action type"), results)
