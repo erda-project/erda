@@ -76,26 +76,29 @@ type PipelineConfig struct {
 	FileName       string
 }
 
+type PipelineRuleEnv struct {
+	Content apistructs.GittarPushEventRequest `json:"content"`
+	Config  *PipelineConfig                   `json:"pipelineConfig"`
+}
+
 func (p *provider) CreatePipeline(env map[string]interface{}) (string, error) {
 	gitPush, ok := env["git_push"]
 	if !ok {
 		return "", fmt.Errorf("empty git_push config")
 	}
-	v, ok := gitPush.(map[string]interface{})["pipelineConfig"]
-	if !ok {
-		return "", fmt.Errorf("empty pipeline config")
-	}
+
 	// parse pipeline config
-	b, err := json.Marshal(v)
+	b, err := json.Marshal(gitPush)
 	if err != nil {
 		return "", err
 	}
 
-	var req PipelineConfig
-	if err := json.Unmarshal(b, &req); err != nil {
+	var e PipelineRuleEnv
+	if err := json.Unmarshal(b, &e); err != nil {
 		return "", err
 	}
 
+	req := e.Config
 	app, err := p.bdl.GetApp(req.AppID)
 	if err != nil {
 		return "", err

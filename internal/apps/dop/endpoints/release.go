@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
-	pipelineaction "github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
+	ruleactionpipeline "github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
@@ -105,9 +105,9 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 
 		path, fileName := getSourcePathAndName(each)
 		go func() {
-			env := map[string]interface{}{
-				"content": req.Content,
-				"pipelineConfig": &pipelineaction.PipelineConfig{
+			env := ruleactionpipeline.PipelineRuleEnv{
+				Content: req.Content,
+				Config: &ruleactionpipeline.PipelineConfig{
 					PipelineYml:    each,
 					PipelineYmlStr: strPipelineYml,
 					AppID:          app.ID,
@@ -117,6 +117,7 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 					FileName:       fileName,
 				},
 			}
+
 			if err := e.FireRule(ctx, env, EventInfo{
 				Scope:       "project",
 				ScopeID:     req.ProjectID,
