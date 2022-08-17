@@ -50,11 +50,12 @@ const (
 )
 
 const (
-	EnvDiceOrgName    = "DICE_ORG_NAME"
-	EnvDiceOrgID      = "DICE_ORG_ID"
-	EnvDiceWorkspace  = "DICE_WORKSPACE"
-	EnvIsEdgePipeline = "IS_EDGE_PIPELINE"
-	EnvPipelineAddr   = "PIPELINE_ADDR"
+	EnvDiceOrgName      = "DICE_ORG_NAME"
+	EnvDiceOrgID        = "DICE_ORG_ID"
+	EnvDiceWorkspace    = "DICE_WORKSPACE"
+	EnvIsEdgePipeline   = "IS_EDGE_PIPELINE"
+	EnvPipelineAddr     = "PIPELINE_ADDR"
+	EnvEdgePipelineAddr = "PIPELINE_ADDR"
 )
 
 // pipeline reconcileTask context key

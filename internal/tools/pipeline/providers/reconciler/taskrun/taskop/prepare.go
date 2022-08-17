@@ -40,7 +40,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/taskrun"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
@@ -352,8 +351,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 
 	// edge pipeline envs
 	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
-	task.Extra.PublicEnvs[edgepipeline_register.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
-	task.Extra.PublicEnvs[edgepipeline_register.EnvEdgePipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
+	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
+	task.Extra.PublicEnvs[apistructs.EnvEdgePipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
 
 	// 条件表达式存在
 	if jump := condition(task); jump {
