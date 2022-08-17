@@ -16,12 +16,14 @@ package collector
 
 import (
 	"bytes"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 )
 
 func Test_provider_collectLogsWithSource(t *testing.T) {
