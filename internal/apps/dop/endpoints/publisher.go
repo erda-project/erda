@@ -278,49 +278,6 @@ func (e *Endpoints) ListMyPublishers(ctx context.Context, r *http.Request, vars 
 	return httpserver.OkResp(*pagingPublishers)
 }
 
-func (e *Endpoints) QueryMyPublishItem(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
-	var l = logrus.WithField("func", "QueryMyPublishItem")
-
-	// auth info: user and org
-	userID, err := user.GetUserID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetUserID")
-		return apierrors.ErrQueryMyPublishItem.NotLogin().ToResp(), nil
-	}
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetOrgID")
-		return apierrors.ErrQueryMyPublishItem.InvalidParameter(err).ToResp(), nil
-	}
-
-	publishers, err := e.publisher.ListJoinedPublishers(userID.String(), &apistructs.PublisherListRequest{
-		OrgID:    orgID,
-		Joined:   false,
-		Query:    "",
-		Name:     "",
-		PageNo:   1,
-		PageSize: 20,
-	})
-	if err != nil {
-		l.WithError(err).Errorln("failed to ListJoinedPublishers")
-		return apierrors.ErrQueryMyPublishItem.InternalError(err).ToResp(), nil
-	}
-	if publishers.Total == 0 || len(publishers.List) == 0 {
-		l.Errorln("on publisher in the response data from ListJoinedPublishers")
-		return apierrors.ErrQueryMyPublishItem.InternalError(errors.New("no publisher")).ToResp(), nil
-	}
-	var req = new(apistructs.QueryPublishItemRequest)
-	req.FromValues(r.URL.Query())
-	req.OrgID = int64(orgID)
-	req.PublisherId = int64(publishers.List[0].ID)
-	data, err := e.bdl.QueryMyPublishItem(userID.String(), req)
-	if err != nil {
-		l.WithError(err).Errorln("failed to QueryMyPublishItem from dicehub")
-		return apierrors.ErrQueryMyPublishItem.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp(data)
-}
-
 // Publisher列表时获取请求参数
 func getListPublishersParam(r *http.Request) (*apistructs.PublisherListRequest, error) {
 	// 获取企业Id

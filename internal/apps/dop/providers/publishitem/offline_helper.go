@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package publish_item
+package publishitem
 
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,7 +37,8 @@ import (
 	"howett.net/plist"
 
 	"github.com/erda-project/erda-proto-go/core/file/pb"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/publishitem/db"
 	"github.com/erda-project/erda/internal/core/file/filetypes"
 	"github.com/erda-project/erda/pkg/template"
 )
@@ -80,7 +83,7 @@ type AndroidAppInfo struct {
 }
 
 // isOffLineVersion 判断版本是不是离线包上传的版本
-func isOffLineVersion(version *dbclient.PublishItemVersion) bool {
+func isOffLineVersion(version *db.PublishItemVersion) bool {
 	var meta map[string]interface{}
 	if err := json.Unmarshal([]byte(version.Meta), &meta); err != nil {
 		logrus.Errorf("Judge is OffLineVersion err: %v", err)
@@ -93,7 +96,7 @@ func isOffLineVersion(version *dbclient.PublishItemVersion) bool {
 	return false
 }
 
-func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*pb.File, error) {
+func (s *PublishItemService) UploadFileFromReader(fileHeader *multipart.FileHeader) (*pb.File, error) {
 	fileName := fileHeader.Filename
 	if fileName == "" {
 		fileName = "file"
@@ -103,7 +106,7 @@ func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*p
 		return nil, err
 	}
 	defer reader.Close()
-	resp, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
+	resp, err := s.bdl.UploadFile(filetypes.FileUploadRequest{
 		From:            "release",
 		IsPublic:        true,
 		FileReader:      reader,
@@ -121,14 +124,14 @@ func (i *PublishItem) UploadFileFromReader(fileHeader *multipart.FileHeader) (*p
 	return resp, nil
 }
 
-func (i *PublishItem) UploadFileFromFile(filePath string) (*pb.File, error) {
+func (s *PublishItemService) UploadFileFromFile(filePath string) (*pb.File, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	resp, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
+	resp, err := s.bdl.UploadFile(filetypes.FileUploadRequest{
 		From:            "release",
 		IsPublic:        true,
 		FileReader:      f,
@@ -329,4 +332,38 @@ func SaveImageToFile(icon image.Image, path string) error {
 	opt.Quality = 80
 	err = jpeg.Encode(out, icon, &opt) // put quality to 80%
 	return err
+}
+
+// getAppStoreURL 根据bundleID从app store搜索链接，目前只从中国区查找
+func getAppStoreURL(bundleID string) string {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	hc := &http.Client{
+		Transport: tr,
+	}
+	var getResp apistructs.AppStoreResponse
+	resp, err := hc.Get("https://itunes.apple.com/cn/lookup?bundleId=" + bundleID)
+	if err != nil {
+		logrus.Errorf("get app store url err: %v", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logrus.Errorf("get app store url err: %v", err)
+		return ""
+	}
+	err = json.Unmarshal(body, &getResp)
+	if err != nil {
+		logrus.Errorf("get app store url err: %v", err)
+		return ""
+	}
+
+	if getResp.ResultCount == 0 {
+		return ""
+	}
+
+	return getResp.Results[0].TrackViewURL
 }

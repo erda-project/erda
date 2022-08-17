@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package publish_item
+package publishitem
 
 import (
 	"fmt"
@@ -20,6 +20,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/publishitem/db"
 )
 
 func TestMatchMod(t *testing.T) {
@@ -100,5 +103,48 @@ func TestBatchIPGray(t *testing.T) {
 		}
 		trulyGrayPercent := float64(resultMap["isGray"]) / float64(resultMap["isGray"]+resultMap["isNotGray"]) * 100
 		fmt.Printf("expect gray percent: %v, trulyGrayPercent: %.2f\n", expectedGrayPercent, trulyGrayPercent)
+	}
+}
+
+func Test_discriminateReleaseAndBeta(t *testing.T) {
+	type arg struct {
+		l        int
+		versions []db.PublishItemVersion
+	}
+	tests := []struct {
+		name string
+		args arg
+		want int
+	}{
+		{
+			name: "l=0",
+			args: arg{
+				l: 0,
+			},
+			want: 0,
+		},
+		{
+			name: "l=1",
+			args: arg{
+				l:        1,
+				versions: []db.PublishItemVersion{{VersionStates: string(apistructs.PublishItemReleaseVersion)}},
+			},
+			want: 1,
+		},
+		{
+			name: "l=2",
+			args: arg{
+				l: 2,
+				versions: []db.PublishItemVersion{
+					{VersionStates: string(apistructs.PublishItemReleaseVersion)},
+					{VersionStates: string(apistructs.PublishItemBetaVersion)},
+				},
+			},
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		versions, _ := discriminateReleaseAndBeta(tt.args.l, tt.args.versions)
+		assert.Equal(t, tt.want, len(versions))
 	}
 }

@@ -110,7 +110,7 @@ func (b *Bundle) SearchExtensions(req apistructs.ExtensionSearchRequest) (map[st
 }
 
 func (b *Bundle) GetPublishItem(publishItemID int64) (*apistructs.PublishItem, error) {
-	host, err := b.urls.ErdaServer()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

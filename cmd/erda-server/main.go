@@ -105,9 +105,10 @@ import (
 	// uc-adaptor
 	_ "github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor"
 
-	// dop
 	_ "github.com/erda-project/erda/internal/apps/devflow/flow"
 	_ "github.com/erda-project/erda/internal/apps/devflow/issuerelation"
+
+	// dop
 	_ "github.com/erda-project/erda/internal/apps/dop"
 	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/api-management"
@@ -124,6 +125,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/pipelinetemplate"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/project/home"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/publishitem"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/rule"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/search"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/taskerror"

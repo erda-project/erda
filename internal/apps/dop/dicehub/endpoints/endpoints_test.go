@@ -22,25 +22,22 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/endpoints"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/publish_item"
 	release2 "github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 )
 
 func TestNew(t *testing.T) {
 	var (
-		db          = new(dbclient.DBClient)
-		bdl         = new(bundle.Bundle)
-		release     = new(release2.Release)
-		publishItem = new(publish_item.PublishItem)
-		rule        = new(release_rule.ReleaseRule)
-		decoder     = new(schema.Decoder)
+		db      = new(dbclient.DBClient)
+		bdl     = new(bundle.Bundle)
+		release = new(release2.Release)
+		rule    = new(release_rule.ReleaseRule)
+		decoder = new(schema.Decoder)
 	)
 	endpoints.New(
 		endpoints.WithDBClient(db),
 		endpoints.WithBundle(bdl),
 		endpoints.WithReleaseRule(rule),
-		endpoints.WithPublishItem(publishItem),
 		endpoints.WithRelease(release),
 		endpoints.WithQueryStringDecoder(decoder),
 	)
