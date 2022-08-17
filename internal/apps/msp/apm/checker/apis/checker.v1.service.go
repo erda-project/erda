@@ -389,7 +389,10 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			Status: StatusMiss,
 		}
 		language := apis.Language(ctx)
-		err = s.QueryCheckersLatencySummary(ctx, language, req.Id, req.Period, results)
+
+		metricQueryCtx := apis.GetContext(ctx, func(header *transport.Header) {})
+
+		err = s.QueryCheckersLatencySummary(metricQueryCtx, language, req.Id, req.Period, results)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.metric/%d", req.Id), err)
 		}
@@ -759,7 +762,7 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 		Statement: `
 		SELECT timestamp(), status_name::tag, count(latency)
 		FROM status_page 
-		WHERE metric=$metric 
+		WHERE metric::tag=$metric 
 		GROUP BY time($interval), status_name::tag 
 		LIMIT 200`,
 		Params: map[string]*structpb.Value{
@@ -863,6 +866,10 @@ loop:
 			for _, i := range keys {
 				val := row.Values[i].AsInterface()
 				if val == nil {
+					continue rowsloop
+				}
+				kval := fmt.Sprint(val)
+				if kval == "" {
 					continue rowsloop
 				}
 				kvals = append(kvals, fmt.Sprint(val))
