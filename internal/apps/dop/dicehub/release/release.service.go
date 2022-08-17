@@ -48,7 +48,6 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/template"
@@ -905,8 +904,7 @@ func (s *ReleaseService) CheckVersion(ctx context.Context, req *pb.CheckVersionR
 // PutOnRelease puts on release to gallery.
 // Internal call only
 func (s *ReleaseService) PutOnRelease(ctx context.Context, req *pb.ReleasePutOnRequest) (*pb.ReleasePutOnResponse, error) {
-	internalClient := apis.GetHeader(ctx, httputil.InternalHeader)
-	if internalClient == "" {
+	if !apis.IsInternalClient(ctx) {
 		return nil, apierrors.ErrPutOnRelease.AccessDenied()
 	}
 
@@ -932,8 +930,7 @@ func (s *ReleaseService) PutOnRelease(ctx context.Context, req *pb.ReleasePutOnR
 }
 
 func (s *ReleaseService) PutOffRelease(ctx context.Context, req *pb.ReleasePutOffRequest) (*pb.ReleasePutOffResponse, error) {
-	internalClient := apis.GetHeader(ctx, httputil.InternalHeader)
-	if internalClient == "" {
+	if !apis.IsInternalClient(ctx) {
 		return nil, apierrors.ErrPutOnRelease.AccessDenied()
 	}
 
@@ -1581,7 +1578,7 @@ func getPermissionHeader(ctx context.Context) (int64, error) {
 
 func getIdentityInfo(ctx context.Context) (apistructs.IdentityInfo, error) {
 	userID := apis.GetUserID(ctx)
-	internalClient := apis.GetHeader(ctx, httputil.InternalHeader)
+	internalClient := apis.GetInternalClient(ctx)
 
 	// not login
 	if userID == "" && internalClient == "" {
