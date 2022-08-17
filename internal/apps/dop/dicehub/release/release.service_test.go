@@ -659,3 +659,41 @@ func TestService_getOrg(t *testing.T) {
 		})
 	}
 }
+
+func Test_PutOffRelease(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.ReleasePutOffRequest
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    *pb.ReleasePutOffResponse
+		wantErr bool
+	}{
+		{
+			name: "case1: access denied",
+			args: args{
+				ctx: context.Background(),
+				req: &pb.ReleasePutOffRequest{},
+			},
+			wantErr: true,
+		},
+	}
+
+	r := ReleaseService{}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := r.PutOffRelease(test.args.ctx, test.args.req)
+			if (err != nil) != test.wantErr {
+				t.Errorf("PutOffRelease() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if got != test.want {
+				t.Errorf("PutOffRelease() got = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
