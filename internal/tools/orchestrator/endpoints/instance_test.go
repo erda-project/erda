@@ -131,6 +131,7 @@ func TestEndpoints_getPodStatusFromK8s(t *testing.T) {
 			CpuRequest: 0.01,
 			CpuLimit:   0.02,
 		},
+		Message: "Ok",
 	})
 
 	pods := make([]apistructs.Pod, 0)
@@ -139,7 +140,7 @@ func TestEndpoints_getPodStatusFromK8s(t *testing.T) {
 		IPAddress:     "10.112.227.92",
 		Host:          "10.0.6.51",
 		Phase:         "Healthy",
-		Message:       "Ok",
+		Message:       containers[0].Message,
 		StartedAt:     "2022-08-02T11:40:15+08:00",
 		Service:       "test",
 		ClusterName:   "local-cluster",
@@ -252,6 +253,75 @@ func TestEndpoints_getPodStatusFromK8s(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getPodStatusFromK8s() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertReasonMessageToHumanReadableMessage(t *testing.T) {
+	type args struct {
+		containerReason  string
+		containerMessage string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "Test01",
+			args: args{
+				containerReason:  "Unschedulable",
+				containerMessage: "0/6 nodes are available: 6 Insufficient memory.",
+			},
+			want: "Failed to Schedule Pod: Insufficient memory",
+		},
+		{
+			name: "Test02",
+			args: args{
+				containerReason:  "Unschedulable",
+				containerMessage: "0/6 nodes are available: 6 Insufficient cpu.",
+			},
+			want: "Failed to Schedule Pod: Insufficient cpu",
+		},
+		{
+			name: "Test03",
+			args: args{
+				containerReason:  "Unschedulable",
+				containerMessage: "0/6 nodes are available: 6 node(s) didn't match Pod's node affinity.",
+			},
+			want: "Failed to Schedule Pod: didn't match Pod's node affinity",
+		},
+		{
+			name: "Test04",
+			args: args{
+				containerReason:  "RunContainerError",
+				containerMessage: "failed to start container \"6be8ec962041b4f0d0afc515af35df4ea976130bb79d402f12514a7a2c2dd96f\": Error response from daemon: OCI runtime create failed: runc create failed: unable to start container process: exec: \"/opt/xxx xxx\": stat /opt/xxx xxx: no such file or directory: unknown",
+			},
+			want: "Failed to start container: some file or directory not found",
+		},
+		{
+			name: "Test05",
+			args: args{
+				containerReason:  "CrashLoopBackOff",
+				containerMessage: "back-off 5m0s restarting failed container=hpa pod=testvpa-5548879d76-79rtb_default(d0c3f1de-55b8-41ca-a402-3da9bff84f2a)",
+			},
+			want: "Failed to run command: container process exit",
+		},
+		{
+			name: "Test06",
+			args: args{
+				containerReason:  "ImagePullBackOff",
+				containerMessage: "rpc error: code = Unknown desc = Error response from daemon: manifest for registry.cn-hangzhou.aliyuncs.com/xxx/xa:v0.09 not found",
+			},
+			want: "Failed to pull image: image not found or can not pull",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertReasonMessageToHumanReadableMessage(tt.args.containerReason, tt.args.containerMessage); got != tt.want {
+				t.Errorf("convertReasonMessageToHumanReadableMessage() = %v, want %v", got, tt.want)
 			}
 		})
 	}

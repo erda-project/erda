@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -44,9 +45,35 @@ const (
 	INSTANCE_REQUEST_TYPE_RUNTIME     InstanceRequestType = "runtime"
 
 	PodStatusHealthy    string = "Healthy"
-	PodStatusUnHealthy  string = "UnHealthy"
+	PodStatusUnHealthy  string = "Unhealthy"
 	PodStatusCreating   string = "Creating"
 	PodStatusTerminated string = "Terminated"
+
+	PodConditionFalse                     string = "False"
+	PodDefaultMessage                     string = "Ok"
+	PodPendingDefaultMessage              string = "Waiting for scheduling"
+	PodPendingReasonUnSchedulable         string = "Unschedulable"
+	PodUnHealthyReasonErrImagePull        string = "ErrImagePull"
+	PodUnHealthyReasonUnSchedulable       string = "Failed to Schedule Pod"
+	ContainerStateReasonImagePullBackOff  string = "ImagePullBackOff"
+	PodUnHealthyReasonImagePullBackOff    string = "Failed to pull image"
+	ContainerStateReasonRunContainerError string = "RunContainerError"
+	PodUnHealthyReasonRunContainerError   string = "Failed to start container"
+	ContainerStateReasonCrashLoopBackOff  string = "CrashLoopBackOff"
+	PodUnHealthyReasonCrashLoopBackOff    string = "Failed to run command"
+
+	messageContainsImageNotFound                string = "not found"
+	messageContainsImagePullBackoff             string = "Back-off pulling image"
+	messageContainsImagePullFailedTrans         string = "image not found or can not pull"
+	messageContainsNodeAffinity                 string = "didn't match Pod's node affinity"
+	messageContainsInsufficientCPU              string = "Insufficient cpu"
+	messageContainsInsufficientMemory           string = "Insufficient memory"
+	messageContainsInsufficientCPUAndMemory     string = "Insufficient memory and memory"
+	messageContainsNoSuchFileOrDirectory        string = "no such file or directory"
+	messageContainsNoSuchFileOrDirectoryTrans   string = "some file or directory not found"
+	messageContainsBackOff                      string = "back-off"
+	messageContainsBackOffRestartConatiner      string = "restarting failed container"
+	messageContainsBackOffRestartConatinerTrans string = "container process exit"
 )
 
 // ListServiceInstance 获取runtime 下服务实例列表
@@ -283,20 +310,20 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 		if _, ok := pod.Labels["DICE_CLUSTER_NAME"]; ok {
 			clusterName = pod.Labels["DICE_CLUSTER_NAME"]
 		}
-		message := "Ok"
+		message := PodDefaultMessage
 		if pod.Status.Message != "" {
 			message = pod.Status.Message
 		}
 
 		podRestartCount := int32(0)
 		containersResource := make([]apistructs.PodContainer, 0)
-
 		podHealthy := PodStatusHealthy
 		switch pod.Status.Phase {
 		case apiv1.PodPending:
 			podHealthy = PodStatusCreating
 			containerResource := apistructs.ContainerResource{}
-			for _, container := range pod.Spec.Containers {
+			nameToIndex := make(map[string]int)
+			for idx, container := range pod.Spec.Containers {
 				requestmem, _ := container.Resources.Requests.Memory().AsInt64()
 				limitmem, _ := container.Resources.Limits.Memory().AsInt64()
 				containerResource = apistructs.ContainerResource{
@@ -310,6 +337,28 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 					Image:         container.Image,
 					Resource:      containerResource,
 				})
+				nameToIndex[container.Name] = idx
+			}
+			message = PodPendingDefaultMessage
+			if len(pod.Status.ContainerStatuses) > 0 {
+				for _, podContainerStatus := range pod.Status.ContainerStatuses {
+					if podContainerStatus.Ready != true {
+						message = getPodContainerMessage(podContainerStatus.State)
+						if _, ok := nameToIndex[podContainerStatus.Name]; ok {
+							containersResource[nameToIndex[podContainerStatus.Name]].Message = message
+						} else {
+							containersResource[0].Message = message
+						}
+					}
+				}
+			} else {
+				for _, podCondition := range pod.Status.Conditions {
+					if string(podCondition.Status) == PodConditionFalse {
+						message = convertReasonMessageToHumanReadableMessage(podCondition.Reason, podCondition.Message)
+						containersResource[0].Message = message
+						break
+					}
+				}
 			}
 
 		default:
@@ -329,6 +378,10 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 					return currPods, errors.Errorf("Pod status containerStatuses no containerID, neew pod for service %s is creating, please wait", serviceName)
 				} else {
 					containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
+				}
+
+				if podContainerStatus.Ready != true {
+					message = getPodContainerMessage(podContainerStatus.State)
 				}
 
 				containerResource := apistructs.ContainerResource{}
@@ -351,6 +404,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 					ContainerName: podContainerStatus.Name,
 					Image:         podContainerStatus.Image,
 					Resource:      containerResource,
+					Message:       message,
 				})
 			}
 
@@ -369,7 +423,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 			IPAddress:     pod.Status.PodIP,
 			Host:          pod.Status.HostIP,
 			Phase:         podHealthy,
-			Message:       message,
+			Message:       containersResource[0].Message,
 			StartedAt:     pod.Status.StartTime.Format(time.RFC3339Nano),
 			Service:       serviceName,
 			ClusterName:   clusterName,
@@ -384,6 +438,57 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 		return currPods, errors.Errorf("No pods get for service %s, pod may be is creating, please wait", serviceName)
 	}
 	return currPods, nil
+}
+
+func getPodContainerMessage(containerState apiv1.ContainerState) string {
+	message := ""
+	switch {
+	case containerState.Waiting != nil:
+		message = convertReasonMessageToHumanReadableMessage(containerState.Waiting.Reason, containerState.Waiting.Message)
+	case containerState.Terminated != nil:
+		message = convertReasonMessageToHumanReadableMessage(containerState.Terminated.Reason, containerState.Terminated.Message)
+	}
+	return message
+}
+
+func convertReasonMessageToHumanReadableMessage(containerReason, containerMessage string) string {
+
+	extractMessage := ""
+	switch {
+	case strings.Contains(containerMessage, messageContainsImageNotFound), strings.Contains(containerMessage, messageContainsImagePullBackoff):
+		extractMessage = messageContainsImagePullFailedTrans
+	case strings.Contains(containerMessage, messageContainsNodeAffinity):
+		extractMessage = messageContainsNodeAffinity
+	case strings.Contains(containerMessage, messageContainsInsufficientCPU), strings.Contains(containerMessage, messageContainsInsufficientMemory):
+		if strings.Contains(containerMessage, messageContainsInsufficientCPU) {
+			extractMessage = messageContainsInsufficientCPU
+		}
+		if strings.Contains(containerMessage, messageContainsInsufficientMemory) {
+			extractMessage = messageContainsInsufficientMemory
+		}
+		if strings.Contains(containerMessage, messageContainsInsufficientCPU) && strings.Contains(containerMessage, messageContainsInsufficientMemory) {
+			extractMessage = messageContainsInsufficientCPUAndMemory
+		}
+	case strings.Contains(containerMessage, messageContainsNoSuchFileOrDirectory):
+		extractMessage = messageContainsNoSuchFileOrDirectoryTrans
+	case strings.Contains(containerMessage, messageContainsBackOff) || strings.Contains(containerMessage, messageContainsBackOffRestartConatiner):
+		extractMessage = messageContainsBackOffRestartConatinerTrans
+	default:
+		extractMessage = containerMessage
+	}
+
+	switch containerReason {
+	case ContainerStateReasonImagePullBackOff, PodUnHealthyReasonErrImagePull:
+		return fmt.Sprintf("%s: %s", PodUnHealthyReasonImagePullBackOff, extractMessage)
+	case PodPendingReasonUnSchedulable:
+		return fmt.Sprintf("%s: %s", PodUnHealthyReasonUnSchedulable, extractMessage)
+	case ContainerStateReasonRunContainerError:
+		return fmt.Sprintf("%s: %s", PodUnHealthyReasonRunContainerError, extractMessage)
+	case ContainerStateReasonCrashLoopBackOff:
+		return fmt.Sprintf("%s: %s", PodUnHealthyReasonCrashLoopBackOff, extractMessage)
+	default:
+		return fmt.Sprintf("%s: %s", containerReason, extractMessage)
+	}
 }
 
 func buildInstanceUsageParams(instances apistructs.InstanceInfoDataList) (
