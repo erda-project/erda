@@ -139,6 +139,7 @@ message ActionParams {
 message ActionNode {
   DingTalkConfig dingTalk = 1;
   string snippet = 2;
+  string type = 3;
 }
 
 message DingTalkConfig {

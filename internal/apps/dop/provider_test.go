@@ -36,7 +36,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
+	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
 	"github.com/erda-project/erda/internal/apps/dop/services/cdp"
+	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
 )
 
 type MockCP struct {
@@ -91,6 +93,20 @@ func TestNewCDP(t *testing.T) {
 	assert.NotNil(t, c)
 }
 
+type MockPipelineAction struct{}
+
+func (a *MockPipelineAction) CreatePipeline(env map[string]interface{}) (string, error) {
+	return "", nil
+}
+
+func (a *MockPipelineAction) WithPipelineSvc(svc *pipeline.Pipeline) {
+
+}
+
+func (a *MockPipelineAction) WithBranchRule(branchRule *branchrule.BranchRule) {
+
+}
+
 func Test_initEndpoints(t *testing.T) {
 	p := &provider{
 		Log:                   logrusx.New(),
@@ -102,6 +118,7 @@ func Test_initEndpoints(t *testing.T) {
 		GuideSvc:              &guide.GuideService{},
 		CICDCmsSvc:            &cms.CICDCmsService{},
 		IssueCoreSvc:          &core.IssueService{},
+		PipelineAction:        &MockPipelineAction{},
 	}
 
 	_, err := p.initEndpoints(nil)

@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/executor"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -42,6 +43,7 @@ type provider struct {
 
 	ruleService *ruleService
 	API         api.Interface
+	Pipeline    pipeline.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -56,7 +58,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		RuleExecutor: &executor.ExprExecutor{
 			DB: p.db,
 		},
-		API: p.API,
+		API:      p.API,
+		Pipeline: p.Pipeline,
 	}
 	p.ruleService = &ruleService{p}
 	if p.Register != nil {

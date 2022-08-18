@@ -331,6 +331,8 @@ metricq-client:
 erda.dop.rule: { }
 erda.dop.rule.action.api: { }
 erda.dop.publishitem: { }
+erda.dop.rule.action.pipeline: { }
+
 #grpc-client@erda.core.user:
 #  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 #erda.core.user-client: {}

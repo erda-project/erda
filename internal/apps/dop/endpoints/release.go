@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
+	ruleactionpipeline "github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
@@ -102,6 +103,30 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 			continue
 		}
 
+		path, fileName := getSourcePathAndName(each)
+		go func() {
+			env := ruleactionpipeline.PipelineRuleEnv{
+				Content: req.Content,
+				Config: &ruleactionpipeline.PipelineConfig{
+					PipelineYml:    each,
+					PipelineYmlStr: strPipelineYml,
+					AppID:          app.ID,
+					RefName:        refName,
+					UserID:         req.Content.Pusher.ID,
+					Path:           path,
+					FileName:       fileName,
+				},
+			}
+
+			if err := e.FireRule(ctx, env, EventInfo{
+				Scope:       "project",
+				ScopeID:     req.ProjectID,
+				EventHeader: req.EventHeader,
+			}); err != nil {
+				logrus.Errorf("failed to fire rule event: %v, err, (%+v)", req.Event, err)
+			}
+		}()
+
 		if pipelineYml.Spec().On != nil && pipelineYml.Spec().On.Push != nil {
 			if !diceworkspace.IsRefPatternMatch(refName, pipelineYml.Spec().On.Push.Branches) {
 				continue
@@ -118,7 +143,6 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 			}
 		}
 
-		path, fileName := getSourcePathAndName(each)
 		definitionID, err := e.getOrCreateDefinitionID(apis.WithUserIDContext(ctx, req.UserID), app, refName, path, fileName, strPipelineYml)
 		if err != nil {
 			logrus.Errorf("failed to bind definition %v", err)
