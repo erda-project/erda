@@ -73,6 +73,7 @@ clickhouse:
 
 clickhouse.table.loader@log:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
+  load_mode: ${QUERY_LOG_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "logs"
   default_search_table: "logs_all"
   cache_key_prefix: "clickhouse-table-log"
@@ -97,7 +98,7 @@ metric-storage-clickhouse:
 clickhouse.table.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
   table_prefix: "metrics"
-  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadWithCache}"
+  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   default_search_table: "metrics_all"
   cache_key_prefix: "clickhouse-table-metric"
 
