@@ -618,7 +618,7 @@ erda.oap.collector.receiver.kafka@spotmetric:
   consumer:
     topics: "${METRIC_TOPICS:spot-metrics}"
     # TODO. METRIC_CH_GROUP_ID to METRIC_GROUP_ID when all finished
-    group: "${METRIC_CH_GROUP_ID:spot-monitor-metrics-dev}"
+    group: "${METRIC_CH_GROUP_ID:spot-monitor-metrics-ch}"
     parallelism: ${SPOT_METRICS_CONSUMERS:9}
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
@@ -637,8 +637,6 @@ erda.oap.collector.receiver.kafka@oapspanevent:
 
 erda.oap.collector.exporter.clickhouse@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
-  keypass:
-    name: ${WRITE_METRIC_TO_CLICKHOUSE_KEY_PASS_NAME:["kubernetes_*", "etcd"]}
   storage:
     currency_num: ${EXPORTER_CH_METRIC_CURRENCY_NUM:2}
   builder:
