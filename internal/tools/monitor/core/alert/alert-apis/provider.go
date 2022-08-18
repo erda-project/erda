@@ -145,7 +145,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.db = db.New(ctx.Service("mysql").(mysql.Interface).DB())
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
-	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
+	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc), cmdb.WithOrgSvc(p.Org))
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)

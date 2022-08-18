@@ -15,41 +15,17 @@
 package cmdb
 
 import (
-	"fmt"
-	"time"
+	"context"
 
-	"github.com/erda-project/erda/apistructs"
+	"google.golang.org/grpc/metadata"
+
+	"github.com/erda-project/erda-infra/pkg/transport"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-// OrgClusterRelationDTO 企业对应集群关系结构
-type OrgClusterRelationDTO struct {
-	ID          uint64    `json:"id"`
-	OrgID       uint64    `json:"orgId"`
-	OrgName     string    `json:"orgName"`
-	ClusterID   uint64    `json:"clusterId"`
-	ClusterName string    `json:"clusterName"`
-	Creator     string    `json:"creator"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
-type orgClusterRelResp struct {
-	apistructs.Header
-	Data []*OrgClusterRelationDTO `json:"data"`
-}
-
-// QueryAllOrgClusterRelation 获取所有的企业集群关联关系
-func (c *Cmdb) QueryAllOrgClusterRelation() ([]*OrgClusterRelationDTO, error) {
-	var resp orgClusterRelResp
-	hresp, err := c.hc.Get(c.url).
-		Path("/api/orgs/clusters/relations").
-		Header("User-ID", c.operatorID).
-		Do().JSON(&resp)
-	if err != nil {
-		return nil, err
-	}
-	if !hresp.IsOK() || !resp.Success {
-		return nil, fmt.Errorf("status: %d, error: %v", hresp.StatusCode(), resp.Error)
-	}
-	return resp.Data, nil
+// GetOrgClusterRelationsByOrg 获取所有的企业集群关联关系
+func (c *Cmdb) GetOrgClusterRelationsByOrg(ctx context.Context, orgID string) (*orgpb.GetOrgClusterRelationsByOrgResponse, error) {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	return c.orgServer.GetOrgClusterRelationsByOrg(ctx, &orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: orgID})
 }

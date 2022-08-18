@@ -70,7 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("alert")
 	p.db = newDB(ctx.Service("mysql").(mysql.Interface).DB())
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
-	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
+	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc), cmdb.WithOrgSvc(p.Org))
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(hc),
 		bundle.WithPipeline(),

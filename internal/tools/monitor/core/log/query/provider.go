@@ -70,7 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		pb.RegisterLogQueryServiceImp(p.Register, p.logQueryService, apis.Options(), p.Perm.Check(
 			perm.NoPermMethod(pb.LogQueryServiceServer.GetLog),
 			perm.Method(pb.LogQueryServiceServer.GetLogByRuntime, perm.ScopeApp, common.ResourceRuntime, perm.ActionGet, perm.FieldValue("ApplicationId")),
-			perm.Method(pb.LogQueryServiceServer.GetLogByOrganization, perm.ScopeOrg, common.ResourceOrgCenter, perm.ActionGet, monitorperm.OrgIDByClusterWrapper("ClusterName")),
+			perm.Method(pb.LogQueryServiceServer.GetLogByOrganization, perm.ScopeOrg, common.ResourceOrgCenter, perm.ActionGet, monitorperm.OrgIDByClusterWrapper(p.Org, "ClusterName")),
 			perm.NoPermMethod(pb.LogQueryServiceServer.GetLogByRealtime),
 			perm.NoPermMethod(pb.LogQueryServiceServer.GetLogByExpression),
 			perm.NoPermMethod(pb.LogQueryServiceServer.LogAggregation),
