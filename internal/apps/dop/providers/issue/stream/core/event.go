@@ -108,6 +108,7 @@ func (p *provider) CreateIssueEvent(req *common.IssueStreamCreateRequest) error 
 				"operator":     operator.Nick,
 				"parentID":     parentID,
 				"relationType": apistructs.IssueRelationInclusion,
+				"creator":      issue.Creator,
 			},
 		},
 	}
