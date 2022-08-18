@@ -479,17 +479,30 @@ func (chs *ClickhouseSource) getFilterByKey(sql *goqu.SelectDataset, key string,
 	switch key {
 	case ncpus, mem, clusterName, hostIP:
 		exp = goqu.L("tag_values[indexOf(tag_keys,?)]", key)
+		if len(values) == 1 {
+			return sql.Where(exp.Eq(values[0]))
+		}
+		return sql.Where(exp.In(values))
+	case cpuUsageActive, memUsedPercent, diskUsedPercent, cpuRequestPercent, memRequestPercent:
+		exp = goqu.L("number_field_values[indexOf(number_field_keys,?)]", key)
+		if len(values) == 1 {
+			return sql.Where(exp.Eq(values[0]))
+		}
+		return sql.Where(exp.In(values))
 	case labels:
-		exp = goqu.L("string_field_values[indexOf(string_field_keys,?)]", key)
+		pats := ""
+		for i, v := range values {
+			if i > 0 {
+				pats += ","
+			}
+			pats += fmt.Sprintf("'%s'", v)
+		}
+		exp = goqu.L(fmt.Sprintf("multiSearchAny(string_field_values[indexOf(string_field_keys,?)],[%s])", pats), key, values)
+		return sql.Where(exp.Eq(1))
 	default:
 		chs.Log.Errorf("unsupported filter key: %v", key)
 		return sql
 	}
-
-	if len(values) == 1 {
-		return sql.Where(exp.Eq(values[0]))
-	}
-	return sql.Where(exp.In(values))
 }
 
 func (chs *ClickhouseSource) parseGroupHost(hosts []*hostData, groups []string, index int) *groupHostData {
