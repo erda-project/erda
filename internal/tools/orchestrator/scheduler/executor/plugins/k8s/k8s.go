@@ -1167,6 +1167,10 @@ func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName
 		return fmt.Errorf("list pods in ns %s err: %v", ns, err)
 	}
 
+	podRuntimeID := ""
+	if runtimeID, ok := sg.Labels["GET_RUNTIME_STATELESS_SERVICE_POD_RUNTIME_ID"]; ok {
+		podRuntimeID = runtimeID
+	}
 	serviceToPods := make(map[string][]apiv1.Pod)
 	for i := range sg.Services {
 		if sg.Services[i].Name != svcName {
@@ -1175,6 +1179,10 @@ func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName
 
 		for _, pod := range pods.Items {
 			if pod.Labels == nil {
+				continue
+			}
+
+			if !runtimeIDMatch(podRuntimeID, pod.Labels) {
 				continue
 			}
 
@@ -1212,6 +1220,22 @@ func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName
 	}
 
 	return nil
+}
+
+func runtimeIDMatch(podRuntimeID string, labels map[string]string) bool {
+	if podRuntimeID == "" {
+		return true
+	}
+	runtimeIDFromPod := ""
+	runtimeIDFromPod, ok := labels["DICE_RUNTIME"]
+	if !ok {
+		runtimeIDFromPod, ok = labels["DICE_RUNTIME_ID"]
+	}
+
+	if runtimeIDFromPod != "" && runtimeIDFromPod == podRuntimeID {
+		return true
+	}
+	return false
 }
 
 func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {

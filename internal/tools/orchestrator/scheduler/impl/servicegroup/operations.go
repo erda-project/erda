@@ -379,7 +379,7 @@ func (s ServiceGroupImpl) InspectServiceGroupWithTimeout(namespace, name string)
 	}
 }
 
-func (s ServiceGroupImpl) InspectRuntimeServicePods(namespace, name, serviceName string) (*apistructs.ServiceGroup, error) {
+func (s ServiceGroupImpl) InspectRuntimeServicePods(namespace, name, serviceName, runtimeID string) (*apistructs.ServiceGroup, error) {
 	var (
 		sg  apistructs.ServiceGroup
 		err error
@@ -394,6 +394,7 @@ func (s ServiceGroupImpl) InspectRuntimeServicePods(namespace, name, serviceName
 	}
 
 	sg.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"] = serviceName
+	sg.Labels["GET_RUNTIME_STATELESS_SERVICE_POD_RUNTIME_ID"] = runtimeID
 	result, err := s.handleServiceGroup(context.Background(), &sg, task.TaskInspect)
 	if err != nil {
 		return &sg, err
