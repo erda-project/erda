@@ -399,16 +399,16 @@ func TestClickhouseSource_GetGroupHosts(t *testing.T) {
 		},
 		Filters: []*resourceFilter{
 			{
-				Key:    cpus,
+				Key:    ncpus,
 				Values: []string{"8"},
 			},
 			{
-				Key:    cpuCoresUsage,
+				Key:    cpuUsageActive,
 				Values: []string{">=90%"},
 			},
 			{
-				Key:    memUsedPercent,
-				Values: []string{"40%-70%"},
+				Key:    labels,
+				Values: []string{"workspace-test"},
 			},
 		},
 		Groups: []string{"cluster", "cpus"},
