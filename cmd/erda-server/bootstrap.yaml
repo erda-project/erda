@@ -292,6 +292,11 @@ grpc-client@erda.core.pipeline.cron:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
   block: false
 erda.core.pipeline.cron-client:
+queue: { }
+erda.core.pipeline.queue-client:
+grpc-client@erda.core.pipeline.queue:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"
   block: false

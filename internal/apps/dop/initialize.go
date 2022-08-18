@@ -134,6 +134,8 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.OrgService, p.Org)
 	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
 
+	p.Queue.InjectQueueManager(p.PipelineQueue)
+
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New("")
 	server.Router().UseEncodedPath()
@@ -587,6 +589,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		pipeline.WithPipelineCron(p.PipelineCron),
 		pipeline.WithPipelineDefinition(p.PipelineDefinition),
 		pipeline.WithAppSvc(app),
+		pipeline.WithQueueService(p.Queue),
+		pipeline.WithProjectSvc(proj),
 	)
 
 	p.PipelineAction.WithBranchRule(branchRule)

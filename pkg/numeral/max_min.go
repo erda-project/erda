@@ -65,3 +65,18 @@ func MaxFloat64(nums []float64) float64 {
 	}
 	return r
 }
+
+func MaxInt64(nums []int64) int64 {
+	var r int64 = 0
+	if len(nums) == 0 {
+		return r
+	}
+	r = nums[0]
+	for _, num := range nums {
+		if num > r {
+			r = num
+			continue
+		}
+	}
+	return r
+}

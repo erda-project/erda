@@ -35,9 +35,11 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/queue"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/application"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
+	"github.com/erda-project/erda/internal/apps/dop/services/project"
 	"github.com/erda-project/erda/internal/apps/dop/services/publisher"
 	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
@@ -59,7 +61,9 @@ type Pipeline struct {
 	pipelineSource     sourcepb.SourceServiceServer
 	pipelineDefinition definitionpb.DefinitionServiceServer
 	appSvc             *application.Application
+	projectSvc         *project.Project
 	cronService        cronpb.CronServiceServer
+	queueService       queue.Interface
 }
 
 // Option Pipeline 配置选项
@@ -120,6 +124,18 @@ func WithPipelineDefinition(pipelineDefinition definitionpb.DefinitionServiceSer
 func WithAppSvc(svc *application.Application) Option {
 	return func(f *Pipeline) {
 		f.appSvc = svc
+	}
+}
+
+func WithQueueService(queueService queue.Interface) Option {
+	return func(f *Pipeline) {
+		f.queueService = queueService
+	}
+}
+
+func WithProjectSvc(svc *project.Project) Option {
+	return func(f *Pipeline) {
+		f.projectSvc = svc
 	}
 }
 
@@ -396,11 +412,19 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	pv2.NormalLabels = normalLabels
 
 	// clusterName
-	pj, err := p.bdl.GetProject(app.ProjectID)
-	if err != nil {
-		return nil, apierrors.ErrGetProject.InternalError(err)
+	pj, apiErr := p.projectSvc.Get(context.Background(), app.ProjectID)
+	if apiErr != nil {
+		return nil, apierrors.ErrGetProject.InternalError(apiErr)
 	}
 
+	// bind queue
+	queue, err := p.queueService.IdempotentGetProjectLevelQueue(workspace, pj)
+	if err != nil {
+		logrus.Errorf("failed get project level queue error: %v", err)
+		return nil, err
+	}
+	pv2.Labels[apistructs.LabelBindPipelineQueueID] = strconv.FormatUint(queue.ID, 10)
+	pv2.Labels[apistructs.LabelBindPipelineQueueEnqueueCondition] = apistructs.EnqueueConditionSkipAlreadyRunningLimit.String()
 	for ws, clusterName := range pj.ClusterConfig {
 		if strutil.Equal(ws, workspace, true) {
 			if err := p.setClusterName(clusterName, pv2); err != nil {

@@ -20,6 +20,10 @@ const (
 	EnqueueConditionSkipAlreadyRunningLimit EnqueueConditionType = "skip_already_running_limit"
 )
 
+func (e EnqueueConditionType) String() string {
+	return string(e)
+}
+
 func (e EnqueueConditionType) IsSkipAlreadyRunningLimit() bool {
 	return e == EnqueueConditionSkipAlreadyRunningLimit
 }

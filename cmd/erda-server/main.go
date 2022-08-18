@@ -71,6 +71,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/queue/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/source/client"
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
@@ -105,10 +106,9 @@ import (
 	// uc-adaptor
 	_ "github.com/erda-project/erda/internal/core/user/impl/uc/uc-adaptor"
 
+	// dop
 	_ "github.com/erda-project/erda/internal/apps/devflow/flow"
 	_ "github.com/erda-project/erda/internal/apps/devflow/issuerelation"
-
-	// dop
 	_ "github.com/erda-project/erda/internal/apps/dop"
 	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/api-management"
@@ -126,6 +126,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/project/home"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/publishitem"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/queue"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/rule"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/search"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
