@@ -41,15 +41,28 @@ func (p *provider) collectLogs(ctx echo.Context) error {
 	if source == "" {
 		return ctx.NoContent(http.StatusBadRequest)
 	}
-	name := source + "_log"
-	req := ctx.Request()
+	return p.collectLogsWithSource(ctx, source)
+}
 
+func (p *provider) collectLogsAll(ctx echo.Context) error {
+	return p.collectLogsWithSource(ctx, "")
+}
+
+func (p *provider) collectLogsWithSource(ctx echo.Context, source string) error {
+	req := ctx.Request()
 	err := rawparser.ParseStream(
 		req.Body,
 		req.Header.Get(headerContentEncoding),
 		req.Header.Get(headerCustomContentEncoding),
 		req.Header.Get(headerCollectorFormat), func(buf []byte) error {
-			return p.sendRaw(name, buf)
+			if source == "" {
+				val, err := jsonparser.GetString(buf, "source")
+				if err != nil {
+					return fmt.Errorf("get source: %w", err)
+				}
+				source = val
+			}
+			return p.sendRaw(source+"_log", buf)
 		})
 	if err != nil {
 		return fmt.Errorf("parse stream: %w", err)
