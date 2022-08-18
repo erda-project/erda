@@ -72,7 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpserver.WriteErr(rw, "400", apierrors.ErrGetPublishItem.InternalError(err).Error())
 				return
 			}
-			httpserver.WriteJSON(rw, &pb.PublishItemDistributionResponse{
+			httpserver.WriteData(rw, &pb.PublishItemDistributionResponse{
 				Data: result,
 			})
 		})
@@ -116,7 +116,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpserver.WriteErr(rw, "400", apierrors.ErrCreateOffLinePublishItemVersion.InternalError(err).Error())
 			}
 
-			httpserver.WriteJSON(rw, &pb.CreatePublishItemOfflineResponse{
+			httpserver.WriteData(rw, &pb.CreatePublishItemOfflineResponse{
 				Data: mobileType,
 			})
 		})
@@ -135,7 +135,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpserver.WriteErr(rw, "400", apierrors.ErrGetPublishItem.InternalError(err).Error())
 				return
 			}
-			httpserver.WriteJSON(rw, &pb.GetPublishItemLatestVersionResponse{
+			httpserver.WriteData(rw, &pb.GetPublishItemLatestVersionResponse{
 				Data: results,
 			})
 		})
