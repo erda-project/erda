@@ -240,14 +240,14 @@ func init() {
 		Type:         SourceMQNode,
 		GroupByField: []string{apm.TagsComponent, apm.TagsPeerAddress},
 		ColumnFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsPeerAddress},
-		Filter:       goqu.L(fmt.Sprintf("metric_group == '%s' AND has(tag_keys, '%s') == 1", GroupMq, ckhelper.TrimTags(apm.TagsTargetAddonType))),
+		Filter:       goqu.L(fmt.Sprintf("metric_group == '%s' AND has(tag_keys, '%s') == 0", GroupMq, ckhelper.TrimTags(apm.TagsTargetAddonType))),
 		Aggregation:  nodeAggregation,
 	}
 	TargetMQNodeType = &NodeType{
 		Type:         TargetMQNode,
 		GroupByField: []string{apm.TagsComponent, apm.TagsPeerAddress},
 		ColumnFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsPeerAddress},
-		Filter:       goqu.L(fmt.Sprintf("metric_group == '%s' AND has(tag_keys, '%s') == 1", GroupMq, ckhelper.TrimTags(apm.TagsTargetAddonType))),
+		Filter:       goqu.L(fmt.Sprintf("metric_group == '%s' AND has(tag_keys, '%s') == 0", GroupMq, ckhelper.TrimTags(apm.TagsTargetAddonType))),
 		Aggregation:  nodeAggregation,
 	}
 	TargetMQServiceNodeType = &NodeType{

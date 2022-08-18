@@ -150,11 +150,32 @@ type graphTopo struct {
 	nodes map[string]*Node
 }
 
+func (gt *graphTopo) addNode(node *Node, edge *TopologyNodeRelation) {
+	if !node.Valid() {
+		return
+	}
+	if n, ok := gt.nodes[node.Id]; ok {
+		if n.RuntimeId == "" {
+			n.RuntimeId = node.RuntimeId
+		}
+		n.Metric.Count += node.Metric.Count
+		n.Metric.HttpError += node.Metric.HttpError
+		n.Metric.Duration += node.Metric.Duration
+		n.Metric.RT += node.Metric.RT
+		if n.RuntimeId == "" {
+			n.RuntimeId = node.RuntimeId
+		}
+	} else {
+		node.Metric = edge.Metric
+		gt.nodes[node.Id] = node
+	}
+}
+
 func (gt *graphTopo) toNodes() []*Node {
 	nodes := make([]*Node, 0, len(gt.adj))
-	for id, set := range gt.adj {
-		n := gt.nodes[id]
-		for pid := range set {
+	for id, n := range gt.nodes {
+		adj := gt.adj[id]
+		for pid := range adj {
 			pnode := gt.nodes[pid]
 			n.Parents = append(n.Parents, &Node{
 				Id:              pnode.Id,
@@ -246,19 +267,7 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows dr
 
 		if targetNode.Valid() {
 			targetNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(targetNode.Type))
-			targetNode.Metric = edge.Metric
-			if n, ok := tg.nodes[targetNode.Id]; ok { // merge metric
-				n.Metric.Count += targetNode.Metric.Count
-				n.Metric.HttpError += targetNode.Metric.HttpError
-				n.Metric.Duration += targetNode.Metric.Duration
-				n.Metric.RT += targetNode.Metric.RT
-				if n.RuntimeId == "" {
-					n.RuntimeId = targetNode.RuntimeId
-				}
-			} else {
-				tg.nodes[targetNode.Id] = targetNode
-			}
-
+			tg.addNode(targetNode, edge)
 			if _, ok := tg.adj[targetNode.Id]; !ok {
 				tg.adj[targetNode.Id] = map[string]struct{}{}
 			}
@@ -266,13 +275,7 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows dr
 
 		if sourceNode.Valid() {
 			tg.adj[targetNode.Id][sourceNode.Id] = struct{}{}
-			if n, ok := tg.nodes[sourceNode.Id]; ok {
-				if n.RuntimeId == "" {
-					n.RuntimeId = sourceNode.RuntimeId
-				}
-			} else {
-				tg.nodes[sourceNode.Id] = sourceNode
-			}
+			tg.addNode(sourceNode, edge)
 		}
 	}
 }
