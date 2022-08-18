@@ -1880,7 +1880,7 @@ func (r *Runtime) GetRuntimeServiceCurrentPods(runtimeID uint64, serviceName str
 		return nil, errors.New("empty namespace or name or serviceName")
 	}
 
-	return r.serviceGroupImpl.InspectRuntimeServicePods(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, serviceName)
+	return r.serviceGroupImpl.InspectRuntimeServicePods(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, serviceName, fmt.Sprintf("%d", runtimeID))
 }
 
 // TODO: this work is weird
