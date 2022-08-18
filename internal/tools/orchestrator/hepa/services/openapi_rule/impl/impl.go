@@ -180,7 +180,7 @@ func (impl GatewayOpenapiRuleServiceImpl) SetPackageApiKongPolicies(packageApi *
 	if err != nil {
 		return err
 	}
-	needUpdate, err := impl.setPackageApiKongPolicies(priority, pack.PackageName, regexDomains, enables, disables, packageApi, nil)
+	needUpdate, err := impl.setPackageApiKongPolicies(priority, pack.PackageName, regexDomains, enables, disables, packageApi, session)
 	if err != nil {
 		return err
 	}
