@@ -17,9 +17,10 @@ package topology
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
-	"strings"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	apm "github.com/erda-project/erda/internal/tools/monitor/apm/common"
