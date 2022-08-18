@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/rule/pb"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/api"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/dingtalkworknotice"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/db"
 	"github.com/erda-project/erda/internal/apps/dop/providers/rule/executor"
@@ -44,6 +45,7 @@ type provider struct {
 	ruleService *ruleService
 	API         api.Interface
 	Pipeline    pipeline.Interface
+	DingTalk    dingtalkworknotice.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -60,6 +62,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		},
 		API:      p.API,
 		Pipeline: p.Pipeline,
+		DingTalk: p.DingTalk,
 	}
 	p.ruleService = &ruleService{p}
 	if p.Register != nil {
