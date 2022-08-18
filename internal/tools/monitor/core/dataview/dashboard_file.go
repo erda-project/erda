@@ -295,7 +295,7 @@ func dashboardFilename(scope, scopeId string) string {
 	nowTime := time.Now().Format("2006-01-02 15:04:05")
 	fileNameWithoutExt := fmt.Sprintf("%s-%s-%s", scope, scopeId, nowTime)
 	encode := base64.StdEncoding.EncodeToString([]byte(fileNameWithoutExt))
-	filename := fmt.Sprintf("%s.%s", encode, "json")
+	filename := fmt.Sprintf("%s.%s", encode[:12], "json")
 	return filename
 }
 
