@@ -41,3 +41,11 @@ func TestMaxFloat64(t *testing.T) {
 	max = MaxFloat64([]float64{-2, -3, -100, -0.5, 0})
 	assert.Equal(t, max, float64(0))
 }
+
+func TestMaxInt64(t *testing.T) {
+	max := MaxInt64([]int64{1, 2, 3, 4, 5})
+	assert.Equal(t, max, int64(5))
+
+	max = MaxInt64([]int64{-2, -3, -100, -3, 0})
+	assert.Equal(t, max, int64(0))
+}
