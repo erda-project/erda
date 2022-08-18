@@ -92,8 +92,6 @@ metric-storage-clickhouse:
   query_max_threads: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_THREADS:0}"
   query_max_memory: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_MEMORY:0}"
   runtime_settings: "${QUERY_METRIC_FROM_CLICKHOUSE_RUNTIME_SETTINGS}"
-  keypass:
-    name: ${QUERY_METRIC_FROM_CLICKHOUSE_KEY_PASS_NAME:[kubernetes_*, etcd]}
 
 clickhouse.table.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
