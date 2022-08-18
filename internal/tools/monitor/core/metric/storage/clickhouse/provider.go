@@ -25,13 +25,10 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/filter"
 )
 
 type (
 	config struct {
-		Keypass map[string][]string `file:"keypass"`
-
 		QueryTimeout    time.Duration `file:"query_timeout" default:"1m"`
 		QueryMaxThreads int           `file:"query_max_threads" default:"0"`
 		QueryMaxMemory  int64         `file:"query_max_memory" default:"0"`
@@ -43,8 +40,6 @@ type (
 		Loader loader.Interface `autowired:"clickhouse.table.loader@metric"`
 
 		clickhouse clickhouse.Interface
-
-		Keypass map[string]filter.Filter
 	}
 )
 
@@ -58,15 +53,6 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	}
 	p.clickhouse = svc.(clickhouse.Interface)
 
-	p.Keypass = make(map[string]filter.Filter)
-	for k, v := range p.Cfg.Keypass {
-		tmp, err := filter.Compile(v)
-		if err != nil {
-			return fmt.Errorf("service metric-storage-clickhouse, build keypass is error: %w", err)
-		}
-		p.Keypass[k] = tmp
-	}
-
 	return nil
 }
 func init() {
@@ -78,20 +64,6 @@ func init() {
 }
 
 func (p *provider) Select(metrics []string) bool {
-	if len(metrics) <= 0 {
-		return false
-	}
-
-	nameKeyPass, ok := p.Keypass["name"]
-	if !ok {
-		// Matches other than name are not currently supported
-		return false
-	}
-	for _, m := range metrics {
-		if !nameKeyPass.Match(m) {
-			return false
-		}
-	}
 	return true
 }
 func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
