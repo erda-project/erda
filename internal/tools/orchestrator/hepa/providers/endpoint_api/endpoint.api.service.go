@@ -471,6 +471,9 @@ func (s *endpointApiService) DeletePackageApis(ctx context.Context, req *pb.List
 
 	endpointApis, err := s.ListPackageApis(ctx, req)
 	if err != nil {
+		if strings.Contains(err.Error(), "endpoint apis not found") {
+			return new(pb.DeletePackageApiResp), nil
+		}
 		return nil, err
 	}
 	var result pb.DeletePackageApiResp
