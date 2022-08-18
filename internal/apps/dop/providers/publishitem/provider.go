@@ -72,9 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpserver.WriteErr(rw, "400", apierrors.ErrGetPublishItem.InternalError(err).Error())
 				return
 			}
-			httpserver.WriteData(rw, &pb.PublishItemDistributionResponse{
-				Data: result,
-			})
+			httpserver.WriteData(rw, result)
 		})
 		p.Register.Add(http.MethodPost, "/api/publish-items/{publishItemId}/versions/create-offline-version", func(rw http.ResponseWriter, r *http.Request) {
 			vars := muxserver.Vars(r)
@@ -116,9 +114,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpserver.WriteErr(rw, "400", apierrors.ErrCreateOffLinePublishItemVersion.InternalError(err).Error())
 			}
 
-			httpserver.WriteData(rw, &pb.CreatePublishItemOfflineResponse{
-				Data: mobileType,
-			})
+			httpserver.WriteData(rw, mobileType)
 		})
 		p.Register.Add(http.MethodPost, "/api/publish-items/actions/latest-versions", func(rw http.ResponseWriter, r *http.Request) {
 			var req pb.GetPublishItemLatestVersionRequest
@@ -135,9 +131,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpserver.WriteErr(rw, "400", apierrors.ErrGetPublishItem.InternalError(err).Error())
 				return
 			}
-			httpserver.WriteData(rw, &pb.GetPublishItemLatestVersionResponse{
-				Data: results,
-			})
+			httpserver.WriteData(rw, results)
 		})
 		pb.RegisterPublishItemServiceImp(p.Register, p.publishItemService, apis.Options())
 	}
