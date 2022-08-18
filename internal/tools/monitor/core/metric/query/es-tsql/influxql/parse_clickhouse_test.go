@@ -472,11 +472,6 @@ func TestSelect(t *testing.T) {
 		},
 		{
 			name: "select time diff function",
-			sql:  "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state from table",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\" FROM \"table\"",
-		},
-		{
-			name: "select time diff function",
 			sql:  "SELECT service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'false','true') AS state from table",
 			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\" FROM \"table\"",
 		},
