@@ -475,3 +475,53 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 		})
 	}
 }
+
+func Test_runtimeIDMatch(t *testing.T) {
+	type args struct {
+		podRuntimeID string
+		labels       map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				podRuntimeID: "1",
+				labels: map[string]string{
+					"DICE_RUNTIME": "1",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Test_02",
+			args: args{
+				podRuntimeID: "1",
+				labels: map[string]string{
+					"DICE_RUNTIME_ID": "1",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Test_03",
+			args: args{
+				podRuntimeID: "",
+				labels: map[string]string{
+					"DICE_RUNTIME_ID": "1",
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := runtimeIDMatch(tt.args.podRuntimeID, tt.args.labels); got != tt.want {
+				t.Errorf("runtimeIDMatch() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

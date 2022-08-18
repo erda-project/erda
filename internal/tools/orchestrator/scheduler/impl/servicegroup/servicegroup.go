@@ -61,7 +61,7 @@ type ServiceGroup interface {
 	KillPod(ctx context.Context, namespace string, name string, podname string) error
 	Scale(sg *apistructs.ServiceGroup) (interface{}, error)
 	InspectServiceGroupWithTimeout(namespace, name string) (*apistructs.ServiceGroup, error)
-	InspectRuntimeServicePods(namespace, name, serviceName string) (*apistructs.ServiceGroup, error)
+	InspectRuntimeServicePods(namespace, name, serviceName, runtimeID string) (*apistructs.ServiceGroup, error)
 }
 
 type ServiceGroupImpl struct {
