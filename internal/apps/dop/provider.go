@@ -60,6 +60,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/qa/unittest"
+	"github.com/erda-project/erda/internal/apps/dop/providers/rule/actions/pipeline"
 	"github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/metrics/query"
@@ -104,6 +105,7 @@ type provider struct {
 	Org                   org.Interface `required:"true"`
 	Identity              userpb.UserServiceServer
 	RuleService           rulepb.RuleServiceServer
+	PipelineAction        pipeline.Interface
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n"`

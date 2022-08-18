@@ -589,6 +589,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		pipeline.WithAppSvc(app),
 	)
 
+	p.PipelineAction.WithBranchRule(branchRule)
+	p.PipelineAction.WithPipelineSvc(pipelineSvc)
 	publishItem := publish_item.New()
 
 	p.ProjectPipelineSvc.WithPipelineSvc(pipelineSvc)
