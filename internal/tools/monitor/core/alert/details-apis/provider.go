@@ -58,7 +58,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
-	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
+	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc), cmdb.WithOrgSvc(p.Org))
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	p.alertDetailService = &alertDetailService{
 		p: p,

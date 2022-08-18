@@ -28,20 +28,18 @@ import (
 func (p *provider) getOrgIDByClusters(ctx httpserver.Context) (string, error) {
 	req := ctx.Request()
 	idStr := api.OrgID(req)
-	orgID, err := strconv.ParseUint(idStr, 10, 64)
+	_, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		return "", fmt.Errorf("Org-ID is not number")
 	}
 
-	resp, err := p.cmdb.QueryAllOrgClusterRelation()
+	resp, err := p.cmdb.GetOrgClusterRelationsByOrg(ctx.Request().Context(), idStr)
 	if err != nil {
 		return "", err
 	}
-	clustersMap := make(map[string]bool, len(resp))
-	for _, item := range resp {
-		if item.OrgID == orgID {
-			clustersMap[item.ClusterName] = true
-		}
+	clustersMap := make(map[string]bool, len(resp.Data))
+	for _, item := range resp.Data {
+		clustersMap[item.ClusterName] = true
 	}
 	clusters := req.URL.Query()["in_cluster_name"]
 	if len(clusters) <= 0 {
@@ -59,7 +57,7 @@ func (p *provider) OrgIDByCluster(key string) permission.ValueGetter {
 	return func(ctx context.Context, req interface{}) (string, error) {
 		orgIdValue := permission.OrgIDValue()
 		orgIdStr, err := orgIdValue(ctx, req)
-		orgID, err := strconv.ParseUint(orgIdStr, 10, 64)
+		_, err = strconv.ParseUint(orgIdStr, 10, 64)
 		if err != nil {
 			return "", fmt.Errorf("Org-ID is not number")
 		}
@@ -68,7 +66,7 @@ func (p *provider) OrgIDByCluster(key string) permission.ValueGetter {
 		if len(cluster) <= 0 {
 			return "", fmt.Errorf("cluster must not be empty")
 		}
-		err = p.checkOrgIDsByCluster(orgID, cluster)
+		err = p.checkOrgIDsByCluster(ctx, orgIdStr, cluster)
 		if err != nil {
 			return "", err
 		}
@@ -76,16 +74,14 @@ func (p *provider) OrgIDByCluster(key string) permission.ValueGetter {
 	}
 }
 
-func (p *provider) checkOrgIDsByCluster(orgID uint64, clusterName string) error {
-	resp, err := p.cmdb.QueryAllOrgClusterRelation()
+func (p *provider) checkOrgIDsByCluster(ctx context.Context, orgID string, clusterName string) error {
+	resp, err := p.cmdb.GetOrgClusterRelationsByOrg(ctx, orgID)
 	if err != nil {
 		return err
 	}
-	for _, item := range resp {
+	for _, item := range resp.Data {
 		if item.ClusterName == clusterName {
-			if orgID == item.OrgID {
-				return nil
-			}
+			return nil
 		}
 	}
 	return fmt.Errorf("not found cluster '%s'", clusterName)

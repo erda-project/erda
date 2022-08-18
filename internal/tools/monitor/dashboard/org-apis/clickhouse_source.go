@@ -199,29 +199,29 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 	}
 
 	var (
-		cpuList         = make(map[string]struct{})
-		memList         = make(map[string]struct{})
-		clusterNameList = make(map[string]struct{})
-		hostIPList      = make(map[string]struct{})
-		labelList       = make(map[string]struct{})
+		cpuSet         = make(map[string]struct{})
+		memSet         = make(map[string]struct{})
+		clusterNameSet = make(map[string]struct{})
+		hostIPSet      = make(map[string]struct{})
+		labelSet       = make(map[string]struct{})
 	)
 	for _, hostType := range hostTypes {
-		if _, ok := cpuList[hostType.CPUs]; !ok {
-			cpuList[hostType.CPUs] = struct{}{}
+		if _, ok := cpuSet[hostType.CPUs]; !ok {
+			cpuSet[hostType.CPUs] = struct{}{}
 		}
-		if _, ok := memList[hostType.Mem]; !ok {
-			memList[hostType.Mem] = struct{}{}
+		if _, ok := memSet[hostType.Mem]; !ok {
+			memSet[hostType.Mem] = struct{}{}
 		}
-		if _, ok := clusterNameList[hostType.ClusterName]; !ok {
-			clusterNameList[hostType.ClusterName] = struct{}{}
+		if _, ok := clusterNameSet[hostType.ClusterName]; !ok {
+			clusterNameSet[hostType.ClusterName] = struct{}{}
 		}
-		if _, ok := hostIPList[hostType.HostIP]; !ok {
-			hostIPList[hostType.HostIP] = struct{}{}
+		if _, ok := hostIPSet[hostType.HostIP]; !ok {
+			hostIPSet[hostType.HostIP] = struct{}{}
 		}
 		labels := strings.Split(hostType.Labels, ",")
 		for _, label := range labels {
-			if _, ok := labelList[label]; !ok {
-				labelList[label] = struct{}{}
+			if _, ok := labelSet[label]; !ok {
+				labelSet[label] = struct{}{}
 			}
 		}
 	}
@@ -229,23 +229,23 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 	res := []*groupHostTypeData{
 		{
 			Key:    cpus,
-			Values: mapToSlice(cpuList),
+			Values: mapToSlice(cpuSet),
 		},
 		{
 			Key:    mem,
-			Values: mapToSlice(memList),
+			Values: mapToSlice(memSet),
 		},
 		{
 			Key:    cluster,
-			Values: mapToSlice(clusterNameList),
+			Values: mapToSlice(clusterNameSet),
 		},
 		{
 			Key:    host,
-			Values: mapToSlice(hostIPList),
+			Values: mapToSlice(hostIPSet),
 		},
 		{
 			Key:    labels,
-			Values: mapToSlice(labelList),
+			Values: mapToSlice(labelSet),
 		},
 		{
 			Key:    cpuUsageActive,

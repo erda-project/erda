@@ -1013,17 +1013,15 @@ func (m *alertService) GetOrgAlertDetail(ctx context.Context, request *pb.GetOrg
 	}, nil
 }
 
-func (m *alertService) checkOrgClusterNames(orgID uint64, clusters []string) bool {
-	rels, err := m.p.cmdb.QueryAllOrgClusterRelation()
+func (m *alertService) checkOrgClusterNames(ctx context.Context, orgID string, clusters []string) bool {
+	rels, err := m.p.cmdb.GetOrgClusterRelationsByOrg(ctx, orgID)
 	if err != nil {
-		m.p.L.Errorf("fail to QueryAllOrgClusterRelation(): %s", err)
+		m.p.L.Errorf("fail to GetOrgClusterRelationsByOrg(): %s", err)
 		return false
 	}
 	clustersMap := make(map[string]bool)
-	for _, item := range rels {
-		if item.OrgID == orgID {
-			clustersMap[item.ClusterName] = true
-		}
+	for _, item := range rels.Data {
+		clustersMap[item.ClusterName] = true
 	}
 	for _, clusterName := range clusters {
 		if _, ok := clustersMap[clusterName]; !ok {

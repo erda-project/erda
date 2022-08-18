@@ -66,7 +66,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 	)
-	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
+	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc), cmdb.WithOrgSvc(p.Org))
 	routes := ctx.Service("http-server", interceptors.Recover(p.L)).(httpserver.Router)
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	p.service = &queryService{metricQ: p.metricq}
