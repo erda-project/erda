@@ -18,11 +18,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -92,7 +92,7 @@ func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {
 	} {
 		clusterNames := req.URL.Query()[key]
 		if len(clusterNames) > 0 {
-			err := p.checkOrgIDByClusters(orgID, clusterNames)
+			err := p.checkOrgIDByClusters(ctx.Request().Context(), idStr, clusterNames)
 			if err != nil {
 				return "", err
 			}
@@ -164,16 +164,14 @@ func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {
 }
 
 // 根据集群校验企业ID
-func (p *provider) checkOrgIDByClusters(orgID uint64, clusterNames []string) error {
-	resp, err := p.cmdb.QueryAllOrgClusterRelation()
+func (p *provider) checkOrgIDByClusters(ctx context.Context, orgID string, clusterNames []string) error {
+	resp, err := p.cmdb.GetOrgClusterRelationsByOrg(ctx, orgID)
 	if err != nil {
-		return err
+		return errors.Errorf("failed to query all org cluster relation, %v", err)
 	}
-	clustersMap := make(map[string]bool, len(resp))
-	for _, item := range resp {
-		if item.OrgID == orgID {
-			clustersMap[item.ClusterName] = true
-		}
+	clustersMap := make(map[string]bool, len(resp.Data))
+	for _, item := range resp.Data {
+		clustersMap[item.ClusterName] = true
 	}
 	for _, clusterName := range clusterNames {
 		if !clustersMap[clusterName] {
@@ -198,7 +196,7 @@ func (p *provider) listClustersByOrg(orgID uint64) ([]string, error) {
 
 func (p *provider) checkOrgByClusters(ctx httpserver.Context, clusters []*resourceCluster) error {
 	idStr := api.OrgID(ctx.Request())
-	orgID, err := strconv.ParseUint(idStr, 10, 64)
+	_, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		msg := fmt.Sprint("Org-ID is not number")
 		permission.Failure(ctx, msg)
@@ -209,7 +207,7 @@ func (p *provider) checkOrgByClusters(ctx httpserver.Context, clusters []*resour
 	for _, cluster := range clusters {
 		clusterNames = append(clusterNames, cluster.ClusterName)
 	}
-	if err := p.checkOrgIDByClusters(orgID, clusterNames); err != nil {
+	if err := p.checkOrgIDByClusters(ctx.Request().Context(), idStr, clusterNames); err != nil {
 		permission.Failure(ctx, err.Error())
 		return err
 	}

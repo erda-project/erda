@@ -36,7 +36,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 
 	// metrics for system
 	routes.GET("/api/system/addon/metrics/:scope/:aggregate", p.systemAddonMetrics, permission.Intercepter(
-		permission.ScopeOrg, permission.OrgIDByCluster("filter_cluster_name"),
+		permission.ScopeOrg, permission.OrgIDByCluster(p.Org, "filter_cluster_name"),
 		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
 	return nil

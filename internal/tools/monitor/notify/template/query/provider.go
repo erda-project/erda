@@ -153,7 +153,7 @@ func (p *provider) initBundle() {
 		bundle.WithHTTPClient(hc),
 		bundle.WithErdaServer(),
 	)
-	p.cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc))
+	p.cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc), bundlecmdb.WithOrgSvc(p.Org))
 }
 
 func init() {

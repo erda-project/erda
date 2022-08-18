@@ -43,7 +43,7 @@ func (p *provider) initRoutes(routes httpserver.Router) {
 
 	// org
 	routes.GET("/api/orgCenter/logs/actions/download", p.downloadOrgLog, permission.Intercepter(
-		permission.ScopeOrg, permission.OrgIDByCluster("clusterName"),
+		permission.ScopeOrg, permission.OrgIDByCluster(p.Org, "clusterName"),
 		common.ResourceOrgCenter, permission.ActionGet, p.Org,
 	))
 }

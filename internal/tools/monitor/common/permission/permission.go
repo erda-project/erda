@@ -24,18 +24,21 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/grpc/metadata"
+
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
-	bundlecmdb "github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	table "github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // Scope .
@@ -71,7 +74,6 @@ var (
 	hc        = httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))
 	bdl       *bundle.Bundle
 	once      sync.Once
-	cmdb      *bundlecmdb.Cmdb // 为了调用 /api/orgs/clusters/relations 接口
 	orgClient org.ClientInterface
 )
 
@@ -80,7 +82,6 @@ func initBundle() {
 		bundle.WithHTTPClient(hc),
 		bundle.WithErdaServer(),
 	)
-	cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc))
 }
 
 // Interceptor .
@@ -300,11 +301,11 @@ func OrgIDFromQuery(key string) func(ctx httpserver.Context) (string, error) {
 }
 
 // OrgIDByCluster .
-func OrgIDByCluster(key string) func(ctx httpserver.Context) (string, error) {
+func OrgIDByCluster(orgServer orgpb.OrgServiceServer, key string) func(ctx httpserver.Context) (string, error) {
 	return func(ctx httpserver.Context) (string, error) {
 		req := ctx.Request()
 		idStr := api.OrgID(req)
-		orgID, err := strconv.ParseUint(idStr, 10, 64)
+		_, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
 			return "", fmt.Errorf("Org-ID is not number")
 		}
@@ -312,7 +313,7 @@ func OrgIDByCluster(key string) func(ctx httpserver.Context) (string, error) {
 		if len(cluster) <= 0 {
 			return "", fmt.Errorf("cluster must not be empty")
 		}
-		err = checkOrgIDsByCluster(orgID, cluster)
+		err = checkOrgIDsByCluster(ctx.Request().Context(), orgServer, idStr, cluster)
 		if err != nil {
 			return "", err
 		}
@@ -321,7 +322,7 @@ func OrgIDByCluster(key string) func(ctx httpserver.Context) (string, error) {
 }
 
 // wrap the new pkg.permission.ValueGetter
-func OrgIDByClusterWrapper(key string) func(ctx context.Context, req interface{}) (string, error) {
+func OrgIDByClusterWrapper(orgServer orgpb.OrgServiceServer, key string) func(ctx context.Context, req interface{}) (string, error) {
 	clusterNameGetter := permission.FieldValue(key)
 	orgidGetter := permission.OrgIDValue()
 	return func(ctx context.Context, req interface{}) (string, error) {
@@ -329,7 +330,7 @@ func OrgIDByClusterWrapper(key string) func(ctx context.Context, req interface{}
 		if err != nil {
 			return "", err
 		}
-		orgID, err := strconv.ParseUint(idStr, 10, 64)
+		_, err = strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
 			return "", fmt.Errorf("Org-ID is not number")
 		}
@@ -337,7 +338,7 @@ func OrgIDByClusterWrapper(key string) func(ctx context.Context, req interface{}
 		if err != nil {
 			return "", err
 		}
-		err = checkOrgIDsByCluster(orgID, cluster)
+		err = checkOrgIDsByCluster(ctx, orgServer, idStr, cluster)
 		if err != nil {
 			return "", err
 		}
@@ -353,16 +354,15 @@ type MonitorPermission struct {
 	查询全部关联关系，再在内存中过滤
 	TODO 待优化，目前只有这个接口
 */
-func checkOrgIDsByCluster(orgID uint64, clusterName string) error {
-	resp, err := cmdb.QueryAllOrgClusterRelation()
+func checkOrgIDsByCluster(ctx context.Context, orgServer orgpb.OrgServiceServer, orgID, clusterName string) error {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "monitor"}))
+	resp, err := orgServer.GetOrgClusterRelationsByOrg(ctx, &orgpb.GetOrgClusterRelationsByOrgRequest{OrgID: orgID})
 	if err != nil {
 		return err
 	}
-	for _, item := range resp {
+	for _, item := range resp.Data {
 		if item.ClusterName == clusterName {
-			if orgID == item.OrgID {
-				return nil
-			}
+			return nil
 		}
 	}
 	return fmt.Errorf("not found cluster '%s'", clusterName)

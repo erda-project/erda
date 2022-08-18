@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -29,6 +30,7 @@ type Cmdb struct {
 	url        string
 	operatorID string
 	hc         *httpclient.HTTPClient
+	orgServer  orgpb.OrgServiceServer
 }
 
 // Option .
@@ -72,5 +74,11 @@ func WithOperatorID(operatorID string) Option {
 func WithHTTPClient(hc *httpclient.HTTPClient) Option {
 	return func(e *Cmdb) {
 		e.hc = hc
+	}
+}
+
+func WithOrgSvc(orgSvc orgpb.OrgServiceServer) Option {
+	return func(e *Cmdb) {
+		e.orgServer = orgSvc
 	}
 }
