@@ -104,20 +104,20 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 		}
 
 		path, fileName := getSourcePathAndName(each)
-		go func() {
-			env := ruleactionpipeline.PipelineRuleEnv{
-				Content: req.Content,
-				Config: &ruleactionpipeline.PipelineConfig{
-					PipelineYml:    each,
-					PipelineYmlStr: strPipelineYml,
-					AppID:          app.ID,
-					RefName:        refName,
-					UserID:         req.Content.Pusher.ID,
-					Path:           path,
-					FileName:       fileName,
-				},
-			}
 
+		env := ruleactionpipeline.PipelineRuleEnv{
+			Content: req.Content,
+			Config: &ruleactionpipeline.PipelineConfig{
+				PipelineYml:    each,
+				PipelineYmlStr: strPipelineYml,
+				AppID:          app.ID,
+				RefName:        refName,
+				UserID:         req.Content.Pusher.ID,
+				Path:           path,
+				FileName:       fileName,
+			},
+		}
+		go func() {
 			if err := e.FireRule(ctx, env, EventInfo{
 				Scope:       "project",
 				ScopeID:     req.ProjectID,
