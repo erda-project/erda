@@ -162,6 +162,7 @@ log-persist:
     options:
       auto.offset.reset: "${LOG_PERSIST_INPUT_KAFKA_AUTO_OFFSET_RESET:earliest}"
       queued.max.messages.kbytes: ${LOG_PERSIST_INPUT_KAFKA_QUEUE_SIZE_KB:102400}
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
   id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
   buffer_size: ${LOG_BATCH_SIZE:200}
@@ -335,6 +336,10 @@ metric-persist:
   input:
     topics: "${METRIC_TOPICS:spot-metrics,erda-trace-metrics}"
     group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
+    options:
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:180000}
+      max.poll.interval.ms: ${KAFKA_MAX_POLL_INTERVAL_MS:600000}
+      request.timeout.ms: ${KAFKA_REQUEST_TIMEOUT_MS:60000}
   read_timeout: ${METRIC_PERSIST_READ_TIMEOUT:10s}
   buffer_size: ${METRIC_BATCH_SIZE:200}
   parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
@@ -400,6 +405,7 @@ span-persist:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
   oap_input:
     topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace,erda-spans}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
@@ -407,6 +413,7 @@ span-persist:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
   id_keys: "${SPAN_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
   buffer_size: ${SPAN_BATCH_SIZE:200}
@@ -422,6 +429,7 @@ browser-analytics:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
   output:
     topic: "${METRIC_TOPICS:spot-metrics}"
     parallelism: ${KAFKA_PARALLELISM:3}
@@ -439,6 +447,7 @@ trace-storage:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
   oap_input:
     topics: "${OAP_TRACE_TOPICS:erda-spans,msp-jaeger-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
@@ -446,6 +455,7 @@ trace-storage:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
   output:
     cassandra:
       writer_config:
@@ -491,6 +501,8 @@ entity-persist:
   input:
     topics: "${ENTITY_TOPICS:spot-entity}"
     group: "${ENTITY_GROUP_ID:spot-monitor-entity-dev}"
+    options:
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
   read_timeout: "5s"
   buffer_size: ${ENTITY_BATCH_SIZE:200}
   parallelism: ${ENTITY_PERSIST_PARALLELISM:3}
@@ -557,6 +569,7 @@ erda.oap.collector.receiver.kafka@spotspan:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
 
 erda.oap.collector.receiver.kafka@oapspan:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
@@ -568,6 +581,7 @@ erda.oap.collector.receiver.kafka@oapspan:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
 
 erda.oap.collector.processor.modifier@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
@@ -623,6 +637,7 @@ erda.oap.collector.receiver.kafka@spotmetric:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:60000}
 
 erda.oap.collector.receiver.kafka@oapspanevent:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
