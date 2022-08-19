@@ -17,6 +17,7 @@ package query
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
@@ -96,4 +97,38 @@ func Test_provider_GetIssuesByIssueIDs(t *testing.T) {
 	defer p2.Unpatch()
 	_, err := p.GetIssuesByIssueIDs([]uint64{1})
 	assert.NoError(t, err)
+}
+
+func Test_getUpdatedFieldsByPlanTime(t *testing.T) {
+	type args struct {
+		start *time.Time
+		end   *time.Time
+		left  *time.Time
+		right *time.Time
+	}
+	t1, _ := time.Parse("2006-01-02", "2022-02-01")
+	t2, _ := time.Parse("2006-01-02", "2022-02-02")
+	t3, _ := time.Parse("2006-01-02", "2022-02-04")
+	tests := []struct {
+		name string
+		args args
+		want map[string]interface{}
+	}{
+		{
+			args: args{
+				start: &t1,
+				end:   &t2,
+				left:  &t3,
+				right: nil,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := getUpdatedFieldsByPlanTime(tt.args.start, tt.args.end, tt.args.left, tt.args.right)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getUpdatedFieldsByPlanTime() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
