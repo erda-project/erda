@@ -124,8 +124,6 @@ func (p *provider) AfterIssueAppRelationCreate(issueIDs []int64) error {
 }
 
 func (p *provider) AfterIssueInclusionRelationChange(id uint64) error {
-	fields := make(map[string]interface{})
-	streamFields := make(map[string][]interface{})
 	start, end, err := p.db.FindIssueChildrenTimeRange(id)
 	if err != nil {
 		return err
@@ -134,16 +132,7 @@ func (p *provider) AfterIssueInclusionRelationChange(id uint64) error {
 	if err != nil {
 		return err
 	}
-	if start != nil && issue.PlanStartedAt != nil && !start.Equal(*issue.PlanStartedAt) {
-		fields["plan_started_at"] = start
-		streamFields["plan_started_at"] = []interface{}{issue.PlanStartedAt, start, common.ChildrenPlanUpdated}
-	}
-	if end != nil && issue.PlanFinishedAt != nil && !end.Equal(*issue.PlanFinishedAt) {
-		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-		fields["expiry_status"] = dao.GetExpiryStatus(end, now)
-		fields["plan_finished_at"] = end
-		streamFields["plan_finished_at"] = []interface{}{issue.PlanFinishedAt, end, common.ChildrenPlanUpdated}
-	}
+	fields, streamFields := getUpdatedFieldsByPlanTime(issue.PlanStartedAt, issue.PlanFinishedAt, start, end)
 	if len(fields) > 0 {
 		if err := p.db.UpdateIssue(id, fields); err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err)
@@ -153,4 +142,27 @@ func (p *provider) AfterIssueInclusionRelationChange(id uint64) error {
 		return err
 	}
 	return nil
+}
+
+func getUpdatedFieldsByPlanTime(start, end, left, right *time.Time) (map[string]interface{}, map[string][]interface{}) {
+	fields := make(map[string]interface{})
+	streamFields := make(map[string][]interface{})
+	updatedStart, updatedEnd := start, end
+	if start != nil && left != nil && !start.Equal(*left) {
+		updatedStart = left
+		fields["plan_started_at"] = left
+		streamFields["plan_started_at"] = []interface{}{start, left, common.ChildrenPlanUpdated}
+	}
+	if end != nil && right != nil && !end.Equal(*right) {
+		updatedEnd = right
+		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+		fields["expiry_status"] = dao.GetExpiryStatus(right, now)
+		fields["plan_finished_at"] = right
+		streamFields["plan_finished_at"] = []interface{}{end, right, common.ChildrenPlanUpdated}
+	}
+	// discard updates when primary rule is violated.
+	if updatedStart != nil && updatedEnd != nil && updatedStart.After(*updatedEnd) {
+		return nil, nil
+	}
+	return fields, streamFields
 }
