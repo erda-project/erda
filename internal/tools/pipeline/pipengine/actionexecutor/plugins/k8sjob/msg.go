@@ -40,7 +40,7 @@ func (em MessageList) Less(i, j int) bool { return em[i].Timestamp < em[j].Times
 func (k *K8sJob) getLastMsg(ctx context.Context, namespace, name string) (lastMsg string, err error) {
 	var ems MessageList
 
-	eventList, err := k.client.ClientSet.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
+	eventList, err := k.Client.ClientSet.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return
 	}

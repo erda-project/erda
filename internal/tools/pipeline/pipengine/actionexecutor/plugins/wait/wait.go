@@ -170,6 +170,10 @@ func (w *Wait) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (int
 	return nil, nil
 }
 
+func (w *Wait) SubscribeEvent(ctx context.Context, action *spec.PipelineTask, handler interface{}) error {
+	return nil
+}
+
 func mergeEnvs(task *spec.PipelineTask) map[string]string {
 	envs := make(map[string]string)
 	for k, v := range task.Extra.PublicEnvs {

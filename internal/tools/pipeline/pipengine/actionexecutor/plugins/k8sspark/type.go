@@ -15,14 +15,10 @@
 package k8sspark
 
 import (
-	"time"
-
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
-	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 var Kind = types.Kind(spec.PipelineTaskExecutorKindK8sSpark)
@@ -30,27 +26,23 @@ var Kind = types.Kind(spec.PipelineTaskExecutorKindK8sSpark)
 type K8sSpark struct {
 	*types.K8sExecutor
 	name        types.Name
-	client      *k8sclient.K8sClient
 	clusterName string
 	cluster     apistructs.ClusterInfo
 	errWrapper  *logic.ErrorWrapper
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sSpark, error) {
-	// we could operate normal resources (job, pod, deploy,pvc,pv,crd and so on) by default config permissions(injected by kubernetes, /var/run/secrets/kubernetes.io/serviceaccount)
-	// so WithPreferredToUseInClusterConfig it's enough for pipeline and orchestrator
-	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second), k8sclient.WithPreferredToUseInClusterConfig())
-	if err != nil {
-		return nil, err
-	}
 	k8sSpark := &K8sSpark{
 		name:        name,
 		clusterName: clusterName,
-		client:      client,
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),
 	}
-	k8sSpark.K8sExecutor = types.NewK8sExecutor(k8sSpark)
+	k8sExecutor, err := types.NewK8sExecutor(clusterName, k8sSpark)
+	if err != nil {
+		return nil, err
+	}
+	k8sSpark.K8sExecutor = k8sExecutor
 	return k8sSpark, nil
 }
 

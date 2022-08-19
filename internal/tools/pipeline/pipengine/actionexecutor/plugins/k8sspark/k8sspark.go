@@ -94,14 +94,14 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		}, err
 	}
 
-	if _, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, job.Namespace, metav1.GetOptions{}); err != nil {
+	if _, err := k.Client.ClientSet.CoreV1().Namespaces().Get(ctx, job.Namespace, metav1.GetOptions{}); err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil, fmt.Errorf("get namespace err: %v", err)
 		}
 
 		logrus.Debugf("create namespace : %s", job.Namespace)
 		ns := container_provider.GenNamespaceByJob(&job)
-		if _, err = k.client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
+		if _, err = k.Client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 			return nil, fmt.Errorf("create namespace err: %v", err)
 		}
 	}
@@ -123,7 +123,7 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		if pvc == nil {
 			continue
 		}
-		_, err := k.client.ClientSet.
+		_, err := k.Client.ClientSet.
 			CoreV1().
 			PersistentVolumeClaims(job.Namespace).
 			Create(ctx, pvc, metav1.CreateOptions{})
@@ -147,7 +147,7 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, fmt.Errorf("failed to generate spark appliation, namespace: %s, name: %s, err: %v", job.Namespace, job.Name, err)
 	}
 
-	if err := k.client.CRClient.Create(ctx, sparkApp); err != nil {
+	if err := k.Client.CRClient.Create(ctx, sparkApp); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return apistructs.Job{
 				JobFromUser: job,
@@ -227,7 +227,7 @@ func (k *K8sSpark) Delete(ctx context.Context, task *spec.PipelineTask) (interfa
 		return nil, errors.Errorf("failed to get k8s spark job, namespace: %s, name: %s", task.Extra.Namespace, task.Extra.UUID)
 	}
 
-	if err := k.client.CRClient.Delete(ctx, sparkApp); err != nil {
+	if err := k.Client.CRClient.Delete(ctx, sparkApp); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -237,7 +237,7 @@ func (k *K8sSpark) Delete(ctx context.Context, task *spec.PipelineTask) (interfa
 	sparkApps := sparkv1beta2.SparkApplicationList{}
 	namespace := task.Extra.Namespace
 	if !task.Extra.NotPipelineControlledNs {
-		err = k.client.CRClient.List(ctx, &sparkApps, &client.ListOptions{Namespace: namespace})
+		err = k.Client.CRClient.List(ctx, &sparkApps, &client.ListOptions{Namespace: namespace})
 		if err != nil {
 			return nil, fmt.Errorf("%s list k8sspark apps error: %+v, namespace: %s", K8SSparkLogPrefix, err, namespace)
 		}
@@ -250,7 +250,7 @@ func (k *K8sSpark) Delete(ctx context.Context, task *spec.PipelineTask) (interfa
 			}
 		}
 		if remainCount < 1 {
-			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+			ns, err := k.Client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 			if err != nil {
 				if k8serrors.IsNotFound(err) {
 					return nil, nil
@@ -260,7 +260,7 @@ func (k *K8sSpark) Delete(ctx context.Context, task *spec.PipelineTask) (interfa
 
 			if ns.DeletionTimestamp == nil {
 				logrus.Debugf(" %s start to delete the namespace %s", K8SSparkLogPrefix, namespace)
-				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+				err = k.Client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 				if err != nil {
 					if !k8serrors.IsNotFound(err) {
 						errMsg := fmt.Errorf("%s delete the namespace: %s, error: %+v", K8SSparkLogPrefix, namespace, err)
@@ -282,14 +282,14 @@ func (k *K8sSpark) Inspect(ctx context.Context, task *spec.PipelineTask) (apistr
 
 func (k *K8sSpark) getSparkApp(ctx context.Context, task *spec.PipelineTask) (*sparkv1beta2.SparkApplication, error) {
 	var sparkApp sparkv1beta2.SparkApplication
-	if err := k.client.CRClient.Get(ctx, client.ObjectKey{Name: task.Extra.UUID, Namespace: task.Extra.Namespace}, &sparkApp); err != nil {
+	if err := k.Client.CRClient.Get(ctx, client.ObjectKey{Name: task.Extra.UUID, Namespace: task.Extra.Namespace}, &sparkApp); err != nil {
 		return nil, err
 	}
 	return &sparkApp, nil
 }
 
 func (k *K8sSpark) removePipelineJobs(ns string) error {
-	if err := k.client.ClientSet.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{}); err != nil {
+	if err := k.Client.ClientSet.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{}); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
@@ -299,7 +299,7 @@ func (k *K8sSpark) removePipelineJobs(ns string) error {
 }
 
 func (k *K8sSpark) createSparkServiceAccountIfNotExist(ns string) error {
-	if _, err := k.client.ClientSet.CoreV1().ServiceAccounts(ns).Get(context.Background(), sparkServiceAccountName, metav1.GetOptions{}); err == nil {
+	if _, err := k.Client.ClientSet.CoreV1().ServiceAccounts(ns).Get(context.Background(), sparkServiceAccountName, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
@@ -314,7 +314,7 @@ func (k *K8sSpark) createSparkServiceAccountIfNotExist(ns string) error {
 		},
 	}
 
-	if _, err := k.client.ClientSet.CoreV1().ServiceAccounts(ns).Create(context.Background(), sa, metav1.CreateOptions{}); err != nil {
+	if _, err := k.Client.ClientSet.CoreV1().ServiceAccounts(ns).Create(context.Background(), sa, metav1.CreateOptions{}); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return nil
 		}
@@ -325,7 +325,7 @@ func (k *K8sSpark) createSparkServiceAccountIfNotExist(ns string) error {
 }
 
 func (k *K8sSpark) createSparkRoleIfNotExist(ns string) error {
-	if _, err := k.client.ClientSet.RbacV1().Roles(ns).Get(context.Background(), sparkRoleName, metav1.GetOptions{}); err == nil {
+	if _, err := k.Client.ClientSet.RbacV1().Roles(ns).Get(context.Background(), sparkRoleName, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
@@ -352,7 +352,7 @@ func (k *K8sSpark) createSparkRoleIfNotExist(ns string) error {
 		},
 	}
 
-	if _, err := k.client.ClientSet.RbacV1().Roles(ns).Create(context.Background(), r, metav1.CreateOptions{}); err != nil {
+	if _, err := k.Client.ClientSet.RbacV1().Roles(ns).Create(context.Background(), r, metav1.CreateOptions{}); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return nil
 		}
@@ -362,7 +362,7 @@ func (k *K8sSpark) createSparkRoleIfNotExist(ns string) error {
 }
 
 func (k *K8sSpark) createSparkRolebindingIfNotExist(ns string) error {
-	if _, err := k.client.ClientSet.RbacV1().RoleBindings(ns).Get(context.Background(), sparkRoleBindingName, metav1.GetOptions{}); err == nil {
+	if _, err := k.Client.ClientSet.RbacV1().RoleBindings(ns).Get(context.Background(), sparkRoleBindingName, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
@@ -389,7 +389,7 @@ func (k *K8sSpark) createSparkRolebindingIfNotExist(ns string) error {
 		},
 	}
 
-	if _, err := k.client.ClientSet.RbacV1().RoleBindings(ns).Create(context.Background(), rb, metav1.CreateOptions{}); err != nil {
+	if _, err := k.Client.ClientSet.RbacV1().RoleBindings(ns).Create(context.Background(), rb, metav1.CreateOptions{}); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return nil
 		}
@@ -428,7 +428,7 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 		},
 	}
 
-	isMount, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, pipelineconf.ErdaNamespace(), job.Namespace,
+	isMount, err := logic.CreateInnerSecretIfNotExist(k.Client.ClientSet, pipelineconf.ErdaNamespace(), job.Namespace,
 		pipelineconf.CustomRegCredSecret())
 	if err != nil {
 		return nil, err

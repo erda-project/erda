@@ -100,3 +100,9 @@ func (d *Demo) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (i
 	time.Sleep(time.Second * 5)
 	return nil, nil
 }
+
+func (d *Demo) SubscribeEvent(ctx context.Context, action *spec.PipelineTask, handler interface{}) error {
+	logrus.Info("demo subscribe event ...")
+	time.Sleep(time.Second * 5)
+	return nil
+}

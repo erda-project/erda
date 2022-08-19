@@ -175,6 +175,10 @@ func (d *define) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) 
 	return nil, nil
 }
 
+func (d *define) SubscribeEvent(ctx context.Context, action *spec.PipelineTask, handler interface{}) error {
+	return nil
+}
+
 func (d *define) makeRunningApiKey(task *spec.PipelineTask) string {
 	return fmt.Sprintf("%d-%d", task.PipelineID, task.ID)
 }

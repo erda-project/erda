@@ -131,7 +131,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 
 	ns := &corev1.Namespace{}
 	statusDesc := apistructs.StatusDesc{}
-	if ns, err = k.client.ClientSet.CoreV1().Namespaces().Get(ctx, task.Extra.Namespace, metav1.GetOptions{}); err != nil {
+	if ns, err = k.Client.ClientSet.CoreV1().Namespaces().Get(ctx, task.Extra.Namespace, metav1.GetOptions{}); err != nil {
 		if !strings.Contains(err.Error(), "not found") {
 			statusDesc.Status = apistructs.StatusError
 			statusDesc.Reason = err.Error()
@@ -146,7 +146,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		ns = container_provider.GenNamespaceByJob(&job)
 
 		var nsErr error
-		if ns, nsErr = k.client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); nsErr != nil {
+		if ns, nsErr = k.Client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); nsErr != nil {
 			statusDesc.Status = apistructs.StatusError
 			statusDesc.Reason = nsErr.Error()
 			statusDesc.LastMessage = nsErr.Error()
@@ -162,7 +162,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		if pvc == nil {
 			continue
 		}
-		_, err := k.client.ClientSet.
+		_, err := k.Client.ClientSet.
 			CoreV1().
 			PersistentVolumeClaims(job.Namespace).
 			Create(context.Background(), pvc, metav1.CreateOptions{})
@@ -186,7 +186,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		composeOwnerReferences("v1", "Namespace", ns.Name, ns.UID),
 	}
 
-	isMount, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, conf.ErdaNamespace(), job.Namespace,
+	isMount, err := logic.CreateInnerSecretIfNotExist(k.Client.ClientSet, conf.ErdaNamespace(), job.Namespace,
 		conf.CustomRegCredSecret())
 	if err != nil {
 		return apistructs.Job{
@@ -199,14 +199,14 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		}
 	}
 
-	if err := k.client.CRClient.Create(ctx, flinkCluster); err != nil {
+	if err := k.Client.CRClient.Create(ctx, flinkCluster); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return apistructs.Job{
 				JobFromUser: job,
 			}, nil
 		}
 		if !job.NotPipelineControlledNs {
-			if delErr := k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, ns.Name, metav1.DeleteOptions{}); delErr != nil {
+			if delErr := k.Client.ClientSet.CoreV1().Namespaces().Delete(ctx, ns.Name, metav1.DeleteOptions{}); delErr != nil {
 				return nil, fmt.Errorf("delete namespace err: %v", delErr)
 			}
 		}
@@ -231,7 +231,7 @@ func (k *K8sFlink) Delete(ctx context.Context, task *spec.PipelineTask) (data in
 		return nil, fmt.Errorf("%s failed to get flink cluster: %s, err: %v", K8SFlinkLogPrefix, task.Name, err)
 	}
 
-	err = k.client.CRClient.Delete(ctx, flinkCluster)
+	err = k.Client.CRClient.Delete(ctx, flinkCluster)
 	if err != nil {
 		return nil, fmt.Errorf("delete flink cluster %s err: %s", bigDataConf.Name, err.Error())
 	}
@@ -240,7 +240,7 @@ func (k *K8sFlink) Delete(ctx context.Context, task *spec.PipelineTask) (data in
 	namespace := task.Extra.Namespace
 	if !task.Extra.NotPipelineControlledNs {
 		flinkClusters := flinkoperatorv1beta1.FlinkClusterList{}
-		err = k.client.CRClient.List(context.Background(), &flinkClusters, &client.ListOptions{
+		err = k.Client.CRClient.List(context.Background(), &flinkClusters, &client.ListOptions{
 			Namespace: namespace,
 		})
 		if err != nil {
@@ -256,7 +256,7 @@ func (k *K8sFlink) Delete(ctx context.Context, task *spec.PipelineTask) (data in
 		}
 
 		if remainCount < 1 {
-			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+			ns, err := k.Client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 			if err != nil {
 				if k8serrors.IsNotFound(err) {
 					return nil, nil
@@ -266,7 +266,7 @@ func (k *K8sFlink) Delete(ctx context.Context, task *spec.PipelineTask) (data in
 
 			if ns.DeletionTimestamp == nil {
 				logrus.Debugf("%s start to delete the namespace %s", K8SFlinkLogPrefix, namespace)
-				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+				err = k.Client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 				if err != nil {
 					if !k8serrors.IsNotFound(err) {
 						errMsg := fmt.Errorf("%s delete the namespace %s, error: %+v", K8SFlinkLogPrefix, namespace, err)
@@ -290,7 +290,7 @@ func (k *K8sFlink) GetFlinkClusterInfo(ctx context.Context, data apistructs.Bigd
 	logrus.Debugf("get flinkCluster name %s in ns %s", data.Name, data.Namespace)
 
 	flinkCluster := flinkoperatorv1beta1.FlinkCluster{}
-	err := k.client.CRClient.Get(context.Background(), client.ObjectKey{
+	err := k.Client.CRClient.Get(context.Background(), client.ObjectKey{
 		Name:      data.Name,
 		Namespace: data.Namespace,
 	}, &flinkCluster)

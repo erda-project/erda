@@ -83,3 +83,7 @@ func (m *Memory) Remove(ctx context.Context, action *spec.PipelineTask) (interfa
 func (m *Memory) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (interface{}, error) {
 	panic("implement me")
 }
+
+func (m *Memory) SubscribeEvent(ctx context.Context, action *spec.PipelineTask, handler interface{}) error {
+	panic("implement me")
+}

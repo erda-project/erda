@@ -40,7 +40,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
-	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -86,27 +85,26 @@ func init() {
 type K8sJob struct {
 	*types.K8sExecutor
 	name        types.Name
-	client      *k8sclient.K8sClient
 	clusterName string
 	cluster     apistructs.ClusterInfo
 	errWrapper  *logic.ErrorWrapper
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
-	// we could operate normal resources (job, pod, deploy,pvc,pv,crd and so on) by default config permissions(injected by kubernetes, /var/run/secrets/kubernetes.io/serviceaccount)
-	// so WithPreferredToUseInClusterConfig it's enough for pipeline and orchestrator
-	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second), k8sclient.WithPreferredToUseInClusterConfig())
-	if err != nil {
-		return nil, err
-	}
 	k8sJob := &K8sJob{
 		name:        name,
-		client:      client,
 		clusterName: clusterName,
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),
 	}
-	k8sJob.K8sExecutor = types.NewK8sExecutor(k8sJob)
+	k8sExecutor, err := types.NewK8sExecutor(clusterName, k8sJob)
+	if err != nil {
+		return nil, err
+	}
+	k8sJob.K8sExecutor = k8sExecutor
+	go func() {
+		k8sJob.informer()
+	}()
 	return k8sJob, nil
 }
 
@@ -128,7 +126,7 @@ func (k *K8sJob) Status(ctx context.Context, task *spec.PipelineTask) (desc apis
 		jobPods *corev1.PodList
 	)
 	jobName := logic.MakeJobName(task)
-	job, err = k.client.ClientSet.BatchV1().Jobs(task.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
+	job, err = k.Client.ClientSet.BatchV1().Jobs(task.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			desc.Status = logic.TransferStatus(string(apistructs.StatusNotFoundInCluster))
@@ -144,7 +142,7 @@ func (k *K8sJob) Status(ctx context.Context, task *spec.PipelineTask) (desc apis
 		}
 		selector := strutil.Join(matchlabels, ",", true)
 
-		jobPods, err = k.client.ClientSet.CoreV1().Pods(task.Extra.Namespace).List(ctx, metav1.ListOptions{
+		jobPods, err = k.Client.ClientSet.CoreV1().Pods(task.Extra.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: selector,
 		})
 		if err != nil {
@@ -211,7 +209,7 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 			if pvc == nil {
 				continue
 			}
-			_, err := k.client.ClientSet.CoreV1().
+			_, err := k.Client.ClientSet.CoreV1().
 				PersistentVolumeClaims(pvc.Namespace).
 				Create(ctx, pvc, metav1.CreateOptions{})
 			if err != nil && !k8serrors.IsAlreadyExists(err) {
@@ -232,7 +230,7 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 		return nil, errors.Wrapf(err, "failed to create k8s job")
 	}
 
-	_, err = k.client.ClientSet.BatchV1().Jobs(job.Namespace).Create(ctx, kubeJob, metav1.CreateOptions{})
+	_, err = k.Client.ClientSet.BatchV1().Jobs(job.Namespace).Create(ctx, kubeJob, metav1.CreateOptions{})
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to create k8s job, name: %s, err: %v", kubeJob.Name, err)
 		logrus.Errorf(errMsg)
@@ -250,11 +248,11 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 		return nil, err
 	}
 
-	name := makeJobName(task.Extra.Namespace, task.Extra.UUID)
+	name := types.MakeJobName(task.Extra.Namespace, task.Extra.UUID)
 	namespace := job.Namespace
 	propagationPolicy := metav1.DeletePropagationBackground
 
-	jb, err := k.client.ClientSet.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
+	jb, err := k.Client.ClientSet.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil, err
@@ -265,7 +263,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 	// when the err is nil, the job and DeletionTimestamp is not nil. scheduler should delete the job.
 	if err == nil && jb.DeletionTimestamp == nil {
 		logrus.Debugf("start to delete job %s", name)
-		err = k.client.ClientSet.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{
+		err = k.Client.ClientSet.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{
 			PropagationPolicy: &propagationPolicy,
 		})
 		if err != nil {
@@ -279,7 +277,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 		for index := range job.Volumes {
 			pvcName := fmt.Sprintf("%s-%d", name, index)
 			logrus.Debugf("start to delete pvc %s", pvcName)
-			err = k.client.ClientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
+			err = k.Client.ClientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
 					return nil, errors.Wrapf(err, "failed to remove k8s pvc, name: %s", pvcName)
@@ -292,7 +290,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 
 	// if user customize namespace, shouldn't delete namespace
 	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) == "" && !job.NotPipelineControlledNs {
-		jobs, err := k.client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
+		jobs, err := k.Client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
 			return nil, errMsg
@@ -313,7 +311,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 			retainNamespace = false
 		}
 		if remainCount < 1 && retainNamespace == false {
-			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+			ns, err := k.Client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 			if err != nil {
 				if k8serrors.IsNotFound(err) {
 					logrus.Warningf("get namespace %s not found", namespace)
@@ -325,7 +323,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 
 			if ns.DeletionTimestamp == nil {
 				logrus.Debugf("start to delete the job's namespace %s", namespace)
-				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+				err = k.Client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 				if err != nil {
 					if !k8serrors.IsNotFound(err) {
 						errMsg := fmt.Errorf("delete the job's namespace error: %+v", err)
@@ -342,7 +340,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 
 // Inspect use kubectl describe pod information, return latest pod description for current job
 func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
-	jobPods, err := k.client.ClientSet.CoreV1().Pods(task.Extra.Namespace).List(ctx, metav1.ListOptions{
+	jobPods, err := k.Client.ClientSet.CoreV1().Pods(task.Extra.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: logic.MakeJobLabelSelector(task),
 	})
 	if err != nil {
@@ -351,7 +349,7 @@ func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistruc
 	if len(jobPods.Items) == 0 {
 		return apistructs.TaskInspect{}, errors.Errorf("get empty pods in job: %s", logic.MakeJobName(task))
 	}
-	d := describe.PodDescriber{k.client.ClientSet}
+	d := describe.PodDescriber{k.Client.ClientSet}
 	s, err := d.Describe(task.Extra.Namespace, jobPods.Items[len(jobPods.Items)-1].Name, describe.DescriberSettings{
 		ShowEvents: true,
 	})
@@ -394,12 +392,12 @@ func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVo
 }
 
 func (k *K8sJob) CreatePVCIfNotExists(ctx context.Context, pvc *corev1.PersistentVolumeClaim) error {
-	_, err := k.client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(ctx, pvc.Name, metav1.GetOptions{})
+	_, err := k.Client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(ctx, pvc.Name, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return errors.Errorf("faile to get pvc, name: %s, err: %v", pvc.Name, err)
 		}
-		_, createErr := k.client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
+		_, createErr := k.Client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
 		if createErr != nil {
 			if !k8serrors.IsAlreadyExists(err) {
 				return errors.Errorf("failed to create pvc, name: %s, err: %v", pvc.Name, createErr)
@@ -412,14 +410,14 @@ func (k *K8sJob) CreatePVCIfNotExists(ctx context.Context, pvc *corev1.Persisten
 
 // dealWithNamespace deal with namespace, such as labels
 func (k *K8sJob) dealWithNamespace(ctx context.Context, job *apistructs.JobFromUser) error {
-	if _, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, job.Namespace, metav1.GetOptions{}); err != nil {
+	if _, err := k.Client.ClientSet.CoreV1().Namespaces().Get(ctx, job.Namespace, metav1.GetOptions{}); err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get k8s namespace %s: %v", job.Namespace, err)
 		}
 
 		ns := container_provider.GenNamespaceByJob(job)
 
-		if _, err := k.client.ClientSet.CoreV1().Namespaces().
+		if _, err := k.Client.ClientSet.CoreV1().Namespaces().
 			Create(ctx, ns, metav1.CreateOptions{}); err != nil && !k8serrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create namespace: %v, err: %v", ns, err)
 		}
@@ -429,7 +427,7 @@ func (k *K8sJob) dealWithNamespace(ctx context.Context, job *apistructs.JobFromU
 }
 
 func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
-	_, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
+	_, err := k.Client.ClientSet.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			errMsg := fmt.Sprintf("failed to get k8s namespace %s: %v", name, err)
@@ -441,7 +439,7 @@ func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 		}
 
-		_, err := k.client.ClientSet.CoreV1().Namespaces().Create(ctx, newNamespace, metav1.CreateOptions{})
+		_, err := k.Client.ClientSet.CoreV1().Namespaces().Create(ctx, newNamespace, metav1.CreateOptions{})
 		if err != nil {
 			if !strings.Contains(err.Error(), "already exists") {
 				errMsg := fmt.Sprintf("failed to create namespace: %v", err)
@@ -489,7 +487,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 			APIVersion: jobAPIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      makeJobName(job.Namespace, job.Name),
+			Name:      types.MakeJobName(job.Namespace, job.Name),
 			Namespace: job.Namespace,
 			// TODO: Job.Labels cannot be used directly now, which does not comply with the rules of k8s labels
 			//Labels:    job.Labels,
@@ -544,7 +542,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 	// According to the current business, only one Pod and one Container are supported
 	container := &pod.Spec.Containers[0]
 
-	isMount, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, conf.ErdaNamespace(), job.Namespace,
+	isMount, err := logic.CreateInnerSecretIfNotExist(k.Client.ClientSet, conf.ErdaNamespace(), job.Namespace,
 		conf.CustomRegCredSecret())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inner secret: %v", err)
@@ -591,8 +589,8 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 		}
 
 		if isRateHit(hitRate) {
-			//create buildkit client secret
-			if _, err := logic.CreateInnerSecretIfNotExist(k.client.ClientSet, conf.ErdaNamespace(), job.Namespace,
+			//create buildkit Client secret
+			if _, err := logic.CreateInnerSecretIfNotExist(k.Client.ClientSet, conf.ErdaNamespace(), job.Namespace,
 				apistructs.BuildkitClientSecret); err != nil {
 				return nil, err
 			}
@@ -975,10 +973,6 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 
 	statusDesc.LastMessage = lastMsg
 	return statusDesc
-}
-
-func makeJobName(namespace string, taskUUID string) string {
-	return strutil.Concat(namespace, ".", taskUUID)
 }
 
 func isRateHit(hitRate int) bool {

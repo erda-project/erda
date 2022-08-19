@@ -45,6 +45,8 @@ type ActionExecutor interface {
 	Cancel(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	Remove(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (interface{}, error)
+
+	SubscribeEvent(ctx context.Context, action *spec.PipelineTask, handler interface{}) error
 }
 
 const kindNameFormat = `^[A-Z0-9]+$`

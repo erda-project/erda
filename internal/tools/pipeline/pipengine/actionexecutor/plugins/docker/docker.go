@@ -289,6 +289,10 @@ func (d *DockerJob) Delete(ctx context.Context, task *spec.PipelineTask) (data i
 	return task.Extra.UUID, nil
 }
 
+func (d *DockerJob) SubscribeEvent(ctx context.Context, action *spec.PipelineTask, handler interface{}) error {
+	return nil
+}
+
 func (d *DockerJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
 	jobName := logic.MakeJobName(task)
 	inspect, err := d.client.ContainerInspect(ctx, jobName)

@@ -16,14 +16,20 @@ package types
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -36,15 +42,30 @@ type K8sBaseExecutor interface {
 }
 
 type K8sExecutor struct {
+	sync.Mutex
+
 	K8sBaseExecutor
+	Client *k8sclient.K8sClient
+
 	errWrapper *logic.ErrorWrapper
+	StopCh     chan struct{}
+	handlers   map[string][]reflect.Value
 }
 
-func NewK8sExecutor(exe K8sBaseExecutor) *K8sExecutor {
+func NewK8sExecutor(clusterName string, exe K8sBaseExecutor) (*K8sExecutor, error) {
+	// we could operate normal resources (job, pod, deploy,pvc,pv,crd and so on) by default config permissions(injected by kubernetes, /var/run/secrets/kubernetes.io/serviceaccount)
+	// so WithPreferredToUseInClusterConfig it's enough for pipeline and orchestrator
+	client, err := k8sclient.New(clusterName, k8sclient.WithTimeout(time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second), k8sclient.WithPreferredToUseInClusterConfig())
+	if err != nil {
+		return nil, err
+	}
 	return &K8sExecutor{
+		StopCh:          make(chan struct{}),
+		Client:          client,
 		K8sBaseExecutor: exe,
 		errWrapper:      logic.NewErrorWrapper(exe.Name().String()),
-	}
+		handlers:        map[string][]reflect.Value{},
+	}, nil
 }
 
 func (k *K8sExecutor) Exist(ctx context.Context, task *spec.PipelineTask) (created bool, started bool, err error) {
@@ -120,4 +141,48 @@ func (k *K8sExecutor) BatchDelete(ctx context.Context, tasks []*spec.PipelineTas
 		}
 	}
 	return nil, nil
+}
+
+func (k *K8sExecutor) SubscribeEvent(ctx context.Context, task *spec.PipelineTask, f interface{}) error {
+	k.Lock()
+	defer k.Unlock()
+
+	v := reflect.ValueOf(f)
+	if v.Type().Kind() != reflect.Func {
+		return fmt.Errorf("handler: %v is not a function", v.Type().Kind().String())
+	}
+
+	handlers, ok := k.handlers[MakeJobName(task.Extra.Namespace, task.Extra.UUID)]
+	if !ok {
+		handlers = []reflect.Value{}
+	}
+	handlers = append(handlers, v)
+	k.handlers[MakeJobName(task.Extra.Namespace, task.Extra.UUID)] = handlers
+	return nil
+}
+
+func (k *K8sExecutor) PublishEvent(identity string, args ...interface{}) {
+	handlers, ok := k.handlers[identity]
+	if !ok {
+		return
+	}
+
+	params := make([]reflect.Value, len(args))
+	for i, arg := range args {
+		params[i] = reflect.ValueOf(arg)
+	}
+	for i := range handlers {
+		go func(idx int) {
+			defer func() {
+				if err := recover(); err != nil {
+					logrus.Errorf("%s: handler: %s, error: %s", k.Kind().String(), handlers[idx].Type().String(), err)
+				}
+			}()
+			handlers[idx].Call(params)
+		}(i)
+	}
+}
+
+func MakeJobName(namespace string, taskUUID string) string {
+	return strutil.Concat(namespace, ".", taskUUID)
 }
