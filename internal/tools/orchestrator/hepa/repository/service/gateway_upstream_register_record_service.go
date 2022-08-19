@@ -81,7 +81,7 @@ func (impl *GatewayUpstreamRegisterRecordServiceImpl) Get(upstreamId string, reg
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
 	record := &orm.GatewayUpstreamRegisterRecord{}
-	succ, err := orm.Get(impl.engine, record, "upstream_id = ? and register_id = ?", upstreamId, registerId)
+	succ, err := orm.Get(impl.engine.Desc("create_time"), record, "upstream_id = ? and register_id = ?", upstreamId, registerId)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
