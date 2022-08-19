@@ -99,11 +99,18 @@ func (s *upstreamService) AsyncRegister(ctx context.Context, req *pb.AsyncRegist
 	if req.GetUpstream().GetRuntimeId() == "" || req.GetUpstream().GetOnlyRuntimePath() {
 		return s.asyncRegister(ctx, req)
 	}
-	if _, err = s.asyncRegister(ctx, req); err != nil {
-		return nil, err
-	}
-	req.Upstream.RuntimeId = ""
-	return s.asyncRegister(ctx, req)
+	go func() {
+		l := ctx.(*context1.LogContext).Entry()
+		response, err := s.Register(ctx, &pb.RegisterRequest{Upstream: req.GetUpstream()})
+		if err != nil {
+			l.WithError(err).WithField("registerTag", req.GetUpstream().GetRegisterTag()).Errorln("failed to go s.Register")
+			return
+		}
+		if response == nil || !response.GetData() {
+			l.WithField("registerTag", req.GetUpstream().GetRegisterTag()).Errorln("failed to go s.Register")
+		}
+	}()
+	return &pb.AsyncRegisterResponse{Data: true}, nil
 }
 
 func (s *upstreamService) asyncRegister(ctx context.Context, req *pb.AsyncRegisterRequest) (resp *pb.AsyncRegisterResponse, err error) {

@@ -250,15 +250,15 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 		if err != nil {
 			return err
 		}
-		l.WithField("len(oldApis)", len(oldApis)).
-			Infoln("oldValidId != validId, get oldApis")
+		l := l.WithField("len(newApis)", len(newApis))
+		l.Infoln("oldValidId != validId, get oldApis")
 		if oldValidId != "" {
 			oldApis, err = impl.getUpstreamApis(upstream.Id, oldValidId)
 			if err != nil {
 				return err
 			}
-			l.WithField("len(oldApis)", len(oldApis)).
-				Infoln("oldValidId != '' && oldValidId != validId, get oldApis")
+			l := l.WithField("len(oldApis)", len(oldApis))
+			l.Infoln("oldValidId != '' && oldValidId != validId, got oldApis")
 			if oFlag == gw.OFlagAppend {
 				for k := range oldApis {
 					if _, ok := newApis[k]; !ok {

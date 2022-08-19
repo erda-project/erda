@@ -31,8 +31,8 @@ const (
 type LogContext struct {
 	context.Context
 
-	logger   logger
-	baseName string
+	l        logger
+	baseFunc string
 }
 
 func (c LogContext) Entry() (entry *logrus.Entry) {
@@ -44,7 +44,7 @@ func (c LogContext) Entry() (entry *logrus.Entry) {
 
 	pc, _, _, ok := runtime.Caller(baseSkip)
 	if !ok {
-		switch t := c.logger.(type) {
+		switch t := c.l.(type) {
 		case *logrus.Logger:
 			return logrus.NewEntry(t)
 		case *logrus.Entry:
@@ -53,8 +53,8 @@ func (c LogContext) Entry() (entry *logrus.Entry) {
 		return logrus.NewEntry(logrus.StandardLogger())
 	}
 	name := filepath.Base(runtime.FuncForPC(pc).Name())
-	if c.baseName == "" || c.baseName == name {
-		return c.logger.WithField("stack", name)
+	if c.baseFunc == "" || c.baseFunc == name {
+		return c.l.WithField("stack", name)
 	}
 	for i := baseSkip + 1; i < baseSkip+maxSkip; i++ {
 		pc, _, _, ok := runtime.Caller(i)
@@ -63,11 +63,11 @@ func (c LogContext) Entry() (entry *logrus.Entry) {
 		}
 		curName := filepath.Base(runtime.FuncForPC(pc).Name())
 		name = curName + " -> " + name
-		if curName == c.baseName {
+		if curName == c.baseFunc {
 			break
 		}
 	}
-	return c.logger.WithField("stack", name)
+	return c.l.WithField("stack", name)
 }
 
 func WithLoggerIfWithout(ctx context.Context, logger *logrus.Logger) *LogContext {
@@ -91,14 +91,14 @@ func with(ctx context.Context, logger logger) *LogContext {
 		baseName := filepath.Base(runtime.FuncForPC(pc).Name())
 		c := &LogContext{
 			Context:  ctx,
-			logger:   logger,
-			baseName: baseName,
+			l:        logger,
+			baseFunc: baseName,
 		}
 		return c
 	}
 	return &LogContext{
 		Context: ctx,
-		logger:  logger,
+		l:       logger,
 	}
 }
 
