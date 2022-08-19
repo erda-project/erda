@@ -70,3 +70,28 @@ func Test_queryConditionsV2(t *testing.T) {
 		})
 	}
 }
+
+func Test_graphTopo_toNodes(t *testing.T) {
+	g := &graphTopo{
+		adj:   map[string]map[string]struct{}{},
+		nodes: map[string]Node{},
+	}
+	stats := Metric{Count: 1}
+
+	g.addDirectEdge(mockRelation("a", "b", stats))
+	g.addDirectEdge(mockRelation("a", "c", stats))
+	g.addDirectEdge(mockRelation("b", "a", stats))
+	g.addDirectEdge(mockRelation("b", "c", stats))
+	g.addDirectEdge(mockRelation("c", "a", stats))
+	g.addDirectEdge(mockRelation("c", "b", stats))
+
+	nodes := g.toNodes()
+	for _, n := range nodes {
+		assert.Equal(t, int64(4), n.Metric.Count)
+		assert.Equal(t, 2, len(n.Parents))
+	}
+}
+
+func mockRelation(sid, tid string, stats Metric) *relation {
+	return &relation{source: Node{Id: sid}, target: Node{Id: tid}, stats: stats}
+}

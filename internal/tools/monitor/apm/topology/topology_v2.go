@@ -147,15 +147,58 @@ func (cn *chNodeEdge) ToTopologyNodeRelation() *TopologyNodeRelation {
 
 type graphTopo struct {
 	adj   map[string]map[string]struct{}
-	nodes map[string]*Node
+	nodes map[string]Node
+}
+
+type relation struct {
+	source, target Node
+	stats          Metric
+}
+
+func (gt *graphTopo) addDirectEdge(rel *relation) {
+	gt.addNode(rel.target, rel.stats)
+	gt.addNode(rel.source, rel.stats)
+
+	if rel.target.Valid() {
+		if _, ok := gt.adj[rel.target.Id]; !ok {
+			gt.adj[rel.target.Id] = map[string]struct{}{}
+		}
+		if rel.source.Valid() {
+			gt.adj[rel.target.Id][rel.source.Id] = struct{}{}
+		}
+	}
+}
+
+func (gt *graphTopo) addNode(node Node, m Metric) {
+	if !node.Valid() {
+		return
+	}
+	if n, ok := gt.nodes[node.Id]; ok {
+		if n.RuntimeId == "" {
+			n.RuntimeId = node.RuntimeId
+		}
+		n.Metric.Count += m.Count
+		n.Metric.HttpError += m.HttpError
+		n.Metric.Duration += m.Duration
+		n.Metric.RT += m.RT
+		if n.RuntimeId == "" {
+			n.RuntimeId = node.RuntimeId
+		}
+	} else {
+		node.Metric = &m
+		gt.nodes[node.Id] = node
+	}
 }
 
 func (gt *graphTopo) toNodes() []*Node {
-	nodes := make([]*Node, 0, len(gt.adj))
-	for id, set := range gt.adj {
-		n := gt.nodes[id]
-		for pid := range set {
+	nodes := make([]Node, 0, len(gt.adj))
+	for id, n := range gt.nodes {
+		adj := gt.adj[id]
+		for pid := range adj {
 			pnode := gt.nodes[pid]
+			if pnode.Id == "" {
+				fmt.Println()
+			}
 			n.Parents = append(n.Parents, &Node{
 				Id:              pnode.Id,
 				Name:            pnode.Name,
@@ -176,14 +219,19 @@ func (gt *graphTopo) toNodes() []*Node {
 		}
 		nodes = append(nodes, n)
 	}
-	return nodes
+
+	pnodes := make([]*Node, len(nodes))
+	for i := 0; i < len(pnodes); i++ {
+		pnodes[i] = &nodes[i]
+	}
+	return pnodes
 }
 
 func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes, param Vo) ([]*Node, error) {
 	timeRange := (param.EndTime - param.StartTime) / 1e3 // second
 	ctx := context.Background()
 	tagInfo := parserTag(param)
-	tg := &graphTopo{adj: map[string]map[string]struct{}{}, nodes: map[string]*Node{}}
+	tg := &graphTopo{adj: map[string]map[string]struct{}{}, nodes: map[string]Node{}}
 	table, _ := topology.Loader.GetSearchTable(orgName)
 	for key, typeIndices := range typeMetricGroupMap {
 		aggregationConditions, _ := clickhousesource.SelectRelation(key)
@@ -243,37 +291,10 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows dr
 		if cnode.TargetType == TargetOtherNode && targetNode.Type == TypeInternal {
 			continue
 		}
-
-		if targetNode.Valid() {
-			targetNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(targetNode.Type))
-			targetNode.Metric = edge.Metric
-			if n, ok := tg.nodes[targetNode.Id]; ok { // merge metric
-				n.Metric.Count += targetNode.Metric.Count
-				n.Metric.HttpError += targetNode.Metric.HttpError
-				n.Metric.Duration += targetNode.Metric.Duration
-				n.Metric.RT += targetNode.Metric.RT
-				if n.RuntimeId == "" {
-					n.RuntimeId = targetNode.RuntimeId
-				}
-			} else {
-				tg.nodes[targetNode.Id] = targetNode
-			}
-
-			if _, ok := tg.adj[targetNode.Id]; !ok {
-				tg.adj[targetNode.Id] = map[string]struct{}{}
-			}
-		}
-
-		if sourceNode.Valid() {
-			tg.adj[targetNode.Id][sourceNode.Id] = struct{}{}
-			if n, ok := tg.nodes[sourceNode.Id]; ok {
-				if n.RuntimeId == "" {
-					n.RuntimeId = sourceNode.RuntimeId
-				}
-			} else {
-				tg.nodes[sourceNode.Id] = sourceNode
-			}
-		}
+		targetNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(targetNode.Type))
+		sourceNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(sourceNode.Type))
+		rel := &relation{target: *targetNode, source: *sourceNode, stats: *edge.Metric}
+		tg.addDirectEdge(rel)
 	}
 }
 
