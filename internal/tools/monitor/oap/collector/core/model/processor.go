@@ -27,6 +27,10 @@ type RuntimeProcessor struct {
 	Filter    *DataFilter
 }
 
+func (rp *RuntimeProcessor) Close() error {
+	return rp.Processor.ComponentClose()
+}
+
 type Processor interface {
 	Component
 	ProcessMetric(item *metric.Metric) (*metric.Metric, error)
@@ -35,10 +39,7 @@ type Processor interface {
 	ProcessRaw(item *odata2.Raw) (*odata2.Raw, error)
 }
 
-type RunningProcessor interface {
-	Processor
-	StartProcessor(consumer ObservableDataConsumerFunc)
-}
+
 
 type NoopProcessor struct {
 }

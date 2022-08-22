@@ -59,7 +59,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		ctx.AddTask(runner.Run, servicehub.WithTaskName("metric validator"))
 	}
 
-	p.stats = sharedStatistics
+	p.stats = newStatistics()
 
 	p.metadata = newMetadataProcessor(p.Cfg, p)
 	if runner, ok := p.metadata.(servicehub.ProviderRunnerWithContext); ok {

@@ -13,3 +13,6 @@
 // limitations under the License.
 
 package kafka
+
+type AdminInterface interface {
+}

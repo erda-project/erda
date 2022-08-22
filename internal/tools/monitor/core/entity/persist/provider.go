@@ -51,7 +51,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		ctx.AddTask(runner.Run, servicehub.WithTaskName("entity validator"))
 	}
 
-	p.stats = sharedStatistics
+	p.stats = newStatistics()
 
 	// add consumer task
 	for i := 0; i < p.Cfg.Parallelism; i++ {

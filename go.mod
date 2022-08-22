@@ -9,6 +9,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
+	github.com/Shopify/sarama v1.29.1
 	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
@@ -244,6 +245,9 @@ require (
 	github.com/docker/go-metrics v0.0.0-20180209012529-399ea8c73916 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/eapache/go-resiliency v1.2.0 // indirect
+	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
+	github.com/eapache/queue v1.1.0 // indirect
 	github.com/elastic/go-ucfg v0.8.3 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
@@ -282,6 +286,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/yamux v0.0.0-20210826001029-26ff87cf9493 // indirect
@@ -289,6 +294,11 @@ require (
 	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
+	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
+	github.com/jcmturner/gofork v1.0.0 // indirect
+	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
+	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jmoiron/sqlx v1.3.1 // indirect
@@ -329,7 +339,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/paulmach/orb v0.4.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
+	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pingcap/errors v0.11.5-0.20200917111840-a15ef68f753d // indirect
 	github.com/pingcap/kvproto v0.0.0-20200818080353-7aaed8998596 // indirect
@@ -341,6 +351,7 @@ require (
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/rancher/lasso v0.0.0-20210408231703-9ddd9378d08d // indirect
 	github.com/rancher/norman v0.0.0-20210423002317-8e6ffc77a819 // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/recallsong/unmarshal v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237 // indirect
 	github.com/richardlehane/mscfb v1.0.3 // indirect

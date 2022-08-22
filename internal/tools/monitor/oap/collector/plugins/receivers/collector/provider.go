@@ -35,6 +35,8 @@ type config struct {
 	}
 }
 
+var _ model.Receiver = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg       *config
@@ -44,6 +46,10 @@ type provider struct {
 
 	auth     *Authenticator
 	consumer model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {

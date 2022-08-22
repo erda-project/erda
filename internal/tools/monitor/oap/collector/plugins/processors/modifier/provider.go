@@ -16,6 +16,7 @@ package modifier
 
 import (
 	"fmt"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -35,12 +36,18 @@ type config struct {
 	Keypass map[string][]string `file:"keypass"`
 }
 
+var _ model.Processor = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg *config
 	Log logs.Logger
 
 	operators []*operator.Operator
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {

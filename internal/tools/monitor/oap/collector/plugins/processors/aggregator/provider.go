@@ -16,6 +16,7 @@ package aggregator
 
 import (
 	"fmt"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -37,6 +38,8 @@ type config struct {
 	Rules []RuleConfig `file:"rules"`
 }
 
+var _ model.Processor = (*provider)(nil)
+
 // +provider
 // TODO. Watch out: only work with metric's Fields now, so specify field key without `fields.` prefix
 type provider struct {
@@ -45,6 +48,10 @@ type provider struct {
 
 	cache  map[uint64]aggregate
 	rulers []*ruler
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 type aggregate struct {

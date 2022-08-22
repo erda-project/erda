@@ -61,7 +61,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		ctx.AddTask(runner.Run, servicehub.WithTaskName("span metadata processor"))
 	}
 
-	p.stats = sharedStatistics
+	p.stats = newStatistics()
 
 	// add consumer task
 	for i := 0; i < p.Cfg.Parallelism; i++ {

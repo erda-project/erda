@@ -20,10 +20,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	kafkaInf "github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	kafkaInf "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/oapspan"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotmetric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotspan"
@@ -46,13 +46,21 @@ type config struct {
 	Consumer    *kafkaInf.ConsumerConfig `file:"consumer"`
 }
 
+var _ model.Receiver = (*provider)(nil)
+
 // +provider
 type provider struct {
-	Cfg      *config
-	parser   parserName
-	Log      logs.Logger
-	Kafka    kafkaInf.Interface `autowired:"kafka"`
+	Cfg    *config
+	parser parserName
+	Log    logs.Logger
+	Kafka  kafkaInf.Interface `autowired:"kafkago"`
+	cg     *kafkaInf.ConsumerGroupManager
+
 	consumer model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentClose() error {
+	return p.cg.Close()
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -86,16 +94,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("invalide parser: %q", p.parser)
 	}
 
-	err := p.Kafka.NewConsumer(p.Cfg.Consumer, invokeFunc)
+	cg, err := p.Kafka.NewConsumerGroup(p.Cfg.Consumer, invokeFunc)
 	if err != nil {
 		return fmt.Errorf("failed create consumer: %w", err)
-
 	}
+	p.cg = cg
 	return nil
 }
 
 func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
 		return oapspan.ParseOapSpanEvent(value, func(m []*metric.Metric) error {
 			if len(m) > 0 {
 				for i := 0; i < len(m); i++ {
@@ -108,28 +116,25 @@ func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFunc {
 }
 
 func (p *provider) parseOapSpan() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
 		return oapspan.ParseOapSpan(value, func(span *trace.Span) error {
-			p.consumer(span)
-			return nil
+			return p.consumer(span)
 		})
 	}
 }
 
 func (p *provider) parseSpotSpan() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
 		return spotspan.ParseSpotSpan(value, func(span *trace.Span) error {
-			p.consumer(span)
-			return nil
+			return p.consumer(span)
 		})
 	}
 }
 
 func (p *provider) parseSpotMetric() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
 		return spotmetric.ParseSpotMetric(value, func(m *metric.Metric) error {
-			p.consumer(m)
-			return nil
+			return p.consumer(m)
 		})
 	}
 }

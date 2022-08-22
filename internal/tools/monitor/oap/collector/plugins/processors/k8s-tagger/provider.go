@@ -16,6 +16,7 @@ package tagger
 
 import (
 	"context"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -41,6 +42,8 @@ type config struct {
 	Keypass map[string][]string `file:"keypass"`
 }
 
+var _ model.Processor = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg        *config
@@ -49,6 +52,10 @@ type provider struct {
 
 	// cache
 	podCache *pod2.Cache
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {

@@ -62,7 +62,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 	p.storage = ctx.Service(p.Cfg.StorageWriterService).(storage.Storage)
 
-	p.stats = sharedStatistics
+	p.stats = newStatistics()
 
 	// add consumer task
 	for i := 0; i < p.Cfg.Parallelism; i++ {

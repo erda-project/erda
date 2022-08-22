@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"net/http"
 	"time"
 
@@ -53,6 +54,8 @@ type config struct {
 	Compatibility bool `file:"compatibility" default:"true"`
 }
 
+var _ model.Exporter = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg *config
@@ -61,6 +64,10 @@ type provider struct {
 	client *http.Client
 	au     auth.Authenticator
 	cp     compressor.Compressor
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {

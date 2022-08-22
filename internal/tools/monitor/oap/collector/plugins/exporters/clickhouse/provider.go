@@ -17,6 +17,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -40,11 +41,17 @@ type config struct {
 	BuilderCfg *builder.BuilderConfig `file:"builder"`
 }
 
+var _ model.Exporter = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg     *config
 	Log     logs.Logger
 	storage *Storage
+}
+
+func (p *provider) ComponentClose() error {
+	return p.storage.Close()
 }
 
 func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }

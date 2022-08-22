@@ -34,14 +34,16 @@ import (
 )
 
 type Pipeline struct {
-	name       string
-	Log        logs.Logger
-	cfg        config.Pipeline
-	dtype      odata2.DataType
-	receivers  []*model.RuntimeReceiver
-	processors []*model.RuntimeProcessor
-	exporters  []*model.RuntimeExporter
-	rp, pe     chan odata2.ObservableData
+	name                          string
+	Log                           logs.Logger
+	cfg                           config.Pipeline
+	dtype                         odata2.DataType
+	receivers                     []*model.RuntimeReceiver
+	processors                    []*model.RuntimeProcessor
+	exporters                     []*model.RuntimeExporter
+	rp, pe                        chan odata2.ObservableData
+	cancelReceivers               context.CancelFunc
+	waitExporters, waitProcessors sync.WaitGroup
 }
 
 var (
@@ -171,124 +173,102 @@ func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]*model.Runtime
 	return res, nil
 }
 
-func (p *Pipeline) StartStream(ctx context.Context) {
-	go p.StartExporters(ctx, p.pe)
-	go p.startProcessors(ctx, p.rp, p.pe)
-	p.startReceivers(ctx, p.rp)
+func (p *Pipeline) StartStream() {
+	go p.StartExporters(p.pe)
+	go p.startProcessors(p.rp, p.pe)
+	p.startReceivers(p.rp)
 }
 
-func (p *Pipeline) StartExporters(ctx context.Context, out <-chan odata2.ObservableData) {
+func (p *Pipeline) StartExporters(out <-chan odata2.ObservableData) {
+	p.waitExporters.Add(1)
+	defer p.waitExporters.Done()
+
 	for _, e := range p.exporters {
 		go func(exp *model.RuntimeExporter) {
-			go exp.Start(ctx)
+			go exp.Start()
 		}(e)
 	}
 
-	for {
-		select {
-		case data, ok := <-out:
-			if !ok {
-				return
-			}
-			// TODO. fan-out connector
-			var wg sync.WaitGroup
-			wg.Add(len(p.exporters))
-			for _, e := range p.exporters {
-				go func(exp *model.RuntimeExporter, od odata2.ObservableData) {
-					defer wg.Done()
-					dataExported.WithLabelValues(p.name, string(p.dtype), exp.Name).Inc()
-					exp.Add(od)
-				}(e, data)
-			}
-			wg.Wait()
-		case <-ctx.Done():
-			return
+	for data := range out {
+		// TODO. fan-out connector
+		var wg sync.WaitGroup
+		wg.Add(len(p.exporters))
+		for _, e := range p.exporters {
+			go func(exp *model.RuntimeExporter, od odata2.ObservableData) {
+				defer wg.Done()
+				dataExported.WithLabelValues(p.name, string(p.dtype), exp.Name).Inc()
+				exp.Add(od)
+			}(e, data)
 		}
+		wg.Wait()
 	}
 }
 
-func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata2.ObservableData, out chan<- odata2.ObservableData) {
-	for _, r := range p.processors {
-		rp, ok := r.Processor.(model.RunningProcessor)
-		if !ok {
-			continue
-		}
-		// TODO. may not needed
-		rp.StartProcessor(p.newConsumer(ctx, r.Name, out))
-	}
-
-	for {
-	begin:
-		select {
-		case data, ok := <-in:
-			if !ok {
-				return
+func (p *Pipeline) startProcessors(in <-chan odata2.ObservableData, out chan<- odata2.ObservableData) {
+	p.waitProcessors.Add(1)
+	defer p.waitProcessors.Done()
+loop:
+	for data := range in {
+		// TODO. Parallelism
+		for _, pr := range p.processors {
+			if !pr.Filter.Selected(data) {
+				continue
 			}
-			// TODO. Parallelism
-			for _, pr := range p.processors {
-				if !pr.Filter.Selected(data) {
+			dataProcessed.WithLabelValues(p.name, string(p.dtype), pr.Name).Inc()
+			switch p.dtype {
+			case odata2.MetricType:
+				tmp, err := pr.Processor.ProcessMetric(data.(*metric.Metric))
+				if err != nil {
+					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 					continue
 				}
-				dataProcessed.WithLabelValues(p.name, string(p.dtype), pr.Name).Inc()
-				switch p.dtype {
-				case odata2.MetricType:
-					tmp, err := pr.Processor.ProcessMetric(data.(*metric.Metric))
-					if err != nil {
-						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
-						continue
-					}
-					if tmp == nil {
-						goto begin
-					}
-					data = tmp
-				case odata2.LogType:
-					tmp, err := pr.Processor.ProcessLog(data.(*log.Log))
-					if err != nil {
-						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
-						continue
-					}
-					if tmp == nil {
-						goto begin
-					}
-					data = tmp
-				case odata2.SpanType:
-					tmp, err := pr.Processor.ProcessSpan(data.(*trace.Span))
-					if err != nil {
-						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
-						continue
-					}
-					if tmp == nil {
-						goto begin
-					}
-					data = tmp
-				case odata2.RawType:
-					tmp, err := pr.Processor.ProcessRaw(data.(*odata2.Raw))
-					if err != nil {
-						p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
-						continue
-					}
-					if tmp == nil {
-						goto begin
-					}
-					data = tmp
-				default:
+				if tmp == nil {
+					goto loop
+				}
+				data = tmp
+			case odata2.LogType:
+				tmp, err := pr.Processor.ProcessLog(data.(*log.Log))
+				if err != nil {
+					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 					continue
 				}
+				if tmp == nil {
+					goto loop
+				}
+				data = tmp
+			case odata2.SpanType:
+				tmp, err := pr.Processor.ProcessSpan(data.(*trace.Span))
+				if err != nil {
+					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+					continue
+				}
+				if tmp == nil {
+					goto loop
+				}
+				data = tmp
+			case odata2.RawType:
+				tmp, err := pr.Processor.ProcessRaw(data.(*odata2.Raw))
+				if err != nil {
+					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+					continue
+				}
+				if tmp == nil {
+					goto loop
+				}
+				data = tmp
+			default:
+				continue
 			}
-
-			// wait forever
-			select {
-			case out <- data:
-			case <-ctx.Done():
-				return
-			}
-		case <-ctx.Done():
-			return
 		}
+
+		out <- data
 	}
 }
 
-func (p *Pipeline) startReceivers(ctx context.Context, out chan<- odata2.ObservableData) {
+func (p *Pipeline) startReceivers(out chan<- odata2.ObservableData) {
+	ctx, cancel := context.WithCancel(context.Background())
+	p.cancelReceivers = cancel
+
 	for _, r := range p.receivers {
 		r.Receiver.RegisterConsumer(p.newConsumer(ctx, r.Name, out))
 	}
@@ -303,5 +283,34 @@ func (p *Pipeline) newConsumer(pctx context.Context, name string, out chan<- oda
 			return nil
 		}
 		return nil
+	}
+}
+
+func (p *Pipeline) Close() {
+	for _, item := range p.receivers {
+		err := item.Close()
+		if err != nil {
+			p.Log.Errorf("close receiver<%s>: %s", item.Name, err)
+		}
+	}
+	// stop receive, wait for exit
+	p.cancelReceivers()
+	close(p.rp)
+
+	p.waitProcessors.Wait()
+	for _, item := range p.processors {
+		err := item.Close()
+		if err != nil {
+			p.Log.Errorf("close processor<%s>: %s", item.Name, err)
+		}
+	}
+	close(p.pe)
+
+	p.waitExporters.Wait()
+	for _, item := range p.exporters {
+		err := item.Close()
+		if err != nil {
+			p.Log.Errorf("close exporter<%s>: %s", item.Name, err)
+		}
 	}
 }

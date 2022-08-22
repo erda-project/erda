@@ -18,6 +18,7 @@ type ComponentID string
 
 type Component interface {
 	ComponentConfig() interface{}
+	ComponentClose() error
 }
 
 type ComponentUnit struct {

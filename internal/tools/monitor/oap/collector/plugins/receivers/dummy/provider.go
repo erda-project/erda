@@ -38,12 +38,20 @@ type config struct {
 	Rate         time.Duration `file:"rate" default:"10s"`
 }
 
+var _ model.Receiver = (*provider)(nil)
+
 // +provider
 type provider struct {
-	Cfg *config
-	Log logs.Logger
+	Cfg    *config
+	Log    logs.Logger
+	cancel context.CancelFunc
 
 	consumerFunc model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentClose() error {
+	p.cancel()
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -55,11 +63,9 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 }
 
 // Run this is optional
-func (p *provider) Init(ctx servicehub.Context) error {
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
+func (p *provider) Init(_ servicehub.Context) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	p.cancel = cancel
 	if p.Cfg.MetricSample != "" {
 		go p.dummyMetrics(ctx)
 	}
