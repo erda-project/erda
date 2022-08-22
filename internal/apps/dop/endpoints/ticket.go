@@ -136,7 +136,7 @@ func (e *Endpoints) DeleteTicket(ctx context.Context, r *http.Request, vars map[
 	ticketType := r.URL.Query().Get("ticketType")
 	targetType := r.URL.Query().Get("targetType")
 
-	if err := e.ticket.Delete(ticketID, targetType, ticketType); err != nil {
+	if err := e.ticket.Delete(ticketID, apistructs.TicketTarget(targetType), convert2TicketType(ticketType)); err != nil {
 		return apierrors.ErrDeleteTicket.InternalError(err).ToResp(), nil
 	}
 

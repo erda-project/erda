@@ -464,3 +464,11 @@ func (i *IRComment) Scan(value interface{}) error {
 	}
 	return nil
 }
+
+func (t TicketType) String() string {
+	return string(t)
+}
+
+func (t TicketTarget) String() string {
+	return string(t)
+}

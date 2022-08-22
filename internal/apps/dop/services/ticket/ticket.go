@@ -621,6 +621,6 @@ func (t *Ticket) getDingTalkURL(req *apistructs.TicketCreateRequest) (string, er
 }
 
 // Delete 删除工单
-func (t *Ticket) Delete(targetID, targetType, ticketType string) error {
-	return t.db.DeleteTicket(targetID, targetType, ticketType)
+func (t *Ticket) Delete(targetID string, targetType apistructs.TicketTarget, ticketType apistructs.TicketType) error {
+	return t.db.DeleteTicket(targetID, targetType.String(), ticketType.String())
 }
