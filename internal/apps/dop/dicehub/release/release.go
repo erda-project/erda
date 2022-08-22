@@ -905,51 +905,12 @@ func (s *ReleaseService) CreateByFile(req *pb.ReleaseUploadRequest, file io.Read
 }
 
 func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.ReadCloser) (*db.Release, []db.Release, error) {
-	var metadata apistructs.ReleaseMetadata
-	dices := make(map[string]string)
-	buf := bytes.Buffer{}
-	if _, err := io.Copy(&buf, file); err != nil {
-		return nil, nil, err
-	}
-	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	metadata, dices, err := ParseMetaFromReadCloser(file)
 	if err != nil {
 		return nil, nil, err
 	}
-	hasMetadata := false
-	for _, f := range zr.File {
-		rc, err := f.Open()
-		if err != nil {
-			return nil, nil, err
-		}
-		buf := bytes.Buffer{}
-		if _, err = io.Copy(&buf, rc); err != nil {
-			return nil, nil, err
-		}
 
-		splits := strings.Split(f.Name, "/")
-		if len(splits) == 2 && splits[1] == "metadata.yml" {
-			hasMetadata = true
-			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
-				return nil, nil, err
-			}
-		} else if len(splits) == 4 && splits[3] == "dice.yml" {
-			appName := splits[2]
-			dices[appName] = buf.String()
-		}
-
-		if err := rc.Close(); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	if !hasMetadata {
-		return nil, nil, errors.New("invalid file, metadata.yml not found")
-	}
-	if len(dices) == 0 {
-		return nil, nil, errors.Errorf("invalid file, dice.yml not found")
-	}
-
-	projectReleaseID := uuid.UUID()
+	projectReleaseID := uuid.New()
 
 	var names []string
 	for appName := range dices {
@@ -963,9 +924,13 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 
 	now := time.Now()
 
-	var appReleases []db.Release
-	appVersion2ID := make(map[string]string)
-	modes := make(map[string]apistructs.ReleaseDeployMode)
+	var (
+		appReleases []db.Release
+		// cache application name to application id, if release already imported, query from cache
+		cacheAppVersion2ID = make(map[string]string)
+		modes              = make(map[string]apistructs.ReleaseDeployMode)
+	)
+
 	for name := range metadata.Modes {
 		appReleaseList := make([][]string, len(metadata.Modes[name].AppList))
 		for i := 0; i < len(metadata.Modes[name].AppList); i++ {
@@ -976,12 +941,11 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 				if version == "" {
 					return nil, nil, errors.New("version can not be empty")
 				}
-				if id, ok := appVersion2ID[appName+"_"+version]; ok {
+
+				if id, ok := cacheAppVersion2ID[fmt.Sprintf("%s_%s", appName, version)]; ok {
 					appReleaseList[i][j] = id
 					continue
 				}
-				id := uuid.UUID()
-				appVersion2ID[appName+"_"+version] = id
 
 				gitBranch := metadata.Modes[name].AppList[i][j].GitBranch
 				gitCommitID := metadata.Modes[name].AppList[i][j].GitCommitID
@@ -997,6 +961,7 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 				if err != nil {
 					return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
 				}
+
 				if len(existedReleases) > 0 {
 					var oldDice *diceyml.DiceYaml
 					if len(existedReleases[0].Dice) != 0 {
@@ -1017,8 +982,12 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 							version, existedReleases[0].ReleaseID, oldDice.Obj(), newDice.Obj())
 					}
 					appReleaseList[i][j] = existedReleases[0].ReleaseID
+					cacheAppVersion2ID[fmt.Sprintf("%s_%s", appName, version)] = existedReleases[0].ReleaseID
 					continue
 				}
+
+				// if release not existed, generate new release id
+				id := uuid.New()
 
 				labels := map[string]string{
 					"gitBranch":        gitBranch,
@@ -1224,4 +1193,56 @@ func convertPbModesToModes(pbModes map[string]*pb.Mode) map[string]apistructs.Re
 		}
 	}
 	return modes
+}
+
+func ParseMetaFromReadCloser(file io.ReadCloser) (*apistructs.ReleaseMetadata, map[string]string, error) {
+	var (
+		hasMetadata bool
+		metadata    apistructs.ReleaseMetadata
+		dices       = make(map[string]string)
+	)
+
+	fileBuffer := bytes.Buffer{}
+	if _, err := io.Copy(&fileBuffer, file); err != nil {
+		return nil, nil, err
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(fileBuffer.Bytes()), int64(fileBuffer.Len()))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, f := range zr.File {
+		rc, err := f.Open()
+		if err != nil {
+			return nil, nil, err
+		}
+		buf := bytes.Buffer{}
+		if _, err = io.Copy(&buf, rc); err != nil {
+			return nil, nil, err
+		}
+
+		splits := strings.Split(f.Name, "/")
+		if len(splits) == 2 && splits[1] == "metadata.yml" {
+			hasMetadata = true
+			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
+				return nil, nil, err
+			}
+		} else if len(splits) == 4 && splits[3] == "dice.yml" {
+			appName := splits[2]
+			dices[appName] = buf.String()
+		}
+
+		if err := rc.Close(); err != nil {
+			return nil, nil, err
+		}
+	}
+	if !hasMetadata {
+		return nil, nil, errors.New("invalid file, metadata.yml not found")
+	}
+	if len(dices) == 0 {
+		return nil, nil, errors.Errorf("invalid file, dice.yml not found")
+	}
+
+	return &metadata, dices, nil
 }

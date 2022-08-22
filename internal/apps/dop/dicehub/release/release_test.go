@@ -16,13 +16,19 @@ package release
 
 import (
 	"encoding/json"
+	"io"
 	"os"
+	"reflect"
 	"sort"
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
+	"github.com/DATA-DOG/go-sqlmock"
+
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/release/db"
 )
 
@@ -359,5 +365,145 @@ func TestHasLoopDependence(t *testing.T) {
 	}
 	if hasLoopDependence(modes) {
 		t.Errorf("expected: no dependence, actual has")
+	}
+}
+
+func Test_parseMetaFromReadCloser(t *testing.T) {
+	file, err := os.Open("./release_test_data.zip")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	_, _, err = ParseMetaFromReadCloser(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_parseReleaseFile(t *testing.T) {
+	// init db mock
+	gormDB, mock, err := db.InitMysqlMock()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bdl := bundle.New()
+	rs := ReleaseService{
+		bdl: bdl,
+		db: &db.ReleaseConfigDB{
+			DB: gormDB,
+		},
+	}
+
+	appDemoDice := `
+envs: {}
+jobs: {}
+services:
+  app-demo:
+    deployments:
+      replicas: 1
+    image: registry.inner/erda-erda/app-demo:1660034920509725590
+    ports:
+    - expose: true
+      port: 80
+    resources:
+      cpu: 0.2
+      mem: 20
+version: "2.0"
+`
+	appDemo2Dice := `
+envs: {}
+jobs: {}
+services:
+  app-demo-2:
+    deployments:
+      replicas: 1
+    image: registry.inner/erda-erda/app-demo-2:1660034920509725590
+    ports:
+    - expose: true
+      port: 80
+    resources:
+      cpu: 0.2
+      mem: 20
+version: "2.0"
+`
+
+	mock.ExpectQuery("SELECT").WithArgs(1, 1, 1, "1.0.0+20220809164508").WillReturnRows(sqlmock.NewRows([]string{"release_id", "dice"}).
+		AddRow("eb028675-b8d8-4039-874c-4099e7c9170b", appDemoDice)).RowsWillBeClosed()
+	mock.ExpectQuery("SELECT").WithArgs(1, 1, 2, "1.0.4+20220809164918").WillReturnRows(sqlmock.NewRows([]string{"release_id", "dice"}).
+		AddRow("e2f88618-6135-4c6e-b9b1-37cd0900e4ad", appDemo2Dice)).RowsWillBeClosed()
+
+	defer monkey.UnpatchAll()
+	monkey.Patch(ParseMetaFromReadCloser, func(io.ReadCloser) (*apistructs.ReleaseMetadata, map[string]string, error) {
+		return &apistructs.ReleaseMetadata{
+				ApiVersion: "v1",
+				Author:     "erda",
+				Source: apistructs.ReleaseSource{
+					Org:     "erda",
+					Project: "erda",
+					URL:     "https://erda.io/dop/projects/1",
+				},
+				Version:   "1.0.0",
+				ChangeLog: "release: 1.0.0",
+				Modes: map[string]apistructs.ReleaseModeMetadata{
+					"modeA": {
+						Expose: true,
+						AppList: [][]apistructs.AppMetadata{{
+							{
+								AppName:          "app-demo",
+								GitBranch:        "release/1.0.0",
+								GitCommitID:      "60eb5799596db6e8b7564b389baf9803d6c36bb4",
+								GitCommitMessage: "remove 1 file",
+								GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-demo",
+								Version:          "1.0.0+20220809164508",
+							},
+							{
+								AppName:          "app-demo-2",
+								GitBranch:        "release/1.0.4",
+								GitCommitID:      "0266863d8c3840aac4df14ee37e1d8dc7fc44188",
+								GitCommitMessage: "init project",
+								GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-admin-demo",
+								Version:          "1.0.4+20220809164918",
+							},
+						}},
+					},
+					"quickstart": {
+						Expose: true,
+						AppList: [][]apistructs.AppMetadata{{
+							{
+								AppName:          "app-demo",
+								GitBranch:        "release/1.0.0",
+								GitCommitID:      "60eb5799596db6e8b7564b389baf9803d6c36bb4",
+								GitCommitMessage: "remove 1 file",
+								GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-demo",
+								Version:          "1.0.0+20220809164508",
+							},
+						}},
+					},
+				},
+			}, map[string]string{
+				"app-demo":   appDemoDice,
+				"app-demo-2": appDemo2Dice,
+			}, nil
+	},
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppIDByNames", func(*bundle.Bundle, uint64, string,
+		[]string) (*apistructs.GetAppIDByNamesResponseData, error) {
+		return &apistructs.GetAppIDByNamesResponseData{
+			AppNameToID: map[string]int64{
+				"app-demo":   1,
+				"app-demo-2": 2,
+			},
+		}, nil
+	})
+
+	_, _, err = rs.parseReleaseFile(&pb.ReleaseUploadRequest{
+		ProjectID: 1,
+		OrgID:     1,
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
