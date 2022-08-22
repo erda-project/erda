@@ -682,7 +682,7 @@ func (e *Endpoints) dealTickets(so *apistructs.SonarStoreRequest, issueType stri
 	// }
 
 	//logrus.Infof("close resolved ticket, issues: %+v", nl)
-	err = e.ticket.Delete(strconv.FormatInt(so.ApplicationID, 10), string(convert2TicketType(issueType)), "application")
+	err = e.ticket.Delete(strconv.FormatInt(so.ApplicationID, 10), apistructs.TicketApp, convert2TicketType(issueType))
 	e.createTicket(tmpIssue, so, issueType)
 
 	return err
