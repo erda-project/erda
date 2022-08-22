@@ -105,7 +105,8 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 		}
 		deployList, err = d.renderDeployListWithCrossProject(req.Modes, req.ProjectId, req.Operator, releaseData)
 		if err != nil {
-			return nil, errors.Errorf("failed to render deploy list with cross project, err: %v", err)
+			logrus.Errorf("failed to render deploy list with cross project, err: %v", err)
+			return nil, err
 		}
 		appsInfo = d.parseAppsInfoWithDeployList(deployList)
 	case apistructs.TypeApplicationRelease:
@@ -727,6 +728,28 @@ func (d *DeploymentOrder) getWorkspaceFromBranch(projectId uint64, branch string
 func (d *DeploymentOrder) renderDeployListWithCrossProject(selectedModes []string, projectId uint64, userId string,
 	releaseResp *pb.ReleaseGetResponseData) ([][]*pb.ApplicationReleaseSummary, error) {
 	deployList := renderDeployList(selectedModes, releaseResp.Modes)
+
+	// check duplicated release
+	var (
+		registered = make(map[string]bool)
+		repeatedLi = make([]string, 0)
+	)
+
+	for _, summaries := range deployList {
+		for _, summary := range summaries {
+			if _, ok := registered[summary.ApplicationName]; !ok {
+				registered[summary.ApplicationName] = true
+				continue
+			}
+			// repeated
+			repeatedLi = append(repeatedLi, summary.ApplicationName)
+		}
+	}
+
+	if len(repeatedLi) != 0 {
+		return nil, fmt.Errorf("applications %s repeated", strings.Join(repeatedLi, ", "))
+	}
+
 	// non-cross project
 	if int64(projectId) == releaseResp.ProjectID {
 		return deployList, nil

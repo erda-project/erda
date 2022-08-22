@@ -489,3 +489,68 @@ func TestRenderDeployList(t *testing.T) {
 		}
 	}
 }
+
+func Test_renderDeployListWithCrossProject(t *testing.T) {
+	order := New()
+
+	type args struct {
+		selectedModes []string
+		releaseResp   *pb.ReleaseGetResponseData
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    [][]*pb.ApplicationReleaseSummary
+		wantErr bool
+	}{
+		{
+			name: "application repeated",
+			args: args{
+				selectedModes: []string{"A", "A2"},
+				releaseResp: &pb.ReleaseGetResponseData{
+					Modes: map[string]*pb.ModeSummary{
+						"A": {
+							DependOn: []string{},
+							ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+								{List: []*pb.ApplicationReleaseSummary{
+									{ApplicationName: "A11", ReleaseID: "A11"},
+									{ApplicationName: "A12", ReleaseID: "A12"},
+								}},
+								{List: []*pb.ApplicationReleaseSummary{
+									{ApplicationName: "A21", ReleaseID: "A21"},
+									{ApplicationName: "A22", ReleaseID: "A22"},
+								}},
+							},
+						},
+						"A2": {
+							DependOn: []string{},
+							ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+								{List: []*pb.ApplicationReleaseSummary{
+									{ApplicationName: "A11", ReleaseID: "A11"},
+								}},
+								{List: []*pb.ApplicationReleaseSummary{
+									{ApplicationName: "A21", ReleaseID: "A21"},
+								}},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := order.renderDeployListWithCrossProject(tt.args.selectedModes, 1, "1", tt.args.releaseResp)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("renderDeployListWithCrossProject() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("renderDeployListWithCrossProject() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
