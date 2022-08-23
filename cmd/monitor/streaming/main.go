@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/trace/persist"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/trace/storage/cassandra_v1"
