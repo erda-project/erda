@@ -177,6 +177,14 @@ cassandra:
   password: ${CASSANDRA_SECURITY_PASSWORD}
   timeout: "${CASSANDRA_TIMEOUT:3s}"
 
+grpc-client@erda.core.org:
+  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.org-client:
+  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
+erda.core.org:
+  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
+
 log-persist-v1:
   _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
   input:
