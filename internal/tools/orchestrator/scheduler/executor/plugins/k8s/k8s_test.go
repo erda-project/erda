@@ -40,7 +40,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/job"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/nodelabel"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolume"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/pod"
@@ -369,7 +368,6 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 		secret                     *secret.Secret
 		storageClass               *storageclass.StorageClass
 		sa                         *serviceaccount.ServiceAccount
-		nodeLabel                  *nodelabel.NodeLabel
 		ClusterInfo                *clusterinfo.ClusterInfo
 		resourceInfo               *resourceinfo.ResourceInfo
 		event                      *event.Event
@@ -436,7 +434,6 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 				secret:                     tt.fields.secret,
 				storageClass:               tt.fields.storageClass,
 				sa:                         tt.fields.sa,
-				nodeLabel:                  tt.fields.nodeLabel,
 				ClusterInfo:                tt.fields.ClusterInfo,
 				resourceInfo:               tt.fields.resourceInfo,
 				event:                      tt.fields.event,
