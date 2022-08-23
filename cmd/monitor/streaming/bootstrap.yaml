@@ -281,11 +281,13 @@ elasticsearch:
   password: "${ES_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@metric:
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
   templates:
     - name: "spot_metric_template"
       path: "conf/metric_index_template.json"
 
 elasticsearch.index.loader@metric:
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -302,6 +304,7 @@ elasticsearch.index.loader@metric:
         - "<metric>-<namespace>"
 
 elasticsearch.index.creator@metric:
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
   patterns:
     - first_index: "spot-<metric>-<namespace>-r-000001"
       alias: "spot-<metric>-<namespace>-rollover"
@@ -313,6 +316,7 @@ elasticsearch.index.creator@metric:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@metric:
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
   check_interval: "30m"
   body_file: "conf/index_rollover.json"
   patterns:
@@ -326,12 +330,14 @@ storage-retention-strategy@metric:
   ttl_reload_interval: "3m"
 
 metric-storage-elasticsearch:
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
   read_timeout: "1m"
   write_timeout: "1m"
   index_type: "spot"
   dummy_index: "spot-empty"
 
 metric-persist:
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
   input:
     topics: "${METRIC_TOPICS:spot-metrics,erda-trace-metrics}"
     group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
