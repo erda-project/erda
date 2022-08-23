@@ -1,42 +1,47 @@
 version: "1.1"
-
-#on:
-#  push:
-#    branches:
-#      - release/*
-#    tags:
-#      - v*
-
+name: ""
 stages:
   - stage:
       - git-checkout:
-          alias: erda
+          alias: raw-erda
+          description: 代码仓库克隆
           params:
             depth: 1
       - git-checkout:
           alias: erda-actions
+          description: 代码仓库克隆
           params:
-            uri: https://erda.cloud/erda/dop/erda-project/erda-actions-mirror
             branch: master
+            depth: 1
+            uri: https://erda.cloud/erda/dop/erda-project/erda-actions-mirror
       - git-checkout:
           alias: erda-addons
+          description: 代码仓库克隆
           params:
-            uri: https://erda.cloud/erda/dop/erda-project/erda-addons-mirror
             branch: master
+            depth: 1
+            uri: https://erda.cloud/erda/dop/erda-project/erda-addons-mirror
   - stage:
       - custom-script:
           alias: erda
+          description: 运行自定义命令
           image: registry.erda.cloud/erda/gohub:1.0.7
           commands:
             - cp -a ${{ dirs.raw-erda }}/. .
             - make proto-go-in-local
+          resources:
+            cpu: 0.5
+            mem: 2048
   - stage:
       - extract-repo-version:
+          alias: extract-repo-version
+          description: 从 git 代码仓库中解析提交信息，生成仓库版本
           params:
             git_dir: ${{ dirs.erda }}
   - stage:
       - custom-script:
           alias: build-erda
+          description: 运行自定义命令
           image: registry.erda.cloud/erda/erda-base:20220726
           commands:
             - cd ${{ dirs.erda }}
@@ -54,10 +59,11 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
       - custom-script:
-          alias: build-agent
+          alias: build-cluster-agent
+          description: 运行自定义命令
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -70,28 +76,5 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 2
+            cpu: 1
             mem: 2048
-  - stage:
-      - release:
-          alias: release-erda
-          params:
-            check_diceyml: false
-            cross_cluster: "true"
-            dice_yml: ${{ dirs.erda }}/erda.yml
-            image:
-              erda-server: ${{ outputs.build-erda.image }}
-              cluster-agent: ${{ outputs.build-agent.image }}
-              cluster-manager: ${{ outputs.build-erda.image }}
-              cmp: ${{ outputs.build-erda.image }}
-              collector: ${{ outputs.build-erda.image }}
-              gittar: ${{ outputs.build-erda.image }}
-              hepa: ${{ outputs.build-erda.image }}
-              log-service: ${{ outputs.build-erda.image }}
-              monitor: ${{ outputs.build-erda.image }}
-              msp: ${{ outputs.build-erda.image }}
-              orchestrator: ${{ outputs.build-erda.image }}
-              pipeline: ${{ outputs.build-erda.image }}
-              streaming: ${{ outputs.build-erda.image }}
-            migration_type: erda
-            migration_dir: ${{ dirs.erda }}/.erda/migrations
