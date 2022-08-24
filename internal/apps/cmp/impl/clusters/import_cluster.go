@@ -747,8 +747,8 @@ func convertSchedConfigToPbSchedConfig(in *apistructs.ClusterSchedConfig) *clust
 		LogicalRegionID:          in.LogicalRegionID,
 		K8SAddr:                  in.K8sAddr,
 		RegAddr:                  in.RegAddr,
-		CpuSubscribeRatio:        in.DevCPUSubscribeRatio,
-		DevCPUSubscribeRatio:     in.CPUSubscribeRatio,
+		CpuSubscribeRatio:        in.CPUSubscribeRatio,
+		DevCPUSubscribeRatio:     in.DevCPUSubscribeRatio,
 		TestCPUSubscribeRatio:    in.TestCPUSubscribeRatio,
 		StagingCPUSubscribeRatio: in.StagingCPUSubscribeRatio,
 	}
