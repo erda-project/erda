@@ -25,8 +25,8 @@ import (
 
 func Test_QueryAlertHistory_BothFail_Should_Return_Error(t *testing.T) {
 	a := &Adapt{}
-	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromES)
-	monkey.Patch((*Adapt).queryAlertHistoryFromES, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+	defer monkey.Unpatch((*Adapt).queryAlertHistory)
+	monkey.Patch((*Adapt).queryAlertHistory, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 		return nil, fmt.Errorf("booooo!")
 	})
 	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromCassandra)
@@ -42,8 +42,8 @@ func Test_QueryAlertHistory_BothFail_Should_Return_Error(t *testing.T) {
 
 func Test_QueryAlertHistory_WithBothSuccess_Should_Return_NoneEmpty(t *testing.T) {
 	a := &Adapt{}
-	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromES)
-	monkey.Patch((*Adapt).queryAlertHistoryFromES, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+	defer monkey.Unpatch((*Adapt).queryAlertHistory)
+	monkey.Patch((*Adapt).queryAlertHistory, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 		return []*pb.AlertHistory{
 			{
 				Timestamp: 4,
@@ -95,8 +95,8 @@ func Test_QueryAlertHistory_WithBothSuccess_Should_Return_NoneEmpty(t *testing.T
 
 func Test_QueryAlertHistory_WithEnoughFromES_Should_Skip_Call_Cassandra(t *testing.T) {
 	a := &Adapt{}
-	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromES)
-	monkey.Patch((*Adapt).queryAlertHistoryFromES, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+	defer monkey.Unpatch((*Adapt).queryAlertHistory)
+	monkey.Patch((*Adapt).queryAlertHistory, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 		return []*pb.AlertHistory{
 			{
 				Timestamp: 4,
@@ -142,8 +142,8 @@ func Test_QueryAlertHistory_WithEnoughFromES_Should_Skip_Call_Cassandra(t *testi
 
 func Test_QueryAlertHistory_WithFailedFromES_Should_Skip_Call_Merge(t *testing.T) {
 	a := &Adapt{}
-	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromES)
-	monkey.Patch((*Adapt).queryAlertHistoryFromES, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+	defer monkey.Unpatch((*Adapt).queryAlertHistory)
+	monkey.Patch((*Adapt).queryAlertHistory, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 		return nil, fmt.Errorf("boooo!")
 	})
 	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromCassandra)

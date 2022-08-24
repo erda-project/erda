@@ -120,7 +120,7 @@ func getUnixMillisecond(ts int64) int64 {
 
 func init() {
 	servicehub.Register("event-storage-elasticsearch", &servicehub.Spec{
-		Services:     []string{"event-storage-elasticsearch-reader", "event-storage-writer"},
+		Services:     []string{"event-storage-elasticsearch-reader", "event-storage-elasticsearch-writer"},
 		Dependencies: []string{"elasticsearch"},
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },

@@ -254,7 +254,7 @@ elasticsearch.index.rollover@event:
       alias: "erda-events-<event>-<namespace>.<key>-rollover"
 
 storage-retention-strategy@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE|WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   load_from_database: false
   ttl_reload_interval: "3m"
 
@@ -264,7 +264,7 @@ event-storage-elasticsearch:
   index_type: "events"
 
 event-persist:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE|WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   input:
     topics: "${EVENT_TOPICS:spot-events}"
     group: "${EVENT_GROUP_ID:spot-monitor-event-dev}"
@@ -272,6 +272,7 @@ event-persist:
   buffer_size: ${EVENT_BATCH_SIZE:200}
   parallelism: ${EVENT_PERSIST_PARALLELISM:3}
   print_invalid_event: false
+  storage_writer_service: ${EVENT_STORAGE_WRITER_SERVICE:event-storage-elasticsearch-writer}
 
 # elasticsearch for metric
 elasticsearch:
@@ -669,6 +670,39 @@ clickhouse.table.loader@metric:
   default_search_table: "metrics_all"
   cache_key_prefix: "clickhouse-table-metric"
 # --- metric to clickhouse block ---
+
+# --- event to clickhouse block ---
+clickhouse.table.initializer@event:
+  _enable: ${CLICKHOUSE_ENABLE:false}
+  table_prefix: "logs"
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  default_ddl_files:
+    - path: "conf/clickhouse/events_ddl_create_db.sql"
+      ignore_err: "false"
+    - path: "conf/clickhouse/events_ddl_create_default_tables.sql"
+      ignore_err: "false"
+  tenant_ddl_files:
+    - path: "conf/clickhouse/events_ddl_create_tenant_tables.sql"
+      ignore_err: "true"
+
+clickhouse.table.creator@event:
+  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:false}
+  ddl_template: "conf/clickhouse/events_ddl_create_tenant_tables.sql"
+  default_write_table: "events"
+  table_prefix: "events"
+
+clickhouse.table.loader@event:
+  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:false}
+  load_mode: ${QUERY_EVENT_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
+  table_prefix: "events"
+  default_search_table: "events_all"
+  cache_key_prefix: "clickhouse-table-event"
+
+event-storage-clickhouse:
+  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:false}
+  query_timeout: 1m
+
+# --- event to clickhouse block ---
 
 i18n@metric:
 

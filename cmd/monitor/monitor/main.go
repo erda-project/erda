@@ -42,6 +42,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/query"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/storage/clickhouse"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/expression"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/log/query"

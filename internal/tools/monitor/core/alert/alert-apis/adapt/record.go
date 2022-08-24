@@ -211,10 +211,10 @@ func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start
 		return nil, err
 	}
 
-	respFromES, err1 := a.queryAlertHistoryFromES(groupID, start, end, limit)
+	resp, err1 := a.queryAlertHistory(groupID, start, end, limit)
 	// if got enough data from es, no need do further call to cassandra
-	if err1 == nil && len(respFromES) >= int(limit) {
-		return respFromES, nil
+	if err1 == nil && len(resp) >= int(limit) {
+		return resp, nil
 	}
 	respFromCassandra, err2 := a.queryAlertHistoryFromCassandra(groupID, start, end, limit)
 
@@ -226,7 +226,7 @@ func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start
 		return respFromCassandra, nil
 	}
 
-	list := a.mergeAlertHistories(limit, respFromES, respFromCassandra)
+	list := a.mergeAlertHistories(limit, resp, respFromCassandra)
 	return list, nil
 }
 
@@ -283,7 +283,7 @@ func (a *Adapt) queryAlertHistoryFromCassandra(groupID string, start, end int64,
 	return result, nil
 }
 
-func (a *Adapt) queryAlertHistoryFromES(groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+func (a *Adapt) queryAlertHistory(groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 	if a.eventStorage == nil {
 		return nil, nil
 	}

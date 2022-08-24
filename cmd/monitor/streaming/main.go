@@ -33,6 +33,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/persist"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/storage/clickhouse"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/log/persist"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/log/persist/v1"
