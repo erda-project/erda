@@ -1620,7 +1620,7 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 					}
 
 					node := columnsParser(targetNodeType.Type, targetNode)
-					node.TypeDisplay = topology.t.Text(lang, strings.ToLower(node.Type))
+					topology.translateNode(lang, node)
 					if targetNodeType.Type == TargetOtherNode && node.Type == TypeInternal {
 						continue
 					}
@@ -1680,6 +1680,7 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 							}
 
 							sourceNode := columnsParser(nodeType.Type, sourceNodeInfo)
+							topology.translateNode(lang, sourceNode)
 							if !topology.isExistTopologyNode(sourceNode, topologyNodes) {
 								*topologyNodes = append(*topologyNodes, sourceNode)
 								sourceNode.Parents = []*Node{}
@@ -1704,6 +1705,10 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 		}
 		node.Metric.RPS = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.Count)/float64(timeRange), 2)
 	}
+}
+
+func (topology *provider) translateNode(lang i18n.LanguageCodes, node *Node) {
+	node.TypeDisplay = topology.t.Text(lang, strings.ToLower(node.Type))
 }
 
 func metricParser(targetNodeType *NodeType, target elastic.Aggregations) *Metric {
