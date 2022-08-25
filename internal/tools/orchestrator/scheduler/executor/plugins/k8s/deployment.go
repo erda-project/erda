@@ -25,10 +25,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
@@ -60,7 +61,11 @@ const (
 	ECIPodFluentbitSidecarConfigFileEnvValue = "/fluent-bit/etc/eci/fluent-bit.conf"
 )
 
-var ECIPodSidecarENVFromScheduler = []string{"ECI_POD_FLUENTBIT_COLLECTOR_ADDR", "COLLECTOR_SIDECAR_IMAGE", "ECI_POD_FLUENTBIT_CONFIG_FILE"}
+var ECIPodSidecarENVFromScheduler = []string{
+	"ECI_POD_FLUENTBIT_COLLECTOR_ADDR",
+	"COLLECTOR_SIDECAR_IMAGE",
+	"ECI_POD_FLUENTBIT_CONFIG_FILE",
+}
 
 func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	deployment, err := k.newDeployment(service, sg)
@@ -75,7 +80,7 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
 		return nil
 	}
-	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
+	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
@@ -159,7 +164,7 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
 		return nil
 	}
-	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
+	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
@@ -193,7 +198,7 @@ func (k *Kubernetes) deleteDeployment(namespace, name string) error {
 }
 
 // SetPodAnnotationsBaseContainerEnvs Add container environment variables
-func SetPodAnnotationsBaseContainerEnvs(container apiv1.Container, podAnnotations map[string]string) {
+func SetPodAnnotationsBaseContainerEnvs(container corev1.Container, podAnnotations map[string]string) {
 	if podAnnotations == nil {
 		podAnnotations = make(map[string]string)
 	}
@@ -206,8 +211,8 @@ func SetPodAnnotationsBaseContainerEnvs(container apiv1.Container, podAnnotation
 }
 
 // AddContainersEnv Add container environment variables
-func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
-	var envs []apiv1.EnvVar
+func (k *Kubernetes) AddContainersEnv(containers []corev1.Container, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
+	var envs []corev1.EnvVar
 	ns := MakeNamespace(sg)
 	serviceName := service.Name
 	if sg.ProjectNamespace != "" {
@@ -218,14 +223,14 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	// User-injected environment variables
 	if len(service.Env) > 0 {
 		for k, v := range service.Env {
-			envs = append(envs, apiv1.EnvVar{
+			envs = append(envs, corev1.EnvVar{
 				Name:  k,
 				Value: v,
 			})
 		}
 	}
 
-	addEnv := func(svc *apistructs.Service, envs *[]apiv1.EnvVar, useClusterIP bool) error {
+	addEnv := func(svc *apistructs.Service, envs *[]corev1.EnvVar, useClusterIP bool) error {
 		var err error
 		// use SHORT dns, service's name is equal to SHORT dns
 		svcName := svc.Name
@@ -240,14 +245,14 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 			}
 		}
 		// add {serviceName}_HOST
-		*envs = append(*envs, apiv1.EnvVar{
+		*envs = append(*envs, corev1.EnvVar{
 			Name:  makeEnvVariableName(svc.Name) + "_HOST",
 			Value: host,
 		})
 
 		// {serviceName}_PORT Refers to the first port
 		if len(svc.Ports) > 0 {
-			*envs = append(*envs, apiv1.EnvVar{
+			*envs = append(*envs, corev1.EnvVar{
 				Name:  makeEnvVariableName(svc.Name) + "_PORT",
 				Value: strconv.Itoa(svc.Ports[0].Port),
 			})
@@ -255,7 +260,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 
 		//If there are multiple ports, use them in sequence: {serviceName}_PORT0,{serviceName}_PORT1,...
 		for i, port := range svc.Ports {
-			*envs = append(*envs, apiv1.EnvVar{
+			*envs = append(*envs, corev1.EnvVar{
 				Name:  makeEnvVariableName(svc.Name) + "_PORT" + strconv.Itoa(i),
 				Value: strconv.Itoa(port.Port),
 			})
@@ -281,7 +286,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	} else {
 		//Inject the environment variables of dependent services according to the convention, for example, service A depends on service B,
 		//Then inject {B}_HOST, {B}_PORT into the container environment variable visible to A
-		var backendURLEnv apiv1.EnvVar
+		var backendURLEnv corev1.EnvVar
 		for _, name := range service.Depends {
 			var dependSvc *apistructs.Service
 			for _, svc := range sg.Services {
@@ -310,7 +315,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 			if service.Labels["IS_ENDPOINT"] == "true" && len(dependSvc.Ports) > 0 {
 				backendIP := strings.Join([]string{getServiceName(dependSvc), dependSvc.Namespace, DefaultServiceDNSSuffix}, ".")
 				backendPort := dependSvc.Ports[0].Port
-				backendURLEnv = apiv1.EnvVar{
+				backendURLEnv = corev1.EnvVar{
 					Name:  "BACKEND_URL",
 					Value: backendIP + ":" + strconv.Itoa(backendPort),
 				}
@@ -337,42 +342,42 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	}
 
 	// add K8S label
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name:  "IS_K8S",
 		Value: "true",
 	})
 
 	// add root domain
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name:  "DICE_ROOT_DOMAIN",
 		Value: clusterInfo["DICE_ROOT_DOMAIN"],
 	})
 
 	// add namespace label
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name:  "DICE_NAMESPACE",
 		Value: ns,
 	})
 
 	if service.NewHealthCheck != nil && service.NewHealthCheck.HttpHealthCheck != nil {
-		envs = append(envs, apiv1.EnvVar{
+		envs = append(envs, corev1.EnvVar{
 			Name:  "DICE_HTTP_HEALTHCHECK_PATH",
 			Value: service.NewHealthCheck.HttpHealthCheck.Path,
 		})
 	}
 	// add POD_IP, HOST_IP
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name: "POD_IP",
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
 				APIVersion: "v1",
 				FieldPath:  "status.podIP",
 			},
 		},
-	}, apiv1.EnvVar{
+	}, corev1.EnvVar{
 		Name: "HOST_IP",
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
 				APIVersion: "v1",
 				FieldPath:  "status.hostIP",
 			},
@@ -380,10 +385,10 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	})
 
 	// Add POD_NAME
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name: "POD_NAME",
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
 				APIVersion: "v1",
 				FieldPath:  "metadata.name",
 			},
@@ -391,10 +396,10 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	})
 
 	// Add POD_UUID
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name: "POD_UUID",
-		ValueFrom: &apiv1.EnvVarSource{
-			FieldRef: &apiv1.ObjectFieldSelector{
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
 				APIVersion: "v1",
 				FieldPath:  "metadata.uid",
 			},
@@ -403,7 +408,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 
 	// add SELF_URL、SELF_HOST、SELF_PORT
 	selfHost := strings.Join([]string{serviceName, service.Namespace, DefaultServiceDNSSuffix}, ".")
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name:  "SELF_HOST",
 		Value: selfHost,
 	})
@@ -413,16 +418,16 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 			// TODO: we should deprecate this SELF_URL
 			// TODO: we don't care what http is
 			// special port env, SELF_PORT == SELF_PORT0
-			envs = append(envs, apiv1.EnvVar{
+			envs = append(envs, corev1.EnvVar{
 				Name:  "SELF_PORT",
 				Value: portStr,
-			}, apiv1.EnvVar{
+			}, corev1.EnvVar{
 				Name:  "SELF_URL",
 				Value: "http://" + selfHost + ":" + portStr,
 			})
 
 		}
-		envs = append(envs, apiv1.EnvVar{
+		envs = append(envs, corev1.EnvVar{
 			Name:  "SELF_PORT" + strconv.Itoa(i),
 			Value: portStr,
 		})
@@ -432,22 +437,22 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		requestmem, _ := container.Resources.Requests.Memory().AsInt64()
 		limitmem, _ := container.Resources.Limits.Memory().AsInt64()
 		envs = append(envs,
-			apiv1.EnvVar{
+			corev1.EnvVar{
 				Name:  "DICE_CPU_ORIGIN",
 				Value: fmt.Sprintf("%f", service.Resources.Cpu)},
-			apiv1.EnvVar{
+			corev1.EnvVar{
 				Name:  "DICE_MEM_ORIGIN",
 				Value: fmt.Sprintf("%f", service.Resources.Mem)},
-			apiv1.EnvVar{
+			corev1.EnvVar{
 				Name:  "DICE_CPU_REQUEST",
 				Value: container.Resources.Requests.Cpu().AsDec().String()},
-			apiv1.EnvVar{
+			corev1.EnvVar{
 				Name:  "DICE_MEM_REQUEST",
 				Value: fmt.Sprintf("%d", requestmem/1024/1024)},
-			apiv1.EnvVar{
+			corev1.EnvVar{
 				Name:  "DICE_CPU_LIMIT",
 				Value: container.Resources.Limits.Cpu().AsDec().String()},
-			apiv1.EnvVar{
+			corev1.EnvVar{
 				Name:  "DICE_MEM_LIMIT",
 				Value: fmt.Sprintf("%d", limitmem/1024/1024)},
 		)
@@ -488,10 +493,6 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		enableServiceLinks = true
 	}
 	deployment := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        deploymentName,
 			Namespace:   service.Namespace,
@@ -499,16 +500,16 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 			Annotations: make(map[string]string),
 		},
 		Spec: appsv1.DeploymentSpec{
-			RevisionHistoryLimit: func(i int32) *int32 { return &i }(int32(3)),
-			Replicas:             func(i int32) *int32 { return &i }(int32(service.Scale)),
-			Template: apiv1.PodTemplateSpec{
+			RevisionHistoryLimit: pointer.Int32(3),
+			Replicas:             pointer.Int32(int32(service.Scale)),
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   deploymentName,
 					Labels: make(map[string]string),
 				},
-				Spec: apiv1.PodSpec{
-					EnableServiceLinks:    func(enable bool) *bool { return &enable }(enableServiceLinks),
-					ShareProcessNamespace: func(b bool) *bool { return &b }(false),
+				Spec: corev1.PodSpec{
+					EnableServiceLinks:    pointer.Bool(enableServiceLinks),
+					ShareProcessNamespace: pointer.Bool(false),
 					Tolerations:           toleration.GenTolerations(),
 				},
 			},
@@ -542,7 +543,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	// inject hosts
 	deployment.Spec.Template.Spec.HostAliases = ConvertToHostAlias(service.Hosts)
 
-	container := apiv1.Container{
+	container := corev1.Container{
 		// TODO, container name e.g. redis-1528180634
 		Name:  service.Name,
 		Image: service.Image,
@@ -563,7 +564,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)
 
-	containers := []apiv1.Container{container}
+	containers := []corev1.Container{container}
 	containers = append(containers, sidecars...)
 	deployment.Spec.Template.Spec.Containers = containers
 	if len(initcontainers) > 0 {
@@ -638,8 +639,8 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		logrus.Errorf("failed to copy secret: %v", err)
 		return nil, err
 	}
-	secretvolumes := []apiv1.Volume{}
-	secretvolmounts := []apiv1.VolumeMount{}
+	secretvolumes := make([]corev1.Volume, 0, len(secrets))
+	secretvolmounts := make([]corev1.VolumeMount, 0, len(secrets))
 	for _, secret := range secrets {
 		secretvol, volmount := k.SecretVolume(&secret)
 		secretvolumes = append(secretvolumes, secretvol)
@@ -660,8 +661,8 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	return deployment, nil
 }
 
-func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.InitContainer) []apiv1.Container {
-	containers := []apiv1.Container{}
+func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.InitContainer) []corev1.Container {
+	containers := []corev1.Container{}
 	if initcontainers == nil {
 		return containers
 	}
@@ -670,30 +671,30 @@ func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.Ini
 		limitCPU := fmt.Sprintf("%.fm", initcontainer.Resources.CPU*1000)
 		memory := fmt.Sprintf("%.dMi", initcontainer.Resources.Mem)
 
-		sc := apiv1.Container{
+		sc := corev1.Container{
 			Name:  name,
 			Image: initcontainer.Image,
-			Resources: apiv1.ResourceRequirements{
-				Requests: apiv1.ResourceList{
-					apiv1.ResourceCPU:              resource.MustParse(reqCPU),
-					apiv1.ResourceMemory:           resource.MustParse(memory),
-					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:              resource.MustParse(reqCPU),
+					corev1.ResourceMemory:           resource.MustParse(memory),
+					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 				},
-				Limits: apiv1.ResourceList{
-					apiv1.ResourceCPU:              resource.MustParse(limitCPU),
-					apiv1.ResourceMemory:           resource.MustParse(memory),
-					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:              resource.MustParse(limitCPU),
+					corev1.ResourceMemory:           resource.MustParse(memory),
+					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 				},
 			},
 			Command: []string{"sh", "-c", initcontainer.Cmd},
 		}
 		if initcontainer.Resources.EphemeralStorageCapacity > 1 {
 			maxEphemeral := fmt.Sprintf("%dGi", initcontainer.Resources.EphemeralStorageCapacity)
-			sc.Resources.Limits[apiv1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
+			sc.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 		}
 		for i, dir := range initcontainer.SharedDirs {
 			emptyDirVolumeName := fmt.Sprintf("%s-%d", name, i)
-			dstMount := apiv1.VolumeMount{
+			dstMount := corev1.VolumeMount{
 				Name:      emptyDirVolumeName,
 				MountPath: dir.SideCar,
 				ReadOnly:  false, // rw
@@ -706,8 +707,8 @@ func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.Ini
 	return containers
 }
 
-func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.SideCar) []apiv1.Container {
-	var containers []apiv1.Container
+func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.SideCar) []corev1.Container {
+	var containers []corev1.Container
 
 	if len(sidecars) == 0 {
 		return nil
@@ -718,30 +719,30 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 		limitCPU := fmt.Sprintf("%.fm", sidecar.Resources.CPU*1000)
 		memory := fmt.Sprintf("%.dMi", sidecar.Resources.Mem)
 
-		sc := apiv1.Container{
+		sc := corev1.Container{
 			Name:  strutil.Concat(sidecarNamePrefix, name),
 			Image: sidecar.Image,
-			Resources: apiv1.ResourceRequirements{
-				Requests: apiv1.ResourceList{
-					apiv1.ResourceCPU:              resource.MustParse(reqCPU),
-					apiv1.ResourceMemory:           resource.MustParse(memory),
-					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:              resource.MustParse(reqCPU),
+					corev1.ResourceMemory:           resource.MustParse(memory),
+					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 				},
-				Limits: apiv1.ResourceList{
-					apiv1.ResourceCPU:              resource.MustParse(limitCPU),
-					apiv1.ResourceMemory:           resource.MustParse(memory),
-					apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:              resource.MustParse(limitCPU),
+					corev1.ResourceMemory:           resource.MustParse(memory),
+					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 				},
 			},
 		}
 		if sidecar.Resources.EphemeralStorageCapacity > 1 {
 			maxEphemeral := fmt.Sprintf("%dGi", sidecar.Resources.EphemeralStorageCapacity)
-			sc.Resources.Limits[apiv1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
+			sc.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 		}
 
 		//Do not insert platform environment variables (DICE_*) to prevent the instance list from being collected
 		for k, v := range sidecar.Envs {
-			sc.Env = append(sc.Env, apiv1.EnvVar{
+			sc.Env = append(sc.Env, corev1.EnvVar{
 				Name:  k,
 				Value: v,
 			})
@@ -750,7 +751,7 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 		// Sidecar and business container share directory
 		for _, dir := range sidecar.SharedDirs {
 			emptyDirVolumeName := strutil.Concat(name, shardDirSuffix)
-			dstMount := apiv1.VolumeMount{
+			dstMount := corev1.VolumeMount{
 				Name:      emptyDirVolumeName,
 				MountPath: dir.SideCar,
 				ReadOnly:  false, // rw
@@ -768,16 +769,16 @@ func makeEnvVariableName(str string) string {
 }
 
 // AddPodMountVolume Add pod volume configuration
-func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *apiv1.PodSpec,
-	secretvolmounts []apiv1.VolumeMount, secretvolumes []apiv1.Volume) error {
+func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *corev1.PodSpec,
+	secretvolmounts []corev1.VolumeMount, secretvolumes []corev1.Volume) error {
 
 	if len(podSpec.Volumes) == 0 {
-		podSpec.Volumes = make([]apiv1.Volume, 0)
+		podSpec.Volumes = make([]corev1.Volume, 0)
 	}
 
 	//Pay attention to the settings mentioned above, there is only one container in a pod
 	if len(podSpec.Containers[0].VolumeMounts) == 0 {
-		podSpec.Containers[0].VolumeMounts = make([]apiv1.VolumeMount, 0)
+		podSpec.Containers[0].VolumeMounts = make([]corev1.VolumeMount, 0)
 	}
 
 	// get cluster info
@@ -804,16 +805,16 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 			//hostPath = strutil.Concat("/mnt/k8s/", hostPath)
 			pvcName := strings.Replace(hostPath, "_", "-", -1)
 			sc := "dice-local-volume"
-			if err := k.pvc.CreateIfNotExists(&apiv1.PersistentVolumeClaim{
+			if err := k.pvc.CreateIfNotExists(&corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-%s", service.Name, pvcName),
 					Namespace: service.Namespace,
 				},
-				Spec: apiv1.PersistentVolumeClaimSpec{
-					AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
-					Resources: apiv1.ResourceRequirements{
-						Requests: apiv1.ResourceList{
-							apiv1.ResourceStorage: resource.MustParse("10Gi"),
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("10Gi"),
 						},
 					},
 					StorageClassName: &sc,
@@ -823,17 +824,17 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 			}
 
 			podSpec.Volumes = append(podSpec.Volumes,
-				apiv1.Volume{
+				corev1.Volume{
 					Name: name,
-					VolumeSource: apiv1.VolumeSource{
-						PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 							ClaimName: fmt.Sprintf("%s-%s", service.Name, pvcName),
 						},
 					},
 				})
 
 			podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts,
-				apiv1.VolumeMount{
+				corev1.VolumeMount{
 					Name:      name,
 					MountPath: bind.ContainerPath,
 					ReadOnly:  bind.ReadOnly,
@@ -842,17 +843,17 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 		}
 
 		podSpec.Volumes = append(podSpec.Volumes,
-			apiv1.Volume{
+			corev1.Volume{
 				Name: name,
-				VolumeSource: apiv1.VolumeSource{
-					HostPath: &apiv1.HostPathVolumeSource{
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
 						Path: hostPath,
 					},
 				},
 			})
 
 		podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts,
-			apiv1.VolumeMount{
+			corev1.VolumeMount{
 				Name:      name,
 				MountPath: bind.ContainerPath,
 				ReadOnly:  bind.ReadOnly,
@@ -877,7 +878,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 				quantitySize = resource.MustParse(maxEmptyDir)
 			}
 
-			srcMount := apiv1.VolumeMount{
+			srcMount := corev1.VolumeMount{
 				Name:      emptyDirVolumeName,
 				MountPath: dir.Main,
 				ReadOnly:  false, // rw
@@ -885,10 +886,10 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 			// Business master container
 			podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, srcMount)
 
-			podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
+			podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 				Name: emptyDirVolumeName,
-				VolumeSource: apiv1.VolumeSource{
-					EmptyDir: &apiv1.EmptyDirVolumeSource{
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{
 						SizeLimit: &quantitySize,
 					},
 				},
@@ -899,7 +900,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 		for name, initc := range service.InitContainer {
 			for i, dir := range initc.SharedDirs {
 				name := fmt.Sprintf("%s-%d", name, i)
-				srcMount := apiv1.VolumeMount{
+				srcMount := corev1.VolumeMount{
 					Name:      name,
 					MountPath: dir.Main,
 					ReadOnly:  false,
@@ -910,10 +911,10 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 					quantitySize = resource.MustParse(maxEmptyDir)
 				}
 				podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, srcMount)
-				podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
+				podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 					Name: name,
-					VolumeSource: apiv1.VolumeSource{
-						EmptyDir: &apiv1.EmptyDirVolumeSource{
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{
 							SizeLimit: &quantitySize,
 						},
 					},
@@ -928,7 +929,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 	return nil
 }
 
-func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, podSpec *apiv1.PodSpec) error {
+func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, podSpec *corev1.PodSpec) error {
 
 	runtimeName := ""
 	workspace := ""
@@ -1003,16 +1004,16 @@ func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, pod
 		if vol.Capacity > 20 {
 			capacity = fmt.Sprintf("%dGi", vol.Capacity)
 		}
-		pvc := apiv1.PersistentVolumeClaim{
+		pvc := corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      pvcName,
 				Namespace: service.Namespace,
 			},
-			Spec: apiv1.PersistentVolumeClaimSpec{
-				AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
-				Resources: apiv1.ResourceRequirements{
-					Requests: apiv1.ResourceList{
-						apiv1.ResourceStorage: resource.MustParse(capacity),
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse(capacity),
 					},
 				},
 				StorageClassName: &sc,
@@ -1038,17 +1039,17 @@ func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, pod
 		}
 
 		podSpec.Volumes = append(podSpec.Volumes,
-			apiv1.Volume{
+			corev1.Volume{
 				Name: name,
-				VolumeSource: apiv1.VolumeSource{
-					PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 						ClaimName: pvcName,
 					},
 				},
 			})
 
 		podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts,
-			apiv1.VolumeMount{
+			corev1.VolumeMount{
 				Name:      name,
 				MountPath: vol.TargetPath,
 				ReadOnly:  vol.ReadOnly,
@@ -1057,19 +1058,19 @@ func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, pod
 	return nil
 }
 
-func (k *Kubernetes) AddSpotEmptyDir(podSpec *apiv1.PodSpec, emptySize int) {
+func (k *Kubernetes) AddSpotEmptyDir(podSpec *corev1.PodSpec, emptySize int) {
 	quantitySize := resource.MustParse(k8sapi.PodEmptyDirSizeLimit10Gi)
 	if emptySize > 0 {
 		quantitySize = resource.MustParse(fmt.Sprintf("%dGi", emptySize))
 	}
-	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
+	podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 		Name: "spot-emptydir",
-		VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{
+		VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{
 			SizeLimit: &quantitySize,
 		}},
 	})
 
-	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, apiv1.VolumeMount{
+	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, corev1.VolumeMount{
 		Name:      "spot-emptydir",
 		MountPath: "/tmp",
 	})
@@ -1090,14 +1091,14 @@ func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deploym
 	}
 }
 
-func ConvertToHostAlias(hosts []string) []apiv1.HostAlias {
-	var r []apiv1.HostAlias
+func ConvertToHostAlias(hosts []string) []corev1.HostAlias {
+	var r []corev1.HostAlias
 	for _, host := range hosts {
 		splitRes := strings.Fields(host)
 		if len(splitRes) < 2 {
 			continue
 		}
-		r = append(r, apiv1.HostAlias{
+		r = append(r, corev1.HostAlias{
 			IP:        splitRes[0],
 			Hostnames: splitRes[1:],
 		})
@@ -1182,7 +1183,7 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	return nil
 }
 
-func (k *Kubernetes) setContainerResources(service apistructs.Service, container *apiv1.Container) error {
+func (k *Kubernetes) setContainerResources(service apistructs.Service, container *corev1.Container) error {
 	if service.Resources.Cpu < MIN_CPU_SIZE {
 		return errors.Errorf("invalid cpu, value: %v, (which is lower than min cpu(%v))",
 			service.Resources.Cpu, MIN_CPU_SIZE)
@@ -1215,22 +1216,22 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 	maxCpu := fmt.Sprintf("%dm", int(service.Resources.MaxCPU*1000))
 	maxMem := fmt.Sprintf("%dMi", int(service.Resources.MaxMem))
 
-	container.Resources = apiv1.ResourceRequirements{
-		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:              resource.MustParse(cpu),
-			apiv1.ResourceMemory:           resource.MustParse(memory),
-			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
+	container.Resources = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:              resource.MustParse(cpu),
+			corev1.ResourceMemory:           resource.MustParse(memory),
+			corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 		},
-		Limits: apiv1.ResourceList{
-			apiv1.ResourceCPU:              resource.MustParse(maxCpu),
-			apiv1.ResourceMemory:           resource.MustParse(maxMem),
-			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
+		Limits: corev1.ResourceList{
+			corev1.ResourceCPU:              resource.MustParse(maxCpu),
+			corev1.ResourceMemory:           resource.MustParse(maxMem),
+			corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
 		},
 	}
 
 	if service.Resources.EphemeralStorageCapacity > 1 {
 		maxEphemeral := fmt.Sprintf("%dGi", service.Resources.EphemeralStorageCapacity)
-		container.Resources.Limits[apiv1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
+		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 	}
 
 	if err := k.SetFineGrainedCPU(container, map[string]string{}, cpuSubscribeRatio); err != nil {
@@ -1247,7 +1248,7 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 	return nil
 }
 
-func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resources, container *apiv1.Container) {
+func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resources, container *corev1.Container) {
 	for index, env := range container.Env {
 		var needToUpdate = false
 		switch env.Name {
@@ -1278,7 +1279,7 @@ func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resour
 }
 
 // DereferenceEnvs dereferences envs if the placeholder ${env.PLACEHOLDER} in the env.
-func DereferenceEnvs(podTempate *apiv1.PodTemplateSpec) error {
+func DereferenceEnvs(podTempate *corev1.PodTemplateSpec) error {
 	var (
 		left, right = "${", "}"
 		find        = func(p string) bool { return strings.HasPrefix(p, "env.") }
@@ -1486,21 +1487,21 @@ func serviceHasHostpath(service *apistructs.Service) bool {
 	return false
 }
 
-func GenerateECIPodSidecarContainers(inEdge bool) (apiv1.Container, error) {
-	sc := apiv1.Container{
+func GenerateECIPodSidecarContainers(inEdge bool) (corev1.Container, error) {
+	sc := corev1.Container{
 		Name: "fluent-bit",
 		//Image: sidecar.Image,
-		Resources: apiv1.ResourceRequirements{
-			Requests: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse("0.1"),
-				apiv1.ResourceMemory: resource.MustParse("256Mi"),
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("0.1"),
+				corev1.ResourceMemory: resource.MustParse("256Mi"),
 			},
-			Limits: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse("1"),
-				apiv1.ResourceMemory: resource.MustParse("1Gi"),
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("1"),
+				corev1.ResourceMemory: resource.MustParse("1Gi"),
 			},
 		},
-		VolumeMounts: []apiv1.VolumeMount{},
+		VolumeMounts: []corev1.VolumeMount{},
 	}
 
 	if err := getSideCarConfigFromConfigMapVolumeFiles(&sc, inEdge); err != nil {
@@ -1508,13 +1509,13 @@ func GenerateECIPodSidecarContainers(inEdge bool) (apiv1.Container, error) {
 		return sc, errors.Errorf("Can not create log collector sidecar container for ECI Pod, error：%v", err)
 	}
 
-	sc.VolumeMounts = append(sc.VolumeMounts, apiv1.VolumeMount{
+	sc.VolumeMounts = append(sc.VolumeMounts, corev1.VolumeMount{
 		Name:      "erda-volume",
 		MountPath: "/erda",
 		ReadOnly:  false, // rw
 	})
 
-	sc.VolumeMounts = append(sc.VolumeMounts, apiv1.VolumeMount{
+	sc.VolumeMounts = append(sc.VolumeMounts, corev1.VolumeMount{
 		Name:      "stdlog",
 		MountPath: "/stdlog",
 		ReadOnly:  false, // rw
@@ -1523,26 +1524,26 @@ func GenerateECIPodSidecarContainers(inEdge bool) (apiv1.Container, error) {
 	return sc, nil
 }
 
-func SetPodContainerLifecycleAndSharedVolumes(podSpec *apiv1.PodSpec) {
+func SetPodContainerLifecycleAndSharedVolumes(podSpec *corev1.PodSpec) {
 	for i := range podSpec.Containers {
 		if len(podSpec.Containers[i].VolumeMounts) == 0 {
-			podSpec.Containers[i].VolumeMounts = make([]apiv1.VolumeMount, 0)
+			podSpec.Containers[i].VolumeMounts = make([]corev1.VolumeMount, 0)
 		}
-		podSpec.Containers[i].VolumeMounts = append(podSpec.Containers[i].VolumeMounts, apiv1.VolumeMount{
+		podSpec.Containers[i].VolumeMounts = append(podSpec.Containers[i].VolumeMounts, corev1.VolumeMount{
 			Name:      "erda-volume",
 			MountPath: "/erda",
 			ReadOnly:  false, // rw
 		})
 
-		podSpec.Containers[i].VolumeMounts = append(podSpec.Containers[i].VolumeMounts, apiv1.VolumeMount{
+		podSpec.Containers[i].VolumeMounts = append(podSpec.Containers[i].VolumeMounts, corev1.VolumeMount{
 			Name:      "stdlog",
 			MountPath: "/stdlog",
 			ReadOnly:  false, // rw
 		})
 		lifecyclePostStartExecCmd := fmt.Sprintf("mkdir -p /erda/containers/%s && cp /proc/self/cpuset /erda/containers/%s/cpuset", podSpec.Containers[i].Name, podSpec.Containers[i].Name)
-		podSpec.Containers[i].Lifecycle = &apiv1.Lifecycle{
-			PostStart: &apiv1.Handler{
-				Exec: &apiv1.ExecAction{
+		podSpec.Containers[i].Lifecycle = &corev1.Lifecycle{
+			PostStart: &corev1.Handler{
+				Exec: &corev1.ExecAction{
 					Command: []string{"sh", "-c", lifecyclePostStartExecCmd},
 				},
 			},
@@ -1550,27 +1551,27 @@ func SetPodContainerLifecycleAndSharedVolumes(podSpec *apiv1.PodSpec) {
 	}
 
 	if len(podSpec.Volumes) == 0 {
-		podSpec.Volumes = make([]apiv1.Volume, 0)
+		podSpec.Volumes = make([]corev1.Volume, 0)
 	}
-	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
+	podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 		Name: "erda-volume",
-		VolumeSource: apiv1.VolumeSource{
-			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		},
 	})
-	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
+	podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 		Name: "stdlog",
-		VolumeSource: apiv1.VolumeSource{
-			FlexVolume: &apiv1.FlexVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			FlexVolume: &corev1.FlexVolumeSource{
 				Driver: "alicloud/pod-stdlog",
 			},
 		},
 	})
 }
 
-func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container, inEdge bool) error {
+func getSideCarConfigFromConfigMapVolumeFiles(sc *corev1.Container, inEdge bool) error {
 	if sc.Env == nil {
-		sc.Env = make([]apiv1.EnvVar, 0)
+		sc.Env = make([]corev1.EnvVar, 0)
 	}
 
 	for _, envKey := range ECIPodSidecarENVFromScheduler {
@@ -1592,7 +1593,7 @@ func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container, inEdge bool) 
 			}
 		}
 
-		sc.Env = append(sc.Env, apiv1.EnvVar{
+		sc.Env = append(sc.Env, corev1.EnvVar{
 			Name:  strutil.TrimPrefixes(envKey, "ECI_POD_FLUENTBIT_"),
 			Value: envValue,
 		})
@@ -1603,7 +1604,7 @@ func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container, inEdge bool) 
 	if ns == "" {
 		ns = "default"
 	}
-	sc.Env = append(sc.Env, apiv1.EnvVar{
+	sc.Env = append(sc.Env, corev1.EnvVar{
 		Name:  "COLLECTOR_ADDR",
 		Value: fmt.Sprintf("collector.%s.svc.cluster.local:7076", ns),
 	})
@@ -1611,19 +1612,19 @@ func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container, inEdge bool) 
 	// COLLECTOR_PUBLIC_URL
 	collcror_pubilic_url := os.Getenv("COLLECTOR_PUBLIC_URL")
 	if collcror_pubilic_url != "" {
-		sc.Env = append(sc.Env, apiv1.EnvVar{
+		sc.Env = append(sc.Env, corev1.EnvVar{
 			Name:  "COLLECTOR_PUBLIC_URL",
 			Value: collcror_pubilic_url,
 		})
 	}
 
 	if inEdge {
-		sc.Env = append(sc.Env, apiv1.EnvVar{
+		sc.Env = append(sc.Env, corev1.EnvVar{
 			Name:  "DICE_IS_EDGE",
 			Value: "true",
 		})
 	} else {
-		sc.Env = append(sc.Env, apiv1.EnvVar{
+		sc.Env = append(sc.Env, corev1.EnvVar{
 			Name:  "DICE_IS_EDGE",
 			Value: "false",
 		})
