@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -958,8 +959,13 @@ func (impl GatewayApiServiceImpl) getRuntimeService(runtimeId, appName, serviceN
 
 func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.GatewayConsumer, dto *gw.ApiDto,
 	optionDto *gw.ApiReqOptionDto, upstreamApiId ...string) (string, StandardErrorCode, error) {
+	timeNow := time.Now()
+
 	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
+	defer func() {
+		l.Infof("GatewayApiServiceImpl.createApi costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
 
 	if consumer == nil || dto == nil || len(dto.RedirectAddr) == 0 {
 		return "", PARAMS_IS_NULL, errors.Errorf("invalid consumer[%+v] or dto[%+v]",
@@ -1009,6 +1015,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 	}
 	// 1 创建service
 	{
+		timeNow := time.Now()
 		serviceReq, err := impl.kongAssembler.BuildKongServiceReq("", dto)
 		if err != nil {
 			ret = CREATE_API_SERVICE_FAIL
@@ -1022,9 +1029,11 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 			l.WithError(err).Errorln(ret)
 			return "", ret, err
 		}
+		l.Infof("GatewayApiServiceImpl.createApi create kong service costs %dms", time.Now().Sub(timeNow).Milliseconds())
 	}
 	// 2 创建route
 	{
+		timeNow := time.Now()
 		routeReq, err := impl.kongAssembler.BuildKongRouteReq("", dto, serviceResp.Id, isRegexPath)
 		if err != nil {
 			ret = CREATE_API_ROUTE_FAIL
@@ -1040,9 +1049,11 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 			l.WithError(err).Errorln(ret)
 			return "", ret, err
 		}
+		l.Infof("GatewayApiServiceImpl.createApi create kong route costs %dms", time.Now().Sub(timeNow).Milliseconds())
 	}
 	// 3 根据group信息+请求信息增加插件
 	{
+		timeNow := time.Now()
 		needAuth := false
 		var policies []orm.GatewayPolicy
 		var basicPolicies []orm.GatewayPolicy
@@ -1168,6 +1179,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 				return "", ret, err
 			}
 		}
+		l.Infof("GatewayApiServiceImpl.createApi create plugins costs %dms", time.Now().Sub(timeNow).Milliseconds())
 	}
 	// 4 相关信息入库
 	{
@@ -1184,6 +1196,11 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 func (impl GatewayApiServiceImpl) CreateApi(ctx context.Context, req *gw.ApiReqDto) (apiId string, err error) {
 	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
+
+	timeNow := time.Now()
+	defer func() {
+		l.Infof("GatewayApiServiceImpl.CreateApi costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
 
 	defer func() {
 		if err != nil {

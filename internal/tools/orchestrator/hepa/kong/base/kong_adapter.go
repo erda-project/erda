@@ -93,6 +93,11 @@ func (impl *KongAdapterImpl) DeleteConsumer(id string) error {
 }
 
 func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error) {
+	timeNow := time.Now()
+	defer func() {
+		log.Infof("*KongAdapterImpl.UpdateRoute costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
+
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -129,6 +134,11 @@ func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDt
 }
 
 func (impl *KongAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error) {
+	timeNow := time.Now()
+	defer func() {
+		log.Infof("*KongAdapterImpl.CreateOrUpdateRoute costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
+
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -209,6 +219,11 @@ func (impl *KongAdapterImpl) TouchRouteOAuthMethod(id string) error {
 }
 
 func (impl *KongAdapterImpl) DeleteRoute(id string) error {
+	timeNow := time.Now()
+	defer func() {
+		log.Infof("*KongAdapterImpl.DeleteRoute costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
+
 	if impl == nil {
 		return errors.New("kong can't be attached")
 	}
@@ -225,6 +240,11 @@ func (impl *KongAdapterImpl) DeleteRoute(id string) error {
 	return errors.Errorf("DeleteRoute failed: code[%d] msg[%s]", code, body)
 }
 func (impl *KongAdapterImpl) CreateOrUpdateService(req *KongServiceReqDto) (*KongServiceRespDto, error) {
+	timeNow := time.Now()
+	defer func() {
+		log.Infof("*KongAdapterImpl.CreateOrUpdateService costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
+
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -259,6 +279,11 @@ func (impl *KongAdapterImpl) CreateOrUpdateService(req *KongServiceReqDto) (*Kon
 }
 
 func (impl *KongAdapterImpl) DeleteService(id string) error {
+	timeNow := time.Now()
+	defer func() {
+		log.Infof("*KongAdapterImpl.DeleteService costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
+
 	if impl == nil {
 		return errors.New("kong can't be attached")
 	}
@@ -405,6 +430,11 @@ func (impl *KongAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
 }
 
 func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+	timeNow := time.Now()
+	defer func() {
+		log.Infof("*KongAdapterImpl.CreateOrUpdatePlugin costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
+
 	enabled, err := impl.CheckPluginEnabled(req.Name)
 	if err != nil {
 		return nil, err
