@@ -1234,7 +1234,7 @@ func TestGetServiceInstanceType(t *testing.T) {
 			Metric: mockMetricService{
 				t: t,
 				checkQueryWithInfluxFormat: func(test *testing.T, request *metricpb.QueryWithInfluxFormatRequest) {
-					require.Equal(test, "SELECT terminus_key::tag FROM jvm_memory WHERE terminus_key::tag=$terminus_key AND service_instance_id=$service_instance_id LIMIT 1", request.Statement)
+					require.Equal(test, "SELECT terminus_key::tag FROM jvm_memory WHERE terminus_key::tag=$terminus_key AND service_instance_id::tag=$service_instance_id LIMIT 1", request.Statement)
 					want := make(map[string]*structpb.Value)
 					want["service_instance_id"] = &structpb.Value{
 						Kind: &structpb.Value_StringValue{StringValue: "trace"},

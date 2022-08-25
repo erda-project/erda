@@ -224,9 +224,9 @@ func getLiteralValue(ctx *Context, expr influxql.Expr) (interface{}, bool, error
 		return val.Val, true, nil
 	case *influxql.BooleanLiteral:
 		if val.Val {
-			return 1, true, nil
+			return true, true, nil
 		} else {
-			return 0, true, nil
+			return false, true, nil
 		}
 	case *influxql.StringLiteral:
 		return val.Val, true, nil
