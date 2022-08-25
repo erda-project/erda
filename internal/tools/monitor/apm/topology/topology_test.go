@@ -1089,6 +1089,11 @@ func TestGetInstances(t *testing.T) {
 	}, response)
 }
 
+func Test_provider_translateNode(t *testing.T) {
+	topo := &provider{t: &MockTran{}}
+	topo.translateNode(i18n.LanguageCodes{{Code: "zh"}}, &Node{Type: "abc"})
+}
+
 type mockMetricQuery struct {
 	data      *model.ResultSet
 	checkStmt func(stmt string, params map[string]interface{})
