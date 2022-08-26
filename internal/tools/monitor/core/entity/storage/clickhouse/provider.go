@@ -15,19 +15,13 @@
 package clickhouse
 
 import (
-	"context"
 	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/clickhouse"
-	"github.com/erda-project/erda/internal/tools/monitor/core/event"
 	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
-	tablepkg "github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/creator"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
@@ -39,15 +33,15 @@ type config struct {
 type provider struct {
 	Cfg       *config
 	Log       logs.Logger
-	Creator   creator.Interface   `autowired:"clickhouse.table.creator@event" optional:"true"`
-	Loader    loader.Interface    `autowired:"clickhouse.table.loader@event"`
-	Retention retention.Interface `autowired:"storage-retention-strategy@event" optional:"true"`
+	Creator   creator.Interface   `autowired:"clickhouse.table.creator@entity" optional:"true"`
+	Loader    loader.Interface    `autowired:"clickhouse.table.loader@entity"`
+	Retention retention.Interface `autowired:"storage-retention-strategy@entity" optional:"true"`
 
 	clickhouse clickhouse.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	svc := ctx.Service("clickhouse@event")
+	svc := ctx.Service("clickhouse@eneity")
 	if svc == nil {
 		svc = ctx.Service("clickhouse")
 	}
@@ -58,46 +52,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
-	return p.clickhouse.NewWriter(&clickhouse.WriterOptions{
-		Encoder: func(data interface{}) (item *clickhouse.WriteItem, err error) {
-			eventData := data.(*event.Event)
-			item = &clickhouse.WriteItem{
-				Data: eventData,
-			}
-			var (
-				wait  <-chan error
-				table string
-			)
-
-			if p.Retention == nil {
-				return nil, errors.Errorf("provider storage-retention-strategy@event is required")
-			}
-
-			key := p.Retention.GetConfigKey(eventData.Name, eventData.Tags)
-			ttl := p.Retention.GetTTL(key)
-			if len(key) > 0 {
-				wait, table = p.Creator.Ensure(ctx, eventData.Tags["org_name"], key, tablepkg.FormatTTLToDays(ttl))
-			} else {
-				wait, table = p.Creator.Ensure(ctx, eventData.Tags["org_name"], "", tablepkg.FormatTTLToDays(ttl))
-			}
-
-			if wait != nil {
-				select {
-				case <-wait:
-				case <-ctx.Done():
-					return nil, storekit.ErrExitConsume
-				}
-			}
-			item.Table = table
-			return item, nil
-		},
-	}), nil
-}
-
 func init() {
-	servicehub.Register("event-storage-clickhouse", &servicehub.Spec{
-		Services:             []string{"event-storage-clickhouse-reader", "event-storage-clickhouse-writer"},
+	servicehub.Register("entity-storage-clickhouse", &servicehub.Spec{
+		Services:             []string{"entity-storage-clickhouse-reader", "entity-storage-clickhouse-writer"},
 		Dependencies:         []string{"clickhouse"},
 		OptionalDependencies: []string{"clickhouse.table.creator"},
 		ConfigFunc:           func() interface{} { return &config{} },

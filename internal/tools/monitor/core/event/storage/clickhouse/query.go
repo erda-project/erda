@@ -16,6 +16,8 @@ package clickhouse
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/doug-martin/goqu/v9"
 
@@ -41,6 +43,10 @@ func (p *provider) QueryPaged(ctx context.Context, sel *storage.Selector, pageNo
 
 		switch filter.Op {
 		case storage.EQ:
+			splits := strings.Split(filter.Key, ".")
+			if len(splits) > 1 && splits[0] == "tags" {
+				filter.Key = fmt.Sprintf("%s['%s']", splits[0], splits[1])
+			}
 			sql = sql.Where(goqu.L(filter.Key).Eq(val))
 		case storage.REGEXP:
 			sql = sql.Where(goqu.L("match(?,?)", filter.Key, val))
@@ -57,13 +63,19 @@ func (p *provider) QueryPaged(ctx context.Context, sel *storage.Selector, pageNo
 	}
 
 	var (
-		res    []*event.Event
+		events []event.Event
 		cancel context.CancelFunc
 	)
 	ctx, cancel = context.WithTimeout(ctx, p.Cfg.QueryTimeout)
 	defer cancel()
-	if err = p.clickhouse.Client().Select(ctx, &res, expr); err != nil {
+	if err = p.clickhouse.Client().Select(ctx, &events, expr); err != nil {
 		return nil, err
+	}
+
+	var res []*event.Event
+	for i := range events {
+		events[i].Timestamp = events[i].Time.UnixNano()
+		res = append(res, &events[i])
 	}
 	return res, nil
 }

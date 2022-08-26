@@ -19,7 +19,7 @@ import (
 
 	"github.com/ahmetb/go-linq/v3"
 
-	"github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
 )
 
 // Writer .
@@ -30,7 +30,7 @@ type Writer struct {
 
 // WriteN .
 func (w *Writer) WriteN(vals ...interface{}) (n int, err error) {
-	var entities []*pb.Entity
+	var entities []*entity.Entity
 	linq.From(vals).ToSlice(&entities)
 	return w.p.SetEntities(w.ctx, entities)
 }
@@ -40,7 +40,7 @@ func (w *Writer) Write(val interface{}) error {
 	if val == nil {
 		return nil
 	}
-	return w.p.SetEntity(w.ctx, val.(*pb.Entity))
+	return w.p.SetEntity(w.ctx, val.(*entity.Entity))
 }
 
 // Close .

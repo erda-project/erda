@@ -5,19 +5,12 @@ CREATE TABLE IF NOT EXISTS <database>.events ON CLUSTER '{cluster}'
     `event_id` String,
     `content` String,
     `kind` LowCardinality(String),
+    `relations` Map(String,String),
     `tags` Map(String,String),
 
-    `tags.display_url` String MATERIALIZED tags['display_url'],
-    `tags.alert_title` String MATERIALIZED tags['alert_title'],
-    `tags.trigger` String MATERIALIZED tags['trigger'],
-    `tags.org_name` String MATERIALIZED tags['org_name'],
-    `tags.dice_org_id` String MATERIALIZED tags['dice_org_id'],
-
-    `relations` Nested (
-                           `trace_id` String,
-                           `res_id` String,
-                           `res_type` LowCardinality(String)
-    )
+    `relations.res_id` String MATERIALIZED relations['res_id'],
+    `relations.res_type` String MATERIALIZED relations['res_type'],
+    `relations.trace_id` String MATERIALIZED relations['trace_id']
 )
 ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/events', '{replica}')
 PARTITION BY toYYYYMMDD(timestamp)

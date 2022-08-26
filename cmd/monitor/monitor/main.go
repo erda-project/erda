@@ -40,6 +40,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/diagnotor/controller"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/query"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage/clickhouse"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/query"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/storage/clickhouse"

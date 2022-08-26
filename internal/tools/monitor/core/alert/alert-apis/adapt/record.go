@@ -309,7 +309,7 @@ func (a *Adapt) queryAlertHistory(groupID string, start, end int64, limit uint) 
 	for _, item := range list {
 		results = append(results, &pb.AlertHistory{
 			AlertState: item.Tags["trigger"],
-			GroupId:    item.Relations.ResID,
+			GroupId:    item.Relations["res_id"],
 			Timestamp:  item.Timestamp / int64(time.Millisecond),
 			Title:      item.Tags["alert_title"],
 			Content:    item.Content,
