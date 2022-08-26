@@ -1244,6 +1244,10 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 		if err := svc.db.CreateAutoTestSceneStep(newStep); err != nil {
 			return newScene.ID, err
 		}
+		replaceIdMap[v.ID] = newStep.ID
+		if err := svc.replaceNewStepValue(newStep, replaceIdMap); err != nil {
+			return 0, err
+		}
 		head = newStep.ID
 		pHead := newStep.ID
 
@@ -1270,9 +1274,11 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			pHead = newPStep.ID
 
 			childStepIdMap[pv.ID] = newPStep.ID
+			if err := svc.replaceNewStepValue(newPStep, childStepIdMap); err != nil {
+				return 0, err
+			}
 		}
 
-		replaceIdMap[v.ID] = newStep.ID
 		for key, v := range childStepIdMap {
 			replaceIdMap[key] = v
 		}
@@ -1296,6 +1302,19 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 
 	go svc.db.AfterUpdateAutoTestSpaceElements(sp.ID)
 	return newScene.ID, nil
+}
+
+// replaceNewStepValue replace new step value if needed because loop strategy may use self id
+func (svc *Service) replaceNewStepValue(newStep *dao.AutoTestSceneStep, stepIDAssociationMap map[uint64]uint64) error {
+	replacedValue := replacePreStepValue(newStep.Value, stepIDAssociationMap)
+	if replacedValue == newStep.Value {
+		return nil
+	}
+	newStep.Value = replacedValue
+	if err := svc.db.UpdateAutotestSceneStep(newStep); err != nil {
+		return err
+	}
+	return nil
 }
 
 func replacePreSceneValue(value string, replaceIdMap map[uint64]uint64) string {
