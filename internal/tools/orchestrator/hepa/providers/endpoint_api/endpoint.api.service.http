@@ -1,3 +1,50 @@
+# curl 'https://erda.cloud/api/terminus/gateway/openapi/packages?orgId=2&projectId=190&env=TEST'
+#  -H 'authority: erda.cloud'
+#  -H 'accept: application/vnd.dice+json;version=1.0'
+#  -H 'accept-language: zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
+#  -H 'content-type: application/json'
+#  -H 'cookie: taid=f707f292-462a-4155-b5e8-928ce38a94ed; _ga=GA1.1.1604408292.1657196722; _ga_XQLGRVW2FJ=GS1.1.1660408982.83.1.1660408983.0; OPENAPISESSION=85cbe192-ad47-4147-908f-b1da3f2d40ab; OPENAPI-CSRF-TOKEN=xopoUOl3Qx34M92GDQB7UjZ00kudNBwG; _ga_GGY77GT80X=GS1.1.1661133585.13.1.1661135381.0.0.0; u_c_erda_cloud=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiJlNDhjZGQwOWU3NjRjYmYxMGY5NjMxOGMxOGU3ZWNiZDljOTVmMzk5YTJiN2M5NzNkZjc3MGE0YWViZDU2OWM5IiwibmJmIjoxNjYxMTQ3MjA1LCJkb21haW4iOiJlcmRhLmNsb3VkIiwiaXNzIjoiZHJhY28iLCJ0ZW5hbnRJZCI6MSwiZXhwaXJlX3RpbWUiOjYwNDgwMCwiZXhwIjoxNjYxNzUyMDA1LCJpYXQiOjE2NjExNDcyMDV9.Wthl5uK6HlaS96eDvF-LUaURaMHV30qecb-tkOeXlfw'
+#  -H 'lang: zh-CN'
+#  -H 'openapi-csrf-token: xopoUOl3Qx34M92GDQB7UjZ00kudNBwG'
+#  -H 'org: terminus'
+#  -H 'origin: https://erda.cloud'
+#  -H 'referer: https://erda.cloud/terminus/msp/190/TEST/d8eaf063892946455091a107dcc4fe3b/gateway/api-package/create'
+#  -H 'sec-ch-ua: "Chromium";v="104", " Not A;Brand";v="99", "Microsoft Edge";v="104"'
+#  -H 'sec-ch-ua-mobile: ?0'
+#  -H 'sec-ch-ua-platform: "macOS"'
+#  -H 'sec-fetch-dest: empty'
+#  -H 'sec-fetch-mode: cors'
+#  -H 'sec-fetch-site: same-origin'
+#  -H 'service-provider: TERMINUS'
+#  -H 'terminus-request-id: 704361d0-2222-11ed-82bf-54b0c28d96a8'
+#  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.81 Safari/537.36 Edg/104.0.1293.54'
+#  --data-raw '{"name":"web-chen.app.terminus.io","description":"web-chen.app.terminus.io","scene":"webapi","bindDomain":["web-chen.app.terminus.io"]}'
+#  --compressed
+POST https://erda.cloud/api/terminus/gateway/openapi/packages?orgId=2&projectId=190&env=TEST
+authority: erda.cloud
+accept: application/vnd.dice+json;version=1.0
+accept-language: zh-CN,zh;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6
+cookie: taid=f707f292-462a-4155-b5e8-928ce38a94ed; _ga=GA1.1.1604408292.1657196722; _ga_XQLGRVW2FJ=GS1.1.1660408982.83.1.1660408983.0; OPENAPISESSION=85cbe192-ad47-4147-908f-b1da3f2d40ab; OPENAPI-CSRF-TOKEN=xopoUOl3Qx34M92GDQB7UjZ00kudNBwG; _ga_GGY77GT80X=GS1.1.1661133585.13.1.1661135381.0.0.0; u_c_erda_cloud=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiJlNDhjZGQwOWU3NjRjYmYxMGY5NjMxOGMxOGU3ZWNiZDljOTVmMzk5YTJiN2M5NzNkZjc3MGE0YWViZDU2OWM5IiwibmJmIjoxNjYxMTQ3MjA1LCJkb21haW4iOiJlcmRhLmNsb3VkIiwiaXNzIjoiZHJhY28iLCJ0ZW5hbnRJZCI6MSwiZXhwaXJlX3RpbWUiOjYwNDgwMCwiZXhwIjoxNjYxNzUyMDA1LCJpYXQiOjE2NjExNDcyMDV9.Wthl5uK6HlaS96eDvF-LUaURaMHV30qecb-tkOeXlfw
+lang: zh-CN
+openapi-csrf-token: xopoUOl3Qx34M92GDQB7UjZ00kudNBwG
+org: terminus
+origin: https://erda.cloud
+referer: https://erda.cloud/terminus/msp/190/TEST/d8eaf063892946455091a107dcc4fe3b/gateway/api-package/create
+sec-ch-ua: "Chromium";v="104", " Not A;Brand";v="99", "Microsoft Edge";v="104"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+sec-fetch-dest: empty
+sec-fetch-mode: cors
+sec-fetch-site: same-origin
+service-provider: TERMINUS
+terminus-request-id: 704361d0-2222-11ed-82bf-54b0c28d96a8
+user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.81 Safari/537.36 Edg/104.0.1293.54
+Content-Type: application/json
+
+{"name":"test-gateway-outer.app.terminus.io","description":"test-gateway-outer.app.terminus.io","scene":"hub","bindDomain":["test-gateway-outer.app.terminus.io"]}
+
+###
+
 POST http://{{domain}}/api/erda-demo/gateway/openapi/packages?orgId=?&projectId=&env=
 
 {}
@@ -11,3 +58,13 @@ GET https://{{domain}}/api/gateway/openapi/package-apis?projectId=&env=&domain=&
 DELETE https://{{domain}}/api/gateway/openapi/package-apis?projectId=&env=&domain=&paths=
 
 ### create package
+POST http://hepa.daily.terminus.io/api/gateway/openapi/packages?orgId=633&projectId=1904&env=DEV
+authority: erda.daily.terminus.io
+cookie: taid=d98d2b64-d943-475c-a4f6-c394b3c1d9f4; Hm_lvt_210739f1f314f3bf914d4ecf7cfa151b=1655433793; _ga=GA1.1.1175985073.1656407570; lng=zh-CN; emp_u_c_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiIyNDg4YmRjZTAzNGQ1NTVlN2UwNDlkZTZiZmMxMzJkYTcyNWUxY2IwZGUxMDEzNWQ1MGQ4Njc3MTA3Nzc0MDY3IiwibmJmIjoxNjU5OTQ3NDIzLCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTY2MDU1MjIyMywiaWF0IjoxNjU5OTQ3NDIzfQ.QjcA-g4IJXHKSjYQDb7dPejhScSKo8DIUB-gFA_2tFI; u_c_captain_hkci_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiI2MDRjMGEyNTFiMjc2MDFkMDY2NzZhMTM3MGUzZmM5MjRiMjhlMmE1MWE4NmYyY2RmNjlhODMwY2QwNzBlOGI0IiwibmJmIjoxNjYwMDEwNTA0LCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTY2MDYxNTMwNCwiaWF0IjoxNjYwMDEwNTA0fQ.YsG1UefVl03zZ5WzJ3TMLC3S_O3TDS6IYQL7a-WRRUQ; OPENAPI-CSRF-TOKEN=FSSf9ApWFNX46xXrp2RTF1NqucFRRL8g; OPENAPISESSION=3de12d3e-ad62-4263-b9ba-fd2e28d725eb; _ga_XQLGRVW2FJ=GS1.1.1660026571.95.1.1660026574.0
+lang: zh-CN
+org: erda-development
+org-id: 633
+user-id: 1000001
+
+{"name":"test-hub-api","description":"test-hub-api.csi.terminus.io","scene":"hub","bindDomain":["dev-hub.daily.terminus.io"]}
+

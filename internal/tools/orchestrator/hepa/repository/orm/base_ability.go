@@ -169,11 +169,11 @@ func Count(engine xorm.Interface, row BaseAbility, cond interface{}, condArgs ..
 	return engine.Where(cond, condArgs...).And("is_deleted = ?", NOT_DELETED_VALUE).Count(row)
 }
 func Get(engine xorm.Interface, row BaseAbility, cond interface{}, condArgs ...interface{}) (bool, error) {
-	return engine.Where(cond, condArgs...).And("is_deleted = ?", NOT_DELETED_VALUE).Get(row)
+	return engine.Desc("update_time").Where(cond, condArgs...).And("is_deleted = ?", NOT_DELETED_VALUE).Get(row)
 }
 
 func GetForUpdate(session *xorm.Session, engine *OrmEngine, row BaseAbility, cond string, condArgs ...interface{}) (bool, error) {
-	return session.SQL("select * from "+engine.TableName(row)+" where is_deleted = 'N' and "+cond+" for update", condArgs...).Get(row)
+	return session.SQL("select * from "+engine.TableName(row)+" where is_deleted = 'N' and "+cond+" order by update_time desc for update", condArgs...).Get(row)
 }
 
 func GetByAnyI(engine xorm.Interface, bCond builder.Cond, row BaseAbility) (bool, error) {
