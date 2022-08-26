@@ -361,7 +361,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		}
 	}
 
-	deploy := deployment.New(deployment.WithCompleteParams(addr, client))
+	deploy := deployment.New(deployment.WithClientSet(k8sClient.ClientSet))
 	job := job.New(job.WithCompleteParams(addr, client))
 	ds := ds.New(ds.WithCompleteParams(addr, client))
 	ing := ingress.New(ingress.WithCompleteParams(addr, client))

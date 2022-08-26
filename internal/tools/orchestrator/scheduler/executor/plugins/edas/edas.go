@@ -146,7 +146,7 @@ func init() {
 			return nil, errors.Errorf("not found dice registry addr in env variables")
 		}
 
-		k8sDeployClient := deployment.New(deployment.WithCompleteParams(kubeAddr, kubeClient))
+		k8sDeployClient := deployment.New(deployment.WithClientSet(k8sClient.ClientSet))
 		k8sSvcClient := k8sservice.New(k8sservice.WithCompleteParams(kubeAddr, kubeClient))
 		notifier, err := events.New(string(name), nil)
 		if err != nil {
