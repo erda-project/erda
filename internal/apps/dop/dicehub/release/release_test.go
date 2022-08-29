@@ -16,6 +16,7 @@ package release
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -25,6 +26,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -382,128 +384,191 @@ func Test_parseMetaFromReadCloser(t *testing.T) {
 }
 
 func Test_parseReleaseFile(t *testing.T) {
-	// init db mock
-	gormDB, mock, err := db.InitMysqlMock()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	bdl := bundle.New()
-	rs := ReleaseService{
-		bdl: bdl,
-		db: &db.ReleaseConfigDB{
-			DB: gormDB,
+	appDemoDiceTmpl := `
+envs: {}
+jobs: {}
+services:
+  app-demo-%d:
+    deployments:
+      replicas: 1
+    image: registry.inner/erda-erda/app-demo-%d:1660034920509725590
+    ports:
+    - expose: true
+      port: 80
+    resources:
+      cpu: 0.2
+      mem: 20
+version: "2.0"
+`
+	base := apistructs.ReleaseMetadata{
+		ApiVersion: "v1",
+		Author:     "erda",
+		Source: apistructs.ReleaseSource{
+			Org:     "erda",
+			Project: "erda",
+			URL:     "https://erda.io/dop/projects/1",
+		},
+		Version:   "1.0.0",
+		ChangeLog: "release: 1.0.0",
+		Modes: map[string]apistructs.ReleaseModeMetadata{
+			"modeA": {
+				Expose: true,
+				AppList: [][]apistructs.AppMetadata{{
+					{
+						AppName:          "app-demo",
+						GitBranch:        "release/1.0.0",
+						GitCommitID:      "60eb5799596db6e8b7564b389baf9803d6c36bb4",
+						GitCommitMessage: "remove 1 file",
+						GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-demo",
+						Version:          "1.0.0+20220809164508",
+					},
+					{
+						AppName:          "app-demo-2",
+						GitBranch:        "release/1.0.4",
+						GitCommitID:      "0266863d8c3840aac4df14ee37e1d8dc7fc44188",
+						GitCommitMessage: "init project",
+						GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-admin-demo",
+						Version:          "1.0.4+20220809164918",
+					},
+				}},
+			},
+			"quickstart": {
+				Expose: true,
+				AppList: [][]apistructs.AppMetadata{{
+					{
+						AppName:          "app-demo",
+						GitBranch:        "release/1.0.0",
+						GitCommitID:      "60eb5799596db6e8b7564b389baf9803d6c36bb4",
+						GitCommitMessage: "remove 1 file",
+						GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-demo",
+						Version:          "1.0.0+20220809164508",
+					},
+				}},
+			},
 		},
 	}
 
-	appDemoDice := `
-envs: {}
-jobs: {}
-services:
-  app-demo:
-    deployments:
-      replicas: 1
-    image: registry.inner/erda-erda/app-demo:1660034920509725590
-    ports:
-    - expose: true
-      port: 80
-    resources:
-      cpu: 0.2
-      mem: 20
-version: "2.0"
-`
-	appDemo2Dice := `
-envs: {}
-jobs: {}
-services:
-  app-demo-2:
-    deployments:
-      replicas: 1
-    image: registry.inner/erda-erda/app-demo-2:1660034920509725590
-    ports:
-    - expose: true
-      port: 80
-    resources:
-      cpu: 0.2
-      mem: 20
-version: "2.0"
-`
-
-	mock.ExpectQuery("SELECT").WithArgs(1, 1, 1, "1.0.0+20220809164508").WillReturnRows(sqlmock.NewRows([]string{"release_id", "dice"}).
-		AddRow("eb028675-b8d8-4039-874c-4099e7c9170b", appDemoDice)).RowsWillBeClosed()
-	mock.ExpectQuery("SELECT").WithArgs(1, 1, 2, "1.0.4+20220809164918").WillReturnRows(sqlmock.NewRows([]string{"release_id", "dice"}).
-		AddRow("e2f88618-6135-4c6e-b9b1-37cd0900e4ad", appDemo2Dice)).RowsWillBeClosed()
+	bdl := bundle.New()
 
 	defer monkey.UnpatchAll()
-	monkey.Patch(ParseMetaFromReadCloser, func(io.ReadCloser) (*apistructs.ReleaseMetadata, map[string]string, error) {
-		return &apistructs.ReleaseMetadata{
-				ApiVersion: "v1",
-				Author:     "erda",
-				Source: apistructs.ReleaseSource{
-					Org:     "erda",
-					Project: "erda",
-					URL:     "https://erda.io/dop/projects/1",
-				},
-				Version:   "1.0.0",
-				ChangeLog: "release: 1.0.0",
-				Modes: map[string]apistructs.ReleaseModeMetadata{
-					"modeA": {
-						Expose: true,
-						AppList: [][]apistructs.AppMetadata{{
-							{
-								AppName:          "app-demo",
-								GitBranch:        "release/1.0.0",
-								GitCommitID:      "60eb5799596db6e8b7564b389baf9803d6c36bb4",
-								GitCommitMessage: "remove 1 file",
-								GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-demo",
-								Version:          "1.0.0+20220809164508",
-							},
-							{
-								AppName:          "app-demo-2",
-								GitBranch:        "release/1.0.4",
-								GitCommitID:      "0266863d8c3840aac4df14ee37e1d8dc7fc44188",
-								GitCommitMessage: "init project",
-								GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-admin-demo",
-								Version:          "1.0.4+20220809164918",
-							},
-						}},
-					},
-					"quickstart": {
-						Expose: true,
-						AppList: [][]apistructs.AppMetadata{{
-							{
-								AppName:          "app-demo",
-								GitBranch:        "release/1.0.0",
-								GitCommitID:      "60eb5799596db6e8b7564b389baf9803d6c36bb4",
-								GitCommitMessage: "remove 1 file",
-								GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/go-demo",
-								Version:          "1.0.0+20220809164508",
-							},
-						}},
-					},
-				},
-			}, map[string]string{
-				"app-demo":   appDemoDice,
-				"app-demo-2": appDemo2Dice,
-			}, nil
-	},
-	)
-
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppIDByNames", func(*bundle.Bundle, uint64, string,
 		[]string) (*apistructs.GetAppIDByNamesResponseData, error) {
 		return &apistructs.GetAppIDByNamesResponseData{
 			AppNameToID: map[string]int64{
 				"app-demo":   1,
 				"app-demo-2": 2,
+				"app-demo-3": 3,
 			},
 		}, nil
 	})
 
-	_, _, err = rs.parseReleaseFile(&pb.ReleaseUploadRequest{
-		ProjectID: 1,
-		OrgID:     1,
-	}, nil)
-	if err != nil {
-		t.Fatal(err)
+	type fields struct {
+		mock       func() (*gorm.DB, sqlmock.Sqlmock)
+		monkeyPath func() *monkey.PatchGuard
+		bdl        bundle.Bundle
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{
+			name: "application already existed in dicehub",
+			fields: fields{
+				mock: func() (*gorm.DB, sqlmock.Sqlmock) {
+					gormDB, mock, err := db.InitMysqlMock()
+					if err != nil {
+						t.Fatal(err)
+					}
+					mock.ExpectQuery("SELECT").
+						WithArgs(1, 1, 1, "1.0.0+20220809164508").
+						WillReturnRows(sqlmock.NewRows([]string{"release_id", "dice"}).
+							AddRow("eb028675-b8d8-4039-874c-4099e7c9170b", fmt.Sprintf(appDemoDiceTmpl, 1))).
+						RowsWillBeClosed()
+
+					mock.ExpectQuery("SELECT").
+						WithArgs(1, 1, 2, "1.0.4+20220809164918").
+						WillReturnRows(sqlmock.NewRows([]string{"release_id", "dice"}).
+							AddRow("e2f88618-6135-4c6e-b9b1-37cd0900e4ad", fmt.Sprintf(appDemoDiceTmpl, 2))).
+						RowsWillBeClosed()
+					return gormDB, mock
+				},
+				monkeyPath: func() *monkey.PatchGuard {
+					return monkey.Patch(ParseMetaFromReadCloser, func(io.ReadCloser) (
+						*apistructs.ReleaseMetadata, map[string]string, error) {
+						retMode := base
+						return &retMode, map[string]string{
+							"app-demo":   fmt.Sprintf(appDemoDiceTmpl, 1),
+							"app-demo-2": fmt.Sprintf(appDemoDiceTmpl, 2),
+						}, nil
+					})
+				},
+			},
+		},
+		{
+			name: "application not existed in dicehub",
+			fields: fields{
+				mock: func() (*gorm.DB, sqlmock.Sqlmock) {
+					gormDB, mock, err := db.InitMysqlMock()
+					if err != nil {
+						t.Fatal(err)
+					}
+					mock.ExpectQuery("SELECT").
+						WithArgs(1, 1, 3, "1.3.0+20220804164816").
+						WillReturnRows(sqlmock.NewRows([]string{"release_id", "dice"}))
+					return gormDB, mock
+				},
+				monkeyPath: func() *monkey.PatchGuard {
+					return monkey.Patch(ParseMetaFromReadCloser, func(io.ReadCloser) (
+						*apistructs.ReleaseMetadata, map[string]string, error) {
+						retMode := base
+						retMode.Modes = map[string]apistructs.ReleaseModeMetadata{
+							"quickstart": {
+								Expose: true,
+								AppList: [][]apistructs.AppMetadata{{
+									{
+										AppName:          "app-demo-3",
+										GitBranch:        "release/1.3.0",
+										GitCommitID:      "d2828ac735b29d97c7f866aa7470b3f71cc89ac8",
+										GitCommitMessage: "init project",
+										GitRepo:          "http://gittar.erda-system.svc.cluster.local:5566/erda-demo-erda-demo/rust-demo",
+										Version:          "1.3.0+20220804164816",
+									},
+								}},
+							},
+						}
+						return &retMode, map[string]string{
+							"app-demo-3": fmt.Sprintf(appDemoDiceTmpl, 3),
+						}, nil
+					})
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conn, mock := tt.fields.mock()
+			rs := ReleaseService{
+				bdl: bdl,
+				db: &db.ReleaseConfigDB{
+					DB: conn,
+				},
+			}
+
+			p := tt.fields.monkeyPath()
+
+			_, _, err := rs.parseReleaseFile(&pb.ReleaseUploadRequest{
+				ProjectID: 1,
+				OrgID:     1,
+			}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			p.Unpatch()
+			mock.ExpectClose()
+			_ = conn.Close()
+		})
 	}
 }
