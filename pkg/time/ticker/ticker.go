@@ -34,14 +34,29 @@ type Ticker struct {
 	Interval time.Duration
 	Task     func() (stop bool, err error)
 	done     chan bool
+
+	execAtBegin bool
 }
 
-func New(interval time.Duration, task Task) *Ticker {
-	return &Ticker{
-		Interval: interval,
-		Task:     task,
-		done:     make(chan bool),
+type Option func(d *Ticker)
+
+func WithExecAtBegin(exec bool) Option {
+	return func(d *Ticker) {
+		d.execAtBegin = exec
 	}
+}
+
+func New(interval time.Duration, task Task, opts ...Option) *Ticker {
+	d := &Ticker{
+		Interval:    interval,
+		Task:        task,
+		done:        make(chan bool),
+		execAtBegin: true,
+	}
+	for _, opt := range opts {
+		opt(d)
+	}
+	return d
 }
 
 func (d *Ticker) Run() error {
@@ -52,12 +67,14 @@ func (d *Ticker) Run() error {
 		err      error
 		finished bool
 	)
-	fmt.Printf("the interval task %s is running right now: %s\n", d.Name, time.Now().Format(time.RFC3339))
-	finished, err = d.Task()
-	fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
-	if finished {
-		d.Close()
-		return err
+	if d.execAtBegin {
+		fmt.Printf("the interval task %s is running right now: %s\n", d.Name, time.Now().Format(time.RFC3339))
+		finished, err = d.Task()
+		fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
+		if finished {
+			d.Close()
+			return err
+		}
 	}
 
 	for {
