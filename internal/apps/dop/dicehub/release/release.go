@@ -1025,6 +1025,9 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 					UpdatedAt:        now,
 					IsLatest:         true,
 				})
+
+				// cache application name union version to release id
+				cacheAppVersion2ID[fmt.Sprintf("%s_%s", appName, version)] = id
 			}
 		}
 		modes[name] = apistructs.ReleaseDeployMode{
