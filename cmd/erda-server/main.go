@@ -67,6 +67,8 @@ import (
 	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/client"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
@@ -130,6 +132,10 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/rule"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/search"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/taskerror"
+
+	// cmp
+	_ "github.com/erda-project/erda/internal/apps/cmp"
+	_ "github.com/erda-project/erda/internal/apps/cmp/component-protocol/components"
 )
 
 //go:embed bootstrap.yaml

@@ -27,6 +27,7 @@ i18n:
     - conf/i18n/cs-i18n.yml # core-services
     - conf/i18n/i18n.yaml # core-services
     - conf/i18n/cp/common.yaml # dop
+    - conf/i18n/cp/cmp-common.yaml # cmp
     - common-conf/i18n/common.yml # dop
   files:
     - conf/i18n/cp/scenarios/
@@ -346,3 +347,14 @@ erda.dop.rule.action.dingtalkworknotice: { }
 #  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 #erda.core.org-client: {}
 #erda.core.org: {}
+
+########### cmp
+cmp: { }
+grpc-client@erda.core.monitor.metric:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+  block: false
+erda.core.monitor.metric-client: {}
+grpc-client@erda.core.monitor.alert:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+  block: false
+erda.core.monitor.alert-client: {}
