@@ -27,7 +27,7 @@ envs:
   OPENAPI_ADDR: erda-server:9529
   MSP_ADDR: msp:8080
   DOP_ADDR: erda-server:9095
-  CMP_ADDR: cmp:9027
+  CMP_ADDR: erda-server:9095
   ORCHESTRATOR_ADDR: orchestrator:8081
   OTEL_TRACES_ENABLED: false
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
@@ -57,6 +57,7 @@ services:
       UC_AUDITOR_PULL_SIZE: "30"
       ERDA_SERVER_ADDR: "localhost:9095"
       DOP_ADDR: "localhost:9095"
+      CMP_ADDR: "localhost:9095"
     ports:
       - port: 9529
         protocol: "TCP"
