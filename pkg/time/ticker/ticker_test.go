@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/pkg/time/ticker"
 )
@@ -43,4 +44,15 @@ func TestTicker_Close(t *testing.T) {
 		return false, nil
 	})
 	ti.Run()
+}
+
+func TestTicker_New(t *testing.T) {
+	task := func() (finished bool, err error) {
+		return true, nil
+	}
+	d := ticker.New(time.Millisecond*200, task)
+	assert.True(t, d.ExecAtBegin, "default behaviour")
+
+	d = ticker.New(time.Millisecond*200, task, ticker.WithExecAtBegin(false))
+	assert.False(t, d.ExecAtBegin)
 }
