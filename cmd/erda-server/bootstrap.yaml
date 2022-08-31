@@ -203,7 +203,7 @@ openapi-v1-routes:
         scenarios:
           - demo
           - yetAnotherDemo
-      - addr: cmp:9027
+      - app: cmp
         scenarios:
           - cmp-dashboard-events-list
           - cmp-dashboard-workloads-list
