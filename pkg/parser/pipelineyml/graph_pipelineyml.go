@@ -15,8 +15,10 @@
 package pipelineyml
 
 import (
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -115,8 +117,8 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 	return GenerateYml(s)
 }
 
-// ConvertToGraphPipelineYml: YAML(Spec) -> apistructs.PipelineYml
-func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
+// ConvertToGraphPipelineYml: YAML(Spec) -> pb.PipelineYml
+func ConvertToGraphPipelineYml(data []byte) (*pb.PipelineYml, error) {
 
 	pipelineYml, err := New(data, WithFlatParams(false))
 	if err != nil {
@@ -124,16 +126,19 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 	}
 
 	params := pipelineYml.Spec().Params
-	var pipelineParams []*apistructs.PipelineParam
+	var pipelineParams []*pb.PipelineParam
 	if params != nil {
 		for _, param := range params {
-			pipelineInput := toApiParam(param)
+			pipelineInput, err := toApiParam(param)
+			if err != nil {
+				return nil, err
+			}
 			pipelineParams = append(pipelineParams, pipelineInput)
 		}
 	}
 
 	outputs := pipelineYml.Spec().Outputs
-	var pipelineOutputs []*apistructs.PipelineOutput
+	var pipelineOutputs []*pb.PipelineOutput
 	if outputs != nil {
 		for _, output := range outputs {
 			pipelineOutput := toApiOutput(output)
@@ -141,18 +146,18 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		}
 	}
 
-	var on *apistructs.TriggerConfig
+	var on *pb.TriggerConfig
 	if pipelineYml.Spec().On != nil {
 		merge := pipelineYml.Spec().On.Merge
 		push := pipelineYml.Spec().On.Push
 		if merge != nil || push != nil {
-			on = &apistructs.TriggerConfig{}
+			on = &pb.TriggerConfig{}
 			if merge != nil {
 				var branches []string
 				if merge.Branches != nil {
 					branches = merge.Branches
 				}
-				on.Merge = &apistructs.MergeTrigger{Branches: branches}
+				on.Merge = &pb.MergeTrigger{Branches: branches}
 			}
 			if push != nil {
 				var branches, tags []string
@@ -162,7 +167,7 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 				if push.Tags != nil {
 					tags = push.Tags
 				}
-				on.Push = &apistructs.PushTrigger{
+				on.Push = &pb.PushTrigger{
 					Branches: branches,
 					Tags:     tags,
 				}
@@ -171,18 +176,18 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 	}
 
 	triggers := pipelineYml.Spec().Triggers
-	var pipelineTriggers []*apistructs.PipelineTrigger
+	var pipelineTriggers []*pb.PipelineTrigger
 	if triggers != nil {
 		for _, trigger := range triggers {
 			eventName := trigger.On
 			filter := trigger.Filter
 			if eventName != "" && filter != nil {
-				pipelineTriggers = append(pipelineTriggers, &apistructs.PipelineTrigger{On: eventName, Filter: filter})
+				pipelineTriggers = append(pipelineTriggers, &pb.PipelineTrigger{On: eventName, Filter: filter})
 			}
 		}
 	}
 
-	result := &apistructs.PipelineYml{
+	result := &pb.PipelineYml{
 		Version:     pipelineYml.Spec().Version,
 		Envs:        pipelineYml.Spec().Envs,
 		Cron:        pipelineYml.Spec().Cron,
@@ -191,11 +196,11 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		Outputs:     pipelineOutputs,
 		On:          on,
 		Triggers:    pipelineYml.Spec().Triggers,
-		CronCompensator: func() *apistructs.CronCompensator {
+		CronCompensator: func() *pb.CronCompensator {
 			if pipelineYml.Spec().CronCompensator == nil {
 				return nil
 			}
-			return &apistructs.CronCompensator{
+			return &pb.CronCompensator{
 				Enable:               pipelineYml.Spec().CronCompensator.Enable,
 				LatestFirst:          pipelineYml.Spec().CronCompensator.LatestFirst,
 				StopIfLatterExecuted: pipelineYml.Spec().CronCompensator.StopIfLatterExecuted,
@@ -203,14 +208,13 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		}(),
 	}
 
-	var lifecycle []*apistructs.NetworkHookInfo
+	var lifecycle []*pb.NetworkHookInfo
 	for _, hookInfo := range pipelineYml.Spec().Lifecycle {
-		hook := apistructs.NetworkHookInfo{
-			Hook:   hookInfo.Hook,
-			Client: hookInfo.Client,
-			Labels: hookInfo.Labels,
+		hook, err := hookInfo.Convert2PB()
+		if err != nil {
+			return nil, err
 		}
-		lifecycle = append(lifecycle, &hook)
+		lifecycle = append(lifecycle, hook)
 	}
 	result.Lifecycle = lifecycle
 
@@ -224,8 +228,9 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		result.YmlContent = string(graphYmlContent)
 	}
 
+	stages := make([]interface{}, 0)
 	for _, stage := range pipelineYml.Spec().Stages {
-		stageActions := make([]*apistructs.PipelineYmlAction, 0)
+		stageActions := make([]interface{}, 0)
 		for _, typedAction := range stage.Actions {
 			for _, action := range typedAction {
 				resultAction := &apistructs.PipelineYmlAction{}
@@ -256,7 +261,7 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 				}
 
 				if action.SnippetConfig != nil {
-					resultAction.SnippetConfig = action.SnippetConfig.toApiSnippetConfig()
+					resultAction.SnippetConfig = action.SnippetConfig.toPBSnippetConfig()
 				}
 
 				if action.Policy != nil {
@@ -264,18 +269,27 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 						Type: action.Policy.Type,
 					}
 				}
+				structValue, err := resultAction.Convert2StructValue()
+				if err != nil {
+					return nil, err
+				}
 
-				stageActions = append(stageActions, resultAction)
+				stageActions = append(stageActions, structValue.AsInterface())
 			}
 		}
-		result.Stages = append(result.Stages, stageActions)
+		stages = append(stages, stageActions)
 	}
+	stagesPB, err := structpb.NewList(stages)
+	if err != nil {
+		return nil, err
+	}
+	result.Stages = stagesPB
 
 	result.CronCompensator = cronCompensatorReset(result.CronCompensator)
 	return result, nil
 }
 
-func cronCompensatorReset(cronCompensator *apistructs.CronCompensator) *apistructs.CronCompensator {
+func cronCompensatorReset(cronCompensator *pb.CronCompensator) *pb.CronCompensator {
 	if cronCompensator != nil {
 		if cronCompensator.Enable == DefaultCronCompensator.Enable &&
 			cronCompensator.LatestFirst == DefaultCronCompensator.LatestFirst &&
@@ -286,18 +300,22 @@ func cronCompensatorReset(cronCompensator *apistructs.CronCompensator) *apistruc
 	return cronCompensator
 }
 
-func toApiParam(pipelineInput *PipelineParam) (params *apistructs.PipelineParam) {
-	return &apistructs.PipelineParam{
+func toApiParam(pipelineInput *PipelineParam) (params *pb.PipelineParam, err error) {
+	paramDefault, err := structpb.NewValue(pipelineInput.Default)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PipelineParam{
 		Name:     pipelineInput.Name,
 		Required: pipelineInput.Required,
-		Default:  pipelineInput.Default,
+		Default:  paramDefault,
 		Desc:     pipelineInput.Desc,
 		Type:     pipelineInput.Type,
-	}
+	}, nil
 }
 
-func toApiOutput(pipelineOutput *PipelineOutput) (outputs *apistructs.PipelineOutput) {
-	return &apistructs.PipelineOutput{
+func toApiOutput(pipelineOutput *PipelineOutput) (outputs *pb.PipelineOutput) {
+	return &pb.PipelineOutput{
 		Desc: pipelineOutput.Desc,
 		Name: pipelineOutput.Name,
 		Ref:  pipelineOutput.Ref,

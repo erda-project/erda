@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
@@ -49,12 +50,12 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	if err != nil {
 		return nil, apierrors.ErrParsePipelineYml.InternalError(err)
 	}
-	var compensator *apistructs.CronCompensator
+	var compensator *common.CronCompensator
 	if pipelineYml.Spec().CronCompensator != nil {
-		compensator = &apistructs.CronCompensator{}
-		compensator.Enable = pipelineYml.Spec().CronCompensator.Enable
-		compensator.StopIfLatterExecuted = pipelineYml.Spec().CronCompensator.StopIfLatterExecuted
-		compensator.LatestFirst = pipelineYml.Spec().CronCompensator.LatestFirst
+		compensator = &common.CronCompensator{}
+		compensator.Enable = wrapperspb.Bool(pipelineYml.Spec().CronCompensator.Enable)
+		compensator.StopIfLatterExecuted = wrapperspb.Bool(pipelineYml.Spec().CronCompensator.StopIfLatterExecuted)
+		compensator.LatestFirst = wrapperspb.Bool(pipelineYml.Spec().CronCompensator.LatestFirst)
 	}
 
 	if req.CronExpr == "" {
@@ -338,10 +339,10 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 		return nil, err
 	}
 	if pipeline.Spec().CronCompensator != nil {
-		cron.Extra.Compensator = &apistructs.CronCompensator{
-			Enable:               pipeline.Spec().CronCompensator.Enable,
-			LatestFirst:          pipeline.Spec().CronCompensator.LatestFirst,
-			StopIfLatterExecuted: pipeline.Spec().CronCompensator.StopIfLatterExecuted,
+		cron.Extra.Compensator = &common.CronCompensator{
+			Enable:               wrapperspb.Bool(pipeline.Spec().CronCompensator.Enable),
+			LatestFirst:          wrapperspb.Bool(pipeline.Spec().CronCompensator.LatestFirst),
+			StopIfLatterExecuted: wrapperspb.Bool(pipeline.Spec().CronCompensator.StopIfLatterExecuted),
 		}
 	}
 	cron.CronExpr = req.CronExpr

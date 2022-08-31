@@ -82,7 +82,7 @@ type PipelineCronExtra struct {
 
 	// compensate
 	// Compensator 老的 cron 为空，经过补偿后会自动赋值默认配置；新创建的 cron 一定会有值。
-	Compensator *apistructs.CronCompensator `json:"compensator,omitempty"`
+	Compensator *pb.CronCompensator `json:"compensator,omitempty"`
 	//每次中断补偿执行的时间，下次中断补偿从这个时间开始查询
 	LastCompensateAt *time.Time `json:"lastCompensateAt,omitempty"`
 }
@@ -157,9 +157,9 @@ func (pc *PipelineCron) Convert2DTO() *pb.Cron {
 				return nil
 			}
 			return &pb.CronCompensator{
-				Enable:               wrapperspb.Bool(pc.Extra.Compensator.Enable),
-				LatestFirst:          wrapperspb.Bool(pc.Extra.Compensator.LatestFirst),
-				StopIfLatterExecuted: wrapperspb.Bool(pc.Extra.Compensator.StopIfLatterExecuted),
+				Enable:               pc.Extra.Compensator.Enable,
+				LatestFirst:          pc.Extra.Compensator.LatestFirst,
+				StopIfLatterExecuted: pc.Extra.Compensator.StopIfLatterExecuted,
 			}
 		}(),
 		LastCompensateAt: func() *timestamppb.Timestamp {

@@ -17,6 +17,8 @@ package pipelineyml
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCountEnabledActionNumByPipelineYml(t *testing.T) {
@@ -214,4 +216,18 @@ func TestGetSliceCommands(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvert2PB(t *testing.T) {
+	hookInfo := &NetworkHookInfo{
+		Hook:   "hook",
+		Client: "client",
+		Labels: map[string]interface{}{
+			"hook": "hook",
+			"id":   3,
+		},
+	}
+	hook, err := hookInfo.Convert2PB()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(hook.Labels))
 }

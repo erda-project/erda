@@ -16,15 +16,17 @@ package autotest
 
 import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	graphpb "github.com/erda-project/erda-proto-go/core/pipeline/graph/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 // Service autotest 实例对象封装
 type Service struct {
-	db  *dao.DBClient
-	bdl *bundle.Bundle
-	cms cmspb.CmsServiceServer
+	db    *dao.DBClient
+	bdl   *bundle.Bundle
+	cms   cmspb.CmsServiceServer
+	graph graphpb.GraphServiceServer
 }
 
 // New 新建 autotest service
@@ -55,5 +57,11 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(svc *Service) {
 		svc.cms = cms
+	}
+}
+
+func WithPipelineGraph(graph graphpb.GraphServiceServer) Option {
+	return func(svc *Service) {
+		svc.graph = graph
 	}
 }

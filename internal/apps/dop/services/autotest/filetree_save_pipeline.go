@@ -15,12 +15,16 @@
 package autotest
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	graphpb "github.com/erda-project/erda-proto-go/core/pipeline/graph/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -47,7 +51,7 @@ func (svc *Service) SaveFileTreeNodePipeline(req apistructs.AutoTestCaseSavePipe
 	if req.PipelineYml != "" {
 		// 为当前节点生成 snippetConfig，pipeline engine 直接使用当前未保存的 pipeline yml 文件内容作为 query-snippet-yaml 结果；
 		// 否则，pipeline engine 会拿到老的 yaml，导致无法判断循环引用等问题
-		var snippetConfigForCurrentNode *apistructs.SnippetConfig
+		var snippetConfigForCurrentNode *pb.SnippetConfig
 		currentNodeMeta, exist, err := svc.db.GetAutoTestFileTreeNodeMetaByInode(req.Inode)
 		if err != nil {
 			return nil, apierrors.ErrSaveAutoTestFileTreeNodePipeline.InternalError(err)
@@ -59,8 +63,8 @@ func (svc *Service) SaveFileTreeNodePipeline(req apistructs.AutoTestCaseSavePipe
 		}
 		snippetConfigForCurrentNode.Name = req.Inode
 
-		// 解析 pipeline 内容
-		y, err := svc.bdl.ParsePipelineYmlGraph(apistructs.PipelineYmlParseGraphRequest{
+		// parse pipeline graph
+		y, err := svc.graph.PipelineYmlGraph(context.Background(), &graphpb.PipelineYmlGraphRequest{
 			PipelineYmlContent: req.PipelineYml,
 			SnippetConfig:      snippetConfigForCurrentNode,
 		})
@@ -68,9 +72,9 @@ func (svc *Service) SaveFileTreeNodePipeline(req apistructs.AutoTestCaseSavePipe
 			return nil, apierrors.ErrSaveAutoTestFileTreeNodePipeline.InvalidParameter(fmt.Errorf("invalid pipelineYml: %v", err))
 		}
 
-		snippetAction := svc.handleSnippetAction(*y)
+		snippetAction := svc.handleSnippetAction(*y.Data)
 
-		polishedYaml, err := svc.handlePipelineYml(req, *y)
+		polishedYaml, err := svc.handlePipelineYml(req, *y.Data)
 		if err != nil {
 			return nil, apierrors.ErrSaveAutoTestFileTreeNodePipeline.InternalError(err)
 		}
@@ -113,7 +117,7 @@ func (svc *Service) SaveFileTreeNodePipeline(req apistructs.AutoTestCaseSavePipe
 }
 
 // handleSnippetAction 生成 snippet action 配置供其他用例或计划通过 snippet action 方式引用当前节点时，根据该参数拼装 action
-func (svc *Service) handleSnippetAction(y apistructs.PipelineYml) apistructs.PipelineYmlAction {
+func (svc *Service) handleSnippetAction(y pb.PipelineYml) pb.PipelineYmlAction {
 
 	// 生成 snippet action
 	// tips:
@@ -129,7 +133,7 @@ func (svc *Service) handleSnippetAction(y apistructs.PipelineYml) apistructs.Pip
 	}
 	snippetConfig.Labels[labelKeyApiCount] = strconv.Itoa(apiCount)
 
-	snippetAction := apistructs.PipelineYmlAction{
+	snippetAction := pb.PipelineYmlAction{
 		Alias:         "", // alias 调用方赋值，因为一个 snippet 可以被引用多次，alias 不能一样
 		Type:          pipelineyml.Snippet,
 		Params:        nil, // 调用方统一调用 pipeline 提供的 snippet detail 接口批量获取 params
@@ -139,8 +143,8 @@ func (svc *Service) handleSnippetAction(y apistructs.PipelineYml) apistructs.Pip
 	return snippetAction
 }
 
-func generateBaseSnippetConfig() *apistructs.SnippetConfig {
-	return &apistructs.SnippetConfig{
+func generateBaseSnippetConfig() *pb.SnippetConfig {
+	return &pb.SnippetConfig{
 		Source: apistructs.PipelineSourceAutoTest.String(), // 固定为 autotest
 		Name:   "",                                         // 为了方便复制，在 get node 详情时才赋值，使用 inode 填充
 		Labels: map[string]string{},                        // ensure non-nil
@@ -148,15 +152,24 @@ func generateBaseSnippetConfig() *apistructs.SnippetConfig {
 }
 
 // handlePipelineYml 处理 pipeline yml 内容
-func (svc *Service) handlePipelineYml(req apistructs.AutoTestCaseSavePipelineRequest, y apistructs.PipelineYml) (string, error) {
+func (svc *Service) handlePipelineYml(req apistructs.AutoTestCaseSavePipelineRequest, y pb.PipelineYml) (string, error) {
 	needUpdate := false
 
 	// TODO yaml 里 snippet 嵌套返回 actions，则无需查询，直接使用嵌套数据
 
+	stages := y.Stages
+	var graphStages [][]*pb.PipelineYmlAction
+	stageBytes, err := stages.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	if err := json.Unmarshal(stageBytes, &graphStages); err != nil {
+		return "", err
+	}
 	// yaml 中若有 snippet autotest case 引用，则查询对应的 snippetConfig 并更新
-	for i := range y.Stages {
-		for j := range y.Stages[i] {
-			action := y.Stages[i][j]
+	for i := range graphStages {
+		for j := range graphStages[i] {
+			action := graphStages[i][j]
 			if action.Type == pipelineyml.Snippet {
 				if action.SnippetConfig != nil && action.SnippetConfig.Name != "" &&
 					action.SnippetConfig.Source == apistructs.PipelineSourceAutoTest.String() {
@@ -172,14 +185,14 @@ func (svc *Service) handlePipelineYml(req apistructs.AutoTestCaseSavePipelineReq
 					}
 					meta.SnippetAction.SnippetConfig.Name = inode
 
-					if y.Stages[i][j].SnippetConfig == nil {
-						y.Stages[i][j].SnippetConfig = meta.SnippetAction.SnippetConfig
+					if graphStages[i][j].SnippetConfig == nil {
+						graphStages[i][j].SnippetConfig = meta.SnippetAction.SnippetConfig
 					} else {
 						if meta.SnippetAction.SnippetConfig == nil {
 							continue
 						}
 						for key, value := range meta.SnippetAction.SnippetConfig.Labels {
-							y.Stages[i][j].SnippetConfig.Labels[key] = value
+							graphStages[i][j].SnippetConfig.Labels[key] = value
 						}
 					}
 				}

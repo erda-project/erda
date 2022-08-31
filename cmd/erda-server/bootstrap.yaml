@@ -283,6 +283,10 @@ erda.core.pipeline.cms-client: { }
 grpc-client@erda.core.pipeline.definition:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
   block: false
+erda.core.pipeline.graph-client: { }
+grpc-client@erda.core.pipeline.graph:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 erda.core.pipeline.definition-client: { }
 grpc-client@erda.core.pipeline.source:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"

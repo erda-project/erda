@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 func TestConvertGraphPipelineYml(t *testing.T) {
@@ -46,12 +46,12 @@ func TestConvertToGraphPipelineYml(t *testing.T) {
 
 func Test_cronCompensatorReset(t *testing.T) {
 	type args struct {
-		cronCompensator *apistructs.CronCompensator
+		cronCompensator *pb.CronCompensator
 	}
 	tests := []struct {
 		name string
 		args args
-		want *apistructs.CronCompensator
+		want *pb.CronCompensator
 	}{
 		{
 			name: "test_nil",
@@ -63,7 +63,7 @@ func Test_cronCompensatorReset(t *testing.T) {
 		{
 			name: "test_default",
 			args: args{
-				cronCompensator: &apistructs.CronCompensator{
+				cronCompensator: &pb.CronCompensator{
 					Enable:               DefaultCronCompensator.Enable,
 					LatestFirst:          DefaultCronCompensator.LatestFirst,
 					StopIfLatterExecuted: DefaultCronCompensator.StopIfLatterExecuted,
@@ -74,13 +74,13 @@ func Test_cronCompensatorReset(t *testing.T) {
 		{
 			name: "test_other",
 			args: args{
-				cronCompensator: &apistructs.CronCompensator{
+				cronCompensator: &pb.CronCompensator{
 					Enable:               true,
 					LatestFirst:          false,
 					StopIfLatterExecuted: true,
 				},
 			},
-			want: &apistructs.CronCompensator{
+			want: &pb.CronCompensator{
 				Enable:               true,
 				LatestFirst:          false,
 				StopIfLatterExecuted: true,
