@@ -81,6 +81,7 @@ func (p *provider) initialize(ctx context.Context) error {
 	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -188,8 +189,9 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		shellHandler.HandleShell,
 		auditor.AuditMiddleWare,
 	}
-	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))
-	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
+
+	server.Router().Path("/api/k8s/clusters/{clusterName}/*").Handler(middlewares.Handler(ep.SteveAggregator))
+	server.Router().Path("/api/apim/metrics/*").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
 
 	logrus.Info("starting cmp instance")
 
