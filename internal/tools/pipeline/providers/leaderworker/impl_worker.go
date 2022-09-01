@@ -244,10 +244,14 @@ func (p *provider) workerListenCancelingLogicTask(ctx context.Context, w worker.
 			p.Log.Infof("logic task cancel request received, begin cancel it, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
 			// do cancel
 			p.lock.Lock()
-			tctx := p.forWorkerUse.myWorkers[w.GetID()].LogicTasks[logicTaskID].Ctx
-			lwctx.IdempotentCloseTaskCancelChan(tctx)
+			defer p.lock.Unlock()
+			logicTask, ok := p.forWorkerUse.myWorkers[w.GetID()].LogicTasks[logicTaskID]
+			if !ok {
+				p.Log.Warnf("worker received cancel request, but not found logic task, skip cancel, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
+				return
+			}
+			lwctx.IdempotentCloseTaskCancelChan(logicTask.Ctx)
 			// set canceling flag to true to prevent duplicate close chan
-			p.lock.Unlock()
 			p.Log.Infof("logic task cancel request received, cancel signal sent, waiting for cancellation done, workerID: %s, logicTaskID: %s", w.GetID(), logicTaskID)
 			return
 		}()
