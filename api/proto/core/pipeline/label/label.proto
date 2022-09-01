@@ -19,7 +19,7 @@ service LabelService {
   }
   rpc PipelineLabelList (PipelineLabelListRequest) returns (PipelineLabelListResponse) {
     option (google.api.http) = {
-      post: "/api/pipelines-labels",
+      get: "/api/pipelines-labels",
     };
   }
 }
@@ -35,20 +35,27 @@ message PipelineLabel {
   google.protobuf.Timestamp timeCreated = 8;
   google.protobuf.Timestamp timeUpdated = 9;
 }
+
 message PipelineLabelBatchInsertRequest {
   repeated PipelineLabel labels = 1;
 }
+
 message PipelineLabelBatchInsertResponse {
 }
 
 message PipelineLabelListRequest {
   string pipelineSource = 1;
   string pipelineYmlName = 2;
-  repeated uint64 targetIDs = 3;
+  repeated uint64 targetIDs = 3 [json_name = "targetIds"];
   repeated string matchKeys = 4;
   repeated string unMatchKeys = 5;
 }
-message PipelineLabelListResponse {
+
+message PipelineLabelPageListData {
   repeated PipelineLabel labels = 1;
   int64 total = 2;
+}
+
+message PipelineLabelListResponse {
+  PipelineLabelPageListData data = 1;
 }

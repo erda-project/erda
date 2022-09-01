@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/label/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -74,7 +75,7 @@ func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOptio
 	return err
 }
 
-func (client *Client) ListPipelineLabels(req *apistructs.PipelineLabelListRequest, ops ...SessionOption) ([]spec.PipelineLabel, int64, error) {
+func (client *Client) ListPipelineLabels(req *pb.PipelineLabelListRequest, ops ...SessionOption) ([]spec.PipelineLabel, int64, error) {
 	sqlSession := client.NewSession(ops...)
 	defer sqlSession.Close()
 

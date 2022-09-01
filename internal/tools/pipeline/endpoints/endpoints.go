@@ -168,10 +168,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipelines/{pipelineID}/actions/rerun", Method: http.MethodPost, Handler: e.pipelineRerun},
 		{Path: "/api/pipelines/{pipelineID}/actions/rerun-failed", Method: http.MethodPost, Handler: e.pipelineRerunFailed},
 
-		// labels
-		{Path: "/api/pipelines-labels/actions/batch-insert-labels", Method: http.MethodPost, Handler: e.batchInsertLabels},
-		{Path: "/api/pipelines-labels", Method: http.MethodGet, Handler: e.pipelineLabelList},
-
 		// tasks
 		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}", Method: http.MethodGet, Handler: e.pipelineTaskDetail},
 		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info", Method: http.MethodGet, Handler: e.taskBootstrapInfo},
