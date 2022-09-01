@@ -72,11 +72,12 @@ func (p *provider) normalize(input *pb.Event) *event.Event {
 		Kind:      input.Kind.String(),
 		Content:   input.Message,
 		Timestamp: int64(input.TimeUnixNano),
+		Time:      time.Unix(0, int64(input.TimeUnixNano)),
 		Tags:      input.Attributes,
-		Relations: &event.Relation{
-			ResID:   input.Relations.ResID,
-			ResType: input.Relations.ResType,
-			TraceID: input.Relations.TraceID,
+		Relations: map[string]string{
+			"res_id":   input.Relations.ResID,
+			"res_type": input.Relations.ResType,
+			"trace_id": input.Relations.TraceID,
 		},
 	}
 }

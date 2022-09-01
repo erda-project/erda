@@ -256,7 +256,7 @@ etcd-election@table-loader:
 
 erda.msp.apm.exception.query:
   query_source:
-    elasticsearch: "${QUERY_EVENT_FROM_ES_ENABLE:true}"
+    elasticsearch: "${QUERY_EVENT_FROM_ES_ENABLE|QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:true}"
     cassandra: "${QUERY_EVENT_FROM_CASSANDRA_ENABLE:false}"
   cassandra:
     keyspace:

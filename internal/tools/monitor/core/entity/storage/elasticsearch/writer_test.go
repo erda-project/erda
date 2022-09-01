@@ -20,11 +20,11 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
 )
 
 func Test_WriteN_Should_Success(t *testing.T) {
-	monkey.Patch((*provider).SetEntities, func(p *provider, ctx context.Context, list []*pb.Entity) (int, error) {
+	monkey.Patch((*provider).SetEntities, func(p *provider, ctx context.Context, list []*entity.Entity) (int, error) {
 		return len(list), nil
 	})
 	defer monkey.Unpatch((*provider).SetEntities)
@@ -35,8 +35,8 @@ func Test_WriteN_Should_Success(t *testing.T) {
 	}
 
 	var entities []interface{}
-	entities = append(entities, &pb.Entity{Id: "1"})
-	entities = append(entities, &pb.Entity{Id: "2"})
+	entities = append(entities, &entity.Entity{ID: "1"})
+	entities = append(entities, &entity.Entity{ID: "2"})
 	result, err := w.WriteN(entities...)
 	if err != nil {
 		t.Errorf("error assert failed, expect: nil, but got: %s", err)

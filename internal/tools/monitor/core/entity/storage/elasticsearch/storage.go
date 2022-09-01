@@ -24,14 +24,13 @@ import (
 
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	"github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
 	"github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 )
 
-func (p *provider) SetEntities(ctx context.Context, list []*pb.Entity) (int, error) {
+func (p *provider) SetEntities(ctx context.Context, list []*entity.Entity) (int, error) {
 	if len(list) <= 0 {
 		return 0, nil
 	}
@@ -73,7 +72,7 @@ func (p *provider) SetEntities(ctx context.Context, list []*pb.Entity) (int, err
 	return len(list), nil
 }
 
-func (p *provider) SetEntity(ctx context.Context, data *pb.Entity) error {
+func (p *provider) SetEntity(ctx context.Context, data *entity.Entity) error {
 	index, id, typ, body, doc, err := p.prepareSetRequest(ctx, data)
 	_, err = p.es.Client().Update().Index(index).
 		Type(typ).
@@ -101,7 +100,7 @@ func (p *provider) RemoveEntity(ctx context.Context, typ, key string) (bool, err
 	return true, nil
 }
 
-func (p *provider) GetEntity(ctx context.Context, typ, key string) (*pb.Entity, error) {
+func (p *provider) GetEntity(ctx context.Context, typ, key string) (*entity.Entity, error) {
 	query := elastic.NewBoolQuery().
 		Filter(elastic.NewTermQuery("type", typ)).
 		Filter(elastic.NewTermQuery("key", key))
@@ -120,7 +119,7 @@ func (p *provider) GetEntity(ctx context.Context, typ, key string) (*pb.Entity, 
 	return parseData(*resp.Hits.Hits[0].Source)
 }
 
-func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) ([]*pb.Entity, int64, error) {
+func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) ([]*entity.Entity, int64, error) {
 	query := elastic.NewBoolQuery()
 	var typ string
 	if opts != nil {
@@ -163,7 +162,7 @@ func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) 
 	if resp == nil || resp.Hits == nil {
 		return nil, 0, nil
 	}
-	list := make([]*pb.Entity, 0, len(resp.Hits.Hits))
+	list := make([]*entity.Entity, 0, len(resp.Hits.Hits))
 	for _, hit := range resp.Hits.Hits {
 		if hit.Source == nil {
 			continue
@@ -177,8 +176,8 @@ func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) 
 	return list, resp.Hits.TotalHits, nil
 }
 
-func parseData(data []byte) (*pb.Entity, error) {
-	entity := &pb.Entity{}
+func parseData(data []byte) (*entity.Entity, error) {
+	entity := &entity.Entity{}
 	err := json.Unmarshal(data, entity)
 	if err != nil {
 		return nil, err
@@ -186,12 +185,12 @@ func parseData(data []byte) (*pb.Entity, error) {
 	return entity, nil
 }
 
-func (p *provider) prepareSetRequest(ctx context.Context, data *pb.Entity) (index, id, typ string, upsertDoc interface{}, updateDoc interface{}, err error) {
+func (p *provider) prepareSetRequest(ctx context.Context, data *entity.Entity) (index, id, typ string, upsertDoc interface{}, updateDoc interface{}, err error) {
 	index, id, typ, upsertDoc, err = p.encodeToDocument(ctx)(data)
 	if err != nil {
 		return index, id, typ, upsertDoc, updateDoc, err
 	}
-	data.Id = id
+	data.ID = id
 	now := time.Now()
 	data.CreateTimeUnixNano = now.UnixNano()
 	data.UpdateTimeUnixNano = now.UnixNano()
@@ -207,14 +206,14 @@ func (p *provider) prepareSetRequest(ctx context.Context, data *pb.Entity) (inde
 
 	// upsert
 	if data.Values == nil {
-		data.Values = map[string]*structpb.Value{}
+		data.Values = map[string]string{}
 	}
 	if data.Labels == nil {
 		data.Labels = map[string]string{}
 	}
 
 	updateDoc = map[string]interface{}{
-		"id":                 data.Id,
+		"id":                 data.ID,
 		"type":               data.Type,
 		"key":                data.Key,
 		"values":             data.Values,

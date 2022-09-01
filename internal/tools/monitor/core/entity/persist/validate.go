@@ -14,16 +14,18 @@
 
 package persist
 
-import "github.com/erda-project/erda-proto-go/oap/entity/pb"
+import (
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
+)
 
 // Validator .
 type Validator interface {
-	Validate(m *pb.Entity) error
+	Validate(m *entity.Entity) error
 }
 
 type nopValidator struct{}
 
-func (*nopValidator) Validate(*pb.Entity) error { return nil }
+func (*nopValidator) Validate(e *entity.Entity) error { return nil }
 
 // NopValidator .
 var NopValidator Validator = &nopValidator{}
@@ -35,7 +37,7 @@ func newValidator(cfg *config) Validator {
 type validator struct {
 }
 
-func (v *validator) Validate(e *pb.Entity) error {
+func (v *validator) Validate(e *entity.Entity) error {
 	// TODO: check something
 	return nil
 }

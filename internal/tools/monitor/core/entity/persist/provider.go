@@ -27,18 +27,19 @@ import (
 )
 
 type config struct {
-	Input            kafka.BatchReaderConfig `file:"input"`
-	Parallelism      int                     `file:"parallelism" default:"1"`
-	BufferSize       int                     `file:"buffer_size" default:"1024"`
-	ReadTimeout      time.Duration           `file:"read_timeout" default:"5s"`
-	PrintInvalidData bool                    `file:"print_invalid_data" default:"false"`
+	Input                kafka.BatchReaderConfig `file:"input"`
+	Parallelism          int                     `file:"parallelism" default:"1"`
+	BufferSize           int                     `file:"buffer_size" default:"1024"`
+	ReadTimeout          time.Duration           `file:"read_timeout" default:"5s"`
+	PrintInvalidData     bool                    `file:"print_invalid_data" default:"false"`
+	StorageWriterService string                  `file:"storage_writer_service" default:"entity-storage-elasticsearch-writer"`
 }
 
 type provider struct {
 	Cfg           *config
 	Log           logs.Logger
 	Kafka         kafka.Interface `autowired:"kafka"`
-	StorageWriter storage.Storage `autowired:"entity-storage-writer"`
+	StorageWriter storage.Storage
 
 	stats     Statistics
 	validator Validator
@@ -50,6 +51,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if runner, ok := p.validator.(servicehub.ProviderRunnerWithContext); ok {
 		ctx.AddTask(runner.Run, servicehub.WithTaskName("entity validator"))
 	}
+
+	p.StorageWriter = ctx.Service(p.Cfg.StorageWriterService).(storage.Storage)
 
 	p.stats = sharedStatistics
 

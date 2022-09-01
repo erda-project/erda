@@ -17,7 +17,10 @@ package entity
 import (
 	"context"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
 	"github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -31,7 +34,7 @@ func (s *entityService) SetEntity(ctx context.Context, req *pb.SetEntityRequest)
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("body")
 	}
-	err := s.storage.SetEntity(ctx, req.Data)
+	err := s.storage.SetEntity(ctx, convert(req.Data))
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
@@ -56,7 +59,7 @@ func (s *entityService) GetEntity(ctx context.Context, req *pb.GetEntityRequest)
 		return nil, errors.NewDatabaseError(err)
 	}
 	return &pb.GetEntityResponse{
-		Data: entity,
+		Data: convertToPb(entity),
 	}, nil
 }
 
@@ -72,10 +75,46 @@ func (s *entityService) ListEntities(ctx context.Context, req *pb.ListEntitiesRe
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
+	var pbList []*pb.Entity
+	for i := range list {
+		pbList = append(pbList, convertToPb(list[i]))
+	}
 	return &pb.ListEntitiesResponse{
 		Data: &pb.EntityList{
-			List:  list,
+			List:  pbList,
 			Total: total,
 		},
 	}, nil
+}
+
+func convert(input *pb.Entity) *entity.Entity {
+	values := make(map[string]string)
+	for k, v := range input.Values {
+		values[k] = v.String()
+	}
+	return &entity.Entity{
+		ID:                 input.Id,
+		Type:               input.Type,
+		Key:                input.Key,
+		Values:             values,
+		Labels:             input.Labels,
+		CreateTimeUnixNano: input.CreateTimeUnixNano,
+		UpdateTimeUnixNano: input.UpdateTimeUnixNano,
+	}
+}
+
+func convertToPb(input *entity.Entity) *pb.Entity {
+	values := make(map[string]*structpb.Value)
+	for k, v := range input.Values {
+		values[k] = structpb.NewStringValue(v)
+	}
+	return &pb.Entity{
+		Id:                 input.ID,
+		Type:               input.Type,
+		Key:                input.Key,
+		Values:             values,
+		Labels:             input.Labels,
+		CreateTimeUnixNano: input.CreateTimeUnixNano,
+		UpdateTimeUnixNano: input.UpdateTimeUnixNano,
+	}
 }

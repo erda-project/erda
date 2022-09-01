@@ -24,6 +24,7 @@ import (
 )
 
 type config struct {
+	StorageReaderService string `file:"storage_reader_service" default:"event-storage-elasticsearch-reader"`
 }
 
 // +provider
@@ -31,14 +32,15 @@ type provider struct {
 	Cfg               *config
 	Log               logs.Logger
 	Register          transport.Register
-	StorageReader     storage.Storage `autowired:"event-storage-elasticsearch-reader" optional:"true"`
+	StorageReader     storage.Storage
 	eventQueryService *eventQueryService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// TODO initialize something ...
 
-	p.eventQueryService = &eventQueryService{p, p.StorageReader}
+	p.StorageReader = ctx.Service(p.Cfg.StorageReaderService).(storage.Storage)
+	p.eventQueryService = &eventQueryService{p: p, storageReader: p.StorageReader}
 	if p.Register != nil {
 		pb.RegisterEventQueryServiceImp(p.Register, p.eventQueryService, apis.Options())
 	}

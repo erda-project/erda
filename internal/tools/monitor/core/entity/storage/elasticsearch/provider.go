@@ -162,7 +162,7 @@ func processInvalidFields(data *pb.Entity) {
 
 func init() {
 	servicehub.Register("entity-storage-elasticsearch", &servicehub.Spec{
-		Services:             []string{"entity-storage", "entity-storage-writer"},
+		Services:             []string{"entity-storage-elasticsearch-reader", "entity-storage-writer-elasticsearch-writer"},
 		Dependencies:         []string{"elasticsearch"},
 		OptionalDependencies: []string{"elasticsearch.index.initializer"},
 		ConfigFunc:           func() interface{} { return &config{} },

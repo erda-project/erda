@@ -17,7 +17,7 @@ package storage
 import (
 	"context"
 
-	"github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
@@ -34,9 +34,9 @@ type (
 	// Storage .
 	Storage interface {
 		NewWriter(ctx context.Context) (storekit.BatchWriter, error)
-		SetEntity(ctx context.Context, data *pb.Entity) error
+		SetEntity(ctx context.Context, data *entity.Entity) error
 		RemoveEntity(ctx context.Context, typ, key string) (bool, error)
-		GetEntity(ctx context.Context, typ, key string) (*pb.Entity, error)
-		ListEntities(ctx context.Context, opts *ListOptions) ([]*pb.Entity, int64, error)
+		GetEntity(ctx context.Context, typ, key string) (*entity.Entity, error)
+		ListEntities(ctx context.Context, opts *ListOptions) ([]*entity.Entity, int64, error)
 	}
 )
