@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 )
 
@@ -28,7 +28,7 @@ type Statistics interface {
 	storekit.ConsumeStatistics
 
 	DecodeError(value []byte, err error)
-	ValidateError(data *pb.Entity)
+	ValidateError(data *entity.Entity)
 }
 
 type statistics struct {
@@ -134,23 +134,23 @@ func (s *statistics) DecodeError(value []byte, err error) {
 
 func (s *statistics) WriteError(list []interface{}, err error) {
 	for _, item := range list {
-		s.writeErrors.WithLabelValues(getStatisticsLabels(item.(*pb.Entity))...).Inc()
+		s.writeErrors.WithLabelValues(getStatisticsLabels(item.(*entity.Entity))...).Inc()
 	}
 }
 
 func (s *statistics) ConfirmError(list []interface{}, err error) {
 	for _, item := range list {
-		s.confirmErrors.WithLabelValues(getStatisticsLabels(item.(*pb.Entity))...).Inc()
+		s.confirmErrors.WithLabelValues(getStatisticsLabels(item.(*entity.Entity))...).Inc()
 	}
 }
 
 func (s *statistics) Success(list []interface{}) {
 	for _, item := range list {
-		s.success.WithLabelValues(getStatisticsLabels(item.(*pb.Entity))...).Inc()
+		s.success.WithLabelValues(getStatisticsLabels(item.(*entity.Entity))...).Inc()
 	}
 }
 
-func (s *statistics) ValidateError(data *pb.Entity) {
+func (s *statistics) ValidateError(data *entity.Entity) {
 	s.validateErrors.WithLabelValues(getStatisticsLabels(data)...).Inc()
 }
 
@@ -166,7 +166,7 @@ var distinguishingKeys = []string{
 	"type",
 }
 
-func getStatisticsLabels(data *pb.Entity) []string {
+func getStatisticsLabels(data *entity.Entity) []string {
 	return []string{
 		data.Type,
 	}

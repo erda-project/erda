@@ -23,18 +23,21 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-type config struct{}
+type config struct {
+	StorageReaderService string `file:"storage_reader_service" default:"entity-storage-elasticsearch-reader"`
+}
 
 // +provider
 type provider struct {
 	Cfg           *config
 	Log           logs.Logger
 	Register      transport.Register `autowired:"service-register" optional:"true"`
-	Storage       storage.Storage    `autowired:"entity-storage"`
+	Storage       storage.Storage
 	entityService *entityService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.Storage = ctx.Service(p.Cfg.StorageReaderService).(storage.Storage)
 	p.entityService = &entityService{
 		p:       p,
 		storage: p.Storage,

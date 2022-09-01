@@ -211,6 +211,18 @@ event-storage-elasticsearch:
   query_timeout: "1m"
   read_page_size: 50
 erda.core.monitor.event.query:
+  storage_reader_service: ${EVENT_STORAGE_READER_SERVICE:event-storage-elasticsearch-reader}
+
+clickhouse.table.loader@event:
+  _enable: ${QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:false}
+  load_mode: ${QUERY_EVENT_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
+  table_prefix: "events"
+  default_search_table: "events_all"
+  cache_key_prefix: "clickhouse-table-event"
+
+event-storage-clickhouse:
+  _enable: ${QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:false}
+  query_timeout: 1m
 
 # metric
 elasticsearch.index.loader@metric:
@@ -299,10 +311,22 @@ entity-storage-elasticsearch:
   index_type: "entity"
   pattern: "erda-entity-<type>"
 erda.oap.entity:
+  storage_reader_service: ${ENTITY_STORAGE_READER_SERVICE:entity-storage-elasticsearch-reader}
 
 erda.core.monitor.alertdetail:
   query_metric_from_clickhouse: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
   debug_sql: ${DEBUG:false}
+
+clickhouse.table.loader@entity:
+  _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:false}
+  load_mode: ${QUERY_ENTITY_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
+  table_prefix: "entities"
+  default_search_table: "entities_all"
+  cache_key_prefix: "clickhouse-table-entities"
+
+entity-storage-clickhouse:
+  _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:false}
+  query_timeout: 1m
 
 #logs-index-query:
 #  query_back_es: ${LOGS_QUERY_BACK_ES:false}
@@ -329,6 +353,8 @@ erda.core.monitor.alert:
       keyspace:
         name: "spot_prod"
     gc_grace_seconds: 86400
+  storage_reader_service: ${EVENT_STORAGE_READER_SERVICE:event-storage-elasticsearch-reader}
+
 
 report-apis:
   pipeline:

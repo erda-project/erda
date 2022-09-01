@@ -85,9 +85,9 @@ func (s *eventQueryService) GetEvents(ctx context.Context, req *pb.GetEventsRequ
 		}
 		if item.Relations != nil {
 			data.Relations = &commonPb.Relation{
-				ResID:   item.Relations.ResID,
-				ResType: item.Relations.ResType,
-				TraceID: item.Relations.TraceID,
+				ResID:   item.Relations["res_id"],
+				ResType: item.Relations["res_type"],
+				TraceID: item.Relations["trace_id"],
 			}
 		}
 		resp.Data.Items = append(resp.Data.Items, data)
