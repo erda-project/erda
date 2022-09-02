@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
+
 	"github.com/Shopify/sarama"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -13,10 +15,14 @@ import (
 )
 
 type Interface interface {
-	NewProducer() (*AsyncProducer, error)
-	NewConsumerGroup(c *ConsumerConfig, handler ConsumerFunc, options ...ConsumerOption) (*ConsumerGroupManager, error)
+	NewProducer(c *ProducerConfig) (*AsyncProducer, error)
+	NewConsumerGroup(c *ConsumerConfig, handler ConsumerFuncV2) (*ConsumerGroupManager, error)
 	NewAdminClient() (AdminInterface, error)
 	Brokers() []string
+	//deprecated. Please use NewConsumerGroup
+	NewBatchReader(c *BatchReaderConfig, options ...BatchReaderOption) (storekit.BatchReader, error)
+	//deprecated. Please use NewConsumerGroup
+	NewConsumer(c *ConsumerConfig, handler ConsumerFunc) error
 }
 
 type config struct {
@@ -25,7 +31,7 @@ type config struct {
 	DebugClient     bool   `file:"debug_client" env:"KAFKA_DEBUG_CLIENT" desc:"log sarama client log to console"`
 	ProtocolVersion string `file:"protocol_version" default:"1.1.0" desc:"kafka broker protocol version"`
 
-	Producer *producerConfig `file:"producer"`
+	Producer *globalProducerConfig `file:"producer"`
 }
 
 var _ Interface = (*provider)(nil)
@@ -43,12 +49,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Cfg.DebugClient {
 		sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
 	}
-	switch p.Cfg.ProtocolVersion {
-	case "1.1.0":
-		p.protoVersion = sarama.V1_1_0_0
-	default:
-		return fmt.Errorf("invalid version: %q", p.Cfg.ProtocolVersion)
+	v, err := sarama.ParseKafkaVersion(p.Cfg.ProtocolVersion)
+	if err != nil {
+		return fmt.Errorf("parser version: %w", err)
 	}
+	p.protoVersion = v
 	return nil
 }
 

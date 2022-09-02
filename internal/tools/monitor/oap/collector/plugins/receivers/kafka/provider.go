@@ -16,6 +16,7 @@ package kafka
 
 import (
 	"fmt"
+	"github.com/Shopify/sarama"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -80,7 +81,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.parser = parserName(p.Cfg.ProtoParser)
 
-	var invokeFunc kafkaInf.ConsumerFunc
+	var invokeFunc kafkaInf.ConsumerFuncV2
 	switch p.parser {
 	case oapSpan:
 		invokeFunc = p.parseOapSpan()
@@ -102,9 +103,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
-		return oapspan.ParseOapSpanEvent(value, func(m []*metric.Metric) error {
+func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFuncV2 {
+	return func(msg *sarama.ConsumerMessage) error {
+		return oapspan.ParseOapSpanEvent(msg.Value, func(m []*metric.Metric) error {
 			if len(m) > 0 {
 				for i := 0; i < len(m); i++ {
 					p.consumer(m[i])
@@ -115,25 +116,25 @@ func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFunc {
 	}
 }
 
-func (p *provider) parseOapSpan() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
-		return oapspan.ParseOapSpan(value, func(span *trace.Span) error {
+func (p *provider) parseOapSpan() kafkaInf.ConsumerFuncV2 {
+	return func(msg *sarama.ConsumerMessage) error {
+		return oapspan.ParseOapSpan(msg.Value, func(span *trace.Span) error {
 			return p.consumer(span)
 		})
 	}
 }
 
-func (p *provider) parseSpotSpan() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
-		return spotspan.ParseSpotSpan(value, func(span *trace.Span) error {
+func (p *provider) parseSpotSpan() kafkaInf.ConsumerFuncV2 {
+	return func(msg *sarama.ConsumerMessage) error {
+		return spotspan.ParseSpotSpan(msg.Value, func(span *trace.Span) error {
 			return p.consumer(span)
 		})
 	}
 }
 
-func (p *provider) parseSpotMetric() kafkaInf.ConsumerFunc {
-	return func(key []byte, value []byte, topic string, timestamp time.Time) error {
-		return spotmetric.ParseSpotMetric(value, func(m *metric.Metric) error {
+func (p *provider) parseSpotMetric() kafkaInf.ConsumerFuncV2 {
+	return func(msg *sarama.ConsumerMessage) error {
+		return spotmetric.ParseSpotMetric(msg.Value, func(m *metric.Metric) error {
 			return p.consumer(m)
 		})
 	}

@@ -17,7 +17,7 @@ package globals
 import (
 	"time"
 
-	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type Config struct {

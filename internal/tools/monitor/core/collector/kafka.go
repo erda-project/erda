@@ -15,9 +15,8 @@
 package collector
 
 import (
+	"github.com/Shopify/sarama"
 	"github.com/pkg/errors"
-
-	"github.com/erda-project/erda-infra/providers/kafka"
 )
 
 var (
@@ -47,9 +46,9 @@ func (p *provider) send(name string, data []byte) error {
 	if err != nil {
 		return err
 	}
-	return p.writer.Write(&kafka.Message{
-		Topic: &topic,
-		Data:  data,
+	return p.writer.Write(&sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
 	})
 }
 

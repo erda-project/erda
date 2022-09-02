@@ -15,7 +15,9 @@
 package kafka
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/recallsong/go-utils/reflectx"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,8 +30,7 @@ var (
 	sharedProducer *AsyncProducer // producer is thread safe, so we shared
 )
 
-// ProducerConfig try to keep same semantics as kafka official doc
-type producerConfig struct {
+type globalProducerConfig struct {
 	MaxBlockMs        time.Duration `file:"max.block.ms" default:"30s"`
 	LingerMs          time.Duration `file:"linger.ms" default:"50ms"`
 	RequestTimeoutMs  time.Duration `file:"request.timeout.ms" default:"30s"`
@@ -38,10 +39,14 @@ type producerConfig struct {
 	ChannelBufferSize int           `file:"channel_buffer_size" default:"500" env:"KAFKA_P_CHANNEL_BUFFER_SIZE"`
 }
 
+type ProducerConfig struct {
+	Topic string `file:"topic" env:"KAFKA_P_TOPIC" desc:"topic"`
+}
+
 type ProducerOption interface{}
 
 // NewProducer default shared
-func (p *provider) NewProducer() (*AsyncProducer, error) {
+func (p *provider) NewProducer(pc *ProducerConfig) (*AsyncProducer, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if sharedProducer != nil {
@@ -65,6 +70,7 @@ func (p *provider) NewProducer() (*AsyncProducer, error) {
 
 	ref := uint32(1)
 	sharedProducer = &AsyncProducer{
+		topic:        pc.Topic,
 		ref:          &ref,
 		producer:     producer,
 		blockTimeout: p.Cfg.Producer.MaxBlockMs,
@@ -82,17 +88,26 @@ func (p *provider) NewProducer() (*AsyncProducer, error) {
 }
 
 type AsyncProducer struct {
+	topic        string
 	ref          *uint32
 	blockTimeout time.Duration
 	producer     sarama.AsyncProducer
 }
 
 func (a *AsyncProducer) Write(data interface{}) error {
-	switch msg := data.(type) {
+	switch val := data.(type) {
 	case *sarama.ProducerMessage:
-		return a.send(msg)
+		return a.send(val)
+	case []byte:
+		return a.send(&sarama.ProducerMessage{Topic: a.topic, Value: sarama.ByteEncoder(val)})
+	case string:
+		return a.send(&sarama.ProducerMessage{Topic: a.topic, Value: sarama.ByteEncoder(reflectx.StringToBytes(val))})
 	default:
-		return fmt.Errorf("unsupported data type: %T", data)
+		buf, err := json.Marshal(data)
+		if err != nil {
+			return err
+		}
+		return a.send(&sarama.ProducerMessage{Topic: a.topic, Value: sarama.ByteEncoder(buf)})
 	}
 }
 

@@ -21,9 +21,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type config struct {
@@ -38,9 +38,10 @@ type config struct {
 type provider struct {
 	Cfg           *config
 	Log           logs.Logger
-	Kafka         kafka.Interface `autowired:"kafka"`
+	Kafka         kafka.Interface `autowired:"kafkago"`
 	StorageWriter storage.Storage
 
+	r         storekit.BatchReader
 	stats     Statistics
 	validator Validator
 }
@@ -54,15 +55,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.stats = newStatistics()
 	p.StorageWriter = ctx.Service(p.Cfg.StorageWriterService).(storage.Storage)
+	r, err := p.Kafka.NewBatchReader(&p.Cfg.Input, kafka.WithReaderDecoder(p.decodeData))
+	if err != nil {
+		return err
+	}
+	p.r = r
 
 	// add consumer task
 	for i := 0; i < p.Cfg.Parallelism; i++ {
 		ctx.AddTask(func(ctx context.Context) error {
-			r, err := p.Kafka.NewBatchReader(&p.Cfg.Input, kafka.WithReaderDecoder(p.decodeData))
-			if err != nil {
-				return err
-			}
-			defer r.Close()
+
 			w, err := p.StorageWriter.NewWriter(ctx)
 			if err != nil {
 				return err
@@ -81,10 +83,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
+func (p *provider) Close() error {
+	return p.r.Close()
+}
+
 func init() {
 	servicehub.Register("entity-persist", &servicehub.Spec{
-		Dependencies: []string{"kafka.topic.initializer"},
-		ConfigFunc:   func() interface{} { return &config{} },
+		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

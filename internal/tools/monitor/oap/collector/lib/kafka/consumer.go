@@ -29,45 +29,80 @@ type ConsumerConfig struct {
 	Topics []string `file:"topics" desc:"topics"`
 	// group related
 	Group             string        `file:"group" desc:"consumer group id"`
-	SessionTimeout    time.Duration `file:"session_timeout" default:"3m" env:"KAFKA_C_G_SESSION_TIMEOUT"`
+	SessionTimeout    time.Duration `file:"session_timeout" default:"2m" env:"KAFKA_C_G_SESSION_TIMEOUT"`
 	MaxProcessingTime time.Duration `file:"max_processing_time" default:"30s" env:"KAFKA_C_MAX_PROCESSING_TIME"`
-	ChannelBufferSize int           `file:"channel_buffer_size" default:"500" env:"KAFKA_C_G_CHANNEL_BUFFER_SIZE"`
+	ChannelBufferSize int           `file:"channel_buffer_size" default:"500" env:"KAFKA_CHANNEL_BUFFER_SIZE"`
+
+	Offsets struct {
+		AutoCommit struct {
+			Enable   bool          `file:"enable" default:"true"`
+			Interval time.Duration `file:"interval" default:"1s"`
+		} `file:"auto_commit"`
+		Initial string `file:"initial" default:"latest"`
+	} `file:"offsets"`
 }
 
-type ConsumerOption interface{}
-
-// ConsumerFunc .
-type ConsumerFunc func(key []byte, value []byte, topic string, timestamp time.Time) error
-
-func (p *provider) NewConsumerGroup(c *ConsumerConfig, handler ConsumerFunc, options ...ConsumerOption) (*ConsumerGroupManager, error) {
+func (p *provider) newConsumerGroup(c *ConsumerConfig) (sarama.ConsumerGroup, error) {
 	cfg := sarama.NewConfig()
 	cfg.Version = p.protoVersion
 	cfg.ClientID = p.Cfg.ClientID
-	cfg.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategySticky
-	cfg.Consumer.Group.Session.Timeout = c.SessionTimeout
-	cfg.Consumer.Group.Heartbeat.Interval = c.SessionTimeout / 4
-	cfg.Consumer.MaxProcessingTime = c.MaxProcessingTime
 	cfg.ChannelBufferSize = c.ChannelBufferSize
+
+	cfg.Consumer.MaxProcessingTime = c.MaxProcessingTime
 	cfg.Consumer.Fetch.Min = 512 * 1024
 	cfg.Consumer.Fetch.Default = 5 * 1024 * 1024
-	cfg.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	cfg.Consumer.Group.Session.Timeout = c.SessionTimeout
+	cfg.Consumer.Group.Heartbeat.Interval = c.SessionTimeout / 4
+
+	if v, err := parserOffsetInitial(c.Offsets.Initial); err != nil {
+		return nil, err
+	} else {
+		cfg.Consumer.Offsets.Initial = v
+	}
+	cfg.Consumer.Offsets.AutoCommit.Enable = c.Offsets.AutoCommit.Enable
+	cfg.Consumer.Offsets.AutoCommit.Interval = c.Offsets.AutoCommit.Interval
 
 	cfg.Net.ReadTimeout = cfg.Consumer.Group.Rebalance.Timeout + 30*time.Second
 	cg, err := sarama.NewConsumerGroup(p.Brokers(), c.Group, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("creat consumer group: %w", err)
 	}
+	return cg, nil
+}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cgm := &ConsumerGroupManager{
-		cancel:  cancel,
-		cg:      cg,
-		handler: &defaultHandler{fn: handler, log: p.Log.Sub(c.Group).Sub("handler")},
-		topics:  c.Topics,
+func (p *provider) NewConsumerGroup(c *ConsumerConfig, handler ConsumerFuncV2) (*ConsumerGroupManager, error) {
+	cg, err := p.newConsumerGroup(c)
+	if err != nil {
+		return nil, err
 	}
+	return NewConsumerGroupManager(
+		cg,
+		&defaultHandler{fn: handler, log: p.Log.Sub(c.Group).Sub("default-handler")},
+		c.Topics,
+	), nil
+}
 
-	go cgm.consume(ctx)
-	return cgm, nil
+//deprecated
+type ConsumerFunc func(key []byte, value []byte, topic *string, timestamp time.Time) error
+type ConsumerFuncV2 func(msg *sarama.ConsumerMessage) error
+
+//deprecated
+func (p *provider) NewConsumer(c *ConsumerConfig, handler ConsumerFunc) error {
+	cg, err := p.newConsumerGroup(c)
+	if err != nil {
+		return err
+	}
+	handlerv2 := ConsumerFuncV2(func(msg *sarama.ConsumerMessage) error {
+		return handler(msg.Key, msg.Value, &msg.Topic, msg.Timestamp)
+	})
+	_ = NewConsumerGroupManager(
+		cg,
+		&defaultHandler{fn: handlerv2, log: p.Log.Sub(c.Group).Sub("default-handler")},
+		c.Topics,
+	)
+
+	return nil
 }
 
 type ConsumerGroupManager struct {
@@ -75,6 +110,18 @@ type ConsumerGroupManager struct {
 	handler sarama.ConsumerGroupHandler
 	topics  []string
 	cancel  context.CancelFunc
+}
+
+func NewConsumerGroupManager(cg sarama.ConsumerGroup, handler sarama.ConsumerGroupHandler, topics []string) *ConsumerGroupManager {
+	ctx, cancel := context.WithCancel(context.Background())
+	cgm := &ConsumerGroupManager{
+		cg:      cg,
+		cancel:  cancel,
+		handler: handler,
+		topics:  topics,
+	}
+	go cgm.consume(ctx)
+	return cgm
 }
 
 func (cgm *ConsumerGroupManager) Close() error {
@@ -96,7 +143,7 @@ func (cgm *ConsumerGroupManager) consume(ctx context.Context) {
 }
 
 type defaultHandler struct {
-	fn  ConsumerFunc
+	fn  ConsumerFuncV2
 	log logs.Logger
 }
 
@@ -117,7 +164,7 @@ func (d *defaultHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim
 			if !ok {
 				return fmt.Errorf("empty received")
 			}
-			err := d.fn(msg.Key, msg.Value, msg.Topic, msg.Timestamp)
+			err := d.fn(msg)
 			if err != nil {
 				d.log.Errorf("consume err: %s", err)
 			}
@@ -125,5 +172,16 @@ func (d *defaultHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim
 		case <-session.Context().Done():
 			return nil
 		}
+	}
+}
+
+func parserOffsetInitial(s string) (int64, error) {
+	switch s {
+	case "latest":
+		return sarama.OffsetNewest, nil
+	case "earliest":
+		return sarama.OffsetOldest, nil
+	default:
+		return 0, fmt.Errorf("invalid offset initial: %q", s)
 	}
 }

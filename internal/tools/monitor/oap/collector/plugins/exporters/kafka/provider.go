@@ -111,7 +111,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Cfg.MetadataKeyOfTopic == "" && p.Cfg.Topic == "" {
 		return fmt.Errorf("must specify metadata_key_of_topic or producer.topic")
 	}
-	producer, err := p.Kafka.NewProducer()
+	producer, err := p.Kafka.NewProducer(&kafka.ProducerConfig{Topic: p.Cfg.Topic})
 	if err != nil {
 		return err
 	}

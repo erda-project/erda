@@ -19,7 +19,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/extensions/cloud/aliyun/metrics/cloudcat/api"
 )
 
