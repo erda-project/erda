@@ -181,5 +181,9 @@ func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) 
 			UpdateTimeUnixNano: e.UpdateTimestamp.UnixNano(),
 		})
 	}
-	return res, int64(counts[0].Count), nil
+	var count uint64 = 0
+	if len(counts) > 0 {
+		count = counts[0].Count
+	}
+	return res, int64(count), nil
 }
