@@ -90,7 +90,14 @@ func (s *PipelineSvc) QueryDetails(req *apistructs.SnippetQueryDetailsRequest) (
 
 		// params
 		for _, param := range graph.Params {
-			detail.Params = append(detail.Params, param)
+			detailParam := &apistructs.PipelineParam{
+				Name:     param.Name,
+				Required: param.Required,
+				Default:  param.Default.AsInterface(),
+				Desc:     param.Desc,
+				Type:     param.Type,
+			}
+			detail.Params = append(detail.Params, detailParam)
 		}
 
 		snippetDetailMap[config.Alias] = detail

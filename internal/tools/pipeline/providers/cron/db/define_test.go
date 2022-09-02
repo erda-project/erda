@@ -94,10 +94,10 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 					},
 					CronStartFrom: &parseTime,
 					Version:       "v2",
-					Compensator: &apistructs.CronCompensator{
-						Enable:               true,
-						LatestFirst:          true,
-						StopIfLatterExecuted: true,
+					Compensator: &pb.CronCompensator{
+						Enable:               wrapperspb.Bool(true),
+						LatestFirst:          wrapperspb.Bool(true),
+						StopIfLatterExecuted: wrapperspb.Bool(true),
 					},
 					LastCompensateAt: &parseTime,
 				},

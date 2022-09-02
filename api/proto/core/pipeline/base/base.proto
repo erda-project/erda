@@ -66,11 +66,6 @@ service BaseService {
       post: "/api/pipelines/actions/batch-create",
     };
   }
-  rpc PipelineYmlGraph (PipelineYmlGraphRequest) returns (PipelineYmlGraphResponse) {
-    option (google.api.http) = {
-      post: "/api/pipelines/actions/pipeline-yml-graph",
-    };
-  }
 
   // task
   rpc PipelineTaskDetail (PipelineTaskDetailRequest) returns (PipelineTaskDetailResponse) {
@@ -391,6 +386,11 @@ message PipelineYml {
 
   // describe the use of network hooks in the pipeline
   repeated NetworkHookInfo lifecycle = 12;
+  repeated PipelineTrigger triggers = 13;
+}
+message PipelineTrigger {
+  string on = 1;
+  map<string, string> filter = 2;
 }
 message TriggerConfig {
   PushTrigger push = 1;
@@ -415,7 +415,7 @@ message PipelineYmlAction {
   string version = 4;
   map<string, google.protobuf.Value> params = 5;
   string image = 6;
-  repeated string commands = 7;
+  google.protobuf.Value commands = 7;
   int64 timeout = 8;
   repeated string namespaces = 9;
   Resources resources = 10;
@@ -426,6 +426,8 @@ message PipelineYmlAction {
   string if = 15;
   TaskLoop loop = 16;
   SnippetStages snippetStages = 17;
+  string shell = 18;
+  bool disable = 19;
 }
 message Resources {
   double cpu = 1;
@@ -880,14 +882,6 @@ message DeprecatedPipelineBatchCreateResponse {
   map<string, PipelineInstance> data = 1;
 }
 
-message PipelineYmlGraphRequest {
-  string pipelineYmlContent = 1;
-  map<string, string> globalSnippetConfigLabels = 2;
-  SnippetConfig snippetConfig = 3;
-}
-message PipelineYmlGraphResponse {
-  PipelineYml data = 1;
-}
 message PipelineCallbackRequest {
   string type = 1;
   bytes data = 2;

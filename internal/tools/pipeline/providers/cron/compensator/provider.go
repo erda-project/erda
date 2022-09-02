@@ -22,11 +22,13 @@ import (
 
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
@@ -285,10 +287,10 @@ func (p *provider) cronInterruptCompensate(ctx context.Context, pc db.PipelineCr
 	pc.Extra.LastCompensateAt = &thisCompensateFromTime
 	// If the compensator is empty, it indicates that it is an old cron, and the default configuration will be used automatically
 	if pc.Extra.Compensator == nil {
-		pc.Extra.Compensator = &apistructs.CronCompensator{
-			Enable:               pipelineyml.DefaultCronCompensator.Enable,
-			LatestFirst:          pipelineyml.DefaultCronCompensator.LatestFirst,
-			StopIfLatterExecuted: pipelineyml.DefaultCronCompensator.StopIfLatterExecuted,
+		pc.Extra.Compensator = &pb.CronCompensator{
+			Enable:               wrapperspb.Bool(pipelineyml.DefaultCronCompensator.Enable),
+			LatestFirst:          wrapperspb.Bool(pipelineyml.DefaultCronCompensator.LatestFirst),
+			StopIfLatterExecuted: wrapperspb.Bool(pipelineyml.DefaultCronCompensator.StopIfLatterExecuted),
 		}
 	}
 	if err := p.cronDBClient.UpdatePipelineCron(pc.ID, &pc); err != nil {
@@ -315,7 +317,7 @@ func (p *provider) doNonExecuteCompensateByCronID(ctx context.Context, id uint64
 func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc db.PipelineCron) error {
 
 	// Notexecute compensate is not enabled, exit
-	if pc.Enable == nil || *pc.Enable == false || pc.Extra.Compensator == nil || pc.Extra.Compensator.Enable == false {
+	if pc.Enable == nil || *pc.Enable == false || pc.Extra.Compensator == nil || pc.Extra.Compensator.Enable.Value == false {
 		return nil
 	}
 
@@ -339,7 +341,7 @@ func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc db.PipelineC
 		LargePageSize:    true,
 	}
 
-	if (*pc.Extra.Compensator).LatestFirst {
+	if (*pc.Extra.Compensator).LatestFirst.Value {
 		request.DescCols = []string{apistructs.PipelinePageListRequestIdColumn}
 	} else {
 		request.AscCols = []string{apistructs.PipelinePageListRequestIdColumn}
@@ -353,7 +355,7 @@ func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc db.PipelineC
 	return p.doCronCompensate(ctx, *pc.Extra.Compensator, existPipelines, pc)
 }
 
-func (p *provider) doCronCompensate(ctx context.Context, compensator apistructs.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron db.PipelineCron) error {
+func (p *provider) doCronCompensate(ctx context.Context, compensator pb.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron db.PipelineCron) error {
 	var order string
 
 	if len(notRunPipelines) <= 0 {
@@ -361,7 +363,7 @@ func (p *provider) doCronCompensate(ctx context.Context, compensator apistructs.
 	}
 
 	// Select the most suitable time point from the non execution in good order according to the strategy
-	if compensator.LatestFirst {
+	if compensator.LatestFirst.Value {
 		order = "DESC"
 	} else {
 		order = "ASC"
@@ -371,7 +373,7 @@ func (p *provider) doCronCompensate(ctx context.Context, compensator apistructs.
 
 	// According to the policy decision, if it is the last pipeline, when it is the StopIfLatterExecuted policy,
 	// it should be compared with the pipeline in the latest success status. Only the ID greater than the successful ID can be executed
-	if compensator.LatestFirst && compensator.StopIfLatterExecuted {
+	if compensator.LatestFirst.Value && compensator.StopIfLatterExecuted.Value {
 		// Get the pipeline successfully executed
 		result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:  []apistructs.PipelineSource{pipelineCron.PipelineSource},

@@ -40,6 +40,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/definition"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/graph"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/lifecycle_hook_client"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
