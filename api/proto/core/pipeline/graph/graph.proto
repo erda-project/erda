@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package erda.core.pipeline.graph;
+
+import "core/pipeline/base/base.proto";
+import "google/api/annotations.proto";
+import "common/openapi.proto";
+import "common/identity.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/graph/pb";
+
+service GraphService {
+  option(erda.common.openapi_service) = {
+    service: "pipeline",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc PipelineYmlGraph (PipelineYmlGraphRequest) returns (PipelineYmlGraphResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines/actions/pipeline-yml-graph",
+    };
+  }
+}
+
+message PipelineYmlGraphRequest {
+  string pipelineYmlContent = 1;
+  map<string, string> globalSnippetConfigLabels = 2;
+  core.pipeline.base.SnippetConfig snippetConfig = 3;
+}
+message PipelineYmlGraphResponse {
+  core.pipeline.base.PipelineYml data = 1;
+}

@@ -86,6 +86,7 @@ metric-report-client:
 erda.core.pipeline.definition:
 erda.core.pipeline.lifecycle_hook_client:
 erda.core.pipeline.cron:
+erda.core.pipeline.graph:
 erda.core.pipeline.build:
 erda.core.pipeline.action_runner_scheduler:
 cron-daemon:

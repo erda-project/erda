@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -308,7 +309,7 @@ func (svc *GittarFileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGet
 		Meta: map[string]interface{}{
 			apistructs.AutoTestFileTreeNodeMetaKeyPipelineYml: context,
 			apistructs.AutoTestFileTreeNodeMetaKeySnippetAction: apistructs.PipelineYmlAction{
-				SnippetConfig: &apistructs.SnippetConfig{
+				SnippetConfig: &pb.SnippetConfig{
 					Name:   snippetConfigName,
 					Source: apistructs.SnippetSourceLocal,
 					Labels: map[string]string{

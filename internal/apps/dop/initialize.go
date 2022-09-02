@@ -385,6 +385,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	autotest := autotest.New(autotest.WithDBClient(db),
 		autotest.WithBundle(bdl.Bdl),
 		autotest.WithPipelineCms(p.PipelineCms),
+		autotest.WithPipelineGraph(p.GraphSvc),
 	)
 
 	sceneset := sceneset.New(

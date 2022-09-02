@@ -21,12 +21,12 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type autoTestFileTreeNodeMetaExtra map[string]interface{}
-type snippetActionType apistructs.PipelineYmlAction
+type snippetActionType pb.PipelineYmlAction
 
 type AutoTestFileTreeNodeMeta struct {
 	dbengine.BaseModel
@@ -102,7 +102,7 @@ func (db *DBClient) GetAutoTestFileTreeNodeMetaByInode(inode string) (*AutoTestF
 	return &meta, true, nil
 }
 
-func (db *DBClient) updateAutoTestFileTreeNodeMetaPipelineYmlAndSnippetObjByInode(inode, pipelineYml string, snippetAction apistructs.PipelineYmlAction) error {
+func (db *DBClient) updateAutoTestFileTreeNodeMetaPipelineYmlAndSnippetObjByInode(inode, pipelineYml string, snippetAction pb.PipelineYmlAction) error {
 	updateColumns := map[string]interface{}{
 		"pipeline_yml":   pipelineYml,
 		"snippet_action": snippetActionType(snippetAction),
@@ -110,7 +110,7 @@ func (db *DBClient) updateAutoTestFileTreeNodeMetaPipelineYmlAndSnippetObjByInod
 	return db.Model(&AutoTestFileTreeNodeMeta{}).Where("inode = ?", inode).Update(updateColumns).Error
 }
 
-func (db *DBClient) CreateOrUpdateAutoTestFileTreeNodeMetaPipelineYmlAndSnippetObjByInode(inode, pipelineYml string, snippetAction apistructs.PipelineYmlAction) error {
+func (db *DBClient) CreateOrUpdateAutoTestFileTreeNodeMetaPipelineYmlAndSnippetObjByInode(inode, pipelineYml string, snippetAction pb.PipelineYmlAction) error {
 	// 查询
 	_, exist, err := db.GetAutoTestFileTreeNodeMetaByInode(inode)
 	if err != nil {

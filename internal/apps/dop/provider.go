@@ -38,6 +38,7 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	graphpb "github.com/erda-project/erda-proto-go/core/pipeline/graph/pb"
 	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
@@ -104,6 +105,7 @@ type provider struct {
 	ClusterSvc            clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 	DevFlowSvc            *flow.Service                  `autowired:"erda.apps.devflow.flow.FlowService"`
 	IssueCoreSvc          *core.IssueService             `autowired:"erda.dop.issue.core.IssueCoreService"`
+	GraphSvc              graphpb.GraphServiceServer     `autowired:"erda.core.pipeline.graph.GraphService"`
 	Query                 issuequery.Interface
 	Org                   org.Interface `required:"true"`
 	Identity              userpb.UserServiceServer

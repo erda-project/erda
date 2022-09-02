@@ -15,8 +15,12 @@
 package apistructs
 
 import (
+	"encoding/json"
 	"sort"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 )
 
@@ -43,7 +47,7 @@ type PipelineYml struct {
 	Name            string                 `json:"name"`
 	Envs            map[string]string      `json:"envs,omitempty"`                                             // 环境变量
 	Cron            string                 `json:"cron,omitempty"`                                             // 定时配置
-	CronCompensator *CronCompensator       `json:"cronCompensator,omitempty" yaml:"cronCompensator,omitempty"` // 定时补偿配置
+	CronCompensator *pb.CronCompensator    `json:"cronCompensator,omitempty" yaml:"cronCompensator,omitempty"` // 定时补偿配置
 	Stages          [][]*PipelineYmlAction `json:"stages"`                                                     // 流水线
 	FlatActions     []*PipelineYmlAction   `json:"flatActions"`                                                // 展平了的流水线
 
@@ -61,9 +65,9 @@ type PipelineYml struct {
 	// 2) 当 needUpgrade 为 false 时：
 	//    1) 用户传入的为 YAML(apistructs.PipelineYml) 时，ymlContent 返回 YAML(spec.PipelineYml)
 	//    2) 用户传入的为 YAML(spec.PipelineYml) 时，返回优化后的 YAML(spec.PipelineYml)
-	YmlContent string             `json:"ymlContent,omitempty"`
-	On         *TriggerConfig     `json:"on,omitempty"`
-	Triggers   []*PipelineTrigger `json:"triggers,omitempty"`
+	YmlContent string                `json:"ymlContent,omitempty"`
+	On         *TriggerConfig        `json:"on,omitempty"`
+	Triggers   []*pb.PipelineTrigger `json:"triggers,omitempty"`
 	// describe the use of network hooks in the pipeline
 	Lifecycle []*NetworkHookInfo `json:"lifecycle"`
 }
@@ -103,12 +107,24 @@ type PipelineYmlAction struct {
 	DisplayName   string                 `json:"displayName,omitempty"`                                    // 中文名称
 	LogoUrl       string                 `json:"logoUrl,omitempty"`                                        // logo
 	Caches        []ActionCache          `json:"caches,omitempty"`                                         // 缓存
-	SnippetConfig *SnippetConfig         `json:"snippet_config,omitempty" yaml:"snippet_config,omitempty"` // snippet 的配置
+	SnippetConfig *pb.SnippetConfig      `json:"snippet_config,omitempty" yaml:"snippet_config,omitempty"` // snippet 的配置
 	If            string                 `json:"if,omitempty"`                                             // 条件执行
 	Disable       bool                   `json:"disable,omitempty"`                                        // task is disable or enable
 	Loop          *PipelineTaskLoop      `json:"loop,omitempty"`                                           // 循环执行
 	SnippetStages *SnippetStages         `json:"snippetStages,omitempty"`                                  // snippetStages snippet 展开
 	Policy        *Policy                `json:"policy,omitempty"`                                         // action execution strategy
+}
+
+func (p *PipelineYmlAction) Convert2StructValue() (*structpb.Value, error) {
+	var tmpData interface{}
+	byteDat, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(byteDat, &tmpData); err != nil {
+		return nil, err
+	}
+	return structpb.NewValue(tmpData)
 }
 
 type PolicyType string
@@ -245,26 +261,4 @@ type ActionCache struct {
 	// 用户没有指定 key 有一定的生成规则, 具体生成规则看 prepare.go 的 setActionCacheStorageAndBinds 方法
 	Key  string `json:"key,omitempty"`
 	Path string `json:"path,omitempty"` // 指定那个目录被缓存, 只能是由 / 开始的绝对路径
-}
-
-type CronCompensator struct {
-	Enable               bool `json:"enable"`
-	LatestFirst          bool `json:"latestFirst"`
-	StopIfLatterExecuted bool `json:"stopIfLatterExecuted"`
-}
-
-type PipelineYmlParseGraphRequest struct {
-	PipelineYmlContent        string            `json:"pipelineYmlContent"`
-	GlobalSnippetConfigLabels map[string]string `json:"globalSnippetConfigLabels"`
-	SnippetConfig             *SnippetConfig    `json:"snippetConfig"`
-}
-
-type PipelineYmlParseGraphResponse struct {
-	Header
-	Data *PipelineYml `json:"data"`
-}
-
-type PipelineTrigger struct {
-	On     string            `yaml:"on,omitempty" json:"on,omitempty"`
-	Filter map[string]string `yaml:"filter,omitempty" json:"filter,omitempty"`
 }

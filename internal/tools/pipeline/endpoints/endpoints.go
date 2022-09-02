@@ -178,7 +178,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// pipeline related actions
 		{Path: "/api/pipelines/actions/batch-create", Method: http.MethodPost, Handler: e.pipelineBatchCreate},
-		{Path: "/api/pipelines/actions/pipeline-yml-graph", Method: http.MethodPost, Handler: e.pipelineYmlGraph},
 		{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
 		{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
 

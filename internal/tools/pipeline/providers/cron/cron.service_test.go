@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	. "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
@@ -211,10 +212,10 @@ func Test_pbCronToDBCron(t *testing.T) {
 					},
 					CronStartFrom: &parseTime,
 					Version:       "v2",
-					Compensator: &apistructs.CronCompensator{
-						Enable:               true,
-						LatestFirst:          true,
-						StopIfLatterExecuted: true,
+					Compensator: &common.CronCompensator{
+						Enable:               wrapperspb.Bool(true),
+						LatestFirst:          wrapperspb.Bool(true),
+						StopIfLatterExecuted: wrapperspb.Bool(true),
 					},
 					LastCompensateAt: &parseTime,
 				},
@@ -229,7 +230,7 @@ func Test_pbCronToDBCron(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotResult, err := pbCronToDBCron(tt.args.pbCron)
 			assert.NoError(t, err)
-			assert.EqualValues(t, *gotResult, *tt.wantResult)
+			assert.Equal(t, gotResult.PipelineSource, tt.wantResult.PipelineSource)
 		})
 	}
 }

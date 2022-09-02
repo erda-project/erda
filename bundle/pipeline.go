@@ -272,28 +272,6 @@ func (b *Bundle) GetPipelineTask(pipelineID, taskID uint64) (*apistructs.Pipelin
 	return taskGetResp.Data, nil
 }
 
-// ParsePipelineYmlGraph 解析并校验 pipeline yaml 文件
-func (b *Bundle) ParsePipelineYmlGraph(req apistructs.PipelineYmlParseGraphRequest) (*apistructs.PipelineYml, error) {
-	host, err := b.urls.Pipeline()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var graphResp apistructs.PipelineYmlParseGraphResponse
-	httpResp, err := hc.Post(host).Path("/api/pipelines/actions/pipeline-yml-graph").
-		Header(httputil.InternalHeader, "bundle").
-		JSONBody(&req).
-		Do().JSON(&graphResp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !httpResp.IsOK() || !graphResp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), graphResp.Error)
-	}
-	return graphResp.Data, nil
-}
-
 func (b *Bundle) GetPipelineActionParamsAndOutputs(req apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
 	host, err := b.urls.Pipeline()
 	if err != nil {

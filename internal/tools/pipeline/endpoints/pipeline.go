@@ -360,25 +360,6 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 	return httpserver.OkResp(newP)
 }
 
-// pipelineYmlGraph 根据 yml 文件内容返回解析好的 spec 结构，兼容 1.0, 1.1
-func (e *Endpoints) pipelineYmlGraph(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-
-	var req apistructs.PipelineYmlParseGraphRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logrus.Errorf("[alert] failed to decode request body: %v", err)
-		return apierrors.ErrParsePipelineYml.InvalidParameter("request body").ToResp(), nil
-	}
-
-	graph, err := e.pipelineSvc.PipelineYmlGraph(&req)
-	if err != nil {
-		logrus.Errorf("[alert] failed to do pipeline yml graph, content: %s, err: %v", req.PipelineYmlContent, err)
-		return errorresp.ErrResp(err)
-	}
-
-	return httpserver.OkResp(graph)
-}
-
 // pipelineStatistic pipeline 状态分类统计
 func (e *Endpoints) pipelineStatistic(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {

@@ -19,7 +19,9 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -36,9 +38,9 @@ type Spec struct {
 
 	Name string `yaml:"name"`
 
-	On       *TriggerConfig                `yaml:"on,omitempty"`
-	Triggers []*apistructs.PipelineTrigger `yaml:"triggers,omitempty"` // todo Solve the problem that quotation marks will be automatically added after yaml is saved
-	Storage  *StorageConfig                `yaml:"storage,omitempty"`
+	On       *TriggerConfig        `yaml:"on,omitempty"`
+	Triggers []*pb.PipelineTrigger `yaml:"triggers,omitempty"` // todo Solve the problem that quotation marks will be automatically added after yaml is saved
+	Storage  *StorageConfig        `yaml:"storage,omitempty"`
 
 	Envs map[string]string `yaml:"envs,omitempty"`
 
@@ -68,6 +70,23 @@ type NetworkHookInfo struct {
 	Hook   string                 `json:"hook"`   // hook type
 	Client string                 `json:"client"` // use network client
 	Labels map[string]interface{} `json:"labels"` // additional information
+}
+
+func (n *NetworkHookInfo) Convert2PB() (*pb.NetworkHookInfo, error) {
+	res := &pb.NetworkHookInfo{
+		Hook:   n.Hook,
+		Client: n.Client,
+	}
+	labels := map[string]*structpb.Value{}
+	for k, v := range n.Labels {
+		val, err := structpb.NewValue(v)
+		if err != nil {
+			return nil, err
+		}
+		labels[k] = val
+	}
+	res.Labels = labels
+	return res, nil
 }
 
 type StorageConfig struct {
@@ -194,6 +213,18 @@ func (v *SnippetConfig) toApiSnippetConfig() (config *apistructs.SnippetConfig) 
 		return config
 	}
 	return nil
+}
+
+func (v *SnippetConfig) toPBSnippetConfig() (config *pb.SnippetConfig) {
+	if v != nil {
+		config = &pb.SnippetConfig{
+			Name:   v.Name,
+			Source: v.Source,
+			Labels: v.Labels,
+		}
+		return config
+	}
+	return
 }
 
 type ActionCache struct {
@@ -344,7 +375,7 @@ func (s *Spec) ToSimplePipelineYmlActionSlice() [][]*apistructs.PipelineYmlActio
 		}
 
 		if action.SnippetConfig != nil {
-			newAction.SnippetConfig = &apistructs.SnippetConfig{
+			newAction.SnippetConfig = &pb.SnippetConfig{
 				Name:   action.SnippetConfig.Name,
 				Source: action.SnippetConfig.Source,
 				Labels: action.SnippetConfig.Labels,

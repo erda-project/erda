@@ -12,40 +12,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package graph
 
 import (
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
+	"context"
+	"encoding/json"
 
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v2"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/graph/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (s *PipelineSvc) PipelineYmlGraph(req *apistructs.PipelineYmlParseGraphRequest) (*apistructs.PipelineYml, error) {
+type graphService struct {
+	p   *provider
+	bdl *bundle.Bundle
+	log logs.Logger
+}
+
+func (s *graphService) PipelineYmlGraph(ctx context.Context, req *pb.PipelineYmlGraphRequest) (*pb.PipelineYmlGraphResponse, error) {
 	graph, err := pipelineyml.ConvertToGraphPipelineYml([]byte(req.PipelineYmlContent))
 	if err != nil {
 		return nil, apierrors.ErrParsePipelineYml.InvalidParameter(err)
 	}
-
 	if graph == nil {
-		return graph, nil
+		return &pb.PipelineYmlGraphResponse{
+			Data: graph,
+		}, nil
 	}
-
-	// 设置logo和名称
-	s.loadGraphActionNameAndLogo(graph)
-
-	return graph, nil
+	if err := s.loadGraphActionNameAndLogo(graph); err != nil {
+		return nil, apierrors.ErrParsePipelineYml.InternalError(err)
+	}
+	return &pb.PipelineYmlGraphResponse{Data: graph}, nil
 }
 
-func (s *PipelineSvc) loadGraphActionNameAndLogo(graph *apistructs.PipelineYml) {
-
+func (s *graphService) loadGraphActionNameAndLogo(graph *basepb.PipelineYml) error {
+	stages := graph.Stages
+	var graphStages [][]*basepb.PipelineYmlAction
+	stageBytes, err := stages.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(stageBytes, &graphStages); err != nil {
+		return err
+	}
 	var extensionSearchRequest = apistructs.ExtensionSearchRequest{}
 	extensionSearchRequest.YamlFormat = true
-	for _, stage := range graph.Stages {
+	for _, stage := range graphStages {
 		for _, action := range stage {
 			if action.Type == apistructs.ActionTypeSnippet {
 				continue
@@ -59,10 +81,12 @@ func (s *PipelineSvc) loadGraphActionNameAndLogo(graph *apistructs.PipelineYml) 
 
 	resultMap, err := s.bdl.SearchExtensions(extensionSearchRequest)
 	if err != nil {
-		logrus.Errorf("pipelineYmlGraph to SearchExtensions error: %v", err)
-		return
+		s.log.Errorf("pipelineYmlGraph to SearchExtensions error: %v", err)
+		return err
 	}
-	for _, stage := range graph.Stages {
+	stageList := make([]interface{}, 0)
+	for _, stage := range graphStages {
+		actionStage := make([]interface{}, 0)
 		for _, action := range stage {
 			if action.Type == pipelineyml.Snippet {
 				action.LogoUrl = pipelineyml.SnippetLogo
@@ -90,6 +114,30 @@ func (s *PipelineSvc) loadGraphActionNameAndLogo(graph *apistructs.PipelineYml) 
 			action.DisplayName = actionSpec.GetLocaleDisplayName(i18n.GetGoroutineBindLang())
 			action.LogoUrl = actionSpec.LogoUrl
 			action.Description = actionSpec.GetLocaleDesc(i18n.GetGoroutineBindLang())
+			actionValue, err := convertAction2Value(action)
+			if err != nil {
+				return err
+			}
+			actionStage = append(actionStage, actionValue.AsInterface())
 		}
+		stageList = append(stageList, actionStage)
 	}
+	newStages, err := structpb.NewList(stageList)
+	if err != nil {
+		return err
+	}
+	graph.Stages = newStages
+	return nil
+}
+
+func convertAction2Value(action *basepb.PipelineYmlAction) (*structpb.Value, error) {
+	var dat interface{}
+	byteDat, err := action.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(byteDat, &dat); err != nil {
+		return nil, err
+	}
+	return structpb.NewValue(dat)
 }
