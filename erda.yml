@@ -27,7 +27,7 @@ envs:
   OPENAPI_ADDR: erda-server:9529
   MSP_ADDR: msp:8080
   DOP_ADDR: erda-server:9095
-  CMP_ADDR: cmp:9027
+  CMP_ADDR: erda-server:9095
   ORCHESTRATOR_ADDR: orchestrator:8081
   OTEL_TRACES_ENABLED: false
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
@@ -57,6 +57,10 @@ services:
       UC_AUDITOR_PULL_SIZE: "30"
       ERDA_SERVER_ADDR: "localhost:9095"
       DOP_ADDR: "localhost:9095"
+      CMP_ADDR: "localhost:9095"
+      # cmp
+      ERDA_NAMESPACE: "default"
+      ERDA_HELM_CHART_VERSION: "1.1.0"
     ports:
       - port: 9529
         protocol: "TCP"
@@ -391,38 +395,6 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-  cmp:
-    cmd: /erda/cmd/cmp/bin
-    envs:
-      UC_CLIENT_ID: "dice"
-      UC_CLIENT_SECRET: "secret"
-      ERDA_NAMESPACE: "default"
-      ERDA_HELM_CHART_VERSION: "1.1.0"
-    ports:
-      - port: 9027
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 9029
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    resources:
-      cpu: ${request_cpu:1}
-      max_cpu: 1
-      mem: ${request_mem:2048}
-      max_mem: 2048
-      network:
-        mode: "container"
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    deployments:
-      replicas: ${replicas:1}
-      labels:
-        GROUP: "dice"
-    health_check:
-      http: { }
-      exec: { }
   orchestrator:
     cmd: /erda/cmd/orchestrator/bin
     ports:

@@ -41,9 +41,20 @@ func (s *Server) RegisterToNewHttpServerRouter(newRouter httpserver.Router) erro
 		if err != nil {
 			return err
 		}
+		if route.GetHandler() == nil {
+			return nil
+		}
+		if strings.HasPrefix(pathTml, "/debug/pprof/") { // skip pprof routes
+			return nil
+		}
 		methods, err := route.GetMethods()
 		if err != nil {
-			return nil
+			if err.Error() == "mux: route doesn't have methods" { // see: github.com/gorilla/mux@v1.8.0/route.go:703
+				// register handler for any methods
+				newRouter.Any(pathTml, route.GetHandler(), httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))
+				return nil
+			}
+			return err
 		}
 		for _, method := range methods {
 			err := newRouter.Add(method, pathTml, route.GetHandler(), httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))

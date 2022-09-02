@@ -17,7 +17,6 @@ package steve
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/rancher/apiserver/pkg/builtin"
 	"github.com/rancher/apiserver/pkg/parse"
 	"github.com/rancher/apiserver/pkg/server"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/client-go/rest"
 
+	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -128,7 +128,7 @@ func (a *apiServer) apiHandler(apiFunc APIFunc, prefix string) http.Handler {
 }
 
 func k8sAPI(sf schema.Factory, apiOp *types.APIRequest) {
-	vars := mux.Vars(apiOp.Request)
+	vars := infrahttpserver.Vars(apiOp.Request)
 	group := vars["group"]
 	if group == "core" {
 		group = ""

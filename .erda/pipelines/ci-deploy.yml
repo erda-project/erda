@@ -238,7 +238,6 @@ stages:
               erda-server: ${{ outputs.build-erda.image }}
               cluster-agent: ${{ outputs.build-agent.image }}
               cluster-manager: ${{ outputs.build-erda.image }}
-              cmp: ${{ outputs.build-erda.image }}
               collector: ${{ outputs.build-erda.image }}
               gittar: ${{ outputs.build-erda.image }}
               hepa: ${{ outputs.build-erda.image }}

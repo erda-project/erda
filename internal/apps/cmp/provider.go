@@ -61,7 +61,7 @@ type provider struct {
 	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
 	Protocol        componentprotocol.Interface
 	Resource        *resource.Resource
-	CPTran          i18n.I18n       `autowired:"i18n@cp"`
+	CPTran          i18n.I18n       `autowired:"i18n"`
 	Tran            i18n.Translator `translator:"common"`
 	SteveAggregator *steve.Aggregator
 	Org             org.ClientInterface

@@ -78,7 +78,10 @@ func (p *provider) initialize(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	p.Router.Any("/**", server.Router().ServeHTTP)
+	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -174,7 +177,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		initServices(ep)
 	}
 
-	server := httpserver.New(conf.ListenAddr())
+	server := httpserver.New("")
 	server.RegisterEndpoint(append(ep.Routes()))
 
 	authenticator := middleware.NewAuthenticator(bdl, p.ClusterSvc)
@@ -186,10 +189,10 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		shellHandler.HandleShell,
 		auditor.AuditMiddleWare,
 	}
-	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))
-	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
 
-	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
+	server.Router().Path("/api/k8s/clusters/{clusterName}/*").Handler(middlewares.Handler(ep.SteveAggregator))
+	server.Router().Path("/api/apim/metrics/*").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
+
 	logrus.Info("starting cmp instance")
 
 	// init cron job

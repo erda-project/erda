@@ -25,7 +25,6 @@ import (
 type Conf struct {
 	Debug              bool          `env:"DEBUG" default:"false"`
 	EnableEss          bool          `env:"ENABLE_ESS" default:"false"`
-	ListenAddr         string        `env:"LISTEN_ADDR" default:":9027"`
 	SoldierAddr        string        `env:"SOLDIER_ADDR"`
 	SchedulerAddr      string        `env:"SCHEDULER_ADDR"`
 	TaskSyncDuration   time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`
@@ -60,11 +59,6 @@ var cfg Conf
 // Load Load envs
 func Load() {
 	envconf.MustLoad(&cfg)
-}
-
-// ListenAddr return the address of listen.
-func ListenAddr() string {
-	return cfg.ListenAddr
 }
 
 // Debug Return the switch of debug.
