@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/attributes"
@@ -33,6 +32,7 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -341,7 +341,7 @@ func (a *Aggregator) Delete(clusterName string) {
 
 // ServeHTTP forwards API request to corresponding steve server
 func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
+	vars := infrahttpserver.Vars(req)
 	clusterName := vars["clusterName"]
 
 	if clusterName == "" {
