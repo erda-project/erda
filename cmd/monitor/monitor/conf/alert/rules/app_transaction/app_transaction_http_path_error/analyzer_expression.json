@@ -7,6 +7,16 @@
         "operator":"eq",
         "tag":"target_terminus_key",
         "value":"$terminus_key"
+      },
+      {
+        "operator": "neq",
+        "tag": "target_runtime_id",
+        "value": ""
+      },
+      {
+        "operator": "neq",
+        "tag": "target_service_name",
+        "value": ""
       }
     ],
     "functions":[
