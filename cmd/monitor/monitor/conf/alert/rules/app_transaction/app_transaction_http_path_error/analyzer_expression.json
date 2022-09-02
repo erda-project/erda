@@ -51,7 +51,8 @@
       "runtime_name":"#target_runtime_name",
       "service_name":"#target_service_name",
       "terminus_key":"#target_terminus_key",
-      "workspace":"#target_workspace"
+      "workspace":"#target_workspace",
+      "cluster_name": "#cluster_name"
     },
     "window":1
   }
