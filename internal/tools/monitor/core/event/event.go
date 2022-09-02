@@ -14,19 +14,16 @@
 
 package event
 
+import "time"
+
 // Event .
 type Event struct {
-	EventID   string            `json:"event_id"`
-	Name      string            `json:"name"`
-	Kind      string            `json:"kind"`
-	Content   string            `json:"content"`
+	EventID   string            `json:"event_id" ch:"event_id"`
+	Name      string            `json:"name" ch:"name"`
+	Kind      string            `json:"kind" ch:"kind"`
+	Content   string            `json:"content" ch:"content"`
 	Timestamp int64             `json:"timestamp"`
-	Tags      map[string]string `json:"tags"`
-	Relations *Relation         `json:"relations"`
-}
-
-type Relation struct {
-	TraceID string `json:"trace_id"`
-	ResID   string `json:"res_id"`
-	ResType string `json:"res_type"`
+	Time      time.Time         `json:"-" ch:"timestamp"`
+	Tags      map[string]string `json:"tags" ch:"tags"`
+	Relations map[string]string `json:"relations" ch:"relations"`
 }

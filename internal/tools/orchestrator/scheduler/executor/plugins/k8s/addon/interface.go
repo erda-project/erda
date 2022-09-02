@@ -47,7 +47,7 @@ type DeploymentUtil interface {
 	Patch(namespace, deployName, containerName string, snippet v1.Container) error
 	Create(*appsv1.Deployment) error
 	Get(namespace, name string) (*appsv1.Deployment, error)
-	List(namespace string, labelSelector map[string]string) (appsv1.DeploymentList, error)
+	List(namespace string, labelSelector map[string]string) (*appsv1.DeploymentList, error)
 	Delete(namespace, name string) error
 }
 

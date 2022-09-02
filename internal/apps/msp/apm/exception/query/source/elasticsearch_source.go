@@ -50,8 +50,8 @@ func (source *ElasticsearchSource) GetExceptions(ctx context.Context, req *pb.Ge
 		UpdateTimeUnixNanoMax: req.EndTime * 1e6,
 		Debug:                 req.Debug,
 	}
-	exceptions, _ := source.fetchErdaErrorFromES(ctx, entityReq, req.StartTime, req.EndTime)
-	return exceptions, nil
+	exceptions, err := source.fetchErdaErrorFromES(ctx, entityReq, req.StartTime, req.EndTime)
+	return exceptions, err
 }
 
 func (source *ElasticsearchSource) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) ([]string, error) {
@@ -65,7 +65,7 @@ func (source *ElasticsearchSource) GetExceptionEventIds(ctx context.Context, req
 		RelationType: "exception",
 		Tags:         tags,
 		PageNo:       1,
-		PageSize:     999,
+		PageSize:     200,
 		Start:        time.Now().Add(-time.Hour * 24 * 7).UnixNano(),
 		End:          time.Now().UnixNano(),
 	}
@@ -156,7 +156,7 @@ func (source *ElasticsearchSource) fetchErdaErrorFromES(ctx context.Context, req
 			Start:        startTime * 1e6,
 			End:          endTime * 1e6,
 			PageNo:       1,
-			PageSize:     10000,
+			PageSize:     200,
 			Debug:        false,
 		}
 		items, err := source.fetchErdaEventFromES(ctx, eventReq)

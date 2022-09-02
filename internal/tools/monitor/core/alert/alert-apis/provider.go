@@ -59,13 +59,14 @@ type config struct {
 		cassandra.SessionConfig `file:"session"`
 		GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
 	} `file:"cassandra"`
+	StorageReaderService string `file:"storage_reader_service" default:"event-storage-elasticsearch-reader"`
 }
 
 type provider struct {
 	C                           *config
 	L                           logs.Logger
 	metricq                     metricq.Queryer `autowired:"metrics-query" optional:"true"`
-	EventStorage                storage.Storage `autowired:"event-storage-elasticsearch-reader" optional:"true"`
+	EventStorage                storage.Storage
 	t                           i18n.Translator
 	db                          *db.DB
 	cql                         *cql.Cql
@@ -148,6 +149,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc), cmdb.WithOrgSvc(p.Org))
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithErdaServer())
 
+	p.EventStorage = ctx.Service(p.C.StorageReaderService).(storage.Storage)
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
 	p.a = adapt.New(p.L, p.metricq, p.EventStorage, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies, p.Org)
 

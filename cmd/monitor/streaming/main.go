@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/browser"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/trace/persist"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/trace/storage/cassandra_v1"
@@ -31,8 +32,10 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/alert/storage/alert-record"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/persist"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage/clickhouse"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/entity/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/persist"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/storage/clickhouse"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/event/storage/elasticsearch"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/log/persist"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/log/persist/v1"

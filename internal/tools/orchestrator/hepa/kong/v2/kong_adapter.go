@@ -17,6 +17,7 @@ package v2
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -141,6 +142,11 @@ func (impl *KongAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
 }
 
 func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+	timeNow := time.Now()
+	defer func() {
+		log.Infof("*KongAdapterImpl.CreateOrUpdatePlugin costs %dms", time.Now().Sub(timeNow).Milliseconds())
+	}()
+
 	enabled, err := impl.CheckPluginEnabled(req.Name)
 	if err != nil {
 		return nil, err

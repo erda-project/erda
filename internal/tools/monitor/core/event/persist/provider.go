@@ -28,17 +28,17 @@ import (
 
 type (
 	config struct {
-		Input             kafka.BatchReaderConfig `file:"input"`
-		Parallelism       int                     `file:"parallelism" default:"1"`
-		BufferSize        int                     `file:"buffer_size" default:"1024"`
-		ReadTimeout       time.Duration           `file:"read_timeout" default:"5s"`
-		PrintInvalidEvent bool                    `file:"print_invalid_event" default:"false"`
+		Input                kafka.BatchReaderConfig `file:"input"`
+		Parallelism          int                     `file:"parallelism" default:"1"`
+		BufferSize           int                     `file:"buffer_size" default:"1024"`
+		ReadTimeout          time.Duration           `file:"read_timeout" default:"5s"`
+		PrintInvalidEvent    bool                    `file:"print_invalid_event" default:"false"`
+		StorageWriterService string                  `file:"storage_writer_service" default:"event-storage-elasticsearch-writer"`
 	}
 	provider struct {
-		Cfg           *config
-		Log           logs.Logger
-		Kafka         kafka.Interface `autowired:"kafka"`
-		StorageWriter storage.Storage `autowired:"event-storage-writer"`
+		Cfg   *config
+		Log   logs.Logger
+		Kafka kafka.Interface `autowired:"kafka"`
 
 		storage   storage.Storage
 		stats     Statistics
@@ -60,6 +60,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	}
 
 	p.stats = newStatistics()
+	p.storage = ctx.Service(p.Cfg.StorageWriterService).(storage.Storage)
 
 	// add consumer task
 	for i := 0; i < p.Cfg.Parallelism; i++ {
@@ -70,7 +71,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 			}
 			defer r.Close()
 
-			w, err := p.StorageWriter.NewWriter(ctx)
+			w, err := p.storage.NewWriter(ctx)
 			if err != nil {
 				return err
 			}
@@ -90,8 +91,9 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 func init() {
 	servicehub.Register("event-persist", &servicehub.Spec{
-		ConfigFunc:   func() interface{} { return &config{} },
-		Dependencies: []string{"kafka.topic.initializer"},
+		ConfigFunc:           func() interface{} { return &config{} },
+		Dependencies:         []string{"kafka.topic.initializer"},
+		OptionalDependencies: []string{"event-storage-clickhouse", "event-storage-elasticsearch"},
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

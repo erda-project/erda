@@ -15,8 +15,13 @@
 package k8s
 
 import (
+	"context"
+	"encoding/json"
+
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
@@ -24,31 +29,34 @@ import (
 )
 
 func (k *Kubernetes) IPToHostname(ip string) string {
-	nodeList, err := k.nodeLabel.List()
+	nodes, err := k.k8sClient.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
+		logrus.Errorf("failed to list node, %v", err)
 		return ""
 	}
-	for _, node := range nodeList.Items {
+
+	for _, node := range nodes.Items {
 		for _, addr := range node.Status.Addresses {
-			if addr.Type == v1.NodeInternalIP && addr.Address == ip {
+			if addr.Type == corev1.NodeInternalIP && addr.Address == ip {
 				return node.Name
 			}
 		}
 	}
+
 	return ""
 }
 
 // SetNodeLabels set the labels of k8s node
 func (k *Kubernetes) SetNodeLabels(_ executortypes.NodeLabelSetting, hosts []string, labels map[string]string) error {
 	// contents in 'hosts' maybe hostname or internalIP, it should be unified into hostname
-	nodelist, err := k.nodeLabel.List()
+	nodes, err := k.k8sClient.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		logrus.Errorf("failed to list nodes: %v", err)
 		return err
 	}
-	updatedHosts := []string{}
+	updatedHosts := make([]string, 0)
 	for _, host := range hosts {
-		for _, node := range nodelist.Items {
+		for _, node := range nodes.Items {
 			add := false
 			for _, addr := range node.Status.Addresses {
 
@@ -65,13 +73,14 @@ func (k *Kubernetes) SetNodeLabels(_ executortypes.NodeLabelSetting, hosts []str
 
 	for _, host := range updatedHosts {
 		prefixedLabels := map[string]*string{}
-		orig, err := k.nodeLabel.Get(host)
+		node, err := k.k8sClient.ClientSet.CoreV1().Nodes().Get(context.Background(), host,
+			metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
 		// 1. unset all 'dice/' labels
-		for k := range orig {
+		for k := range node.Labels {
 			if !strutil.HasPrefixes(k, labelconfig.K8SLabelPrefix) {
 				continue
 			}
@@ -89,9 +98,23 @@ func (k *Kubernetes) SetNodeLabels(_ executortypes.NodeLabelSetting, hosts []str
 		}
 
 		// 3. set them
-		if err := k.nodeLabel.Set(prefixedLabels, host); err != nil {
+		var patch struct {
+			Metadata struct {
+				Labels map[string]*string `json:"labels"` // Use '*string' to cover 'null' case
+			} `json:"metadata"`
+		}
+
+		patch.Metadata.Labels = prefixedLabels
+		patchData, err := json.Marshal(patch)
+		if err != nil {
+			return err
+		}
+
+		if _, err = k.k8sClient.ClientSet.CoreV1().Nodes().Patch(context.Background(), host, types.MergePatchType,
+			patchData, metav1.PatchOptions{}); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }

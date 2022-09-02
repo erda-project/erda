@@ -60,7 +60,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/nodelabel"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolume"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/pod"
@@ -207,7 +206,6 @@ type Kubernetes struct {
 	secret       *secret.Secret
 	storageClass *storageclass.StorageClass
 	sa           *serviceaccount.ServiceAccount
-	nodeLabel    *nodelabel.NodeLabel
 	ClusterInfo  *clusterinfo.ClusterInfo
 	resourceInfo *resourceinfo.ResourceInfo
 	event        *event.Event
@@ -363,7 +361,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		}
 	}
 
-	deploy := deployment.New(deployment.WithCompleteParams(addr, client))
+	deploy := deployment.New(deployment.WithClientSet(k8sClient.ClientSet))
 	job := job.New(job.WithCompleteParams(addr, client))
 	ds := ds.New(ds.WithCompleteParams(addr, client))
 	ing := ingress.New(ingress.WithCompleteParams(addr, client))
@@ -378,7 +376,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	k8ssecret := secret.New(secret.WithCompleteParams(addr, client))
 	k8sstorageclass := storageclass.New(storageclass.WithCompleteParams(addr, client))
 	sa := serviceaccount.New(serviceaccount.WithCompleteParams(addr, client))
-	nodeLabel := nodelabel.New(addr, client)
 	event := event.New(event.WithKubernetesClient(k8sClient.ClientSet))
 	dbclient := instanceinfo.New(dbengine.MustOpen())
 
@@ -435,7 +432,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		secret:                   k8ssecret,
 		storageClass:             k8sstorageclass,
 		sa:                       sa,
-		nodeLabel:                nodeLabel,
 		ClusterInfo:              clusterInfo,
 		resourceInfo:             resourceInfo,
 		event:                    event,

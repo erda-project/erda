@@ -59,7 +59,7 @@ redis:
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 cassandra:
-  _enable: ${CASSANDRA_ENABLE:true}
+  _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
@@ -93,16 +93,16 @@ elasticsearch.index.loader@span:
         - "<org>.<key>-{number}"
 
 storage-retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   default_ttl: "${SPAN_TTL:168h}"
   load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   key_patterns:
     - "erda-spans-<org>.<key>-{number}"
 elasticsearch.index.cleaner@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   check_interval: "30m"
   disk_clean:
     enable: ${SPAN_DISK_CLEAN_ENABLE:true}
@@ -233,10 +233,10 @@ erda.msp.apm.checker.task:
 erda.msp.apm.trace.query:
   debug_sql: ${TRACE_QUERY_DEBUG_SQL:true}
   query_source:
-    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:false}"
-    cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:true}"
+    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:true}"
+    cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}"
     clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}"
-  compatible_enable: "${QUERY_SPAN_COMPATIBLE_ENABLE:true}"
+  compatible_enable: "${QUERY_SPAN_FROM_CLICKHOUSE_COMPATIBLE_ENABLE:false}"
   cassandra:
     keyspace:
       name: "spot_prod"
@@ -256,7 +256,7 @@ etcd-election@table-loader:
 
 erda.msp.apm.exception.query:
   query_source:
-    elasticsearch: "${QUERY_EVENT_FROM_ES_ENABLE:true}"
+    elasticsearch: "${QUERY_EVENT_FROM_ES_ENABLE|QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:true}"
     cassandra: "${QUERY_EVENT_FROM_CASSANDRA_ENABLE:false}"
   cassandra:
     keyspace:

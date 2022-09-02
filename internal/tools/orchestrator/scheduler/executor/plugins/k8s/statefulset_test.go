@@ -267,7 +267,7 @@ func TestStatefulset(t *testing.T) {
 		name:      "whatever",
 		addr:      "10.167.0.248:8080",
 		client:    httpclient.New(),
-		deploy:    deployment.New(deployment.WithCompleteParams("10.167.0.248:8080", httpclient.New())),
+		deploy:    deployment.New(),
 		ingress:   ingress.New(ingress.WithCompleteParams("10.167.0.248:8080", httpclient.New())),
 		namespace: namespace.New(),
 		service:   k8sservice.New(k8sservice.WithCompleteParams("10.167.0.248:8080", httpclient.New())),

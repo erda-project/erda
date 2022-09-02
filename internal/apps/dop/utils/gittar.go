@@ -22,18 +22,18 @@ import (
 )
 
 func GetGittarRepoURL(clusterName, repoAbbr string) string {
-	return getCenterOrEdgeURL(conf.DiceClusterName(), clusterName, httpclientutil.WrapHttp(discover.Gittar()), httpclientutil.WrapHttp(conf.GittarPublicURL())) + "/" + repoAbbr
+	return getCenterOrEdgeURL(conf.DiceClusterName(), clusterName, httpclientutil.WrapHttp(discover.Gittar()), httpclientutil.WrapProto(conf.GittarPublicURL())) + "/" + repoAbbr
 }
 
-func getCenterOrEdgeURL(diceCluster, requestCluster, center, sass string) string {
-	if sass == "" {
+func getCenterOrEdgeURL(diceCluster, requestCluster, center, saas string) string {
+	if saas == "" {
 		return center
 	}
 	// 如果和 daemon 在一个集群，则用内网地址
 	if diceCluster == requestCluster {
 		return center
 	}
-	return sass
+	return saas
 }
 
 func GetGittarSecrets(clusterName, branch string, detail apistructs.CommitDetail) map[string]string {

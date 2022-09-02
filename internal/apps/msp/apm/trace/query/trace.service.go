@@ -123,7 +123,7 @@ func (s *TraceService) getServiceInstanceType(ctx context.Context, startTime, en
 
 	for _, metricType := range query.ProcessMetrics {
 		statement := fmt.Sprintf("SELECT terminus_key::tag FROM %s WHERE terminus_key::tag=$terminus_key "+
-			"AND service_instance_id=$service_instance_id LIMIT 1", metricType)
+			"AND service_instance_id::tag=$service_instance_id LIMIT 1", metricType)
 		queryParams := map[string]*structpb.Value{
 			"terminus_key":        structpb.NewStringValue(tenantId),
 			"service_instance_id": structpb.NewStringValue(serviceInstanceId),
@@ -135,8 +135,10 @@ func (s *TraceService) getServiceInstanceType(ctx context.Context, startTime, en
 			Statement: statement,
 			Params:    queryParams,
 		}
-
-		response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
+		metricQueryCtx := apis.GetContext(ctx, func(header *transport.Header) {
+			header.Set("terminus_key", tenantId)
+		})
+		response, err := s.p.Metric.QueryWithInfluxFormat(metricQueryCtx, request)
 		if err != nil {
 			return "", errors.NewInternalServerError(err)
 		}
