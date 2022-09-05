@@ -410,8 +410,8 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 						str = append(str, mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}])
 					}
 				}
-				haveValue = true
 				r[index+1] = append(r[index+1], strutil.Join(str, ","))
+				haveValue = true
 			}
 			if !haveValue {
 				// add empty value for this column
