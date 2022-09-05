@@ -22,6 +22,9 @@ service GraphService {
     option (google.api.http) = {
       post: "/api/pipelines/actions/pipeline-yml-graph",
     };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/actions/pipeline-yml-graph",
+    };
   }
 }
 
