@@ -221,3 +221,183 @@ func Test_provider_BatchConvert(t *testing.T) {
 	_, err := p.BatchConvert([]dao.Issue{{ProjectID: 1}}, []string{"TASK", "BUG"})
 	assert.NoError(t, err)
 }
+
+func Test_rangePropertyMap(t *testing.T) {
+	propertyMap := make(map[int64][]dao.IssuePropertyRelation)
+	properties := []dao.IssuePropertyRelation{{PropertyID: 1, IssueID: 1}, {PropertyID: 2, IssueID: 2}}
+	for _, v := range properties {
+		propertyMap[v.IssueID] = append(propertyMap[v.IssueID], v)
+	}
+	assert.Equal(t, 2, len(propertyMap))
+	assert.Equal(t, int64(1), propertyMap[1][0].IssueID)
+	assert.Equal(t, int64(1), propertyMap[1][0].PropertyID)
+	assert.Equal(t, int64(2), propertyMap[2][0].IssueID)
+	assert.Equal(t, int64(2), propertyMap[2][0].PropertyID)
+}
+
+func Test_getCustomPropertyColumnValue(t *testing.T) {
+	type args struct {
+		pro       *pb.IssuePropertyIndex
+		relations []dao.IssuePropertyRelation
+		mp        map[pair]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "no property, no panic",
+			args: args{pro: nil},
+			want: "",
+		},
+		{
+			name: "no relation, no panic",
+			args: args{pro: &pb.IssuePropertyIndex{}},
+			want: "",
+		},
+		{
+			name: "no mp, no panic",
+			args: args{
+				pro:       &pb.IssuePropertyIndex{PropertyID: 1},
+				relations: []dao.IssuePropertyRelation{{PropertyID: 1}},
+				mp:        nil,
+			},
+			want: "",
+		},
+		{
+			name: "arbitrary value",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_Text,
+				},
+				relations: []dao.IssuePropertyRelation{{PropertyID: 1, ArbitraryValue: "text"}},
+				mp:        nil,
+			},
+			want: "text",
+		},
+		{
+			name: "arbitrary value, but not match",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_Text,
+				},
+				relations: []dao.IssuePropertyRelation{{PropertyID: 2, ArbitraryValue: "text"}},
+				mp:        nil,
+			},
+			want: "",
+		},
+		{
+			name: "select",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_Select,
+				},
+				relations: []dao.IssuePropertyRelation{{PropertyID: 1, PropertyValueID: 1}},
+				mp: map[pair]string{
+					pair{
+						PropertyID: 1,
+						valueID:    1,
+					}: "select value",
+				},
+			},
+			want: "select value",
+		},
+		{
+			name: "select, but not match",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_Select,
+				},
+				relations: []dao.IssuePropertyRelation{{PropertyID: 1, PropertyValueID: 1}},
+				mp: map[pair]string{
+					pair{PropertyID: 1, valueID: 2}: "select value",
+				},
+			},
+			want: "",
+		},
+		{
+			name: "multi select",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_MultiSelect,
+				},
+				relations: []dao.IssuePropertyRelation{
+					{PropertyID: 1, PropertyValueID: 1},
+					{PropertyID: 1, PropertyValueID: 2},
+				},
+				mp: map[pair]string{
+					pair{PropertyID: 1, valueID: 1}: "m11",
+					pair{PropertyID: 1, valueID: 2}: "m12",
+				},
+			},
+			want: "m11,m12",
+		},
+		{
+			name: "multi select, but no match",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_MultiSelect,
+				},
+				relations: []dao.IssuePropertyRelation{
+					{PropertyID: 2, PropertyValueID: 1},
+					{PropertyID: 2, PropertyValueID: 2},
+				},
+				mp: map[pair]string{
+					pair{PropertyID: 1, valueID: 1}: "m11",
+					pair{PropertyID: 1, valueID: 2}: "m12",
+				},
+			},
+			want: "",
+		},
+		{
+			name: "check box",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_CheckBox,
+				},
+				relations: []dao.IssuePropertyRelation{
+					{PropertyID: 1, PropertyValueID: 1},
+					{PropertyID: 1, PropertyValueID: 2},
+				},
+				mp: map[pair]string{
+					pair{PropertyID: 1, valueID: 1}: "m11",
+					pair{PropertyID: 1, valueID: 2}: "m12",
+				},
+			},
+			want: "m11,m12",
+		},
+		{
+			name: "check box, but no match",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_CheckBox,
+				},
+				relations: []dao.IssuePropertyRelation{
+					{PropertyID: 2, PropertyValueID: 1},
+					{PropertyID: 2, PropertyValueID: 2},
+				},
+				mp: map[pair]string{
+					pair{PropertyID: 1, valueID: 1}: "m11",
+					pair{PropertyID: 1, valueID: 2}: "m12",
+				},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getCustomPropertyColumnValue(tt.args.pro, tt.args.relations, tt.args.mp); got != tt.want {
+				t.Errorf("getCustomPropertyColumnValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

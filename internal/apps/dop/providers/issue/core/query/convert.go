@@ -253,6 +253,11 @@ func (p *provider) getIssueExportDataI18n(locale, i18nKey string) []string {
 	return strutil.Split(t, ",")
 }
 
+type pair struct {
+	PropertyID int64
+	valueID    int64
+}
+
 func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.IssuePropertyIndex, projectID uint64, isDownload bool, stageMap map[IssueStage]string, locale string) ([][]string, error) {
 	// 默认字段列名
 	r := [][]string{p.getIssueExportDataI18n(locale, i18n.I18nKeyIssueExportTitles)}
@@ -263,10 +268,6 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 	// 下载模版
 	if isDownload {
 		return r, nil
-	}
-	type pair struct {
-		PropertyID int64
-		valueID    int64
 	}
 	// 构建自定义字段枚举值map
 	mp := make(map[pair]string)
@@ -382,34 +383,45 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 			fmt.Sprintf("%d", i.ReopenCount),
 		}))
 		relations := propertyMap[i.Id]
-		// 获取每个自定义字段的值
+		// get value of each custom field
 		for _, pro := range property {
-			// 根据字段类型将数据放入表格
-			if common.IsOptions(pro.PropertyType.String()) == false {
-				for _, rel := range relations {
-					if rel.PropertyID == pro.PropertyID {
-						r[index+1] = append(r[index+1], rel.ArbitraryValue)
-						break
-					}
-				}
-			} else if pro.PropertyType == pb.PropertyTypeEnum_Select {
-				for _, rel := range relations {
-					if rel.PropertyID == pro.PropertyID {
-						r[index+1] = append(r[index+1], mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}])
-						break
-					}
-				}
-			} else if pro.PropertyType == pb.PropertyTypeEnum_MultiSelect || pro.PropertyType == pb.PropertyTypeEnum_CheckBox {
-				// 多选类型的全部已选项的名字拼接成一个字符串放入表格
-				var str []string
-				for _, rel := range relations {
-					if rel.PropertyID == pro.PropertyID {
-						str = append(str, mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}])
-					}
-				}
-				r[index+1] = append(r[index+1], strutil.Join(str, ","))
-			}
+			columnValue := getCustomPropertyColumnValue(pro, relations, mp)
+			r[index+1] = append(r[index+1], columnValue)
 		}
 	}
 	return r, nil
+}
+
+func getCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.IssuePropertyRelation, mp map[pair]string) string {
+	if pro == nil || len(relations) == 0 {
+		return ""
+	}
+	if mp == nil {
+		mp = make(map[pair]string)
+	}
+	// according to the field type, put the data into the table
+	if common.IsOptions(pro.PropertyType.String()) == false {
+		for _, rel := range relations {
+			if rel.PropertyID == pro.PropertyID {
+				return rel.ArbitraryValue
+			}
+		}
+	} else if pro.PropertyType == pb.PropertyTypeEnum_Select {
+		for _, rel := range relations {
+			if rel.PropertyID == pro.PropertyID {
+				return mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}]
+			}
+		}
+	} else if pro.PropertyType == pb.PropertyTypeEnum_MultiSelect || pro.PropertyType == pb.PropertyTypeEnum_CheckBox {
+		// for multiple selection type, all selected options are concatenated into a string and put into the table
+		var str []string
+		for _, rel := range relations {
+			if rel.PropertyID == pro.PropertyID {
+				str = append(str, mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}])
+			}
+		}
+		return strutil.Join(str, ",")
+	}
+	// add empty value for this column
+	return ""
 }
