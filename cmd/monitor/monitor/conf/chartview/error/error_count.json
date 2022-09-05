@@ -1,0 +1,88 @@
+{
+  "id": "error_count",
+  "scope": "micro_service",
+  "version": "v2",
+  "name": "错误分析",
+  "desc": "",
+  "viewConfig": [
+    {
+      "w": 24,
+      "h": 6,
+      "x": 0,
+      "y": 0,
+      "i": "view-NI7vlatA",
+      "view": {
+        "title": "错误统计",
+        "i18n": {
+          "title": {
+            "zh": "错误统计",
+            "en": "Error Statistics"
+          }
+        },
+        "description": "",
+        "chartType": "chart:area",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@error_count"
+            ],
+            "isSqlMode": false,
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeQLI5Rfrz",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "sum",
+                "alias": "count",
+                "field": "error_count-count::field",
+                "key": "value4o6G2LEC",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "error_count"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeQLI5Rfrz",
+                "expr": "time()"
+              },
+              {
+                "alias": "value4o6G2LEC",
+                "expr": "round_float(sum(count::field), 2)"
+              }
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{tk}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{start}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        },
+        "controls": null
+      }
+    }
+  ]
+}
