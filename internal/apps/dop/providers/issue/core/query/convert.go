@@ -384,11 +384,13 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 		relations := propertyMap[i.Id]
 		// 获取每个自定义字段的值
 		for _, pro := range property {
+			haveValue := false
 			// 根据字段类型将数据放入表格
 			if common.IsOptions(pro.PropertyType.String()) == false {
 				for _, rel := range relations {
 					if rel.PropertyID == pro.PropertyID {
 						r[index+1] = append(r[index+1], rel.ArbitraryValue)
+						haveValue = true
 						break
 					}
 				}
@@ -396,6 +398,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 				for _, rel := range relations {
 					if rel.PropertyID == pro.PropertyID {
 						r[index+1] = append(r[index+1], mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}])
+						haveValue = true
 						break
 					}
 				}
@@ -407,7 +410,12 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 						str = append(str, mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}])
 					}
 				}
+				haveValue = true
 				r[index+1] = append(r[index+1], strutil.Join(str, ","))
+			}
+			if !haveValue {
+				// add empty value for this column
+				r[index+1] = append(r[index+1], "")
 			}
 		}
 	}
