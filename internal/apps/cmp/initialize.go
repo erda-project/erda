@@ -190,8 +190,8 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		auditor.AuditMiddleWare,
 	}
 
-	server.Router().Path("/api/k8s/clusters/{clusterName}/*").Handler(middlewares.Handler(ep.SteveAggregator))
-	server.Router().Path("/api/apim/metrics/*").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
+	server.Router().Path("/api/k8s/clusters/{clusterName}/**").Handler(middlewares.Handler(ep.SteveAggregator))
+	server.Router().Path("/api/apim/metrics/**").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
 
 	logrus.Info("starting cmp instance")
 
