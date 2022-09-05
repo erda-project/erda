@@ -221,3 +221,16 @@ func Test_provider_BatchConvert(t *testing.T) {
 	_, err := p.BatchConvert([]dao.Issue{{ProjectID: 1}}, []string{"TASK", "BUG"})
 	assert.NoError(t, err)
 }
+
+func Test_rangePropertyMap(t *testing.T) {
+	propertyMap := make(map[int64][]dao.IssuePropertyRelation)
+	properties := []dao.IssuePropertyRelation{{PropertyID: 1, IssueID: 1}, {PropertyID: 2, IssueID: 2}}
+	for _, v := range properties {
+		propertyMap[v.IssueID] = append(propertyMap[v.IssueID], v)
+	}
+	assert.Equal(t, 2, len(propertyMap))
+	assert.Equal(t, int64(1), propertyMap[1][0].IssueID)
+	assert.Equal(t, int64(1), propertyMap[1][0].PropertyID)
+	assert.Equal(t, int64(2), propertyMap[2][0].IssueID)
+	assert.Equal(t, int64(2), propertyMap[2][0].PropertyID)
+}
