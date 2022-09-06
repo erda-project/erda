@@ -302,10 +302,6 @@ erda.core.pipeline.queue-client:
 grpc-client@erda.core.pipeline.queue:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
   block: false
-grpc-client@erda.cmp.dashboard.resource:
-  addr: "${CMP_GRPC_ADDR:cmp:9029}"
-  block: false
-erda.cmp.dashboard.resource-client: { }
 #grpc-client@erda.core.dicehub.release:
 #  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 #erda.core.dicehub.release-client: {}
@@ -357,8 +353,8 @@ cmp: { }
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
   block: false
-erda.core.monitor.metric-client: {}
+erda.core.monitor.metric-client: { }
 grpc-client@erda.core.monitor.alert:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
   block: false
-erda.core.monitor.alert-client: {}
+erda.core.monitor.alert-client: { }
