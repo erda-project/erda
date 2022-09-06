@@ -105,6 +105,18 @@ func (p *provider) NewConsumer(c *ConsumerConfig, handler ConsumerFunc) error {
 	return nil
 }
 
+func (p *provider) NewConsumerWitchCreator(c *ConsumerConfig, handlerFactory func(i int) (ConsumerFunc, error)) error {
+	handler, err := handlerFactory(0)
+	if err != nil {
+		return fmt.Errorf("create handler failed: %w", err)
+	}
+	err = p.NewConsumer(c, handler)
+	if err != nil {
+		return fmt.Errorf("failed NewConsumer: %w", err)
+	}
+	return nil
+}
+
 type ConsumerGroupManager struct {
 	cg      sarama.ConsumerGroup
 	handler sarama.ConsumerGroupHandler

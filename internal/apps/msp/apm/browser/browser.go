@@ -67,9 +67,9 @@ func (p *provider) Close() error {
 
 func init() {
 	servicehub.Register("browser-analytics", &servicehub.Spec{
-		Services:     []string{"browser-analytics"},
-		Description:  "browser-analytics",
-		ConfigFunc:   func() interface{} { return &config{} },
+		Services:    []string{"browser-analytics"},
+		Description: "browser-analytics",
+		ConfigFunc:  func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

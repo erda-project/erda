@@ -17,7 +17,9 @@ package kafka
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/Shopify/sarama"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
@@ -38,7 +40,7 @@ type config struct {
 	Keyinclude []string            `file:"keyinclude"`
 	Keyexclude []string            `file:"keyexclude"`
 
-	MetadataKeyOfTopic string `file:"metadata_key_of_topic" desc:"for raw data type"`
+	MetadataKeyOfTopic string `file:"metadata_key_of_topic" desc:"note: only for raw data type"`
 	Topic              string `file:"topic"`
 }
 

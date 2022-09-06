@@ -16,8 +16,9 @@ package kafka
 
 import (
 	"fmt"
-	"github.com/Shopify/sarama"
 	"time"
+
+	"github.com/Shopify/sarama"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

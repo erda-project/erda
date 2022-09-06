@@ -26,9 +26,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 

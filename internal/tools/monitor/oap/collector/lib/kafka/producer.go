@@ -17,12 +17,13 @@ package kafka
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/recallsong/go-utils/reflectx"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/Shopify/sarama"
+
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var (
@@ -94,6 +95,13 @@ type AsyncProducer struct {
 	producer     sarama.AsyncProducer
 }
 
+// Message .
+type Message struct {
+	Topic *string
+	Data  []byte
+	Key   []byte
+}
+
 func (a *AsyncProducer) Write(data interface{}) error {
 	switch val := data.(type) {
 	case *sarama.ProducerMessage:
@@ -101,7 +109,9 @@ func (a *AsyncProducer) Write(data interface{}) error {
 	case []byte:
 		return a.send(&sarama.ProducerMessage{Topic: a.topic, Value: sarama.ByteEncoder(val)})
 	case string:
-		return a.send(&sarama.ProducerMessage{Topic: a.topic, Value: sarama.ByteEncoder(reflectx.StringToBytes(val))})
+		return a.send(&sarama.ProducerMessage{Topic: a.topic, Value: sarama.ByteEncoder(strutil.NoCopyStringToBytes(val))})
+	case *Message:
+		return a.send(&sarama.ProducerMessage{Topic: *val.Topic, Value: sarama.ByteEncoder(val.Data)})
 	default:
 		buf, err := json.Marshal(data)
 		if err != nil {

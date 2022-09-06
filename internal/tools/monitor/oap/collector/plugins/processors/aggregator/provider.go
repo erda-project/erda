@@ -16,13 +16,13 @@ package aggregator
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 )

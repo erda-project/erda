@@ -39,8 +39,6 @@ type Processor interface {
 	ProcessRaw(item *odata2.Raw) (*odata2.Raw, error)
 }
 
-
-
 type NoopProcessor struct {
 }
 
