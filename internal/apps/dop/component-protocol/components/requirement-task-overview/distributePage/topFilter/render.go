@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"net/http"
 	"sort"
 	"strconv"
 	"time"
@@ -35,6 +36,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func init() {
@@ -74,6 +77,24 @@ func (f *ComponentFilter) setInParams(ctx context.Context) error {
 		}
 	}
 	f.InParams.ProjectID, err = strconv.ParseUint(f.InParams.FrontEndProjectID, 10, 64)
+	if err != nil {
+		return err
+	}
+	if err := f.checkPermission(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *ComponentFilter) checkPermission(ctx context.Context) error {
+	// project get api will check permission by org&user id header correctly
+	_, err := f.bdl.GetProjectWithSetter(f.InParams.ProjectID, httpclient.SetHeaders(
+		http.Header{
+			httputil.InternalHeader: []string{""},
+			httputil.OrgHeader:      []string{f.sdk.Identity.OrgID},
+			httputil.UserHeader:     []string{f.sdk.Identity.UserID},
+		},
+	))
 	return err
 }
 
