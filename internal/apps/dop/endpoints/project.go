@@ -229,7 +229,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 	// check orgID
 	orgID, err := strconv.ParseUint(r.Header.Get(httputil.OrgHeader), 10, 64)
 	if err != nil {
-		return apierrors.ErrGetProject.InvalidParameter(fmt.Errorf("invalid orgID: %s, err: %v", orgID, err)).ToResp(), nil
+		return apierrors.ErrGetProject.InvalidParameter(fmt.Errorf("invalid orgID: %d, err: %v", orgID, err)).ToResp(), nil
 	}
 
 	// check projectID
