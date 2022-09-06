@@ -533,7 +533,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: ${log_service_replicas:0}
+      replicas: ${log_service_replicas:2}
       labels:
         GROUP: "spot-v2"
     health_check:
