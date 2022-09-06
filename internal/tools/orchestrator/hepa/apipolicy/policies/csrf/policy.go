@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
@@ -30,6 +30,17 @@ import (
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
 
+const (
+	PolicyName = "safety-csrf"
+	PluginName = "csrf-token"
+)
+
+func init() {
+	if err := apipolicy.RegisterPolicyEngine(PluginName, new(Policy)); err != nil {
+		panic(err)
+	}
+}
+
 type Policy struct {
 	apipolicy.BasePolicy
 }
@@ -37,12 +48,12 @@ type Policy struct {
 func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
 	value, ok := ctx[apipolicy.CTX_SERVICE_INFO]
 	if !ok {
-		log.Errorf("get identify failed:%+v", ctx)
+		logrus.Errorf("get identify failed:%+v", ctx)
 		return nil
 	}
 	info, ok := value.(apipolicy.ServiceInfo)
 	if !ok {
-		log.Errorf("convert failed:%+v", value)
+		logrus.Errorf("convert failed:%+v", value)
 		return nil
 	}
 	tokenName := strings.ToLower(fmt.Sprintf("x-%s-%s-csrf-token", strings.Replace(info.ProjectName, "_", "-", -1), info.Env))
@@ -60,21 +71,19 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 }
 
 func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error, string) {
-	policyDto := &PolicyDto{}
-	err := json.Unmarshal(config, policyDto)
-	if err != nil {
-		return nil, errors.Wrapf(err, "json parse config failed, config:%s", config), "Invalid config"
+	var policyDto PolicyDto
+	if err := json.Unmarshal(config, &policyDto); err != nil {
+		return nil, errors.Wrapf(err, "failed to Unmarshal config: %s", config), "Invalid config"
 	}
-	ok, msg := policyDto.IsValidDto()
-	if !ok {
+	if ok, msg := policyDto.IsValidDto(); !ok {
 		return nil, errors.Errorf("invalid policy dto, msg:%s", msg), msg
 	}
-	return policyDto, nil, ""
+	return &policyDto, nil, ""
 }
 
 func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 	req := &kongDto.KongPluginReqDto{
-		Name:    "csrf-token",
+		Name:    PluginName,
 		Config:  map[string]interface{}{},
 		Enabled: &dto.Switch,
 	}
@@ -99,127 +108,55 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 }
 
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
-	l := log.WithField("func", "CSRF-Token.ParseConfig")
+	l := logrus.WithField("pluginName", PluginName).WithField("func", "ParseConfig")
+	l.Infof("dto: %+v", dto)
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
-	value, ok := ctx[apipolicy.CTX_KONG_ADAPTER]
+	adapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER].(kong.KongAdapter)
 	if !ok {
-		return res, errors.Errorf("get identify failed:%+v", ctx)
+		return res, errors.Errorf("failed to get identify with %s: %+v", apipolicy.CTX_KONG_ADAPTER, ctx)
 	}
-	adapter, ok := value.(kong.KongAdapter)
+	kongVersion, err := adapter.GetVersion()
+	if err != nil {
+		return res, errors.Wrap(err, "failed to retrieve Kong version")
+	}
+	if !strings.HasPrefix(kongVersion, "2.") {
+		return res, errors.Errorf("the plugin %s is not supportted on the Kong version %s", PluginName, kongVersion)
+	}
+	zone, ok := ctx[apipolicy.CTX_ZONE].(*orm.GatewayZone)
 	if !ok {
-		return res, errors.Errorf("convert failed:%+v", value)
+		return res, errors.Errorf("failed to get identify with %s: %+v", apipolicy.CTX_ZONE, ctx)
 	}
-	value, ok = ctx[apipolicy.CTX_ZONE]
-	if !ok {
-		return res, errors.Errorf("get identify failed:%+v", ctx)
-	}
-	zone, ok := value.(*orm.GatewayZone)
-	if !ok {
-		return res, errors.Errorf("convert failed:%+v", value)
-	}
-
 	policyDb, _ := db.NewGatewayPolicyServiceImpl()
 	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
-		PluginName: "csrf-token",
+		PluginName: PluginName,
 	})
 	if err != nil {
 		return res, err
 	}
-	req := policy.buildPluginReq(policyDto)
-
-	var routes = make(map[string]struct{})
-	packageAPIDB, _ := db.NewGatewayPackageApiServiceImpl()
-	apiDB, _ := db.NewGatewayApiServiceImpl()
-	routeDB, _ := db.NewGatewayRouteServiceImpl()
-	apis, err := packageAPIDB.SelectByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
-	if err != nil || len(apis) == 0 {
-		l.WithError(err).Warnf("failed to packageAPIDB.SelectByAny(&orm.GatewayPackageApi{ZoneId: %s})", zone.Id)
-	}
-
-	for _, api := range apis {
-		switch route, err := routeDB.GetByApiId(api.Id); {
-		case err != nil:
-			l.WithError(err).
-				WithField("tb_gateway_package_api.id", api.Id).
-				Warnf("failed to routeDB.GetByApiId(%s)", api.Id)
-		case route == nil:
-			l.WithError(err).
-				WithField("tb_gateway_package_api.id", api.Id).
-				Warnf("failed to routeDB.GetByApiId(%s): not found", api.Id)
-		default:
-			routes[route.RouteId] = struct{}{}
-		}
-
-		if api.DiceApiId == "" {
-			continue
-		}
-		var cond orm.GatewayApi
-		cond.Id = api.DiceApiId
-		gatewayApis, err := apiDB.SelectByAny(&cond)
-		if err != nil {
-			l.WithError(err).
-				WithField("tb_gateway_package_api.id", api.Id).
-				WithField("tb_gateway_package_api.dice_api_id", api.DiceApiId).
-				Warnf("failed to apiDB.SelectByAny(&orm.GatewayApi{Id: %s})", cond.Id)
-			continue
-		}
-		for _, gatewayApi := range gatewayApis {
-			switch route, err := routeDB.GetByApiId(gatewayApi.Id); {
-			case err != nil:
-				l.WithError(err).WithField("tb_gateway_package_api.id", api.Id).
-					WithField("tb_gateway_package_api.dice_api_id", api.DiceApiId).
-					Warnf("failed to routeDB.GetByApiId(%s)", gatewayApi.Id)
-			case route == nil:
-				l.WithError(err).
-					WithField("tb_gateway_package_api.id", api.Id).
-					Warnf("failed to routeDB.GetByApiId(%s): not found", gatewayApi.Id)
-			default:
-				routes[route.RouteId] = struct{}{}
-			}
-		}
-	}
-
 	if !policyDto.Switch {
 		if exist != nil {
-			adapter.RemovePlugin(exist.PluginId)
-			_ = policyDb.DeleteById(exist.Id)
-		}
-		for routeID := range routes {
-			routeReq := *req
-			routeReq.RouteId = routeID
-			plugin, err := adapter.GetPlugin(&routeReq)
+			err = adapter.RemovePlugin(exist.PluginId)
 			if err != nil {
-				l.WithError(err).Warnf("failed to adapter.GetPlugin(%+v)", routeReq)
-				continue
+				return res, err
 			}
-			if plugin == nil {
-				l.Warnf("failed to adapter.GetPlugin(%+v): not found", routeReq)
-				continue
-			}
-			if err = adapter.RemovePlugin(plugin.Id); err != nil {
-				l.WithError(err).Warnf("failed to adapter.RemovePlugin(%s)", plugin.Id)
-			}
+			_ = policyDb.DeleteById(exist.Id)
+			res.KongPolicyChange = true
 		}
-		res.KongPolicyChange = true
 		return res, nil
 	}
-
-	for routeID := range routes {
-		routeReq := *req
-		routeReq.RouteId = routeID
-		if _, err := adapter.CreateOrUpdatePlugin(&routeReq); err != nil {
-			l.WithError(err).Errorf("faield to adapter.CreateOrUpdatePlugin(%+v)", routeReq)
+	req := policy.buildPluginReq(policyDto)
+	if exist != nil {
+		req.Id = exist.PluginId
+		resp, err := adapter.CreateOrUpdatePluginById(req)
+		if err != nil {
 			return res, err
 		}
-	}
-
-	if exist != nil {
-		configByte, err := json.Marshal(req.Config)
+		configByte, err := json.Marshal(resp.Config)
 		if err != nil {
 			return res, err
 		}
@@ -229,15 +166,19 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			return res, err
 		}
 	} else {
-		configByte, err := json.Marshal(req.Config)
+		resp, err := adapter.AddPlugin(req)
+		if err != nil {
+			return res, err
+		}
+		configByte, err := json.Marshal(resp.Config)
 		if err != nil {
 			return res, err
 		}
 		policyDao := &orm.GatewayPolicy{
 			ZoneId:     zone.Id,
-			PluginName: "csrf-token",
+			PluginName: PluginName,
 			Category:   "safety",
-			PluginId:   "",
+			PluginId:   resp.Id,
 			Config:     configByte,
 			Enabled:    1,
 		}
@@ -245,15 +186,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		if err != nil {
 			return res, err
 		}
+		res.KongPolicyChange = true
 	}
-	res.KongPolicyChange = true
 	return res, nil
-}
-
-func init() {
-
-	err := apipolicy.RegisterPolicyEngine("safety-csrf", &Policy{})
-	if err != nil {
-		panic(err)
-	}
 }
