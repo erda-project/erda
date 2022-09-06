@@ -11,12 +11,12 @@
       {
         "operator": "neq",
         "tag": "target_runtime_id",
-        "value": ""
+        "value": null
       },
       {
         "operator": "neq",
         "tag": "target_service_name",
-        "value": ""
+        "value": null
       }
     ],
     "functions":[
