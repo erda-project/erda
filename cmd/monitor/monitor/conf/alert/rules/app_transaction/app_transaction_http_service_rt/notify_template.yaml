@@ -12,6 +12,8 @@
 
     项目: {{project_name}}
 
+    集群: {{cluster_name}}
+    
     应用: {{application_name}}
 
     服务: {{runtime_name}} - {{service_name}}
@@ -65,6 +67,8 @@
 
     项目: {{project_name}}
 
+    集群: {{cluster_name}}
+    
     应用: {{application_name}}
 
     服务: {{runtime_name}} - {{service_name}}
@@ -112,6 +116,8 @@
 
     Project: {{project_name}}
 
+    Cluster: {{cluster_name}}
+    
     Application: {{application_name}}
 
     Service: {{runtime_name}} - {{service_name}}
@@ -163,6 +169,8 @@
 
     Project: {{project_name}}
 
+    Cluster: {{cluster_name}}
+    
     Application: {{application_name}}
 
     Service: {{runtime_name}} - {{service_name}}

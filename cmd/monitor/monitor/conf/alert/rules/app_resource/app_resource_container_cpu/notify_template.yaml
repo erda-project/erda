@@ -13,6 +13,8 @@
 
     项目: {{project_name}}
 
+    集群: {{cluster_name}}
+    
     应用: {{application_name}}
 
     服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
@@ -72,6 +74,8 @@
 
     项目: {{project_name}}
 
+    集群: {{cluster_name}}
+    
     应用: {{application_name}}
 
     服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
@@ -131,6 +135,8 @@
 
     Project: {{project_name}}
 
+    Cluster: {{cluster_name}}
+    
     Application: {{application_name}}
 
     Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
@@ -188,6 +194,8 @@
 
     Project: {{project_name}}
 
+    Cluster: {{cluster_name}}
+    
     Application: {{application_name}}
 
     Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
