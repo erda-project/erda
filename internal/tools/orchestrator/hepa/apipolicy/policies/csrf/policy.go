@@ -36,7 +36,7 @@ const (
 )
 
 func init() {
-	if err := apipolicy.RegisterPolicyEngine(PluginName, new(Policy)); err != nil {
+	if err := apipolicy.RegisterPolicyEngine(PolicyName, new(Policy)); err != nil {
 		panic(err)
 	}
 }
@@ -107,6 +107,7 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 	return req
 }
 
+// ParseConfig is used to parse the policy configuration .
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
 	l := logrus.WithField("pluginName", PluginName).WithField("func", "ParseConfig")
 	l.Infof("dto: %+v", dto)
