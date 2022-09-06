@@ -24,6 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 )
 
+//deprecated
+type ConsumerFunc func(key []byte, value []byte, topic *string, timestamp time.Time) error
+type ConsumerFuncV2 func(msg *sarama.ConsumerMessage) error
+
 // ConsumerConfig .
 type ConsumerConfig struct {
 	Topics []string `file:"topics" desc:"topics"`
@@ -43,6 +47,18 @@ type ConsumerConfig struct {
 }
 
 func (p *provider) newConsumerGroup(c *ConsumerConfig) (sarama.ConsumerGroup, error) {
+	cfg, err := p.customConfig(c)
+	if err != nil {
+		return nil, fmt.Errorf("custom config: %w", err)
+	}
+	cg, err := sarama.NewConsumerGroup(p.Brokers(), c.Group, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("creat consumer group: %w", err)
+	}
+	return cg, nil
+}
+
+func (p *provider) customConfig(c *ConsumerConfig) (*sarama.Config, error) {
 	cfg := sarama.NewConfig()
 	cfg.Version = p.protoVersion
 	cfg.ClientID = p.Cfg.ClientID
@@ -64,11 +80,7 @@ func (p *provider) newConsumerGroup(c *ConsumerConfig) (sarama.ConsumerGroup, er
 	cfg.Consumer.Offsets.AutoCommit.Interval = c.Offsets.AutoCommit.Interval
 
 	cfg.Net.ReadTimeout = cfg.Consumer.Group.Rebalance.Timeout + 30*time.Second
-	cg, err := sarama.NewConsumerGroup(p.Brokers(), c.Group, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("creat consumer group: %w", err)
-	}
-	return cg, nil
+	return cfg, nil
 }
 
 func (p *provider) NewConsumerGroup(c *ConsumerConfig, handler ConsumerFuncV2) (*ConsumerGroupManager, error) {
@@ -82,10 +94,6 @@ func (p *provider) NewConsumerGroup(c *ConsumerConfig, handler ConsumerFuncV2) (
 		c.Topics,
 	), nil
 }
-
-//deprecated
-type ConsumerFunc func(key []byte, value []byte, topic *string, timestamp time.Time) error
-type ConsumerFuncV2 func(msg *sarama.ConsumerMessage) error
 
 //deprecated
 func (p *provider) NewConsumer(c *ConsumerConfig, handler ConsumerFunc) error {
