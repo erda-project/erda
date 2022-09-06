@@ -47,7 +47,7 @@ type define struct{}
 
 func (d *define) Services() []string { return []string{"apm-topology"} }
 func (d *define) Dependencies() []string {
-	return []string{"http-server", "metrics-query", "elasticsearch", "mysql", "i18n"}
+	return []string{"http-server", "metrics-query", "mysql", "i18n"}
 }
 func (d *define) Summary() string     { return "apm-topology api" }
 func (d *define) Description() string { return d.Summary() }
@@ -67,8 +67,10 @@ func (topology *provider) Init(ctx servicehub.Context) (err error) {
 	topology.ctx = ctx
 
 	// elasticsearch
-	es := ctx.Service("elasticsearch").(elasticsearch.Interface)
-	topology.es = es.Client()
+	if !topology.Cfg.TopologyFromClickHouse {
+		es := ctx.Service("elasticsearch").(elasticsearch.Interface)
+		topology.es = es.Client()
+	}
 
 	// translator
 	topology.t = ctx.Service("i18n").(i18n.I18n).Translator("topology")
