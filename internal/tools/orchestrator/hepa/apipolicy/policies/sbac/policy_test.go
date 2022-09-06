@@ -70,7 +70,7 @@ func TestPluginConfig_ToPluginReqDto(t *testing.T) {
 		"withBody":true,
 		"withCookie":true
 	}`
-	var pc sbac.PluginConfig
+	var pc sbac.PolicyDto
 	if err := json.Unmarshal([]byte(config), &pc); err != nil {
 		t.Fatal(err)
 	}
