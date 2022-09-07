@@ -2,12 +2,8 @@ http-server:
     addr: ":7096"
 health:
 
-kafka:
+kafkago:
     servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
-    comsumer:
-        options:
-            auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-            auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 logs-exporter-base:
     filters:
         monitor_log_key: "${MONITOR_LOG_KEY:-}"

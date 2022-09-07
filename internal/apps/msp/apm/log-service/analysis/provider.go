@@ -53,7 +53,7 @@ type provider struct {
 	C          *config
 	L          logs.Logger
 	mysql      *gorm.DB
-	kafka      kafka.Interface
+	Kafka      kafka.Interface `autowired:"kafkago"`
 	output     writer.Writer
 	processors atomic.Value
 	db         *db.DB
@@ -62,8 +62,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.mysql = ctx.Service("mysql").(mysql.Interface).DB()
 	p.db = db.New(p.mysql)
-	p.kafka = ctx.Service("kafka").(kafka.Interface)
-	w, err := p.kafka.NewProducer(&p.C.Output.Kafka)
+	w, err := p.Kafka.NewProducer(&p.C.Output.Kafka)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
@@ -73,7 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 // Start .
 func (p *provider) Start() error {
-	err := p.kafka.NewConsumer(&p.C.Input, p.invoke)
+	err := p.Kafka.NewConsumer(&p.C.Input, p.invoke)
 	if err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func (p *provider) Close() error { return nil }
 func init() {
 	servicehub.Register("logs-metrics-analysis", &servicehub.Spec{
 		Services:     []string{"logs-metrics-analysis"},
-		Dependencies: []string{"kafka", "mysql"},
+		Dependencies: []string{"mysql"},
 		Description:  "parse logs to metrics",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
