@@ -53,7 +53,7 @@ type provider struct {
 	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 	Clickhouse  clickhouse.Interface           `autowired:"clickhouse" optional:"true"`
 	Loader      loader.Interface               `autowired:"clickhouse.table.loader@metric" optional:"true"`
-	EsSearchRaw elasticsearch.Interface        `autowired:"metric-storage"`
+	EsSearchRaw elasticsearch.Interface        `autowired:"metric-storage" optional:"true"`
 	Org         org.ClientInterface
 	Source      MetricSource
 }

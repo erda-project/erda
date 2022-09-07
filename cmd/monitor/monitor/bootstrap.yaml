@@ -9,6 +9,7 @@ grpc-server:
 service-register:
 
 elasticsearch:
+  _enable: ${ES_ENABLE:false}
   urls: "${ES_URL:http://localhost:9200}"
   security: ${ES_SECURITY_ENABLE:false}
   username: "${ES_SECURITY_USERNAME}"
@@ -59,7 +60,7 @@ permission:
 
 # log
 clickhouse:
-  _enable: ${CLICKHOUSE_ENABLE:false}
+  _enable: ${CLICKHOUSE_ENABLE:true}
   addr: "${CLICKHOUSE_ADDR:localhost:9000}"
   username: "${CLICKHOUSE_USERNAME:default}"
   password: "${CLICKHOUSE_PASSWORD:default}"
@@ -72,14 +73,14 @@ clickhouse:
 
 
 clickhouse.table.loader@log:
-  _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_LOG_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "logs"
   default_search_table: "logs_all"
   cache_key_prefix: "clickhouse-table-log"
 
 log-storage-clickhouse:
-  _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:true}
   query_timeout: "${QUERY_LOG_FROM_CLICKHOUSE_TIMEOUT:1m}"
   query_max_threads: "${QUERY_LOG_FROM_CLICKHOUSE_MAX_THREADS:0}"
   query_max_memory: "${QUERY_LOG_FROM_CLICKHOUSE_MAX_MEMORY:0}"
@@ -87,14 +88,14 @@ log-storage-clickhouse:
     tags.request_id: tags.trace_id
 
 metric-storage-clickhouse:
-  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
   query_timeout: "${QUERY_METRIC_FROM_CLICKHOUSE_TIMEOUT:1m}"
   query_max_threads: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_THREADS:0}"
   query_max_memory: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_MEMORY:0}"
   runtime_settings: "${QUERY_METRIC_FROM_CLICKHOUSE_RUNTIME_SETTINGS}"
 
 clickhouse.table.loader@metric:
-  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
   table_prefix: "metrics"
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   default_search_table: "metrics_all"
@@ -107,7 +108,7 @@ elasticsearch@log:
   username: "${LOG_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.loader@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -119,16 +120,16 @@ elasticsearch.index.loader@log:
         - "<org>-{number}"
         - "<org>.<key>-{number}"
 storage-retention-strategy@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   default_ttl: "${LOG_TTL:168h}"
   load_from_database: true
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   key_patterns:
     - "erda-logs-<org>.<key>-{number}"
 elasticsearch.index.cleaner@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   check_interval: "30m"
   disk_clean:
     enable: ${LOG_DISK_CLEAN_ENABLE:true}
@@ -144,7 +145,7 @@ elasticsearch.index.cleaner@log:
       - index: "erda-logs-<org>.<key>-{number}"
         alias: "erda-logs-<org>.<key>-rollover"
 log-storage-elasticsearch:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   query_timeout: "${QUERY_LOG_FROM_ES_TIMEOUT:1m}"
   read_page_size: 200
 kubernetes-logs-storage:
@@ -171,7 +172,7 @@ elasticsearch@event:
   username: "${EVENT_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.loader@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -182,16 +183,16 @@ elasticsearch.index.loader@event:
         - "<event>-<namespace>-{number}"
         - "<event>-<namespace>.<key>-{number}"
 storage-retention-strategy@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   default_ttl: "${EVENT_TTL:168h}"
   load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   key_patterns:
     - "erda-events-<event>-<namespace>.<key>-{number}"
 elasticsearch.index.cleaner@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   check_interval: "30m"
   disk_clean:
     enable: ${EVENT_DISK_CLEAN_ENABLE:true}
@@ -207,25 +208,26 @@ elasticsearch.index.cleaner@event:
       - index: "erda-events-<event>-<namespace>.<key>-{number}"
         alias: "erda-events-<event>-<namespace>.<key>-rollover"
 event-storage-elasticsearch:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   query_timeout: "1m"
   read_page_size: 50
 erda.core.monitor.event.query:
-  storage_reader_service: ${EVENT_STORAGE_READER_SERVICE:event-storage-elasticsearch-reader}
+  storage_reader_service: ${EVENT_STORAGE_READER_SERVICE:event-storage-clickhouse-reader}
 
 clickhouse.table.loader@event:
-  _enable: ${QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_EVENT_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "events"
   default_search_table: "events_all"
   cache_key_prefix: "clickhouse-table-event"
 
 event-storage-clickhouse:
-  _enable: ${QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:true}
   query_timeout: 1m
 
 # metric
 elasticsearch.index.loader@metric:
+  _enable: ${QUERY_METRIC_FROM_ES_ENABLE:false}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -244,14 +246,17 @@ elasticsearch.index.loader@metric:
         - "<metric>-<namespace>.<key>"
         - "<metric>-<namespace>"
 storage-retention-strategy@metric:
+  _enable: ${QUERY_METRIC_FROM_ES_ENABLE:false}
   default_ttl: "${METRIC_TTL:168h}"
   load_from_database: true
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@metric:
+  _enable: ${QUERY_METRIC_FROM_ES_ENABLE:false}
   key_patterns:
     - "spot-<metric>-<namespace>.<key>-r-{number}"
     - "spot-<metric>-<namespace>.<key>-<timestamp>"
 elasticsearch.index.cleaner@metric:
+  _enable: ${QUERY_METRIC_FROM_ES_ENABLE:false}
   check_interval: "30m"
   disk_clean:
     enable: ${METRIC_DISK_CLEAN_ENABLE:true}
@@ -307,25 +312,26 @@ elasticsearch@entity:
   username: "${ENTITY_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${ENTITY_ELASTICSEARCH_SECURITY_PASSWORD}"
 entity-storage-elasticsearch:
+  _enable: ${QUERY_ENTITY_FROM_ES_ENABLE:false}
   query_timeout: "1m"
   index_type: "entity"
   pattern: "erda-entity-<type>"
 erda.oap.entity:
-  storage_reader_service: ${ENTITY_STORAGE_READER_SERVICE:entity-storage-elasticsearch-reader}
+  storage_reader_service: ${ENTITY_STORAGE_READER_SERVICE:entity-storage-clickhouse-reader}
 
 erda.core.monitor.alertdetail:
-  query_metric_from_clickhouse: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  query_metric_from_clickhouse: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
   debug_sql: ${DEBUG:false}
 
 clickhouse.table.loader@entity:
-  _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_ENTITY_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "entities"
   default_search_table: "entities_all"
   cache_key_prefix: "clickhouse-table-entities"
 
 entity-storage-clickhouse:
-  _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:true}
   query_timeout: 1m
 
 #logs-index-query:
@@ -334,9 +340,9 @@ entity-storage-clickhouse:
 #    file: conf/logs/default_field_settings.yml
 
 #apm providers
-apm-runtime:
+#apm-runtime:
 apm-topology:
-  topology_from_click_house: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}
+  topology_from_click_house: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
 #apm-report:
 
 erda.core.monitor.alert:
@@ -353,7 +359,7 @@ erda.core.monitor.alert:
       keyspace:
         name: "spot_prod"
     gc_grace_seconds: 86400
-  storage_reader_service: ${EVENT_STORAGE_READER_SERVICE:event-storage-elasticsearch-reader}
+  storage_reader_service: ${EVENT_STORAGE_READER_SERVICE:event-storage-clickhouse-reader}
 
 
 report-apis:
@@ -379,7 +385,7 @@ monitor.dashboard.report.apis.v1:
   cluster_name: "${DICE_CLUSTER_NAME}"
 
 org-apis:
-  query_metric_from_clickhouse: "${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:false}"
+  query_metric_from_clickhouse: "${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}"
   debug_sql: "${DEBUG:false}"
   offline_timeout: "${DASHBOARD_OFFLINE_TIMEOUT:3s}"
   offline_sleep: "${DASHBOARD_OFFLINE_SLEEP:3m}"
@@ -464,6 +470,7 @@ grpc-client@erda.core.messenger.notifygroup:
 erda.core.messenger.notifygroup-client:
 
 metric-storage-elasticsearch:
+  _enable: ${QUERY_METRIC_FROM_ES_ENABLE:false}
   read_timeout: "1m"
   write_timeout: "1m"
   index_type: "spot"
