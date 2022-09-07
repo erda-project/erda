@@ -79,7 +79,7 @@ storage-retention-strategy@span:
   default_ttl: "${SPAN_TTL:168h}"
 
 clickhouse.table.initializer@log:
-  _enable: ${CLICKHOUSE_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "logs"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
