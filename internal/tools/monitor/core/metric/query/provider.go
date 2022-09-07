@@ -61,14 +61,14 @@ type provider struct {
 	Register   transport.Register    `autowired:"service-register" optional:"true"`
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	MetricTran i18n.I18n             `autowired:"i18n@metric"`
-	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric"`
+	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric" optional:"true"`
 	Redis      *redis.Client         `autowired:"redis-client"`
 
 	meta              *metricmeta.Manager
 	metricService     *metricService
 	metricMetaService *metricMetaService
 
-	Storage         storage.Storage  `autowired:"metric-storage"`
+	Storage         storage.Storage  `autowired:"metric-storage" optional:"true"`
 	CkStorageReader storage.Storage  `autowired:"metric-storage-clickhouse" optional:"true"`
 	CkSearchRaw     clickhouse.Query `autowired:"metric-storage-clickhouse" optional:"true"`
 }

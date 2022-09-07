@@ -60,7 +60,7 @@ type provider struct {
 	C          *config
 	L          logs.Logger
 	Meta       *metricmeta.Manager   `autowired:"erda.core.monitor.metric.meta"`
-	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric"`
+	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric" optional:"true"`
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	ChartTrans i18n.Translator       `autowired:"i18n" translator:"charts"`
 	q          *Metricq
@@ -70,7 +70,7 @@ type provider struct {
 	MetricTran i18n.I18n          `autowired:"i18n@metric"`
 	Redis      *redis.Client      `autowired:"redis-client"`
 
-	Storage storage.Storage `autowired:"metric-storage"`
+	Storage storage.Storage `autowired:"metric-storage" optional:"true"`
 
 	CkSearchRaw     clickhouse.Query `autowired:"metric-storage-clickhouse" optional:"true"`
 	CkStorageReader storage.Storage  `autowired:"metric-storage-clickhouse" optional:"true"`
