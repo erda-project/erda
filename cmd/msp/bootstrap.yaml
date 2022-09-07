@@ -19,24 +19,27 @@ mysql:
   database: "${MYSQL_DATABASE:dice}"
 
 clickhouse:
-  _enable: ${CLICKHOUSE_ENABLE:false}
+  _enable: ${CLICKHOUSE_ENABLE:true}
   addr: "${CLICKHOUSE_ADDR:localhost:9000}"
   username: "${CLICKHOUSE_USERNAME:default}"
   password: "${CLICKHOUSE_PASSWORD:default}"
 
 elasticsearch:
+  _enable: ${ES_ENABLE:false}
   urls: "${ES_URL:http://localhost:9200}"
   security: ${ES_SECURITY_ENABLE:false}
   username: "${ES_SECURITY_USERNAME}"
   password: "${ES_SECURITY_PASSWORD}"
 
 elasticsearch@logs:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   urls: "${LOGS_ES_URL:http://localhost:9200}"
   security: ${LOGS_ES_SECURITY_ENABLE:false}
   username: "${LOGS_ES_SECURITY_USERNAME}"
   password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 logs-index-query:
+  query_log_from_es: ${QUERY_LOG_FROM_ES_ENABLE:false}
   query_back_es: ${LOGS_QUERY_BACK_ES:false}
   index_field_settings:
     file: conf/logs/default_field_settings.yml
@@ -75,11 +78,11 @@ elasticsearch@span:
   password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 span-storage-elasticsearch:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE|QUERY_SPAN_FROM_CASSANDRA_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE|QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}
   query_timeout: "1m"
   read_page_size: 200
 elasticsearch.index.loader@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE|QUERY_SPAN_FROM_CASSANDRA_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE|QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -93,16 +96,16 @@ elasticsearch.index.loader@span:
         - "<org>.<key>-{number}"
 
 storage-retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   default_ttl: "${SPAN_TTL:168h}"
   load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   key_patterns:
     - "erda-spans-<org>.<key>-{number}"
 elasticsearch.index.cleaner@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   check_interval: "30m"
   disk_clean:
     enable: ${SPAN_DISK_CLEAN_ENABLE:true}
@@ -233,9 +236,9 @@ erda.msp.apm.checker.task:
 erda.msp.apm.trace.query:
   debug_sql: ${TRACE_QUERY_DEBUG_SQL:true}
   query_source:
-    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:true}"
+    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:false}"
     cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}"
-    clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}"
+    clickhouse: "${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:true}"
   compatible_enable: "${QUERY_SPAN_FROM_CLICKHOUSE_COMPATIBLE_ENABLE:false}"
   cassandra:
     keyspace:
@@ -244,14 +247,14 @@ erda.msp.apm.trace.query:
 
 
 clickhouse.table.loader@span:
-  _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "spans"
   default_search_table: "spans_all"
   cache_key_prefix: "clickhouse-table-span"
 
 etcd-election@table-loader:
-  _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:true}
   root_path: "/erda/monitor-ck-table-loader-election"
 
 erda.msp.apm.exception.query:
@@ -298,7 +301,7 @@ erda.msp.apm.service:
      - "errorRate"
 
 #resource deploy related
-erda.msp.resource:
+#erda.msp.resource:
 erda.msp.resource.deploy.coordinator:
 erda.msp.resource.deploy.handlers.apigateway:
   main_cluster_info:

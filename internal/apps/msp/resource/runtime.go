@@ -59,6 +59,9 @@ type RuntimeDTO struct {
 }
 
 func (s *resourceService) QueryRuntime(query RuntimeQuery) (*RuntimeDTO, error) {
+	if s.es == nil {
+		return nil, nil
+	}
 	ctx := context.Background()
 	boolQuery := elastic.NewBoolQuery()
 	if len(query.RuntimeId) == 0 {

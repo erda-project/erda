@@ -44,7 +44,7 @@ type provider struct {
 	C           *config
 	L           logs.Logger
 	metricq     metricq.Queryer
-	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage"`
+	EsSearchRaw elasticsearch.Interface `autowired:"metric-storage" optional:"true"`
 	//metricq  metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	cmdb *cmdb.Cmdb
 

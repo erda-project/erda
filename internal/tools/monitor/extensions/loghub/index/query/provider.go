@@ -37,6 +37,7 @@ import (
 
 type config struct {
 	Timeout              time.Duration `file:"timeout" default:"60s"`
+	QueryLogFromES       bool          `file:"query_log_from_es" default:"false"`
 	QueryBackES          bool          `file:"query_back_es" default:"false"`
 	IndexPreload         bool          `file:"index_preload" default:"true" env:"LOG_INDEX_PRELOAD"`
 	IndexPreloadInterval time.Duration `file:"index_preload_interval" default:"60s" env:"LOG_INDEX_PRELOAD_INTERVAL"`
@@ -96,12 +97,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.C.IndexFieldSettings.DefaultSettings = defaultSettings
 	}
 
-	es := ctx.Service("elasticsearch@logs").(elasticsearch.Interface)
-	p.client = es.Client()
-	backES := ctx.Service("elasticsearch").(elasticsearch.Interface)
-	p.backClient = backES.Client()
-	if es.URL() == backES.URL() {
-		p.C.QueryBackES = false
+	if p.C.QueryLogFromES {
+		es := ctx.Service("elasticsearch@logs").(elasticsearch.Interface)
+		p.client = es.Client()
+		backES := ctx.Service("elasticsearch").(elasticsearch.Interface)
+		p.backClient = backES.Client()
+		if es.URL() == backES.URL() {
+			p.C.QueryBackES = false
+		}
 	}
 
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("log-metrics")
@@ -137,7 +140,7 @@ func (p *provider) Close() error {
 func init() {
 	servicehub.Register("logs-index-query", &servicehub.Spec{
 		Services:     []string{"logs-index-query"},
-		Dependencies: []string{"elasticsearch", "elasticsearch@logs", "mysql", "i18n", "http-server"},
+		Dependencies: []string{"mysql", "i18n", "http-server"},
 		Description:  "logs query",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {

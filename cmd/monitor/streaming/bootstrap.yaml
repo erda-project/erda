@@ -68,7 +68,7 @@ etcd-mutex:
   root_path: "/erda/streaming"
 
 clickhouse:
-  _enable: ${CLICKHOUSE_ENABLE:false}
+  _enable: ${CLICKHOUSE_ENABLE:true}
   addr: "${CLICKHOUSE_ADDR:localhost:9000}"
   username: "${CLICKHOUSE_USERNAME:default}"
   password: "${CLICKHOUSE_PASSWORD:default}"
@@ -79,7 +79,7 @@ storage-retention-strategy@span:
   default_ttl: "${SPAN_TTL:168h}"
 
 clickhouse.table.initializer@log:
-  _enable: ${CLICKHOUSE_ENABLE:false}
+  _enable: ${CLICKHOUSE_ENABLE:true}
   table_prefix: "logs"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
@@ -92,20 +92,20 @@ clickhouse.table.initializer@log:
       ignore_err: "true"
 
 clickhouse.table.creator@log:
-  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/logs_ddl_create_tenant_tables.sql"
   default_write_table: "logs"
   table_prefix: "logs"
 
 clickhouse.table.loader@log:
-  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_LOG_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "logs"
   default_search_table: "logs_all"
   cache_key_prefix: "clickhouse-table-log"
 
 log-storage-clickhouse:
-  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
 
 # elasticsearch for log
 elasticsearch@log:
@@ -116,13 +116,13 @@ elasticsearch@log:
   password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
   templates:
     - name: "erda-logs"
       path: "conf/log_index_template.json"
 
 elasticsearch.index.loader@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -132,7 +132,7 @@ elasticsearch.index.loader@log:
         - "<org>.<key>-{number}"
 
 elasticsearch.index.creator@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
   patterns:
     - first_index: "erda-logs-<org>-000001"
       alias: "erda-logs-<org>-rollover"
@@ -141,7 +141,7 @@ elasticsearch.index.creator@log:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
   check_interval: "30s"
   body_file: "conf/index_rollover.json"
   patterns:
@@ -156,7 +156,7 @@ storage-retention-strategy@log:
   default_ttl: "${LOG_TTL:168h}"
 
 log-storage-elasticsearch:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
   write_timeout: "1m"
   index_type: "logs"
 
@@ -230,13 +230,13 @@ elasticsearch@event:
   password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
   templates:
     - name: "erda-events"
       path: "conf/event_index_template.json"
 
 elasticsearch.index.loader@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -246,7 +246,7 @@ elasticsearch.index.loader@event:
         - "<event>-<namespace>.<key>-{number}"
 
 elasticsearch.index.creator@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
   patterns:
     - first_index: "erda-events-<event>-<namespace>-000001"
       alias: "erda-events-<event>-<namespace>-rollover"
@@ -255,7 +255,7 @@ elasticsearch.index.creator@event:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
   check_interval: "30s"
   body_file: "conf/index_rollover.json"
   patterns:
@@ -270,7 +270,7 @@ storage-retention-strategy@event:
   ttl_reload_interval: "3m"
 
 event-storage-elasticsearch:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
   write_timeout: "1m"
   index_type: "events"
 
@@ -283,23 +283,24 @@ event-persist:
   buffer_size: ${EVENT_BATCH_SIZE:200}
   parallelism: ${EVENT_PERSIST_PARALLELISM:3}
   print_invalid_event: false
-  storage_writer_service: ${EVENT_STORAGE_WRITER_SERVICE:event-storage-elasticsearch-writer}
+  storage_writer_service: ${EVENT_STORAGE_WRITER_SERVICE:event-storage-clickhouse-writer}
 
 # elasticsearch for metric
 elasticsearch:
+  _enable: ${ES_ENABLE:false}
   urls: "${ES_URL:http://localhost:9200}"
   security: ${ES_SECURITY_ENABLE:false}
   username: "${ES_SECURITY_USERNAME}"
   password: "${ES_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@metric:
-  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:false}
   templates:
     - name: "spot_metric_template"
       path: "conf/metric_index_template.json"
 
 elasticsearch.index.loader@metric:
-  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:false}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -316,7 +317,7 @@ elasticsearch.index.loader@metric:
         - "<metric>-<namespace>"
 
 elasticsearch.index.creator@metric:
-  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:false}
   patterns:
     - first_index: "spot-<metric>-<namespace>-r-000001"
       alias: "spot-<metric>-<namespace>-rollover"
@@ -328,7 +329,7 @@ elasticsearch.index.creator@metric:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@metric:
-  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:false}
   check_interval: "30m"
   body_file: "conf/index_rollover.json"
   patterns:
@@ -342,14 +343,14 @@ storage-retention-strategy@metric:
   ttl_reload_interval: "3m"
 
 metric-storage-elasticsearch:
-  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:false}
   read_timeout: "1m"
   write_timeout: "1m"
   index_type: "spot"
   dummy_index: "spot-empty"
 
 metric-persist:
-  _enable: ${WRITE_METRIC_TO_ES_ENABLE:true}
+  _enable: ${WRITE_METRIC_TO_ES_ENABLE:false}
   input:
     topics: "${METRIC_TOPICS:spot-metrics,erda-trace-metrics}"
     group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
@@ -369,13 +370,13 @@ elasticsearch@span:
   password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   templates:
     - name: "erda-spans"
       path: "conf/span_index_template.json"
 
 elasticsearch.index.loader@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -385,7 +386,7 @@ elasticsearch.index.loader@span:
         - "<org>.<key>-{number}"
 
 elasticsearch.index.creator@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   patterns:
     - first_index: "erda-spans-<org>-000001"
       alias: "erda-spans-<org>-rollover"
@@ -394,7 +395,7 @@ elasticsearch.index.creator@span:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   check_interval: "30s"
   body_file: "conf/index_rollover.json"
   patterns:
@@ -405,12 +406,12 @@ elasticsearch.index.rollover@span:
 
 
 span-storage-elasticsearch:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   write_timeout: "1m"
   index_type: "spans"
 
 span-persist:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   spot_input:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
@@ -481,11 +482,12 @@ elasticsearch@entity:
   username: "${ENTITY_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${ENTITY_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.initializer@entity:
-  _enable: ${WRITE_ENTITY_TO_ES_ENABLE:true}
+  _enable: ${WRITE_ENTITY_TO_ES_ENABLE:false}
   templates:
     - name: "erda-entity"
       path: "conf/entity_index_template.json"
 entity-storage-elasticsearch:
+  _enable: ${WRITE_ENTITY_TO_ES_ENABLE:false}
   write_timeout: "1m"
   query_timeout: "1m"
   index_type: "entity"
@@ -497,7 +499,7 @@ entity-persist:
   read_timeout: "5s"
   buffer_size: ${ENTITY_BATCH_SIZE:200}
   parallelism: ${ENTITY_PERSIST_PARALLELISM:3}
-  storage_writer_service: "${ENTITY_STORAGE_WRITER_SERVICE:entity-storage-elasticsearch-writer}"
+  storage_writer_service: "${ENTITY_STORAGE_WRITER_SERVICE:entity-storage-clickhouse-writer}"
 
 alert-event-storage:
   input:
@@ -574,7 +576,7 @@ erda.oap.collector.receiver.kafka@oapspan:
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.processor.modifier@span:
-  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   rules:
     - action: drop
       key: tags.http_read_bytes
@@ -584,7 +586,7 @@ erda.oap.collector.processor.modifier@span:
       key: tags.http_wrote_bytes
 
 erda.oap.collector.exporter.clickhouse@span:
-  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   storage:
     currency_num: ${EXPORTER_CH_SPAN_CURRENCY_NUM:2}
   builder:
@@ -592,7 +594,7 @@ erda.oap.collector.exporter.clickhouse@span:
     tenant_id_key: terminus_key
 
 clickhouse.table.initializer@span:
-  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "spans"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
@@ -602,14 +604,14 @@ clickhouse.table.initializer@span:
       ignore_err: "false"
 
 clickhouse.table.loader@span:
-  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "spans"
   default_search_table: "spans_all"
   cache_key_prefix: "clickhouse-table-span"
 
 clickhouse.table.creator@span:
-  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   default_write_table: "spans"
   table_prefix: "spans"
 
@@ -617,7 +619,7 @@ clickhouse.table.creator@span:
 
 # --- metric to clickhouse block ---
 erda.oap.collector.receiver.kafka@spotmetric:
-  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   proto_parser: spotmetric
   consumer:
     topics: "${METRIC_TOPICS:spot-metrics}"
@@ -629,7 +631,7 @@ erda.oap.collector.receiver.kafka@spotmetric:
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.receiver.kafka@oapspanevent:
-  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   proto_parser: oapspanevent
   consumer:
     topics: "${OAP_TRACE_EVENT_TOPICS:erda-spans}"
@@ -640,7 +642,7 @@ erda.oap.collector.receiver.kafka@oapspanevent:
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.exporter.clickhouse@metric:
-  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   storage:
     currency_num: ${EXPORTER_CH_METRIC_CURRENCY_NUM:2}
   builder:
@@ -648,7 +650,7 @@ erda.oap.collector.exporter.clickhouse@metric:
     tenant_id_key: _metric_scope_id
 
 clickhouse.table.initializer@metric:
-  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "metrics"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
@@ -661,13 +663,13 @@ clickhouse.table.initializer@metric:
       ignore_err: "true"
 
 clickhouse.table.creator@metric:
-  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/metrics/ddl_create_tenant_tables.sql.tpl"
   default_write_table: "metrics"
   table_prefix: "metrics"
 
 clickhouse.table.loader@metric:
-  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "metrics"
   default_search_table: "metrics_all"
@@ -676,7 +678,7 @@ clickhouse.table.loader@metric:
 
 # --- event to clickhouse block ---
 clickhouse.table.initializer@event:
-  _enable: ${CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "events"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
@@ -689,27 +691,27 @@ clickhouse.table.initializer@event:
       ignore_err: "true"
 
 clickhouse.table.creator@event:
-  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/events_ddl_create_tenant_tables.sql"
   default_write_table: "events"
   table_prefix: "events"
 
 clickhouse.table.loader@event:
-  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_EVENT_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "events"
   default_search_table: "events_all"
   cache_key_prefix: "clickhouse-table-event"
 
 event-storage-clickhouse:
-  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   query_timeout: 1m
 
 # --- event to clickhouse block ---
 
 # --- entity to clickhouse block ---
 clickhouse.table.initializer@entity:
-  _enable: ${CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "entities"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   default_ddl_files:
@@ -722,13 +724,13 @@ clickhouse.table.initializer@entity:
       ignore_err: "true"
 
 clickhouse.table.creator@entity:
-  _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/entities_ddl_create_tenant_tables.sql"
   default_write_table: "entities"
   table_prefix: "entities"
 
 clickhouse.table.loader@entity:
-  _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_ENTITY_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "entities"
   default_search_table: "entities_all"
@@ -739,7 +741,7 @@ storage-retention-strategy@entity:
   ttl_reload_interval: "3m"
 
 entity-storage-clickhouse:
-  _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:false}
+  _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
   query_timeout: 1m
 
 # --- entity to clickhouse block ---

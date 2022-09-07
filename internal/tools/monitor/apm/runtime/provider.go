@@ -40,7 +40,7 @@ type provider struct {
 type define struct{}
 
 func (d *define) Services() []string     { return []string{"apm-runtime"} }
-func (d *define) Dependencies() []string { return []string{"http-server", "elasticsearch", "mysql"} }
+func (d *define) Dependencies() []string { return []string{"http-server", "mysql"} }
 func (d *define) Summary() string        { return "apm-runtime api" }
 func (d *define) Description() string    { return d.Summary() }
 func (d *define) Config() interface{}    { return &config{} }
@@ -57,8 +57,10 @@ func (runtime *provider) Init(ctx servicehub.Context) (err error) {
 	runtime.ctx = ctx
 
 	// elasticsearch
-	es := ctx.Service("elasticsearch").(elasticsearch.Interface)
-	runtime.es = es.Client()
+	es, _ := ctx.Service("elasticsearch").(elasticsearch.Interface)
+	if es != nil {
+		runtime.es = es.Client()
+	}
 
 	// mysql
 	runtime.db = db.New(ctx.Service("mysql").(mysql.Interface).DB())
