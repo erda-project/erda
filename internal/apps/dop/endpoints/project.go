@@ -222,21 +222,32 @@ func addOnsFilterIn(addOns []apistructs.AddonFetchResponseData, fn func(addOn *a
 	return
 }
 
+func checkOrgIDAndProjectID(orgIDStr, projectIDStr string) (orgID, projectID uint64, err error) {
+	// check orgID
+	orgID, err = strconv.ParseUint(orgIDStr, 10, 64)
+	if err != nil {
+		err = apierrors.ErrGetProject.InvalidParameter(fmt.Errorf("invalid orgID: %d, err: %v", orgID, err))
+		return
+	}
+
+	// check projectID
+	projectID, err = strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		err = apierrors.ErrGetProject.InvalidParameter(fmt.Errorf("invalid projectID: %s, err: %v", projectIDStr, err))
+		return
+	}
+
+	return
+}
+
 // GetProject gets the project info
 func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	l := logrus.WithField("func", "*Endpoints.GetProject")
 
-	// check orgID
-	orgID, err := strconv.ParseUint(r.Header.Get(httputil.OrgHeader), 10, 64)
+	// check orgID and projectID
+	orgID, projectID, err := checkOrgIDAndProjectID(r.Header.Get(httputil.OrgHeader), vars["projectID"])
 	if err != nil {
-		return apierrors.ErrGetProject.InvalidParameter(fmt.Errorf("invalid orgID: %d, err: %v", orgID, err)).ToResp(), nil
-	}
-
-	// check projectID
-	projectIDStr := vars["projectID"]
-	projectID, err := strutil.Atoi64(projectIDStr)
-	if err != nil {
-		return apierrors.ErrGetProject.InvalidParameter(fmt.Errorf("invalid projectID: %s, err: %v", projectIDStr, err)).ToResp(), nil
+		return errorresp.ErrResp(err)
 	}
 
 	// check permission
