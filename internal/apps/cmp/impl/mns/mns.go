@@ -68,7 +68,7 @@ type Mns struct {
 	js         jsonstore.JsonStore
 	Config     *Config
 	ClusterSvc clusterpb.ClusterServiceServer
-	org        org.ClientInterface
+	org        org.Interface
 }
 
 type Config struct {
@@ -84,7 +84,7 @@ type Config struct {
 	BathSize        int32
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, n *nodes.Nodes, js jsonstore.JsonStore, clusterSvc clusterpb.ClusterServiceServer, org org.ClientInterface) *Mns {
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, n *nodes.Nodes, js jsonstore.JsonStore, clusterSvc clusterpb.ClusterServiceServer, org org.Interface) *Mns {
 	return &Mns{db: db, bdl: bdl, nodes: n, js: js, ClusterSvc: clusterSvc, org: org}
 }
 
