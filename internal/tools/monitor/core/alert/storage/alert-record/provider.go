@@ -20,8 +20,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type define struct{}
@@ -35,7 +35,7 @@ func (d *define) Services() []string {
 }
 
 func (d *define) Dependencies() []string {
-	return []string{"kafka", "mysql", "kafka.topic.initializer"}
+	return []string{"mysql"}
 }
 
 func (d *define) Summary() string {
@@ -60,18 +60,18 @@ type provider struct {
 	C     *config
 	L     logs.Logger
 	mysql *gorm.DB
-	kafka kafka.Interface
+	Kafka kafka.Interface `autowired:"kafkago"`
 	//output writer.Writer
+
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.mysql = ctx.Service("mysql").(mysql.Interface).DB()
-	p.kafka = ctx.Service("kafka").(kafka.Interface)
 	return nil
 }
 
 func (p *provider) Start() error {
-	err := p.kafka.NewConsumer(&p.C.Input, p.invoke)
+	err := p.Kafka.NewConsumer(&p.C.Input, p.invoke)
 	return err
 }
 

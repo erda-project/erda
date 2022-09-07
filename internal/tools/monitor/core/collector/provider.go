@@ -22,8 +22,8 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type config struct {
@@ -40,7 +40,7 @@ type config struct {
 type define struct{}
 
 func (m *define) Services() []string     { return []string{"metrics-collector"} }
-func (m *define) Dependencies() []string { return []string{"http-server", "kafka-producer"} }
+func (m *define) Dependencies() []string { return []string{"http-server"} }
 func (m *define) Summary() string        { return "log and metrics collector" }
 func (m *define) Description() string    { return m.Summary() }
 func (m *define) Config() interface{}    { return &config{} }
@@ -53,7 +53,7 @@ type provider struct {
 	Cfg    *config
 	Logger logs.Logger
 	writer writer.Writer
-	Kafka  kafka.Interface `autowired:"kafka"`
+	Kafka  kafka.Interface `autowired:"kafkago"`
 
 	auth      *Authenticator
 	Validator authentication.Validator `autowired:"erda.oap.collector.authentication.Validator"`

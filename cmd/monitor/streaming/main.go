@@ -51,14 +51,14 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/initializer"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/rollover"
-	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/kafka/topic/initializer"
 
-	// erda stream pipeline
+	// data pipeline
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/core"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/all"
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 //go:embed bootstrap.yaml

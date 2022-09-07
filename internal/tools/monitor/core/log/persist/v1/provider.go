@@ -26,10 +26,10 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/persist/v1/schema"
 	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type config struct {
@@ -51,7 +51,7 @@ type config struct {
 type provider struct {
 	Cfg       *config
 	Log       logs.Logger
-	Kafka     kafka.Interface     `autowired:"kafka"`
+	Kafka     kafka.Interface     `autowired:"kafkago"`
 	Cassandra cassandra.Interface `autowired:"cassandra"`
 	Retention retention.Interface `autowired:"storage-retention-strategy@log"`
 	Mutex     mutex.Interface     `autowired:"etcd-mutex"`
@@ -98,8 +98,7 @@ func (p *provider) Run(ctx context.Context) error {
 
 func init() {
 	servicehub.Register("log-persist-v1", &servicehub.Spec{
-		Dependencies: []string{"kafka.topic.initializer"},
-		ConfigFunc:   func() interface{} { return &config{} },
+		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

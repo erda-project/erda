@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/compressor"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
@@ -53,6 +54,8 @@ type config struct {
 	Compatibility bool `file:"compatibility" default:"true"`
 }
 
+var _ model.Exporter = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg *config
@@ -61,6 +64,10 @@ type provider struct {
 	client *http.Client
 	au     auth.Authenticator
 	cp     compressor.Compressor
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {

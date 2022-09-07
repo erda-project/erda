@@ -26,6 +26,10 @@ type RuntimeReceiver struct {
 	Filter   *DataFilter
 }
 
+func (rr *RuntimeReceiver) Close() error {
+	return rr.Receiver.ComponentClose()
+}
+
 type Receiver interface {
 	Component
 	// TODO

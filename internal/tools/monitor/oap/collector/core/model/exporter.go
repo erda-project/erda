@@ -15,7 +15,6 @@
 package model
 
 import (
-	"context"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -36,6 +35,13 @@ type RuntimeExporter struct {
 	Buffer           *odata2.Buffer
 	Timer            *time.Timer
 	Interval, Jitter time.Duration
+
+	done chan struct{}
+}
+
+func (re *RuntimeExporter) Close() error {
+	close(re.done)
+	return re.Exporter.ComponentClose()
 }
 
 func (re *RuntimeExporter) Add(od odata2.ObservableData) {
@@ -55,12 +61,13 @@ func (re *RuntimeExporter) Add(od odata2.ObservableData) {
 	}
 }
 
-func (re *RuntimeExporter) Start(ctx context.Context) {
+func (re *RuntimeExporter) Start() {
+	re.done = make(chan struct{})
 	for {
 		select {
-		case <-ctx.Done():
+		case <-re.done:
 			if err := re.flushOnce(); err != nil {
-				re.Logger.Errorf("event done, but flush err: %s", err)
+				re.Logger.Errorf("close trigger, but flush err: %s", err)
 			}
 			re.Timer.Stop()
 			return

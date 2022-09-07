@@ -51,8 +51,6 @@ type statistics struct {
 	writeLatency prometheus.Histogram
 }
 
-var sharedStatistics = newStatistics()
-
 func newStatistics() Statistics {
 	const subSystem = "metric_persist"
 	s := &statistics{

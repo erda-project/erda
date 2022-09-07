@@ -37,6 +37,8 @@ var providerName = plugins.WithPrefixReceiver("prometheus-remote-write")
 type config struct {
 }
 
+var _ model.Receiver = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg    *config
@@ -44,6 +46,10 @@ type provider struct {
 	Router httpserver.Router `autowired:"http-router"`
 
 	consumerFunc model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 // Run this is optional

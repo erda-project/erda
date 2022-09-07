@@ -22,16 +22,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
-	"github.com/erda-project/erda/internal/tools/monitor/core/log"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
-	pod2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kubernetes"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
+	pod2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
 )
 
 var providerName = plugins.WithPrefixProcessor("k8s-tagger")
@@ -41,6 +41,8 @@ type config struct {
 	Keypass map[string][]string `file:"keypass"`
 }
 
+var _ model.Processor = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg        *config
@@ -49,6 +51,10 @@ type provider struct {
 
 	// cache
 	podCache *pod2.Cache
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {

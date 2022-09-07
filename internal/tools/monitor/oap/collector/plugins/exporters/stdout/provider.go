@@ -17,12 +17,14 @@ package stdout
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -35,12 +37,21 @@ type config struct {
 	Keydrop    map[string][]string `file:"keydrop"`
 	Keyinclude []string            `file:"keyinclude"`
 	Keyexclude []string            `file:"keyexclude"`
+
+	Print bool          `file:"print" default:"false"`
+	Sleep time.Duration `file:"sleep" default:"3s"`
 }
+
+var _ model.Exporter = (*provider)(nil)
 
 // +provider
 type provider struct {
 	Cfg *config
 	Log logs.Logger
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -51,46 +62,66 @@ func (p *provider) Connect() error {
 	return nil
 }
 
-func (p *provider) Close() error {
-	return nil
-}
-
 func (p *provider) ExportMetric(items ...*metric.Metric) error {
 	for _, item := range items {
+		if !p.Cfg.Print {
+			continue
+		}
 		buf, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("%s\n", string(buf))
+	}
+	if p.Cfg.Sleep > 0 {
+		time.Sleep(p.Cfg.Sleep)
 	}
 	return nil
 }
 
 func (p *provider) ExportLog(items ...*log.Log) error {
 	for _, item := range items {
+		if !p.Cfg.Print {
+			continue
+		}
 		buf, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("%s\n", string(buf))
+	}
+	if p.Cfg.Sleep > 0 {
+		time.Sleep(p.Cfg.Sleep)
 	}
 	return nil
 }
 
 func (p *provider) ExportSpan(items ...*trace.Span) error {
 	for _, item := range items {
+		if !p.Cfg.Print {
+			continue
+		}
 		buf, err := json.Marshal(item)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("%s\n", string(buf))
 	}
+	if p.Cfg.Sleep > 0 {
+		time.Sleep(p.Cfg.Sleep)
+	}
 	return nil
 }
 
 func (p *provider) ExportRaw(items ...*odata.Raw) error {
 	for _, item := range items {
+		if !p.Cfg.Print {
+			continue
+		}
 		fmt.Printf("meta: %+v; data: %s\n", item.Meta, strutil.NoCopyBytesToString(item.Data))
+	}
+	if p.Cfg.Sleep > 0 {
+		time.Sleep(p.Cfg.Sleep)
 	}
 	return nil
 }
