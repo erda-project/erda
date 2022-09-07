@@ -105,7 +105,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.outputs.es = es.NewBatchWriter(&p.C.Output.Elasticsearch.WriterConfig)
 	p.outputs.indexPrefix = p.C.Output.Elasticsearch.IndexPrefix
 
-	k, err := ctx.Service("kafka").(kafka.Interface).NewProducer(&p.C.Output.Kafka)
+	k, err := ctx.Service("kafkago").(kafka.Interface).NewProducer(&p.C.Output.Kafka)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
@@ -149,7 +149,7 @@ func (p *provider) Close() error {
 func init() {
 	servicehub.Register("sls-import", &servicehub.Spec{
 		Services:     []string{"sls-import"},
-		Dependencies: []string{"kafka", "elasticsearch"},
+		Dependencies: []string{"kafkago", "elasticsearch"},
 		Description:  "import logs from aliyun sls",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
