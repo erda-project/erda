@@ -121,7 +121,7 @@ type Parser interface {
 	GetOrgName() string
 	GetTerminusKey() string
 	SetTerminusKey(terminusKey string) Parser
-	SetMeta(*metricmeta.Manager)
+	SetMeta(metricmeta.MetricMeta)
 }
 
 // Creator .
