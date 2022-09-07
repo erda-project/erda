@@ -3,15 +3,9 @@ http-server:
 health:
     path: "/api/health"
 
-kafka:
+kafkago:
     servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
-    comsumer:
-        options:
-            auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-            auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-    producer:
-        options:
-            go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
+    client_id: log-service
 
 logs-exporter-base:
     filters:

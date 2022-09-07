@@ -34,20 +34,18 @@ type config struct {
 type provider struct {
 	C     *config
 	L     logs.Logger
-	kafka kafka.Interface
+	Kafka kafka.Interface `autowired:"kafkago"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	if len(p.C.Input.Group) <= 0 {
 		p.C.Input.Group = fmt.Sprintf("%s-%s", p.C.Output, md5x.SumString(p.C.OutputConfig).String16())
 	}
-	p.kafka = ctx.Service("kafka").(kafka.Interface)
 	return nil
 }
 
-// NewConsumer
 func (p *provider) NewConsumer(fn OutputFactory) error {
-	return p.kafka.NewConsumerWitchCreator(&p.C.Input, func(i int) (kafka.ConsumerFunc, error) {
+	return p.Kafka.NewConsumerWitchCreator(&p.C.Input, func(i int) (kafka.ConsumerFunc, error) {
 		output, err := fn(i)
 		if err != nil {
 			return nil, fmt.Errorf("fail to create output %s", err)
@@ -63,10 +61,9 @@ func (p *provider) NewConsumer(fn OutputFactory) error {
 
 func init() {
 	servicehub.Register("logs-exporter-base", &servicehub.Spec{
-		Services:     []string{"logs-exporter-base"},
-		Dependencies: []string{"kafka"},
-		Description:  "logs exporter base",
-		ConfigFunc:   func() interface{} { return &config{} },
+		Services:    []string{"logs-exporter-base"},
+		Description: "logs exporter base",
+		ConfigFunc:  func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
