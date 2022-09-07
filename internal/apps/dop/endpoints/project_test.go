@@ -121,3 +121,64 @@ func Test_getOrgID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), orgID)
 }
+
+func Test_checkOrgIDAndProjectID(t *testing.T) {
+	type args struct {
+		orgIDStr     string
+		projectIDStr string
+	}
+	tests := []struct {
+		name          string
+		args          args
+		wantOrgID     uint64
+		wantProjectID uint64
+		wantHaveError bool
+	}{
+		{
+			name:          "empty org id",
+			args:          args{orgIDStr: ""},
+			wantOrgID:     0,
+			wantProjectID: 0,
+			wantHaveError: true,
+		},
+		{
+			name:          "empty project id",
+			args:          args{orgIDStr: "1", projectIDStr: ""},
+			wantOrgID:     1,
+			wantProjectID: 0,
+			wantHaveError: true,
+		},
+		{
+			name:          "invalid org id",
+			args:          args{orgIDStr: "s", projectIDStr: "1"},
+			wantOrgID:     0,
+			wantProjectID: 0,
+			wantHaveError: true,
+		},
+		{
+			name:          "invalid project id",
+			args:          args{orgIDStr: "1", projectIDStr: "s"},
+			wantOrgID:     1,
+			wantProjectID: 0,
+			wantHaveError: true,
+		},
+		{
+			name:          "all right",
+			args:          args{orgIDStr: "1", projectIDStr: "2"},
+			wantOrgID:     1,
+			wantProjectID: 2,
+			wantHaveError: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotOrgID, gotProjectID, err := checkOrgIDAndProjectID(tt.args.orgIDStr, tt.args.projectIDStr)
+			if (err != nil) != tt.wantHaveError {
+				t.Errorf("checkOrgIDAndProjectID() have error = %v, wantHaveError %v", err != nil, tt.wantHaveError)
+				return
+			}
+			assert.Equalf(t, tt.wantOrgID, gotOrgID, "checkOrgIDAndProjectID(%v, %v)", tt.args.orgIDStr, tt.args.projectIDStr)
+			assert.Equalf(t, tt.wantProjectID, gotProjectID, "checkOrgIDAndProjectID(%v, %v)", tt.args.orgIDStr, tt.args.projectIDStr)
+		})
+	}
+}
