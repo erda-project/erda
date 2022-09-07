@@ -48,6 +48,7 @@ func Test_provider_ExportMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &provider{
 				writer: &mockWriter{},
+				Cfg:    &config{Topic: "test"},
 			}
 			if err := p.ExportMetric(tt.args.items...); (err != nil) != tt.wantErr {
 				t.Errorf("ExportMetric() error = %v, wantErr %v", err, tt.wantErr)

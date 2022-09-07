@@ -19,9 +19,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/interceptor"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 
 	"github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
@@ -38,6 +38,8 @@ type config struct {
 	} `file:"kafka"`
 }
 
+var _ model.Receiver = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg *config
@@ -49,6 +51,10 @@ type provider struct {
 	Interceptors interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
 
 	consumer model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {

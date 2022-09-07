@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 )
@@ -37,6 +38,8 @@ type config struct {
 	Rules []RuleConfig `file:"rules"`
 }
 
+var _ model.Processor = (*provider)(nil)
+
 // +provider
 // TODO. Watch out: only work with metric's Fields now, so specify field key without `fields.` prefix
 type provider struct {
@@ -45,6 +48,10 @@ type provider struct {
 
 	cache  map[uint64]aggregate
 	rulers []*ruler
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 type aggregate struct {

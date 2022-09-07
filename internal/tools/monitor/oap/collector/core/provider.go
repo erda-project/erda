@@ -15,10 +15,10 @@
 package core
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -40,6 +40,7 @@ type provider struct {
 	Cfg        *config.Config
 	Log        logs.Logger
 	servicectx servicehub.Context
+	shutdown   chan struct{}
 
 	metricPipelines, spanPipelines, logPipeline, rawPipeline []*pipeline.Pipeline
 }
@@ -48,29 +49,28 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.servicectx = ctx
 	p.metricPipelines = make([]*pipeline.Pipeline, 0)
-	return nil
-}
-
-// Run this is optional
-func (p *provider) Run(ctx context.Context) error {
-	err := p.initComponents()
-	if err != nil {
-		return fmt.Errorf("initComponents err: %w", err)
-	}
-
-	p.start(ctx)
+	p.shutdown = make(chan struct{})
 	return nil
 }
 
 // TODO. smooth close channel
 func (p *provider) Start() error {
+	err := p.initComponents()
+	if err != nil {
+		return fmt.Errorf("initComponents err: %w", err)
+	}
+
 	unmarshalwork.Start()
 	receivercurrentlimiter.Init()
+	p.startPipelines()
+	<-p.shutdown
 	return nil
 }
 
 func (p *provider) Close() error {
+	p.closePipelines()
 	unmarshalwork.Stop()
+	close(p.shutdown)
 	return nil
 }
 
@@ -158,19 +158,38 @@ func (p *provider) createPipelines(cfgs []config.Pipeline, dtype odata.DataType)
 	return res, nil
 }
 
-func (p *provider) start(ctx context.Context) {
-	startPipeline(ctx, p.metricPipelines)
-	startPipeline(ctx, p.logPipeline)
-	startPipeline(ctx, p.spanPipelines)
-	startPipeline(ctx, p.rawPipeline)
+func (p *provider) startPipelines() {
+	startPipeline(p.metricPipelines)
+	startPipeline(p.logPipeline)
+	startPipeline(p.spanPipelines)
+	startPipeline(p.rawPipeline)
 }
 
-func startPipeline(ctx context.Context, pipes []*pipeline.Pipeline) {
+func (p *provider) closePipelines() {
+	p.closePipeline(p.metricPipelines)
+	p.closePipeline(p.logPipeline)
+	p.closePipeline(p.spanPipelines)
+	p.closePipeline(p.rawPipeline)
+}
+
+func startPipeline(pipes []*pipeline.Pipeline) {
 	for _, pipe := range pipes {
 		go func(pi *pipeline.Pipeline) {
-			pi.StartStream(ctx)
+			pi.StartStream()
 		}(pipe)
 	}
+}
+
+func (p *provider) closePipeline(pipes []*pipeline.Pipeline) {
+	var wg sync.WaitGroup
+	wg.Add(len(pipes))
+	for _, pipe := range pipes {
+		go func(pi *pipeline.Pipeline) {
+			defer wg.Done()
+			pi.Close()
+		}(pipe)
+	}
+	wg.Wait()
 }
 
 func findComponents(ctx servicehub.Context, components []string) ([]model.ComponentUnit, error) {
@@ -236,8 +255,9 @@ func extractFromStruct(t reflect.Type, v reflect.Value) model.FilterConfig {
 
 func init() {
 	servicehub.Register("erda.oap.collector.core", &servicehub.Spec{
-		Services:    []string{},
-		Description: "core logic for schedule",
+		Services:     []string{},
+		Description:  "core logic for schedule",
+		Dependencies: []string{"prometheus", "pprof"},
 		ConfigFunc: func() interface{} {
 			return &config.Config{}
 		},

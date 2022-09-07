@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type config struct {

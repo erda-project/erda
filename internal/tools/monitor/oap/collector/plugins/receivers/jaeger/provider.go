@@ -34,6 +34,8 @@ type config struct {
 	// } `file:"kafka"`
 }
 
+var _ model.Receiver = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg *config
@@ -44,6 +46,10 @@ type provider struct {
 	Interceptors  interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
 
 	consumer model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {

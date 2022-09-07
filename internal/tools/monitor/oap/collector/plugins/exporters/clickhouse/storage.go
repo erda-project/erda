@@ -100,3 +100,7 @@ func (st *Storage) sendBatch(ctx context.Context, b driver.Batch) {
 		<-st.currencyLimiter
 	}()
 }
+
+func (st *Storage) Close() error {
+	return nil
+}

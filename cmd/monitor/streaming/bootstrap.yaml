@@ -5,28 +5,34 @@ health:
   path: "/api/health"
 
 # storages
-kafka:
-  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
-  producer:
-    options:
-      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
+#kafka:
+#  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
+#  producer:
+#    options:
+#      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
 
-kafka.topic.initializer:
-  force: ${KAFKA_INIT_FORCE_SUCCESS:true}
-  topics:
-    - spot-container-log
-    - spot-job-log
-    - spot-metrics
-    - spot-events
-    - spot-analytics
-    - spot-trace
-    - spot-alert-record
-    - spot-notify-record
-    - spot-entity
-    - msp-tracing-metrics
-    - msp-jaeger-trace
-    - erda-spans
-    - erda-trace-metrics
+kafkago:
+  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
+  client_id: streaming
+  debug_client: ${KAFKAGO_DEBUG_CLIENT:true}
+
+
+#kafka.topic.initializer:
+#  force: ${KAFKA_INIT_FORCE_SUCCESS:true}
+#  topics:
+#    - spot-container-log
+#    - spot-job-log
+#    - spot-metrics
+#    - spot-events
+#    - spot-analytics
+#    - spot-trace
+#    - spot-alert-record
+#    - spot-notify-record
+#    - spot-entity
+#    - msp-tracing-metrics
+#    - msp-jaeger-trace
+#    - erda-spans
+#    - erda-trace-metrics
 
 redis:
   addr: "${REDIS_ADDR}"
@@ -159,9 +165,8 @@ log-persist:
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:erda-logs-dev}"
-    options:
-      auto.offset.reset: "${LOG_PERSIST_INPUT_KAFKA_AUTO_OFFSET_RESET:earliest}"
-      queued.max.messages.kbytes: ${LOG_PERSIST_INPUT_KAFKA_QUEUE_SIZE_KB:102400}
+    offsets:
+      initial: earliest
   id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
   buffer_size: ${LOG_BATCH_SIZE:200}
@@ -191,10 +196,8 @@ log-persist-v1:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
     parallelism: ${LOG_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-      queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
+    offsets:
+      initial: earliest
   output:
     id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
     log_schema:
@@ -412,16 +415,10 @@ span-persist:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
     parallelism: ${SPOT_SPOTSPAN_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   oap_input:
     topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace,erda-spans}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
     parallelism: ${SPOT_OAPSPAN_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   id_keys: "${SPAN_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
   buffer_size: ${SPAN_BATCH_SIZE:200}
@@ -434,9 +431,6 @@ browser-analytics:
     topics: "${BROWSER_TOPICS:spot-analytics}"
     group: "${BROWSER_GROUP_ID:spot-monitor-browser-dev}"
     parallelism: ${BROWSER_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   output:
     topic: "${METRIC_TOPICS:spot-metrics}"
     parallelism: ${KAFKA_PARALLELISM:3}
@@ -451,16 +445,10 @@ trace-storage:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
     parallelism: ${SPOT_TRACE_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   oap_input:
     topics: "${OAP_TRACE_TOPICS:erda-spans,msp-jaeger-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
     parallelism: ${OAP_TRACE_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   output:
     cassandra:
       writer_config:

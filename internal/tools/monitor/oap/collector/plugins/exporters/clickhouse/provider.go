@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
 	metricstore "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/metric"
@@ -40,11 +41,17 @@ type config struct {
 	BuilderCfg *builder.BuilderConfig `file:"builder"`
 }
 
+var _ model.Exporter = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg     *config
 	Log     logs.Logger
 	storage *Storage
+}
+
+func (p *provider) ComponentClose() error {
+	return p.storage.Close()
 }
 
 func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }

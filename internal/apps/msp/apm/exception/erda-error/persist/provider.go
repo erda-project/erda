@@ -21,9 +21,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/apps/msp/apm/exception/erda-error/storage"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type (
@@ -38,7 +38,7 @@ type (
 	provider struct {
 		Cfg           *config
 		Log           logs.Logger
-		Kafka         kafka.Interface `autowired:"kafka"`
+		Kafka         kafka.Interface `autowired:"kafkago"`
 		StorageWriter storage.Storage `autowired:"error-storage-writer"`
 
 		storage   storage.Storage
@@ -92,8 +92,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 func init() {
 	servicehub.Register("error-persist", &servicehub.Spec{
-		Dependencies: []string{"kafka.topic.initializer"},
-		ConfigFunc:   func() interface{} { return &config{} },
+		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

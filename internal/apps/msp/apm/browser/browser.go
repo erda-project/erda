@@ -20,8 +20,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/internal/apps/msp/apm/browser/ipdb"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
 type config struct {
@@ -35,7 +35,7 @@ type provider struct {
 	Log    logs.Logger
 	ipdb   *ipdb.Locator
 	output writer.Writer
-	kafka  kafka.Interface
+	Kafka  kafka.Interface `autowired:"kafkago"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -46,8 +46,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.ipdb = ipdb
 	p.Log.Infof("load ipdb from %s", p.Cfg.Ipdb)
 
-	p.kafka = ctx.Service("kafka").(kafka.Interface)
-	w, err := p.kafka.NewProducer(&p.Cfg.Output)
+	w, err := p.Kafka.NewProducer(&p.Cfg.Output)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
@@ -57,7 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 // Start .
 func (p *provider) Start() error {
-	return p.kafka.NewConsumer(&p.Cfg.Input, p.invoke)
+	return p.Kafka.NewConsumer(&p.Cfg.Input, p.invoke)
 }
 
 // Close .
@@ -68,10 +67,9 @@ func (p *provider) Close() error {
 
 func init() {
 	servicehub.Register("browser-analytics", &servicehub.Spec{
-		Services:     []string{"browser-analytics"},
-		Dependencies: []string{"kafka", "kafka.topic.initializer"},
-		Description:  "browser-analytics",
-		ConfigFunc:   func() interface{} { return &config{} },
+		Services:    []string{"browser-analytics"},
+		Description: "browser-analytics",
+		ConfigFunc:  func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
 )
@@ -33,10 +34,16 @@ type config struct {
 	Keypass map[string][]string `file:"keypass"`
 }
 
+var _ model.Processor = (*provider)(nil)
+
 // +provider
 type provider struct {
 	Cfg *config
 	Log logs.Logger
+}
+
+func (p *provider) ComponentClose() error {
+	return nil
 }
 
 func (p *provider) ComponentConfig() interface{} {

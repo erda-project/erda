@@ -28,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 
 	// providers
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/collector"
@@ -38,7 +39,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 
-	// pipeline collector
+	// data pipeline
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/core"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/all"
 )
