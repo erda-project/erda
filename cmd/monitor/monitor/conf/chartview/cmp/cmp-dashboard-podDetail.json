@@ -162,8 +162,7 @@
             "where": [
               "pod_name::tag='{{podName}}'",
               "pod_namespace::tag='{{namespace}}'",
-              "cluster_name::tag='{{clusterName}}'",
-              "podsandbox!=true"
+              "cluster_name::tag='{{clusterName}}'"
             ]
           },
           "method": "post",
@@ -333,8 +332,7 @@
             "where": [
               "pod_name::tag='{{podName}}'",
               "pod_namespace::tag='{{namespace}}'",
-              "cluster_name::tag='{{clusterName}}'",
-              "podsandbox!=true"
+              "cluster_name::tag='{{clusterName}}'"
             ]
           },
           "method": "post",
@@ -535,8 +533,7 @@
             "where": [
               "pod_name::tag='{{podName}}'",
               "pod_namespace::tag='{{namespace}}'",
-              "cluster_name::tag='{{clusterName}}'",
-              "podsandbox!=true"
+              "cluster_name::tag='{{clusterName}}'"
             ]
           },
           "method": "post",
@@ -732,8 +729,7 @@
             "where": [
               "pod_namespace::tag='{{namespace}}'",
               "cluster_name::tag='{{clusterName}}'",
-              "pod_name::tag='{{podName}}'",
-              "podsandbox!=true"
+              "pod_name::tag='{{podName}}'"
             ]
           },
           "method": "post",
