@@ -61,7 +61,7 @@ type Endpoints struct {
 
 	reportTable *resource.ReportTable
 	CronService cronpb.CronServiceServer
-	org         org.ClientInterface
+	org         org.Interface
 }
 
 type Option func(*Endpoints)
@@ -130,7 +130,7 @@ func WithClusterServiceServer(clusterSvc clusterpb.ClusterServiceServer) Option 
 	}
 }
 
-func WithOrg(org org.ClientInterface) Option {
+func WithOrg(org org.Interface) Option {
 	return func(e *Endpoints) {
 		e.org = org
 	}

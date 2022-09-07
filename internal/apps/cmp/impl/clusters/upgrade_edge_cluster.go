@@ -47,10 +47,10 @@ type Clusters struct {
 	bdl        *bundle.Bundle
 	credential tokenpb.TokenServiceServer
 	clusterSvc clusterpb.ClusterServiceServer
-	org        org.ClientInterface
+	org        org.Interface
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer, clusterSvc clusterpb.ClusterServiceServer, org org.ClientInterface) *Clusters {
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer, clusterSvc clusterpb.ClusterServiceServer, org org.Interface) *Clusters {
 	return &Clusters{db: db, bdl: bdl, credential: c, clusterSvc: clusterSvc, org: org}
 }
 

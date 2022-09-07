@@ -64,7 +64,7 @@ type provider struct {
 	CPTran          i18n.I18n       `autowired:"i18n"`
 	Tran            i18n.Translator `translator:"common"`
 	SteveAggregator *steve.Aggregator
-	Org             org.ClientInterface
+	Org             org.Interface
 }
 
 // Run Run the provider
