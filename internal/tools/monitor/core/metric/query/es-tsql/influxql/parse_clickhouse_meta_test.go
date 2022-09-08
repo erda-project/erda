@@ -70,8 +70,8 @@ func TestMeta(t *testing.T) {
 					},
 				},
 			},
-			sql:  "select if(gt(http_status_code_count::field-timestamp,300000000000),'false','true') from metric",
-			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\", toNullable(timestamp) AS \"timestamp\" FROM \"metric\" ",
+			sql:  "select if(gt(http_status_code_count::field-10,300000000000),'false','true') from metric",
+			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
 		},
 		{
 			name: "where string function field",
