@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clickhouse
+package metricmeta
 
 import (
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/doug-martin/goqu/v9"
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
 
-type Query interface {
-	QueryRaw(table string, expr *goqu.SelectDataset) (driver.Rows, error)
+type MetricMeta interface {
+	GetMetricMetaByCache(scope, scopeID string, names ...string) ([]*pb.MetricMeta, error)
 }

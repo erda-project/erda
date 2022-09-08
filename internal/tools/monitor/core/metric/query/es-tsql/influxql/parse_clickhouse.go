@@ -722,7 +722,34 @@ var originColumn = map[string]string{
 
 // ckField return clickhouse column, and is number
 func (p *Parser) ckField(key string) (string, bool) {
-	return fmt.Sprintf("indexOf(number_field_keys,'%s')", key), true
+	field := fmt.Sprintf("indexOf(number_field_keys,'%s')", key)
+	isNumber := true
+
+	if p.meta == nil {
+		return field, true
+	}
+
+	metrics, err := p.Metrics()
+	if err != nil {
+		fmt.Println("parse_clickhouse get metric is err: ", err)
+		return field, true
+	}
+	metas, err := p.meta.GetMetricMetaByCache(p.GetOrgName(), p.GetTerminusKey(), metrics...)
+	if err != nil {
+		fmt.Println("parse_clickhouse get meta is err:", err)
+		return field, true
+	}
+
+	for _, meta := range metas {
+		if v, ok := meta.Fields[key]; ok {
+			if v.Type == "string" {
+				field = fmt.Sprintf("indexOf(string_field_keys,'%s')", key)
+				isNumber = false
+				break
+			}
+		}
+	}
+	return field, isNumber
 }
 
 func ckTag(key string) string {

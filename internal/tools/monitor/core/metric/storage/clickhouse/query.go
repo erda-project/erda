@@ -233,9 +233,8 @@ func (p *provider) buildQueryContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (p *provider) QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Rows, error) {
-	table, _ := p.Loader.GetSearchTable(orgName)
-	expr = expr.From(table)
+func (p *provider) QueryRaw(table string, expr *goqu.SelectDataset) (driver.Rows, error) {
+	expr = expr.From(fmt.Sprintf("%s.%s", p.Loader.Database(), table))
 	sql, _, err := expr.ToSQL()
 	if err != nil {
 		return nil, err
@@ -244,6 +243,7 @@ func (p *provider) QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Ro
 }
 
 func (p *provider) exec(ctx context.Context, sql string) (driver.Rows, error) {
+
 	_, span := otel.Tracer("executive").Start(ctx, "exec.clickhouse")
 	defer span.End()
 	return p.clickhouse.Client().Query(p.buildQueryContext(ctx), sql)

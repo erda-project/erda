@@ -112,15 +112,33 @@ func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i 
 	if p.clickhouse == nil {
 		return map[string]*metricpb.MetricMeta{}, nil
 	}
+
+	/*
+		CREATE TABLE IF NOT EXISTS <database>.metrics_meta ON CLUSTER '{cluster}'
+		(
+		    `org_name`            LowCardinality(String),
+		    `tenant_id`           LowCardinality(String),
+		    `metric_group`        LowCardinality(String),
+		    `timestamp`           DateTime64(9,'Asia/Shanghai') CODEC (DoubleDelta),
+		    `number_field_keys`   Array(LowCardinality(String)),
+		    `string_field_keys`   Array(LowCardinality(String)),
+		    `tag_keys`            Array(LowCardinality(String)),
+		    INDEX idx_timestamp TYPE minmax GRANULARITY 2
+		)
+		ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/metrics_meta', '{replica}')
+		ORDER BY (org_name, tenant_id, metric_group, number_field_keys, string_field_keys, tag_keys);
+		TTL toDateTime(timestamp) + INTERVAL <ttl_in_days> DAY;
+	*/
+
 	end := now().UnixNano()
 	start := end - 7*24*int64(time.Hour)
 
-	expr := goqu.From("meta") // fake table
+	expr := goqu.From("metrics_meta")
 
-	expr = goqu.Select(goqu.C("metric_group"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(string_field_keys))").As("sk"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(number_field_keys))").As("nk"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(tag_keys))").As("tk"))
+	expr = expr.Select(goqu.C("metric_group"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(string_field_keys),[null],string_field_keys)))").As("sk"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(number_field_keys),[null],number_field_keys)))").As("nk"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(tag_keys),[null],tag_keys)))").As("tk"))
 
 	expr = expr.Where(goqu.C("org_name").Eq(scope))
 	if len(scopeID) > 0 {
@@ -136,7 +154,7 @@ func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i 
 	)
 	expr = expr.GroupBy(goqu.C("metric_group"))
 
-	rows, err := p.clickhouse.QueryRaw(scope, expr)
+	rows, err := p.clickhouse.QueryRaw("metrics_meta_all", expr)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query metric meta")
 	}

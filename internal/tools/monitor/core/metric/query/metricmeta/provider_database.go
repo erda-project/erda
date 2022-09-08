@@ -32,7 +32,7 @@ const (
 	TableMetricMeta = "sp_metric_meta"
 )
 
-type MetricMeta struct {
+type Database struct {
 	ID         int       `gorm:"column:id"`
 	Scope      string    `gorm:"column:scope"`
 	ScopeID    string    `gorm:"column:scope_id"`
@@ -45,7 +45,7 @@ type MetricMeta struct {
 	UpdateTime time.Time `gorm:"column:update_time"`
 }
 
-func (MetricMeta) TableName() string { return TableMetricMeta }
+func (Database) TableName() string { return TableMetricMeta }
 
 type DatabaseGroupProvider struct {
 	db  *gorm.DB
@@ -110,7 +110,7 @@ func (p *DatabaseMetaProvider) MetricMeta(langCodes i18n.LanguageCodes, i18n i18
 	} else {
 		db = db.Where("`scope`=? AND `scope_id`=? AND `metric` IN (?)", scope, scopeID, names)
 	}
-	var list []*MetricMeta
+	var list []*Database
 	err := db.Find(&list).Error
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (p *DatabaseMetaProvider) MetricMeta(langCodes i18n.LanguageCodes, i18n i18
 	return result, nil
 }
 
-func (p *DatabaseMetaProvider) convertMetricMetaFromDB(langCodes i18n.LanguageCodes, n i18n.I18n, scope, scopeID string, item *MetricMeta) (*pb.MetricMeta, error) {
+func (p *DatabaseMetaProvider) convertMetricMetaFromDB(langCodes i18n.LanguageCodes, n i18n.I18n, scope, scopeID string, item *Database) (*pb.MetricMeta, error) {
 	if item == nil || len(item.Metric) <= 0 {
 		return nil, fmt.Errorf("invalid metric meta in %s=%s", scope, scopeID)
 	}
