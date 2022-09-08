@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
-
 	"github.com/Shopify/sarama"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -27,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	kafkaInf "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/oapspan"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotmetric"
