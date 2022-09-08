@@ -730,7 +730,7 @@ func (p *Parser) ckField(key string) (string, bool) {
 	}
 
 	metrics, err := p.Metrics()
-	if err == nil {
+	if err != nil {
 		fmt.Println("parse_clickhouse get metric is err: ", err)
 		return field, true
 	}

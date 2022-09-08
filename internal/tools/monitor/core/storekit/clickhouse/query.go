@@ -20,5 +20,5 @@ import (
 )
 
 type Query interface {
-	QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Rows, error)
+	QueryRaw(table string, expr *goqu.SelectDataset) (driver.Rows, error)
 }

@@ -135,10 +135,10 @@ func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i 
 
 	expr := goqu.From("metrics_meta")
 
-	expr = goqu.Select(goqu.C("metric_group"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(string_field_keys))").As("sk"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(number_field_keys))").As("nk"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(tag_keys))").As("tk"))
+	expr = expr.Select(goqu.C("metric_group"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(string_field_keys),[null],string_field_keys)))").As("sk"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(number_field_keys),[null],number_field_keys)))").As("nk"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(tag_keys),[null],tag_keys)))").As("tk"))
 
 	expr = expr.Where(goqu.C("org_name").Eq(scope))
 	if len(scopeID) > 0 {
@@ -154,7 +154,7 @@ func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i 
 	)
 	expr = expr.GroupBy(goqu.C("metric_group"))
 
-	rows, err := p.clickhouse.QueryRaw(scope, expr)
+	rows, err := p.clickhouse.QueryRaw("metrics_meta_all", expr)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query metric meta")
 	}

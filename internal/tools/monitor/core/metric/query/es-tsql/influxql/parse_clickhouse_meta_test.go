@@ -57,7 +57,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select http_status_code_count::field from metric",
-			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
 		},
 		{
 			name: "select string function field",
@@ -71,7 +71,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select if(gt(http_status_code_count::field-10,300000000000),'false','true') from metric",
-			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
 		},
 		{
 			name: "where string function field",
@@ -85,7 +85,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select column from metric where http_status_code_count::field > 100",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"metric\" WHERE ((string_field_values[indexOf(string_field_keys,'http_status_code_count')] > 100))",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"metric\" WHERE ((number_field_values[indexOf(number_field_keys,'http_status_code_count')] > 100))",
 		},
 		{
 			name: "no column name",
@@ -99,7 +99,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select column from metric",
-			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'column')]) AS \"column\" FROM \"metric\" ",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"metric\" ",
 		},
 	}
 
