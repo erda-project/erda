@@ -76,7 +76,7 @@
             "filter__metric_scope_id": "{{tk}}",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": "{{start}}",
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/tmc/metrics-query"
