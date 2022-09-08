@@ -115,7 +115,7 @@ func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFuncV2 {
 		return oapspan.ParseOapSpanEvent(msg.Value, func(m []*metric.Metric) error {
 			if len(m) > 0 {
 				for i := 0; i < len(m); i++ {
-					p.consume(m[i])
+					p.consumeData(m[i])
 				}
 			}
 			return nil
@@ -126,7 +126,7 @@ func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFuncV2 {
 func (p *provider) parseOapSpan() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return oapspan.ParseOapSpan(msg.Value, func(span *trace.Span) error {
-			return p.consume(span)
+			return p.consumeData(span)
 		})
 	}
 }
@@ -134,7 +134,7 @@ func (p *provider) parseOapSpan() kafkaInf.ConsumerFuncV2 {
 func (p *provider) parseSpotSpan() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return spotspan.ParseSpotSpan(msg.Value, func(span *trace.Span) error {
-			return p.consume(span)
+			return p.consumeData(span)
 		})
 	}
 }
@@ -142,12 +142,12 @@ func (p *provider) parseSpotSpan() kafkaInf.ConsumerFuncV2 {
 func (p *provider) parseSpotMetric() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return spotmetric.ParseSpotMetric(msg.Value, func(m *metric.Metric) error {
-			return p.consume(m)
+			return p.consumeData(m)
 		})
 	}
 }
 
-func (p *provider) consume(od odata.ObservableData) error {
+func (p *provider) consumeData(od odata.ObservableData) error {
 	if p.consumer == nil { // wait consumer injected
 		<-p.consumerInjectedC
 	}
