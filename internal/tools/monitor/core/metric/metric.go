@@ -104,3 +104,13 @@ type TableMetrics struct {
 	TagKeys           []string  `ch:"tag_keys"`
 	TagValues         []string  `ch:"tag_values"`
 }
+
+type TableMetricsMeta struct {
+	OrgName         string   `ch:"org_name"`
+	TenantId        string   `ch:"tenant_id"`
+	MetricGroup     string   `ch:"metric_group"`
+	Timestamp       int64    `ch:"timestamp"`
+	NumberFieldKeys []string `ch:"number_field_keys"`
+	StringFieldKeys []string `ch:"string_field_keys"`
+	TagKeys         []string `ch:"tag_keys"`
+}

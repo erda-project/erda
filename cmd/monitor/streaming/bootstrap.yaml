@@ -559,10 +559,6 @@ erda.oap.collector.receiver.kafka@spotspan:
   consumer:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${SPOT_SPOTSPAN_CONSUMERS:9}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.receiver.kafka@oapspan:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:false}
@@ -570,10 +566,6 @@ erda.oap.collector.receiver.kafka@oapspan:
   consumer:
     topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace,erda-spans}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${SPOT_OAPSPAN_CONSUMERS:9}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.processor.modifier@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
@@ -625,10 +617,6 @@ erda.oap.collector.receiver.kafka@spotmetric:
     topics: "${METRIC_TOPICS:spot-metrics}"
     # TODO. METRIC_CH_GROUP_ID to METRIC_GROUP_ID when all finished
     group: "${METRIC_CH_GROUP_ID:spot-monitor-metrics-ch}"
-    parallelism: ${SPOT_METRICS_CONSUMERS:9}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.receiver.kafka@oapspanevent:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
@@ -636,10 +624,6 @@ erda.oap.collector.receiver.kafka@oapspanevent:
   consumer:
     topics: "${OAP_TRACE_EVENT_TOPICS:erda-spans}"
     group: "${OAP_TRACE_EVENT_GROUP_ID:spot-monitor-trace-event}"
-    parallelism: ${SPOT_OAPSPAN_EVENT_CONSUMERS:9}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 erda.oap.collector.exporter.clickhouse@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}

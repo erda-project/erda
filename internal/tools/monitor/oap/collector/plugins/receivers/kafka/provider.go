@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	kafkaInf "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/oapspan"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotmetric"
@@ -58,7 +59,8 @@ type provider struct {
 	Kafka  kafkaInf.Interface `autowired:"kafkago"`
 	cg     *kafkaInf.ConsumerGroupManager
 
-	consumer model.ObservableDataConsumerFunc
+	consumer          model.ObservableDataConsumerFunc
+	consumerInjectedC chan struct{}
 }
 
 func (p *provider) ComponentClose() error {
@@ -72,6 +74,7 @@ func (p *provider) ComponentConfig() interface{} {
 func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 	p.Log.Infof("register consumer: %+v", consumer)
 	p.consumer = consumer
+	close(p.consumerInjectedC)
 }
 
 // Run this is optional
@@ -101,6 +104,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("failed create consumer: %w", err)
 	}
 	p.cg = cg
+
+	p.consumerInjectedC = make(chan struct{})
 	return nil
 }
 
@@ -109,7 +114,7 @@ func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFuncV2 {
 		return oapspan.ParseOapSpanEvent(msg.Value, func(m []*metric.Metric) error {
 			if len(m) > 0 {
 				for i := 0; i < len(m); i++ {
-					p.consumer(m[i])
+					p.consumeData(m[i])
 				}
 			}
 			return nil
@@ -120,7 +125,7 @@ func (p *provider) parseOapSpanEvent() kafkaInf.ConsumerFuncV2 {
 func (p *provider) parseOapSpan() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return oapspan.ParseOapSpan(msg.Value, func(span *trace.Span) error {
-			return p.consumer(span)
+			return p.consumeData(span)
 		})
 	}
 }
@@ -128,7 +133,7 @@ func (p *provider) parseOapSpan() kafkaInf.ConsumerFuncV2 {
 func (p *provider) parseSpotSpan() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return spotspan.ParseSpotSpan(msg.Value, func(span *trace.Span) error {
-			return p.consumer(span)
+			return p.consumeData(span)
 		})
 	}
 }
@@ -136,9 +141,16 @@ func (p *provider) parseSpotSpan() kafkaInf.ConsumerFuncV2 {
 func (p *provider) parseSpotMetric() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return spotmetric.ParseSpotMetric(msg.Value, func(m *metric.Metric) error {
-			return p.consumer(m)
+			return p.consumeData(m)
 		})
 	}
+}
+
+func (p *provider) consumeData(od odata.ObservableData) error {
+	if p.consumer == nil { // wait consumer injected
+		<-p.consumerInjectedC
+	}
+	return p.consumer(od)
 }
 
 func init() {
