@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 )
 
 type mockMeta struct {
@@ -57,7 +59,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select http_status_code_count::field from metric",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
+			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
 		},
 		{
 			name: "select string function field",
@@ -71,7 +73,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select if(gt(http_status_code_count::field-10,300000000000),'false','true') from metric",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
+			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'http_status_code_count')]) AS \"http_status_code_count::field\" FROM \"metric\" ",
 		},
 		{
 			name: "where string function field",
@@ -85,7 +87,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select column from metric where http_status_code_count::field > 100",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"metric\" WHERE ((number_field_values[indexOf(number_field_keys,'http_status_code_count')] > 100))",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"metric\" WHERE ((string_field_values[indexOf(string_field_keys,'http_status_code_count')] > 100))",
 		},
 		{
 			name: "no column name",
@@ -99,7 +101,7 @@ func TestMeta(t *testing.T) {
 				},
 			},
 			sql:  "select column from metric",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"metric\" ",
+			want: "SELECT toNullable(string_field_values[indexOf(string_field_keys,'column')]) AS \"column\" FROM \"metric\" ",
 		},
 	}
 
@@ -109,21 +111,19 @@ func TestMeta(t *testing.T) {
 				ctx: &Context{
 					timeKey: "timestamp",
 				},
+				ql: influxql.NewParser(strings.NewReader(test.sql)),
 			}
 			parse.SetMeta(mockMeta{
 				mockMeta: test.mockMeta,
 			})
 
-			stm, err := influxql.NewParser(strings.NewReader(test.sql)).ParseQuery()
+			require.NoError(t, parse.Build())
 
+			plans, err := parse.ParseQuery(context.Background(), model.ClickhouseKind)
 			require.NoError(t, err)
-			selectStmt, ok := stm.Statements[0].(*influxql.SelectStatement)
-			require.True(t, ok)
+			require.Len(t, plans, 1)
 
-			plan, err := parse.ParseClickhouse(selectStmt)
-			require.NoError(t, err)
-
-			execPlan, ok := plan.SearchSource().(*goqu.SelectDataset)
+			execPlan, ok := plans[0].SearchSource().(*goqu.SelectDataset)
 			require.True(t, ok)
 
 			sql, _, err := execPlan.ToSQL()
