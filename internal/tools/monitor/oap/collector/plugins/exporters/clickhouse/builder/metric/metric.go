@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	tablepkg "github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/creator"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/typeconvert"
@@ -45,9 +46,10 @@ type Builder struct {
 	logger    logs.Logger
 	client    clickhouse.Conn
 	Creator   creator.Interface
+	Loader    loader.Interface
 	Retention retention.Interface
 	cfg       *builder.BuilderConfig
-	batchCh   chan []*metric.Metric
+	batchC    chan []*metric.Metric
 }
 
 func (bu *Builder) BuildBatch(ctx context.Context, sourceBatch interface{}) ([]driver.Batch, error) {
@@ -87,26 +89,36 @@ func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.Builder
 		bu.Retention = svc
 	}
 
+	if svc, ok := ctx.Service(chTableLoader).(loader.Interface); !ok {
+		return nil, fmt.Errorf("service %q must existed", chTableLoader)
+	} else {
+		bu.Loader = svc
+	}
+
 	return bu, nil
 }
 
 func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]driver.Batch, error) {
-	tablebatch := make(map[string]driver.Batch)
+	metaBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+bu.Loader.Database()+".metrics_meta")
+	if err != nil {
+		return nil, fmt.Errorf("prepare metrics_meta batch: %w", err)
+	}
+	tableBatch := make(map[string]driver.Batch)
 	for _, data := range items {
 		table, err := bu.getOrCreateTenantTable(ctx, data)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get tenant table: %w", err)
 		}
 
-		if _, ok := tablebatch[table]; !ok {
+		if _, ok := tableBatch[table]; !ok {
 			// nolint
 			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table)
 			if err != nil {
 				return nil, err
 			}
-			tablebatch[table] = batch
+			tableBatch[table] = batch
 		}
-		batch := tablebatch[table]
+		batch := tableBatch[table]
 
 		numFieldKeys := getnumFieldKeysBuf()
 		numFieldValues := getnumFieldValuesBuf()
@@ -153,7 +165,16 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 			continue
 		}
 
-		err = batch.AppendStruct(&metric.TableMetrics{
+		err1 := metaBatch.AppendStruct(&metric.TableMetricsMeta{
+			OrgName:         data.OrgName,
+			TenantId:        data.Tags[bu.cfg.TenantIdKey],
+			MetricGroup:     data.Name,
+			Timestamp:       data.Timestamp,
+			NumberFieldKeys: numFieldKeys,
+			StringFieldKeys: strFieldKeys,
+			TagKeys:         tagKeys,
+		})
+		err2 := batch.AppendStruct(&metric.TableMetrics{
 			OrgName:           data.OrgName,
 			TenantId:          data.Tags[bu.cfg.TenantIdKey],
 			MetricGroup:       data.Name,
@@ -165,7 +186,8 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 			TagKeys:           tagKeys,
 			TagValues:         tagValues,
 		})
-		if err != nil {
+
+		if err1 != nil || err2 != nil {
 			_ = batch.Abort()
 			putnumFieldKeysBuf(numFieldKeys)
 			putnumFieldValuesBuf(numFieldValues)
@@ -176,10 +198,11 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 			return nil, fmt.Errorf("batch append: %w", err)
 		}
 	}
-	batches := make([]driver.Batch, 0, len(tablebatch))
-	for _, d := range tablebatch {
+	batches := make([]driver.Batch, 0, len(tableBatch)+1)
+	for _, d := range tableBatch {
 		batches = append(batches, d)
 	}
+	batches = append(batches, metaBatch)
 	return batches, nil
 }
 

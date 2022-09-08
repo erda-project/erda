@@ -170,8 +170,9 @@ func (d *batchHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim s
 			data, err := d.fn(msg.Key, msg.Value, &msg.Topic, msg.Timestamp)
 			if err != nil {
 				d.msgC <- &message{err: fmt.Errorf("decode failed: %w", err)}
+			} else {
+				d.msgC <- &message{data: data}
 			}
-			d.msgC <- &message{data: data}
 			session.MarkMessage(msg, "")
 		case <-session.Context().Done():
 			return nil
