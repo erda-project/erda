@@ -40,4 +40,4 @@ TTL toDateTime(timestamp) + INTERVAL <ttl_in_days> DAY;
 // create distributed table
 // notice: ddls to the <table> table should be synced to the <table>_all table
 CREATE TABLE IF NOT EXISTS <database>.metrics_meta_all ON CLUSTER '{cluster}' AS <database>.metrics_meta
-ENGINE = Distributed('{cluster}', <database>, metrics, rand());
+ENGINE = Distributed('{cluster}', <database>, metrics_meta, rand());
