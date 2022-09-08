@@ -299,6 +299,7 @@ metrics-query-compatibility:
       - "index"
       - "file"
       - "database"
+      - "clickhouse"
     group_files:
       - "conf/metricmeta/groups/org.yml"
       - "conf/metricmeta/groups/micro_service.yml"
