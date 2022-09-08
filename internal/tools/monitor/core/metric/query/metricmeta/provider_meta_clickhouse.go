@@ -136,9 +136,9 @@ func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i 
 	expr := goqu.From("metrics_meta")
 
 	expr = goqu.Select(goqu.C("metric_group"))
-	expr = expr.SelectAppend(goqu.L("string_field_keys").As("sk"))
-	expr = expr.SelectAppend(goqu.L("number_field_keys").As("nk"))
-	expr = expr.SelectAppend(goqu.L("tag_keys").As("tk"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(string_field_keys))").As("sk"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(number_field_keys))").As("nk"))
+	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(tag_keys))").As("tk"))
 
 	expr = expr.Where(goqu.C("org_name").Eq(scope))
 	if len(scopeID) > 0 {

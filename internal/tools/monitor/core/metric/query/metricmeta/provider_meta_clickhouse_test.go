@@ -178,19 +178,19 @@ func TestMetricMetaWantSQL(t *testing.T) {
 		{
 			name:  "scope",
 			scope: "org",
-			want:  "SELECT \"metric_group\", string_field_keys AS \"sk\", number_field_keys AS \"nk\", tag_keys AS \"tk\" WHERE ((\"org_name\" = 'org') AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
+			want:  "SELECT \"metric_group\", groupUniqArray(arrayJoin(string_field_keys)) AS \"sk\", groupUniqArray(arrayJoin(number_field_keys)) AS \"nk\", groupUniqArray(arrayJoin(tag_keys)) AS \"tk\" WHERE ((\"org_name\" = 'org') AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
 		},
 		{
 			name:    "scope,scopeid",
 			scope:   "org",
 			scopeId: "13123",
-			want:    "SELECT \"metric_group\", string_field_keys AS \"sk\", number_field_keys AS \"nk\", tag_keys AS \"tk\" WHERE ((\"org_name\" = 'org') AND (\"tenant_id\" = '13123') AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
+			want:    "SELECT \"metric_group\", groupUniqArray(arrayJoin(string_field_keys)) AS \"sk\", groupUniqArray(arrayJoin(number_field_keys)) AS \"nk\", groupUniqArray(arrayJoin(tag_keys)) AS \"tk\" WHERE ((\"org_name\" = 'org') AND (\"tenant_id\" = '13123') AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
 		},
 		{
 			name:  "scope,names",
 			scope: "org",
 			names: []string{"metric1", "metric2"},
-			want:  "SELECT \"metric_group\", string_field_keys AS \"sk\", number_field_keys AS \"nk\", tag_keys AS \"tk\" WHERE ((\"org_name\" = 'org') AND (\"metric_group\" IN ('metric1', 'metric2')) AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
+			want:  "SELECT \"metric_group\", groupUniqArray(arrayJoin(string_field_keys)) AS \"sk\", groupUniqArray(arrayJoin(number_field_keys)) AS \"nk\", groupUniqArray(arrayJoin(tag_keys)) AS \"tk\" WHERE ((\"org_name\" = 'org') AND (\"metric_group\" IN ('metric1', 'metric2')) AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
 		},
 	}
 
