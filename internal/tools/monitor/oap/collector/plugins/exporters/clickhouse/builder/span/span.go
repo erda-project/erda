@@ -123,10 +123,10 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*trace.Span) ([]dri
 			TagKeys:       tagKeys,
 			TagValues:     tagValues,
 		})
+		puttagKeysBuf(tagKeys)
+		puttagValuesBuf(tagValues)
 		if err != nil {
 			_ = batch.Abort()
-			puttagKeysBuf(tagKeys)
-			puttagValuesBuf(tagValues)
 			return nil, fmt.Errorf("batch append: %w", err)
 		}
 	}

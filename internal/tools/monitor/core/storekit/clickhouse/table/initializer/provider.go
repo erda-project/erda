@@ -54,7 +54,10 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.Election.OnLeader(func(ctx context.Context) {
 		p.once.Do(func() {
-			_ = p.initDefaultDDLs()
+			err := p.initDefaultDDLs()
+			if err != nil {
+				p.Log.Errorf("init default ddls: %s", err)
+			}
 			p.initTenantDDLs()
 		})
 		go p.syncTTL(ctx)

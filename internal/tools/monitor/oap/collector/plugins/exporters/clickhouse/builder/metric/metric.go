@@ -186,15 +186,14 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 			TagKeys:           tagKeys,
 			TagValues:         tagValues,
 		})
-
+		putnumFieldKeysBuf(numFieldKeys)
+		putnumFieldValuesBuf(numFieldValues)
+		putstrFieldKeysBuf(strFieldKeys)
+		putstrFieldValuesBuf(strFieldValues)
+		puttagKeysBuf(tagKeys)
+		puttagValuesBuf(tagValues)
 		if err1 != nil || err2 != nil {
 			_ = batch.Abort()
-			putnumFieldKeysBuf(numFieldKeys)
-			putnumFieldValuesBuf(numFieldValues)
-			putstrFieldKeysBuf(strFieldKeys)
-			putstrFieldValuesBuf(strFieldValues)
-			puttagKeysBuf(tagKeys)
-			puttagValuesBuf(tagValues)
 			return nil, fmt.Errorf("batch append: %w", err)
 		}
 	}

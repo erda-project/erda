@@ -40,22 +40,11 @@ func (p *provider) runClickhouseTablesLoader(ctx context.Context) error {
 	p.suppressCacheLoader = true
 	p.Log.Info("start clickhouse tables loader")
 	defer p.Log.Info("exit clickhouse tables loader")
-	timer := time.NewTimer(0)
-	defer timer.Stop()
+	ticker := time.NewTicker(p.Cfg.ReloadInterval)
+	defer ticker.Stop()
 	var notifiers []chan error
 	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case ch := <-p.reloadCh:
-			if ch != nil {
-				notifiers = append(notifiers, ch)
-			}
-		case <-timer.C:
-		}
-
 		p.loadLock.Lock()
-
 		err := p.reloadTablesFromClickhouse(ctx)
 		if err != nil {
 			p.Log.Errorf("failed to reload indices from clickhouse: %s", err)
@@ -72,7 +61,6 @@ func (p *provider) runClickhouseTablesLoader(ctx context.Context) error {
 				break drain
 			}
 		}
-
 		for _, notifier := range notifiers {
 			notifier <- err
 			close(notifier)
@@ -86,8 +74,17 @@ func (p *provider) runClickhouseTablesLoader(ctx context.Context) error {
 			}
 		}
 
-		timer.Reset(p.Cfg.ReloadInterval)
 		p.loadLock.Unlock()
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case ch := <-p.reloadCh:
+			if ch != nil {
+				notifiers = append(notifiers, ch)
+			}
+		case <-ticker.C:
+		}
 	}
 }
 

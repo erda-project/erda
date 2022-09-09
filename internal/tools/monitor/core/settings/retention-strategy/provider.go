@@ -17,6 +17,7 @@ package retention
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -52,6 +53,8 @@ type (
 		DB    *gorm.DB `autowired:"mysql-client"`
 		typ   string
 		value atomic.Value
+
+		loadingOnce sync.Once
 	}
 )
 
@@ -75,20 +78,29 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 }
 
 func (p *provider) Loading(ctx context.Context) {
-	if p.Cfg.LoadFromDatabase {
-		timer := time.NewTimer(0)
-		defer timer.Stop()
-		defer p.value.Store((*retentionConfig)(nil))
-		for {
-			p.loadConfig()
-			select {
-			case <-timer.C:
-			case <-ctx.Done():
-				return
+	p.loadingOnce.Do(func() {
+		if p.Cfg.LoadFromDatabase {
+			ticker := time.NewTicker(p.Cfg.ReloadInterval)
+			defer ticker.Stop()
+			defer p.value.Store((*retentionConfig)(nil))
+			for {
+				err := p.loadConfig()
+				if err != nil {
+					p.Log.Errorf("loadConfig failed: %s", err)
+				}
+				select {
+				case <-ticker.C:
+				case <-ctx.Done():
+					return
+				}
 			}
-			timer.Reset(p.Cfg.ReloadInterval)
 		}
-	}
+	})
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	p.Loading(ctx)
+	return nil
 }
 
 func init() {

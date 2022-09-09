@@ -68,7 +68,7 @@ type config struct {
 	TablePrefix        string        `file:"table_prefix"`
 	DefaultSearchTable string        `file:"default_search_table"`
 	Database           string        `file:"database" default:"monitor"`
-	ReloadInterval     time.Duration `file:"reload_interval" default:"2m"`
+	ReloadInterval     time.Duration `file:"reload_interval" default:"10m"`
 	CacheKeyPrefix     string        `file:"cache_key_prefix" default:"clickhouse-table"`
 }
 

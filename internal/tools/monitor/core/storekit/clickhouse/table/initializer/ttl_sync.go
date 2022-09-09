@@ -27,44 +27,48 @@ import (
 
 func (p *provider) syncTTL(ctx context.Context) {
 	p.Log.Infof("run sync ttl with interval: %v", p.Cfg.TTLSyncInterval)
+
+	ticker := time.NewTicker(p.Cfg.TTLSyncInterval)
+	defer ticker.Stop()
 	for {
+		p.Log.Infof("start check and sync ttls...")
+		tables := p.Loader.WaitAndGetTables(ctx)
+		for t, meta := range tables {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			if meta.TTLDays == 0 || len(meta.TTLBaseField) == 0 {
+				continue
+			}
+
+			// default table
+			if t == fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.TablePrefix) && meta.TTLDays != table.FormatTTLToDays(p.Retention.DefaultTTL()) {
+				p.AlterTableTTL(t, meta, table.FormatTTLToDays(p.Retention.DefaultTTL()))
+				continue
+			}
+
+			// tenant table
+			database, tenant, key, ok := p.extractTenantAndKey(t, meta, tables)
+			if !ok {
+				continue
+			}
+
+			ttl := table.FormatTTLToDays(p.Retention.GetTTL(key))
+			if meta.TTLDays == ttl {
+				continue
+			}
+
+			writeTable := fmt.Sprintf("%s.%s_%s_%s", database, p.Cfg.TablePrefix, tenant, key)
+			p.AlterTableTTL(writeTable, meta, ttl)
+		}
+
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(p.Cfg.TTLSyncInterval):
-			p.Log.Infof("start check and sync ttls")
-			tables := p.Loader.WaitAndGetTables(ctx)
-			for t, meta := range tables {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-
-				if meta.TTLDays == 0 || len(meta.TTLBaseField) == 0 {
-					continue
-				}
-
-				// default table
-				if t == fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.TablePrefix) && meta.TTLDays != table.FormatTTLToDays(p.Retention.DefaultTTL()) {
-					p.AlterTableTTL(t, meta, table.FormatTTLToDays(p.Retention.DefaultTTL()))
-					continue
-				}
-
-				// tenant table
-				database, tenant, key, ok := p.extractTenantAndKey(t, meta, tables)
-				if !ok {
-					continue
-				}
-
-				ttl := table.FormatTTLToDays(p.Retention.GetTTL(key))
-				if meta.TTLDays == ttl {
-					continue
-				}
-
-				writeTable := fmt.Sprintf("%s.%s_%s_%s", database, p.Cfg.TablePrefix, tenant, key)
-				p.AlterTableTTL(writeTable, meta, ttl)
-			}
+		case <-ticker.C:
 		}
 	}
 }
