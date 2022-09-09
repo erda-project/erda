@@ -327,7 +327,7 @@ func (mr *MockParserMockRecorder) SetMaxTimePoints(points interface{}) *gomock.C
 }
 
 // SetMeta mocks base method.
-func (m *MockParser) SetMeta(arg0 *metricmeta.Manager) {
+func (m *MockParser) SetMeta(arg0 metricmeta.MetricMeta) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetMeta", arg0)
 }

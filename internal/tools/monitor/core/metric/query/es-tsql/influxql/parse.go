@@ -30,7 +30,7 @@ import (
 
 // Parser .
 type Parser struct {
-	meta      *metricmeta.Manager
+	meta      metricmeta.MetricMeta
 	debug     bool
 	stm       string
 	ql        *influxql.Parser
@@ -40,6 +40,7 @@ type Parser struct {
 
 	orgName     string
 	terminusKey string
+	metric      []string
 }
 
 // New start and end always nanosecond
@@ -85,7 +86,7 @@ func (p *Parser) SetFilter(filters []*model.Filter) (tsql.Parser, error) {
 	return p, nil
 }
 
-func (p *Parser) SetMeta(meta *metricmeta.Manager) {
+func (p *Parser) SetMeta(meta metricmeta.MetricMeta) {
 	p.meta = meta
 }
 
@@ -139,6 +140,10 @@ func (p *Parser) Metrics() ([]string, error) {
 	if p.queryPlan == nil {
 		return nil, errors.New("please call Build() first")
 	}
+
+	if len(p.metric) > 0 {
+		return p.metric, nil
+	}
 	var metrics []string
 	for _, stmt := range p.queryPlan.Statements {
 		s, ok := stmt.(*influxql.SelectStatement)
@@ -154,6 +159,7 @@ func (p *Parser) Metrics() ([]string, error) {
 		}
 	}
 
+	p.metric = metrics
 	return metrics, nil
 }
 

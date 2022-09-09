@@ -83,6 +83,7 @@ func (m *Manager) GetMetricMetaByCache(scope, scopeID string, names ...string) (
 	for _, metric := range names {
 		key := fmt.Sprintf("metric_meta_%s_%s_%s", scope, scopeID, metric)
 		meta, err := m.redis.Get(key).Result()
+
 		if err != nil && err != redis.Nil {
 			return nil, err
 		}

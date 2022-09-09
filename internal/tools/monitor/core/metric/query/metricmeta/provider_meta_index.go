@@ -119,6 +119,9 @@ func NewMetaIndexMetricMetaProvider(index indexloader.Interface, log logs.Logger
 
 // MetricMeta .
 func (p *MetaIndexMetricMetaProvider) MetricMeta(langCodes i18n.LanguageCodes, i i18n.I18n, scope, scopeID string, names ...string) (map[string]*pb.MetricMeta, error) {
+	if p.index == nil {
+		return map[string]*pb.MetricMeta{}, nil
+	}
 	query := elastic.NewBoolQuery().
 		Filter(elastic.NewExistsQuery("fields.fields")).
 		Filter(elastic.NewExistsQuery("fields.tags"))
