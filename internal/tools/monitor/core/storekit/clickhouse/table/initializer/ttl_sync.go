@@ -19,15 +19,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
-
 	"github.com/ClickHouse/clickhouse-go/v2"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 func (p *provider) syncTTL(ctx context.Context) {
 	p.Log.Infof("run sync ttl with interval: %v", p.Cfg.TTLSyncInterval)
+
+	ticker := time.NewTicker(p.Cfg.TTLSyncInterval)
+	defer ticker.Stop()
 	for {
 		p.Log.Infof("start check and sync ttls...")
 		tables := p.Loader.WaitAndGetTables(ctx)
@@ -66,7 +68,7 @@ func (p *provider) syncTTL(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(p.Cfg.TTLSyncInterval):
+		case <-ticker.C:
 		}
 	}
 }
