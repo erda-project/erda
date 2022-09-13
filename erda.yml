@@ -58,6 +58,7 @@ services:
       ERDA_SERVER_ADDR: "localhost:9095"
       DOP_ADDR: "localhost:9095"
       CMP_ADDR: "localhost:9095"
+      MSP_ADDR: "localhost:9095"
       # cmp
       ERDA_NAMESPACE: "default"
       ERDA_HELM_CHART_VERSION: "1.1.0"
