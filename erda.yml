@@ -25,9 +25,9 @@ envs:
   PIPELINE_ADDR: pipeline:3081
   ERDA_SERVER_ADDR: erda-server:9095
   OPENAPI_ADDR: erda-server:9529
-  MSP_ADDR: msp:8080
   DOP_ADDR: erda-server:9095
   CMP_ADDR: erda-server:9095
+  MSP_ADDR: erda-server:9095
   ORCHESTRATOR_ADDR: orchestrator:8081
   OTEL_TRACES_ENABLED: false
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
@@ -350,43 +350,6 @@ services:
       http:
         port: 7096
         path: "/api/health"
-        duration: 120
-      exec: { }
-    expose: [ ]
-    hosts: [ ]
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-  msp:
-    cmd: /erda/cmd/msp/bin
-    ports:
-      - port: 8080
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 7080
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 9080
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    envs:
-      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
-    resources:
-      cpu: ${request_cpu:1}
-      mem: ${request_mem:512}
-      max_cpu: 1
-      max_mem: 1024
-      network:
-        mode: "container"
-    deployments:
-      replicas: ${replicas:2}
-      labels:
-        GROUP: "msp"
-    health_check:
-      http:
-        port: 8080
-        path: "/health"
         duration: 120
       exec: { }
     expose: [ ]
