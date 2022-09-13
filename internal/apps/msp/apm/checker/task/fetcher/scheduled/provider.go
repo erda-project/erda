@@ -42,7 +42,7 @@ type provider struct {
 	Cfg      *config
 	Log      logs.Logger
 	Redis    *redis.Client      `autowired:"redis-client"`
-	Election election.Interface `autowired:"etcd-election"`
+	Election election.Interface `autowired:"etcd-election@msp"`
 
 	storage    storage.Interface
 	dispatcher *Dispatcher
