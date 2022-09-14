@@ -15,11 +15,13 @@
 package apigateway
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
@@ -61,7 +63,7 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 
 	yml, _ := json.Marshal(pipelineYml)
 
-	pipelineReq := &apistructs.PipelineCreateRequestV2{
+	pipelineReq := &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(yml),
 		PipelineSource:  "dice",
 		PipelineYmlName: uuid.UUID() + ".yml",
@@ -69,7 +71,7 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 		AutoRunAtOnce:   true,
 	}
 
-	pipelineResp, err := p.Bdl.CreatePipeline(pipelineReq)
+	pipelineResp, err := p.PipelineSvc.PipelineCreateV2(context.Background(), pipelineReq)
 	if err != nil {
 		return err
 	}
@@ -79,15 +81,15 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 	for time.Now().Unix()-startTime < handlers.RuntimeMaxUpTimeoutSeconds {
 		time.Sleep(10 * time.Second)
 
-		detail, err := p.Bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+		detail, err := p.PipelineSvc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
 			SimplePipelineBaseResult: true,
-			PipelineID:               pipelineResp.ID,
+			PipelineID:               pipelineResp.Data.ID,
 		})
 		if err != nil {
 			continue
 		}
 
-		status = detail.Status
+		status = apistructs.PipelineStatus(detail.Data.Status)
 		if status == apistructs.PipelineStatusSuccess ||
 			status == apistructs.PipelineStatusFailed ||
 			status == apistructs.PipelineStatusTimeout ||
@@ -102,7 +104,9 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 		}
 	}
 
-	p.Bdl.DeletePipeline(pipelineResp.ID)
+	p.PipelineSvc.PipelineDelete(context.Background(), &pipelinepb.PipelineDeleteRequest{
+		PipelineID: pipelineResp.Data.ID,
+	})
 
 	switch status {
 	case apistructs.PipelineStatusSuccess:

@@ -22,6 +22,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -54,10 +56,10 @@ func TestSetData(t *testing.T) {
 			Tran: &MockTran{},
 		},
 	}
-	p := apistructs.PipelineDetailDTO{
-		PipelineStages: []apistructs.PipelineStageDetailDTO{
+	p := pipelinepb.PipelineDetailDTO{
+		PipelineStages: []*basepb.PipelineStageDetailDTO{
 			{
-				PipelineTasks: []apistructs.PipelineTaskDTO{
+				PipelineTasks: []*basepb.PipelineTaskDTO{
 					{
 						Labels: map[string]string{apistructs.AutotestSceneStep: "eyJpZCI6MSwidHlwZSI6IkNVU1RPTSIsIm1ldGhvZCI6IiIsInZhbHVlIjoie1wiY29tbWFuZHNcIjpbXCJzbGVlcCAzNlwiXSxcImltYWdlXCI6XCJyZWdpc3RyeS5lcmRhLmNsb3VkL2VyZGEtYWN0aW9ucy9jdXN0b20tc2NyaXB0LWFjdGlvbjoyMDIxMDUxOS0wMWQyODExXCJ9IiwibmFtZSI6Iua1i+ivleiHquWumuS5iSIsInByZUlEIjowLCJwcmVUeXBlIjoiU2VyaWFsIiwic2NlbmVJRCI6MSwic3BhY2VJRCI6MSwiY3JlYXRvcklEIjoiIiwidXBkYXRlcklEIjoiIiwiQ2hpbGRyZW4iOm51bGwsImFwaVNwZWNJRCI6MH0="},
 						ID:     1,
@@ -69,16 +71,17 @@ func TestSetData(t *testing.T) {
 	err := table.setData(&p)
 	assert.Equal(t, nil, err)
 
-	waiP := apistructs.PipelineDetailDTO{
-		PipelineStages: []apistructs.PipelineStageDetailDTO{
+	waiP := pipelinepb.PipelineDetailDTO{
+		PipelineStages: []*basepb.PipelineStageDetailDTO{
 			{
-				PipelineTasks: []apistructs.PipelineTaskDTO{
+				PipelineTasks: []*basepb.PipelineTaskDTO{
 					{
 						Labels: map[string]string{
 							apistructs.AutotestSceneStep: "eyJpZCI6MTI2NTQsInR5cGUiOiJXQUlUIiwibWV0aG9kIjoiIiwidmFsdWUiOiJ7XG4gICAgXCJ3YWl0VGltZVwiOiAxMFxufSIsIm5hbWUiOiLnrYnlvoXku7vliqEiLCJwcmVJRCI6MCwicHJlVHlwZSI6IlNlcmlhbCIsInNjZW5lSUQiOjE2MTAsInNwYWNlSUQiOjEsImNyZWF0b3JJRCI6IiIsInVwZGF0ZXJJRCI6IiIsIkNoaWxkcmVuIjpudWxsLCJhcGlTcGVjSUQiOjB9",
 							apistructs.AutotestType:      apistructs.AutotestSceneStep,
 						},
-						ID: 2,
+						ID:    2,
+						Extra: &basepb.PipelineTaskExtra{},
 					},
 				},
 			},

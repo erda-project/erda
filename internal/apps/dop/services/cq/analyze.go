@@ -15,12 +15,14 @@
 package cq
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
@@ -106,22 +108,20 @@ func (cq *CQ) GenerateCQPipeline4Go(req CQRequest, userID string) (uint64, error
 		return 0, err
 	}
 
-	result, err := cq.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	result, err := cq.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(pipelineYmlByte),
 		ClusterName:     clusterName,
 		PipelineYmlName: generateCQPipelineName(req.AppID, req.Commit),
-		PipelineSource:  apistructs.PipelineSourceQA,
+		PipelineSource:  apistructs.PipelineSourceQA.String(),
 		Labels:          labels,
 		ForceRun:        false,
 		AutoRunAtOnce:   true,
-		IdentityInfo: apistructs.IdentityInfo{
-			InternalClient: "QA-MR-CQ-Robot",
-		},
+		InternalClient:  "QA-MR-CQ-Robot",
 	})
 	if err != nil {
 		return 0, err
 	}
-	return result.ID, nil
+	return result.Data.ID, nil
 }
 
 func (cq *CQ) getWorkspaceClusterByAppBranch(appID uint64, gitRef string) (

@@ -23,6 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
@@ -57,7 +58,7 @@ type PropColumn struct {
 
 type State struct {
 	PipelineID     uint64                        `json:"pipelineId"`
-	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
+	PipelineDetail *pipelinepb.PipelineDetailDTO `json:"pipelineDetail"`
 	EnvData        apistructs.AutoTestAPIConfig  `json:"envData"`
 	EnvName        string                        `json:"envName"`
 }
@@ -114,40 +115,41 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 			return fmt.Errorf("not find pipelineID %v info", i.State.PipelineID)
 		}
 		i.State.PipelineDetail = rsp
-		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && rsp.Status.IsEndStatus() {
+		pipelineStatus := apistructs.PipelineStatus(rsp.Status)
+		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && pipelineStatus.IsEndStatus() {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			if rsp.TimeEnd == nil {
 				rsp.TimeEnd = rsp.TimeUpdated
 			}
-			t := rsp.TimeEnd.Sub(*rsp.TimeBegin)
+			t := rsp.TimeEnd.AsTime().Sub(rsp.TimeBegin.AsTime())
 			h := strconv.FormatInt(int64(t.Hours()), 10) + ":"
 			if t.Hours() < 10 {
 				h = "0" + strconv.FormatInt(int64(t.Hours()), 10) + ":"
 			}
 			i.Data = map[string]interface{}{
 				"pipelineID": i.State.PipelineID,
-				"status":     i18n.TransferTaskStatus(rsp.Status, i18nLocale),
+				"status":     i18n.TransferTaskStatus(pipelineStatus, i18nLocale),
 				"time":       h + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05"),
-				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
-				"timeEnd":    rsp.TimeEnd.Format(timeLayoutStr),
+				"timeBegin":  rsp.TimeBegin.AsTime().Format(timeLayoutStr),
+				"timeEnd":    rsp.TimeEnd.AsTime().Format(timeLayoutStr),
 			}
 		} else if rsp.TimeBegin != nil {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			i.Data = map[string]interface{}{
 				"pipelineID": i.State.PipelineID,
-				"status":     i18n.TransferTaskStatus(rsp.Status, i18nLocale),
-				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
+				"status":     i18n.TransferTaskStatus(pipelineStatus, i18nLocale),
+				"timeBegin":  rsp.TimeBegin.AsTime().Format(timeLayoutStr),
 			}
 		} else {
 			i.Data = map[string]interface{}{
 				"pipelineID": i.State.PipelineID,
-				"status":     i18n.TransferTaskStatus(rsp.Status, i18nLocale),
+				"status":     i18n.TransferTaskStatus(pipelineStatus, i18nLocale),
 			}
 		}
-		if rsp.Status == apistructs.PipelineStatusStopByUser {
+		if pipelineStatus == apistructs.PipelineStatusStopByUser {
 			i.Data["status"] = i18nLocale.Get(i18n.I18nKeyUserCancels)
 		}
-		if rsp.Status == apistructs.PipelineStatusNoNeedBySystem {
+		if pipelineStatus == apistructs.PipelineStatusNoNeedBySystem {
 			i.Data["status"] = i18nLocale.Get(i18n.I18nKeyNoNeedExecute)
 		}
 		reports, err := i.CtxBdl.Bdl.GetPipelineReportSet(i.State.PipelineID, []string{

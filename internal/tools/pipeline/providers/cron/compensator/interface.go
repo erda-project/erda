@@ -17,7 +17,7 @@ package compensator
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -26,12 +26,10 @@ type PipelineFunc struct {
 	CreatePipeline CreatePipelineFunc
 }
 
-type RunPipelineFunc func(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
-type CreatePipelineFunc func(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+type RunPipelineFunc func(ctx context.Context, req *pipelinepb.PipelineRunRequest) (*spec.Pipeline, error)
+type CreatePipelineFunc func(ctx context.Context, req *pipelinepb.PipelineCreateRequestV2) (*spec.Pipeline, error)
 
 type Interface interface {
 	PipelineCronCompensate(ctx context.Context, pipelineID uint64)
-
-	// todo Can be removed after all objects are provider
 	WithPipelineFunc(pipelineFunc PipelineFunc)
 }

@@ -24,6 +24,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -35,7 +37,7 @@ import (
 func (e *Endpoints) projectPipelineCreate(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 
-	var createReq apistructs.PipelineCreateRequestV2
+	var createReq pipelinepb.PipelineCreateRequestV2
 	if err := json.NewDecoder(r.Body).Decode(&createReq); err != nil {
 		logrus.Errorf("[alert] failed to decode request body: %v", err)
 		return apierrors.ErrCreatePipeline.InvalidParameter(errors.Errorf("request body: %v", err)).ToResp(), nil
@@ -76,6 +78,7 @@ func (e *Endpoints) projectPipelineCreate(ctx context.Context, r *http.Request, 
 	}
 
 	createReq.UserID = identityInfo.UserID
+	createReq.InternalClient = identityInfo.InternalClient
 
 	spec, err := pipelineyml.New([]byte(createReq.PipelineYml))
 	if err != nil {
@@ -132,7 +135,7 @@ func (e *Endpoints) projectPipelineDetail(ctx context.Context, r *http.Request, 
 		return errorresp.ErrResp(apierrors.ErrCheckPermission.InternalError(fmt.Errorf("external users cannot call the internal interface\n")))
 	}
 
-	result, err := e.bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+	result, err := e.PipelineSvc.PipelineDetail(ctx, &pipelinepb.PipelineDetailRequest{
 		PipelineID:               req.PipelineID,
 		SimplePipelineBaseResult: req.SimplePipelineBaseResult,
 	})
@@ -140,5 +143,5 @@ func (e *Endpoints) projectPipelineDetail(ctx context.Context, r *http.Request, 
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(result)
+	return httpserver.OkResp(result.Data)
 }

@@ -27,11 +27,16 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+
+	common "github.com/erda-project/erda-proto-go/common/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -60,6 +65,7 @@ type Pipeline struct {
 	cms                cmspb.CmsServiceServer
 	pipelineSource     sourcepb.SourceServiceServer
 	pipelineDefinition definitionpb.DefinitionServiceServer
+	pipelineSvc        pipelinepb.PipelineServiceServer
 	appSvc             *application.Application
 	projectSvc         *project.Project
 	cronService        cronpb.CronServiceServer
@@ -139,6 +145,12 @@ func WithProjectSvc(svc *project.Project) Option {
 	}
 }
 
+func WithPipelineSvc(svc pipelinepb.PipelineServiceServer) Option {
+	return func(f *Pipeline) {
+		f.pipelineSvc = svc
+	}
+}
+
 // 获取应用下的所有.yml文件
 func GetPipelineYmlList(req apistructs.CICDPipelineYmlListRequest, bdl *bundle.Bundle, userID string) []string {
 	result := []string{}
@@ -166,23 +178,23 @@ func (p *Pipeline) FetchPipelineYml(gittarURL, ref, pipelineYmlName, userID stri
 }
 
 // CreatePipeline 创建pipeline流程
-func (p *Pipeline) CreatePipeline(reqPipeline *apistructs.PipelineCreateRequest) (*apistructs.PipelineDTO, error) {
-	resp, err := p.bdl.CreatePipeline(reqPipeline)
+func (p *Pipeline) CreatePipeline(reqPipeline *pipelinepb.PipelineCreateRequest) (*basepb.PipelineDTO, error) {
+	resp, err := p.pipelineSvc.PipelineCreate(context.Background(), reqPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }
 
 // CreatePipeline 创建pipeline流程
-func (p *Pipeline) CreatePipelineV2(reqPipeline *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
-	resp, err := p.bdl.CreatePipeline(reqPipeline)
+func (p *Pipeline) CreatePipelineV2(reqPipeline *pipelinepb.PipelineCreateRequestV2) (*basepb.PipelineDTO, error) {
+	resp, err := p.pipelineSvc.PipelineCreateV2(context.Background(), reqPipeline)
 	if err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }
 
 // GenerateReleaseYml 根据pipeline.yml生成新的release.yml
@@ -316,11 +328,11 @@ func (p *Pipeline) AllValidBranchWorkspaces(appID uint64, userID string) ([]apis
 	return p.bdl.GetAllValidBranchWorkspace(appID, userID)
 }
 
-func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*apistructs.PipelineCreateRequestV2, error) {
-	pv2 := &apistructs.PipelineCreateRequestV2{
-		PipelineSource: apistructs.PipelineSourceDice,
+func (p *Pipeline) ConvertPipelineToV2(pv1 *pipelinepb.PipelineCreateRequest) (*pipelinepb.PipelineCreateRequestV2, error) {
+	pv2 := &pipelinepb.PipelineCreateRequestV2{
+		PipelineSource: apistructs.PipelineSourceDice.String(),
 		AutoRunAtOnce:  pv1.AutoRun,
-		IdentityInfo:   apistructs.IdentityInfo{UserID: pv1.UserID},
+		UserID:         pv1.UserID,
 	}
 
 	labels := make(map[string]string, 0)
@@ -433,7 +445,14 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 			break
 		}
 	}
-	pv2.Secrets = utils.GetGittarSecrets(pv2.ClusterName, pv1.Branch, detail)
+	pv2.Secrets = utils.GetGittarSecrets(pv2.ClusterName, pv1.Branch, &common.CommitDetail{
+		CommitID: detail.CommitID,
+		Repo:     detail.Repo,
+		RepoAbbr: detail.RepoAbbr,
+		Author:   detail.Author,
+		Email:    detail.Email,
+		Comment:  detail.Comment,
+	})
 	// the person who made the last modification is currently the owner of yaml,
 	// because the modification may not be an erda user, so errors should be ignored
 	ownerUser, err := p.getPipelineOwnerUser(app, pv1)
@@ -450,13 +469,13 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	//}
 
 	// generate pipeline yaml name
-	pv2.PipelineYmlName = GenerateV1UniquePipelineYmlName(pv2.PipelineSource, pipelineYmlName,
+	pv2.PipelineYmlName = GenerateV1UniquePipelineYmlName(apistructs.PipelineSource(pv2.PipelineSource), pipelineYmlName,
 		strconv.FormatUint(app.ID, 10), pv1.Branch, workspace)
 
 	return pv2, nil
 }
 
-func (p *Pipeline) getPipelineOwnerUser(app *apistructs.ApplicationDTO, pv1 *apistructs.PipelineCreateRequest) (*apistructs.PipelineUser, error) {
+func (p *Pipeline) getPipelineOwnerUser(app *apistructs.ApplicationDTO, pv1 *pipelinepb.PipelineCreateRequest) (*basepb.PipelineUser, error) {
 	ymlCommit, err := p.bdl.GetGittarTree(fmt.Sprintf("/%s/tree/%s/%s", app.GitRepoAbbrev, pv1.Branch, pv1.PipelineYmlName), strconv.FormatUint(app.OrgID, 10), pv1.UserID)
 	if err != nil {
 		return nil, err
@@ -477,8 +496,8 @@ func (p *Pipeline) getPipelineOwnerUser(app *apistructs.ApplicationDTO, pv1 *api
 			if err := p.checkOwnerPermission(user.ID, app); err != nil {
 				return nil, err
 			}
-			return &apistructs.PipelineUser{
-				ID:     user.ID,
+			return &basepb.PipelineUser{
+				ID:     structpb.NewStringValue(user.ID),
 				Name:   user.Name,
 				Avatar: user.Avatar,
 			}, nil
@@ -514,7 +533,7 @@ func (p *Pipeline) diceYmlCheck(pipelineYml, gitRepo, branch string, workspace a
 	return utils.Check(yml)
 }
 
-func (p *Pipeline) setClusterName(clusterName string, pv *apistructs.PipelineCreateRequestV2) error {
+func (p *Pipeline) setClusterName(clusterName string, pv *pipelinepb.PipelineCreateRequestV2) error {
 	pv.ClusterName = clusterName
 	clusterInfo, err := p.bdl.QueryClusterInfo(clusterName)
 	if err != nil {
@@ -758,12 +777,12 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 }
 
 func (p *Pipeline) createCron(appDto *apistructs.ApplicationDTO, ymlPathName string, branch string, event apistructs.GittarPushPayloadEvent) error {
-	createV1 := apistructs.PipelineCreateRequest{
+	createV1 := pipelinepb.PipelineCreateRequest{
 		AppID:             appDto.ID,
 		Branch:            branch,
 		PipelineYmlName:   ymlPathName,
-		Source:            apistructs.PipelineSourceDice,
-		PipelineYmlSource: apistructs.PipelineYmlSourceGittar,
+		Source:            apistructs.PipelineSourceDice.String(),
+		PipelineYmlSource: apistructs.PipelineYmlSourceGittar.String(),
 		UserID:            event.Content.Pusher.Id,
 	}
 	createV2, err := p.ConvertPipelineToV2(&createV1)
@@ -801,7 +820,7 @@ func (p *Pipeline) createCron(appDto *apistructs.ApplicationDTO, ymlPathName str
 	}
 	createV2.DefinitionID = definitionList.Data[0].ID
 
-	_, err = p.bdl.CreatePipeline(createV2)
+	_, err = p.pipelineSvc.PipelineCreateV2(context.Background(), createV2)
 	if err != nil {
 		return fmt.Errorf("CreatePipeline  error %v req %v", err, createV2)
 	}

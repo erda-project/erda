@@ -18,24 +18,26 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erda-project/erda/apistructs"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 type Interface interface {
-	TryGetUser(ctx context.Context, userID string) *apistructs.PipelineUser
+	TryGetUser(ctx context.Context, userID string) *pb.PipelineUser
 }
 
-func (p *provider) TryGetUser(ctx context.Context, userID string) *apistructs.PipelineUser {
+func (p *provider) TryGetUser(ctx context.Context, userID string) *pb.PipelineUser {
 	user, err := p.bdl.GetCurrentUser(userID)
 	if err != nil {
 		p.Log.Warnf("failed to get user info, userID: %s, err: %v", userID, err)
 		// return basic user just with id
-		return &apistructs.PipelineUser{ID: userID}
+		return &pb.PipelineUser{ID: structpb.NewStringValue(userID)}
 	}
 	if user == nil {
 		p.Log.Warnf("failed to get user info, userID: %s, err: %v", userID, fmt.Errorf("get empty user info"))
 		// return basic user just with id
-		return &apistructs.PipelineUser{ID: userID}
+		return &pb.PipelineUser{ID: structpb.NewStringValue(userID)}
 	}
 	// return queried user
 	return user.ConvertToPipelineUser()

@@ -20,26 +20,24 @@ import (
 
 	"github.com/pkg/errors"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
-func GetPipeline(ctx *command.Context, pipelineID uint64) (apistructs.PipelineDetailDTO, error) {
+func GetPipeline(ctx *command.Context, pipelineID uint64) (pipelinepb.PipelineDetailDTO, error) {
 	// fetch pipeline info
-	var pipelineInfoResp apistructs.PipelineDetailResponse
+	var pipelineInfoResp pipelinepb.PipelineDetailResponse
 	response, err := ctx.Get().
 		Path(fmt.Sprintf("/api/pipelines/%d", pipelineID)).
 		Do().JSON(&pipelineInfoResp)
 	if err != nil {
-		return apistructs.PipelineDetailDTO{}, err
+		return pipelinepb.PipelineDetailDTO{}, err
 	}
 	if !response.IsOK() {
-		return apistructs.PipelineDetailDTO{}, errors.Errorf("status fail, status code: %d, err: %+v", response.StatusCode(), pipelineInfoResp.Error)
-	}
-	if !pipelineInfoResp.Success {
-		return apistructs.PipelineDetailDTO{}, errors.Errorf("status fail: %+v", pipelineInfoResp.Error)
+		return pipelinepb.PipelineDetailDTO{}, errors.Errorf("status fail, status code: %d", response.StatusCode())
 	}
 
 	return *pipelineInfoResp.Data, nil
@@ -88,7 +86,7 @@ func BuildCheckLoop(ctx *command.Context, pipelineID uint64) error {
 					v = taskInfoHinted{}
 				}
 
-				switch task.Status {
+				switch apistructs.PipelineStatus(task.Status) {
 				case apistructs.PipelineStatusQueue, apistructs.PipelineStatusRunning:
 					currentStageDone = false
 					if !v.Running {
@@ -120,9 +118,10 @@ func BuildCheckLoop(ctx *command.Context, pipelineID uint64) error {
 			stageDone[stage.ID] = struct{}{}
 		}
 
-		if pipelineInfo.Status == apistructs.PipelineStatusStopByUser ||
-			pipelineInfo.Status == apistructs.PipelineStatusFailed ||
-			pipelineInfo.Status == apistructs.PipelineStatusTimeout {
+		pipelineStatus := apistructs.PipelineStatus(pipelineInfo.Status)
+		if pipelineStatus == apistructs.PipelineStatusStopByUser ||
+			pipelineStatus == apistructs.PipelineStatusFailed ||
+			pipelineStatus == apistructs.PipelineStatusTimeout {
 			fmt.Print(color_str.Green(fmt.Sprintf("build faild, status: %s, time elapsed: %s\n",
 				pipelineInfo.Status, utils.ToTimeSpanString(int(pipelineInfo.CostTimeSec)))))
 			var msg = "nil"
@@ -134,7 +133,7 @@ func BuildCheckLoop(ctx *command.Context, pipelineID uint64) error {
 				"build error: "+msg, false))
 		}
 
-		if pipelineInfo.Status == apistructs.PipelineStatusSuccess {
+		if pipelineStatus == apistructs.PipelineStatusSuccess {
 			fmt.Print(color_str.Green(fmt.Sprintf("\nbuild succ, time elapsed: %s\n", utils.ToTimeSpanString(int(pipelineInfo.CostTimeSec)))))
 			return nil
 		}

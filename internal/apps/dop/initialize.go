@@ -400,6 +400,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		atv2.WithAutotestSvc(autotest),
 		atv2.WithPipelineCms(p.PipelineCms),
 		atv2.WithOrg(p.Org),
+		atv2.WithPipelineSvc(p.PipelineSvc),
 	)
 
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
@@ -568,6 +569,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		application.WithPipelineCms(p.PipelineCms),
 		application.WithTokenSvc(p.TokenService),
 		application.WithOrg(p.Org),
+		application.WithPipelineSvc(p.PipelineSvc),
 	)
 
 	codeCvc := code_coverage.New(
@@ -592,6 +594,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		pipeline.WithAppSvc(app),
 		pipeline.WithQueueService(p.Queue),
 		pipeline.WithProjectSvc(proj),
+		pipeline.WithPipelineSvc(p.PipelineSvc),
 	)
 
 	p.PipelineAction.WithBranchRule(branchRule)
@@ -601,6 +604,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	p.ProjectPipelineSvc.WithPipelineSvc(pipelineSvc)
 	p.ProjectPipelineSvc.WithPermissionSvc(perm)
 	p.ProjectPipelineSvc.WithBranchRuleSve(branchRule)
+	p.ProjectPipelineSvc.WithPipelineService(p.PipelineSvc)
 
 	p.GuideSvc.WithBranchRuleSve(branchRule)
 
@@ -638,7 +642,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithSonarMetricRule(sonarMetricRule),
 		endpoints.WithTestplan(testPlan),
 		endpoints.WithWorkbench(workBench),
-		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl), cq.WithBranchRule(branchRule))),
+		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl), cq.WithBranchRule(branchRule), cq.WithPipelineSvc(p.PipelineSvc))),
 		endpoints.WithAutoTest(autotest),
 		endpoints.WithAutoTestV2(autotestV2),
 		endpoints.WithSceneSet(sceneset),
@@ -673,6 +677,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithIssueDB(issueDB),
 		endpoints.WithRuleSvc(p.RuleService),
 		endpoints.WithIssueQuery(p.Query),
+		endpoints.WithPipelineSvc(p.PipelineSvc),
 	)
 
 	ep.ImportChannel = make(chan uint64)

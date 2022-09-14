@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -36,7 +37,7 @@ type PipelineStreamEvent struct {
 	IdentityInfo
 	EventHeader apistructs.EventHeader
 	PipelineID  uint64
-	Events      []*apistructs.PipelineEvent
+	Events      []*basepb.PipelineEvent
 }
 
 func (e *PipelineStreamEvent) Kind() EventKind {

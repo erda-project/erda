@@ -16,10 +16,11 @@ package bundle
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/pkg/errors"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -32,7 +33,7 @@ import (
 //
 // Tips:
 // 1. 使用 bundle 调用时，如果有用户信息，需要在 req.UserID 字段赋值
-func (b *Bundle) CreatePipeline(req interface{}) (*apistructs.PipelineDTO, error) {
+func (b *Bundle) CreatePipeline(req interface{}) (*basepb.PipelineDTO, error) {
 	host, err := b.urls.Pipeline()
 	if err != nil {
 		return nil, err
@@ -49,61 +50,43 @@ func (b *Bundle) CreatePipeline(req interface{}) (*apistructs.PipelineDTO, error
 	case *apistructs.PipelineCreateRequestV2:
 		apiPath = "/api/v2/pipelines"
 		headerUserID = req.(*apistructs.PipelineCreateRequestV2).UserID
+	case *pb.PipelineCreateRequestV2:
+		apiPath = "/api/v2/pipelines"
+		headerUserID = req.(*pb.PipelineCreateRequestV2).UserID
 	default:
 		return nil, apierrors.ErrInvoke.InvalidParameter(errors.Errorf("invalid request struct type"))
 	}
 
-	var createResp apistructs.PipelineCreateResponse
+	var createResp pb.PipelineCreateResponse
 	resp, err := hc.Post(host).Path(apiPath).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, headerUserID).
 		JSONBody(req).Do().JSON(&createResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !resp.IsOK() || !createResp.Success {
-		return nil, toAPIError(resp.StatusCode(), createResp.Error)
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), apistructs.ErrorResponse{})
 	}
 
 	return createResp.Data, nil
 }
 
-func (b *Bundle) GetPipelineV2(req apistructs.PipelineDetailRequest) (*apistructs.PipelineDetailDTO, error) {
+func (b *Bundle) GetPipeline(pipelineID uint64) (*pb.PipelineDetailDTO, error) {
 	host, err := b.urls.Pipeline()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
-	var pipelineResp apistructs.PipelineDetailResponse
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/pipelines/%d", req.PipelineID)).
-		Header(httputil.InternalHeader, "bundle").
-		Param("simplePipelineBaseResult", strconv.FormatBool(req.SimplePipelineBaseResult)).
-		Do().JSON(&pipelineResp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !httpResp.IsOK() || !pipelineResp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), pipelineResp.Error)
-	}
-	return pipelineResp.Data, nil
-}
-
-func (b *Bundle) GetPipeline(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
-	host, err := b.urls.Pipeline()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var pipelineResp apistructs.PipelineDetailResponse
+	var pipelineResp pb.PipelineDetailResponse
 	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/pipelines/%d", pipelineID)).
 		Header(httputil.InternalHeader, "bundle").
 		Do().JSON(&pipelineResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !httpResp.IsOK() || !pipelineResp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), pipelineResp.Error)
+	if !httpResp.IsOK() {
+		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
 	}
 	return pipelineResp.Data, nil
 }
@@ -169,14 +152,14 @@ func (b *Bundle) DeletePipeline(pipelineID uint64) error {
 	return nil
 }
 
-func (b *Bundle) RunPipeline(req apistructs.PipelineRunRequest) error {
+func (b *Bundle) RunPipeline(req pb.PipelineRunRequest) error {
 	host, err := b.urls.Pipeline()
 	if err != nil {
 		return err
 	}
 	hc := b.hc
 
-	var runResp apistructs.PipelineRunResponse
+	var runResp pb.PipelineRunResponse
 	httpResp, err := hc.Post(host).Path(fmt.Sprintf("/api/pipelines/%d/actions/run", req.PipelineID)).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, req.UserID).
 		JSONBody(req).
@@ -184,40 +167,40 @@ func (b *Bundle) RunPipeline(req apistructs.PipelineRunRequest) error {
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
-	if !httpResp.IsOK() || !runResp.Success {
-		return toAPIError(httpResp.StatusCode(), runResp.Error).SetCtx(runResp.Error.Ctx)
+	if !httpResp.IsOK() {
+		return toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
 	}
 	return nil
 }
 
-func (b *Bundle) CancelPipeline(req apistructs.PipelineCancelRequest) error {
+func (b *Bundle) CancelPipeline(req pb.PipelineCancelRequest) error {
 	host, err := b.urls.Pipeline()
 	if err != nil {
 		return err
 	}
 	hc := b.hc
 
-	var cancelResp apistructs.PipelineCancelResponse
+	var cancelResp pb.PipelineCancelResponse
 	httpResp, err := hc.Post(host).Path(fmt.Sprintf("/api/pipelines/%d/actions/cancel", req.PipelineID)).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, req.UserID).
 		Do().JSON(&cancelResp)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
-	if !httpResp.IsOK() || !cancelResp.Success {
-		return toAPIError(httpResp.StatusCode(), cancelResp.Error)
+	if !httpResp.IsOK() {
+		return toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
 	}
 	return nil
 }
 
-func (b *Bundle) RerunPipeline(req apistructs.PipelineRerunRequest) (*apistructs.PipelineDTO, error) {
+func (b *Bundle) RerunPipeline(req pb.PipelineRerunRequest) (*basepb.PipelineDTO, error) {
 	host, err := b.urls.Pipeline()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
-	var rerunResp apistructs.PipelineRerunResponse
+	var rerunResp pb.PipelineRerunResponse
 	httpResp, err := hc.Post(host).Path(fmt.Sprintf("/api/pipelines/%d/actions/rerun", req.PipelineID)).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, req.UserID).
 		JSONBody(&apistructs.PipelineRerunRequest{AutoRunAtOnce: req.AutoRunAtOnce, Secrets: req.Secrets}).
@@ -225,20 +208,20 @@ func (b *Bundle) RerunPipeline(req apistructs.PipelineRerunRequest) (*apistructs
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !httpResp.IsOK() || !rerunResp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), rerunResp.Error)
+	if !httpResp.IsOK() {
+		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
 	}
 	return rerunResp.Data, nil
 }
 
-func (b *Bundle) RerunFailedPipeline(req apistructs.PipelineRerunFailedRequest) (*apistructs.PipelineDTO, error) {
+func (b *Bundle) RerunFailedPipeline(req pb.PipelineRerunFailedRequest) (*basepb.PipelineDTO, error) {
 	host, err := b.urls.Pipeline()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
-	var rerunFailedResp apistructs.PipelineRerunFailedResponse
+	var rerunFailedResp pb.PipelineRerunFailedResponse
 	httpResp, err := hc.Post(host).Path(fmt.Sprintf("/api/pipelines/%d/actions/rerun-failed", req.PipelineID)).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, req.UserID).
 		JSONBody(&apistructs.PipelineRerunFailedRequest{AutoRunAtOnce: req.AutoRunAtOnce, Secrets: req.Secrets}).
@@ -246,8 +229,8 @@ func (b *Bundle) RerunFailedPipeline(req apistructs.PipelineRerunFailedRequest) 
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !httpResp.IsOK() || !rerunFailedResp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), rerunFailedResp.Error)
+	if !httpResp.IsOK() {
+		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
 	}
 	return rerunFailedResp.Data, nil
 }

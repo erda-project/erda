@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 var (
@@ -97,7 +98,7 @@ func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 	defer ctrl.Finish()
 
 	akService := getMockTokenServiceServer(ctrl)
-	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil, &mock.MockPipelineServiceServer{})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "CheckCluster", func(_ *Clusters, _ context.Context, _ string) error {
 		return nil
@@ -124,7 +125,7 @@ func Test_GetOrCreateAccessKey_Get(t *testing.T) {
 		Data: fakeAkItem,
 	}, nil)
 
-	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil, &mock.MockPipelineServiceServer{})
 	akResp, err := c.GetOrCreateAccessKey(context.Background(), fakeCluster)
 	assert.NoError(t, err)
 	assert.Equal(t, akResp, fakeAkItem)
@@ -142,7 +143,7 @@ func Test_DeleteAccessKey(t *testing.T) {
 		Total: 1,
 	}, nil)
 
-	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil, &mock.MockPipelineServiceServer{})
 	err := c.DeleteAccessKey(fakeCluster)
 	assert.NoError(t, err)
 }
@@ -171,7 +172,7 @@ func Test_ResetAccessKey_InCluster_Error(t *testing.T) {
 		return nil, csErr
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, &mock.MockPipelineServiceServer{})
 	_, err := c.ResetAccessKey(context.Background(), emptyClusterName)
 	assert.Equal(t, err, fmt.Errorf("get inCluster kubernetes client error: %s", csErr.Error()))
 }
@@ -181,7 +182,7 @@ func Test_ResetAccessKeyWithClientSet(t *testing.T) {
 	defer ctrl.Finish()
 
 	akService := getMockTokenServiceServer(ctrl)
-	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, akService, &fakeClusterServiceServer{}, nil, &mock.MockPipelineServiceServer{})
 
 	_, err := c.ResetAccessKeyWithClientSet(context.Background(), fakeCluster, fakeclientset.NewSimpleClientset())
 	assert.NoError(t, err)

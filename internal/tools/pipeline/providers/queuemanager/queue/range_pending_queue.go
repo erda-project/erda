@@ -21,7 +21,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
@@ -211,16 +213,16 @@ func (q *defaultQueue) ensureMarkPipelineFailed(p *spec.Pipeline) {
 // emitEvent
 func (q *defaultQueue) emitEvent(p *spec.Pipeline, reason string, message string, eType string) string {
 	now := time.Now()
-	se := apistructs.PipelineEvent{
+	se := basepb.PipelineEvent{
 		Reason:         reason,
 		Message:        message,
-		Source:         apistructs.PipelineEventSource{Component: EventComponentQueueManager},
-		FirstTimestamp: now,
-		LastTimestamp:  now,
+		Source:         &basepb.PipelineEventSource{Component: EventComponentQueueManager},
+		FirstTimestamp: timestamppb.New(now),
+		LastTimestamp:  timestamppb.New(now),
 		Count:          1,
 		Type:           eType,
 	}
-	events.EmitPipelineStreamEvent(p.ID, []*apistructs.PipelineEvent{&se})
+	events.EmitPipelineStreamEvent(p.ID, []*basepb.PipelineEvent{&se})
 	msg := fmt.Sprintf("queueManager: queueID: %s, queueName: %s, pipelineID: %d, Type: %s, Reason: %s, Message: %s",
 		q.ID(), q.pq.Name, p.ID, eType, reason, message)
 	rlog.PDebugf(p.ID, msg)

@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strconv"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -426,7 +428,7 @@ func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, mo
 	return fields, nil
 }
 
-func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTestPlansRequest) (*apistructs.PipelineDTO, error) {
+func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTestPlansRequest) (*basepb.PipelineDTO, error) {
 	testPlan, err := svc.GetTestPlanV2(req.TestPlan.ID, req.IdentityInfo)
 	if err != nil {
 		return nil, err
@@ -491,15 +493,16 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 		return nil, err
 	}
 
-	var reqPipeline = apistructs.PipelineCreateRequestV2{
+	var reqPipeline = pipelinepb.PipelineCreateRequestV2{
 		PipelineYmlName: apistructs.PipelineSourceAutoTestPlan.String() + "-" + strconv.Itoa(int(req.TestPlan.ID)),
-		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		PipelineSource:  apistructs.PipelineSourceAutoTest.String(),
 		AutoRun:         true,
 		ForceRun:        true,
 		ClusterName:     req.ClusterName,
 		PipelineYml:     string(yml),
 		Labels:          req.Labels,
-		IdentityInfo:    req.IdentityInfo,
+		UserID:          req.IdentityInfo.UserID,
+		InternalClient:  req.IdentityInfo.InternalClient,
 		NormalLabels:    map[string]string{apistructs.LabelOrgName: org.Name, apistructs.LabelOrgID: strconv.FormatUint(org.ID, 10)},
 	}
 	if req.ConfigManageNamespaces != "" {
@@ -514,12 +517,12 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 		reqPipeline.ClusterName = testClusterName
 	}
 
-	pipelineDTO, err := svc.bdl.CreatePipeline(&reqPipeline)
+	pipelineDTO, err := svc.pipelineSvc.PipelineCreateV2(context.Background(), &reqPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	return pipelineDTO, nil
+	return pipelineDTO.Data, nil
 }
 
 // getStepMapByGroupID get step group by groupID
@@ -578,9 +581,12 @@ func (svc *Service) CancelDiceAutotestTestPlan(req apistructs.AutotestCancelTest
 
 	for _, v := range pages.Pipelines {
 		if v.Status.IsReconcilerRunningStatus() {
-			var pipelineCancelRequest apistructs.PipelineCancelRequest
+			var pipelineCancelRequest pipelinepb.PipelineCancelRequest
 			pipelineCancelRequest.PipelineID = v.ID
-			return svc.bdl.CancelPipeline(pipelineCancelRequest)
+			_, err = svc.pipelineSvc.PipelineCancel(context.Background(), &pipelineCancelRequest)
+			if err != nil {
+				return err
+			}
 		}
 		break
 	}

@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strconv"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -131,7 +133,7 @@ func mapping(s *dao.SceneSet) *apistructs.SceneSet {
 	}
 }
 
-func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneSetRequest) (*apistructs.PipelineDTO, error) {
+func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneSetRequest) (*basepb.PipelineDTO, error) {
 	var spec pipelineyml.Spec
 	spec.Version = "1.1"
 	var stagesValue []*pipelineyml.Stage
@@ -246,15 +248,16 @@ func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneS
 		return nil, err
 	}
 
-	var reqPipeline = apistructs.PipelineCreateRequestV2{
+	var reqPipeline = pipelinepb.PipelineCreateRequestV2{
 		PipelineYmlName: apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(req.AutoTestSceneSet.ID)),
-		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		PipelineSource:  apistructs.PipelineSourceAutoTest.String(),
 		AutoRun:         true,
 		ForceRun:        true,
 		ClusterName:     req.ClusterName,
 		PipelineYml:     string(yml),
 		Labels:          req.Labels,
-		IdentityInfo:    req.IdentityInfo,
+		UserID:          req.IdentityInfo.UserID,
+		InternalClient:  req.IdentityInfo.InternalClient,
 		NormalLabels:    map[string]string{apistructs.LabelOrgName: org.Name, apistructs.LabelOrgID: strconv.FormatUint(org.ID, 10)},
 	}
 	if req.ConfigManageNamespaces != "" {
@@ -269,12 +272,12 @@ func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneS
 		reqPipeline.ClusterName = testClusterName
 	}
 
-	pipelineDTO, err := svc.bdl.CreatePipeline(&reqPipeline)
+	pipelineDTO, err := svc.pipelineSvc.PipelineCreateV2(context.Background(), &reqPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	return pipelineDTO, nil
+	return pipelineDTO.Data, nil
 }
 
 func getSceneMapByGroupID(scenes []apistructs.AutoTestScene) (map[uint64][]*apistructs.AutoTestScene, []uint64) {

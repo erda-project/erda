@@ -15,6 +15,7 @@
 package cq
 
 import (
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
 )
@@ -22,6 +23,7 @@ import (
 type CQ struct {
 	bdl           *bundle.Bundle
 	branchRuleSvc *branchrule.BranchRule
+	pipelineSvc   pipelinepb.PipelineServiceServer
 }
 
 type Option func(*CQ)
@@ -43,5 +45,11 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithBranchRule(svc *branchrule.BranchRule) Option {
 	return func(cq *CQ) {
 		cq.branchRuleSvc = svc
+	}
+}
+
+func WithPipelineSvc(svc pipelinepb.PipelineServiceServer) Option {
+	return func(cq *CQ) {
+		cq.pipelineSvc = svc
 	}
 }

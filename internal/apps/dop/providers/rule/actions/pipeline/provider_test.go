@@ -21,6 +21,8 @@ import (
 
 	"bou.ke/monkey"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/branchrule"
@@ -48,14 +50,14 @@ func Test_provider_CreatePipeline(t *testing.T) {
 
 	var pipelineSvc *pipeline.Pipeline
 	monkey.PatchInstanceMethod(reflect.TypeOf(pipelineSvc), "ConvertPipelineToV2",
-		func(p *pipeline.Pipeline, pv1 *apistructs.PipelineCreateRequest) (*apistructs.PipelineCreateRequestV2, error) {
-			return &apistructs.PipelineCreateRequestV2{}, nil
+		func(p *pipeline.Pipeline, pv1 *pipelinepb.PipelineCreateRequest) (*pipelinepb.PipelineCreateRequestV2, error) {
+			return &pipelinepb.PipelineCreateRequestV2{}, nil
 		},
 	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(pipelineSvc), "CreatePipelineV2",
-		func(p *pipeline.Pipeline, reqPipeline *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
-			return &apistructs.PipelineDTO{ID: 1}, nil
+		func(p *pipeline.Pipeline, reqPipeline *pipelinepb.PipelineCreateRequestV2) (*basepb.PipelineDTO, error) {
+			return &basepb.PipelineDTO{ID: 1}, nil
 		},
 	)
 	var branch *branchrule.BranchRule

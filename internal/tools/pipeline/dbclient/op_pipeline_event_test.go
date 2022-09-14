@@ -19,14 +19,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 func Test_makeOrderEvents(t *testing.T) {
 	var nowTime = time.Now()
 	type args struct {
-		events    []*apistructs.PipelineEvent
-		newEvents []*apistructs.PipelineEvent
+		events    []*pb.PipelineEvent
+		newEvents []*pb.PipelineEvent
 	}
 	tests := []struct {
 		name string
@@ -37,16 +39,16 @@ func Test_makeOrderEvents(t *testing.T) {
 			name: "empty events add one newEvents",
 			args: args{
 				events: nil,
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(20 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -56,12 +58,12 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(20 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
@@ -71,28 +73,28 @@ func Test_makeOrderEvents(t *testing.T) {
 			name: "empty events add two differ newEvents",
 			args: args{
 				events: nil,
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(20 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -102,24 +104,24 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(20 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
@@ -129,28 +131,28 @@ func Test_makeOrderEvents(t *testing.T) {
 			name: "empty events add two same newEvents",
 			args: args{
 				events: nil,
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(20 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -160,12 +162,12 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          2,
 					Type:           "type",
 				},
@@ -175,40 +177,40 @@ func Test_makeOrderEvents(t *testing.T) {
 			name: "empty events add three no order lastTimestamp newEvents",
 			args: args{
 				events: nil,
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(20 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(10 * time.Second),
-						LastTimestamp:  nowTime.Add(30 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(10 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 						Count:          1,
 						Type:           "type1",
 					},
@@ -218,36 +220,36 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(20 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(10 * time.Second),
-					LastTimestamp:  nowTime.Add(30 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(10 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 					Count:          1,
 					Type:           "type1",
 				},
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
@@ -257,40 +259,40 @@ func Test_makeOrderEvents(t *testing.T) {
 			name: "empty events add three order lastTimestamp newEvents",
 			args: args{
 				events: nil,
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(20 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(10 * time.Second),
-						LastTimestamp:  nowTime.Add(30 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(10 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 						Count:          1,
 						Type:           "type1",
 					},
 					{
 						Reason:  "reason2",
 						Message: "message2",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component2",
 							Host:      "host2",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          1,
 						Type:           "type2",
 					},
@@ -300,36 +302,36 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(20 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(10 * time.Second),
-					LastTimestamp:  nowTime.Add(30 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(10 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 					Count:          1,
 					Type:           "type1",
 				},
 				{
 					Reason:  "reason2",
 					Message: "message2",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component2",
 						Host:      "host2",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          1,
 					Type:           "type2",
 				},
@@ -339,40 +341,40 @@ func Test_makeOrderEvents(t *testing.T) {
 			name: "empty events add three no order lastTimestamp newEvents，two events count++",
 			args: args{
 				events: nil,
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(20 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(30 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(10 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(10 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          1,
 						Type:           "type1",
 					},
@@ -382,24 +384,24 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(30 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 					Count:          2,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(10 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(10 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          1,
 					Type:           "type1",
 				},
@@ -409,40 +411,40 @@ func Test_makeOrderEvents(t *testing.T) {
 			name: "empty events add three no order lastTimestamp newEvents，three events count++",
 			args: args{
 				events: nil,
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(20 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(20 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(30 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(10 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(10 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -452,12 +454,12 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          3,
 					Type:           "type",
 				},
@@ -466,42 +468,42 @@ func Test_makeOrderEvents(t *testing.T) {
 		{
 			name: "events add in order",
 			args: args{
-				events: []*apistructs.PipelineEvent{
+				events: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          3,
 						Type:           "type",
 					},
 				},
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(50 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(50 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -511,36 +513,36 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          3,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(50 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(50 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
@@ -549,42 +551,42 @@ func Test_makeOrderEvents(t *testing.T) {
 		{
 			name: "events first add counts",
 			args: args{
-				events: []*apistructs.PipelineEvent{
+				events: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          3,
 						Type:           "type",
 					},
 				},
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(60 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(60 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(50 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(50 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -594,24 +596,24 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(50 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(50 * time.Second)),
 					Count:          4,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(60 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(60 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
@@ -620,66 +622,66 @@ func Test_makeOrderEvents(t *testing.T) {
 		{
 			name: "events first add counts three add counts",
 			args: args{
-				events: []*apistructs.PipelineEvent{
+				events: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          3,
 						Type:           "type",
 					},
 				},
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(60 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(60 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(-30 * time.Second),
-						LastTimestamp:  nowTime.Add(80 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-30 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(80 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason2",
 						Message: "message2",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component2",
 							Host:      "host2",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(90 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(90 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(50 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(50 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -689,36 +691,36 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(50 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(50 * time.Second)),
 					Count:          4,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(-30 * time.Second),
-					LastTimestamp:  nowTime.Add(80 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-30 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(80 * time.Second)),
 					Count:          2,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason2",
 					Message: "message2",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component2",
 						Host:      "host2",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(90 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(90 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
@@ -728,42 +730,42 @@ func Test_makeOrderEvents(t *testing.T) {
 		{
 			name: "sort events and add events",
 			args: args{
-				events: []*apistructs.PipelineEvent{
+				events: []*pb.PipelineEvent{
 					{
 						Reason:  "reason",
 						Message: "message",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component",
 							Host:      "host",
 						},
-						FirstTimestamp: nowTime.Add(-20 * time.Second),
-						LastTimestamp:  nowTime.Add(40 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 						Count:          3,
 						Type:           "type",
 					},
 					{
 						Reason:  "reason1",
 						Message: "message1",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component1",
 							Host:      "host1",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(30 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
 				},
-				newEvents: []*apistructs.PipelineEvent{
+				newEvents: []*pb.PipelineEvent{
 					{
 						Reason:  "reason2",
 						Message: "message2",
-						Source: apistructs.PipelineEventSource{
+						Source: &pb.PipelineEventSource{
 							Component: "component2",
 							Host:      "host2",
 						},
-						FirstTimestamp: nowTime.Add(20 * time.Second),
-						LastTimestamp:  nowTime.Add(90 * time.Second),
+						FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+						LastTimestamp:  timestamppb.New(nowTime.Add(90 * time.Second)),
 						Count:          1,
 						Type:           "type",
 					},
@@ -773,36 +775,36 @@ func Test_makeOrderEvents(t *testing.T) {
 				{
 					Reason:  "reason1",
 					Message: "message1",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component1",
 						Host:      "host1",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(30 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(30 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason",
 					Message: "message",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component",
 						Host:      "host",
 					},
-					FirstTimestamp: nowTime.Add(-20 * time.Second),
-					LastTimestamp:  nowTime.Add(40 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(-20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(40 * time.Second)),
 					Count:          3,
 					Type:           "type",
 				},
 				{
 					Reason:  "reason2",
 					Message: "message2",
-					Source: apistructs.PipelineEventSource{
+					Source: &pb.PipelineEventSource{
 						Component: "component2",
 						Host:      "host2",
 					},
-					FirstTimestamp: nowTime.Add(20 * time.Second),
-					LastTimestamp:  nowTime.Add(90 * time.Second),
+					FirstTimestamp: timestamppb.New(nowTime.Add(20 * time.Second)),
+					LastTimestamp:  timestamppb.New(nowTime.Add(90 * time.Second)),
 					Count:          1,
 					Type:           "type",
 				},

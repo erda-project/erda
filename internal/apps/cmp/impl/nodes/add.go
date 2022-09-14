@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
@@ -38,13 +39,14 @@ import (
 )
 
 type Nodes struct {
-	db         *dbclient.DBClient
-	bdl        *bundle.Bundle
-	clusterSvc clusterpb.ClusterServiceServer
+	db          *dbclient.DBClient
+	bdl         *bundle.Bundle
+	clusterSvc  clusterpb.ClusterServiceServer
+	pipelineSvc pipelinepb.PipelineServiceServer
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *Nodes {
-	return &Nodes{db: db, bdl: bdl, clusterSvc: clusterSvc}
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer, pipelineSvc pipelinepb.PipelineServiceServer) *Nodes {
+	return &Nodes{db: db, bdl: bdl, clusterSvc: clusterSvc, pipelineSvc: pipelineSvc}
 }
 
 func (n *Nodes) AddNodes(req apistructs.AddNodesRequest, userid string) (uint64, error) {
@@ -86,12 +88,12 @@ func (n *Nodes) AddNodes(req apistructs.AddNodesRequest, userid string) (uint64,
 		return recordID, err
 	}
 
-	dto, err := n.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-add-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME), uuid.UUID()[:12]),
 		ClusterName:    clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource: apistructs.PipelineSourceOps,
+		PipelineSource: apistructs.PipelineSourceOps.String(),
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
@@ -114,7 +116,7 @@ func (n *Nodes) AddNodes(req apistructs.AddNodesRequest, userid string) (uint64,
 		ClusterName: req.ClusterName,
 		Status:      dbclient.StatusTypeProcessing,
 		Detail:      detail,
-		PipelineID:  dto.ID,
+		PipelineID:  dto.Data.ID,
 	})
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)
@@ -212,12 +214,12 @@ func (n *Nodes) AddCSNodes(ctx context.Context, req apistructs.CloudNodesRequest
 		return recordID, err
 	}
 
-	dto, err := n.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-cloud-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME), uuid.UUID()[:12]),
 		ClusterName:    clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource: apistructs.PipelineSourceOps,
+		PipelineSource: apistructs.PipelineSourceOps.String(),
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
@@ -233,7 +235,7 @@ func (n *Nodes) AddCSNodes(ctx context.Context, req apistructs.CloudNodesRequest
 		ClusterName: req.ClusterName,
 		Status:      dbclient.StatusTypeProcessing,
 		Detail:      "",
-		PipelineID:  dto.ID,
+		PipelineID:  dto.Data.ID,
 	})
 	if err != nil {
 		err = fmt.Errorf("failed to create record: %v", err)
@@ -368,12 +370,12 @@ func (n *Nodes) AddCloudNodes(ctx context.Context, req apistructs.CloudNodesRequ
 		return recordID, err
 	}
 
-	dto, err := n.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-cloud-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME), uuid.UUID()[:12]),
 		ClusterName:    clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource: apistructs.PipelineSourceOps,
+		PipelineSource: apistructs.PipelineSourceOps.String(),
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
@@ -389,7 +391,7 @@ func (n *Nodes) AddCloudNodes(ctx context.Context, req apistructs.CloudNodesRequ
 		ClusterName: req.ClusterName,
 		Status:      dbclient.StatusTypeProcessing,
 		Detail:      "",
-		PipelineID:  dto.ID,
+		PipelineID:  dto.Data.ID,
 	})
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)

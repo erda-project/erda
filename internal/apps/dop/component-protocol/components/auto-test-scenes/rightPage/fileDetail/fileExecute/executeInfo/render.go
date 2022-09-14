@@ -111,13 +111,13 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 		if rsp == nil {
 			return fmt.Errorf("not find pipelineID %v info", pipelineID)
 		}
-		status := cputil.I18n(ctx, util.ColumnPipelineStatus+rsp.Status.String())
-		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && rsp.Status.IsEndStatus() {
+		status := cputil.I18n(ctx, util.ColumnPipelineStatus+rsp.Status)
+		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && apistructs.PipelineStatus(rsp.Status).IsEndStatus() {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			if rsp.TimeEnd == nil {
 				rsp.TimeEnd = rsp.TimeUpdated
 			}
-			t := rsp.TimeEnd.Sub(*rsp.TimeBegin)
+			t := rsp.TimeEnd.AsTime().Sub(rsp.TimeBegin.AsTime())
 			h := strconv.FormatInt(int64(t.Hours()), 10) + ":"
 			if t.Hours() < 10 {
 				h = "0" + strconv.FormatInt(int64(t.Hours()), 10) + ":"
@@ -126,15 +126,15 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 				"pipelineID": pipelineID,
 				"status":     status,
 				"time":       h + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05"),
-				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
-				"timeEnd":    rsp.TimeEnd.Format(timeLayoutStr),
+				"timeBegin":  rsp.TimeBegin.AsTime().Format(timeLayoutStr),
+				"timeEnd":    rsp.TimeEnd.AsTime().Format(timeLayoutStr),
 			}
 		} else if rsp.TimeBegin != nil {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			i.Data = map[string]interface{}{
 				"pipelineID": pipelineID,
 				"status":     status,
-				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
+				"timeBegin":  rsp.TimeBegin.AsTime().Format(timeLayoutStr),
 			}
 		} else {
 			i.Data = map[string]interface{}{
@@ -142,10 +142,10 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 				"status":     status,
 			}
 		}
-		if rsp.Status == apistructs.PipelineStatusStopByUser {
+		if apistructs.PipelineStatus(rsp.Status) == apistructs.PipelineStatusStopByUser {
 			i.Data["status"] = status
 		}
-		if rsp.Status == apistructs.PipelineStatusNoNeedBySystem {
+		if apistructs.PipelineStatus(rsp.Status) == apistructs.PipelineStatusNoNeedBySystem {
 			i.Data["status"] = status
 		}
 		res, err := i.bdl.GetPipelineReportSet(pipelineID, []string{"api-test"})

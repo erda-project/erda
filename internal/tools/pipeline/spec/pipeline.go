@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"time"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
@@ -73,17 +74,17 @@ func (p *PipelineWithTasks) DoneTasks() []string {
 	return dones
 }
 
-func (p *Pipeline) GenIdentityInfo() apistructs.IdentityInfo {
+func (p *Pipeline) GenIdentityInfo() *commonpb.IdentityInfo {
 	// 默认从快照获取
-	if !p.Snapshot.IdentityInfo.Empty() {
-		return p.Snapshot.IdentityInfo
+	if !(p.Snapshot.IdentityInfo.UserID == "" && p.Snapshot.IdentityInfo.InternalClient == "") {
+		return &p.Snapshot.IdentityInfo
 	}
 	// 老数据从 extra 里获取
 	var userID string
 	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.SubmitUser.ID)
+		userID = p.Extra.SubmitUser.ID.GetStringValue()
 	}
-	return apistructs.IdentityInfo{
+	return &commonpb.IdentityInfo{
 		UserID:         userID,
 		InternalClient: p.Extra.InternalClient,
 	}
@@ -92,7 +93,7 @@ func (p *Pipeline) GenIdentityInfo() apistructs.IdentityInfo {
 func (p *Pipeline) GetSubmitUserID() string {
 	var userID string
 	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.SubmitUser.ID)
+		userID = p.Extra.SubmitUser.ID.GetStringValue()
 	}
 	return mustUserID(userID)
 }
@@ -100,7 +101,7 @@ func (p *Pipeline) GetSubmitUserID() string {
 func (p *Pipeline) GetRunUserID() string {
 	var userID string
 	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.RunUser.ID)
+		userID = p.Extra.RunUser.ID.GetStringValue()
 	}
 	return mustUserID(userID)
 }
@@ -108,7 +109,7 @@ func (p *Pipeline) GetRunUserID() string {
 func (p *Pipeline) GetOwnerUserID() string {
 	var userID string
 	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
+		return p.Extra.OwnerUser.ID.GetStringValue()
 	}
 	return mustUserID(userID)
 }
@@ -123,10 +124,10 @@ func (p *Pipeline) GetOwnerOrRunUserID() string {
 		return p.GetRunUserID()
 	}
 	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
-		return fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
+		return p.Extra.OwnerUser.ID.GetStringValue()
 	}
 	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
-		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
+		return p.Extra.RunUser.ID.GetStringValue()
 	}
 	return mustUserID("")
 }
@@ -136,13 +137,13 @@ func (p *Pipeline) GetOwnerOrRunUserID() string {
 // Not included internal UserID
 func (p *Pipeline) GetUserID() string {
 	if p.Extra.OwnerUser != nil && p.Extra.OwnerUser.ID != nil {
-		return fmt.Sprintf("%v", p.Extra.OwnerUser.ID)
+		return p.Extra.OwnerUser.ID.GetStringValue()
 	}
 	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
-		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
+		return p.Extra.RunUser.ID.GetStringValue()
 	}
 	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != nil {
-		return fmt.Sprintf("%v", p.Extra.SubmitUser.ID)
+		return p.Extra.SubmitUser.ID.GetStringValue()
 	}
 	return ""
 }
@@ -150,7 +151,7 @@ func (p *Pipeline) GetUserID() string {
 func (p *Pipeline) GetCancelUserID() string {
 	var userID string
 	if p.Extra.CancelUser != nil && p.Extra.CancelUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.CancelUser.ID)
+		userID = p.Extra.CancelUser.ID.GetStringValue()
 	}
 	return mustUserID(userID)
 }
