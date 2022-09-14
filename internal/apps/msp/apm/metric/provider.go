@@ -43,7 +43,7 @@ type provider struct {
 
 	db            *monitordb.MonitorDB
 	compatibleTKs map[string][]string
-	Org           org.ClientInterface
+	Org           org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {

@@ -40,7 +40,7 @@ type provider struct {
 	Log       logs.Logger
 	Redis     *redis.Client      `autowired:"redis-client"`
 	DB        *gorm.DB           `autowired:"mysql-client"`
-	Election  election.Interface `autowired:"etcd-election"`
+	Election  election.Interface `autowired:"etcd-election@msp"`
 	checkerDB *db.CheckerDB
 	cache     *cache.Cache
 }
