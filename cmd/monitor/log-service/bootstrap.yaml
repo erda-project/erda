@@ -24,7 +24,7 @@ elasticsearch@logs:
     password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 logs-exporter-elasticsearch:
-    disabled: ${WRITE_LOG_TO_ES_ENABLE|WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
+    _enable: "${WRITE_LOG_TO_CASSANDRA_ENABLE:false}"
     index:
         prefix: "${INDEX_PREFIX:rlogs-}"
     writer_config:
