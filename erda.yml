@@ -26,8 +26,11 @@ envs:
   ERDA_SERVER_ADDR: erda-server:9095
   OPENAPI_ADDR: erda-server:9529
   DOP_ADDR: erda-server:9095
+  DOP_GRPC_ADDR: erda-server:8096
   CMP_ADDR: erda-server:9095
+  CMP_GRPC_ADDR: erda-server:8096
   MSP_ADDR: erda-server:9095
+  MSP_GRPC_ADDR: erda-server:8096
   ORCHESTRATOR_ADDR: orchestrator:8081
   OTEL_TRACES_ENABLED: false
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
