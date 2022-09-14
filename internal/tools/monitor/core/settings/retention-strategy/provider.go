@@ -50,7 +50,7 @@ type (
 	provider struct {
 		Cfg   *config
 		Log   logs.Logger
-		DB    *gorm.DB `autowired:"mysql-client"`
+		DB    *gorm.DB `autowired:"mysql-client" optional:"true"`
 		typ   string
 		value atomic.Value
 
@@ -64,9 +64,8 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	}
 	p.typ = ctx.Label()
 
-	err = p.loadConfig()
-	if err != nil {
-		return err
+	if p.Cfg.LoadFromDatabase && p.DB == nil {
+		return fmt.Errorf("mysql-client is required")
 	}
 
 	routes := ctx.Service("http-router", interceptors.CORS(true)).(httpserver.Router)

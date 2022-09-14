@@ -47,29 +47,24 @@ type Pipeline struct {
 }
 
 var (
-	dataReceived                *prometheus.CounterVec
-	dataProcessed, dataExported *prometheus.CounterVec
-)
-
-func init() {
 	dataReceived = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "data_pipeline",
-		Name:      "receiver_consumed",
+		Name:      "receiver_consumed_total",
 		Help:      "event count for certain receiver consumed",
 	}, []string{"pipeline", "dtype", "receiver"})
 
 	dataProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "data_pipeline",
-		Name:      "processor_consumed",
+		Name:      "processor_consumed_total",
 		Help:      "event count for certain processor consumed",
 	}, []string{"pipeline", "dtype", "processor"})
 
 	dataExported = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "data_pipeline",
-		Name:      "exporter_consumed",
+		Name:      "exporter_consumed_total",
 		Help:      "event count for certain exporter consumed",
 	}, []string{"pipeline", "dtype", "exporter"})
-}
+)
 
 func NewPipeline(name string, logger logs.Logger, cfg config.Pipeline, dtype odata2.DataType) *Pipeline {
 	p := &Pipeline{
@@ -86,25 +81,45 @@ func NewPipeline(name string, logger logs.Logger, cfg config.Pipeline, dtype oda
 
 func (p *Pipeline) initStats() {
 	promauto.NewGaugeFunc(prometheus.GaugeOpts{
-		Namespace: "data_pipeline",
-		Name:      "rp_channel_used",
-		Help:      "the current channel used of receiver to processor",
+		Namespace: "data_pipeline_channel",
+		Name:      "rp_size",
+		Help:      "the current channel size of receiver to processor",
 		ConstLabels: prometheus.Labels{
 			"pipeline": p.name,
 		},
 	}, func() float64 {
-		return float64(len(p.pe))
+		return float64(len(p.rp))
+	})
+	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "data_pipeline_channel",
+		Name:      "rp_cap",
+		Help:      "the current channel capacity of receiver to processor",
+		ConstLabels: prometheus.Labels{
+			"pipeline": p.name,
+		},
+	}, func() float64 {
+		return float64(cap(p.rp))
 	})
 
 	promauto.NewGaugeFunc(prometheus.GaugeOpts{
-		Namespace: "data_pipeline",
-		Name:      "pe_channel_used",
+		Namespace: "data_pipeline_channel",
+		Name:      "pe_size",
 		Help:      "the current channel used of processor to exporter",
 		ConstLabels: prometheus.Labels{
 			"pipeline": p.name,
 		},
 	}, func() float64 {
 		return float64(len(p.pe))
+	})
+	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "data_pipeline_queue",
+		Name:      "pe_cap",
+		Help:      "the current channel capacity of processor to exporter",
+		ConstLabels: prometheus.Labels{
+			"pipeline": p.name,
+		},
+	}, func() float64 {
+		return float64(cap(p.pe))
 	})
 }
 

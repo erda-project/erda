@@ -42,7 +42,7 @@ type Interface interface {
 
 type config struct {
 	Servers         string `file:"servers" env:"BOOTSTRAP_SERVERS" default:"localhost:9092" desc:"kafka servers"`
-	ClientID        string `file:"client_id" env:"COMPONENT_NAME" default:"sarama" desc:"kafka client name"`
+	ClientID        string `file:"client_id" env:"KAFKA_CLIENT_ID" default:"sarama" desc:"kafka client id"`
 	DebugClient     bool   `file:"debug_client" env:"KAFKA_DEBUG_CLIENT" desc:"log sarama client log to console"`
 	ProtocolVersion string `file:"protocol_version" default:"1.1.0" desc:"kafka broker protocol version"`
 
