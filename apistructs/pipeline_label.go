@@ -14,10 +14,6 @@
 
 package apistructs
 
-import (
-	"time"
-)
-
 // PipelineLabelType defines the type of pipeline label.
 type PipelineLabelType string
 
@@ -56,33 +52,4 @@ type TargetIDSelectByLabelRequest struct {
 
 	// OrderByTargetIDAsc 根据 target_id 升序，默认为 false，即降序
 	OrderByTargetIDAsc bool `json:"orderByTargetIDAsc"`
-}
-
-type PipelineLabelBatchInsertRequest struct {
-	Labels []PipelineLabel `json:"labels"`
-}
-
-type PipelineLabelListRequest struct {
-	PipelineSource  PipelineSource `schema:"pipelineSource" json:"pipelineSource"`
-	PipelineYmlName string         `schema:"pipelineYmlName" json:"pipelineYmlName"`
-	TargetIDs       []uint64       `schema:"targetIds" json:"targetIds"`
-	MatchKeys       []string       `schema:"matchKeys" json:"matchKeys"`
-	UnMatchKeys     []string       `schema:"unMatchKeys" json:"unMatchKeys"`
-}
-
-type PipelineLabelPageListData struct {
-	Labels []PipelineLabel `json:"labels,omitempty"`
-	Total  int64           `json:"total"`
-}
-
-type PipelineLabel struct {
-	ID              uint64            `json:"id"`
-	Type            PipelineLabelType `json:"type"`
-	TargetID        uint64            `json:"targetID"`
-	PipelineSource  PipelineSource    `json:"pipelineSource"`
-	PipelineYmlName string            `json:"pipelineYmlName"`
-	Key             string            `json:"key"`
-	Value           string            `json:"value"`
-	TimeCreated     time.Time         `json:"timeCreated"`
-	TimeUpdated     time.Time         `json:"timeUpdated"`
 }

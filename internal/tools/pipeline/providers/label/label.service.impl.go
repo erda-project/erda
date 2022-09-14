@@ -12,53 +12,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package label
 
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/label/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
-func (s *PipelineSvc) BatchCreateLabels(createReq *apistructs.PipelineLabelBatchInsertRequest) error {
+type labelServiceImpl struct {
+	dbClient *dbclient.Client
+}
+
+func (l *labelServiceImpl) BatchCreateLabels(createReq *pb.PipelineLabelBatchInsertRequest) error {
 	var insertLabels []spec.PipelineLabel
 	for _, label := range createReq.Labels {
 		insertLabels = append(insertLabels, spec.PipelineLabel{
-			Type:            label.Type,
+			Type:            apistructs.PipelineLabelType(label.Type),
 			Key:             label.Key,
 			Value:           label.Value,
 			TargetID:        label.TargetID,
 			PipelineYmlName: label.PipelineYmlName,
-			PipelineSource:  label.PipelineSource,
+			PipelineSource:  apistructs.PipelineSource(label.PipelineSource),
 			TimeCreated:     time.Now(),
 			TimeUpdated:     time.Now(),
 			ID:              uuid.SnowFlakeIDUint64(),
 		})
 	}
-	err := s.dbClient.BatchInsertLabels(insertLabels)
+	err := l.dbClient.BatchInsertLabels(insertLabels)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *PipelineSvc) ListLabels(req *apistructs.PipelineLabelListRequest) (*apistructs.PipelineLabelPageListData, error) {
-
-	// if UnMatchKeys and TargetIDS not empty, find targetID by MatchKeys from db then filter targetID not in TargetIDs
+func (l *labelServiceImpl) ListLabels(req *pb.PipelineLabelListRequest) (*pb.PipelineLabelPageListData, error) {
+	// if UnMatchKeys and TargetIds not empty, find targetID by MatchKeys from db then filter targetID not in TargetIds
 	if len(req.UnMatchKeys) > 0 && len(req.TargetIDs) > 0 {
 		req.MatchKeys = req.UnMatchKeys
 	}
 
-	labels, _, err := s.dbClient.ListPipelineLabels(req)
+	labels, _, err := l.dbClient.ListPipelineLabels(req)
 	if err != nil {
 		return nil, apierrors.ErrListPipelineLabel.InternalError(err)
 	}
 
-	var listLabel []apistructs.PipelineLabel
-	// filter targetID not in TargetIDS
+	var listLabel []*pb.PipelineLabel
+	// filter targetID not in TargetIds
 	if len(req.UnMatchKeys) > 0 && len(req.TargetIDs) > 0 {
 		var labelMap = make(map[uint64]spec.PipelineLabel)
 		for _, value := range labels {
@@ -70,27 +77,27 @@ func (s *PipelineSvc) ListLabels(req *apistructs.PipelineLabelListRequest) (*api
 				continue
 			}
 
-			listLabel = append(listLabel, apistructs.PipelineLabel{
+			listLabel = append(listLabel, &pb.PipelineLabel{
 				TargetID: value,
 			})
 		}
 	} else {
 		for _, value := range labels {
-			listLabel = append(listLabel, apistructs.PipelineLabel{
+			listLabel = append(listLabel, &pb.PipelineLabel{
 				ID:              value.ID,
-				Type:            value.Type,
+				Type:            value.Type.String(),
 				TargetID:        value.TargetID,
-				PipelineSource:  value.PipelineSource,
+				PipelineSource:  value.PipelineSource.String(),
 				PipelineYmlName: value.PipelineYmlName,
 				Key:             value.Key,
 				Value:           value.Value,
-				TimeCreated:     value.TimeCreated,
-				TimeUpdated:     value.TimeUpdated,
+				TimeCreated:     timestamppb.New(value.TimeCreated),
+				TimeUpdated:     timestamppb.New(value.TimeUpdated),
 			})
 		}
 	}
 
-	var result apistructs.PipelineLabelPageListData
+	var result pb.PipelineLabelPageListData
 	result.Labels = listLabel
 	return &result, nil
 }
