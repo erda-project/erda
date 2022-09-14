@@ -162,9 +162,11 @@ func (p *provider) do() error {
 	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: p.PipelineRun.RunOnePipeline})
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
-	server := httpserver.New(conf.ListenAddr())
+	server := httpserver.New("")
 	server.RegisterEndpoint(ep.Routes())
-	p.Router.Any("/**", server.Router())
+	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
+		return err
+	}
 
 	// 加载 event manager
 	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister, p.Org)

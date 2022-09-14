@@ -24,7 +24,6 @@ import (
 
 // Conf 定义配置对象.
 type Conf struct {
-	ListenAddr          string `env:"LISTEN_ADDR" default:":3081"`
 	Debug               bool   `env:"DEBUG" default:"false"`
 	DiceClusterName     string `env:"DICE_CLUSTER_NAME" default:"local"` // 服务所在集群
 	DiceIsEdge          bool   `env:"DICE_IS_EDGE" default:"false"`      // is edge cluster
@@ -126,11 +125,6 @@ func Load() {
 
 	// actionTypeMapping
 	checkActionTypeMapping(&cfg)
-}
-
-// ListenAddr 返回 pipeline 服务监听地址.
-func ListenAddr() string {
-	return cfg.ListenAddr
 }
 
 // Debug 返回 Debug 选项.
