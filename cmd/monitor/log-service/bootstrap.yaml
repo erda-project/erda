@@ -16,15 +16,15 @@ logs-exporter-base:
         group: "${LOG_KAFKA_GROUP}"
         parallelism: ${LOG_KAFKA_WORKERS:3}
 
-#elasticsearch@logs:
-#    _enable: "${WRITE_LOG_TO_ES_ENABLE:false}"
-#    urls: "${LOGS_ES_URL:http://localhost:9200}"
-#    security: ${LOGS_ES_SECURITY_ENABLE:false}
-#    username: "${LOGS_ES_SECURITY_USERNAME}"
-#    password: "${LOGS_ES_SECURITY_PASSWORD}"
+elasticsearch@logs:
+    _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
+    urls: "${LOGS_ES_URL:http://localhost:9200}"
+    security: ${LOGS_ES_SECURITY_ENABLE:false}
+    username: "${LOGS_ES_SECURITY_USERNAME}"
+    password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 logs-exporter-elasticsearch:
-    _enable: "${WRITE_LOG_TO_CASSANDRA_ENABLE:false}"
+    _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
     index:
         prefix: "${INDEX_PREFIX:rlogs-}"
     writer_config:
@@ -35,6 +35,7 @@ logs-exporter-elasticsearch:
             timeout: "30s"
 
 logs-index-manager:
+    _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
     index_prefix: "${INDEX_PREFIX:rlogs-}"
     index_template_name: "rlogs-rollover"
     index_template_file: "conf/elasticsearch.index.template.json"

@@ -85,7 +85,7 @@ func (o *esOutput) Write(key string, data []byte) error {
 func init() {
 	servicehub.Register("logs-exporter-elasticsearch", &servicehub.Spec{
 		Services:     []string{"logs-exporter-elasticsearch"},
-		Dependencies: []string{"logs-exporter-base"},
+		Dependencies: []string{"logs-exporter-base", "elasticsearch@logs"},
 		Description:  "logs export to elasticsearch",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
