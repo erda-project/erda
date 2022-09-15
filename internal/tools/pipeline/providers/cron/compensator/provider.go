@@ -341,7 +341,7 @@ func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc db.PipelineC
 		LargePageSize:    true,
 	}
 
-	if (*pc.Extra.Compensator).LatestFirst.Value {
+	if pc.Extra.Compensator.LatestFirst != nil && (*pc.Extra.Compensator).LatestFirst.Value {
 		request.DescCols = []string{apistructs.PipelinePageListRequestIdColumn}
 	} else {
 		request.AscCols = []string{apistructs.PipelinePageListRequestIdColumn}
@@ -363,7 +363,7 @@ func (p *provider) doCronCompensate(ctx context.Context, compensator pb.CronComp
 	}
 
 	// Select the most suitable time point from the non execution in good order according to the strategy
-	if compensator.LatestFirst.Value {
+	if compensator.LatestFirst != nil && compensator.LatestFirst.Value {
 		order = "DESC"
 	} else {
 		order = "ASC"
@@ -373,7 +373,8 @@ func (p *provider) doCronCompensate(ctx context.Context, compensator pb.CronComp
 
 	// According to the policy decision, if it is the last pipeline, when it is the StopIfLatterExecuted policy,
 	// it should be compared with the pipeline in the latest success status. Only the ID greater than the successful ID can be executed
-	if compensator.LatestFirst.Value && compensator.StopIfLatterExecuted.Value {
+	if (compensator.LatestFirst != nil && compensator.LatestFirst.Value) &&
+		(compensator.StopIfLatterExecuted != nil && compensator.StopIfLatterExecuted.Value) {
 		// Get the pipeline successfully executed
 		result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:  []apistructs.PipelineSource{pipelineCron.PipelineSource},
