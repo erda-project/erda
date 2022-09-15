@@ -16,12 +16,12 @@ logs-exporter-base:
         group: "${LOG_KAFKA_GROUP}"
         parallelism: ${LOG_KAFKA_WORKERS:3}
 
-elasticsearch@logs:
-    _enable: "${WRITE_LOG_TO_ES_ENABLE:false}"
-    urls: "${LOGS_ES_URL:http://localhost:9200}"
-    security: ${LOGS_ES_SECURITY_ENABLE:false}
-    username: "${LOGS_ES_SECURITY_USERNAME}"
-    password: "${LOGS_ES_SECURITY_PASSWORD}"
+#elasticsearch@logs:
+#    _enable: "${WRITE_LOG_TO_ES_ENABLE:false}"
+#    urls: "${LOGS_ES_URL:http://localhost:9200}"
+#    security: ${LOGS_ES_SECURITY_ENABLE:false}
+#    username: "${LOGS_ES_SECURITY_USERNAME}"
+#    password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 logs-exporter-elasticsearch:
     _enable: "${WRITE_LOG_TO_CASSANDRA_ENABLE:false}"
