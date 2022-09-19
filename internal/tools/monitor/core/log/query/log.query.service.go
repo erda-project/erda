@@ -45,6 +45,27 @@ type logQueryService struct {
 var timeNow = time.Now
 
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
+	if req.GetSource() == "job" {
+		resp, err := s.GetLogByRealtime(ctx, &pb.GetLogByRuntimeRequest{
+			Id:           req.GetId(),
+			Source:       req.GetSource(),
+			RequestId:    req.GetRequestId(),
+			Start:        req.GetStart(),
+			End:          req.GetEnd(),
+			Count:        req.GetCount(),
+			Pattern:      req.GetPattern(),
+			Offset:       req.GetOffset(),
+			Live:         true,
+			Debug:        req.GetDebug(),
+			PodNamespace: fmt.Sprintf("pipeline-%s", req.GetPipelineID()),
+			ClusterName:  req.GetClusterName(),
+		})
+		if err != nil {
+			s.p.Log.Errorf("failed to get log for job %s, %v", req.GetId(), err)
+		} else if len(resp.Lines) > 0 {
+			return &pb.GetLogResponse{Lines: resp.GetLines(), IsFallBack: true}, nil
+		}
+	}
 	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Meta.PreferredReturnFields = storage.OnlyIdContent
 		return s.tryFillQueryMeta(ctx, sel)
@@ -109,6 +130,9 @@ func (s *logQueryService) GetLogByRealtime(ctx context.Context, req *pb.GetLogBy
 		// set is first query flag.for first query, may be use tail speed up perform
 		sel.Options[storage.IsFirstQuery] = req.GetIsFirstQuery()
 
+		if len(req.GetId()) > 0 {
+			sel.Options[storage.ID] = req.GetId()
+		}
 		if len(req.GetContainerName()) > 0 {
 			sel.Options[storage.ContainerName] = req.GetContainerName()
 		}

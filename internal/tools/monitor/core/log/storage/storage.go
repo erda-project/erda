@@ -36,6 +36,8 @@ const (
 	PodName       = "pod_name"
 	PodNamespace  = "pod_namespace"
 	ClusterName   = "cluster_name"
+	ID            = "id"
+	PipelineID    = "pipelineID"
 
 	// fall back
 	IsFallBack = "is_fall_back"

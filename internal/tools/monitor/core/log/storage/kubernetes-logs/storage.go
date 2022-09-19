@@ -35,10 +35,11 @@ import (
 type queryFunc func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error)
 
 type cStorage struct {
-	log          logs.Logger
-	getQueryFunc func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error)
-	bufferLines  int64
-	timeSpan     int64
+	log            logs.Logger
+	getQueryFunc   func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error)
+	bufferLines    int64
+	timeSpan       int64
+	getPodNameFunc func(ctx context.Context, clusterName, namespace, jobName string) (string, error)
 }
 
 var _ storage.Storage = (*cStorage)(nil)
@@ -78,7 +79,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	var err error
 	var podName, containerName, namespace, clusterName, id string
 
-	if sel.Scheme != "container" {
+	if sel.Scheme != "container" && sel.Scheme != "job" {
 		s.log.Debugf("kubernetes-log not supported query %s of real log", sel.Scheme)
 		return storekit.EmptyIterator{}, nil
 	}
@@ -105,7 +106,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 			}
 		case "source":
 			source, _ := filter.Value.(string)
-			if len(source) > 0 && source != "container" {
+			if len(source) > 0 && source != "container" && source != "job" {
 				return storekit.EmptyIterator{}, nil
 			}
 		case "content":
@@ -139,17 +140,35 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 			}
 		}
 	}
-	if containerName, ok = sel.Options[storage.ContainerName].(string); !ok || len(containerName) <= 0 {
-		return storekit.EmptyIterator{}, nil
-	}
-	if podName, ok = sel.Options[storage.PodName].(string); !ok || len(containerName) <= 0 {
-		return storekit.EmptyIterator{}, nil
-	}
-	if namespace, ok = sel.Options[storage.PodNamespace].(string); !ok || len(namespace) <= 0 {
-		return storekit.EmptyIterator{}, nil
-	}
-	if clusterName, ok = sel.Options[storage.ClusterName].(string); !ok || len(clusterName) <= 0 {
-		return storekit.EmptyIterator{}, nil
+	if sel.Scheme == "container" {
+		if containerName, ok = sel.Options[storage.ContainerName].(string); !ok || len(containerName) <= 0 {
+			return storekit.EmptyIterator{}, nil
+		}
+		if podName, ok = sel.Options[storage.PodName].(string); !ok || len(podName) <= 0 {
+			return storekit.EmptyIterator{}, nil
+		}
+		if namespace, ok = sel.Options[storage.PodNamespace].(string); !ok || len(namespace) <= 0 {
+			return storekit.EmptyIterator{}, nil
+		}
+		if clusterName, ok = sel.Options[storage.ClusterName].(string); !ok || len(clusterName) <= 0 {
+			return storekit.EmptyIterator{}, nil
+		}
+	} else {
+		if id, ok := sel.Options[storage.ID].(string); !ok || len(id) <= 0 {
+			return storekit.EmptyIterator{}, nil
+		}
+		containerName = id
+		if namespace, ok = sel.Options[storage.PodNamespace].(string); !ok || len(namespace) <= 0 {
+			return storekit.EmptyIterator{}, nil
+		}
+		if clusterName, ok = sel.Options[storage.ClusterName].(string); !ok || len(clusterName) <= 0 {
+			return storekit.EmptyIterator{}, nil
+		}
+		podName, err = s.getPodNameFunc(ctx, clusterName, namespace, namespace+"."+id)
+		if err != nil {
+			s.log.Errorf("failed to get podName, %v", err)
+			return storekit.EmptyIterator{}, nil
+		}
 	}
 
 	queryFunc, err := s.getQueryFunc(clusterName)

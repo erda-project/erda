@@ -15,6 +15,7 @@
 package kuberneteslogs
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -68,6 +70,26 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 		},
 		bufferLines: int64(p.Cfg.BufferLines),
 		timeSpan:    int64(p.Cfg.TimeSpan),
+		getPodNameFunc: func(ctx context.Context, clusterName, namespace, jobName string) (string, error) {
+			client, _, err := p.Clients.GetClient(clusterName)
+			if err != nil {
+				return "", err
+			}
+			if client == nil {
+				return "", fmt.Errorf("not found clientset")
+			}
+			pod, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("job-name=%s", jobName),
+				Limit:         1,
+			})
+			if err != nil {
+				return "", err
+			}
+			if len(pod.Items) == 0 {
+				return "", fmt.Errorf("pod not found")
+			}
+			return pod.Items[0].Name, nil
+		},
 	}
 }
 
