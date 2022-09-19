@@ -81,6 +81,9 @@ message GetLogRequest {
   int64  offset    = 9;
   bool   live      = 10;
   bool   debug     = 11;
+  // used for job
+  string clusterName = 12;
+  string pipelineID = 13;
 }
 
 message GetLogByRuntimeRequest {
@@ -201,6 +204,7 @@ message LogAggregationResponse {
 
 message GetLogResponse {
   repeated LogItem lines = 1;
+  bool isFallBack = 2;
 }
 
 message GetLogByRuntimeResponse {

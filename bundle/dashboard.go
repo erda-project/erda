@@ -140,7 +140,9 @@ func (b *Bundle) GetLog(orgName string, req apistructs.DashboardSpotLogRequest) 
 		Param("stream", string(req.Stream)).
 		Param("source", string(req.Source)).
 		Param("start", strconv.FormatInt(int64(req.Start), 10)).
-		Param("end", strconv.FormatInt(int64(req.End), 10))
+		Param("end", strconv.FormatInt(int64(req.End), 10)).
+		Param("clusterName", req.ClusterName).
+		Param("pipelineID", req.PipelineID)
 
 	if req.Debug {
 		request = request.Param("debug", "true")

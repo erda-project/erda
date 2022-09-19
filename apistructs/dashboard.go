@@ -70,7 +70,8 @@ type DashboardSpotLogLine struct {
 }
 
 type DashboardSpotLogData struct {
-	Lines []DashboardSpotLogLine `json:"lines"`
+	Lines      []DashboardSpotLogLine `json:"lines"`
+	IsFallBack bool                   `json:"IsFallBack,omitempty"`
 }
 
 type DashboardSpotLogResponse struct {
@@ -79,13 +80,15 @@ type DashboardSpotLogResponse struct {
 }
 
 type DashboardSpotLogRequest struct {
-	ID     string
-	Source DashboardSpotLogSource
-	Stream DashboardSpotLogStream
-	Count  int64
-	Start  time.Duration // 纳秒
-	End    time.Duration // 纳秒
-	Debug  bool
+	ID          string
+	Source      DashboardSpotLogSource
+	Stream      DashboardSpotLogStream
+	Count       int64
+	Start       time.Duration // 纳秒
+	End         time.Duration // 纳秒
+	Debug       bool
+	ClusterName string
+	PipelineID  string
 }
 
 type DashboardSpotLogStream string
