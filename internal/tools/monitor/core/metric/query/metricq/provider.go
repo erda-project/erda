@@ -38,7 +38,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/language/json"   //
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/query/v1/language/params" //
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
@@ -72,8 +72,8 @@ type provider struct {
 
 	Storage storage.Storage `autowired:"metric-storage" optional:"true"`
 
-	CkSearchRaw     clickhouse.Query `autowired:"metric-storage-clickhouse" optional:"true"`
-	CkStorageReader storage.Storage  `autowired:"metric-storage-clickhouse" optional:"true"`
+	CkMetaLoader    meta.Interface  `autowired:"clickhouse.meta.loader@metric" optional:"true"`
+	CkStorageReader storage.Storage `autowired:"metric-storage-clickhouse" optional:"true"`
 
 	Org org.ClientInterface
 }
@@ -95,7 +95,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.Log,
 		p.Redis,
 		p.C.MetricMeta.MetricMetaCacheExpiration,
-		p.CkSearchRaw,
+		p.CkMetaLoader,
 	)
 	err = meta.Init()
 	if err != nil {
