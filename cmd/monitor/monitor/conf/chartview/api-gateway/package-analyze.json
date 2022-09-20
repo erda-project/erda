@@ -88,11 +88,11 @@
                     },
                     "method": "post",
                     "query": {
-                        "end": "{{endTime}}",
+                        "end": "{{numEndTime}}",
                         "epoch": "ms",
                         "format": "chartv2",
                         "ql": "influxql:ast",
-                        "start": "{{startTime}}",
+                        "start": "{{numStartTime}}",
                         "type": "_"
                     },
                     "url": "/api/orgCenter/metrics-query"
