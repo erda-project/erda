@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/entity"
 	"github.com/erda-project/erda/internal/tools/monitor/core/entity/storage"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index"
@@ -108,8 +109,8 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 
 func (p *provider) encodeToDocument(ctx context.Context) func(val interface{}) (index, id, typ string, body interface{}, err error) {
 	return func(val interface{}) (index, id, typ string, body interface{}, err error) {
-		data := val.(*pb.Entity)
-		processInvalidFields(data)
+		data := val.(*entity.Entity)
+		//processInvalidFields(data)
 		index = p.getIndex(data.Type, data.Key)
 		id = p.getDocumentID(data.Type, data.Key)
 		return index, id, p.Cfg.IndexType, data, nil
@@ -162,7 +163,7 @@ func processInvalidFields(data *pb.Entity) {
 
 func init() {
 	servicehub.Register("entity-storage-elasticsearch", &servicehub.Spec{
-		Services:             []string{"entity-storage-elasticsearch-reader", "entity-storage-writer-elasticsearch-writer"},
+		Services:             []string{"entity-storage-elasticsearch-reader", "entity-storage-elasticsearch-writer"},
 		Dependencies:         []string{"elasticsearch"},
 		OptionalDependencies: []string{"elasticsearch.index.initializer"},
 		ConfigFunc:           func() interface{} { return &config{} },
