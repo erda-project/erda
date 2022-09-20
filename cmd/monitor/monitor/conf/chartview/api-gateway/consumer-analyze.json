@@ -1,0 +1,229 @@
+{
+    "id": "consumer-analyze",
+    "name": "consumer-analyze",
+    "version": "v2",
+    "desc": "test",
+    "scope": "org",
+    "scopeId": "erda",
+    "viewConfig": [
+        {
+            "w": 8,
+            "h": 9,
+            "x": 0,
+            "y": 0,
+            "i": "view-i8BUjBeu",
+            "view": {
+                "title": "成功调用量(7天)",
+                "description": "",
+                "chartType": "chart:bar",
+                "dataSourceType": "api",
+                "staticData": {},
+                "config": {
+                    "dataSourceConfig": {
+                        "activedMetricGroups": [
+                            "all",
+                            "all@agg_kong"
+                        ],
+                        "isSqlMode": false,
+                        "resultFilters": [
+                            {
+                                "alias": "表达式-6",
+                                "expr": "cluster_name::tag = '{{clusterName}}' AND dpid::tag = '{{projectId}}' AND denv::tag = '{{workspace}}'",
+                                "key": "filterq6D2HQFo",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "表达式-1",
+                                "expr": "csmr::tag =~ /{{consumer}}/",
+                                "key": "filtersiFJOu6M",
+                                "type": "expr"
+                            }
+                        ],
+                        "typeDimensions": [
+                            {
+                                "alias": "时间",
+                                "key": "typeKMUS3wmn",
+                                "timeInterval": {
+                                    "unit": "d",
+                                    "value": 1
+                                },
+                                "type": "time"
+                            }
+                        ],
+                        "valueDimensions": [
+                            {
+                                "alias": "累计调用",
+                                "expr": "sum(succ_sum)",
+                                "key": "valueI63KVUvR",
+                                "type": "expr"
+                            }
+                        ]
+                    },
+                    "optionProps": {
+                        "isMoreThanOneDay": false
+                    }
+                },
+                "api": {
+                    "body": {
+                        "from": [
+                            "agg_kong"
+                        ],
+                        "groupby": [
+                            "time(24h)"
+                        ],
+                        "select": [
+                            {
+                                "alias": "typeKMUS3wmn",
+                                "expr": "time()"
+                            },
+                            {
+                                "alias": "valueI63KVUvR",
+                                "expr": "sum(succ_sum)"
+                            }
+                        ],
+                        "where": [
+                            "cluster_name::tag = '{{clusterName}}' AND dpid::tag = '{{projectId}}' AND denv::tag = '{{workspace}}'",
+                            "csmr::tag =~ /{{consumer}}/"
+                        ]
+                    },
+                    "method": "post",
+                    "query": {
+                        "end": "{{endTime}}",
+                        "epoch": "ms",
+                        "format": "chartv2",
+                        "ql": "influxql:ast",
+                        "start": "{{startTime}}",
+                        "type": "_"
+                    },
+                    "url": "/api/orgCenter/metrics-query"
+                },
+                "controls": null,
+                "i18n": null
+            }
+        },
+        {
+            "w": 8,
+            "h": 9,
+            "x": 10,
+            "y": 0,
+            "i": "view-babq3rpM",
+            "view": {
+                "title": "实时流量(每分钟)",
+                "description": "",
+                "chartType": "chart:line",
+                "dataSourceType": "api",
+                "staticData": {},
+                "config": {
+                    "dataSourceConfig": {
+                        "activedMetricGroups": [
+                            "all",
+                            "all@agg_kong"
+                        ],
+                        "isSqlMode": false,
+                        "resultFilters": [
+                            {
+                                "alias": "表达式-13",
+                                "expr": "cluster_name::tag = '{{clusterName}}' AND dpid::tag = '{{projectId}}' AND denv::tag = '{{workspace}}'",
+                                "key": "filterYcQc7onA",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "表达式-3",
+                                "expr": "csmr::tag =~ /{{consumer}}/",
+                                "key": "filterSWUxPNi7",
+                                "type": "expr"
+                            }
+                        ],
+                        "typeDimensions": [
+                            {
+                                "alias": "时间",
+                                "key": "typeTCNTyF39",
+                                "timeInterval": {
+                                    "value": null
+                                },
+                                "type": "time"
+                            }
+                        ],
+                        "valueDimensions": [
+                            {
+                                "alias": "成功",
+                                "expr": "sum(succ_sum::field)",
+                                "key": "value7HA0vxUp",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "错误",
+                                "expr": "sum(err_sum::field)",
+                                "key": "valueFKI3XFW0",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "限流",
+                                "expr": "sum(lim::field)",
+                                "key": "valueM5iB3Cnp",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "整体",
+                                "expr": "sum(cnt_sum::field)",
+                                "key": "valuerUorqfmz",
+                                "type": "expr"
+                            }
+                        ]
+                    },
+                    "optionProps": {
+                        "isMoreThanOneDay": false
+                    }
+                },
+                "api": {
+                    "body": {
+                        "from": [
+                            "agg_kong"
+                        ],
+                        "groupby": [
+                            "time()"
+                        ],
+                        "select": [
+                            {
+                                "alias": "typeTCNTyF39",
+                                "expr": "time()"
+                            },
+                            {
+                                "alias": "value7HA0vxUp",
+                                "expr": "sum(succ_sum::field)"
+                            },
+                            {
+                                "alias": "valueFKI3XFW0",
+                                "expr": "sum(err_sum::field)"
+                            },
+                            {
+                                "alias": "valueM5iB3Cnp",
+                                "expr": "sum(lim::field)"
+                            },
+                            {
+                                "alias": "valuerUorqfmz",
+                                "expr": "sum(cnt_sum::field)"
+                            }
+                        ],
+                        "where": [
+                            "cluster_name::tag = '{{clusterName}}' AND dpid::tag = '{{projectId}}' AND denv::tag = '{{workspace}}'",
+                            "csmr::tag =~ /{{consumer}}/"
+                        ]
+                    },
+                    "method": "post",
+                    "query": {
+                        "end": "{{endTime}}",
+                        "epoch": "ms",
+                        "format": "chartv2",
+                        "ql": "influxql:ast",
+                        "start": "{{startTime}}",
+                        "type": "_"
+                    },
+                    "url": "/api/orgCenter/metrics-query"
+                },
+                "controls": null,
+                "i18n": null
+            }
+        }
+    ]
+}
