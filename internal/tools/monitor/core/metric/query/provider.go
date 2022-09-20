@@ -87,7 +87,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query.New(meta, p.Storage, p.CkStorageReader, p.Log),
+		query: query.New(p.CkMetaLoader, p.Storage, p.CkStorageReader, p.Log),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),
