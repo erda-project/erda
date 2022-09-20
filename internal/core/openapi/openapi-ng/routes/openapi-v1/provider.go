@@ -54,7 +54,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Log = p.Log
 	p.proxy.Discover = p.Discover
-	hooks.Enable = false
+	hooks.Enable = true
 	conf.Load()
 	srv, err := openapiv1.NewServer(p.TokenService)
 	if err != nil {
