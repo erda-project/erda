@@ -25,12 +25,12 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 )
 
 // Parser .
 type Parser struct {
-	meta      metricmeta.MetricMeta
+	meta      meta.Interface
 	debug     bool
 	stm       string
 	ql        *influxql.Parser
@@ -86,7 +86,7 @@ func (p *Parser) SetFilter(filters []*model.Filter) (tsql.Parser, error) {
 	return p, nil
 }
 
-func (p *Parser) SetMeta(meta metricmeta.MetricMeta) {
+func (p *Parser) SetMeta(meta meta.Interface) {
 	p.meta = meta
 }
 

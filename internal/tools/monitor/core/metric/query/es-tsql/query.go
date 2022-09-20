@@ -34,7 +34,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 )
 
 // TimeUnit .
@@ -121,7 +121,7 @@ type Parser interface {
 	GetOrgName() string
 	GetTerminusKey() string
 	SetTerminusKey(terminusKey string) Parser
-	SetMeta(metricmeta.MetricMeta)
+	SetMeta(meta.Interface)
 }
 
 // Creator .

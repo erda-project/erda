@@ -23,22 +23,30 @@ import (
 	"github.com/influxdata/influxql"
 	"github.com/stretchr/testify/require"
 
-	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 )
 
 type mockMeta struct {
-	mockMeta []*pb.MetricMeta
+	mockMeta []*meta.MetricMeta
 }
 
-func (m mockMeta) GetMetricMetaByCache(scope, scopeID string, names ...string) ([]*pb.MetricMeta, error) {
-	return m.mockMeta, nil
+func (m mockMeta) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []*meta.MetricMeta {
+	return m.mockMeta
+}
+
+func (m mockMeta) WaitAndGetTables(ctx context.Context) map[meta.MetricUniq]*meta.MetricMeta {
+	return nil
+}
+
+func (m mockMeta) Reload() chan error {
+	return nil
 }
 
 func TestMeta(t *testing.T) {
 	tests := []struct {
 		name     string
-		mockMeta []*pb.MetricMeta
+		mockMeta []*meta.MetricMeta
 		sql      string
 		want     string
 	}{
@@ -49,13 +57,9 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "string field",
-			mockMeta: []*pb.MetricMeta{
+			mockMeta: []*meta.MetricMeta{
 				{
-					Fields: map[string]*pb.FieldDefine{
-						"http_status_code_count": {
-							Type: "string",
-						},
-					},
+					StringKeys: []string{"http_status_code_count"},
 				},
 			},
 			sql:  "select http_status_code_count::field from metric",
@@ -63,13 +67,9 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "select string function field",
-			mockMeta: []*pb.MetricMeta{
+			mockMeta: []*meta.MetricMeta{
 				{
-					Fields: map[string]*pb.FieldDefine{
-						"http_status_code_count": {
-							Type: "string",
-						},
-					},
+					StringKeys: []string{"http_status_code_count"},
 				},
 			},
 			sql:  "select if(gt(http_status_code_count::field-10,300000000000),'false','true') from metric",
@@ -77,13 +77,9 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "where string function field",
-			mockMeta: []*pb.MetricMeta{
+			mockMeta: []*meta.MetricMeta{
 				{
-					Fields: map[string]*pb.FieldDefine{
-						"http_status_code_count": {
-							Type: "string",
-						},
-					},
+					StringKeys: []string{"http_status_code_count"},
 				},
 			},
 			sql:  "select column from metric where http_status_code_count::field > 100",
@@ -91,13 +87,9 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "no column name",
-			mockMeta: []*pb.MetricMeta{
+			mockMeta: []*meta.MetricMeta{
 				{
-					Fields: map[string]*pb.FieldDefine{
-						"column": {
-							Type: "string",
-						},
-					},
+					StringKeys: []string{"column"},
 				},
 			},
 			sql:  "select column from metric",

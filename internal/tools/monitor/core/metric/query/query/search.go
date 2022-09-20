@@ -31,24 +31,24 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql/formats"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 )
 
 type queryer struct {
-	storage   storage.Storage `autowired:"metric-storage"`
-	ckStorage storage.Storage `autowired:"metric-storage-clickhouse"`
-	meta      *metricmeta.Manager
-	log       logs.Logger
+	storage      storage.Storage `autowired:"metric-storage"`
+	ckStorage    storage.Storage `autowired:"metric-storage-clickhouse"`
+	log          logs.Logger
+	ckMetaLoader meta.Interface
 }
 
 // New .
-func New(meta *metricmeta.Manager, esStorage storage.Storage, ckStorage storage.Storage, log logs.Logger) Queryer {
+func New(meta meta.Interface, esStorage storage.Storage, ckStorage storage.Storage, log logs.Logger) Queryer {
 	return &queryer{
-		meta:      meta,
-		storage:   esStorage,
-		ckStorage: ckStorage,
-		log:       log,
+		ckMetaLoader: meta,
+		storage:      esStorage,
+		ckStorage:    ckStorage,
+		log:          log,
 	}
 }
 
@@ -103,7 +103,7 @@ func (q *queryer) buildTSQLParser(ctx context.Context, ql, statement string, par
 		return nil, nil, fmt.Errorf("not support tsql '%s'", ql)
 	}
 
-	parser.SetMeta(q.meta)
+	parser.SetMeta(q.ckMetaLoader)
 	parser, err = parser.SetFilter(filters)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid filter on parse filter: %s", err)
