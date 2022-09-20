@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -734,15 +735,15 @@ func (p *Parser) ckField(key string) (string, bool) {
 		fmt.Println("parse_clickhouse get metric is err: ", err)
 		return field, true
 	}
-	metas, err := p.meta.GetMetricMetaByCache(p.GetOrgName(), p.GetTerminusKey(), metrics...)
+	metas := p.meta.GetMeta(context.Background(), p.GetOrgName(), p.GetTerminusKey(), metrics...)
 	if err != nil {
 		fmt.Println("parse_clickhouse get meta is err:", err)
 		return field, true
 	}
 
 	for _, meta := range metas {
-		if v, ok := meta.Fields[key]; ok {
-			if v.Type == "string" {
+		for _, stringKey := range meta.StringKeys {
+			if stringKey == key {
 				field = fmt.Sprintf("indexOf(string_field_keys,'%s')", key)
 				isNumber = false
 				break
