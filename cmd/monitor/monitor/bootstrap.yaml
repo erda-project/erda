@@ -331,6 +331,14 @@ clickhouse.table.loader@entity:
   default_search_table: "entities_all"
   cache_key_prefix: "clickhouse-table-entities"
 
+clickhouse.meta.loader@metric:
+  _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
+  load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_META_MODE:LoadWithCache}"
+  table: "metrics_meta_all"
+  cache_key_prefix: "clickhouse-table-meta-metric"
+  meta_start_time: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_META_START_TIME:-1h}"
+  reload_interval: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_META_RELOAD_INTERVAL:15m}"
+
 entity-storage-clickhouse:
   _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:true}
   query_timeout: 1m

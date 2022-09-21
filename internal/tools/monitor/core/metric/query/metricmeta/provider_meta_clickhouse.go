@@ -15,26 +15,23 @@
 package metricmeta
 
 import (
+	"context"
 	"math"
 	"sort"
-	"time"
-
-	"github.com/doug-martin/goqu/v9"
-	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 )
 
 type MetaClickhouseGroupProvider struct {
-	clickhouse clickhouse.Query
+	ckMetaLoader meta.Interface
 }
 
-func NewMetaClickhouseGroupProvider(ck clickhouse.Query) (*MetaClickhouseGroupProvider, error) {
+func NewMetaClickhouseGroupProvider(ck meta.Interface) (*MetaClickhouseGroupProvider, error) {
 	return &MetaClickhouseGroupProvider{
-		clickhouse: ck,
+		ckMetaLoader: ck,
 	}, nil
 }
 
@@ -97,76 +94,13 @@ func (m *MetaClickhouseGroupProvider) getDynamicGroupsMetrics(group string, ms m
 	return gm
 }
 
-type ckMeta struct {
-	MetricGroup string   `ch:"metric_group"`
-	StringKeys  []string `ch:"sk"`
-	NumberKeys  []string `ch:"nk"`
-	TagKeys     []string `ch:"tk"`
-}
-
-var now = func() time.Time {
-	return time.Now()
-}
-
 func (p MetaClickhouseGroupProvider) MetricMeta(langCodes i18n.LanguageCodes, i i18n.I18n, scope, scopeID string, names ...string) (map[string]*metricpb.MetricMeta, error) {
-	if p.clickhouse == nil {
+	result := p.ckMetaLoader.GetMeta(context.Background(), scope, scopeID, names...)
+	if len(result) <= 0 {
 		return map[string]*metricpb.MetricMeta{}, nil
 	}
-
-	/*
-		CREATE TABLE IF NOT EXISTS <database>.metrics_meta ON CLUSTER '{cluster}'
-		(
-		    `org_name`            LowCardinality(String),
-		    `tenant_id`           LowCardinality(String),
-		    `metric_group`        LowCardinality(String),
-		    `timestamp`           DateTime64(9,'Asia/Shanghai') CODEC (DoubleDelta),
-		    `number_field_keys`   Array(LowCardinality(String)),
-		    `string_field_keys`   Array(LowCardinality(String)),
-		    `tag_keys`            Array(LowCardinality(String)),
-		    INDEX idx_timestamp TYPE minmax GRANULARITY 2
-		)
-		ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/metrics_meta', '{replica}')
-		ORDER BY (org_name, tenant_id, metric_group, number_field_keys, string_field_keys, tag_keys);
-		TTL toDateTime(timestamp) + INTERVAL <ttl_in_days> DAY;
-	*/
-
-	end := now().UnixNano()
-	start := end - 7*24*int64(time.Hour)
-
-	expr := goqu.From("metrics_meta")
-
-	expr = expr.Select(goqu.C("metric_group"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(string_field_keys),[null],string_field_keys)))").As("sk"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(number_field_keys),[null],number_field_keys)))").As("nk"))
-	expr = expr.SelectAppend(goqu.L("groupUniqArray(arrayJoin(if(empty(tag_keys),[null],tag_keys)))").As("tk"))
-
-	expr = expr.Where(goqu.C("org_name").Eq(scope))
-	if len(scopeID) > 0 {
-		expr = expr.Where(goqu.C("tenant_id").Eq(scopeID))
-	}
-	if len(names) > 0 {
-		expr = expr.Where(goqu.C("metric_group").In(names))
-	}
-
-	expr = expr.Where(
-		goqu.C("timestamp").Gte(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", start)),
-		goqu.C("timestamp").Lt(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", end)),
-	)
-	expr = expr.GroupBy(goqu.C("metric_group"))
-
-	rows, err := p.clickhouse.QueryRaw("metrics_meta_all", expr)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query metric meta")
-	}
-
 	metas := make(map[string]*metricpb.MetricMeta)
-
-	for rows.Next() {
-		var cm ckMeta
-		err := rows.ScanStruct(&cm)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to scan metric meta")
-		}
+	for _, cm := range result {
 		meta := metric.NewMeta()
 		meta.Name.Key, meta.Name.Name = cm.MetricGroup, cm.MetricGroup
 		meta.Tags = make(map[string]*metricpb.TagDefine)
