@@ -61,7 +61,9 @@ func (svc *Service) SaveFileTreeNodePipeline(req apistructs.AutoTestCaseSavePipe
 		} else {
 			snippetConfigForCurrentNode = generateBaseSnippetConfig()
 		}
-		snippetConfigForCurrentNode.Name = req.Inode
+		if snippetConfigForCurrentNode != nil {
+			snippetConfigForCurrentNode.Name = req.Inode
+		}
 
 		// parse pipeline graph
 		y, err := svc.graph.PipelineYmlGraph(context.Background(), &graphpb.PipelineYmlGraphRequest{
