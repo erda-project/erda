@@ -22,30 +22,30 @@ import (
 )
 
 type Interface interface {
-	GetMeta(ctx context.Context, scope, scopeId string, names ...string) []*MetricMeta
-	WaitAndGetTables(ctx context.Context) map[MetricUniq]*MetricMeta
+	GetMeta(ctx context.Context, scope, scopeId string, names ...string) []MetricMeta
+	WaitAndGetTables(ctx context.Context) []MetricMeta
 	Reload() chan error
 }
 
-func (p *provider) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []*MetricMeta {
-	metas, ok := p.Meta.Load().(map[MetricUniq]*MetricMeta)
+func (p *provider) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []MetricMeta {
+	metas, ok := p.Meta.Load().([]MetricMeta)
 	if !ok {
 		return nil
 	}
 
-	var result []*MetricMeta
+	var result []MetricMeta
 
-	for k, v := range metas {
+	for _, v := range metas {
 		if len(names) > 1 {
-			if indexOf(names, k.MetricGroup) == -1 {
+			if indexOf(names, v.MetricGroup) == -1 {
 				continue
 			}
 		}
-		if k.Scope != scope {
+		if v.Scope != scope {
 			continue
 		}
 		if !strings.IsEmpty(&scopeId) {
-			if k.ScopeId != scopeId {
+			if v.ScopeId != scopeId {
 				continue
 			}
 		}
@@ -63,9 +63,9 @@ func indexOf(arr []string, target string) int {
 	return -1
 }
 
-func (p *provider) WaitAndGetTables(ctx context.Context) map[MetricUniq]*MetricMeta {
+func (p *provider) WaitAndGetTables(ctx context.Context) []MetricMeta {
 	for {
-		metes, ok := p.Meta.Load().(map[MetricUniq]*MetricMeta)
+		metes, ok := p.Meta.Load().([]MetricMeta)
 
 		if ok && len(metes) > 0 {
 			return metes

@@ -91,26 +91,22 @@ func TestClickhouseMetaLoader(t *testing.T) {
 	tests := []struct {
 		name       string
 		mockResult mockResult
-		want       map[MetricUniq]*MetricMeta
+		want       []MetricMeta
 	}{
 		{
 			name: "one_metric",
-			mockResult: mockResult{data: []*ckMeta{
+			mockResult: mockResult{data: []MetricMeta{
 				{
 					MetricGroup: "metric",
-					OrgName:     "org",
-					TenantId:    "",
+					Scope:       "org",
+					ScopeId:     "",
 					StringKeys:  []string{"field"},
 					NumberKeys:  []string{"field2"},
 					TagKeys:     []string{"tag"},
 				},
 			}},
-			want: map[MetricUniq]*MetricMeta{
-				MetricUniq{
-					MetricGroup: "metric",
-					Scope:       "org",
-					ScopeId:     "",
-				}: {
+			want: []MetricMeta{
+				{
 					MetricGroup: "metric",
 					Scope:       "org",
 					ScopeId:     "",
@@ -122,30 +118,26 @@ func TestClickhouseMetaLoader(t *testing.T) {
 		},
 		{
 			name: "two_metric",
-			mockResult: mockResult{data: []*ckMeta{
+			mockResult: mockResult{data: []MetricMeta{
 				{
 					MetricGroup: "metric",
-					OrgName:     "org",
-					TenantId:    "",
+					Scope:       "org",
+					ScopeId:     "",
 					StringKeys:  []string{"field"},
 					NumberKeys:  []string{"field2"},
 					TagKeys:     []string{"tag"},
 				},
 				{
 					MetricGroup: "metric",
-					OrgName:     "org",
-					TenantId:    "1",
+					Scope:       "org",
+					ScopeId:     "1",
 					StringKeys:  []string{"field"},
 					NumberKeys:  []string{"field2"},
 					TagKeys:     []string{"tag"},
 				},
 			}},
-			want: map[MetricUniq]*MetricMeta{
-				MetricUniq{
-					MetricGroup: "metric",
-					Scope:       "org",
-					ScopeId:     "",
-				}: {
+			want: []MetricMeta{
+				{
 					MetricGroup: "metric",
 					Scope:       "org",
 					ScopeId:     "",
@@ -153,11 +145,7 @@ func TestClickhouseMetaLoader(t *testing.T) {
 					NumberKeys:  []string{"field2"},
 					TagKeys:     []string{"tag"},
 				},
-				MetricUniq{
-					MetricGroup: "metric",
-					Scope:       "org",
-					ScopeId:     "1",
-				}: {
+				{
 					MetricGroup: "metric",
 					Scope:       "org",
 					ScopeId:     "1",
@@ -169,36 +157,40 @@ func TestClickhouseMetaLoader(t *testing.T) {
 		},
 		{
 			name: "merge_metric",
-			mockResult: mockResult{data: []*ckMeta{
+			mockResult: mockResult{data: []MetricMeta{
 				{
 					MetricGroup: "metric",
-					OrgName:     "org",
-					TenantId:    "",
+					Scope:       "org",
+					ScopeId:     "",
 					StringKeys:  []string{"field"},
 					NumberKeys:  []string{"field2"},
 					TagKeys:     []string{"tag"},
 				},
 				{
 					MetricGroup: "metric",
-					OrgName:     "org",
-					TenantId:    "",
+					Scope:       "org",
+					ScopeId:     "",
 					StringKeys:  []string{"field3"},
 					NumberKeys:  []string{"field4"},
 					TagKeys:     []string{"tag"},
 				},
 			}},
-			want: map[MetricUniq]*MetricMeta{
-				MetricUniq{
+			want: []MetricMeta{
+				{
 					MetricGroup: "metric",
 					Scope:       "org",
 					ScopeId:     "",
-				}: {
+					StringKeys:  []string{"field"},
+					NumberKeys:  []string{"field2"},
+					TagKeys:     []string{"tag"},
+				},
+				{
 					MetricGroup: "metric",
 					Scope:       "org",
 					ScopeId:     "",
-					StringKeys:  []string{"field", "field3"},
-					NumberKeys:  []string{"field2", "field4"},
-					TagKeys:     []string{"tag", "tag"},
+					StringKeys:  []string{"field3"},
+					NumberKeys:  []string{"field4"},
+					TagKeys:     []string{"tag"},
 				},
 			},
 		},
@@ -249,19 +241,9 @@ func TestClickhouseMetaLoader(t *testing.T) {
 			err := p.runClickhouseMetaLoader(context.Background())
 			require.NoError(t, err)
 
-			metas, ok := p.Meta.Load().(map[MetricUniq]*MetricMeta)
+			metas, ok := p.Meta.Load().([]MetricMeta)
 			require.True(t, ok)
-
-			for k, v := range test.want {
-				got, ok := metas[k]
-				require.True(t, ok)
-				require.Equal(t, v.MetricGroup, got.MetricGroup)
-				require.Equal(t, v.Scope, got.Scope)
-				require.Equal(t, v.ScopeId, got.ScopeId)
-				require.ElementsMatch(t, v.NumberKeys, got.NumberKeys, "number keys not match")
-				require.ElementsMatch(t, v.TagKeys, got.TagKeys, "tag keys not match")
-				require.ElementsMatch(t, v.StringKeys, got.StringKeys, "string keys not match")
-			}
+			require.ElementsMatch(t, test.want, metas)
 		})
 	}
 }

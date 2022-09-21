@@ -65,14 +65,14 @@ func (m mockI18n) RegisterFilesFromFS(fsPrefix string, rootFS embed.FS) error {
 }
 
 type mockMeta struct {
-	mock []*meta.MetricMeta
+	mock []meta.MetricMeta
 }
 
-func (m mockMeta) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []*meta.MetricMeta {
+func (m mockMeta) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []meta.MetricMeta {
 	return m.mock
 }
 
-func (m mockMeta) WaitAndGetTables(ctx context.Context) map[meta.MetricUniq]*meta.MetricMeta {
+func (m mockMeta) WaitAndGetTables(ctx context.Context) []meta.MetricMeta {
 	return nil
 }
 
@@ -86,7 +86,7 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		scope      string
 		scopeId    string
 		names      []string
-		mockResult []*meta.MetricMeta
+		mockResult []meta.MetricMeta
 		want       map[string]*metricpb.MetricMeta
 	}{
 		{
@@ -96,7 +96,7 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "no meta",
-			mockResult: []*meta.MetricMeta{
+			mockResult: []meta.MetricMeta{
 				{
 					MetricGroup: "metric1",
 				},
@@ -110,7 +110,7 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "only tag",
-			mockResult: []*meta.MetricMeta{
+			mockResult: []meta.MetricMeta{
 				{
 					MetricGroup: "metric1",
 					TagKeys:     []string{"tag", "tag1", "tag2"},
@@ -137,7 +137,7 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "tag,field",
-			mockResult: []*meta.MetricMeta{
+			mockResult: []meta.MetricMeta{
 				{
 					MetricGroup: "metric1",
 					TagKeys:     []string{"tag", "tag1", "tag2"},
@@ -182,7 +182,7 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "string and number field",
-			mockResult: []*meta.MetricMeta{
+			mockResult: []meta.MetricMeta{
 				{
 					MetricGroup: "metric1",
 					TagKeys:     []string{"tag", "tag1", "tag2"},
@@ -288,7 +288,7 @@ func TestMetricMetaWantMeta(t *testing.T) {
 
 func TestGroups(t *testing.T) {
 	mockClickhouse := &mockMeta{
-		mock: []*meta.MetricMeta{},
+		mock: []meta.MetricMeta{},
 	}
 	p, err := NewMetaClickhouseGroupProvider(mockClickhouse)
 	require.NoError(t, err)
@@ -313,7 +313,7 @@ func TestGroups(t *testing.T) {
 
 func TestMappingsByID(t *testing.T) {
 	mockClickhouse := &mockMeta{
-		mock: []*meta.MetricMeta{},
+		mock: []meta.MetricMeta{},
 	}
 
 	p, err := NewMetaClickhouseGroupProvider(mockClickhouse)

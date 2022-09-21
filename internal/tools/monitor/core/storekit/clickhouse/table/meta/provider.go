@@ -43,29 +43,23 @@ type config struct {
 	MetaTable      string        `file:"table"`
 	Database       string        `file:"database" default:"monitor"`
 	ReloadInterval time.Duration `file:"reload_interval" default:"5m"`
-	CacheKeyPrefix string        `file:"cache_key_prefix" default:"clickhouse-table"`
+	CacheKeyPrefix string        `file:"cache_key_prefix" default:"clickhouse-meta-loader"`
 	MetaStartTime  time.Duration `file:"meta_start_time" default:"-1h"`
 	Once           bool
 }
 
 type updateMetricsRequest struct {
-	Metas map[MetricUniq]*MetricMeta
+	Metas []MetricMeta
 	Done  chan struct{}
 }
 
-type MetricUniq struct {
-	Scope       string
-	ScopeId     string
-	MetricGroup string
-}
-
 type MetricMeta struct {
-	Scope       string
-	ScopeId     string
-	MetricGroup string
-	StringKeys  []string
-	NumberKeys  []string
-	TagKeys     []string
+	Scope       string   `json:"scope,omitempty" ch:"org_name"`
+	ScopeId     string   `json:"scope_id,omitempty" ch:"tenant_id"`
+	MetricGroup string   `json:"metric_group,omitempty" ch:"metric_group"`
+	StringKeys  []string `json:"string_keys,omitempty" ch:"sk"`
+	NumberKeys  []string `json:"number_keys,omitempty" ch:"nk"`
+	TagKeys     []string `json:"tag_keys,omitempty" ch:"tk"`
 }
 
 type provider struct {
@@ -73,7 +67,7 @@ type provider struct {
 	Log        logs.Logger
 	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
 	Redis      *redis.Client        `autowired:"redis-client"`
-	Election   election.Interface   `autowired:"etcd-election@table-loader"`
+	Election   election.Interface   `autowired:"etcd-election@meta-loader"`
 
 	Meta            atomic.Value
 	updateMetricsCh chan *updateMetricsRequest
@@ -122,10 +116,10 @@ func (p *provider) Run(ctx context.Context) error {
 	}
 }
 
-func (p *provider) updateMetrics(metrics map[MetricUniq]*MetricMeta) chan struct{} {
+func (p *provider) updateMetrics(metas []MetricMeta) chan struct{} {
 	ch := make(chan struct{}, 1)
 	req := updateMetricsRequest{
-		Metas: metrics,
+		Metas: metas,
 		Done:  ch,
 	}
 	p.updateMetricsCh <- &req

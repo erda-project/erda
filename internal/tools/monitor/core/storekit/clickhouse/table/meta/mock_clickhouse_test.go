@@ -92,7 +92,7 @@ func (m *mockClickhouseConn) Close() error {
 }
 
 type mockResult struct {
-	data  []*ckMeta
+	data  []MetricMeta
 	point int
 }
 
@@ -114,7 +114,7 @@ func (m *mockResult) Scan(dest ...interface{}) error {
 func (m *mockResult) ScanStruct(dest interface{}) error {
 	data := m.data[m.point-1]
 
-	v, ok := dest.(*ckMeta)
+	v, ok := dest.(*MetricMeta)
 	if !ok {
 		return errors.New("error type")
 	}
@@ -122,8 +122,8 @@ func (m *mockResult) ScanStruct(dest interface{}) error {
 	v.NumberKeys = data.NumberKeys
 	v.TagKeys = data.TagKeys
 	v.StringKeys = data.StringKeys
-	v.OrgName = data.OrgName
-	v.TenantId = data.TenantId
+	v.Scope = data.Scope
+	v.ScopeId = data.ScopeId
 	return nil
 }
 
