@@ -301,7 +301,7 @@ erda.msp.apm.service:
      - "errorRate"
 
 #resource deploy related
-#erda.msp.resource:
+erda.msp.resource:
 erda.msp.resource.deploy.coordinator:
 erda.msp.resource.deploy.handlers.apigateway:
   main_cluster_info:

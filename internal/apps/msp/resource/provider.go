@@ -67,7 +67,7 @@ func init() {
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},
-		Dependencies:         []string{"erda.msp.resource.deploy.coordinator", "elasticsearch"},
+		Dependencies:         []string{"erda.msp.resource.deploy.coordinator"},
 		Description:          "",
 		ConfigFunc: func() interface{} {
 			return &config{}
