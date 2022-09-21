@@ -17,16 +17,20 @@ package filter
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/internal/apps/dop/services/autotest_v2"
 	"github.com/erda-project/erda/internal/apps/dop/services/iteration"
 	"github.com/erda-project/erda/internal/apps/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/internal/apps/dop/services/testplan"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/components/filter"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type Filter struct {
@@ -39,6 +43,8 @@ type Filter struct {
 	mtTestPlan *mttestplan.TestPlan
 	// auto test
 	atTestPlan *autotestv2.Service
+	// bdl
+	bdl *bundle.Bundle
 
 	InParams InParams `json:"-"`
 	State    State    `json:"state,omitempty"`
@@ -75,13 +81,31 @@ func (f *Filter) initFromProtocol(ctx context.Context, c *cptype.Component) erro
 	f.mtTestCase = ctx.Value(types.ManualTestCaseService).(*testcase.Service)
 	f.mtTestPlan = ctx.Value(types.ManualTestPlanService).(*mttestplan.TestPlan)
 	f.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
 	// in params
 	if err := f.setInParams(ctx); err != nil {
 		return err
 	}
 
+	// check permission
+	if err := f.checkPermission(ctx); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (f *Filter) checkPermission(ctx context.Context) error {
+	// project get api will check permission by org&user id header correctly
+	_, err := f.bdl.GetProjectWithSetter(f.InParams.ProjectID, httpclient.SetHeaders(
+		http.Header{
+			httputil.InternalHeader: []string{""},
+			httputil.OrgHeader:      []string{f.sdk.Identity.OrgID},
+			httputil.UserHeader:     []string{f.sdk.Identity.UserID},
+		},
+	))
+	return err
 }
 
 func (f *Filter) setInParams(ctx context.Context) error {
