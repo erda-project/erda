@@ -16,12 +16,17 @@ package envFilter
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type ComponentAction struct {
@@ -31,6 +36,11 @@ const urlQuery = "envFilter__urlQuery"
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
+
+	// check permission
+	if err := ca.checkPermission(ctx); err != nil {
+		return err
+	}
 
 	if c.State == nil {
 		c.State = map[string]interface{}{}
@@ -81,6 +91,20 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	return nil
+}
+
+func (ca *ComponentAction) checkPermission(ctx context.Context) error {
+	// project get api will check permission by org&user id header correctly
+	sdk := cputil.SDK(ctx)
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	_, err := bdl.GetProjectWithSetter(sdk.InParams.Uint64("projectId"), httpclient.SetHeaders(
+		http.Header{
+			httputil.InternalHeader: []string{""},
+			httputil.OrgHeader:      []string{sdk.Identity.OrgID},
+			httputil.UserHeader:     []string{sdk.Identity.UserID},
+		},
+	))
+	return err
 }
 
 func init() {
