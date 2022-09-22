@@ -30,12 +30,24 @@ func (p *provider) ListWorkers(ctx context.Context, workerTypes ...worker.Type) 
 }
 
 func (p *provider) ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event)) {
+	for {
+		select {
+		case <-ctx.Done():
+			p.Log.Infof("accept context done signal and stop listen prefix: %s", prefix)
+			return
+		default:
+			p.listenPrefix(ctx, prefix, putHandler, deleteHandler)
+		}
+	}
+}
+
+func (p *provider) listenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event)) {
 	wctx, wcancel := context.WithCancel(ctx)
 	defer wcancel()
 	wch := p.EtcdClient.Watch(wctx, prefix, clientv3.WithPrefix())
 	for {
 		select {
-		case <-ctx.Done():
+		case <-wctx.Done():
 			return
 		case resp, ok := <-wch:
 			if !ok {

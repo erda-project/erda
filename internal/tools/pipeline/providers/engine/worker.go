@@ -40,11 +40,17 @@ func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker.Lo
 
 func (p *provider) workerHandlerOnWorkerDelete(ctx context.Context, ev leaderworker.Event) {
 	for {
-		err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcileOnePipeline)))
-		if err == nil {
+		select {
+		case <-ctx.Done():
+			p.Log.Warnf("workerHandlerOnWorkerDelete func accept context done signal")
 			return
+		default:
+			err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcileOnePipeline)))
+			if err == nil {
+				return
+			}
+			p.Log.Errorf("failed to add new candidate worker when old worker deleted(auto retry), old workerID: %s, err: %v", ev.WorkerID, err)
+			time.Sleep(p.Cfg.Worker.RetryInterval)
 		}
-		p.Log.Errorf("failed to add new candidate worker when old worker deleted(auto retry), old workerID: %s, err: %v", ev.WorkerID, err)
-		time.Sleep(p.Cfg.Worker.RetryInterval)
 	}
 }
