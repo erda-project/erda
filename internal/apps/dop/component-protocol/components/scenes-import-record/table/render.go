@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/core/legacy/conf"
 )
 
 type ComponentAction struct {
@@ -181,7 +180,7 @@ func (ca *ComponentAction) setData() error {
 			},
 			Result: Result{
 				RenderType: "downloadUrl",
-				URL:        fmt.Sprintf("%s/api/files/%s", conf.RootDomain(), fileRecord.ApiFileUUID),
+				URL:        fmt.Sprintf("/api/files/%s", fileRecord.ApiFileUUID),
 			},
 		})
 	}
