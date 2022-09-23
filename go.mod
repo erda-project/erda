@@ -250,7 +250,7 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/elastic/go-ucfg v0.8.3 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
-	github.com/erda-project/erda-infra/tools v0.0.0-20220922095052-119fd9477a70 // indirect
+	github.com/erda-project/erda-infra/tools v0.0.0-20220922112628-1965c0260662 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect

@@ -14,16 +14,13 @@ require (
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
-	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294 // indirect
 	github.com/recallsong/unmarshal v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/spf13/cobra v1.1.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
 	golang.org/x/sys v0.0.0-20220429233432-b5fbb4746d32 // indirect
