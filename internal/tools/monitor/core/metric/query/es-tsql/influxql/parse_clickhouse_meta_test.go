@@ -28,14 +28,14 @@ import (
 )
 
 type mockMeta struct {
-	mockMeta []*meta.MetricMeta
+	mockMeta []meta.MetricMeta
 }
 
-func (m mockMeta) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []*meta.MetricMeta {
+func (m mockMeta) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []meta.MetricMeta {
 	return m.mockMeta
 }
 
-func (m mockMeta) WaitAndGetTables(ctx context.Context) map[meta.MetricUniq]*meta.MetricMeta {
+func (m mockMeta) WaitAndGetTables(ctx context.Context) []meta.MetricMeta {
 	return nil
 }
 
@@ -46,7 +46,7 @@ func (m mockMeta) Reload() chan error {
 func TestMeta(t *testing.T) {
 	tests := []struct {
 		name     string
-		mockMeta []*meta.MetricMeta
+		mockMeta []meta.MetricMeta
 		sql      string
 		want     string
 	}{
@@ -57,7 +57,7 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "string field",
-			mockMeta: []*meta.MetricMeta{
+			mockMeta: []meta.MetricMeta{
 				{
 					StringKeys: []string{"http_status_code_count"},
 				},
@@ -67,7 +67,7 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "select string function field",
-			mockMeta: []*meta.MetricMeta{
+			mockMeta: []meta.MetricMeta{
 				{
 					StringKeys: []string{"http_status_code_count"},
 				},
@@ -77,7 +77,7 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "where string function field",
-			mockMeta: []*meta.MetricMeta{
+			mockMeta: []meta.MetricMeta{
 				{
 					StringKeys: []string{"http_status_code_count"},
 				},
@@ -87,7 +87,7 @@ func TestMeta(t *testing.T) {
 		},
 		{
 			name: "no column name",
-			mockMeta: []*meta.MetricMeta{
+			mockMeta: []meta.MetricMeta{
 				{
 					StringKeys: []string{"column"},
 				},

@@ -23,15 +23,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ckMeta struct {
-	MetricGroup string   `ch:"metric_group"`
-	OrgName     string   `ch:"org_name"`
-	TenantId    string   `ch:"tenant_id"`
-	StringKeys  []string `ch:"sk"`
-	NumberKeys  []string `ch:"nk"`
-	TagKeys     []string `ch:"tk"`
-}
-
 func (p *provider) runClickhouseMetaLoader(ctx context.Context) error {
 	p.suppressCacheLoader = true
 	p.Log.Info("start clickhouse meta loader")
@@ -142,32 +133,15 @@ func (p *provider) reloadMetaFromClickhouse(ctx context.Context) error {
 		return errors.Wrap(err, "failed to query metric meta")
 	}
 
-	metas := make(map[MetricUniq]*MetricMeta)
+	var metas []MetricMeta
 
 	for rows.Next() {
-		cm := ckMeta{}
+		cm := MetricMeta{}
 		err := rows.ScanStruct(&cm)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan metric meta")
 		}
-
-		uniq := MetricUniq{
-			Scope:       cm.OrgName,
-			ScopeId:     cm.TenantId,
-			MetricGroup: cm.MetricGroup,
-		}
-		meta := &MetricMeta{}
-
-		if exist, ok := metas[uniq]; ok {
-			meta = exist
-		}
-		meta.MetricGroup, meta.Scope, meta.ScopeId = uniq.MetricGroup, uniq.Scope, uniq.ScopeId
-
-		meta.TagKeys = append(meta.TagKeys, cm.TagKeys...)
-		meta.StringKeys = append(meta.StringKeys, cm.StringKeys...)
-		meta.NumberKeys = append(meta.NumberKeys, cm.NumberKeys...)
-
-		metas[uniq] = meta
+		metas = append(metas, cm)
 	}
 
 	ch := p.updateMetrics(metas)

@@ -15,37 +15,50 @@
 package meta
 
 import (
-	"encoding/json"
-	"strings"
-
 	"github.com/go-redis/redis"
+	jsoniter "github.com/json-iterator/go"
 )
 
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
 func (p *provider) setCache() error {
-	meta, ok := p.Meta.Load().(map[MetricUniq]*MetricMeta)
+	meta, ok := p.Meta.Load().([]MetricMeta)
 	if !ok {
 		return nil
 	}
 	expire := 3 * p.Cfg.ReloadInterval
-	bytes, _ := json.Marshal(meta)
-	err := p.Redis.Set(p.Cfg.CacheKeyPrefix+"-all", string(bytes), expire).Err()
+
+	var caches []MetricMeta
+	for _, v := range meta {
+		caches = append(caches, v)
+	}
+
+	text, err := json.MarshalToString(caches)
+
+	if err != nil {
+		return err
+	}
+	if len(meta) <= 0 {
+		return nil
+	}
+	err = p.Redis.Set(p.Cfg.CacheKeyPrefix, text, expire).Err()
 	return err
 }
 
-func (p *provider) getCache() (map[MetricUniq]*MetricMeta, error) {
-	meta := map[MetricUniq]*MetricMeta{}
-	val, err := p.Redis.Get(p.Cfg.CacheKeyPrefix + "-all").Result()
+func (p *provider) getCache() ([]MetricMeta, error) {
+	var caches []MetricMeta
+
+	val, err := p.Redis.Get(p.Cfg.CacheKeyPrefix).Result()
 	if err != nil && err != redis.Nil {
 		return nil, err
 	}
 	if len(val) == 0 {
 		return nil, nil
 	}
-
-	err = json.NewDecoder(strings.NewReader(val)).Decode(&meta)
+	err = json.UnmarshalFromString(val, &caches)
 	if err != nil {
 		p.Log.Warnf("corrupted table cached-data: \n%s\n", val)
 		return nil, err
 	}
-	return meta, nil
+	return caches, nil
 }
