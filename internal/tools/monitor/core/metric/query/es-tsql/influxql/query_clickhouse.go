@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 	"reflect"
-	"strings"
 	"time"
 
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -62,16 +61,12 @@ func (q QueryClickhouse) AppendBoolFilter(key string, value interface{}) {
 }
 
 func iterate(ctx context.Context, row ckdriver.Rows) (map[string]interface{}, error) {
-	_, span := otel.Tracer("parser").Start(ctx, "parser.iterate")
-	defer span.End()
 
 	var (
 		columnTypes = row.ColumnTypes()
 		vars        = make([]interface{}, len(columnTypes))
 		columns     = row.Columns()
 	)
-
-	span.SetAttributes(attribute.String("origin.columns", strings.Join(columns, ";")))
 
 	for i := range columnTypes {
 		vars[i] = reflect.New(columnTypes[i].ScanType()).Interface()
@@ -94,7 +89,6 @@ func iterate(ctx context.Context, row ckdriver.Rows) (map[string]interface{}, er
 		data[columnName] = pretty(v)
 	}
 
-	span.AddEvent("dump", oteltrace.WithAttributes(trace.BigStringAttribute("data", data)))
 	return data, nil
 }
 func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*model.Data, error) {
@@ -113,24 +107,7 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		return nil, errors.New("data should be ck driver.Rows")
 	}
 
-	for _, c := range q.column {
-		if c.col == nil {
-			c.col = &model.Column{
-				Name: getColumnName(c.field),
-			}
-			key, flag := getExprStringAndFlag(c.field.Expr, influxql.AnyField)
-			c.col.Flag = flag
-			if q.ctx.dimensions[key] {
-				c.col.Flag |= model.ColumnFlagGroupBy
-			}
-
-			// delete *
-			if c.AllColumns() {
-				continue
-			}
-			rs.Columns = append(rs.Columns, c.col)
-		}
-	}
+	q.buildColumn(newCtx, rs)
 
 	cur := make(map[string]interface{})
 	next := make(map[string]interface{})
@@ -138,7 +115,8 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 	q.ctx.AttributesCache()
 
 	// first read
-	rows.Next()
+	nextRows(newCtx, rows)
+
 	cur, err = iterate(newCtx, rows)
 	isTail := false
 	if err != nil {
@@ -146,12 +124,14 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 			// The first item is empty
 			return rs, nil
 		}
-
 		span.RecordError(err, oteltrace.WithAttributes(attribute.String("comment", "first is error")))
 		return nil, err
 	}
 
+	iterateCtx, iterateSpan := otel.Tracer("parser").Start(newCtx, "iterate")
+	defer iterateSpan.End()
 	for {
+
 		if cur == nil && next == nil {
 			break
 		}
@@ -161,15 +141,15 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		}
 
 		if len(cur) <= 0 {
-			cur, err = iterate(newCtx, rows)
+			cur, err = iterate(iterateCtx, rows)
 			if err != nil {
 				span.RecordError(err)
 				return nil, err
 			}
 		}
 
-		if rows.Next() {
-			next, err = iterate(newCtx, rows)
+		if nextRows(iterateCtx, rows) {
+			next, err = iterate(iterateCtx, rows)
 			if err != nil {
 				span.RecordError(err)
 				return nil, err
@@ -202,7 +182,7 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 				continue
 			}
 
-			v, err := c.getValue(cur)
+			v, err := c.getValue(iterateCtx, cur)
 			if err != nil {
 				span.RecordError(err, oteltrace.WithAttributes(
 					attribute.String("comment", "get column value error"),
@@ -231,6 +211,35 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 	rs.Interval = q.ctx.Interval()
 	span.SetAttributes(trace.BigStringAttribute("result.total", len(rs.Rows)))
 	return rs, nil
+}
+
+func (q QueryClickhouse) buildColumn(ctx context.Context, rs *model.Data) {
+	_, span := otel.Tracer("parser").Start(ctx, "build.column")
+	defer span.End()
+	for _, c := range q.column {
+		if c.col == nil {
+			c.col = &model.Column{
+				Name: getColumnName(c.field),
+			}
+			key, flag := getExprStringAndFlag(c.field.Expr, influxql.AnyField)
+			c.col.Flag = flag
+			if q.ctx.dimensions[key] {
+				c.col.Flag |= model.ColumnFlagGroupBy
+			}
+
+			// delete *
+			if c.AllColumns() {
+				continue
+			}
+			rs.Columns = append(rs.Columns, c.col)
+		}
+	}
+}
+
+func nextRows(ctx context.Context, rows ckdriver.Rows) bool {
+	_, span := otel.Tracer("parser").Start(ctx, "next.row")
+	defer span.End()
+	return rows.Next()
 }
 
 func appendIfMissing(slice []*model.Column, target *model.Column) ([]*model.Column, int) {
