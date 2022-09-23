@@ -7,10 +7,10 @@
     "scopeId": "erda",
     "viewConfig": [
         {
-            "w": 22,
+            "w": 24,
             "h": 9,
-            "x": 1,
-            "y": 18,
+            "x": 0,
+            "y": 0,
             "i": "view-LnRdKptc",
             "view": {
                 "title": "热点分析",
