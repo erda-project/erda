@@ -32,7 +32,6 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 	authenticationv1 "k8s.io/api/authentication/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -211,7 +210,6 @@ func (c *Client) getClusterInfo() (map[string]interface{}, error) {
 			return nil, err
 		}
 
-		saSecret := &corev1.Secret{}
 		if len(sa.Secrets) == 0 {
 			expirationSeconds := int64(999999 * time.Hour / time.Second)
 
@@ -241,7 +239,7 @@ func (c *Client) getClusterInfo() (map[string]interface{}, error) {
 				return nil, errors.Wrapf(err, "reading %s", rootCAFile)
 			}
 		} else {
-			saSecret, err = k.ClientSet.CoreV1().Secrets(c.cfg.ErdaNamespace).Get(context.Background(),
+			saSecret, err := k.ClientSet.CoreV1().Secrets(c.cfg.ErdaNamespace).Get(context.Background(),
 				sa.Secrets[0].Name, metav1.GetOptions{})
 			if err != nil {
 				return nil, err
