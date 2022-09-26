@@ -269,6 +269,8 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				columns[timeBucketColumn] = timeBucketColumn
 				newHandler = append(newHandler, *handler...)
 				*handler = newHandler
+				p.ctx.dimensions[timeBucketColumn] = true
+
 				continue
 			} else if expr.Name == "range" {
 				continue
@@ -282,6 +284,9 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 		}
 		script := p.getExprStringAndFlagByExpr(dim.Expr, influxql.AnyField)
 		exprList = append(exprList, script)
+
+		key, _ := getExprStringAndFlag(dim.Expr, influxql.AnyField)
+		p.ctx.dimensions[key] = true
 	}
 	return exprSelect, exprList, tailExpr, nil
 }
