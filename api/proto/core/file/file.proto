@@ -16,6 +16,7 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "common/openapi.proto";
 import "common/identity.proto";
 import "common/http.proto";
+import "custom/extension/extension.proto";
 
 enum FileType {
     unknown = 0;
@@ -37,10 +38,35 @@ message File {
     google.protobuf.Timestamp expiredAt = 11;
 }
 
+message FilePart {
+    bytes part = 1;
+}
+
 service FileService {
     option (erda.common.openapi_service) = {
         service: "erda-server",
     };
+
+    rpc Download (FileDownloadRequest) returns (stream FilePart) {
+        option (google.api.http) = {
+            get: "/api/files/{uuid}",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/files/{uuid}",
+            auth: {
+                check_login: false,
+                try_check_login: true,
+                check_token: true,
+            },
+        };
+        option (custom.extension.http) = {
+            pure: true,
+        };
+    }
+}
+
+message FileDownloadRequest {
+    string uuid = 1;
 }
 
 message FileUploadResponse {
