@@ -327,6 +327,11 @@ erda.core.monitor.alertdetail:
   query_metric_from_clickhouse: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
   debug_sql: ${DEBUG:false}
 
+erda.core.pipeline.pipeline-client: { }
+grpc-client@erda.core.pipeline.pipeline:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
+
 clickhouse.table.loader@entity:
   _enable: ${QUERY_ENTITY_FROM_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_ENTITY_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}

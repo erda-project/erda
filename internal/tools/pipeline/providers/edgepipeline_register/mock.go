@@ -39,6 +39,7 @@ func (m *MockEdgeRegister) GetEdgePipelineEnvs() apistructs.ClusterManagerClient
 }
 func (m *MockEdgeRegister) CheckAccessToken(token string) error                     { return nil }
 func (m *MockEdgeRegister) CheckAccessTokenFromHttpRequest(req *http.Request) error { return nil }
+func (m *MockEdgeRegister) CheckAccessTokenFromCtx(ctx context.Context) error       { return nil }
 func (m *MockEdgeRegister) IsEdge() bool                                            { return true }
 func (m *MockEdgeRegister) IsCenter() bool                                          { return !m.IsEdge() }
 func (m *MockEdgeRegister) CanProxyToEdge(source apistructs.PipelineSource, clusterName string) bool {

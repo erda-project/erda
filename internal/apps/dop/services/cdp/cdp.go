@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
@@ -257,7 +258,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 	return nil
 }
 
-func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO, withTruncate bool) (string, error) {
+func (cdp *CDP) getFailedTaskLogs(pipelineDetail *pipelinepb.PipelineDetailDTO, withTruncate bool) (string, error) {
 	failedTasks := map[string]string{}
 	for _, stage := range pipelineDetail.PipelineStages {
 		for _, task := range stage.PipelineTasks {

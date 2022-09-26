@@ -20,7 +20,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -30,17 +32,17 @@ func TestPipeline_EnsureGC(t *testing.T) {
 	p := Pipeline{
 		PipelineExtra: PipelineExtra{
 			Extra: PipelineExtraInfo{
-				GC: apistructs.PipelineGC{
-					ResourceGC: apistructs.PipelineResourceGC{
+				GC: basepb.PipelineGC{
+					ResourceGC: &basepb.PipelineResourceGC{
 						SuccessTTLSecond: &ttl,
 						FailedTTLSecond:  nil,
 					},
-					DatabaseGC: apistructs.PipelineDatabaseGC{
-						Analyzed: apistructs.PipelineDBGCItem{
+					DatabaseGC: &basepb.PipelineDatabaseGC{
+						Analyzed: &basepb.PipelineDBGCItem{
 							NeedArchive: nil,
 							TTLSecond:   &ttl,
 						},
-						Finished: apistructs.PipelineDBGCItem{
+						Finished: &basepb.PipelineDBGCItem{
 							NeedArchive: &archive,
 							TTLSecond:   nil,
 						},
@@ -172,9 +174,9 @@ func Test_canDelete(t *testing.T) {
 					},
 					PipelineExtra: PipelineExtra{
 						Extra: PipelineExtraInfo{
-							GC: apistructs.PipelineGC{
-								DatabaseGC: apistructs.PipelineDatabaseGC{
-									Finished: apistructs.PipelineDBGCItem{
+							GC: basepb.PipelineGC{
+								DatabaseGC: &basepb.PipelineDatabaseGC{
+									Finished: &basepb.PipelineDBGCItem{
 										TTLSecond: &[]uint64{5184000}[0],
 									},
 								},
@@ -197,9 +199,9 @@ func Test_canDelete(t *testing.T) {
 					},
 					PipelineExtra: PipelineExtra{
 						Extra: PipelineExtraInfo{
-							GC: apistructs.PipelineGC{
-								DatabaseGC: apistructs.PipelineDatabaseGC{
-									Finished: apistructs.PipelineDBGCItem{
+							GC: basepb.PipelineGC{
+								DatabaseGC: &basepb.PipelineDatabaseGC{
+									Finished: &basepb.PipelineDBGCItem{
 										TTLSecond: &[]uint64{5184000}[0],
 									},
 								},
@@ -247,8 +249,8 @@ func TestGetOwnerUserID(t *testing.T) {
 			args: args{
 				extra: PipelineExtra{
 					Extra: PipelineExtraInfo{
-						OwnerUser: &apistructs.PipelineUser{
-							ID: "1",
+						OwnerUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("1"),
 						},
 					},
 				},
@@ -289,8 +291,8 @@ func TestGetUserID(t *testing.T) {
 			args: args{
 				extra: PipelineExtra{
 					Extra: PipelineExtraInfo{
-						SubmitUser: &apistructs.PipelineUser{
-							ID: "1",
+						SubmitUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("1"),
 						},
 					},
 				},
@@ -302,11 +304,11 @@ func TestGetUserID(t *testing.T) {
 			args: args{
 				extra: PipelineExtra{
 					Extra: PipelineExtraInfo{
-						SubmitUser: &apistructs.PipelineUser{
-							ID: "1",
+						SubmitUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("1"),
 						},
-						RunUser: &apistructs.PipelineUser{
-							ID: "2",
+						RunUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("2"),
 						},
 					},
 				},
@@ -318,14 +320,14 @@ func TestGetUserID(t *testing.T) {
 			args: args{
 				extra: PipelineExtra{
 					Extra: PipelineExtraInfo{
-						SubmitUser: &apistructs.PipelineUser{
-							ID: "1",
+						SubmitUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("1"),
 						},
-						RunUser: &apistructs.PipelineUser{
-							ID: "2",
+						RunUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("2"),
 						},
-						OwnerUser: &apistructs.PipelineUser{
-							ID: "3",
+						OwnerUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("3"),
 						},
 					},
 				},
@@ -367,8 +369,8 @@ func TestGetOwnerOrRunUserID(t *testing.T) {
 			args: args{
 				extra: PipelineExtra{
 					Extra: PipelineExtraInfo{
-						OwnerUser: &apistructs.PipelineUser{
-							ID: "1",
+						OwnerUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("1"),
 						},
 					},
 				},
@@ -380,8 +382,8 @@ func TestGetOwnerOrRunUserID(t *testing.T) {
 			args: args{
 				extra: PipelineExtra{
 					Extra: PipelineExtraInfo{
-						RunUser: &apistructs.PipelineUser{
-							ID: "2",
+						RunUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("2"),
 						},
 					},
 				},
@@ -393,11 +395,11 @@ func TestGetOwnerOrRunUserID(t *testing.T) {
 			args: args{
 				extra: PipelineExtra{
 					Extra: PipelineExtraInfo{
-						RunUser: &apistructs.PipelineUser{
-							ID: "2",
+						RunUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("2"),
 						},
-						OwnerUser: &apistructs.PipelineUser{
-							ID: "1",
+						OwnerUser: &basepb.PipelineUser{
+							ID: structpb.NewStringValue("1"),
 						},
 					},
 				},

@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/internal/tools/pipeline/precheck/checkers/actionchecker/api_register"
@@ -39,7 +40,7 @@ var fileRegexp, _ = regexp.Compile(`^\/(\w+\/?)+$`)
 
 // files: key: fileName, value: fileContent
 // return: abort, message
-func PreCheck(ctx context.Context, pipelineYmlByte []byte, itemForCheck prechecktype.ItemsForCheck) (globalAbort bool, showMessage apistructs.ShowMessage) {
+func PreCheck(ctx context.Context, pipelineYmlByte []byte, itemForCheck prechecktype.ItemsForCheck) (globalAbort bool, showMessage basepb.ShowMessage) {
 	initialize()
 
 	defer func() {

@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/scenarios/auto-test-plan-detail/i18n"
@@ -51,7 +52,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	switch event.Operation {
 	case "cancelExecute":
 
-		var req apistructs.PipelineCancelRequest
+		var req pipelinepb.PipelineCancelRequest
 		req.PipelineID = uint64(c.State["pipelineId"].(float64))
 		req.UserID = bdl.Identity.UserID
 		err := bdl.Bdl.CancelPipeline(req)

@@ -15,12 +15,16 @@
 package dbclient
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
@@ -122,7 +126,7 @@ func (client *Client) GetPipelineWithExistInfo(id interface{}, ops ...SessionOpt
 }
 
 // UpdatePipelineShowMessage 更新 extra.ExtraInfo.ShowMessage
-func (client *Client) UpdatePipelineShowMessage(pipelineID uint64, showMessage apistructs.ShowMessage, ops ...SessionOption) error {
+func (client *Client) UpdatePipelineShowMessage(pipelineID uint64, showMessage basepb.ShowMessage, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -241,8 +245,24 @@ func (p *PageListPipelinesResult) GetMinPipelineID() uint64 {
 	return minID
 }
 
+func getLabels(source map[string]*structpb.Value) (map[string][]string, error) {
+	labels := make(map[string][]string)
+	for k, v := range source {
+		dat, err := v.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		newList := make([]string, 0)
+		if err := json.Unmarshal(dat, &newList); err != nil {
+			return nil, err
+		}
+		labels[k] = newList
+	}
+	return labels, nil
+}
+
 // PageListPipelines return pagingPipelines, pagingPipelineIDs, total, currentPageSize, error
-func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, ops ...SessionOption) (*PageListPipelinesResult, error) {
+func (client *Client) PageListPipelines(req *pipelinepb.PipelinePagingRequest, ops ...SessionOption) (*PageListPipelinesResult, error) {
 
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -264,16 +284,16 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 		req.PageSize = 20
 	}
 
-	if !req.AllSources && len(req.Sources) == 0 {
+	if !req.AllSources && len(req.Source) == 0 {
 		return nil, errors.New("missing pipeline sources")
 	}
 
 	// label
-	if req.MustMatchLabels == nil {
-		req.MustMatchLabels = make(map[string][]string)
+	if req.MustMatchLabelsJSON == nil {
+		req.MustMatchLabelsJSON = make(map[string]*structpb.Value)
 	}
-	if req.AnyMatchLabels == nil {
-		req.AnyMatchLabels = make(map[string][]string)
+	if req.AnyMatchLabelsJSON == nil {
+		req.AnyMatchLabelsJSON = make(map[string]*structpb.Value)
 	}
 
 	// 并行查询
@@ -287,15 +307,27 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	go func() {
 		defer wg.Done()
 		// select by labels
-		if len(req.MustMatchLabels) > 0 || len(req.AnyMatchLabels) > 0 {
+		if len(req.MustMatchLabelsJSON) > 0 || len(req.AnyMatchLabelsJSON) > 0 {
 			needFilterByLabel = true
+			sources := make([]apistructs.PipelineSource, 0)
+			for _, source := range req.Source {
+				sources = append(sources, apistructs.PipelineSource(source))
+			}
+			mustMatchLabels, err := getLabels(req.MustMatchLabelsJSON)
+			if err != nil {
+				return
+			}
+			anyMatchLabels, err := getLabels(req.AnyMatchLabelsJSON)
+			if err != nil {
+				return
+			}
 			labelRequest := apistructs.TargetIDSelectByLabelRequest{
 				Type:                   apistructs.PipelineLabelTypeInstance,
-				PipelineSources:        req.Sources,
+				PipelineSources:        sources,
 				AllowNoPipelineSources: req.AllSources,
-				PipelineYmlNames:       req.YmlNames,
-				MustMatchLabels:        req.MustMatchLabels,
-				AnyMatchLabels:         req.AnyMatchLabels,
+				PipelineYmlNames:       req.YmlName,
+				MustMatchLabels:        mustMatchLabels,
+				AnyMatchLabels:         anyMatchLabels,
 			}
 			labelPipelineIDs, err = client.SelectTargetIDsByLabels(labelRequest)
 			if err != nil {
@@ -312,10 +344,10 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	var forceIndexes []string
 	// idx_id_source_cluster_status
 	if !req.AllSources && len(req.Sources) > 0 &&
-		len(req.ClusterNames) > 0 &&
-		len(req.Statuses) > 0 &&
+		len(req.ClusterName) > 0 &&
+		len(req.Status) > 0 &&
 		len(req.AscCols) == 0 && len(req.DescCols) == 0 {
-		if !req.StartTimeBegin.IsZero() || !req.EndTimeBegin.IsZero() {
+		if req.StartTimeBegin != nil || req.EndTimeBegin != nil {
 			forceIndexes = append(forceIndexes, "`idx_source_status_cluster_timebegin_timeend_id`")
 		} else {
 			forceIndexes = append(forceIndexes, "`idx_id_source_cluster_status`")
@@ -330,10 +362,9 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	if req.PipelineDefinitionRequest != nil {
 		var definitionReq = req.PipelineDefinitionRequest
 		needQueryDefinition = true
-
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " != '' ")
-		if !definitionReq.IsEmptyValue() {
+		if !apistructs.IsPipelineDefinitionReqEmpty(req.PipelineDefinitionRequest) {
 			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
 			baseSQL.Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
 			if len(definitionReq.Name) > 0 {
@@ -354,35 +385,35 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 		}
 	}
 
-	if !req.AllSources && len(req.Sources) > 0 {
-		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_source"), req.Sources)
+	if !req.AllSources && len(req.Source) > 0 {
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_source"), req.Source)
 	}
-	if len(req.YmlNames) > 0 {
-		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_yml_name"), req.YmlNames)
+	if len(req.YmlName) > 0 {
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_yml_name"), req.YmlName)
 	}
-	if len(req.Statuses) > 0 {
-		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.Statuses)
+	if len(req.Status) > 0 {
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.Status)
 	}
-	if len(req.NotStatuses) > 0 {
-		baseSQL.NotIn(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.NotStatuses)
+	if len(req.NotStatus) > 0 {
+		baseSQL.NotIn(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.NotStatus)
 	}
-	if len(req.TriggerModes) > 0 {
-		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "trigger_mode"), req.TriggerModes)
+	if len(req.TriggerMode) > 0 {
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "trigger_mode"), req.TriggerMode)
 	}
-	if len(req.ClusterNames) > 0 {
-		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "cluster_name"), req.ClusterNames)
+	if len(req.ClusterName) > 0 {
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "cluster_name"), req.ClusterName)
 	}
 	baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "is_snippet")+" = ?", req.IncludeSnippet)
-	if !req.StartTimeBegin.IsZero() {
+	if req.StartTimeBegin != nil && !req.StartTimeBegin.AsTime().IsZero() {
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" >= ? ", req.StartTimeBegin)
 	}
-	if !req.EndTimeBegin.IsZero() {
+	if req.EndTimeBegin != nil && !req.EndTimeBegin.AsTime().IsZero() {
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" <= ?", req.EndTimeBegin)
 	}
-	if !req.StartTimeCreated.IsZero() {
+	if req.StartTimeCreated != nil && !req.StartTimeCreated.AsTime().IsZero() {
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" >= ?", req.StartTimeCreated)
 	}
-	if !req.EndTimeCreated.IsZero() {
+	if req.EndTimeCreated != nil && !req.EndTimeCreated.AsTime().IsZero() {
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
 	}
 	if req.StartIDGt != 0 {
@@ -434,7 +465,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	}
 
 	// 在内存中做分页
-	pagingPipelineIDs := paging(pipelineIDs, req.PageNum, req.PageSize)
+	pagingPipelineIDs := paging(pipelineIDs, int(req.PageNum), int(req.PageSize))
 	currentPageSize := int64(len(pagingPipelineIDs))
 	total := int64(len(pipelineIDs))
 
@@ -535,8 +566,8 @@ func (client *Client) ParseRerunFailedDetail(detail *spec.RerunFailedDetail) (
 	return successTaskMap, failedTaskMap, nil
 }
 
-// PipelineStatistic pipeline 执行情况统计
-func (client *Client) PipelineStatistic(source, clusterName string) (*apistructs.PipelineStatisticResponseData, error) {
+// PipelineStatistic pipeline operation statistics
+func (client *Client) PipelineStatistic(source, clusterName string) (*pipelinepb.PipelineStatisticResponseData, error) {
 	var (
 		success    int64
 		failed     int64
@@ -571,7 +602,7 @@ func (client *Client) PipelineStatistic(source, clusterName string) (*apistructs
 		return nil, err
 	}
 
-	return &apistructs.PipelineStatisticResponseData{
+	return &pipelinepb.PipelineStatisticResponseData{
 		Success:    uint64(success),
 		Processing: uint64(processing),
 		Failed:     uint64(failed),

@@ -26,11 +26,14 @@ import (
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
-	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -175,11 +178,11 @@ func (c *Clusters) AddClusters(ctx context.Context, req apistructs.CloudClusterR
 	}
 	logrus.Infof("add edge cluster yaml: %v", string(b))
 
-	dto, err := c.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := c.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(b),
 		PipelineYmlName: fmt.Sprintf("ops-add-cluster-%s.yml", req.ClusterName),
 		ClusterName:     clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource:  apistructs.PipelineSourceOps,
+		PipelineSource:  apistructs.PipelineSourceOps.String(),
 		AutoRunAtOnce:   true,
 	})
 	if err != nil {
@@ -195,7 +198,7 @@ func (c *Clusters) AddClusters(ctx context.Context, req apistructs.CloudClusterR
 		ClusterName: req.ClusterName,
 		Status:      dbclient.StatusTypeProcessing,
 		Detail:      "",
-		PipelineID:  dto.ID,
+		PipelineID:  dto.Data.ID,
 	})
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)
@@ -207,7 +210,7 @@ func (c *Clusters) AddClusters(ctx context.Context, req apistructs.CloudClusterR
 }
 
 func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
-	var dto *apistructs.PipelineDetailDTO
+	var dto *pipelinepb.PipelineDetailResponse
 	reader := c.db.RecordsReader()
 	clusterTypes := []string{
 		dbclient.RecordTypeAddAliACKECluster.String(),
@@ -233,7 +236,9 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
-		dto, err = c.bdl.GetPipeline(record.PipelineID)
+		dto, err = c.pipelineSvc.PipelineDetail(ctx, &pipelinepb.PipelineDetailRequest{
+			PipelineID: record.PipelineID,
+		})
 		if err != nil && strutil.Contains(err.Error(), "not found") {
 			err = fmt.Errorf("not found pipeline: %d", record.PipelineID)
 			_ = c.processFailedPipeline(ctx, record, err)
@@ -244,19 +249,20 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
-		if len(dto.PipelineStages) == 0 {
+		if len(dto.Data.PipelineStages) == 0 {
 			err = fmt.Errorf("empty pipeline stages, pipelineid: %d", record.PipelineID)
 			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
-		for _, stage := range dto.PipelineStages {
+		for _, stage := range dto.Data.PipelineStages {
 			if len(stage.PipelineTasks) == 0 {
 				err = fmt.Errorf("empty task in pipeline stage")
 				_ = c.processFailedPipeline(ctx, record, err)
 				break
 			}
 			for _, task := range stage.PipelineTasks {
-				if task.Status.IsFailedStatus() {
+				taskStatus := apistructs.PipelineStatus(task.Status)
+				if taskStatus.IsFailedStatus() {
 					if len(task.Result.Errors) != 0 {
 						err = fmt.Errorf("%s", task.Result.Errors[0].Msg)
 					} else {
@@ -265,11 +271,11 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 					_ = c.processFailedPipeline(ctx, record, err)
 					break
 				}
-				if !task.Status.IsSuccessStatus() {
+				if !taskStatus.IsSuccessStatus() {
 					break
 				}
-				if task.Status.IsSuccessStatus() && task.Name == "diceInstall" {
-					_ = c.processSuccessPipeline(task.Result.Result, record)
+				if taskStatus.IsSuccessStatus() && task.Name == "diceInstall" {
+					_ = c.processSuccessPipeline(task.Result.Metadata, record)
 				}
 			}
 		}
@@ -302,10 +308,10 @@ func (c *Clusters) processFailedPipeline(ctx context.Context, record dbclient.Re
 	return nil
 }
 
-func (c *Clusters) processSuccessPipeline(pTaskResult taskresult.Result, record dbclient.Record) error {
+func (c *Clusters) processSuccessPipeline(pTaskResult []*commonpb.MetadataField, record dbclient.Record) error {
 	req := &clusterpb.CreateClusterRequest{}
 	// get cluster info from pipeline result
-	for _, m := range pTaskResult.Metadata {
+	for _, m := range pTaskResult {
 		if m.Name == "cluster_info" {
 			cluster := []byte(m.Value)
 			err := json.Unmarshal(cluster, &req)

@@ -22,6 +22,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
@@ -157,12 +159,12 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 		},
 	)
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipeline",
-		func(_ *bundle.Bundle, pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
-			resp := &apistructs.PipelineDetailDTO{
-				PipelineStages: []apistructs.PipelineStageDetailDTO{
-					apistructs.PipelineStageDetailDTO{
-						PipelineTasks: []apistructs.PipelineTaskDTO{apistructs.PipelineTaskDTO{Type: "dice-deploy-release",
-							Status: apistructs.PipelineStatusRunning}},
+		func(_ *bundle.Bundle, pipelineID uint64) (*pipelinepb.PipelineDetailDTO, error) {
+			resp := &pipelinepb.PipelineDetailDTO{
+				PipelineStages: []*basepb.PipelineStageDetailDTO{
+					&basepb.PipelineStageDetailDTO{
+						PipelineTasks: []*basepb.PipelineTaskDTO{&basepb.PipelineTaskDTO{Type: "dice-deploy-release",
+							Status: apistructs.PipelineStatusRunning.String()}},
 					},
 				},
 			}
@@ -185,11 +187,11 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 }
 
 func TestIsUndoneDeployByReleaseTask(t *testing.T) {
-	pipelineDetailDTO := &apistructs.PipelineDetailDTO{
-		PipelineStages: []apistructs.PipelineStageDetailDTO{
-			apistructs.PipelineStageDetailDTO{
-				PipelineTasks: []apistructs.PipelineTaskDTO{apistructs.PipelineTaskDTO{Type: "dice-deploy-release",
-					Status: apistructs.PipelineStatusRunning}},
+	pipelineDetailDTO := &pipelinepb.PipelineDetailDTO{
+		PipelineStages: []*basepb.PipelineStageDetailDTO{
+			&basepb.PipelineStageDetailDTO{
+				PipelineTasks: []*basepb.PipelineTaskDTO{&basepb.PipelineTaskDTO{Type: "dice-deploy-release",
+					Status: apistructs.PipelineStatusRunning.String()}},
 			},
 		},
 	}

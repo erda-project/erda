@@ -17,11 +17,11 @@ package run
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type Interface interface {
-	RunOnePipeline(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
+	RunOnePipeline(ctx context.Context, req *pipelinepb.PipelineRunRequest) (*spec.Pipeline, error)
 	CanManualRun(ctx context.Context, p *spec.Pipeline) (reason string, can bool)
 }

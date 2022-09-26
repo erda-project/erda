@@ -47,13 +47,13 @@ type provider struct {
 	MySQL        mysqlxorm.Interface    `autowired:"mysql-xorm"`
 	LeaderWorker leaderworker.Interface `autowired:"leader-worker"`
 
-	createPipelineFunc   CreatePipelineFunc
 	bdl                  *bundle.Bundle
 	dbClient             *db.Client
 	crond                *cron.Cron
 	mu                   *sync.Mutex
 	EdgePipelineRegister edgepipeline_register.Interface
 	BuildSvc             build.Interface
+	createPipelineFunc   CreatePipelineFunc
 }
 
 func (p *provider) WithPipelineFunc(createPipelineFunc CreatePipelineFunc) {

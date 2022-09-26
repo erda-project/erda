@@ -22,7 +22,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -94,6 +98,21 @@ func (rps PipelineRunParamsWithValue) ToPipelineRunParams() PipelineRunParams {
 		result = append(result, PipelineRunParam{Name: rp.Name, Value: rp.Value})
 	}
 	return result
+}
+
+func (rps PipelineRunParamsWithValue) ToPipelineRunParamsPB() ([]*basepb.PipelineRunParam, error) {
+	result := make([]*basepb.PipelineRunParam, 0)
+	for _, rp := range rps {
+		val, err := structpb.NewValue(rp.Value)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &basepb.PipelineRunParam{
+			Name:  rp.Name,
+			Value: val,
+		})
+	}
+	return result, nil
 }
 
 // PipelineCreateRequestV2 used to create pipeline via pipeline V2 API.
@@ -272,12 +291,6 @@ type PipelineBatchCreateResponse struct {
 }
 
 // pipeline detail
-type PipelineDetailRequest struct {
-	SimplePipelineBaseResult bool   `json:"simplePipelineBaseResult"`
-	PipelineID               uint64 `json:"pipelineID"`
-}
-
-// pipeline detail
 type PipelineDetailResponse struct {
 	Header
 	Data *PipelineDetailDTO `json:"data"`
@@ -407,6 +420,25 @@ func (definition *PipelineDefinitionRequest) IsEmptyValue() bool {
 	return true
 }
 
+func IsPipelineDefinitionReqEmpty(definition *pipelinepb.PipelineDefinitionRequest) bool {
+	if definition == nil {
+		return true
+	}
+	if len(definition.Name) > 0 {
+		return false
+	}
+	if len(definition.Creators) > 0 {
+		return false
+	}
+	if len(definition.SourceRemotes) > 0 {
+		return false
+	}
+	if definition.Location != "" {
+		return false
+	}
+	return true
+}
+
 type PipelineSourceRequest struct {
 	Remote     string `json:"remote"`
 	Ref        string `json:"ref"`
@@ -507,6 +539,136 @@ func (req *PipelinePageListRequest) PostHandleQueryString() error {
 	}
 
 	return nil
+}
+
+func PostHandlePBQueryString(req *pipelinepb.PipelinePagingRequest) error {
+	// comma
+	const comma = ","
+	req.Branch = append(req.Branch, strutil.Split(req.Branches, comma, true)...)
+	for _, source := range strutil.Split(req.Sources, comma, true) {
+		req.Source = append(req.Source, source)
+	}
+	req.Status = append(req.Status, strutil.Split(req.Statuses, comma, true)...)
+	req.YmlName = append(req.YmlName, strutil.Split(req.YmlNames, comma, true)...)
+
+	// labels
+	if req.MustMatchLabelsJSON == nil {
+		req.MustMatchLabelsJSON = make(map[string]*structpb.Value)
+	}
+	if req.MustMatchLabels != "" {
+		mustMatchLabels := make(map[string]string)
+		if err := json.Unmarshal([]byte(req.MustMatchLabels), &mustMatchLabels); err != nil {
+			return err
+		}
+		for k, v := range mustMatchLabels {
+			newValue, err := appendStructValue(req.MustMatchLabelsJSON[k], v)
+			if err != nil {
+				return err
+			}
+			req.MustMatchLabelsJSON[k] = newValue
+		}
+	}
+	for _, param := range req.MustMatchLabel {
+		kv := strings.SplitN(param, "=", 2)
+		if len(kv) != 2 {
+			return errors.Errorf("invalid mustMatchLabel: %s", param)
+		}
+		newValue, err := appendStructValue(req.MustMatchLabelsJSON[kv[0]], kv[1])
+		if err != nil {
+			return err
+		}
+		req.MustMatchLabelsJSON[kv[0]] = newValue
+	}
+
+	if req.AnyMatchLabelsJSON == nil {
+		req.AnyMatchLabelsJSON = make(map[string]*structpb.Value)
+	}
+	if req.AnyMatchLabels != "" {
+		anyMatchLabels := make(map[string]string)
+		if err := json.Unmarshal([]byte(req.AnyMatchLabels), &anyMatchLabels); err != nil {
+			return err
+		}
+		for k, v := range anyMatchLabels {
+			newValue, err := appendStructValue(req.AnyMatchLabelsJSON[k], v)
+			if err != nil {
+				return err
+			}
+			req.AnyMatchLabelsJSON[k] = newValue
+		}
+	}
+	for _, param := range req.AnyMatchLabel {
+		kv := strings.SplitN(param, "=", 2)
+		if len(kv) != 2 {
+			return errors.Errorf("invalid anyMatchLabel: %s", param)
+		}
+		newValue, err := appendStructValue(req.AnyMatchLabelsJSON[kv[0]], kv[1])
+		if err != nil {
+			return err
+		}
+		req.AnyMatchLabelsJSON[kv[0]] = newValue
+	}
+
+	// time
+	// 历史遗留问题，cdp 对接时时区使用了 CST
+	l, _ := time.LoadLocation("Asia/Shanghai")
+
+	if req.StartTimeBeginTimestamp > 0 {
+		req.StartTimeBegin = timestamppb.New(time.Unix(req.StartTimeBeginTimestamp, 0))
+	} else if req.StartedAt != "" {
+		startedAtCST, _ := time.ParseInLocation("2006-01-02T15:04:05", req.StartedAt, l)
+		if !startedAtCST.IsZero() {
+			req.StartTimeBegin = timestamppb.New(time.Unix(startedAtCST.Unix(), 0))
+		}
+	}
+	if req.EndTimeBeginTimestamp > 0 {
+		req.EndTimeBegin = timestamppb.New(time.Unix(req.EndTimeBeginTimestamp, 0))
+	} else if req.EndedAt != "" {
+		endedAtCST, _ := time.ParseInLocation("2006-01-02T15:04:05", req.EndedAt, l)
+		if !endedAtCST.IsZero() {
+			req.EndTimeBegin = timestamppb.New(time.Unix(endedAtCST.Unix(), 0))
+		}
+	}
+
+	if req.StartTimeCreatedTimestamp > 0 {
+		req.StartTimeCreated = timestamppb.New(time.Unix(req.StartTimeCreatedTimestamp, 0))
+	}
+	if req.EndTimeCreatedTimestamp > 0 {
+		req.EndTimeCreated = timestamppb.New(time.Unix(req.EndTimeCreatedTimestamp, 0))
+	}
+	if req.PipelineDefinition != "" {
+		var pipelineDefinitionRequest = pipelinepb.PipelineDefinitionRequest{}
+		value, err := base64.StdEncoding.DecodeString(req.PipelineDefinition)
+		if err != nil {
+			return errors.Errorf("invalid PipelineDefinitionRequestJSONBase64: %s", req.PipelineDefinition)
+		}
+		err = json.Unmarshal(value, &pipelineDefinitionRequest)
+		if err != nil {
+			return errors.Errorf("invalid PipelineDefinitionRequestJSONBase64: %s", req.PipelineDefinition)
+		}
+		req.PipelineDefinitionRequest = &pipelineDefinitionRequest
+	}
+
+	return nil
+}
+
+func appendStructValue(val *structpb.Value, newDatas ...string) (*structpb.Value, error) {
+	dats := make([]string, 0)
+	if val != nil {
+		listValue := val.GetListValue()
+		for _, v := range listValue.Values {
+			dats = append(dats, v.String())
+		}
+	}
+	dats = strutil.DedupSlice(append(dats, newDatas...))
+	tmp := make([]interface{}, 0)
+	for _, dat := range dats {
+		tmp = append(tmp, dat)
+	}
+	res, err := structpb.NewValue(tmp)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 // UrlQueryString 不兼容 deprecated 字段
@@ -778,8 +940,8 @@ type PipelineDeleteResponse struct {
 }
 
 type PipelineDefinitionExtraValue struct {
-	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
-	RunParams     []*pb.PipelineRunParam   `json:"runParams"`
+	CreateRequest *pipelinepb.PipelineCreateRequestV2 `json:"createRequest"`
+	RunParams     []*pb.PipelineRunParam              `json:"runParams"`
 }
 
 type EdgeReportStatus string

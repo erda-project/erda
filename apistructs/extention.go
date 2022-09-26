@@ -21,6 +21,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
@@ -315,6 +316,17 @@ type ActionSpec struct {
 
 func (s *ActionSpec) ConvertToDetail() PipelineTaskActionDetail {
 	return PipelineTaskActionDetail{
+		Name:        s.Name,
+		Version:     s.Version,
+		Type:        s.Type,
+		LogoUrl:     s.LogoUrl,
+		DisplayName: s.GetLocaleDisplayName(i18n.GetGoroutineBindLang()),
+		Description: s.GetLocaleDesc(i18n.GetGoroutineBindLang()),
+	}
+}
+
+func (s *ActionSpec) Convert2PBDetail() *basepb.PipelineTaskActionDetail {
+	return &basepb.PipelineTaskActionDetail{
 		Name:        s.Name,
 		Version:     s.Version,
 		Type:        s.Type,

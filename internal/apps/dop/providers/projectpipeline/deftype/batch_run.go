@@ -14,7 +14,10 @@
 
 package deftype
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	"github.com/erda-project/erda/apistructs"
+)
 
 type ProjectPipelineBatchRun struct {
 	PipelineDefinitionIDs []string
@@ -23,5 +26,5 @@ type ProjectPipelineBatchRun struct {
 }
 
 type ProjectPipelineBatchRunResult struct {
-	PipelineMap map[string]*apistructs.PipelineDTO
+	PipelineMap map[string]*basepb.PipelineDTO
 }

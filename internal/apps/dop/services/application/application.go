@@ -26,6 +26,7 @@ import (
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -43,6 +44,7 @@ type Application struct {
 	bdl          *bundle.Bundle
 	cms          cmspb.CmsServiceServer
 	tokenService tokenpb.TokenServiceServer
+	pipelineSvc  pipelinepb.PipelineServiceServer
 	org          org.Interface
 }
 
@@ -83,6 +85,12 @@ func WithTokenSvc(tokenService tokenpb.TokenServiceServer) Option {
 func WithOrg(org org.Interface) Option {
 	return func(a *Application) {
 		a.org = org
+	}
+}
+
+func WithPipelineSvc(svc pipelinepb.PipelineServiceServer) Option {
+	return func(a *Application) {
+		a.pipelineSvc = svc
 	}
 }
 
@@ -182,10 +190,10 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 	if err != nil {
 		return 0, err
 	}
-	req := &apistructs.PipelineCreateRequestV2{
+	req := &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(ymlContent),
 		PipelineYmlName: fmt.Sprintf("%s_%s_pipeline.yml", project.Name, app.Name),
-		PipelineSource:  apistructs.PipelineSourceDice,
+		PipelineSource:  apistructs.PipelineSourceDice.String(),
 		ClusterName:     clusterName,
 		Labels: map[string]string{
 			apistructs.LabelBranch:        "master",
@@ -197,12 +205,12 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 		AutoRunAtOnce: true,
 	}
 	// create pipeline info
-	pipelineInfo, err := a.bdl.CreatePipeline(req)
+	pipelineInfo, err := a.pipelineSvc.PipelineCreateV2(context.Background(), req)
 	if err != nil {
 		return 0, err
 	}
 
-	return pipelineInfo.ID, nil
+	return pipelineInfo.Data.ID, nil
 }
 
 // QueryPublishItemRelations 查询应用发布内容关联关系

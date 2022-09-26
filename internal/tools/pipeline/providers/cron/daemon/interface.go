@@ -17,19 +17,17 @@ package daemon
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
-type CreatePipelineFunc func(ctx context.Context, req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+type CreatePipelineFunc func(ctx context.Context, req *pb.PipelineCreateRequestV2) (*spec.Pipeline, error)
 
 type Interface interface {
 	AddIntoPipelineCrond(cron *db.PipelineCron) error
 	DeleteFromPipelineCrond(cron *db.PipelineCron) error
 	ReloadCrond(ctx context.Context) ([]string, error)
 	CrondSnapshot() []string
-
-	// todo Can be removed after all objects are provider
 	WithPipelineFunc(createPipelineFunc CreatePipelineFunc)
 }

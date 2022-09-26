@@ -39,6 +39,7 @@ import (
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	graphpb "github.com/erda-project/erda-proto-go/core/pipeline/graph/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
@@ -101,11 +102,12 @@ type provider struct {
 	CICDCmsSvc            *cms.CICDCmsService                     `autowired:"erda.dop.cms.CICDCmsService"`
 	UnitTestService       *unittest.UnitTestService               `autowired:"erda.dop.qa.unittest.UnitTestService"`
 	DevFlowRule           devflowrule.Interface
-	TokenService          tokenpb.TokenServiceServer     `autowired:"erda.core.token.TokenService"`
-	ClusterSvc            clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	DevFlowSvc            *flow.Service                  `autowired:"erda.apps.devflow.flow.FlowService"`
-	IssueCoreSvc          *core.IssueService             `autowired:"erda.dop.issue.core.IssueCoreService"`
-	GraphSvc              graphpb.GraphServiceServer     `autowired:"erda.core.pipeline.graph.GraphService"`
+	TokenService          tokenpb.TokenServiceServer       `autowired:"erda.core.token.TokenService"`
+	ClusterSvc            clusterpb.ClusterServiceServer   `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	DevFlowSvc            *flow.Service                    `autowired:"erda.apps.devflow.flow.FlowService"`
+	IssueCoreSvc          *core.IssueService               `autowired:"erda.dop.issue.core.IssueCoreService"`
+	GraphSvc              graphpb.GraphServiceServer       `autowired:"erda.core.pipeline.graph.GraphService"`
+	PipelineSvc           pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 	Query                 issuequery.Interface
 	Org                   org.Interface `required:"true"`
 	Identity              userpb.UserServiceServer

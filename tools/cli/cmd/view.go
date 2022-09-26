@@ -25,6 +25,8 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
@@ -122,13 +124,13 @@ func PipelineView(ctx *command.Context, branch string, pipelineID uint64, watch 
 	for i, stage := range pipelineInfo.PipelineStages {
 		success := true
 		for _, task := range stage.PipelineTasks {
-			success = success && task.Status.IsSuccessStatus()
+			success = success && apistructs.PipelineStatus(task.Status).IsSuccessStatus()
 			data = append(data, []string{
 				strconv.FormatUint(pipelineID, 10),
 				strconv.FormatUint(task.ID, 10),
 				task.Name,
-				task.Status.String(),
-				task.TimeBegin.Format("2006-01-02 15:04:05"),
+				task.Status,
+				task.TimeBegin.AsTime().Format("2006-01-02 15:04:05"),
 			})
 		}
 		if success {
@@ -168,7 +170,7 @@ func seeMore(ctx *command.Context, orgName string, projectID, appID int, branch 
 	}
 }
 
-func printMetadata(pipelineStages []apistructs.PipelineStageDetailDTO) {
+func printMetadata(pipelineStages []*basepb.PipelineStageDetailDTO) {
 	var meta []map[string]map[string]string
 	for _, pipelineStage := range pipelineStages {
 		s := make(map[string]map[string]string)
