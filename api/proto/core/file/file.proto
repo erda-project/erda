@@ -97,6 +97,26 @@ service FileService {
             pure: true,
         };
     }
+
+    rpc Head (FileHeadRequest) returns (File) {
+        option (google.api.http) = {
+            custom: {
+                kind: "HEAD",
+                path: "/api/files/{uuid}",
+            },
+        };
+        option (erda.common.openapi) = {
+            path: "/api/files/{uuid}",
+            auth: {
+                check_login: false,
+                try_check_login: true,
+                check_token: true,
+            },
+        };
+        option (custom.extension.http) = {
+            pure: true,
+        };
+    }
 }
 
 message FileDownloadRequest {
@@ -116,4 +136,8 @@ message FileUploadResponse {
 message FileDownloadFailResponse {
     bool success = 1;
     common.ResponseError error = 2;
+}
+
+message FileHeadRequest {
+    string uuid = 1;
 }
