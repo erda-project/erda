@@ -45,6 +45,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v1.0.8
+	github.com/erda-project/erda-infra/tools v0.0.0-20220922112628-1965c0260662
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -250,7 +251,6 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/elastic/go-ucfg v0.8.3 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
-	github.com/erda-project/erda-infra/tools v0.0.0-20220922112628-1965c0260662 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
