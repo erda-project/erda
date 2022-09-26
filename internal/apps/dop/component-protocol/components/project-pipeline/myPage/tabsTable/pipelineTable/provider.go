@@ -252,7 +252,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			continue
 		}
 		pipelineYmlNames = append(pipelineYmlNames, extraValue.CreateRequest.PipelineYmlName)
-		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource.String())
+		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource)
 		definitionYmlSourceMap[v.ID] = fmt.Sprintf("%s%s", extraValue.CreateRequest.PipelineYmlName, extraValue.CreateRequest.PipelineSource)
 	}
 

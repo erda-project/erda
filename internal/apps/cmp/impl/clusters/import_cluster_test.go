@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 const (
@@ -38,7 +39,7 @@ const (
 func Test_ImportCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, &mock.MockPipelineServiceServer{})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateClusterWithOrg", func(bundle *bundle.Bundle, userID string, orgID uint64, req *apistructs.ClusterCreateRequest, header ...http.Header) error {
 		return nil

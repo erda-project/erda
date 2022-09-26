@@ -20,6 +20,7 @@ import (
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
@@ -36,6 +37,7 @@ type Service struct {
 	bdl         *bundle.Bundle
 	sceneset    *sceneset.Service
 	autotestSvc *autotest.Service
+	pipelineSvc pipelinepb.PipelineServiceServer
 	cms         cmspb.CmsServiceServer
 	org         org.Interface
 
@@ -89,6 +91,12 @@ func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 func WithOrg(org org.Interface) Option {
 	return func(e *Service) {
 		e.org = org
+	}
+}
+
+func WithPipelineSvc(svc pipelinepb.PipelineServiceServer) Option {
+	return func(e *Service) {
+		e.pipelineSvc = svc
 	}
 }
 

@@ -24,7 +24,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -177,7 +178,7 @@ func (e *Endpoints) pipelineCronStop(ctx context.Context, r *http.Request, vars 
 // pipelineCronCreate accept
 func (e *Endpoints) pipelineCronCreate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 
-	var req pb1.PipelineCreateRequest
+	var req pipelinepb.PipelineCreateRequestV2
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrCreatePipelineCron.InvalidParameter(err).ToResp(), nil
 	}

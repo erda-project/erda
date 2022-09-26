@@ -15,6 +15,7 @@
 package events
 
 import (
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
@@ -41,7 +42,7 @@ func EmitPipelineInstanceEvent(p *spec.Pipeline, userID string) {
 	mgr.ch <- event
 }
 
-func EmitPipelineStreamEvent(pipelineID uint64, events []*apistructs.PipelineEvent) {
+func EmitPipelineStreamEvent(pipelineID uint64, events []*basepb.PipelineEvent) {
 	event := &PipelineStreamEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader

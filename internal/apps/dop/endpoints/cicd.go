@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -121,7 +122,7 @@ func (e *Endpoints) ProxyCICDTaskLogDownload(ctx context.Context, r *http.Reques
 }
 
 func (e *Endpoints) checkTaskPermission(r *http.Request, vars map[string]string) (
-	*apistructs.PipelineDetailDTO, *apistructs.PipelineTaskDTO, error) {
+	*pipelinepb.PipelineDetailDTO, *apistructs.PipelineTaskDTO, error) {
 
 	pipelineIDStr := vars["pipelineID"]
 	pipelineID, err := strconv.ParseUint(pipelineIDStr, 10, 64)

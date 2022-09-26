@@ -25,6 +25,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	notifyGrouppb "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
@@ -85,22 +87,22 @@ func (p *provider) createReportPipelineCron(obj *reportTask) error {
 	if err != nil {
 		return err
 	}
-	createResp, err := p.bdl.CreatePipeline(&pipeline)
+	createResp, err := p.PipelineSvc.PipelineCreateV2(context.Background(), pipeline)
 	if err != nil {
 		return err
 	}
-	if createResp.CronID != nil {
-		obj.PipelineCronId = *createResp.CronID
+	if createResp.Data.CronID != nil {
+		obj.PipelineCronId = *createResp.Data.CronID
 	}
 	return nil
 }
 
-func (p *provider) generatePipeline(r *reportTask) (pipeline dicestructs.PipelineCreateRequestV2, err error) {
+func (p *provider) generatePipeline(r *reportTask) (pipeline *pipelinepb.PipelineCreateRequestV2, err error) {
 	pipeline.PipelineYml, err = p.generatePipelineYml(r)
 	if err != nil {
 		return pipeline, err
 	}
-	pipeline.PipelineSource = dicestructs.PipelineSourceDice
+	pipeline.PipelineSource = dicestructs.PipelineSourceDice.String()
 	pipeline.PipelineYmlName = hex.EncodeToString(uuid.NewV4().Bytes()) + ".yml"
 	pipeline.ClusterName = p.Cfg.ClusterName
 	pipeline.AutoRunAtOnce = r.RunAtOnce

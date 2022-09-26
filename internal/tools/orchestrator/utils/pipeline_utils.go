@@ -21,6 +21,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -217,11 +219,11 @@ func FindCreatingRuntimesByRelease(appID uint64, envs map[string][]string, ymlNa
 }
 
 // isUndoneTaskOFDeployByRelease determine if the 'deploy by release' task is unfinished
-func isUndoneTaskOFDeployByRelease(piplineDetail *apistructs.PipelineDetailDTO) bool {
+func isUndoneTaskOFDeployByRelease(piplineDetail *pipelinepb.PipelineDetailDTO) bool {
 	if len(piplineDetail.PipelineStages) == 0 || len(piplineDetail.PipelineStages[0].PipelineTasks) == 0 {
 		return false
 	}
 
 	task := piplineDetail.PipelineStages[0].PipelineTasks[0]
-	return task.Type == "dice-deploy-release" && !task.Status.IsEndStatus()
+	return task.Type == "dice-deploy-release" && !apistructs.PipelineStatus(task.Status).IsEndStatus()
 }

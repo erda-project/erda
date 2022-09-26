@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	taskpb "github.com/erda-project/erda-proto-go/core/pipeline/task/pb"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/metrics/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop/plugins"
@@ -38,12 +39,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/dispatcher"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/pipeline"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
 	reportsvc "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
@@ -59,6 +60,7 @@ type provider struct {
 	MetricReport   report.MetricReport      `autowired:"metric-report-client" optional:"true"`
 	Router         httpserver.Router        `autowired:"http-router"`
 	CronService    cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	TaskService    taskpb.TaskServiceServer `autowired:"erda.core.pipeline.task.TaskService" required:"true"`
 	ReportSvc      reportsvc.Interface
 	CronDaemon     daemon.Interface
 	CronCompensate compensator.Interface
@@ -67,7 +69,6 @@ type provider struct {
 	Engine       engine.Interface
 	QueueManager queuemanager.Interface
 	Reconciler   reconciler.Interface
-	EdgePipeline edgepipeline.Interface
 	EdgeRegister edgepipeline_register.Interface
 	EdgeReporter edgereporter.Interface
 	LeaderWorker leaderworker.Interface
@@ -85,6 +86,7 @@ type provider struct {
 	Org          org.ClientInterface
 	ActionAgent  actionagent.Interface
 	Permission   permission.Interface
+	PipelineSvc  pipeline.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

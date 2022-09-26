@@ -21,6 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/pkg/gshelper"
@@ -51,7 +52,7 @@ type info struct {
 }
 
 type State struct {
-	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
+	PipelineDetail *pipelinepb.PipelineDetailDTO `json:"pipelineDetail"`
 	PipelineID     uint64                        `json:"pipelineId"`
 	TaskID         uint64                        `json:"taskId"`
 }

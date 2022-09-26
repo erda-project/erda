@@ -15,6 +15,7 @@
 package nodes
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,8 +24,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
@@ -70,13 +73,13 @@ func (n *Nodes) RmNodes(req apistructs.RmNodesRequest, userid string, orgid stri
 		logrus.Errorf(errstr)
 		return recordID, err
 	}
-	dto, err := n.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-rm-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
 			uuid.UUID()[:12]),
 		ClusterName:    clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource: apistructs.PipelineSourceOps,
+		PipelineSource: apistructs.PipelineSourceOps.String(),
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
@@ -106,7 +109,7 @@ func (n *Nodes) RmNodes(req apistructs.RmNodesRequest, userid string, orgid stri
 		ClusterName: req.ClusterName,
 		Status:      dbclient.StatusTypeProcessing,
 		Detail:      "",
-		PipelineID:  dto.ID,
+		PipelineID:  dto.Data.ID,
 	})
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)
@@ -188,11 +191,11 @@ func (n *Nodes) DeleteEssNodes(req apistructs.DeleteNodesRequest, userid string,
 		logrus.Errorf(errstr)
 		return recordID, err
 	}
-	dto, err := n.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(b),
 		PipelineYmlName: fmt.Sprintf("ops-delete-ess-nodes-%s.yml", clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME)),
 		ClusterName:     clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource:  apistructs.PipelineSourceOps,
+		PipelineSource:  apistructs.PipelineSourceOps.String(),
 		AutoRunAtOnce:   true,
 	})
 	if err != nil {
@@ -217,7 +220,7 @@ func (n *Nodes) DeleteEssNodes(req apistructs.DeleteNodesRequest, userid string,
 		ClusterName: req.ClusterName,
 		Status:      dbclient.StatusTypeProcessing,
 		Detail:      string(detail),
-		PipelineID:  dto.ID,
+		PipelineID:  dto.Data.ID,
 	})
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)
@@ -328,13 +331,13 @@ func (n *Nodes) DeleteEssNodesCron(req apistructs.DeleteNodesCronRequest, userid
 		logrus.Errorf(errstr)
 		return nil, err
 	}
-	dto, err := n.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(b),
 		PipelineYmlName: fmt.Sprintf("%s-%s.yml", apistructs.DeleteEssNodesCronPrefix, clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME)),
 		ClusterName:     clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource:  apistructs.PipelineSourceOps,
+		PipelineSource:  apistructs.PipelineSourceOps.String(),
 		AutoStartCron:   true,
-		CronStartFrom:   &launchTime,
+		CronStartFrom:   timestamppb.New(launchTime),
 	})
 
 	if err != nil {
@@ -343,5 +346,5 @@ func (n *Nodes) DeleteEssNodesCron(req apistructs.DeleteNodesCronRequest, userid
 		return nil, err
 	}
 
-	return dto.CronID, nil
+	return dto.Data.CronID, nil
 }

@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package erda.core.pipeline.task;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "common/identity.proto";
+import "core/pipeline/base/base.proto";
+import "common/openapi.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/task/pb";
+
+service TaskService {
+  option(erda.common.openapi_service) = {
+    service: "pipeline",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+  // task
+  rpc PipelineTaskDetail (PipelineTaskDetailRequest) returns (PipelineTaskDetailResponse) {
+    option (google.api.http) = {
+      get: "/api/pipelines/{pipelineID}/tasks/{taskID}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}/tasks/{taskID}",
+      doc: "summary: 查看 task 详情",
+    };
+  }
+  rpc PipelineTaskGetBootstrapInfo (PipelineTaskGetBootstrapInfoRequest) returns (PipelineTaskGetBootstrapInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info",
+      doc: "summary: 获取 task bootstrap info",
+    };
+  }
+
+}
+
+message PipelineTaskDetailRequest {
+  uint64 pipelineID = 1;
+  uint64 taskID = 2;
+}
+message PipelineTaskDetailResponse {
+  core.pipeline.base.PipelineTaskDTO data = 1;
+}
+
+message PipelineTaskGetBootstrapInfoRequest {
+  uint64 pipelineID = 1;
+  uint64 taskID = 2;
+}
+message PipelineTaskGetBootstrapInfoResponse {
+  PipelineTaskGetBootstrapInfoResponseData data = 1;
+}
+message PipelineTaskGetBootstrapInfoResponseData{
+  bytes data = 1;
+}

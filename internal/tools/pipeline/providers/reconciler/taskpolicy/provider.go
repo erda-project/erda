@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -63,10 +64,10 @@ func (p *provider) resetTask(task *spec.PipelineTask, statuses ...apistructs.Pip
 	for _, status := range statuses {
 		strStatuses = append(strStatuses, status.String())
 	}
-	result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
-		Sources:        []apistructs.PipelineSource{source},
-		YmlNames:       []string{ymlName},
-		Statuses:       strStatuses,
+	result, err := p.dbClient.PageListPipelines(&pb.PipelinePagingRequest{
+		Source:         []string{string(source)},
+		YmlName:        []string{ymlName},
+		Status:         strStatuses,
 		PageNum:        1,
 		PageSize:       1,
 		IncludeSnippet: true,

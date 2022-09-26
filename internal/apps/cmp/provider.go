@@ -35,6 +35,7 @@ import (
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
@@ -50,12 +51,13 @@ import (
 var scenarioFS embed.FS
 
 type provider struct {
-	Server      pb.MetricServiceServer         `autowired:"erda.core.monitor.metric.MetricService"`
-	Credential  tokenpb.TokenServiceServer     `autowired:"erda.core.token.TokenService" optional:"true"`
-	Register    transport.Register             `autowired:"service-register" optional:"true"`
-	CronService cronpb.CronServiceServer       `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
-	ClusterSvc  clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	Router      httpserver.Router              `autowired:"http-router"`
+	Server      pb.MetricServiceServer           `autowired:"erda.core.monitor.metric.MetricService"`
+	Credential  tokenpb.TokenServiceServer       `autowired:"erda.core.token.TokenService" optional:"true"`
+	Register    transport.Register               `autowired:"service-register" optional:"true"`
+	CronService cronpb.CronServiceServer         `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	ClusterSvc  clusterpb.ClusterServiceServer   `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	PipelineSvc pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService" required:"true"`
+	Router      httpserver.Router                `autowired:"http-router"`
 
 	Metrics         *metrics.Metric
 	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`

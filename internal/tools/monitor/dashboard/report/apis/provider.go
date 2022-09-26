@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
@@ -66,7 +67,8 @@ type provider struct {
 	cmdb        *cmdb.Cmdb
 	t           i18n.Translator
 	db          *DB
-	CronService cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	CronService cronpb.CronServiceServer         `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	PipelineSvc pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 	Org         org.ClientInterface
 }
 

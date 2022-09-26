@@ -23,9 +23,9 @@ import (
 
 	"github.com/alecthomas/assert"
 
-	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
@@ -72,7 +72,7 @@ func (t TestPipelineCron) CronUpdate(ctx context.Context, request *cronpb.CronUp
 
 func TestEndpoints_pipelineCronCreate(t *testing.T) {
 	e := &Endpoints{}
-	var createV2 pb1.PipelineCreateRequest
+	var createV2 pipelinepb.PipelineCreateRequestV2
 	createV2.PipelineYml = `version: 1.1
 cron_compensator:
   enable: true

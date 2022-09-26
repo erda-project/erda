@@ -32,11 +32,13 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	pipelinesvcpb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
@@ -225,7 +227,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 
 	err := p.checkRolePermission(apistructs.IdentityInfo{
 		UserID: apis.GetUserID(ctx),
-	}, &apistructs.PipelineCreateRequestV2{
+	}, &pipelinesvcpb.PipelineCreateRequestV2{
 		Labels: map[string]string{
 			apistructs.LabelAppID:  strconv.FormatUint(params.AppID, 10),
 			apistructs.LabelBranch: params.Ref,
@@ -459,7 +461,7 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 
 	crons, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 		AllSources: false,
-		Sources:    []string{extra.CreateRequest.PipelineSource.String()},
+		Sources:    []string{extra.CreateRequest.PipelineSource},
 		YmlNames:   []string{extra.CreateRequest.PipelineYmlName},
 		PageSize:   1,
 		PageNo:     1,
@@ -473,7 +475,7 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 
 	createV2 := extra.CreateRequest
 	createV2.DefinitionID = definition.ID
-	_, err = p.bundle.CreatePipeline(createV2)
+	_, err = p.pipelineService.PipelineCreateV2(context.Background(), createV2)
 	if err != nil {
 		return fmt.Errorf("failed to CreatePipeline, err: %v", err)
 	}
@@ -608,7 +610,7 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
 	crons, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
-		Sources:  []string{extraValue.CreateRequest.PipelineSource.String()},
+		Sources:  []string{extraValue.CreateRequest.PipelineSource},
 		YmlNames: []string{extraValue.CreateRequest.PipelineYmlName},
 		PageSize: 1,
 		PageNo:   1,
@@ -792,7 +794,7 @@ func (p *ProjectPipelineService) Run(ctx context.Context, params *pb.RunProjectP
 	}, nil
 }
 
-func pipelineDTOToStructPb(value *apistructs.PipelineDTO) (*structpb.Value, error) {
+func pipelineDTOToStructPb(value *basepb.PipelineDTO) (*structpb.Value, error) {
 	valueJson, err := json.Marshal(value)
 	if err != nil {
 		return nil, err
@@ -1019,7 +1021,7 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 	}
 
 	work := limit_sync_group.NewWorker(5)
-	var result = map[string]*apistructs.PipelineDTO{}
+	var result = map[string]*basepb.PipelineDTO{}
 
 	for _, v := range definitionMap {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
@@ -1079,11 +1081,12 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params *pb.CancelPr
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
 
-	if pipelineInfo.Status.CanCancel() {
-		var req apistructs.PipelineCancelRequest
+	if apistructs.PipelineStatus(pipelineInfo.Status).CanCancel() {
+		var req pipelinesvcpb.PipelineCancelRequest
 		req.PipelineID = uint64(definition.PipelineID)
-		req.IdentityInfo = identityInfo
-		err = p.bundle.CancelPipeline(req)
+		req.UserID = apis.GetUserID(ctx)
+		req.InternalClient = apis.GetInternalClient(ctx)
+		_, err = p.pipelineService.PipelineCancel(ctx, &req)
 		if err != nil {
 			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 		}
@@ -1160,21 +1163,27 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		return nil, err
 	}
 
-	var dto *apistructs.PipelineDTO
+	var dto *basepb.PipelineDTO
 	if rerun {
-		var req apistructs.PipelineRerunRequest
+		var req pipelinesvcpb.PipelineRerunRequest
+		var reRunResult *pipelinesvcpb.PipelineRerunResponse
 		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
-		req.IdentityInfo = identityInfo
+		req.UserID = identityInfo.UserID
+		req.InternalClient = identityInfo.InternalClient
 		req.Secrets = utils.GetGittarSecrets(pipeline.ClusterName, pipeline.Branch, pipeline.CommitDetail)
-		dto, err = p.bundle.RerunPipeline(req)
+		reRunResult, err = p.pipelineService.PipelineRerun(context.Background(), &req)
+		dto = reRunResult.Data
 	} else {
-		var req apistructs.PipelineRerunFailedRequest
+		var req pipelinesvcpb.PipelineRerunFailedRequest
+		var reRunFailedResult *pipelinesvcpb.PipelineRerunFailedResponse
 		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
-		req.IdentityInfo = identityInfo
+		req.UserID = identityInfo.UserID
+		req.InternalClient = identityInfo.InternalClient
 		req.Secrets = utils.GetGittarSecrets(pipeline.ClusterName, pipeline.Branch, pipeline.CommitDetail)
-		dto, err = p.bundle.RerunFailedPipeline(req)
+		reRunFailedResult, err = p.pipelineService.PipelineRerunFailed(context.Background(), &req)
+		dto = reRunFailedResult.Data
 	}
 	if err != nil {
 		return nil, apiError.InternalError(err)
@@ -1214,7 +1223,7 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 	cron, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 		PageNo:   1,
 		PageSize: 1,
-		Sources:  []string{extraValue.CreateRequest.PipelineSource.String()},
+		Sources:  []string{extraValue.CreateRequest.PipelineSource},
 		YmlNames: []string{extraValue.CreateRequest.PipelineYmlName},
 	})
 	if err != nil {
@@ -1399,7 +1408,7 @@ func (p *ProjectPipelineService) batchGetPipelineSources(pipelineSourceIDArray [
 	return pipelineSourceMap, nil
 }
 
-func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.IdentityInfo, params AutoRunParams) (*apistructs.PipelineDTO, error) {
+func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.IdentityInfo, params AutoRunParams) (*basepb.PipelineDTO, error) {
 	source := params.source
 	definition := params.definition
 
@@ -1482,7 +1491,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	}
 
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		createV2, err = p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
+		createV2, err = p.pipelineSvc.ConvertPipelineToV2(&pipelinesvcpb.PipelineCreateRequest{
 			PipelineYmlName:    filepath.Join(source.Path, source.Name),
 			AppID:              appID,
 			Branch:             createV2.Labels[apistructs.LabelBranch],
@@ -1501,18 +1510,19 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	createV2.AutoRunAtOnce = true
 	createV2.DefinitionID = definition.ID
 	createV2.UserID = identityInfo.UserID
+	createV2.InternalClient = identityInfo.InternalClient
 
 	// run params
-	var pipelineRunParams apistructs.PipelineRunParams
+	var pipelineRunParams []*basepb.PipelineRunParam
 	for _, runParams := range params.runParams {
-		pipelineRunParams = append(pipelineRunParams, apistructs.PipelineRunParam{
+		pipelineRunParams = append(pipelineRunParams, &basepb.PipelineRunParam{
 			Name:  runParams.Name,
-			Value: runParams.Value.AsInterface(),
+			Value: runParams.Value,
 		})
 	}
 	createV2.RunParams = pipelineRunParams
 
-	value, err := p.bundle.CreatePipeline(createV2)
+	value, err := p.pipelineService.PipelineCreateV2(context.Background(), createV2)
 	if err != nil {
 		runningPipelineErr, ok := p.TryAddRunningPipelineLinkToErr(orgName, projectID, appID, err)
 		if ok {
@@ -1520,7 +1530,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 		}
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	return value, nil
+	return value.Data, nil
 }
 
 func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error) {
@@ -1616,7 +1626,7 @@ type pipelineNum struct {
 	TotalNum   int `json:"totalNum"`
 }
 
-func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.IdentityInfo, createRequest *apistructs.PipelineCreateRequestV2, apiError *errorresp.APIError) error {
+func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.IdentityInfo, createRequest *pipelinesvcpb.PipelineCreateRequestV2, apiError *errorresp.APIError) error {
 	appIDString := createRequest.Labels[apistructs.LabelAppID]
 	appID, err := strconv.ParseInt(appIDString, 10, 64)
 	if err != nil {
@@ -1935,7 +1945,7 @@ func (p *ProjectPipelineService) OneClickCreate(ctx context.Context, params *pb.
 	// permission check
 	err := p.checkRolePermission(apistructs.IdentityInfo{
 		UserID: apis.GetUserID(ctx),
-	}, &apistructs.PipelineCreateRequestV2{
+	}, &pipelinesvcpb.PipelineCreateRequestV2{
 		Labels: map[string]string{
 			apistructs.LabelAppID:  strconv.FormatUint(params.AppID, 10),
 			apistructs.LabelBranch: params.Ref,

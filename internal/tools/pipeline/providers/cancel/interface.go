@@ -18,17 +18,19 @@ import (
 	"context"
 	"fmt"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 type Interface interface {
-	CancelOnePipeline(ctx context.Context, req *apistructs.PipelineCancelRequest) error
-	StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec.Pipeline, identityInfo apistructs.IdentityInfo) error
+	CancelOnePipeline(ctx context.Context, req *pb.PipelineCancelRequest) error
+	StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec.Pipeline, identityInfo *commonpb.IdentityInfo) error
 }
 
-func (s *provider) CancelOnePipeline(ctx context.Context, req *apistructs.PipelineCancelRequest) error {
+func (s *provider) CancelOnePipeline(ctx context.Context, req *pb.PipelineCancelRequest) error {
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return apierrors.ErrGetPipeline.InternalError(err)
@@ -55,7 +57,7 @@ func (s *provider) CancelOnePipeline(ctx context.Context, req *apistructs.Pipeli
 	return s.Engine.DistributedStopPipeline(ctx, p.ID)
 }
 
-func (s *provider) StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec.Pipeline, identityInfo apistructs.IdentityInfo) error {
+func (s *provider) StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context, p *spec.Pipeline, identityInfo *commonpb.IdentityInfo) error {
 	var runningPipelineIDs []uint64
 	err := s.dbClient.Table(&spec.PipelineBase{}).
 		Select("id").In("status", apistructs.ReconcilerRunningStatuses()).
@@ -68,9 +70,10 @@ func (s *provider) StopRelatedRunningPipelinesOfOnePipeline(ctx context.Context,
 		return apierrors.ErrParallelRunPipeline.InternalError(err)
 	}
 	for _, runningPipelineID := range runningPipelineIDs {
-		if err := s.CancelOnePipeline(ctx, &apistructs.PipelineCancelRequest{
-			PipelineID:   runningPipelineID,
-			IdentityInfo: identityInfo,
+		if err := s.CancelOnePipeline(ctx, &pb.PipelineCancelRequest{
+			PipelineID:     runningPipelineID,
+			UserID:         identityInfo.UserID,
+			InternalClient: identityInfo.InternalClient,
 		}); err != nil {
 			return err
 		}

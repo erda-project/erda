@@ -22,6 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
@@ -47,22 +49,22 @@ func (tr *defaultTaskReconciler) CreateSnippetPipeline(ctx context.Context, p *s
 			snippetPipeline = nil
 		}
 	}()
-	var taskSnippetConfig = apistructs.SnippetConfig{
+	var taskSnippetConfig = pb.SnippetDetailQuery{
 		Source: task.Extra.Action.SnippetConfig.Source,
 		Name:   task.Extra.Action.SnippetConfig.Name,
 		Labels: task.Extra.Action.SnippetConfig.Labels,
 	}
-	sourceSnippetConfigs := []apistructs.SnippetConfig{taskSnippetConfig}
+	sourceSnippetConfigs := []*pb.SnippetDetailQuery{&taskSnippetConfig}
 	sourceSnippetConfigYamls, err := tr.pipelineSvcFuncs.HandleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
 	if err != nil {
 		failedError = err
 		return nil, failedError
 	}
 	if len(sourceSnippetConfigYamls) <= 0 {
-		return nil, fmt.Errorf("not find snippet %v yml", taskSnippetConfig.ToString())
+		return nil, fmt.Errorf("not find snippet %v yml", tr.pipelineSvcFuncs.ConvertSnippetConfig2String(&taskSnippetConfig))
 	}
 
-	snippetPipeline, err = tr.pipelineSvcFuncs.MakeSnippetPipeline4Create(p, task, sourceSnippetConfigYamls[taskSnippetConfig.ToString()])
+	snippetPipeline, err = tr.pipelineSvcFuncs.MakeSnippetPipeline4Create(p, task, sourceSnippetConfigYamls[tr.pipelineSvcFuncs.ConvertSnippetConfig2String(&taskSnippetConfig)])
 	if err != nil {
 		return nil, err
 	}

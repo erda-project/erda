@@ -24,10 +24,13 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
@@ -91,9 +94,9 @@ func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 	if _, ok := pc.Extra.FilterLabels[apistructs.LabelPipelineTriggerMode]; ok {
 		pc.Extra.FilterLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
 	}
-	var ownerUser *apistructs.PipelineUser
+	var ownerUser *basepb.PipelineUser
 	if ownerUserID, ok := pc.Extra.NormalLabels[apistructs.LabelOwnerUserID]; ok {
-		ownerUser = &apistructs.PipelineUser{ID: ownerUserID}
+		ownerUser = &basepb.PipelineUser{ID: structpb.NewStringValue(ownerUserID)}
 	}
 
 	pc.Extra.NormalLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
@@ -102,11 +105,11 @@ func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 	pc.Extra.NormalLabels[apistructs.LabelPipelineCronTriggerTime] = strconv.FormatInt(cronTriggerTime.UnixNano(), 10)
 	pc.Extra.NormalLabels[apistructs.LabelPipelineCronID] = strconv.FormatUint(pc.ID, 10)
 
-	_, err = d.createPipelineFunc(ctx, &apistructs.PipelineCreateRequestV2{
+	_, err = d.createPipelineFunc(ctx, &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,
-		PipelineSource:         pc.PipelineSource,
+		PipelineSource:         pc.PipelineSource.String(),
 		Labels:                 pc.Extra.FilterLabels,
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
@@ -114,12 +117,10 @@ func (d *provider) runCronPipelineFunc(ctx context.Context, id uint64) {
 		Secrets:                getSecrets(pc.Extra),
 		AutoRunAtOnce:          true,
 		AutoStartCron:          false,
-		IdentityInfo: apistructs.IdentityInfo{
-			UserID:         pc.Extra.NormalLabels[apistructs.LabelUserID],
-			InternalClient: "system-cron",
-		},
-		OwnerUser:    ownerUser,
-		DefinitionID: pc.PipelineDefinitionID,
+		UserID:                 pc.Extra.NormalLabels[apistructs.LabelUserID],
+		InternalClient:         "system-cron",
+		OwnerUser:              ownerUser,
+		DefinitionID:           pc.PipelineDefinitionID,
 	})
 }
 

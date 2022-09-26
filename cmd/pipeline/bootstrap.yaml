@@ -49,7 +49,6 @@ edgepipeline_register:
   cluster_access_key: "${CLUSTER_ACCESS_KEY}"
   allowed_sources: "cdp-,fdp-"
   cluster_access_key_etcd_prefix: "${EDGE_PIPELINE_CLUSTER_ACCESS_KEY_ETCD_PREFIX:/devops/pipeline/v2/edge/cluster-access-key}"
-edgepipeline: {}
 resourcegc: {}
 dbgc: {}
 task-policy: {}
@@ -86,6 +85,8 @@ metric-report-client:
 erda.core.pipeline.definition:
 erda.core.pipeline.lifecycle_hook_client:
 erda.core.pipeline.cron:
+erda.core.pipeline.pipeline:
+erda.core.pipeline.task:
 erda.core.pipeline.graph:
 erda.core.pipeline.build:
 erda.core.pipeline.action_runner_scheduler:

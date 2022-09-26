@@ -26,8 +26,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
@@ -206,14 +206,15 @@ func (e *Endpoints) SyncTaskStatus(interval time.Duration) {
 
 		for _, job := range jobs {
 			// 根据pipelineID获取task列表信息
-			bdl := bundle.New(bundle.WithPipeline())
-			pipelineInfo, err := bdl.GetPipeline(job.PipelineID)
+			pipelineInfo, err := e.PipelineSvc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
+				PipelineID: job.PipelineID,
+			})
 			if err != nil {
 				logrus.Errorf("failed to get pipeline info by pipelineID, pipelineID:%d, (%+v)", job.PipelineID, err)
 				continue
 			}
 
-			for _, stage := range pipelineInfo.PipelineStages {
+			for _, stage := range pipelineInfo.Data.PipelineStages {
 				for _, task := range stage.PipelineTasks {
 					if task.ID == job.TaskID {
 						if string(task.Status) != job.Status {
@@ -234,14 +235,15 @@ func (e *Endpoints) SyncTaskStatus(interval time.Duration) {
 
 		for _, deployment := range deployments {
 			// 根据pipelineID获取task列表信息
-			bdl := bundle.New(bundle.WithPipeline())
-			pipelineInfo, err := bdl.GetPipeline(deployment.PipelineID)
+			pipelineInfo, err := e.PipelineSvc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
+				PipelineID: deployment.PipelineID,
+			})
 			if err != nil {
 				logrus.Errorf("failed to get pipeline info by pipelineID, pipelineID:%d, (%+v)", deployment.PipelineID, err)
 				continue
 			}
 
-			for _, stage := range pipelineInfo.PipelineStages {
+			for _, stage := range pipelineInfo.Data.PipelineStages {
 				for _, task := range stage.PipelineTasks {
 					if task.ID == deployment.TaskID {
 						if string(task.Status) != deployment.Status {

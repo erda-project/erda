@@ -15,6 +15,7 @@
 package testcase
 
 import (
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
@@ -30,6 +31,7 @@ type Service struct {
 	hc            *httpclient.HTTPClient
 	org           org.Interface
 	issueDBClient *issuedao.DBClient
+	pipelineSvc   pipelinepb.PipelineServiceServer
 
 	CreateTestSetFn func(apistructs.TestSetCreateRequest) (*apistructs.TestSet, error)
 }
@@ -69,5 +71,11 @@ func WithOrg(org org.Interface) Option {
 func WithIssueDBClient(db *issuedao.DBClient) Option {
 	return func(svc *Service) {
 		svc.issueDBClient = db
+	}
+}
+
+func WithPipelineSvc(pipelineSvc pipelinepb.PipelineServiceServer) Option {
+	return func(svc *Service) {
+		svc.pipelineSvc = pipelineSvc
 	}
 }

@@ -17,6 +17,9 @@ package apistructs
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskresult"
 )
 
@@ -38,6 +41,10 @@ const (
 	UserTaskParamSource    TaskParamSource = "user"
 	MergedTaskParamSource  TaskParamSource = "merged"
 )
+
+func (t TaskParamSource) String() string {
+	return string(t)
+}
 
 type TaskParamDetail struct {
 	Name   string                     `json:"name"`
@@ -91,6 +98,26 @@ type PipelineTaskSnippetDetail struct {
 	// 递归子任务数，即该节点下所有子任务数
 	// -1 表示未知，具体数据由 aop 上报
 	RecursiveSnippetTasksNum int `json:"recursiveSnippetTasksNum"`
+}
+
+func (d *PipelineTaskSnippetDetail) Convert2PB() *basepb.PipelineTaskSnippetDetail {
+	if d == nil {
+		return nil
+	}
+	detail := basepb.PipelineTaskSnippetDetail{
+		DirectSnippetTasksNum:    int64(d.DirectSnippetTasksNum),
+		RecursiveSnippetTasksNum: int64(d.RecursiveSnippetTasksNum),
+	}
+	for _, output := range d.Outputs {
+		value, _ := structpb.NewValue(output.Value)
+		detail.Outputs = append(detail.Outputs, &basepb.PipelineOutputWithValue{
+			Name:  output.Name,
+			Desc:  output.Desc,
+			Ref:   output.Ref,
+			Value: value,
+		})
+	}
+	return &detail
 }
 
 type PipelineTaskGetResponse struct {

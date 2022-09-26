@@ -24,9 +24,11 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/stretchr/testify/assert"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/permission"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 func Test_shouldCheckPermission(t *testing.T) {
@@ -100,7 +102,7 @@ func Test_getPipelineDetailAndCheckPermission(t *testing.T) {
 	type args struct {
 		req          apistructs.CICDPipelineDetailRequest
 		identityInfo apistructs.IdentityInfo
-		result       apistructs.PipelineDetailDTO
+		result       pipelinepb.PipelineDetailDTO
 	}
 	tests := []struct {
 		name    string
@@ -114,12 +116,10 @@ func Test_getPipelineDetailAndCheckPermission(t *testing.T) {
 					PipelineID:               1,
 					SimplePipelineBaseResult: false,
 				},
-				result: apistructs.PipelineDetailDTO{
-					PipelineDTO: apistructs.PipelineDTO{
-						ID:            1,
-						ApplicationID: 1,
-						Branch:        "master",
-					},
+				result: pipelinepb.PipelineDetailDTO{
+					ID:            1,
+					ApplicationID: 1,
+					Branch:        "master",
 				},
 				identityInfo: apistructs.IdentityInfo{
 					UserID: "1",
@@ -130,12 +130,12 @@ func Test_getPipelineDetailAndCheckPermission(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var bdl = &bundle.Bundle{}
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineV2", func(bdl *bundle.Bundle, req apistructs.PipelineDetailRequest) (*apistructs.PipelineDetailDTO, error) {
+			var pipelineSvc = &mock.MockPipelineServiceServer{}
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(pipelineSvc), "PipelineDetail", func(_ *mock.MockPipelineServiceServer, ctx context.Context, req *pipelinepb.PipelineDetailRequest) (*pipelinepb.PipelineDetailResponse, error) {
 				assert.Equal(t, req.PipelineID, tt.args.req.PipelineID)
 				assert.Equal(t, req.SimplePipelineBaseResult, tt.args.req.SimplePipelineBaseResult)
 
-				return &tt.args.result, nil
+				return &pipelinepb.PipelineDetailResponse{Data: &tt.args.result}, nil
 			})
 
 			defer patch.Unpatch()
@@ -149,7 +149,7 @@ func Test_getPipelineDetailAndCheckPermission(t *testing.T) {
 			})
 			defer patch1.Unpatch()
 
-			got, err := getPipelineDetailAndCheckPermission(bdl, permissionChecker, tt.args.req, tt.args.identityInfo)
+			got, err := getPipelineDetailAndCheckPermission(pipelineSvc, permissionChecker, tt.args.req, tt.args.identityInfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getPipelineDetailAndCheckPermission() error = %v, wantErr %v", err, tt.wantErr)
 				return

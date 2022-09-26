@@ -24,7 +24,11 @@ import (
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
@@ -61,7 +65,7 @@ func (p *provider) PipelineDatabaseGC(ctx context.Context) {
 }
 
 // doPipelineDatabaseGC query the data in the database according to req paging to perform gc
-func (p *provider) doPipelineDatabaseGC(ctx context.Context, req apistructs.PipelinePageListRequest) {
+func (p *provider) doPipelineDatabaseGC(ctx context.Context, req *pb.PipelinePagingRequest) {
 	rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
 		result, err := p.dbClient.PageListPipelines(req)
 		if err != nil {
@@ -89,11 +93,11 @@ func (p *provider) doPipelineDatabaseGC(ctx context.Context, req apistructs.Pipe
 
 func needArchive(p spec.Pipeline) bool {
 	if p.Status == apistructs.PipelineStatusAnalyzed {
-		if p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != nil {
+		if *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != false {
 			return *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
 		}
 	} else {
-		if p.Extra.GC.DatabaseGC.Finished.NeedArchive != nil {
+		if *p.Extra.GC.DatabaseGC.Finished.NeedArchive != false {
 			return *p.Extra.GC.DatabaseGC.Finished.NeedArchive
 		}
 	}
@@ -102,32 +106,32 @@ func needArchive(p spec.Pipeline) bool {
 
 // doAnalyzedPipelineDatabaseGC gc Analyzed status pipeline
 func (p *provider) doAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippetPipeline bool) {
-	var req apistructs.PipelinePageListRequest
-	req.Statuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	var req pb.PipelinePagingRequest
+	req.Status = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
 	req.DescCols = []string{"id"}
-	req.EndTimeCreated = time.Now().Add(-time.Second * time.Duration(conf.AnalyzedPipelineDefaultDatabaseGCTTLSec()))
+	req.EndTimeCreated = timestamppb.New(time.Now().Add(-time.Second * time.Duration(conf.AnalyzedPipelineDefaultDatabaseGCTTLSec())))
 	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
 
-	p.doPipelineDatabaseGC(ctx, req)
+	p.doPipelineDatabaseGC(ctx, &req)
 }
 
 // doNotAnalyzedPipelineDatabaseGC gc other status pipeline
 func (p *provider) doNotAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippetPipeline bool) {
-	var req apistructs.PipelinePageListRequest
-	req.NotStatuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	var req pb.PipelinePagingRequest
+	req.NotStatus = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
 	req.DescCols = []string{"id"}
-	req.EndTimeCreated = time.Now().Add(-time.Second * time.Duration(conf.FinishedPipelineDefaultDatabaseGCTTLSec()))
+	req.EndTimeCreated = timestamppb.New(time.Now().Add(-time.Second * time.Duration(conf.FinishedPipelineDefaultDatabaseGCTTLSec())))
 	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
 
-	p.doPipelineDatabaseGC(ctx, req)
+	p.doPipelineDatabaseGC(ctx, &req)
 }
 
 func (p *provider) doAnalyzedPipelineArchiveGC() {
@@ -427,7 +431,7 @@ func (p *provider) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
 			PipelineBase: oldBase,
 			PipelineExtra: spec.PipelineExtra{
 				Extra: spec.PipelineExtraInfo{
-					GC: apistructs.PipelineGC{},
+					GC: basepb.PipelineGC{},
 				},
 			},
 		})

@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
@@ -70,17 +71,17 @@ func (r *provider) doWaitGCCompensate(isSnippetPipeline bool) {
 func (r *provider) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipeline, int, error) {
 	var pipelineResults []spec.Pipeline
 
-	var req apistructs.PipelinePageListRequest
-	req.PageNum = pageNum
+	var req pb.PipelinePagingRequest
+	req.PageNum = int64(pageNum)
 	req.PageSize = 100
 	req.LargePageSize = true
 	req.AscCols = []string{"id"}
 	for _, end := range apistructs.PipelineEndStatuses {
-		req.Statuses = append(req.Statuses, end.String())
+		req.Status = append(req.Status, end.String())
 	}
 	req.AllSources = true
 	req.IncludeSnippet = isSnippet
-	result, err := r.dbClient.PageListPipelines(req)
+	result, err := r.dbClient.PageListPipelines(&req)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to compensate pipeline req %v err: %v", req, err)
 	}

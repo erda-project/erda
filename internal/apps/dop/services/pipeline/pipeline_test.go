@@ -21,6 +21,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/gitflowutil"
@@ -263,7 +264,7 @@ func Test_setClusterName(t *testing.T) {
 	})
 	defer m1.Unpatch()
 	pipelineSvc := New(WithBundle(bdl))
-	pv := &apistructs.PipelineCreateRequestV2{}
+	pv := &pipelinepb.PipelineCreateRequestV2{}
 	pipelineSvc.setClusterName("erda-edge", pv)
 	assert.Equal(t, "erda-center", pv.ClusterName)
 	pipelineSvc.setClusterName("erda-center", pv)
@@ -303,9 +304,9 @@ func Test_getPipelineOwnerUser(t *testing.T) {
 	})
 	defer pm3.Unpatch()
 	pipelineSvc := New(WithBundle(bdl))
-	owner, err := pipelineSvc.getPipelineOwnerUser(&apistructs.ApplicationDTO{ID: 1}, &apistructs.PipelineCreateRequest{Branch: "develop"})
+	owner, err := pipelineSvc.getPipelineOwnerUser(&apistructs.ApplicationDTO{ID: 1}, &pipelinepb.PipelineCreateRequest{Branch: "develop"})
 	assert.NoError(t, err)
-	assert.Equal(t, "1", owner.ID)
+	assert.Equal(t, "1", owner.ID.GetStringValue())
 }
 
 func Test_checkOwnerPermission(t *testing.T) {

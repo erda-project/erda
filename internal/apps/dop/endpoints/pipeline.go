@@ -27,10 +27,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/services/permission"
@@ -65,7 +66,7 @@ func shouldCheckPermission(isInternalClient, isInternalActionClient bool) bool {
 func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 
-	var createReq apistructs.PipelineCreateRequest
+	var createReq pipelinepb.PipelineCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&createReq); err != nil {
 		logrus.Errorf("[alert] failed to decode request body: %v", err)
 		return apierrors.ErrCreatePipeline.InvalidParameter("request body").ToResp(), nil
@@ -158,7 +159,7 @@ func (e *Endpoints) pipelineDetail(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrGetUser.InvalidParameter(err).ToResp(), nil
 	}
 
-	result, err := getPipelineDetailAndCheckPermission(e.bdl, e.permission, req, identityInfo)
+	result, err := getPipelineDetailAndCheckPermission(e.PipelineSvc, e.permission, req, identityInfo)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -166,17 +167,17 @@ func (e *Endpoints) pipelineDetail(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(result)
 }
 
-func getPipelineDetailAndCheckPermission(bdl *bundle.Bundle, permission *permission.Permission, req apistructs.CICDPipelineDetailRequest, identityInfo apistructs.IdentityInfo) (*apistructs.PipelineDetailDTO, error) {
-	result, err := bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+func getPipelineDetailAndCheckPermission(svc pipelinepb.PipelineServiceServer, permission *permission.Permission, req apistructs.CICDPipelineDetailRequest, identityInfo apistructs.IdentityInfo) (*pipelinepb.PipelineDetailDTO, error) {
+	result, err := svc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
 		PipelineID: req.PipelineID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if err := permission.CheckRuntimeBranch(identityInfo, result.ApplicationID, result.Branch, apistructs.OperateAction); err != nil {
+	if err := permission.CheckRuntimeBranch(identityInfo, result.Data.ApplicationID, result.Data.Branch, apistructs.OperateAction); err != nil {
 		return nil, err
 	}
-	return result, nil
+	return result.Data, nil
 }
 
 func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -387,7 +388,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 	}
 
 	// 运行时的入参，不一定需要
-	var runRequest apistructs.PipelineRunRequest
+	var runRequest pipelinepb.PipelineRunRequest
 	if err := json.NewDecoder(r.Body).Decode(&runRequest); err != nil {
 		logrus.Errorf("error to decode runRequest")
 	}
@@ -401,14 +402,15 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		return errorresp.ErrResp(err)
 	}
 
-	if err = e.bdl.RunPipeline(apistructs.PipelineRunRequest{
+	if err = e.bdl.RunPipeline(pipelinepb.PipelineRunRequest{
 		PipelineID:             pipelineID,
-		IdentityInfo:           identityInfo,
+		UserID:                 identityInfo.UserID,
+		InternalClient:         identityInfo.InternalClient,
 		PipelineRunParams:      runRequest.PipelineRunParams,
 		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 		Secrets:                utils.GetGittarSecrets(p.ClusterName, p.Branch, p.CommitDetail),
 	}); err != nil {
-		runningPipelineErr, ok := e.ProjectPipelineSvc.TryAddRunningPipelineLinkToErr(p.PipelineDTO.OrgName, p.PipelineDTO.ProjectID, p.PipelineDTO.ApplicationID, err)
+		runningPipelineErr, ok := e.ProjectPipelineSvc.TryAddRunningPipelineLinkToErr(p.OrgName, p.ProjectID, p.ApplicationID, err)
 		if ok {
 			return errorresp.ErrResp(runningPipelineErr)
 		}
@@ -462,7 +464,7 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 	}
 
 	// action will cancel pipelineID,  pipelineID not the id that needs to be canceled
-	var cancelRequest apistructs.PipelineCancelRequest
+	var cancelRequest pipelinepb.PipelineCancelRequest
 	if err := json.NewDecoder(r.Body).Decode(&cancelRequest); err != nil {
 		logrus.Errorf("error to decode runRequest")
 	}
@@ -483,7 +485,8 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 
-	cancelRequest.IdentityInfo = identityInfo
+	cancelRequest.UserID = identityInfo.UserID
+	cancelRequest.InternalClient = identityInfo.InternalClient
 	if err := e.bdl.CancelPipeline(cancelRequest); err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -502,7 +505,7 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 			strutil.Concat(pathPipelineID, ": ", pipelineIDStr)).ToResp(), nil
 	}
 
-	var rerunReq apistructs.PipelineRerunRequest
+	var rerunReq pipelinepb.PipelineRerunRequest
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return apierrors.ErrRerunPipeline.InvalidParameter(err).ToResp(), nil
@@ -531,7 +534,8 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 	}
 
 	rerunReq.PipelineID = pipelineID
-	rerunReq.IdentityInfo = identityInfo
+	rerunReq.UserID = identityInfo.UserID
+	rerunReq.InternalClient = identityInfo.InternalClient
 
 	pipelineDto, err := e.bdl.RerunPipeline(rerunReq)
 	if err != nil {
@@ -552,7 +556,7 @@ func (e *Endpoints) pipelineRerunFailed(ctx context.Context, r *http.Request, va
 			strutil.Concat(pathPipelineID, ": ", pipelineIDStr)).ToResp(), nil
 	}
 
-	var rerunFailedReq apistructs.PipelineRerunFailedRequest
+	var rerunFailedReq pipelinepb.PipelineRerunFailedRequest
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return apierrors.ErrRerunPipeline.InvalidParameter(err).ToResp(), nil
@@ -581,7 +585,8 @@ func (e *Endpoints) pipelineRerunFailed(ctx context.Context, r *http.Request, va
 	}
 
 	rerunFailedReq.PipelineID = pipelineID
-	rerunFailedReq.IdentityInfo = identityInfo
+	rerunFailedReq.UserID = identityInfo.UserID
+	rerunFailedReq.InternalClient = identityInfo.InternalClient
 
 	pipelineDto, err := e.bdl.RerunFailedPipeline(rerunFailedReq)
 	if err != nil {
@@ -705,11 +710,11 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		find = true
 
 		// 创建pipeline流程
-		reqPipeline := &apistructs.PipelineCreateRequest{
+		reqPipeline := &pipelinepb.PipelineCreateRequest{
 			AppID:              uint64(appID),
 			Branch:             gitEvent.Content.SourceBranch,
-			Source:             apistructs.PipelineSourceDice,
-			PipelineYmlSource:  apistructs.PipelineYmlSourceGittar,
+			Source:             apistructs.PipelineSourceDice.String(),
+			PipelineYmlSource:  apistructs.PipelineYmlSourceGittar.String(),
 			PipelineYmlContent: strPipelineYml,
 			AutoRun:            true,
 			UserID:             gitEvent.Content.MergeUserId,
@@ -771,16 +776,17 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 
 				logrus.Infof("Check pipeline result, status: %s", pipelineResp.Status)
 
-				if !pipelineResp.Status.IsEndStatus() {
+				pipelineStatus := apistructs.PipelineStatus(pipelineResp.Status)
+				if !pipelineStatus.IsEndStatus() {
 					return false, fmt.Errorf("is not end")
 				}
-				if pipelineResp.Status == apistructs.PipelineStatusTimeout {
+				if pipelineStatus == apistructs.PipelineStatusTimeout {
 					request.Result = apistructs.CheckRunResultTimeout
-				} else if pipelineResp.Status == apistructs.PipelineStatusStopByUser {
+				} else if pipelineStatus == apistructs.PipelineStatusStopByUser {
 					request.Result = apistructs.CheckRunResultCancelled
-				} else if pipelineResp.Status == apistructs.PipelineStatusFailed {
+				} else if pipelineStatus == apistructs.PipelineStatusFailed {
 					request.Result = apistructs.CheckRunResultFailure
-				} else if pipelineResp.Status == apistructs.PipelineStatusSuccess {
+				} else if pipelineStatus == apistructs.PipelineStatusSuccess {
 					request.Result = apistructs.CheckRunResultSuccess
 				}
 				request.Status = apistructs.CheckRunStatusCompleted
@@ -788,7 +794,7 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 				if err != nil {
 					return true, err
 				}
-				if pipelineResp.Status != apistructs.PipelineStatusSuccess {
+				if pipelineStatus != apistructs.PipelineStatusSuccess {
 					err := e.bdl.CloseMergeRequest(appID, gitEvent.Content.RepoMergeId, gitEvent.Content.MergeUserId)
 					if err != nil {
 						return true, err

@@ -20,7 +20,7 @@ import (
 
 	"bou.ke/monkey"
 
-	"github.com/erda-project/erda/apistructs"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
@@ -31,7 +31,7 @@ func Test_provider_createPipelineRunLabels(t *testing.T) {
 	}
 	type args struct {
 		p   spec.Pipeline
-		req *apistructs.PipelineRunRequest
+		req *pipelinepb.PipelineRunRequest
 	}
 
 	dbClient := &dbclient.Client{}
@@ -59,10 +59,8 @@ func Test_provider_createPipelineRunLabels(t *testing.T) {
 						PipelineYmlName: "pipeline.yml",
 					},
 				},
-				req: &apistructs.PipelineRunRequest{
-					IdentityInfo: apistructs.IdentityInfo{
-						UserID: "1",
-					},
+				req: &pipelinepb.PipelineRunRequest{
+					UserID: "1",
 				},
 			},
 			wantErr: false,

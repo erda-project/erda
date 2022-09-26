@@ -25,15 +25,15 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 func TestEndpoints_projectPipelineDetail(t *testing.T) {
 	type fields struct {
-		result       apistructs.PipelineDetailDTO
-		request      apistructs.PipelineDetailRequest
+		result       pipelinepb.PipelineDetailDTO
+		request      pipelinepb.PipelineDetailRequest
 		assertUserID uint64
 	}
 	type args struct {
@@ -51,17 +51,15 @@ func TestEndpoints_projectPipelineDetail(t *testing.T) {
 		{
 			name: "test",
 			fields: fields{
-				request: apistructs.PipelineDetailRequest{
+				request: pipelinepb.PipelineDetailRequest{
 					PipelineID:               1,
 					SimplePipelineBaseResult: false,
 				},
 				assertUserID: 1,
-				result: apistructs.PipelineDetailDTO{
-					PipelineDTO: apistructs.PipelineDTO{
-						ID:            1,
-						ApplicationID: 1,
-						Branch:        "master",
-					},
+				result: pipelinepb.PipelineDetailDTO{
+					ID:            1,
+					ApplicationID: 1,
+					Branch:        "master",
 				},
 			},
 			args: args{
@@ -87,14 +85,14 @@ func TestEndpoints_projectPipelineDetail(t *testing.T) {
 			queryStringDecoder.IgnoreUnknownKeys(true)
 			e.queryStringDecoder = queryStringDecoder
 
-			var bdl = &bundle.Bundle{}
-			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineV2", func(d *bundle.Bundle, req apistructs.PipelineDetailRequest) (*apistructs.PipelineDetailDTO, error) {
+			var pipelineSvc = &mock.MockPipelineServiceServer{}
+			monkey.PatchInstanceMethod(reflect.TypeOf(pipelineSvc), "PipelineDetail", func(_ *mock.MockPipelineServiceServer, ctx context.Context, req *pipelinepb.PipelineDetailRequest) (*pipelinepb.PipelineDetailResponse, error) {
 				assert.Equal(t, req.PipelineID, tt.fields.request.PipelineID)
 				assert.Equal(t, req.SimplePipelineBaseResult, tt.fields.request.SimplePipelineBaseResult)
 
-				return &tt.fields.result, nil
+				return &pipelinepb.PipelineDetailResponse{Data: &tt.fields.result}, nil
 			})
-			e.bdl = bdl
+			e.PipelineSvc = pipelineSvc
 
 			got, err := e.projectPipelineDetail(tt.args.ctx, tt.args.r, tt.args.vars)
 			if (err != nil) != tt.wantErr {
@@ -103,9 +101,9 @@ func TestEndpoints_projectPipelineDetail(t *testing.T) {
 			}
 
 			assert.NotNil(t, got)
-			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*apistructs.PipelineDetailDTO).ID, tt.fields.result.ID)
-			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*apistructs.PipelineDetailDTO).Branch, tt.fields.result.Branch)
-			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*apistructs.PipelineDetailDTO).ApplicationID, tt.fields.result.ApplicationID)
+			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*pipelinepb.PipelineDetailDTO).ID, tt.fields.result.ID)
+			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*pipelinepb.PipelineDetailDTO).Branch, tt.fields.result.Branch)
+			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*pipelinepb.PipelineDetailDTO).ApplicationID, tt.fields.result.ApplicationID)
 		})
 	}
 }

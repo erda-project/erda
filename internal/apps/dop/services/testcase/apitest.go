@@ -25,6 +25,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -114,8 +116,8 @@ func (svc *Service) ExecuteAPIs(req apistructs.ApiTestsActionRequest) (uint64, e
 	labels[apistructs.LabelDiceWorkspace] = string(apistructs.TestWorkspace)
 	labels[apistructs.LabelTestPlanID] = strconv.FormatInt(req.TestPlanID, 10)
 
-	reqPipeline := &apistructs.PipelineCreateRequestV2{
-		PipelineSource:  apistructs.PipelineSourceAPITest,
+	reqPipeline := &pipelinepb.PipelineCreateRequestV2{
+		PipelineSource:  apistructs.PipelineSourceAPITest.String(),
 		PipelineYmlName: fmt.Sprintf("api-test-%s.yml", strconv.FormatInt(req.ProjectID, 10)),
 		PipelineYml:     ymlContent,
 		Labels:          labels,
@@ -263,10 +265,10 @@ func (svc *Service) getClusterNameAndOrgNameFromCmdb(projectID int64) (string, s
 }
 
 // createPipeline 创建pipeline流程
-func (svc *Service) createPipeline(reqPipeline *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineDTO, error) {
-	resp, err := svc.bdl.CreatePipeline(reqPipeline)
+func (svc *Service) createPipeline(reqPipeline *pipelinepb.PipelineCreateRequestV2) (*basepb.PipelineDTO, error) {
+	resp, err := svc.pipelineSvc.PipelineCreateV2(context.Background(), reqPipeline)
 	if err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return resp.Data, nil
 }

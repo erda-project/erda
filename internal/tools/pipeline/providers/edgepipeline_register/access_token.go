@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func (p *provider) GetAccessToken(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
@@ -41,6 +42,14 @@ func (p *provider) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistr
 func (p *provider) CheckAccessTokenFromHttpRequest(req *http.Request) error {
 	if p.Cfg.IsEdge {
 		token := req.Header.Get("Authorization")
+		return p.CheckAccessToken(token)
+	}
+	return nil
+}
+
+func (p *provider) CheckAccessTokenFromCtx(ctx context.Context) error {
+	if p.Cfg.IsEdge {
+		token := apis.GetHeader(ctx, "Authorization")
 		return p.CheckAccessToken(token)
 	}
 	return nil

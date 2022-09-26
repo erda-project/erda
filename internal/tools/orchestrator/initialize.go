@@ -192,6 +192,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithClusterInfo(scheduler.Httpendpoints.ClusterinfoImpl),
 		runtime.WithClusterSvc(p.ClusterSvc),
 		runtime.WithOrg(p.Org),
+		runtime.WithPipelineSvc(p.PipelineSvc),
 	)
 	envConfig := environment.New(
 		environment.WithDBClient(db),

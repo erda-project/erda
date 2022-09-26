@@ -17,7 +17,7 @@ package reconciler
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -33,10 +33,11 @@ type Interface interface {
 type PipelineSvcFuncs struct {
 	CronNotExecuteCompensate                func(id uint64) error
 	MergePipelineYmlTasks                   func(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec.PipelineTask, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec.PipelineTask, err error)
-	HandleQueryPipelineYamlBySnippetConfigs func(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error)
+	HandleQueryPipelineYamlBySnippetConfigs func(sourceSnippetConfigs []*pb.SnippetDetailQuery) (map[string]string, error)
 	MakeSnippetPipeline4Create              func(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error)
 	CreatePipelineGraph                     func(p *spec.Pipeline) (stages []spec.PipelineStage, err error)
 	PreCheck                                func(p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error
+	ConvertSnippetConfig2String             func(snippetConfig *pb.SnippetDetailQuery) string
 }
 
 func (r *provider) InjectLegacyFields(f *PipelineSvcFuncs) {

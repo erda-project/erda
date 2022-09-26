@@ -22,6 +22,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/aop/aoptypes"
@@ -36,7 +39,7 @@ import (
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
-func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
+func (s *provider) RunOnePipeline(ctx context.Context, req *pipelinepb.PipelineRunRequest) (*spec.Pipeline, error) {
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InvalidParameter(err)
@@ -54,7 +57,10 @@ func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineR
 		return nil, apierrors.ErrRunPipeline.InvalidState(reason)
 	}
 	if req.ForceRun {
-		err := s.Cancel.StopRelatedRunningPipelinesOfOnePipeline(ctx, &p, req.IdentityInfo)
+		err := s.Cancel.StopRelatedRunningPipelinesOfOnePipeline(ctx, &p, &commonpb.IdentityInfo{
+			UserID:         req.UserID,
+			InternalClient: req.InternalClient,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +173,7 @@ func (s *provider) RunOnePipeline(ctx context.Context, req *apistructs.PipelineR
 	return &p, nil
 }
 
-func (s *provider) createPipelineRunLabels(p spec.Pipeline, req *apistructs.PipelineRunRequest) (err error) {
+func (s *provider) createPipelineRunLabels(p spec.Pipeline, req *pipelinepb.PipelineRunRequest) (err error) {
 	labels := make([]spec.PipelineLabel, 0)
 	if req.UserID != "" {
 		labels = append(labels, spec.PipelineLabel{
@@ -216,14 +222,14 @@ func (s *provider) updatePipelineDefinition(p spec.Pipeline) error {
 	return s.dbClient.UpdatePipelineDefinition(definition.ID, definition)
 }
 
-func getRealRunParams(runParams []apistructs.PipelineRunParam, yml string) (result apistructs.PipelineRunParams, err error) {
+func getRealRunParams(runParams []*basepb.PipelineRunParam, yml string) (result apistructs.PipelineRunParams, err error) {
 
 	pipeline, err := pipelineyml.New([]byte(yml))
 	if err != nil {
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
-	var runParamsMap = make(map[string]apistructs.PipelineRunParam)
+	var runParamsMap = make(map[string]*basepb.PipelineRunParam)
 	if runParams != nil {
 		for _, runParam := range runParams {
 			runParamsMap[runParam.Name] = runParam

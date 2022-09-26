@@ -25,6 +25,7 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
@@ -648,6 +649,7 @@ type Endpoints struct {
 	PipelineDefinition dpb.DefinitionServiceServer
 	DevFlowRule        dwfpb.DevFlowRuleServiceServer
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
+	PipelineSvc        pipelinepb.PipelineServiceServer
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -764,6 +766,12 @@ func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 func WithOrgClient(org orgclient.Interface) Option {
 	return func(e *Endpoints) {
 		e.orgClient = org
+	}
+}
+
+func WithPipelineSvc(svc pipelinepb.PipelineServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineSvc = svc
 	}
 }
 

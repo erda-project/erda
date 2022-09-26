@@ -33,6 +33,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
@@ -215,7 +216,7 @@ func TestConvertRuntimeDeployDto(t *testing.T) {
 		Diceyml: diceYml,
 	}
 
-	dto := &apistructs.PipelineDTO{ID: 4}
+	dto := &basepb.PipelineDTO{ID: 4}
 
 	want := apistructs.RuntimeDeployDTO{
 		PipelineID:      4,

@@ -313,6 +313,6 @@ func TestMergeTaskParamDetailToDisplay(t *testing.T) {
 	}
 	params := task.MergeTaskParamDetailToDisplay(action, ymlTask, snapshot)
 	assert.Equal(t, len(params), 3)
-	assert.Equal(t, params[1].Values[apistructs.MergedTaskParamSource], EncryptedValueDisplay)
-	assert.Equal(t, params[2].Values[apistructs.MergedTaskParamSource], EncryptedValueDisplay)
+	assert.Equal(t, params[1].Values[apistructs.MergedTaskParamSource.String()], EncryptedValueDisplay)
+	assert.Equal(t, params[2].Values[apistructs.MergedTaskParamSource.String()], EncryptedValueDisplay)
 }

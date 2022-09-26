@@ -25,6 +25,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
@@ -149,11 +151,11 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 		}
 
 		// 创建pipeline流程
-		reqPipeline := &apistructs.PipelineCreateRequest{
+		reqPipeline := &pipelinepb.PipelineCreateRequest{
 			AppID:              uint64(req.Content.Repository.ApplicationID),
 			Branch:             refName,
-			Source:             apistructs.PipelineSourceDice,
-			PipelineYmlSource:  apistructs.PipelineYmlSourceGittar,
+			Source:             apistructs.PipelineSourceDice.String(),
+			PipelineYmlSource:  apistructs.PipelineYmlSourceGittar.String(),
 			PipelineYmlContent: strPipelineYml,
 			AutoRun:            true,
 			UserID:             req.Content.Pusher.ID,

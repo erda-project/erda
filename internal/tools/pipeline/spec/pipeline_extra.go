@@ -18,6 +18,9 @@ import (
 	"encoding/json"
 	"time"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/metadata"
@@ -61,14 +64,14 @@ type PipelineExtraInfo struct {
 	NotPipelineControlledNs bool                         `json:"notPipelineControlledNs"`
 	DiceWorkspace           apistructs.DiceWorkspace     `json:"diceWorkspace,omitempty"`
 	PipelineYmlSource       apistructs.PipelineYmlSource `json:"pipelineYmlSource,omitempty"`
-	SubmitUser              *apistructs.PipelineUser     `json:"submitUser,omitempty"`
-	RunUser                 *apistructs.PipelineUser     `json:"runUser,omitempty"`
-	CancelUser              *apistructs.PipelineUser     `json:"cancelUser,omitempty"`
-	OwnerUser               *apistructs.PipelineUser     `json:"ownerUser,omitempty"`
+	SubmitUser              *basepb.PipelineUser         `json:"submitUser,omitempty"`
+	RunUser                 *basepb.PipelineUser         `json:"runUser,omitempty"`
+	CancelUser              *basepb.PipelineUser         `json:"cancelUser,omitempty"`
+	OwnerUser               *basepb.PipelineUser         `json:"ownerUser,omitempty"`
 	InternalClient          string                       `json:"internalClient,omitempty"`
 	CronExpr                string                       `json:"cronExpr,omitempty"`
 	CronTriggerTime         *time.Time                   `json:"cronTriggerTime,omitempty"` // 秒级精确，毫秒级误差请忽略，cron expr 精确度同样为秒级
-	ShowMessage             *apistructs.ShowMessage      `json:"showMessage,omitempty"`
+	ShowMessage             *basepb.ShowMessage          `json:"showMessage,omitempty"`
 	Messages                []string                     `json:"errors,omitempty"` // TODO ShowMessage 和 Message
 	// Deprecated
 	ConfigManageNamespaceOfSecretsDefault string `json:"configManageNamespaceOfSecretsDefault,omitempty"`
@@ -102,7 +105,7 @@ type PipelineExtraInfo struct {
 	RunPipelineParams []apistructs.PipelineRunParam `json:"runPipelineParams,omitempty"`
 
 	// GC
-	GC apistructs.PipelineGC `json:"gc,omitempty"`
+	GC basepb.PipelineGC `json:"gc,omitempty"`
 
 	// OutputDefines
 	DefinedOutputs []apistructs.PipelineOutput `json:"definedOutputs,omitempty"`
@@ -111,7 +114,7 @@ type PipelineExtraInfo struct {
 
 	QueueInfo *QueueInfo `json:"queueInfo,omitempty"`
 
-	TaskOperates []apistructs.PipelineTaskOperateRequest `json:"taskTaskOperates,omitempty"`
+	TaskOperates []*pipelinepb.PipelineTaskOperateRequest `json:"taskTaskOperates,omitempty"`
 
 	ContainerInstanceProvider *apistructs.ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"`
 }
@@ -136,7 +139,7 @@ type Snapshot struct {
 	RunPipelineParams apistructs.PipelineRunParamsWithValue `json:"runPipelineParams,omitempty"` // 流水线运行时参数
 
 	// IdentityInfo 身份信息
-	IdentityInfo apistructs.IdentityInfo `json:"identityInfo" xorm:"json"`
+	IdentityInfo commonpb.IdentityInfo `json:"identityInfo" xorm:"json"`
 
 	// OutputValues output 定义和从 task 里采集上来的值
 	OutputValues []apistructs.PipelineOutputWithValue `json:"outputValues,omitempty"`

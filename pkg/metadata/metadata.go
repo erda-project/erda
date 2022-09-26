@@ -16,6 +16,8 @@ package metadata
 
 import (
 	"strings"
+
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 )
 
 type MetadataLevel string
@@ -83,6 +85,17 @@ func (metadata Metadata) DedupByName() Metadata {
 func (metadata Metadata) FilterNoErrorLevel() (notErrorLevel, errorLevel Metadata) {
 	for _, field := range metadata {
 		if field.GetLevel() == MetadataLevelError {
+			errorLevel = append(errorLevel, field)
+			continue
+		}
+		notErrorLevel = append(notErrorLevel, field)
+	}
+	return
+}
+
+func FilterNoErrorLevelMeta(metas []*commonpb.MetadataField) (notErrorLevel, errorLevel []*commonpb.MetadataField) {
+	for _, field := range metas {
+		if field.Level == string(MetadataLevelError) {
 			errorLevel = append(errorLevel, field)
 			continue
 		}

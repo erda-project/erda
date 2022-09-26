@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/internal/pkg/mock"
+	gmock "github.com/erda-project/erda/pkg/mock"
 )
 
 type OfflineOrgMock struct {
@@ -74,7 +75,7 @@ func TestOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{}, &gmock.MockPipelineServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -116,7 +117,7 @@ func TestOfflineWithDeleteClusterFailed(t *testing.T) {
 		}, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{}, &gmock.MockPipelineServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -159,7 +160,7 @@ func TestOfflineWithDeleteAKFailed(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{}, &gmock.MockPipelineServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -200,7 +201,7 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{})
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, OfflineOrgMock{}, &gmock.MockPipelineServiceServer{})
 
 	// monkey patch Credential with core services
 	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
@@ -295,7 +296,7 @@ func TestOfflineEdgeClusters(t *testing.T) {
 				return 0, nil
 			})
 
-			c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+			c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, &gmock.MockPipelineServiceServer{})
 
 			_, hint, err := c.OfflineEdgeCluster(ctx, req, "", "")
 

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -56,7 +57,7 @@ func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipel
 	if err != nil {
 		return nil, err
 	}
-	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
+	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&pipelinepb.PipelineCreateRequest{
 		PipelineYmlName:    filepath.Join(params.Path, params.FileName),
 		AppID:              params.AppID,
 		Branch:             params.Ref,

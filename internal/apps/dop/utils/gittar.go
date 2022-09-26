@@ -15,7 +15,7 @@
 package utils
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
@@ -36,7 +36,7 @@ func getCenterOrEdgeURL(diceCluster, requestCluster, center, saas string) string
 	return saas
 }
 
-func GetGittarSecrets(clusterName, branch string, detail apistructs.CommitDetail) map[string]string {
+func GetGittarSecrets(clusterName, branch string, detail *commonpb.CommitDetail) map[string]string {
 	return map[string]string{
 		MakeGittarRepoSecret():         GetGittarRepoURL(clusterName, detail.RepoAbbr),
 		MakeGittarBranchSecret():       branch,

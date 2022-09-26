@@ -30,6 +30,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -586,7 +590,7 @@ func (svc *Service) UpdateAutotestSceneUpdateTime(sceneID uint64) error {
 	return svc.db.UpdateAutotestSceneUpdateAt(sceneID, time.Now())
 }
 
-func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteSceneRequest) (*apistructs.PipelineDTO, error) {
+func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteSceneRequest) (*basepb.PipelineDTO, error) {
 	var autotestSceneRequest apistructs.AutotestSceneRequest
 	autotestSceneRequest.SceneID = req.AutoTestScene.ID
 	scene, err := svc.GetAutotestScene(autotestSceneRequest)
@@ -604,14 +608,14 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 		return nil, err
 	}
 
-	var params []apistructs.PipelineRunParam
+	var params []*basepb.PipelineRunParam
 	for _, input := range sceneInputs {
 		// replace mock temp before create pipeline
 		// and so steps can use the same mock temp
 		replacedTemp := expression.ReplaceRandomParams(input.Temp)
-		params = append(params, apistructs.PipelineRunParam{
+		params = append(params, &basepb.PipelineRunParam{
 			Name:  input.Name,
-			Value: replacedTemp,
+			Value: structpb.NewStringValue(replacedTemp),
 		})
 	}
 
@@ -628,16 +632,17 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 		return nil, err
 	}
 
-	var reqPipeline = apistructs.PipelineCreateRequestV2{
+	var reqPipeline = pipelinepb.PipelineCreateRequestV2{
 		PipelineYmlName: strconv.Itoa(int(scene.ID)),
-		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		PipelineSource:  apistructs.PipelineSourceAutoTest.String(),
 		AutoRun:         true,
 		ForceRun:        true,
 		ClusterName:     req.ClusterName,
 		PipelineYml:     yml,
 		Labels:          req.Labels,
 		RunParams:       params,
-		IdentityInfo:    req.IdentityInfo,
+		UserID:          req.IdentityInfo.UserID,
+		InternalClient:  req.IdentityInfo.InternalClient,
 		NormalLabels:    map[string]string{apistructs.LabelOrgName: org.Name, apistructs.LabelOrgID: strconv.FormatUint(org.ID, 10)},
 	}
 
@@ -653,12 +658,12 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 		reqPipeline.ClusterName = testClusterName
 	}
 
-	pipelineDTO, err := svc.bdl.CreatePipeline(&reqPipeline)
+	pipelineDTO, err := svc.pipelineSvc.PipelineCreateV2(context.Background(), &reqPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	return pipelineDTO, nil
+	return pipelineDTO.Data, nil
 }
 
 func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteSceneStepRequest) (*apistructs.AutotestExecuteSceneStepRespData, error) {
@@ -1090,9 +1095,12 @@ func (svc *Service) CancelDiceAutotestScene(req apistructs.AutotestCancelSceneRe
 
 	for _, v := range pages.Pipelines {
 		if v.Status.IsReconcilerRunningStatus() {
-			var pipelineCancelRequest apistructs.PipelineCancelRequest
+			var pipelineCancelRequest pipelinepb.PipelineCancelRequest
 			pipelineCancelRequest.PipelineID = v.ID
-			return svc.bdl.CancelPipeline(pipelineCancelRequest)
+			_, err = svc.pipelineSvc.PipelineCancel(context.Background(), &pipelineCancelRequest)
+			if err != nil {
+				return err
+			}
 		}
 		break
 	}

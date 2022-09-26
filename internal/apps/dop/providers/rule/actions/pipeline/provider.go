@@ -24,6 +24,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
@@ -111,11 +113,11 @@ func (p *provider) CreatePipeline(env map[string]interface{}) (string, error) {
 		logrus.Errorf("failed to bind definition %v", err)
 	}
 
-	reqPipeline := &apistructs.PipelineCreateRequest{
+	reqPipeline := &pipelinepb.PipelineCreateRequest{
 		AppID:              req.AppID,
 		Branch:             req.RefName,
-		Source:             apistructs.PipelineSourceDice,
-		PipelineYmlSource:  apistructs.PipelineYmlSourceGittar,
+		Source:             apistructs.PipelineSourceDice.String(),
+		PipelineYmlSource:  apistructs.PipelineYmlSourceGittar.String(),
 		PipelineYmlContent: req.PipelineYmlStr,
 		AutoRun:            true,
 		UserID:             req.UserID,

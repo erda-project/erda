@@ -290,6 +290,10 @@ erda.core.pipeline.queue-client:
 grpc-client@erda.core.pipeline.queue:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
   block: false
+erda.core.pipeline.pipeline-client: { }
+grpc-client@erda.core.pipeline.pipeline:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 #grpc-client@erda.core.dicehub.release:
 #  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 #erda.core.dicehub.release-client: {}

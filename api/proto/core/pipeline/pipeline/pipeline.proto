@@ -1,0 +1,563 @@
+syntax = "proto3";
+
+package erda.core.pipeline.pipeline;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/identity.proto";
+import "common/commit.proto";
+import "common/openapi.proto";
+import "core/pipeline/base/base.proto";
+import "core/pipeline/queue/queue.proto";
+import "core/pipeline/cron_pub.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb";
+
+service PipelineService {
+  option(erda.common.openapi_service) = {
+    service: "pipeline",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+  ////////// pipelines
+  rpc PipelineCreateV2 (PipelineCreateRequestV2) returns (PipelineCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/v2/pipelines",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/v2/pipelines",
+      doc: "summary: 创建 pipeline v2",
+    };
+  }
+
+  rpc PipelineCreate (PipelineCreateRequest) returns (PipelineCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines",
+      doc: "summary: 创建 pipeline",
+    };
+  }
+
+  rpc PipelineBatchCreate (PipelineBatchCreateRequest) returns (PipelineBatchCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines/actions/batch-create",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/actions/batch-create",
+      doc: "summary: 批量创建 pipeline",
+    };
+  }
+
+  rpc PipelinePaging (PipelinePagingRequest) returns (PipelinePagingResponse) {
+    option (google.api.http) = {
+      get: "/api/pipelines",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines",
+      doc: "summary: 分页查询 pipeline",
+    };
+  }
+
+  rpc PipelineDetail (PipelineDetailRequest) returns (PipelineDetailResponse) {
+    option (google.api.http) = {
+      get: "/api/pipelines/{pipelineID}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}",
+      doc: "summary: 查询 pipeline 详情",
+    };
+  }
+
+  rpc PipelineDelete (PipelineDeleteRequest) returns (PipelineDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/api/pipelines/{pipelineID}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}",
+      doc: "summary: 删除 pipeline",
+    };
+  }
+
+  rpc PipelineOperate (PipelineOperateRequest) returns (PipelineOperateResponse) {
+    option (google.api.http) = {
+      put: "/api/pipelines/{pipelineID}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}",
+      doc: "summary: 更新 pipeline",
+    };
+  }
+
+  rpc PipelineRun (PipelineRunRequest) returns (PipelineRunResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines/{pipelineID}/actions/run",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}/actions/run",
+      doc: "summary: 执行 pipeline",
+    };
+  }
+
+  rpc PipelineCancel (PipelineCancelRequest) returns (PipelineCancelResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines/{pipelineID}/actions/cancel",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}/actions/cancel",
+      doc: "summary: 取消 pipeline",
+    };
+  }
+
+  rpc PipelineRerun (PipelineRerunRequest) returns (PipelineRerunResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines/{pipelineID}/actions/rerun",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}/actions/rerun",
+      doc: "summary: 重试 pipeline",
+    };
+  }
+
+  rpc PipelineRerunFailed (PipelineRerunFailedRequest) returns (PipelineRerunFailedResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines/{pipelineID}/actions/rerun-failed",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/{pipelineID}/actions/rerun-failed",
+      doc: "summary: 重试失败 pipeline",
+    };
+  }
+
+  rpc PipelineStatistic (PipelineStatisticRequest) returns (PipelineStatisticResponse) {
+    option (google.api.http) = {
+      get: "/api/pipelines/actions/statistics",
+    };
+  }
+
+  rpc QueryPipelineSnippet (PipelineSnippetQueryRequest) returns (PipelineSnippetQueryResponse) {
+    option (google.api.http) = {
+      post: "/api/pipeline-snippets/actions/query-details",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipeline-snippets/actions/query-details",
+      doc: "summary: 查询 pipeline snippet 详情",
+    };
+  }
+
+  rpc PipelineCallback (PipelineCallbackRequest) returns (PipelineCallbackResponse) {
+    option (google.api.http) = {
+      post: "/api/pipelines/actions/callback",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/pipelines/actions/callback",
+      doc: "summary: pipeline 回调",
+    };
+  }
+
+  rpc PipelineTaskView (PipelineTaskViewRequest) returns (PipelineTaskViewResponse) {
+    option (google.api.http) = {
+      get: "/api/pipelines/actions/task-view",
+    };
+  }
+}
+
+message PipelineDeleteRequest {
+  uint64 pipelineID = 1;
+}
+message PipelineDeleteResponse {
+}
+
+message PipelineDetailRequest {
+  bool simplePipelineBaseResult = 1;
+  uint64 pipelineID = 2;
+}
+
+message PipelineDetailDTO {
+  // TODO embed
+  // base
+  uint64 ID = 1 [json_name = "id"];
+  string source = 2;
+  string ymlName = 3;
+  string namespace = 4;
+  string clusterName = 5;
+  string status = 6;
+  string type = 7;
+  string triggerMode = 8;
+  optional uint64 cronID = 9;
+  map<string, string> labels = 10;
+  string ymlSource = 11;
+  string ymlContent = 12;
+  core.pipeline.base.PipelineExtra extra = 13;
+
+  // app related info
+  uint64 orgID = 14;
+  string orgName = 15;
+  uint64 projectID = 16;
+  string projectName = 17;
+  uint64 applicationID = 18;
+  string applicationName = 19;
+  string branch = 20;
+  string commit = 21;
+  common.CommitDetail commitDetail = 22;
+
+  // runtime info
+  double progress = 23;
+  int64 costTimeSec = 24;
+  google.protobuf.Timestamp timeBegin = 25;
+  google.protobuf.Timestamp timeEnd = 26;
+  google.protobuf.Timestamp timeCreated = 27;
+  google.protobuf.Timestamp timeUpdated = 28;
+
+  // additional fields
+  repeated core.pipeline.base.PipelineStageDetailDTO pipelineStages = 29;
+  repeated core.pipeline.base.PipelineStageDetailDTO pipelineSnippetStages = 30;
+  core.pipeline.Cron pipelineCron = 31;
+  core.pipeline.base.PipelineButton pipelineButton = 32;
+  map<string, core.pipeline.base.PipelineTaskActionDetail> pipelineTaskActionDetails = 33;
+  repeated core.pipeline.base.PipelineParamWithValue runParams = 34;
+  repeated core.pipeline.base.PipelineEvent events = 35;
+  bool needApproval = 36;
+}
+
+message PipelineDetailResponse {
+  PipelineDetailDTO data = 1;
+}
+
+////////////// request & response
+message PipelineCreateRequestV2 {
+  // PipelineYml is pipeline yaml content.
+  // +required
+  string pipelineYml = 1 [(validate.rules).string.min_len = 1];
+
+  // ClusterName represents the cluster the pipeline will be executed.
+  // +required
+  string clusterName = 2 [(validate.rules).string.min_len = 1];
+
+  // Namespace upper layer could customize pipeline running in which namespace
+  // +optional
+  string namespace = 3;
+
+  // PipelineYmlName
+  // Equal to `Name`.
+  // Default is `pipeline.yml`.
+  // +optional
+  string pipelineYmlName = 4 [(validate.rules).string.min_len = 1];
+
+  // PipelineSource represents the source where pipeline created from.
+  // Equal to `Namespace`.
+  // +required
+  string pipelineSource = 5 [(validate.rules).string.min_len = 1];
+
+  // Labels is Map of string keys and values, can be used to filter pipeline.
+  // If label key or value is too long, it will be moved to NormalLabels automatically and overwrite value if key already exists in NormalLabels.
+  // +optional
+  map<string, string> labels = 6;
+
+  // NormalLabels is Map of string keys and values, cannot be used to filter pipeline.
+  // +optional
+  map<string, string> normalLabels = 7;
+
+  // Envs is Map of string keys and values.
+  // +optional
+  map<string, string> envs = 8;
+
+  // ConfigManageNamespaces pipeline fetch configs from cms by namespaces in order.
+  // Pipeline won't generate default ns.
+  // +optional
+  repeated string configManageNamespaces = 9;
+
+  // AutoRun represents whether auto run the created pipeline.
+  // Default is false.
+  // +optional
+  // Deprecated, please use `AutoRunAtOnce` or `AutoStartCron`.
+  // Alias for AutoRunAtOnce.
+  bool autoRun = 10;
+
+  // ForceRun represents stop other running pipelines to run.
+  // Default is false.
+  // +optional
+  bool forceRun = 11;
+
+  // AutoRunAtOnce alias for `AutoRun`.
+  // AutoRunAtOnce represents whether auto run the created pipeline.
+  // Default is false.
+  // +optional
+  bool autoRunAtOnce = 12;
+
+  // AutoStartCron represents whether auto start cron.
+  // If a pipeline doesn't have `cron` field, ignore.
+  // Default is false.
+  // +optional
+  bool autoStartCron = 13;
+
+  // CronStartFrom specify time when to start
+  // +optional
+  google.protobuf.Timestamp cronStartFrom = 14;
+
+  // GC represents pipeline gc configs.
+  // If config is empty, will use default config.
+  // +optional
+  core.pipeline.base.PipelineGC GC = 15 [json_name = "gc"];
+
+  // RunPipelineParams represents pipeline params runtime input
+  // if pipeline have params runPipelineParams can not be empty
+  // +optional
+  repeated core.pipeline.base.PipelineRunParam runParams = 16;
+
+  // Internal-Use below
+
+  // BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
+  core.pipeline.queue.Queue bindQueue = 17;
+
+  // DefinitionID pipeline definition id
+  // +optional
+  string definitionID = 18;
+
+  // passed from the invoker, different from config cms
+  // eg: gittar.repo
+  // +optional
+  map<string, string> Secrets = 19;
+
+  // ownerUser pipeline user information
+  core.pipeline.base.PipelineUser ownerUser = 20;
+
+  string userID = 21;
+  string internalClient = 22;
+}
+
+message PipelineCreateRequest {
+  uint64 appID = 1;
+  string branch = 2;
+  string source = 3;
+  string pipelineYmlSource = 4;
+  string pipelineYmlName = 5;
+  string pipelineYmlContent = 6;
+  bool autoRun = 7;
+  repeated string callbackURLs = 8;
+  string userID = 9;
+  bool isCronTriggered = 10;
+}
+
+message PipelineCreateResponse {
+  core.pipeline.base.PipelineDTO data = 1;
+}
+
+message PipelineBatchCreateRequest {
+  uint64 appID = 1;
+  string branch = 2;
+  string source = 3;
+  repeated string batchPipelineYmlPaths = 4;
+  bool autoRun = 5;
+  repeated string callbackURLs = 6;
+  string userID = 7;
+}
+
+message PipelineBatchCreateResponse {
+  map<string, core.pipeline.base.PipelineDTO> data = 1;
+}
+
+message PipelinePagingRequest {
+  // todo json name
+  string branches = 1;
+  string sources = 2;
+  string ymlNames = 3;
+  string statuses = 4;
+  uint64 appID = 5;
+  repeated string branch = 6;
+  repeated string source = 7;
+  bool allSources = 8;
+  repeated string ymlName = 9;
+  repeated string status = 10;
+  repeated string notStatus = 11;
+  repeated string triggerMode = 12;
+  repeated string clusterName = 13;
+  bool includeSnippet = 14;
+  google.protobuf.Timestamp startTimeBegin = 15;
+  int64 startTimeBeginTimestamp = 16;
+  string startedAt = 17;
+  google.protobuf.Timestamp endTimeBegin = 18;
+  int64 endTimeBeginTimestamp = 19;
+  string endedAt = 20;
+  google.protobuf.Timestamp startTimeCreated = 21;
+  int64 startTimeCreatedTimestamp = 22;
+  google.protobuf.Timestamp endTimeCreated = 23;
+  int64 endTimeCreatedTimestamp = 24;
+  string mustMatchLabels = 25;
+  repeated string mustMatchLabel = 26;
+  map<string, google.protobuf.Value> mustMatchLabelsJSON = 27;
+  string anyMatchLabels = 28;
+  repeated string anyMatchLabel = 29;
+  map<string, google.protobuf.Value> anyMatchLabelsJSON = 30;
+  int64 pageNum = 31;
+  int64 pageNo = 32;
+  int64 pageSize = 33;
+  bool largePageSize = 34;
+  bool countOnly = 35;
+  repeated string selectCols = 36;
+  repeated string ascCols = 37;
+  repeated string descCols = 38;
+  uint64 startIDGt = 39;
+  uint64 endIDLt = 40;
+  PipelineDefinitionRequest pipelineDefinitionRequest = 41;
+  string pipelineDefinition = 42;
+}
+
+message PipelinePagingResponse {
+  PipelineListResponseData data = 1;
+}
+message PipelineListResponseData {
+  repeated PagePipeline pipelines = 1;
+  int64 total = 2;
+  int64 currentPageSize = 3;
+}
+message PagePipeline {
+  uint64 ID = 1 [json_name = "id"];
+  uint64 cronID = 2;
+  string commit = 3;
+  string source = 4;
+  string ymlName = 5;
+  core.pipeline.base.PipelineExtra extra = 6;
+  map<string, string> filterLabels = 7;
+  map<string, string> normalLabels = 8;
+
+  // runtime
+  string type = 9;
+  string triggerMode = 10;
+  string clusterName = 11;
+  string status = 12;
+  double progress = 13; // eg: 0.8 = 80%
+
+  // snippet
+  bool isSnippet = 14;
+  uint64 parentPipelineID = 15;
+  uint64  parentTaskID = 16;
+
+  // time
+  int64 costTimeSec = 17;
+  google.protobuf.Timestamp timeBegin = 18;
+  google.protobuf.Timestamp timeEnd = 19;
+  google.protobuf.Timestamp timeCreated = 20;
+  google.protobuf.Timestamp timeUpdated = 21;
+  core.pipeline.base.DefinitionPageInfo definitionPageInfo = 22;
+}
+
+message PipelineDefinitionRequest {
+  string name = 1;
+  repeated string creators = 2;
+  repeated string sourceRemotes = 3;
+  string location = 4;
+  string definitionID = 5;
+}
+
+message PipelineTaskOperateRequest {
+  uint64 taskID = 1;
+  string taskAlias = 2;
+  optional bool disable = 3;
+  optional bool pause = 4;
+}
+
+message PipelineOperateRequest {
+  uint64 pipelineID = 1;
+  repeated PipelineTaskOperateRequest taskOperates = 2;
+}
+
+message PipelineOperateResponse {
+}
+
+message PipelineRunRequest {
+  uint64 pipelineID = 1; // get from path variable
+  bool forceRun = 2;
+  repeated  core.pipeline.base.PipelineRunParam pipelineRunParams = 3;
+  repeated string configManageNamespaces = 4;
+  map<string, string>  secrets = 5;
+  string userID = 6;
+  string internalClient = 7;
+}
+message PipelineRunResponse {
+}
+
+message PipelineCancelRequest {
+  uint64 pipelineID = 1;
+  string userID = 2;
+  string internalClient = 3;
+}
+message PipelineCancelResponse {
+}
+
+message PipelineRerunRequest {
+  uint64 pipelineID = 1;
+  bool autoRunAtOnce = 2;
+  map<string, string> secrets = 3;
+  string userID = 4;
+  string internalClient = 5;
+}
+message PipelineRerunResponse {
+  core.pipeline.base.PipelineDTO data = 1;
+}
+
+message PipelineRerunFailedRequest {
+  uint64 pipelineID = 1;
+  bool autoRunAtOnce = 2;
+  map<string, string> secrets = 3;
+  string userID = 4;
+  string internalClient = 5;
+}
+message PipelineRerunFailedResponse {
+  core.pipeline.base.PipelineDTO data = 1;
+}
+
+message PipelineStatisticRequest {
+  string source = 1;
+  string clusterName = 2;
+}
+
+message PipelineStatisticResponseData {
+  uint64 success = 1;
+  uint64 processing = 2;
+  uint64 failed = 3;
+  uint64 completed = 4;
+}
+
+message PipelineStatisticResponse {
+    PipelineStatisticResponseData data = 1;
+}
+
+message PipelineSnippetQueryRequest {
+  repeated SnippetDetailQuery snippetConfigs = 1;
+}
+message PipelineSnippetQueryResponse {
+  map<string, SnippetQueryDetail> data = 1;
+}
+message SnippetDetailQuery {
+  string source = 1;
+  string name = 2;
+  map<string, string> labels = 3;
+  string alias = 4;
+}
+message SnippetQueryDetail {
+  repeated core.pipeline.base.PipelineParam params = 1;
+  repeated string outputs = 2;
+}
+
+message PipelineCallbackRequest {
+  string type = 1;
+  bytes data = 2;
+}
+message PipelineCallbackResponse {
+}
+
+message PipelineTaskViewRequest {
+  uint64 pipelineID = 1;
+  string ymlNames = 2;
+  string sources = 3;
+}
+
+message PipelineTaskViewResponse {
+  PipelineDetailDTO data = 1;
+}

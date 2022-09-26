@@ -56,3 +56,12 @@ func Test_EnablePipelineVolume(t *testing.T) {
 		}
 	}
 }
+
+func TestConvertToPipelineUser(t *testing.T) {
+	user := UserInfo{
+		ID:   "1",
+		Name: "user1",
+	}
+	pbUser := user.ConvertToPipelineUser()
+	assert.Equal(t, "user1", pbUser.Name)
+}

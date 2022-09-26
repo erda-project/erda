@@ -37,6 +37,9 @@ type Interface interface {
 	GetEdgePipelineEnvs() apistructs.ClusterManagerClientDetail
 	CheckAccessToken(token string) error
 	CheckAccessTokenFromHttpRequest(req *http.Request) error
+
+	// CheckAccessTokenFromCtx is used for pb provider, get token from content and check access
+	CheckAccessTokenFromCtx(ctx context.Context) error
 	IsEdge() bool
 	IsCenter() bool
 

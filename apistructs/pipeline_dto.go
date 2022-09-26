@@ -17,6 +17,9 @@ package apistructs
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 )
 
@@ -190,15 +193,15 @@ type PipelineStageDetailDTO struct {
 	PipelineTasks []PipelineTaskDTO `json:"pipelineTasks"`
 }
 
-func (user *UserInfo) ConvertToPipelineUser() *PipelineUser {
+func (user *UserInfo) ConvertToPipelineUser() *basepb.PipelineUser {
 
 	var name = user.Nick
 	if len(name) <= 0 {
 		name = user.Name
 	}
 
-	return &PipelineUser{
-		ID:     user.ID,
+	return &basepb.PipelineUser{
+		ID:     structpb.NewStringValue(user.ID),
 		Name:   name,
 		Avatar: user.Avatar,
 	}

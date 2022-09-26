@@ -19,6 +19,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
@@ -40,7 +41,7 @@ func assign(src, dst interface{}) error {
 	return mapstructure.Decode(src, dst)
 }
 
-func (h *GSHelper) SetPipelineInfo(pipeline apistructs.PipelineDetailDTO) {
+func (h *GSHelper) SetPipelineInfo(pipeline pipelinepb.PipelineDetailDTO) {
 	if h.gs == nil {
 		return
 	}
@@ -54,7 +55,7 @@ func (h *GSHelper) ClearPipelineInfo() {
 	delete(*h.gs, "GlobalPipelineInfo")
 }
 
-func (h *GSHelper) GetPipelineInfo() *apistructs.PipelineDetailDTO {
+func (h *GSHelper) GetPipelineInfo() *pipelinepb.PipelineDetailDTO {
 	if h.gs == nil {
 		return nil
 	}
@@ -63,7 +64,7 @@ func (h *GSHelper) GetPipelineInfo() *apistructs.PipelineDetailDTO {
 	if info == "" || info == nil {
 		return nil
 	}
-	var v apistructs.PipelineDetailDTO
+	var v pipelinepb.PipelineDetailDTO
 	err := json.Unmarshal([]byte(info.(string)), &v)
 	if err != nil {
 		return nil
@@ -72,7 +73,7 @@ func (h *GSHelper) GetPipelineInfo() *apistructs.PipelineDetailDTO {
 	return &v
 }
 
-func (h *GSHelper) GetPipelineInfoWithPipelineID(pipelineID uint64, bdl *bundle.Bundle) *apistructs.PipelineDetailDTO {
+func (h *GSHelper) GetPipelineInfoWithPipelineID(pipelineID uint64, bdl *bundle.Bundle) *pipelinepb.PipelineDetailDTO {
 	value := h.GetPipelineInfo()
 	if value != nil && value.ID == pipelineID {
 		return value

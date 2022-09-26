@@ -25,6 +25,8 @@ import (
 	"github.com/bmizerany/assert"
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -82,10 +84,14 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       true,
 								CompleteReconcilerTeardown: false,
-								GC: apistructs.PipelineGC{
-									ResourceGC: apistructs.PipelineResourceGC{
+								GC: basepb.PipelineGC{
+									ResourceGC: &basepb.PipelineResourceGC{
 										FailedTTLSecond:  &[]uint64{200}[0],
 										SuccessTTLSecond: &[]uint64{200}[0],
+									},
+									DatabaseGC: &basepb.PipelineDatabaseGC{
+										Analyzed: &basepb.PipelineDBGCItem{},
+										Finished: &basepb.PipelineDBGCItem{},
 									},
 								},
 							},
@@ -112,10 +118,14 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: true,
-								GC: apistructs.PipelineGC{
-									ResourceGC: apistructs.PipelineResourceGC{
+								GC: basepb.PipelineGC{
+									ResourceGC: &basepb.PipelineResourceGC{
 										FailedTTLSecond:  &[]uint64{200}[0],
 										SuccessTTLSecond: &[]uint64{200}[0],
+									},
+									DatabaseGC: &basepb.PipelineDatabaseGC{
+										Analyzed: &basepb.PipelineDBGCItem{},
+										Finished: &basepb.PipelineDBGCItem{},
 									},
 								},
 							},
@@ -142,10 +152,14 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: true,
-								GC: apistructs.PipelineGC{
-									ResourceGC: apistructs.PipelineResourceGC{
+								GC: basepb.PipelineGC{
+									ResourceGC: &basepb.PipelineResourceGC{
 										FailedTTLSecond:  &[]uint64{200}[0],
 										SuccessTTLSecond: &[]uint64{200}[0],
+									},
+									DatabaseGC: &basepb.PipelineDatabaseGC{
+										Analyzed: &basepb.PipelineDBGCItem{},
+										Finished: &basepb.PipelineDBGCItem{},
 									},
 								},
 								Namespace: "pipeline-1",
@@ -173,10 +187,14 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
-								GC: apistructs.PipelineGC{
-									ResourceGC: apistructs.PipelineResourceGC{
+								GC: basepb.PipelineGC{
+									ResourceGC: &basepb.PipelineResourceGC{
 										FailedTTLSecond:  &[]uint64{200}[0],
 										SuccessTTLSecond: &[]uint64{200}[0],
+									},
+									DatabaseGC: &basepb.PipelineDatabaseGC{
+										Analyzed: &basepb.PipelineDBGCItem{},
+										Finished: &basepb.PipelineDBGCItem{},
 									},
 								},
 							},
@@ -203,10 +221,14 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
-								GC: apistructs.PipelineGC{
-									ResourceGC: apistructs.PipelineResourceGC{
+								GC: basepb.PipelineGC{
+									ResourceGC: &basepb.PipelineResourceGC{
 										FailedTTLSecond:  &[]uint64{200}[0],
 										SuccessTTLSecond: &[]uint64{200}[0],
+									},
+									DatabaseGC: &basepb.PipelineDatabaseGC{
+										Analyzed: &basepb.PipelineDBGCItem{},
+										Finished: &basepb.PipelineDBGCItem{},
 									},
 								},
 							},
@@ -233,10 +255,14 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
-								GC: apistructs.PipelineGC{
-									ResourceGC: apistructs.PipelineResourceGC{
+								GC: basepb.PipelineGC{
+									ResourceGC: &basepb.PipelineResourceGC{
 										FailedTTLSecond:  &[]uint64{gcTime()}[0],
 										SuccessTTLSecond: &[]uint64{gcTime()}[0],
+									},
+									DatabaseGC: &basepb.PipelineDatabaseGC{
+										Analyzed: &basepb.PipelineDBGCItem{},
+										Finished: &basepb.PipelineDBGCItem{},
 									},
 								},
 							},
@@ -263,10 +289,14 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 							Extra: spec.PipelineExtraInfo{
 								CompleteReconcilerGC:       false,
 								CompleteReconcilerTeardown: false,
-								GC: apistructs.PipelineGC{
-									ResourceGC: apistructs.PipelineResourceGC{
+								GC: basepb.PipelineGC{
+									ResourceGC: &basepb.PipelineResourceGC{
 										FailedTTLSecond:  &[]uint64{gcTime()}[0],
 										SuccessTTLSecond: &[]uint64{gcTime()}[0],
+									},
+									DatabaseGC: &basepb.PipelineDatabaseGC{
+										Analyzed: &basepb.PipelineDBGCItem{},
+										Finished: &basepb.PipelineDBGCItem{},
 									},
 								},
 							},
@@ -302,14 +332,13 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			wantLen: 0,
 		},
 	}
-
 	logrus.Infof("start test pipeline_gc_compensator_test")
 	defer logrus.Infof("end test pipeline_gc_compensator_test")
 
 	for _, tt := range tests {
 
 		var db *dbclient.Client
-		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req *pipelinepb.PipelinePagingRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 			return &dbclient.PageListPipelinesResult{
 				Pipelines:         tt.args.pipelines,
 				PagingPipelineIDs: nil,
@@ -343,7 +372,7 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 func TestReconciler_doWaitGCCompensate(t *testing.T) {
 	var db *dbclient.Client
 
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req *pipelinepb.PipelinePagingRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 		return &dbclient.PageListPipelinesResult{
 			Pipelines:         []spec.Pipeline{},
 			PagingPipelineIDs: []uint64{},

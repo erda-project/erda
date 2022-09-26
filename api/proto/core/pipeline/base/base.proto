@@ -14,103 +14,7 @@ import "core/pipeline/queue/queue.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/base/pb";
 
-service BaseService {
-  ////////// pipelines
-  rpc PipelineCreate (PipelineCreateRequest) returns (PipelineCreateResponse) {
-    option (google.api.http) = {
-      post: "/api/v2/pipelines",
-    };
-  }
-  rpc PipelinePaging (PipelinePagingRequest) returns (PipelinePagingResponse) {
-    option (google.api.http) = {
-      get: "/api/pipelines?source={sources}&ymlName={ymlNames}&status={statuses}&notStatus={notStatuses}&triggerMode={triggerModes}&clusterName={clusterNames}&mustMatchLabels={mustMatchLabelsJSON}&mustMatchLabel={mustMatchLabelsQueryParams}&anyMatchLabels={anyMatchLabelsJSON}&anyMatchLabel={anyMatchLabelsQueryParams}&branches={commaBranches}&sources={commaSources}&ymlNames={commaYmlNames}&statuses={commaStatuses}&branch={branches}",
-    };
-  }
-  rpc PipelineDetail (PipelineDetailRequest) returns (PipelineDetailResponse) {
-    option (google.api.http) = {
-      get: "/api/pipelines/{pipelineID}",
-    };
-  }
-  rpc PipelineOperate (PipelineOperateRequest) returns (PipelineOperateResponse) {
-    option (google.api.http) = {
-      put: "/api/pipelines/{pipelineID}",
-    };
-  }
-  rpc PipelineDelete (PipelineDeleteRequest) returns (PipelineDeleteResponse) {
-    option (google.api.http) = {
-      delete: "/api/pipelines/{pipelineID}",
-    };
-  }
-  rpc PipelineRun (PipelineRunRequest) returns (PipelineRunResponse) {
-    option (google.api.http) = {
-      post: "/api/pipelines/{pipelineID}/actions/run",
-    };
-  }
-  rpc PipelineCancel (PipelineCancelRequest) returns (PipelineCancelResponse) {
-    option (google.api.http) = {
-      post: "/api/pipelines/{pipelineID}/actions/cancel",
-    };
-  }
-  rpc PipelineRerun (PipelineRerunRequest) returns (PipelineRerunResponse) {
-    option (google.api.http) = {
-      post: "/api/pipelines/{pipelineID}/actions/rerun",
-    };
-  }
-  rpc PipelineRerunFailed (PipelineRerunFailedRequest) returns (PipelineRerunFailedResponse) {
-    option (google.api.http) = {
-      post: "/api/pipelines/{pipelineID}/actions/rerun-failed",
-    };
-  }
-  rpc DeprecatedPipelineBatchCreate (DeprecatedPipelineBatchCreateRequest) returns (DeprecatedPipelineBatchCreateResponse) {
-    option (google.api.http) = {
-      post: "/api/pipelines/actions/batch-create",
-    };
-  }
-
-  // task
-  rpc PipelineTaskDetail (PipelineTaskDetailRequest) returns (PipelineTaskDetailResponse) {
-    option (google.api.http) = {
-      get: "/api/pipelines/{pipelineID}/tasks/{taskID}",
-    };
-  }
-  rpc PipelineTaskGetBootstrapInfo (PipelineTaskGetBootstrapInfoRequest) returns (PipelineTaskGetBootstrapInfoResponse) {
-    option (google.api.http) = {
-      get: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info",
-    };
-  }
-
-  rpc PipelineCallback (PipelineCallbackRequest) returns (PipelineCallbackResponse) {
-    option (google.api.http) = {
-      get: "/api/pipelines/actions/callback",
-    };
-  }
-
-  rpc QueryPipelineSnippet (PipelineSnippetQueryRequest) returns (PipelineSnippetQueryRequest) {
-    option (google.api.http) = {
-      get: "/api/pipeline-snippets/actions/query-details",
-    };
-  }
-
-}
-
-message PipelineSnippetQueryRequest {
-  repeated SnippetDetailQuery snippetConfigs = 1;
-}
-message PipelineSnippetQueryResponse {
-  map<string, SnippetQueryDetail> data = 1;
-}
-message SnippetDetailQuery {
-  string source = 1;
-  string name = 2;
-  map<string, string> labels = 3;
-  string alias = 4;
-}
-message SnippetQueryDetail {
-  repeated PipelineParam params = 1;
-  repeated string outputs = 2;
-}
-
-message PipelineInstance {
+message PipelineDTO {
   // base
   uint64 ID = 1 [json_name = "id"];
   string source = 2;
@@ -120,7 +24,7 @@ message PipelineInstance {
   string status = 6;
   string type = 7;
   string triggerMode = 8;
-  uint64 cronID = 9;
+  optional uint64 cronID = 9;
   map<string, string> labels = 10;
   string ymlSource = 11;
   string ymlContent = 12;
@@ -144,6 +48,8 @@ message PipelineInstance {
   google.protobuf.Timestamp timeEnd = 26;
   google.protobuf.Timestamp timeCreated = 27;
   google.protobuf.Timestamp timeUpdated = 28;
+
+  string ymlNameV1 = 29;
 }
 message PipelineExtra {
   string diceWorkspace = 1;
@@ -156,52 +62,8 @@ message PipelineExtra {
   repeated string configManageNamespaces = 8;
   bool isAutoRun = 9;
   repeated string callbackURLs = 10;
-}
-message PipelineInstanceDetail {
-  // TODO embed
-  // base
-  uint64 ID = 1 [json_name = "id"];
-  string source = 2;
-  string ymlName = 3;
-  string namespace = 4;
-  string clusterName = 5;
-  string status = 6;
-  string type = 7;
-  string triggerMode = 8;
-  uint64 cronID = 9;
-  map<string, string> labels = 10;
-  string ymlSource = 11;
-  string ymlContent = 12;
-  PipelineExtra extra = 13;
-
-  // app related info
-  uint64 orgID = 14;
-  string orgName = 15;
-  uint64 projectID = 16;
-  string projectName = 17;
-  uint64 applicationID = 18;
-  string applicationName = 19;
-  string branch = 20;
-  string commit = 21;
-  common.CommitDetail commitDetail = 22;
-
-  // runtime info
-  double progress = 23;
-  int64 costTimeSec = 24;
-  google.protobuf.Timestamp timeBegin = 25;
-  google.protobuf.Timestamp timeEnd = 26;
-  google.protobuf.Timestamp timeCreated = 27;
-  google.protobuf.Timestamp timeUpdated = 28;
-
-  // additional fields
-  repeated PipelineStageDetail pipelineStages = 29;
-  repeated PipelineStageDetail pipelineSnippetStages = 30;
-  core.pipeline.Cron pipelineCron = 31;
-  PipelineButton pipelineButton = 32;
-  map<string, PipelineTaskActionDetail> pipelineTaskActionDetails = 33;
-  repeated PipelineParamWithValue runParams = 34;
-  repeated PipelineEvent events = 35;
-  bool needApproval = 36;
+  PipelineUser ownerUser = 11;
+  string pipelineYmlNameV1 = 12;
 }
 message PipelineGC {
   PipelineResourceGC resourceGC = 1;
@@ -215,12 +77,12 @@ message PipelineResourceGC {
   // SuccessTTLSecond means when to release resource if pipeline status is Success.
   // Normally success ttl should be small even to zero, because everything is ok and don't need to rerun.
   // Default is 1800s(30min)
-  uint64 successTTLSecond = 1;
+  optional uint64 successTTLSecond = 1;
   // FailedTTLSecond means when to release resource if pipeline status is Failed.
   // Normally failed ttl should larger than SuccessTTLSecond, because you may want to rerun this failed pipeline,
   // which need these resource.
   // Default is 1800s.
-  uint64 failedTTLSecond = 2;
+  optional uint64 failedTTLSecond = 2;
 }
 // PipelineDatabaseGC represents database record gc strategy.
 message PipelineDatabaseGC {
@@ -231,9 +93,9 @@ message PipelineDBGCItem {
   // NeedArchive means whether this record need be archived:
   // If true, archive record to specific archive table;
   // If false, delete record and cannot be found anymore.
-  bool needArchive = 1;
+  optional bool needArchive = 1;
   // TTLSecond means when to do archive or delete operation.
-  uint64 TTLSecond = 2 [json_name = "ttlSecond"];
+  optional uint64 TTLSecond = 2 [json_name = "ttlSecond"];
 }
 message PipelineRunParam {
   string name = 1;
@@ -245,7 +107,7 @@ message PipelineRunParamWithValue {
   google.protobuf.Value trueValue = 3; // true value: placeholders will be replaced
 }
 message PipelineUser {
-  string ID = 1 [json_name = "id"];
+  google.protobuf.Value ID = 1 [json_name = "id"];
   string name = 2;
   string avatar = 3;
 }
@@ -328,7 +190,7 @@ message PipelineEventSource {
 message ErrorResponse {
   string code = 1;
   string msg = 2;
-  google.protobuf.Value ctx = 3;
+  ErrorContext ctx = 3;
 }
 
 ///////////// pipelineyaml
@@ -474,7 +336,7 @@ message PipelineStage {
   google.protobuf.Timestamp timeCreated = 8;
   google.protobuf.Timestamp timeUpdated = 9;
 }
-message PipelineStageDetail {
+message PipelineStageDetailDTO {
   uint64 ID = 1 [json_name = "id"];
   uint64 pipelineID = 2;
   string name = 3;
@@ -485,11 +347,11 @@ message PipelineStageDetail {
   google.protobuf.Timestamp timeCreated = 8;
   google.protobuf.Timestamp timeUpdated = 9;
 
-  repeated PipelineTask pipelineTasks = 10;
+  repeated PipelineTaskDTO pipelineTasks = 10;
 }
 
 /////////////
-message PipelineTask {
+message PipelineTaskDTO {
   uint64 ID = 1 [json_name = "id"];
   uint64 pipelineID = 2;
   uint64 stageID = 3;
@@ -500,7 +362,7 @@ message PipelineTask {
   map<string, string> labels = 8;
   PipelineTaskResult result = 9;
   bool isSnippet = 10;
-  uint64 snippetPipelineID = 11;
+  optional uint64 snippetPipelineID = 11;
   PipelineTaskSnippetDetail snippetPipelineDetail = 12; // detail of snippet pipeline
   int64 costTimeSec = 13; // -1 means no cost info, 0 means cost 0s exactly
   int64 queueTimeSec = 14;
@@ -508,24 +370,43 @@ message PipelineTask {
   google.protobuf.Timestamp timeEnd = 16;
   google.protobuf.Timestamp timeCreated = 17;
   google.protobuf.Timestamp timeUpdated = 18;
+  string opType = 19;
+}
+message TaskContainer {
+  string taskName = 1;
+  string containerID = 2;
+}
+message TaskParamDetail {
+  string name = 1;
+  map<string, string> values = 2;
 }
 message PipelineTaskExtra {
   string UUID = 1 [json_name = "uuid"];
   bool allowFailure = 2;
+  repeated TaskContainer taskContainers = 3;
+  repeated TaskParamDetail params = 4;
+  PipelineTaskActionDetail action = 5;
+}
+message ErrorContext {
+  google.protobuf.Timestamp startTime = 1;
+  google.protobuf.Timestamp endTime = 2;
+  uint64 count = 3;
 }
 message PipelineTaskResult {
   repeated common.MetadataField metadata = 1;
   repeated ErrorResponse errors = 2;
   PipelineTaskMachineStat machineStat = 3;
+  string inspect = 4;
+  string events = 5;
 }
 message PipelineTaskSnippetDetail {
   repeated PipelineOutputWithValue outputs = 1;
   // direct snippet task number, won't query recursively.
   // -1 means UNKNOWN, concrete value assigned when reconcile.
-  int64 directSnippetTaskNum = 2;
+  int64 directSnippetTasksNum = 2;
   // recursive snippet task number, i.e. the whole expanded tasks number.
   // -1 means UNKNOWN, concrete value will be reported by AOP.
-  int64 recursiveSnippetTaskNum = 3;
+  int64 recursiveSnippetTasksNum = 3;
 }
 
 message PipelineTaskMachineStat {
@@ -540,7 +421,7 @@ message PipelineTaskMachineHostStat {
   string hostname = 2;
   uint64 uptimeSec = 3;
   uint64 bootTimeSec = 4;
-  string OS = 5 [json_name = "os"];
+  string os = 5 [json_name = "os"];
   string platform = 6;
   string platformVersion = 7;
   string kernelVersion = 8;
@@ -574,218 +455,9 @@ message PipelineTaskActionDetail {
   string logoUrl = 1;
   string displayName = 2;
   string description = 3;
-}
-
-////////////// request & response
-message PipelineCreateRequest {
-  // PipelineYml is pipeline yaml content.
-  // +required
-  string pipelineYml = 1 [(validate.rules).string.min_len = 1];
-
-  // ClusterName represents the cluster the pipeline will be executed.
-  // +required
-  string clusterName = 2 [(validate.rules).string.min_len = 1];
-
-  // Namespace upper layer could customize pipeline running in which namespace
-  // +optional
-  string namespace = 3;
-
-  // PipelineYmlName
-  // Equal to `Name`.
-  // Default is `pipeline.yml`.
-  // +optional
-  string pipelineYmlName = 4 [(validate.rules).string.min_len = 1];
-
-  // PipelineSource represents the source where pipeline created from.
-  // Equal to `Namespace`.
-  // +required
-  string pipelineSource = 5 [(validate.rules).string.min_len = 1];
-
-  // Labels is Map of string keys and values, can be used to filter pipeline.
-  // If label key or value is too long, it will be moved to NormalLabels automatically and overwrite value if key already exists in NormalLabels.
-  // +optional
-  map<string, string> labels = 6;
-
-  // NormalLabels is Map of string keys and values, cannot be used to filter pipeline.
-  // +optional
-  map<string, string> normalLabels = 7;
-
-  // Envs is Map of string keys and values.
-  // +optional
-  map<string, string> envs = 8;
-
-  // ConfigManageNamespaces pipeline fetch configs from cms by namespaces in order.
-  // Pipeline won't generate default ns.
-  // +optional
-  repeated string configManageNamespaces = 9;
-
-  // AutoRun represents whether auto run the created pipeline.
-  // Default is false.
-  // +optional
-  // Deprecated, please use `AutoRunAtOnce` or `AutoStartCron`.
-  // Alias for AutoRunAtOnce.
-  bool autoRun = 10;
-
-  // ForceRun represents stop other running pipelines to run.
-  // Default is false.
-  // +optional
-  bool forceRun = 11;
-
-  // AutoRunAtOnce alias for `AutoRun`.
-  // AutoRunAtOnce represents whether auto run the created pipeline.
-  // Default is false.
-  // +optional
-  bool autoRunAtOnce = 12;
-
-  // AutoStartCron represents whether auto start cron.
-  // If a pipeline doesn't have `cron` field, ignore.
-  // Default is false.
-  // +optional
-  bool autoStartCron = 13;
-
-  // CronStartFrom specify time when to start
-  // +optional
-  google.protobuf.Timestamp cronStartFrom = 14;
-
-  // GC represents pipeline gc configs.
-  // If config is empty, will use default config.
-  // +optional
-  PipelineGC GC = 15 [json_name = "gc"];
-
-  // RunPipelineParams represents pipeline params runtime input
-  // if pipeline have params runPipelineParams can not be empty
-  // +optional
-  repeated PipelineRunParam runParams = 16;
-
-  // Internal-Use below
-
-  // BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
-  core.pipeline.queue.Queue bindQueue = 17 [json_name = "-"];
-
-  // DefinitionID pipeline definition id
-  // +optional
-  string definitionID = 18;
-
-  common.IdentityInfo identityInfo = 19 [json_name = "-"];
-
-  // passed from the invoker, different from config cms
-  // eg: gittar.repo
-  // +optional
-  map<string, string> Secrets = 20;
-}
-
-message PipelineCreateResponse {
-  PipelineInstance data = 1;
-}
-
-message PipelinePagingRequest {
-  int64 pageNum = 1;
-  int64 pageSize = 2;
-  bool largePageSize = 3;
-  bool countOnly = 4; // only total
-
-  bool allSources = 5;
-  repeated string sources = 6;
-  repeated string ymlNames = 7;
-  repeated string statuses = 8;
-  repeated string notStatuses = 9;
-  repeated string triggerModes = 10;
-  repeated string clusterNames = 11;
-
-  // IncludeSnippet whether include snippet, default is false.
-  bool includeSnippet = 12;
-
-  // time
-
-  // 开始执行时间 左闭区间
-  // http GET query param 请赋值该字段
-  int64 startTimeBeginTimestamp = 13;
-  // Deprecated, use `StartedAtTimestamp`.
-  // format: 2006-01-02T15:04:05, TZ: CST
-  string startTimeBeginCST = 14;
-
-  // 开始执行时间 右闭区间
-  // http GET query param 请赋值该字段
-  int64 endTimeBeginTimestamp = 15;
-  // Deprecated, use `StartedAtTimestamp`.
-  // format: 2006-01-02T15:04:05, TZ: CST
-  string endTimeBeginCST = 16;
-
-  // 创建时间 左闭区间
-  // http GET query param 请赋值该字段
-  int64 startTimeCreatedTimestamp = 17;
-
-  // 创建时间 右闭区间
-  // http GET query param 请赋值该字段
-  int64 endTimeCreatedTimestamp = 18;
-
-  // labels
-
-  // Deprecated
-  // 供 CDP 工作流明细查询使用，JSON(map[string]string)
-  string mustMatchLabelsJSON = 19;
-  // ?mustMatchLabel=key1=value1
-  // &mustMatchLabel=key1=value2
-  // &mustMatchLabel=key2=value3
-  repeated string mustMatchLabelsQueryParams = 20;
-
-  // Deprecated
-  // 供 CDP 工作流明细查询使用，JSON(map[string]string)
-  string anyMatchLabelsJSON = 21;
-  // ?anyMatchLabel=key1=value1
-  // &anyMatchLabel=key1=value2
-  // &anyMatchLabel=key2=value3
-  repeated string anyMatchLabelsQueryParams = 22;
-
-  // Deprecated, use schema `branch`
-  string commaBranches = 23;
-  // Deprecated, use schema `source`
-  string commaSources = 24;
-  // Deprecated, use schema `ymlName`
-  string commaYmlNames = 25;
-  // Deprecated, use schema `status`
-  string commaStatuses = 26;
-  // Deprecated, use mustMatchLabels, key=appID
-  uint64 appID = 27;
-  // Deprecated, use mustMatchLabels, key=branch
-  repeated string branches = 28;
-}
-message PipelinePagingResponse {
-  PipelineListResponseData data = 1;
-}
-message PipelineListResponseData {
-  repeated PagePipeline pipelines = 1;
-  int64 total = 2;
-  int64 currentPageSize = 3;
-}
-message PagePipeline {
-  uint64 ID = 1 [json_name = "id"];
-  uint64 cronID = 2;
-  string commit = 3;
-  string source = 4;
-  string ymlName = 5;
-  PipelineExtra extra = 6;
-  map<string, string> filterLabels = 7;
-  map<string, string> normalLabels = 8;
-
-  // runtime
-  string type = 9;
-  string triggerMode = 10;
-  string clusterName = 11;
-  string status = 12;
-  double progress = 13; // eg: 0.8 = 80%
-
-  // snippet
-  bool isSnippet = 14;
-  uint64 parentPipelineID = 15;
-  uint64  parentTaskID = 16;
-
-  // time
-  int64 costTimeSec = 17;
-  google.protobuf.Timestamp timeBegin = 18;
-  google.protobuf.Timestamp timeEnd = 19;
-  google.protobuf.Timestamp timeCreated = 20;
-  google.protobuf.Timestamp timeUpdated = 21;
+  string name = 4;
+  string version = 5;
+  string type = 6;
 }
 message SnippetConfig {
   string source = 1;
@@ -793,98 +465,10 @@ message SnippetConfig {
   map<string, string> labels = 3;
 }
 
-message PipelineDetailRequest {
-  bool simplePipelineBaseResult = 1;
-  uint64 pipelineID = 2;
-}
-message PipelineDetailResponse {
-  PipelineInstanceDetail data = 1;
-}
-
-message PipelineTaskOperateRequest {
-  uint64 taskID = 1;
-  google.protobuf.Value disable = 2;
-  google.protobuf.Value pause = 3;
-}
-message PipelineOperateRequest {
-  uint64 pipelineID = 1;
-  repeated PipelineTaskOperateRequest taskOperates = 2;
-}
-message PipelineOperateResponse {
-}
-
-message PipelineDeleteRequest {
-  uint64 pipelineID = 1;
-}
-message PipelineDeleteResponse {
-}
-
-message PipelineRunRequest {
-  uint64 pipelineID = 1; // get from path variable
-  bool forceRun = 2;
-  repeated  PipelineRunParam pipelineRunParams = 3;
-  common.IdentityInfo identityInfo = 4;
-}
-message PipelineRunResponse {
-}
-
-message PipelineCancelRequest {
-  uint64 pipelineID = 1;
-  common.IdentityInfo identityInfo = 2;
-}
-message PipelineCancelResponse {
-}
-
-message PipelineRerunRequest {
-  uint64 pipelineID = 1;
-  bool autoRunAtOnce = 2;
-  common.IdentityInfo identityInfo = 3;
-}
-message PipelineRerunResponse {
-  PipelineInstance data = 1;
-}
-
-message PipelineRerunFailedRequest {
-  uint64 pipelineID = 1;
-  bool autoRunAtOnce = 2;
-  common.IdentityInfo identityInfo = 3;
-}
-message PipelineRerunFailedResponse {
-  PipelineInstance data = 1;
-}
-
-message PipelineTaskDetailRequest {
-  uint64 pipelineID = 1;
-  uint64 taskID = 2;
-}
-message PipelineTaskDetailResponse {
-  PipelineTask data = 1;
-}
-
-message PipelineTaskGetBootstrapInfoRequest {
-  uint64 pipelineID = 1;
-  uint64 taskID = 2;
-}
-message PipelineTaskGetBootstrapInfoResponse {
-  bytes data = 1;
-}
-
-message DeprecatedPipelineBatchCreateRequest {
-  uint64 appID = 1;
-  string branch = 2;
-  string source = 3;
-  repeated string batchPipelineYmlPaths = 4;
-  bool autoRun = 5;
-  repeated string callbackURLs = 6;
-  string userID = 7;
-}
-message DeprecatedPipelineBatchCreateResponse {
-  map<string, PipelineInstance> data = 1;
-}
-
-message PipelineCallbackRequest {
-  string type = 1;
-  bytes data = 2;
-}
-message PipelineCallbackResponse {
+message DefinitionPageInfo {
+  string name = 1;
+  string creator = 2;
+  string executor = 3;
+  string sourceRemote = 4;
+  string  sourceRef = 5;
 }

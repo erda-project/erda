@@ -19,6 +19,10 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
@@ -82,6 +86,17 @@ func (pt *PipelineTask) GetBigDataConf() (apistructs.BigdataSpec, error) {
 		return bigdataSpec, nil
 	}
 	return apistructs.BigdataSpec{}, nil
+}
+
+func (pt *PipelineTask) ConvertTaskContainer2PB() []*basepb.TaskContainer {
+	res := make([]*basepb.TaskContainer, 0)
+	for _, container := range pt.Extra.TaskContainers {
+		res = append(res, &basepb.TaskContainer{
+			TaskName:    container.TaskName,
+			ContainerID: container.ContainerID,
+		})
+	}
+	return res
 }
 
 func (pt *PipelineTask) GetExecutorName() PipelineTaskExecutorName {
@@ -332,7 +347,66 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	return &task
 }
 
-func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSpec, ymlTask PipelineTask, snapshot Snapshot) (params []*apistructs.TaskParamDetail) {
+func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
+	if pt == nil {
+		return nil
+	}
+	task := basepb.PipelineTaskDTO{
+		ID:         pt.ID,
+		PipelineID: pt.PipelineID,
+		StageID:    pt.StageID,
+		Name:       pt.Name,
+		OpType:     string(pt.OpType),
+		Type:       pt.Type,
+		Status:     pt.Status.String(),
+		Extra: &basepb.PipelineTaskExtra{
+			UUID:           pt.Extra.UUID,
+			AllowFailure:   pt.Extra.AllowFailure,
+			TaskContainers: pt.ConvertTaskContainer2PB(),
+		},
+		Labels:       pt.Extra.Action.Labels,
+		CostTimeSec:  pt.CostTimeSec,
+		QueueTimeSec: pt.QueueTimeSec,
+		TimeBegin:    timestamppb.New(pt.TimeBegin),
+		TimeEnd:      timestamppb.New(pt.TimeEnd),
+		TimeCreated:  timestamppb.New(pt.TimeCreated),
+		TimeUpdated:  timestamppb.New(pt.TimeUpdated),
+
+		IsSnippet: pt.IsSnippet,
+	}
+	if pt.SnippetPipelineID != nil {
+		task.SnippetPipelineID = pt.SnippetPipelineID
+	}
+	if pt.SnippetPipelineDetail != nil {
+		task.SnippetPipelineDetail = pt.SnippetPipelineDetail.Convert2PB()
+	}
+	if task.Result == nil {
+		task.Result = &basepb.PipelineTaskResult{}
+	}
+	task.Result.Metadata = pt.GetPBMetadata()
+	task.Result.MachineStat = pt.Inspect.GetPBMachineStat()
+	task.Result.Inspect = pt.Inspect.Inspect
+	task.Result.Events = pt.Inspect.Events
+	task.Result.Errors = pt.MergeErrors2PB()
+	// handle metadata
+	for _, field := range task.Result.Metadata {
+		field.Level = field.GetLevel()
+	}
+
+	if pt.Status.IsSuccessStatus() {
+		task.Result.Errors = nil
+		notErrorMeta, _ := metadata.FilterNoErrorLevelMeta(task.Result.Metadata)
+		task.Result.Metadata = notErrorMeta
+	}
+
+	if task.Type == "manual-review" {
+		task.Status = pt.Status.ChangeStateForManualReview().String()
+	}
+
+	return &task
+}
+
+func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSpec, ymlTask PipelineTask, snapshot Snapshot) (params []*basepb.TaskParamDetail) {
 	secrets := make(map[string]string)
 	for key := range snapshot.Secrets {
 		secrets[key] = EncryptedValueDisplay
@@ -346,16 +420,16 @@ func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSp
 
 	for _, specParam := range action.Params {
 		// if user write the param in action, use it
-		param := &apistructs.TaskParamDetail{
+		param := &basepb.TaskParamDetail{
 			Name: specParam.Name,
-			Values: map[apistructs.TaskParamSource]string{
-				apistructs.DefaultTaskParamSource: jsonparse.JsonOneLine(specParam.Default),
-				apistructs.UserTaskParamSource:    jsonparse.JsonOneLine(ymlTask.Extra.Action.Params[specParam.Name]),
-				apistructs.MergedTaskParamSource:  jsonparse.JsonOneLine(pt.Extra.Action.Params[specParam.Name]),
+			Values: map[string]string{
+				apistructs.DefaultTaskParamSource.String(): jsonparse.JsonOneLine(specParam.Default),
+				apistructs.UserTaskParamSource.String():    jsonparse.JsonOneLine(ymlTask.Extra.Action.Params[specParam.Name]),
+				apistructs.MergedTaskParamSource.String():  jsonparse.JsonOneLine(pt.Extra.Action.Params[specParam.Name]),
 			},
 		}
 		if value, ok := pt.Extra.Action.Params[specParam.Name]; ok {
-			param.Values[apistructs.MergedTaskParamSource] = jsonparse.JsonOneLine(value)
+			param.Values[apistructs.MergedTaskParamSource.String()] = jsonparse.JsonOneLine(value)
 			pt.filterSecretParam(apistructs.UserTaskParamSource, param, ymlTask, secrets)
 			params = append(params, param)
 			continue
@@ -363,7 +437,7 @@ func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSp
 		// if action has a default value, use it and replace the encrypted value
 		if specParam.Default != nil {
 			defaultValue := jsonparse.JsonOneLine(specParam.Default)
-			param.Values[apistructs.MergedTaskParamSource] = defaultValue
+			param.Values[apistructs.MergedTaskParamSource.String()] = defaultValue
 			pt.filterSecretParam(apistructs.DefaultTaskParamSource, param, ymlTask, secrets)
 			params = append(params, param)
 		}
@@ -377,12 +451,12 @@ func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSp
 			}
 		}
 		if !find {
-			param := &apistructs.TaskParamDetail{
+			param := &basepb.TaskParamDetail{
 				Name: name,
-				Values: map[apistructs.TaskParamSource]string{
-					apistructs.DefaultTaskParamSource: "",
-					apistructs.UserTaskParamSource:    jsonparse.JsonOneLine(ymlTask.Extra.Action.Params[name]),
-					apistructs.MergedTaskParamSource:  jsonparse.JsonOneLine(pt.Extra.Action.Params[name]),
+				Values: map[string]string{
+					apistructs.DefaultTaskParamSource.String(): "",
+					apistructs.UserTaskParamSource.String():    jsonparse.JsonOneLine(ymlTask.Extra.Action.Params[name]),
+					apistructs.MergedTaskParamSource.String():  jsonparse.JsonOneLine(pt.Extra.Action.Params[name]),
 				},
 			}
 			pt.filterSecretParam(apistructs.UserTaskParamSource, param, ymlTask, secrets)
@@ -392,13 +466,13 @@ func (pt *PipelineTask) MergeTaskParamDetailToDisplay(action apistructs.ActionSp
 	return
 }
 
-func (pt *PipelineTask) filterSecretParam(source apistructs.TaskParamSource, param *apistructs.TaskParamDetail, ymlAction PipelineTask, secrets map[string]string) {
-	replacedValue, err := pipelineyml.RenderSecrets([]byte(param.Values[source]), secrets)
+func (pt *PipelineTask) filterSecretParam(source apistructs.TaskParamSource, param *basepb.TaskParamDetail, ymlAction PipelineTask, secrets map[string]string) {
+	replacedValue, err := pipelineyml.RenderSecrets([]byte(param.Values[source.String()]), secrets)
 	if err != nil {
 		return
 	}
 	if string(replacedValue) == EncryptedValueDisplay {
-		param.Values[apistructs.MergedTaskParamSource] = EncryptedValueDisplay
+		param.Values[apistructs.MergedTaskParamSource.String()] = EncryptedValueDisplay
 		return
 	}
 	ymlParamValue, ok := ymlAction.Extra.Action.Params[param.Name]
@@ -408,7 +482,7 @@ func (pt *PipelineTask) filterSecretParam(source apistructs.TaskParamSource, par
 	ymlParamValueStr := jsonparse.JsonOneLine(ymlParamValue)
 	replacedYmlValue, err := pipelineyml.RenderSecrets([]byte(ymlParamValueStr), secrets)
 	if string(replacedYmlValue) == EncryptedValueDisplay {
-		param.Values[apistructs.MergedTaskParamSource] = EncryptedValueDisplay
+		param.Values[apistructs.MergedTaskParamSource.String()] = EncryptedValueDisplay
 		return
 	}
 	return
@@ -441,6 +515,24 @@ func (pt *PipelineTask) GetMetadata() metadata.Metadata {
 	return pt.Result.Metadata
 }
 
+func (pt *PipelineTask) GetPBMetadata() []*commonpb.MetadataField {
+	if pt.Result == nil || len(pt.Result.Metadata) == 0 {
+		return []*commonpb.MetadataField{}
+	}
+	metas := make([]*commonpb.MetadataField, 0)
+	for _, meta := range pt.Result.Metadata {
+		metas = append(metas, &commonpb.MetadataField{
+			Name:     meta.Name,
+			Value:    meta.Value,
+			Type:     meta.Type,
+			Optional: meta.Optional,
+			Labels:   meta.Labels,
+			Level:    string(meta.Level),
+		})
+	}
+	return metas
+}
+
 func (pt *PipelineTask) MergeErrors() taskerror.OrderedErrors {
 	o := make(taskerror.OrderedErrors, 0)
 	o = append(o, pt.Inspect.Errors...)
@@ -449,6 +541,23 @@ func (pt *PipelineTask) MergeErrors() taskerror.OrderedErrors {
 	}
 	o.ConvertErrors()
 	return o
+}
+
+func (pt *PipelineTask) MergeErrors2PB() []*basepb.ErrorResponse {
+	errs := pt.MergeErrors()
+	res := make([]*basepb.ErrorResponse, 0)
+	for _, err := range errs {
+		res = append(res, &basepb.ErrorResponse{
+			Code: err.Code,
+			Ctx: &basepb.ErrorContext{
+				StartTime: timestamppb.New(err.Ctx.StartTime),
+				EndTime:   timestamppb.New(err.Ctx.EndTime),
+				Count:     err.Ctx.Count,
+			},
+			Msg: err.Msg,
+		})
+	}
+	return res
 }
 
 type ExecutorDoneChanData struct {

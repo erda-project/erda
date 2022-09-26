@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
@@ -29,14 +30,15 @@ import (
 )
 
 type provider struct {
-	Election          election.Interface             `autowired:"etcd-election"`
-	Orm               *gorm.DB                       `autowired:"mysql-client"`
-	EventManager      *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
-	PusherQueue       *queue.PusherQueue             `autowired:"erda.orchestrator.events.pusher-queue"`
-	Trans             i18n.Translator                `translator:"common"`
-	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
-	ClusterSvc        clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	TenantSvc         tenantpb.TenantServiceServer   `autowired:"erda.msp.tenant.TenantService"`
+	Election          election.Interface               `autowired:"etcd-election"`
+	Orm               *gorm.DB                         `autowired:"mysql-client"`
+	EventManager      *events.EventManager             `autowired:"erda.orchestrator.events.event-manager"`
+	PusherQueue       *queue.PusherQueue               `autowired:"erda.orchestrator.events.pusher-queue"`
+	Trans             i18n.Translator                  `translator:"common"`
+	DicehubReleaseSvc dicehubpb.ReleaseServiceServer   `autowired:"erda.core.dicehub.release.ReleaseService"`
+	ClusterSvc        clusterpb.ClusterServiceServer   `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	PipelineSvc       pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
+	TenantSvc         tenantpb.TenantServiceServer     `autowired:"erda.msp.tenant.TenantService"`
 	Org               org.ClientInterface
 }
 

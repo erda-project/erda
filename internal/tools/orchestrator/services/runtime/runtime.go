@@ -37,6 +37,8 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
@@ -70,6 +72,7 @@ type Runtime struct {
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterinfoImpl  clusterinfo.ClusterInfo
 	clusterSvc       clusterpb.ClusterServiceServer
+	pipelineSvc      pipelinepb.PipelineServiceServer
 	org              org.ClientInterface
 }
 
@@ -145,6 +148,12 @@ func WithOrg(org org.ClientInterface) Option {
 	}
 }
 
+func WithPipelineSvc(svc pipelinepb.PipelineServiceServer) Option {
+	return func(r *Runtime) {
+		r.pipelineSvc = svc
+	}
+}
+
 func (r *Runtime) CreateByReleaseIDPipeline(ctx context.Context, orgid uint64, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.RuntimeDeployDTO, error) {
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: releaseReq.ReleaseID})
@@ -205,9 +214,9 @@ func (r *Runtime) CreateByReleaseIDPipeline(ctx context.Context, orgid uint64, o
 	if err != nil {
 		return nil, err
 	}
-	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
-		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
-		PipelineYml:  string(b),
+	dto, err := r.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+		UserID:      operator.String(),
+		PipelineYml: string(b),
 		Labels: map[string]string{
 			apistructs.LabelBranch:        releaseResp.Data.ReleaseName,
 			apistructs.LabelOrgID:         strconv.FormatUint(orgid, 10),
@@ -221,13 +230,13 @@ func (r *Runtime) CreateByReleaseIDPipeline(ctx context.Context, orgid uint64, o
 		PipelineYmlName: fmt.Sprintf("dice-deploy-release-%s-%d-%s", releaseReq.Workspace,
 			releaseReq.ApplicationID, branch),
 		ClusterName:    releaseResp.Data.ClusterName,
-		PipelineSource: apistructs.PipelineSourceDice,
+		PipelineSource: apistructs.PipelineSourceDice.String(),
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return convertRuntimeDeployDto(app, releaseResp.Data, dto)
+	return convertRuntimeDeployDto(app, releaseResp.Data, dto.Data)
 }
 
 // Create 创建应用实例
@@ -500,9 +509,9 @@ func (r *Runtime) RedeployPipeline(ctx context.Context, operator user.ID, orgID 
 	if err := r.setClusterName(runtime); err != nil {
 		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
 	}
-	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
-		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
-		PipelineYml:  string(b),
+	dto, err := r.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+		UserID:      operator.String(),
+		PipelineYml: string(b),
 		Labels: map[string]string{
 			apistructs.LabelBranch:        runtime.Name,
 			apistructs.LabelOrgID:         strconv.FormatUint(orgID, 10),
@@ -515,14 +524,14 @@ func (r *Runtime) RedeployPipeline(ctx context.Context, operator user.ID, orgID 
 		},
 		PipelineYmlName: getRedeployPipelineYmlName(*runtime),
 		ClusterName:     runtime.ClusterName,
-		PipelineSource:  apistructs.PipelineSourceDice,
+		PipelineSource:  apistructs.PipelineSourceDice.String(),
 		AutoRunAtOnce:   true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return convertRuntimeDeployDto(app, releaseResp.Data, dto)
+	return convertRuntimeDeployDto(app, releaseResp.Data, dto.Data)
 }
 
 func (r *Runtime) setClusterName(rt *dbclient.Runtime) error {
@@ -935,9 +944,9 @@ func (r *Runtime) RollbackPipeline(ctx context.Context, operator user.ID, orgID 
 	if err != nil {
 		return nil, err
 	}
-	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
-		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
-		PipelineYml:  string(b),
+	dto, err := r.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+		UserID:      operator.String(),
+		PipelineYml: string(b),
 		Labels: map[string]string{
 			apistructs.LabelBranch:        runtime.Name,
 			apistructs.LabelOrgID:         strconv.FormatUint(orgID, 10),
@@ -950,13 +959,13 @@ func (r *Runtime) RollbackPipeline(ctx context.Context, operator user.ID, orgID 
 		},
 		PipelineYmlName: fmt.Sprintf("dice-deploy-rollback-%d", runtime.ID),
 		ClusterName:     runtime.ClusterName,
-		PipelineSource:  apistructs.PipelineSourceDice,
+		PipelineSource:  apistructs.PipelineSourceDice.String(),
 		AutoRunAtOnce:   true,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return convertRuntimeDeployDto(app, releaseResp.Data, dto)
+	return convertRuntimeDeployDto(app, releaseResp.Data, dto.Data)
 }
 
 func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, deploymentID uint64) (
@@ -2245,7 +2254,7 @@ func getRedeployPipelineYmlName(runtime dbclient.Runtime) string {
 	return fmt.Sprintf("%d/%s/%s/pipeline.yml", runtime.ApplicationID, runtime.Workspace, runtime.Name)
 }
 
-func convertRuntimeDeployDto(app *apistructs.ApplicationDTO, release *pb.ReleaseGetResponseData, dto *apistructs.PipelineDTO) (*apistructs.RuntimeDeployDTO, error) {
+func convertRuntimeDeployDto(app *apistructs.ApplicationDTO, release *pb.ReleaseGetResponseData, dto *basepb.PipelineDTO) (*apistructs.RuntimeDeployDTO, error) {
 	names, err := getServicesNames(release.Diceyml)
 	if err != nil {
 		return nil, err

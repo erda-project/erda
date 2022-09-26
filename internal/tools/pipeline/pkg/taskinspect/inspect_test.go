@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 )
 
@@ -62,4 +64,20 @@ func TestIsErrorsExceed(t *testing.T) {
 			t.Errorf("%s want: %v, but got: %v", tt.name, tt.want, got)
 		}
 	}
+}
+
+func TestGetPBMachineStat(t *testing.T) {
+	inspect := Inspect{
+		MachineStat: &PipelineTaskMachineStat{
+			Host: PipelineTaskMachineHostStat{},
+			Pod:  PipelineTaskMachinePodStat{},
+			Load: PipelineTaskMachineLoadStat{},
+			Mem:  PipelineTaskMachineMemStat{},
+			Swap: PipelineTaskMachineSwapStat{
+				Total: 1,
+			},
+		},
+	}
+	stat := inspect.GetPBMachineStat()
+	assert.Equal(t, uint64(1), stat.Swap.Total)
 }
