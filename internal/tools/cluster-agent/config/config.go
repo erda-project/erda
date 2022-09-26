@@ -31,4 +31,5 @@ type Config struct {
 	ErdaNamespace          string `desc:"erda namespace"`
 	ClusterAccessKey       string `desc:"cluster access key, if specified will doesn't start watcher"`
 	K8SApiServerAddr       string `desc:"kube-apiserver address in cluster"`
+	TokenExpirationSeconds string `desc:"token expiration seconds"`
 }
