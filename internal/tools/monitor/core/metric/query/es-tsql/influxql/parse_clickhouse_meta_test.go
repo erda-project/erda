@@ -121,6 +121,9 @@ func TestMeta(t *testing.T) {
 			sql, _, err := execPlan.ToSQL()
 			require.NoError(t, err)
 
+			if strings.Index(sql, "ORDER BY") != -1 {
+				sql = sql[:strings.Index(sql, "ORDER BY")]
+			}
 			sql = strings.ReplaceAll(sql, "(\"timestamp\" >= fromUnixTimestamp64Nano(cast(0,'Int64')))", "")
 			sql = strings.ReplaceAll(sql, "(\"timestamp\" < fromUnixTimestamp64Nano(cast(0,'Int64')))", "")
 			sql = strings.ReplaceAll(sql, "( AND )", "")
