@@ -93,11 +93,11 @@ func RangeOpenAPIs(pkgPrefix string, handler OneOpenAPIHandler) (err error) {
 				method := methods.Get(i)
 				if method.IsStreamingClient() || method.IsStreamingServer() {
 					httpMethodOption, _ := proto.GetExtension(method.Options(), extension.E_Http).(*extension.HttpMethodOption)
-					// method is stream grpc and not pure http, skip
-					if httpMethodOption != nil && !httpMethodOption.GetPure() {
+					// method is stream grpc and not declared as pure http, skip
+					if httpMethodOption == nil || !httpMethodOption.GetPure() {
 						continue
 					}
-					// declared as pure http method, do proxy
+					// declared as pure http method, do register
 				}
 				methodOption, _ := proto.GetExtension(method.Options(), common.E_Openapi).(*common.OpenAPIOption)
 				if methodOption == nil {
