@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
+	"github.com/erda-project/erda-infra/tools/protoc/include/custom/extension"
 	_ "github.com/erda-project/erda-proto-go" // import all protobuf APIs
 	common "github.com/erda-project/erda-proto-go/common/pb"
 )
@@ -91,7 +92,12 @@ func RangeOpenAPIs(pkgPrefix string, handler OneOpenAPIHandler) (err error) {
 			for i, n := 0, methods.Len(); i < n; i++ {
 				method := methods.Get(i)
 				if method.IsStreamingClient() || method.IsStreamingServer() {
-					continue
+					httpMethodOption, _ := proto.GetExtension(method.Options(), extension.E_Http).(*extension.HttpMethodOption)
+					// method is stream grpc and not pure http, skip
+					if httpMethodOption != nil && !httpMethodOption.GetPure() {
+						continue
+					}
+					// declared as pure http method, do proxy
 				}
 				methodOption, _ := proto.GetExtension(method.Options(), common.E_Openapi).(*common.OpenAPIOption)
 				if methodOption == nil {
