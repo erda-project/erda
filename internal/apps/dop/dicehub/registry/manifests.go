@@ -16,35 +16,79 @@
 package registry
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/bundle"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/registryhelper"
 )
 
+type (
+	Interface interface {
+		DeleteManifests(clusterName string, images []string) (err error)
+	}
+	Service struct {
+		clusterSvc clusterpb.ClusterServiceServer
+	}
+)
+
+func New(clusterSvc clusterpb.ClusterServiceServer) Interface {
+	return &Service{
+		clusterSvc: clusterSvc,
+	}
+}
+
 // DeleteManifests deletes manifests from the cluster inner image registry
-func DeleteManifests(bdl *bundle.Bundle, clusterName string, images []string) (err error) {
+func (s *Service) DeleteManifests(clusterName string, images []string) (err error) {
 	var l = logrus.WithField("func", "DeleteManifests").
 		WithField("clusterName", clusterName).
 		WithField("images", images)
 	if len(images) == 0 {
 		return nil
 	}
-	req := registryhelper.RemoveManifestsRequest{
-		Images:     images,
-		ClusterKey: clusterName,
+
+	if s.clusterSvc == nil {
+		return errors.New("cluster service is nil")
 	}
-	if req.RegistryURL, err = bdl.GetRegistryAddress(clusterName); err != nil {
+
+	clusterResp, err := s.clusterSvc.GetCluster(context.TODO(), &clusterpb.GetClusterRequest{
+		IdOrName: clusterName,
+	})
+	if err != nil {
+		l.WithError(err).Errorln("failed to get cluster info")
+		return err
+	}
+
+	clusterInfo := clusterResp.Data.GetCm()
+	if clusterInfo == nil {
+		l.WithError(err).Errorln("failed to get cluster configmap")
+		return err
+	}
+
+	registryAddr, ok := clusterInfo[apistructs.REGISTRY_ADDR.String()]
+	if !ok {
 		l.WithError(err).Errorln("failed to GetRegistryAddress")
 		return errors.Wrap(err, "failed to GetRegistryAddress")
 	}
+
+	req := registryhelper.RemoveManifestsRequest{
+		RegistryAddr:   registryAddr,
+		RegistryScheme: clusterInfo[apistructs.REGISTRY_SCHEME.String()],
+		Images:         images,
+		ClusterKey:     clusterName,
+	}
+
 	removeResp, err := registryhelper.RemoveManifests(req)
 	if err != nil {
 		return err
 	}
+
 	if len(removeResp.Failed) > 0 {
 		return errors.Errorf("recycle image fail: %+v", removeResp.Failed)
 	}
+
 	return nil
 }

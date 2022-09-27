@@ -15,18 +15,10 @@
 package release
 
 import (
-	"strings"
-	"time"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/conf"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 	imagedb "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
-	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -60,7 +52,7 @@ func WithDBClient(db *dbclient.DBClient) Option {
 	}
 }
 
-// WithDBClient 配置 db client
+// WithImageDBClient 配置 db client
 func WithImageDBClient(db *imagedb.ImageConfigDB) Option {
 	return func(a *Release) {
 		a.imageDB = db
@@ -85,63 +77,4 @@ func (r *Release) GetDiceYAML(orgID int64, releaseID string) (string, error) {
 	}
 
 	return release.Dice, nil
-}
-
-// RemoveDeprecatedsReleases 回收过期release具体逻辑
-func (r *Release) RemoveDeprecatedsReleases(now time.Time) error {
-	d, err := time.ParseDuration(strutil.Concat("-", conf.MaxTimeReserved(), "h")) // one month before, eg: -720h
-	if err != nil {
-		return err
-	}
-	before := now.Add(d)
-
-	releases, err := r.db.GetUnReferedReleasesBefore(before)
-	if err != nil {
-		return err
-	}
-	for i := range releases {
-		release := releases[i]
-		if release.Version != "" {
-			logrus.Debugf("release %s have been tagged, can't be recycled", release.ReleaseID)
-			continue
-		}
-
-		images, err := r.imageDB.GetImagesByRelease(release.ReleaseID)
-		if err != nil {
-			logrus.Warnf(err.Error())
-			continue
-		}
-
-		deletable := true // 若release下的image manifest删除失败，release不可删除
-		for _, image := range images {
-			// 若有其他release引用此镜像，镜像manifest不可删，只删除DB元信息(多次构建，存在镜像相同的情况)
-			count, err := r.imageDB.GetImageCount(release.ReleaseID, image.Image)
-			if err != nil {
-				logrus.Errorf(err.Error())
-				continue
-			}
-			if count == 0 && release.ClusterName != "" && !strings.HasPrefix(image.Image, AliYunRegistry) {
-				if err := registry.DeleteManifests(r.bdl, release.ClusterName, []string{image.Image}); err != nil {
-					deletable = false
-					logrus.Errorf(err.Error())
-					continue
-				}
-			}
-
-			// Delete image info
-			if err := r.imageDB.DeleteImage(int64(image.ID)); err != nil {
-				logrus.Errorf("[alert] delete image: %s fail, err: %v", image.Image, err)
-			}
-			logrus.Infof("deleted image: %s", image.Image)
-		}
-
-		if deletable {
-			// Delete release info
-			if err := r.db.DeleteRelease(release.ReleaseID); err != nil {
-				logrus.Errorf("[alert] delete release: %s fail, err: %v", release.ReleaseID, err)
-			}
-			logrus.Infof("deleted release: %s", release.ReleaseID)
-		}
-	}
-	return nil
 }

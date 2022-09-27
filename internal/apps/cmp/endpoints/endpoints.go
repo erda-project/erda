@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 	"github.com/erda-project/erda/internal/apps/cmp/resource"
 	"github.com/erda-project/erda/internal/apps/cmp/steve"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -64,6 +65,7 @@ type Endpoints struct {
 	reportTable *resource.ReportTable
 	CronService cronpb.CronServiceServer
 	org         org.Interface
+	registry    registry.Interface
 }
 
 type Option func(*Endpoints)
@@ -87,6 +89,7 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.Resource = ctx.Value("resource").(*resource.Resource)
 	e.CachedJS = cachedJS
 	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl, e.ClusterSvc)
+	e.registry = registry.New(e.ClusterSvc)
 	return e
 }
 

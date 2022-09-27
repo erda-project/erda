@@ -257,12 +257,15 @@ func (b *Bundle) GetRegistryAddress(name string) (string, error) {
 	if cluster == nil {
 		return "", errors.New("failed to GetCluster: response data is nil")
 	}
-	if cluster.URLs == nil {
-		return "", errors.New("failed to GetCluster: response data.URLs is nil")
+
+	if cluster.CM == nil || len(cluster.CM) == 0 {
+		return "", errors.New("failed to GetCluster ClusterInfo: response data.CM is empty")
 	}
-	address, ok := cluster.URLs["registry"]
-	if !ok {
-		return "", errors.New("failed to get registry address from cluster info: registry is not in data.URLs")
+
+	address := cluster.CM.Get(apistructs.REGISTRY_ADDR)
+	if address == "" {
+		return "", errors.New("failed to get registry address, result is empty")
 	}
+
 	return address, nil
 }
