@@ -20,16 +20,10 @@ import (
 	"testing"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/doug-martin/goqu/v9"
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 )
-
-type mockClickhouse struct {
-	mchRow *mockClickhouseRow
-	sql    string
-}
 
 type mockClickhouseRow struct {
 	column     []string
@@ -75,13 +69,6 @@ func (m *mockClickhouseRow) Err() error {
 	return m.err
 }
 
-func (m *mockClickhouse) QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Rows, error) {
-	if expr != nil {
-		m.sql, _, _ = expr.ToSQL()
-	}
-	return m.mchRow, nil
-}
-
 func Test(t *testing.T) {
 	q := QueryClickhouse{
 		column: []*SQLColumnHandler{
@@ -119,4 +106,102 @@ func Test(t *testing.T) {
 
 func parse(q QueryClickhouse, rows driver.Rows) (*model.Data, error) {
 	return q.ParseResult(context.Background(), rows)
+}
+
+func TestStep(t *testing.T) {
+	tests := []struct {
+		name   string
+		params []map[string]interface{}
+		want   int
+	}{
+		{
+			name: "two",
+			params: []map[string]interface{}{
+				{
+					"bucket_timestamp": int64(11),
+					"column":           "11",
+				},
+				{
+					"bucket_timestamp": int64(11),
+					"column":           "22",
+				},
+				{
+					"bucket_timestamp": int64(22),
+					"column":           "11",
+				},
+				{
+					"bucket_timestamp": int64(22),
+					"column":           "22",
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "no time",
+			params: []map[string]interface{}{
+				{
+					"column": "11",
+				},
+				{
+					"column": "22",
+				},
+				{
+					"column": "11",
+				},
+				{
+					"column": "22",
+				},
+			},
+			want: 0,
+		},
+		{
+			name: "three",
+			params: []map[string]interface{}{
+				{
+					"bucket_timestamp": int64(11),
+					"column":           "11",
+				},
+				{
+					"bucket_timestamp": int64(11),
+					"column":           "22",
+				},
+				{
+					"bucket_timestamp": int64(11),
+					"column":           "33",
+				},
+				{
+					"bucket_timestamp": int64(22),
+					"column":           "11",
+				},
+				{
+					"bucket_timestamp": int64(22),
+					"column":           "22",
+				},
+				{
+					"bucket_timestamp": int64(22),
+					"column":           "33",
+				},
+				{
+					"bucket_timestamp": int64(33),
+					"column":           "11",
+				},
+				{
+					"bucket_timestamp": int64(33),
+					"column":           "22",
+				},
+				{
+					"bucket_timestamp": int64(33),
+					"column":           "33",
+				},
+			},
+			want: 3,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := getStep(context.Background(), test.params)
+			require.Equal(t, test.want, got)
+		})
+	}
 }
