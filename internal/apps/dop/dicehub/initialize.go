@@ -80,8 +80,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 	bdl := bundle.New(bundleOpts...)
 	rl := release.New(
 		release.WithDBClient(db),
-		release.WithBundle(bdl),
-		release.WithImageDBClient(p.ImageDB),
 	)
 
 	// 3.20 灰度逻辑迁移，3.21删除
