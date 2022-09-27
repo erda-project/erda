@@ -191,7 +191,7 @@ func (q QueryClickhouse) parse(ctx context.Context, rows ckdriver.Rows, rs *mode
 
 // rows must be sorted
 func getStep(ctx context.Context, rows []map[string]interface{}) int {
-	_, span := otel.Tracer("parser").Start(ctx, "get.step")
+	_, span := otel.Tracer("parser").Start(ctx, "calculator.step")
 	defer span.End()
 
 	if len(rows) <= 0 {
@@ -210,6 +210,7 @@ func getStep(ctx context.Context, rows []map[string]interface{}) int {
 		}
 
 		if _timestamp > timestamp {
+			span.SetAttributes(attribute.Int("step", i))
 			return i
 		} else {
 			timestamp = _timestamp
@@ -263,8 +264,6 @@ func (q QueryClickhouse) buildColumn(ctx context.Context, rs *model.Data) {
 }
 
 func nextRows(ctx context.Context, rows ckdriver.Rows) bool {
-	_, span := otel.Tracer("parser").Start(ctx, "next.row")
-	defer span.End()
 	return rows.Next()
 }
 
