@@ -15,11 +15,13 @@
 package k8sjob
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -196,5 +198,59 @@ func Test_parseFailedReason(t *testing.T) {
 		if msg != tt.want {
 			t.Errorf("parseFailedScheduling() got = %v, want %v", msg, tt.want)
 		}
+	}
+}
+
+func TestCleanUp(t *testing.T) {
+	type arg struct {
+		namespace string
+	}
+	testCases := []struct {
+		name    string
+		arg     arg
+		wantErr bool
+	}{
+		{
+			name: "remain jobs",
+			arg: arg{
+				namespace: "pipeline-1",
+			},
+			wantErr: true,
+		},
+		{
+			name: "non jobs",
+			arg: arg{
+				namespace: "pipeline-2",
+			},
+			wantErr: false,
+		},
+	}
+
+	kubeClient := fake.NewSimpleClientset(&batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "job1",
+			Namespace: "pipeline-1",
+		},
+	}, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipeline-1",
+		},
+	},
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "pipeline-2",
+			},
+		})
+	k := &K8sJob{
+		client: &k8sclient.K8sClient{
+			ClientSet: kubeClient,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := k.CleanUp(context.Background(), tc.arg.namespace)
+			assert.Equal(t, err != nil, tc.wantErr)
+		})
 	}
 }

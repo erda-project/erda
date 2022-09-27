@@ -16,9 +16,12 @@ package types
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor/logic"
@@ -27,12 +30,18 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+var (
+	EnvRetainNamespace = "RETAIN_NAMESPACE"
+)
+
 type K8sBaseExecutor interface {
 	Kind() Kind
 	Name() Name
 
 	Status(ctx context.Context, action *spec.PipelineTask) (apistructs.PipelineStatusDesc, error)
 	Delete(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error)
+	// CleanUp clean up all resources under this namespace
+	CleanUp(ctx context.Context, namespace string) error
 }
 
 type K8sExecutor struct {
@@ -110,6 +119,7 @@ func (k *K8sExecutor) BatchDelete(ctx context.Context, tasks []*spec.PipelineTas
 	}
 	task := tasks[0]
 	defer k.errWrapper.WrapTaskError(&err, "batch delete job", task)
+	namespaces := sets.NewString()
 	for _, task := range tasks {
 		if len(task.Extra.UUID) <= 0 {
 			continue
@@ -118,6 +128,30 @@ func (k *K8sExecutor) BatchDelete(ctx context.Context, tasks []*spec.PipelineTas
 		if err != nil {
 			return nil, err
 		}
+		if !isRetainNamespace(task) {
+			namespaces.Insert(task.Extra.Namespace)
+		}
+	}
+	logrus.Infof("start to clean up namespaces: %s", strings.Join(namespaces.List(), ","))
+	for namespace := range namespaces {
+		if err := k.CleanUp(ctx, namespace); err != nil {
+			logrus.Errorf("failed to clean up namespace: %s, err: %v", namespace, err)
+			return nil, err
+		}
+		logrus.Infof("successfully clean up namespace: %s", namespace)
 	}
 	return nil, nil
+}
+
+func isRetainNamespace(task *spec.PipelineTask) bool {
+	retainNamespaceEnv := task.Extra.PublicEnvs[EnvRetainNamespace]
+	if len(retainNamespaceEnv) == 0 {
+		return false
+	}
+	retainNamespace, err := strconv.ParseBool(retainNamespaceEnv)
+	if err != nil {
+		logrus.Debugf("parse bool err %v when clean up the namespace %s", err, task.Extra.Namespace)
+		return false
+	}
+	return retainNamespace
 }

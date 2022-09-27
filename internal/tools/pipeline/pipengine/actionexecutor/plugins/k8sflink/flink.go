@@ -236,49 +236,51 @@ func (k *K8sFlink) Delete(ctx context.Context, task *spec.PipelineTask) (data in
 		return nil, fmt.Errorf("delete flink cluster %s err: %s", bigDataConf.Name, err.Error())
 	}
 
-	// delete namespace after gc flinkcluster
-	namespace := task.Extra.Namespace
-	if !task.Extra.NotPipelineControlledNs {
-		flinkClusters := flinkoperatorv1beta1.FlinkClusterList{}
-		err = k.client.CRClient.List(context.Background(), &flinkClusters, &client.ListOptions{
-			Namespace: namespace,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("%s list k8sflink clusters error: %+v, namespace: %s", K8SFlinkLogPrefix, err, namespace)
-		}
-		remainCount := 0
-		if len(flinkClusters.Items) != 0 {
-			for _, f := range flinkClusters.Items {
-				if f.DeletionTimestamp == nil {
-					remainCount++
-				}
-			}
-		}
+	return nil, nil
+}
 
-		if remainCount < 1 {
-			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-			if err != nil {
-				if k8serrors.IsNotFound(err) {
-					return nil, nil
-				}
-				return nil, fmt.Errorf("%s get the namespace %s, error: %+v", K8SFlinkLogPrefix, namespace, err)
-			}
-
-			if ns.DeletionTimestamp == nil {
-				logrus.Debugf("%s start to delete the namespace %s", K8SFlinkLogPrefix, namespace)
-				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
-				if err != nil {
-					if !k8serrors.IsNotFound(err) {
-						errMsg := fmt.Errorf("%s delete the namespace %s, error: %+v", K8SFlinkLogPrefix, namespace, err)
-						return nil, errMsg
-					}
-					logrus.Warningf("%s not found the namespace %s", K8SFlinkLogPrefix, namespace)
-				}
-				logrus.Debugf("%s clean namespace %s successfully", K8SFlinkLogPrefix, namespace)
+func (k *K8sFlink) CleanUp(ctx context.Context, namespace string) error {
+	flinkClusters := flinkoperatorv1beta1.FlinkClusterList{}
+	err := k.client.CRClient.List(context.Background(), &flinkClusters, &client.ListOptions{
+		Namespace: namespace,
+	})
+	if err != nil {
+		return fmt.Errorf("%s list k8sflink clusters error: %+v, namespace: %s", K8SFlinkLogPrefix, err, namespace)
+	}
+	remainCount := 0
+	if len(flinkClusters.Items) != 0 {
+		for _, f := range flinkClusters.Items {
+			if f.DeletionTimestamp == nil {
+				remainCount++
 			}
 		}
 	}
-	return nil, nil
+
+	if remainCount >= 1 {
+		return fmt.Errorf("namespace: %s still have remain flinkclusters, skip clean up", namespace)
+	}
+
+	ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("%s get the namespace %s, error: %+v", K8SFlinkLogPrefix, namespace, err)
+	}
+
+	if ns.DeletionTimestamp == nil {
+		logrus.Debugf("%s start to delete the namespace %s", K8SFlinkLogPrefix, namespace)
+		err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+		if err != nil {
+			if !k8serrors.IsNotFound(err) {
+				errMsg := fmt.Errorf("%s delete the namespace %s, error: %+v", K8SFlinkLogPrefix, namespace, err)
+				return errMsg
+			}
+			logrus.Warningf("%s not found the namespace %s", K8SFlinkLogPrefix, namespace)
+		}
+		logrus.Debugf("%s clean namespace %s successfully", K8SFlinkLogPrefix, namespace)
+	}
+	return nil
 }
 
 // Inspect k8sflink doesn`t support inspect, flinkcluster`s logs are too long

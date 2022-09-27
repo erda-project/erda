@@ -234,45 +234,48 @@ func (k *K8sSpark) Delete(ctx context.Context, task *spec.PipelineTask) (interfa
 		return nil, errors.Errorf("failed to remove spark application, namespace: %s, name: %s, err: %v", task.Extra.Namespace, task.Extra.UUID, err)
 	}
 
-	sparkApps := sparkv1beta2.SparkApplicationList{}
-	namespace := task.Extra.Namespace
-	if !task.Extra.NotPipelineControlledNs {
-		err = k.client.CRClient.List(ctx, &sparkApps, &client.ListOptions{Namespace: namespace})
-		if err != nil {
-			return nil, fmt.Errorf("%s list k8sspark apps error: %+v, namespace: %s", K8SSparkLogPrefix, err, namespace)
-		}
-		remainCount := 0
-		if len(sparkApps.Items) != 0 {
-			for _, app := range sparkApps.Items {
-				if app.DeletionTimestamp == nil {
-					remainCount++
-				}
-			}
-		}
-		if remainCount < 1 {
-			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-			if err != nil {
-				if k8serrors.IsNotFound(err) {
-					return nil, nil
-				}
-				return nil, fmt.Errorf("%s get the namespace: %s,  error: %+v", K8SSparkLogPrefix, namespace, err)
-			}
+	return nil, nil
+}
 
-			if ns.DeletionTimestamp == nil {
-				logrus.Debugf(" %s start to delete the namespace %s", K8SSparkLogPrefix, namespace)
-				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
-				if err != nil {
-					if !k8serrors.IsNotFound(err) {
-						errMsg := fmt.Errorf("%s delete the namespace: %s, error: %+v", K8SSparkLogPrefix, namespace, err)
-						return nil, errMsg
-					}
-					logrus.Warningf("%s not found the namespace %s", K8SSparkLogPrefix, namespace)
-				}
-				logrus.Debugf("%s clean namespace %s successfully", K8SSparkLogPrefix, namespace)
+func (k *K8sSpark) CleanUp(ctx context.Context, namespace string) error {
+	sparkApps := sparkv1beta2.SparkApplicationList{}
+	err := k.client.CRClient.List(ctx, &sparkApps, &client.ListOptions{Namespace: namespace})
+	if err != nil {
+		return fmt.Errorf("%s list k8sspark apps error: %+v, namespace: %s", K8SSparkLogPrefix, err, namespace)
+	}
+	remainCount := 0
+	if len(sparkApps.Items) != 0 {
+		for _, app := range sparkApps.Items {
+			if app.DeletionTimestamp == nil {
+				remainCount++
 			}
 		}
 	}
-	return nil, nil
+	if remainCount >= 1 {
+		return fmt.Errorf("namespace: %s still have remain sparkapps, skip clean up", namespace)
+	}
+	ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("%s get the namespace: %s,  error: %+v", K8SSparkLogPrefix, namespace, err)
+	}
+
+	if ns.DeletionTimestamp == nil {
+		logrus.Debugf(" %s start to delete the namespace %s", K8SSparkLogPrefix, namespace)
+		err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+		if err != nil {
+			if !k8serrors.IsNotFound(err) {
+				errMsg := fmt.Errorf("%s delete the namespace: %s, error: %+v", K8SSparkLogPrefix, namespace, err)
+				return errMsg
+			}
+			logrus.Warningf("%s not found the namespace %s", K8SSparkLogPrefix, namespace)
+		}
+		logrus.Debugf("%s clean namespace %s successfully", K8SSparkLogPrefix, namespace)
+	}
+
+	return nil
 }
 
 // Inspect k8sspark doesn`t support inspect, sparkapp`s logs are too long
