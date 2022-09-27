@@ -15,22 +15,14 @@
 package release
 
 import (
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
-	imagedb "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
 	"github.com/pkg/errors"
-)
 
-const (
-	// AliYunRegistry 阿里云registry前缀
-	AliYunRegistry = "registry.cn-hangzhou.aliyuncs.com"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 )
 
 // Release Release操作封装
 type Release struct {
-	db      *dbclient.DBClient
-	bdl     *bundle.Bundle
-	imageDB *imagedb.ImageConfigDB
+	db *dbclient.DBClient
 }
 
 // Option 定义 Release 对象的配置选项
@@ -49,20 +41,6 @@ func New(options ...Option) *Release {
 func WithDBClient(db *dbclient.DBClient) Option {
 	return func(a *Release) {
 		a.db = db
-	}
-}
-
-// WithImageDBClient 配置 db client
-func WithImageDBClient(db *imagedb.ImageConfigDB) Option {
-	return func(a *Release) {
-		a.imageDB = db
-	}
-}
-
-// WithBundle 配置 bundle
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(a *Release) {
-		a.bdl = bdl
 	}
 }
 

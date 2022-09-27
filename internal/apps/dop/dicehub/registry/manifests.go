@@ -20,9 +20,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/registryhelper"
 )
 
@@ -54,7 +57,8 @@ func (s *Service) DeleteManifests(clusterName string, images []string) (err erro
 		return errors.New("cluster service is nil")
 	}
 
-	clusterResp, err := s.clusterSvc.GetCluster(context.TODO(), &clusterpb.GetClusterRequest{
+	ctx := transport.WithHeader(context.TODO(), metadata.New(map[string]string{httputil.InternalHeader: "dop"}))
+	clusterResp, err := s.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{
 		IdOrName: clusterName,
 	})
 	if err != nil {
@@ -70,8 +74,8 @@ func (s *Service) DeleteManifests(clusterName string, images []string) (err erro
 
 	registryAddr, ok := clusterInfo[apistructs.REGISTRY_ADDR.String()]
 	if !ok {
-		l.WithError(err).Errorln("failed to GetRegistryAddress")
-		return errors.Wrap(err, "failed to GetRegistryAddress")
+		l.WithError(err).Errorln("failed to get registry address")
+		return errors.Wrap(err, "failed to get registry address")
 	}
 
 	req := registryhelper.RemoveManifestsRequest{
