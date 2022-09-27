@@ -117,12 +117,12 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	}
 
 	if _, ok := sortFields[p.ctx.timeKey]; ok {
-		expr = expr.Order(goqu.C(p.ctx.timeKey).Desc())
+		expr = expr.Order(goqu.C(p.ctx.timeKey).Asc())
 	}
 
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 	if _, ok := sortFields[timeBucketColumn]; ok {
-		expr = expr.Order(goqu.C(timeBucketColumn).Desc())
+		expr = expr.Order(goqu.C(timeBucketColumn).Asc())
 	}
 
 	for column, asc := range sortFields {

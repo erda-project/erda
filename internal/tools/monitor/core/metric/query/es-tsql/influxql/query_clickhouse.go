@@ -16,7 +16,7 @@ package esinfluxql
 
 import (
 	"context"
-	"io"
+	"math"
 	"reflect"
 	"time"
 
@@ -61,7 +61,6 @@ func (q QueryClickhouse) AppendBoolFilter(key string, value interface{}) {
 }
 
 func iterate(ctx context.Context, row ckdriver.Rows) (map[string]interface{}, error) {
-
 	var (
 		columnTypes = row.ColumnTypes()
 		vars        = make([]interface{}, len(columnTypes))
@@ -99,8 +98,6 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		return nil, nil
 	}
 
-	var err error
-
 	rows, ok := resp.(ckdriver.Rows)
 	rs := &model.Data{}
 	if !ok {
@@ -109,86 +106,71 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 
 	q.buildColumn(newCtx, rs)
 
-	cur := make(map[string]interface{})
-	next := make(map[string]interface{})
+	err := q.parse(newCtx, rows, rs)
+	if err != nil {
+		return nil, errors.Wrap(err, "clickhouse metric query parse is fail")
+	}
+	rs.Total = int64(len(rs.Rows))
+	rs.Interval = q.ctx.Interval()
+	span.SetAttributes(trace.BigStringAttribute("result.total", len(rs.Rows)))
+	return rs, nil
+}
 
+func (q QueryClickhouse) fetchAllValue(ctx context.Context, rows ckdriver.Rows) ([]map[string]interface{}, error) {
+	newCtx, span := otel.Tracer("parser").Start(ctx, "fetch")
+	defer span.End()
+	var dates []map[string]interface{}
+	for nextRows(newCtx, rows) {
+		cur, err := iterate(newCtx, rows)
+		if err != nil {
+			return nil, err
+		}
+		dates = append(dates, cur)
+	}
+	return dates, nil
+}
+
+func (q QueryClickhouse) parse(ctx context.Context, rows ckdriver.Rows, rs *model.Data) error {
+	newCtx, span := otel.Tracer("parser").Start(ctx, "parse")
+	defer span.End()
+
+	var err error
 	q.ctx.AttributesCache()
 
-	// first read
-	nextRows(newCtx, rows)
-
-	cur, err = iterate(newCtx, rows)
-	isTail := false
+	dates, err := q.fetchAllValue(newCtx, rows)
 	if err != nil {
-		if err == io.EOF {
-			// The first item is empty
-			return rs, nil
-		}
-		span.RecordError(err, oteltrace.WithAttributes(attribute.String("comment", "first is error")))
-		return nil, err
+		return errors.Wrap(err, "fetch clickhouse value is failed")
 	}
 
-	iterateCtx, iterateSpan := otel.Tracer("parser").Start(newCtx, "iterate")
-	defer iterateSpan.End()
-	for {
+	if len(dates) <= 0 {
+		return nil
+	}
 
-		if cur == nil && next == nil {
-			break
-		}
+	step := getStep(newCtx, dates)
 
-		if isTail {
-			break
-		}
-
-		if len(cur) <= 0 {
-			cur, err = iterate(iterateCtx, rows)
-			if err != nil {
-				span.RecordError(err)
-				return nil, err
-			}
-		}
-
-		if nextRows(iterateCtx, rows) {
-			next, err = iterate(iterateCtx, rows)
-			if err != nil {
-				span.RecordError(err)
-				return nil, err
-			}
-			q.ctx.attributesCache["next"] = next
-		} else {
-			isTail = true
-		}
-
+	for i, iterate := range dates {
 		var row []interface{}
+		point := i + step
+		if point < len(dates) {
+			q.ctx.attributesCache["next"] = dates[i+step]
+		}
+
 		for _, c := range q.column {
 			if c.AllColumns() {
-				allValue, err := c.getALLValue(cur)
+				row, err = q.parseAllColumn(c, iterate, rs)
 				if err != nil {
-					span.RecordError(err, oteltrace.WithAttributes(attribute.String("comment", "get all value error")))
-					return nil, err
-				}
-				for k, v := range allValue {
-					var point int
-					rs.Columns, point = appendIfMissing(rs.Columns, &model.Column{
-						Name: k,
-					})
-					if cap(row) <= point || row == nil {
-						newRow := make([]interface{}, point+1)
-						copy(newRow, row)
-						row = newRow
-					}
-					row[point] = v
+					return err
 				}
 				continue
 			}
 
-			v, err := c.getValue(iterateCtx, cur)
+			v, err := c.getValue(newCtx, iterate)
 			if err != nil {
 				span.RecordError(err, oteltrace.WithAttributes(
 					attribute.String("comment", "get column value error"),
-					trace.BigStringAttribute("data", cur),
+					trace.BigStringAttribute("data", iterate),
 				))
-				return nil, err
+				return err
 			}
 
 			var point int
@@ -203,16 +185,60 @@ func (q QueryClickhouse) ParseResult(ctx context.Context, resp interface{}) (*mo
 		if row != nil {
 			rs.Rows = append(rs.Rows, row)
 		}
-
-		cur = next
-		next = nil
 	}
-	rs.Total = int64(len(rs.Rows))
-	rs.Interval = q.ctx.Interval()
-	span.SetAttributes(trace.BigStringAttribute("result.total", len(rs.Rows)))
-	return rs, nil
+	return nil
 }
 
+// rows must be sorted
+func getStep(ctx context.Context, rows []map[string]interface{}) int {
+	_, span := otel.Tracer("parser").Start(ctx, "get.step")
+	defer span.End()
+
+	if len(rows) <= 0 {
+		return 0
+	}
+	timestamp := int64(math.MaxInt64)
+	i := 0
+	for _, row := range rows {
+		_t, exist := row["bucket_timestamp"]
+		if !exist {
+			break
+		}
+		_timestamp, ok := _t.(int64)
+		if !ok {
+			break
+		}
+
+		if _timestamp > timestamp {
+			return i
+		} else {
+			timestamp = _timestamp
+		}
+		i++
+	}
+	return 0
+}
+
+func (q QueryClickhouse) parseAllColumn(c *SQLColumnHandler, cur map[string]interface{}, rs *model.Data) ([]interface{}, error) {
+	allValue, err := c.getALLValue(cur)
+	var row []interface{}
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range allValue {
+		var point int
+		rs.Columns, point = appendIfMissing(rs.Columns, &model.Column{
+			Name: k,
+		})
+		if cap(row) <= point || row == nil {
+			newRow := make([]interface{}, point+1)
+			copy(newRow, row)
+			row = newRow
+		}
+		row[point] = v
+	}
+	return row, nil
+}
 func (q QueryClickhouse) buildColumn(ctx context.Context, rs *model.Data) {
 	_, span := otel.Tracer("parser").Start(ctx, "build.column")
 	defer span.End()
