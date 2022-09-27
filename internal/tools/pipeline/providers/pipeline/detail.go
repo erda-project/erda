@@ -270,6 +270,7 @@ func (s *pipelineService) Detail(pipelineID uint64) (*pb.PipelineDetailDTO, erro
 	detail.CronID = baseDetail.CronID
 	detail.Labels = baseDetail.Labels
 	detail.YmlSource = baseDetail.YmlSource
+	detail.YmlContent = baseDetail.YmlContent
 	detail.Extra = baseDetail.Extra
 	detail.OrgID = baseDetail.OrgID
 	detail.OrgName = baseDetail.OrgName

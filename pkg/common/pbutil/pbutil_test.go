@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestGetBool(t *testing.T) {
@@ -84,4 +85,14 @@ func TestGetTimestamp(t *testing.T) {
 	pbt = GetTimestamp(&now)
 	assert.NotNil(t, pbt)
 	assert.True(t, pbt.AsTime().Equal(now))
+}
+
+func TestGetTimeInLocal(t *testing.T) {
+	vv := GetTimeInLocal(nil)
+	assert.Nil(t, vv)
+
+	now := time.Now()
+	pbt := timestamppb.New(now)
+	nowInLocal := GetTimeInLocal(pbt)
+	assert.True(t, now.Equal(*nowInLocal))
 }
