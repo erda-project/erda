@@ -52,3 +52,11 @@ func GetTimestamp(t *time.Time) *timestamppb.Timestamp {
 	}
 	return timestamppb.New(*t)
 }
+
+func GetTimeInLocal(t *timestamppb.Timestamp) *time.Time {
+	if t == nil {
+		return nil
+	}
+	v := t.AsTime().In(time.Local)
+	return &v
+}

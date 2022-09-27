@@ -29,6 +29,7 @@ import (
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -405,16 +406,16 @@ func (client *Client) PageListPipelines(req *pipelinepb.PipelinePagingRequest, o
 	}
 	baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "is_snippet")+" = ?", req.IncludeSnippet)
 	if req.StartTimeBegin != nil && !req.StartTimeBegin.AsTime().IsZero() {
-		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" >= ? ", req.StartTimeBegin)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" >= ? ", pbutil.GetTimeInLocal(req.StartTimeBegin))
 	}
 	if req.EndTimeBegin != nil && !req.EndTimeBegin.AsTime().IsZero() {
-		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" <= ?", req.EndTimeBegin)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" <= ?", pbutil.GetTimeInLocal(req.EndTimeBegin))
 	}
 	if req.StartTimeCreated != nil && !req.StartTimeCreated.AsTime().IsZero() {
-		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" >= ?", req.StartTimeCreated)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" >= ?", pbutil.GetTimeInLocal(req.StartTimeCreated))
 	}
 	if req.EndTimeCreated != nil && !req.EndTimeCreated.AsTime().IsZero() {
-		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" <= ?", pbutil.GetTimeInLocal(req.EndTimeCreated))
 	}
 	if req.StartIDGt != 0 {
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "id")+" > ?", req.StartIDGt)
