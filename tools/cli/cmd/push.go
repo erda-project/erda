@@ -141,9 +141,9 @@ func Push(ctx *command.Context, urlstr string, applications []string, configfile
 			gitRepo = remoteApp.GitRepoNew
 		}
 
-		ss := strings.Split(ctx.CurrentOpenApiHost, "://")
+		ss := strings.Split(ctx.CurrentHost, "://")
 		if len(ss) < 1 {
-			return errors.Errorf("Invalid openapi host %s", ctx.CurrentOpenApiHost)
+			return errors.Errorf("Invalid openapi host %s", ctx.CurrentHost)
 		}
 		repo := fmt.Sprintf("%s://%s", ss[0], gitRepo)
 
@@ -155,6 +155,6 @@ func Push(ctx *command.Context, urlstr string, applications []string, configfile
 		ctx.Info("Application '%s' pushed.", a.Application)
 	}
 
-	ctx.Succ("Project '%s' pushed to server %s.", project, ctx.CurrentOpenApiHost)
+	ctx.Succ("Project '%s' pushed to server %s.", project, ctx.CurrentHost)
 	return nil
 }

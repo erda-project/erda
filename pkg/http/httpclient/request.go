@@ -284,11 +284,20 @@ func (r *Request) Path(path string) *Request {
 	r.path = path
 	return r
 }
+
 func (r *Request) Param(k, v string) *Request {
 	if r.params == nil {
 		r.params = make(url.Values)
 	}
 	r.params.Add(k, v)
+	return r
+}
+
+func (r *Request) SetParam(k, v string) *Request {
+	if r.params == nil {
+		r.params = make(url.Values)
+	}
+	r.params.Set(k, v)
 	return r
 }
 

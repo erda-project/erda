@@ -73,7 +73,7 @@ func ConstructURL(ctx *command.Context, entity ErdaEntity, params url.Values) (s
 		entity.Org = o.Name
 	}
 
-	paths := []string{strings.Replace(ctx.CurrentOpenApiHost, "openapi.", "", 1)}
+	paths := []string{strings.Replace(ctx.CurrentHost, "openapi.", "", 1)}
 	switch entity.Type {
 	case OrgEntity:
 		paths = append(paths, entity.Org)
