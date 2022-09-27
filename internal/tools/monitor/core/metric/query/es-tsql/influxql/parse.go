@@ -56,6 +56,7 @@ func New(start, end int64, stmt string, debug bool) tsql.Parser {
 			targetTimeUnit:   tsql.UnsetTimeUnit,
 			timeKey:          model.TimestampKey,
 			maxTimePoints:    512,
+			dimensions:       make(map[string]bool),
 		},
 	}
 }
