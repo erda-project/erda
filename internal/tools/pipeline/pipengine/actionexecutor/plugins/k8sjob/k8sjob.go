@@ -61,7 +61,6 @@ const (
 	jobAPIVersion      = "batch/v1"
 	initContainerName  = "pre-fetech-container"
 	emptyDirVolumeName = "pre-fetech-volume"
-	EnvRetainNamespace = "RETAIN_NAMESPACE"
 )
 
 var (
@@ -287,54 +286,6 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 				logrus.Warningf("the job %s's pvc %s in namespace %s is not found", name, pvcName, namespace)
 			}
 			logrus.Debugf("finish to delete pvc %s", pvcName)
-		}
-	}
-
-	// if user customize namespace, shouldn't delete namespace
-	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) == "" && !job.NotPipelineControlledNs {
-		jobs, err := k.client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
-		if err != nil {
-			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
-			return nil, errMsg
-		}
-
-		remainCount := 0
-		if len(jobs.Items) != 0 {
-			for _, j := range jobs.Items {
-				if j.DeletionTimestamp == nil {
-					remainCount++
-				}
-			}
-		}
-
-		retainNamespace, err := strconv.ParseBool(job.Env[EnvRetainNamespace])
-		if err != nil {
-			logrus.Debugf("parse bool err %v when delete job %s in the namespace %s", err, job.Name, job.Namespace)
-			retainNamespace = false
-		}
-		if remainCount < 1 && retainNamespace == false {
-			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-			if err != nil {
-				if k8serrors.IsNotFound(err) {
-					logrus.Warningf("get namespace %s not found", namespace)
-					return nil, nil
-				}
-				errMsg := fmt.Errorf("get the job's namespace error: %+v", err)
-				return nil, errMsg
-			}
-
-			if ns.DeletionTimestamp == nil {
-				logrus.Debugf("start to delete the job's namespace %s", namespace)
-				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
-				if err != nil {
-					if !k8serrors.IsNotFound(err) {
-						errMsg := fmt.Errorf("delete the job's namespace error: %+v", err)
-						return nil, errMsg
-					}
-					logrus.Warningf("not found the namespace %s", namespace)
-				}
-				logrus.Debugf("clean namespace %s successfully", namespace)
-			}
 		}
 	}
 	return task.Extra.UUID, nil
@@ -796,6 +747,50 @@ func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo 
 	}
 
 	return env, nil
+}
+
+func (k *K8sJob) CleanUp(ctx context.Context, namespace string) error {
+	jobs, err := k.client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		errMsg := fmt.Errorf("failed to list jobs, namespace: %s, err: %+v", namespace, err)
+		return errMsg
+	}
+
+	remainCount := 0
+	if len(jobs.Items) != 0 {
+		for _, j := range jobs.Items {
+			if j.DeletionTimestamp == nil {
+				remainCount++
+			}
+		}
+	}
+	if remainCount >= 1 {
+		return fmt.Errorf("namespace: %s still have remain job, skip clean up", namespace)
+	}
+
+	ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			logrus.Warningf("namespace %s not found", namespace)
+			return nil
+		}
+		errMsg := fmt.Errorf("failed to get namespace: %s, err: %+v", namespace, err)
+		return errMsg
+	}
+
+	if ns.DeletionTimestamp == nil {
+		logrus.Debugf("start to delete the job's namespace %s", namespace)
+		err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+		if err != nil {
+			if !k8serrors.IsNotFound(err) {
+				errMsg := fmt.Errorf("delete the job's namespace error: %+v", err)
+				return errMsg
+			}
+			logrus.Warningf("not found the namespace %s", namespace)
+		}
+		logrus.Debugf("clean namespace %s successfully", namespace)
+	}
+	return nil
 }
 
 func jobLabels() map[string]string {
