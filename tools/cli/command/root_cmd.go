@@ -79,6 +79,17 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 	PersistentPreRunE: PrepareCtx,
 }
 
+type BaseResponse struct {
+	Success bool            `json:"success"`
+	Data    json.RawMessage `json:"data"`
+	Err     interface{}     `json:"err"`
+}
+
+type OrgsResponseData struct {
+	List  []OrgInfo `json:"list"`
+	Total int       `json:"total"`
+}
+
 func PrepareCtx(cmd *cobra.Command, args []string) error {
 	logrus.SetOutput(os.Stdout)
 	var err error
@@ -165,7 +176,7 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 		return nil, err
 	}
 	// file ~/.erda.d/sessions exist & and session for host also exist; otherwise need login fisrt
-	currentSession, ok := sessionInfos[ctx.CurrentOpenApiHost]
+	currentSession, ok := sessionInfos[ctx.CurrentHost]
 	if ok {
 		// check session if expired
 		if currentSession.ExpiredAt != nil && time.Now().Before(*currentSession.ExpiredAt) {
@@ -184,7 +195,7 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 
 	if username != "" && password != "" {
 		// fetch session & user info according to host, username & password
-		if err = loginAndStoreSession(ctx.CurrentOpenApiHost, username, password); err != nil {
+		if err = loginAndStoreSession(ctx.CurrentHost, username, password); err != nil {
 			return nil, err
 		}
 
@@ -278,38 +289,10 @@ func parseCtx() error {
 		return errors.Errorf("invalid host format, it should be http[s]://<domain>")
 	}
 
-	openAPIAddr := host
-	if strings.HasSuffix(host, ".dev.terminus.io") {
-		openAPIAddr = "https://openapi.dev.terminus.io"
-	} else if strings.HasSuffix(host, ".daily.terminus.io") {
-		openAPIAddr = "https://openapi.daily.terminus.io"
-	} else if strings.HasSuffix(host, ".gts.terminus.io") {
-		openAPIAddr = "https://openapi.gts.terminus.io"
-	} else {
-		orgIndex := strings.Index(host, "-org.")
-		if orgIndex != -1 {
-			openAPIAddr = host[:slashIndex+3] + host[orgIndex+5:]
-		}
-
-		oneIndex := strings.Index(openAPIAddr, "://one.")
-		if oneIndex != -1 {
-			openAPIAddr = openAPIAddr[:oneIndex+3] + openAPIAddr[oneIndex+7:]
-		}
-
-		hostHasOpenApi := strings.Index(openAPIAddr, "openapi.") != -1
-		if strings.HasPrefix(host, "https") {
-			if !hostHasOpenApi {
-				openAPIAddr = "https://openapi." + openAPIAddr[slashIndex+3:]
-			}
-		} else {
-			if !hostHasOpenApi {
-				openAPIAddr = "http://openapi." + openAPIAddr[slashIndex+3:]
-			}
-		}
+	ctx.CurrentHost = host
+	if err := (&ctx).FetchOpenapi(); err != nil {
+		return err
 	}
-
-	logrus.Debugf("openapi addr: %s", openAPIAddr)
-	ctx.CurrentOpenApiHost = openAPIAddr
 
 	return nil
 }
@@ -360,13 +343,15 @@ func loginAndStoreSession(host, username, password string) error {
 
 	logrus.Debugf("current ctx: %+v", ctx)
 	var body bytes.Buffer
-	res, err := ctx.Post().Path("/login").FormBody(form).Do().Body(&body)
+	request := ctx.UseOpenapi().Post().Path("/login").FormBody(form)
+	res, err := request.Do().Body(&body)
 	if err != nil {
 		return fmt.Errorf(utils.FormatErrMsg("login", "error: "+err.Error(), false))
 	}
 	if !res.IsOK() {
+		ctx.Error("login not ok, url: %s, response body: %s", request.GetUrl(), body.String())
 		return fmt.Errorf(utils.FormatErrMsg("login",
-			"failed to login, status code: "+strconv.Itoa(res.StatusCode()), false))
+			"failed to login, status code: "+strconv.Itoa(res.StatusCode())+string(res.Body()), false))
 	}
 	var s status.StatusInfo
 	d := json.NewDecoder(&body)

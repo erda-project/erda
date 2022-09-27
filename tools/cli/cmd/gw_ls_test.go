@@ -23,21 +23,21 @@ import (
 
 func TestHepaHostFromOpenapi(t *testing.T) {
 	var ctx = command.Context{
-		CurrentOpenApiHost: "https://openapi.erda.cloud",
+		CurrentHost: "https://openapi.erda.cloud",
 	}
 	var hepa = "https://hepa.erda.cloud"
 	if err := cmd.HepaHostFromOpenapi(&ctx, ""); err != nil {
 		t.Fatal(err)
 	}
-	if ctx.CurrentOpenApiHost != hepa {
-		t.Fatal("ctx.CurrentOpenApiHost != hepa")
+	if ctx.CurrentHost != hepa {
+		t.Fatal("ctx.CurrentHost != hepa")
 	}
 
-	ctx.CurrentOpenApiHost = "https://openapi.erda.cloud"
+	ctx.CurrentHost = "https://openapi.erda.cloud"
 	if err := cmd.HepaHostFromOpenapi(&ctx, hepa); err != nil {
 		t.Fatal(err)
 	}
-	if ctx.CurrentOpenApiHost != hepa {
-		t.Fatal("ctx.CurrentOpenApiHost != hepa")
+	if ctx.CurrentHost != hepa {
+		t.Fatal("ctx.CurrentHost != hepa")
 	}
 }
