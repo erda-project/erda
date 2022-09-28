@@ -66,6 +66,7 @@ type ReleaseService struct {
 	Config          *releaseConfig
 	ReleaseRule     *release_rule.ReleaseRule
 	org             org.Interface
+	registry        registry.Interface
 }
 
 // CreateRelease POST /api/releases release create release
@@ -1065,6 +1066,9 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 	if err != nil {
 		return err
 	}
+
+	logrus.Infof("get unrefered release before %v, count: %d", d.String(), len(releases))
+
 	for i := range releases {
 		release := releases[i]
 		if release.Version != "" {
@@ -1087,7 +1091,7 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 				continue
 			}
 			if count == 0 && release.ClusterName != "" && !strings.HasPrefix(image.Image, AliYunRegistry) {
-				if err := registry.DeleteManifests(s.bdl, release.ClusterName, []string{image.Image}); err != nil {
+				if err := s.registry.DeleteManifests(release.ClusterName, []string{image.Image}); err != nil {
 					deletable = false
 					logrus.Errorf(err.Error())
 					continue

@@ -48,9 +48,9 @@ const (
 	NEXUS_USERNAME          ClusterInfoMapKey = "NEXUS_USERNAME"          // nexus 用户名
 	NEXUS_PASSWORD          ClusterInfoMapKey = "NEXUS_PASSWORD"          // nexus的密码
 	REGISTRY_ADDR           ClusterInfoMapKey = "REGISTRY_ADDR"           // registry的地址
+	REGISTRY_SCHEME         ClusterInfoMapKey = "REGISTRY_SCHEME"         // registry scheme
 	REGISTRY_USERNAME       ClusterInfoMapKey = "REGISTRY_USERNAME"       // registry username
 	REGISTRY_PASSWORD       ClusterInfoMapKey = "REGISTRY_PASSWORD"       // registry password
-	SOLDIER_ADDR            ClusterInfoMapKey = "SOLDIER_ADDR"            // soldier的地址
 	EDASJOB_CLUSTER_NAME    ClusterInfoMapKey = "EDASJOB_CLUSTER_NAME"    // edas 集群可能会使用别的集群运行 JOB，若该字段为空，则说明使用本集群运行 JOB
 	CLUSTER_DNS             ClusterInfoMapKey = "CLUSTER_DNS"             // k8s 或 dcos 内部域名服务器，逗号分隔
 	ISTIO_ALIYUN            ClusterInfoMapKey = "ISTIO_ALIYUN"            // 是否用aliyn asm，true or false
@@ -82,6 +82,10 @@ type ClusterInfoData map[ClusterInfoMapKey]string
 type ClusterInfoDataList []ClusterInfoData
 
 type ClusterInfoMapKey string
+
+func (k ClusterInfoMapKey) String() string {
+	return string(k)
+}
 
 func (info ClusterInfoData) MustGet(key ClusterInfoMapKey) string {
 	v := info.Get(key)

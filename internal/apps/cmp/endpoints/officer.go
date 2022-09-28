@@ -23,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
 	"github.com/erda-project/erda/internal/pkg/colonyutil"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -74,7 +73,7 @@ func (e *Endpoints) RegistryRemoveManifests(ctx context.Context, r *http.Request
 	}
 	s := vars["clusterName"]
 
-	if err := registry.DeleteManifests(e.bdl, s, req.Images); err != nil {
+	if err := e.registry.DeleteManifests(s, req.Images); err != nil {
 		errstr := fmt.Sprintf("Registry deleteManifests failed: %v", err)
 		logrus.Errorf(errstr)
 		return mkResponseErr("502", errstr)

@@ -35,12 +35,14 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 	extensiondb "github.com/erda-project/erda/internal/apps/dop/dicehub/extension/db"
 	imagedb "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/release/db"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 	"github.com/erda-project/erda/internal/core/org"
@@ -59,11 +61,12 @@ type config struct {
 type provider struct {
 	Cfg                   *config
 	Log                   logs.Logger
-	Register              transport.Register      `autowired:"service-register" required:"true"`
-	DB                    *gorm.DB                `autowired:"mysql-client"`
-	DBv2                  *gormV2.DB              `autowired:"mysql-gorm.v2-client"`
-	Etcd                  *clientv3.Client        `autowired:"etcd"`
-	GallerySvc            gallerypb.GalleryServer `autowired:"erda.apps.gallery.Gallery"`
+	Register              transport.Register             `autowired:"service-register" required:"true"`
+	DB                    *gorm.DB                       `autowired:"mysql-client"`
+	DBv2                  *gormV2.DB                     `autowired:"mysql-gorm.v2-client"`
+	Etcd                  *clientv3.Client               `autowired:"etcd"`
+	GallerySvc            gallerypb.GalleryServer        `autowired:"erda.apps.gallery.Gallery"`
+	ClusterSvc            clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 	releaseService        *ReleaseService
 	releaseGetDiceService *releaseGetDiceService
 	opusService           pb.OpusServer
@@ -82,16 +85,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		imageDB:         &imagedb.ImageConfigDB{DB: p.DB},
 		extensionDB:     &extensiondb.ExtensionConfigDB{DB: p.DB},
 		bdl:             p.bdl,
-		//Etcd:    p.Etcd,
+		Etcd:            p.Etcd,
 		Config: &releaseConfig{
 			MaxTimeReserved: p.Cfg.MaxTimeReserved,
 		},
 		ReleaseRule: release_rule.New(release_rule.WithDBClient(&dbclient.DBClient{
 			DBEngine: &dbengine.DBEngine{DB: p.DB},
 		})),
-		opus:    p.opusService,
-		gallery: p.GallerySvc,
-		org:     p.Org,
+		opus:     p.opusService,
+		gallery:  p.GallerySvc,
+		org:      p.Org,
+		registry: registry.New(p.ClusterSvc),
 	}
 	p.releaseGetDiceService = &releaseGetDiceService{
 		p:  p,
@@ -273,11 +277,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				}),
 			))
 	}
-	// TODO endpoint open GC now. open it after refactor Dicehub
 	// Do release Scheduled cleaning tasks
-	//if err := p.ReleaseGC(); err != nil {
-	//	return err
-	//}
+	if err := p.ReleaseGC(); err != nil {
+		return err
+	}
 	return nil
 }
 

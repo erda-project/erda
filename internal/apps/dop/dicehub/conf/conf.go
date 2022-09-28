@@ -27,7 +27,6 @@ type Conf struct {
 	Debug           bool                `env:"DEBUG" default:"false"`
 	OpsAddr         string              `env:"OPS_ADDR"`
 	EventBoxAddr    string              `env:"EVENTBOX_ADDR"`
-	GCSwitch        bool                `env:"RELEASE_GC_SWITCH" default:"true"`
 	MaxTimeReserved string              `env:"RELEASE_MAX_TIME_RESERVED" default:"72"` // default: 72h
 	ExtensionMenu   map[string][]string `env:"EXTENSION_MENU" default:"{}"`
 	SiteUrl         string              `env:"SITE_URL"`
@@ -55,11 +54,6 @@ func SiteUrl() string {
 // EventBoxAddr 返回eventbox地址
 func EventBoxAddr() string {
 	return cfg.EventBoxAddr
-}
-
-// GCSwitch release自动回收开关
-func GCSwitch() bool {
-	return cfg.GCSwitch
 }
 
 // MaxTimeReserved 未使用的release保留最长时间

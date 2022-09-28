@@ -26,12 +26,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/conf"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/endpoints"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/recycle"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-	// "terminus.io/dice/telemetry/promxp"
 )
 
 // Initialize 初始化应用启动服务.
@@ -52,11 +49,6 @@ func Initialize(p *provider) error {
 		return err
 	}
 
-	// 启动 release 定时清理任务
-	if err := ReleaseGC(ep.Release()); err != nil {
-		return err
-	}
-
 	server := httpserver.New("")
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("dicehub"))
 	server.Router().UseEncodedPath()
@@ -67,19 +59,6 @@ func Initialize(p *provider) error {
 	server.Router().Path("/api/releases/{releaseId}/actions/get-dice").Methods(http.MethodGet).HandlerFunc(ep.GetDiceYAML)
 
 	return server.RegisterToNewHttpServerRouter(p.Router)
-}
-
-// ReleaseGC 启动release gc定时任务
-func ReleaseGC(rl *release.Release) error {
-	if conf.GCSwitch() {
-		etcdStore, err := etcd.New()
-		if err != nil {
-			logrus.Errorf("[alert] initialize etcd client error: %v", err)
-			return err
-		}
-		recycle.ImageGCCron(rl, etcdStore.GetClient())
-	}
-	return nil
 }
 
 // 初始化 Endpoints
@@ -101,8 +80,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 	bdl := bundle.New(bundleOpts...)
 	rl := release.New(
 		release.WithDBClient(db),
-		release.WithBundle(bdl),
-		release.WithImageDBClient(p.ImageDB),
 	)
 
 	// 3.20 灰度逻辑迁移，3.21删除

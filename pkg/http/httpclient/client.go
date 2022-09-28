@@ -285,7 +285,7 @@ func New(ops ...OpOption) *HTTPClient {
 
 	var tr = defaultTransport
 	if option.clusterDialKey != "" || option.dnscache != nil || option.dialTimeout != 0 || option.clientTimeout != 0 ||
-		option.proxy != "" || option.dialerKeepalive != 0 || option.ca != nil || option.dialContext != nil {
+		option.proxy != "" || option.dialerKeepalive != 0 || option.dialContext != nil {
 		tr = newdefaultTransport(mkDialContext(option.clusterDialKey, option.dnscache, option.dialTimeout, option.clientTimeout))
 		if option.dialContext != nil {
 			tr.DialContext = option.dialContext
@@ -299,17 +299,18 @@ func New(ops ...OpOption) *HTTPClient {
 		if option.dialerKeepalive != 0 {
 			tr.IdleConnTimeout = option.dialerKeepalive
 		}
-		if option.isHTTPS {
-			if option.ca != nil {
-				tr.TLSClientConfig = &tls.Config{
-					RootCAs:      option.ca,
-					Certificates: []tls.Certificate{option.keyPair},
-				}
-			} else {
-				tr.TLSClientConfig = &tls.Config{
-					InsecureSkipVerify: true,
-					Certificates:       []tls.Certificate{option.keyPair},
-				}
+	}
+
+	if option.isHTTPS {
+		if option.ca != nil {
+			tr.TLSClientConfig = &tls.Config{
+				RootCAs:      option.ca,
+				Certificates: []tls.Certificate{option.keyPair},
+			}
+		} else {
+			tr.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+				Certificates:       []tls.Certificate{option.keyPair},
 			}
 		}
 	}

@@ -35,7 +35,6 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	imagedb "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/release/db"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -525,7 +524,7 @@ func (s *ReleaseService) Delete(orgID int64, opusMap map[string]*pb.ListArtifact
 			for _, v := range images {
 				imgs = append(imgs, v.Image)
 			}
-			if err := registry.DeleteManifests(s.bdl, release.ClusterName, imgs); err != nil {
+			if err := s.registry.DeleteManifests(release.ClusterName, imgs); err != nil {
 				logrus.Errorf(err.Error())
 			}
 		}
