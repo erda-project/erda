@@ -1066,6 +1066,9 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 	if err != nil {
 		return err
 	}
+
+	logrus.Infof("get unrefered release before %v, count: %d", d.String(), len(releases))
+
 	for i := range releases {
 		release := releases[i]
 		if release.Version != "" {
