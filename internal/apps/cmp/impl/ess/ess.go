@@ -318,7 +318,7 @@ func (e *Ess) EnsureScheduledTasks(name string) (bool, error) {
 	return true, nil
 }
 
-//DeleteScaleRule Delete scale rule
+// DeleteScaleRule Delete scale rule
 func (e *Ess) DeleteScheduledTasks(name string) error {
 
 	f, err := e.EnsureScheduledTasks(name)
@@ -341,7 +341,7 @@ func (e *Ess) DeleteScheduledTasks(name string) error {
 	return nil
 }
 
-//CreateScaleGroup Create scale group
+// CreateScaleGroup Create scale group
 func (e *Ess) CreateScaleGroup(essGroupName string, vSwitchID string) error {
 	request := api.CreateCreateScalingGroupRequest()
 	request.Scheme = "https"
@@ -488,7 +488,7 @@ func (e *Ess) ExecScaleRule(scaleRuleName string) error {
 	return nil
 }
 
-//CreateNotificationConfiguration Related configuration
+// CreateNotificationConfiguration Related configuration
 func (e *Ess) CreateNotificationConfiguration(queueName string) error {
 	request := api.CreateCreateNotificationConfigurationRequest()
 	request.Scheme = "https"

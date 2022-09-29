@@ -30,6 +30,7 @@ var (
 )
 
 // InfoType metric 分类
+//
 //go:generate stringer -type=InfoType
 type InfoType int
 

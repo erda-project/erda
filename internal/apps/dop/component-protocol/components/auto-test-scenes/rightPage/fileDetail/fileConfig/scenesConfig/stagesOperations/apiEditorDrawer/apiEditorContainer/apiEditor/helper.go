@@ -51,29 +51,30 @@ import (
 //   }
 // ]
 
-//apiExecute: {
-//  text: '执行',
-//  type: 'primary',
-//  disabled: true,
-//  allowSave: true,
-//  menu: [
-//	{
-//	  text: '开发环境',
-//	  key: 'dev',
-//	  operations: {
-//		click: { key: 'execute', reload: true, meta: { env: 'dev' } },
-//	  },
-//	},
-//	{
-//	  text: '测试环境',
-//	  key: 'test',
-//	  operations: {
-//		click: { key: 'execute', reload: true, meta: { env: 'test' } },
-//	  },
-//	},
-//  ],
-//}
-//}
+//	apiExecute: {
+//	 text: '执行',
+//	 type: 'primary',
+//	 disabled: true,
+//	 allowSave: true,
+//	 menu: [
+//		{
+//		  text: '开发环境',
+//		  key: 'dev',
+//		  operations: {
+//			click: { key: 'execute', reload: true, meta: { env: 'dev' } },
+//		  },
+//		},
+//		{
+//		  text: '测试环境',
+//		  key: 'test',
+//		  operations: {
+//			click: { key: 'execute', reload: true, meta: { env: 'test' } },
+//		  },
+//		},
+//	 ],
+//	}
+//
+// }
 const props4 string = `}`
 
 type optionKey string

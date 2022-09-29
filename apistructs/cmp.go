@@ -188,7 +188,7 @@ type NameValue struct {
 	Value interface{} `json:"value"`
 }
 
-//                      group       key      value
+// group       key      value
 type OpsClusterInfoData []map[string]map[string]NameValue
 
 type UpdateLabelsRequest struct {
@@ -1231,7 +1231,7 @@ type CloudAddonResourceDeleteRequest struct {
 // delete mysql request
 type DeleteCloudResourceMysqlRequest CloudAddonResourceDeleteRequest
 
-//delete mysql database request
+// delete mysql database request
 type DeleteCloudResourceMysqlDBRequest struct {
 	CloudAddonResourceDeleteRequest
 	DatabaseName string `json:"databaseName"`

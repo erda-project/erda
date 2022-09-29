@@ -182,7 +182,7 @@ func GetInstanceDetailInfo(ctx aliyun_resources.Context, req apistructs.CloudRes
 	}, nil
 }
 
-//get rds full detail info
+// get rds full detail info
 func GetInstanceFullDetailInfo(c context.Context, ctx aliyun_resources.Context, req apistructs.CloudResourceMysqlDetailInfoRequest) ([]apistructs.CloudResourceDetailInfo, error) {
 	i18n := c.Value("i18nPrinter").(*message.Printer)
 	r1, err := DescribeInstanceAttribute(ctx, req)
@@ -350,7 +350,7 @@ func DescribeInstanceAttribute(ctx aliyun_resources.Context, req apistructs.Clou
 	return response, nil
 }
 
-//describe rds net info
+// describe rds net info
 func DescribeDBInstanceNetInfo(ctx aliyun_resources.Context, req apistructs.CloudResourceMysqlDetailInfoRequest) (*rds.DescribeDBInstanceNetInfoResponse, error) {
 	if strings.IsEmpty(&req.InstanceID) {
 		err := fmt.Errorf("get instance attribute failed, empty instance id")
@@ -377,7 +377,7 @@ func DescribeDBInstanceNetInfo(ctx aliyun_resources.Context, req apistructs.Clou
 	return response, nil
 }
 
-//describe rds resource usage
+// describe rds resource usage
 func DescribeDBInstanceResourceUsage(ctx aliyun_resources.Context, req apistructs.CloudResourceMysqlDetailInfoRequest) (*rds.DescribeResourceUsageResponse, error) {
 	if strings.IsEmpty(&req.InstanceID) {
 		err := fmt.Errorf("get instance attribute failed, empty instance id")

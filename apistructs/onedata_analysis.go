@@ -205,14 +205,14 @@ type StarDTO struct {
 	RelationGroup map[string][]RelationDTO `json:"relationGroup"`
 }
 
-//onedata基本参数
+// onedata基本参数
 type BaseParam struct {
 	EnName string `json:"enName"`
 	CnName string `json:"cnName"`
 	Desc   string `json:"desc"`
 }
 
-//onedata扩展参数
+// onedata扩展参数
 type ExtBaseParam struct {
 	BaseParam
 	Table string `json:"table"`

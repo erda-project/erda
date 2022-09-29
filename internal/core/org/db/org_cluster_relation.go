@@ -33,7 +33,7 @@ func (OrgClusterRelation) TableName() string {
 	return "dice_org_cluster_relation"
 }
 
-//CreateOrgClusterRelation 创建企业集群关系
+// CreateOrgClusterRelation 创建企业集群关系
 func (client *DBClient) CreateOrgClusterRelation(relation *OrgClusterRelation) error {
 	return client.Create(relation).Error
 }

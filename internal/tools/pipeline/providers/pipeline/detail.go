@@ -599,8 +599,8 @@ func (s *pipelineService) setPipelineButtons(p spec.Pipeline, pc *common.Cron) (
 	return
 }
 
-//isEventsContainWarn return k8s events is contain warn
-//Events:
+// isEventsContainWarn return k8s events is contain warn
+// Events:
 // Type    Reason     Age   From               Message
 // ----    ------     ----  ----               -------
 // Normal  Scheduled  7s    default-scheduler  Successfully assigned pipeline-4152/pipeline-4152.pipeline-task-8296-tgxd7 to node-010000006200

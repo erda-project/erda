@@ -21,10 +21,10 @@ import (
 // Request for API `GET /api/runtimes/{idOrName}`
 //
 // 两种使用场景:
-//  1) idOrName is id: 只需要传 id 即可
-//      e.g. GET /api/runtimes/123
-//  2) idOrName is name: 此时需要传 applicationId 和 workspace
-//      e.g. GET /api/runtimes/test.develop?applicationId=456&workspace=TEST
+//  1. idOrName is id: 只需要传 id 即可
+//     e.g. GET /api/runtimes/123
+//  2. idOrName is name: 此时需要传 applicationId 和 workspace
+//     e.g. GET /api/runtimes/test.develop?applicationId=456&workspace=TEST
 type RuntimeInspectRequest struct {
 	// 应用实例 ID / Name
 	IDOrName string `path:"idOrName"`

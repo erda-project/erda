@@ -150,7 +150,7 @@ func tailHandlerForMeta(line, metafile string) {
 
 // getMetaFromLogLine 从日志行中分析 meta，格式如下：
 // action meta: key=value
-//考虑到 value 可能较复杂，每行只支持声明一个 meta
+// 考虑到 value 可能较复杂，每行只支持声明一个 meta
 func getMetaFromLogLine(line string) (bool, string, string) {
 	line = strings.TrimSpace(line)
 	if !strings.HasPrefix(line, metaPrefix) {

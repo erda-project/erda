@@ -58,7 +58,6 @@ type UCTokenAuth struct {
 1. openapi先获取token (servertoken)
 2. 创建client (NewClient)
 3. 根据创建的client生成 clienttoken
-
 */
 func NewUCTokenAuth(UCHost, ClientID, ClientSecret string) (*UCTokenAuth, error) {
 	clientTokenCache, err := jsonstore.New(jsonstore.UseMemStore(), jsonstore.UseTimeoutStore(60))

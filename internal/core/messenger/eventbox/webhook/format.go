@@ -24,67 +24,68 @@ import (
 )
 
 // EXAMPLE pipeline event json
-// {
-//     "action": "B_CREATE",
-//     "applicationID": "178",
-//     "content": {
-//         "kind": "B_CREATE",
-//         "operator": "10672",
-//         "pipeline": {
-//             "applicationID": 178,
-//             "applicationName": "dice",
-//             "basePipelineID": 4847,
-//             "branch": "develop",
-//             "clusterName": "terminus-y",
-//             "commit": "bc6410f8e3282e6e5d667551013efac0ded79491",
-//             "commitDetail": {
-//                 "author": "郑嘉涛",
-//                 "comment": "Merge branch 'feature/org-switch' into 'develop'\n\nfeature: org switch\n\nSee merge request !1645",
-//                 "email": "ef@terminus.io",
-//                 "repo": "http://gittar.app.terminus.io/dcos-terminus/dice",
-//                 "repoAbbr": "dcos-terminus/dice",
-//                 "time": "2019-03-13T10:41:01+08:00"
-//             },
-//             "costTimeSec": -1,
-//             "cronID": null,
-//             "extra": {
-//                 "callbackURLs": null,
-//                 "configManageNamespaceOfSecrets": "pipeline-secrets-app-178-develop",
-//                 "configManageNamespaceOfSecretsDefault": "pipeline-secrets-app-178-default",
-//                 "cronTriggerTime": "0001-01-01T00:00:00Z",
-//                 "diceWorkspace": "TEST",
-//                 "isAutoRun": true,
-//                 "submitUser": {
-//                     "avatar": "",
-//                     "id": 10672,
-//                     "name": "姜政冬"
-//                 }
-//             },
-//             "id": 6461,
-//             "orgID": 2,
-//             "orgName": "terminus",
-//             "pipelineYml": "...",
-//             "pipelineYmlName": "pipeline.yml",
-//             "pipelineYmlSource": "content",
-//             "projectID": 70,
-//             "projectName": "dice",
-//             "snapshot": {},
-//             "source": "qa",
-//             "status": "Analyzed",
-//             "timeBegin": "0001-01-01T00:00:00Z",
-//             "timeCreated": "2019-03-13T10:43:47.945103124+08:00",
-//             "timeEnd": "0001-01-01T00:00:00Z",
-//             "timeUpdated": "2019-03-13T10:43:48.035938235+08:00",
-//             "triggerMode": "manual",
-//             "type": "normal"
-//         }
-//     },
-//     "env": "",
-//     "event": "pipeline",
-//     "orgID": "2",
-//     "projectID": "70",
-//     "timestamp": "2019-03-13 10:43:49"
-// }
+//
+//	{
+//	    "action": "B_CREATE",
+//	    "applicationID": "178",
+//	    "content": {
+//	        "kind": "B_CREATE",
+//	        "operator": "10672",
+//	        "pipeline": {
+//	            "applicationID": 178,
+//	            "applicationName": "dice",
+//	            "basePipelineID": 4847,
+//	            "branch": "develop",
+//	            "clusterName": "terminus-y",
+//	            "commit": "bc6410f8e3282e6e5d667551013efac0ded79491",
+//	            "commitDetail": {
+//	                "author": "郑嘉涛",
+//	                "comment": "Merge branch 'feature/org-switch' into 'develop'\n\nfeature: org switch\n\nSee merge request !1645",
+//	                "email": "ef@terminus.io",
+//	                "repo": "http://gittar.app.terminus.io/dcos-terminus/dice",
+//	                "repoAbbr": "dcos-terminus/dice",
+//	                "time": "2019-03-13T10:41:01+08:00"
+//	            },
+//	            "costTimeSec": -1,
+//	            "cronID": null,
+//	            "extra": {
+//	                "callbackURLs": null,
+//	                "configManageNamespaceOfSecrets": "pipeline-secrets-app-178-develop",
+//	                "configManageNamespaceOfSecretsDefault": "pipeline-secrets-app-178-default",
+//	                "cronTriggerTime": "0001-01-01T00:00:00Z",
+//	                "diceWorkspace": "TEST",
+//	                "isAutoRun": true,
+//	                "submitUser": {
+//	                    "avatar": "",
+//	                    "id": 10672,
+//	                    "name": "姜政冬"
+//	                }
+//	            },
+//	            "id": 6461,
+//	            "orgID": 2,
+//	            "orgName": "terminus",
+//	            "pipelineYml": "...",
+//	            "pipelineYmlName": "pipeline.yml",
+//	            "pipelineYmlSource": "content",
+//	            "projectID": 70,
+//	            "projectName": "dice",
+//	            "snapshot": {},
+//	            "source": "qa",
+//	            "status": "Analyzed",
+//	            "timeBegin": "0001-01-01T00:00:00Z",
+//	            "timeCreated": "2019-03-13T10:43:47.945103124+08:00",
+//	            "timeEnd": "0001-01-01T00:00:00Z",
+//	            "timeUpdated": "2019-03-13T10:43:48.035938235+08:00",
+//	            "triggerMode": "manual",
+//	            "type": "normal"
+//	        }
+//	    },
+//	    "env": "",
+//	    "event": "pipeline",
+//	    "orgID": "2",
+//	    "projectID": "70",
+//	    "timestamp": "2019-03-13 10:43:49"
+//	}
 var (
 	//  所有具体 event 相关钉钉显示格式定义在 fmtMap
 	fmtMap = map[string]string{

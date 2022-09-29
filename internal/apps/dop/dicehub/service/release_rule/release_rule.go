@@ -35,7 +35,7 @@ type ReleaseRule struct {
 	db *dbclient.DBClient
 }
 
-//New returns a *ReleaseRule
+// New returns a *ReleaseRule
 func New(options ...Option) *ReleaseRule {
 	var rule = new(ReleaseRule)
 	for _, opt := range options {

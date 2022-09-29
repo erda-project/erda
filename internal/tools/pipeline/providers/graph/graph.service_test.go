@@ -55,7 +55,7 @@ func Test_loadGraphActionNameAndLogo(t *testing.T) {
 	bdl := bundle.New()
 	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "SearchExtensions", func(_ *bundle.Bundle, req apistructs.ExtensionSearchRequest) (map[string]apistructs.ExtensionVersion, error) {
 		return map[string]apistructs.ExtensionVersion{
-			"git-checkout": apistructs.ExtensionVersion{
+			"git-checkout": {
 				Spec: `name: git-checkout
 version: "1.0"
 type: action

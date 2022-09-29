@@ -223,7 +223,7 @@ func (a *AutoTestSpaceExcel) SetScenes() error {
 	return nil
 }
 
-//SetSceneSteps get steps data and judge step`s children
+// SetSceneSteps get steps data and judge step`s children
 func (a *AutoTestSpaceExcel) SetSceneSteps() error {
 	var err error
 	a.Data.Steps = map[uint64][]apistructs.AutoTestSceneStep{}

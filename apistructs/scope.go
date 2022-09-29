@@ -33,7 +33,7 @@ const (
 // 答疑用户的固定 ID
 const SupportID string = "2020"
 
-//MSP
+// MSP
 const (
 	MSPScope         string = "msp_env"
 	MSPMemberScope   string = "member_scopeType"

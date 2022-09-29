@@ -43,7 +43,7 @@ type RegistryReadonlyResponse struct {
 	Data bool `json:"data"` // true只读, false读写
 }
 
-//RegistryAuthJson dockerRegistry的认证串
+// RegistryAuthJson dockerRegistry的认证串
 type RegistryUserInfo struct {
 	Auth string `json:"auth"`
 }

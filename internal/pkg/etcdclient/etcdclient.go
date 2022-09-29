@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* 由于要实现 多个eventbox实例同时watch相同目录，并且只处理一次，而etcd库中提供的分布式锁在etcd断开连接时候有问题，
+/*
+	由于要实现 多个eventbox实例同时watch相同目录，并且只处理一次，而etcd库中提供的分布式锁在etcd断开连接时候有问题，
+
 eventbox中用事务来实现, 但是需要一个 etcd client， 所以在这个文件实现一下 NewEtcdClient
 */
 package etcdclient

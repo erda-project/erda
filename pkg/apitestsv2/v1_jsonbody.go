@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/**
+/*
+*
 v1_jsonbody 兼容 apitestsv1 里的 json body 渲染逻辑：
 - 反序列化，当类型是 map 或 slice 时进行处理
 - value(map 的 value、slice 的 value) 必须**全量匹配** {{.+}}，不支持 {{.+}}xxx 这种
@@ -22,13 +23,14 @@ v1_jsonbody 兼容 apitestsv1 里的 json body 渲染逻辑：
 - 例如 map 有一组 kv 为 "key1": "{{ticketID}}"
   - 若参数 ticketID 为 integer(10)，渲染结果为 "key1": 10
   - 若参数 ticketID 为 string("10")，渲染结果为 "key1": "10"
+
 - 假如 map 有一组 kv 为 "key1": {{ticketID}}
   - 此时反序列化失败，不进行 v1 渲染
   - 此时走 v2 渲染逻辑，即文本渲染。若参数为 ticketID=10
-    - "key1": {{ticketID}} => "key1": 10
-    - "key1": "{{ticketID}}" => "key1": "10"
-    - "key1": "{{ticketID}}-xxx" => "key1": "10-xxx"
-    - "key1": {{ticketID}}-xxx => "key1": 10-xxx
+  - "key1": {{ticketID}} => "key1": 10
+  - "key1": "{{ticketID}}" => "key1": "10"
+  - "key1": "{{ticketID}}-xxx" => "key1": "10-xxx"
+  - "key1": {{ticketID}}-xxx => "key1": 10-xxx
 */
 package apitestsv2
 
