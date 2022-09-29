@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-//Health Component health check interface
+// Health Component health check interface
 func (e *Endpoints) Health(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	res := &apistructs.HealthResponse{
 		Name:   "dop",

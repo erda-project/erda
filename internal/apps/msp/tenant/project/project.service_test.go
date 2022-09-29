@@ -681,11 +681,11 @@ type mockInfluxQl struct {
 func (m *mockInfluxQl) QueryWithInfluxFormat(context.Context, *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
 	return &metricpb.QueryWithInfluxFormatResponse{
 		Results: []*metricpb.Result{
-			&metricpb.Result{
+			{
 				Series: []*metricpb.Serie{
-					&metricpb.Serie{
+					{
 						Rows: []*metricpb.Row{
-							&metricpb.Row{
+							{
 								Values: []*structpb.Value{
 									structpb.NewStringValue("1"),
 									structpb.NewStringValue("1"),
@@ -693,7 +693,7 @@ func (m *mockInfluxQl) QueryWithInfluxFormat(context.Context, *metricpb.QueryWit
 									structpb.NewNumberValue(100),
 								},
 							},
-							&metricpb.Row{
+							{
 								Values: []*structpb.Value{
 									structpb.NewStringValue("2"),
 									structpb.NewStringValue("2"),

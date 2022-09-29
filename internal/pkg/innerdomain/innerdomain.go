@@ -27,9 +27,12 @@
 // 新版本的内部地址格式
 //
 // marathon:
-//   <servicename>.<namespace>.marathon.l4lb.thisdcos.directory
+//
+//	<servicename>.<namespace>.marathon.l4lb.thisdcos.directory
+//
 // k8s:
-//   <servicename>.<namespace>.svc.cluster.local
+//
+//	<servicename>.<namespace>.svc.cluster.local
 //
 // _LIMIT_: <namespace> 最长63位, <namespace> 必须保持唯一
 //
@@ -219,19 +222,22 @@ type domainGenerator interface {
 }
 
 // (marathon) prototype.prod-6056.services.v1.runtimes.marathon.l4lb.thisdcos.directory
-// {
-//  serviceName: prototype,
-//  servicegroupName: prod-6056,
-//  servicegroupNamespace: services,
-//  suffix: []string{"v1", "runtimes"},
-// }
+//
+//	{
+//	 serviceName: prototype,
+//	 servicegroupName: prod-6056,
+//	 servicegroupNamespace: services,
+//	 suffix: []string{"v1", "runtimes"},
+//	}
+//
 // (marathon) consul.consul-afdb5eb0327848e19f3d414eb345dfdd.addons-2126.v1.runtimes.marathon.l4lb.thisdcos.directory
-// {
-//  serviceName: consul,
-//  servicegroupName: consul-afdb5eb0327848e19f3d414eb345dfdd,
-//  servicegroupNamespace: addons-2126
-//  suffix: []string{"v1", "runtimes"},
-// }
+//
+//	{
+//	 serviceName: consul,
+//	 servicegroupName: consul-afdb5eb0327848e19f3d414eb345dfdd,
+//	 servicegroupNamespace: addons-2126
+//	 suffix: []string{"v1", "runtimes"},
+//	}
 type domaininfoLegacy struct {
 	servicegroupName      string
 	servicegroupNamespace string
@@ -259,9 +265,12 @@ func (a *domaininfoLegacy) marathon() (string, error) {
 }
 
 // marathon:
-//   <servicename>.<namespace>.marathon.l4lb.thisdcos.directory
+//
+//	<servicename>.<namespace>.marathon.l4lb.thisdcos.directory
+//
 // k8s:
-//   <servicename>.<namespace>.svc.cluster.local
+//
+//	<servicename>.<namespace>.svc.cluster.local
 type domaininfo struct {
 	serviceName string
 	namespace   string

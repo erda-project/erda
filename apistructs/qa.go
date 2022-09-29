@@ -160,7 +160,8 @@ type SonarStoreResponse struct {
 type TestStatus string
 
 // The following relation should hold true.
-//   Tests == (Passed + Skipped + Failed + Error)
+//
+//	Tests == (Passed + Skipped + Failed + Error)
 type TestTotals struct {
 	Tests    int                `json:"tests" yaml:"tests"`
 	Duration time.Duration      `json:"duration" yaml:"duration"`

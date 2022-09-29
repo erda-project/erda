@@ -43,7 +43,7 @@ func (m ProjectResourceDailyModel) UpdatedDay() string {
 	return m.UpdatedAt.Format("2006-01-02")
 }
 
-//ClusterResourceDailyModel is the model cmp_cluster_resource_daily
+// ClusterResourceDailyModel is the model cmp_cluster_resource_daily
 type ClusterResourceDailyModel struct {
 	ID        uint64    `json:"id" gorm:"id"`
 	CreatedAt time.Time `json:"created_at" gorm:"created_at"`

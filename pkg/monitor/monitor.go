@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// 使用方法：
-//     从环境变量中根据规则解析出 logrus 日志前缀 与 eventbox dest 的映射关系。
-//
-//     目前支持 DINGDING Webhook，通过 logrus 日志前缀 查找对应的钉钉告警地址，并发送告警。
-//     通过环境变量解析日志前缀的规则如下：
-//     1. DINGDING                   默认规则，前缀为 [alert]
-//     2. DINGDING_[-._a-zA-Z0-9]*   DINGDING_ 后的字符串左右加上 [] 即为前缀。假设 key 为 DINGDING_error，则前缀为 [error]
+/*
+使用方法：
+
+	从环境变量中根据规则解析出 logrus 日志前缀 与 eventbox dest 的映射关系。
+
+	目前支持 DINGDING Webhook，通过 logrus 日志前缀 查找对应的钉钉告警地址，并发送告警。
+	通过环境变量解析日志前缀的规则如下：
+	1. DINGDING                   默认规则，前缀为 [alert]
+	2. DINGDING_[-._a-zA-Z0-9]*   DINGDING_ 后的字符串左右加上 [] 即为前缀。假设 key 为 DINGDING_error，则前缀为 [error]
+*/
 package monitor
 
 // import (

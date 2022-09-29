@@ -32,28 +32,28 @@ func TestIsErrorsExceed(t *testing.T) {
 		{
 			name: "less than one hour and count less than 180",
 			inspect: &Inspect{
-				Errors: []*taskerror.Error{&taskerror.Error{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-59 * time.Minute), Count: 179, EndTime: time.Now()}}},
+				Errors: []*taskerror.Error{{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-59 * time.Minute), Count: 179, EndTime: time.Now()}}},
 			},
 			want: false,
 		},
 		{
 			name: "less than one hour but count more than 180",
 			inspect: &Inspect{
-				Errors: []*taskerror.Error{&taskerror.Error{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-59 * time.Minute), Count: 181, EndTime: time.Now()}}},
+				Errors: []*taskerror.Error{{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-59 * time.Minute), Count: 181, EndTime: time.Now()}}},
 			},
 			want: true,
 		},
 		{
 			name: "more than one hour ans count less than 180 per hour",
 			inspect: &Inspect{
-				Errors: []*taskerror.Error{&taskerror.Error{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-61 * time.Minute), Count: 180, EndTime: time.Now()}}},
+				Errors: []*taskerror.Error{{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-61 * time.Minute), Count: 180, EndTime: time.Now()}}},
 			},
 			want: false,
 		},
 		{
 			name: "more than one hour ans count more than 180 per hour",
 			inspect: &Inspect{
-				Errors: []*taskerror.Error{&taskerror.Error{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-61 * time.Minute), Count: 185, EndTime: time.Now()}}},
+				Errors: []*taskerror.Error{{Msg: "xxx", Ctx: taskerror.ErrorContext{StartTime: time.Now().Add(-61 * time.Minute), Count: 185, EndTime: time.Now()}}},
 			},
 			want: true,
 		},

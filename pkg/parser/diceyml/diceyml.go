@@ -113,7 +113,8 @@ func (d *DiceYaml) Parse(validate bool) error {
 
 // validate result is a map , key: regexp of problem-position-element, value: error info
 // NOTE: why use regex to mark the position of problem-elements ?
-//   because the yaml package not expose the line information
+//
+//	because the yaml package not expose the line information
 type ValidateError map[*regexp.Regexp]error
 
 func (d *DiceYaml) Validate() ValidateError {

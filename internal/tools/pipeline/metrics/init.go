@@ -24,7 +24,7 @@ import (
 // disableMetrics 是否禁用 metric 相关操作
 var disableMetrics bool
 
-//var reportClient *report.MetricReport
+// var reportClient *report.MetricReport
 var reportClient report.MetricReport
 
 func Initialize(client report.MetricReport) {

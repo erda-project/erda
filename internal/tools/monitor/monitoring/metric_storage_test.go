@@ -106,7 +106,7 @@ func Test_getMetricIdxMap(t *testing.T) {
 			name: "",
 			args: args{
 				resp: elastic.CatIndicesResponse([]elastic.CatIndicesResponseRow{
-					elastic.CatIndicesResponseRow{
+					{
 						StoreSize: "2048",
 						DocsCount: 1024,
 						Index:     "spot-hello_world-full_cluster-r000001",
@@ -114,7 +114,7 @@ func Test_getMetricIdxMap(t *testing.T) {
 				}),
 			},
 			want: map[string]*metricIndex{
-				"hello_world": &metricIndex{
+				"hello_world": {
 					sizeBytes: 2048,
 					docCount:  1024,
 					indices:   []string{"spot-hello_world-full_cluster-r000001"},

@@ -27,18 +27,18 @@ const (
 	sessionFile = "sessions"
 )
 
-// {
-// 	"terminus-org.app.terminus.io": {
-// 		"sessionid": "",
-// 		"id": "0001",
-// 		"nickName": "username",
-// 	},
-// 	"terminus-org.test.terminus.io": {
-// 		"sessionid": "",
-// 		"id": "0002",
-// 		"nickName": "username",
-// 	}
-// }
+//	{
+//		"terminus-org.app.terminus.io": {
+//			"sessionid": "",
+//			"id": "0001",
+//			"nickName": "username",
+//		},
+//		"terminus-org.test.terminus.io": {
+//			"sessionid": "",
+//			"id": "0002",
+//			"nickName": "username",
+//		}
+//	}
 var SessionInfos = map[string]StatusInfo{}
 
 type StatusInfo struct {

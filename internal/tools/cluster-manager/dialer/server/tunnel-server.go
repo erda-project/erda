@@ -434,6 +434,8 @@ func NewDialerRouter(ctx context.Context, clusterSvc clusterpb.ClusterServiceSer
 }
 
 func Start(ctx context.Context, clusterSvc clusterpb.ClusterServiceServer, credential tokenpb.TokenServiceServer, cfg *config.Config, etcd *clientv3.Client, bdl *bundle.Bundle) error {
+	//nolint
+	//TODO configure ReadHeaderTimeout in the http.Server
 	server := &http.Server{
 		BaseContext: func(net.Listener) context.Context {
 			return ctx

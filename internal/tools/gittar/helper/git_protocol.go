@@ -26,7 +26,7 @@ const (
 	ASCII_a = 97
 )
 
-//https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt
+// https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt
 func ReadGitSendPackHeader(reqBody io.ReadCloser) ([]byte, error) {
 	var headBuffer bytes.Buffer
 	reader := reqBody
@@ -51,7 +51,7 @@ func ReadGitSendPackHeader(reqBody io.ReadCloser) ([]byte, error) {
 	return headBuffer.Bytes(), nil
 }
 
-//https://github.com/git/git/blob/master/Documentation/technical/pack-protocol.txt
+// https://github.com/git/git/blob/master/Documentation/technical/pack-protocol.txt
 func NewPtkLine(line string) []byte {
 	lineBytes := []byte(line + "\n")
 	lineLen := len(lineBytes) + 4 //加上len自身长度
@@ -99,7 +99,7 @@ func getLengthInt(b []byte) int {
 	return convertHexCharToInt(b[3]) | convertHexCharToInt(b[2])<<4 | convertHexCharToInt(b[1])<<8 | convertHexCharToInt(b[0])<<16
 }
 
-//十六进制字符转int
+// 十六进制字符转int
 func convertHexCharToInt(b byte) int {
 	if b <= ASCII_9 && b >= ASCII_0 {
 		return int(b - ASCII_0)

@@ -92,7 +92,7 @@ func getMockTokenServiceServer(ctrl *gomock.Controller) *MockTokenServiceServer 
 	return akService
 }
 
-////go:generate mockgen -destination=./credential_ak_test.go -package clusters github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
+// //go:generate mockgen -destination=./credential_ak_test.go -package clusters github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
 func Test_GetOrCreateAccessKey_Create(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

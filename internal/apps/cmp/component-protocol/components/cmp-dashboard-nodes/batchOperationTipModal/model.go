@@ -21,24 +21,24 @@ import (
 	"github.com/erda-project/erda/bundle"
 )
 
-//batchOperationTipModal: {
-//        type: 'Modal',
-//        props: {
-//          status: 'warning',
-//          content: '您将解冻以下节点：\n cn-hongkong.172.15.3.3 \ncn-hongkong.172.15.3.3',
-//          title: '提示',
-//        },
-//        state: { visible: true },
-//        operations: {
-//          onOk: {
-//            key: 'submit',
-//            reload: true,
-//            meta: {
-//              type: 'uncordon',
-//            },
-//          },
-//        },
-//      },
+//	batchOperationTipModal: {
+//	       type: 'Modal',
+//	       props: {
+//	         status: 'warning',
+//	         content: '您将解冻以下节点：\n cn-hongkong.172.15.3.3 \ncn-hongkong.172.15.3.3',
+//	         title: '提示',
+//	       },
+//	       state: { visible: true },
+//	       operations: {
+//	         onOk: {
+//	           key: 'submit',
+//	           reload: true,
+//	           meta: {
+//	             type: 'uncordon',
+//	           },
+//	         },
+//	       },
+//	     },
 type BatchOperationTipModal struct {
 	Type       string                 `json:"type"`
 	Props      Props                  `json:"props"`

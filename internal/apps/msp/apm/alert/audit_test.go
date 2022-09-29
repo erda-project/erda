@@ -95,7 +95,7 @@ func TestAuditOperateMicroserviceAlert(t *testing.T) {
 		return &monitor.QueryAlertsResponse{
 			Data: &monitor.QueryAlertsData{
 				List: []*monitor.Alert{
-					&monitor.Alert{
+					{
 						Name: "test-alert",
 					},
 				},
@@ -175,7 +175,7 @@ func TestAuditOperateMicroserviceCustomAlert(t *testing.T) {
 		return &monitor.QueryCustomizeAlertResponse{
 			Data: &monitor.QueryCustomizeAlertData{
 				List: []*monitor.CustomizeAlertOverview{
-					&monitor.CustomizeAlertOverview{
+					{
 						Name: "customize-alert",
 					},
 				},

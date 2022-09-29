@@ -56,8 +56,9 @@ func parseConfFromTask(task *spec.PipelineTask) (EnvConfig, error) {
 // Do do api test.
 //
 // attention:
-//   push log to collector
-//   save metadata
+//
+//	push log to collector
+//	save metadata
 func Do(ctx context.Context, task *spec.PipelineTask) {
 	logger := newLogger().
 		WithContext(context.WithValue(context.Background(), CtxKeyCollectorLogID, task.Extra.UUID)).

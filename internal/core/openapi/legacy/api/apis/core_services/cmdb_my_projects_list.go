@@ -19,7 +19,8 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 )
 
-/**
+/*
+*
 add for standard
 */
 var CMDB_MY_PROJECTS_LIST = apis.ApiSpec{

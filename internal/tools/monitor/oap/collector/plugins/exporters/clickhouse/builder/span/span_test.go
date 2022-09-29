@@ -68,7 +68,7 @@ func TestBuilder_buildBatches(t *testing.T) {
 			},
 			want: []driver.Batch{
 				&mockBatch{arr: []trace.TableSpan{
-					trace.TableSpan{
+					{
 						StartTime:     1652421595810000000,
 						EndTime:       1652421595810843400,
 						OrgName:       "erda",

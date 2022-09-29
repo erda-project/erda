@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-//TODO
+// TODO
 func getMyletHost(writeHost string) string {
 	return writeHost + ":33080"
 }

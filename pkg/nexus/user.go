@@ -34,19 +34,19 @@ var (
 	UserSourceDefault UserSource = "default"
 )
 
-// {
-//   "userId": "anonymous",
-//   "firstName": "Anonymous",
-//   "lastName": "User",
-//   "emailAddress": "anonymous@example.org",
-//   "source": "default",
-//   "status": "active",
-//   "readOnly": false,
-//   "roles": [
-//     "nx-anonymous"
-//   ],
-//   "externalRoles": []
-// },
+//	{
+//	  "userId": "anonymous",
+//	  "firstName": "Anonymous",
+//	  "lastName": "User",
+//	  "emailAddress": "anonymous@example.org",
+//	  "source": "default",
+//	  "status": "active",
+//	  "readOnly": false,
+//	  "roles": [
+//	    "nx-anonymous"
+//	  ],
+//	  "externalRoles": []
+//	},
 type User struct {
 	UserID        UserID           `json:"userId"`
 	FirstName     string           `json:"firstName"`

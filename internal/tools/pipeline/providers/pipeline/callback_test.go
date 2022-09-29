@@ -43,7 +43,7 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 	task := &spec.PipelineTask{
 		Inspect: taskinspect.Inspect{
 			Errors: []*taskerror.Error{
-				&taskerror.Error{Msg: "a"},
+				{Msg: "a"},
 			},
 		},
 	}

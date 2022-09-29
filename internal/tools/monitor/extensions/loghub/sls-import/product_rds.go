@@ -41,7 +41,6 @@ import (
 // thread_id	线程ID
 // user	执行SQL的用户名
 // update_rows	更新行数
-//
 func (c *Consumer) rdsProcess(shardID int, groups *sls.LogGroupList) string {
 	product := "rds"
 	buf := &bytes.Buffer{}

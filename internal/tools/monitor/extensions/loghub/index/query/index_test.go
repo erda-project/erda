@@ -56,7 +56,7 @@ func TestReloadAllIndices_Should_Success(t *testing.T) {
 	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List")
 	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List", func(_ *db2.LogDeploymentDB) ([]*db2.LogDeployment, error) {
 		return []*db2.LogDeployment{
-			&db2.LogDeployment{
+			{
 				ClusterName:  "cluster-1",
 				ClusterType:  0,
 				ESURL:        "http://localhost:9200",

@@ -40,11 +40,13 @@ const (
 
 // Flow:
 //
-// WAITAPPROVE(optional) -> I/W -> DEPLOYING -> OK
-//                           |          `---> FAILED
-//                           |          `---> CANCELING -> CANCELED
-//                           |                       `---> FAILED
-//                           `-> CANCELED
+//	WAITAPPROVE(optional)
+//	-> I/W -> DEPLOYING -> OK
+//
+//	|          `---> FAILED
+//	|          `---> CANCELING -> CANCELED
+//	|                       `---> FAILED
+//	`-> CANCELED
 type DeploymentStatus string
 
 const (

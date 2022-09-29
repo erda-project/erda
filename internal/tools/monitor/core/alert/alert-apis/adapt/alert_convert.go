@@ -701,16 +701,17 @@ func FromDBAlertModel(m *db.Alert) *pb.Alert {
 }
 
 // ToModel .
-//func (a *Alert) ToModel() *db.Alert {
-//	return &db.Alert{
-//		ID:           a.ID,
-//		Name:         a.Name,
-//		AlertScope:   a.AlertScope,
-//		AlertScopeID: a.AlertScopeID,
-//		Attributes:   a.Attributes,
-//		Enable:       a.Enable,
+//
+//	func (a *Alert) ToModel() *db.Alert {
+//		return &db.Alert{
+//			ID:           a.ID,
+//			Name:         a.Name,
+//			AlertScope:   a.AlertScope,
+//			AlertScopeID: a.AlertScopeID,
+//			Attributes:   a.Attributes,
+//			Enable:       a.Enable,
+//		}
 //	}
-//}
 func ToDBAlertModel(a *pb.Alert) *db.Alert {
 	dbAlert := &db.Alert{
 		ID:           a.Id,

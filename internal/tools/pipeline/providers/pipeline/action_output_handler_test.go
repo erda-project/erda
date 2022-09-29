@@ -51,7 +51,7 @@ func Test_handlerActionOutputsWithJq(t *testing.T) {
 
 		monkey.Patch(jsonpath.JQ, func(jsonInput, filter string) (interface{}, error) {
 			var outputs []string
-			for key, _ := range data.outputs {
+			for key := range data.outputs {
 				outputs = append(outputs, key)
 			}
 			return outputs, nil

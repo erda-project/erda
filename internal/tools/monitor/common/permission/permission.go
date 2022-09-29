@@ -351,8 +351,8 @@ type MonitorPermission struct {
 }
 
 /*
-	查询全部关联关系，再在内存中过滤
-	TODO 待优化，目前只有这个接口
+查询全部关联关系，再在内存中过滤
+TODO 待优化，目前只有这个接口
 */
 func checkOrgIDsByCluster(ctx context.Context, orgServer orgpb.OrgServiceServer, orgID, clusterName string) error {
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "monitor"}))

@@ -299,8 +299,9 @@ func (y *PipelineYml) GetTaskForceBuildpackStatus(taskUUID string) bool {
 // ApplyKVsWithPriority generates a result map with the rule that
 // the latter will overwrite the former.
 // For example:
-//   priority: e1 > e2 > e3
-// 	 you should pass param `envs` as: e3, e2, e1
+//
+//	  priority: e1 > e2 > e3
+//		 you should pass param `envs` as: e3, e2, e1
 func ApplyKVsWithPriority(kvs ...map[string]string) map[string]string {
 	result := make(map[string]string)
 	for _, env := range kvs {

@@ -86,7 +86,7 @@ var ComponentInfo = map[string]*componentInfo{
 
 var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
-//GetMenu api
+// GetMenu api
 func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.GetMenuResponse, error) {
 	//监控中心保留服务监控，诊断分析保留链路追踪、错误分析
 	// get menu items

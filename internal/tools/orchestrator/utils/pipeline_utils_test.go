@@ -73,7 +73,7 @@ func TestFindCRBRRunningPipeline(t *testing.T) {
 		func(_ *bundle.Bundle, req apistructs.PipelinePageListRequest) (*apistructs.PipelinePageListData, error) {
 			resp := &apistructs.PipelinePageListData{
 				Pipelines: []apistructs.PagePipeline{
-					apistructs.PagePipeline{
+					{
 						ID:      12580,
 						YmlName: "dice-deploy-release-develop",
 						Extra: apistructs.PipelineExtra{
@@ -85,7 +85,7 @@ func TestFindCRBRRunningPipeline(t *testing.T) {
 						FilterLabels: map[string]string{"appID": "1", "branch": "develop"},
 						TimeBegin:    &now,
 					},
-					apistructs.PagePipeline{
+					{
 						ID:      12581,
 						YmlName: "dice-deploy-release-feature/test",
 						Extra: apistructs.PipelineExtra{
@@ -117,7 +117,7 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 		func(_ *bundle.Bundle, req apistructs.PipelinePageListRequest) (*apistructs.PipelinePageListData, error) {
 			resp := &apistructs.PipelinePageListData{
 				Pipelines: []apistructs.PagePipeline{
-					apistructs.PagePipeline{
+					{
 						ID:      12580,
 						YmlName: "dice-deploy-release-develop",
 						Extra: apistructs.PipelineExtra{
@@ -129,7 +129,7 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 						FilterLabels: map[string]string{"appID": "1", "branch": "develop"},
 						TimeBegin:    &now,
 					},
-					apistructs.PagePipeline{
+					{
 						ID:      12581,
 						YmlName: "dice-deploy-release-feature/test-ttt",
 						Extra: apistructs.PipelineExtra{
@@ -141,7 +141,7 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 						FilterLabels: map[string]string{"appID": "1", "branch": "feature/xxx"},
 						TimeBegin:    &now,
 					},
-					apistructs.PagePipeline{
+					{
 						ID:      12581,
 						YmlName: "dice-deploy-release-feature/test",
 						Extra: apistructs.PipelineExtra{
@@ -162,8 +162,8 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 		func(_ *bundle.Bundle, pipelineID uint64) (*pipelinepb.PipelineDetailDTO, error) {
 			resp := &pipelinepb.PipelineDetailDTO{
 				PipelineStages: []*basepb.PipelineStageDetailDTO{
-					&basepb.PipelineStageDetailDTO{
-						PipelineTasks: []*basepb.PipelineTaskDTO{&basepb.PipelineTaskDTO{Type: "dice-deploy-release",
+					{
+						PipelineTasks: []*basepb.PipelineTaskDTO{{Type: "dice-deploy-release",
 							Status: apistructs.PipelineStatusRunning.String()}},
 					},
 				},
@@ -173,7 +173,7 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 	)
 	defer monkey.UnpatchAll()
 
-	result, err := FindCreatingRuntimesByRelease(uint64(1), map[string][]string{"test": []string{"develop/fake"}}, "", bdl)
+	result, err := FindCreatingRuntimesByRelease(uint64(1), map[string][]string{"test": {"develop/fake"}}, "", bdl)
 	assert.NoError(t, err)
 	assert.Equal(t, len(result), 1)
 	assert.Equal(t, result[0].Name, "develop")
@@ -189,8 +189,8 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 func TestIsUndoneDeployByReleaseTask(t *testing.T) {
 	pipelineDetailDTO := &pipelinepb.PipelineDetailDTO{
 		PipelineStages: []*basepb.PipelineStageDetailDTO{
-			&basepb.PipelineStageDetailDTO{
-				PipelineTasks: []*basepb.PipelineTaskDTO{&basepb.PipelineTaskDTO{Type: "dice-deploy-release",
+			{
+				PipelineTasks: []*basepb.PipelineTaskDTO{{Type: "dice-deploy-release",
 					Status: apistructs.PipelineStatusRunning.String()}},
 			},
 		},

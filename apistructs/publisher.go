@@ -50,7 +50,7 @@ type PublisherDeleteResponse struct {
 	Data uint64 `json:"data"`
 }
 
-//PublisherDetailResponse GET /api/publishers/{publisherId} Publisher详情响应结构
+// PublisherDetailResponse GET /api/publishers/{publisherId} Publisher详情响应结构
 type PublisherDetailResponse struct {
 	Header
 	Data PublisherDTO `json:"data"`
@@ -82,7 +82,7 @@ type PagingPublisherDTO struct {
 	List  []PublisherDTO `json:"list"`
 }
 
-//PublisherDTO Publisher结构
+// PublisherDTO Publisher结构
 type PublisherDTO struct {
 	ID            uint64    `json:"id"`
 	Name          string    `json:"name"`

@@ -25,32 +25,34 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
 )
 
-//import (
+// import (
+//
 //	"testing"
 //
 //	"github.com/stretchr/testify/require"
-//)
 //
-//func TestRepo_FetchFiles(t *testing.T) {
-//	_, err := r.FetchFiles("feature/init_sql", "pipeline.yml")
-//	require.NoError(t, err)
+// )
 //
-//	_, err = r.FetchFiles("feature/init_sql", "dice.yml")
-//	require.NoError(t, err)
+//	func TestRepo_FetchFiles(t *testing.T) {
+//		_, err := r.FetchFiles("feature/init_sql", "pipeline.yml")
+//		require.NoError(t, err)
 //
-//	_, err = r.FetchFiles("feature/init_sql", "no")
-//	require.Error(t, err)
-//}
+//		_, err = r.FetchFiles("feature/init_sql", "dice.yml")
+//		require.NoError(t, err)
 //
-//func TestRepo_FetchPipelineYml(t *testing.T) {
-//	_, err := r.FetchPipelineYml("feature/empty-pipelineyml")
-//	require.Error(t, err)
-//}
+//		_, err = r.FetchFiles("feature/init_sql", "no")
+//		require.Error(t, err)
+//	}
 //
-//func TestRepo_FetchFile(t *testing.T) {
-//	_, err := r.FetchFile("feature/init_sql", "README.md")
-//	require.NoError(t, err)
-//}
+//	func TestRepo_FetchPipelineYml(t *testing.T) {
+//		_, err := r.FetchPipelineYml("feature/empty-pipelineyml")
+//		require.Error(t, err)
+//	}
+//
+//	func TestRepo_FetchFile(t *testing.T) {
+//		_, err := r.FetchFile("feature/init_sql", "README.md")
+//		require.NoError(t, err)
+//	}
 func TestFetchFile(t *testing.T) {
 	monkey.Patch(httpclientutil.DoJson, func(r *httpclient.Request, o interface{}) error {
 		return errors.New("the userID is empty")

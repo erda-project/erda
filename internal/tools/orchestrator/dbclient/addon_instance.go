@@ -77,6 +77,7 @@ func (db *DBClient) UpdateAddonInstanceStatus(ID, status string) error {
 }
 
 // CreateAddonInstance 创建 addon instance
+//
 //go:noinline
 func (db *DBClient) CreateAddonInstance(instance *AddonInstance) error {
 	return db.Create(instance).Error
@@ -225,7 +226,7 @@ func (db *DBClient) ListAddonInstancesByParamsWithoutPage(orgID uint64, params *
 	return instances, nil
 }
 
-//ListAddonInstanceByOrg 根据 orgID 获取实例列表
+// ListAddonInstanceByOrg 根据 orgID 获取实例列表
 func (db *DBClient) ListAddonInstanceByOrg(orgID uint64) (*[]AddonInstance, error) {
 	var instances []AddonInstance
 	if err := db.Where("org_id = ?", orgID).
@@ -238,7 +239,7 @@ func (db *DBClient) ListAddonInstanceByOrg(orgID uint64) (*[]AddonInstance, erro
 	return &instances, nil
 }
 
-//ListAddonInstanceByAddonName 根据 addonName 获取实例列表
+// ListAddonInstanceByAddonName 根据 addonName 获取实例列表
 func (db *DBClient) ListAddonInstanceByAddonName(projectID, workspace, addonName string) (*[]AddonInstance, error) {
 	var instances []AddonInstance
 	if err := db.Where("project_id = ?", projectID).
@@ -252,7 +253,7 @@ func (db *DBClient) ListAddonInstanceByAddonName(projectID, workspace, addonName
 	return &instances, nil
 }
 
-//ListAttachingAddonInstance 查询出所有attaching的addon信息
+// ListAttachingAddonInstance 查询出所有attaching的addon信息
 func (db *DBClient) ListAttachingAddonInstance() (*[]AddonInstance, error) {
 	var instances []AddonInstance
 	if err := db.Where("is_deleted = ?", apistructs.AddonNotDeleted).

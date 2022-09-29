@@ -75,7 +75,6 @@ func (s *Scheduler) initAliyunVendor() (vendor api.CloudVendor, err error) {
 	return
 }
 
-//
 func New(info api.OrgInfo, cfg *globals.Config, w writer.Writer) (sc *Scheduler, err error) {
 	sc = &Scheduler{
 		pipe:              make(chan []*api.Metric),

@@ -622,12 +622,12 @@ func (e ExceptionDescriptionsCountSort) Len() int {
 	return len(e)
 }
 
-//Less() by count
+// Less() by count
 func (e ExceptionDescriptionsCountSort) Less(i, j int) bool {
 	return e[i].Count > e[j].Count
 }
 
-//Swap()
+// Swap()
 func (e ExceptionDescriptionsCountSort) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
@@ -638,7 +638,7 @@ func (e ExceptionDescriptionsTimeSort) Len() int {
 	return len(e)
 }
 
-//Less() by time
+// Less() by time
 func (e ExceptionDescriptionsTimeSort) Less(i, j int) bool {
 	iTime, err := time.Parse(TimeLayout, e[i].Time)
 	jTime, err := time.Parse(TimeLayout, e[j].Time)
@@ -648,7 +648,7 @@ func (e ExceptionDescriptionsTimeSort) Less(i, j int) bool {
 	return iTime.UnixNano() > jTime.UnixNano()
 }
 
-//Swap()
+// Swap()
 func (e ExceptionDescriptionsTimeSort) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
@@ -791,7 +791,7 @@ func handleSpeed(rows [][]interface{}) []ReadWriteBytesSpeed {
 	return itemResultSpeed
 }
 
-//calculateSpeed Calculate the speed through the two metric values before and after.
+// calculateSpeed Calculate the speed through the two metric values before and after.
 func calculateSpeed(curr, next float64, currTime, nextTime int64) float64 {
 	if curr != next {
 		if next == 0 || next < curr {
@@ -1210,7 +1210,7 @@ func (topology *provider) globalReqCount(ctx context.Context, metricScopeName st
 	return rows, nil
 }
 
-//toTwoDecimalPlaces Two decimal places
+// toTwoDecimalPlaces Two decimal places
 func toTwoDecimalPlaces(num float64) float64 {
 	temp, err := strconv.ParseFloat(fmt.Sprintf("%.2f", num), 64)
 	if err != nil {

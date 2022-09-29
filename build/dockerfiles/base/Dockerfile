@@ -1,4 +1,4 @@
-FROM --platform=$TARGETPLATFORM golang:1.17-bullseye
+FROM --platform=$TARGETPLATFORM golang:1.19-bullseye
 
 # set timezone to CST
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
@@ -22,7 +22,7 @@ RUN apt update && apt install -y --no-install-recommends --no-install-suggests \
  && rm -fr /var/lib/apt/lists/*
 
 # nodejs
-RUN curl -sL https://deb.nodesource.com/setup_lts.x | bash - && apt install -y nodejs && rm -fr /var/lib/apt/lists/*
+RUN curl -sL https://deb.nodesource.com/setup_lts.x | bash - && apt install -y nodejs npm && rm -fr /var/lib/apt/lists/*
 
 # docker-cli
 RUN mkdir -p /etc/apt/keyrings \

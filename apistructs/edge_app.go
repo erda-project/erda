@@ -20,7 +20,7 @@ type EdgeAppListResponse struct {
 	List  []EdgeAppInfo `json:"list"`
 }
 
-//EdgeAppInfo 边缘应用信息
+// EdgeAppInfo 边缘应用信息
 type EdgeAppInfo struct {
 	ID                  uint64            `json:"id"`
 	OrgID               int64             `json:"orgID"`
@@ -119,7 +119,7 @@ type GenerateHeathCheckRequest struct {
 	HealthCheckExec     string
 }
 
-//GenerateUnitedDeploymentRequest
+// GenerateUnitedDeploymentRequest
 type GenerateEdgeServiceRequest struct {
 	Name      string
 	Namespace string

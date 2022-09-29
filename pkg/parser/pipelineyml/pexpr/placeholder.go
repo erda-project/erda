@@ -21,11 +21,12 @@ import (
 )
 
 // phRe 占位符正则表达式:
-//   ${{ configs.key }}
-//   ${{ dirs.preTaskName.fileName }}
-//   ${{ outputs.preTaskName.key }}
-//   ${{ params.key }}
-//   ${{ (echo hello world) }}
+//
+//	${{ configs.key }}
+//	${{ dirs.preTaskName.fileName }}
+//	${{ outputs.preTaskName.key }}
+//	${{ params.key }}
+//	${{ (echo hello world) }}
 var PhRe = regexp.MustCompile(`\${{[ ]{1}([^{}\s]+)[ ]{1}}}`) // [ ]{1} 强调前后均有且仅有一个空格
 
 // loosePhRe 宽松的正则表达式:

@@ -67,7 +67,7 @@ func (client *DBClient) GetSceneSet(id uint64) (*SceneSet, error) {
 	return &res, nil
 }
 
-//	Get Scenesets by spaceID
+// Get Scenesets by spaceID
 func (client *DBClient) SceneSetsBySpaceID(spaceID uint64) ([]SceneSet, error) {
 	var res []SceneSet
 	if err := client.Where("`space_id` = ?", spaceID).Find(&res).Error; err != nil {

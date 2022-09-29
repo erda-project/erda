@@ -72,6 +72,8 @@ func (p *provider) newHTTPSServer() (*http.Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	//nolint
+	//TODO configure ReadHeaderTimeout in the http.Server
 	return &http.Server{
 		Addr:      p.Cfg.WebHookAddr,
 		TLSConfig: &tls.Config{Certificates: []tls.Certificate{pair}},

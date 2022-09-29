@@ -19,7 +19,8 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 )
 
-/**
+/*
+*
 add for standard
 */
 var CMDB_APPLICATIONS_LIST = apis.ApiSpec{

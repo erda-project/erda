@@ -14,7 +14,7 @@
 
 package encryption
 
-//Hash for crypto Hash
+// Hash for crypto Hash
 type Hash uint
 
 const (
@@ -28,7 +28,7 @@ const (
 	SHA512_256
 )
 
-//Encode defines the type of bytes encoded to string
+// Encode defines the type of bytes encoded to string
 type Encode uint
 
 const (
@@ -37,7 +37,7 @@ const (
 	Base64
 )
 
-//Secret defines the private key type
+// Secret defines the private key type
 type Secret uint
 
 const (
@@ -45,7 +45,7 @@ const (
 	PKCS8
 )
 
-//Crypt defines crypt types
+// Crypt defines crypt types
 type Crypt uint
 
 const (

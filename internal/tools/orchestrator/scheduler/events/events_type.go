@@ -141,7 +141,7 @@ type EventMgr struct {
 	notifier Notifier
 }
 
-//Structure stuffed into eventbox
+// Structure stuffed into eventbox
 type RuntimeEvent struct {
 	RuntimeName     string          `json:"runtimeName"`
 	ServiceStatuses []ServiceStatus `json:"serviceStatuses,omitempty"`

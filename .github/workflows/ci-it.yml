@@ -68,7 +68,7 @@ jobs:
   CI:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/erda-base:20220726
+      image: registry.erda.cloud/erda/erda-base:20220928
     needs:
       - PREPARE
     steps:
@@ -98,7 +98,7 @@ jobs:
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/erda-base:20220726
+      image: registry.erda.cloud/erda/erda-base:20220928
     needs:
       - PREPARE
     steps:
@@ -129,19 +129,19 @@ jobs:
       - name: Run SQL Lint
         run: make miglint
       - name: Run Go Lint
-        uses: golangci/golangci-lint-action@v2.5.2
+        uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.46
+          version: v1.49.0
           args: --timeout=10m
-          skip-go-installation: true
-          #skip-cache: true # not available in v2.5.2
+          #skip-go-installation: true # not available in v1.49.0
+          #skip-cache: true # not available in v1.49.0
           skip-pkg-cache: true
           skip-build-cache: true
 
   CODE-TEST:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/erda-base:20220726
+      image: registry.erda.cloud/erda/erda-base:20220928
     needs:
       - PREPARE
     strategy:

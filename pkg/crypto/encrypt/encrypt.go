@@ -63,14 +63,14 @@ func AesDecrypt(cryted string, key string) string {
 	return string(orig)
 }
 
-//补码
+// PKCS7Padding complement
 func PKCS7Padding(ciphertext []byte, blocksize int) []byte {
 	padding := blocksize - len(ciphertext)%blocksize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(ciphertext, padtext...)
 }
 
-//去码
+// PKCS7UnPadding to code
 func PKCS7UnPadding(origData []byte) []byte {
 	length := len(origData)
 	unpadding := int(origData[length-1])

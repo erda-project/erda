@@ -18,7 +18,7 @@ import (
 	"net/http"
 )
 
-//                    request       response       response error
+// request       response       response error
 type RetryFunc func(*http.Request, *http.Response, error) bool
 
 type RetryOption struct {

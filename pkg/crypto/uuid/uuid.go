@@ -28,15 +28,18 @@ import (
 // In its canonical textual representation, the 16 octets of a UUID are represented as 32 hexadecimal (base-16) digits,
 // displayed in five groups separated by hyphens, in the form 8-4-4-4-12 for a total of 36 characters (32 hexadecimal characters and 4 hyphens).
 // For example:
-//   123e4567-e89b-12d3-a456-426614174000
-//   xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
+//
+//	123e4567-e89b-12d3-a456-426614174000
+//	xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
 func New() string {
 	return guuid.New().String()
 }
 
 // UUID return uuid.
 // format:
-//   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+//
+//	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+//
 // Deprecated. Please use New()
 func UUID() string {
 	u := uuid.NewV4()

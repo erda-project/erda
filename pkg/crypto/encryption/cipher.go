@@ -23,11 +23,11 @@ type CipherCrypt struct {
 	Block cipher.Block
 }
 
-//Encrypt encrypts src to dst with cipher & iv, if failed return error
-//src the original source bytes
-//c the defined cipher type,now support CBC,CFB,OFB,ECB
-//ivs the iv for CBC,CFB,OFB mode
-//dst the encrypted bytes
+// Encrypt encrypts src to dst with cipher & iv, if failed return error
+// src the original source bytes
+// c the defined cipher type,now support CBC,CFB,OFB,ECB
+// ivs the iv for CBC,CFB,OFB mode
+// dst the encrypted bytes
 func (cc *CipherCrypt) Encrypt(src []byte, c Cipher, ivs ...[]byte) (dst []byte, err error) {
 	block := cc.Block
 	data := PKCS7Padding(src, block.BlockSize())
@@ -46,8 +46,8 @@ func (cc *CipherCrypt) Encrypt(src []byte, c Cipher, ivs ...[]byte) (dst []byte,
 	}
 }
 
-//EncryptToString encrypts src then encodes data returned to string
-//encodeType now support String,HEX,Base64
+// EncryptToString encrypts src then encodes data returned to string
+// encodeType now support String,HEX,Base64
 func (cc *CipherCrypt) EncryptToString(encodeType Encode, src []byte, c Cipher, ivs ...[]byte) (dst string, err error) {
 	data, err := cc.Encrypt(src, c, ivs...)
 	if err != nil {
@@ -56,11 +56,11 @@ func (cc *CipherCrypt) EncryptToString(encodeType Encode, src []byte, c Cipher, 
 	return EncodeToString(data, encodeType)
 }
 
-//Decrypt decrypts src to dst with cipher & iv, if failed return error
-//src the original encrypted bytes
-//c the defined cipher type,now support CBC,CFB,OFB,ECB
-//ivs the iv for CBC,CFB,OFB mode
-//dst the decrypted bytes
+// Decrypt decrypts src to dst with cipher & iv, if failed return error
+// src the original encrypted bytes
+// c the defined cipher type,now support CBC,CFB,OFB,ECB
+// ivs the iv for CBC,CFB,OFB mode
+// dst the decrypted bytes
 func (cc *CipherCrypt) Decrypt(src []byte, c Cipher, ivs ...[]byte) (dst []byte, err error) {
 	block := cc.Block
 	switch c {
@@ -76,8 +76,8 @@ func (cc *CipherCrypt) Decrypt(src []byte, c Cipher, ivs ...[]byte) (dst []byte,
 	return UnPaddingPKCS7(dst), err
 }
 
-//DecryptToString decrypts src then encodes return data to string
-//encodeType now support String,HEX,Base64
+// DecryptToString decrypts src then encodes return data to string
+// encodeType now support String,HEX,Base64
 func (cc *CipherCrypt) DecryptToString(encodeType Encode, src []byte, c Cipher, ivs ...[]byte) (dst string, err error) {
 	data, err := cc.Decrypt(src, c, ivs...)
 	if err != nil {
@@ -86,7 +86,7 @@ func (cc *CipherCrypt) DecryptToString(encodeType Encode, src []byte, c Cipher, 
 	return EncodeToString(data, encodeType)
 }
 
-//ecbEncrypt encrypts data with ecb mode
+// ecbEncrypt encrypts data with ecb mode
 func ecbEncrypt(block cipher.Block, src []byte) (dst []byte, err error) {
 	out := make([]byte, len(src))
 	dst = out
@@ -98,7 +98,7 @@ func ecbEncrypt(block cipher.Block, src []byte) (dst []byte, err error) {
 	return out, nil
 }
 
-//ecbDecrypt decrypts data with ecb mode
+// ecbDecrypt decrypts data with ecb mode
 func ecbDecrypt(block cipher.Block, src []byte) (dst []byte, err error) {
 	dst = make([]byte, len(src))
 	out := dst
@@ -115,7 +115,7 @@ func ecbDecrypt(block cipher.Block, src []byte) (dst []byte, err error) {
 	return
 }
 
-//cbcEncrypt encrypts data with cbc mode
+// cbcEncrypt encrypts data with cbc mode
 func cbcEncrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err error) {
 	var iv []byte
 	if len(ivs) > 0 {
@@ -127,7 +127,7 @@ func cbcEncrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err 
 	return
 }
 
-//cbcDecrypt decrypts data with cbc mode
+// cbcDecrypt decrypts data with cbc mode
 func cbcDecrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err error) {
 	var iv []byte
 	if len(ivs) > 0 {
@@ -139,7 +139,7 @@ func cbcDecrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err 
 	return
 }
 
-//cfbEncrypt encrypts data with cfb mode
+// cfbEncrypt encrypts data with cfb mode
 func cfbEncrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err error) {
 	var iv []byte
 	if len(ivs) > 0 {
@@ -151,7 +151,7 @@ func cfbEncrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err 
 	return
 }
 
-//cfbDecrypt decrypts data with cfb mode
+// cfbDecrypt decrypts data with cfb mode
 func cfbDecrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err error) {
 	var iv []byte
 	if len(ivs) > 0 {
@@ -163,7 +163,7 @@ func cfbDecrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err 
 	return
 }
 
-//ofbCrypt encrypts or decrypts data with ofb mode
+// ofbCrypt encrypts or decrypts data with ofb mode
 func ofbCrypt(block cipher.Block, src []byte, ivs ...[]byte) (dst []byte, err error) {
 	var iv []byte
 	if len(ivs) > 0 {

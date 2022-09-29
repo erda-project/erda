@@ -147,7 +147,6 @@ func (a *UCUserAuth) PwdAuth(username, password string) (OAuthToken, error) {
 	return oauthToken, nil
 }
 
-//
 func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (common.UserInfo, error) {
 	if a.oryEnabled() {
 		// sessionID as token
@@ -186,39 +185,39 @@ func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (common.UserInfo, error)
 	return info, nil
 }
 
-// {
-//   "success": true,
-//   "result": {
-//     "id": 1000530,
-//     "tenantId": 1,
-//     "username": "u191-1019703192",
-//     "nickname": "",
-//     "avatar": "",
-//     "prefix": "86",
-//     "mobile": "15950552810",
-//     "email": "",
-//     "pwdExpireAt": null,
-//     "passwordExist": true,
-//     "enabled": true,
-//     "locked": false,
-//     "channel": "",
-//     "channelType": "",
-//     "source": "",
-//     "sourceType": "",
-//     "tag": "",
-//     "extra": null,
-//     "userDetail": null,
-//     "createdAt": "2020-09-21T09:11:26.000+0000",
-//     "updatedAt": "2020-12-15T04:01:02.000+0000",
-//     "lastLoginAt": "2020-12-15T04:01:02.000+0000",
-//     "pk": 1307970680503390208
-//   },
-//   "code": null,
-//   "args": null,
-//   "error": null,
-//   "sourceIp": null,
-//   "sourceStack": null
-// }
+//	{
+//	  "success": true,
+//	  "result": {
+//	    "id": 1000530,
+//	    "tenantId": 1,
+//	    "username": "u191-1019703192",
+//	    "nickname": "",
+//	    "avatar": "",
+//	    "prefix": "86",
+//	    "mobile": "15950552810",
+//	    "email": "",
+//	    "pwdExpireAt": null,
+//	    "passwordExist": true,
+//	    "enabled": true,
+//	    "locked": false,
+//	    "channel": "",
+//	    "channelType": "",
+//	    "source": "",
+//	    "sourceType": "",
+//	    "tag": "",
+//	    "extra": null,
+//	    "userDetail": null,
+//	    "createdAt": "2020-09-21T09:11:26.000+0000",
+//	    "updatedAt": "2020-12-15T04:01:02.000+0000",
+//	    "lastLoginAt": "2020-12-15T04:01:02.000+0000",
+//	    "pk": 1307970680503390208
+//	  },
+//	  "code": null,
+//	  "args": null,
+//	  "error": null,
+//	  "sourceIp": null,
+//	  "sourceStack": null
+//	}
 type CurrentUser struct {
 	Success bool `json:"success"`
 	Result  struct {

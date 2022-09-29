@@ -44,7 +44,7 @@ func Test_fillTestPlanFields(t *testing.T) {
 			name: "Filled",
 			args: args{
 				field: []apistructs.FormPropItem{
-					apistructs.FormPropItem{
+					{
 						Label:     "执行条件",
 						Component: "input",
 						Required:  true,
@@ -52,34 +52,34 @@ func Test_fillTestPlanFields(t *testing.T) {
 					},
 				},
 				testPlans: []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"name":  "a",
 						"value": "1",
 					},
-					map[string]interface{}{
+					{
 						"name":  "b",
 						"value": "2",
 					},
 				},
 				cms: []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"name":  "aa",
 						"value": "11",
 					},
-					map[string]interface{}{
+					{
 						"name":  "bb",
 						"value": "22",
 					},
 				},
 			},
 			want: []apistructs.FormPropItem{
-				apistructs.FormPropItem{
+				{
 					Label:     "执行条件",
 					Component: "input",
 					Required:  true,
 					Group:     "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Component: "formGroup",
 					ComponentProps: map[string]interface{}{
 						"title": "任务参数",
@@ -87,18 +87,18 @@ func Test_fillTestPlanFields(t *testing.T) {
 					Group: "params",
 					Key:   "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Label:     "测试计划",
 					Component: "select",
 					Required:  true,
 					Key:       "params.test_plan",
 					ComponentProps: map[string]interface{}{
 						"options": []map[string]interface{}{
-							map[string]interface{}{
+							{
 								"name":  "a",
 								"value": 1,
 							},
-							map[string]interface{}{
+							{
 								"name":  "b",
 								"value": 2,
 							},
@@ -106,18 +106,18 @@ func Test_fillTestPlanFields(t *testing.T) {
 					},
 					Group: "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Label:     "参数配置",
 					Component: "select",
 					Required:  true,
 					Key:       "params.cms",
 					ComponentProps: map[string]interface{}{
 						"options": []map[string]interface{}{
-							map[string]interface{}{
+							{
 								"name":  "aa",
 								"value": 11,
 							},
-							map[string]interface{}{
+							{
 								"name":  "bb",
 								"value": 22,
 							},
@@ -125,7 +125,7 @@ func Test_fillTestPlanFields(t *testing.T) {
 					},
 					Group: "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Label:        "失败后是否继续执行",
 					Component:    "input",
 					Required:     false,

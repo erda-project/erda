@@ -34,8 +34,10 @@ import (
 //   - outputs.preTaskName.key
 //   - dirs.preTaskName.filepath
 //   - params.key
+//
 // - 函数语法
 //   - (echo hello world)
+//
 // - 内置变量
 //   - pipeline_status
 //   - task_status

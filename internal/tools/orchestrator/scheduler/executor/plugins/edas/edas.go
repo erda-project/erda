@@ -369,7 +369,7 @@ func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.Stat
 	return status, nil
 }
 
-//Because it takes a long time for edas to delete the interface, which exceeds the timeout set by the console, the app is deleted in parallel
+// Because it takes a long time for edas to delete the interface, which exceeds the timeout set by the console, the app is deleted in parallel
 // Remove edas remove runtime
 func (e *EDAS) Remove(ctx context.Context, specObj interface{}) error {
 	var err error
@@ -432,7 +432,7 @@ func (e *EDAS) Update(ctx context.Context, specObj interface{}) (interface{}, er
 	return nil, nil
 }
 
-//Get the deploy list of corresponding runtime from k8s api
+// Get the deploy list of corresponding runtime from k8s api
 func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apistructs.Service) (interface{}, error) {
 	var err error
 	var edasAhasName string
@@ -1045,7 +1045,7 @@ func (e *EDAS) abortAndRollbackChangeOrder(changeOrderID string) error {
 	return nil
 }
 
-//Termination of change order
+// Termination of change order
 func (e *EDAS) abortChangeOrder(changeOrderID string) error {
 	var req *api.AbortChangeOrderRequest
 	var err error

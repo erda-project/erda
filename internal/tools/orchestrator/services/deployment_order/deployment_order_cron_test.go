@@ -83,7 +83,7 @@ func TestInspectDeploymentStatusDetail(t *testing.T) {
 	}
 }
 
-////go:generate mockgen -destination=./deployment_order_release_test.go -package deployment_order github.com/erda-project/erda-proto-go/core/dicehub/release/pb ReleaseServiceServer
+// //go:generate mockgen -destination=./deployment_order_release_test.go -package deployment_order github.com/erda-project/erda-proto-go/core/dicehub/release/pb ReleaseServiceServer
 func TestPushOnDeploymentOrderPolling(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

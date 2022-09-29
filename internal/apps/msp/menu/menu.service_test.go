@@ -32,8 +32,8 @@ import (
 	mdb "github.com/erda-project/erda/internal/apps/msp/menu/db"
 )
 
-////go:generate mockgen -destination=./menu_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
-////go:generate mockgen -destination=./menu_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
+// //go:generate mockgen -destination=./menu_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
+// //go:generate mockgen -destination=./menu_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
 func Test_menuService_GetMenu(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

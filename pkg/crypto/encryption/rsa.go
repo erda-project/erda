@@ -34,14 +34,14 @@ type RSASecret struct {
 	PrivateKeyType     Secret
 }
 
-//NewRSACrypt init with the RSA secret info
+// NewRSACrypt init with the RSA secret info
 func NewRSAScrypt(secretInfo RSASecret) *RsaCrypt {
 	return &RsaCrypt{secretInfo: secretInfo}
 }
 
-//Encrypt encrypts the given message with public key
-//src the original data
-//outputDataType the encode type of encrypted data ,such as Base64,HEX
+// Encrypt encrypts the given message with public key
+// src the original data
+// outputDataType the encode type of encrypted data ,such as Base64,HEX
 func (rc *RsaCrypt) Encrypt(src string, outputDataType Encode) (dst string, err error) {
 	secretInfo := rc.secretInfo
 	if secretInfo.PublicKey == "" {
@@ -65,9 +65,9 @@ func (rc *RsaCrypt) Encrypt(src string, outputDataType Encode) (dst string, err 
 	return EncodeToString(dataEncrypted, outputDataType)
 }
 
-//Decrypt decrypts a plaintext using private key
-//src the encrypted data with public key
-//srcType the encode type of encrypted data ,such as Base64,HEX
+// Decrypt decrypts a plaintext using private key
+// src the encrypted data with public key
+// srcType the encode type of encrypted data ,such as Base64,HEX
 func (rc *RsaCrypt) Decrypt(src string, srcType Encode) (dst string, err error) {
 	secretInfo := rc.secretInfo
 	if secretInfo.PrivateKey == "" {

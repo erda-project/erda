@@ -31,7 +31,7 @@ func Test_provider_ExportMetric(t *testing.T) {
 	}{
 		{
 			args: args{items: []*metric.Metric{
-				&metric.Metric{
+				{
 					Name:      "cpu",
 					Timestamp: 1,
 					Tags:      map[string]string{"org_name": "erda"},

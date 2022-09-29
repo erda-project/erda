@@ -799,11 +799,13 @@ func isServerError(httpResponse *http.Response) bool {
 	return httpResponse.StatusCode >= http.StatusInternalServerError
 }
 
-/**
+/*
+*
 only block when any one of the following occurs:
 1. the asyncTaskQueue is full, increase the queue size to avoid this
 2. Shutdown() in progressing, the client is being closed
-**/
+*
+*/
 func (client *Client) AddAsyncTask(task func()) (err error) {
 	if client.asyncTaskQueue != nil {
 		client.asyncChanLock.RLock()

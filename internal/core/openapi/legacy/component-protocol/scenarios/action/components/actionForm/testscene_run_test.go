@@ -414,7 +414,7 @@ func Test_fillFields(t *testing.T) {
 			name: "Filled",
 			args: args{
 				field: []apistructs.FormPropItem{
-					apistructs.FormPropItem{
+					{
 						Label:     "执行条件",
 						Component: "input",
 						Required:  true,
@@ -422,54 +422,54 @@ func Test_fillFields(t *testing.T) {
 					},
 				},
 				testSpaces: []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"name":  "a",
 						"value": "1",
 					},
-					map[string]interface{}{
+					{
 						"name":  "b",
 						"value": "2",
 					},
 				},
 				testSceneSets: []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"name":  "aa",
 						"value": "11",
 					},
-					map[string]interface{}{
+					{
 						"name":  "bb",
 						"value": "22",
 					},
 				},
 				testScenes: []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"name":  "aaa",
 						"value": "111",
 					},
-					map[string]interface{}{
+					{
 						"name":  "bbb",
 						"value": "222",
 					},
 				},
 				cms: []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"name":  "aaaa",
 						"value": "1111",
 					},
-					map[string]interface{}{
+					{
 						"name":  "bbbb",
 						"value": "2222",
 					},
 				},
 			},
 			want: []apistructs.FormPropItem{
-				apistructs.FormPropItem{
+				{
 					Label:     "执行条件",
 					Component: "input",
 					Required:  true,
 					Group:     "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Component: "formGroup",
 					ComponentProps: map[string]interface{}{
 						"title": "任务参数",
@@ -477,18 +477,18 @@ func Test_fillFields(t *testing.T) {
 					Group: "params",
 					Key:   "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Label:     "测试空间",
 					Component: "select",
 					Required:  true,
 					Key:       "params.test_space",
 					ComponentProps: map[string]interface{}{
 						"options": []map[string]interface{}{
-							map[string]interface{}{
+							{
 								"name":  "a",
 								"value": 1,
 							},
-							map[string]interface{}{
+							{
 								"name":  "b",
 								"value": 2,
 							},
@@ -496,18 +496,18 @@ func Test_fillFields(t *testing.T) {
 					},
 					Group: "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Label:     "场景集",
 					Component: "select",
 					Required:  true,
 					Key:       "params.test_scene_set",
 					ComponentProps: map[string]interface{}{
 						"options": []map[string]interface{}{
-							map[string]interface{}{
+							{
 								"name":  "aa",
 								"value": 11,
 							},
-							map[string]interface{}{
+							{
 								"name":  "bb",
 								"value": 22,
 							},
@@ -515,18 +515,18 @@ func Test_fillFields(t *testing.T) {
 					},
 					Group: "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Label:     "场景",
 					Component: "select",
 					Required:  true,
 					Key:       "params.test_scene",
 					ComponentProps: map[string]interface{}{
 						"options": []map[string]interface{}{
-							map[string]interface{}{
+							{
 								"name":  "aaa",
 								"value": 111,
 							},
-							map[string]interface{}{
+							{
 								"name":  "bbb",
 								"value": 222,
 							},
@@ -534,18 +534,18 @@ func Test_fillFields(t *testing.T) {
 					},
 					Group: "params",
 				},
-				apistructs.FormPropItem{
+				{
 					Label:     "参数配置",
 					Component: "select",
 					Required:  true,
 					Key:       "params.cms",
 					ComponentProps: map[string]interface{}{
 						"options": []map[string]interface{}{
-							map[string]interface{}{
+							{
 								"name":  "aaaa",
 								"value": 1111,
 							},
-							map[string]interface{}{
+							{
 								"name":  "bbbb",
 								"value": 2222,
 							},

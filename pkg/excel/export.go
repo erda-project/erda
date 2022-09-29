@@ -29,7 +29,9 @@ import (
 // 参数sheetName: 生成表单的名字
 // data数据内容为: data[row][col]，由 title+content组成
 // 例子: 第一行: ["name", "age", "city"]
-//      第二行: ["excel", "15", "hangzhou"]
+//
+//	第二行: ["excel", "15", "hangzhou"]
+//
 // 注：每一行和每一列需要完全对应，根据 row 和 col 导出 xlsx 格式的 excel
 func ExportExcel(w io.Writer, data [][]string, sheetName string) error {
 	file := xlsx.NewFile()

@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-////go:generate mockgen -destination=./collector_validator_test.go -package collector github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication Validator
+// //go:generate mockgen -destination=./collector_validator_test.go -package collector github.com/erda-project/erda/internal/tools/monitor/oap/collector/authentication Validator
 func Test_Auth(t *testing.T) {
 	// Init collector validator
 	ctrl := gomock.NewController(t)

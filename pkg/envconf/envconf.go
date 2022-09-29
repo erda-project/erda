@@ -14,26 +14,28 @@
 
 // Package envconf 从环境变量加载配置项用于初始化具体的配置对象。
 // 用法：
-// type Config struct {
-//		Addr  string `env:"ADDR" default:""`
-//		Level string `env:"LEVEL" required:"true"`
-// }
+//
+//	type Config struct {
+//			Addr  string `env:"ADDR" default:""`
+//			Level string `env:"LEVEL" required:"true"`
+//	}
 //
 // config := &Config{}
-// if err := Load(config); err != nil {
-//		return err
-// }
+//
+//	if err := Load(config); err != nil {
+//			return err
+//	}
 //
 // 配置项支持的类型有：
-//	bool
-//	int
-//	int64
-//  uint64
-//	float64
-//	string
-//	time.Duration
-//	其他非基本类型使用json解析
 //
+//		bool
+//		int
+//		int64
+//	 uint64
+//		float64
+//		string
+//		time.Duration
+//		其他非基本类型使用json解析
 package envconf
 
 import (

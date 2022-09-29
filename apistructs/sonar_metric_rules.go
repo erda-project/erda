@@ -109,13 +109,13 @@ type SonarMetricRulesDeleteRequest struct {
 	ScopeID   string `json:"scopeId"`
 }
 
-//  查询用户未添加 metricKey 和 operational 列表
+// 查询用户未添加 metricKey 和 operational 列表
 type SonarMetricRulesDefinitionListRequest struct {
 	ScopeType string `json:"scopeType"`
 	ScopeID   string `json:"scopeId"`
 }
 
-//  查询用户未添加 metricKey 和 operational 列表
+// 查询用户未添加 metricKey 和 operational 列表
 type SonarMetricRulesListRequest struct {
 	ScopeType string `json:"scopeType"`
 	ScopeID   string `json:"scopeId"`

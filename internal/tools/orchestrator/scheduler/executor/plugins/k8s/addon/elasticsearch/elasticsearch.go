@@ -427,7 +427,7 @@ func envs(envs map[string]string) []corev1.EnvVar {
 }
 
 // convertMiToMB Convert MiB to MB
-//1 MiB = 1.048576 MB
+// 1 MiB = 1.048576 MB
 func convertMiToMB(mem float64) float64 {
 	return mem * 1.048576
 }

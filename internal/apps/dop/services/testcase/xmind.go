@@ -108,7 +108,7 @@ func recursiveParseTestSetTopic(topic xmind.Topic, tsPaths []string, allTcTopics
 //   - ...
 //   - 步骤n - 结果n
 //   - 接口测试
-//     - at: (APITest)
+//   - at: (APITest)
 //
 // tsPaths 用于存放测试集目录列表
 func parseXMindTestCaseTopic(topic xmind.Topic, directory string) (*apistructs.TestCaseXmind, error) {

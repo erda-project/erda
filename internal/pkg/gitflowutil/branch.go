@@ -115,8 +115,9 @@ func GetReferencePrefix(reference string) (string, error) {
 }
 
 // map:
-//   key: prefix with slash
-//   value: prefix with mock
+//
+//	key: prefix with slash
+//	value: prefix with mock
 type PrefixAndBranch struct {
 	Workspace string
 	Branch    string

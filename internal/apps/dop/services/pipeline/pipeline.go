@@ -547,10 +547,11 @@ func (p *Pipeline) setClusterName(clusterName string, pv *pipelinepb.PipelineCre
 }
 
 // workspace <-> main-branch mapping:
-//   DEV     -> feature
-//   TEST    -> develop
-//   STAGING -> release
-//   PROD    -> master
+//
+//	DEV     -> feature
+//	TEST    -> develop
+//	STAGING -> release
+//	PROD    -> master
 var nsWorkspaceMainBranchMapping = map[string]string{
 	gitflowutil.DevWorkspace:     gitflowutil.FEATURE_WITHOUT_SLASH,
 	gitflowutil.TestWorkspace:    gitflowutil.DEVELOP,
@@ -583,14 +584,17 @@ func (p *Pipeline) makeCmsNamespaces(appID uint64, workspace string) []string {
 // history reason: we use branch-level namespace, but now we use workspace-level namespace, and use main-branch to represent workspace
 //
 // process:
-//   (branch)   ->  workspace(from project branch-rule)  ->  main-branch  ->  corresponding ns
+//
+//	(branch)   ->  workspace(from project branch-rule)  ->  main-branch  ->  corresponding ns
+//
 // examples:
-//   master     ->  PROD                                 ->  master         ->  ${prefix}-master
-//   support/a  ->  PROD                                 ->  master         ->  ${prefix}-master
-//   release    ->  STAGING                              ->  release        ->  ${prefix}-release
-//   hotfix/b   ->  STAGING                              ->  release        ->  ${prefix}-release
-//   develop    ->  TEST                                 ->  develop        ->  ${prefix}-develop
-//   feature/c  ->  DEV                                  ->  feature        ->  ${prefix}-feature
+//
+//	master     ->  PROD                                 ->  master         ->  ${prefix}-master
+//	support/a  ->  PROD                                 ->  master         ->  ${prefix}-master
+//	release    ->  STAGING                              ->  release        ->  ${prefix}-release
+//	hotfix/b   ->  STAGING                              ->  release        ->  ${prefix}-release
+//	develop    ->  TEST                                 ->  develop        ->  ${prefix}-develop
+//	feature/c  ->  DEV                                  ->  feature        ->  ${prefix}-feature
 func makeBranchWorkspaceLevelCmsNs(appID uint64, workspace string) []string {
 	var results []string
 

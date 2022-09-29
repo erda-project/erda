@@ -93,7 +93,7 @@ func (p *provider) getAllNotifyTemplates(r *http.Request) interface{} {
 	return api.Success(allNotifyTemplates)
 }
 
-//get notify template list
+// get notify template list
 func (p *provider) getNotifyTemplate(r *http.Request, params struct {
 	Scope   string `query:"scope" validate:"required"`
 	ScopeID string `query:"scopeId" validate:"required"`
@@ -202,7 +202,7 @@ func (p *provider) updateNotify(r *http.Request, params model.UpdateNotifyReq) i
 	return api.Success(params.ID)
 }
 
-//query user's notify configuration
+// query user's notify configuration
 func (p *provider) getUserNotifyList(r *http.Request, params struct {
 	Scope   string `query:"scope" validate:"required"`
 	ScopeID string `query:"scopeId" validate:"required"`
@@ -271,7 +271,7 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 	return api.Success(resp)
 }
 
-//whether to enable this notify
+// whether to enable this notify
 func (p *provider) notifyEnable(r *http.Request, params struct {
 	ID      int64  `param:"id" validate:"required"`
 	ScopeID string `query:"scopeId" validate:"required"`

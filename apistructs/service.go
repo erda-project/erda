@@ -604,7 +604,6 @@ type ServiceGroupKillPodResponse struct {
 
 /*
 restart servicegroup
-
 */
 type ServiceGroupRestartV2Request struct {
 	Namespace string `query:"namespace"`
@@ -616,7 +615,6 @@ type ServiceGroupRestartV2Response struct {
 
 /*
 cancel servicegroup
-
 */
 type ServiceGroupCancelV2Request struct {
 	Namespace string `query:"namespace"`

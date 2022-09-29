@@ -257,7 +257,7 @@ type TestCaseUpdateRequest struct {
 	IdentityInfo
 }
 
-//  TestCaseUpdateResponse 更新测试用例响应
+// TestCaseUpdateResponse 更新测试用例响应
 type TestCaseUpdateResponse struct {
 	Header
 }
@@ -297,7 +297,7 @@ type TestCaseQueryParams struct {
 	Recycled        bool     `query:"recycled"`
 }
 
-//  TestCaseBatchUpdateResponse PUT /api/usecases/batch 批量更新测试用例响应
+// TestCaseBatchUpdateResponse PUT /api/usecases/batch 批量更新测试用例响应
 type TestCaseBatchUpdateResponse struct {
 	Header
 	Data bool `json:"data"`

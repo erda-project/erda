@@ -24,9 +24,10 @@ import (
 // Inspired by Sonyflake.
 
 // A Snowflake ID is composed of below parts:
-//     35 bits for time in units of 10 msec (lifetime: 10 years)
-//      6 bits for a sequence number (64 IDs/10msec)
-//     12 bits for a machine id (4096 machines/thread)
+//
+//	35 bits for time in units of 10 msec (lifetime: 10 years)
+//	 6 bits for a sequence number (64 IDs/10msec)
+//	12 bits for a machine id (4096 machines/thread)
 const (
 	BitTotal        = 53                                     // bit length of Snowflake ID
 	BitLenTime      = 35                                     // bit length of time

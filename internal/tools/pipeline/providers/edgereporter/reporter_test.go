@@ -87,7 +87,7 @@ func Test_pipelineFilterIn(t *testing.T) {
 	}
 }
 
-////go:generate mockgen -destination=./reporter_logs_test.go -package edgereporter github.com/erda-project/erda-infra/base/logs Logger
+// //go:generate mockgen -destination=./reporter_logs_test.go -package edgereporter github.com/erda-project/erda-infra/base/logs Logger
 func Test_provider_doTaskReporter(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

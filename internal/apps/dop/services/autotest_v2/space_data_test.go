@@ -37,10 +37,10 @@ func TestCopy(t *testing.T) {
 		NewSpace:     &apistructs.AutoTestSpace{},
 		IdentityInfo: apistructs.IdentityInfo{UserID: "1"},
 		Steps: map[uint64][]apistructs.AutoTestSceneStep{
-			1: []apistructs.AutoTestSceneStep{},
+			1: {},
 		},
 		Scenes: map[uint64][]apistructs.AutoTestScene{
-			1: []apistructs.AutoTestScene{},
+			1: {},
 		},
 	}
 	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "CreateNewSpace",
@@ -110,7 +110,7 @@ func TestCopy(t *testing.T) {
 		NewSpace:     &apistructs.AutoTestSpace{},
 		IdentityInfo: apistructs.IdentityInfo{UserID: "1"},
 		Steps: map[uint64][]apistructs.AutoTestSceneStep{
-			1: []apistructs.AutoTestSceneStep{},
+			1: {},
 		},
 	}
 	_, err = emptyScenesData.Copy()
@@ -135,10 +135,10 @@ func TestCopyScenes(t *testing.T) {
 		NewSpace:     &apistructs.AutoTestSpace{},
 		IdentityInfo: apistructs.IdentityInfo{UserID: "1"},
 		Steps: map[uint64][]apistructs.AutoTestSceneStep{
-			1: []apistructs.AutoTestSceneStep{},
+			1: {},
 		},
 		Scenes: map[uint64][]apistructs.AutoTestScene{
-			1: []apistructs.AutoTestScene{
+			1: {
 				{
 					RefSetID: 1,
 					Name:     "test-scene",
@@ -146,7 +146,7 @@ func TestCopyScenes(t *testing.T) {
 			},
 		},
 		SceneSets: map[uint64][]apistructs.SceneSet{
-			1: []apistructs.SceneSet{
+			1: {
 				{
 					ID: 1,
 				},
@@ -172,7 +172,7 @@ func Test_addSceneStepToExcel(t *testing.T) {
 	ad := &AutoTestSpaceData{
 		svc: New(WithBundle(bdl)),
 		Steps: map[uint64][]apistructs.AutoTestSceneStep{
-			1: []apistructs.AutoTestSceneStep{
+			1: {
 				{
 					Name:      "step1",
 					APISpecID: 2,
