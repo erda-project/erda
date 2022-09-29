@@ -41,8 +41,6 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 func (p *provider) queryMetrics(r *http.Request) interface{} {
 	params := make(map[string]interface{})
 
-	//ctx := api.GetContextHeader(r)
-
 	ctx := api.GetContext(r, func(header *http.Header) {
 		if len(header.Get("org")) == 0 {
 			//org-apis
