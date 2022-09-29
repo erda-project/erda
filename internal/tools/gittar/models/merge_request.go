@@ -66,7 +66,7 @@ type MergeOptions struct {
 	CommitMessage      string `json:"CommitMessage"`
 }
 
-//MergeRequest model
+// MergeRequest model
 type MergeRequest struct {
 	ID                   int64
 	RepoID               int64 `gorm:"size:150;index:idx_repo_id"`

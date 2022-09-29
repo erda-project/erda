@@ -65,9 +65,9 @@ type WithTriggersSpec struct {
 // Assert that we implement the interfaces necessary to
 // use duck.VerifyType.
 var (
-//	_ duck.Populatable   = (*WithTriggers)(nil)
-//	_ duck.Implementable = (*ScaleTriggers)(nil)
-//	_ apis.Listable      = (*WithTriggers)(nil)
+// _ duck.Populatable   = (*WithTriggers)(nil)
+// _ duck.Implementable = (*ScaleTriggers)(nil)
+// _ apis.Listable      = (*WithTriggers)(nil)
 )
 
 // GetFullType implements duck.Implementable

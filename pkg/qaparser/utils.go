@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//解压 tar.gz
+// 解压 tar.gz
 func DeCompress(tarFile, dest string) error {
 	srcFile, err := os.Open(tarFile)
 	if err != nil {
@@ -105,21 +105,22 @@ func reparentXML(data []byte) []byte {
 // This function deals with two distinct classes of node data; Encoded entities
 // and CDATA tags. These Encoded entities are normal (html escaped) text that
 // you typically find between tags like so:
-//   • "Hello, world!"  →  "Hello, world!"
-//   • "I &lt;/3 XML"   →  "I </3 XML"
+//   - "Hello, world!"  →  "Hello, world!"
+//   - "I &lt;/3 XML"   →  "I </3 XML"
+//
 // CDATA tags are a special way to embed data that would normally require
 // escaping, without escaping it, like so:
-//   • "<![CDATA[Hello, world!]]>"  →  "Hello, world!"
-//   • "<![CDATA[I &lt;/3 XML]]>"   →  "I &lt;/3 XML"
-//   • "<![CDATA[I </3 XML]]>"      →  "I </3 XML"
+//   - "<![CDATA[Hello, world!]]>"  →  "Hello, world!"
+//   - "<![CDATA[I &lt;/3 XML]]>"   →  "I &lt;/3 XML"
+//   - "<![CDATA[I </3 XML]]>"      →  "I </3 XML"
 //
 // This function specifically allows multiple interleaved instances of either
 // encoded entities or cdata, and will decode them into one piece of normalized
 // text, like so:
-//   • "I &lt;/3 XML <![CDATA[a lot]]>. You probably <![CDATA[</3 XML]]> too."  →  "I </3 XML a lot. You probably </3 XML too."
-//      └─────┬─────┘         └─┬─┘   └──────┬──────┘         └──┬──┘   └─┬─┘
-//      "I </3 XML "            │     ". You probably "          │      " too."
-//                          "a lot"                         "</3 XML"
+//   - "I &lt;/3 XML <![CDATA[a lot]]>. You probably <![CDATA[</3 XML]]> too."  →  "I </3 XML a lot. You probably </3 XML too."
+//     └─────┬─────┘         └─┬─┘   └──────┬──────┘         └──┬──┘   └─┬─┘
+//     "I </3 XML "            │     ". You probably "          │      " too."
+//     "a lot"                         "</3 XML"
 //
 // Errors are returned only when there are unmatched CDATA tags, although these
 // should cause proper XML unmarshalling errors first, if encountered in an

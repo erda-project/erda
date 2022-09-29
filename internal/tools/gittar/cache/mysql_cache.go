@@ -41,7 +41,7 @@ func NewMysqlCache(typeName string, db *models.DBClient) *MysqlCache {
 	}
 }
 
-//Status return the status of cache
+// Status return the status of cache
 func (c *MysqlCache) Status() *gitmodule.CacheStatus {
 	status := &gitmodule.CacheStatus{
 		MaxItemSize: -1,
@@ -54,7 +54,7 @@ func (c *MysqlCache) Status() *gitmodule.CacheStatus {
 	return status
 }
 
-//Get value with key
+// Get value with key
 func (c *MysqlCache) Get(key string, outValue interface{}) error {
 	c.gets.Add(1)
 	var repoCache models.RepoCache
@@ -67,7 +67,7 @@ func (c *MysqlCache) Get(key string, outValue interface{}) error {
 	return errors.New("key not found")
 }
 
-//Set a value with key
+// Set a value with key
 func (c *MysqlCache) Set(key string, value interface{}) error {
 	bytes, err := json.Marshal(value)
 	if err != nil {
@@ -101,7 +101,7 @@ func (c *MysqlCache) Set(key string, value interface{}) error {
 	return nil
 }
 
-//Delete delete the key
+// Delete delete the key
 func (c *MysqlCache) Delete(key string) error {
 	err := c.db.Where("type_name = ? and key_name = ? ", c.typeName, key).Delete(models.RepoCache{}).Error
 	return err

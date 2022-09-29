@@ -46,6 +46,8 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.targets = strings.Split(p.C.Targets, ",")
+	//nolint
+	//TODO configure ReadHeaderTimeout in the http.Server
 	p.server = &http.Server{Addr: p.C.Addr, Handler: http.HandlerFunc(p.Handler)}
 	return nil
 }

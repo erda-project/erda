@@ -1073,7 +1073,7 @@ func TestGetInstances(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, map[string][]ServiceInstance{
-		"0": []ServiceInstance{
+		"0": {
 			{
 				ApplicationName:     "",
 				ServiceId:           "0",

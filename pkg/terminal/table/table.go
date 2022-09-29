@@ -12,19 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* example:
+/*
+	example:
+
 1. NewTable().Header([]string{"h1", "h2"}).Data([][]string{{"d1", "d2"}, {"d3","d4"}}).Flush()
 >>>
 H1   H2
 d1   d2
 d3   d4
-   NewTable(WithVertical()).Header([]string{"h1", "h2"}).Data([][]string{{"d1", "d2"}, {"d3","d4"}}).Flush()
+
+	NewTable(WithVertical()).Header([]string{"h1", "h2"}).Data([][]string{{"d1", "d2"}, {"d3","d4"}}).Flush()
+
 >>>
 H1   d1   d3
 H2   d2   d4
 
-2. 指定输出
-   NewTable(WithWriter(os.Stderr))
+ 2. 指定输出
+    NewTable(WithWriter(os.Stderr))
 
 // NOTE:
 没有设置 WithVertical 时，标题行 全部都是大写

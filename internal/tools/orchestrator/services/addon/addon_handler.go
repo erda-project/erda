@@ -432,7 +432,7 @@ func (a *Addon) addonAttach(addonSpec *apistructs.AddonExtension, addonDice *dic
 	}, nil
 }
 
-//buildRealCreate 真实例创建判断
+// buildRealCreate 真实例创建判断
 func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *apistructs.AddonHandlerCreateItem) error {
 	if len(params.Options) == 0 {
 		return nil

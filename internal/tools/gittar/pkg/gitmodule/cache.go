@@ -29,7 +29,7 @@ type CacheStatus struct {
 	CurrentSize int
 }
 
-//this is a interface which defines some common functions
+// this is a interface which defines some common functions
 type Cache interface {
 	Set(key string, value interface{}) error
 	Get(key string, outValue interface{}) error
@@ -55,8 +55,8 @@ type entry struct {
 	value interface{}
 }
 
-//NewMemCache If maxItemSize is zero, the cache has no limit.
-//if maxItemSize is not zero, when cache's size beyond maxItemSize,start to swap
+// NewMemCache If maxItemSize is zero, the cache has no limit.
+// if maxItemSize is not zero, when cache's size beyond maxItemSize,start to swap
 func NewMemCache(maxItemSize int, prefix string) *MemCache {
 	return &MemCache{
 		maxItemSize: maxItemSize,
@@ -66,7 +66,7 @@ func NewMemCache(maxItemSize int, prefix string) *MemCache {
 	}
 }
 
-//Status return the status of cache
+// Status return the status of cache
 func (c *MemCache) Status() *CacheStatus {
 	c.mutex.Lock()
 	status := &CacheStatus{
@@ -87,7 +87,7 @@ func (c *MemCache) GetCacheMap() map[string]interface{} {
 	return result
 }
 
-//Get value with key
+// Get value with key
 func (c *MemCache) Get(key string, out interface{}) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -114,7 +114,7 @@ func (c *MemCache) Get(key string, out interface{}) error {
 	return errors.New("key not found")
 }
 
-//Set a value with key
+// Set a value with key
 func (c *MemCache) Set(key string, value interface{}) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -139,7 +139,7 @@ func (c *MemCache) Set(key string, value interface{}) error {
 	return nil
 }
 
-//Delete delete the key
+// Delete delete the key
 func (c *MemCache) Delete(key string) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -157,7 +157,7 @@ func (c *MemCache) Delete(key string) error {
 	return nil
 }
 
-//RemoveOldest remove the oldest key
+// RemoveOldest remove the oldest key
 func (c *MemCache) RemoveOldest() {
 	if c.cache == nil {
 		return

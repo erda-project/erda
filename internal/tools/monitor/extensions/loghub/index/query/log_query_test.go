@@ -156,9 +156,9 @@ func Test_mergeStatisticResponse_Should_Success(t *testing.T) {
 		Interval: 1000,
 		Time:     []int64{1},
 		Results: []*LogStatisticResult{
-			&LogStatisticResult{
+			{
 				Data: []*CountHistogram{
-					&CountHistogram{
+					{
 						Count: ArrayAgg{
 							Data: []float64{1},
 						},
@@ -173,9 +173,9 @@ func Test_mergeStatisticResponse_Should_Success(t *testing.T) {
 		Interval: 1000,
 		Time:     []int64{2},
 		Results: []*LogStatisticResult{
-			&LogStatisticResult{
+			{
 				Data: []*CountHistogram{
-					&CountHistogram{
+					{
 						Count: ArrayAgg{
 							Data: []float64{2},
 						},
@@ -190,9 +190,9 @@ func Test_mergeStatisticResponse_Should_Success(t *testing.T) {
 		Interval: 1000,
 		Time:     []int64{1},
 		Results: []*LogStatisticResult{
-			&LogStatisticResult{
+			{
 				Data: []*CountHistogram{
-					&CountHistogram{
+					{
 						Count: ArrayAgg{
 							Data: []float64{1},
 						},
@@ -470,7 +470,7 @@ func Test_DownloadLogs(t *testing.T) {
 	defer monkey.Unpatch((*provider).getESClients)
 	monkey.Patch((*provider).getESClients, func(p *provider, orgID int64, req *LogRequest) []*ESClient {
 		return []*ESClient{
-			&ESClient{},
+			{},
 		}
 	})
 
@@ -520,7 +520,7 @@ func Test_downloadLogs(t *testing.T) {
 			Hits: &elastic.SearchHits{
 				TotalHits: 1,
 				Hits: []*elastic.SearchHit{
-					&elastic.SearchHit{
+					{
 						Id:     log.DocId,
 						Source: &source,
 					},

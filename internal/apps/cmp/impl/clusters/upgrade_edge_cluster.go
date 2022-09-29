@@ -57,9 +57,10 @@ func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer
 }
 
 // status:
-//		1 -- in processing, jump to check log
-//		2 -- do precheck
-//		3 -- invalid, do not support (non k8s cluster, central cluster, higher version ecluster)
+//
+//	1 -- in processing, jump to check log
+//	2 -- do precheck
+//	3 -- invalid, do not support (non k8s cluster, central cluster, higher version ecluster)
 func (c *Clusters) UpgradeEdgeCluster(ctx context.Context, req apistructs.UpgradeEdgeClusterRequest, userid string, orgid string) (recordID uint64, status int, precheckHint string, err error) {
 	records, err := getUpgradeRecords(c.db, req.ClusterName)
 	if err != nil {

@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
-//CreateOrgClusterRelation 创建企业集群关系
+// CreateOrgClusterRelation 创建企业集群关系
 func (client *DBClient) CreateOrgClusterRelation(relation *model.OrgClusterRelation) error {
 	return client.Create(relation).Error
 }

@@ -100,7 +100,7 @@ func TestDeleteHistoryJob(t *testing.T) {
 		return batchv1.JobList{
 			TypeMeta: metav1.TypeMeta{},
 			ListMeta: metav1.ListMeta{},
-			Items: []batchv1.Job{batchv1.Job{
+			Items: []batchv1.Job{{
 				TypeMeta: metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-job",
@@ -129,7 +129,7 @@ func TestGetJobStatusFromMap(t *testing.T) {
 		return batchv1.JobList{
 			TypeMeta: metav1.TypeMeta{},
 			ListMeta: metav1.ListMeta{},
-			Items: []batchv1.Job{batchv1.Job{
+			Items: []batchv1.Job{{
 				TypeMeta: metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-job",

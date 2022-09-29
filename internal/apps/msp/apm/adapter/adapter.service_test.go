@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
-////go:generate mockgen -destination=./adapter_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
-////go:generate mockgen -destination=./adapter_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
+// //go:generate mockgen -destination=./adapter_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
+// //go:generate mockgen -destination=./adapter_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
 func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -40,10 +40,10 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 		Register:       nil,
 		adapterService: &adapterService{},
 		libraries: []*InstrumentationLibrary{
-			&InstrumentationLibrary{InstrumentationLibrary: "Jaeger", Languages: []*Language{&Language{Name: "Java", Enabled: true}}},
+			{InstrumentationLibrary: "Jaeger", Languages: []*Language{{Name: "Java", Enabled: true}}},
 		},
 		templates: map[string]*InstrumentationLibraryTemplate{
-			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: map[string]string{
+			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{{Language: "Java", Template: map[string]string{
 				"zh-CN": "这是中文模版",
 				"en-US": "this is english template",
 			}}}},
@@ -70,10 +70,10 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 		Register:       nil,
 		adapterService: &adapterService{},
 		libraries: []*InstrumentationLibrary{
-			{InstrumentationLibrary: "Jaeger", Languages: []*Language{&Language{Name: "Java", Enabled: true}}},
+			{InstrumentationLibrary: "Jaeger", Languages: []*Language{{Name: "Java", Enabled: true}}},
 		},
 		templates: map[string]*InstrumentationLibraryTemplate{
-			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: map[string]string{
+			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{{Language: "Java", Template: map[string]string{
 				"zh-CN": "这是中文模版",
 				"en-US": "this is english template",
 			}}}},

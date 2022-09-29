@@ -87,7 +87,9 @@ type ValueObjects map[WorkspaceStr]*ValueMap
 // Selectors: map[key]value
 // key: [a-zA-Z0-9-]*
 // value: NOT_VALUE
-//      | NORMAL_VALUE { "|" NORMAL_VALUE }
+//
+//	| NORMAL_VALUE { "|" NORMAL_VALUE }
+//
 // NOT_VALUE: "!" NORMAL_VALUE
 // NORMAL_VALUE: [a-zA-Z0-9-]*
 type Selector struct {

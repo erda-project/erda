@@ -20,7 +20,8 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/spec"
 )
 
-/**
+/*
+*
 migration
 */
 var CMDB_PROJECT_DELETE = apis.ApiSpec{

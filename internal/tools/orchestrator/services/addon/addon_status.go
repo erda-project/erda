@@ -1715,9 +1715,11 @@ func (a *Addon) savePassword(addonIns *dbclient.AddonInstance, key string) (stri
 // setAddonVolumes set Volumes for diceyml.Service for addon service
 // service： addon service
 // options:  主要获取如下三种 options
-//     "addonDiskType": "SSD"
-//     "addonVolumeSize": "10"
-//     "addonSnapMaxHistory": "3"
+//
+//	"addonDiskType": "SSD"
+//	"addonVolumeSize": "10"
+//	"addonSnapMaxHistory": "3"
+//
 // targetPath：容器中卷映射目录
 // readOnly： 表明卷是否以只读方式挂载
 func SetAddonVolumes(options map[string]string, targetPath string, readOnly bool) diceyml.Volume {

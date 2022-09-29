@@ -40,9 +40,9 @@ func Test_parseWriteRequest(t *testing.T) {
 			args: args{
 				wr: &prompb.WriteRequest{
 					Timeseries: []*prompb.TimeSeries{
-						&prompb.TimeSeries{
+						{
 							Labels: []*prompb.Label{
-								&prompb.Label{
+								{
 									Name:  "n1",
 									Value: "v1",
 								},
@@ -56,7 +56,7 @@ func Test_parseWriteRequest(t *testing.T) {
 								},
 							},
 							Samples: []*prompb.Sample{
-								&prompb.Sample{
+								{
 									Value:     1,
 									Timestamp: 1658904849000,
 								},
@@ -81,9 +81,9 @@ func Test_parseWriteRequest(t *testing.T) {
 			args: args{
 				wr: &prompb.WriteRequest{
 					Timeseries: []*prompb.TimeSeries{
-						&prompb.TimeSeries{
+						{
 							Labels: []*prompb.Label{
-								&prompb.Label{
+								{
 									Name:  "n1",
 									Value: "v1",
 								},
@@ -93,7 +93,7 @@ func Test_parseWriteRequest(t *testing.T) {
 								},
 							},
 							Samples: []*prompb.Sample{
-								&prompb.Sample{
+								{
 									Value:     1,
 									Timestamp: 1658904849000,
 								},
@@ -119,9 +119,9 @@ func Test_parseWriteRequest(t *testing.T) {
 			args: args{
 				wr: &prompb.WriteRequest{
 					Timeseries: []*prompb.TimeSeries{
-						&prompb.TimeSeries{
+						{
 							Labels: []*prompb.Label{
-								&prompb.Label{
+								{
 									Name:  "n1",
 									Value: "v1",
 								},
@@ -131,7 +131,7 @@ func Test_parseWriteRequest(t *testing.T) {
 								},
 							},
 							Samples: []*prompb.Sample{
-								&prompb.Sample{
+								{
 									Value:     1,
 									Timestamp: 1658904849000,
 								},

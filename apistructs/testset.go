@@ -62,7 +62,7 @@ type TestSetCreateRequest struct {
 	IdentityInfo
 }
 
-//  TestSetCreateResponse POST /api/testsets 创建测试集合
+// TestSetCreateResponse POST /api/testsets 创建测试集合
 type TestSetCreateResponse struct {
 	Header
 	Data *TestSet `json:"data"`
@@ -84,7 +84,7 @@ type TestSetListRequest struct {
 	NoSubTestSets bool `json:"noSubTestSets"`
 }
 
-//  TestSetListResponse GET /api/testsets 测试集列表
+// TestSetListResponse GET /api/testsets 测试集列表
 type TestSetListResponse struct {
 	Header
 	Data []TestSet `json:"data"`
@@ -160,7 +160,7 @@ type TestSetRecoverFromRecycleBinResponse struct {
 	Header
 }
 
-//  TestSetCommonResponse 通用返回结构
+// TestSetCommonResponse 通用返回结构
 type TestSetCommonResponse struct {
 	Header
 	Data string `json:"data"`

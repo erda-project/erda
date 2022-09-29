@@ -158,7 +158,7 @@ type FuzzyQueryNotifiesBySourceRequest struct {
 	Channel     string
 }
 
-//消息通知对接组件化
+// 消息通知对接组件化
 type NotifyPageRequest struct {
 	Scope   string `json:"scope"`
 	ScopeId string `json:"scopeId"`

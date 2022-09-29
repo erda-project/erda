@@ -40,7 +40,7 @@ func TestBuilder_buildBatches(t *testing.T) {
 	}{
 		{
 			args: args{items: []*metric.Metric{
-				&metric.Metric{
+				{
 					Name:      "cpu",
 					Timestamp: 1652421595810000000,
 					Tags: map[string]string{
