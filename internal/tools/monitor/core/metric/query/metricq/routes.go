@@ -47,6 +47,10 @@ func (p *provider) queryMetrics(r *http.Request) interface{} {
 		if len(header.Get("org")) == 0 {
 			//org-apis
 			orgID := api.OrgID(r)
+			if len(orgID) <= 0 {
+				return
+			}
+
 			orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
 				IdOrName: orgID,
 			})
