@@ -301,6 +301,11 @@ func pretty(data interface{}) interface{} {
 		return *v
 	case *uint64:
 		return *v
+	case **uint64:
+		if *v == nil {
+			return nil
+		}
+		return **v
 	case *string:
 		return *v
 	case **string:
