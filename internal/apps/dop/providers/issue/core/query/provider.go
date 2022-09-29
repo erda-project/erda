@@ -65,11 +65,13 @@ type Interface interface {
 	SyncLabels(value *syncpb.Value, issueIDs []uint64) error
 	BatchUpdateIssue(req *pb.BatchUpdateIssueRequest) error
 	GetProperties(req *pb.GetIssuePropertyRequest) ([]*pb.IssuePropertyIndex, error)
+	BatchGetProperties(orgID int64, issuesType []string) ([]*pb.IssuePropertyIndex, error)
 	CreatePropertyRelation(req *pb.CreateIssuePropertyInstanceRequest) error
+	GetIssuePropertyInstance(req *pb.GetIssuePropertyInstanceRequest) (*pb.IssueAndPropertyAndValue, error)
+	BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*pb.IssueAndPropertyAndValue, error)
 	GetIssueStage(req *pb.IssueStageRequest) ([]*pb.IssueStage, error)
 	GetIssueRelationsByIssueIDs(issueID uint64, relationType []string) ([]uint64, []uint64, error)
 	GetIssuesByIssueIDs(issueIDs []uint64) ([]*pb.Issue, error)
-	GetBatchProperties(orgID int64, issuesType []string) ([]*pb.IssuePropertyIndex, error)
 	ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error)
 	SyncIssueChildrenIteration(issue *pb.Issue, iterationID int64) error
 	AfterIssueAppRelationCreate(issueIDs []int64) error

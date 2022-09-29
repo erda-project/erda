@@ -49,9 +49,9 @@ func (client *DBClient) UpdateIssuePropertyValue(property *IssuePropertyValue) e
 	return client.Save(property).Error
 }
 
-func (client *DBClient) GetIssuePropertyValues(orgID int64) ([]IssuePropertyValue, error) {
+func (client *DBClient) GetIssuePropertyValues(propertyID int64) ([]IssuePropertyValue, error) {
 	var propertyValues []IssuePropertyValue
-	if err := client.Where("property_id = ?", orgID).Find(&propertyValues).Error; err != nil {
+	if err := client.Where("property_id = ?", propertyID).Find(&propertyValues).Error; err != nil {
 		return nil, err
 	}
 	return propertyValues, nil

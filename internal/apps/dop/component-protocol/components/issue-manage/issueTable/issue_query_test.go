@@ -145,7 +145,7 @@ func (mr *MockInterfaceMockRecorder) GetAllIssuesByProject(req interface{}) *gom
 // GetBatchProperties mocks base method.
 func (m *MockInterface) GetBatchProperties(orgID int64, issuesType []string) ([]*pb0.IssuePropertyIndex, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBatchProperties", orgID, issuesType)
+	ret := m.ctrl.Call(m, "BatchGetProperties", orgID, issuesType)
 	ret0, _ := ret[0].([]*pb0.IssuePropertyIndex)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -154,7 +154,7 @@ func (m *MockInterface) GetBatchProperties(orgID int64, issuesType []string) ([]
 // GetBatchProperties indicates an expected call of GetBatchProperties.
 func (mr *MockInterfaceMockRecorder) GetBatchProperties(orgID, issuesType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBatchProperties", reflect.TypeOf((*MockInterface)(nil).GetBatchProperties), orgID, issuesType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchGetProperties", reflect.TypeOf((*MockInterface)(nil).GetBatchProperties), orgID, issuesType)
 }
 
 // GetIssue mocks base method.

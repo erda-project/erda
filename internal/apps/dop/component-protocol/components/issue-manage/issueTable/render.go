@@ -143,6 +143,8 @@ type TableItem struct {
 	Creator       Assignee  `json:"creator"`
 	PlanStartedAt Time      `json:"planStartedAt"`
 	Iteration     TextBlock `json:"iteration"`
+
+	Properties []*pb.IssuePropertyExtraProperty `json:"properties"`
 }
 
 type TextBlock struct {
@@ -652,6 +654,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *pb.Issue, i
 		},
 		PlanStartedAt: planStartedAt,
 		Iteration:     iteration,
+		//Properties:    data.Properties,
 	}
 }
 

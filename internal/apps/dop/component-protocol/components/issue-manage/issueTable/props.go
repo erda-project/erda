@@ -66,6 +66,9 @@ func buildTableColumnProps(ctx context.Context, issueType string) cptype.Compone
 	default:
 		columns = []interface{}{id, name, complexity, priority, iteration, state, assignee, planStartedAt, deadline, creator, createdAt}
 	}
+
+	// handle custom issue properties
+
 	return map[string]interface{}{
 		"columns":         columns,
 		"rowKey":          "id",

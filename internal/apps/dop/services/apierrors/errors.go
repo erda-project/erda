@@ -385,6 +385,7 @@ var (
 	ErrUpdateIssueProperty      = err("ErrUpdateIssueProperty", "更新事项字段失败")
 	ErrDeleteIssueProperty      = err("ErrDeleteIssueProperty", "删除事项字段失败")
 	ErrGetIssueProperty         = err("ErrGetIssueProperty", "查询事项字段失败")
+	ErrGetIssuePropertyInstance = err("ErrGetIssuePropertyInstance", "查询事项字段实际值失败")
 	ErrCreateIssuePropertyValue = err("ErrCreateIssuePropertyValue ", "创建事项字段枚举值失败")
 	ErrDeleteIssuePropertyValue = err("ErrDeleteIssuePropertyValue ", "删除事项字段枚举值失败")
 

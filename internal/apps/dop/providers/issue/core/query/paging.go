@@ -101,6 +101,24 @@ func (p *provider) Paging(req pb.PagingIssueRequest) ([]*pb.Issue, uint64, error
 		return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 	}
 
+	// get property instances
+	if req.WithCustomProperties {
+		if len(req.Type) != 1 {
+			return nil, 0, apierrors.ErrPagingIssues.InvalidParameter("only support one type to get custom properties")
+		}
+		issueIDs := make([]uint64, 0, len(issues))
+		for _, issue := range issues {
+			issueIDs = append(issueIDs, uint64(issue.Id))
+		}
+		issueInstancesMap, err := p.BatchGetIssuePropertyInstances(req.OrgID, req.Type[0], issueIDs)
+		if err != nil {
+			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+		}
+		for _, issue := range issues {
+			issue.PropertyInstances = issueInstancesMap[uint64(issue.Id)].Property
+		}
+	}
+
 	// issue 填充需求标题
 	requirementIDs := make([]int64, 0, len(issues))
 	for _, v := range issues {

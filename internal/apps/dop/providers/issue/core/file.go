@@ -234,7 +234,7 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
 		return
 	}
-	pro, err := i.query.GetBatchProperties(req.OrgID, req.Type)
+	pro, err := i.query.BatchGetProperties(req.OrgID, req.Type)
 	if err != nil {
 		logrus.Errorf("%s failed to batch get properties, err: %v", issueService, err)
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
