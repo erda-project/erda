@@ -65,6 +65,7 @@ var diceCIDiscardKeys = []string{
 // diceAddonsInfoKeys
 var diceAddonsInfoKeys = []string{
 	"REGISTRY_ADDR",
+	"REGISTRY_SCHEME",
 	"REGISTRY_USERNAME",
 	"REGISTRY_PASSWORD",
 	"NEXUS_ADDR",
