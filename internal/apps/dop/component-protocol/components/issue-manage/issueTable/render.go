@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/issueFilter"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	issuemodel "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -145,6 +146,27 @@ type TableItem struct {
 	Iteration     TextBlock `json:"iteration"`
 
 	Properties []*pb.IssuePropertyExtraProperty `json:"properties"`
+}
+
+type TableItemForShow map[string]interface{}
+
+func (item *TableItem) toColumnDataRow() map[string]interface{} {
+	data := make(map[string]interface{})
+	cputil.MustObjJSONTransfer(item, &data)
+	// delete self properties field
+	delete(data, "properties")
+	// treat all custom properties as TextBlock
+	for _, property := range item.Properties {
+		data[makePropertyColumnName(property)] = TextBlock{
+			Value:      (*issuemodel.PropertyInstanceForShow)(property).String(),
+			RenderType: "text",
+		}
+	}
+	return data
+}
+
+func makePropertyColumnName(property *pb.IssuePropertyExtraProperty) string {
+	return "property_" + property.PropertyName
 }
 
 type TextBlock struct {
@@ -325,6 +347,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	}
 
+	// handle custom properties
+	if fixedIssueType != "ALL" {
+		cond.WithCustomProperties = true
+	}
+
 	issues, total, err := issueSvc.Paging(cond)
 	if err != nil {
 		return err
@@ -369,13 +396,17 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		iterationTitleMap[key] = i.Label
 	}
 
-	var l []TableItem
+	var l []TableItemForShow
 	for _, data := range issues {
-		l = append(l, *ca.buildTableItem(ctx, data, iterationTitleMap))
+		l = append(l, (*ca.buildTableItem(ctx, data, iterationTitleMap)).toColumnDataRow())
 	}
 	c.Data = map[string]interface{}{}
 	c.Data["list"] = l
-	c.Props = buildTableColumnProps(ctx, fixedIssueType)
+	var customProperties []*pb.IssuePropertyExtraProperty
+	if len(issues) > 0 {
+		customProperties = issues[0].PropertyInstances
+	}
+	c.Props = buildTableColumnProps(ctx, fixedIssueType, customProperties)
 	c.Operations = map[string]interface{}{
 		"changePageNo": map[string]interface{}{
 			"key":    "changePageNo",
@@ -654,7 +685,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *pb.Issue, i
 		},
 		PlanStartedAt: planStartedAt,
 		Iteration:     iteration,
-		//Properties:    data.Properties,
+		Properties:    data.PropertyInstances,
 	}
 }
 
