@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -79,6 +78,11 @@ func (e *Endpoints) projectPipelineCreate(ctx context.Context, r *http.Request, 
 
 	createReq.UserID = identityInfo.UserID
 	createReq.InternalClient = identityInfo.InternalClient
+	if createReq.NormalLabels == nil {
+		createReq.NormalLabels = make(map[string]string)
+	}
+	createReq.NormalLabels[apistructs.LabelOrgName] = createReq.Labels[apistructs.LabelOrgName]
+	createReq.NormalLabels[apistructs.LabelOrgID] = createReq.Labels[apistructs.LabelOrgID]
 
 	spec, err := pipelineyml.New([]byte(createReq.PipelineYml))
 	if err != nil {
@@ -96,6 +100,7 @@ func (e *Endpoints) projectPipelineCreate(ctx context.Context, r *http.Request, 
 			}
 			action.SnippetConfig.Labels[apistructs.LabelProjectID] = createReq.Labels[apistructs.LabelProjectID]
 			action.SnippetConfig.Labels[apistructs.LabelOrgID] = createReq.Labels[apistructs.LabelOrgID]
+			action.SnippetConfig.Labels[apistructs.LabelOrgName] = createReq.Labels[apistructs.LabelOrgName]
 		}
 	})
 	if err != nil {
