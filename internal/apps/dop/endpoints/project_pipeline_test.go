@@ -15,7 +15,10 @@
 package endpoints
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -25,7 +28,10 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/services/pipeline"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/mock"
 )
@@ -104,6 +110,70 @@ func TestEndpoints_projectPipelineDetail(t *testing.T) {
 			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*pipelinepb.PipelineDetailDTO).ID, tt.fields.result.ID)
 			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*pipelinepb.PipelineDetailDTO).Branch, tt.fields.result.Branch)
 			assert.Equal(t, got.GetContent().(httpserver.Resp).Data.(*pipelinepb.PipelineDetailDTO).ApplicationID, tt.fields.result.ApplicationID)
+		})
+	}
+}
+
+func TestEndpoints_projectPipelineCreate(t *testing.T) {
+	type arg struct {
+		req pipelinepb.PipelineCreateRequestV2
+	}
+	testCases := []struct {
+		name string
+		arg  arg
+	}{
+		{
+			name: "project pipeline",
+			arg: arg{
+				req: pipelinepb.PipelineCreateRequestV2{
+					Labels: map[string]string{
+						apistructs.LabelOrgID:     "1",
+						apistructs.LabelOrgName:   "erda",
+						apistructs.LabelProjectID: "1",
+					},
+					PipelineYmlName: "project-pipeline",
+					PipelineYml: `version: "1.1"
+name: ""
+stages:
+  - stage:
+      - custom-script:
+          alias: custom-script
+          version: "1.0"
+          image: custom-script-action:latest
+          commands:
+            - sleep 10
+          resources:
+            cpu: 0.1
+            mem: 256`,
+				},
+			},
+		},
+	}
+	pipelineSvc := &pipeline.Pipeline{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(pipelineSvc), "CreatePipelineV2", func(_ *pipeline.Pipeline, reqPipeline *pipelinepb.PipelineCreateRequestV2) (*pb.PipelineDTO, error) {
+		return &pb.PipelineDTO{
+			ID: 1,
+		}, nil
+	})
+	e := Endpoints{
+		pipeline: pipelineSvc,
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			dat, err := json.Marshal(tc.arg.req)
+			if err != nil {
+				t.Error(err)
+			}
+			reader := bytes.NewReader([]byte(dat))
+			body := ioutil.NopCloser(reader)
+			r := &http.Request{
+				Header: http.Header{
+					"Internal-Client": []string{"pipeline"},
+				},
+				Body: body,
+			}
+			_, err = e.projectPipelineCreate(context.Background(), r, map[string]string{})
+			assert.NoError(t, err)
 		})
 	}
 }
