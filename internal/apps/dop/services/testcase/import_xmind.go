@@ -40,14 +40,14 @@ func (svc *Service) storeXmind2DB(req apistructs.TestCaseImportRequest, rootTest
 //   - ...
 //   - 步骤n - 结果n
 //   - 接口测试
-//     - at: (APITest)
-//       - headers - result
-//       - method - result
-//       - url - result
-//       - params - result
-//       - body - result
-//       - outParams - result
-//       - asserts - result
+//   - at: (APITest)
+//   - headers - result
+//   - method - result
+//   - url - result
+//   - params - result
+//   - body - result
+//   - outParams - result
+//   - asserts - result
 func insertTestCaseTopic(parentTopic *xmind.XMLTopic, tc apistructs.TestCase) {
 	// 用例名
 	tcTitle := fmt.Sprintf("tc:%s__%s", tc.Priority, tc.Name)

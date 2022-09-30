@@ -24,6 +24,8 @@ import (
 	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -60,9 +62,9 @@ func (n *Nodes) Sync(rs []dbclient.Record) ([]dbclient.Record, error) {
 				logrus.Errorf(errstr)
 				return nil, errors.New(errstr)
 			}
-			task := dto.PipelineStages[0].PipelineTasks[0]
-			if task.Status.IsEndStatus() {
-				if task.Status.IsSuccessStatus() {
+			taskStatus := apistructs.PipelineStatus(dto.PipelineStages[0].PipelineTasks[0].Status)
+			if taskStatus.IsEndStatus() {
+				if taskStatus.IsSuccessStatus() {
 					record.Status = dbclient.StatusTypeSuccess
 				} else {
 					record.Status = dbclient.StatusTypeFailed
@@ -82,7 +84,7 @@ func (n *Nodes) Sync(rs []dbclient.Record) ([]dbclient.Record, error) {
 
 type RecordWithPipeline struct {
 	dbclient.Record
-	*apistructs.PipelineDetailDTO
+	PipelineDetailDTO *pipelinepb.PipelineDetailDTO
 }
 
 func (n *Nodes) Merge(rs []dbclient.Record) ([]RecordWithPipeline, error) {
@@ -114,11 +116,12 @@ func (n *Nodes) Merge(rs []dbclient.Record) ([]RecordWithPipeline, error) {
 		status := dbclient.StatusTypeSuccess
 		for _, stage := range dto.PipelineStages {
 			for _, task := range stage.PipelineTasks {
-				if task.Status.IsFailedStatus() {
+				taskStatus := apistructs.PipelineStatus(task.Status)
+				if taskStatus.IsFailedStatus() {
 					status = dbclient.StatusTypeFailed
 					break
 				}
-				if !task.Status.IsSuccessStatus() {
+				if !taskStatus.IsSuccessStatus() {
 					status = dbclient.StatusTypeProcessing
 					break
 				}

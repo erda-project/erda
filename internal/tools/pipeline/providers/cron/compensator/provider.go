@@ -22,6 +22,7 @@ import (
 
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -29,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
@@ -59,13 +61,11 @@ type provider struct {
 	EtcdClient           *v3.Client
 	MySQL                mysqlxorm.Interface `autowired:"mysql-xorm"`
 	EdgePipelineRegister edgepipeline_register.Interface
+	pipelineFunc         PipelineFunc
 
 	jsonStore    jsonstore.JsonStore
 	dbClient     *dbclient.Client
 	cronDBClient *db.Client
-
-	// TODO remove
-	pipelineFunc PipelineFunc
 }
 
 func (p *provider) WithPipelineFunc(pipelineFunc PipelineFunc) {
@@ -244,12 +244,12 @@ func (p *provider) cronInterruptCompensate(ctx context.Context, pc db.PipelineCr
 
 	if len(needTriggerTimes) > 0 {
 		// Pipeline search record created based on createlyname + source
-		result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
-			Sources:          []apistructs.PipelineSource{pc.PipelineSource},
-			YmlNames:         []string{pc.PipelineYmlName},
-			TriggerModes:     []apistructs.PipelineTriggerMode{apistructs.PipelineTriggerModeCron},
-			StartTimeCreated: beforeCompensateFromTime.Add(time.Second * -time.Duration(conf.CronFailureCreateIntervalCompensateTimeSecond())),
-			EndTimeCreated:   thisCompensateFromTime.Add(time.Second * time.Duration(conf.CronFailureCreateIntervalCompensateTimeSecond())),
+		result, err := p.dbClient.PageListPipelines(&pipelinepb.PipelinePagingRequest{
+			Source:           []string{pc.PipelineSource.String()},
+			YmlName:          []string{pc.PipelineYmlName},
+			TriggerMode:      []string{apistructs.PipelineTriggerModeCron.String()},
+			StartTimeCreated: timestamppb.New(beforeCompensateFromTime.Add(time.Second * -time.Duration(conf.CronFailureCreateIntervalCompensateTimeSecond()))),
+			EndTimeCreated:   timestamppb.New(thisCompensateFromTime.Add(time.Second * time.Duration(conf.CronFailureCreateIntervalCompensateTimeSecond()))),
 			PageNum:          1,
 			PageSize:         100,
 			LargePageSize:    true,
@@ -329,19 +329,19 @@ func (p *provider) cronNonExecuteCompensate(ctx context.Context, pc db.PipelineC
 	// Here, why take 10 by ID? Because when the expression granularity is very small, a lot of data will be lost. However, the ID order of interrupt compensation is different from that of execution
 	// Therefore, neutralization first takes 10 items in positive or reverse order with ID, and then doCronCompensate selects the most suitable time for execution according to the specific execution time of the 10 items
 	// When the time granularity is very large, in essence, one is OK
-	request := apistructs.PipelinePageListRequest{
-		Sources:          []apistructs.PipelineSource{pc.PipelineSource},
-		YmlNames:         []string{pc.PipelineYmlName},
-		Statuses:         []string{apistructs.PipelineStatusAnalyzed.String()},
-		TriggerModes:     []apistructs.PipelineTriggerMode{apistructs.PipelineTriggerModeCron},
-		StartTimeCreated: oneDayBeforeNow,
-		EndTimeCreated:   now,
+	request := &pipelinepb.PipelinePagingRequest{
+		Source:           []string{pc.PipelineSource.String()},
+		YmlName:          []string{pc.PipelineYmlName},
+		Status:           []string{apistructs.PipelineStatusAnalyzed.String()},
+		TriggerMode:      []string{apistructs.PipelineTriggerModeCron.String()},
+		StartTimeCreated: timestamppb.New(oneDayBeforeNow),
+		EndTimeCreated:   timestamppb.New(now),
 		PageNum:          1,
 		PageSize:         10,
 		LargePageSize:    true,
 	}
 
-	if (*pc.Extra.Compensator).LatestFirst.Value {
+	if pc.Extra.Compensator.LatestFirst != nil && (*pc.Extra.Compensator).LatestFirst.Value {
 		request.DescCols = []string{apistructs.PipelinePageListRequestIdColumn}
 	} else {
 		request.AscCols = []string{apistructs.PipelinePageListRequestIdColumn}
@@ -363,7 +363,7 @@ func (p *provider) doCronCompensate(ctx context.Context, compensator pb.CronComp
 	}
 
 	// Select the most suitable time point from the non execution in good order according to the strategy
-	if compensator.LatestFirst.Value {
+	if compensator.LatestFirst != nil && compensator.LatestFirst.Value {
 		order = "DESC"
 	} else {
 		order = "ASC"
@@ -373,12 +373,13 @@ func (p *provider) doCronCompensate(ctx context.Context, compensator pb.CronComp
 
 	// According to the policy decision, if it is the last pipeline, when it is the StopIfLatterExecuted policy,
 	// it should be compared with the pipeline in the latest success status. Only the ID greater than the successful ID can be executed
-	if compensator.LatestFirst.Value && compensator.StopIfLatterExecuted.Value {
+	if (compensator.LatestFirst != nil && compensator.LatestFirst.Value) &&
+		(compensator.StopIfLatterExecuted != nil && compensator.StopIfLatterExecuted.Value) {
 		// Get the pipeline successfully executed
-		result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
-			Sources:  []apistructs.PipelineSource{pipelineCron.PipelineSource},
-			YmlNames: []string{pipelineCron.PipelineYmlName},
-			Statuses: func() []string {
+		result, err := p.dbClient.PageListPipelines(&pipelinepb.PipelinePagingRequest{
+			Source:  []string{pipelineCron.PipelineSource.String()},
+			YmlName: []string{pipelineCron.PipelineYmlName},
+			Status: func() []string {
 				var endStatuses []string
 				for _, endStatus := range apistructs.PipelineEndStatuses {
 					endStatuses = append(endStatuses, endStatus.String())
@@ -407,10 +408,11 @@ func (p *provider) doCronCompensate(ctx context.Context, compensator pb.CronComp
 			return nil
 		}
 	}
-	_, err := p.pipelineFunc.RunPipeline(ctx, &apistructs.PipelineRunRequest{
-		PipelineID:   firstOrLastPipeline.ID,
-		Secrets:      firstOrLastPipeline.Extra.IncomingSecrets,
-		IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient, UserID: firstOrLastPipeline.GetUserID()},
+	_, err := p.pipelineFunc.RunPipeline(ctx, &pipelinepb.PipelineRunRequest{
+		PipelineID:     firstOrLastPipeline.ID,
+		Secrets:        firstOrLastPipeline.Extra.IncomingSecrets,
+		UserID:         firstOrLastPipeline.GetUserID(),
+		InternalClient: firstOrLastPipeline.Extra.InternalClient,
 	})
 
 	// Print one line of record after successful execution
@@ -503,11 +505,11 @@ func (p *provider) createCronCompensatePipeline(ctx context.Context, pc db.Pipel
 	pc.Extra.NormalLabels = pc.GenCompensateCreatePipelineReqNormalLabels(triggerTime)
 	pc.Extra.FilterLabels = pc.GenCompensateCreatePipelineReqFilterLabels()
 
-	return p.pipelineFunc.CreatePipeline(ctx, &apistructs.PipelineCreateRequestV2{
+	return p.pipelineFunc.CreatePipeline(ctx, &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,
-		PipelineSource:         pc.PipelineSource,
+		PipelineSource:         pc.PipelineSource.String(),
 		Labels:                 pc.Extra.FilterLabels,
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
@@ -515,10 +517,8 @@ func (p *provider) createCronCompensatePipeline(ctx context.Context, pc db.Pipel
 		Secrets:                pc.Extra.IncomingSecrets,
 		AutoRunAtOnce:          false,
 		AutoStartCron:          false,
-		IdentityInfo: apistructs.IdentityInfo{
-			UserID:         pc.Extra.NormalLabels[apistructs.LabelUserID],
-			InternalClient: "system-cron-compensator",
-		},
+		UserID:                 pc.Extra.NormalLabels[apistructs.LabelUserID],
+		InternalClient:         "system-cron-compensator",
 	})
 }
 

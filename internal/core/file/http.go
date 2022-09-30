@@ -28,6 +28,7 @@ import (
 	"gorm.io/gorm"
 
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/file/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/file/filetypes"
@@ -142,6 +143,7 @@ func (p *provider) DownloadFile(rw http.ResponseWriter, r *http.Request) {
 			rw.WriteHeader(statusCode)
 			var jsonResp pb.FileDownloadFailResponse
 			jsonResp.Success = false
+			jsonResp.Error = &commonpb.ResponseError{}
 			jsonResp.Error.Code = "ErrDownloadFile"
 			if apiErr, ok := err.(*errorresp.APIError); ok {
 				jsonResp.Error.Msg = apiErr.Error()

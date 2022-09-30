@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 	indexloader "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"
 )
 
@@ -54,11 +54,11 @@ type Manager struct {
 	redis *redis.Client
 
 	metricMetaCacheExpiration time.Duration
-	ckRaw                     clickhouse.Query
+	ckMetaLoader              meta.Interface
 }
 
 // NewManager .
-func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger, redis *redis.Client, metricMetaCacheExpiration time.Duration, raw clickhouse.Query) *Manager {
+func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger, redis *redis.Client, metricMetaCacheExpiration time.Duration, ckMetaLoader meta.Interface) *Manager {
 	sources := make(map[MetaSource]bool)
 	for _, item := range ms {
 		sources[MetaSource(item)] = true
@@ -73,7 +73,7 @@ func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath 
 		log:                       log,
 		redis:                     redis,
 		metricMetaCacheExpiration: metricMetaCacheExpiration,
-		ckRaw:                     raw,
+		ckMetaLoader:              ckMetaLoader,
 	}
 }
 
@@ -129,12 +129,12 @@ func (m *Manager) Init() error {
 	}
 
 	if m.sources[ClickhouseMetaSource] {
-		gp, err := NewMetaClickhouseGroupProvider(m.ckRaw)
+		gp, err := NewMetaClickhouseGroupProvider(m.ckMetaLoader)
 		if err != nil {
 			return err
 		}
 		m.groupProviders = append(m.groupProviders, func() GroupProvider { return gp })
-		mp, err := NewMetaClickhouseGroupProvider(m.ckRaw)
+		mp, err := NewMetaClickhouseGroupProvider(m.ckMetaLoader)
 		if err != nil {
 			return err
 		}

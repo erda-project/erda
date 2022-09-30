@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-scenes/common/gshelper"
@@ -52,7 +53,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	switch event.Operation {
 	case "cancelExecute":
 
-		var req apistructs.PipelineCancelRequest
+		var req pipelinepb.PipelineCancelRequest
 		req.PipelineID = gh.GetExecuteHistoryTablePipelineID()
 		req.UserID = ca.sdk.Identity.UserID
 		err := ca.bdl.CancelPipeline(req)
@@ -74,7 +75,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 				if rsp == nil {
 					return fmt.Errorf("not find pipelineID %v info", ca.pipelineId)
 				}
-				if !rsp.Status.IsReconcilerRunningStatus() {
+				if !apistructs.PipelineStatus(rsp.Status).IsReconcilerRunningStatus() {
 					visible = false
 				}
 			} else {

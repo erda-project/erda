@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package strutil 字符串工具包
 package strutil
 
 import (
@@ -539,9 +538,10 @@ func Exist(slice []string, val string) bool {
 // into \n (unix).
 //
 // There are 3 ways to represent a newline.
-//   Unix: using single character LF, which is byte 10 (0x0a), represented as “” in Go string literal.
-//   Windows: using 2 characters: CR LF, which is bytes 13 10 (0x0d, 0x0a), represented as “” in Go string literal.
-//   Mac OS: using 1 character CR (byte 13 (0x0d)), represented as “” in Go string literal. This is the least popular.
+//
+//	Unix: using single character LF, which is byte 10 (0x0a), represented as “” in Go string literal.
+//	Windows: using 2 characters: CR LF, which is bytes 13 10 (0x0d, 0x0a), represented as “” in Go string literal.
+//	Mac OS: using 1 character CR (byte 13 (0x0d)), represented as “” in Go string literal. This is the least popular.
 func NormalizeNewlines(d []byte) []byte {
 	// replace CR LF \r\n (windows) with LF \n (unix)
 	d = bytes.Replace(d, []byte{13, 10}, []byte{10}, -1)

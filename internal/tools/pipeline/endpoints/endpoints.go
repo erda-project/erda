@@ -22,36 +22,22 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/cancel"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	permissionSvc permission.Interface
-	pipelineSvc   *pipelinesvc.PipelineSvc
-	crondSvc      daemon.Interface
+	pipelineSvc *pipelinesvc.PipelineSvc
+	crondSvc    daemon.Interface
 
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
 
-	engine       engine.Interface
-	queueManager queuemanager.Interface
-	clusterInfo  clusterinfo.Interface
-	edgePipeline edgepipeline.Interface
-	edgeRegister edgepipeline_register.Interface
-	mySQL        mysqlxorm.Interface
-	run          run.Interface
-	cancel       cancel.Interface
+	clusterInfo clusterinfo.Interface
+	mySQL       mysqlxorm.Interface
 }
 
 type Option func(*Endpoints)
@@ -73,12 +59,6 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 	}
 }
 
-func WithPermissionSvc(svc permission.Interface) Option {
-	return func(e *Endpoints) {
-		e.permissionSvc = svc
-	}
-}
-
 func WithCrondSvc(svc daemon.Interface) Option {
 	return func(e *Endpoints) {
 		e.crondSvc = svc
@@ -97,51 +77,15 @@ func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	}
 }
 
-func WithEngine(engine engine.Interface) Option {
-	return func(e *Endpoints) {
-		e.engine = engine
-	}
-}
-
-func WithQueueManager(qm queuemanager.Interface) Option {
-	return func(e *Endpoints) {
-		e.queueManager = qm
-	}
-}
-
 func WithClusterInfo(clusterInfo clusterinfo.Interface) Option {
 	return func(e *Endpoints) {
 		e.clusterInfo = clusterInfo
 	}
 }
 
-func WithEdgePipeline(edgePipeline edgepipeline.Interface) Option {
-	return func(e *Endpoints) {
-		e.edgePipeline = edgePipeline
-	}
-}
-
-func WithEdgeRegister(edgeRegister edgepipeline_register.Interface) Option {
-	return func(e *Endpoints) {
-		e.edgeRegister = edgeRegister
-	}
-}
-
 func WithMysql(mysql mysqlxorm.Interface) Option {
 	return func(e *Endpoints) {
 		e.mySQL = mysql
-	}
-}
-
-func WithRun(run run.Interface) Option {
-	return func(e *Endpoints) {
-		e.run = run
-	}
-}
-
-func WithCancel(cancel cancel.Interface) Option {
-	return func(e *Endpoints) {
-		e.cancel = cancel
 	}
 }
 
@@ -156,40 +100,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/mysql/stats", Method: http.MethodGet, Handler: e.mysqlStats},
 		{Path: "/mysql/provider/stats", Method: http.MethodGet, Handler: e.providerMysqlStats},
 
-		// pipelines
-		{Path: "/api/v2/pipelines", Method: http.MethodPost, Handler: e.pipelineCreateV2},
-		{Path: "/api/pipelines", Method: http.MethodPost, Handler: e.pipelineCreate}, // TODO qa 和 adaptor 通过 bundle 调用 v1 create，需要调整后再下线
-		{Path: "/api/pipelines", Method: http.MethodGet, Handler: e.pipelineList},
-		{Path: "/api/pipelines/{pipelineID}", Method: http.MethodGet, Handler: e.pipelineDetail},
-		{Path: "/api/pipelines/{pipelineID}", Method: http.MethodPut, Handler: e.pipelineOperate},
-		{Path: "/api/pipelines/{pipelineID}", Method: http.MethodDelete, Handler: e.pipelineDelete},
-		{Path: "/api/pipelines/{pipelineID}/actions/run", Method: http.MethodPost, Handler: e.pipelineRun},
-		{Path: "/api/pipelines/{pipelineID}/actions/cancel", Method: http.MethodPost, Handler: e.pipelineCancel},
-		{Path: "/api/pipelines/{pipelineID}/actions/rerun", Method: http.MethodPost, Handler: e.pipelineRerun},
-		{Path: "/api/pipelines/{pipelineID}/actions/rerun-failed", Method: http.MethodPost, Handler: e.pipelineRerunFailed},
-
-		// labels
-		{Path: "/api/pipelines-labels/actions/batch-insert-labels", Method: http.MethodPost, Handler: e.batchInsertLabels},
-		{Path: "/api/pipelines-labels", Method: http.MethodGet, Handler: e.pipelineLabelList},
-
-		// tasks
-		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}", Method: http.MethodGet, Handler: e.pipelineTaskDetail},
-		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info", Method: http.MethodGet, Handler: e.taskBootstrapInfo},
-
-		// pipeline related actions
-		{Path: "/api/pipelines/actions/batch-create", Method: http.MethodPost, Handler: e.pipelineBatchCreate},
-		{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
-		{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
-
-		// platform callback
-		{Path: "/api/pipelines/actions/callback", Method: http.MethodPost, Handler: e.pipelineCallback},
-
 		// daemon
 		{Path: "/_daemon/reload-action-executor-config", Method: http.MethodGet, Handler: e.reloadActionExecutorConfig},
 		{Path: "/_daemon/crond/actions/reload", Method: http.MethodGet, Handler: e.crondReload},
 		{Path: "/_daemon/crond/actions/snapshot", Method: http.MethodGet, Handler: e.crondSnapshot},
-
-		{Path: "/api/pipeline-snippets/actions/query-details", Method: http.MethodPost, Handler: e.querySnippetDetails},
 
 		// cluster info
 		// TODO: clusterinfo provider provide this api directly, remove explicit declaration in endpoint.

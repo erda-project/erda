@@ -132,12 +132,13 @@ func buildDaemonsetAffinity(s *apistructs.ScheduleInfo2, cons *Constraints, serv
 
 // Note: this is an intentional limitation by k8s, only allow targeting single nodes.
 // requiredDuringSchedulingIgnoredDuringExecution:
-//   nodeSelectorTerms:
-//   - matchFields:
-//     - key: metadata.name
-//       operator: In
-//       values:
-//       - node-010168000080
+//
+//	nodeSelectorTerms:
+//	- matchFields:
+//	  - key: metadata.name
+//	    operator: In
+//	    values:
+//	    - node-010168000080
 func buildSpecificHost(specificHosts []string, cons *Constraints, hostnameUtil constraints.HostnameUtil) {
 	if len(specificHosts) == 0 || hostnameUtil == nil {
 		return

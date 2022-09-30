@@ -29,11 +29,12 @@ import (
 
 // ReverseDDLWithSnapshot reverses a DDL.
 // e.g.
-// 	CreateTableStmt ==reverse-to==> DropTableStmt
+//
+//	CreateTableStmt ==reverse-to==> DropTableStmt
 //	RenameTableStmt a to b ==reverse-to==> RenameTableStmt b to a
-// 	AlterTableAddColumns ==reverse-to==> AlterTableDropColumn
-// 	AlterTableOption to new ==reverse-to==> AlterTableOption to old
-// 	... ....
+//	AlterTableAddColumns ==reverse-to==> AlterTableDropColumn
+//	AlterTableOption to new ==reverse-to==> AlterTableOption to old
+//	... ....
 //
 // How to do this ?
 // First, to snapshot the table definition from database, then generate the reversed DDL.

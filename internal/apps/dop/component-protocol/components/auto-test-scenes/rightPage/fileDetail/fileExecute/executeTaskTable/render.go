@@ -23,6 +23,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -282,7 +284,7 @@ func (a *ExecuteTaskTable) getStatus(req apistructs.PipelineStatus) map[string]i
 	return res
 }
 
-func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error {
+func (a *ExecuteTaskTable) setData(pipeline *pipelinepb.PipelineDetailDTO) error {
 	lists := []map[string]interface{}{}
 	clickableKeys := []uint64{}
 	a.State.Total = 0
@@ -306,7 +308,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 							Reload:      false,
 							Meta:        task.Result,
 							DisabledTip: "禁用接口无法查看结果",
-							Disabled:    task.Status.IsDisabledStatus(),
+							Disabled:    apistructs.PipelineStatus(task.Status).IsDisabledStatus(),
 						},
 						"checkLog": dataOperation{
 							Key:    "checkLog",
@@ -318,7 +320,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 								"nodeId":     task.ID,
 							},
 							DisabledTip: "禁用接口无法查看日志",
-							Disabled:    task.Status.IsDisabledStatus(),
+							Disabled:    apistructs.PipelineStatus(task.Status).IsDisabledStatus(),
 						},
 					}
 					taskNum = "-"
@@ -338,7 +340,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					},
 					"tasksNum": taskNum,
 					"name":     task.Name,
-					"status":   a.getStatus(task.Status),
+					"status":   a.getStatus(apistructs.PipelineStatus(task.Status)),
 					"type":     a.transformStepType(apistructs.StepAPIType(task.Type)),
 					"path":     "",
 					"step":     stepIdx,
@@ -385,7 +387,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 								Key:         "checkDetail",
 								Text:        a.sdk.I18n("checkRes"),
 								Reload:      false,
-								Disabled:    task.Status.IsDisabledStatus(),
+								Disabled:    apistructs.PipelineStatus(task.Status).IsDisabledStatus(),
 								DisabledTip: "禁用接口无法查看结果",
 								Meta:        task.Result,
 							},
@@ -393,7 +395,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 								Key:         "checkLog",
 								Reload:      false,
 								Text:        a.sdk.I18n("log"),
-								Disabled:    task.Status.IsDisabledStatus(),
+								Disabled:    apistructs.PipelineStatus(task.Status).IsDisabledStatus(),
 								DisabledTip: "禁用接口无法查看日志",
 								Meta: map[string]interface{}{
 									"logId":      task.Extra.UUID,
@@ -417,7 +419,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.Name,
-						"status":   a.getStatus(task.Status),
+						"status":   a.getStatus(apistructs.PipelineStatus(task.Status)),
 						"type":     a.transformStepType(res.Type),
 						"path":     path,
 						"step":     stepIdx,
@@ -451,7 +453,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.SceneSetName,
-						"status":   a.getStatus(task.Status),
+						"status":   a.getStatus(apistructs.PipelineStatus(task.Status)),
 						"type":     a.sdk.I18n("sceneset"),
 						"path":     "",
 						"step":     stepIdx,
@@ -484,7 +486,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.Name,
-						"status":   a.getStatus(task.Status),
+						"status":   a.getStatus(apistructs.PipelineStatus(task.Status)),
 						"type":     a.sdk.I18n("scene"),
 						"path":     "",
 						"step":     stepIdx,

@@ -21,13 +21,13 @@ import (
 	"net/http"
 	"strconv"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/dbclient"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-
-	"github.com/erda-project/erda/internal/apps/dop/dbclient"
-	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 )
 
 // CreateAPITest 创建 API 接口测试
@@ -151,9 +151,10 @@ func (e *Endpoints) CancelApiTests(ctx context.Context, r *http.Request, vars ma
 	}
 
 	// 根据 pipelineID 获取 pipeline 信息
-	if err := e.bdl.CancelPipeline(apistructs.PipelineCancelRequest{
-		PipelineID:   pipelineID,
-		IdentityInfo: identityInfo,
+	if err := e.bdl.CancelPipeline(pipelinepb.PipelineCancelRequest{
+		PipelineID:     pipelineID,
+		UserID:         identityInfo.UserID,
+		InternalClient: identityInfo.InternalClient,
 	}); err != nil {
 		return apierrors.ErrCancelAPITests.InternalError(err).ToResp(), nil
 	}
@@ -282,9 +283,10 @@ func (e *Endpoints) CancelApiTestPipeline(ctx context.Context, r *http.Request, 
 	if !access.Access {
 		return apierrors.ErrTestPlanCancelAPITest.AccessDenied().ToResp(), nil
 	}
-	err = e.bdl.CancelPipeline(apistructs.PipelineCancelRequest{
-		PipelineID:   pipelineID,
-		IdentityInfo: identityInfo,
+	err = e.bdl.CancelPipeline(pipelinepb.PipelineCancelRequest{
+		PipelineID:     pipelineID,
+		UserID:         identityInfo.UserID,
+		InternalClient: identityInfo.InternalClient,
 	})
 	if err != nil {
 		return apierrors.ErrTestPlanCancelAPITest.InternalError(err).ToResp(), nil

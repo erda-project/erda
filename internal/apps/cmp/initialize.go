@@ -217,6 +217,7 @@ func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js,
 		endpoints.WithCronServiceServer(p.CronService),
 		endpoints.WithClusterServiceServer(p.ClusterSvc),
 		endpoints.WithOrg(p.Org),
+		endpoints.WithPipelineSvc(p.PipelineSvc),
 	)
 
 	// Sync org resource task status

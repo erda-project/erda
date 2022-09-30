@@ -187,7 +187,7 @@ func ImportPackage(ctx *command.Context, orgID, projectID uint64, pkg string) (u
 	return response.Data, nil
 }
 
-//  ListMyProjectInOrg 获取指定组织下的我的项目列表
+// ListMyProjectInOrg 获取指定组织下的我的项目列表
 func ListMyProjectInOrg(ctx *command.Context, orgId string, projectName string) ([]apistructs.ProjectDTO, error) {
 	var resp apistructs.ProjectListResponse
 	var b bytes.Buffer

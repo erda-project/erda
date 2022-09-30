@@ -40,7 +40,7 @@ type provider struct {
 	bdl        *bundle.Bundle
 	MetricMeta metricpb.MetricMetaServiceServer `autowired:"erda.core.monitor.metric.MetricMetaService"`
 	t          i18n.Translator
-	Org        org.ClientInterface
+	Org        org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

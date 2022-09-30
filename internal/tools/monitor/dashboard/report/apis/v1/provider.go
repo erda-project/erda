@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	notifyGrouppb "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda-proto-go/tools/monitor/dashboard/report/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
@@ -61,6 +62,7 @@ type provider struct {
 	db                 *DB
 	CronService        cronpb.CronServiceServer               `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	NotifyGroupService notifyGrouppb.NotifyGroupServiceServer `autowired:"erda.core.messenger.notifygroup.NotifyGroupService" required:"true"`
+	PipelineSvc        pipelinepb.PipelineServiceServer       `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 	reportService      *reportService
 	Org                org.ClientInterface
 }

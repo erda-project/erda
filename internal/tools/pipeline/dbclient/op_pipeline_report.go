@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -55,9 +56,9 @@ func (client *Client) PagingPipelineReportSets(req *pb.PipelineReportSetPagingRe
 	if len(req.Types) == 0 {
 		req.Types = append(req.Types, string(apistructs.PipelineReportTypeBasic))
 	}
-	sources := make([]apistructs.PipelineSource, 0)
+	sources := make([]string, 0)
 	for _, source := range req.Sources {
-		sources = append(sources, apistructs.PipelineSource(source))
+		sources = append(sources, source)
 	}
 
 	// 先查询流水线 ID 列表
@@ -68,22 +69,22 @@ func (client *Client) PagingPipelineReportSets(req *pb.PipelineReportSetPagingRe
 			reportLabelKey, reportLabelValue := client.MakePipelineReportTypeLabelKey(apistructs.PipelineReportType(typ))
 			req.MustMatchLabelsQueryParams = append(req.MustMatchLabelsQueryParams, fmt.Sprintf("%s=%s", reportLabelKey, reportLabelValue))
 		}
-		pipelinePagingReq := &apistructs.PipelinePageListRequest{
-			Sources:                    sources,
-			AllSources:                 false,
-			StartTimeBeginTimestamp:    req.StartTimeBeginTimestamp,
-			EndTimeBeginTimestamp:      req.EndTimeBeginTimestamp,
-			StartTimeCreatedTimestamp:  req.StartTimeBeginTimestamp,
-			EndTimeCreatedTimestamp:    req.EndTimeCreatedTimestamp,
-			MustMatchLabelsQueryParams: req.MustMatchLabelsQueryParams,
-			PageNum:                    int(req.PageNum),
-			PageSize:                   int(req.PageSize),
-			CountOnly:                  true,
+		pipelinePagingReq := &pipelinepb.PipelinePagingRequest{
+			Source:                    sources,
+			AllSources:                false,
+			StartTimeBeginTimestamp:   req.StartTimeBeginTimestamp,
+			EndTimeBeginTimestamp:     req.EndTimeBeginTimestamp,
+			StartTimeCreatedTimestamp: req.StartTimeBeginTimestamp,
+			EndTimeCreatedTimestamp:   req.EndTimeCreatedTimestamp,
+			MustMatchLabel:            req.MustMatchLabelsQueryParams,
+			PageNum:                   int64(req.PageNum),
+			PageSize:                  int64(req.PageSize),
+			CountOnly:                 true,
 		}
-		if err := pipelinePagingReq.PostHandleQueryString(); err != nil {
+		if err := apistructs.PostHandlePBQueryString(pipelinePagingReq); err != nil {
 			return nil, -1, fmt.Errorf("failed to paging pipeline ids, invalid req, err: %v", err)
 		}
-		result, err := client.PageListPipelines(*pipelinePagingReq, ops...)
+		result, err := client.PageListPipelines(pipelinePagingReq, ops...)
 		if err != nil {
 			return nil, -1, fmt.Errorf("failed to paging pipeline ids, err: %v", err)
 		}

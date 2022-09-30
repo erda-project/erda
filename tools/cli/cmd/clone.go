@@ -94,7 +94,7 @@ func Clone(ctx *command.Context, ustr string, cloneApps bool) error {
 	}
 	pInfo = &command.ProjectInfo{
 		Version:   command.ConfigVersion,
-		Server:    ctx.CurrentOpenApiHost,
+		Server:    ctx.CurrentHost,
 		Org:       org,
 		OrgID:     orgID,
 		Project:   p.Name,

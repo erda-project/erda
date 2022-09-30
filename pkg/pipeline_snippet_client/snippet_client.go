@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -42,11 +43,11 @@ type batchQuerySnippetYamlResp struct {
 	Data []apistructs.BatchSnippetConfigYml `json:"data"`
 }
 
-func BatchGetSnippetPipelineYml(snippetConfig []apistructs.SnippetConfig) ([]apistructs.BatchSnippetConfigYml, error) {
+func BatchGetSnippetPipelineYml(snippetConfig []*pb.SnippetDetailQuery) ([]apistructs.BatchSnippetConfigYml, error) {
 
-	var configs = map[string][]apistructs.SnippetConfig{}
-	for _, v := range snippetConfig {
-		configs[v.Source] = append(configs[v.Source], v)
+	var configs = map[string][]*pb.SnippetDetailQuery{}
+	for i := range snippetConfig {
+		configs[snippetConfig[i].Source] = append(configs[snippetConfig[i].Source], snippetConfig[i])
 	}
 
 	var results []apistructs.BatchSnippetConfigYml
@@ -86,7 +87,7 @@ func BatchGetSnippetPipelineYml(snippetConfig []apistructs.SnippetConfig) ([]api
 	return results, nil
 }
 
-func GetSnippetPipelineYml(snippetConfig apistructs.SnippetConfig) (string, error) {
+func GetSnippetPipelineYml(snippetConfig *pb.SnippetDetailQuery) (string, error) {
 	clientConfig := snippetClientMap[snippetConfig.Source]
 	if clientConfig == nil {
 		return "", fmt.Errorf("getSnippetPipelineYml error: can not find snippet %s client", snippetConfig.Name)

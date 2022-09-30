@@ -184,3 +184,9 @@ func TestWriteBody(t *testing.T) {
 		t.Fatal("buff != data")
 	}
 }
+
+// Request_SetParam need not test
+func TestRequest_SetParam(t *testing.T) {
+	var request = new(Request)
+	request.SetParam("key", "value")
+}

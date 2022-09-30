@@ -23,6 +23,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/autotest"
@@ -75,11 +76,9 @@ func TestGetApiConfigName(t *testing.T) {
 func TestRender(t *testing.T) {
 	bdl := bundle.New()
 	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipeline",
-		func(bdl *bundle.Bundle, pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
-			return &apistructs.PipelineDetailDTO{
-				PipelineDTO: apistructs.PipelineDTO{
-					Status: apistructs.PipelineStatusSuccess,
-				},
+		func(bdl *bundle.Bundle, pipelineID uint64) (*pipelinepb.PipelineDetailDTO, error) {
+			return &pipelinepb.PipelineDetailDTO{
+				Status: apistructs.PipelineStatusSuccess.String(),
 			}, nil
 		})
 	defer m1.Unpatch()

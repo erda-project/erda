@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka/prometheusmetrics"
 )
 
-//deprecated
+// deprecated
 type ConsumerFunc func(key []byte, value []byte, topic *string, timestamp time.Time) error
 type ConsumerFuncV2 func(msg *sarama.ConsumerMessage) error
 
@@ -104,7 +104,7 @@ func (p *provider) NewConsumerGroup(c *ConsumerConfig, handler ConsumerFuncV2) (
 	), nil
 }
 
-//deprecated
+// deprecated
 func (p *provider) NewConsumer(c *ConsumerConfig, handler ConsumerFunc) error {
 	cg, err := p.newConsumerGroup(c)
 	if err != nil {

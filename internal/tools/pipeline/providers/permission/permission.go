@@ -17,14 +17,15 @@ package permission
 import (
 	"strconv"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/gitflowutil"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 )
 
-func (s *provider) Check(identityInfo apistructs.IdentityInfo, req *apistructs.PermissionCheckRequest) error {
+func (s *provider) Check(identityInfo *commonpb.IdentityInfo, req *apistructs.PermissionCheckRequest) error {
 	// 内部调用，无需鉴权
-	if identityInfo.InternalClient != "" {
+	if identityInfo == nil || identityInfo.InternalClient != "" {
 		return nil
 	}
 
@@ -41,7 +42,7 @@ func (s *provider) Check(identityInfo apistructs.IdentityInfo, req *apistructs.P
 	return nil
 }
 
-func (s *provider) CheckInternalClient(identityInfo apistructs.IdentityInfo) error {
+func (s *provider) CheckInternalClient(identityInfo *commonpb.IdentityInfo) error {
 	return s.Check(identityInfo, &apistructs.PermissionCheckRequest{
 		UserID:   identityInfo.UserID,    // just check internal user id
 		Scope:    apistructs.OrgScope,    // any valid scope is ok
@@ -51,7 +52,7 @@ func (s *provider) CheckInternalClient(identityInfo apistructs.IdentityInfo) err
 }
 
 // CheckApp 校验用户在 应用 下是否有 ${action} 权限
-func (s *provider) CheckApp(identityInfo apistructs.IdentityInfo, appID uint64, action string) error {
+func (s *provider) CheckApp(identityInfo *commonpb.IdentityInfo, appID uint64, action string) error {
 	return s.Check(identityInfo, &apistructs.PermissionCheckRequest{
 		Scope:    apistructs.AppScope,
 		ScopeID:  appID,
@@ -61,8 +62,8 @@ func (s *provider) CheckApp(identityInfo apistructs.IdentityInfo, appID uint64, 
 }
 
 // CheckBranch 校验用户在 应用对应分支 下是否有 ${action} 权限
-func (s *provider) CheckBranch(identityInfo apistructs.IdentityInfo, appIDStr, branch, action string) error {
-	if identityInfo.IsInternalClient() {
+func (s *provider) CheckBranch(identityInfo *commonpb.IdentityInfo, appIDStr, branch, action string) error {
+	if identityInfo == nil || identityInfo.InternalClient != "" {
 		return nil
 	}
 	// 处理分支，获取分支前缀

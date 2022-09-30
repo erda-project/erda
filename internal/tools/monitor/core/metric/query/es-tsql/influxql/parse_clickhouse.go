@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -86,17 +87,10 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 }
 
 func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectDataset, columns map[string]string) (*goqu.SelectDataset, error) {
-	if len(s) <= 0 {
-		return expr, nil
-	}
 	sortFields := make(map[string]bool)
-
-	if len(s) <= 0 {
-		sortFields[p.ctx.timeKey] = false
-	} else {
+	if len(s) > 0 {
 		for _, field := range s {
 			if field.Expr == nil {
-				sortFields[p.ctx.timeKey] = field.Ascending
 				continue
 			}
 
@@ -113,20 +107,34 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 		}
 	}
 
-	for key, isAsc := range sortFields {
-		column := key
-		if newName, ok := columns[key]; ok {
-			column = newName
+	for script, column := range columns {
+		asc := false
+		if _asc, ok := sortFields[script]; ok {
+			delete(sortFields, script)
+			asc = _asc
 		}
-		// simple column
-		if !isAsc {
-			expr = expr.OrderAppend(goqu.C(column).Desc())
-		} else {
-			expr = expr.OrderAppend(goqu.C(column).Asc())
-		}
-		continue
+		sortFields[column] = asc
 	}
 
+	if _, ok := sortFields[p.ctx.timeKey]; ok {
+		expr = expr.Order(goqu.C(p.ctx.timeKey).Asc())
+	}
+
+	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
+	if _, ok := sortFields[timeBucketColumn]; ok {
+		expr = expr.Order(goqu.C(timeBucketColumn).Asc())
+	}
+
+	for column, asc := range sortFields {
+		if column == p.ctx.timeKey || column == timeBucketColumn || column == "*" {
+			continue
+		}
+		if asc {
+			expr = expr.OrderAppend(goqu.C(column).Asc())
+		} else {
+			expr = expr.OrderAppend(goqu.C(column).Desc())
+		}
+	}
 	return expr, nil
 }
 
@@ -161,7 +169,7 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 	if len(dimensions) <= 0 {
 		return expr, nil, nil
 	}
-	expr, liters, tailLiters, err := p.parseQueryDimensionsByExpr(expr, dimensions, handlers)
+	expr, liters, tailLiters, err := p.parseQueryDimensionsByExpr(expr, dimensions, handlers, columns)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -207,7 +215,7 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 	}
 	return expr, handlers, columns, nil
 }
-func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dimensions influxql.Dimensions, handler *[]*SQLColumnHandler) (*goqu.SelectDataset, []string, map[string]string, error) {
+func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dimensions influxql.Dimensions, handler *[]*SQLColumnHandler, columns map[string]string) (*goqu.SelectDataset, []string, map[string]string, error) {
 	var exprList []string
 
 	tailExpr := make(map[string]string)
@@ -246,12 +254,7 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 				intervalSeconds := interval / int64(tsql.Second)
 
-				bucketStartTime := (start / interval) * interval
-				bucketEndTime := (end / interval) * interval
-
 				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(%v)),9)", intervalSeconds)).As(timeBucketColumn))
-
-				tailExpr[timeBucketColumn] = fmt.Sprintf("%s with fill from fromUnixTimestamp64Nano(cast(%v, 'Int64')) to fromUnixTimestamp64Nano(cast(%v, 'Int64')) step  toDateTime64(%v,9)", timeBucketColumn, bucketStartTime, bucketEndTime, intervalSeconds)
 
 				exprList = append(exprList, timeBucketColumn)
 
@@ -264,8 +267,11 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 					},
 					ctx: p.ctx,
 				})
+				columns[timeBucketColumn] = timeBucketColumn
 				newHandler = append(newHandler, *handler...)
 				*handler = newHandler
+				p.ctx.dimensions[timeBucketColumn] = true
+
 				continue
 			} else if expr.Name == "range" {
 				continue
@@ -279,6 +285,9 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 		}
 		script := p.getExprStringAndFlagByExpr(dim.Expr, influxql.AnyField)
 		exprList = append(exprList, script)
+
+		key, _ := getExprStringAndFlag(dim.Expr, influxql.AnyField)
+		p.ctx.dimensions[key] = true
 	}
 	return exprSelect, exprList, tailExpr, nil
 }
@@ -422,7 +431,7 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]string)
 		c, _ := p.ckGetKeyName(expr, influxql.AnyField)
 		cols[c] = exprString(expr)
 	case *influxql.Wildcard:
-		cols["*"] = ""
+		cols["*"] = "*"
 	}
 	return nil
 }
@@ -734,15 +743,15 @@ func (p *Parser) ckField(key string) (string, bool) {
 		fmt.Println("parse_clickhouse get metric is err: ", err)
 		return field, true
 	}
-	metas, err := p.meta.GetMetricMetaByCache(p.GetOrgName(), p.GetTerminusKey(), metrics...)
+	metas := p.meta.GetMeta(context.Background(), p.GetOrgName(), p.GetTerminusKey(), metrics...)
 	if err != nil {
 		fmt.Println("parse_clickhouse get meta is err:", err)
 		return field, true
 	}
 
 	for _, meta := range metas {
-		if v, ok := meta.Fields[key]; ok {
-			if v.Type == "string" {
+		for _, stringKey := range meta.StringKeys {
+			if stringKey == key {
 				field = fmt.Sprintf("indexOf(string_field_keys,'%s')", key)
 				isNumber = false
 				break

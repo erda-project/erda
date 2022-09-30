@@ -23,8 +23,10 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/xormplus/xorm"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda/apistructs"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
@@ -37,20 +39,22 @@ func TestNotFoundBaseErrorIs(t *testing.T) {
 }
 
 func TestPageListPipelines(t *testing.T) {
+	sourceLabels := []interface{}{"s1", "s2"}
+	labels, _ := structpb.NewValue(sourceLabels)
 	tests := []struct {
 		name            string
-		labels          map[string][]string
+		labels          map[string]*structpb.Value
 		wantPipelineIDS []uint64
 	}{
 		{
 			name:            "no labels",
-			labels:          map[string][]string{},
+			labels:          map[string]*structpb.Value{},
 			wantPipelineIDS: []uint64{1, 2, 3},
 		},
 		{
 			name: "with labels",
-			labels: map[string][]string{
-				"source": {"s1", "s2"},
+			labels: map[string]*structpb.Value{
+				"source": labels,
 			},
 			wantPipelineIDS: []uint64{1, 2},
 		},
@@ -114,11 +118,11 @@ func TestPageListPipelines(t *testing.T) {
 				return nil
 			})
 			defer pm9.Unpatch()
-			pagingRes, err := client.PageListPipelines(apistructs.PipelinePageListRequest{
-				AnyMatchLabels: tt.labels,
-				PageNo:         1,
-				PageSize:       3,
-				AllSources:     true,
+			pagingRes, err := client.PageListPipelines(&pipelinepb.PipelinePagingRequest{
+				AnyMatchLabelsJSON: tt.labels,
+				PageNo:             1,
+				PageSize:           3,
+				AllSources:         true,
 			})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantPipelineIDS, pagingRes.PagingPipelineIDs)

@@ -15,16 +15,15 @@
 package metricmeta
 
 import (
+	"context"
 	"embed"
 	"testing"
-	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/doug-martin/goqu/v9"
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 )
 
 type mockI18n struct {
@@ -65,152 +64,20 @@ func (m mockI18n) RegisterFilesFromFS(fsPrefix string, rootFS embed.FS) error {
 	return nil
 }
 
-type mockClickhouse struct {
-	mchRow *mockClickhouseRow
-	sql    string
+type mockMeta struct {
+	mock []meta.MetricMeta
 }
 
-type mockClickhouseRow struct {
-	column []string
-	err    error
-	data   []ckMeta
-	point  int
+func (m mockMeta) GetMeta(ctx context.Context, scope, scopeId string, names ...string) []meta.MetricMeta {
+	return m.mock
 }
 
-func (m *mockClickhouseRow) Next() bool {
-	if m.point < len(m.data) {
-		m.point = m.point + 1
-		return true
-	}
-	return false
-}
-
-func (m *mockClickhouseRow) Scan(dest ...interface{}) error {
+func (m mockMeta) WaitAndGetTables(ctx context.Context) []meta.MetricMeta {
 	return nil
 }
 
-func (m *mockClickhouseRow) ScanStruct(dest interface{}) error {
-	meta := dest.(*ckMeta)
-	data := m.data[m.point-1]
-	meta.MetricGroup = data.MetricGroup
-	meta.TagKeys = data.TagKeys
-	meta.NumberKeys = data.NumberKeys
-	meta.StringKeys = data.StringKeys
+func (m mockMeta) Reload() chan error {
 	return nil
-}
-
-func (m *mockClickhouseRow) ColumnTypes() []driver.ColumnType {
-	return nil
-}
-
-func (m *mockClickhouseRow) Totals(dest ...interface{}) error {
-	return nil
-}
-
-func (m *mockClickhouseRow) Columns() []string {
-	return m.column
-}
-
-func (m mockClickhouseRow) Close() error {
-	return nil
-}
-
-func (m *mockClickhouseRow) Err() error {
-	return m.err
-}
-
-func (m *mockClickhouse) QueryRaw(orgName string, expr *goqu.SelectDataset) (driver.Rows, error) {
-	if expr != nil {
-		m.sql, _, _ = expr.ToSQL()
-	}
-	return m.mchRow, nil
-}
-
-func TestMock(t *testing.T) {
-	row := mockClickhouseRow{}
-	row.data = []ckMeta{
-		ckMeta{
-			MetricGroup: "",
-			StringKeys:  []string{"11", "22", "33"},
-			NumberKeys:  []string{"44", "55", "66"},
-			TagKeys:     []string{"77", "88", "99"},
-		},
-		ckMeta{
-			MetricGroup: "",
-			StringKeys:  []string{"11", "22", "33"},
-			NumberKeys:  []string{"44", "55", "66"},
-			TagKeys:     []string{"77", "88", "99"},
-		},
-		ckMeta{
-			MetricGroup: "",
-			StringKeys:  []string{"11", "22", "33"},
-			NumberKeys:  []string{"44", "55", "66"},
-			TagKeys:     []string{"77", "88", "99"},
-		},
-	}
-	mch := mockClickhouse{
-		mchRow: &row,
-	}
-	resultRow, err := mch.QueryRaw("", nil)
-	require.NoError(t, err)
-	var cms []ckMeta
-
-	for resultRow.Next() {
-		var cm ckMeta
-		err := resultRow.ScanStruct(&cm)
-		require.NoError(t, err)
-		require.ElementsMatch(t, []string{"11", "22", "33"}, cm.StringKeys)
-		require.ElementsMatch(t, []string{"44", "55", "66"}, cm.NumberKeys)
-		require.ElementsMatch(t, []string{"77", "88", "99"}, cm.TagKeys)
-		cms = append(cms, cm)
-	}
-	require.Equal(t, 3, len(cms))
-}
-
-func TestMetricMetaWantSQL(t *testing.T) {
-	tests := []struct {
-		name    string
-		scope   string
-		scopeId string
-		names   []string
-		want    string
-	}{
-		{
-			name:  "scope",
-			scope: "org",
-			want:  "SELECT \"metric_group\", groupUniqArray(arrayJoin(if(empty(string_field_keys),[null],string_field_keys))) AS \"sk\", groupUniqArray(arrayJoin(if(empty(number_field_keys),[null],number_field_keys))) AS \"nk\", groupUniqArray(arrayJoin(if(empty(tag_keys),[null],tag_keys))) AS \"tk\" FROM \"metrics_meta\" WHERE ((\"org_name\" = 'org') AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
-		},
-		{
-			name:    "scope,scopeid",
-			scope:   "org",
-			scopeId: "13123",
-			want:    "SELECT \"metric_group\", groupUniqArray(arrayJoin(if(empty(string_field_keys),[null],string_field_keys))) AS \"sk\", groupUniqArray(arrayJoin(if(empty(number_field_keys),[null],number_field_keys))) AS \"nk\", groupUniqArray(arrayJoin(if(empty(tag_keys),[null],tag_keys))) AS \"tk\" FROM \"metrics_meta\" WHERE ((\"org_name\" = 'org') AND (\"tenant_id\" = '13123') AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
-		},
-		{
-			name:  "scope,names",
-			scope: "org",
-			names: []string{"metric1", "metric2"},
-			want:  "SELECT \"metric_group\", groupUniqArray(arrayJoin(if(empty(string_field_keys),[null],string_field_keys))) AS \"sk\", groupUniqArray(arrayJoin(if(empty(number_field_keys),[null],number_field_keys))) AS \"nk\", groupUniqArray(arrayJoin(if(empty(tag_keys),[null],tag_keys))) AS \"tk\" FROM \"metrics_meta\" WHERE ((\"org_name\" = 'org') AND (\"metric_group\" IN ('metric1', 'metric2')) AND (\"timestamp\" >= fromUnixTimestamp64Nano(cast(1658201469067491000,'Int64'))) AND (\"timestamp\" < fromUnixTimestamp64Nano(cast(1658806269067491000,'Int64')))) GROUP BY \"metric_group\"",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := MetaClickhouseGroupProvider{}
-			mockClickhouse := &mockClickhouse{
-				mchRow: &mockClickhouseRow{},
-			}
-			p.clickhouse = mockClickhouse
-
-			now = func() time.Time {
-				return time.Unix(0, 1658806269067491000)
-			}
-
-			_, err := p.MetricMeta(nil, nil, tt.scope, tt.scopeId, tt.names...)
-			require.NoError(t, err)
-			require.Equal(t, tt.want, mockClickhouse.sql)
-		})
-	}
 }
 
 func TestMetricMetaWantMeta(t *testing.T) {
@@ -219,7 +86,7 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		scope      string
 		scopeId    string
 		names      []string
-		mockResult []ckMeta
+		mockResult []meta.MetricMeta
 		want       map[string]*metricpb.MetricMeta
 	}{
 		{
@@ -229,8 +96,8 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "no meta",
-			mockResult: []ckMeta{
-				ckMeta{
+			mockResult: []meta.MetricMeta{
+				{
 					MetricGroup: "metric1",
 				},
 			},
@@ -243,8 +110,8 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "only tag",
-			mockResult: []ckMeta{
-				ckMeta{
+			mockResult: []meta.MetricMeta{
+				{
 					MetricGroup: "metric1",
 					TagKeys:     []string{"tag", "tag1", "tag2"},
 				},
@@ -270,8 +137,8 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "tag,field",
-			mockResult: []ckMeta{
-				ckMeta{
+			mockResult: []meta.MetricMeta{
+				{
 					MetricGroup: "metric1",
 					TagKeys:     []string{"tag", "tag1", "tag2"},
 					StringKeys:  []string{"field", "field1", "field2"},
@@ -315,8 +182,8 @@ func TestMetricMetaWantMeta(t *testing.T) {
 		},
 		{
 			name: "string and number field",
-			mockResult: []ckMeta{
-				ckMeta{
+			mockResult: []meta.MetricMeta{
+				{
 					MetricGroup: "metric1",
 					TagKeys:     []string{"tag", "tag1", "tag2"},
 					StringKeys:  []string{"field", "field1", "field2"},
@@ -379,12 +246,10 @@ func TestMetricMetaWantMeta(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := MetaClickhouseGroupProvider{}
-			mockClickhouse := &mockClickhouse{
-				mchRow: &mockClickhouseRow{
-					data: tt.mockResult,
-				},
+			mockClickhouse := mockMeta{
+				mock: tt.mockResult,
 			}
-			p.clickhouse = mockClickhouse
+			p.ckMetaLoader = mockClickhouse
 			i := mockI18n{}
 			data, err := p.MetricMeta(nil, i, tt.scope, tt.scopeId, tt.names...)
 			require.NoError(t, err)
@@ -422,8 +287,8 @@ func TestMetricMetaWantMeta(t *testing.T) {
 }
 
 func TestGroups(t *testing.T) {
-	mockClickhouse := &mockClickhouse{
-		mchRow: &mockClickhouseRow{},
+	mockClickhouse := &mockMeta{
+		mock: []meta.MetricMeta{},
 	}
 	p, err := NewMetaClickhouseGroupProvider(mockClickhouse)
 	require.NoError(t, err)
@@ -447,8 +312,8 @@ func TestGroups(t *testing.T) {
 }
 
 func TestMappingsByID(t *testing.T) {
-	mockClickhouse := &mockClickhouse{
-		mchRow: &mockClickhouseRow{},
+	mockClickhouse := &mockMeta{
+		mock: []meta.MetricMeta{},
 	}
 
 	p, err := NewMetaClickhouseGroupProvider(mockClickhouse)

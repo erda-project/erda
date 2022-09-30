@@ -17,6 +17,8 @@ package apistructs
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPipelineTaskLoop_Duplicate(t *testing.T) {
@@ -94,4 +96,28 @@ func TestPipelineTaskLoop_IsEmpty(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_TaskParamSource_String(t *testing.T) {
+	source := UserTaskParamSource.String()
+	assert.Equal(t, "user", source)
+}
+
+func Test_PipelineTaskSnippetDetail_Convert2PB(t *testing.T) {
+	detail := &PipelineTaskSnippetDetail{
+		Outputs: []PipelineOutputWithValue{
+			{
+				PipelineOutput: PipelineOutput{
+					Name: "output1",
+					Ref:  "ourput1",
+				},
+				Value: "val1",
+			},
+		},
+		DirectSnippetTasksNum:    1,
+		RecursiveSnippetTasksNum: 1,
+	}
+	pbDetail := detail.Convert2PB()
+	assert.Equal(t, int64(1), pbDetail.RecursiveSnippetTasksNum)
+	assert.Equal(t, 1, len(pbDetail.Outputs))
 }

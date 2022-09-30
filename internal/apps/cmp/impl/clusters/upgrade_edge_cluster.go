@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -43,21 +44,23 @@ import (
 )
 
 type Clusters struct {
-	db         *dbclient.DBClient
-	bdl        *bundle.Bundle
-	credential tokenpb.TokenServiceServer
-	clusterSvc clusterpb.ClusterServiceServer
-	org        org.Interface
+	db          *dbclient.DBClient
+	bdl         *bundle.Bundle
+	credential  tokenpb.TokenServiceServer
+	clusterSvc  clusterpb.ClusterServiceServer
+	pipelineSvc pipelinepb.PipelineServiceServer
+	org         org.Interface
 }
 
-func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer, clusterSvc clusterpb.ClusterServiceServer, org org.Interface) *Clusters {
-	return &Clusters{db: db, bdl: bdl, credential: c, clusterSvc: clusterSvc, org: org}
+func New(db *dbclient.DBClient, bdl *bundle.Bundle, c tokenpb.TokenServiceServer, clusterSvc clusterpb.ClusterServiceServer, org org.Interface, pipelineSvc pipelinepb.PipelineServiceServer) *Clusters {
+	return &Clusters{db: db, bdl: bdl, credential: c, clusterSvc: clusterSvc, org: org, pipelineSvc: pipelineSvc}
 }
 
 // status:
-//		1 -- in processing, jump to check log
-//		2 -- do precheck
-//		3 -- invalid, do not support (non k8s cluster, central cluster, higher version ecluster)
+//
+//	1 -- in processing, jump to check log
+//	2 -- do precheck
+//	3 -- invalid, do not support (non k8s cluster, central cluster, higher version ecluster)
 func (c *Clusters) UpgradeEdgeCluster(ctx context.Context, req apistructs.UpgradeEdgeClusterRequest, userid string, orgid string) (recordID uint64, status int, precheckHint string, err error) {
 	records, err := getUpgradeRecords(c.db, req.ClusterName)
 	if err != nil {
@@ -146,12 +149,12 @@ func (c *Clusters) UpgradeEdgeCluster(ctx context.Context, req apistructs.Upgrad
 		return
 	}
 
-	dto, err := c.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	dto, err := c.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-upgrade-edge-cluster-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME)),
 		ClusterName:    clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
-		PipelineSource: apistructs.PipelineSourceOps,
+		PipelineSource: apistructs.PipelineSourceOps.String(),
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
@@ -166,7 +169,7 @@ func (c *Clusters) UpgradeEdgeCluster(ctx context.Context, req apistructs.Upgrad
 		ClusterName: req.ClusterName,
 		Status:      dbclient.StatusTypeProcessing,
 		Detail:      "",
-		PipelineID:  dto.ID,
+		PipelineID:  dto.Data.ID,
 	})
 
 	if err != nil {

@@ -38,7 +38,7 @@ func getAllNotifyTemplates() (list []model.Model) {
 	return
 }
 
-//obtain notify template list
+// obtain notify template list
 func getNotifyTemplateList(scope, name, nType string) (list []*model.GetNotifyRes) {
 	for _, v := range templateMap {
 		if len(v.Metadata.Scope) > 0 {

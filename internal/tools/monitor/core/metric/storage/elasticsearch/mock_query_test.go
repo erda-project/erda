@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
 	es_tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricmeta"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/meta"
 )
 
 // MockQuery is a mock of Query interface.
@@ -327,7 +327,7 @@ func (mr *MockParserMockRecorder) SetMaxTimePoints(points interface{}) *gomock.C
 }
 
 // SetMeta mocks base method.
-func (m *MockParser) SetMeta(arg0 metricmeta.MetricMeta) {
+func (m *MockParser) SetMeta(arg0 meta.Interface) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetMeta", arg0)
 }

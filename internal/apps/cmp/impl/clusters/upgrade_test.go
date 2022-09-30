@@ -24,13 +24,16 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
-func patch(bdl *bundle.Bundle, c *Clusters) {
+func patch(bdl *bundle.Bundle, c *Clusters, pipelineSvc *mock.MockPipelineServiceServer) {
 	// monkey patch get upgrade record
 	// monkey record delete func
 	monkey.Patch(getUpgradeRecords, func(c *dbclient.DBClient, cluster string) ([]dbclient.Record, error) {
@@ -57,9 +60,9 @@ func patch(bdl *bundle.Bundle, c *Clusters) {
 			apistructs.DICE_VERSION:      "1.4",
 		}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreatePipeline", func(_ *bundle.Bundle, req interface{}) (*apistructs.PipelineDTO, error) {
-		return &apistructs.PipelineDTO{ID: 11}, nil
-	})
+	//monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreatePipeline", func(_ *bundle.Bundle, req interface{}) (*apistructs.PipelineDTO, error) {
+	//	return &apistructs.PipelineDTO{ID: 11}, nil
+	//})
 
 	// monkey record delete func
 	monkey.Patch(createRecord, func(c *dbclient.DBClient, r dbclient.Record) (uint64, error) {
@@ -76,15 +79,23 @@ func patch(bdl *bundle.Bundle, c *Clusters) {
 		}
 		return &tokenpb.Token{AccessKey: "clusterAccessKey"}, nil
 	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(pipelineSvc), "PipelineCreateV2", func(_ *mock.MockPipelineServiceServer, arg0 context.Context, arg1 *pipelinepb.PipelineCreateRequestV2) (*pipelinepb.PipelineCreateResponse, error) {
+		return &pipelinepb.PipelineCreateResponse{
+			Data: &basepb.PipelineDTO{
+				ID: 11,
+			},
+		}, nil
+	})
 }
 
 func TestUpgradeEdgeCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	pipelineSvc := &mock.MockPipelineServiceServer{}
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, pipelineSvc)
 
-	patch(bdl, c)
+	patch(bdl, c, pipelineSvc)
 
 	req := apistructs.UpgradeEdgeClusterRequest{
 		ClusterName: "fake-edge-cluster",
@@ -99,9 +110,10 @@ func TestEmptyCluster(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	pipelineSvc := &mock.MockPipelineServiceServer{}
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, pipelineSvc)
 
-	patch(bdl, c)
+	patch(bdl, c, pipelineSvc)
 
 	req := apistructs.UpgradeEdgeClusterRequest{
 		ClusterName: "",
@@ -114,9 +126,10 @@ func TestEmptyCluster(t *testing.T) {
 func TestEmptyDBClient(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	pipelineSvc := &mock.MockPipelineServiceServer{}
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, pipelineSvc)
 
-	patch(bdl, c)
+	patch(bdl, c, pipelineSvc)
 
 	req := apistructs.UpgradeEdgeClusterRequest{
 		ClusterName: "fake-edge-cluster",
@@ -131,9 +144,10 @@ func TestClusterWithoutAccessKey(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	pipelineSvc := &mock.MockPipelineServiceServer{}
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, pipelineSvc)
 
-	patch(bdl, c)
+	patch(bdl, c, pipelineSvc)
 
 	req := apistructs.UpgradeEdgeClusterRequest{
 		ClusterName: "fake-edge-cluster-without-access-key",
@@ -148,9 +162,10 @@ func TestClusterWithoutUserID(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	db = &dbclient.DBClient{}
-	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil)
+	pipelineSvc := &mock.MockPipelineServiceServer{}
+	c := New(db, bdl, nil, &fakeClusterServiceServer{}, nil, pipelineSvc)
 
-	patch(bdl, c)
+	patch(bdl, c, pipelineSvc)
 
 	req := apistructs.UpgradeEdgeClusterRequest{
 		ClusterName: "fake-edge-cluster",

@@ -1,0 +1,136 @@
+{
+    "id": "hotspot-analyze",
+    "name": "hotspot-analyze",
+    "version": "v2",
+    "desc": "test",
+    "scope": "org",
+    "scopeId": "erda",
+    "viewConfig": [
+        {
+            "w": 24,
+            "h": 9,
+            "x": 0,
+            "y": 0,
+            "i": "view-LnRdKptc",
+            "view": {
+                "title": "热点分析",
+                "description": "",
+                "chartType": "table",
+                "dataSourceType": "api",
+                "staticData": {},
+                "config": {
+                    "dataSourceConfig": {
+                        "activedMetricGroups": [
+                            "all",
+                            "all@agg_kong"
+                        ],
+                        "limit": 15,
+                        "resultFilters": [
+                            {
+                                "alias": "表达式-16",
+                                "expr": "cluster_name::tag = '{{clusterName}}' AND dpid::tag = '{{projectId}}' AND denv::tag = '{{workspace}}' ",
+                                "key": "filterDrETveRM",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "表达式-17",
+                                "expr": "csmr::tag =~ /{{consumer}}/",
+                                "key": "filteryG1Hj2F3",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "表达式-19",
+                                "expr": "pack::tag=~ /{{package}}/",
+                                "key": "filterqmAyob8y",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "表达式-20",
+                                "expr": "mthd::tag =~ /{{method}}/",
+                                "key": "filteriJNr8alJ",
+                                "type": "expr"
+                            },
+                            {
+                                "alias": "表达式-21",
+                                "expr": "papi::tag =~ /{{api}}/",
+                                "key": "filterllDYEP2Y",
+                                "type": "expr"
+                            }
+                        ],
+                        "sortDimensions": [
+                            {
+                                "alias": "表达式-1",
+                                "expr": "sum(succ_sum) DESC",
+                                "key": "sortTaRSm3dl",
+                                "type": "expr"
+                            }
+                        ],
+                        "typeDimensions": [
+                            {
+                                "alias": "API",
+                                "expr": "pmapi::tag",
+                                "key": "type4Gxwl7HZ",
+                                "type": "expr"
+                            }
+                        ],
+                        "valueDimensions": [
+                            {
+                                "alias": "成功调用量",
+                                "expr": "sum(succ_sum)",
+                                "key": "valuerMqHYaYc",
+                                "type": "expr"
+                            }
+                        ]
+                    },
+                    "optionProps": {
+                        "isMoreThanOneDay": false
+                    }
+                },
+                "api": {
+                    "body": {
+                        "from": [
+                            "agg_kong"
+                        ],
+                        "groupby": [
+                            "pmapi::tag"
+                        ],
+                        "limit": 15,
+                        "orderby": [
+                            {
+                                "expr": "sum(succ_sum) DESC"
+                            }
+                        ],
+                        "select": [
+                            {
+                                "alias": "type4Gxwl7HZ",
+                                "expr": "pmapi::tag"
+                            },
+                            {
+                                "alias": "valuerMqHYaYc",
+                                "expr": "sum(succ_sum)"
+                            }
+                        ],
+                        "where": [
+                            "cluster_name::tag = '{{clusterName}}' AND dpid::tag = '{{projectId}}' AND denv::tag = '{{workspace}}' ",
+                            "csmr::tag =~ /{{consumer}}/",
+                            "pack::tag=~ /{{package}}/",
+                            "mthd::tag =~ /{{method}}/",
+                            "papi::tag =~ /{{api}}/"
+                        ]
+                    },
+                    "method": "post",
+                    "query": {
+                        "end": "{{endTime}}",
+                        "format": "chartv2",
+                        "ql": "influxql:ast",
+                        "start": "{{startTime}}",
+                        "type": "_"
+                    },
+                    "url": "/api/orgCenter/metrics-query"
+                },
+                "controls": null,
+                "i18n": null
+            }
+        }
+    ]
+}

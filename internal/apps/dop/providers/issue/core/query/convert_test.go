@@ -298,7 +298,7 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 				},
 				relations: []dao.IssuePropertyRelation{{PropertyID: 1, PropertyValueID: 1}},
 				mp: map[pair]string{
-					pair{
+					{
 						PropertyID: 1,
 						valueID:    1,
 					}: "select value",
@@ -315,7 +315,7 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 				},
 				relations: []dao.IssuePropertyRelation{{PropertyID: 1, PropertyValueID: 1}},
 				mp: map[pair]string{
-					pair{PropertyID: 1, valueID: 2}: "select value",
+					{PropertyID: 1, valueID: 2}: "select value",
 				},
 			},
 			want: "",
@@ -332,8 +332,8 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 1, PropertyValueID: 2},
 				},
 				mp: map[pair]string{
-					pair{PropertyID: 1, valueID: 1}: "m11",
-					pair{PropertyID: 1, valueID: 2}: "m12",
+					{PropertyID: 1, valueID: 1}: "m11",
+					{PropertyID: 1, valueID: 2}: "m12",
 				},
 			},
 			want: "m11,m12",
@@ -350,8 +350,8 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 2, PropertyValueID: 2},
 				},
 				mp: map[pair]string{
-					pair{PropertyID: 1, valueID: 1}: "m11",
-					pair{PropertyID: 1, valueID: 2}: "m12",
+					{PropertyID: 1, valueID: 1}: "m11",
+					{PropertyID: 1, valueID: 2}: "m12",
 				},
 			},
 			want: "",
@@ -368,8 +368,8 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 1, PropertyValueID: 2},
 				},
 				mp: map[pair]string{
-					pair{PropertyID: 1, valueID: 1}: "m11",
-					pair{PropertyID: 1, valueID: 2}: "m12",
+					{PropertyID: 1, valueID: 1}: "m11",
+					{PropertyID: 1, valueID: 2}: "m12",
 				},
 			},
 			want: "m11,m12",
@@ -386,8 +386,8 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 2, PropertyValueID: 2},
 				},
 				mp: map[pair]string{
-					pair{PropertyID: 1, valueID: 1}: "m11",
-					pair{PropertyID: 1, valueID: 2}: "m12",
+					{PropertyID: 1, valueID: 1}: "m11",
+					{PropertyID: 1, valueID: 2}: "m12",
 				},
 			},
 			want: "",

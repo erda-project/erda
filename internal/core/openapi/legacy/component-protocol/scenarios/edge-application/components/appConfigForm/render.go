@@ -161,8 +161,9 @@ func getOperations() apistructs.EdgeOperations {
 // GenerateOperation:
 // - viewDetail->all disabled;
 // - update: deployResource:
-//           - mirror disabled: appName, deployResource, cluster;
-//           - middleware disabled: appName, deployResource, middlewareType, cluster;
+//   - mirror disabled: appName, deployResource, cluster;
+//   - middleware disabled: appName, deployResource, middlewareType, cluster;
+//
 // Param: cluster, sites, configSets； select part.
 func getProps(clusters, sites, configSets, depends []map[string]interface{}, operation, deployResource string, lr *i18r.LocaleResource) apistructs.EdgeFormModalPointProps {
 	formModal := apistructs.EdgeFormModalPointProps{

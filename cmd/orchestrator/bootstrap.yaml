@@ -8,6 +8,11 @@ etcd:
 etcd-election:
   root_path: erda/component-leader/scheduler
 
+erda.core.pipeline.pipeline-client: { }
+grpc-client@erda.core.pipeline.pipeline:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
+
 http-server:
   addr: "${LISTEN_ADDR:0.0.0.0:8081}"
 grpc-server:

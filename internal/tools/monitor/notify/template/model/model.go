@@ -21,7 +21,7 @@ import (
 	"unicode/utf8"
 )
 
-//the complete template，ID just like addon_elasticsearch_cpu
+// the complete template，ID just like addon_elasticsearch_cpu
 type Model struct {
 	ID        string      `json:"id" yaml:"id"` //id is not the database generated auto id
 	Metadata  Metadata    `json:"metadata" yaml:"metadata"`

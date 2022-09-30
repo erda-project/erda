@@ -15,7 +15,7 @@
 /*
 Package cron implements a cron spec parser and job runner.
 
-Usage
+# Usage
 
 Callers may register Funcs to be invoked on a given schedule.  Cron will run
 them in their own goroutines.
@@ -36,7 +36,7 @@ them in their own goroutines.
 	..
 	c.Stop()  // Stop the scheduler (does not stop any jobs already running).
 
-CRON Expression Format
+# CRON Expression Format
 
 A cron expression represents a set of times, using 6 space-separated fields.
 
@@ -52,7 +52,7 @@ A cron expression represents a set of times, using 6 space-separated fields.
 Note: Month and Day-of-week field values are case insensitive.  "SUN", "Sun",
 and "sun" are equally accepted.
 
-Special Characters
+# Special Characters
 
 Asterisk ( * )
 
@@ -84,7 +84,7 @@ Question mark ( ? )
 Question mark may be used instead of '*' for leaving either day-of-month or
 day-of-week blank.
 
-Predefined schedules
+# Predefined schedules
 
 You may use one of several pre-defined schedules in place of a cron expression.
 
@@ -96,12 +96,12 @@ You may use one of several pre-defined schedules in place of a cron expression.
 	@daily (or @midnight)  | Run once a day, midnight                   | 0 0 0 * * *
 	@hourly                | Run once an hour, beginning of hour        | 0 0 * * * *
 
-Intervals
+# Intervals
 
 You may also schedule a job to execute at fixed intervals, starting at the time it's added
 or cron is run. This is supported by formatting the cron spec like this:
 
-    @every <duration>
+	@every <duration>
 
 where "duration" is a string accepted by time.ParseDuration
 (http://golang.org/pkg/time/#ParseDuration).
@@ -113,7 +113,7 @@ Note: The interval does not take the job runtime into account.  For example,
 if a job takes 3 minutes to run, and it is scheduled to run every 5 minutes,
 it will have only 2 minutes of idle time between each run.
 
-Time zones
+# Time zones
 
 All interpretation and scheduling is done in the machine's local time zone (as
 provided by the Go time package (http://www.golang.org/pkg/time).
@@ -121,7 +121,7 @@ provided by the Go time package (http://www.golang.org/pkg/time).
 Be aware that jobs scheduled during daylight-savings leap-ahead transitions will
 not be run!
 
-Thread safety
+# Thread safety
 
 Since the Cron service runs concurrently with the calling code, some amount of
 care must be taken to ensure proper synchronization.
@@ -129,15 +129,15 @@ care must be taken to ensure proper synchronization.
 All cron methods are designed to be correctly synchronized as long as the caller
 ensures that invocations have a clear happens-before ordering between them.
 
-Implementation
+# Implementation
 
 Cron entries are stored in an array, sorted by their next activation time.  Cron
 sleeps until the next job is due to be run.
 
 Upon waking:
- - it runs each entry that is active on that second
- - it calculates the next run times for the jobs that were run
- - it re-sorts the array of entries by next activation time.
- - it goes to sleep until the soonest job.
+  - it runs each entry that is active on that second
+  - it calculates the next run times for the jobs that were run
+  - it re-sorts the array of entries by next activation time.
+  - it goes to sleep until the soonest job.
 */
 package cron

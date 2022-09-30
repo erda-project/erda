@@ -16,6 +16,8 @@ package apistructs
 
 import (
 	"time"
+
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 )
 
 const (
@@ -186,7 +188,7 @@ type NameValue struct {
 	Value interface{} `json:"value"`
 }
 
-//                      group       key      value
+// group       key      value
 type OpsClusterInfoData []map[string]map[string]NameValue
 
 type UpdateLabelsRequest struct {
@@ -282,7 +284,7 @@ type RecordData struct {
 	Status        string    `json:"status"`
 	Detail        string    `json:"detail"`
 
-	PipelineDetail *PipelineDetailDTO `json:"pipelineDetail"`
+	PipelineDetail *pipelinepb.PipelineDetailDTO `json:"pipelineDetail"`
 }
 
 type RecordRequest struct {
@@ -1229,7 +1231,7 @@ type CloudAddonResourceDeleteRequest struct {
 // delete mysql request
 type DeleteCloudResourceMysqlRequest CloudAddonResourceDeleteRequest
 
-//delete mysql database request
+// delete mysql database request
 type DeleteCloudResourceMysqlDBRequest struct {
 	CloudAddonResourceDeleteRequest
 	DatabaseName string `json:"databaseName"`

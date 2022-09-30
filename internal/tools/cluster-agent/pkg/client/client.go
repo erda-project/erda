@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +31,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/cluster-agent/config"
@@ -208,23 +211,49 @@ func (c *Client) getClusterInfo() (map[string]interface{}, error) {
 		}
 
 		if len(sa.Secrets) == 0 {
-			return nil, errors.Errorf("service account %s has non auth secret", c.cfg.ServiceAccountName)
-		}
+			expirationSeconds := int64(999999 * time.Hour / time.Second)
 
-		saSecret, err := k.ClientSet.CoreV1().Secrets(c.cfg.ErdaNamespace).Get(context.Background(),
-			sa.Secrets[0].Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
+			if c.cfg.TokenExpirationSeconds != "" {
+				expirationSeconds, err = strconv.ParseInt(c.cfg.TokenExpirationSeconds, 10, 64)
+				if err != nil {
+					return nil, errors.Wrapf(err, "illegal expiration seconds %s",
+						c.cfg.TokenExpirationSeconds)
+				}
+			}
 
-		caData = saSecret.Data[caCrtKey]
-		token = saSecret.Data[tokenSecKey]
+			resp, err := k.ClientSet.CoreV1().ServiceAccounts(c.cfg.ErdaNamespace).CreateToken(context.Background(),
+				c.cfg.ServiceAccountName, &authenticationv1.TokenRequest{
+					Spec: authenticationv1.TokenRequestSpec{
+						ExpirationSeconds: pointer.Int64(expirationSeconds),
+					},
+				}, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+
+			logrus.Debugf("create token for serviceaccount %s, token: %s", c.cfg.ServiceAccountName, resp.Status.Token)
+
+			token = []byte(resp.Status.Token)
+			caData, err = ioutil.ReadFile(rootCAFile)
+			if err != nil {
+				return nil, errors.Wrapf(err, "reading %s", rootCAFile)
+			}
+		} else {
+			saSecret, err := k.ClientSet.CoreV1().Secrets(c.cfg.ErdaNamespace).Get(context.Background(),
+				sa.Secrets[0].Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
+
+			caData = saSecret.Data[caCrtKey]
+			token = saSecret.Data[tokenSecKey]
+		}
 	default:
 		return nil, errors.Errorf("collector source %s is illegal", c.cfg.CollectSource)
 	}
 
 	logrus.Debugf("load cluster info, apiserver addr: %s, token: %s, cacert: %s", c.cfg.K8SApiServerAddr,
-		string(token), string(caData))
+		string(token), base64.StdEncoding.EncodeToString(caData))
 
 	return map[string]interface{}{
 		"address": c.cfg.K8SApiServerAddr,

@@ -21,13 +21,16 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 
 // GetPipelineEvents get pipeline events from reports.
 // return: report, events, error
-func (client *Client) GetPipelineEvents(pipelineID uint64, ops ...SessionOption) (*spec.PipelineReport, []*apistructs.PipelineEvent, error) {
+func (client *Client) GetPipelineEvents(pipelineID uint64, ops ...SessionOption) (*spec.PipelineReport, []*basepb.PipelineEvent, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -52,14 +55,14 @@ func (client *Client) GetPipelineEvents(pipelineID uint64, ops ...SessionOption)
 	if err != nil {
 		return &report, nil, nil
 	}
-	var events []*apistructs.PipelineEvent
+	var events []*basepb.PipelineEvent
 	if err := json.Unmarshal(b, &events); err != nil {
 		return &report, nil, nil
 	}
 	return &report, events, nil
 }
 
-func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistructs.PipelineEvent, ops ...SessionOption) error {
+func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*basepb.PipelineEvent, ops ...SessionOption) error {
 	if len(newEvents) == 0 {
 		return nil
 	}
@@ -95,7 +98,7 @@ func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistr
 	return client.UpdatePipelineReport(report, ops...)
 }
 
-func getLastEvent(ordered orderedEvents) *apistructs.PipelineEvent {
+func getLastEvent(ordered orderedEvents) *basepb.PipelineEvent {
 	if ordered != nil {
 		sort.Sort(ordered)
 		return ordered[len(ordered)-1]
@@ -103,9 +106,9 @@ func getLastEvent(ordered orderedEvents) *apistructs.PipelineEvent {
 	return nil
 }
 
-type orderedEvents []*apistructs.PipelineEvent
+type orderedEvents []*basepb.PipelineEvent
 
-func makeOrderEvents(events []*apistructs.PipelineEvent, newEvents []*apistructs.PipelineEvent) orderedEvents {
+func makeOrderEvents(events []*basepb.PipelineEvent, newEvents []*basepb.PipelineEvent) orderedEvents {
 	// order events
 	var ordered orderedEvents
 	for _, g := range events {
@@ -116,11 +119,11 @@ func makeOrderEvents(events []*apistructs.PipelineEvent, newEvents []*apistructs
 	var newEventOrder orderedEvents
 	now := time.Now()
 	for index, g := range newEvents {
-		if g.FirstTimestamp.IsZero() {
-			g.FirstTimestamp = now.Add(time.Duration(index) * time.Millisecond)
+		if g.FirstTimestamp == nil || g.FirstTimestamp.AsTime().IsZero() {
+			g.FirstTimestamp = timestamppb.New(now.Add(time.Duration(index) * time.Millisecond))
 		}
-		if g.LastTimestamp.IsZero() {
-			g.FirstTimestamp = now.Add(time.Duration(index) * time.Millisecond)
+		if g.LastTimestamp == nil || g.LastTimestamp.AsTime().IsZero() {
+			g.FirstTimestamp = timestamppb.New(now.Add(time.Duration(index) * time.Millisecond))
 		}
 		newEventOrder = append(newEventOrder, g)
 	}
@@ -144,10 +147,10 @@ func makeOrderEvents(events []*apistructs.PipelineEvent, newEvents []*apistructs
 		// same like
 		if strings.EqualFold(lastEventKey, thsEventKey) {
 			// compare time and exchange
-			if !ev.FirstTimestamp.IsZero() && ev.FirstTimestamp.Before(lastEvent.FirstTimestamp) {
+			if !ev.FirstTimestamp.AsTime().IsZero() && ev.FirstTimestamp.AsTime().Before(lastEvent.FirstTimestamp.AsTime()) {
 				lastEvent.FirstTimestamp = ev.FirstTimestamp
 			}
-			if ev.LastTimestamp.After(lastEvent.LastTimestamp) {
+			if ev.LastTimestamp.AsTime().After(lastEvent.LastTimestamp.AsTime()) {
 				lastEvent.LastTimestamp = ev.LastTimestamp
 			}
 			// count++
@@ -165,14 +168,16 @@ func makeOrderEvents(events []*apistructs.PipelineEvent, newEvents []*apistructs
 	return ordered
 }
 
-func (o orderedEvents) Len() int           { return len(o) }
-func (o orderedEvents) Less(i, j int) bool { return o[i].LastTimestamp.Before(o[j].LastTimestamp) }
-func (o orderedEvents) Swap(i, j int)      { o[i], o[j] = o[j], o[i] }
+func (o orderedEvents) Len() int { return len(o) }
+func (o orderedEvents) Less(i, j int) bool {
+	return o[i].LastTimestamp.AsTime().Before(o[j].LastTimestamp.AsTime())
+}
+func (o orderedEvents) Swap(i, j int) { o[i], o[j] = o[j], o[i] }
 
-func makeEventGroupKey(se *apistructs.PipelineEvent) string {
+func makeEventGroupKey(se *basepb.PipelineEvent) string {
 	return fmt.Sprintf("%s:%s:%s", se.Source.Component, se.Reason, se.Message)
 }
 
-func makeEventReportMeta(events []*apistructs.PipelineEvent) apistructs.PipelineReportMeta {
+func makeEventReportMeta(events []*basepb.PipelineEvent) apistructs.PipelineReportMeta {
 	return apistructs.PipelineReportMeta{apistructs.PipelineReportEventMetaKey: events}
 }

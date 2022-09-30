@@ -38,15 +38,17 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/definition"
-	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/graph"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/label"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/lifecycle_hook_client"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/pipeline"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/report"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/resourcegc"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/source"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/task"
 	"github.com/erda-project/erda/pkg/common"
 )
 

@@ -20,6 +20,7 @@ import (
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/cmp/metrics"
 	"github.com/erda-project/erda/internal/apps/cmp/resource"
 	"github.com/erda-project/erda/internal/apps/cmp/steve"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -58,10 +60,12 @@ type Endpoints struct {
 	Resource        *resource.Resource
 	Credential      tokenpb.TokenServiceServer
 	ClusterSvc      clusterpb.ClusterServiceServer
+	PipelineSvc     pipelinepb.PipelineServiceServer
 
 	reportTable *resource.ReportTable
 	CronService cronpb.CronServiceServer
 	org         org.Interface
+	registry    registry.Interface
 }
 
 type Option func(*Endpoints)
@@ -74,8 +78,8 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	}
 	e.dbclient = db
 	e.labels = labels.New(db, e.bdl)
-	e.nodes = nodes.New(db, e.bdl, e.ClusterSvc)
-	e.clusters = clusters.New(db, e.bdl, e.Credential, e.ClusterSvc, e.org)
+	e.nodes = nodes.New(db, e.bdl, e.ClusterSvc, e.PipelineSvc)
+	e.clusters = clusters.New(db, e.bdl, e.Credential, e.ClusterSvc, e.org, e.PipelineSvc)
 	e.Mns = mns.New(db, e.bdl, e.nodes, js, e.ClusterSvc, e.org)
 	e.Ess = ess.New(e.bdl, e.Mns, e.nodes, e.labels, e.ClusterSvc)
 	e.CloudAccount = cloud_account.New(db, cachedJS)
@@ -85,6 +89,7 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.Resource = ctx.Value("resource").(*resource.Resource)
 	e.CachedJS = cachedJS
 	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl, e.ClusterSvc)
+	e.registry = registry.New(e.ClusterSvc)
 	return e
 }
 
@@ -133,6 +138,12 @@ func WithClusterServiceServer(clusterSvc clusterpb.ClusterServiceServer) Option 
 func WithOrg(org org.Interface) Option {
 	return func(e *Endpoints) {
 		e.org = org
+	}
+}
+
+func WithPipelineSvc(pipelineSvc pipelinepb.PipelineServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineSvc = pipelineSvc
 	}
 }
 

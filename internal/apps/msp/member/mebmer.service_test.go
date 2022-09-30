@@ -34,8 +34,8 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-////go:generate mockgen -destination=./member_register_test.go -package member github.com/erda-project/erda-infra/pkg/transport Register
-////go:generate mockgen -destination=./projectServer_test.go -package member github.com/erda-project/erda-proto-go/msp/tenant/project/pb ProjectServiceServer
+// //go:generate mockgen -destination=./member_register_test.go -package member github.com/erda-project/erda-infra/pkg/transport Register
+// //go:generate mockgen -destination=./projectServer_test.go -package member github.com/erda-project/erda-proto-go/msp/tenant/project/pb ProjectServiceServer
 func Test_memberService_ListMember(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

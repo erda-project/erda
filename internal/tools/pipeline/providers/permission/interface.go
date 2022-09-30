@@ -14,9 +14,12 @@
 
 package permission
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+)
 
 type Interface interface {
-	CheckInternalClient(apistructs.IdentityInfo) error
-	CheckApp(apistructs.IdentityInfo, uint64, string) error
+	CheckInternalClient(identityInfo *commonpb.IdentityInfo) error
+	CheckApp(identityInfo *commonpb.IdentityInfo, appID uint64, action string) error
+	CheckBranch(identityInfo *commonpb.IdentityInfo, appIDStr, branch, action string) error
 }

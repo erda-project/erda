@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/cmd/msp/conf"
+	conf "github.com/erda-project/erda/cmd/erda-server/conf/msp"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/internal/apps/msp/resource/utils"

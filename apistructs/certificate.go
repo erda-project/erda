@@ -117,7 +117,7 @@ type CertificateDeleteResponse struct {
 	Data CertificateDTO `json:"data"`
 }
 
-//CertificateDetailResponse GET /api/certificates/{certificateId} 证书详情响应结构
+// CertificateDetailResponse GET /api/certificates/{certificateId} 证书详情响应结构
 type CertificateDetailResponse struct {
 	Header
 	CertificateDTO `json:"data"`
@@ -158,7 +158,7 @@ type PagingCertificateDTO struct {
 	List  []CertificateDTO `json:"list"`
 }
 
-//CertificateDTO 证书结构
+// CertificateDTO 证书结构
 type CertificateDTO struct {
 	ID          uint64                `json:"id"`
 	Name        string                `json:"name"`
@@ -180,7 +180,7 @@ type CertificateQuoteRequest struct {
 	AppID         uint64 `json:"appId"`
 }
 
-//ApplicationCertificateDTO 应用引用证书结构
+// ApplicationCertificateDTO 应用引用证书结构
 type ApplicationCertificateDTO struct {
 	ID            uint64                 `json:"id"`
 	AppID         uint64                 `json:"appId"`

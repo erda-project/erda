@@ -22,6 +22,7 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
@@ -52,6 +53,7 @@ type ProjectPipelineService struct {
 	tokenService       tokenpb.TokenServiceServer
 	branchRuleSve      *branchrule.BranchRule
 	org                org.Interface
+	pipelineService    pipelinepb.PipelineServiceServer
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
@@ -64,6 +66,10 @@ func (p *ProjectPipelineService) WithPermissionSvc(permission *permission.Permis
 
 func (p *ProjectPipelineService) WithBranchRuleSve(svc *branchrule.BranchRule) {
 	p.branchRuleSve = svc
+}
+
+func (p *ProjectPipelineService) WithPipelineService(svc pipelinepb.PipelineServiceServer) {
+	p.pipelineService = svc
 }
 
 type Service interface {

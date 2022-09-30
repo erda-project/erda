@@ -15,114 +15,24 @@
 package pipelinesvc
 
 import (
-	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
-	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/pkg/websocket"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionagent"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/app"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/clusterinfo"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/engine"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/queuemanager"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/resource"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/run"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/secret"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/user"
-	"github.com/erda-project/erda/pkg/jsonstore"
-	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
 type PipelineSvc struct {
-	appSvc          app.Interface
-	crondSvc        daemon.Interface
-	actionAgentSvc  actionagent.Interface
-	pipelineCronSvc cronpb.CronServiceServer
-	permissionSvc   permission.Interface
-	queueManage     queuemanager.Interface
-	cache           cache.Interface
-
-	dbClient  *dbclient.Client
-	bdl       *bundle.Bundle
-	publisher *websocket.Publisher
-
-	engine engine.Interface
-
-	js      jsonstore.JsonStore
-	etcdctl *etcd.Store
+	dbClient *dbclient.Client
+	bdl      *bundle.Bundle
 
 	// providers
-	cmsService   pb.CmsServiceServer
-	clusterInfo  clusterinfo.Interface
-	edgeRegister edgepipeline_register.Interface
-	edgeReporter edgereporter.Interface
-	secret       secret.Interface
-	user         user.Interface
-	run          run.Interface
-	actionMgr    actionmgr.Interface
-	mysql        mysqlxorm.Interface
-	resource     resource.Interface
+	clusterInfo clusterinfo.Interface
 }
 
-func New(appSvc app.Interface, crondSvc daemon.Interface,
-	actionAgentSvc actionagent.Interface,
-	pipelineCronSvc cronpb.CronServiceServer, permissionSvc permission.Interface,
-	queueManage queuemanager.Interface,
-	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
-	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface,
-	edgeRegister edgepipeline_register.Interface, cache cache.Interface, resource resource.Interface) *PipelineSvc {
+func New(dbClient *dbclient.Client, bdl *bundle.Bundle, clusterInfo clusterinfo.Interface) *PipelineSvc {
 
 	s := PipelineSvc{}
-	s.appSvc = appSvc
-	s.crondSvc = crondSvc
-	s.actionAgentSvc = actionAgentSvc
-	s.pipelineCronSvc = pipelineCronSvc
-	s.permissionSvc = permissionSvc
-	s.queueManage = queueManage
 	s.dbClient = dbClient
 	s.bdl = bdl
-	s.publisher = publisher
-	s.engine = engine
-	s.js = js
-	s.etcdctl = etcd
 	s.clusterInfo = clusterInfo
-	s.edgeRegister = edgeRegister
-	s.cache = cache
-	s.resource = resource
 	return &s
-}
-
-func (s *PipelineSvc) WithCmsService(cmsService pb.CmsServiceServer) {
-	s.cmsService = cmsService
-}
-
-func (s *PipelineSvc) WithSecret(secret secret.Interface) {
-	s.secret = secret
-}
-
-func (s *PipelineSvc) WithUser(user user.Interface) {
-	s.user = user
-}
-
-func (s *PipelineSvc) WithRun(run run.Interface) {
-	s.run = run
-}
-
-func (s *PipelineSvc) WithActionMgr(actionMgr actionmgr.Interface) {
-	s.actionMgr = actionMgr
-}
-
-func (s *PipelineSvc) WithMySQL(mysql mysqlxorm.Interface) {
-	s.mysql = mysql
-}
-
-func (s *PipelineSvc) WithEdgeReporter(r edgereporter.Interface) {
-	s.edgeReporter = r
 }

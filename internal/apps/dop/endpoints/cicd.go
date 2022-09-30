@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -31,7 +32,7 @@ import (
 )
 
 // CICDTaskLog 包装 cicd task 获取接口
-// dashboard: /api/logs?start=0&end=1576498555732000000&count=-200&stream=stderr&id=pipeline-task-2059&source=job
+// dashboard: /api/logs?start=0&end=1576498555732000000&count=-200&stream=stderr&id=pipeline-task-2059&source=job&clusterName=xxx
 func (e *Endpoints) CICDTaskLog(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 
 	_, task, err := e.checkTaskPermission(r, vars)
@@ -44,6 +45,7 @@ func (e *Endpoints) CICDTaskLog(ctx context.Context, r *http.Request, vars map[s
 	if err := queryStringDecoder.Decode(&logReq, r.URL.Query()); err != nil {
 		return apierrors.ErrGetCICDTaskLog.InvalidParameter(err).ToResp(), nil
 	}
+	logReq.PipelineID = vars["pipelineID"]
 	logID := task.Extra.UUID
 	if logReq.ID != "" {
 		var exist bool
@@ -120,7 +122,7 @@ func (e *Endpoints) ProxyCICDTaskLogDownload(ctx context.Context, r *http.Reques
 }
 
 func (e *Endpoints) checkTaskPermission(r *http.Request, vars map[string]string) (
-	*apistructs.PipelineDetailDTO, *apistructs.PipelineTaskDTO, error) {
+	*pipelinepb.PipelineDetailDTO, *apistructs.PipelineTaskDTO, error) {
 
 	pipelineIDStr := vars["pipelineID"]
 	pipelineID, err := strconv.ParseUint(pipelineIDStr, 10, 64)

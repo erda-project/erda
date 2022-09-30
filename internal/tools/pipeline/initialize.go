@@ -22,6 +22,10 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
+
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/compensator"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
@@ -36,13 +40,9 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/pexpr/pexpr_params"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/pipelinefunc"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/compensator"
-	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/jsonstore"
-	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 )
 
@@ -96,43 +96,25 @@ func (p *provider) do() error {
 		return err
 	}
 
-	// etcd
-	js, err := jsonstore.New()
-	if err != nil {
-		return err
-	}
-	etcdctl, err := etcd.New()
-	if err != nil {
-		return err
-	}
-
 	// bundle
 	bdl := bundle.New(bundle.WithAllAvailableClients())
 
 	// init services
-	pipelineSvc := pipelinesvc.New(p.App, p.CronDaemon, p.ActionAgent, p.CronService,
-		p.Permission, p.QueueManager, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo, p.EdgeRegister, p.Cache, p.Resource)
-	pipelineSvc.WithCmsService(p.CmsService)
-	pipelineSvc.WithSecret(p.Secret)
-	pipelineSvc.WithUser(p.User)
-	pipelineSvc.WithRun(p.PipelineRun)
-	pipelineSvc.WithActionMgr(p.ActionMgr)
-	pipelineSvc.WithMySQL(p.MySQL)
-	pipelineSvc.WithEdgeReporter(p.EdgeReporter)
+	pipelineSvc := pipelinesvc.New(dbClient, bdl, p.ClusterInfo)
+
+	// init CallbackActionFunc
+	pipelinefunc.CallbackActionFunc = p.PipelineSvc.DealPipelineCallbackOfAction
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFuncs := reconciler.PipelineSvcFuncs{
-		MergePipelineYmlTasks:                   pipelineSvc.MergePipelineYmlTasks,
-		HandleQueryPipelineYamlBySnippetConfigs: pipelineSvc.HandleQueryPipelineYamlBySnippetConfigs,
-		MakeSnippetPipeline4Create:              pipelineSvc.MakeSnippetPipeline4Create,
-		CreatePipelineGraph:                     pipelineSvc.CreatePipelineGraph,
-		PreCheck:                                pipelineSvc.PreCheck,
+		MergePipelineYmlTasks:                   p.PipelineSvc.MergePipelineYmlTasks,
+		HandleQueryPipelineYamlBySnippetConfigs: p.PipelineSvc.HandleQueryPipelineYamlBySnippetConfigs,
+		MakeSnippetPipeline4Create:              p.PipelineSvc.MakeSnippetPipeline4Create,
+		CreatePipelineGraph:                     p.PipelineSvc.CreatePipelineGraph,
+		PreCheck:                                p.PipelineSvc.PreCheck,
+		ConvertSnippetConfig2String:             p.PipelineSvc.ConvertSnippetConfig2String,
 	}
-	// init CallbackActionFunc
-	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
-
 	p.Reconciler.InjectLegacyFields(&pipelineFuncs)
-	p.EdgePipeline.InjectLegacyFields(pipelineSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
 		return err
@@ -145,26 +127,21 @@ func (p *provider) do() error {
 	ep := endpoints.New(
 		endpoints.WithDBClient(dbClient),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithPermissionSvc(p.Permission),
 		endpoints.WithCrondSvc(p.CronDaemon),
 		endpoints.WithPipelineSvc(pipelineSvc),
-		endpoints.WithQueueManager(p.QueueManager),
-		endpoints.WithEngine(p.Engine),
 		endpoints.WithClusterInfo(p.ClusterInfo),
-		endpoints.WithEdgePipeline(p.EdgePipeline),
-		endpoints.WithEdgeRegister(p.EdgeRegister),
 		endpoints.WithMysql(p.MySQL),
-		endpoints.WithRun(p.PipelineRun),
-		endpoints.WithCancel(p.Cancel),
 	)
 
-	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)
-	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: p.PipelineRun.RunOnePipeline})
+	p.CronDaemon.WithPipelineFunc(p.PipelineSvc.CreateV2)
+	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: p.PipelineSvc.CreateV2, RunPipeline: p.PipelineRun.RunOnePipeline})
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
-	server := httpserver.New(conf.ListenAddr())
+	server := httpserver.New("")
 	server.RegisterEndpoint(ep.Routes())
-	p.Router.Any("/**", server.Router())
+	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
+		return err
+	}
 
 	// 加载 event manager
 	events.Initialize(bdl, publisher, dbClient, p.EdgeRegister, p.Org)

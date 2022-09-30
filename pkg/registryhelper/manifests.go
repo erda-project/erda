@@ -29,9 +29,10 @@ import (
 )
 
 type RemoveManifestsRequest struct {
-	RegistryURL string
-	Images      []string
-	ClusterKey  string
+	RegistryAddr   string
+	RegistryScheme string
+	Images         []string
+	ClusterKey     string
 }
 
 type RemoveManifestsResponse struct {
@@ -39,7 +40,7 @@ type RemoveManifestsResponse struct {
 	Failed  map[string]string
 }
 
-func (req RemoveManifestsRequest) removeManifests(s, clusterKey string) string {
+func (req RemoveManifestsRequest) removeManifests(s string) string {
 	var name, tag string
 	if i := strings.IndexByte(s, '/'); i != -1 {
 		name = s[i+1:]
@@ -53,8 +54,19 @@ func (req RemoveManifestsRequest) removeManifests(s, clusterKey string) string {
 	if tag == "" {
 		tag = "latest"
 	}
-	c := httpclient.New(httpclient.WithClusterDialer(clusterKey))
-	res, err := c.Get(req.RegistryURL).Path(fmt.Sprintf("/v2/%s/manifests/%s", name, tag)).
+
+	opts := []httpclient.OpOption{
+		httpclient.WithClusterDialer(req.ClusterKey),
+	}
+
+	// Default scheme is http
+	if req.RegistryScheme == "https" {
+		opts = append(opts, httpclient.WithHTTPS())
+	}
+
+	c := httpclient.New(opts...)
+
+	res, err := c.Get(req.RegistryAddr).Path(fmt.Sprintf("/v2/%s/manifests/%s", name, tag)).
 		Header("Content-Type", "application/json").
 		Header("Accept", "application/vnd.docker.distribution.manifest.v2+json").
 		Do().DiscardBody()
@@ -72,7 +84,7 @@ func (req RemoveManifestsRequest) removeManifests(s, clusterKey string) string {
 	if dcd == "" {
 		return "get manifests failed: header Docker-Content-Digest is empty"
 	}
-	res, err = c.Delete(req.RegistryURL).Path(fmt.Sprintf("/v2/%s/manifests/%s", name, dcd)).
+	res, err = c.Delete(req.RegistryAddr).Path(fmt.Sprintf("/v2/%s/manifests/%s", name, dcd)).
 		Header("Content-Type", "application/json").
 		Do().DiscardBody()
 	if err != nil {
@@ -85,17 +97,17 @@ func (req RemoveManifestsRequest) removeManifests(s, clusterKey string) string {
 }
 
 func RemoveManifests(req RemoveManifestsRequest) (*RemoveManifestsResponse, error) {
-	if req.RegistryURL == "" {
-		req.RegistryURL = os.Getenv("REGISTRY_ADDR")
+	if req.RegistryAddr == "" {
+		req.RegistryAddr = os.Getenv("REGISTRY_ADDR")
 	}
-	if req.RegistryURL == "" {
+	if req.RegistryAddr == "" {
 		return nil, errors.New("no registry url")
 	}
 
 	m := make(map[string]string, len(req.Images))
 	for _, image := range req.Images {
 		if _, ok := m[image]; !ok {
-			m[image] = req.removeManifests(image, req.ClusterKey)
+			m[image] = req.removeManifests(image)
 		}
 	}
 	var res RemoveManifestsResponse
