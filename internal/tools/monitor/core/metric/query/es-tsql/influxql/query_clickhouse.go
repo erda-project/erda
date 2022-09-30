@@ -18,6 +18,7 @@ import (
 	"context"
 	"math"
 	"reflect"
+	"strings"
 	"time"
 
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -346,8 +347,11 @@ func (q QueryClickhouse) SubSearchSource() interface{} {
 	return q.subLiters
 }
 
-func (q QueryClickhouse) OrgName() string {
-	return q.orgName
+func (q QueryClickhouse) OrgName() []string {
+	if strings.Index(q.orgName, ",") != -1 {
+		return strings.Split(q.orgName, ",")
+	}
+	return []string{q.orgName}
 }
 func (q QueryClickhouse) TerminusKey() string {
 	return q.terminusKey

@@ -94,8 +94,8 @@ func (q *Query) AppendBoolFilter(key string, value interface{}) {
 	q.boolQuery.Filter(elastic.NewTermQuery(key, value))
 }
 
-func (q *Query) OrgName() string {
-	return ""
+func (q *Query) OrgName() []string {
+	return []string{}
 }
 func (q *Query) TerminusKey() string {
 	return ""

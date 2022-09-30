@@ -15,6 +15,7 @@
 package orgapis
 
 import (
+	"context"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -23,14 +24,16 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
-
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
+	"github.com/erda-project/erda/pkg/cache"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -56,6 +59,8 @@ type provider struct {
 	EsSearchRaw elasticsearch.Interface        `autowired:"metric-storage" optional:"true"`
 	Org         org.ClientInterface
 	Source      MetricSource
+
+	clusterToOrges *cache.Cache
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -80,6 +85,25 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			Loader:     p.Loader,
 		}
 	}
+
+	p.clusterToOrges = cache.New("cluster_name_by_orges", time.Minute*20, func(i interface{}) (interface{}, bool) {
+		request := i.(clusterToOrges)
+		if len(request.clusterName) <= 0 {
+			return nil, false
+		}
+
+		replations, err := p.Org.ListOrgClusterRelation(apis.WithUserIDContext(context.Background(), request.userId), &pb.ListOrgClusterRelationRequest{
+			Cluster: request.clusterName,
+		})
+		var orgs []string
+		if err == nil {
+			for _, org := range replations.Data {
+				orgs = append(orgs, org.OrgName)
+			}
+		}
+		return orgs, true
+	})
+
 	return p.intRoutes(routes)
 }
 

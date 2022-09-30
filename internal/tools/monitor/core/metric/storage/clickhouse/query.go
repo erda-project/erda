@@ -17,7 +17,6 @@ package clickhouse
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	cksdk "github.com/ClickHouse/clickhouse-go/v2"
@@ -47,26 +46,23 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 	if len(q.Sources()) <= 0 {
 		return nil, errors.New("no source")
 	}
-	table, _ := p.Loader.GetSearchTable(q.OrgName())
 
-	header := ctx.Value("header")
-	isOrgCenterQuery := false
-	if v, ok := header.(http.Header); ok && v != nil {
-		if v.Get("org-center") == "true" {
-			isOrgCenterQuery = true
-		}
+	orgs := q.OrgName()
+	if len(orgs) <= 0 {
+		orgs = []string{""}
 	}
 
-	if len(q.OrgName()) > 0 && isOrgCenterQuery == false {
+	table, _ := p.Loader.GetSearchTable(orgs[0])
+
+	if len(q.OrgName()) > 0 {
 		// compatible erda and empty, erda components sometimes use empty and erda org
-		expr = expr.Where(goqu.C("org_name").In(q.OrgName(), "erda", ""))
+		expr = expr.Where(goqu.C("org_name").In(append(orgs, "erda", "")))
 	}
 	if len(q.TerminusKey()) > 0 {
 		expr = expr.Where(goqu.C("tenant_id").Eq(q.TerminusKey()))
 	}
 
-	span.SetAttributes(attribute.String("org_name", q.OrgName()))
-	span.SetAttributes(attribute.Bool("is_org_center_query", isOrgCenterQuery))
+	span.SetAttributes(attribute.StringSlice("org_name", orgs))
 	span.SetAttributes(attribute.String("tenant_id", q.TerminusKey()))
 	span.SetAttributes(attribute.String("table", table))
 
