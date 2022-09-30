@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka/prometheusmetrics"
 	"github.com/erda-project/erda/pkg/strutil"
 )

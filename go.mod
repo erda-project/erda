@@ -120,6 +120,7 @@ require (
 	github.com/rancher/remotedialer v0.2.6-0.20210318171128-d1ebd5202be4
 	github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
 	github.com/rancher/wrangler v0.8.1-0.20210423003607-f71a90542852
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
@@ -352,7 +353,6 @@ require (
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/rancher/lasso v0.0.0-20210408231703-9ddd9378d08d // indirect
 	github.com/rancher/norman v0.0.0-20210423002317-8e6ffc77a819 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/recallsong/unmarshal v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237 // indirect
 	github.com/richardlehane/mscfb v1.0.3 // indirect
