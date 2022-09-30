@@ -76,7 +76,7 @@ type provider struct {
 	Cfg        *config
 	Log        logs.Logger
 	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
-	Redis      *redis.Client        `autowired:"redis-client" optional:"true"`
+	Redis      *redis.Client        `autowired:"redis-client"`
 	Election   election.Interface   `autowired:"etcd-election@table-loader"`
 
 	tables      atomic.Value
@@ -89,26 +89,12 @@ type provider struct {
 	needSyncTablesToCache bool
 }
 
-func (p *provider) Validate() error {
+func (p *provider) Init(ctx servicehub.Context) error {
 	if len(p.Cfg.TablePrefix) == 0 {
 		return fmt.Errorf("table_prefix is required")
 	}
 	if len(p.Cfg.DefaultSearchTable) == 0 {
 		return fmt.Errorf("default_search_table is required")
-	}
-
-	switch LoadMode(p.Cfg.LoadMode) {
-	case LoadFromCacheOnly, LoadWithCache:
-		if p.Redis == nil {
-			return fmt.Errorf("redis-client reuqired")
-		}
-	}
-	return nil
-}
-
-func (p *provider) Init(ctx servicehub.Context) error {
-	if err := p.Validate(); err != nil {
-		return fmt.Errorf("validate: %w", err)
 	}
 
 	switch LoadMode(p.Cfg.LoadMode) {
