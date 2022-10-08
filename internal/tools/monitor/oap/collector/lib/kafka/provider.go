@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
+	"github.com/rcrowley/go-metrics"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -61,6 +62,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	metrics.UseNilMetrics = true
 	if p.Cfg.DebugClient {
 		sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
 	}

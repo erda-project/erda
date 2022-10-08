@@ -15,7 +15,6 @@
 package kafka
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -24,7 +23,6 @@ import (
 
 	"github.com/Shopify/sarama"
 
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka/prometheusmetrics"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -58,13 +56,6 @@ func (p *provider) NewProducer(pc *ProducerConfig) (*AsyncProducer, error) {
 	}
 
 	cfg := sarama.NewConfig()
-	err := prometheusmetrics.ExportMetrics(context.TODO(), cfg.MetricRegistry, prometheusmetrics.Options{
-		Namespace: "kafka",
-		Subsystem: "producer",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("metrics export: %w", err)
-	}
 	cfg.Version = p.protoVersion
 	cfg.ClientID = p.Cfg.ClientID
 	cfg.Producer.RequiredAcks = sarama.WaitForLocal

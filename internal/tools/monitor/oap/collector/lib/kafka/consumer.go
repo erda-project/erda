@@ -22,7 +22,6 @@ import (
 	"github.com/Shopify/sarama"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka/prometheusmetrics"
 )
 
 // deprecated
@@ -61,15 +60,6 @@ func (p *provider) newConsumerGroup(c *ConsumerConfig) (sarama.ConsumerGroup, er
 
 func (p *provider) customConfig(c *ConsumerConfig) (*sarama.Config, error) {
 	cfg := sarama.NewConfig()
-	err := prometheusmetrics.ExportMetrics(context.TODO(), cfg.MetricRegistry, prometheusmetrics.Options{
-		Namespace:      "kafka",
-		Subsystem:      "consumer_group",
-		ConstantLabels: map[string]string{"group_id": c.Group},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("metrics export: %w", err)
-	}
-
 	cfg.Version = p.protoVersion
 	cfg.ClientID = p.Cfg.ClientID
 	cfg.ChannelBufferSize = c.ChannelBufferSize
