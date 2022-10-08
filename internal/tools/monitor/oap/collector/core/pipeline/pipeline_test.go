@@ -13,3 +13,18 @@
 // limitations under the License.
 
 package pipeline
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/config"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+)
+
+func TestNewPipeline(t *testing.T) {
+	p := NewPipeline("hello", logrusx.New(), config.Pipeline{}, odata.MetricType)
+	assert.NotNil(t, p)
+}
