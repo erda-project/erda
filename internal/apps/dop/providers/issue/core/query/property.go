@@ -228,8 +228,9 @@ func (p *provider) BatchGetProperties(orgID int64, issuesTypes []string) ([]*pb.
 
 // BatchGetIssuePropertyInstances .
 // return:
-//   @map[int64][]*dao.IssuePropertyRelation: key is issueID
-//   @err: error
+//
+//	@map[int64][]*dao.IssuePropertyRelation: key is issueID
+//	@err: error
 func (p *provider) BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*pb.IssueAndPropertyAndValue, error) {
 	issueInstancesMap := make(map[uint64]*pb.IssueAndPropertyAndValue)
 	// 获取该事件类型配置的全部自定义字段
