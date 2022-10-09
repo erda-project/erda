@@ -101,7 +101,8 @@
           "format": "chartv2",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -203,7 +204,8 @@
           "format": "chartv2",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -321,7 +323,8 @@
           "format": "chartv2",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -429,7 +432,8 @@
           "neq_type": "netdata",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -524,7 +528,8 @@
           "format": "chartv2",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -619,7 +624,8 @@
           "format": "chartv2",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -721,7 +727,8 @@
           "neq_type": "netdata",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -830,7 +837,8 @@
           "format": "chartv2",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },
@@ -928,7 +936,8 @@
           "format": "chartv2",
           "ql": "influxql:ast",
           "start": "{{startTime}}",
-          "type": "_"
+          "type": "_",
+          "cluster_name": "{{clusterName}}"
         },
         "url": "/api/orgCenter/metrics-query"
       },

@@ -668,8 +668,8 @@ func Test_getProjectsStatistics(t *testing.T) {
 		},
 	}
 
-	_, err := s.getProjectsStatistics([]string{}...)
-	_, err = s.getProjectsStatistics("1", "2")
+	_, err := s.getProjectsStatistics(context.Background(), []string{}...)
+	_, err = s.getProjectsStatistics(context.Background(), "1", "2")
 	if err != nil {
 		t.Errorf("should not error")
 	}

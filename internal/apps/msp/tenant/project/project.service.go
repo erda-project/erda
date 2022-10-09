@@ -191,7 +191,7 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 
 	var ids []string
 	linq.From(projects).Select(func(i interface{}) interface{} { return i.(*pb.Project).Id }).ToSlice(&ids)
-	stats, err := s.getProjectsStatistics(ids...)
+	stats, err := s.getProjectsStatistics(ctx, ids...)
 	if err != nil {
 		s.p.Log.Warnf("failed to get projects statistics: %s", err)
 		return projects, nil
@@ -451,7 +451,7 @@ func (s *projectService) GetProjectsTenantsIDs(ctx context.Context, req *pb.GetP
 }
 
 func (s *projectService) GetProjectStatistics(ctx context.Context, req *pb.GetProjectStatisticsRequest) (*pb.GetProjectStatisticsResponse, error) {
-	stats, err := s.getProjectsStatistics(req.ProjectIds...)
+	stats, err := s.getProjectsStatistics(ctx, req.ProjectIds...)
 	if err != nil {
 		return nil, err
 	}
