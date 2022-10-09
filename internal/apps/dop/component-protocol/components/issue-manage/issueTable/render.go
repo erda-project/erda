@@ -157,10 +157,14 @@ func (item *TableItem) toColumnDataRow() map[string]interface{} {
 	delete(data, "properties")
 	// treat all custom properties as TextBlock
 	for _, property := range item.Properties {
-		data[makePropertyColumnName(property)] = TextBlock{
+		block := TextBlock{
 			Value:      (*issuemodel.PropertyInstanceForShow)(property).String(),
 			RenderType: "text",
 		}
+		if property.PropertyType == pb.PropertyTypeEnum_Person && block.Value != "" {
+			block.RenderType = "userAvatar"
+		}
+		data[makePropertyColumnName(property)] = block
 	}
 	return data
 }
@@ -369,6 +373,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	for _, p := range issues {
 		userids = append(userids, p.Creator, p.Assignee, p.Owner)
+		// get from custom properties
+		for _, property := range p.PropertyInstances {
+			tryUserID := (*issuemodel.PropertyInstanceForShow)(property).TryGetUserID()
+			if tryUserID != "" {
+				userids = append(userids, tryUserID)
+			}
+		}
 	}
 	// 获取全部用户
 	userids = strutil.DedupSlice(userids, true)

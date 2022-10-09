@@ -15,8 +15,8 @@
 package common
 
 import (
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
@@ -24,23 +24,48 @@ import (
 type PropertyInstanceForShow pb.IssuePropertyExtraProperty
 
 func (p *PropertyInstanceForShow) String() string {
-	if p.ArbitraryValue != nil {
-		switch p.PropertyType {
-		case pb.PropertyTypeEnum_Text:
-			return p.ArbitraryValue.GetStringValue()
-		case pb.PropertyTypeEnum_Number:
-			return strconv.FormatFloat(p.ArbitraryValue.GetNumberValue(), 'f', 10, 64)
-		default:
-			return p.ArbitraryValue.GetStructValue().String()
+	if IsOptions(p.PropertyType.String()) {
+		enumValueMap := make(map[int64]string, len(p.EnumeratedValues))
+		for _, enum := range p.EnumeratedValues {
+			enumValueMap[enum.Id] = enum.Name
 		}
+		var valueStrings []string
+		for _, value := range p.Values {
+			valueStrings = append(valueStrings, enumValueMap[value])
+		}
+		return strings.Join(valueStrings, ", ")
 	}
-	enumValueMap := make(map[int64]string, len(p.EnumeratedValues))
-	for _, enum := range p.EnumeratedValues {
-		enumValueMap[enum.Id] = enum.Name
+	if p.ArbitraryValue == nil {
+		return ""
 	}
-	var valueStrings []string
-	for _, value := range p.Values {
-		valueStrings = append(valueStrings, enumValueMap[value])
+	switch p.PropertyType {
+	case pb.PropertyTypeEnum_Text:
+		return p.ArbitraryValue.GetStringValue()
+	case pb.PropertyTypeEnum_Number:
+		return p.ArbitraryValue.GetStringValue()
+	case pb.PropertyTypeEnum_Date:
+		t, err := time.ParseInLocation(time.RFC3339, p.ArbitraryValue.GetStringValue(), time.Local)
+		if err != nil {
+			return p.ArbitraryValue.GetStringValue()
+		}
+		// only to day level
+		return t.Format("2006-01-02")
+	case pb.PropertyTypeEnum_Person:
+		return p.ArbitraryValue.GetStringValue()
+	case pb.PropertyTypeEnum_URL:
+		return p.ArbitraryValue.GetStringValue()
+	case pb.PropertyTypeEnum_Email:
+		return p.ArbitraryValue.GetStringValue()
+	case pb.PropertyTypeEnum_Phone:
+		return p.ArbitraryValue.GetStringValue()
+	default:
+		return ""
 	}
-	return strings.Join(valueStrings, ", ")
+}
+
+func (p *PropertyInstanceForShow) TryGetUserID() string {
+	if p.PropertyType != pb.PropertyTypeEnum_Person {
+		return ""
+	}
+	return p.ArbitraryValue.GetStringValue()
 }
