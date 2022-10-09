@@ -16,10 +16,12 @@ package orgapis
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/internal/tools/monitor/common"
 	"github.com/erda-project/erda/internal/tools/monitor/common/permission"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
@@ -67,8 +69,24 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	return nil
 }
 
+type clusterToOrges struct {
+	clusterName string
+	userId      string
+}
+
 func (p *provider) getCmpMetricQuery(request *http.Request) interface{} {
-	request.Header.Set("org-center", "true")
+	clusterName := request.URL.Query().Get("cluster_name")
+	if len(clusterName) > 0 {
+		orges, _ := p.clusterToOrges.LoadWithUpdate(clusterToOrges{
+			clusterName: clusterName,
+			userId:      api.UserID(request),
+		})
+
+		orgArr := orges.([]string)
+		if len(orgArr) > 0 {
+			request.Header.Set("org", strings.Join(orgArr, ","))
+		}
+	}
 	return p.metricq.Handle(request)
 }
 

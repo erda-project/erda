@@ -41,12 +41,14 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 func (p *provider) queryMetrics(r *http.Request) interface{} {
 	params := make(map[string]interface{})
 
-	//ctx := api.GetContextHeader(r)
-
 	ctx := api.GetContext(r, func(header *http.Header) {
 		if len(header.Get("org")) == 0 {
 			//org-apis
 			orgID := api.OrgID(r)
+			if len(orgID) <= 0 {
+				return
+			}
+
 			orgResp, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.GetOrgRequest{
 				IdOrName: orgID,
 			})

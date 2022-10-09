@@ -235,7 +235,8 @@ func (p *provider) doQuerySql(ctx context.Context, statement string, params map[
 		Statement: statement,
 		Params:    params,
 	}
-
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+	})
 	response, err := p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
 		return 0, errors.NewInternalServerError(err)

@@ -133,8 +133,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					return goqu.DISTINCT(lit).As(id), nil
 				}
 				f := p.ckColumnByOnlyExistingColumn(field)
-				// count(distinct(column))
-				return goqu.L(fmt.Sprintf("count(distinct(%s))", f)).As(id), nil
+				return goqu.L(fmt.Sprintf("uniqCombined(%s)", f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
 				return v, true

@@ -23,7 +23,9 @@ import (
 	"github.com/ahmetb/go-linq/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type projectStats struct {
@@ -79,7 +81,7 @@ func (ps projectStatisticMap) statForTerminusKeys(projectId string, terminusKeys
 	return result, true
 }
 
-func (s *projectService) getProjectsStatistics(projectIds ...string) (map[string]*projectStats, error) {
+func (s *projectService) getProjectsStatistics(ctx context.Context, projectIds ...string) (map[string]*projectStats, error) {
 	if len(projectIds) == 0 {
 		return nil, fmt.Errorf("empty projects list")
 	}
@@ -146,7 +148,11 @@ func (s *projectService) getProjectsStatistics(projectIds ...string) (map[string
 		GROUP BY terminus_key::tag
         `,
 	}
-	if err := s.doInfluxQuery(req, func(row *metricpb.Row) {
+
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+	})
+
+	if err := s.doInfluxQuery(ctx, req, func(row *metricpb.Row) {
 		terminusKey := row.Values[0].GetStringValue()
 		servicesCount := row.Values[1].GetNumberValue()
 		activeTime := row.Values[2].GetNumberValue()
@@ -177,7 +183,7 @@ func (s *projectService) getProjectsStatistics(projectIds ...string) (map[string
 		GROUP BY terminus_key::tag
 		`,
 	}
-	if err := s.doInfluxQuery(req, func(row *metricpb.Row) {
+	if err := s.doInfluxQuery(ctx, req, func(row *metricpb.Row) {
 		terminusKey := row.Values[0].GetStringValue()
 		alertCount := row.Values[1].GetNumberValue()
 
@@ -210,7 +216,7 @@ func (s *projectService) getProjectsStatistics(projectIds ...string) (map[string
 	return result, nil
 }
 
-func (s *projectService) doInfluxQuery(req *metricpb.QueryWithInfluxFormatRequest, rowCallback func(row *metricpb.Row)) error {
+func (s *projectService) doInfluxQuery(ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest, rowCallback func(row *metricpb.Row)) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	resp, err := s.metricq.QueryWithInfluxFormat(ctx, req)

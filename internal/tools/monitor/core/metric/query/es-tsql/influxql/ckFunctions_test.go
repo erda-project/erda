@@ -128,7 +128,7 @@ func TestAggregationFunction(t *testing.T) {
 					},
 				},
 			},
-			want: "SELECT count(distinct(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')]))) AS \"f316cf2c588e6404\" FROM \"table\"",
+			want: "SELECT uniqCombined(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')])) AS \"f316cf2c588e6404\" FROM \"table\"",
 		},
 		{
 			name:     "test rateps",

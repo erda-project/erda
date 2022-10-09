@@ -27,8 +27,10 @@ import (
 	"golang.org/x/time/rate"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/internal/apps/cmp/cache"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type ResourceType string
@@ -308,6 +310,9 @@ func GetAllCache(key string) map[string]*MetricsData {
 
 // NodeMetrics query cpu and memory metrics from es database, return immediately if cache hit.
 func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+	})
+
 	metricsReq, noNeed, err := m.ToInfluxReq(req, Node)
 	if metricsReq == nil || err != nil {
 		return noNeed, err
@@ -329,6 +334,8 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[stri
 }
 
 func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+	})
 	metricsReq, noNeed, err := m.ToInfluxReq(req, Pod)
 	if metricsReq == nil || err != nil {
 		return noNeed, err
@@ -350,6 +357,9 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[strin
 }
 
 func (m *Metric) NodeAllMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
+	ctx = apis.GetContext(ctx, func(header *transport.Header) {
+	})
+
 	metricsReq, noNeed, err := m.ToInfluxReq(req, NodeAll)
 	res := make(map[string]*MetricsData)
 	res[req.Cluster+Cpu] = &MetricsData{}

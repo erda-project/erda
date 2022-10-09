@@ -418,12 +418,12 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select distinct",
 			sql:  "select DISTINCT(service_id::tag) from table",
-			want: "SELECT count(distinct(if(indexOf(tag_keys,'service_id') == 0,null,tag_values[indexOf(tag_keys,'service_id')]))) AS \"2e1cf76dc42cffe8\" FROM \"table\"",
+			want: "SELECT uniqCombined(if(indexOf(tag_keys,'service_id') == 0,null,tag_values[indexOf(tag_keys,'service_id')])) AS \"2e1cf76dc42cffe8\" FROM \"table\"",
 		},
 		{
 			name: "select origin distinct",
 			sql:  "select DISTINCT(timestamp) from table",
-			want: "SELECT count(distinct(timestamp)) AS \"05b05e5af080d601\" FROM \"table\"",
+			want: "SELECT uniqCombined(timestamp) AS \"05b05e5af080d601\" FROM \"table\"",
 		},
 		{
 			name: "select max",

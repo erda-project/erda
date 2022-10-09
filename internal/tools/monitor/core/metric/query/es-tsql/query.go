@@ -99,7 +99,7 @@ type Query interface {
 	Debug() bool
 	Timestamp() (int64, int64)
 	Kind() string
-	OrgName() string
+	OrgName() []string
 	TerminusKey() string
 }
 
