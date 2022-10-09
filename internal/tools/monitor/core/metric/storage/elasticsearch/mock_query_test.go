@@ -103,10 +103,10 @@ func (mr *MockQueryMockRecorder) Kind() *gomock.Call {
 }
 
 // OrgName mocks base method.
-func (m *MockQuery) OrgName() string {
+func (m *MockQuery) OrgName() []string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OrgName")
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].([]string)
 	return ret0
 }
 
