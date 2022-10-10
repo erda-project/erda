@@ -138,3 +138,15 @@ func (i IssueMock) GetIssueStatesBelong(req *issuepb.GetIssueStateRelationReques
 func (i IssueMock) AfterIssueInclusionRelationChange(id uint64) error {
 	panic("implement me")
 }
+
+func (i IssueMock) BatchGetProperties(orgID int64, issuesType []string) ([]*issuepb.IssuePropertyIndex, error) {
+	panic("implement me")
+}
+
+func (i IssueMock) GetIssuePropertyInstance(req *issuepb.GetIssuePropertyInstanceRequest) (*issuepb.IssueAndPropertyAndValue, error) {
+	panic("implement me")
+}
+
+func (i IssueMock) BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*issuepb.IssueAndPropertyAndValue, error) {
+	panic("implement me")
+}

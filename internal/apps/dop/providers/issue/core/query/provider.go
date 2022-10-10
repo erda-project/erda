@@ -56,6 +56,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
+// Interface .
+// How to generate mock code:
+//
+//	mockgen -destination pkg/mock/issue_query_mock.go -package mock -source internal/apps/dop/providers/issue/core/query/provider.go -mock_names Interface=MockIssueQuery
 type Interface interface {
 	Paging(req pb.PagingIssueRequest) ([]*pb.Issue, uint64, error)
 	GetIssue(id int64, identityInfo *commonpb.IdentityInfo) (*pb.Issue, error)

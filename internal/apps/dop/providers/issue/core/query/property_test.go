@@ -40,10 +40,10 @@ func Test_provider_GetBatchProperties(t *testing.T) {
 
 	r, err := p.BatchGetProperties(1, []string{"TASK", "BUG"})
 	assert.NoError(t, err)
-	assert.Nil(t, r)
+	assert.Equal(t, 2, len(r))
 	r, err = p.BatchGetProperties(1, []string{"TASK"})
 	assert.NoError(t, err)
-	assert.NotNil(t, r)
+	assert.Equal(t, 1, len(r))
 }
 
 func Test_provider_CreatePropertyRelation(t *testing.T) {
