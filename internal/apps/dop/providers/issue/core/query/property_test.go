@@ -38,12 +38,12 @@ func Test_provider_GetBatchProperties(t *testing.T) {
 	)
 	defer p1.Unpatch()
 
-	r, err := p.GetBatchProperties(1, []string{"TASK", "BUG"})
+	r, err := p.BatchGetProperties(1, []string{"TASK", "BUG"})
 	assert.NoError(t, err)
-	assert.Nil(t, r)
-	r, err = p.GetBatchProperties(1, []string{"TASK"})
+	assert.Equal(t, 2, len(r))
+	r, err = p.BatchGetProperties(1, []string{"TASK"})
 	assert.NoError(t, err)
-	assert.NotNil(t, r)
+	assert.Equal(t, 1, len(r))
 }
 
 func Test_provider_CreatePropertyRelation(t *testing.T) {
@@ -126,4 +126,68 @@ func Test_provider_GetProperties(t *testing.T) {
 	}
 	_, err := p.GetProperties(req)
 	assert.NoError(t, err)
+}
+
+func TestConvertRelations(t *testing.T) {
+	type args struct {
+		issueID   int64
+		relations []*pb.IssuePropertyInstance
+	}
+	v1 := structpb.NewNumberValue(1)
+	v2 := structpb.NewStringValue("")
+	v3 := structpb.NewStringValue("t1")
+	r1 := []*pb.IssuePropertyInstance{
+		{
+			ArbitraryValue: v2,
+			PropertyType:   pb.PropertyTypeEnum_Number,
+		},
+		{
+			ArbitraryValue: v1,
+			PropertyType:   pb.PropertyTypeEnum_Number,
+		},
+		{
+			ArbitraryValue: v3,
+			PropertyType:   pb.PropertyTypeEnum_Text,
+		},
+	}
+	p1 := []*pb.IssuePropertyExtraProperty{
+		{
+			ArbitraryValue: v2,
+			PropertyType:   pb.PropertyTypeEnum_Number,
+		},
+		{
+			ArbitraryValue: v1,
+			PropertyType:   pb.PropertyTypeEnum_Number,
+		},
+		{
+			ArbitraryValue: v3,
+			PropertyType:   pb.PropertyTypeEnum_Text,
+		},
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *pb.IssueAndPropertyAndValue
+		wantErr bool
+	}{
+		{
+			args: args{1, r1},
+			want: &pb.IssueAndPropertyAndValue{
+				IssueID:  1,
+				Property: p1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertRelations(tt.args.issueID, tt.args.relations)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertRelations() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertRelations() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

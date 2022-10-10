@@ -33,7 +33,7 @@ type ColumnWithFixedWidth struct {
 	Width int `json:"width,omitempty"`
 }
 
-func buildTableColumnProps(ctx context.Context, issueType string) cptype.ComponentProps {
+func buildTableColumnProps(ctx context.Context, issueType string, customProperties []*pb.IssuePropertyExtraProperty) cptype.ComponentProps {
 	id := Column{"ID", "id", false}
 	name := ColumnWithFixedWidth{Column{cputil.I18n(ctx, "title"), "name", false}, 500}
 	progress := Column{cputil.I18n(ctx, "progress"), "progress", false}
@@ -66,6 +66,12 @@ func buildTableColumnProps(ctx context.Context, issueType string) cptype.Compone
 	default:
 		columns = []interface{}{id, name, complexity, priority, iteration, state, assignee, planStartedAt, deadline, creator, createdAt}
 	}
+
+	// handle custom issue properties
+	for _, property := range customProperties {
+		columns = append(columns, Column{property.DisplayName, "property_" + property.PropertyName, true})
+	}
+
 	return map[string]interface{}{
 		"columns":         columns,
 		"rowKey":          "id",

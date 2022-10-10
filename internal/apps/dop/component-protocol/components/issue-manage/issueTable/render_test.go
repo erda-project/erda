@@ -18,13 +18,14 @@ import (
 	"context"
 	"testing"
 
-	gomock "github.com/golang/mock/gomock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	idpb "github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 func TestGetTotalPage(t *testing.T) {
@@ -120,7 +121,7 @@ func Test_eventHandler(t *testing.T) {
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Identity: &idpb.IdentityInfo{UserID: "2"}})
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	issueService := NewMockInterface(ctrl)
+	issueService := mock.NewMockIssueQuery(ctrl)
 	issueService.EXPECT().UpdateIssue(gomock.Any()).AnyTimes().Return(nil)
 	ctx = context.WithValue(ctx, "issue", issueService)
 	tests := []struct {

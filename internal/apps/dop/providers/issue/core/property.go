@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -413,7 +412,7 @@ func (i *IssueService) GetIssuePropertyInstance(ctx context.Context, req *pb.Get
 
 	issueModel, err := i.db.GetIssue(req.IssueID)
 	if err != nil {
-		return nil, apierrors.ErrGetIssueProperty.InvalidParameter(err)
+		return nil, apierrors.ErrGetIssue.InvalidParameter(err)
 	}
 
 	if !apis.IsInternalClient(ctx) {
@@ -436,106 +435,12 @@ func (i *IssueService) GetIssuePropertyInstance(ctx context.Context, req *pb.Get
 		}
 	}
 
-	var instances []pb.IssuePropertyInstance
-	mp := make(map[int64]int)
-	// 获取该事件类型配置的全部自定义字段
-	properties, err := i.query.GetProperties(&pb.GetIssuePropertyRequest{
-		OrgID:             req.OrgID,
-		PropertyIssueType: req.PropertyIssueType,
-	})
+	instance, err := i.query.GetIssuePropertyInstance(req)
 	if err != nil {
-		return nil, err
-	}
-	// 构建property到instances的映射，instances中存放自定义字段信息（不含值）
-	for i, pro := range properties {
-		instances = append(instances, pb.IssuePropertyInstance{
-			PropertyID:        pro.PropertyID,
-			ScopeID:           pro.ScopeID,
-			ScopeType:         pro.ScopeType,
-			OrgID:             pro.OrgID,
-			PropertyName:      pro.PropertyName,
-			DisplayName:       pro.DisplayName,
-			PropertyType:      pro.PropertyType,
-			Required:          pro.Required,
-			PropertyIssueType: pro.PropertyIssueType,
-			Relation:          pro.Relation,
-			Index:             pro.Index,
-			EnumeratedValues:  pro.EnumeratedValues,
-			Values:            pro.Values,
-			RelatedIssue:      pro.RelatedIssue,
-		})
-		mp[pro.PropertyID] = i
-	}
-	// 填充instances每个自定义字段的值
-	relations, err := i.db.GetPropertyRelationByID(req.IssueID)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range relations {
-		if mp[v.PropertyID] >= len(instances) {
-			return nil, apierrors.ErrGetIssue.InvalidState("找不到使用的自定义字段")
-		}
-		if common.IsOptions(instances[mp[v.PropertyID]].PropertyType.String()) == false {
-			instances[mp[v.PropertyID]].ArbitraryValue = structpb.NewStringValue(v.ArbitraryValue)
-			continue
-		}
-		instances[mp[v.PropertyID]].PropertyEnumeratedValues = append(
-			instances[mp[v.PropertyID]].PropertyEnumeratedValues, &pb.PropertyEnumerate{Id: v.PropertyValueID})
+		return nil, apierrors.ErrGetIssuePropertyInstance.InternalError(err)
 	}
 
-	res, err := ConvertRelations(req.IssueID, instances)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.GetIssuePropertyInstanceResponse{Data: res}, nil
-}
-
-func ConvertRelations(issueID int64, relations []pb.IssuePropertyInstance) (*pb.IssueAndPropertyAndValue, error) {
-	res := &pb.IssueAndPropertyAndValue{
-		IssueID: issueID,
-	}
-	for i, v := range relations {
-		var arbitraryValue interface{}
-		// 判断出参应该是数字还是字符串
-		if v.PropertyType == pb.PropertyTypeEnum_Number && v.ArbitraryValue != nil {
-			if val := v.ArbitraryValue.GetNumberValue(); val > 0 {
-				arbitraryValue = val
-			} else {
-				arbitraryValue = v.ArbitraryValue.GetStringValue()
-			}
-		} else {
-			arbitraryValue = v.ArbitraryValue
-		}
-
-		var arbi *structpb.Value
-		if v.ArbitraryValue != nil {
-			a, ok := arbitraryValue.(*structpb.Value)
-			if ok {
-				arbi = a
-			} else {
-				arb, err := structpb.NewValue(arbitraryValue)
-				if err != nil {
-					return nil, err
-				}
-				arbi = arb
-			}
-		}
-
-		res.Property = append(res.Property, &pb.IssuePropertyExtraProperty{
-			PropertyID:       v.PropertyID,
-			PropertyType:     v.PropertyType,
-			PropertyName:     v.PropertyName,
-			Required:         v.Required,
-			DisplayName:      v.DisplayName,
-			ArbitraryValue:   arbi,
-			EnumeratedValues: v.EnumeratedValues,
-		})
-		for _, val := range v.PropertyEnumeratedValues {
-			res.Property[i].Values = append(res.Property[i].Values, val.Id)
-		}
-	}
-	return res, nil
+	return &pb.GetIssuePropertyInstanceResponse{Data: instance}, nil
 }
 
 func GetArb(i *pb.IssuePropertyInstance) string {

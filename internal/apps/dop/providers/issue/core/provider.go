@@ -126,7 +126,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						if err != nil {
 							return err
 						}
-						pro, err := p.Query.GetBatchProperties(req.OrgID, req.Type)
+						pro, err := p.Query.BatchGetProperties(req.OrgID, req.Type)
 						if err != nil {
 							return err
 						}

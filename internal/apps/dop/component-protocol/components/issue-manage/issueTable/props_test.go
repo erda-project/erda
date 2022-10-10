@@ -25,17 +25,17 @@ import (
 
 func Test_buildTableColumnProps(t *testing.T) {
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
-	got := buildTableColumnProps(ctx, "REQUIREMENT")
+	got := buildTableColumnProps(ctx, "REQUIREMENT", nil)
 	c := got["columns"].([]interface{})
 	assert.Equal(t, c[2].(Column).DataIndex, "progress")
 	assert.Equal(t, c[1].(ColumnWithFixedWidth).Width, 500)
-	got = buildTableColumnProps(ctx, "TASK")
+	got = buildTableColumnProps(ctx, "TASK", nil)
 	c = got["columns"].([]interface{})
 	assert.Equal(t, c[2].(Column).DataIndex, "complexity")
-	got = buildTableColumnProps(ctx, "BUG")
+	got = buildTableColumnProps(ctx, "BUG", nil)
 	c = got["columns"].([]interface{})
 	assert.Equal(t, c[2].(Column).DataIndex, "severity")
-	got = buildTableColumnProps(ctx, "ALL")
+	got = buildTableColumnProps(ctx, "ALL", nil)
 	c = got["columns"].([]interface{})
 	assert.Equal(t, c[2].(Column).DataIndex, "complexity")
 }
