@@ -113,6 +113,7 @@ func (chs *ClickhouseSource) queryContainers(ctx context.Context, orgName, clust
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).Eq(cluster),
 		goqu.L("timestamp").Gte(time.Unix(start, 0).Local().Format(timeFormat)),
 		goqu.L("timestamp").Lt(time.Unix(end, 0).Local().Format(timeFormat)),
+		goqu.L("org_name").Eq(orgName),
 	)
 
 	if instanceType != instanceTypeAll {
@@ -174,7 +175,9 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 		goqu.L("metric_group").Eq(groupHostSummary),
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).In(clusterNames),
 		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).NotLike("%offline%"),
-		goqu.L("timestamp").Between(goqu.Range(from, to)))
+		goqu.L("timestamp").Between(goqu.Range(from, to)),
+		goqu.L("org_name").Eq(params.OrgName),
+	)
 
 	sqlStr, err := chs.toSQL(sql)
 	if err != nil {
@@ -337,6 +340,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 		goqu.L("tag_values[indexOf(tag_keys,?)]", clusterName).In(clusterNames),
 		goqu.L("string_field_values[indexOf(string_field_keys,?)]", labels).NotLike("%offline%"),
 		goqu.L("timestamp").Between(goqu.Range(from, to)),
+		goqu.L("org_name").Eq(params.OrgName),
 	).GroupBy(goqu.L("tag_values[indexOf(tag_keys,?)]", hostIP))
 
 	sql = chs.wrapGroupHostFilter(res.Filters, sql)
