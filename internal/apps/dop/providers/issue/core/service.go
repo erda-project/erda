@@ -279,6 +279,11 @@ func (i *IssueService) PagingIssue(ctx context.Context, req *pb.PagingIssueReque
 	if req.IdentityInfo == nil {
 		return nil, apierrors.ErrPagingIssues.NotLogin()
 	}
+	orgID, err := strconv.ParseInt(req.IdentityInfo.OrgID, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrPagingIssues.InvalidParameter("invalid orgid")
+	}
+	req.OrgID = orgID
 	if !apis.IsInternalClient(ctx) {
 		req.External = true
 	}

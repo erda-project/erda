@@ -133,7 +133,7 @@ func IsInternalClient(ctx context.Context) bool {
 	return GetInternalClient(ctx) != ""
 }
 
-// GetIdentityInfo get User-ID and Internal-Client from header.
+// GetIdentityInfo get User-ID, Internal-Client and Org-ID from header.
 // return nil if no identity info found.
 func GetIdentityInfo(ctx context.Context) *pb.IdentityInfo {
 	// try to get User-ID
@@ -142,5 +142,6 @@ func GetIdentityInfo(ctx context.Context) *pb.IdentityInfo {
 	if userID == "" && internalClient == "" {
 		return nil
 	}
-	return &pb.IdentityInfo{UserID: userID, InternalClient: internalClient}
+	orgID := GetOrgID(ctx)
+	return &pb.IdentityInfo{UserID: userID, InternalClient: internalClient, OrgID: orgID}
 }

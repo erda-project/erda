@@ -17,6 +17,9 @@ package query
 import (
 	"fmt"
 	"strconv"
+	"sync"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
@@ -177,28 +180,192 @@ func GetArb(i *pb.IssuePropertyInstance) string {
 	return i.ArbitraryValue.GetStringValue()
 }
 
-func (p *provider) GetBatchProperties(orgID int64, issuesType []string) ([]*pb.IssuePropertyIndex, error) {
+func (p *provider) BatchGetProperties(orgID int64, issuesTypes []string) ([]*pb.IssuePropertyIndex, error) {
 	var (
 		properties []*pb.IssuePropertyIndex
 		err        error
 	)
-	if len(issuesType) != 1 {
-		return nil, nil
+	if len(issuesTypes) > 0 {
+		var wg sync.WaitGroup
+		errChan := make(chan error, len(issuesTypes))
+		propertiesChan := make(chan []*pb.IssuePropertyIndex, len(issuesTypes))
+		for _, issueType := range issuesTypes {
+			wg.Add(1)
+			go func(issueType string) {
+				defer wg.Done()
+				properties, err := p.GetProperties(&pb.GetIssuePropertyRequest{
+					OrgID:             orgID,
+					PropertyIssueType: issueType,
+				})
+				if err != nil {
+					errChan <- err
+					return
+				}
+				propertiesChan <- properties
+			}(issueType)
+		}
+		wg.Wait()
+		close(errChan)
+		close(propertiesChan)
+		for err := range errChan {
+			if err != nil {
+				return nil, apierrors.ErrGetIssueProperty.InternalError(err)
+			}
+		}
+		for p := range propertiesChan {
+			properties = append(properties, p...)
+		}
+	} else {
+		// get by all issue types
+		req := &pb.GetIssuePropertyRequest{OrgID: orgID}
+		properties, err = p.GetProperties(req)
+		if err != nil {
+			return nil, err
+		}
 	}
-	req := &pb.GetIssuePropertyRequest{OrgID: orgID}
-	switch issuesType[0] {
-	case pb.IssueTypeEnum_TASK.String():
-		req.PropertyIssueType = pb.PropertyIssueTypeEnum_TASK.String()
-	case pb.IssueTypeEnum_BUG.String():
-		req.PropertyIssueType = pb.PropertyIssueTypeEnum_BUG.String()
-	case pb.IssueTypeEnum_REQUIREMENT.String():
-		req.PropertyIssueType = pb.PropertyIssueTypeEnum_REQUIREMENT.String()
-	case pb.IssueTypeEnum_EPIC.String():
-		req.PropertyIssueType = pb.PropertyIssueTypeEnum_EPIC.String()
+	return properties, nil
+}
+
+// BatchGetIssuePropertyInstances .
+// return:
+//
+//	@map[int64][]*dao.IssuePropertyRelation: key is issueID
+//	@err: error
+func (p *provider) BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*pb.IssueAndPropertyAndValue, error) {
+	issueInstancesMap := make(map[uint64]*pb.IssueAndPropertyAndValue)
+	// 获取该事件类型配置的全部自定义字段
+	if len(issueType) == 0 {
+		return nil, apierrors.ErrGetIssueProperty.MissingParameter("issueType")
 	}
-	properties, err = p.GetProperties(req)
+	properties, err := p.GetProperties(&pb.GetIssuePropertyRequest{
+		OrgID:             orgID,
+		PropertyIssueType: issueType,
+	})
 	if err != nil {
 		return nil, err
 	}
-	return properties, nil
+
+	// get all issue property relations
+	relations, err := p.db.ListPropertyRelationsByIssueIDs(issueIDs)
+	if err != nil {
+		return nil, apierrors.ErrGetIssuePropertyInstance.InternalError(err)
+	}
+	issueRelationsMap := make(map[int64][]*dao.IssuePropertyRelation)
+	for _, relation := range relations {
+		issueRelationsMap[relation.IssueID] = append(issueRelationsMap[relation.IssueID], relation)
+	}
+
+	for issueID, issueRelations := range issueRelationsMap {
+		instances, err := p.getIssuePropertyInstance(issueID, properties, issueRelations)
+		if err != nil {
+			return nil, err
+		}
+		issueInstancesMap[uint64(issueID)] = instances
+	}
+
+	return issueInstancesMap, nil
+}
+
+func (p *provider) getIssuePropertyInstance(issueID int64, properties []*pb.IssuePropertyIndex, relations []*dao.IssuePropertyRelation) (*pb.IssueAndPropertyAndValue, error) {
+	var instances []*pb.IssuePropertyInstance
+	propertyInstanceMap := make(map[int64]*pb.IssuePropertyInstance, len(properties))
+	// 构建property到instances的映射，instances中存放自定义字段信息（不含值）
+	for _, pro := range properties {
+		instance := &pb.IssuePropertyInstance{
+			PropertyID:        pro.PropertyID,
+			ScopeID:           pro.ScopeID,
+			ScopeType:         pro.ScopeType,
+			OrgID:             pro.OrgID,
+			PropertyName:      pro.PropertyName,
+			DisplayName:       pro.DisplayName,
+			PropertyType:      pro.PropertyType,
+			Required:          pro.Required,
+			PropertyIssueType: pro.PropertyIssueType,
+			Relation:          pro.Relation,
+			Index:             pro.Index,
+			EnumeratedValues:  pro.EnumeratedValues,
+			Values:            pro.Values,
+			RelatedIssue:      pro.RelatedIssue,
+		}
+		instances = append(instances, instance)
+		propertyInstanceMap[pro.PropertyID] = instance
+	}
+	// 填充instances每个自定义字段的值
+	for _, v := range relations {
+		instance, ok := propertyInstanceMap[v.PropertyID]
+		if !ok {
+			return nil, apierrors.ErrGetIssuePropertyInstance.InvalidState("找不到使用的自定义字段")
+		}
+		if !common.IsOptions(instance.PropertyType.String()) {
+			instance.ArbitraryValue = structpb.NewStringValue(v.ArbitraryValue)
+			continue
+		}
+		instance.PropertyEnumeratedValues = append(
+			instance.PropertyEnumeratedValues, &pb.PropertyEnumerate{Id: v.PropertyValueID})
+	}
+
+	return convertRelations(issueID, instances)
+}
+
+func (p *provider) GetIssuePropertyInstance(req *pb.GetIssuePropertyInstanceRequest) (*pb.IssueAndPropertyAndValue, error) {
+	// 获取该事件类型配置的全部自定义字段
+	properties, err := p.GetProperties(&pb.GetIssuePropertyRequest{
+		OrgID:             req.OrgID,
+		PropertyIssueType: req.PropertyIssueType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	relations, err := p.db.GetPropertyRelationByID(req.IssueID)
+	if err != nil {
+		return nil, err
+	}
+	return p.getIssuePropertyInstance(req.IssueID, properties, relations)
+}
+
+func convertRelations(issueID int64, relations []*pb.IssuePropertyInstance) (*pb.IssueAndPropertyAndValue, error) {
+	res := &pb.IssueAndPropertyAndValue{
+		IssueID: issueID,
+	}
+	for i, v := range relations {
+		var arbitraryValue interface{}
+		// 判断出参应该是数字还是字符串
+		if v.PropertyType == pb.PropertyTypeEnum_Number && v.ArbitraryValue != nil {
+			if val := v.ArbitraryValue.GetNumberValue(); val > 0 {
+				arbitraryValue = val
+			} else {
+				arbitraryValue = v.ArbitraryValue.GetStringValue()
+			}
+		} else {
+			arbitraryValue = v.ArbitraryValue
+		}
+
+		var arbi *structpb.Value
+		if v.ArbitraryValue != nil {
+			a, ok := arbitraryValue.(*structpb.Value)
+			if ok {
+				arbi = a
+			} else {
+				arb, err := structpb.NewValue(arbitraryValue)
+				if err != nil {
+					return nil, err
+				}
+				arbi = arb
+			}
+		}
+
+		res.Property = append(res.Property, &pb.IssuePropertyExtraProperty{
+			PropertyID:       v.PropertyID,
+			PropertyType:     v.PropertyType,
+			PropertyName:     v.PropertyName,
+			Required:         v.Required,
+			DisplayName:      v.DisplayName,
+			ArbitraryValue:   arbi,
+			EnumeratedValues: v.EnumeratedValues,
+		})
+		for _, val := range v.PropertyEnumeratedValues {
+			res.Property[i].Values = append(res.Property[i].Values, val.Id)
+		}
+	}
+	return res, nil
 }

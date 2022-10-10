@@ -16,13 +16,16 @@ package search
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda-proto-go/common/pb"
+	pb0 "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	pb2 "github.com/erda-project/erda-proto-go/dop/search/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -73,8 +76,15 @@ func TestSearch(t *testing.T) {
 	})
 	defer pm5.Unpatch()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	issueQueryForSearch := &IssueQueryForSearch{
+		MockIssueQuery: mock.NewMockIssueQuery(ctrl),
+	}
+
 	p := &provider{
-		Query: &mock.MockIssueQuery{},
+		Query: issueQueryForSearch,
 		bdl:   bdl,
 		Cfg:   &config{},
 	}
@@ -89,6 +99,20 @@ func TestSearch(t *testing.T) {
 	assert.Equal(t, 1, len(res.Data))
 	assert.Equal(t, handlers.SearchTypeIssue.String(), res.Data[0].Type)
 	assert.Equal(t, 2, len(res.Data[0].Items))
+}
+
+type IssueQueryForSearch struct {
+	*mock.MockIssueQuery
+}
+
+func (m *IssueQueryForSearch) Paging(req pb0.PagingIssueRequest) ([]*pb0.Issue, uint64, error) {
+	res := make([]*pb0.Issue, 0)
+	var total uint64
+	for _, projectID := range req.ProjectIDs {
+		res = append(res, &pb0.Issue{ProjectID: projectID, Title: fmt.Sprintf("%d", projectID)})
+		total++
+	}
+	return res, total, nil
 }
 
 func TestInit(t *testing.T) {

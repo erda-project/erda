@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/issueFilter"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	issuemodel "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -143,6 +144,33 @@ type TableItem struct {
 	Creator       Assignee  `json:"creator"`
 	PlanStartedAt Time      `json:"planStartedAt"`
 	Iteration     TextBlock `json:"iteration"`
+
+	Properties []*pb.IssuePropertyExtraProperty `json:"properties"`
+}
+
+type TableItemForShow map[string]interface{}
+
+func (item *TableItem) toColumnDataRow() map[string]interface{} {
+	data := make(map[string]interface{})
+	cputil.MustObjJSONTransfer(item, &data)
+	// delete self properties field
+	delete(data, "properties")
+	// treat all custom properties as TextBlock
+	for _, property := range item.Properties {
+		block := TextBlock{
+			Value:      (*issuemodel.PropertyInstanceForShow)(property).String(),
+			RenderType: "text",
+		}
+		if property.PropertyType == pb.PropertyTypeEnum_Person && block.Value != "" {
+			block.RenderType = "userAvatar"
+		}
+		data[makePropertyColumnName(property)] = block
+	}
+	return data
+}
+
+func makePropertyColumnName(property *pb.IssuePropertyExtraProperty) string {
+	return "property_" + property.PropertyName
 }
 
 type TextBlock struct {
@@ -323,6 +351,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	}
 
+	// handle custom properties
+	if fixedIssueType != "ALL" {
+		cond.WithCustomProperties = true
+	}
+
 	issues, total, err := issueSvc.Paging(cond)
 	if err != nil {
 		return err
@@ -340,6 +373,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	for _, p := range issues {
 		userids = append(userids, p.Creator, p.Assignee, p.Owner)
+		// get from custom properties
+		for _, property := range p.PropertyInstances {
+			tryUserID := (*issuemodel.PropertyInstanceForShow)(property).TryGetUserID()
+			if tryUserID != "" {
+				userids = append(userids, tryUserID)
+			}
+		}
 	}
 	// 获取全部用户
 	userids = strutil.DedupSlice(userids, true)
@@ -367,13 +407,17 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		iterationTitleMap[key] = i.Label
 	}
 
-	var l []TableItem
+	var l []TableItemForShow
 	for _, data := range issues {
-		l = append(l, *ca.buildTableItem(ctx, data, iterationTitleMap))
+		l = append(l, (*ca.buildTableItem(ctx, data, iterationTitleMap)).toColumnDataRow())
 	}
 	c.Data = map[string]interface{}{}
 	c.Data["list"] = l
-	c.Props = buildTableColumnProps(ctx, fixedIssueType)
+	var customProperties []*pb.IssuePropertyExtraProperty
+	if len(issues) > 0 {
+		customProperties = issues[0].PropertyInstances
+	}
+	c.Props = buildTableColumnProps(ctx, fixedIssueType, customProperties)
 	c.Operations = map[string]interface{}{
 		"changePageNo": map[string]interface{}{
 			"key":    "changePageNo",
@@ -652,6 +696,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *pb.Issue, i
 		},
 		PlanStartedAt: planStartedAt,
 		Iteration:     iteration,
+		Properties:    data.PropertyInstances,
 	}
 }
 

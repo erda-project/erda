@@ -59,8 +59,8 @@ func (client *DBClient) DeletePropertyRelationByIssueID(issueID int64) error {
 		Delete(IssuePropertyRelation{}).Error
 }
 
-func (client *DBClient) GetPropertyRelationByID(issueID int64) ([]IssuePropertyRelation, error) {
-	var relations []IssuePropertyRelation
+func (client *DBClient) GetPropertyRelationByID(issueID int64) ([]*IssuePropertyRelation, error) {
+	var relations []*IssuePropertyRelation
 	err := client.Table("dice_issue_property_relation").Where("issue_id = ?", issueID).Where("property_id != 0").Find(&relations).Error
 	if err != nil {
 		return nil, err
@@ -93,4 +93,13 @@ func (client *DBClient) GetPropertyRelationByIssueID(issueID int64, propertyID i
 		return nil, err
 	}
 	return &relations, nil
+}
+
+func (client *DBClient) ListPropertyRelationsByIssueIDs(issueIDs []uint64) ([]*IssuePropertyRelation, error) {
+	var relations []*IssuePropertyRelation
+	err := client.Table("dice_issue_property_relation").Where("issue_id in (?)", issueIDs).Find(&relations).Error
+	if err != nil {
+		return nil, err
+	}
+	return relations, nil
 }

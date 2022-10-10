@@ -583,6 +583,7 @@ message Issue {
   repeated uint64 relatedIssueIDs = 31;
   int32 reopenCount = 32;
   IssueTypeEnum.Type type = 33;
+  repeated IssuePropertyExtraProperty propertyInstances = 34;
 }
 
 message IssueStage {
@@ -624,7 +625,7 @@ message IssuePropertyIndex {
   int64 index = 11;
   repeated Enumerate enumeratedValues = 12;
   repeated int64 values = 13;
-  repeated string relatedIssue = 14;
+  repeated string relatedIssue = 14; // related issue types
 }
 
 message PropertyEnumerate {
@@ -874,6 +875,8 @@ message PagingIssueRequest {
   int64 orgID = 40;
   repeated uint64 projectIDs = 41;
   repeated string participant = 42;
+
+  bool withCustomProperties = 43;
 }
 
 message IssueListRequest {
