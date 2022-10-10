@@ -16,7 +16,6 @@ package esinfluxql
 
 import (
 	"context"
-	"math"
 	"reflect"
 	"strings"
 	"time"
@@ -147,13 +146,17 @@ func (q QueryClickhouse) parse(ctx context.Context, rows ckdriver.Rows, rs *mode
 		return nil
 	}
 
-	step := getStep(newCtx, dates)
-
 	for i, iterate := range dates {
 		var row []interface{}
-		point := i + step
+		point := i + 1
 		if point < len(dates) {
-			q.ctx.attributesCache["next"] = dates[i+step]
+			if switchTimeBucket(iterate, dates[i+1]) {
+				q.ctx.attributesCache["next"] = nil
+			} else {
+				q.ctx.attributesCache["next"] = dates[i+1]
+			}
+		} else {
+			q.ctx.attributesCache["next"] = nil
 		}
 
 		for _, c := range q.column {
@@ -190,35 +193,34 @@ func (q QueryClickhouse) parse(ctx context.Context, rows ckdriver.Rows, rs *mode
 	return nil
 }
 
-// rows must be sorted
-func getStep(ctx context.Context, rows []map[string]interface{}) int {
-	_, span := otel.Tracer("parser").Start(ctx, "calculator.step")
-	defer span.End()
-
-	if len(rows) <= 0 {
+func getTimestampByRow(row map[string]interface{}) int64 {
+	if len(row) <= 0 {
 		return 0
 	}
-	timestamp := int64(math.MaxInt64)
-	i := 0
-	for _, row := range rows {
-		_t, exist := row["bucket_timestamp"]
-		if !exist {
-			break
-		}
-		_timestamp, ok := _t.(int64)
-		if !ok {
-			break
-		}
+	t, exist := row["bucket_timestamp"]
+	if !exist {
+		return 0
+	}
 
-		if _timestamp > timestamp {
-			span.SetAttributes(attribute.Int("step", i))
-			return i
-		} else {
-			timestamp = _timestamp
-		}
-		i++
+	if timestamp, ok := t.(int64); ok {
+		return timestamp
 	}
 	return 0
+}
+
+func switchTimeBucket(current map[string]interface{}, next map[string]interface{}) bool {
+	if len(current) <= 0 || len(next) <= 0 {
+		return false
+	}
+
+	currentT := getTimestampByRow(current)
+	nextT := getTimestampByRow(next)
+
+	if currentT == 0 || nextT == 0 {
+		return false
+	}
+	//If the next time is smaller than the current time, you need to switch the time bucket
+	return currentT > nextT
 }
 
 func (q QueryClickhouse) parseAllColumn(c *SQLColumnHandler, cur map[string]interface{}, rs *model.Data) ([]interface{}, error) {
