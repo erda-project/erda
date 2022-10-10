@@ -47,4 +47,4 @@ COPY --from=app-handler /erda-handled /erda
 COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"
 
 WORKDIR /erda
-CMD ["sh", "-c", "/erda/cmd/${MODULE_PATH}/bin"]
+CMD ["bash", "-c", "/erda/cmd/${MODULE_PATH}/bin"]
