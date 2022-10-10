@@ -108,99 +108,48 @@ func parse(q QueryClickhouse, rows driver.Rows) (*model.Data, error) {
 	return q.ParseResult(context.Background(), rows)
 }
 
-func TestStep(t *testing.T) {
+func TestSwitchTimeBucket(t *testing.T) {
 	tests := []struct {
-		name   string
-		params []map[string]interface{}
-		want   int
+		name    string
+		current map[string]interface{}
+		next    map[string]interface{}
+		want    bool
 	}{
 		{
-			name: "two",
-			params: []map[string]interface{}{
-				{
-					"bucket_timestamp": int64(11),
-					"column":           "11",
-				},
-				{
-					"bucket_timestamp": int64(11),
-					"column":           "22",
-				},
-				{
-					"bucket_timestamp": int64(22),
-					"column":           "11",
-				},
-				{
-					"bucket_timestamp": int64(22),
-					"column":           "22",
-				},
+			name: "no_time",
+			current: map[string]interface{}{
+				"11": "", "22": "",
 			},
-			want: 2,
+			next: map[string]interface{}{
+				"11": "", "22": "",
+			},
+			want: false,
 		},
 		{
-			name: "no time",
-			params: []map[string]interface{}{
-				{
-					"column": "11",
-				},
-				{
-					"column": "22",
-				},
-				{
-					"column": "11",
-				},
-				{
-					"column": "22",
-				},
+			name: "true",
+			current: map[string]interface{}{
+				"bucket_timestamp": int64(3), "column": "1",
 			},
-			want: 0,
+			next: map[string]interface{}{
+				"bucket_timestamp": int64(1), "column": "2",
+			},
+			want: true,
 		},
 		{
-			name: "three",
-			params: []map[string]interface{}{
-				{
-					"bucket_timestamp": int64(11),
-					"column":           "11",
-				},
-				{
-					"bucket_timestamp": int64(11),
-					"column":           "22",
-				},
-				{
-					"bucket_timestamp": int64(11),
-					"column":           "33",
-				},
-				{
-					"bucket_timestamp": int64(22),
-					"column":           "11",
-				},
-				{
-					"bucket_timestamp": int64(22),
-					"column":           "22",
-				},
-				{
-					"bucket_timestamp": int64(22),
-					"column":           "33",
-				},
-				{
-					"bucket_timestamp": int64(33),
-					"column":           "11",
-				},
-				{
-					"bucket_timestamp": int64(33),
-					"column":           "22",
-				},
-				{
-					"bucket_timestamp": int64(33),
-					"column":           "33",
-				},
+			name: "false",
+			current: map[string]interface{}{
+				"bucket_timestamp": int64(2), "column": "1",
 			},
-			want: 3,
+			next: map[string]interface{}{
+				"bucket_timestamp": int64(3), "column": "1",
+			},
+			want: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := getStep(context.Background(), test.params)
+			got := switchTimeBucket(test.current, test.next)
 			require.Equal(t, test.want, got)
 		})
 	}

@@ -108,7 +108,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	}
 
 	for script, column := range columns {
-		asc := false
+		asc := true
 		if _asc, ok := sortFields[script]; ok {
 			delete(sortFields, script)
 			asc = _asc
@@ -116,25 +116,28 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 		sortFields[column] = asc
 	}
 
-	if _, ok := sortFields[p.ctx.timeKey]; ok {
-		expr = expr.Order(goqu.C(p.ctx.timeKey).Asc())
-	}
-
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
-	if _, ok := sortFields[timeBucketColumn]; ok {
-		expr = expr.Order(goqu.C(timeBucketColumn).Asc())
-	}
 
 	for column, asc := range sortFields {
 		if column == p.ctx.timeKey || column == timeBucketColumn || column == "*" {
 			continue
 		}
-		if asc {
-			expr = expr.OrderAppend(goqu.C(column).Asc())
-		} else {
+		if !asc {
 			expr = expr.OrderAppend(goqu.C(column).Desc())
+		} else {
+			expr = expr.OrderAppend(goqu.C(column).Asc())
 		}
 	}
+
+	// time order expr should be tail
+	if _, ok := sortFields[p.ctx.timeKey]; ok {
+		expr = expr.OrderAppend(goqu.C(p.ctx.timeKey).Asc())
+	}
+
+	if _, ok := sortFields[timeBucketColumn]; ok {
+		expr = expr.OrderAppend(goqu.C(timeBucketColumn).Asc())
+	}
+
 	return expr, nil
 }
 
