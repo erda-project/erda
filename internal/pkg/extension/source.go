@@ -32,6 +32,23 @@ import (
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
+func (s *provider) InitSources() error {
+
+	fileSources := NewFileExtensionSource(s)
+	RegisterExtensionSource(NewGitExtensionSource(s.Cfg, fileSources))
+	RegisterExtensionSource(fileSources)
+	StartSyncExtensionSource()
+
+	sources := strings.Split(s.Cfg.InitFilePath+","+s.Cfg.ExtensionSources, ",")
+	for _, source := range sources {
+		err := AddSyncExtension(source)
+		if err != nil {
+			return fmt.Errorf("add sync source %v error %v", source, err)
+		}
+	}
+	return nil
+}
+
 type Source interface {
 	match(addr string) bool
 	add(addr string) error
@@ -157,7 +174,7 @@ func (g *GitExtensionSource) start() {
 // start Open file monitoring, continuously monitor file changes, and update extension
 type FileExtensionSource struct {
 	watcher    *fsnotify.Watcher
-	s          *extensionService
+	s          *provider
 	lock       sync.Mutex
 	AddrRWLock map[string]*sync.RWMutex
 }
@@ -361,6 +378,7 @@ func (f *FileExtensionSource) updateOrCreateExtension(fileAddr string) error {
 		ForceUpdate: true,
 		All:         true,
 		IsDefault:   specData.IsDefault,
+		UpdatedAt:   version.UpdateAt,
 	}
 	_, err = f.s.CreateExtensionVersionByRequest(request)
 	if err != nil {
@@ -376,7 +394,7 @@ func isWatchFile(name string) bool {
 	return false
 }
 
-func NewFileExtensionSource(s *extensionService) *FileExtensionSource {
+func NewFileExtensionSource(s *provider) *FileExtensionSource {
 	var fileExtensionSource FileExtensionSource
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {

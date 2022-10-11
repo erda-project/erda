@@ -567,6 +567,7 @@ var (
 	ErrQueryExtension                  = err("ErrQueryExtension", "查询扩展失败")
 	ErrCreateExtensionVersion          = err("ErrCreateExtensionVersion", "添加扩展版本失败")
 	ErrQueryExtensionVersion           = err("ErrQueryExtensionVersion", "查询扩展版本失败")
+	ErrDeleteExtensionVersion          = err("ErrDeleteExtensionVersion", "删除扩展版本失败")
 	ErrQueryPublishItem                = err("ErrQueryPublishItem", "查询发布内容失败")
 	ErrCreatePublishItem               = err("ErrCreatePublishItem", "创建发布内容失败")
 	ErrUpdatePublishItem               = err("ErrUpdatePublishItem", "更新发布内容失败")

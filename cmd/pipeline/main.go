@@ -19,11 +19,13 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
+	_ "github.com/erda-project/erda/internal/pkg/extension"
 	_ "github.com/erda-project/erda/internal/tools/pipeline"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/aop"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"

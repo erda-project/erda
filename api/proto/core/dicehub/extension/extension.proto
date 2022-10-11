@@ -165,6 +165,7 @@ message ExtensionVersionCreateRequest {
     bool forceUpdate = 8;
     bool all = 9;
     bool isDefault = 10;
+    optional google.protobuf.Timestamp updatedAt = 11;
 }
 
 message ExtensionVersionCreateResponse {

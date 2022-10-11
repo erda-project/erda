@@ -25,6 +25,7 @@ var (
 	PutOnArtifacts   = err("PutOnArtifacts", "上架项目制品失败")
 	PutOffArtifacts  = err("PutOffArtifacts", "下架项目制品失败")
 	PutOnExtension   = err("PutOnExtension", "上架 Extension 失败")
+	ExtensionHook    = err("ExtensionHook", "处理 Extension 事件失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

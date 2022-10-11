@@ -40,12 +40,12 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/dbclient"
-	extensiondb "github.com/erda-project/erda/internal/apps/dop/dicehub/extension/db"
 	imagedb "github.com/erda-project/erda/internal/apps/dop/dicehub/image/db"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/registry"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/release/db"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 	"github.com/erda-project/erda/internal/core/org"
+	extensiondb "github.com/erda-project/erda/internal/pkg/extension/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -83,7 +83,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		db:              &db.ReleaseConfigDB{DB: p.DB},
 		labelRelationDB: &db.LabelRelationConfigDB{DB: p.DB},
 		imageDB:         &imagedb.ImageConfigDB{DB: p.DB},
-		extensionDB:     &extensiondb.ExtensionConfigDB{DB: p.DB},
+		extensionDB:     &extensiondb.Client{DB: p.DB},
 		bdl:             p.bdl,
 		Etcd:            p.Etcd,
 		Config: &releaseConfig{

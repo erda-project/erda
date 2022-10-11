@@ -15,7 +15,9 @@
 package gallery
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -24,10 +26,14 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/gallery/cache"
 	"github.com/erda-project/erda/internal/apps/gallery/dao"
 	"github.com/erda-project/erda/internal/apps/gallery/handler"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var (
@@ -68,6 +74,7 @@ type provider struct {
 	l *logrus.Entry
 
 	*handler.GalleryHandler
+	bdl *bundle.Bundle
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -84,7 +91,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.GalleryHandler = h
 		pb.RegisterGalleryImp(p.R, h, apis.Options())
 	}
+	p.bdl = bundle.New(bundle.WithErdaServer())
 
+	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	p.registerExtensionHookUntilSuccess(ctx)
 	return nil
 }
 
@@ -97,4 +110,40 @@ func (c config) GetLogLevel() logrus.Level {
 		return logrus.InfoLevel
 	}
 	return c.LogLevel
+}
+
+func (p *provider) registerExtensionHook() error {
+	ev := apistructs.CreateHookRequest{
+		Name:   "gallery_watch_extension_event",
+		Events: []string{apistructs.EventExtensionPutON},
+		URL:    strutil.Concat("http://", discover.ErdaServer(), "/api/extension-hook"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+
+	if err := p.bdl.CreateWebhook(ev); err != nil {
+		p.l.Errorf("failed to register extension hook, err: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (p *provider) registerExtensionHookUntilSuccess(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			err := p.registerExtensionHook()
+			if err == nil {
+				return
+			}
+			p.l.Errorf("failed to register extension hook(auto retry), err: %v", err)
+			time.Sleep(time.Second * 5)
+		}
+	}
 }

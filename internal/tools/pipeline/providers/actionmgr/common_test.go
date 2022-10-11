@@ -23,8 +23,10 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	extensionpb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 func Test_getActionTypeVersion(t *testing.T) {
@@ -94,9 +96,10 @@ func Test_makeActionTypeVersion(t *testing.T) {
 
 func Test_provider_updateExtensionCache(t *testing.T) {
 	p := &provider{Cfg: &config{RefreshInterval: time.Minute, PoolSize: 20}}
-	p.actionsCache = make(map[string]apistructs.ExtensionVersion)
-	p.defaultActionsCache = make(map[string]apistructs.ExtensionVersion)
+	p.actionsCache = make(map[string]*extensionpb.ExtensionVersion)
+	p.defaultActionsCache = make(map[string]*extensionpb.ExtensionVersion)
 	p.bdl = bundle.New(bundle.WithAllAvailableClients())
+	p.ExtensionSvc = &mock.MockExtensionInterface{}
 
 	// before: not-in-cache
 	// mock bundle
@@ -115,9 +118,9 @@ func Test_provider_updateExtensionCache(t *testing.T) {
 			return versions, nil
 		})
 	monkey.Unpatch(reflect.TypeOf(bdl))
-	action := apistructs.Extension{Name: "git-checkout"}
+	action := &extensionpb.Extension{Name: "git-checkout"}
 	// preset a mock default action to test delete logic
-	p.defaultActionsCache[action.Name] = apistructs.ExtensionVersion{Name: action.Name, Version: "mock", IsDefault: true}
+	p.defaultActionsCache[action.Name] = &extensionpb.ExtensionVersion{Name: action.Name, Version: "mock", IsDefault: true}
 	p.updateExtensionCache(action)
 	if _, ok := p.actionsCache[makeActionNameVersion(action.Name, "1.0")]; !ok {
 		t.Fatalf("1.0 not exist")

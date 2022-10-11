@@ -32,6 +32,10 @@ type SpecType string
 const SpecActionType SpecType = "action"
 const SpecAddonType SpecType = "addon"
 
+func (s SpecType) String() string {
+	return string(s)
+}
+
 var (
 	ExtensionSpecDisableECILabel = "eci_disable"
 )

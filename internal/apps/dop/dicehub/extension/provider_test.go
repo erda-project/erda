@@ -15,29 +15,17 @@
 package extension
 
 import (
-	"errors"
 	"os"
 	"path"
-	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/extension/db"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 func Test_provider(t *testing.T) {
-	pv := &provider{Cfg: &config{ExtensionMenu: nil, InitFilePath: ""}}
-	pv.newExtensionService()
-	cl := &db.ExtensionConfigDB{}
-	p := &extensionService{
-		db: cl,
-	}
-	fc := monkey.PatchInstanceMethod(reflect.TypeOf(cl), "QueryAllExtensions", func(_ *db.ExtensionConfigDB) ([]db.ExtensionVersion, error) {
-		return nil, nil
-	})
-	defer fc.Unpatch()
+	pv := &provider{Cfg: &config{ExtensionMenu: nil}, ExtensionSvc: &mock.MockExtensionInterface{}}
 
 	dir := path.Join(os.TempDir(), "extension")
 	defer func() {
@@ -54,14 +42,6 @@ func Test_provider(t *testing.T) {
 	type: action`
 	_, err = f.Write([]byte(specYml))
 	assert.NoError(t, err)
-
-	fc2 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "RunExtensionsPush", func(_ *extensionService, dir string, extensionVersionMap, extensionTypeMap map[string][]string, ok bool) (string, string, error) {
-		if dir != dir1 {
-			return "", "", errors.New("path wrong")
-		}
-		return "", "", nil
-	})
-	defer fc2.Unpatch()
-	err = p.InitExtension(pv.Cfg.InitFilePath, false)
+	err = pv.ExtensionSvc.InitSources()
 	assert.NoError(t, err)
 }

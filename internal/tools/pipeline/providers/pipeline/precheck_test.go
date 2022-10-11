@@ -23,6 +23,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	extensionpb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -36,11 +37,10 @@ import (
 
 type mockActionAgent struct{}
 
-func (m *mockActionAgent) List(context.Context, *pb.PipelineActionListRequest) (*pb.PipelineActionListResponse, error) {
+func (m *mockActionAgent) List(ctx context.Context, req *pb.PipelineActionListRequest) (*extensionpb.QueryExtensionsResponse, error) {
 	return nil, nil
 }
-
-func (m *mockActionAgent) Save(context.Context, *pb.PipelineActionSaveRequest) (*pb.PipelineActionSaveResponse, error) {
+func (m *mockActionAgent) Save(ctx context.Context, req *pb.PipelineActionSaveRequest) (*extensionpb.ExtensionVersionCreateResponse, error) {
 	return nil, nil
 }
 
@@ -48,7 +48,7 @@ func (m *mockActionAgent) Delete(context.Context, *pb.PipelineActionDeleteReques
 	return nil, nil
 }
 
-func (m *mockActionAgent) SearchActions(items []string, locations []string, ops ...actionmgr.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+func (m *mockActionAgent) SearchActions(items []string, ops ...actionmgr.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 	return nil, nil, nil
 }
 

@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -30,7 +31,7 @@ import (
 // SearchActions .
 // each search item: ActionType or ActionType@version
 // output: map[item]Image
-func (s *provider) SearchActions(items []string, locations []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+func (s *provider) SearchActions(items []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 	so := SearchOption{
 		NeedRender:   false,
 		Placeholders: nil,
@@ -39,25 +40,8 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 		op(&so)
 	}
 
-	// search from pipeline action
-	pipelineActionMap, err := s.searchPipelineActions(items, locations)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var notFindNameVersion []string
-	for _, nameVersion := range items {
-		_, find := pipelineActionMap[nameVersion]
-		if !find {
-			notFindNameVersion = append(notFindNameVersion, nameVersion)
-		}
-	}
-
 	// search from dicehub
-	notFindActionMap := s.searchFromDiceHub(notFindNameVersion)
-	for key, notFindAction := range notFindActionMap {
-		pipelineActionMap[key] = notFindAction
-	}
+	pipelineActionMap := s.searchExtensionVersions(items)
 
 	actionDiceYmlJobMap := make(map[string]*diceyml.Job)
 	actionSpecMap := make(map[string]*apistructs.ActionSpec)
@@ -67,12 +51,7 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 			return nil, nil, errors.Errorf("failed to find action: %s", nameVersion)
 		}
 
-		diceYmlStr, ok := action.Dice.(string)
-		if !ok {
-			errMsg := fmt.Sprintf("failed to search action from extension market, action: %s, err: %s", nameVersion, "action's dice.yml is not string")
-			logrus.Errorf("[alert] %s, action's dice.yml: %#v", errMsg, action.Dice)
-			return nil, nil, errors.New(errMsg)
-		}
+		diceYmlStr := action.Dice.GetStringValue()
 		if so.NeedRender && len(so.Placeholders) > 0 {
 			rendered, err := pipelineyml.RenderSecrets([]byte(diceYmlStr), so.Placeholders)
 			if err != nil {
@@ -93,12 +72,7 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 			break
 		}
 		actionSpecMap[nameVersion] = nil
-		specYmlStr, ok := action.Spec.(string)
-		if !ok {
-			errMsg := fmt.Sprintf("failed to search action from extension market, action: %s, err: %s", nameVersion, "action's spec.yml is not string")
-			logrus.Errorf("[alert] %s, action's spec.yml: %#v", errMsg, action.Spec)
-			return nil, nil, errors.New(errMsg)
-		}
+		specYmlStr := action.Spec.GetStringValue()
 		var actionSpec apistructs.ActionSpec
 		if err := yaml.Unmarshal([]byte(specYmlStr), &actionSpec); err != nil {
 			errMsg := fmt.Sprintf("failed to parse action's spec.yml, action: %s, err: %v", nameVersion, err)
@@ -111,15 +85,15 @@ func (s *provider) SearchActions(items []string, locations []string, ops ...OpOp
 	return actionDiceYmlJobMap, actionSpecMap, nil
 }
 
-func (s *provider) searchFromDiceHub(notFindNameVersion []string) map[string]apistructs.ExtensionVersion {
-	notFindActionMap := make(map[string]apistructs.ExtensionVersion)
+func (s *provider) searchExtensionVersions(items []string) map[string]*pb.ExtensionVersion {
+	notFindActionMap := make(map[string]*pb.ExtensionVersion)
 
 	if s.EdgeRegister.IsEdge() {
 		return notFindActionMap
 	}
 
 	worker := limit_sync_group.NewWorker(5)
-	for _, nameVersion := range notFindNameVersion {
+	for _, nameVersion := range items {
 		worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			nameVersion := i[0].(string)
 			action, ok := s.getOrUpdateExtensionFromCache(nameVersion)

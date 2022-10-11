@@ -8,6 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "common/openapi.proto";
 import "common/http.proto";
+import "common/event.proto";
 
 service Gallery {
   option(erda.common.openapi_service) = {
@@ -48,6 +49,12 @@ service Gallery {
     };
     option(erda.common.openapi) = {
       path: "/api/opus/{opusID}/versions",
+    };
+  }
+
+  rpc ExtensionHook(common.EventCreateRequest) returns(common.EventCreateResponse) {
+    option(google.api.http) = {
+      post: "/api/extension-hook",
     };
   }
 

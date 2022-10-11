@@ -16,9 +16,7 @@ package extension
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/jinzhu/gorm"
@@ -32,17 +30,13 @@ import (
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/apps/dop/dicehub/extension/db"
+	"github.com/erda-project/erda/internal/pkg/extension"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type config struct {
-	ExtensionMenu        map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
-	ExtensionSources     string              `file:"extension_sources" env:"EXTENSION_SOURCES"`
-	ExtensionSourcesCron string              `file:"extension_sources_cron" env:"EXTENSION_SOURCES_CRON"`
-
-	InitFilePath string `file:"init_file_path" default:"common-conf/extensions-init"`
+	ExtensionMenu map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
 }
 
 // +provider
@@ -53,13 +47,15 @@ type provider struct {
 	DB                    *gorm.DB                `autowired:"mysql-client"`
 	InitExtensionElection election.Interface      `autowired:"etcd-election@initExtension"`
 	GalleryServer         gallerypb.GalleryServer `autowired:"erda.apps.gallery.Gallery"`
-	extensionService      *extensionService
+	ExtensionSvc          extension.Interface
+
+	bdl *bundle.Bundle
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.newExtensionService()
+	p.bdl = bundle.New(bundle.WithErdaServer())
 	if p.Register != nil {
-		pb.RegisterExtensionServiceImp(p.Register, p.extensionService, apis.Options(),
+		pb.RegisterExtensionServiceImp(p.Register, p, apis.Options(),
 			transport.WithHTTPOptions(
 				transhttp.WithDecoder(func(r *http.Request, data interface{}) error {
 					lang := r.URL.Query().Get("lang")
@@ -78,7 +74,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	var once sync.Once
 	p.InitExtensionElection.OnLeader(func(ctx context.Context) {
 		once.Do(func() {
-			err := p.InitSources()
+			err := p.ExtensionSvc.InitSources()
 			if err != nil {
 				panic(err)
 			}
@@ -88,34 +84,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) InitSources() error {
-
-	fileSources := NewFileExtensionSource(p.extensionService)
-	RegisterExtensionSource(NewGitExtensionSource(p.Cfg, fileSources))
-	RegisterExtensionSource(fileSources)
-	StartSyncExtensionSource()
-
-	sources := strings.Split(p.Cfg.InitFilePath+","+p.Cfg.ExtensionSources, ",")
-	for _, source := range sources {
-		err := AddSyncExtension(source)
-		if err != nil {
-			return fmt.Errorf("add sync source %v error %v", source, err)
-		}
-	}
-	return nil
-}
-
-func (p *provider) newExtensionService() {
-	p.extensionService = &extensionService{
-		p:             p,
-		db:            &db.ExtensionConfigDB{DB: p.DB},
-		bdl:           bundle.New(bundle.WithErdaServer()),
-		extensionMenu: p.Cfg.ExtensionMenu,
-	}
-}
-
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p.extensionService
+	return p
 }
 
 func init() {

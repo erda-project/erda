@@ -48,6 +48,7 @@ import (
 	_ "github.com/erda-project/erda/internal/core/messenger/notifygroup"
 	_ "github.com/erda-project/erda/internal/core/project"
 	_ "github.com/erda-project/erda/internal/core/user"
+	_ "github.com/erda-project/erda/internal/pkg/extension"
 
 	// infra
 	"github.com/erda-project/erda-infra/base/servicehub"

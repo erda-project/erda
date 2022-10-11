@@ -100,7 +100,7 @@ func menuExtWithLocale(extensions []*pb.Extension, locale *i18n.LocaleResource) 
 	return result
 }
 
-func menuExt(extensions []*pb.Extension, confMenu map[string][]string) interface{} {
+func (s *provider) MenuExt(extensions []*pb.Extension, confMenu map[string][]string) interface{} {
 	extMap := extMap(extensions)
 	menuMap := &MenuMap{}
 	for subMenuName, subMenuValues := range confMenu {

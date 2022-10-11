@@ -81,9 +81,11 @@ erda.core.dicehub.image: { }
 erda.core.dicehub.release:
   max_time_reserved: "${RELEASE_MAX_TIME_RESERVED:72}"
   gc_switch: "${RELEASE_GC_SWITCH:true}"
-erda.core.dicehub.extension:
+extension:
   extension_sources: "${EXTENSION_SOURCES}"
   extension_sources_cron: "${EXTENSION_SOURCES_CRON:0 */5 * * * ?}"
+  reload_extension_type: "${RELOAD_EXTENSION_TYPE:addon}"
+erda.core.dicehub.extension: { }
 #  extension_menu: ${EXTENSION_MENU:{"":""}}
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
