@@ -51,6 +51,9 @@ const (
 )
 
 func (s *pipelineService) PipelineCreateV2(ctx context.Context, req *pb.PipelineCreateRequestV2) (*pb.PipelineCreateResponse, error) {
+	if req.AutoRun {
+		req.AutoRunAtOnce = true
+	}
 	identityInfo := apis.GetIdentityInfo(ctx)
 	if req.UserID == "" && identityInfo != nil {
 		req.UserID = identityInfo.UserID
