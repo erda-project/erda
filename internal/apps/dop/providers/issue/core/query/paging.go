@@ -115,7 +115,11 @@ func (p *provider) Paging(req pb.PagingIssueRequest) ([]*pb.Issue, uint64, error
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
 		for _, issue := range issues {
-			issue.PropertyInstances = issueInstancesMap[uint64(issue.Id)].Property
+			issuePropertyValue := issueInstancesMap[uint64(issue.Id)]
+			if issuePropertyValue == nil {
+				continue
+			}
+			issue.PropertyInstances = issuePropertyValue.Property
 		}
 	}
 
