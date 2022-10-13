@@ -88,7 +88,8 @@ func (n *Nodes) AddNodes(req apistructs.AddNodesRequest, userid string) (uint64,
 		return recordID, err
 	}
 
-	dto, err := n.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(transport.WithHeader(context.Background(),
+		metadata.New(map[string]string{httputil.InternalHeader: "cmp"})), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-add-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME), uuid.UUID()[:12]),
