@@ -530,26 +530,34 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 	case apistructs.AddonMySQL:
 		if capacity.MysqlOperator {
-			_, _, err = a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
-				AddonName: apistructs.AddonMySQL + "-operator",
-				Plan:      apistructs.AddonBasic,
-			})
-			if err != nil {
-				return nil, err
-			}
-
 			if addonDeployGroup.ProjectNamespace == "" {
 				addonDeployGroup.ProjectNamespace = fmt.Sprintf("project-%s-%s", addonIns.ProjectID, strings.ToLower(addonIns.Workspace))
 			}
 
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
-
 			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
 
-			buildErr = a.BuildMysqlOperatorServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
-		} else {
-			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
+			//兼容mysql-addon:5.7.x
+			if strings.HasPrefix(params.Options["version"], "5.7.") {
+				params.Options["version"] = "5.7"
+			}
 
+			operatorSpec, operatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
+				AddonName: params.AddonName,
+				Plan:      params.Plan,
+				Options:   params.Options,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			buildErr = a.BuildMysqlOperatorServiceItem(params, addonIns, operatorSpec, operatorDice, addonDice, &clusterInfo)
+		} else {
+			if strings.Count(params.Options["version"], ".") == 1 {
+				return nil, fmt.Errorf("please install mysql-operator")
+			}
+
+			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
 			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
 
 			buildErr = a.BuildMysqlServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
