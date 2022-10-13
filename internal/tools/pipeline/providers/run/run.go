@@ -241,6 +241,9 @@ func getRealRunParams(runParams []*basepb.PipelineRunParam, yml string) (result 
 	for _, param := range pipeline.Spec().Params {
 		// 用户没有传 key, 且默认值不为空
 		runValue, ok := runParamsMap[param.Name]
+		if !ok {
+			runValue = &basepb.PipelineRunParam{}
+		}
 
 		if runValue.Value == nil && param.Default == nil && param.Required && ok {
 			return nil, apierrors.ErrRunPipeline.InternalError(fmt.Errorf("pipeline param %s value is empty", param.Name))
