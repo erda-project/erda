@@ -47,13 +47,14 @@ const (
 	PipelineStatusAnalyzed      PipelineStatus = "Analyzed"      // 分析完毕：build 创建完即开始分析，分析成功则为该状态
 
 	// 流程推进相关的状态
-	PipelineStatusBorn    PipelineStatus = "Born"    // 流程推进过程中的初始状态
-	PipelineStatusPaused  PipelineStatus = "Paused"  // 暂停状态：表示流程需要暂停，和 Born 同级，不会被 Mark
-	PipelineStatusMark    PipelineStatus = "Mark"    // 标记状态：表示流程开始处理
-	PipelineStatusCreated PipelineStatus = "Created" // 创建成功：scheduler create + start；可能要区分 Created 和 Started 两个状态
-	PipelineStatusQueue   PipelineStatus = "Queue"   // 排队中：介于 启动成功 和 运行中
-	PipelineStatusRunning PipelineStatus = "Running" // 运行中
-	PipelineStatusSuccess PipelineStatus = "Success" // 成功
+	PipelineStatusBorn      PipelineStatus = "Born"    // 流程推进过程中的初始状态
+	PipelineStatusPaused    PipelineStatus = "Paused"  // 暂停状态：表示流程需要暂停，和 Born 同级，不会被 Mark
+	PipelineStatusMark      PipelineStatus = "Mark"    // 标记状态：表示流程开始处理
+	PipelineStatusCreated   PipelineStatus = "Created" // 创建成功：scheduler create + start；可能要区分 Created 和 Started 两个状态
+	PipelineStatusQueue     PipelineStatus = "Queue"   // 排队中：介于 启动成功 和 运行中
+	PipelineStatusRunning   PipelineStatus = "Running" // 运行中
+	PipelineStatusCanceling PipelineStatus = "Canceling"
+	PipelineStatusSuccess   PipelineStatus = "Success" // 成功
 
 	// 流程推进 "正常" 失败：一般是用户侧导致的失败
 	PipelineStatusFailed         PipelineStatus = "Failed"         // 业务逻辑执行失败，"正常" 失败
@@ -83,7 +84,7 @@ var PipelineEndStatuses = []PipelineStatus{
 }
 
 var PipelineAllStatuses = []PipelineStatus{
-	PipelineStatusAnalyzed, PipelineStatusBorn, PipelineStatusCreated, PipelineStatusMark, PipelineStatusQueue, PipelineStatusRunning, PipelineStatusSuccess,
+	PipelineStatusAnalyzed, PipelineStatusBorn, PipelineStatusCreated, PipelineStatusMark, PipelineStatusQueue, PipelineStatusRunning, PipelineStatusCanceling, PipelineStatusSuccess,
 	PipelineStatusFailed, PipelineStatusAnalyzeFailed, PipelineStatusPaused, PipelineStatusCreateError, PipelineStatusStartError, PipelineStatusTimeout,
 	PipelineStatusStopByUser, PipelineStatusNoNeedBySystem, PipelineStatusCancelByRemote, PipelineStatusInitializing, PipelineStatusError, PipelineStatusUnknown, PipelineStatusDBError, PipelineStatusLostConn,
 	PipelineStatusDisabled, PipelineStatusWaitApproval, PipelineStatusApprovalSuccess, PipelineStatusApprovalFail,
@@ -99,6 +100,8 @@ func (status PipelineStatus) ToDesc() string {
 		return "排队中"
 	case PipelineStatusRunning:
 		return "正在执行"
+	case PipelineStatusCanceling:
+		return "取消中"
 	case PipelineStatusSuccess:
 		return "执行成功"
 	case PipelineStatusFailed:
@@ -134,7 +137,7 @@ func (status PipelineStatus) ToDesc() string {
 
 func ReconcilerRunningStatuses() []PipelineStatus {
 	return []PipelineStatus{PipelineStatusBorn, PipelineStatusPaused, PipelineStatusMark,
-		PipelineStatusCreated, PipelineStatusQueue, PipelineStatusRunning}
+		PipelineStatusCreated, PipelineStatusQueue, PipelineStatusRunning, PipelineStatusCanceling}
 }
 
 // CanPauseTask 只有在 Born 状态下可以 暂停
