@@ -68,7 +68,6 @@ func NewLoginServer(token tokenpb.TokenServiceServer) (*LoginServer, error) {
 
 func (s *LoginServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if hooks.Enable {
-		prehandle.FilterHeader(context.Background(), rw, req)
 		prehandle.ReplaceOldCookie(context.Background(), rw, req)
 	}
 	prehandle.FilterCookie(context.Background(), rw, req) // for auth
