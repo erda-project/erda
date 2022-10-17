@@ -37,6 +37,8 @@ func (p *provider) List() []*interceptors.Interceptor {
 
 func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		r.Header.Del(httputil.UserHeader)
+		r.Header.Del(httputil.OrgHeader)
 		r.Header.Del(httputil.InternalHeader)
 		r.Header.Del(httputil.ClientIDHeader)
 		r.Header.Del(httputil.ClientNameHeader)
