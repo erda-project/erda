@@ -70,9 +70,15 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	bdl := bundle.New(bundle.WithErdaServer())
+	// create new dbclient to avoid pipeline and actionmgr provider transaction session compete mysql connections
+	// see provider/pipeline/create_v2.go: 175
+	dbClient, err := dbclient.New()
+	if err != nil {
+		return err
+	}
 	p.pipelineService = &pipelineService{
 		p:        p,
-		dbClient: &dbclient.Client{Engine: p.MySQL.DB()},
+		dbClient: dbClient,
 		bdl:      bdl,
 
 		appSvc:       p.App,
