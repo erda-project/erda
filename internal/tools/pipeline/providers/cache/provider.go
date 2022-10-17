@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/actionmgr"
 )
@@ -34,6 +35,7 @@ type provider struct {
 	Cfg       *config
 	MySQL     mysqlxorm.Interface
 	ActionMgr actionmgr.Interface
+	Org       org.ClientInterface
 
 	dbClient *dbclient.Client
 	bdl      *bundle.Bundle
