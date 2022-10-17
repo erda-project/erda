@@ -773,10 +773,10 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(p.Props)
-	component.Data = map[string]interface{}{"list": p.Data.List}
-	component.State = map[string]interface{}{
+func (p *ComponentPodsTable) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(p.Props)
+	c.Data = map[string]interface{}{"list": p.Data.List}
+	c.State = map[string]interface{}{
 		"clusterName":         p.State.ClusterName,
 		"countValues":         p.State.CountValues,
 		"pageNo":              p.State.PageNo,
@@ -787,7 +787,7 @@ func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
 		"podsTable__urlQuery": p.State.PodsTableURLQuery,
 		"activeKey":           p.State.ActiveKey,
 	}
-	component.Operations = p.Operations
+	c.Operations = p.Operations
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
