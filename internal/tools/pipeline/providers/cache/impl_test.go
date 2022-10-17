@@ -15,13 +15,20 @@
 package cache
 
 import (
+	"context"
+	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/pkg/mock"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -199,4 +206,38 @@ func Test_getOrSetPipelineYmlFromContext(t *testing.T) {
 			p.ClearReconcilerPipelineContextCaches(1)
 		})
 	}
+}
+
+type orgMock struct {
+	mock.OrgMock
+}
+
+func (m orgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
+	if request.IdOrName != "1" {
+		return nil, fmt.Errorf("invalid orgname")
+	}
+	return &orgpb.GetOrgResponse{Data: &orgpb.Org{
+		Name: "erda",
+	}}, nil
+}
+
+type mockLogger struct {
+	mocklogger.MockLogger
+}
+
+func (m *mockLogger) Debugf(template string, args ...interface{}) {}
+
+func TestProvider_GetOrSetOrgName(t *testing.T) {
+	p := &provider{
+		cacheMap: sync.Map{},
+		Org:      &orgMock{},
+		Log:      &mockLogger{},
+	}
+	orgName := p.GetOrSetOrgName(2)
+	assert.Equal(t, "", orgName)
+	orgName = p.GetOrSetOrgName(1)
+	assert.Equal(t, "erda", orgName)
+	cacheOrgName, ok := p.cacheMap.Load(makeMapKey(1, pipelineOrgCacheKey))
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "erda", cacheOrgName.(string))
 }
