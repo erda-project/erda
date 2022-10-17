@@ -17,10 +17,15 @@
 package cache
 
 import (
+	"context"
 	"fmt"
+	"strconv"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -31,6 +36,7 @@ const (
 	pipelineRerunSuccessTaskContextCachesPrefixKey     = "reconciler_caches_rerun_success_tasks"
 	pipelinePassedDataWhenCreateContextCachesPrefixKey = "reconciler_caches_passed_data_when_create"
 	pipelineSecretCacheKey                             = "pipeline_secret"
+	pipelineOrgCacheKey                                = "pipeline_org"
 )
 
 // ClearReconcilerPipelineContextCaches clear context map rwLock by pipelineID
@@ -231,4 +237,22 @@ func (p *provider) GetPipelineSecretByPipelineID(pipelineID uint64) (secret *Sec
 
 func (p *provider) ClearPipelineSecretByPipelineID(pipelineID uint64) {
 	p.cacheMap.Delete(makeMapKey(pipelineID, pipelineSecretCacheKey))
+}
+
+func (p *provider) GetOrSetOrgName(orgID uint64) string {
+	mapKey := makeMapKey(orgID, pipelineOrgCacheKey)
+	value, ok := p.cacheMap.Load(mapKey)
+	if ok {
+		return value.(string)
+	}
+	org, err := p.Org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Pipeline()), &orgpb.GetOrgRequest{
+		IdOrName: strconv.FormatUint(orgID, 10),
+	})
+	if err != nil {
+		p.Log.Debugf("failed to get org by id: %d, err: %v", orgID, err)
+		return ""
+	}
+	orgName := org.Data.Name
+	p.cacheMap.Store(mapKey, org.Data.Name)
+	return orgName
 }
