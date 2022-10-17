@@ -68,12 +68,7 @@ func NewLoginServer(token tokenpb.TokenServiceServer) (*LoginServer, error) {
 
 func (s *LoginServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if hooks.Enable {
-		prehandle.FilterHeader(context.Background(), rw, req)
 		prehandle.ReplaceOldCookie(context.Background(), rw, req)
-		if err := prehandle.CSRFToken(context.Background(), rw, req); err != nil {
-			logrus.Errorf("CSRFToken: %v", err)
-			return
-		}
 	}
 	prehandle.FilterCookie(context.Background(), rw, req) // for auth
 
