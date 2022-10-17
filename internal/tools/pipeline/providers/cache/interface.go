@@ -31,4 +31,5 @@ type Interface interface {
 	SetPipelineSecretByPipelineID(pipelineID uint64, secret *SecretCache)
 	GetPipelineSecretByPipelineID(pipelineID uint64) (secret *SecretCache)
 	ClearPipelineSecretByPipelineID(pipelineID uint64)
+	GetOrSetOrgName(orgID uint64) string
 }

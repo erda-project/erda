@@ -441,6 +441,11 @@ func (s *pipelineService) MakePipelineFromRequestV2(req *pb.PipelineCreateReques
 	// workspace
 	p.Extra.DiceWorkspace = apistructs.DiceWorkspace(labels[apistructs.LabelDiceWorkspace])
 
+	// org
+	if p.GetOrgName() == "" {
+		p.NormalLabels[apistructs.LabelOrgName] = s.tryGetOrgName(p)
+	}
+
 	// vcs
 	if v, ok := labels[apistructs.LabelCommitDetail]; ok {
 		var detail apistructs.CommitDetail
@@ -764,6 +769,16 @@ func (s *pipelineService) GetYmlActionTasks(pipelineYml *pipelineyml.PipelineYml
 	})
 
 	return actionTasks
+}
+
+func (s *pipelineService) tryGetOrgName(p *spec.Pipeline) string {
+	orgIDStr := p.MergeLabels()[apistructs.LabelOrgID]
+	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+	if err != nil {
+		s.p.Log.Debugf("failed to parse orgID: %s, err: %v", orgIDStr, err)
+		return ""
+	}
+	return s.cache.GetOrSetOrgName(orgID)
 }
 
 func initializePipelineGC(gc *basepb.PipelineGC) {

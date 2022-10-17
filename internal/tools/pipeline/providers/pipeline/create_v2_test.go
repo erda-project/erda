@@ -25,13 +25,18 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/action_info"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/cache"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -413,3 +418,79 @@ func createQueue(idx int, url string) (result benchmarkQueueCreateRes) {
 //		time.Sleep(time.Second)
 //	}
 //}
+
+type mockLogger struct {
+	mock.MockLogger
+}
+
+func (m *mockLogger) Debugf(template string, args ...interface{}) {}
+
+type mockCache struct{}
+
+func (m *mockCache) GetOrSetOrgName(orgID uint64) string {
+	if orgID == 1 {
+		return "erda"
+	}
+	return ""
+}
+func (m *mockCache) GetOrSetPipelineRerunSuccessTasksFromContext(pipelineID uint64) (successTasks map[string]*spec.PipelineTask, err error) {
+	return nil, nil
+}
+func (m *mockCache) GetOrSetStagesFromContext(pipelineID uint64) (stages []spec.PipelineStage, err error) {
+	return nil, nil
+}
+func (m *mockCache) GetOrSetPipelineYmlFromContext(pipelineID uint64) (yml *pipelineyml.PipelineYml, err error) {
+	return nil, nil
+}
+func (m *mockCache) GetOrSetPassedDataWhenCreateFromContext(pipelineYml *pipelineyml.PipelineYml, pipeline *spec.Pipeline) (passedDataWhenCreate *action_info.PassedDataWhenCreate, err error) {
+	return nil, nil
+}
+func (m *mockCache) ClearReconcilerPipelineContextCaches(pipelineID uint64)                     {}
+func (m *mockCache) SetPipelineSecretByPipelineID(pipelineID uint64, secret *cache.SecretCache) {}
+func (m *mockCache) GetPipelineSecretByPipelineID(pipelineID uint64) (secret *cache.SecretCache) {
+	return nil
+}
+func (m *mockCache) ClearPipelineSecretByPipelineID(pipelineID uint64) {}
+
+func Test_tryGetOrgName(t *testing.T) {
+	testCases := []struct {
+		name string
+		p    *spec.Pipeline
+		want string
+	}{
+		{
+			name: "valid orgID",
+			p: &spec.Pipeline{
+				PipelineExtra: spec.PipelineExtra{
+					NormalLabels: map[string]string{
+						apistructs.LabelOrgID: "1",
+					},
+				},
+			},
+			want: "erda",
+		},
+		{
+			name: "invalid orgID",
+			p: &spec.Pipeline{
+				PipelineExtra: spec.PipelineExtra{
+					NormalLabels: map[string]string{
+						apistructs.LabelOrgID: "invalid",
+					},
+				},
+			},
+			want: "",
+		},
+	}
+	s := &pipelineService{
+		p: &provider{
+			Log: &mockLogger{},
+		},
+		cache: &mockCache{},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			orgName := s.tryGetOrgName(tc.p)
+			assert.Equal(t, tc.want, orgName)
+		})
+	}
+}
