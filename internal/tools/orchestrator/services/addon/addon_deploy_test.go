@@ -171,7 +171,7 @@ func TestBuildMysqlOperatorServiceItem(t *testing.T) {
 		}
 	}()
 
-	err := addon.BuildMysqlOperatorServiceItem(nil, nil, nil, nil, nil)
+	err := addon.BuildMysqlOperatorServiceItem(nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Log(err)
 	}

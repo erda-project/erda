@@ -1090,7 +1090,7 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 }
 
 // buildMysqlOperatorServiceItem 生成operator发布的格式
-func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
+func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, operatorSpec *apistructs.AddonExtension, operatorDice, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 	password, err := a.savePassword(addonIns, apistructs.AddonMysqlPasswordKey)
 	if err != nil {
 		return err
@@ -1100,9 +1100,9 @@ func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCre
 		"USE_OPERATOR": apistructs.AddonMySQL,
 	}
 
-	addonDeployPlan := addonSpec.Plan[params.Plan]
+	addonDeployPlan := operatorSpec.Plan[params.Plan]
 	serviceMap := diceyml.Services{}
-	serviceBase := *addonDice.Services[params.AddonName]
+	serviceBase := *operatorDice.Services[apistructs.AddonMySQL]
 
 	addonNodeId := a.getRandomId()
 
@@ -1112,7 +1112,7 @@ func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCre
 		logrus.Errorf("deep copy error, %v", err)
 	}
 
-	serviceItem.Deployments.Replicas = 2
+	serviceItem.Deployments.Replicas = addonDeployPlan.Nodes
 	serviceItem.Resources = diceyml.Resources{
 		CPU:    addonDeployPlan.CPU,
 		MaxCPU: addonDeployPlan.MaxCPU,
@@ -1140,8 +1140,10 @@ func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCre
 	serviceItem.HealthCheck = health
 	// envs
 	serviceItem.Envs = map[string]string{
-		"ADDON_ID":            addonIns.ID,
-		"ADDON_NODE_ID":       addonNodeId,
+		"ADDON_ID":      addonIns.ID,
+		"ADDON_NODE_ID": addonNodeId,
+
+		"MYSQL_VERSION":       operatorSpec.Version,
 		"MYSQL_ROOT_PASSWORD": password,
 	}
 
@@ -1154,7 +1156,6 @@ func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCre
 		Deleted:    apistructs.AddonNotDeleted,
 	}
 
-	serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-" + apistructs.AddonMysqlMasterKey
 	err = a.db.CreateAddonInstanceExtra(&addonInstanceExtra)
 	if err != nil {
 		return err
