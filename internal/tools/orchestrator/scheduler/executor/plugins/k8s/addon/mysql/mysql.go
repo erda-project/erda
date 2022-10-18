@@ -153,6 +153,14 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		replicas = 9
 	}
 
+	v := "v5.7"
+	if mysql.Env["MYSQL_VERSION"] != "" {
+		v = mysql.Env["MYSQL_VERSION"]
+		if !strings.HasPrefix(v, "v") {
+			v = "v" + v
+		}
+	}
+
 	obj := &mysqlv1.Mysql{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "database.erda.cloud/v1",
@@ -163,7 +171,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			Namespace: my.Namespace(sg),
 		},
 		Spec: mysqlv1.MysqlSpec{
-			Version: "v5.7",
+			Version: v,
 
 			PrimaryMode: mysqlv1.ModeClassic,
 			Primaries:   1,
