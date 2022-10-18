@@ -57,6 +57,7 @@ var (
 		"migrate mkpy",
 		"migrate mkpypkg",
 		"migrate record",
+		"gw debug-auth",
 		"pipeline",
 		"version",
 		"help",
