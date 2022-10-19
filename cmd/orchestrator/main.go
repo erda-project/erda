@@ -22,6 +22,7 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
