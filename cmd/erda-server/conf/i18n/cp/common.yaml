@@ -274,6 +274,7 @@ zh:
   pipelineStatusMark: 标记中
   pipelineStatusQueue: 排队中
   pipelineStatusRunning: 执行中
+  PipelineStatusCanceling: 取消中
   pipelineStatusSuccess: 成功
   pipelineStatusFailed: 失败
   pipelineStatusAnalyzeFailed: 初始化失败
@@ -605,6 +606,7 @@ en:
   pipelineStatusMark: Mark
   pipelineStatusQueue: Queue
   pipelineStatusRunning: Running
+  PipelineStatusCanceling: Canceling
   pipelineStatusSuccess: Success
   pipelineStatusFailed: Failed
   pipelineStatusAnalyzeFailed: AnalyzeFailed

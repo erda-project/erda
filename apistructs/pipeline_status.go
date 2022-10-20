@@ -53,7 +53,7 @@ const (
 	PipelineStatusCreated   PipelineStatus = "Created" // 创建成功：scheduler create + start；可能要区分 Created 和 Started 两个状态
 	PipelineStatusQueue     PipelineStatus = "Queue"   // 排队中：介于 启动成功 和 运行中
 	PipelineStatusRunning   PipelineStatus = "Running" // 运行中
-	PipelineStatusCanceling PipelineStatus = "Canceling"
+	PipelineStatusCanceling PipelineStatus = "Canceling" // 取消中
 	PipelineStatusSuccess   PipelineStatus = "Success" // 成功
 
 	// 流程推进 "正常" 失败：一般是用户侧导致的失败
@@ -268,6 +268,10 @@ func (status PipelineStatus) IsNoNeedBySystem() bool {
 
 func (status PipelineStatus) IsFailedStatus() bool {
 	return status.IsNormalFailedStatus() || status.IsAbnormalFailedStatus()
+}
+
+func (status PipelineStatus) IsCancelingStatus() bool {
+	return status == PipelineStatusCanceling
 }
 
 func (status PipelineStatus) ChangeStateForManualReview() PipelineStatus {
