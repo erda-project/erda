@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
+	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"

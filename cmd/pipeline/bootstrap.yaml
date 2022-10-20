@@ -59,6 +59,7 @@ user: {}
 app: {}
 cancel: {}
 resource: {}
+pprof: {}
 edge-reporter:
   target:
     url: "${OPENAPI_PUBLIC_URL}"
