@@ -36,7 +36,6 @@ import (
 	ds "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/daemonset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/deployment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/event"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/ingress"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/job"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
@@ -358,7 +357,6 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 		deploy                     *deployment.Deployment
 		job                        *job.Job
 		ds                         *ds.Daemonset
-		ingress                    *ingress.Ingress
 		namespace                  *namespace.Namespace
 		service                    *k8sservice.Service
 		pvc                        *persistentvolumeclaim.PersistentVolumeClaim
@@ -424,7 +422,6 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 				deploy:                     tt.fields.deploy,
 				job:                        tt.fields.job,
 				ds:                         tt.fields.ds,
-				ingress:                    tt.fields.ingress,
 				namespace:                  tt.fields.namespace,
 				service:                    tt.fields.service,
 				pvc:                        tt.fields.pvc,
