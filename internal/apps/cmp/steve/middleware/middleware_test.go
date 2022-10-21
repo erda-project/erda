@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
@@ -28,10 +29,13 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/cmp/steve/predefined"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -55,7 +59,11 @@ type Server struct {
 }
 
 func handler() http.HandlerFunc {
-	return func(http.ResponseWriter, *http.Request) {}
+	return func(writer http.ResponseWriter, req *http.Request) {
+		req.WithContext(context.WithValue(req.Context(), varsKey, map[string]string{
+			"kubectl-shell": "do",
+		}))
+	}
 }
 
 func (s *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -130,10 +138,62 @@ func TestChain(t *testing.T) {
 		}
 	}()
 
-	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	buf := bytes.NewBuffer(make([]byte, 1024))
-	hc.Post(fmt.Sprintf("127.0.0.1:%d/api/k8s/clusters/local/v1/nodes", server.port)).Header("Org-ID", "1").Header("User-ID", "2").Do().Body(buf)
-	hc.Post(fmt.Sprintf("127.0.0.1:%d/api/k8s/clusters/local/kubectl-shell", server.port)).Header("Org-ID", "1").Header("User-ID", "2").Do().Body(buf)
+	target := fmt.Sprintf("127.0.0.1:%d", server.port)
+	header := http.Header{
+		"Org-ID":  []string{"1"},
+		"User-ID": []string{"2"},
+	}
+	httpClient := http.Client{
+		Timeout: 1 * time.Minute,
+	}
+
+	type args struct {
+		path   string
+		method string
+		header http.Header
+		body   io.Reader
+	}
+
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "nodes",
+			args: args{
+				path:   "/api/k8s/clusters/local/v1/nodes",
+				method: http.MethodPost,
+				body:   buf,
+				header: header,
+			},
+		},
+		{
+			name: "kubectl shell",
+			args: args{
+				path:   "/api/k8s/clusters/local/kubectl-shell",
+				method: http.MethodPost,
+				body:   buf,
+				header: header,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := customhttp.NewRequest(tt.args.method, fmt.Sprintf("http://%s%s", target, tt.args.path),
+				tt.args.body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// overwrite
+			req.Header = tt.args.header
+			// do
+			if _, err = httpClient.Do(req); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }
 
 func TestAudit(t *testing.T) {
@@ -232,5 +292,35 @@ func TestShellHandler_GetAgentPod(t *testing.T) {
 	pods := s.getAgentPods(&MockPodInterface{})
 	if len(pods) != 6 {
 		t.Errorf("test failed, expect length of pods is %d, actual %d", 6, len(pods))
+	}
+}
+
+func Test_getAuthToken(t *testing.T) {
+	sh := NewShellHandler(context.Background())
+
+	_, err := sh.getAuthToken(fakeclientset.NewSimpleClientset(&corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "erda-org-support",
+			Namespace: metav1.NamespaceDefault,
+		},
+		Secrets: []corev1.ObjectReference{
+			{
+				Name: "erda-org-support-token-xz6ds",
+			},
+		},
+	}, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "erda-org-support-token-xz6ds",
+			Namespace: metav1.NamespaceDefault,
+		},
+		Data: map[string][]byte{
+			"token": []byte("fake token"),
+		},
+	}), predefined.UserGroupInfo{
+		ServiceAccountName:      "erda-org-support",
+		ServiceAccountNamespace: metav1.NamespaceDefault,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
