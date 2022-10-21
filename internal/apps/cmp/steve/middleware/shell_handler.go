@@ -19,16 +19,25 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/steve/predefined"
 	"github.com/erda-project/erda/pkg/k8sclient"
+)
+
+var (
+	defaultShellTokenExpirationTime = 2 * time.Hour.Seconds()
 )
 
 type ShellHandler struct {
@@ -72,29 +81,13 @@ func (s *ShellHandler) HandleShell(next http.Handler) http.Handler {
 			return
 		}
 
-		serviceAccount, err := client.ClientSet.CoreV1().ServiceAccounts(userGroup.ServiceAccountNamespace).
-			Get(s.ctx, userGroup.ServiceAccountName, metav1.GetOptions{})
+		token, err := s.getAuthToken(client.ClientSet, userGroup)
 		if err != nil {
-			logrus.Errorf("failed to get serviceAccount %s in steve handle shell, %v", userGroup.ServiceAccountName, err)
+			logrus.Error(err)
 			resp.WriteHeader(http.StatusInternalServerError)
 			resp.Write(apistructs.NewSteveError(apistructs.ServerError, "interval server error").JSON())
 			return
 		}
-		if len(serviceAccount.Secrets) == 0 {
-			logrus.Errorf("serviceAccount %s does not have a secret", userGroup.ServiceAccountName)
-			resp.WriteHeader(http.StatusInternalServerError)
-			resp.Write(apistructs.NewSteveError(apistructs.ServerError, "interval server error").JSON())
-			return
-		}
-		secretName := serviceAccount.Secrets[0].Name
-		secret, err := client.ClientSet.CoreV1().Secrets(userGroup.ServiceAccountNamespace).Get(s.ctx, secretName, metav1.GetOptions{})
-		if err != nil {
-			logrus.Errorf("failed to get secret %s in steve handle shell", secretName)
-			resp.WriteHeader(http.StatusInternalServerError)
-			resp.Write(apistructs.NewSteveError(apistructs.ServerError, "interval server error").JSON())
-			return
-		}
-		token := string(secret.Data["token"])
 
 		podClient := client.ClientSet.CoreV1().Pods("")
 
@@ -152,4 +145,38 @@ func (s *ShellHandler) getAgentPods(podClient corev1client.PodInterface) []v1.Po
 	}
 	res = append(res, pods.Items...)
 	return res
+}
+
+// getAuthToken get auth token
+func (s *ShellHandler) getAuthToken(client kubernetes.Interface, ugInfo predefined.UserGroupInfo) (string, error) {
+	// TODO: Deprecated, Compatible with lower versions of kubernetes
+	serviceAccount, err := client.CoreV1().ServiceAccounts(ugInfo.ServiceAccountNamespace).
+		Get(s.ctx, ugInfo.ServiceAccountName, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Errorf("failed to get serviceAccount %s in steve handle shell, %v", ugInfo.ServiceAccountName, err)
+	}
+
+	if len(serviceAccount.Secrets) == 0 {
+		logrus.Warnf("service account doesn't had secrects, use token request")
+
+		getToken, err := client.CoreV1().ServiceAccounts(ugInfo.ServiceAccountNamespace).CreateToken(s.ctx,
+			ugInfo.ServiceAccountName, &authenticationv1.TokenRequest{
+				Spec: authenticationv1.TokenRequestSpec{
+					ExpirationSeconds: pointer.Int64(int64(defaultShellTokenExpirationTime)),
+				},
+			}, metav1.CreateOptions{})
+		if err != nil {
+			return "", errors.Errorf("failed to get token, serviceAccount %s, err: %v", ugInfo.ServiceAccountName, err)
+		}
+
+		return getToken.Status.Token, nil
+	} else {
+		secretName := serviceAccount.Secrets[0].Name
+		secret, err := client.CoreV1().Secrets(ugInfo.ServiceAccountNamespace).Get(s.ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			return "", errors.Errorf("failed to get secret %s in steve handle shell", secretName)
+		}
+
+		return string(secret.Data["token"]), nil
+	}
 }
