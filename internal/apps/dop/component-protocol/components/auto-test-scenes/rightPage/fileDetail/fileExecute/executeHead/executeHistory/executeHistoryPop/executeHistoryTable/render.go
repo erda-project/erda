@@ -228,7 +228,7 @@ func (e *ExecuteHistoryTable) getStatus(req apistructs.PipelineStatus) map[strin
 		res["status"] = "error"
 	} else if req.IsSuccessStatus() {
 		res["status"] = "success"
-	} else if req.IsReconcilerRunningStatus() {
+	} else if req.IsRunningStatus() || req.IsCancelingStatus() {
 		res["status"] = "processing"
 	} else {
 		res["status"] = "default"
