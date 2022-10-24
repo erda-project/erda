@@ -20,11 +20,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/ingress"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -324,38 +323,17 @@ func (k *Kubernetes) createStatefulService(sg *apistructs.ServiceGroup) error {
 	if err := k.service.Create(k8sSvc); err != nil {
 		return err
 	}
-	v, ok := sg.Services[0].Labels["HAPROXY_0_VHOST"]
-	// No external domain name
-	if !ok {
-		return nil
-	}
-	// Forward the domain name/vip set corresponding to HAPROXY_0_VHOST in the label to the 0th port of the service
-	publicHosts := strings.Split(v, ",")
-	if len(publicHosts) == 0 {
-		return nil
-	}
-	// create ingress
-	rules := buildRules(publicHosts, svc.Name, sg.Services[0].Ports[0].Port)
-	tls := buildTLS(publicHosts)
-	ingress := &extensionsv1beta1.Ingress{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "extensions/v1beta1",
-			Kind:       "Ingress",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      svc.Name,
-			Namespace: svc.Namespace,
-		},
-		Spec: extensionsv1beta1.IngressSpec{
-			Rules: rules,
-			TLS:   tls,
-		},
+
+	ing, err := ingress.New(k.k8sClient.ClientSet)
+	if err != nil {
+		logrus.Errorf("failed to create ingress helper, err: %v", err)
+		return err
 	}
 
-	return k.ingress.Create(ingress)
+	return ing.CreateIfNotExists(&svc)
 }
 
-// TODO: State need more precise
+// GetStatefulStatus TODO: State need more precise
 func (k *Kubernetes) GetStatefulStatus(sg *apistructs.ServiceGroup) (apistructs.StatusDesc, error) {
 	var status apistructs.StatusDesc
 	namespace := MakeNamespace(sg)

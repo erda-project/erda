@@ -54,7 +54,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/deployment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/event"
 	erdahpa "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/hpa"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/ingress"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/instanceinfosync"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/job"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
@@ -194,7 +193,6 @@ type Kubernetes struct {
 	deploy       *deployment.Deployment
 	job          *job.Job
 	ds           *ds.Daemonset
-	ingress      *ingress.Ingress
 	namespace    *namespace.Namespace
 	service      *k8sservice.Service
 	pvc          *persistentvolumeclaim.PersistentVolumeClaim
@@ -364,7 +362,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	deploy := deployment.New(deployment.WithClientSet(k8sClient.ClientSet))
 	job := job.New(job.WithCompleteParams(addr, client))
 	ds := ds.New(ds.WithCompleteParams(addr, client))
-	ing := ingress.New(ingress.WithCompleteParams(addr, client))
 	ns := namespace.New(namespace.WithKubernetesClient(k8sClient.ClientSet))
 	svc := k8sservice.New(k8sservice.WithCompleteParams(addr, client))
 	pvc := persistentvolumeclaim.New(persistentvolumeclaim.WithCompleteParams(addr, client))
@@ -420,7 +417,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		deploy:                   deploy,
 		job:                      job,
 		ds:                       ds,
-		ingress:                  ing,
 		namespace:                ns,
 		service:                  svc,
 		pvc:                      pvc,
