@@ -274,7 +274,7 @@ func getStatus(req apistructs.PipelineStatus, i18nLocale *i18n.LocaleResource) m
 	if req.IsFailedStatus() {
 		res["status"] = "error"
 	}
-	if req.IsReconcilerRunningStatus() || req.IsCancelingStatus() {
+	if req.IsReconcilerRunningStatus() { // task doesn't have canceling status
 		res["status"] = "processing"
 	}
 	if req.IsBeforePressRunButton() {
