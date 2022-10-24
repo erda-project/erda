@@ -26,6 +26,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -272,7 +274,7 @@ func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneS
 		reqPipeline.ClusterName = testClusterName
 	}
 
-	pipelineDTO, err := svc.pipelineSvc.PipelineCreateV2(context.Background(), &reqPipeline)
+	pipelineDTO, err := svc.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), &reqPipeline)
 	if err != nil {
 		return nil, err
 	}

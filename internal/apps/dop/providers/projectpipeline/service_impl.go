@@ -475,7 +475,7 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 
 	createV2 := extra.CreateRequest
 	createV2.DefinitionID = definition.ID
-	_, err = p.pipelineService.PipelineCreateV2(context.Background(), createV2)
+	_, err = p.pipelineService.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), createV2)
 	if err != nil {
 		return fmt.Errorf("failed to CreatePipeline, err: %v", err)
 	}
@@ -1091,7 +1091,7 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params *pb.CancelPr
 			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 		}
 
-		_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.PipelineStatusStopByUser), PipelineID: definition.PipelineID})
+		_, err = p.PipelineDefinition.Update(apis.WithInternalClientContext(ctx, discover.DOP()), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.PipelineStatusStopByUser), PipelineID: definition.PipelineID})
 		if err != nil {
 			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 		}
@@ -1172,7 +1172,7 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		req.UserID = identityInfo.UserID
 		req.InternalClient = identityInfo.InternalClient
 		req.Secrets = utils.GetGittarSecrets(pipeline.ClusterName, pipeline.Branch, pipeline.CommitDetail)
-		reRunResult, err = p.pipelineService.PipelineRerun(context.Background(), &req)
+		reRunResult, err = p.pipelineService.PipelineRerun(apis.WithInternalClientContext(context.Background(), discover.DOP()), &req)
 		dto = reRunResult.Data
 	} else {
 		var req pipelinesvcpb.PipelineRerunFailedRequest
@@ -1182,7 +1182,7 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		req.UserID = identityInfo.UserID
 		req.InternalClient = identityInfo.InternalClient
 		req.Secrets = utils.GetGittarSecrets(pipeline.ClusterName, pipeline.Branch, pipeline.CommitDetail)
-		reRunFailedResult, err = p.pipelineService.PipelineRerunFailed(context.Background(), &req)
+		reRunFailedResult, err = p.pipelineService.PipelineRerunFailed(apis.WithInternalClientContext(context.Background(), discover.DOP()), &req)
 		dto = reRunFailedResult.Data
 	}
 	if err != nil {
@@ -1522,7 +1522,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	}
 	createV2.RunParams = pipelineRunParams
 
-	value, err := p.pipelineService.PipelineCreateV2(context.Background(), createV2)
+	value, err := p.pipelineService.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), createV2)
 	if err != nil {
 		runningPipelineErr, ok := p.TryAddRunningPipelineLinkToErr(orgName, projectID, appID, err)
 		if ok {

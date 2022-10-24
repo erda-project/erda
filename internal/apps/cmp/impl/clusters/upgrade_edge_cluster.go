@@ -149,7 +149,7 @@ func (c *Clusters) UpgradeEdgeCluster(ctx context.Context, req apistructs.Upgrad
 		return
 	}
 
-	dto, err := c.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+	dto, err := c.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(ctx, discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-upgrade-edge-cluster-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME)),

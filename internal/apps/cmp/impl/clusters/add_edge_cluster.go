@@ -26,14 +26,14 @@ import (
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
-	commonpb "github.com/erda-project/erda-proto-go/common/pb"
-
-	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
 	"github.com/erda-project/erda-infra/pkg/transport"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -178,7 +178,7 @@ func (c *Clusters) AddClusters(ctx context.Context, req apistructs.CloudClusterR
 	}
 	logrus.Infof("add edge cluster yaml: %v", string(b))
 
-	dto, err := c.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+	dto, err := c.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(ctx, discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(b),
 		PipelineYmlName: fmt.Sprintf("ops-add-cluster-%s.yml", req.ClusterName),
 		ClusterName:     clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
@@ -236,7 +236,7 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 			_ = c.processFailedPipeline(ctx, record, err)
 			continue
 		}
-		dto, err = c.pipelineSvc.PipelineDetail(ctx, &pipelinepb.PipelineDetailRequest{
+		dto, err = c.pipelineSvc.PipelineDetail(apis.WithInternalClientContext(ctx, discover.CMP()), &pipelinepb.PipelineDetailRequest{
 			PipelineID: record.PipelineID,
 		})
 		if err != nil && strutil.Contains(err.Error(), "not found") {

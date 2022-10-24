@@ -205,7 +205,7 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 		AutoRunAtOnce: true,
 	}
 	// create pipeline info
-	pipelineInfo, err := a.pipelineSvc.PipelineCreateV2(context.Background(), req)
+	pipelineInfo, err := a.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), req)
 	if err != nil {
 		return 0, err
 	}

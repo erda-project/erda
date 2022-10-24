@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -140,7 +142,7 @@ func (e *Endpoints) projectPipelineDetail(ctx context.Context, r *http.Request, 
 		return errorresp.ErrResp(apierrors.ErrCheckPermission.InternalError(fmt.Errorf("external users cannot call the internal interface\n")))
 	}
 
-	result, err := e.PipelineSvc.PipelineDetail(ctx, &pipelinepb.PipelineDetailRequest{
+	result, err := e.PipelineSvc.PipelineDetail(apis.WithInternalClientContext(ctx, discover.DOP()), &pipelinepb.PipelineDetailRequest{
 		PipelineID:               req.PipelineID,
 		SimplePipelineBaseResult: req.SimplePipelineBaseResult,
 	})

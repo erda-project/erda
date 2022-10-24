@@ -43,7 +43,6 @@ func TestEndpoints_projectPipelineDetail(t *testing.T) {
 		assertUserID uint64
 	}
 	type args struct {
-		ctx  context.Context
 		r    *http.Request
 		vars map[string]string
 	}
@@ -100,7 +99,7 @@ func TestEndpoints_projectPipelineDetail(t *testing.T) {
 			})
 			e.PipelineSvc = pipelineSvc
 
-			got, err := e.projectPipelineDetail(tt.args.ctx, tt.args.r, tt.args.vars)
+			got, err := e.projectPipelineDetail(context.Background(), tt.args.r, tt.args.vars)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pipelineDetail() error = %v, wantErr %v", err, tt.wantErr)
 				return

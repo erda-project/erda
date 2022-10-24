@@ -266,7 +266,7 @@ func (svc *Service) getClusterNameAndOrgNameFromCmdb(projectID int64) (string, s
 
 // createPipeline 创建pipeline流程
 func (svc *Service) createPipeline(reqPipeline *pipelinepb.PipelineCreateRequestV2) (*basepb.PipelineDTO, error) {
-	resp, err := svc.pipelineSvc.PipelineCreateV2(context.Background(), reqPipeline)
+	resp, err := svc.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), reqPipeline)
 	if err != nil {
 		return nil, err
 	}
