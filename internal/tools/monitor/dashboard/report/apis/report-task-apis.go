@@ -29,10 +29,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	dicestructs "github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/mysql"
 	block "github.com/erda-project/erda/internal/tools/monitor/core/dataview/v1-chart-block"
@@ -371,7 +370,7 @@ func (p *provider) createReportPipelineCron(obj *reportTask) error {
 	if err != nil {
 		return err
 	}
-	createResp, err := p.PipelineSvc.PipelineCreateV2(context.Background(), pipeline)
+	createResp, err := p.PipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.Monitor()), pipeline)
 	if err != nil {
 		return err
 	}

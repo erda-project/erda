@@ -214,7 +214,7 @@ func (r *Runtime) CreateByReleaseIDPipeline(ctx context.Context, orgid uint64, o
 	if err != nil {
 		return nil, err
 	}
-	dto, err := r.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+	dto, err := r.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.Orchestrator()), &pipelinepb.PipelineCreateRequestV2{
 		UserID:      operator.String(),
 		PipelineYml: string(b),
 		Labels: map[string]string{
@@ -509,7 +509,7 @@ func (r *Runtime) RedeployPipeline(ctx context.Context, operator user.ID, orgID 
 	if err := r.setClusterName(runtime); err != nil {
 		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
 	}
-	dto, err := r.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+	dto, err := r.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.Orchestrator()), &pipelinepb.PipelineCreateRequestV2{
 		UserID:      operator.String(),
 		PipelineYml: string(b),
 		Labels: map[string]string{
@@ -944,7 +944,7 @@ func (r *Runtime) RollbackPipeline(ctx context.Context, operator user.ID, orgID 
 	if err != nil {
 		return nil, err
 	}
-	dto, err := r.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+	dto, err := r.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.Monitor()), &pipelinepb.PipelineCreateRequestV2{
 		UserID:      operator.String(),
 		PipelineYml: string(b),
 		Labels: map[string]string{

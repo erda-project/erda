@@ -26,6 +26,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -108,7 +110,7 @@ func (cq *CQ) GenerateCQPipeline4Go(req CQRequest, userID string) (uint64, error
 		return 0, err
 	}
 
-	result, err := cq.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
+	result, err := cq.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(pipelineYmlByte),
 		ClusterName:     clusterName,
 		PipelineYmlName: generateCQPipelineName(req.AppID, req.Commit),

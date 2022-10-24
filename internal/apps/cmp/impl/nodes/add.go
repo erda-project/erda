@@ -30,12 +30,13 @@ import (
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 )
 
 type Nodes struct {
@@ -88,8 +89,7 @@ func (n *Nodes) AddNodes(req apistructs.AddNodesRequest, userid string) (uint64,
 		return recordID, err
 	}
 
-	dto, err := n.pipelineSvc.PipelineCreateV2(transport.WithHeader(context.Background(),
-		metadata.New(map[string]string{httputil.InternalHeader: "cmp"})), &pipelinepb.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-add-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME), uuid.UUID()[:12]),
@@ -215,7 +215,7 @@ func (n *Nodes) AddCSNodes(ctx context.Context, req apistructs.CloudNodesRequest
 		return recordID, err
 	}
 
-	dto, err := n.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(ctx, discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-cloud-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME), uuid.UUID()[:12]),
@@ -371,7 +371,7 @@ func (n *Nodes) AddCloudNodes(ctx context.Context, req apistructs.CloudNodesRequ
 		return recordID, err
 	}
 
-	dto, err := n.pipelineSvc.PipelineCreateV2(ctx, &pipelinepb.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(ctx, discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-cloud-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME), uuid.UUID()[:12]),

@@ -206,7 +206,7 @@ func (e *Endpoints) SyncTaskStatus(interval time.Duration) {
 
 		for _, job := range jobs {
 			// 根据pipelineID获取task列表信息
-			pipelineInfo, err := e.PipelineSvc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
+			pipelineInfo, err := e.PipelineSvc.PipelineDetail(apis.WithInternalClientContext(context.Background(), discover.CMP()), &pipelinepb.PipelineDetailRequest{
 				PipelineID: job.PipelineID,
 			})
 			if err != nil {
@@ -235,7 +235,7 @@ func (e *Endpoints) SyncTaskStatus(interval time.Duration) {
 
 		for _, deployment := range deployments {
 			// 根据pipelineID获取task列表信息
-			pipelineInfo, err := e.PipelineSvc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
+			pipelineInfo, err := e.PipelineSvc.PipelineDetail(apis.WithInternalClientContext(context.Background(), discover.CMP()), &pipelinepb.PipelineDetailRequest{
 				PipelineID: deployment.PipelineID,
 			})
 			if err != nil {
