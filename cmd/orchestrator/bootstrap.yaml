@@ -53,4 +53,6 @@ grpc-client@erda.core.org:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.org-client: {}
 erda.core.org: {}
+http-server@admin:
+  addr: ":7098"
 pprof: {}
