@@ -32,7 +32,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/deployment"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/ingress"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
@@ -268,7 +267,6 @@ func TestStatefulset(t *testing.T) {
 		addr:      "10.167.0.248:8080",
 		client:    httpclient.New(),
 		deploy:    deployment.New(),
-		ingress:   ingress.New(ingress.WithCompleteParams("10.167.0.248:8080", httpclient.New())),
 		namespace: namespace.New(),
 		service:   k8sservice.New(k8sservice.WithCompleteParams("10.167.0.248:8080", httpclient.New())),
 		pvc:       persistentvolumeclaim.New(persistentvolumeclaim.WithCompleteParams("10.167.0.248:8080", httpclient.New())),

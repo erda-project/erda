@@ -12,52 +12,70 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8s
+package v1
 
 import (
-	"strings"
+	"context"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/ingress/common"
 )
 
-func (k *Kubernetes) createIngress(svc *apistructs.Service) error {
+type Ingress struct {
+	c v1beta1.ExtensionsV1beta1Interface
+}
+
+func NewIngress(c v1beta1.ExtensionsV1beta1Interface) *Ingress {
+	return &Ingress{c: c}
+}
+
+func (i *Ingress) CreateIfNotExists(svc *apistructs.Service) error {
+	if svc == nil {
+		return errors.New("service is nil")
+	}
+
 	ing, err := buildIngress(svc)
-	if err != nil {
+	if err != nil || ing == nil {
 		return err
 	}
-	if ing != nil {
-		return k.ingress.Create(ing)
+
+	existedIng, err := i.c.Ingresses(ing.Namespace).Get(context.Background(), ing.Name, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return err
 	}
+
+	if existedIng != nil {
+		logrus.Warnf("ingress %s in namespace %s already existed", svc.Name, svc.Namespace)
+		return nil
+	}
+
+	if _, err = i.c.Ingresses(ing.Namespace).Create(context.Background(), ing,
+		metav1.CreateOptions{}); err != nil {
+		return err
+	}
+
 	return nil
 }
+
 func buildIngress(svc *apistructs.Service) (*extensionsv1beta1.Ingress, error) {
-	if svc.Labels["IS_ENDPOINT"] != "true" {
+	publicHosts := common.ParsePublicHostsFromLabel(svc.Labels)
+	if len(publicHosts) == 0 {
 		return nil, nil
 	}
-	// Services that need to be exposed to the public network
-	// Forward the domain name/vip set corresponding to HAPROXY_0_VHOST in the label to the 0th port of the service
-	publicHosts := strings.Split(svc.Labels["HAPROXY_0_VHOST"], ",")
-	if len(publicHosts) == 0 {
-		return nil, errors.Errorf("failed to set label IS_ENDPOINT true but label HAPROXY_0_VHOST empty, service: %s", svc.Name)
-	}
-	if len(svc.Ports) == 0 {
-		return nil, errors.Errorf("failed to create ingress as ports is empty, service: %s", svc.Name)
-	}
+
 	// create ingress
 	rules := buildRules(publicHosts, svc.Name, svc.Ports[0].Port)
-
-	// tls
 	tls := buildTLS(publicHosts)
-	ingress := &extensionsv1beta1.Ingress{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "extensions/v1beta1",
-			Kind:       "Ingress",
-		},
+
+	return &extensionsv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      svc.Name,
 			Namespace: svc.Namespace,
@@ -66,9 +84,7 @@ func buildIngress(svc *apistructs.Service) (*extensionsv1beta1.Ingress, error) {
 			Rules: rules,
 			TLS:   tls,
 		},
-	}
-
-	return ingress, nil
+	}, nil
 }
 
 func buildRules(publicHosts []string, name string, port int) []extensionsv1beta1.IngressRule {
@@ -98,26 +114,4 @@ func buildTLS(publicHosts []string) []extensionsv1beta1.IngressTLS {
 		tls[0].Hosts[i] = host
 	}
 	return tls
-}
-
-func (k *Kubernetes) updateIngress(svc *apistructs.Service) error {
-	var err error
-
-	ing, err := buildIngress(svc)
-	if err != nil {
-		return err
-	}
-
-	// If you need to update ingress, determine whether it is create or update
-	if ing != nil {
-		return k.ingress.CreateOrUpdate(ing)
-	}
-
-	// If there is no need to update, determine whether you need to delete the remaining ingress
-	return k.ingress.DeleteIfExists(svc.Namespace, svc.Name)
-}
-
-// delete ingress resource
-func (k *Kubernetes) deleteIngress(namespace, name string) error {
-	return k.ingress.Delete(namespace, name)
 }
