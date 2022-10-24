@@ -24,17 +24,16 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/encrypt"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
-	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -76,8 +75,7 @@ func (n *Nodes) RmNodes(req apistructs.RmNodesRequest, userid string, orgid stri
 		logrus.Errorf(errstr)
 		return recordID, err
 	}
-	dto, err := n.pipelineSvc.PipelineCreateV2(transport.WithHeader(context.Background(),
-		metadata.New(map[string]string{httputil.InternalHeader: "cmp"})), &pipelinepb.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml: string(b),
 		PipelineYmlName: fmt.Sprintf("ops-rm-nodes-%s-%s.yml",
 			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
@@ -195,7 +193,7 @@ func (n *Nodes) DeleteEssNodes(req apistructs.DeleteNodesRequest, userid string,
 		logrus.Errorf(errstr)
 		return recordID, err
 	}
-	dto, err := n.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(b),
 		PipelineYmlName: fmt.Sprintf("ops-delete-ess-nodes-%s.yml", clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME)),
 		ClusterName:     clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
@@ -335,7 +333,7 @@ func (n *Nodes) DeleteEssNodesCron(req apistructs.DeleteNodesCronRequest, userid
 		logrus.Errorf(errstr)
 		return nil, err
 	}
-	dto, err := n.pipelineSvc.PipelineCreateV2(context.Background(), &pipelinepb.PipelineCreateRequestV2{
+	dto, err := n.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.CMP()), &pipelinepb.PipelineCreateRequestV2{
 		PipelineYml:     string(b),
 		PipelineYmlName: fmt.Sprintf("%s-%s.yml", apistructs.DeleteEssNodesCronPrefix, clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME)),
 		ClusterName:     clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),

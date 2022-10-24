@@ -21,17 +21,15 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc/metadata"
-
-	"github.com/erda-project/erda-infra/pkg/transport"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
-	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -75,8 +73,7 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 		AutoRunAtOnce:   true,
 	}
 
-	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "msp"}))
-	pipelineResp, err := p.PipelineSvc.PipelineCreateV2(ctx, pipelineReq)
+	pipelineResp, err := p.PipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.MSP()), pipelineReq)
 	if err != nil {
 		return err
 	}

@@ -29,9 +29,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
-
 	common "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
@@ -179,7 +178,7 @@ func (p *Pipeline) FetchPipelineYml(gittarURL, ref, pipelineYmlName, userID stri
 
 // CreatePipeline 创建pipeline流程
 func (p *Pipeline) CreatePipeline(reqPipeline *pipelinepb.PipelineCreateRequest) (*basepb.PipelineDTO, error) {
-	resp, err := p.pipelineSvc.PipelineCreate(context.Background(), reqPipeline)
+	resp, err := p.pipelineSvc.PipelineCreate(apis.WithInternalClientContext(context.Background(), discover.DOP()), reqPipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +188,7 @@ func (p *Pipeline) CreatePipeline(reqPipeline *pipelinepb.PipelineCreateRequest)
 
 // CreatePipeline 创建pipeline流程
 func (p *Pipeline) CreatePipelineV2(reqPipeline *pipelinepb.PipelineCreateRequestV2) (*basepb.PipelineDTO, error) {
-	resp, err := p.pipelineSvc.PipelineCreateV2(context.Background(), reqPipeline)
+	resp, err := p.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), reqPipeline)
 	if err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}
@@ -824,7 +823,7 @@ func (p *Pipeline) createCron(appDto *apistructs.ApplicationDTO, ymlPathName str
 	}
 	createV2.DefinitionID = definitionList.Data[0].ID
 
-	_, err = p.pipelineSvc.PipelineCreateV2(context.Background(), createV2)
+	_, err = p.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), createV2)
 	if err != nil {
 		return fmt.Errorf("CreatePipeline  error %v req %v", err, createV2)
 	}
