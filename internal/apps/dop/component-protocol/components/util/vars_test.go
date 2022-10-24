@@ -17,8 +17,6 @@ package util
 import (
 	"context"
 	"testing"
-
-	"github.com/erda-project/erda/apistructs"
 )
 
 func TestDisplayStatusText(t *testing.T) {
