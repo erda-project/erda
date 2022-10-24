@@ -27,6 +27,7 @@ import (
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type AdminProjectDto struct {
@@ -160,7 +161,7 @@ func (impl *GatewayAzInfoServiceImpl) GetAzInfo(cond *orm.GatewayAzInfo) (*orm.G
 		return info, nil
 	}
 	code, body, err := util.CommonRequest("GET", discover.ErdaServer()+"/api/projects/"+cond.ProjectId, nil,
-		map[string]string{"Internal-Client": "hepa-gateway"})
+		map[string]string{"Internal-Client": "hepa-gateway", httputil.OrgHeader: cond.OrgId})
 	if err != nil {
 		err = errors.WithMessage(err, "request dice admin failed")
 		goto failback
