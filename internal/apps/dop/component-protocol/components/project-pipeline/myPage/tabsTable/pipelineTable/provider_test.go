@@ -15,12 +15,13 @@
 package pipelineTable
 
 import (
+	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMakeInode(t *testing.T) {
@@ -84,5 +85,52 @@ func TestMakeInode(t *testing.T) {
 	}
 	for _, v := range tt {
 		assert.Equal(t, v.want, p.makeInode(v.appName, v.definition, v.appNameIDMap))
+	}
+}
+
+func Test_getStatus(t *testing.T) {
+	tests := []struct {
+		name   string
+		status apistructs.PipelineStatus
+		want   commodel.UnifiedStatus
+	}{
+		// TODO: Add test cases.
+		{
+			name:   "analyzed",
+			status: apistructs.PipelineStatusAnalyzed,
+			want:   commodel.DefaultStatus,
+		},
+		{
+			name:   "running",
+			status: apistructs.PipelineStatusRunning,
+			want:   commodel.ProcessingStatus,
+		},
+		{
+			name:   "canceling",
+			status: apistructs.PipelineStatusCanceling,
+			want:   commodel.ProcessingStatus,
+		},
+		{
+			name:   "failed",
+			status: apistructs.PipelineStatusFailed,
+			want:   commodel.ErrorStatus,
+		},
+		{
+			name:   "AnalyzeFailed",
+			status: apistructs.PipelineStatusAnalyzeFailed,
+			want:   commodel.ErrorStatus,
+		},
+		{
+			name:   "AnalyzeFailed",
+			status: apistructs.PipelineStatusAnalyzeFailed,
+			want:   commodel.ErrorStatus,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getStatus(tt.status); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getStatus() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

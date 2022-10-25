@@ -151,13 +151,12 @@ func (status PipelineStatus) CanUnPauseTask() bool {
 }
 
 func (status PipelineStatus) IsReconcilerRunningStatus() bool {
-	switch status {
-	case PipelineStatusBorn, PipelineStatusPaused, PipelineStatusMark,
-		PipelineStatusCreated, PipelineStatusQueue, PipelineStatusRunning:
-		return true
-	default:
-		return false
+	for _, s := range ReconcilerRunningStatuses() {
+		if s == status {
+			return true
+		}
 	}
+	return false
 }
 
 func (status PipelineStatus) IsBeforePressRunButton() bool {
