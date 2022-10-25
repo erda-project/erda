@@ -17,6 +17,8 @@ package query
 import (
 	"context"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/event/pb"
 	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
 	oapPb "github.com/erda-project/erda-proto-go/oap/event/pb"
@@ -75,12 +77,16 @@ func (s *eventQueryService) GetEvents(ctx context.Context, req *pb.GetEventsRequ
 
 	resp := &pb.GetEventsResponse{Data: &pb.GetEventsResult{}}
 	for _, item := range list {
+		tags := make(map[string]*structpb.Value)
+		for k, v := range item.Tags {
+			tags[k] = structpb.NewStringValue(v)
+		}
 		data := &oapPb.Event{
 			EventID:      item.EventID,
 			Name:         item.Name,
 			Kind:         oapPb.Event_EventKind(oapPb.Event_EventKind_value[item.Kind]),
 			TimeUnixNano: uint64(item.Timestamp),
-			Attributes:   item.Tags,
+			Attributes:   tags,
 			Message:      item.Content,
 		}
 		if item.Relations != nil {

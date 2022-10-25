@@ -18,22 +18,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/oap/event/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/event"
 )
 
-type Event struct {
-	EventID      string            `json:"eventID"`
-	Severity     string            `json:"severity"`
-	Name         string            `json:"name"`
-	Kind         string            `json:"kind"`
-	TimeUnixNano uint64            `json:"timeUnixNano"`
-	Relations    map[string]string `json:"relations"`
-	Attributes   map[string]string `json:"attributes"`
-	Message      string            `json:"message"`
-}
-
 func (p *provider) decode(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {
-	input := &Event{}
+	input := &pb.Event{}
 	if err := json.Unmarshal(value, input); err != nil {
 		p.stats.DecodeError(value, err)
 		if p.Cfg.PrintInvalidEvent {
@@ -75,15 +65,18 @@ func (p *provider) confirmErrorHandler(err error) error {
 	return err // return error to exit
 }
 
-func (p *provider) normalize(input *Event) *event.Event {
+func (p *provider) normalize(input *pb.Event) *event.Event {
+	tags := make(map[string]string)
+	for k, v := range input.Attributes {
+		tags[k] = v.String()
+	}
 	return &event.Event{
 		EventID:   input.EventID,
 		Name:      input.Name,
-		Kind:      input.Kind,
+		Kind:      input.Kind.String(),
 		Content:   input.Message,
 		Timestamp: int64(input.TimeUnixNano),
 		Time:      time.Unix(0, int64(input.TimeUnixNano)),
-		Tags:      input.Attributes,
-		Relations: input.Relations,
+		Tags:      tags,
 	}
 }
