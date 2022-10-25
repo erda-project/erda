@@ -65,7 +65,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.output.cassandra = cassandra.NewBatchWriter(session, &p.Cfg.Output.Cassandra.WriterConfig, p.createTraceStatement)
 
-	p.kafka = ctx.Service("kafka").(kafka.Interface)
+	p.kafka = ctx.Service("kafkago").(kafka.Interface)
 	//w, err := p.kafka.NewProducer(&p.Cfg.Output.Kafka)
 	//if err != nil {
 	//	return fmt.Errorf("fail to create kafka producer: %s", err)
@@ -90,7 +90,7 @@ func (p *provider) Close() error {
 func init() {
 	servicehub.Register("trace-storage", &servicehub.Spec{
 		Services:     []string{"trace-storage"},
-		Dependencies: []string{"kafka", "cassandra", "kafka.topic.initializer"},
+		Dependencies: []string{"kafkago", "cassandra"},
 		Description:  "trace storage",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
