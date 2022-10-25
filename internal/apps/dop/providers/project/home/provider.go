@@ -49,6 +49,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				DB: p.DB,
 			},
 		},
+		bdl:    p.bundle,
 		logger: p.Log,
 	}
 
