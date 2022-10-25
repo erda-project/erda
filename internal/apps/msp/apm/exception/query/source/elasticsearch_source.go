@@ -192,26 +192,26 @@ func (source *ElasticsearchSource) fetchErdaEventFromES(ctx context.Context, req
 		erdaEvent.EventId = item.EventID
 		erdaEvent.Timestamp = int64(item.TimeUnixNano)
 		erdaEvent.ErrorId = item.Relations.ResID
-		erdaEvent.RequestId = item.Attributes["requestId"]
+		erdaEvent.RequestId = item.Attributes["requestId"].String()
 
 		var stacks []string
 		json.Unmarshal([]byte(item.Message), &stacks)
 		erdaEvent.Stacks = stacks
 
 		tagsMap := make(map[string]string)
-		json.Unmarshal([]byte(item.Attributes["tags"]), &tagsMap)
+		json.Unmarshal([]byte(item.Attributes["tags"].String()), &tagsMap)
 		erdaEvent.Tags = tagsMap
 
 		requestContextMap := make(map[string]string)
-		json.Unmarshal([]byte(item.Attributes["requestContext"]), &requestContextMap)
+		json.Unmarshal([]byte(item.Attributes["requestContext"].String()), &requestContextMap)
 		erdaEvent.RequestContext = requestContextMap
 
 		requestHeadersMap := make(map[string]string)
-		json.Unmarshal([]byte(item.Attributes["requestHeaders"]), &requestHeadersMap)
+		json.Unmarshal([]byte(item.Attributes["requestHeaders"].String()), &requestHeadersMap)
 		erdaEvent.RequestHeaders = requestHeadersMap
 
 		metaDataMap := make(map[string]string)
-		json.Unmarshal([]byte(item.Attributes["metaData"]), &metaDataMap)
+		json.Unmarshal([]byte(item.Attributes["metaData"].String()), &metaDataMap)
 		erdaEvent.MetaData = metaDataMap
 
 		list = append(list, erdaEvent)

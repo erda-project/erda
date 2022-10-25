@@ -48,7 +48,7 @@ message Event {
     oap.common.Relation relations = 6;
 
     // Including label, attributes and resource 
-    map<string, string> attributes = 7;
+    map<string, google.protobuf.Value> attributes = 7;
 
     string message = 8;
 }
