@@ -42,6 +42,7 @@ zh:
     org_customize: 企业自定义
     micro_service_customize: 微服务自定义
     addon: 项目中间件
+    addon_micro_service: 项目中间件
     micro_service: 微服务
     custom_addon: 扩展中间件
     app_browser: 浏览器性能
