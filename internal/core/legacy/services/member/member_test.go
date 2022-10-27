@@ -15,6 +15,7 @@
 package member
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -125,4 +126,22 @@ func TestMember_UpdateMemberUserInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_desensitizeMembers(t *testing.T) {
+	email, mobile := "12345678@test.com", "13012345678"
+
+	// do desensitize
+	members := []model.Member{{Email: email, Mobile: mobile}}
+	desensitizeMembers(&members, true, true)
+	assert.NotEqual(t, email, members[0].Email)
+	assert.NotEqual(t, mobile, members[0].Mobile)
+	fmt.Println(members[0].Email, members[0].Mobile)
+
+	// do not desensitize email but mobile
+	members = []model.Member{{Email: email, Mobile: mobile}}
+	desensitizeMembers(&members, false, true)
+	assert.Equal(t, email, members[0].Email)
+	assert.NotEqual(t, mobile, members[0].Mobile)
+	fmt.Println(members[0].Email, members[0].Mobile)
 }

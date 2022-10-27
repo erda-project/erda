@@ -30,6 +30,10 @@ type MemberListRequest struct {
 	Q        string `query:"q"`
 	PageNo   int    `query:"pageNo"`
 	PageSize int    `query:"pageSize"`
+
+	// Desensitize
+	DesensitizeEmail  bool `query:"desensitizeEmail"`  // default true
+	DesensitizeMobile bool `query:"desensitizeMobile"` // default true
 }
 
 // MemberListResponse 查询成员 GET /api/members

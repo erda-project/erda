@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/model"
 	"github.com/erda-project/erda/internal/core/legacy/types"
 	identity "github.com/erda-project/erda/internal/core/user/common"
+	"github.com/erda-project/erda/pkg/desensitize"
 	locale "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -295,7 +296,28 @@ func (m *Member) UpdateMemberUserInfo(req apistructs.MemberUserInfoUpdateRequest
 
 // List 成员列表/查询
 func (m *Member) List(param *apistructs.MemberListRequest) (int, []model.Member, error) {
-	return m.db.GetMembersByParam(param)
+	total, members, err := m.db.GetMembersByParam(param)
+	if err != nil {
+		return 0, nil, err
+	}
+	// desensitize
+	desensitizeMembers(&members, param.DesensitizeEmail, param.DesensitizeMobile)
+	return total, members, nil
+}
+
+func desensitizeMembers(members *[]model.Member, email bool, mobile bool) {
+	if members == nil {
+		return
+	}
+	for i := range *members {
+		member := &(*members)[i]
+		if email {
+			member.Email = desensitize.Email(member.Email)
+		}
+		if mobile {
+			member.Mobile = desensitize.Mobile(member.Mobile)
+		}
+	}
 }
 
 // Delete 删除成员
