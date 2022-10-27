@@ -1,0 +1,1 @@
+ALTER TABLE `dice_repo_check_runs` CHANGE COLUMN `pipeline_id` `pipeline_id` bigint(20) NOT NULL DEFAULT '0';
