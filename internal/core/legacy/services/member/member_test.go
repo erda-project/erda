@@ -131,8 +131,14 @@ func TestMember_UpdateMemberUserInfo(t *testing.T) {
 func Test_desensitizeMembers(t *testing.T) {
 	email, mobile := "12345678@test.com", "13012345678"
 
+	// nil
+	var members []model.Member = nil
+	desensitizeMembers(&members, true, true)
+	assert.Equal(t, 0, len(members))
+	assert.Nil(t, members)
+
 	// do desensitize
-	members := []model.Member{{Email: email, Mobile: mobile}}
+	members = []model.Member{{Email: email, Mobile: mobile}}
 	desensitizeMembers(&members, true, true)
 	assert.NotEqual(t, email, members[0].Email)
 	assert.NotEqual(t, mobile, members[0].Mobile)

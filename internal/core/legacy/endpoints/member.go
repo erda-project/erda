@@ -451,6 +451,26 @@ func (e *Endpoints) GetAllOrganizational(ctx context.Context, r *http.Request, v
 	return httpserver.OkResp(result)
 }
 
+func getMemberQueryParamForDesensitize(r *http.Request) (desensitizeEmail, desensitizeMobile bool) {
+	var err error
+	// Desensitize
+	desensitizeEmail, err = strconv.ParseBool(r.URL.Query().Get("desensitizeEmail"))
+	if err != nil {
+		desensitizeEmail = true // default desensitize
+	}
+	desensitizeMobile, err = strconv.ParseBool(r.URL.Query().Get("desensitizeMobile"))
+	if err != nil {
+		desensitizeMobile = true // default desensitize
+	}
+	identityInfo, _ := user.GetIdentityInfo(r)
+	// non-internal-invoke force desensitize user info
+	if !identityInfo.IsInternalClient() {
+		desensitizeEmail = true
+		desensitizeMobile = true
+	}
+	return desensitizeEmail, desensitizeMobile
+}
+
 // 查询成员时获取查询参数
 func getMemberQueryParam(r *http.Request) (*apistructs.MemberListRequest, error) {
 	// 检查参数scopeType
@@ -511,21 +531,8 @@ func getMemberQueryParam(r *http.Request) (*apistructs.MemberListRequest, error)
 	//	pageSize = 50
 	//}
 
-	// Desensitize
-	desensitizeEmail, err := strconv.ParseBool(r.URL.Query().Get("desensitizeEmail"))
-	if err != nil {
-		desensitizeEmail = true // default desensitize
-	}
-	desensitizeMobile, err := strconv.ParseBool(r.URL.Query().Get("desensitizeMobile"))
-	if err != nil {
-		desensitizeMobile = true // default desensitize
-	}
-	identityInfo, _ := user.GetIdentityInfo(r)
-	// non-internal-invoke force desensitize user info
-	if !identityInfo.IsInternalClient() {
-		desensitizeEmail = true
-		desensitizeMobile = true
-	}
+	// desensitize
+	desensitizeEmail, desensitizeMobile := getMemberQueryParamForDesensitize(r)
 
 	return &apistructs.MemberListRequest{
 		ScopeType: scopeType,
