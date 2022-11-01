@@ -727,10 +727,11 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 	if !blocked && branch.NeedApproval {
 		for range []int{0} {
 			approvers, err := r.bdl.ListMembers(apistructs.MemberListRequest{
-				ScopeType: "project",
-				ScopeID:   int64(ctx.Runtime.ProjectID),
-				Roles:     []string{"Owner", "Lead"},
-				PageSize:  99,
+				ScopeType:        "project",
+				ScopeID:          int64(ctx.Runtime.ProjectID),
+				Roles:            []string{"Owner", "Lead"},
+				PageSize:         99,
+				DesensitizeEmail: false,
 			})
 			if err != nil {
 				logrus.Errorf("failed to listmembers: %v", err)
@@ -1058,10 +1059,11 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 	if !blocked && branch.NeedApproval {
 		for range []int{0} {
 			approvers, err := r.bdl.ListMembers(apistructs.MemberListRequest{
-				ScopeType: "project",
-				ScopeID:   int64(runtime.ProjectID),
-				Roles:     []string{"Owner", "Lead"},
-				PageSize:  99,
+				ScopeType:        "project",
+				ScopeID:          int64(runtime.ProjectID),
+				Roles:            []string{"Owner", "Lead"},
+				PageSize:         99,
+				DesensitizeEmail: false,
 			})
 			if err != nil {
 				logrus.Errorf("failed to listmembers: %v", err)

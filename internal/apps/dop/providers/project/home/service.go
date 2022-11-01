@@ -18,23 +18,39 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/dop/projecthome/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type projectHomeService struct {
 	logger logs.Logger
 
-	db *dao.DBClient
+	db  *dao.DBClient
+	bdl *bundle.Bundle
 }
 
 func (s *projectHomeService) GetProjectHome(ctx context.Context, req *pb.GetProjectHomeRequest) (*pb.GetProjectHomeResponse, error) {
-	userID := apis.GetUserID(ctx)
-	if userID == "" {
-		return nil, fmt.Errorf("not login")
+	projectID, err := strconv.ParseUint(req.ProjectID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid projectID: %s, err: %v", req.ProjectID, err)
+	}
+	_, err = s.bdl.GetProjectWithSetter(projectID, httpclient.SetHeaders(
+		http.Header{
+			httputil.InternalHeader: []string{""},
+			httputil.OrgHeader:      []string{apis.GetOrgID(ctx)},
+			httputil.UserHeader:     []string{apis.GetUserID(ctx)},
+		},
+	))
+	if err != nil {
+		return nil, err
 	}
 	home, err := s.db.GetProjectHome(req.ProjectID)
 	if err != nil {
