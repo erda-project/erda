@@ -126,6 +126,7 @@ func (svc *Service) decodeFromExcelFile(r io.Reader) (allTestCases []apistructs.
 					Asserts:   asserts,
 				})
 			}
+			// row[15] update time
 		}
 
 		allTestCases = append(allTestCases, tcExcel)
