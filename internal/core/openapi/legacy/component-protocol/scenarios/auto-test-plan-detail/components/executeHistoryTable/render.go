@@ -241,7 +241,7 @@ func getStatus(req apistructs.PipelineStatus, i18nLocale *i18n.LocaleResource) m
 		res["status"] = "error"
 	} else if req.IsSuccessStatus() {
 		res["status"] = "success"
-	} else if req.IsReconcilerRunningStatus() || req.IsCancelingStatus() {
+	} else if req.IsReconcilerRunningStatus() {
 		res["status"] = "processing"
 	} else {
 		res["status"] = "default"
