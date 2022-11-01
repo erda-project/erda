@@ -305,5 +305,19 @@ func (pr *defaultPipelineReconciler) TeardownAfterReconcileDone(ctx context.Cont
 func (pr *defaultPipelineReconciler) CancelReconcile(ctx context.Context, p *spec.Pipeline) {
 	pr.lock.Lock()
 	pr.flagCanceling = true
+	// update status to canceling
+	rutil.ContinueWorking(ctx, pr.log, func(ctx context.Context) rutil.WaitDuration {
+		if p.Status == apistructs.PipelineStatusCanceling {
+			return rutil.ContinueWorkingAbort
+		}
+		if err := pr.dbClient.UpdatePipelineBaseStatus(p.ID, apistructs.PipelineStatusCanceling); err != nil {
+			pr.log.Errorf("failed to update pipeline status for canceling reconcile(auto retry), pipelineID: %d, err: %v", p.ID, err)
+			return rutil.ContinueWorkingWithDefaultInterval
+		}
+		return rutil.ContinueWorkingAbort
+	})
+	p.Status = apistructs.PipelineStatusCanceling
+	// send event
+	events.EmitPipelineInstanceEvent(p, p.GetUserID())
 	pr.lock.Unlock()
 }

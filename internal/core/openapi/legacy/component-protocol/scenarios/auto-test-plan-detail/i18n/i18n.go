@@ -98,6 +98,7 @@ var (
 	I18nKeyStatusCreated                 = "autotest.plan.status.created"
 	I18nKeyStatusQueue                   = "autotest.plan.status.queue"
 	I18nKeyStatusExecuting               = "autotest.plan.status.executing"
+	I18nKeyStatusCanceling               = "autotest.plan.status.canceling"
 	I18nKeyStatusExecuteSuccess          = "autotest.plan.status.execute.success"
 	I18nKeyStatusExecuteFailed           = "autotest.plan.status.execute.failed"
 	I18nKeyStatusInitializeFailed        = "autotest.plan.status.initialize.failed"
