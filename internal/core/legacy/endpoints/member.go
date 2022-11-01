@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/core/legacy/types"
 	"github.com/erda-project/erda/internal/pkg/user"
-	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -250,19 +249,10 @@ func (e *Endpoints) ListMember(ctx context.Context, r *http.Request, vars map[st
 	// 组装成API所需格式
 	memberList := make([]apistructs.Member, 0, len(members))
 	for _, item := range members {
-		var email, mobile string
-		if internalClient == "" {
-			email = desensitize.Email(item.Email)
-			mobile = desensitize.Mobile(item.Mobile)
-		} else {
-			email = item.Email
-			mobile = item.Mobile
-		}
-
 		member := apistructs.Member{
 			UserID: item.UserID,
-			Email:  email,
-			Mobile: mobile,
+			Email:  item.Email,
+			Mobile: item.Mobile,
 			Name:   item.Name,
 			Nick:   item.Nick,
 			Avatar: item.Avatar,
@@ -461,6 +451,26 @@ func (e *Endpoints) GetAllOrganizational(ctx context.Context, r *http.Request, v
 	return httpserver.OkResp(result)
 }
 
+func getMemberQueryParamForDesensitize(r *http.Request) (desensitizeEmail, desensitizeMobile bool) {
+	var err error
+	// Desensitize
+	desensitizeEmail, err = strconv.ParseBool(r.URL.Query().Get("desensitizeEmail"))
+	if err != nil {
+		desensitizeEmail = true // default desensitize
+	}
+	desensitizeMobile, err = strconv.ParseBool(r.URL.Query().Get("desensitizeMobile"))
+	if err != nil {
+		desensitizeMobile = true // default desensitize
+	}
+	identityInfo, _ := user.GetIdentityInfo(r)
+	// non-internal-invoke force desensitize user info
+	if !identityInfo.IsInternalClient() {
+		desensitizeEmail = true
+		desensitizeMobile = true
+	}
+	return desensitizeEmail, desensitizeMobile
+}
+
 // 查询成员时获取查询参数
 func getMemberQueryParam(r *http.Request) (*apistructs.MemberListRequest, error) {
 	// 检查参数scopeType
@@ -521,6 +531,9 @@ func getMemberQueryParam(r *http.Request) (*apistructs.MemberListRequest, error)
 	//	pageSize = 50
 	//}
 
+	// desensitize
+	desensitizeEmail, desensitizeMobile := getMemberQueryParamForDesensitize(r)
+
 	return &apistructs.MemberListRequest{
 		ScopeType: scopeType,
 		ScopeID:   scopeID,
@@ -529,6 +542,9 @@ func getMemberQueryParam(r *http.Request) (*apistructs.MemberListRequest, error)
 		Q:         keyword,
 		PageNo:    pageNo,
 		PageSize:  pageSize,
+
+		DesensitizeEmail:  desensitizeEmail,
+		DesensitizeMobile: desensitizeMobile,
 	}, nil
 }
 

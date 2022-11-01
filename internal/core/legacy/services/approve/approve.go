@@ -164,10 +164,12 @@ func (a *Approve) Create(userID string, createReq *apistructs.ApproveCreateReque
 			return nil, errors.Errorf("failed to parse 'end' timestamp: %v", err)
 		}
 		_, approvers, err := a.member.List(&apistructs.MemberListRequest{
-			ScopeType: "org",
-			ScopeID:   int64(approve.OrgID),
-			Roles:     []string{"Owner", "Lead", "Manager"},
-			PageSize:  99,
+			ScopeType:         "org",
+			ScopeID:           int64(approve.OrgID),
+			Roles:             []string{"Owner", "Lead", "Manager"},
+			PageSize:          99,
+			DesensitizeEmail:  false, // need email to notify
+			DesensitizeMobile: true,
 		})
 		if err != nil {
 			return nil, err
