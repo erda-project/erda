@@ -778,7 +778,7 @@ type OpMoreOperationsItemClickServerData struct {
 }
 
 func getStatus(status apistructs.PipelineStatus) commodel.UnifiedStatus {
-	if status.IsRunningStatus() {
+	if status.IsRunningStatus() || status.IsCancelingStatus() {
 		return commodel.ProcessingStatus
 	}
 	if status.IsFailedStatus() {

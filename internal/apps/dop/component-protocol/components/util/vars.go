@@ -27,6 +27,7 @@ const ColumnPipelineTriggerMode = "pipelineTriggerMode"
 var PipelineDefinitionStatus = []apistructs.PipelineStatus{
 	apistructs.PipelineStatusAnalyzed,
 	apistructs.PipelineStatusRunning,
+	apistructs.PipelineStatusCanceling,
 	apistructs.PipelineStatusSuccess,
 	apistructs.PipelineStatusFailed,
 	apistructs.PipelineStatusStopByUser,
@@ -40,6 +41,7 @@ var PipelineDefinitionStatusMap = map[apistructs.PipelineStatus]apistructs.Pipel
 	apistructs.PipelineStatusQueue:           apistructs.PipelineStatusAnalyzed,
 	apistructs.PipelineStatusInitializing:    apistructs.PipelineStatusAnalyzed,
 	apistructs.PipelineStatusRunning:         apistructs.PipelineStatusRunning,
+	apistructs.PipelineStatusCanceling:       apistructs.PipelineStatusCanceling,
 	apistructs.PipelineStatusSuccess:         apistructs.PipelineStatusSuccess,
 	apistructs.PipelineStatusFailed:          apistructs.PipelineStatusFailed,
 	apistructs.PipelineStatusAnalyzeFailed:   apistructs.PipelineStatusFailed,

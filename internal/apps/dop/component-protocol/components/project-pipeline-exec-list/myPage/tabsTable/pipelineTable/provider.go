@@ -223,7 +223,7 @@ func (p *provider) pipelineToRow(exec *pb.PipelineExecHistory) table.Row {
 			ColumnPipelineStatus: table.NewCompleteTextCell(commodel.Text{
 				Text: util.DisplayStatusText(p.sdk.Ctx, exec.PipelineStatus),
 				Status: func() commodel.UnifiedStatus {
-					if apistructs.PipelineStatus(exec.PipelineStatus).IsRunningStatus() {
+					if apistructs.PipelineStatus(exec.PipelineStatus).IsRunningStatus() || apistructs.PipelineStatus(exec.PipelineStatus).IsCancelingStatus() {
 						return commodel.ProcessingStatus
 					}
 					if apistructs.PipelineStatus(exec.PipelineStatus).IsFailedStatus() {

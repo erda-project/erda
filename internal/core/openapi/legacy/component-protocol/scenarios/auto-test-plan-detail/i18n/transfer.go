@@ -29,6 +29,8 @@ func TransferTaskStatus(status apistructs.PipelineStatus, i18nLocale *i18n.Local
 		return i18nLocale.Get(I18nKeyStatusQueue)
 	case apistructs.PipelineStatusRunning:
 		return i18nLocale.Get(I18nKeyStatusExecuting)
+	case apistructs.PipelineStatusCanceling:
+		return i18nLocale.Get(I18nKeyStatusCanceling)
 	case apistructs.PipelineStatusSuccess:
 		return i18nLocale.Get(I18nKeyStatusExecuteSuccess)
 	case apistructs.PipelineStatusFailed:
