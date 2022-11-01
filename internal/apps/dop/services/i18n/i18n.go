@@ -23,6 +23,7 @@ const (
 	I18nKeyCaseSetName      = "tp.export.case.set.name"
 	I18nKeyCasePriority     = "tp.export.case.priority"
 	I18nKeyCasePrecondition = "tp.export.case.precondition"
+	I18nKeyCaseUpdatedAt    = "tp.export.case.updatedat"
 	I18nKeyCaseStepResult   = "tp.export.case.step.and.result"
 	I18nKeyCaseStep         = "tp.export.case.step"
 	I18nKeyCaseExpectResult = "tp.export.case.expect.result"

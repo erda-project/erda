@@ -52,6 +52,7 @@ func (svc *Service) convert2Excel(tcs []apistructs.TestCaseWithSimpleSetInfo, lo
 		excel.EmptyCell(),
 		excel.EmptyCell(),
 		excel.EmptyCell(),
+		excel.NewVMergeCell(l.Get(i18n.I18nKeyCaseUpdatedAt), 1),
 	}
 	title2 := []excel.Cell{
 		excel.EmptyCell(),
@@ -69,6 +70,7 @@ func (svc *Service) convert2Excel(tcs []apistructs.TestCaseWithSimpleSetInfo, lo
 		excel.NewCell(l.Get(i18n.I18nKeyCaseAPITestBody)),
 		excel.NewCell(l.Get(i18n.I18nKeyCaseAPITestOutParams)),
 		excel.NewCell(l.Get(i18n.I18nKeyCaseAPITestAsserts)),
+		excel.EmptyCell(),
 	}
 
 	var allTcLines [][]excel.Cell
@@ -76,13 +78,14 @@ func (svc *Service) convert2Excel(tcs []apistructs.TestCaseWithSimpleSetInfo, lo
 	for _, tc := range tcs {
 		var oneTcLines [][]excel.Cell
 
-		// 步骤与结果会有多条，接口测试也会有多个，取两个长度更大的一个，作为垂直单元格合并的数值
+		// there will be multiple steps and results, and there will be multiple interface tests.
+		// take the one with the larger length as the value of the vertical cell merge.
 		maxLen := len(tc.StepAndResults)
 		if len(tc.APIs) > maxLen {
 			maxLen = len(tc.APIs)
 		}
 		for i := 0; i < maxLen; i++ {
-			// 插入一行
+			// insert one row
 			line := []excel.Cell{
 				excel.NewCell(strconv.FormatUint(tc.ID, 10)),
 				excel.NewCell(tc.Name),
@@ -91,14 +94,15 @@ func (svc *Service) convert2Excel(tcs []apistructs.TestCaseWithSimpleSetInfo, lo
 				excel.NewCell(tc.PreCondition),
 			}
 
-			// 操作步骤、预期结果
+			// operation steps, expected results
 			if i < len(tc.StepAndResults) {
 				line = append(line, excel.NewCell(tc.StepAndResults[i].Step), excel.NewCell(tc.StepAndResults[i].Result))
 			} else {
 				line = append(line, excel.EmptyCells(2)...)
 			}
 
-			// 接口名称、请求头信息、方法、接口地址、接口参数、请求体、out 参数、断言
+			// interface name, request header information, method, interface address
+			// interface parameter, request body, out parameter, assertion
 			if i < len(tc.APIs) {
 				var api apistructs.APIInfo
 				if err := json.Unmarshal([]byte(tc.APIs[i].ApiInfo), &api); err != nil {
@@ -123,18 +127,19 @@ func (svc *Service) convert2Excel(tcs []apistructs.TestCaseWithSimpleSetInfo, lo
 			} else {
 				line = append(line, excel.EmptyCells(8)...)
 			}
+			line = append(line, excel.NewCell(tc.UpdatedAt.Local().Format("2006-01-02 15:04:05")))
 
 			oneTcLines = append(oneTcLines, line)
 		}
 
-		// 调整第一行，作单元格合并
+		// adjust the first row for cell merging
 		if len(oneTcLines) > 0 {
 			firstLine := oneTcLines[0]
 			vMergeNum := len(oneTcLines) - 1
-			// 只合并前5列基础信息
+			// only the first 5 columns of basic information are merged
 			for i := 0; i < 5; i++ {
 				firstLine[i] = excel.NewVMergeCell(firstLine[i].Value, vMergeNum)
-				// 被合并的单元格数据置为空，优化文件大小
+				// the merged cell data is blank to optimize the file size
 				// e.g., 6673 bytes -> 3888 bytes
 				for j := 1; j < len(oneTcLines); j++ {
 					oneTcLines[j][i] = excel.EmptyCell()
