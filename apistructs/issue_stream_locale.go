@@ -146,8 +146,8 @@ type ISTParam struct {
 	CurrentContent string `json:",omitempty"` // 当前内容
 	NewContent     string `json:",omitempty"` // 新内容
 
-	CurrentLabel string `json:",omitempty"` // 当前标签
-	NewLabel     string `json:",omitempty"` // 新标签
+	CurrentLabel []string `json:",omitempty"` // 当前标签
+	NewLabel     []string `json:",omitempty"` // 新标签
 
 	ReasonDetail string `json:",omitempty"`
 }
