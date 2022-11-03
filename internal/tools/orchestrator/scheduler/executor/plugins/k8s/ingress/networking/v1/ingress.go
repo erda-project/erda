@@ -46,20 +46,15 @@ func (i *Ingress) CreateIfNotExists(svc *apistructs.Service) error {
 		return err
 	}
 
-	existedIng, err := i.c.Ingresses(ing.Namespace).Get(context.Background(), ing.Name, metav1.GetOptions{})
-	if err != nil && !k8serrors.IsNotFound(err) {
+	if _, err = i.c.Ingresses(ing.Namespace).Get(context.Background(), ing.Name, metav1.GetOptions{}); err != nil {
+		if !k8serrors.IsNotFound(err) {
+			return err
+		}
+		_, err = i.c.Ingresses(svc.Namespace).Create(context.Background(), ing, metav1.CreateOptions{})
 		return err
 	}
 
-	if existedIng != nil {
-		logrus.Warnf("ingress %s in namespace %s already existed", svc.Name, svc.Namespace)
-		return nil
-	}
-
-	if _, err = i.c.Ingresses(svc.Namespace).Create(context.Background(), ing,
-		metav1.CreateOptions{}); err != nil {
-		return err
-	}
+	logrus.Warnf("ingress %s in namespace %s already existed", svc.Name, svc.Namespace)
 
 	return nil
 }
