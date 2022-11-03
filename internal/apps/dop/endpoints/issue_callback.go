@@ -103,6 +103,7 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 			"projectName":    req.Content.Params["projectName"],
 			"operator":       req.Content.Params["operator"],
 			"issueEmailLink": linkParams["issueEmailLink"],
+			"newLabels":      req.Content.Params["newLabels"],
 		}
 		marshal, _ := json.Marshal(params)
 		logrus.Debugf("issue params :%s", string(marshal))

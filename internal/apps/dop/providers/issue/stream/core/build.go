@@ -177,6 +177,7 @@ func (p *provider) CreateStream(updateReq *pb.UpdateIssueRequest, streamFields m
 			streamReq.StreamParams = common.ISTParam{CurrentState: CurrentState.Name, NewState: NewState.Name}
 			eventReq.StreamParams.CurrentState = CurrentState.Name
 			eventReq.StreamParams.NewState = NewState.Name
+			eventReq.StreamParams.NewLabel = updateReq.Labels
 		case "plan_started_at":
 			streamReq.StreamType = common.ISTChangePlanStartedAt
 			eventReq.StreamTypes = append(eventReq.StreamTypes, common.ISTChangePlanStartedAt)
