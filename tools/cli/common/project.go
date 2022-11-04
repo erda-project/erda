@@ -196,7 +196,7 @@ func ListMyProjectInOrg(ctx *command.Context, orgId string, projectName string) 
 		Param("joined", "true").
 		Param("name", projectName).
 		Param("pageSize", strconv.Itoa(1000)).
-		Header("Org-ID", orgId).
+		Header("org", orgId).
 		Do().Body(&b)
 	if err != nil {
 		return nil, fmt.Errorf(

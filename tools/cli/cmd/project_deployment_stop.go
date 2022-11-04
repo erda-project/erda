@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/utils"
@@ -151,13 +150,15 @@ func RunStopProjectInWorkspace(ctx *command.Context, org, project, workspace str
 	}
 
 	if len(addonIds) > 0 {
-		ctx.Info("Begin to stop project's addons for addon IDs:%v\n", addonIds)
+		ctx.Info("project's addons for addon IDs:%v\n", addonIds)
 		// TODO: STOP Addons
-		if err = StopProjectWorkspaceAddons(ctx, addonIds, params); err != nil {
-			return err
-		}
+		/*
+				if err = StopProjectWorkspaceAddons(ctx, addonIds, params); err != nil {
+					return err
+				}
+			ctx.Succ("project-deployment stop project's addons success\n")
+		*/
 	}
-	ctx.Succ("project-deployment stop project's addons success\n")
 
 	return nil
 }
@@ -181,7 +182,8 @@ func StopProjectWorkspaceRuntimes(ctx *command.Context, runtimeIds []string, par
 	}
 
 	response, err := ctx.Put().Path(fmt.Sprintf("/api/runtimes/actions/batch-update-pre-overlay?scale_action=scaleDown")).
-		Header(httputil.OrgHeader, params.orgId).
+		//Header(httputil.OrgHeader, params.orgId).
+		Header("org", params.orgId).
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
@@ -215,7 +217,8 @@ func StopProjectWorkspaceAddons(ctx *command.Context, addonIds []string, params 
 	req.AddonRoutingIDs = addonIds
 
 	response, err := ctx.Post().Path(fmt.Sprintf("/api/addons?scale_action=scaleDown")).
-		Header(httputil.OrgHeader, params.orgId).
+		//Header(httputil.OrgHeader, params.orgId).
+		Header("org", params.orgId).
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
@@ -252,7 +255,8 @@ func GetProjectApplicationIds(ctx *command.Context, params PDParameters) ([]stri
 	var listResp apistructs.ApplicationListResponse
 
 	response, err := ctx.Get().Path(fmt.Sprintf("/api/applications")).
-		Header(httputil.OrgHeader, params.orgId).
+		//Header(httputil.OrgHeader, params.orgId).
+		Header("org", params.orgId).
 		Param("projectId", params.projectId).
 		Param("pageSize", strconv.FormatUint(PAGE_SIZE, 10)).
 		Param("pageNo", "1").
@@ -274,7 +278,8 @@ func GetProjectApplicationIds(ctx *command.Context, params PDParameters) ([]stri
 
 	for page := 2; listResp.Data.Total > int(PAGE_SIZE)*(page-1); page++ {
 		response, err := ctx.Get().Path(fmt.Sprintf("/api/applications")).
-			Header(httputil.OrgHeader, params.orgId).
+			//Header(httputil.OrgHeader, params.orgId).
+			Header("org", params.orgId).
 			Param("projectId", params.projectId).
 			Param("pageSize", strconv.FormatUint(PAGE_SIZE, 10)).
 			Param("pageNo", strconv.FormatInt(int64(page), 10)).
@@ -301,7 +306,8 @@ func GetProjectApplicationRuntimesIDsForStopOrStart(ctx *command.Context, params
 
 	response, err := ctx.Get().Path("/api/runtimes").
 		Param("applicationId", applicationId).
-		Header("Org-ID", params.orgId).
+		//Header("Org-ID", params.orgId).
+		Header("org", params.orgId).
 		Do().
 		JSON(&listResp)
 	if err != nil {
@@ -341,7 +347,8 @@ func checkProjectRuntimes(ctx *command.Context, applicationId string, params PDP
 
 	response, err := ctx.Get().Path("/api/runtimes").
 		Param("applicationId", applicationId).
-		Header("Org-ID", params.orgId).
+		//Header("Org-ID", params.orgId).
+		Header("org", params.orgId).
 		Do().
 		JSON(&listResp)
 	if err != nil {
@@ -423,7 +430,8 @@ func GetProjectAddonsRoutingKeysForStopOrStart(ctx *command.Context, params PDPa
 	var listResp apistructs.AddonListResponse
 
 	response, err := ctx.Get().Path(fmt.Sprintf("/api/addons")).
-		Header("Org-ID", params.orgId).
+		//Header("Org-ID", params.orgId).
+		Header("org", params.orgId).
 		Param("type", "project").
 		Param("value", params.projectId).
 		Do().

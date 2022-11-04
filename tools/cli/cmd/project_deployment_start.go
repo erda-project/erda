@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/utils"
@@ -88,38 +87,40 @@ func RunStartProjectInWorkspace(ctx *command.Context, org, project, workspace st
 		}
 	}
 
-	addonIds, err := GetProjectAddonsRoutingKeysForStopOrStart(ctx, params)
-	if err != nil {
-		return err
-	}
-
-	if len(addonIds) == 0 {
-		ctx.Info("No addons found for project need start\n")
-	}
-	if len(addonIds) > 0 {
-		ctx.Info("Begin to start project's addons for addon IDs:%v\n", addonIds)
-		// TODO: STOP Addons
-		if err = StartProjectWorkspaceAddons(ctx, addonIds, params); err != nil {
-			return err
-		}
-
-		ctx.Info("Waiting %d minutes for project's addons to Running\n", ADDONS_RESTART_WAITTING_DELAY)
-		tick := time.Tick(1 * time.Second)
-		waits := ADDONS_RESTART_WAITTING_DELAY * 60
-		for waits > 0 {
-			select {
-			case <-tick:
-				fmt.Printf("\r%3d", waits)
-				waits--
-			}
-		}
-
-		err = waitProjectAddonsComplete(ctx, params)
+	/*
+		addonIds, err := GetProjectAddonsRoutingKeysForStopOrStart(ctx, params)
 		if err != nil {
 			return err
 		}
-	}
-	ctx.Succ("project-deployment start project's addons success\n")
+
+		if len(addonIds) == 0 {
+			ctx.Info("No addons found for project\n")
+		}
+		if len(addonIds) > 0 {
+			ctx.Info("project's addons for addon IDs:%v\n", addonIds)
+			// TODO: STOP Addons
+			if err = StartProjectWorkspaceAddons(ctx, addonIds, params); err != nil {
+				return err
+			}
+
+			ctx.Info("Waiting %d minutes for project's addons to Running\n", ADDONS_RESTART_WAITTING_DELAY)
+			tick := time.Tick(1 * time.Second)
+			waits := ADDONS_RESTART_WAITTING_DELAY * 60
+			for waits > 0 {
+				select {
+				case <-tick:
+					fmt.Printf("\r%3d", waits)
+					waits--
+				}
+			}
+
+			err = waitProjectAddonsComplete(ctx, params)
+			if err != nil {
+				return err
+			}
+		}
+		ctx.Succ("project-deployment start project's addons success\n")
+	*/
 
 	if len(runtimeIds) > 0 {
 		ctx.Info("Begin to start project's runtimes for runtime IDs:%v\n", runtimeIds)
@@ -152,7 +153,8 @@ func StartProjectWorkspaceRuntimes(ctx *command.Context, runtimeIds []string, pa
 	}
 
 	response, err := ctx.Put().Path(fmt.Sprintf("/api/runtimes/actions/batch-update-pre-overlay?scale_action=scaleUp")).
-		Header(httputil.OrgHeader, params.orgId).
+		//Header(httputil.OrgHeader, params.orgId).
+		Header("org", params.orgId).
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
@@ -186,7 +188,8 @@ func StartProjectWorkspaceAddons(ctx *command.Context, addonIds []string, params
 	req.AddonRoutingIDs = addonIds
 
 	response, err := ctx.Post().Path(fmt.Sprintf("/api/addons?scale_action=scaleUp")).
-		Header(httputil.OrgHeader, params.orgId).
+		//Header(httputil.OrgHeader, params.orgId).
+		Header("org", params.orgId).
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
@@ -264,7 +267,8 @@ func checkProjectAddons(ctx *command.Context, params PDParameters) ([]apistructs
 	var listResp apistructs.AddonListResponse
 
 	response, err := ctx.Get().Path(fmt.Sprintf("/api/addons")).
-		Header("Org-ID", params.orgId).
+		//Header("Org-ID", params.orgId).
+		Header("org", params.orgId).
 		Param("type", "project").
 		Param("value", params.projectId).
 		Do().
