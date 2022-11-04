@@ -35,7 +35,7 @@ func GetOrgDetail(ctx *command.Context, orgIDorName string) (apistructs.OrgDTO, 
 			"invalid required parameter organization", false))
 	}
 
-	response, err := ctx.Get().Path(fmt.Sprintf("/api/orgs/%s", orgIDorName)).Do().Body(&b)
+	response, err := ctx.Get().Header("org", orgIDorName).Path(fmt.Sprintf("/api/orgs/%s", orgIDorName)).Do().Body(&b)
 	if err != nil {
 		return apistructs.OrgDTO{}, fmt.Errorf(utils.FormatErrMsg(
 			"get organization detail", "failed to request ("+err.Error()+")", false))
