@@ -135,6 +135,7 @@ func (ctx *Context) FetchOpenapi() error {
 	ctx.Hepaapi = new(url.URL)
 	*ctx.Hepaapi = *ctx.Openapi
 	ctx.Hepaapi.Host = strings.Replace(ctx.Openapi.Host, "openapi.", "hepa.", 1)
+	ctx.CurrentHost = ctx.Openapi.String()
 	ctx.Info(`erda openapi info:
 	domain: %s
 	openapi: %s
