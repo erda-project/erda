@@ -15,7 +15,12 @@
 package settings
 
 import (
+	"fmt"
+	"os"
 	"testing"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 func Test_insertOrgFilter(t *testing.T) {
@@ -82,68 +87,58 @@ func Test_getConfigFromDays(t *testing.T) {
 	}
 }
 
-// type pjyLog struct {
-// 	name string
-// 	*logrus.Entry
-// }
+type MockLog struct {
+	logs.Logger
+	t *testing.T
+}
 
-// func (p pjyLog) Sub(name string) logs2.Logger {
-// 	panic("implement me")
-// }
+func (l *MockLog) Errorf(template string, args ...interface{}) {
+	l.t.Errorf(template, args...)
+}
 
-// func (p pjyLog) SetLevel(lvl string) error {
-// 	panic("implement me")
-// }
+type MockTranslator struct {
+	i18n.Translator
+}
 
-// func Test_provider_monitorConfigMap(t *testing.T) {
-// 	type fields struct {
-// 		L      logs2.Logger
-// 		db     *gorm.DB
-// 		cfgMap map[string]map[string]*configDefine
-// 		t      i18n.Translator
-// 		bundle *bundle.Bundle
-// 	}
-// 	type args struct {
-// 		ns string
-// 	}
-// 	os.Setenv("METRIC_INDEX_TTL", "3000ms")
-// 	os.Setenv("LOG_TTL", "3000ms")
-// 	tests := []struct {
-// 		name   string
-// 		fields fields
-// 		args   args
-// 		want   *configDefine
-// 	}{
-// 		{
-// 			name: "test_provider_monitorConfigMap",
-// 			fields: fields{
-// 				L: pjyLog{
-// 					Entry: &logrus.Entry{
-// 						Logger: &logrus.Logger{},
-// 					},
-// 				},
-// 			},
-// 			args: args{
-// 				ns: "general",
-// 			},
-// 			want: nil,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			p := &provider{
-// 				L:      tt.fields.L,
-// 				db:     tt.fields.db,
-// 				cfgMap: tt.fields.cfgMap,
-// 				t:      tt.fields.t,
-// 				bundle: tt.fields.bundle,
-// 			}
-// 			if got := p.monitorConfigMap(tt.args.ns); got != nil {
-// 				fmt.Printf("monitorConfigMap() = %+v", got)
-// 			}
-// 		})
-// 	}
-// }
+func (t *MockTranslator) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func Test_provider_monitorConfigMap(t *testing.T) {
+	type args struct {
+		ns string
+	}
+	os.Unsetenv("METRIC_INDEX_TTL")
+	os.Unsetenv("LOG_TTL")
+	tests := []struct {
+		name string
+		args args
+		want *configDefine
+	}{
+		{
+			name: "test_provider_monitorConfigMap",
+			args: args{
+				ns: "prod",
+			},
+			want: nil,
+		},
+	}
+	ss := &settingsService{
+		p: &provider{
+			Log: &MockLog{
+				t: t,
+			},
+		},
+		t: &MockTranslator{},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ss.monitorConfigMap(tt.args.ns); got != nil {
+				fmt.Printf("monitorConfigMap() = %+v", got)
+			}
+		})
+	}
+}
 
 // func Test_provider_syncMonitorConfig(t *testing.T) {
 // 	p := &provider{

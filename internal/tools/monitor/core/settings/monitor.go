@@ -37,7 +37,13 @@ import (
 )
 
 func (s *settingsService) monitorConfigMap(ns string) *configDefine {
-	metricDays, logDays := 8, 7
+	var metricDays, logDays int
+	switch ns {
+	case "prod":
+		metricDays, logDays = 7, 7
+	default:
+		metricDays, logDays = 3, 3
+	}
 	ttl := os.Getenv("METRIC_INDEX_TTL")
 	if len(ttl) > 0 {
 		d, err := time.ParseDuration(ttl)
