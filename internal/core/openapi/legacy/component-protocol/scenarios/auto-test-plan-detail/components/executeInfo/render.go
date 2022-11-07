@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -32,10 +31,6 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/scenarios/auto-test-plan-detail/i18n"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/scenarios/auto-test-plan-detail/types"
 )
-
-func init() {
-	os.Setenv("TZ", "Asia/Shanghai")
-}
 
 type ComponentFileInfo struct {
 	CtxBdl protocol.ContextBundle

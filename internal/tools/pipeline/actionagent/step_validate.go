@@ -62,7 +62,8 @@ func (agent *Agent) validate() {
 	agent.EasyUse.RunMultiStderrFilePath = "/tmp/stderr"
 	agent.setShellAndArgs()
 
-	// validate envs
+	// set timezone
+	agent.setTimezone()
 
 	// convert(XXX_PUBLIC_URL, XXX_ADDR) -> XXX_ADDR
 	agent.convertEnvsByClusterLocation()
