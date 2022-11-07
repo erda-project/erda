@@ -292,7 +292,7 @@ func convertExecuteTime(data *apistructs.TestPlanV2) string {
 		return ""
 	}
 	var executeTime string
-	executeTime = data.ExecuteTime.Format("2006-01-02 15:04:05")
+	executeTime = data.ExecuteTime.Local().Format("2006-01-02 15:04:05")
 	return executeTime
 }
 
