@@ -231,7 +231,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			}
 		)
 		updatedAt := each.UpdatedAt.Format("2006-01-02 15:04:05")
-		text := text.UpdatedTime(a.sdk.Ctx, each.UpdatedAt)
+		text := text.UpdatedTime(a.sdk.Ctx, each.UpdatedAt.Local())
 		item := spaceItem{
 			ID:          each.ID,
 			Title:       each.Name,
