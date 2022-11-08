@@ -37,6 +37,9 @@ func NewInternalServerErrorMessage(message string) *InternalServerError {
 }
 
 func (e *InternalServerError) Error() string {
+	if e.Cause == nil {
+		return fmt.Sprintf("internal error: %s", e.Message)
+	}
 	return fmt.Sprintf("internal error: %s", e.Cause)
 }
 func (e *InternalServerError) HTTPStatus() int { return http.StatusInternalServerError }
