@@ -35,6 +35,7 @@ const (
 	EnvStdErrRegexpList = "ACTIONAGENT_STDERR_REGEXP_LIST"
 	EnvMaxCacheFileMB   = "ACTIONAGENT_MAX_CACHE_FILE_MB"
 	EnvDefaultShell     = "ACTIONAGENT_DEFAULT_SHELL"
+	EnvDefaultTimezone  = "ACTIONAGENT_DEFAULT_TIMEZONE"
 )
 
 // 对于 custom action，需要将 commands 转换为 script 来执行
@@ -131,6 +132,14 @@ func (agent *Agent) prepare() {
 
 	// 7. listen signal
 	go agent.ListenSignal()
+}
+
+// setTimezone set default timezone
+func (agent *Agent) setTimezone() {
+	timezone := os.Getenv(EnvDefaultTimezone)
+	if timezone != "" {
+		os.Setenv("TZ", timezone)
+	}
 }
 
 func (agent *Agent) convertCustomCommands() []string {

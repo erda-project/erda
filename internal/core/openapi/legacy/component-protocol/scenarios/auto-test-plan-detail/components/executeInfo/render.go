@@ -130,15 +130,15 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 				"pipelineID": i.State.PipelineID,
 				"status":     i18n.TransferTaskStatus(pipelineStatus, i18nLocale),
 				"time":       h + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05"),
-				"timeBegin":  rsp.TimeBegin.AsTime().Format(timeLayoutStr),
-				"timeEnd":    rsp.TimeEnd.AsTime().Format(timeLayoutStr),
+				"timeBegin":  rsp.TimeBegin.AsTime().Local().Format(timeLayoutStr),
+				"timeEnd":    rsp.TimeEnd.AsTime().Local().Format(timeLayoutStr),
 			}
 		} else if rsp.TimeBegin != nil {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			i.Data = map[string]interface{}{
 				"pipelineID": i.State.PipelineID,
 				"status":     i18n.TransferTaskStatus(pipelineStatus, i18nLocale),
-				"timeBegin":  rsp.TimeBegin.AsTime().Format(timeLayoutStr),
+				"timeBegin":  rsp.TimeBegin.AsTime().Local().Format(timeLayoutStr),
 			}
 		} else {
 			i.Data = map[string]interface{}{

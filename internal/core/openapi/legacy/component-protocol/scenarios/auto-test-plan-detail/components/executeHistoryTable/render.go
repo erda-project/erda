@@ -267,7 +267,7 @@ func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData,
 			"pipelineId":  each.ID,
 			"status":      getStatus(each.Status, i18nLocale),
 			"runUser":     runUser,
-			"triggerTime": each.TimeCreated.Format(timeLayoutStr),
+			"triggerTime": each.TimeCreated.Local().Format(timeLayoutStr),
 		}
 		lists = append(lists, list)
 		num--

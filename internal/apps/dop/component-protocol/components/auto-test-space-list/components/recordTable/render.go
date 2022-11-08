@@ -189,7 +189,7 @@ func (r *RecordTable) setData() error {
 			ID:       strconv.FormatInt(int64(fileRecord.ID), 10),
 			Type:     r.sdk.I18n(recordTypeKey),
 			Operator: operatorName,
-			Time:     fileRecord.CreatedAt.Format("2006-01-02 15:04:05"),
+			Time:     fileRecord.CreatedAt.Local().Format("2006-01-02 15:04:05"),
 			Desc:     fileRecord.Description,
 			Status: Status{
 				RenderType: "textWithBadge",

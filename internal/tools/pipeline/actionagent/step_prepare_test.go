@@ -18,6 +18,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/pkg/filehelper"
@@ -90,4 +92,17 @@ tail
 			t.Errorf("%q. setupCommandScript() = %v, want %v", tt.name, tt.got, tt.want)
 		}
 	}
+}
+
+func Test_setTimezone(t *testing.T) {
+	// no timezone set
+	os.Setenv(EnvDefaultTimezone, "")
+	agent := &Agent{}
+	agent.setTimezone()
+	assert.Equal(t, "", os.Getenv("TZ"))
+
+	// set timezone Asia/Shanghai
+	os.Setenv(EnvDefaultTimezone, "Asia/Shanghai")
+	agent.setTimezone()
+	assert.Equal(t, "Asia/Shanghai", os.Getenv("TZ"))
 }
