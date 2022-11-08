@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda/pkg/common/apis"
 
-	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda-proto-go/core/extension/pb"
 )
 
 var (

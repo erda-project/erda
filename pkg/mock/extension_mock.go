@@ -11,7 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	pb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	i18n "github.com/erda-project/erda/pkg/i18n"
 )
 

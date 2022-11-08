@@ -54,7 +54,7 @@ service Gallery {
 
   rpc ExtensionHook(common.EventCreateRequest) returns(common.EventCreateResponse) {
     option(google.api.http) = {
-      post: "/api/extension-hook",
+      post: "/api/hooks/actions/gallery-extension-hook",
     };
   }
 

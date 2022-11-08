@@ -20,7 +20,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	extensionpb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	extensionpb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"

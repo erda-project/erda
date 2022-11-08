@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	extensionpb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	extensionpb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 )
 

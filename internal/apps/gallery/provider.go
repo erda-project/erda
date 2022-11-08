@@ -116,7 +116,7 @@ func (p *provider) registerExtensionHook() error {
 	ev := apistructs.CreateHookRequest{
 		Name:   "gallery_watch_extension_event",
 		Events: []string{apistructs.EventExtensionPutON},
-		URL:    strutil.Concat("http://", discover.ErdaServer(), "/api/extension-hook"),
+		URL:    strutil.Concat("http://", discover.ErdaServer(), "/api/hooks/actions/gallery-extension-hook"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",

@@ -21,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
-	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/diceyml"

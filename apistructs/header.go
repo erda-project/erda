@@ -14,16 +14,6 @@
 
 package apistructs
 
-var (
-	EventActionCreate = "create"
-	EventActionUpdate = "update"
-	EventActionDelete = "delete"
-)
-
-var (
-	EventExtensionPutON = "extension_put_on"
-)
-
 // ErrorResponse 统一的 response 的 err 部分
 type ErrorResponse struct {
 	Code string      `json:"code"`

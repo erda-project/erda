@@ -27,7 +27,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 )

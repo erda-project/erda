@@ -25,6 +25,16 @@ import (
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
+var (
+	EventActionCreate = "create"
+	EventActionUpdate = "update"
+	EventActionDelete = "delete"
+)
+
+var (
+	EventExtensionPutON = "extension_put_on"
+)
+
 const DicehubExtensionsMenu = "dicehub.extensions.menu"
 
 type SpecType string

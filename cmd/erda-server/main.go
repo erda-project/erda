@@ -35,7 +35,6 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-infra/providers/redis"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub"
-	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/extension"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/image"
 	_ "github.com/erda-project/erda/internal/apps/dop/dicehub/release"
 	_ "github.com/erda-project/erda/internal/core/file"
@@ -48,7 +47,6 @@ import (
 	_ "github.com/erda-project/erda/internal/core/messenger/notifygroup"
 	_ "github.com/erda-project/erda/internal/core/project"
 	_ "github.com/erda-project/erda/internal/core/user"
-	_ "github.com/erda-project/erda/internal/pkg/extension"
 
 	// infra
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -205,6 +203,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/zookeeper"
 	_ "github.com/erda-project/erda/internal/apps/msp/tenant"
 	_ "github.com/erda-project/erda/internal/apps/msp/tenant/project"
+	_ "github.com/erda-project/erda/internal/pkg/extension"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/cleaner"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/loader"

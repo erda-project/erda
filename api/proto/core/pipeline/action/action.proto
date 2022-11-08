@@ -5,17 +5,17 @@ package erda.core.pipeline.action;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
-import "core/dicehub/extension/extension.proto";
+import "core/extension/extension.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/action/pb";
 
 service ActionService {
-    rpc List (PipelineActionListRequest) returns (core.dicehub.extension.QueryExtensionsResponse) {
+    rpc List (PipelineActionListRequest) returns (core.extension.QueryExtensionsResponse) {
         option (google.api.http) = {
             get: "/api/pipeline-actions",
         };
     }
-    rpc Save (PipelineActionSaveRequest) returns (core.dicehub.extension.ExtensionVersionCreateResponse) {
+    rpc Save (PipelineActionSaveRequest) returns (core.extension.ExtensionVersionCreateResponse) {
         option (google.api.http) = {
             post: "/api/pipeline-actions/actions/save",
         };

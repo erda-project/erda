@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	extensionpb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	extensionpb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/extension"
@@ -76,9 +76,6 @@ func (s *provider) Init(ctx servicehub.Context) error {
 
 func (s *provider) Run(ctx context.Context) error {
 	s.edgeRegister.OnCenter(s.continuousRefreshAction)
-	s.LeaderWorker.OnLeader(func(ctx context.Context) {
-		s.ExtensionSvc.InitSources()
-	})
 	return nil
 }
 

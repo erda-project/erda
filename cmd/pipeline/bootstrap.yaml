@@ -64,10 +64,12 @@ edge-reporter:
   target:
     url: "${OPENAPI_PUBLIC_URL}"
     auth_token: "${OPENAPI_TOKEN}"
-extension:
+erda.core.extension:
   extension_sources: "${EXTENSION_SOURCES}"
   extension_sources_cron: "${EXTENSION_SOURCES_CRON:0 */5 * * * ?}"
   reload_extension_type: "${RELOAD_EXTENSION_TYPE:action}"
+etcd-election@initExtension:
+  root_path: erda/component-leader/pipeline/action/init_extension
 actionmgr: {}
 actionagent: {}
 permission: {}
