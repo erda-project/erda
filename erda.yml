@@ -38,6 +38,7 @@ envs:
   CLUSTER_MANAGER_ADDR: cluster-manager:9094
   CLUSTER_DIALER_ADDR: cluster-manager:80
   TRACE_HOOK_ENABLE: true
+  GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
 services:
   erda-server:
     cmd: /erda/cmd/erda-server/bin
