@@ -83,3 +83,7 @@ api/proto-go
 
 # go test
 /coverage*
+
+# extensions
+/conf/extensions-init/*
+

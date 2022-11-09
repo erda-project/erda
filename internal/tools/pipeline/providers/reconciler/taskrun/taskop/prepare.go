@@ -191,7 +191,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	extSearchReq := make([]string, 0)
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
 	extSearchReq = append(extSearchReq, pre.ActionMgr.MakeActionTypeVersion(&task.Extra.Action))
-	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ActionMgr.SearchActions(extSearchReq, pre.ActionMgr.MakeActionLocationsBySource(p.PipelineSource),
+	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ActionMgr.SearchActions(extSearchReq,
 		actionmgr.SearchOpWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
 		return true, err

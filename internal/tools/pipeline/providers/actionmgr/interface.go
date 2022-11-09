@@ -23,7 +23,7 @@ import (
 
 type Interface interface {
 	pb.ActionServiceServer
-	SearchActions(items []string, locations []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error)
+	SearchActions(items []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error)
 	MakeActionTypeVersion(action *pipelineyml.Action) string
 	MakeActionLocationsBySource(source apistructs.PipelineSource) []string
 }

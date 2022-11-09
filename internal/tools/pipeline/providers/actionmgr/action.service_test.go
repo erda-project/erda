@@ -15,65 +15,79 @@
 package actionmgr
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	extensionpb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 )
 
-func Test_actionsOrderByLocationIndex(t *testing.T) {
-	type args struct {
-		locations []string
-		data      []*pb.Action
+func Test_transfer2ExtensionReq(t *testing.T) {
+	type arg struct {
+		specYml string
 	}
-	tests := []struct {
-		name string
-		args args
-		want []*pb.Action
+	testCases := []struct {
+		name    string
+		arg     arg
+		wantErr bool
+		want    *extensionpb.ExtensionVersionCreateRequest
 	}{
 		{
-			name: "test order",
-			args: args{
-				locations: []string{
-					"fdp/",
-					"default/",
-				},
-				data: []*pb.Action{
-					{
-						Location: "default/",
-						Name:     "a",
-					},
-					{
-						Location: "default/",
-						Name:     "b",
-					},
-					{
-						Location: "fdp/",
-						Name:     "a",
-					},
-				},
+			name: "valid spec.yml",
+			arg: arg{
+				specYml: `
+name: custom-script
+version: "1.0"
+type: action
+displayName: custom-script
+category: custom_task
+desc: custom-script
+public: true
+labels:
+  autotest: true
+  configsheet: true
+  project_level_app: true
+  eci_disable: true
+
+supportedVersions: # Deprecated. Please use supportedErdaVersions instead.
+  - ">= 3.5"
+supportedErdaVersions:
+  - ">= 1.0"
+
+params:
+  - name: command
+    desc: ${{ i18n.params.command.desc }}
+locale:
+  zh-CN:
+    desc: 运行自定义命令
+    displayName: 自定义任务
+    params.command.desc: 运行的命令
+  en-US:
+    desc: Run custom commands
+    displayName: Custom task
+    params.command.desc: Command
+`,
 			},
-			want: []*pb.Action{
-				{
-					Location: "fdp/",
-					Name:     "a",
-				},
-				{
-					Location: "default/",
-					Name:     "a",
-				},
-				{
-					Location: "default/",
-					Name:     "b",
-				},
+			wantErr: false,
+			want: &extensionpb.ExtensionVersionCreateRequest{
+				Name:    "custom-script",
+				Version: "1.0",
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := actionsOrderByLocationIndex(tt.args.locations, tt.args.data); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("actionsOrderByLocationIndex() = %v, want %v", got, tt.want)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			extReq, err := transfer2ExtensionReq(&pb.PipelineActionSaveRequest{
+				Spec:   tc.arg.specYml,
+				Dice:   " ",
+				Readme: " ",
+			})
+			if (err != nil) != tc.wantErr {
+				t.Errorf("tc: %s want err : %v, but got: %v", tc.name, tc.wantErr, err != nil)
 			}
+			assert.Equal(t, tc.want.Name, extReq.Name)
+			assert.Equal(t, tc.want.Version, extReq.Version)
 		})
 	}
 }

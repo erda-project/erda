@@ -17,7 +17,6 @@ package apistructs
 import (
 	"time"
 
-	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskinspect"
 	"github.com/erda-project/erda/pkg/metadata"
@@ -104,11 +103,6 @@ type ActionItem struct {
 	IsDefault int       `json:"isDefault"`
 	Desc      string    `json:"desc"`
 	CreatedAt time.Time `json:"createdAt"`
-}
-
-type PipelineActionSaveResponse struct {
-	Header
-	Action *pb.Action
 }
 
 type PipelineActionDeleteResponse struct {

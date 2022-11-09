@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
@@ -32,11 +32,6 @@ import (
 )
 
 const localeSpecEntry = "locale"
-
-// ExtensionConfig .
-type ExtensionConfigDB struct {
-	*gorm.DB
-}
 
 func (ext *ExtensionVersion) ToApiData(typ string, yamlFormat bool) (*pb.ExtensionVersion, error) {
 	if yamlFormat {
@@ -187,7 +182,7 @@ func dfs(obj interface{}, locale map[string]interface{}) interface{} {
 	}
 }
 
-func (client *ExtensionConfigDB) CreateExtension(extension *Extension) error {
+func (client *Client) CreateExtension(extension *Extension) error {
 	var cnt int64
 	client.Model(&Extension{}).Where("name = ?", extension.Name).Count(&cnt)
 	if cnt == 0 {
@@ -198,7 +193,7 @@ func (client *ExtensionConfigDB) CreateExtension(extension *Extension) error {
 	}
 }
 
-func (client *ExtensionConfigDB) QueryExtensions(all bool, typ string, labels string) ([]Extension, error) {
+func (client *Client) QueryExtensions(all bool, typ string, labels string) ([]Extension, error) {
 	var result []Extension
 	query := client.Model(&Extension{})
 
@@ -226,17 +221,17 @@ func (client *ExtensionConfigDB) QueryExtensions(all bool, typ string, labels st
 	return result, err
 }
 
-func (client *ExtensionConfigDB) GetExtension(name string) (*Extension, error) {
+func (client *Client) GetExtension(name string) (*Extension, error) {
 	var result Extension
 	err := client.Model(&Extension{}).Where("name = ?", name).Find(&result).Error
 	return &result, err
 }
 
-func (client *ExtensionConfigDB) DeleteExtension(name string) error {
+func (client *Client) DeleteExtension(name string) error {
 	return client.Where("name = ?", name).Delete(&Extension{}).Error
 }
 
-func (client *ExtensionConfigDB) GetExtensionVersion(name string, version string) (*ExtensionVersion, error) {
+func (client *Client) GetExtensionVersion(name string, version string) (*ExtensionVersion, error) {
 	var result ExtensionVersion
 	err := client.Model(&ExtensionVersion{}).
 		Where("name = ? ", name).
@@ -245,7 +240,7 @@ func (client *ExtensionConfigDB) GetExtensionVersion(name string, version string
 	return &result, err
 }
 
-func (client *ExtensionConfigDB) GetExtensionDefaultVersion(name string) (*ExtensionVersion, error) {
+func (client *Client) GetExtensionDefaultVersion(name string) (*ExtensionVersion, error) {
 	var result ExtensionVersion
 	err := client.Model(&ExtensionVersion{}).
 		Where("name = ? ", name).
@@ -264,22 +259,22 @@ func (client *ExtensionConfigDB) GetExtensionDefaultVersion(name string) (*Exten
 	return &result, err
 }
 
-func (client *ExtensionConfigDB) SetUnDefaultVersion(name string) error {
+func (client *Client) SetUnDefaultVersion(name string) error {
 	return client.Model(&ExtensionVersion{}).
 		Where("is_default = ?", true).
 		Where("name = ?", name).
 		Update("is_default", false).Error
 }
 
-func (client *ExtensionConfigDB) CreateExtensionVersion(version *ExtensionVersion) error {
+func (client *Client) CreateExtensionVersion(version *ExtensionVersion) error {
 	return client.Create(version).Error
 }
 
-func (client *ExtensionConfigDB) DeleteExtensionVersion(name, version string) error {
+func (client *Client) DeleteExtensionVersion(name, version string) error {
 	return client.Where("name = ? and version =?", name, version).Delete(&ExtensionVersion{}).Error
 }
 
-func (client *ExtensionConfigDB) QueryExtensionVersions(name string, all bool, orderByVersionDesc bool) ([]ExtensionVersion, error) {
+func (client *Client) QueryExtensionVersions(name string, all bool, orderByVersionDesc bool) ([]ExtensionVersion, error) {
 	var result []ExtensionVersion
 	query := client.Model(&ExtensionVersion{}).
 		Where("name = ?", name)
@@ -294,7 +289,7 @@ func (client *ExtensionConfigDB) QueryExtensionVersions(name string, all bool, o
 	return result, err
 }
 
-func (client *ExtensionConfigDB) GetExtensionVersionCount(name string) (int64, error) {
+func (client *Client) GetExtensionVersionCount(name string) (int64, error) {
 	var count int64
 	err := client.Model(&ExtensionVersion{}).
 		Where("name = ? ", name).
@@ -302,7 +297,7 @@ func (client *ExtensionConfigDB) GetExtensionVersionCount(name string) (int64, e
 	return count, err
 }
 
-func (client *ExtensionConfigDB) QueryAllExtensions() ([]ExtensionVersion, error) {
+func (client *Client) QueryAllExtensions() ([]ExtensionVersion, error) {
 	var result []ExtensionVersion
 	err := client.Model(&ExtensionVersion{}).Find(&result).Error
 	if err != nil {
@@ -311,7 +306,7 @@ func (client *ExtensionConfigDB) QueryAllExtensions() ([]ExtensionVersion, error
 	return result, nil
 }
 
-func (client *ExtensionConfigDB) ListExtensionVersions(names []string, all bool) (map[string][]ExtensionVersion, error) {
+func (client *Client) ListExtensionVersions(names []string, all bool) (map[string][]ExtensionVersion, error) {
 	var result []ExtensionVersion
 	query := client.Model(&ExtensionVersion{}).Order("version desc")
 	if !all {

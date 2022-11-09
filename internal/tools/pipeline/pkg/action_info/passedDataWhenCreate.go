@@ -105,7 +105,7 @@ func (that *PassedDataWhenCreate) PutPassedDataByPipelineYml(pipelineYml *pipeli
 	}
 
 	extItems = strutil.DedupSlice(extItems, true)
-	actionJobDefines, actionJobSpecs, err := that.actionMgr.SearchActions(extItems, that.actionMgr.MakeActionLocationsBySource(p.PipelineSource))
+	actionJobDefines, actionJobSpecs, err := that.actionMgr.SearchActions(extItems)
 	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}

@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apierr
+package apierrors
 
 import (
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
-var (
-	ListOpusTypes    = err("ListOpusTypes", "查询 Opus 类型列表失败")
-	ListOpus         = err("ListOpus", "查询 Opus 失败")
-	ListOpusVersions = err("ListOpusVersions", "查询 Opus 版本详情失败")
-	PutOnArtifacts   = err("PutOnArtifacts", "上架项目制品失败")
-	PutOffArtifacts  = err("PutOffArtifacts", "下架项目制品失败")
-	PutOnExtension   = err("PutOnExtension", "上架 Extension 失败")
-	ExtensionHook    = err("ExtensionHook", "处理 Extension 事件失败")
-)
-
 func err(template, defaultValue string) *errorresp.APIError {
 	return errorresp.New(errorresp.WithTemplateMessage(template, defaultValue))
 }
+
+var (
+	ErrCreateExtension        = err("ErrCreateExtension", "添加扩展失败")
+	ErrQueryExtension         = err("ErrQueryExtension", "查询扩展失败")
+	ErrCreateExtensionVersion = err("ErrCreateExtensionVersion", "添加扩展版本失败")
+	ErrQueryExtensionVersion  = err("ErrQueryExtensionVersion", "查询扩展版本失败")
+	ErrDeleteExtensionVersion = err("ErrDeleteExtensionVersion", "删除扩展版本失败")
+)

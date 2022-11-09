@@ -81,9 +81,11 @@ erda.core.dicehub.image: { }
 erda.core.dicehub.release:
   max_time_reserved: "${RELEASE_MAX_TIME_RESERVED:72}"
   gc_switch: "${RELEASE_GC_SWITCH:true}"
-erda.core.dicehub.extension:
+erda.core.extension:
   extension_sources: "${EXTENSION_SOURCES}"
   extension_sources_cron: "${EXTENSION_SOURCES_CRON:0 */5 * * * ?}"
+  reload_extension_type: "${RELOAD_EXTENSION_TYPE:addon}"
+  enable_service: "${ERDA_CORE_EXTENSION_ENABLE_SERVICE:true}"
 #  extension_menu: ${EXTENSION_MENU:{"":""}}
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
@@ -92,7 +94,7 @@ etcd:
     cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 etcd-election@initExtension:
-  root_path: erda/component-leader/dicehub/init_extension
+  root_path: erda/component-leader/core/extension/init_extension
 
 ## grpc
 grpc-server:

@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	extensionpb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -130,21 +131,21 @@ func Test_provider_searchFromDiceHub(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want map[string]apistructs.ExtensionVersion
+		want map[string]*extensionpb.ExtensionVersion
 	}{
 		{
 			name: "test is edge return",
 			args: args{
 				notFindNameVersion: []string{"custom"},
 			},
-			want: map[string]apistructs.ExtensionVersion{},
+			want: map[string]*extensionpb.ExtensionVersion{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &provider{}
 			s.EdgeRegister = &edgepipeline_register.MockEdgeRegister{}
-			if got := s.searchFromDiceHub(tt.args.notFindNameVersion); !reflect.DeepEqual(got, tt.want) {
+			if got := s.searchExtensionVersions(tt.args.notFindNameVersion); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("searchFromDiceHub() = %v, want %v", got, tt.want)
 			}
 		})

@@ -19,14 +19,21 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 
-	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/apistructs"
+)
+
+var (
+	// baseTime is used to compare extension file mod time
+	baseTime = time.Date(2000, 1, 1, 1, 1, 1, 1, time.Local)
 )
 
 type Repo struct {
@@ -47,9 +54,11 @@ type Version struct {
 	ReadmeContent []byte           // content of readme.md
 
 	SwaggerContent []byte // content of swagger.yml
+
+	UpdateAt *timestamppb.Timestamp
 }
 
-func (s *extensionService) InitExtension(addr string, forceUpdate bool) error {
+func (s *provider) InitExtension(addr string, forceUpdate bool) error {
 	logrus.Infoln("Start init extension")
 
 	// get all extensionVersion in repo
@@ -100,13 +109,16 @@ func (s *extensionService) InitExtension(addr string, forceUpdate bool) error {
 }
 
 // RunExtensionsPush push extensions
-func (s *extensionService) RunExtensionsPush(dir string, extensionVersionMap, extensionTypeMap map[string][]string, forceUpdate bool) (string, string, error) {
+func (s *provider) RunExtensionsPush(dir string, extensionVersionMap, extensionTypeMap map[string][]string, forceUpdate bool) (string, string, error) {
 	version, err := NewVersion(dir)
 	if err != nil {
 		return "", "", err
 	}
 
 	specData := version.Spec
+	if specData.Type != s.Cfg.ReloadExtensionType {
+		return "", "", errors.Errorf("invalid extension type: %s, want: %s", specData.Type, s.Cfg.ReloadExtensionType)
+	}
 
 	// if extension is existed, return
 	versionNow := extensionVersionMap[specData.Name]
@@ -133,6 +145,7 @@ func (s *extensionService) RunExtensionsPush(dir string, extensionVersionMap, ex
 		ForceUpdate: forceUpdate,
 		All:         true,
 		IsDefault:   specData.IsDefault,
+		UpdatedAt:   version.UpdateAt,
 	}
 
 	_, err = s.CreateExtensionVersionByRequest(request)
@@ -158,10 +171,13 @@ func NewVersion(dirname string) (*Version, error) {
 		ReadmeContent:  nil,
 		SwaggerContent: nil,
 	}
+	updateTime := baseTime
 	for _, fileInfo := range fileInfos {
+		fileInfo.ModTime()
 		if fileInfo.IsDir() {
 			continue
 		}
+		updateTime = latestTime(updateTime, fileInfo.ModTime())
 		switch {
 		case strings.EqualFold(fileInfo.Name(), "spec.yml") || strings.EqualFold(fileInfo.Name(), "spec.yaml"):
 			version.SpecContent, err = ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
@@ -187,6 +203,7 @@ func NewVersion(dirname string) (*Version, error) {
 	if version.Spec == nil || len(version.SpecContent) == 0 {
 		return nil, errors.Errorf("spec file not found in %s", dirname)
 	}
+	version.UpdateAt = timestamppb.New(updateTime)
 
 	return &version, nil
 }
@@ -234,4 +251,12 @@ func isThereSpecFile(dirname string) ([]os.FileInfo, bool) {
 		}
 	}
 	return dirs, false
+}
+
+// latestTime compare timeA and timeB return the latest time
+func latestTime(timeA time.Time, timeB time.Time) time.Time {
+	if timeA.After(timeB) {
+		return timeA
+	}
+	return timeB
 }
