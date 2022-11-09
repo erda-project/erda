@@ -19,6 +19,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/alecthomas/assert"
 )
@@ -66,4 +67,11 @@ type: action`
 
 	r := LoadExtensions(dir)
 	assert.Equal(t, tests, r)
+}
+
+func Test_latestTime(t *testing.T) {
+	now := time.Now()
+	timeA, timeB := now, now.Add(10*time.Second)
+	latest := latestTime(timeA, timeB)
+	assert.Equal(t, true, latest.Equal(timeB))
 }

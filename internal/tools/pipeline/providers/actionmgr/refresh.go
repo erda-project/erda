@@ -33,10 +33,7 @@ func (s *provider) continuousRefreshAction(ctx context.Context) {
 }
 
 func (s *provider) constructAllActions() error {
-	allExtensions, err := s.bdl.QueryExtensions(apistructs.ExtensionQueryRequest{
-		All:  true,
-		Type: "action",
-	})
+	allExtensions, err := s.ExtensionSvc.QueryExtensionList(true, apistructs.SpecActionType.String(), "")
 	if err != nil {
 		return fmt.Errorf("failed to query all extension: %v", err)
 	}

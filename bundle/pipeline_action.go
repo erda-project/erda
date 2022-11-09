@@ -15,19 +15,20 @@
 package bundle
 
 import (
+	extensionpb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) SavePipelineAction(req *pb.PipelineActionSaveRequest) (*pb.Action, error) {
+func (b *Bundle) SavePipelineAction(req *pb.PipelineActionSaveRequest) (*extensionpb.ExtensionVersion, error) {
 	host, err := b.urls.Pipeline()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
-	var rsp apistructs.PipelineActionSaveResponse
+	var rsp extensionpb.ExtensionVersionCreateResponse
 	httpResp, err := hc.Post(host).Path("/api/pipeline-actions/actions/save").
 		Header(httputil.InternalHeader, "bundle").
 		JSONBody(req).
@@ -35,11 +36,11 @@ func (b *Bundle) SavePipelineAction(req *pb.PipelineActionSaveRequest) (*pb.Acti
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !httpResp.IsOK() || !rsp.Success {
-		return nil, toAPIError(httpResp.StatusCode(), rsp.Error)
+	if !httpResp.IsOK() {
+		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
 	}
 
-	return rsp.Action, nil
+	return rsp.Data, nil
 }
 
 func (b *Bundle) DeletePipelineAction(req *pb.PipelineActionDeleteRequest) error {

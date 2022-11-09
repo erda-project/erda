@@ -470,7 +470,7 @@ func (s *pipelineService) MakePipelineFromRequestV2(req *pb.PipelineCreateReques
 			}
 		}
 	}
-	_, extensions, err := s.actionMgr.SearchActions(extensionItems, s.actionMgr.MakeActionLocationsBySource(p.PipelineSource))
+	_, extensions, err := s.actionMgr.SearchActions(extensionItems)
 	if err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}

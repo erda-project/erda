@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -320,4 +321,16 @@ func GenPresentationFromReq(opusID, versionID string, common model.Common, req *
 		DownloadURL:     req.GetDownloadURL(),
 		I18n:            req.GetI18N(),
 	}
+}
+
+func ConvertContentToExtension(content *structpb.Value) (*pb.PutOnExtensionsReq, error) {
+	var req pb.PutOnExtensionsReq
+	data, err := content.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(data, &req); err != nil {
+		return nil, err
+	}
+	return &req, nil
 }

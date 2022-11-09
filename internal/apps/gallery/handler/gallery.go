@@ -370,6 +370,22 @@ func (p *GalleryHandler) PutOnExtensions(ctx context.Context, req *pb.PutOnExten
 	return p.updateExtension(ctx, l, userID, opus, version, req)
 }
 
+func (p *GalleryHandler) ExtensionHook(ctx context.Context, req *commonPb.EventCreateRequest) (*commonPb.EventCreateResponse, error) {
+	l := p.L.WithField("func", "ExtensionHook").WithField("event", req.GetEvent())
+	l.Infoln("received event")
+	extensionReq, err := ConvertContentToExtension(req.GetContent())
+	if err != nil {
+		l.WithError(err).Errorln("failed to convert content to extension")
+		return nil, apierr.ExtensionHook.InternalError(err)
+	}
+	_, err = p.PutOnExtensions(ctx, extensionReq)
+	if err != nil {
+		l.WithError(err).Errorln("failed to put on extension")
+		return nil, apierr.ExtensionHook.InternalError(err)
+	}
+	return &commonPb.EventCreateResponse{}, nil
+}
+
 func (p *GalleryHandler) putOnArtifactsPreCheck(ctx context.Context, req *pb.PutOnArtifactsReq) (orgDto *orgpb.Org, userID string, err error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {

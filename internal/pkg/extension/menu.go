@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
@@ -100,7 +100,7 @@ func menuExtWithLocale(extensions []*pb.Extension, locale *i18n.LocaleResource) 
 	return result
 }
 
-func menuExt(extensions []*pb.Extension, confMenu map[string][]string) interface{} {
+func (s *provider) MenuExt(extensions []*pb.Extension, confMenu map[string][]string) interface{} {
 	extMap := extMap(extensions)
 	menuMap := &MenuMap{}
 	for subMenuName, subMenuValues := range confMenu {

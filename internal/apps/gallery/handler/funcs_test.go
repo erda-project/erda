@@ -23,7 +23,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -31,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"github.com/erda-project/erda-proto-go/apps/gallery/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/gallery/handler"
 	"github.com/erda-project/erda/internal/apps/gallery/model"
 	"github.com/erda-project/erda/internal/apps/gallery/types"
@@ -270,4 +273,32 @@ func TestGenOpusUpdates(t *testing.T) {
 // need not do unit test
 func TestGenPresentationFromReq(t *testing.T) {
 	handler.GenPresentationFromReq("", "", model.Common{}, new(pb.PutOnExtensionsReq))
+}
+
+func Test_convertContentToExtension(t *testing.T) {
+	content := &pb.PutOnExtensionsReq{
+		Type:        apistructs.CloudResourceSourceAddon,
+		Name:        "custom-script",
+		Version:     "1.0",
+		DisplayName: "custom-script",
+		Summary:     "custom-script",
+		Catalog:     "custom",
+		Readme: []*pb.Readme{{
+			Lang:     "en-us",
+			LangName: "en",
+			Text:     "custom-script",
+		}},
+		IsDefault: true,
+	}
+	contentBytes, err := json.Marshal(content)
+	assert.NoError(t, err)
+	var dat map[string]interface{}
+	err = json.Unmarshal(contentBytes, &dat)
+	assert.NoError(t, err)
+	contentVal, err := structpb.NewValue(dat)
+	assert.NoError(t, err)
+	extension, err := handler.ConvertContentToExtension(contentVal)
+	assert.NoError(t, err)
+	assert.Equal(t, extension.Name, content.Name)
+	assert.Equal(t, extension.DisplayName, content.DisplayName)
 }

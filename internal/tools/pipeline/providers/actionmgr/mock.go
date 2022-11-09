@@ -17,6 +17,7 @@ package actionmgr
 import (
 	"context"
 
+	extensionpb "github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/action/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -25,16 +26,16 @@ import (
 
 type MockActionMgr struct{}
 
-func (m *MockActionMgr) List(ctx context.Context, request *pb.PipelineActionListRequest) (*pb.PipelineActionListResponse, error) {
+func (m *MockActionMgr) List(ctx context.Context, req *pb.PipelineActionListRequest) (*extensionpb.QueryExtensionsResponse, error) {
 	return nil, nil
 }
-func (m *MockActionMgr) Save(ctx context.Context, request *pb.PipelineActionSaveRequest) (*pb.PipelineActionSaveResponse, error) {
+func (m *MockActionMgr) Save(ctx context.Context, req *pb.PipelineActionSaveRequest) (*extensionpb.ExtensionVersionCreateResponse, error) {
 	return nil, nil
 }
-func (m *MockActionMgr) Delete(ctx context.Context, request *pb.PipelineActionDeleteRequest) (*pb.PipelineActionDeleteResponse, error) {
+func (m *MockActionMgr) Delete(ctx context.Context, req *pb.PipelineActionDeleteRequest) (*pb.PipelineActionDeleteResponse, error) {
 	return nil, nil
 }
-func (m *MockActionMgr) SearchActions(items []string, locations []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+func (m *MockActionMgr) SearchActions(items []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 	return nil, nil, nil
 }
 func (m *MockActionMgr) MakeActionTypeVersion(action *pipelineyml.Action) string {

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package erda.common;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/common/pb";
+
+message EventCreateRequest {
+  string event = 1;
+  string action = 2;
+  string orgID = 3;
+  string projectID = 4;
+  string applicationID = 5;
+  string userID = 6;
+  string env = 7;
+  string timestamp = 8;
+  string sender = 9;
+  google.protobuf.Value content = 10;
+}
+
+message EventCreateResponse {}

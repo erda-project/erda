@@ -14,8 +14,10 @@
 
 package db
 
-import "github.com/erda-project/erda-infra/providers/mysqlxorm"
+import (
+	"github.com/jinzhu/gorm"
+)
 
 type Client struct {
-	mysqlxorm.Interface
+	*gorm.DB
 }

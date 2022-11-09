@@ -158,7 +158,7 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 
 			mockActionMgr := &actionmgr.MockActionMgr{}
 			that.actionMgr = mockActionMgr
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(mockActionMgr), "SearchActions", func(_ *actionmgr.MockActionMgr, items []string, location []string, ops ...actionmgr.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(mockActionMgr), "SearchActions", func(_ *actionmgr.MockActionMgr, items []string, ops ...actionmgr.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 				actionJobMap := make(map[string]*diceyml.Job)
 				actionSpecMap := make(map[string]*apistructs.ActionSpec)
 				for _, item := range items {
