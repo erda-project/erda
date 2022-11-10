@@ -187,7 +187,7 @@ func Test_generateTaskCMDs(t *testing.T) {
 	cmd, args, err := generateTaskCMDs(&pipelineyml.Action{}, spec.PipelineTaskContext{}, 1, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, "agent", cmd)
-	assert.Equal(t, "eyJwdWxsQm9vdHN0cmFwSW5mbyI6dHJ1ZSwiY29udGV4dCI6e30sInBpcGVsaW5lSUQiOjEsInBpcGVsaW5lVGFza0lEIjoxLCJlbmNyeXB0U2VjcmV0S2V5cyI6bnVsbH0=", args[0])
+	assert.Equal(t, "eyJwdWxsQm9vdHN0cmFwSW5mbyI6dHJ1ZSwiY29udGV4dCI6e30sInBpcGVsaW5lSUQiOjEsInBpcGVsaW5lVGFza0lEIjoxLCJlbmNyeXB0U2VjcmV0S2V5cyI6bnVsbCwiZGVidWdPbkZhaWx1cmUiOmZhbHNlLCJkZWJ1Z1RpbWVvdXQiOm51bGx9", args[0])
 }
 
 func Test_getActionAgentTypeVersion(t *testing.T) {
