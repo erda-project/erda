@@ -9,7 +9,13 @@ CREATE TABLE IF NOT EXISTS <database>.<table_name> ON CLUSTER '{cluster}'
     `string_field_keys`   Array(LowCardinality(String)),
     `string_field_values` Array(String),
     `tag_keys`            Array(LowCardinality(String)),
-    `tag_values`          Array(LowCardinality(String))
+    `tag_values`          Array(LowCardinality(String)),
+
+    INDEX idx_metric_source_service_id(tag_values[indexOf(tag_keys, 'source_service_id')]) TYPE bloom_filter GRANULARITY 1,
+    INDEX idx_metric_target_service_id(tag_values[indexOf(tag_keys, 'target_service_id')]) TYPE bloom_filter GRANULARITY 1,
+    INDEX idx_metric_cluster_name(tag_values[indexOf(tag_keys, 'cluster_name')]) TYPE bloom_filter GRANULARITY 1,
+    INDEX idx_container_id(tag_values[indexOf(tag_keys, 'container_id')]) TYPE bloom_filter GRANULARITY 1,
+    INDEX idx_pod_name(tag_values[indexOf(tag_keys, 'pod_name')]) TYPE bloom_filter GRANULARITY 1
 )
 ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/{database}/<table_name>', '{replica}')
 PARTITION BY toYYYYMMDD(timestamp)
