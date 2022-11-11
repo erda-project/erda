@@ -381,6 +381,7 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 		elasticsearchoperator      addon.AddonOperator
 		redisoperator              addon.AddonOperator
 		mysqloperator              addon.AddonOperator
+		canaloperator              addon.AddonOperator
 		daemonsetoperator          addon.AddonOperator
 		sourcecovoperator          addon.AddonOperator
 		instanceinfoSyncCancelFunc context.CancelFunc
@@ -446,6 +447,7 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 				elasticsearchoperator:      tt.fields.elasticsearchoperator,
 				redisoperator:              tt.fields.redisoperator,
 				mysqloperator:              tt.fields.mysqloperator,
+				canaloperator:              tt.fields.canaloperator,
 				daemonsetoperator:          tt.fields.daemonsetoperator,
 				sourcecovoperator:          tt.fields.sourcecovoperator,
 				instanceinfoSyncCancelFunc: tt.fields.instanceinfoSyncCancelFunc,

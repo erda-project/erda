@@ -507,7 +507,11 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		buildErr = a.BuildConsulServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 	case apistructs.AddonCanal:
 		addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
-		buildErr = a.BuildCanalServiceItem(params, addonIns, addonSpec, addonDice)
+		useOperator := capacity.CanalOperator && params.Options["version"] != "1.1.0"
+		if useOperator && addonDeployGroup.ProjectNamespace == "" {
+			addonDeployGroup.ProjectNamespace = fmt.Sprintf("project-%s-%s", addonIns.ProjectID, strings.ToLower(addonIns.Workspace))
+		}
+		buildErr = a.BuildCanalServiceItem(useOperator, params, addonIns, addonSpec, addonDice)
 	case apistructs.AddonRedis:
 		if capacity.RedisOperator && params.Plan == apistructs.AddonProfessional {
 			_, addonOperatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{

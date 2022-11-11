@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -65,19 +66,19 @@ func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, secret addon.SecretUtil, pvc
 }
 
 func (my *MysqlOperator) IsSupported() bool {
-	resp, err := my.client.Get(my.k8s.GetK8SAddr()).
-		Path("/apis/database.erda.cloud").
-		Do().
-		DiscardBody()
-	if err != nil {
-		logrus.Errorf("failed to query database.erda.cloud, host: %v, err: %v",
-			my.k8s.GetK8SAddr(), err)
-		return false
+	res, err := my.client.Get(my.k8s.GetK8SAddr()).
+		Path("/apis/database.erda.cloud/v1").Do().RAW()
+	if err == nil {
+		defer res.Body.Close()
+		var b []byte
+		b, err = io.ReadAll(res.Body)
+		if err == nil {
+			return bytes.Contains(b, []byte("mysqls"))
+		}
 	}
-	if !resp.IsOK() {
-		return false
-	}
-	return true
+	logrus.Errorf("failed to query /apis/database.erda.cloud/v1, host: %s, err: %v",
+		my.k8s.GetK8SAddr(), err)
+	return false
 }
 
 func (my *MysqlOperator) Validate(sg *apistructs.ServiceGroup) error {
