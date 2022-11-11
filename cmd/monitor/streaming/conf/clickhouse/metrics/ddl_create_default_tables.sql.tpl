@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS <database>.metrics ON CLUSTER '{cluster}'
     `tag_keys`            Array(LowCardinality(String)),
     `tag_values`          Array(LowCardinality(String)),
 
+    INDEX idx_metric_service_id(tag_values[indexOf(tag_keys, 'service_id')]) TYPE bloom_filter GRANULARITY 1,
     INDEX idx_metric_source_service_id(tag_values[indexOf(tag_keys, 'source_service_id')]) TYPE bloom_filter GRANULARITY 1,
     INDEX idx_metric_target_service_id(tag_values[indexOf(tag_keys, 'target_service_id')]) TYPE bloom_filter GRANULARITY 1,
     INDEX idx_metric_cluster_name(tag_values[indexOf(tag_keys, 'cluster_name')]) TYPE bloom_filter GRANULARITY 1,
