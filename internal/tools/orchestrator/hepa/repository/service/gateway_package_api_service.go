@@ -171,7 +171,7 @@ func (impl *GatewayPackageApiServiceImpl) DeleteByPackageDiceApi(packageId, dice
 	if packageId == "" || diceApiId == "" {
 		return errors.New(ERR_INVALID_ARG)
 	}
-	_, err := orm.Delete(impl.executor, &orm.GatewayPackageApi{}, "package_id = ? and dice_api_id",
+	_, err := orm.Delete(impl.executor, &orm.GatewayPackageApi{}, "package_id = ? and dice_api_id = ?",
 		packageId, diceApiId)
 	if err != nil {
 		return errors.Wrap(err, ERR_SQL_FAIL)
