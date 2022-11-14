@@ -1392,7 +1392,7 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting,
 }
 
 // buildCanalServiceItem 构造canal的service信息
-func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
+func (a *Addon) BuildCanalServiceItem(useOperator bool, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
 	if params.Options != nil && params.Options["mysql"] != "" {
 		idorname := params.Options["mysql"]
@@ -1479,41 +1479,89 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 
 	addonDeployPlan := addonSpec.Plan[params.Plan]
 	serviceMap := diceyml.Services{}
-	for i := 1; i <= addonDeployPlan.Nodes; i++ {
-		// 从dice.yml中取出对应addon信息
+	if useOperator {
+		addonDice.Meta = map[string]string{
+			"USE_OPERATOR": apistructs.AddonCanal,
+		}
+
 		serviceItem := *addonDice.Services[addonSpec.Name]
-		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
-		// label
+
+		serviceItem.Deployments.Replicas = addonDeployPlan.Nodes
+		serviceItem.Resources = diceyml.Resources{
+			CPU:    addonDeployPlan.CPU,
+			MaxCPU: addonDeployPlan.MaxCPU,
+			Mem:    addonDeployPlan.Mem,
+			MaxMem: addonDeployPlan.MaxMem,
+		}
+
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
 		SetlabelsFromOptions(params.Options, serviceItem.Labels)
-		// volume信息
-		//serviceItem.Binds = diceyml.Binds{"canal-data:/usr/share/canal/logs:rw"}
 
-		//  /usr/share/canal/logs volume
-		vol01 := SetAddonVolumes(params.Options, "/usr/share/canal/logs", false)
-		serviceItem.Volumes = diceyml.Volumes{vol01}
-		// envs
-		heapSize := fmt.Sprintf("%.f", float64(addonDeployPlan.Mem)*0.7)
-		serviceItem.Envs = map[string]string{
-			"ADDON_ID":                      addonIns.ID,
-			"ADDON_NODE_ID":                 a.getRandomId(),
-			"JAVA_OPTS":                     strings.Join([]string{"-Xms", heapSize, "m -Xmx", heapSize, "m"}, ""),
-			"canal.instance.mysql.slaveId":  "123" + strconv.Itoa(i),
-			"canal.destinations":            "example",
-			"canal.instance.master.address": params.Options["canal.instance.master.address"],
-			"canal.instance.dbUsername":     params.Options["canal.instance.dbUsername"],
-			"canal.instance.dbPassword":     params.Options["canal.instance.dbPassword"],
-			"canal.auto.scan":               "false",
-			"instance.connectionCharset":    "UTF-8",
+		server := params.Options["server"]
+		if server == "" && strings.ToLower(params.Workspace) != "prod" { //共享
+			server = "canal-" + params.ProjectID + "-" + strings.ToLower(params.Workspace)
+		}
+		destination := params.Options["destination"]
+		if destination == "" {
+			destination = params.Options["applicationName"]
 		}
 
-		// 设置service
-		serviceMap[strings.Join([]string{addonSpec.Name, strconv.Itoa(i)}, "-")] = &serviceItem
+		serviceItem.Envs = map[string]string{
+			"ADDON_ID":      addonIns.ID,
+			"ADDON_NODE_ID": a.getRandomId(),
+
+			"CANAL_VERSION":     params.Options["version"],
+			"CANAL_SERVER":      server,
+			"CANAL_DESTINATION": destination,
+		}
+		for k, v := range params.Options {
+			if strings.HasPrefix(k, "canal.") {
+				serviceItem.Envs[k] = v
+			}
+		}
+
+		serviceMap[addonSpec.Name] = &serviceItem
+	} else {
+		for i := 1; i <= addonDeployPlan.Nodes; i++ {
+			// 从dice.yml中取出对应addon信息
+			serviceItem := *addonDice.Services[addonSpec.Name]
+			// Resource资源
+			serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
+			// label
+			if len(serviceItem.Labels) == 0 {
+				serviceItem.Labels = map[string]string{}
+			}
+			serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
+			SetlabelsFromOptions(params.Options, serviceItem.Labels)
+			// volume信息
+			//serviceItem.Binds = diceyml.Binds{"canal-data:/usr/share/canal/logs:rw"}
+
+			//  /usr/share/canal/logs volume
+			vol01 := SetAddonVolumes(params.Options, "/usr/share/canal/logs", false)
+			serviceItem.Volumes = diceyml.Volumes{vol01}
+			// envs
+			heapSize := fmt.Sprintf("%.f", float64(addonDeployPlan.Mem)*0.7)
+			serviceItem.Envs = map[string]string{
+				"ADDON_ID":                      addonIns.ID,
+				"ADDON_NODE_ID":                 a.getRandomId(),
+				"JAVA_OPTS":                     strings.Join([]string{"-Xms", heapSize, "m -Xmx", heapSize, "m"}, ""),
+				"canal.instance.mysql.slaveId":  "123" + strconv.Itoa(i),
+				"canal.destinations":            "example",
+				"canal.instance.master.address": params.Options["canal.instance.master.address"],
+				"canal.instance.dbUsername":     params.Options["canal.instance.dbUsername"],
+				"canal.instance.dbPassword":     params.Options["canal.instance.dbPassword"],
+				"canal.auto.scan":               "false",
+				"instance.connectionCharset":    "UTF-8",
+			}
+
+			// 设置service
+			serviceMap[strings.Join([]string{addonSpec.Name, strconv.Itoa(i)}, "-")] = &serviceItem
+		}
 	}
+
 	addonDice.Services = serviceMap
 
 	return nil
