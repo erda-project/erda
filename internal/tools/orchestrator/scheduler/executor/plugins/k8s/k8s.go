@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/canal"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/daemonset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/elasticsearch"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/mysql"
@@ -224,6 +225,7 @@ type Kubernetes struct {
 	elasticsearchoperator addon.AddonOperator
 	redisoperator         addon.AddonOperator
 	mysqloperator         addon.AddonOperator
+	canaloperator         addon.AddonOperator
 	daemonsetoperator     addon.AddonOperator
 	sourcecovoperator     addon.AddonOperator
 
@@ -453,6 +455,8 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	k.redisoperator = redisoperator
 	mysqloperator := mysql.New(k, ns, k8ssecret, pvc, client)
 	k.mysqloperator = mysqloperator
+	canaloperator := canal.New(k, ns, k8ssecret, pvc, client)
+	k.canaloperator = canaloperator
 	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
 	k.daemonsetoperator = daemonsetoperator
 	k.sourcecovoperator = sourcecov.New(k, client, k, ns)
@@ -711,6 +715,7 @@ func (k *Kubernetes) CapacityInfo() apistructs.CapacityInfoData {
 	r.ElasticsearchOperator = k.elasticsearchoperator.IsSupported()
 	r.RedisOperator = k.redisoperator.IsSupported()
 	r.MysqlOperator = k.mysqloperator.IsSupported()
+	r.CanalOperator = k.canaloperator.IsSupported()
 	r.DaemonsetOperator = k.daemonsetoperator.IsSupported()
 	r.SourcecovOperator = k.sourcecovoperator.IsSupported()
 	return r
@@ -1309,6 +1314,8 @@ func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error)
 		return k.redisoperator, nil
 	case "mysql":
 		return k.mysqloperator, nil
+	case "canal":
+		return k.canaloperator, nil
 	case "daemonset":
 		return k.daemonsetoperator, nil
 	case apistructs.AddonSourcecov:

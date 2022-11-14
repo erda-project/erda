@@ -587,6 +587,12 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 		return nil, err
 	}
 	logrus.Infof("after buildRealCreate, param:  %+v", *params)
+
+	// canal不需要走策略，canal就是要一个给一个
+	if params.AddonName == apistructs.AddonCanal {
+		return nil, nil
+	}
+
 	// 根据tag查询addon实例信息
 	shareRoutingIns, err := a.getTagInstance(addonSpec, params)
 	if err != nil {
@@ -617,10 +623,6 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 		return shareRoutingIns, nil
 	}
 	// addon策略筛选
-	// canal不需要走策略，canal就是要一个给一个
-	if params.AddonName == apistructs.AddonCanal {
-		return nil, nil
-	}
 	// custom addon不需要走策略
 	if addonSpec.Category == apistructs.AddonCustomCategory {
 		return nil, nil

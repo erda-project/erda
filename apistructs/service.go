@@ -840,6 +840,7 @@ type CapacityInfoData struct {
 	ElasticsearchOperator bool `json:"elasticsearchOperator"`
 	RedisOperator         bool `json:"redisOperator"`
 	MysqlOperator         bool `json:"mysqlOperator"`
+	CanalOperator         bool `json:"canalOperator"`
 	DaemonsetOperator     bool `json:"daemonsetOperator"`
 	SourcecovOperator     bool `json:"sourcecovOperator"`
 }
