@@ -198,7 +198,8 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 		schema = "http"
 		port = mainClusterHTTPPort
 	}
-	config["HEPA_GATEWAY_HOST"] = schema + "://hepa." + mainClusterDomain
+
+	config["HEPA_GATEWAY_HOST"] = schema + "://hepa." + strings.Split(mainClusterDomain, ",")[0]
 	config["HEPA_GATEWAY_PORT"] = port
 
 	config["VIP_KONG_HOST"] = "http://" + vip
