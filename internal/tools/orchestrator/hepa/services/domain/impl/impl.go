@@ -1107,6 +1107,7 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 	runtimeService, err = impl.runtimeDb.GetByAny(&orm.GatewayRuntimeService{
 		RuntimeId:   runtimeId,
 		ServiceName: serviceName,
+		ReleaseId:   reqDto.ReleaseId,
 		IsEndpoint:  1,
 	})
 	if err != nil {
