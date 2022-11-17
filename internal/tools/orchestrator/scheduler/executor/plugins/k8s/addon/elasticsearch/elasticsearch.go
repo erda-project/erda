@@ -20,11 +20,15 @@ import (
 	"fmt"
 	"strings"
 
+	commonv1 "github.com/elastic/cloud-on-k8s/v2/pkg/apis/common/v1"
+	elasticsearchv1 "github.com/elastic/cloud-on-k8s/v2/pkg/apis/elasticsearch/v1"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
@@ -34,6 +38,11 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+var (
+	esUsername      = "elastic"
+	esExporterImage = "erda-registry.cn-hangzhou.cr.aliyuncs.com/retag/elasticsearch-exporter:v1.5.0"
 )
 
 type ElasticsearchOperator struct {
@@ -102,7 +111,7 @@ func (eo *ElasticsearchOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-// Convert Convert sg to cr, which is kubernetes yaml
+// Convert sg to cr, which is kubernetes yaml
 func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	svc0 := sg.Services[0]
 	scname := "dice-local-volume"
@@ -117,8 +126,8 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity.NodeAffinity
 
-	nodeSets := eo.NodeSetsConvert(svc0, scname, affinity)
-	es := Elasticsearch{
+	nodeSets := eo.NodeSetsConvert(sg, scname, affinity)
+	es := elasticsearchv1.Elasticsearch{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
 			APIVersion: "elasticsearch.k8s.elastic.co/v1",
@@ -127,17 +136,17 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{
 			Name:      sg.ID,
 			Namespace: genK8SNamespace(sg.Type, sg.ID),
 		},
-		Spec: ElasticsearchSpec{
-			Http: HttpSettings{
-				Tls: TlsSettings{
-					SelfSignedCertificate: SelfSignedCertificateSettings{
+		Spec: elasticsearchv1.ElasticsearchSpec{
+			HTTP: commonv1.HTTPConfig{
+				TLS: commonv1.TLSOptions{
+					SelfSignedCertificate: &commonv1.SelfSignedCertificate{
 						Disabled: true,
 					},
 				},
 			},
 			Version: sg.Labels["VERSION"],
 			Image:   svc0.Image,
-			NodeSets: []NodeSetsSettings{
+			NodeSets: []elasticsearchv1.NodeSet{
 				nodeSets,
 			},
 		},
@@ -192,6 +201,10 @@ func (eo *ElasticsearchOperator) Create(k8syml interface{}) error {
 	if !resp.IsOK() {
 		return fmt.Errorf("failed to create elasticsearch, %s/%s, statuscode: %v, body: %v",
 			elasticsearch.Namespace, elasticsearch.Name, resp.StatusCode(), b.String())
+	}
+
+	if err := eo.createMetricSvcIfNotExist(elasticsearch); err != nil {
+		return err
 	}
 	return nil
 }
@@ -306,10 +319,11 @@ func genK8SNamespace(namespace, name string) string {
 	return strutil.Concat(namespace, "--", name)
 }
 
-func (eo *ElasticsearchOperator) NodeSetsConvert(svc apistructs.Service, scname string, affinity *corev1.NodeAffinity) NodeSetsSettings {
+func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, scname string, affinity *corev1.NodeAffinity) elasticsearchv1.NodeSet {
 	// 默认 volume size
 	capacity := "20Gi"
 	// ES 只有一个 pvc，所以只取第一个 volume 的设置
+	svc := sg.Services[0]
 	if len(svc.Volumes) > 0 {
 		if svc.Volumes[0].SCVolume.Capacity >= diceyml.AddonVolumeSizeMin && svc.Volumes[0].SCVolume.Capacity <= diceyml.AddonVolumeSizeMax {
 			capacity = fmt.Sprintf("%dGi", svc.Volumes[0].SCVolume.Capacity)
@@ -323,16 +337,22 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(svc apistructs.Service, scname 
 			scname = svc.Volumes[0].SCVolume.StorageClassName
 		}
 	}
+	labels := makeLabels(sg)
 
+	esUri := fmt.Sprintf("--es.uri=http://%s:%s@localhost:9200", esUsername, svc.Env["requirepass"])
 	config, _ := convertJsontToMap(svc.Env["config"])
-	nodeSets := NodeSetsSettings{
+	nodeSets := elasticsearchv1.NodeSet{
 		Name:   "addon",
-		Count:  svc.Scale,
+		Count:  int32(svc.Scale),
 		Config: config,
-		PodTemplate: PodTemplateSettings{
-			Spec: PodSpecSettings{
+		PodTemplate: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "es",
+				Labels: labels,
+			},
+			Spec: corev1.PodSpec{
 				Affinity: &corev1.Affinity{NodeAffinity: affinity},
-				Containers: []ContainersSettings{
+				Containers: []corev1.Container{
 					{
 						Name: "elasticsearch",
 						Env:  envs(svc.Env),
@@ -350,23 +370,43 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(svc apistructs.Service, scname 
 									fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
 							},
 						},
+					}, {
+						Name:    "es-exporter",
+						Image:   "quay.io/prometheuscommunity/elasticsearch-exporter:v1.5.0",
+						Command: []string{"/bin/elasticsearch_exporter", esUri},
+						Ports: []corev1.ContainerPort{
+							{
+								Name:          "metrics",
+								ContainerPort: 9114,
+							},
+						},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "ES_USERNAME",
+								Value: "elastic",
+							},
+							{
+								Name:  "ES_PASSWORD",
+								Value: svc.Env["requirepass"],
+							},
+						},
 					},
 				},
 			},
 		},
-		VolumeClaimTemplates: []VolumeClaimSettings{
+		VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "elasticsearch-data",
 				},
-				Spec: VolumeClaimSpecSettings{
-					AccessModes: []string{"ReadWriteOnce"},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							"storage": resource.MustParse(capacity),
 						},
 					},
-					StorageClassName: scname,
+					StorageClassName: &scname,
 				},
 			},
 		},
@@ -433,20 +473,20 @@ func convertMiToMB(mem float64) float64 {
 }
 
 // convertJsontToMap Convert json to map
-func convertJsontToMap(str string) (map[string]string, error) {
-	var tempMap map[string]string
+func convertJsontToMap(str string) (*commonv1.Config, error) {
+	var tempMap commonv1.Config
 	if str == "" {
-		return tempMap, nil
+		return &tempMap, nil
 	}
 
 	if err := json.Unmarshal([]byte(str), &tempMap); err != nil {
-		return tempMap, err
+		return nil, err
 	}
-	return tempMap, nil
+	return &tempMap, nil
 }
 
 // Get get elasticsearchs resource information
-func (eo *ElasticsearchOperator) Get(namespace, name string) (*Elasticsearch, error) {
+func (eo *ElasticsearchOperator) Get(namespace, name string) (*elasticsearchv1.Elasticsearch, error) {
 	var b bytes.Buffer
 
 	resp, err := eo.client.Get(eo.k8s.GetK8SAddr()).
@@ -466,10 +506,69 @@ func (eo *ElasticsearchOperator) Get(namespace, name string) (*Elasticsearch, er
 			namespace, name, resp.StatusCode(), b.String())
 	}
 
-	elasticsearch := &Elasticsearch{}
+	elasticsearch := &elasticsearchv1.Elasticsearch{}
 	if err = json.NewDecoder(&b).Decode(elasticsearch); err != nil {
 		return nil, fmt.Errorf("failed to get elasticsearchs info: %s/%s, err: %v", namespace, name, err)
 	}
 
 	return elasticsearch, nil
+}
+
+func (eo *ElasticsearchOperator) createMetricSvcIfNotExist(sg elasticsearchv1.Elasticsearch) error {
+	svcName := fmt.Sprintf("es-exporter-%s", sg.Name)
+	namespace := sg.Namespace
+	_, err := eo.service.Get(namespace, svcName)
+	if err != nil && err != k8serror.ErrNotFound {
+		return err
+	}
+	metricSvc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      svcName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"common.k8s.elastic.co/type":                "elasticsearch",
+				"elasticsearch.k8s.elastic.co/cluster-name": sg.Name,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "metrics",
+					Port:       9114,
+					Protocol:   corev1.ProtocolTCP,
+					TargetPort: intstr.FromInt(9114),
+				},
+			},
+			Selector: map[string]string{
+				"common.k8s.elastic.co/type":                "elasticsearch",
+				"elasticsearch.k8s.elastic.co/cluster-name": sg.Name,
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+	if err = eo.service.Create(metricSvc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func makeLabels(sg *apistructs.ServiceGroup) map[string]string {
+	svc := sg.Services[0]
+	labels := map[string]string{}
+	for k, v := range svc.Labels {
+		labels[k] = v
+	}
+	for k, v := range svc.DeploymentLabels {
+		labels[k] = v
+	}
+	for k, v := range sg.Labels {
+		labels[k] = v
+	}
+	for k, v := range labels {
+		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
+			delete(labels, k)
+		}
+	}
+	labels["ADDON_ID"] = sg.ID
+	return labels
 }

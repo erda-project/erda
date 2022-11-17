@@ -1837,6 +1837,8 @@ func SetlabelsFromOptions(options, labels map[string]string) {
 					labels[diceyml.AddonImageRegistry] = diceyml.AddonPublicRegistry
 				}
 			}
+		case apistructs.LabelOrgName:
+			labels[apistructs.EnvDiceOrgName] = v
 		}
 	}
 }

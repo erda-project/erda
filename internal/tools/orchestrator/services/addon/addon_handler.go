@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -35,6 +36,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/log"
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -249,6 +251,11 @@ func (a *Addon) addonCreateAux(addonSpec *apistructs.AddonExtension, addonDice *
 
 	if params.Options == nil {
 		params.Options = map[string]string{}
+	}
+	orgInfo, err := a.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.Orchestrator()),
+		&orgpb.GetOrgRequest{IdOrName: params.OrgID})
+	if err == nil {
+		params.Options[apistructs.LabelOrgName] = orgInfo.Data.Name
 	}
 	params.Options["orgId"] = params.OrgID
 	params.Options["projectId"] = params.ProjectID
