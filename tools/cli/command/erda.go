@@ -15,7 +15,6 @@
 package command
 
 import (
-	"io/ioutil"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -89,7 +88,7 @@ func SetProjectConfig(file string, conf *ProjectInfo) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(file, c, 0655)
+	err = os.WriteFile(file, c, 0655)
 	if err != nil {
 		return err
 	}

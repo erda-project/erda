@@ -112,7 +112,7 @@ func ListState(ctx *command.Context, orgID uint64, req apistructs.IssueStateRela
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/issues/actions/get-state-relations").
-		Param("Org-ID", strconv.FormatUint(orgID, 10)).
+		Param("org", strconv.FormatUint(orgID, 10)).
 		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
 		Do().Body(&b)
 
@@ -169,7 +169,7 @@ func CreateIssueComment(ctx *command.Context, orgID uint64, request *pb.CommentI
 	var b bytes.Buffer
 
 	respponse, err := ctx.Post().Path("/api/issues/actions/batch-create-comment-stream").JSONBody(request).
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Do().Body(&b)
 	if err != nil {
 		return fmt.Errorf(
@@ -202,7 +202,7 @@ func UpdateIssue(ctx *command.Context, orgID uint64, request *apistructs.IssueUp
 
 	path := fmt.Sprintf("/api/issues/%d", request.ID)
 	response, err := ctx.Put().Path(path).JSONBody(request).
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Do().Body(&b)
 	if err != nil {
 		return fmt.Errorf(utils.FormatErrMsg(
