@@ -36,6 +36,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier"
           - "erda.oap.collector.processor.modifier@addmeta"
           - "erda.oap.collector.processor.modifier@docker_container_summary"
+          - "erda.oap.collector.processor.modifier@mysql"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
         exporters:
@@ -247,6 +248,73 @@ erda.oap.collector.processor.modifier@docker_container_summary:
       value: docker_container_summary
     - action: drop
       key: tags.name
+
+erda.oap.collector.processor.modifier@mysql:
+  keypass:
+    name: [ "mysql" ]
+  rules:
+    - action: rename
+      key: tags.service
+      value: tags.server
+
+    - action: rename
+      key: fields.mysql_global_status_threads_connected
+      value: fields.threads_connected
+    - action: rename
+      key: fields.mysql_global_status_slow_queries
+      value: fields.slow_queries
+    - action: rename
+      key: fields.mysql_global_status_queries
+      value: fields.queries
+    - action: rename
+      key: fields.mysql_global_status_commands_total_insert
+      value: fields.com_insert
+    - action: rename
+      key: fields.mysql_global_status_commands_total_delete
+      value: fields.com_delete
+    - action: rename
+      key: fields.mysql_global_status_update
+      value: fields.com_update
+    - action: rename
+      key: fields.mysql_global_status_select
+      value: fields.com_select
+    - action: rename
+      key: fields.mysql_global_status_commands_total_commit
+      value: fields.com_commit
+    - action: rename
+      key: fields.mysql_global_status_commands_total_rollback
+      value: fields.com_rollback
+    - action: rename
+      key: fields.mysql_global_status_bytes_received
+      value: fields.bytes_received
+    - action: rename
+      key: fields.mysql_global_status_bytes_sent
+      value: fields.bytes_sent
+    - action: rename
+      key: fields.mysql_global_status_open_tables
+      value: fields.open_tables
+    - action: rename
+      key: fields.mysql_global_status_commands_total_deleted
+      value: fields.innodb_rows_deleted
+    - action: rename
+      key: fields.mysql_global_status_commands_total_inserted
+      value: fields.innodb_rows_inserted
+    - action: rename
+      key: fields.mysql_global_status_commands_total_updated
+      value: fields.innodb_rows_updated
+    - action: rename
+      key: fields.mysql_global_status_commands_total_read
+      value: fields.innodb_rows_read
+    - action: rename
+      key: fields.mysql_global_status_innodb_data_reads
+      value: fields.innodb_data_read
+    - action: rename
+      key: fields.mysql_global_status_innodb_data_written
+      value: fields.innodb_data_written
+    - action: rename
+      key: fields.mysql_global_status_table_locks_waited
+      value: fields.table_locks_waited
+
 
 erda.oap.collector.processor.aggregator@cpu-usage:
   keypass:
