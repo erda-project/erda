@@ -248,7 +248,7 @@ func (client *Client) GetExtensionDefaultVersion(name string) (*ExtensionVersion
 		Limit(1).
 		Find(&result).Error
 	//no default,find latest update & public = true
-	if err == gorm.ErrRecordNotFound {
+	if gorm.IsRecordNotFoundError(err) {
 		err = client.Model(&ExtensionVersion{}).
 			Where("name = ? ", name).
 			Where("public = ? ", true).
