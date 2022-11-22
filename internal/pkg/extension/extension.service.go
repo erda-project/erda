@@ -25,13 +25,13 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/version"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
-	"gorm.io/gorm"
 
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/extension/pb"
@@ -192,7 +192,7 @@ func (s *provider) GetExtensionVersion(ctx context.Context, req *pb.GetExtension
 	result, err := s.GetExtension(req.Name, req.Version, req.YamlFormat)
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if gorm.IsRecordNotFoundError(err) {
 			return nil, apierrors.ErrQueryExtension.NotFound()
 		}
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
@@ -265,7 +265,7 @@ func (s *provider) CreateExtensionVersionByRequest(req *pb.ExtensionVersionCreat
 	var ext *pb.Extension
 	if err == nil {
 		ext = extModel.ToApiData()
-	} else if err == gorm.ErrRecordNotFound {
+	} else if gorm.IsRecordNotFoundError(err) {
 		// no same name,create
 		ext, err = s.Create(&pb.ExtensionCreateRequest{
 			Type:        specData.Type,
@@ -331,7 +331,7 @@ func (s *provider) CreateExtensionVersionByRequest(req *pb.ExtensionVersionCreat
 		return &pb.ExtensionVersionCreateResponse{Data: data}, nil
 	case err == nil:
 		return nil, apierrors.ErrQueryExtension.AlreadyExists()
-	case err == gorm.ErrRecordNotFound:
+	case gorm.IsRecordNotFoundError(err):
 		ver = &db.ExtensionVersion{
 			ExtensionId: ext.Id,
 			Name:        specData.Name,
