@@ -156,6 +156,7 @@ func getOpenAPIOption(opts ...*common.OpenAPIOption) *common.OpenAPIOption {
 					TryCheckLogin:  o.Auth.TryCheckLogin,
 					CheckToken:     o.Auth.CheckToken,
 					CheckBasicAuth: o.Auth.CheckBasicAuth,
+					OverPermission: o.Auth.OverPermission,
 				}
 			} else {
 				if o.Auth.NoCheck {
@@ -172,6 +173,9 @@ func getOpenAPIOption(opts ...*common.OpenAPIOption) *common.OpenAPIOption {
 				}
 				if o.Auth.CheckBasicAuth {
 					opt.Auth.CheckBasicAuth = true
+				}
+				if o.Auth.OverPermission != nil {
+					opt.Auth.OverPermission = o.Auth.OverPermission
 				}
 			}
 		}
