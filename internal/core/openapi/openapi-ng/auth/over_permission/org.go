@@ -39,7 +39,11 @@ func (o *overPermissionOrg) Weight() int64 {
 }
 
 func (o *overPermissionOrg) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
-	checkOverPermission := opts.Get(compent).(*pb.CheckOverPermission)
+	opt := opts.Get(compent)
+	if opt == nil {
+		return false, nil
+	}
+	checkOverPermission := opt.(*pb.CheckOverPermission)
 	if checkOverPermission == nil {
 		return false, nil
 	}

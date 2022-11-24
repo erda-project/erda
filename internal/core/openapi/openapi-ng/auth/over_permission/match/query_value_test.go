@@ -21,49 +21,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockValue struct {
-}
-
-func (m mockValue) get(expr string, r *http.Request) interface{} {
-	return "test"
-}
-
-func TestGet(t *testing.T) {
-	ValueFunc = make(map[string]value)
-
-	registry("mock", mockValue{})
+func TestFindValue(t *testing.T) {
+	request, _ := http.NewRequest("GET", "localhost:9529/api/dashboard/blocks?ttt=123", nil)
+	service := queryValue{}
 
 	tests := []struct {
 		name string
-		expr []string
-		want map[string]interface{}
+		expr string
+		want interface{}
 	}{
 		{
 			name: "normal",
-			expr: []string{
-				"mock:ttt",
-			},
-			want: map[string]interface{}{"ttt": "test"},
-		},
-		{
-			name: "no_type",
-			expr: []string{
-				"ttt",
-			},
-			want: nil,
-		},
-		{
-			name: "no_type",
-			expr: []string{
-				":ttt",
-			},
-			want: nil,
+			expr: "ttt",
+			want: "123",
+		}, {
+			name: "no_expr",
+			want: "",
+		}, {
+			name: "no_data",
+			expr: "aabbccc",
+			want: "",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.want, Get(test.expr, nil))
+			require.Equal(t, test.want, service.get(test.expr, request))
 		})
 	}
 }

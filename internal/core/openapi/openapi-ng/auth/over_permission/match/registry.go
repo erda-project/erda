@@ -43,9 +43,10 @@ func Get(express []string, request *http.Request) map[string]interface{} {
 		return nil
 	}
 	typeDelimPoint := strings.IndexAny(express[0], typeDelim)
-	if typeDelimPoint < 0 {
+	if typeDelimPoint <= 0 || typeDelimPoint == 1 {
 		return nil
 	}
+
 	m := make(map[string]interface{})
 	for _, expr := range express {
 		typp := expr[:typeDelimPoint]
