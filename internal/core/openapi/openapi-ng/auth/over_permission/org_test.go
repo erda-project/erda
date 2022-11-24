@@ -44,10 +44,10 @@ func (m *mockOpts) Set(key string, val interface{}) {
 func TestWeightShouldByConfig(t *testing.T) {
 	service := newOverPermissionOrg(&provider{
 		Cfg: &config{
-			Weight: 1000,
+			Weight: int64(1000),
 		},
 	})
-	require.Equal(t, 1000, service.Weight())
+	require.Equal(t, int64(1000), service.Weight())
 }
 
 func TestMatch(t *testing.T) {
