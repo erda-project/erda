@@ -168,7 +168,7 @@ func (e *Endpoints) pipelineDetail(ctx context.Context, r *http.Request, vars ma
 }
 
 func getPipelineDetailAndCheckPermission(svc pipelinepb.PipelineServiceServer, permission *permission.Permission, req apistructs.CICDPipelineDetailRequest, identityInfo apistructs.IdentityInfo) (*pipelinepb.PipelineDetailDTO, error) {
-	result, err := svc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
+	result, err := svc.PipelineDetail(apis.WithInternalClientContext(context.Background(), discover.DOP()), &pipelinepb.PipelineDetailRequest{
 		PipelineID: req.PipelineID,
 	})
 	if err != nil {
