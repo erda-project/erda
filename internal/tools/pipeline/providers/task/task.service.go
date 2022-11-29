@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/debug"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/permission"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/pipeline"
@@ -86,6 +87,11 @@ func (s *taskService) PipelineTaskGetBootstrapInfo(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, apierrors.ErrGetTaskBootstrapInfo.InternalError(err)
 	}
+	breakpointConfig := debug.MergeBreakpoint(task.Extra.Breakpoint, p.Extra.Breakpoint)
+	debugTimeout, err := debug.ParseDebugTimeout(breakpointConfig.Timeout)
+	if err != nil {
+		return nil, apierrors.ErrGetTaskBootstrapInfo.InvalidParameter("debug timeout")
+	}
 	// bootstrapInfoData
 	bootstrapInfo := actionagent.AgentArg{
 		Shell:             task.Extra.Action.Shell,
@@ -93,6 +99,10 @@ func (s *taskService) PipelineTaskGetBootstrapInfo(ctx context.Context, req *pb.
 		Context:           task.Context,
 		PrivateEnvs:       task.Extra.PrivateEnvs,
 		EncryptSecretKeys: task.Extra.EncryptSecretKeys,
+		DebugTimeout:      debugTimeout,
+	}
+	if breakpointConfig.On != nil {
+		bootstrapInfo.DebugOnFailure = breakpointConfig.On.Failure
 	}
 	b, err := json.Marshal(&bootstrapInfo)
 	if err != nil {

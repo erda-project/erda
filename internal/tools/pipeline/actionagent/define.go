@@ -82,6 +82,10 @@ type AgentArg struct {
 	PipelineTaskID uint64 `json:"pipelineTaskID"`
 
 	EncryptSecretKeys []string `json:"encryptSecretKeys"` // Encrypt envs, it will Replaced by '******' when log output
+
+	// breakpoint config
+	DebugOnFailure bool           `json:"debugOnFailure"`
+	DebugTimeout   *time.Duration `json:"debugTimeout"`
 }
 
 type EasyUse struct {
