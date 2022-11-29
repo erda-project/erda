@@ -66,6 +66,8 @@ func (agent *Agent) pullBootstrapInfo() {
 	agent.Arg.Context = bootstrapArg.Context
 	agent.Arg.PrivateEnvs = bootstrapArg.PrivateEnvs
 	agent.Arg.EncryptSecretKeys = bootstrapArg.EncryptSecretKeys
+	agent.Arg.DebugOnFailure = bootstrapArg.DebugOnFailure
+	agent.Arg.DebugTimeout = bootstrapArg.DebugTimeout
 
 	valueLen, err := strconv.Atoi(os.Getenv(EncryptedValueMinLen))
 	if err != nil || valueLen < 6 {

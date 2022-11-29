@@ -17,8 +17,11 @@ package actionagent
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -77,4 +80,63 @@ func TestAgent_watchFiles(t *testing.T) {
 	}
 	agent.watchFiles()
 	t.Logf("no error here")
+}
+
+func TestCheckForBreakpointOnFailure(t *testing.T) {
+	type arg struct {
+		exitCode int
+		debug    bool
+	}
+	testCases := []struct {
+		name     string
+		arg      arg
+		exitCode int
+	}{
+		{
+			name: "exit code 0",
+			arg: arg{
+				exitCode: 0,
+				debug:    false,
+			},
+			exitCode: 0,
+		},
+		{
+			name: "exit code 1 with debug continue",
+			arg: arg{
+				exitCode: 1,
+				debug:    true,
+			},
+			exitCode: 0,
+		},
+		{
+			name: "exit code 1 with debug failed",
+			arg: arg{
+				exitCode: 1,
+				debug:    true,
+			},
+			exitCode: 2,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			agent := Agent{
+				ExitCode: tc.arg.exitCode,
+				Arg: &AgentArg{
+					DebugOnFailure: tc.arg.debug,
+					DebugTimeout:   &[]time.Duration{2 * time.Second}[0],
+				},
+			}
+
+			tmpFile, err := ioutil.TempFile("", "breakpoint")
+			assert.NoError(t, err)
+			fileName := tmpFile.Name()
+			defer os.Remove(fileName)
+			go func(f *os.File, exitCode int) {
+				time.Sleep(1 * time.Second)
+				f.WriteString(fmt.Sprintf("%d\n", exitCode))
+			}(tmpFile, tc.exitCode)
+			agent.CheckForBreakpointOnFailure(fileName)
+			assert.Equal(t, tc.exitCode, agent.ExitCode)
+		})
+	}
 }

@@ -148,15 +148,22 @@ func (w *Watcher) RegisterTailHandler(fullpath string, handler TailHandler) {
 
 	var allLines []string
 	go func(fullpath string) {
-		for line := range tailIO.Lines {
-			if line.Text == w.EndLineForTail {
-				logrus.Debugln(fullpath + " tail done")
+		for {
+			select {
+			case line, _ := <-tailIO.Lines:
+				if line.Text == w.EndLineForTail {
+					logrus.Debugln(fullpath + " tail done")
+					w.Wait.Done()
+					return
+				}
+				allLines = append(allLines, line.Text)
+				if err := handler(line.Text, allLines); err != nil {
+					logger.Printf("failed to handle a tailed line of %s, err: %v\n", fullpath, err)
+				}
+			case <-w.ctx.Done():
+				logrus.Warnf("watcher receive context done signal, stop tail fullpath: %s", fullpath)
 				w.Wait.Done()
-				break
-			}
-			allLines = append(allLines, line.Text)
-			if err := handler(line.Text, allLines); err != nil {
-				logger.Printf("failed to handle a tailed line of %s, err: %v\n", fullpath, err)
+				return
 			}
 		}
 	}(fullpath)

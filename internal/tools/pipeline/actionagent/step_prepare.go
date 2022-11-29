@@ -24,11 +24,21 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/filehelper"
+)
+
+const (
+	defaultWaitPollingInterval = time.Second
+	breakpointWorkdir          = "/.pipeline/debug"
+)
+
+var (
+	breakpointExitFile = breakpointWorkdir + "/breakpointexit"
 )
 
 const (
@@ -129,6 +139,11 @@ func (agent *Agent) prepare() {
 
 	// 6. watch files
 	agent.watchFiles()
+	if agent.Arg.DebugOnFailure {
+		if err := os.MkdirAll(breakpointWorkdir, 0755); err != nil {
+			agent.AppendError(err)
+		}
+	}
 
 	// 7. listen signal
 	go agent.ListenSignal()

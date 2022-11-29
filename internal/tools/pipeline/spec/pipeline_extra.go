@@ -117,6 +117,8 @@ type PipelineExtraInfo struct {
 	TaskOperates []*pipelinepb.PipelineTaskOperateRequest `json:"taskTaskOperates,omitempty"`
 
 	ContainerInstanceProvider *apistructs.ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"`
+
+	Breakpoint *basepb.Breakpoint `json:"breakpoint,omitempty"`
 }
 
 type QueueInfo struct {

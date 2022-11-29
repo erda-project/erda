@@ -63,6 +63,9 @@ type Spec struct {
 
 	// allActions represents all actions from all stages
 	allActions map[ActionAlias]*indexedAction
+
+	// defines the breakpoint config for tasks on global pipeline
+	Breakpoint *pb.Breakpoint `yaml:"breakpoint,omitempty"`
 }
 
 // describe the use of network hook in the pipeline
@@ -186,6 +189,9 @@ type Action struct {
 	// 隐式命名空间为一个 alias，对应流水线上下文目录下的一个目录。
 	// Namespaces 即使声明，同时会注入默认值 alias，也就是说每个 action 至少会有一个 namespace。
 	Namespaces []string `yaml:"namespaces,omitempty"`
+
+	// Breakpoint defines the breakpoint config for a particular task
+	Breakpoint *pb.Breakpoint `yaml:"breakpoint,omitempty"`
 }
 
 type Policy struct {

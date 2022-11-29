@@ -111,6 +111,7 @@ func (s *pipelineService) ConvertPipeline(p *spec.Pipeline) *basepb.PipelineDTO 
 	result.Extra.IsAutoRun = p.Extra.IsAutoRun
 	result.Extra.CallbackURLs = p.Extra.CallbackURLs
 	result.Progress = s.convertProgress(*p)
+	result.Extra.Breakpoint = p.Extra.Breakpoint
 
 	// from labels
 	orgID, _ := strconv.ParseUint(p.Labels[apistructs.LabelOrgID], 10, 64)

@@ -167,6 +167,8 @@ type PipelineTaskExtra struct {
 	CurrentPolicy apistructs.Policy `json:"currentPolicy"` // task execution strategy
 
 	ContainerInstanceProvider *apistructs.ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"`
+
+	Breakpoint *basepb.Breakpoint `json:"breakpoint,omitempty"`
 }
 
 type FlinkSparkConf struct {
@@ -363,6 +365,7 @@ func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 			UUID:           pt.Extra.UUID,
 			AllowFailure:   pt.Extra.AllowFailure,
 			TaskContainers: pt.ConvertTaskContainer2PB(),
+			Breakpoint:     pt.Extra.Breakpoint,
 		},
 		Labels:       pt.Extra.Action.Labels,
 		CostTimeSec:  pt.CostTimeSec,

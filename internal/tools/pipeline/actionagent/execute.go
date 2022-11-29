@@ -80,8 +80,8 @@ func (agent *Agent) Execute(r io.Reader) {
 
 	// 4. logic
 	agent.logic()
-	if len(agent.Errs) > 0 {
-		return
+	if (len(agent.Errs) > 0 || agent.ExitCode != 0) && agent.Arg.DebugOnFailure {
+		agent.CheckForBreakpointOnFailure(breakpointExitFile)
 	}
 }
 

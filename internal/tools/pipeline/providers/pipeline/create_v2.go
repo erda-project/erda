@@ -541,6 +541,9 @@ func (s *pipelineService) MakePipelineFromRequestV2(req *pb.PipelineCreateReques
 	// progress
 	p.Progress = -1
 
+	// breakpoint
+	p.Extra.Breakpoint = pipelineYml.Spec().Breakpoint
+
 	// gc
 	if req.GC != nil {
 		p.Extra.GC = *req.GC

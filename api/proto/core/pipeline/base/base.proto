@@ -64,6 +64,7 @@ message PipelineExtra {
   repeated string callbackURLs = 10;
   PipelineUser ownerUser = 11;
   string pipelineYmlNameV1 = 12;
+  Breakpoint breakpoint = 13;
 }
 message PipelineGC {
   PipelineResourceGC resourceGC = 1;
@@ -139,6 +140,15 @@ message PipelineExecuteRecord {
   google.protobuf.Timestamp timeCreated = 4;
   google.protobuf.Timestamp timeBegin = 5;
   google.protobuf.Timestamp timeEnd = 6;
+}
+
+message Breakpoint {
+  BreakpointOn on = 1;
+  optional google.protobuf.Value timeout = 2;
+}
+
+message BreakpointOn {
+  bool failure = 1;
 }
 
 ///////////// event
@@ -386,6 +396,7 @@ message PipelineTaskExtra {
   repeated TaskContainer taskContainers = 3;
   repeated TaskParamDetail params = 4;
   PipelineTaskActionDetail action = 5;
+  Breakpoint breakpoint = 6;
 }
 message ErrorContext {
   google.protobuf.Timestamp startTime = 1;
