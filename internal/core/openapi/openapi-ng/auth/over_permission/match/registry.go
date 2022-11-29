@@ -17,9 +17,11 @@ package match
 import (
 	"net/http"
 	"strings"
+	"sync"
 )
 
 var ValueFunc map[string]value
+var once sync.Once
 
 const (
 	typeDelim = ":"
@@ -31,9 +33,11 @@ type value interface {
 }
 
 func registry(t string, funcs value) {
-	if ValueFunc == nil {
-		ValueFunc = make(map[string]value)
-	}
+	once.Do(func() {
+		if ValueFunc == nil {
+			ValueFunc = make(map[string]value)
+		}
+	})
 	ValueFunc[t] = funcs
 }
 

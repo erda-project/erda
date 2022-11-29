@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package over_permission
+package org
 
 import (
-	"github.com/go-redis/redis"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
@@ -30,10 +28,9 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg   *config
-	Log   logs.Logger
-	Redis *redis.Client `autowired:"redis-client"`
-	Org   org.Interface
+	Cfg *config
+	Log logs.Logger
+	Org org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -47,8 +44,8 @@ func (p *provider) Authers() []openapiauth.Auther {
 }
 
 func init() {
-	servicehub.Register("openapi-over-permission", &servicehub.Spec{
-		Services:   []string{"openapi-over-permission"},
+	servicehub.Register("openapi-over-permission-org", &servicehub.Spec{
+		Services:   []string{"openapi-over-permission-org"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

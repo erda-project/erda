@@ -42,7 +42,7 @@ service DataViewService {
     option (erda.common.openapi) = {
       path: "/api/dashboard/blocks",
       auth:{
-        over_permission :{
+        check_over_permission :{
           org: {
             enable: true,
             expr: ["query:scope","query:scopeId"]

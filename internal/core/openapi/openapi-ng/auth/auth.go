@@ -47,8 +47,8 @@ type (
 )
 
 type provider struct {
-	authers             []Auther
-	overPermissionAuths []Auther
+	authers               []Auther
+	overPermissionAuthers []Auther
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -63,12 +63,12 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		}
 
 		if strings.HasPrefix(service, "openapi-over-permission") {
-			overPermissionAuths, ok := ctx.Service(service).(AutherLister)
+			overPermissionAuthers, ok := ctx.Service(service).(AutherLister)
 			if !ok {
 				err = fmt.Errorf("%q not implements AutherLister", service)
 				return false
 			}
-			p.overPermissionAuths = append(p.overPermissionAuths, overPermissionAuths.Authers()...)
+			p.overPermissionAuthers = append(p.overPermissionAuthers, overPermissionAuthers.Authers()...)
 		}
 
 		return true
@@ -108,12 +108,12 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 					return
 				}
 				if ok {
-					multipeResult, err := p.executePermissionAuths(r, rw, opts)
+					permissionAuthResult, err := p.executePermissionAuths(r, rw, opts)
 					if err != nil {
 						http.Error(rw, err.Error(), http.StatusUnauthorized)
 						return
 					}
-					if !multipeResult {
+					if !permissionAuthResult {
 						break // execute error
 					}
 					h(rw, req)
@@ -128,10 +128,10 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 }
 
 func (p *provider) executePermissionAuths(r *http.Request, rw http.ResponseWriter, opts Options) (bool, error) {
-	if len(p.overPermissionAuths) == 0 {
+	if len(p.overPermissionAuthers) == 0 {
 		return true, nil
 	}
-	for _, auth := range p.overPermissionAuths {
+	for _, auth := range p.overPermissionAuthers {
 		if ok, data := auth.Match(r, opts); ok {
 			ok, _, err := auth.Check(r, data, opts)
 			if err != nil {

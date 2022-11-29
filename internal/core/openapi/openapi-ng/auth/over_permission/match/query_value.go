@@ -27,6 +27,11 @@ func init() {
 type queryValue struct {
 }
 
+/*
+http://aaaa.com?aaa=1&bbb=2
+query:aaa -> aaa:1
+query:bbb -> bbb:2
+*/
 func (q queryValue) get(expr string, r *http.Request) interface{} {
 	return find(expr, r.URL.Query())
 }

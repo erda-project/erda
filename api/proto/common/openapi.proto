@@ -28,7 +28,7 @@ message APIAuth {
     bool try_check_login = 3;
     bool check_token = 4;
     bool check_basic_auth = 5;
-    CheckOverPermission over_permission= 6;
+    CheckOverPermission check_over_permission= 6;
 }
 
 message CheckOverPermission {

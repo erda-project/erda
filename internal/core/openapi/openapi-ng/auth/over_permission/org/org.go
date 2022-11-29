@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package over_permission
+package org
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/common/pb"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
@@ -55,12 +56,20 @@ func (o *overPermissionOrg) Match(r *http.Request, opts openapiauth.Options) (bo
 	if len(matchExpr) <= 0 {
 		matchExpr = o.provider.Cfg.DefaultMatchOrg
 	}
-
+	matchExpr = trim(matchExpr)
 	m := match.Get(matchExpr, r)
 	if len(m) == 0 {
 		return false, nil
 	}
 	return true, m
+}
+
+func trim(arr []string) []string {
+	var result []string
+	for _, i := range arr {
+		result = append(result, strings.TrimSpace(i))
+	}
+	return result
 }
 
 func (o *overPermissionOrg) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
