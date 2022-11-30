@@ -151,11 +151,12 @@ func getOpenAPIOption(opts ...*common.OpenAPIOption) *common.OpenAPIOption {
 		if o.Auth != nil {
 			if opt.Auth == nil {
 				opt.Auth = &common.APIAuth{
-					NoCheck:        o.Auth.NoCheck,
-					CheckLogin:     o.Auth.CheckLogin,
-					TryCheckLogin:  o.Auth.TryCheckLogin,
-					CheckToken:     o.Auth.CheckToken,
-					CheckBasicAuth: o.Auth.CheckBasicAuth,
+					NoCheck:             o.Auth.NoCheck,
+					CheckLogin:          o.Auth.CheckLogin,
+					TryCheckLogin:       o.Auth.TryCheckLogin,
+					CheckToken:          o.Auth.CheckToken,
+					CheckBasicAuth:      o.Auth.CheckBasicAuth,
+					CheckOverPermission: o.Auth.CheckOverPermission,
 				}
 			} else {
 				if o.Auth.NoCheck {
@@ -172,6 +173,9 @@ func getOpenAPIOption(opts ...*common.OpenAPIOption) *common.OpenAPIOption {
 				}
 				if o.Auth.CheckBasicAuth {
 					opt.Auth.CheckBasicAuth = true
+				}
+				if o.Auth.CheckOverPermission != nil {
+					opt.Auth.CheckOverPermission = o.Auth.CheckOverPermission
 				}
 			}
 		}
