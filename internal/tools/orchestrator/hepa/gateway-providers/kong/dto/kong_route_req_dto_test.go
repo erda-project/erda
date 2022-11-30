@@ -17,7 +17,7 @@ package dto_test
 import (
 	"testing"
 
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 )
 
 func TestNewKongRouteReqDto(t *testing.T) {

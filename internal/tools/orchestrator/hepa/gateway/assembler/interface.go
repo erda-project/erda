@@ -15,8 +15,8 @@
 package assembler
 
 import (
+	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
-	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 

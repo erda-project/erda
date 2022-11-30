@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
+	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 )
 
 type PolicyDto struct {
