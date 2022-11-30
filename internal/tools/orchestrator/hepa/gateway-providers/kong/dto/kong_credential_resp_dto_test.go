@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 )
 
 // need not test on method AdjustCreatedAt

@@ -22,9 +22,9 @@ import (
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	kongConst "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
-	kongConst "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong"
-	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/dto"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 

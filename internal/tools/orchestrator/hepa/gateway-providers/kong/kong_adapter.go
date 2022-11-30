@@ -23,8 +23,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/base"
-	v2 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/kong/v2"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/base"
+	v2 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/v2"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
