@@ -83,7 +83,7 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 	for time.Now().Unix()-startTime < handlers.RuntimeMaxUpTimeoutSeconds {
 		time.Sleep(10 * time.Second)
 
-		detail, err := p.PipelineSvc.PipelineDetail(context.Background(), &pipelinepb.PipelineDetailRequest{
+		detail, err := p.PipelineSvc.PipelineDetail(apis.WithInternalClientContext(context.Background(), discover.MSP()), &pipelinepb.PipelineDetailRequest{
 			SimplePipelineBaseResult: true,
 			PipelineID:               pipelineResp.Data.ID,
 		})
@@ -106,7 +106,7 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 		}
 	}
 
-	p.PipelineSvc.PipelineDelete(context.Background(), &pipelinepb.PipelineDeleteRequest{
+	p.PipelineSvc.PipelineDelete(apis.WithInternalClientContext(context.Background(), discover.MSP()), &pipelinepb.PipelineDeleteRequest{
 		PipelineID: pipelineResp.Data.ID,
 	})
 
