@@ -1397,7 +1397,7 @@ func (p *ProjectPipelineService) batchGetPipelineDefinition(pipelineDefinitionID
 func (p *ProjectPipelineService) batchGetPipelineSources(pipelineSourceIDArray []string) (map[string]*spb.PipelineSource, error) {
 	var pipelineSourceListRequest spb.PipelineSourceListRequest
 	pipelineSourceListRequest.IdList = pipelineSourceIDArray
-	resp, err := p.PipelineSource.List(context.Background(), &pipelineSourceListRequest)
+	resp, err := p.PipelineSource.List(apis.WithInternalClientContext(context.Background(), discover.DOP()), &pipelineSourceListRequest)
 	if err != nil {
 		return nil, err
 	}
