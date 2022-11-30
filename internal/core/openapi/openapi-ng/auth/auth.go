@@ -62,7 +62,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 			p.authers = append(p.authers, authers.Authers()...)
 		}
 
-		if strings.HasPrefix(service, "openapi-over-permission") {
+		if strings.HasPrefix(service, "openapi-over-permission-") {
 			overPermissionAuthers, ok := ctx.Service(service).(AutherLister)
 			if !ok {
 				err = fmt.Errorf("%q not implements AutherLister", service)
