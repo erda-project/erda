@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strings"
 
-	flinkoperatorv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	flinkoperatorv1beta1 "github.com/spotify/flink-on-k8s-operator/apis/flinkcluster/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
