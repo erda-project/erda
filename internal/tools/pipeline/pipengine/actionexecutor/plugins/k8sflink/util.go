@@ -18,8 +18,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	flinkoperatorv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
 	"github.com/sirupsen/logrus"
+	flinkoperatorv1beta1 "github.com/spotify/flink-on-k8s-operator/apis/flinkcluster/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -122,8 +122,7 @@ func composeEnvs(envs map[string]string) []corev1.EnvVar {
 
 func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
 
-	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
-	affinity := &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
+	nodeSelector := k.generateNodeSelector(job)
 	flinkCluster := flinkoperatorv1beta1.FlinkCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "FlinkCluster",
@@ -140,7 +139,7 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Name:       data.Spec.Image,
 				PullPolicy: logic.GetPullImagePolicy(),
 			},
-			JobManager: flinkoperatorv1beta1.JobManagerSpec{
+			JobManager: &flinkoperatorv1beta1.JobManagerSpec{
 				Ingress: &flinkoperatorv1beta1.JobManagerIngressSpec{
 					HostFormat: getStringPoints(hostURL),
 				},
@@ -152,18 +151,18 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Volumes:        nil,
 				VolumeMounts:   nil,
 				InitContainers: nil,
-				NodeSelector:   nil,
-				Affinity:       affinity,
-				Tolerations:    nil,
-				Sidecars:       nil,
+				NodeSelector:   nodeSelector,
+				//Affinity:       affinity,
+				Tolerations: nil,
+				Sidecars:    nil,
 				PodAnnotations: map[string]string{
 					apistructs.MSPTerminusDefineTag:  containers.MakeFlinkJobManagerID(data.Name),
 					apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
 					apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 				},
 			},
-			TaskManager: flinkoperatorv1beta1.TaskManagerSpec{
-				Replicas:  data.Spec.FlinkConf.TaskManagerResource.Replica,
+			TaskManager: &flinkoperatorv1beta1.TaskManagerSpec{
+				Replicas:  &data.Spec.FlinkConf.TaskManagerResource.Replica,
 				Resources: composeResources(data.Spec.FlinkConf.TaskManagerResource),
 				PodLabels: map[string]string{
 					apistructs.TerminusDefineTag: containers.MakeFlinkTaskManagerID(data.Name),
@@ -171,8 +170,7 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Volumes:        nil,
 				VolumeMounts:   nil,
 				InitContainers: nil,
-				NodeSelector:   nil,
-				Affinity:       affinity,
+				NodeSelector:   nodeSelector,
 				Tolerations:    nil,
 				Sidecars:       nil,
 				PodAnnotations: map[string]string{
@@ -195,23 +193,23 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 }
 
 func (k *K8sFlink) composeFlinkJob(job apistructs.JobFromUser, data apistructs.BigdataConf) *flinkoperatorv1beta1.JobSpec {
-	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	return &flinkoperatorv1beta1.JobSpec{
-		JarFile:           data.Spec.Resource,
-		ClassName:         &data.Spec.Class,
-		Args:              data.Spec.Args,
-		Parallelism:       getInt32Points(data.Spec.FlinkConf.Parallelism),
-		NoLoggingToStdout: nil,
-		Volumes:           nil,
-		VolumeMounts:      nil,
-		InitContainers:    nil,
-		RestartPolicy:     getJobRestartPolicy(flinkoperatorv1beta1.JobRestartPolicyFromSavepointOnFailure),
+		JarFile:                     &data.Spec.Resource,
+		ClassName:                   &data.Spec.Class,
+		Args:                        data.Spec.Args,
+		Parallelism:                 getInt32Points(data.Spec.FlinkConf.Parallelism),
+		NoLoggingToStdout:           nil,
+		Volumes:                     nil,
+		VolumeMounts:                nil,
+		InitContainers:              nil,
+		RestartPolicy:               getJobRestartPolicy(flinkoperatorv1beta1.JobRestartPolicyFromSavepointOnFailure),
+		MaxStateAgeToRestoreSeconds: &[]int32{300}[0],
 		CleanupPolicy: &flinkoperatorv1beta1.CleanupPolicy{
 			AfterJobSucceeds:  flinkoperatorv1beta1.CleanupActionDeleteCluster,
 			AfterJobFails:     flinkoperatorv1beta1.CleanupActionKeepCluster,
 			AfterJobCancelled: flinkoperatorv1beta1.CleanupActionDeleteTaskManager,
 		},
-		Affinity:        &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity,
+		NodeSelector:    k.generateNodeSelector(job),
 		CancelRequested: nil,
 		PodAnnotations: map[string]string{
 			apistructs.MSPTerminusDefineTag: containers.MakeFlinkJobID(data.Name),
@@ -221,6 +219,23 @@ func (k *K8sFlink) composeFlinkJob(job apistructs.JobFromUser, data apistructs.B
 			apistructs.TerminusDefineTag: containers.MakeFlinkJobID(data.Name),
 		},
 	}
+}
+
+func (k *K8sFlink) generateNodeSelector(job apistructs.JobFromUser) map[string]string {
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
+	affinity := &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
+	nodeSelector := make(map[string]string)
+	if affinity != nil && affinity.NodeAffinity != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms != nil {
+		nodeTerms := affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+		for _, term := range nodeTerms {
+			for _, expression := range term.MatchExpressions {
+				if expression.Operator == corev1.NodeSelectorOpExists {
+					nodeSelector[expression.Key] = "true"
+				}
+			}
+		}
+	}
+	return nodeSelector
 }
 
 func getJobRestartPolicy(restartPolicy flinkoperatorv1beta1.JobRestartPolicy) *flinkoperatorv1beta1.JobRestartPolicy {
