@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component_protocol
+package proxy
 
 import (
 	"context"
@@ -28,7 +28,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
 	_ "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/scenarios/action/components/actionForm"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/types"
@@ -41,20 +40,12 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-var Render = apis.ApiSpec{
-	Path:         "/api/component-protocol/actions/render",
-	Scheme:       "http",
-	Method:       "POST",
-	Custom:       proxyAndLegacy,
-	RequestType:  apistructs.ComponentProtocolRequest{},
-	ResponseType: apistructs.ComponentProtocolResponse{},
-	Doc:          "某场景下，用户操作，触发后端业务逻辑，重新渲染协议",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-}
+const (
+	openapiComponentProtocolRenderPath = "/api/openapi/component-protocol/actions/render"
+	targetComponentProtocolRenderPath  = "/api/component-protocol/actions/render"
+)
 
-func proxyAndLegacy(rw http.ResponseWriter, r *http.Request) {
+func ProxyOrLegacy(rw http.ResponseWriter, r *http.Request) {
 	// get scenario from query params
 	scenario := r.URL.Query().Get("scenario")
 
@@ -103,6 +94,11 @@ func newProxyDirector(proxyConfig types.ProxyConfig) func(*http.Request) {
 		r.URL.Scheme = schema
 		r.Host = proxyConfig.Addr
 		r.URL.Host = proxyConfig.Addr
+		// Flow:
+		//   openapi(/api/component-protocol/actions/render)
+		//     -> openapi-internal-proxy(/api/openapi/component-protocol/actions/render) // avoid route duplicate issue
+		//       -> target-server(/api/component-protocol/actions/render) // need modify path to target path provide by erda-infra cp provider
+		r.URL.Path = strings.ReplaceAll(r.URL.Path, openapiComponentProtocolRenderPath, targetComponentProtocolRenderPath)
 		path := r.URL.EscapedPath()
 		path = strutil.Concat("/", strutil.TrimPrefixes(path, "/"))
 		r.Header.Set("Origin-Path", path)

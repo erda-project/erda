@@ -95,6 +95,7 @@ import (
 
 	// openapi
 	_ "github.com/erda-project/erda/internal/core/openapi/legacy"
+	_ "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol/provider"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/compatibility"

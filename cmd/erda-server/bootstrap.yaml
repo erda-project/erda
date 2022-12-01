@@ -21,6 +21,7 @@ health:
 
 # component-protocol framework
 component-protocol:
+openapi-component-protocol:
 
 i18n:
   common: # core-services
