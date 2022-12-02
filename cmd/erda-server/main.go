@@ -101,6 +101,7 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/compatibility"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/ory-kratos"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/org"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/org_id"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/password"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/token"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/uc-session"

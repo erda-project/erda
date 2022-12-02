@@ -33,6 +33,7 @@ message APIAuth {
 
 message CheckOverPermission {
     CheckOver org = 1;
+    CheckOver org_id = 2;
 }
 
 message CheckOver {

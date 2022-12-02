@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org
+package org_id
 
 import (
 	"github.com/erda-project/erda-infra/base/logs"
@@ -21,8 +21,7 @@ import (
 )
 
 type config struct {
-	Weight          int64    `file:"weight" default:"50"`
-	DefaultMatchOrg []string `file:"default_match_org" default:""`
+	Weight int64 `file:"weight" default:"50"`
 }
 
 // +provider
@@ -38,12 +37,12 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 var _ openapiauth.AutherLister = (*provider)(nil)
 
 func (p *provider) Authers() []openapiauth.Auther {
-	return []openapiauth.Auther{newOverPermissionOrg(p)}
+	return []openapiauth.Auther{newOverPermissionOrgId(p)}
 }
 
 func init() {
-	servicehub.Register("openapi-over-permission-org", &servicehub.Spec{
-		Services:   []string{"openapi-over-permission-org"},
+	servicehub.Register("openapi-over-permission-org-id", &servicehub.Spec{
+		Services:   []string{"openapi-over-permission-org-id"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})
