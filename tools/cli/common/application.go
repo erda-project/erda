@@ -36,7 +36,7 @@ func GetApplicationDetail(ctx *command.Context, orgID, projectID, applicationID 
 		b    bytes.Buffer
 	)
 
-	response, err := ctx.Get().Header("Org-ID", strconv.FormatUint(orgID, 10)).
+	response, err := ctx.Get().Header("org", strconv.FormatUint(orgID, 10)).
 		Path(fmt.Sprintf("/api/applications/%d?projectID=%d", applicationID, projectID)).
 		Do().Body(&b)
 	if err != nil {
@@ -117,7 +117,7 @@ func GetPagingApplications(ctx *command.Context, orgID, projectID uint64, pageNo
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/applications").
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
 		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
 		Do().Body(&b)
@@ -152,7 +152,7 @@ func GetPagingMyApplications(ctx *command.Context, orgID, projectID uint64, page
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/applications/actions/list-my-applications").
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
 		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
 		Do().Body(&b)
@@ -212,7 +212,7 @@ func DeleteApplication(ctx *command.Context, applicationID uint64) error {
 	return nil
 }
 
-func CreateApplication(ctx *command.Context, projectID uint64, application, mode, desc,
+func CreateApplication(ctx *command.Context, orgID, projectID uint64, application, mode, desc,
 	sonarhost, sonartoken, sonarproject string) (apistructs.ApplicationDTO, error) {
 	var request apistructs.ApplicationCreateRequest
 	var response apistructs.ApplicationCreateResponse
@@ -230,7 +230,9 @@ func CreateApplication(ctx *command.Context, projectID uint64, application, mode
 		}
 	}
 
-	resp, err := ctx.Post().Path("/api/applications").JSONBody(request).Do().Body(&b)
+	resp, err := ctx.Post().Path("/api/applications").
+		Header("org", strconv.FormatUint(orgID, 10)).
+		JSONBody(request).Do().Body(&b)
 	if err != nil {
 		return apistructs.ApplicationDTO{}, fmt.Errorf(
 			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
