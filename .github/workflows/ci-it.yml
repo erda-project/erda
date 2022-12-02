@@ -68,7 +68,7 @@ jobs:
   CI:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/erda-base:20220928
+      image: registry.erda.cloud/erda/erda-base:20221202
     needs:
       - PREPARE
     steps:
@@ -98,7 +98,7 @@ jobs:
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/erda-base:20220928
+      image: registry.erda.cloud/erda/erda-base:20221202
     needs:
       - PREPARE
     steps:
@@ -141,7 +141,7 @@ jobs:
   CODE-TEST:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/erda-base:20220928
+      image: registry.erda.cloud/erda/erda-base:20221202
     needs:
       - PREPARE
     strategy:
