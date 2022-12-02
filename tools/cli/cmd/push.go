@@ -134,7 +134,7 @@ func Push(ctx *command.Context, urlstr string, applications []string, configfile
 		if p, ok := existProjectNames[a.Application]; ok {
 			gitRepo = p.GitRepoNew
 		} else {
-			remoteApp, err := common.CreateApplication(ctx, projectID, a.Application, a.Mode, a.Desc, a.Sonarhost, a.Sonartoken, a.Sonarproject)
+			remoteApp, err := common.CreateApplication(ctx, orgID, projectID, a.Application, a.Mode, a.Desc, a.Sonarhost, a.Sonartoken, a.Sonarproject)
 			if err != nil {
 				return err
 			}

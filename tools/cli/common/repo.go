@@ -25,7 +25,7 @@ import (
 func GetRepoStats(ctx *command.Context, orgID uint64, project, application string) (apistructs.GittarStatsData, error) {
 	var gitResp apistructs.GittarStatsResponse
 	resp, err := ctx.Get().Path(fmt.Sprintf("/api/repo/%s/%s/stats/", project, application)).
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Do().JSON(&gitResp)
 	if err != nil {
 		return apistructs.GittarStatsData{}, err

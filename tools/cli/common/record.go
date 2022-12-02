@@ -30,7 +30,7 @@ func GetRecord(ctx *command.Context, orgID, id uint64) (apistructs.TestFileRecor
 	var b bytes.Buffer
 
 	response, err := ctx.Get().
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Path(fmt.Sprintf("/api/test-file-records/%d", id)).
 		Do().Body(&b)
 	if err != nil {

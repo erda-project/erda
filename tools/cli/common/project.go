@@ -41,7 +41,7 @@ func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs
 	var b bytes.Buffer
 
 	response, err := ctx.Get().
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Path(fmt.Sprintf("/api/projects/%d", projectID)).
 		Do().Body(&b)
 	if err != nil {
@@ -84,7 +84,7 @@ func CreateProject(ctx *command.Context, orgID uint64, name, desc string,
 	}
 
 	resp, err := ctx.Post().Path("/api/projects").
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		JSONBody(request).Do().Body(&b)
 	if err != nil {
 		return response.Data, fmt.Errorf(

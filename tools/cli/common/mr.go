@@ -35,7 +35,7 @@ func CreateMr(ctx *command.Context, orgID uint64, project, application string, r
 
 	path := fmt.Sprintf("/api/repo/%s/%s/merge-requests", project, application)
 	respponse, err := ctx.Post().Path(path).JSONBody(request).
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("org", strconv.FormatUint(orgID, 10)).
 		Do().Body(&b)
 	if err != nil {
 		return nil, fmt.Errorf(
