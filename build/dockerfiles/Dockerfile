@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.2
 ARG BASE_DOCKER_IMAGE
-FROM ${BASE_DOCKER_IMAGE} as build
+FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} as build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
 
 
 
-FROM ${BASE_DOCKER_IMAGE} as app-handler
+FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} as app-handler
 ARG MODULE_PATH
 ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
 COPY --from=build "${PROJ_ROOT}" /erda
@@ -29,7 +29,7 @@ RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handle
 
 
 
-FROM ${BASE_DOCKER_IMAGE}
+FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
 ENV MODULE_PATH=${MODULE_PATH}
 
