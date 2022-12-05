@@ -23,13 +23,13 @@ import (
 )
 
 func init() {
-	registry("form_body", formBodyValue{})
+	registry("request_body", requestBody{})
 }
 
-type formBodyValue struct {
+type requestBody struct {
 }
 
-func (f formBodyValue) get(expr string, r *http.Request) interface{} {
+func (f requestBody) get(expr string, r *http.Request) interface{} {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil

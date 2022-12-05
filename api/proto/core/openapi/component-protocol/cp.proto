@@ -32,7 +32,7 @@ service openapi_component_protocol {
                 check_over_permission : {
                     org_id: {
                         enable: true,
-                        expr: ["form_body:inParams.scope","form_body:inParams.scopeId"]
+                        expr: ["request_body:inParams.scope","request_body:inParams.scopeId"]
                     }
                 }
             },
