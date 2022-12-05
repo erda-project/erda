@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org
+package org_name
 
 import (
 	"net/http"
@@ -42,7 +42,7 @@ func (m *mockOpts) Set(key string, val interface{}) {
 }
 
 func TestWeightShouldByConfig(t *testing.T) {
-	service := newOverPermissionOrg(&provider{
+	service := newOverPermissionOrgName(&provider{
 		Cfg: &config{
 			Weight: int64(1000),
 		},
@@ -52,7 +52,7 @@ func TestWeightShouldByConfig(t *testing.T) {
 
 func TestMatch(t *testing.T) {
 
-	service := newOverPermissionOrg(&provider{
+	service := newOverPermissionOrgName(&provider{
 		Cfg: &config{
 			DefaultMatchOrg: []string{
 				"query:scope", "query:scopeId",
@@ -70,7 +70,7 @@ func TestMatch(t *testing.T) {
 			name: "no_expr",
 			url:  "localhost:9529/api/dashboard/blocks?scope=org&scopeId=erda-development222&pageSize=10&pageNo=1&createdAt=",
 			opts: &pb.CheckOverPermission{
-				Org: &pb.CheckOver{
+				OrgName: &pb.CheckOver{
 					Enable: true,
 				},
 			},
@@ -81,7 +81,7 @@ func TestMatch(t *testing.T) {
 			name: "expr",
 			url:  "localhost:9529/api/dashboard/blocks?ttt=123",
 			opts: &pb.CheckOverPermission{
-				Org: &pb.CheckOver{
+				OrgName: &pb.CheckOver{
 					Enable: true,
 					Expr:   []string{"query:ttt"},
 				},
@@ -98,7 +98,7 @@ func TestMatch(t *testing.T) {
 		{
 			name: "no_aim_default_org",
 			opts: &pb.CheckOverPermission{
-				Org: &pb.CheckOver{},
+				OrgName: &pb.CheckOver{},
 			},
 			isAim:  false,
 			result: nil,
@@ -106,7 +106,7 @@ func TestMatch(t *testing.T) {
 		{
 			name: "no_aim_default_no_enable",
 			opts: &pb.CheckOverPermission{
-				Org: &pb.CheckOver{
+				OrgName: &pb.CheckOver{
 					Enable: false,
 				},
 			},

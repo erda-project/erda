@@ -157,10 +157,12 @@ openapi-auth-uc:
 openapi-auth-password:
   _enable: ${UC_ENABLED:true}
   weight: 50
-openapi-over-permission-org:
+openapi-over-permission-org-name:
   _enable: ${AUTH_OVER_PERMISSION:true}
   weight: 30
   default_match_org: ["query:scope","query:scopeId"]
+openapi-over-permission-org-id:
+  _enable: ${AUTH_OVER_PERMISSION:true}
 openapi-auth-token:
   _enable: ${UC_ENABLED:true}
   weight: 10

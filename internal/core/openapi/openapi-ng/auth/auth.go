@@ -108,7 +108,7 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 					return
 				}
 				if ok {
-					permissionAuthResult, err := p.executePermissionAuths(r, rw, opts)
+					permissionAuthResult, err := p.executePermissionAuths(req, rw, opts)
 					if err != nil {
 						http.Error(rw, err.Error(), http.StatusUnauthorized)
 						return
