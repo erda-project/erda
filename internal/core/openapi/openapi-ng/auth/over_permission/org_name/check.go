@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org
+package org_name
 
 import (
 	"net/http"
@@ -25,21 +25,21 @@ import (
 
 const compent = "OverPermission"
 
-type overPermissionOrg struct {
+type overPermissionOrgName struct {
 	provider *provider
 }
 
-func newOverPermissionOrg(p *provider) *overPermissionOrg {
-	return &overPermissionOrg{
+func newOverPermissionOrgName(p *provider) *overPermissionOrgName {
+	return &overPermissionOrgName{
 		p,
 	}
 }
 
-func (o *overPermissionOrg) Weight() int64 {
+func (o *overPermissionOrgName) Weight() int64 {
 	return o.provider.Cfg.Weight
 }
 
-func (o *overPermissionOrg) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
+func (o *overPermissionOrgName) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
 	opt := opts.Get(compent)
 	if opt == nil {
 		return false, nil
@@ -48,11 +48,11 @@ func (o *overPermissionOrg) Match(r *http.Request, opts openapiauth.Options) (bo
 	if checkOverPermission == nil {
 		return false, nil
 	}
-	if checkOverPermission.Org == nil || !checkOverPermission.Org.Enable {
+	if checkOverPermission.OrgName == nil || !checkOverPermission.OrgName.Enable {
 		return false, nil
 	}
 
-	matchExpr := checkOverPermission.Org.Expr
+	matchExpr := checkOverPermission.OrgName.Expr
 	if len(matchExpr) <= 0 {
 		matchExpr = o.provider.Cfg.DefaultMatchOrg
 	}
@@ -72,7 +72,7 @@ func trim(arr []string) []string {
 	return result
 }
 
-func (o *overPermissionOrg) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
+func (o *overPermissionOrgName) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
 	org := r.Header.Get("org")
 	if len(org) == 0 {
 		o.provider.Log.Debug("org name checker, header org should be not nil")

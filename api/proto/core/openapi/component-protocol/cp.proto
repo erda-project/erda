@@ -29,6 +29,12 @@ service openapi_component_protocol {
                 try_check_login: false,
                 check_token: true,
                 check_basic_auth: false,
+                check_over_permission : {
+                    org_id: {
+                        enable: true,
+                        expr: ["request_body:inParams.scope","request_body:inParams.scopeId"]
+                    }
+                }
             },
             doc: "某场景下，用户操作，触发后端业务逻辑，重新渲染协议",
         };

@@ -43,7 +43,7 @@ service DataViewService {
       path: "/api/dashboard/blocks",
       auth:{
         check_over_permission :{
-          org: {
+          org_name: {
             enable: true,
             expr: ["query:scope","query:scopeId"]
           }

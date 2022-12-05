@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org
+package org_name
 
 import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	openapiauth "github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
-	"github.com/erda-project/erda/internal/core/org"
 )
 
 type config struct {
@@ -30,7 +29,6 @@ type config struct {
 type provider struct {
 	Cfg *config
 	Log logs.Logger
-	Org org.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
@@ -40,12 +38,12 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 var _ openapiauth.AutherLister = (*provider)(nil)
 
 func (p *provider) Authers() []openapiauth.Auther {
-	return []openapiauth.Auther{newOverPermissionOrg(p)}
+	return []openapiauth.Auther{newOverPermissionOrgName(p)}
 }
 
 func init() {
-	servicehub.Register("openapi-over-permission-org", &servicehub.Spec{
-		Services:   []string{"openapi-over-permission-org"},
+	servicehub.Register("openapi-over-permission-org-name", &servicehub.Spec{
+		Services:   []string{"openapi-over-permission-org-name"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

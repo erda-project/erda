@@ -55,7 +55,9 @@ func Get(express []string, request *http.Request) map[string]interface{} {
 	for _, expr := range express {
 		typp := expr[:typeDelimPoint]
 		path := expr[typeDelimPoint+1:]
-
+		if len(path) == 0 {
+			continue
+		}
 		if f, ok := ValueFunc[typp]; ok {
 			m[path] = f.get(path, request)
 		}
