@@ -38,12 +38,12 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 var _ openapiauth.AutherLister = (*provider)(nil)
 
 func (p *provider) Authers() []openapiauth.Auther {
-	return []openapiauth.Auther{newOverPermissionOrg(p)}
+	return []openapiauth.Auther{newOverPermissionOrgName(p)}
 }
 
 func init() {
-	servicehub.Register("openapi-over-permission-org", &servicehub.Spec{
-		Services:   []string{"openapi-over-permission-org"},
+	servicehub.Register("openapi-over-permission-org-name", &servicehub.Spec{
+		Services:   []string{"openapi-over-permission-org-name"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})
