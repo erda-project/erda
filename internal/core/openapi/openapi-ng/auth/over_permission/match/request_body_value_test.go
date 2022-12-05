@@ -45,7 +45,7 @@ func TestFormBodyGet(t *testing.T) {
 		},
 	}
 
-	service := formBodyValue{}
+	service := requestBody{}
 	for _, test := range tests {
 		request, _ := http.NewRequest("POST", "123.com", strings.NewReader(jsonparse.JsonOneLine(test.data)))
 		t.Run(test.name, func(t *testing.T) {
