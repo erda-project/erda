@@ -56,8 +56,9 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		rlog.TErrorf(ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, "failed to get pipeline reports, err: %", err)
 		return err
 	}
+	cookieReports := getSortedReports(reportSets)
 	var setCookies []string
-	for _, v := range reportSets.Data.Reports {
+	for _, v := range cookieReports {
 		if v.Meta == nil {
 			continue
 		}
