@@ -72,7 +72,7 @@ stages:
             - cp -r ${{ dirs.erda-addons-enterprise }} extensions
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
-            - make build-push-all
+            - DOCKER_PLATFORM=linux/arm64 make build-push-all
           loop:
             break: task_status == 'Success'
             strategy:
@@ -90,7 +90,7 @@ stages:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare-cli
-            - make build-push-image MODULE_PATH=cli
+            - DOCKER_PLATFORM=linux/arm64 make build-push-image MODULE_PATH=cli
           loop:
             break: task_status == 'Success'
             strategy:
@@ -106,7 +106,7 @@ stages:
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - MODULE_PATH=cluster-agent make build-push-image
+            - DOCKER_PLATFORM=linux/arm64 MODULE_PATH=cluster-agent make build-push-image
           loop:
             break: task_status == 'Success'
             strategy:
@@ -124,7 +124,7 @@ stages:
             - make ci-build-local -e SKIP_TEST=true
             - cd ${{ dirs.erda }}
             - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
-            - make build-push-image MODULE_PATH=monitor/agent-injector
+            - DOCKER_PLATFORM=linux/arm64 make build-push-image MODULE_PATH=monitor/agent-injector
           resources:
             cpu: 1
             mem: 1024
@@ -133,7 +133,7 @@ stages:
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - make build-push-image MODULE_PATH=monitor/diagnotor-agent
+            - DOCKER_PLATFORM=linux/arm64 make build-push-image MODULE_PATH=monitor/diagnotor-agent
           resources:
             cpu: 1
             mem: 1024
