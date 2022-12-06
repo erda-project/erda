@@ -17,12 +17,36 @@ package autotest_cookie_keep_before
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/report/pb"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 )
+
+type reports []*pb.PipelineReport
+
+func (r reports) Len() int {
+	return len(r)
+}
+
+func (r reports) Less(i, j int) bool {
+	return r[i].ID < r[j].ID
+}
+
+func (r reports) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+// getSortedReports sort the reports by ID, make sure the latest cookie will be used in next step
+func getSortedReports(reportSets *pb.PipelineReportSetQueryResponse) reports {
+	sortedReports := make(reports, 0)
+	sortedReports = append(sortedReports, reportSets.Data.Reports...)
+	sort.Sort(sortedReports)
+	return sortedReports
+}
 
 // appendOrReplaceSetCookiesToCookie
 // - append cookie item if cookie name not exist

@@ -149,3 +149,66 @@ func TestHandle(t *testing.T) {
 	assert.Equal(t, "H_PS_PSSID=36559_36750_36726_36454_36453_36692_36167_36695_36696_36816_36570_36530_36772_36746_36762_36768_36766_26350", cookieLst[5])
 	assert.Equal(t, "BIDUPSID=EA64A26D7004088DC84439A66DB1EC6E", cookieLst[1])
 }
+
+func Test_getSortedReports(t *testing.T) {
+	type args struct {
+		reportSet *pb.PipelineReportSetQueryResponse
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "desc reports",
+			args: args{
+				reportSet: &pb.PipelineReportSetQueryResponse{
+					Data: &pb.PipelineReportSet{
+						Reports: []*pb.PipelineReport{
+							{
+								ID:         1003,
+								PipelineID: 1,
+							},
+							{
+								ID:         1002,
+								PipelineID: 1,
+							},
+							{
+								ID:         1001,
+								PipelineID: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "asc reports",
+			args: args{
+				reportSet: &pb.PipelineReportSetQueryResponse{
+					Data: &pb.PipelineReportSet{
+						Reports: []*pb.PipelineReport{
+							{
+								ID:         1001,
+								PipelineID: 1,
+							},
+							{
+								ID:         1002,
+								PipelineID: 1,
+							},
+							{
+								ID:         1003,
+								PipelineID: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		res := getSortedReports(tt.args.reportSet)
+		for i := 1; i < len(res); i++ {
+			assert.True(t, res[i].ID > res[i-1].ID)
+		}
+	}
+}
