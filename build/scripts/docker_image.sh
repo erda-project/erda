@@ -4,6 +4,8 @@
 
 set -o errexit -o pipefail
 
+echo "GO_BUILD_OPTIONS111=${GO_BUILD_OPTIONS}"
+
 # check parameters and print usage if need
 usage() {
     echo "docker_build.sh MODULE [ACTION]"
@@ -32,7 +34,7 @@ cd $(git rev-parse --show-toplevel)
 VERSION="$(build/scripts/make-version.sh)"
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
-BASE_DOCKER_IMAGE="registry.erda.cloud/erda/erda-base:20221202"
+BASE_DOCKER_IMAGE="registry.erda.cloud/erda/erda-base:20221206"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
 
 # setup single module envionment variables
@@ -106,7 +108,7 @@ build_image()  {
             build/scripts/base_image.sh build
         fi
     fi
-    DOCKER_BUILDKIT=1 docker build --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
+    DOCKER_BUILDKIT=1 docker buildx build --pull --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
@@ -115,6 +117,7 @@ build_image()  {
         --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
+        --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
         --build-arg GOPROXY="${GOPROXY}" \
         -f "${DOCKERFILE}" .
 }

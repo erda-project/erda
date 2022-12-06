@@ -36,7 +36,7 @@ fi
 
 # build docker image
 build_image()  {
-    DOCKER_BUILDKIT=1 docker build --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
+    DOCKER_BUILDKIT=1 docker build --pull --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
         --label "alpine=3.12" \
         --label "golang=1.16" \

@@ -62,7 +62,7 @@ stages:
   - stage:
       - custom-script:
           alias: build-erda
-          image: registry.erda.cloud/erda/erda-base:20221202
+          image: registry.erda.cloud/erda/erda-base:20221206
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions
@@ -85,7 +85,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli
-          image: registry.erda.cloud/erda/erda-base:20221202
+          image: registry.erda.cloud/erda/erda-base:20221206
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -139,7 +139,7 @@ stages:
             mem: 1024
       - custom-script:
           alias: build-erda-cli-linux
-          image: registry.erda.cloud/erda/erda-base:20221202
+          image: registry.erda.cloud/erda/erda-base:20221206
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
@@ -157,7 +157,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli-mac
-          image: registry.erda.cloud/erda/erda-base:20221202
+          image: registry.erda.cloud/erda/erda-base:20221206
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
