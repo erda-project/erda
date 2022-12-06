@@ -156,7 +156,7 @@
               },
               {
                 "alias": "valuezgzhW6F4",
-                "expr": "round_float(cpu_usage_percent::field, 2)"
+                "expr": "max(cpu_usage_percent::field)"
               }
             ],
             "where": [
@@ -327,7 +327,7 @@
               },
               {
                 "alias": "valuenSjy6RH4",
-                "expr": "round_float(mem_usage_percent::field, 2)"
+                "expr": "max(mem_usage_percent::field)"
               }
             ],
             "where": [
