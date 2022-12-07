@@ -83,6 +83,7 @@ stages:
           resources:
             cpu: 2
             mem: 2048
+          timeout: 7200
       - custom-script:
           alias: build-erda-cli
           image: registry.erda.cloud/erda/amd64/erda-base:20221207
@@ -99,8 +100,9 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 1
+            cpu: 2
             mem: 2048
+          timeout: 7200
       - custom-script:
           alias: build-cluster-agent
           commands:
