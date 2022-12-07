@@ -81,7 +81,7 @@ stages:
               decline_limit_sec: 60
               interval_sec: 5
           resources:
-            cpu: 1
+            cpu: 2
             mem: 2048
       - custom-script:
           alias: build-erda-cli
