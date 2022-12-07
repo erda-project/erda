@@ -15,11 +15,21 @@
 package cputil
 
 import (
+	"context"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/rancher/wrangler/pkg/data"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	cppb "github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	cmpcptypes "github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
+	"github.com/erda-project/erda/internal/pkg/mock"
 )
 
 func TestParseWorkloadStatus(t *testing.T) {
@@ -313,5 +323,110 @@ func TestGetWorkloadAgeAndImage(t *testing.T) {
 	}
 	if age != "1m" || image != "test" {
 		t.Error("test failed, cronjob age or image is unexpected")
+	}
+}
+
+type OrgMock struct {
+	mock.OrgMock
+}
+
+func (m OrgMock) GetOrgClusterRelationsByOrg(ctx context.Context, request *orgpb.GetOrgClusterRelationsByOrgRequest) (*orgpb.GetOrgClusterRelationsByOrgResponse, error) {
+	return &orgpb.GetOrgClusterRelationsByOrgResponse{
+		Data: []*orgpb.OrgClusterRelation{
+			{
+				OrgID:       1,
+				ClusterName: "cluster",
+			},
+			{
+				OrgID:       2,
+				ClusterName: "cluster-2",
+			},
+		},
+	}, nil
+}
+
+func TestCheckPermission(t *testing.T) {
+	bdl := bundle.New()
+	orgSvc := &OrgMock{}
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(_ *bundle.Bundle,
+		req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		access := true
+		if req.UserID == "1001" && req.ScopeID == 2 {
+			access = false
+		}
+		return &apistructs.PermissionCheckResponseData{
+			Access: access,
+		}, nil
+	})
+
+	monkey.Patch(cputil.I18n, func(ctx context.Context, key string, args ...interface{}) string {
+		return "permission denied"
+	})
+
+	defer monkey.UnpatchAll()
+
+	ctx := context.WithValue(context.Background(), cmpcptypes.GlobalCtxKeyBundle, bdl)
+	ctx = context.WithValue(ctx, cmpcptypes.OrgSvc, orgSvc)
+
+	type args struct {
+		withContext func(ctx context.Context) context.Context
+		clusterName string
+		userId      string
+		orgId       uint64
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "permission denied",
+			args: args{
+				withContext: func(ctx context.Context) context.Context {
+					sdk := &cptype.SDK{
+						Identity: &cppb.IdentityInfo{
+							OrgID:  "2",
+							UserID: "1001",
+						},
+						InParams: map[string]interface{}{
+							"clusterName": "cluster-2",
+						},
+					}
+					return context.WithValue(ctx, cptype.GlobalInnerKeyCtxSDK, sdk)
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "permission allowed",
+			args: args{
+				withContext: func(ctx context.Context) context.Context {
+					sdk := &cptype.SDK{
+						Identity: &cppb.IdentityInfo{
+							OrgID:  "1",
+							UserID: "1001",
+						},
+						InParams: map[string]interface{}{
+							"clusterName": "cluster",
+						},
+					}
+					return context.WithValue(ctx, cptype.GlobalInnerKeyCtxSDK, sdk)
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newCtx := tt.args.withContext(ctx)
+			if err := CheckPermission(newCtx); (err != nil) != tt.wantErr {
+				t.Errorf("CheckPermission() error = %v, wantErr %v", err, tt.wantErr)
+			} else if err != nil && tt.wantErr {
+				t.Log(err)
+			}
+		})
 	}
 }
