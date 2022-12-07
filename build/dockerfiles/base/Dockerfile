@@ -16,6 +16,7 @@ RUN apt update && apt install -y --no-install-recommends --no-install-suggests \
     vim \
     jq \
     python3-pip \
+    librdkafka-dev \
  && rm -fr /var/lib/apt/lists/*
 
 # nodejs
@@ -38,11 +39,6 @@ RUN mkdir -p /etc/apt/keyrings \
 # ------
 # UPDATE: ARM arch doesn't have prebuilt binary.
 # check $TARGETPLATFORM equal to linux/arm64
-RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-        apt update && apt install -y --no-install-recommends --no-install-suggests \
-            librdkafka-dev \
-        && rm -fr /var/lib/apt/lists/*; \
-    fi
 
 # libgit2 - normal installation if specific version cannot install through APT.
 ## doc: https://github.com/libgit2/git2go#installing

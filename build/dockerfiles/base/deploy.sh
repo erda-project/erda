@@ -5,7 +5,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 image=registry.erda.cloud/erda/erda-base:$(date +"%Y%m%d")
 
-docker buildx build --no-cache --pull --platform linux/amd64 -t ${image} --push . -f Dockerfile
+docker buildx build --no-cache --pull --platform linux/amd64,linux/arm64 -t ${image} --push . -f Dockerfile
 
 # generate Software Bill Of Materials (SBOM)
 docker sbom ${image} --output sbom.txt
