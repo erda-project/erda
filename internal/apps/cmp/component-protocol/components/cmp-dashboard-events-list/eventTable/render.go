@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp"
+	cmpcputil "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
 func init() {
@@ -57,6 +58,11 @@ func (t *ComponentEventTable) Init(ctx servicehub.Context) error {
 func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	t.InitComponent(ctx)
+	// check permission
+	if err := cmpcputil.CheckPermission(ctx); err != nil {
+		return err
+	}
+	// gen component state
 	if err := t.GenComponentState(component); err != nil {
 		return err
 	}

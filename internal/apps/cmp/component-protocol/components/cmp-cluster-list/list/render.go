@@ -65,20 +65,14 @@ func (l *List) Init(ctx servicehub.Context) error {
 }
 
 func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	var (
-		err error
-		d   map[string][]DataItem
-	)
-
 	l.SDK = cputil.SDK(ctx)
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	l.Bdl = bdl
-	clusterSvc := ctx.Value(types.ClusterSvc).(clusterpb.ClusterServiceServer)
-	l.ClusterSvc = clusterSvc
-	err = l.GetComponentValue()
-	if err != nil {
+	l.Bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+
+	l.ClusterSvc = ctx.Value(types.ClusterSvc).(clusterpb.ClusterServiceServer)
+	if err := l.GetComponentValue(); err != nil {
 		return err
 	}
+
 	l.Ctx = ctx
 	switch event.Operation {
 	case cptype.DefaultRenderingKey, common.CMPClusterList, cptype.InitializeOperation:
@@ -88,16 +82,13 @@ func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		return nil
 	}
 
-	d, err = l.GetData(ctx)
+	d, err := l.GetData(ctx)
 	if err != nil {
 		return err
 	}
 	l.Data = d
-	err = l.SetComponentValue(c)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return l.SetComponentValue(c)
 }
 
 //func (l *List) GetMetrics(ctx context.Context, clusterName, orgName string) map[string]*metrics.MetricsData {

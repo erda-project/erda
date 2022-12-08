@@ -33,11 +33,15 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/internal/apps/cmp"
 	"github.com/erda-project/erda/internal/apps/cmp/cache"
+	cmpcptypes "github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 )
@@ -436,4 +440,64 @@ func ParsePodStatus(state string) (string, bool) {
 		status = "default"
 	}
 	return status, breathing
+}
+
+func CheckPermission(ctx context.Context) error {
+	sdk := cputil.SDK(ctx)
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+
+	if sdk == nil || bdl == nil {
+		return errors.New("client is nil")
+	}
+
+	clusterName, ok := sdk.InParams["clusterName"].(string)
+	if !ok {
+		return errors.New("failed to get clusterName")
+	}
+
+	// get cluster and org relations
+	orgSvc, ok := ctx.Value(cmpcptypes.OrgSvc).(org.Interface)
+	if !ok {
+		return errors.New("failed to get org service")
+	}
+
+	orgClusterRelResp, err := orgSvc.GetOrgClusterRelationsByOrg(ctx, &orgpb.GetOrgClusterRelationsByOrgRequest{
+		OrgID: sdk.Identity.OrgID,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to get org cluster relations")
+	}
+
+	forbidden := true
+	for _, c := range orgClusterRelResp.Data {
+		if c.ClusterName == clusterName {
+			forbidden = false
+			break
+		}
+	}
+	if forbidden {
+		return errors.New(cputil.I18n(ctx, "permissionDenied"))
+	}
+
+	oid, err := strconv.ParseUint(sdk.Identity.OrgID, 10, 64)
+	if err != nil {
+		return errors.Wrap(err, "illegal org id")
+	}
+
+	resp, err := bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   sdk.Identity.UserID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  oid,
+		Resource: apistructs.CloudResourceResource,
+		Action:   apistructs.GetAction,
+	})
+	if err != nil {
+		return err
+	}
+
+	if !resp.Access {
+		return errors.New(cputil.I18n(ctx, "permissionDenied"))
+	}
+
+	return nil
 }
