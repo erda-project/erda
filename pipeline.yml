@@ -122,7 +122,6 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-monitor-injector
-          image: registry.erda.cloud/erda/amd64/erda-base:20221207
           commands:
             - cd ${{ dirs.erda-java-extensions }}
             - mkdir -p /root/.m2 && cp maven-settings-template.xml /root/.m2/settings.xml
