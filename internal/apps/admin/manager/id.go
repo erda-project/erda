@@ -23,6 +23,8 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
+var ErrInvalidUserID = errors.New("invalid user id")
+
 type USERID string
 
 // Invalid return UserID is valid or invalid
@@ -52,4 +54,8 @@ func GetOrgIDStr(req *http.Request) (string, error) {
 		}
 	}
 	return orgIDStr, nil
+}
+
+func orgIDUint64ToStr(orgID uint64) string {
+	return strconv.FormatUint(orgID, 10)
 }
