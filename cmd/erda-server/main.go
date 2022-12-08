@@ -112,6 +112,7 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/common"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/csrf"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/dump"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/response"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/user-info"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/custom"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic"
