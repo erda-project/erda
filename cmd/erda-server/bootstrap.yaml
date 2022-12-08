@@ -131,6 +131,7 @@ openapi-interceptor-csrf:
   cookie_path: "/"
   cookie_max_age: "12h"
   token_lookup: "header:OPENAPI-CSRF-TOKEN"
+  cookie_http_only: true
 openapi-interceptor-filter-client-header:
   order: 11
 openapi-interceptor-auth-session-compatibility:
@@ -139,6 +140,9 @@ openapi-interceptor-auth-session-compatibility:
   session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
 openapi-interceptor-user-info:
   order: 900
+openapi-interceptor-set-response-header:
+  order: 1000
+  x_frame_options: "DENY"
 ### openapi-auth
 openapi-auth:
 openapi-auth-ory-kratos:
