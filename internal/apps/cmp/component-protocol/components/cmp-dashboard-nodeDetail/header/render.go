@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp"
+	cmpcputil "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
 var steveServer cmp.SteveServer
@@ -39,10 +40,13 @@ func (header *Header) Init(ctx servicehub.Context) error {
 }
 
 func (header *Header) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	var (
-		err error
-		req apistructs.SteveRequest
-	)
+	var req apistructs.SteveRequest
+
+	// check permission
+	if err := cmpcputil.CheckPermission(ctx); err != nil {
+		return err
+	}
+
 	header.SDK = cputil.SDK(ctx)
 	req.OrgID = header.SDK.Identity.OrgID
 	req.UserID = header.SDK.Identity.UserID

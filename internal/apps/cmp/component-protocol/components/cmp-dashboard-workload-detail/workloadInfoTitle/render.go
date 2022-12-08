@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	cmpcputil "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
 func init() {
@@ -31,6 +32,10 @@ func init() {
 
 func (t *ComponentWorkloadInfoTitle) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	if err := cmpcputil.CheckPermission(ctx); err != nil {
+		return err
+	}
+
 	component.Props = cputil.MustConvertProps(Props{
 		Title: cputil.I18n(ctx, "workloadDetail"),
 		Size:  "small",

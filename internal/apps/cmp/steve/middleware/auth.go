@@ -149,7 +149,10 @@ func (a *Authenticator) listClusterByType(ctx context.Context, orgID uint64, typ
 	var result []*clusterpb.ClusterInfo
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	for _, typ := range types {
-		resp, err := a.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: typ})
+		resp, err := a.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
+			OrgID:       uint32(orgID),
+			ClusterType: typ,
+		})
 		if err != nil {
 			return nil, err
 		}

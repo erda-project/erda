@@ -21,9 +21,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	cmpcputil "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
 func (page *Page) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := cmpcputil.CheckPermission(ctx); err != nil {
+		return err
+	}
+
 	c.Props = cputil.MustConvertProps(Props{SpaceSize: "middle"})
 	return nil
 }

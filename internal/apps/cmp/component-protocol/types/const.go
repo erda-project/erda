@@ -17,6 +17,7 @@ package types
 const (
 	GlobalCtxKeyBundle = "__bundle__"
 	ClusterSvc         = "__clusterServiceServer__"
+	OrgSvc             = "__orgServiceServer__"
 
 	Workbench = "workbench"
 )

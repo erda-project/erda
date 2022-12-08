@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	cmpcputil "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
 func (p *Page) Init(ctx servicehub.Context) error {
@@ -28,11 +29,11 @@ func (p *Page) Init(ctx servicehub.Context) error {
 }
 
 func (p Page) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	err := common.Transfer(p.Props, &c.Props)
-	if err != nil {
+	if err := cmpcputil.CheckPermission(ctx); err != nil {
 		return err
 	}
-	return nil
+
+	return common.Transfer(p.Props, &c.Props)
 }
 
 func init() {

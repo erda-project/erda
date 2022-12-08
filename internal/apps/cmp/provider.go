@@ -91,6 +91,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			)),
 	))
 	p.Protocol.WithContextValue(types.ClusterSvc, p.ClusterSvc)
+	p.Protocol.WithContextValue(types.OrgSvc, p.Org)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	pb2.RegisterClusterResourceImp(p.Register, p, apis.Options())
 	alertpb.RegisterAlertServiceImp(p.Register, p, apis.Options())
