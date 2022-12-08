@@ -125,7 +125,7 @@ stages:
           image: registry.erda.cloud/erda/amd64/erda-base:20221207
           commands:
             - cd ${{ dirs.erda-java-extensions }}
-            - cp maven-settings-template.xml /root/.m2/settings.xml
+            - mkdir -p /root/.m2 && cp maven-settings-template.xml /root/.m2/settings.xml
             - make ci-build-local -e SKIP_TEST=true
             - cd ${{ dirs.erda }}
             - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
