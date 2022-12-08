@@ -33,15 +33,19 @@ func TestRemoveSensitiveInfo(t *testing.T) {
 	cluster := &clusterpb.ClusterInfo{
 		Name: "fake-cluster",
 		SchedConfig: &clusterpb.ClusterSchedConfig{
-			MasterURL:    "FakeMasterURL",
-			AuthType:     "FakeAuthType",
-			AuthUsername: "FakeAuthUsername",
-			AuthPassword: "FakeAuthPassword",
-			CaCrt:        "FakeCACrt",
-			ClientKey:    "FakeClientKey",
-			ClientCrt:    "FakeClientCrt",
-			AccessKey:    "FakeAccessKey",
-			AccessSecret: "FakeAccessSecret",
+			MasterURL:         "FakeMasterURL",
+			AuthType:          "FakeAuthType",
+			AuthUsername:      "FakeAuthUsername",
+			AuthPassword:      "FakeAuthPassword",
+			CaCrt:             "FakeCACrt",
+			ClientKey:         "FakeClientKey",
+			ClientCrt:         "FakeClientCrt",
+			AccessKey:         "FakeAccessKey",
+			AccessSecret:      "FakeAccessSecret",
+			CpuSubscribeRatio: "10",
+		},
+		Cm: map[string]string{
+			"FakeUsername": "fake",
 		},
 		OpsConfig: &clusterpb.OpsConfig{
 			AccessKey: "Fake AccessKey",
@@ -56,21 +60,27 @@ func TestRemoveSensitiveInfo(t *testing.T) {
 			},
 		},
 		ManageConfig: &clusterpb.ManageConfig{
+			Address:          "127.0.0.1",
 			CaData:           "FakeCaData",
 			CredentialSource: "FakeCredentialSource",
 		},
 	}
-	removeSensitiveInfo(cluster)
-	// remove assert
-	assert.Equal(t, "", cluster.SchedConfig.AuthPassword)
-	assert.Equal(t, (*clusterpb.OpsConfig)(nil), cluster.OpsConfig)
-	assert.Equal(t, "", cluster.System.Ssh.Password)
-	assert.Equal(t, "", cluster.ManageConfig.CaData)
-	// keep assert
-	assert.Equal(t, "FakeMasterURL", cluster.SchedConfig.MasterURL)
-	assert.Equal(t, "FakeMountPoint", cluster.System.Storage.MountPoint)
-	assert.Equal(t, "FakeCredentialSource", cluster.ManageConfig.CredentialSource)
 
+	got := convertClusterInfoToResponse(cluster)
+	expect := &ClusterInfoResponse{
+		Name: "fake-cluster",
+		SchedConfig: &SchedConfigResponse{
+			CpuSubscribeRatio: "10",
+		},
+		ManageConfig: &ManageConfigResponse{
+			Address:          "127.0.0.1",
+			CredentialSource: "FakeCredentialSource",
+		},
+	}
+
+	if !reflect.DeepEqual(got, expect) {
+		t.Errorf("equal failed, got: %v, expect: %v", got, expect)
+	}
 }
 
 func TestIsManager(t *testing.T) {
