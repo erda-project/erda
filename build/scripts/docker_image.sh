@@ -119,6 +119,7 @@ build_image()  {
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
         --build-arg GOPROXY="${GOPROXY}" \
+        --push \
         -f "${DOCKERFILE}" .
 }
 
@@ -138,7 +139,7 @@ push_image() {
 # build and push
 build_push_image() {
     build_image
-    push_image
+#    push_image
     echo "action meta: image=${DOCKER_IMAGE}"
     echo "action meta: tag=${IMAGE_TAG}"
 }
