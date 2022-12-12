@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/match"
 )
 
-const compent = "OverPermission"
+const compent = "CheckOverPermission"
 
 type overPermissionOrgName struct {
 	provider *provider
