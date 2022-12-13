@@ -259,7 +259,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 0
+      replicas: 1
       labels:
         GROUP: "spot-v2"
     health_check:

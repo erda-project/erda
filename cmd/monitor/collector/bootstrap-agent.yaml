@@ -156,12 +156,9 @@ erda.oap.collector.processor.modifier@docker_container_summary:
     - action: rename
       key: fields.container_network_transmit_errors_total
       value: fields.tx_errors
-    - action: regex
-      key: tags.id
-      value: '^\/kubepods.*?\/(.*)\/(\w+\-)?(?P<container_id>\w+)'
-      # /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podfebb6bd8_349e_49ea_a629_bf27a28d63f3.slice/docker-39693d24c3985d77348b260bdb4f5af465fc0d86b3c07ec8560b3b56ae629d62.scope
-      # /kubepods/burstable/podc15fa300-e090-4b5d-a850-eb65900a8dac/0fa5d0a7434e23d87f13617f2ab16186530c32ef877724842f96bbe8d4ba8935
-      # /kubepods/podf0b37628-fa39-4496-9f0e-037cce36c8d0/60f9e1c55eb6d6acac6ba72a3c81ffc1f638a8732d24128c70e16884057a431b
+    - action: rename
+      key: tags.name
+      value: tags.container_id
     - action: rename
       key: fields.container_resources_memory_request
       value: fields.mem_request
