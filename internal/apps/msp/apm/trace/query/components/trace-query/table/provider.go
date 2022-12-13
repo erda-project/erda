@@ -86,6 +86,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			ServiceName: params.ServiceName,
 			RpcMethod:   params.RpcMethod,
 			HttpPath:    params.HttpPath,
+			Operator:    params.OperatorText(),
 			PageNo:      int64(pageNo),
 			PageSize:    int64(pageSize),
 		})

@@ -84,22 +84,38 @@ func (esc ElasticsearchSource) GetTraceReqDistribution(ctx context.Context, mode
 	// trace id condition
 	if model.TraceId != "" {
 		queryParams["trace_id"] = structpb.NewStringValue(model.TraceId)
-		where.WriteString("trace_id::tag=$trace_id AND ")
+		if model.Operator.IsNotEqualOperator() {
+			where.WriteString("trace_id::tag!=$trace_id AND ")
+		} else {
+			where.WriteString("trace_id::tag=$trace_id AND ")
+		}
 	}
 
 	if model.ServiceName != "" {
 		queryParams["service_names"] = structpb.NewStringValue(model.ServiceName)
-		where.WriteString("service_names::field=$service_names AND ")
+		if model.Operator.IsNotEqualOperator() {
+			where.WriteString("service_names::field!=$service_names AND ")
+		} else {
+			where.WriteString("service_names::field=$service_names AND ")
+		}
 	}
 
 	if model.RpcMethod != "" {
 		queryParams["rpc_methods"] = structpb.NewStringValue(model.RpcMethod)
-		where.WriteString("rpc_methods::field=$rpc_methods AND ")
+		if model.Operator.IsNotEqualOperator() {
+			where.WriteString("rpc_methods::field!=$rpc_methods AND ")
+		} else {
+			where.WriteString("rpc_methods::field=$rpc_methods AND ")
+		}
 	}
 
 	if model.HttpPath != "" {
 		queryParams["http_paths"] = structpb.NewStringValue(model.HttpPath)
-		where.WriteString("http_paths::field=$http_paths AND ")
+		if model.Operator.IsNotEqualOperator() {
+			where.WriteString("http_paths::field!=$http_paths AND ")
+		} else {
+			where.WriteString("http_paths::field=$http_paths AND ")
+		}
 	}
 
 	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
@@ -151,26 +167,43 @@ func (esc ElasticsearchSource) composeTraceQueryConditions(req *pb.GetTracesRequ
 	queryParams := make(map[string]*structpb.Value)
 	queryParams["terminus_keys"] = structpb.NewStringValue(req.TenantID)
 
+	operator := custom.Operator{Operator: req.Operator}
 	var where bytes.Buffer
 	// trace id condition
 	if req.TraceID != "" {
 		queryParams["trace_id"] = structpb.NewStringValue(req.TraceID)
-		where.WriteString("trace_id::tag=$trace_id AND ")
+		if operator.IsNotEqualOperator() {
+			where.WriteString("trace_id::tag!=$trace_id AND ")
+		} else {
+			where.WriteString("trace_id::tag=$trace_id AND ")
+		}
 	}
 
 	if req.ServiceName != "" {
 		queryParams["service_names"] = structpb.NewStringValue(req.ServiceName)
-		where.WriteString("service_names::field=$service_names AND ")
+		if operator.IsNotEqualOperator() {
+			where.WriteString("service_names::field!=$service_names AND ")
+		} else {
+			where.WriteString("service_names::field=$service_names AND ")
+		}
 	}
 
 	if req.RpcMethod != "" {
 		queryParams["rpc_methods"] = structpb.NewStringValue(req.RpcMethod)
-		where.WriteString("rpc_methods::field=$rpc_methods AND ")
+		if operator.IsNotEqualOperator() {
+			where.WriteString("rpc_methods::field!=$rpc_methods AND ")
+		} else {
+			where.WriteString("rpc_methods::field=$rpc_methods AND ")
+		}
 	}
 
 	if req.HttpPath != "" {
 		queryParams["http_paths"] = structpb.NewStringValue(req.HttpPath)
-		where.WriteString("http_paths::field=$http_paths AND ")
+		if operator.IsNotEqualOperator() {
+			where.WriteString("http_paths::field!=$http_paths AND ")
+		} else {
+			where.WriteString("http_paths::field=$http_paths AND ")
+		}
 	}
 
 	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {

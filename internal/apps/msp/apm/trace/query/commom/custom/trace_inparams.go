@@ -31,6 +31,11 @@ type Model struct {
 	HttpPath    string `json:"httpPath"`
 	Status      string `json:"status"`
 	Limit       int64  `json:"limit"`
+	Operator
+}
+
+type Operator struct {
+	Operator string `json:"operator"`
 }
 
 type TraceInParams struct {
@@ -48,4 +53,12 @@ func (b *TraceInParams) EncodeFromCustomInParams(customInParamsPtr interface{}, 
 
 func (b *TraceInParams) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, customInParamsPtr interface{}) {
 	cputil.MustObjJSONTransfer(stdInParamsPtr, customInParamsPtr)
+}
+
+func (m Operator) IsNotEqualOperator() bool {
+	return m.Operator == "!="
+}
+
+func (m Operator) OperatorText() string {
+	return m.Operator
 }

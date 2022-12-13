@@ -227,6 +227,7 @@ message GetTracesRequest {
   string httpPath    = 12;
   int64  pageNo      = 13;
   int64  pageSize    = 14;
+  string operator    = 15;
 }
 
 message GetSpansResponse {

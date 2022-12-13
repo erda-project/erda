@@ -102,6 +102,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 	)
 	subSQL = buildFilter(subSQL, filter{
 		OrgName:     orgName,
+		Operator:    model.Operator,
 		TenantID:    model.TenantId,
 		StartTime:   model.StartTime,
 		EndTime:     model.EndTime,
@@ -181,6 +182,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 		HttpPath:    req.HttpPath,
 		ServiceName: req.ServiceName,
 		RpcMethod:   req.RpcMethod,
+		Operator:    custom.Operator{Operator: req.Operator},
 	}
 	sel = buildFilter(sel, f).GroupBy(goqu.L(`"trace_id" WITH TOTALS`)).Order(chs.sortConditionStrategy(req.Sort)).
 		Limit(uint(req.PageSize)).Offset(uint((req.PageNo - 1) * req.PageSize))
@@ -376,6 +378,7 @@ type filter struct {
 	StartTime, EndTime                                                   int64 // ms
 	DurationMin, DurationMax                                             int64 // nano
 	OrgName, TenantID, TraceID, HttpPath, ServiceName, RpcMethod, Status string
+	Operator                                                             custom.Operator
 }
 
 func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
@@ -389,7 +392,11 @@ func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
 
 	// optional condition
 	if f.TraceID != "" {
-		sel = sel.Where(goqu.C("trace_id").Like("%" + f.TraceID + "%"))
+		if f.Operator.IsNotEqualOperator() {
+			sel = sel.Where(goqu.C("trace_id").NotLike("%" + f.TraceID + "%"))
+		} else {
+			sel = sel.Where(goqu.C("trace_id").Like("%" + f.TraceID + "%"))
+		}
 	}
 
 	if f.DurationMin > 0 && f.DurationMax > 0 && f.DurationMin < f.DurationMax {
@@ -405,13 +412,25 @@ func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
 	}
 
 	if f.HttpPath != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like("%" + f.HttpPath + "%"))
+		if f.Operator.IsNotEqualOperator() {
+			sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").NotLike("%" + f.HttpPath + "%"))
+		} else {
+			sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like("%" + f.HttpPath + "%"))
+		}
 	}
 	if f.ServiceName != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like("%" + f.ServiceName + "%"))
+		if f.Operator.IsNotEqualOperator() {
+			sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").NotLike("%" + f.ServiceName + "%"))
+		} else {
+			sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like("%" + f.ServiceName + "%"))
+		}
 	}
 	if f.RpcMethod != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like("%" + f.RpcMethod + "%"))
+		if f.Operator.IsNotEqualOperator() {
+			sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").NotLike("%" + f.RpcMethod + "%"))
+		} else {
+			sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like("%" + f.RpcMethod + "%"))
+		}
 	}
 	return sel
 }
