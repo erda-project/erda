@@ -251,6 +251,24 @@ func Test_buildFilter(t *testing.T) {
 			}},
 			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] LIKE '%/users%') AND (tag_values[indexOf(tag_keys, 'service_name')] LIKE '%msp%') AND (tag_values[indexOf(tag_keys, 'rpc_method')] LIKE '%GetUsers%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
 		},
+		{
+			name: "operator !=",
+			args: args{f: filter{
+				StartTime:   1652419305504,
+				EndTime:     1652508045504,
+				OrgName:     "erda",
+				TenantID:    "t1",
+				TraceID:     "972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf",
+				DurationMin: 10000000,
+				DurationMax: 20000000,
+				Status:      "trace_success",
+				HttpPath:    "/users",
+				ServiceName: "msp",
+				RpcMethod:   "GetUsers",
+				Operator:    custom.Operator{Operator: "!="},
+			}},
+			want: `SELECT distinct(trace_id) AS "trace_id", (toUnixTimestamp64Nano(max(end_time)) - toUnixTimestamp64Nano(min(start_time))) AS "duration", min(start_time) AS "min_start_time" FROM "spans_all" WHERE ((("end_time" <= fromUnixTimestamp64Milli(toInt64(1652508045504))) AND ("org_name" = 'erda') AND ("start_time" >= fromUnixTimestamp64Milli(toInt64(1652419305504))) AND ("tenant_id" = 't1')) AND ("trace_id" NOT LIKE '%972f7ef5-ccc4-4f1a-a0c4-3d60c3dea5cf%') AND (tag_values[indexOf(tag_keys,'error')] != 'true') AND (tag_values[indexOf(tag_keys, 'http_path')] NOT LIKE '%/users%') AND (tag_values[indexOf(tag_keys, 'service_name')] NOT LIKE '%msp%') AND (tag_values[indexOf(tag_keys, 'rpc_method')] NOT LIKE '%GetUsers%')) GROUP BY "trace_id" HAVING (("duration" >= 10000000) AND ("duration" <= 20000000))`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
