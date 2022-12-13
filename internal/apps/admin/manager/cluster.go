@@ -92,7 +92,10 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 	// get cluster list
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "admin"}))
 	// list clusters with clusterType
-	resp, err := am.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{ClusterType: clusterType})
+	resp, err := am.clusterSvc.ListCluster(ctx, &clusterpb.ListClusterRequest{
+		OrgID:       uint32(orgID),
+		ClusterType: clusterType,
+	})
 	if err != nil {
 		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 	}
@@ -133,24 +136,35 @@ func convertClusterInfoToResponse(cluster *clusterpb.ClusterInfo) *ClusterInfoRe
 	if cluster == nil {
 		return &ClusterInfoResponse{}
 	}
-	return &ClusterInfoResponse{
+
+	resp := &ClusterInfoResponse{
 		Id:             cluster.Id,
 		Name:           cluster.Name,
 		DisplayName:    cluster.DisplayName,
 		Type:           cluster.Type,
 		Description:    cluster.Description,
 		WildcardDomain: cluster.WildcardDomain,
-		SchedConfig: &SchedConfigResponse{
+		SchedConfig:    &SchedConfigResponse{},
+		ManageConfig:   &ManageConfigResponse{},
+	}
+
+	if cluster.SchedConfig != nil {
+		resp.SchedConfig = &SchedConfigResponse{
 			CpuSubscribeRatio:        cluster.SchedConfig.CpuSubscribeRatio,
 			DevCPUSubscribeRatio:     cluster.SchedConfig.DevCPUSubscribeRatio,
 			TestCPUSubscribeRatio:    cluster.SchedConfig.TestCPUSubscribeRatio,
 			StagingCPUSubscribeRatio: cluster.SchedConfig.StagingCPUSubscribeRatio,
-		},
-		ManageConfig: &ManageConfigResponse{
+		}
+	}
+
+	if cluster.ManageConfig != nil {
+		resp.ManageConfig = &ManageConfigResponse{
 			Address:          cluster.ManageConfig.Address,
 			CredentialSource: cluster.ManageConfig.CredentialSource,
-		},
+		}
 	}
+
+	return resp
 }
 
 func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
