@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/match"
 )
 
 type mockOpts struct {
@@ -118,7 +119,7 @@ func TestMatch(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			opts := mockOpts{}
-			opts.Set(compent, test.opts)
+			opts.Set(match.ProtoComponent, test.opts)
 			request, _ := http.NewRequest("GET", test.url, nil)
 			aim, got := service.Match(request, &opts)
 			require.Equal(t, test.isAim, aim)
