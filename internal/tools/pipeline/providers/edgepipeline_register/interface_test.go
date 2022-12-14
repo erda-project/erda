@@ -16,22 +16,22 @@ package edgepipeline_register
 
 import (
 	"net/http"
-	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 )
 
 func TestSourceWhiteList(t *testing.T) {
 	p := &provider{
 		Cfg: &Config{
 			AllowedSources: []string{"cdp-", "recommend-"},
+		},
+		edgeClients: map[string]apistructs.ClusterManagerClientDetail{
+			"dev": {},
 		},
 	}
 	tests := []struct {
@@ -65,10 +65,6 @@ func TestSourceWhiteList(t *testing.T) {
 			want: false,
 		},
 	}
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(p.bdl), "IsClusterManagerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterManagerClientType, _ string) (bool, error) {
-		return true, nil
-	})
-	defer patch.Unpatch()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := p.CanProxyToEdge(tt.src, "dev"); got != tt.want {
@@ -252,16 +248,13 @@ func TestIsEdge(t *testing.T) {
 }
 
 func TestShouldDispatchToEdge(t *testing.T) {
-	bdl := bundle.New()
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "IsClusterManagerClientRegistered", func(_ *bundle.Bundle, _ apistructs.ClusterManagerClientType, _ string) (bool, error) {
-		return true, nil
-	})
-	defer patch.Unpatch()
 	p := provider{
-		bdl: bdl,
 		Cfg: &Config{
 			ClusterName:    "dev",
 			AllowedSources: []string{"cdp-", "recommend-"},
+		},
+		edgeClients: map[string]apistructs.ClusterManagerClientDetail{
+			"edge": {},
 		},
 	}
 	tests := []struct {
