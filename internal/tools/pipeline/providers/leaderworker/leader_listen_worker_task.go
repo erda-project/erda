@@ -112,6 +112,12 @@ func (p *provider) leaderInitTaskWorkerAssignMap(ctx context.Context) {
 
 outLoop:
 	for {
+		select {
+		case <-ctx.Done():
+			p.Log.Warnf("exit init task worker assign map because context done, err: %v", ctx.Err())
+			return
+		default:
+		}
 		workers, err := p.listWorkers(ctx)
 		if err != nil {
 			p.Log.Errorf("failed to list workers for leaderInitTaskWorkerAssignMap(auto retry), err: %v", err)

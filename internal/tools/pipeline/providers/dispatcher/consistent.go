@@ -25,6 +25,12 @@ import (
 
 func (p *provider) initConsistentUntilSuccess(ctx context.Context) {
 	for {
+		select {
+		case <-ctx.Done():
+			p.Log.Warnf("exit initConsistentUntilSuccess because context done, err: %v", ctx.Err())
+			return
+		default:
+		}
 		// init new one
 		c, err := p.makeConsistent(ctx)
 		if err != nil {
