@@ -23,8 +23,6 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth/over_permission/match"
 )
 
-const compent = "OverPermission"
-
 type overPermissionOrgName struct {
 	provider *provider
 }
@@ -40,7 +38,7 @@ func (o *overPermissionOrgName) Weight() int64 {
 }
 
 func (o *overPermissionOrgName) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
-	opt := opts.Get(compent)
+	opt := opts.Get(match.ProtoComponent)
 	if opt == nil {
 		return false, nil
 	}

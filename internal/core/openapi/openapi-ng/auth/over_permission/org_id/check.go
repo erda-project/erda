@@ -24,8 +24,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-const compent = "CheckOverPermission"
-
 type overPermissionOrgId struct {
 	provider *provider
 }
@@ -39,7 +37,7 @@ func (o *overPermissionOrgId) Weight() int64 {
 }
 
 func (o *overPermissionOrgId) Match(r *http.Request, opts openapiauth.Options) (bool, interface{}) {
-	opt := opts.Get(compent)
+	opt := opts.Get(match.ProtoComponent)
 	if opt == nil {
 		return false, nil
 	}
