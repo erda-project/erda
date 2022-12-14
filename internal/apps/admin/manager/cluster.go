@@ -207,23 +207,22 @@ func (am *AdminManager) InspectCluster(ctx context.Context, r *http.Request, var
 		return apierrors.ErrGetCluster.MissingParameter("clusterName").ToResp(), nil
 	}
 
+	_, err := GetOrgIDStr(r)
+	if err != nil {
+		return apierrors.ErrGetCluster.InvalidParameter(err).ToResp(), nil
+	}
+
 	// get user info
 	userID := r.Header.Get(httputil.UserHeader)
 	if USERID(userID).Invalid() {
 		return apierrors.ErrGetCluster.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
 	}
 
-	// get org
-	orgIDStr, err := GetOrgIDStr(r)
-	if err != nil {
-		return apierrors.ErrGetCluster.InvalidParameter(err).ToResp(), nil
-	}
-
-	// check permission
-	if err := PermissionCheck(am.bundle, userID, orgIDStr, "", apistructs.GetAction); err != nil {
-		logrus.Errorf("list cluster failed, error: %v", err)
-		return apierrors.ErrGetCluster.InternalError(err).ToResp(), nil
-	}
+	// TODO: runtime instance console terminal access denied.
+	//if err := PermissionCheck(am.bundle, userID, orgIDStr, "", apistructs.GetAction); err != nil {
+	//	logrus.Errorf("list cluster failed, error: %v", err)
+	//	return apierrors.ErrGetCluster.InternalError(err).ToResp(), nil
+	//}
 
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "admin"}))
 	resp, err := am.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})

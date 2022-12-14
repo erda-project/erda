@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
@@ -167,5 +168,36 @@ func TestListCluster(t *testing.T) {
 	})
 
 	_, err := m.ListCluster(context.TODO(), req, map[string]string{})
+	assert.NoError(t, err)
+}
+
+func TestInspectCluster(t *testing.T) {
+	bdl := &bundle.Bundle{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	clusterService := NewMockClusterServiceServer(ctrl)
+	clusterService.EXPECT().GetCluster(gomock.Any(), gomock.Any()).AnyTimes().Return(&clusterpb.GetClusterResponse{
+		Data: &clusterpb.ClusterInfo{
+			Id:             0,
+			Name:           "fake-cluster",
+			Type:           "k8s",
+			WildcardDomain: "fake-domain",
+		},
+	}, nil)
+
+	m := &AdminManager{
+		bundle:     bdl,
+		clusterSvc: clusterService,
+	}
+
+	req, _ := http.NewRequest("GET", "https://example.com", nil)
+	req.Header.Add("Org-ID", "1")
+	req.Header.Add("User-ID", "1")
+
+	_, err := m.InspectCluster(context.TODO(), req, map[string]string{
+		"clusterName": "fake-cluster",
+	})
+
 	assert.NoError(t, err)
 }
