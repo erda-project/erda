@@ -94,12 +94,15 @@ func (p *provider) CanProxyToEdge(source apistructs.PipelineSource, clusterName 
 	if !findInWhitelist {
 		return false
 	}
-	isEdge, err := p.bdl.IsClusterManagerClientRegistered(apistructs.ClusterManagerClientTypePipeline, clusterName)
-	if !isEdge || err != nil {
-		return false
+
+	p.Lock()
+	_, ok := p.edgeClients[clusterName]
+	p.Unlock()
+	if ok {
+		return true
 	}
 
-	return true
+	return false
 }
 
 func (p *provider) GetDialContextByClusterName(clusterName string) clusterdialer.DialContextFunc {
