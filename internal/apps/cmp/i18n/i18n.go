@@ -20,6 +20,9 @@ import (
 )
 
 func InitI18N() {
+	// common
+	message.SetString(language.SimplifiedChinese, "permissionDenied", "无权限")
+
 	// ops record
 	message.SetString(language.SimplifiedChinese, "addAliECSEdgeCluster", "添加阿里云集群")
 	message.SetString(language.SimplifiedChinese, "addAliACKEdgeCluster", "添加阿里云容器服务集群") // TODO remove

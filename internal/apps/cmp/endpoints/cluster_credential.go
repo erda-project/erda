@@ -50,9 +50,14 @@ func (e *Endpoints) GetAccessKey(ctx context.Context, r *http.Request, vars map[
 	}
 
 	// permission check
-	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.GetAction)
+	err = e.CloudResourcePermissionCheck(ctx, i.UserID, i.OrgID, clusterName, apistructs.GetAction)
 	if err != nil {
-		return
+		return mkResponse(&apistructs.ClusterGetAkResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: err.Error()},
+			},
+		})
 	}
 
 	res, err := e.clusters.GetAccessKey(clusterName)
@@ -96,9 +101,14 @@ func (e *Endpoints) CreateAccessKey(ctx context.Context, r *http.Request, vars m
 	}
 
 	// permission check
-	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.CreateAction)
+	err = e.CloudResourcePermissionCheck(ctx, i.UserID, i.OrgID, req.ClusterName, apistructs.CreateAction)
 	if err != nil {
-		return
+		return mkResponse(&apistructs.ClusterGetAkResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: err.Error()},
+			},
+		})
 	}
 
 	res, err := e.clusters.GetOrCreateAccessKeyWithRecord(ctx, req.ClusterName, i.UserID, i.OrgID)
@@ -134,9 +144,14 @@ func (e *Endpoints) ResetAccessKey(ctx context.Context, r *http.Request, vars ma
 	}
 
 	// permission check
-	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.CreateAction)
+	err = e.CloudResourcePermissionCheck(ctx, i.UserID, i.OrgID, req.ClusterName, apistructs.UpdateAction)
 	if err != nil {
-		return
+		return mkResponse(&apistructs.ClusterGetAkResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: err.Error()},
+			},
+		})
 	}
 
 	res, err := e.clusters.ResetAccessKeyWithRecord(ctx, req.ClusterName, i.UserID, i.OrgID)
