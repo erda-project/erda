@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/recallsong/go-utils/errorx"
 
@@ -28,7 +29,17 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
+var consumedNum = 0
+
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	consumedNum++
+	var contentSummary string
+	if len(value) > 30 {
+		contentSummary = string(value[:30])
+	} else {
+		contentSummary = string(value)
+	}
+
 	pv := p.processors.Load()
 	if pv == nil {
 		// processors not ready, so return
@@ -108,6 +119,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	ps := (pv.(*processors.Processors)).Find("", scopeID, log.Tags)
 	var errs errorx.Errors
 	for _, processor := range ps {
+		begin := time.Now()
 		name, fields, appendTags, replaceKey, err := processor.Process(log.Content)
 		if err != nil {
 			// invalid processor or not match content
@@ -138,10 +150,16 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 			Tags:      log.Tags,
 			Fields:    fields,
 		}
+		cost := time.Since(begin)
+		if cost > time.Millisecond*20 { // too slow, print log
+			p.L.Warnf("processor %s cost %s, content: %s, reg: %s\n", name, cost, string(value), spew.Sdump(processor))
+		}
+		p.L.Debugf("msg need analyse, consumedNum: %d, cost: %v, content: %s\n", consumedNum, cost, contentSummary)
 		err = p.output.Write(metric)
 		if err != nil {
 			errs = append(errs, err)
 		}
 	}
+
 	return errs.MaybeUnwrap()
 }

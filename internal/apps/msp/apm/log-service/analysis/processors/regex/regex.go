@@ -89,7 +89,7 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 func (p *processor) initRegexps(pattern string) (regexps regexps, err error) {
 	// default regexp
 	if defaultReg, _err := regexp.Compile(pattern); _err != nil {
-		logrus.Warnf("fail to compile regexp pattern(default regexp): %s", _err)
+		logrus.Warnf("failed to compile regexp pattern(default regexp): %s", _err)
 	} else {
 		regexps.defaultReg = defaultReg
 		return
@@ -97,7 +97,7 @@ func (p *processor) initRegexps(pattern string) (regexps regexps, err error) {
 
 	// zwa regexp
 	if zwaReg, _err := regexp2.Compile(pattern, regexp2.RE2); _err != nil {
-		logrus.Warnf("fail to compile regexp pattern(zero-width-assertion ergexp): %s", _err)
+		logrus.Warnf("failed to compile regexp pattern(zero-width-assertion ergexp): %s", _err)
 	} else {
 		regexps.zwaReg = zwaReg
 		return
