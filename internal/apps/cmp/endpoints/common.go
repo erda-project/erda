@@ -15,18 +15,24 @@
 package endpoints
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	libvpc "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/message"
 
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/cmp/dbclient"
 	aliyun_resources "github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources"
 	"github.com/erda-project/erda/internal/apps/cmp/impl/aliyun-resources/vpc"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -42,6 +48,60 @@ func (e *Endpoints) PermissionCheck(userID, orgID, projectID, action string) err
 		return e.IsManager(userID, apistructs.ProjectScope, projectID)
 	}
 	return err
+}
+
+func (e *Endpoints) CloudResourcePermissionCheck(ctx context.Context, userId, orgId, clusterName, action string) error {
+	if clusterName == "" || userId == "" || orgId == "" {
+		return errors.New("invalid params")
+	}
+
+	i18n, ok := ctx.Value("i18nPrinter").(*message.Printer)
+	if !ok {
+		return errors.New("failed to get i18n printer")
+	}
+
+	orgClusterRelResp, err := e.org.GetOrgClusterRelationsByOrg(
+		apis.WithInternalClientContext(ctx, discover.SvcCMP),
+		&orgpb.GetOrgClusterRelationsByOrgRequest{
+			OrgID: orgId,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to get org cluster relations")
+	}
+
+	forbidden := true
+	for _, c := range orgClusterRelResp.Data {
+		if c.ClusterName == clusterName {
+			forbidden = false
+			break
+		}
+	}
+	if forbidden {
+		return errors.New(i18n.Sprint("permissionDenied"))
+	}
+
+	oid, err := strconv.ParseUint(orgId, 10, 64)
+	if err != nil {
+		return errors.Wrap(err, "illegal org id")
+	}
+
+	resp, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userId,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  oid,
+		Resource: apistructs.CloudResourceResource,
+		Action:   action,
+	})
+	if err != nil {
+		return err
+	}
+
+	if !resp.Access {
+		return errors.New(i18n.Sprint("permissionDenied"))
+	}
+
+	return nil
 }
 
 func (e *Endpoints) OrgPermCheck(userID, orgID, action string) error {
