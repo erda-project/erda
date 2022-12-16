@@ -21,9 +21,12 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace/query/commom/custom"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -136,4 +139,156 @@ func TestElasticsearchSource_sortConditionStrategy(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetTraceReqDistribution(t *testing.T) {
+	tests := []struct {
+		name string
+		args custom.Model
+		want string
+	}{
+		{
+			name: "normal",
+			args: custom.Model{
+				TenantId:  "11",
+				Status:    "all",
+				StartTime: 0,
+				EndTime:   1,
+			},
+			want: "SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace WHERE errors_sum::field>=0 AND terminus_keys::field=$terminus_keys GROUP BY time()",
+		},
+		{
+			name: "only service name",
+			args: custom.Model{
+				TenantId:  "11",
+				Status:    "all",
+				StartTime: 0,
+				EndTime:   1,
+				Conditions: []custom.Condition{
+					{
+						ServiceName: "aaa",
+					},
+				},
+			},
+			want: "SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace WHERE service_names::field = service_names_0 AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys GROUP BY time()",
+		},
+		{
+			name: "all condition",
+			args: custom.Model{
+				TenantId:  "11",
+				Status:    "all",
+				StartTime: 0,
+				EndTime:   1,
+				Conditions: []custom.Condition{
+					{
+						ServiceName: "aaa",
+					},
+					{
+						TraceId: "trace_id",
+					},
+					{
+						HttpPath: "/HTTP",
+					},
+					{
+						RpcMethod: "/RPC",
+					},
+				},
+			},
+			want: "SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace WHERE service_names::field = service_names_0 AND trace_id::tag = trace_id_1 AND http_paths::field = http_paths_2 AND rpc_methods::field = rpc_methods_3 AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys GROUP BY time()",
+		},
+		{
+			name: "all condition not equal",
+			args: custom.Model{
+				TenantId:  "11",
+				Status:    "all",
+				StartTime: 0,
+				EndTime:   1,
+				Conditions: []custom.Condition{
+					{
+						ServiceName: "aaa",
+						Operator:    custom.Operator{Operator: "!="},
+					},
+					{
+						TraceId:  "trace_id",
+						Operator: custom.Operator{Operator: "!="},
+					},
+					{
+						HttpPath: "/HTTP",
+						Operator: custom.Operator{Operator: "="},
+					},
+					{
+						RpcMethod: "/RPC",
+						Operator:  custom.Operator{Operator: "="},
+					},
+				},
+			},
+			want: "SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace WHERE service_names::field != service_names_0 AND trace_id::tag != trace_id_1 AND http_paths::field = http_paths_2 AND rpc_methods::field = rpc_methods_3 AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys GROUP BY time()",
+		},
+		{
+			name: "many condition",
+			args: custom.Model{
+				TenantId:  "11",
+				Status:    "all",
+				StartTime: 0,
+				EndTime:   1,
+				Conditions: []custom.Condition{
+					{
+						ServiceName: "aaa",
+					},
+					{
+						ServiceName: "bbb",
+					},
+					{
+						ServiceName: "ccc",
+					},
+					{
+						ServiceName: "dddd",
+					},
+				},
+			},
+			want: "SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace WHERE service_names::field = service_names_0 AND service_names::field = service_names_1 AND service_names::field = service_names_2 AND service_names::field = service_names_3 AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys GROUP BY time()",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockEsMetricServiceServer := mockEsMetricServiceServer{
+				check: func(request *metricpb.QueryWithInfluxFormatRequest) {
+					require.Equal(t, test.want, request.Statement)
+				},
+			}
+			source := ElasticsearchSource{Metric: mockEsMetricServiceServer}
+			_, err := source.GetTraceReqDistribution(context.Background(), test.args)
+			require.NoError(t, err)
+		})
+	}
+}
+
+type mockEsMetricServiceServer struct {
+	check func(*metricpb.QueryWithInfluxFormatRequest)
+}
+
+func (m mockEsMetricServiceServer) QueryWithInfluxFormat(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	m.check(request)
+	return nil, nil
+}
+
+func (m mockEsMetricServiceServer) SearchWithInfluxFormat(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockEsMetricServiceServer) QueryWithTableFormat(ctx context.Context, request *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockEsMetricServiceServer) SearchWithTableFormat(ctx context.Context, request *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	return nil, nil
+}
+
+func (m mockEsMetricServiceServer) GeneralQuery(ctx context.Context, request *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	return nil, nil
+}
+
+func (m mockEsMetricServiceServer) GeneralSearch(ctx context.Context, request *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	return nil, nil
 }
