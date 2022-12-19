@@ -24,6 +24,7 @@ import (
 type Processor interface {
 	Process(content string) (string, map[string]interface{}, map[string]string, map[string]string, error)
 	Keys() []*pb.FieldDefine
+	Pattern() string
 }
 
 type processor struct {

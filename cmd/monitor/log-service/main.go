@@ -37,6 +37,7 @@ import (
 	// infra
 	_ "github.com/erda-project/erda-infra/providers/health"
 	_ "github.com/erda-project/erda-infra/providers/pprof"
+	_ "github.com/erda-project/erda-infra/providers/prometheus"
 )
 
 //go:embed bootstrap.yaml
