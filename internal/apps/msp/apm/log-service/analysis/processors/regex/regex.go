@@ -17,8 +17,10 @@ package regex
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	"github.com/dlclark/regexp2"
+	"github.com/recallsong/go-utils/reflectx"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -35,11 +37,17 @@ type config struct {
 
 type processor struct {
 	metric     string
-	reg        *regexp2.Regexp
 	keys       []*pb.FieldDefine
 	appendTags map[string]string
 	replaceKey map[string]string
 	converts   []func(text string) (interface{}, error)
+	pattern    string
+	regexps    regexps
+}
+
+type regexps struct {
+	defaultReg *regexp.Regexp  // default regexp
+	zwaReg     *regexp2.Regexp // zero-width assertion regexp
 }
 
 // New .
@@ -49,10 +57,10 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fail to unmarshal regexp config: %s", err)
 	}
-	reg, err := regexp2.Compile(c.Pattern, regexp2.RE2)
-	if err != nil {
-		return nil, fmt.Errorf("fail to compile regexp pattern: %s", err)
+	if len(c.Pattern) == 0 {
+		return nil, fmt.Errorf("missing pattern")
 	}
+
 	if len(c.Keys) <= 0 {
 		return nil, fmt.Errorf("regexp keys must not be empty")
 	}
@@ -64,14 +72,41 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 		conv := convert.Converter(key.Type)
 		converts[i] = conv
 	}
-	return &processor{
+	p := &processor{
 		metric:     metric,
-		reg:        reg,
 		keys:       c.Keys,
 		appendTags: c.AppendTags,
 		replaceKey: c.ReplaceKey,
 		converts:   converts,
-	}, nil
+		pattern:    c.Pattern,
+	}
+	regexps, err := p.initRegexps(c.Pattern)
+	if err != nil {
+		return nil, err
+	}
+	p.regexps = regexps
+	return p, nil
+}
+
+func (p *processor) initRegexps(pattern string) (regexps regexps, err error) {
+	// default regexp
+	if defaultReg, _err := regexp.Compile(pattern); _err != nil {
+		logrus.Warnf("failed to compile regexp pattern(default regexp): %s", _err)
+	} else {
+		regexps.defaultReg = defaultReg
+		return
+	}
+
+	// zwa regexp
+	if zwaReg, _err := regexp2.Compile(pattern, regexp2.RE2); _err != nil {
+		logrus.Warnf("failed to compile regexp pattern(zero-width-assertion ergexp): %s", _err)
+	} else {
+		regexps.zwaReg = zwaReg
+		return
+	}
+
+	// not found
+	return regexps, fmt.Errorf("no regexp handler available")
 }
 
 // ErrNotMatch .
@@ -79,7 +114,46 @@ var ErrNotMatch = fmt.Errorf("not match regexp")
 
 // Process .
 func (p *processor) Process(content string) (string, map[string]interface{}, map[string]string, map[string]string, error) {
-	match, err := p.reg.FindStringMatch(content) // 只处理第一次匹配
+	switch true {
+	case p.regexps.zwaReg != nil:
+		// handle by zwaReg
+		return p.handleByZwaReg(content)
+	case p.regexps.defaultReg != nil:
+		// handle by defaultReg
+		return p.handleByDefaultReg(content)
+	default:
+		return "", nil, nil, nil, fmt.Errorf("no regexp handler available")
+	}
+}
+
+func (p *processor) handleByDefaultReg(content string) (string, map[string]interface{}, map[string]string, map[string]string, error) {
+	match := p.regexps.defaultReg.FindAllSubmatch(reflectx.StringToBytes(content), 1)
+	if len(match) <= 0 {
+		return "", nil, nil, nil, ErrNotMatch
+	}
+	fields := make(map[string]interface{})
+	for _, parts := range match {
+		if len(parts) != len(p.keys)+1 {
+			return "", nil, nil, nil, ErrNotMatch
+		}
+		for i, byts := range parts[1:] {
+			if i < len(p.keys) {
+				key := p.keys[i]
+				convert := p.converts[i]
+				val, err := convert(reflectx.BytesToString(byts))
+				if err != nil {
+					return "", nil, nil, nil, ErrNotMatch
+				}
+				fields[key.Key] = val
+			}
+		}
+		break // 只处理第一次匹配
+	}
+	return p.metric, fields, p.appendTags, p.replaceKey, nil
+}
+
+func (p *processor) handleByZwaReg(content string) (string, map[string]interface{}, map[string]string, map[string]string, error) {
+	match, err := p.regexps.zwaReg.FindStringMatch(content) // 只处理第一次匹配
 	if err != nil {
 		logrus.Errorf("failed to find string match, %v", err)
 		return "", nil, nil, nil, ErrNotMatch
@@ -105,6 +179,10 @@ func (p *processor) Process(content string) (string, map[string]interface{}, map
 
 func (p *processor) Keys() []*pb.FieldDefine {
 	return p.keys
+}
+
+func (p *processor) Pattern() string {
+	return p.pattern
 }
 
 func init() {

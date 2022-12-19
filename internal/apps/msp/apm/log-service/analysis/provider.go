@@ -36,6 +36,8 @@ type config struct {
 		ScopeID        string        `file:"scope_id"`
 		ScopeIDKey     string        `file:"scope_id_key"`
 		ReloadInterval time.Duration `file:"reload_interval" default:"3m"`
+
+		SlowAnalysisThreshold time.Duration `file:"slow_analysis_threshold" env:"SLOW_ANALYSIS_THRESHOLD" default:"2ms"`
 	} `file:"processors"`
 	Input  kafka.ConsumerConfig `file:"input"`
 	Output struct {
@@ -57,6 +59,8 @@ type provider struct {
 	output     writer.Writer
 	processors atomic.Value
 	db         *db.DB
+
+	selfMetrics *selfMetrics
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -67,6 +71,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
 	p.output = w
+	// self analysis metrics
+	p.selfMetrics = initSelfMetrics(ctx.Label())
 	return nil
 }
 

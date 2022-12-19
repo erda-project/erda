@@ -15,10 +15,12 @@
 package analysis
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/recallsong/go-utils/errorx"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors"
@@ -29,6 +31,8 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	p.selfMetrics.consumedNum.Inc()
+
 	pv := p.processors.Load()
 	if pv == nil {
 		// processors not ready, so return
@@ -108,6 +112,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	ps := (pv.(*processors.Processors)).Find("", scopeID, log.Tags)
 	var errs errorx.Errors
 	for _, processor := range ps {
+		begin := time.Now()
 		name, fields, appendTags, replaceKey, err := processor.Process(log.Content)
 		if err != nil {
 			// invalid processor or not match content
@@ -138,10 +143,21 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 			Tags:      log.Tags,
 			Fields:    fields,
 		}
+		cost := time.Since(begin)
+		if cost > p.C.Processors.SlowAnalysisThreshold { // too slow
+			p.selfMetrics.slowAnalysis.With(prometheus.Labels{
+				keyMetric:          name,
+				keyPattern:         processor.Pattern(),
+				keyContent:         log.Content,
+				keyCostTime:        cost.String(),
+				keyCostTimeNanoSec: fmt.Sprintf("%d", cost.Nanoseconds())},
+			).Inc()
+		}
 		err = p.output.Write(metric)
 		if err != nil {
 			errs = append(errs, err)
 		}
 	}
+
 	return errs.MaybeUnwrap()
 }

@@ -483,6 +483,9 @@ services:
       - port: 7099
         protocol: "TCP"
         l4_protocol: "TCP"
+      - port: 7098
+        protocol: "TCP"
+        l4_protocol: "TCP"
     envs:
       LOG_SERVICE_INSTANCE_ID: "30563290-f3a8-4f8f-b42b-cc5d3b8ac7c7"
       LOG_KAFKA_TOPICS: "spot-container-log"
