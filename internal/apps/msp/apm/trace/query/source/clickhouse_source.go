@@ -108,10 +108,7 @@ func (chs *ClickhouseSource) GetTraceReqDistribution(ctx context.Context, model 
 		DurationMin: model.DurationMin,
 		DurationMax: model.DurationMax,
 		Status:      model.Status,
-		TraceID:     model.TraceId,
-		HttpPath:    model.HttpPath,
-		ServiceName: model.ServiceName,
-		RpcMethod:   model.RpcMethod,
+		Conditions:  model.Conditions,
 	})
 	subSQL = subSQL.GroupBy("trace_id")
 
@@ -178,9 +175,7 @@ func (chs *ClickhouseSource) GetTraces(ctx context.Context, req *pb.GetTracesReq
 		DurationMax: req.DurationMax,
 		Status:      req.Status,
 		TraceID:     req.TraceID,
-		HttpPath:    req.HttpPath,
-		ServiceName: req.ServiceName,
-		RpcMethod:   req.RpcMethod,
+		Conditions:  custom.ConvertConditionByPbCondition(req.Conditions),
 	}
 	sel = buildFilter(sel, f).GroupBy(goqu.L(`"trace_id" WITH TOTALS`)).Order(chs.sortConditionStrategy(req.Sort)).
 		Limit(uint(req.PageSize)).Offset(uint((req.PageNo - 1) * req.PageSize))
@@ -373,9 +368,10 @@ func GetInterval(duration int64) (int64, string, int64) {
 }
 
 type filter struct {
-	StartTime, EndTime                                                   int64 // ms
-	DurationMin, DurationMax                                             int64 // nano
-	OrgName, TenantID, TraceID, HttpPath, ServiceName, RpcMethod, Status string
+	StartTime, EndTime                 int64 // ms
+	DurationMin, DurationMax           int64 // nano
+	OrgName, TenantID, TraceID, Status string
+	Conditions                         []custom.Condition
 }
 
 func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
@@ -392,6 +388,40 @@ func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
 		sel = sel.Where(goqu.C("trace_id").Like("%" + f.TraceID + "%"))
 	}
 
+	if len(f.Conditions) > 0 {
+		for _, condition := range f.Conditions {
+			if condition.TraceId != "" {
+				if condition.Operator.IsNotEqualOperator() {
+					sel = sel.Where(goqu.C("trace_id").NotLike("%" + condition.TraceId + "%"))
+				} else {
+					sel = sel.Where(goqu.C("trace_id").Like("%" + condition.TraceId + "%"))
+				}
+			}
+
+			if condition.HttpPath != "" {
+				if condition.Operator.IsNotEqualOperator() {
+					sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").NotLike("%" + condition.HttpPath + "%"))
+				} else {
+					sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like("%" + condition.HttpPath + "%"))
+				}
+			}
+			if condition.ServiceName != "" {
+				if condition.Operator.IsNotEqualOperator() {
+					sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").NotLike("%" + condition.ServiceName + "%"))
+				} else {
+					sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like("%" + condition.ServiceName + "%"))
+				}
+			}
+			if condition.RpcMethod != "" {
+				if condition.Operator.IsNotEqualOperator() {
+					sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").NotLike("%" + condition.RpcMethod + "%"))
+				} else {
+					sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like("%" + condition.RpcMethod + "%"))
+				}
+			}
+		}
+	}
+
 	if f.DurationMin > 0 && f.DurationMax > 0 && f.DurationMin < f.DurationMax {
 		sel = sel.Having(goqu.C("duration").Gte(f.DurationMin), goqu.C("duration").Lte(f.DurationMax))
 	}
@@ -404,15 +434,6 @@ func buildFilter(sel *goqu.SelectDataset, f filter) *goqu.SelectDataset {
 	default:
 	}
 
-	if f.HttpPath != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'http_path')]").Like("%" + f.HttpPath + "%"))
-	}
-	if f.ServiceName != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'service_name')]").Like("%" + f.ServiceName + "%"))
-	}
-	if f.RpcMethod != "" {
-		sel = sel.Where(goqu.L("tag_values[indexOf(tag_keys, 'rpc_method')]").Like("%" + f.RpcMethod + "%"))
-	}
 	return sel
 }
 

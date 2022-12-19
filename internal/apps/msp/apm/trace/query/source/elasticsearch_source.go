@@ -82,24 +82,33 @@ func (esc ElasticsearchSource) GetTraceReqDistribution(ctx context.Context, mode
 
 	var where bytes.Buffer
 	// trace id condition
-	if model.TraceId != "" {
-		queryParams["trace_id"] = structpb.NewStringValue(model.TraceId)
-		where.WriteString("trace_id::tag=$trace_id AND ")
-	}
+	if len(model.Conditions) > 0 {
+		for i, condition := range model.Conditions {
+			if condition.TraceId != "" {
+				key := fmt.Sprintf("trace_id_%v", i)
+				queryParams[key] = structpb.NewStringValue(condition.TraceId)
+				where.WriteString(fmt.Sprintf("trace_id::tag %s %s AND ", condition.OperatorText(), key))
+			}
 
-	if model.ServiceName != "" {
-		queryParams["service_names"] = structpb.NewStringValue(model.ServiceName)
-		where.WriteString("service_names::field=$service_names AND ")
-	}
+			if condition.ServiceName != "" {
+				key := fmt.Sprintf("service_names_%v", i)
+				queryParams[key] = structpb.NewStringValue(condition.ServiceName)
+				where.WriteString(fmt.Sprintf("service_names::field %s %s AND ", condition.OperatorText(), key))
+			}
 
-	if model.RpcMethod != "" {
-		queryParams["rpc_methods"] = structpb.NewStringValue(model.RpcMethod)
-		where.WriteString("rpc_methods::field=$rpc_methods AND ")
-	}
+			if condition.RpcMethod != "" {
+				key := fmt.Sprintf("rpc_methods_%v", i)
+				queryParams["key"] = structpb.NewStringValue(condition.RpcMethod)
+				where.WriteString(fmt.Sprintf("rpc_methods::field %s %s AND ", condition.OperatorText(), key))
 
-	if model.HttpPath != "" {
-		queryParams["http_paths"] = structpb.NewStringValue(model.HttpPath)
-		where.WriteString("http_paths::field=$http_paths AND ")
+			}
+
+			if condition.HttpPath != "" {
+				key := fmt.Sprintf("http_paths_%v", i)
+				queryParams["key"] = structpb.NewStringValue(condition.HttpPath)
+				where.WriteString(fmt.Sprintf("http_paths::field %s %s AND ", condition.OperatorText(), key))
+			}
+		}
 	}
 
 	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
@@ -124,6 +133,9 @@ func (esc ElasticsearchSource) GetTraceReqDistribution(ctx context.Context, mode
 	if err != nil {
 		esc.Log.Error(err)
 		return nil, err
+	}
+	if response == nil || len(response.Results) == 0 || len(response.Results[0].Series) == 0 {
+		return []*TraceDistributionItem{}, nil
 	}
 	rows := response.Results[0].Series[0].Rows
 	if rows == nil || len(rows) == 0 {
@@ -158,25 +170,31 @@ func (esc ElasticsearchSource) composeTraceQueryConditions(req *pb.GetTracesRequ
 		where.WriteString("trace_id::tag=$trace_id AND ")
 	}
 
-	if req.ServiceName != "" {
-		queryParams["service_names"] = structpb.NewStringValue(req.ServiceName)
-		where.WriteString("service_names::field=$service_names AND ")
-	}
+	for i, condition := range custom.ConvertConditionByPbCondition(req.Conditions) {
+		if condition.TraceId != "" {
+			key := fmt.Sprintf("trace_id_%v", i)
+			queryParams[key] = structpb.NewStringValue(condition.TraceId)
+			where.WriteString(fmt.Sprintf("trace_id::tag%s %s AND ", condition.OperatorText(), key))
+		}
 
-	if req.RpcMethod != "" {
-		queryParams["rpc_methods"] = structpb.NewStringValue(req.RpcMethod)
-		where.WriteString("rpc_methods::field=$rpc_methods AND ")
-	}
+		if condition.ServiceName != "" {
+			key := fmt.Sprintf("service_names_%v", i)
+			queryParams[key] = structpb.NewStringValue(condition.ServiceName)
+			where.WriteString(fmt.Sprintf("service_names::field%s %s AND ", condition.OperatorText(), key))
+		}
 
-	if req.HttpPath != "" {
-		queryParams["http_paths"] = structpb.NewStringValue(req.HttpPath)
-		where.WriteString("http_paths::field=$http_paths AND ")
-	}
+		if condition.RpcMethod != "" {
+			key := fmt.Sprintf("rpc_methods_%v", i)
+			queryParams["key"] = structpb.NewStringValue(condition.RpcMethod)
+			where.WriteString(fmt.Sprintf("rpc_methods::field%s %s AND ", condition.OperatorText(), key))
 
-	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
-		queryParams["duration_min"] = structpb.NewNumberValue(float64(req.DurationMin))
-		queryParams["duration_max"] = structpb.NewNumberValue(float64(req.DurationMax))
-		where.WriteString("trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND ")
+		}
+
+		if condition.HttpPath != "" {
+			key := fmt.Sprintf("http_paths_%v", i)
+			queryParams["key"] = structpb.NewStringValue(condition.HttpPath)
+			where.WriteString(fmt.Sprintf("http_paths::field%s %s AND ", condition.OperatorText(), key))
+		}
 	}
 
 	// trace status condition

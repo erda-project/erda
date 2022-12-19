@@ -222,11 +222,17 @@ message GetTracesRequest {
   int64  durationMin = 7;
   int64  durationMax = 8;
   string sort        = 9;
-  string serviceName = 10;
-  string rpcMethod   = 11;
-  string httpPath    = 12;
-  int64  pageNo      = 13;
-  int64  pageSize    = 14;
+  int64  pageNo      = 10;
+  int64  pageSize    = 11;
+  repeated Condition conditions = 12;
+}
+
+message Condition {
+  string traceID     = 1 [json_name = "traceId"];
+  string serviceName = 2;
+  string rpcMethod   = 3;
+  string httpPath    = 4;
+  string operator    = 5;
 }
 
 message GetSpansResponse {
