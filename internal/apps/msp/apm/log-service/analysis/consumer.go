@@ -15,11 +15,12 @@
 package analysis
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/recallsong/go-utils/errorx"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/log-service/analysis/processors"
@@ -29,16 +30,8 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-var consumedNum = 0
-
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
-	consumedNum++
-	var contentSummary string
-	if len(value) > 30 {
-		contentSummary = string(value[:30])
-	} else {
-		contentSummary = string(value)
-	}
+	p.selfMetrics.consumedNum.Inc()
 
 	pv := p.processors.Load()
 	if pv == nil {
@@ -151,10 +144,15 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 			Fields:    fields,
 		}
 		cost := time.Since(begin)
-		if cost > time.Millisecond*20 { // too slow, print log
-			p.L.Warnf("processor %s cost %s, content: %s, reg: %s\n", name, cost, string(value), spew.Sdump(processor))
+		if cost > p.C.Processors.SlowAnalysisThreshold { // too slow
+			p.selfMetrics.slowAnalysis.With(prometheus.Labels{
+				keyMetric:          name,
+				keyPattern:         processor.Pattern(),
+				keyContent:         log.Content,
+				keyCostTime:        cost.String(),
+				keyCostTimeNanoSec: fmt.Sprintf("%d", cost.Nanoseconds())},
+			).Inc()
 		}
-		p.L.Debugf("msg need analyse, consumedNum: %d, cost: %v, content: %s\n", consumedNum, cost, contentSummary)
 		err = p.output.Write(metric)
 		if err != nil {
 			errs = append(errs, err)

@@ -140,3 +140,4 @@ logs-metrics-analysis@cluster:
 http-server@admin:
     addr: ":7098"
 pprof:
+prometheus:

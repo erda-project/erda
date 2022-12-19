@@ -41,6 +41,7 @@ type processor struct {
 	appendTags map[string]string
 	replaceKey map[string]string
 	converts   []func(text string) (interface{}, error)
+	pattern    string
 	regexps    regexps
 }
 
@@ -77,6 +78,7 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 		appendTags: c.AppendTags,
 		replaceKey: c.ReplaceKey,
 		converts:   converts,
+		pattern:    c.Pattern,
 	}
 	regexps, err := p.initRegexps(c.Pattern)
 	if err != nil {
@@ -177,6 +179,10 @@ func (p *processor) handleByZwaReg(content string) (string, map[string]interface
 
 func (p *processor) Keys() []*pb.FieldDefine {
 	return p.keys
+}
+
+func (p *processor) Pattern() string {
+	return p.pattern
 }
 
 func init() {
