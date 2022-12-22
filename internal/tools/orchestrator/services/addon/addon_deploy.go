@@ -575,8 +575,12 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			buildErr = a.BuildEsServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 		}
 	case apistructs.AddonRocketMQ:
-		addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "3"
-		buildErr = a.BuildRocketMqServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
+		if capacity.RocketMQOperator && version.Compare(addonSpec.Version, "5.0.0", ">=") {
+			buildErr = a.BuildRocketMQOperaotrServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo, addonSpec.Version)
+		} else {
+			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "3"
+			buildErr = a.BuildRocketMqServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
+		}
 	case apistructs.AddonKafka:
 		addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
 		buildErr = a.BuildKafkaServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
