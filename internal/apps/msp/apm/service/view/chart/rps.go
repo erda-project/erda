@@ -37,7 +37,7 @@ type RpsChart struct {
 
 func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 
-	statement := fmt.Sprintf("SELECT rateps(elapsed_count::field) "+
+	statement := fmt.Sprintf("SELECT sum(elapsed_count::field) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
@@ -80,21 +80,15 @@ func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 
 	rows := response.Results[0].Series[0].Rows
 	maxValue := float64(0)
-	for i, row := range rows {
+	for _, row := range rows {
 		rpsChart := new(pb.Chart)
 		timestamp := int64(0)
-		if i == 0 {
-			date := row.Values[0].GetStringValue()
-			parse, err := time.ParseInLocation(Layout, date, time.Local)
-			if err != nil {
-				return nil, err
-			}
-			timestamp = parse.UnixNano() / int64(time.Millisecond)
-		} else {
-			timestampNano := row.Values[0].GetNumberValue()
-			timestamp = int64(timestampNano) / int64(time.Millisecond)
+		date := row.Values[0].GetStringValue()
+		parse, err := time.ParseInLocation(Layout, date, time.Local)
+		if err != nil {
+			return nil, err
 		}
-
+		timestamp = parse.UnixNano() / int64(time.Millisecond)
 		rpsChart.Timestamp = timestamp
 		rpsChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 		rpsChart.Dimension = "RPS"
