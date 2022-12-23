@@ -50,6 +50,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		data, err := p.DataSource.GetTable(context.WithValue(sdk.Ctx, common.LangKey, sdk.Lang),
 			&viewtable.ErrorTransactionTableBuilder{
 				BaseBuildParams: &viewtable.BaseBuildParams{
+					SdkCtx:    sdk.Ctx,
 					TenantId:  p.InParamsPtr.TenantId,
 					ServiceId: p.InParamsPtr.ServiceId,
 					StartTime: p.InParamsPtr.StartTime,
