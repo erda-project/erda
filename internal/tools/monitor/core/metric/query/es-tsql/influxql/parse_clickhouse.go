@@ -498,9 +498,23 @@ func (p *Parser) filterToExpr(filters []*model.Filter, expr exp.ExpressionList) 
 				expressionList = expressionList.Append(goqu.L(key).In(values))
 			}
 		case "match":
-			expressionList = expressionList.Append(goqu.L(key).Like(fmt.Sprintf("%%%v%%", item.Value)))
+			if item.Value == "*" {
+				continue
+			}
+			v := item.Value.(string)
+			if strings.IndexAny(v, "*") != -1 {
+				v = strings.ReplaceAll(v, "*", "%")
+			}
+			expressionList = expressionList.Append(goqu.L(key).Like(fmt.Sprintf("%%%v%%", v)))
 		case "nmatch":
-			expressionList = expressionList.Append(goqu.L(key).NotLike(fmt.Sprintf("%%%v%%", item.Value)))
+			if item.Value == "*" {
+				continue
+			}
+			v := item.Value.(string)
+			if strings.IndexAny(v, "*") != -1 {
+				v = strings.ReplaceAll(v, "*", "%")
+			}
+			expressionList = expressionList.Append(goqu.L(key).NotLike(fmt.Sprintf("%%%v%%", v)))
 
 		case "or_eq":
 			orExpr := goqu.L(key).Eq(item.Value)
@@ -548,22 +562,23 @@ func (p *Parser) filterOnExpr(expr exp.ExpressionList) (exp.ExpressionList, erro
 }
 
 func (p *Parser) conditionOnExpr(expr *goqu.SelectDataset, s *influxql.SelectStatement) (*goqu.SelectDataset, error) {
+	exprList := goqu.And()
+	var err error
 	if s.Condition != nil {
-		exprList := goqu.And()
-		var err error
 		exprList, err = p.parseConditionOnExpr(s.Condition, exprList)
 		if err != nil {
 			return nil, err
 		}
+	}
 
+	if len(p.filter) > 0 {
 		// add parser filter to expr
 		exprList, err = p.filterOnExpr(exprList)
 		if err != nil {
 			return nil, errors.Wrap(err, "select stmt parse to filter is error")
 		}
-
-		expr = expr.Where(exprList)
 	}
+	expr = expr.Where(exprList)
 	return expr, nil
 }
 
