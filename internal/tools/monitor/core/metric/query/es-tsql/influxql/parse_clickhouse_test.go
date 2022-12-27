@@ -199,6 +199,28 @@ func TestFilterToExpr(t *testing.T) {
 			want: "SELECT * FROM \"table\" WHERE (column LIKE '%12313%')",
 		},
 		{
+			name: "match *",
+			args: []*model.Filter{
+				{
+					Key:      "tags.addon_id",
+					Value:    "*",
+					Operator: "match",
+				},
+			},
+			want: "SELECT * FROM \"table\"",
+		},
+		{
+			name: "match * content",
+			args: []*model.Filter{
+				{
+					Key:      "tags.addon_id",
+					Value:    "*123",
+					Operator: "match",
+				},
+			},
+			want: "SELECT * FROM \"table\" WHERE (tag_values[indexOf(tag_keys,'addon_id')] LIKE '%%123%')",
+		},
+		{
 			name: "nmatch",
 			args: []*model.Filter{
 				{
@@ -208,6 +230,28 @@ func TestFilterToExpr(t *testing.T) {
 				},
 			},
 			want: "SELECT * FROM \"table\" WHERE (column NOT LIKE '%12313%')",
+		},
+		{
+			name: "nmatch *",
+			args: []*model.Filter{
+				{
+					Key:      "column",
+					Value:    "*",
+					Operator: "nmatch",
+				},
+			},
+			want: "SELECT * FROM \"table\"",
+		},
+		{
+			name: "nmatch * content",
+			args: []*model.Filter{
+				{
+					Key:      "column",
+					Value:    "12313*",
+					Operator: "nmatch",
+				},
+			},
+			want: "SELECT * FROM \"table\" WHERE (column NOT LIKE '%12313%%')",
 		},
 		{
 			name: "or eq",
