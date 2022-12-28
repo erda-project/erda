@@ -1089,6 +1089,111 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 	return nil
 }
 
+func (a *Addon) BuildRocketMQOperaotrServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
+	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData, version string) error {
+	addonDice.Meta = map[string]string{
+		"USE_OPERATOR": apistructs.AddonRocketMQ,
+		"VERSION":      version,
+	}
+	addonID := a.getRandomId()
+	addonDeployPlan := addonSpec.Plan[params.Plan]
+	serviceMap := diceyml.Services{}
+
+	var nameSrvPlan apistructs.AddonPlanItem
+	var brokerPlan apistructs.AddonPlanItem
+	var consolePlan apistructs.AddonPlanItem
+	if len(addonDeployPlan.InsideMoudle) > 0 {
+		nameSrvPlan = addonDeployPlan.InsideMoudle[addonSpec.Name+"-namesrv"]
+		brokerPlan = addonDeployPlan.InsideMoudle[addonSpec.Name+"-broker"]
+		consolePlan = addonDeployPlan.InsideMoudle[addonSpec.Name+"-console"]
+	} else {
+		nameSrvPlan = addonDeployPlan
+		brokerPlan = addonDeployPlan
+		consolePlan = addonDeployPlan
+	}
+	// name service item
+	nameServiceItem := *addonDice.Services[addonSpec.Name+"-namesrv"]
+	nameServiceItem.Resources = diceyml.Resources{CPU: nameSrvPlan.CPU, MaxCPU: nameSrvPlan.MaxCPU, Mem: nameSrvPlan.Mem, MaxMem: nameSrvPlan.MaxMem}
+	// label
+	if len(nameServiceItem.Labels) == 0 {
+		nameServiceItem.Labels = map[string]string{}
+	}
+	nameServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-namesrv"
+	SetlabelsFromOptions(params.Options, nameServiceItem.Labels)
+	// envs
+	nameSrvHeapSize := getHeapSize(nameServiceItem.Resources.Mem)
+	nameSrvHeapSizeInt, _ := strconv.Atoi(nameSrvHeapSize)
+	nameServiceItem.Envs = map[string]string{
+		"ADDON_ID":      addonIns.ID,
+		"ADDON_NODE_ID": addonID,
+		"Xms":           nameSrvHeapSize + "m",
+		"Xmx":           nameSrvHeapSize + "m",
+		"Xmn":           strconv.Itoa(int(nameSrvHeapSizeInt/2)) + "m",
+		"JAVA_OPTS":     strings.Join([]string{"-Xms", nameSrvHeapSize, "m -Xmx", nameSrvHeapSize, "m"}, ""),
+	}
+	//nameServiceItem.Binds = diceyml.Binds{nameSrvNodeId + "-namesrv-store:/opt/store:rw", nameSrvNodeId + "-namesrv-logs:/opt/logs:rw"}
+	//  /opt/store volume
+	nameSrvVol01 := SetAddonVolumes(params.Options, "/opt/store", false)
+	//  /opt/logs volume
+	nameSrvVol02 := SetAddonVolumes(params.Options, "/opt/logs", false)
+	nameServiceItem.Volumes = diceyml.Volumes{nameSrvVol01, nameSrvVol02}
+	serviceMap[addonSpec.Name+"-namesrv"] = &nameServiceItem
+
+	// broker item
+	brokerServiceItem := *addonDice.Services[addonSpec.Name+"-broker"]
+	brokerServiceItem.Resources = diceyml.Resources{CPU: brokerPlan.CPU, MaxCPU: brokerPlan.MaxCPU, Mem: brokerPlan.Mem, MaxMem: brokerPlan.MaxMem}
+	// label
+	if len(brokerServiceItem.Labels) == 0 {
+		brokerServiceItem.Labels = map[string]string{}
+	}
+	brokerServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-broker"
+	SetlabelsFromOptions(params.Options, brokerServiceItem.Labels)
+	// envs
+	brokerHeapSize := getHeapSize(brokerPlan.Mem)
+	brokerHeapSizeInt, _ := strconv.Atoi(brokerHeapSize)
+	brokerServiceItem.Envs = map[string]string{
+		"ADDON_ID":      addonIns.ID,
+		"ADDON_NODE_ID": addonID,
+		"Xms":           brokerHeapSize + "m",
+		"Xmx":           brokerHeapSize + "m",
+		"Xmn":           strconv.Itoa(int(brokerHeapSizeInt/2)) + "m",
+		"JAVA_OPTS":     strings.Join([]string{"-Xms", brokerHeapSize, "m -Xmx", brokerHeapSize, "m"}, ""),
+	}
+	// binds
+	//brokerServiceItem.Binds = diceyml.Binds{brokerNodeId + "-broker-store:/opt/store:rw", brokerNodeId + "-broker-logs:/opt/logs:rw"}
+	//  /opt/store volume
+	vol01 := SetAddonVolumes(params.Options, "/opt/store", false)
+	//  /opt/logs volume
+	vol02 := SetAddonVolumes(params.Options, "/opt/logs", false)
+	brokerServiceItem.Volumes = diceyml.Volumes{vol01, vol02}
+	serviceMap[addonSpec.Name+"-broker"] = &brokerServiceItem
+
+	// console item
+	consoleServiceItem := addonDice.Services[addonSpec.Name+"-console"]
+	consoleServiceItem.Resources = diceyml.Resources{CPU: consolePlan.CPU, MaxCPU: consolePlan.MaxCPU, Mem: consolePlan.Mem, MaxMem: consolePlan.MaxMem}
+	// label
+	if len(consoleServiceItem.Labels) == 0 {
+		consoleServiceItem.Labels = map[string]string{}
+	}
+	consoleServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-console"
+	SetlabelsFromOptions(params.Options, consoleServiceItem.Labels)
+	// envs
+	heapSize := getHeapSize(consolePlan.Mem)
+	heapSizeInt, _ := strconv.Atoi(heapSize)
+	consoleServiceItem.Envs = map[string]string{
+		"ADDON_ID":      addonIns.ID,
+		"ADDON_NODE_ID": a.getRandomId(),
+		"Xms":           heapSize + "m",
+		"Xmx":           heapSize + "m",
+		"Xmn":           strconv.Itoa(int(heapSizeInt/2)) + "m",
+		"JAVA_OPTS":     strings.Join([]string{"-Xms", heapSize, "m -Xmx", heapSize, " -Dcom.rocketmq.sendMessageWithVIPChannel=false"}, ""),
+	}
+	serviceMap[addonSpec.Name+"-console"] = consoleServiceItem
+
+	addonDice.Services = serviceMap
+	return nil
+}
+
 // buildMysqlOperatorServiceItem 生成operator发布的格式
 func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, operatorSpec *apistructs.AddonExtension, operatorDice, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 	password, err := a.savePassword(addonIns, apistructs.AddonMysqlPasswordKey)

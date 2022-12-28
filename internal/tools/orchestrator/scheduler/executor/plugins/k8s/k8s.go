@@ -49,6 +49,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/elasticsearch"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/mysql"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/redis"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/rocketmq"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/sourcecov"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/clusterinfo"
 	ds "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/daemonset"
@@ -228,6 +229,7 @@ type Kubernetes struct {
 	canaloperator         addon.AddonOperator
 	daemonsetoperator     addon.AddonOperator
 	sourcecovoperator     addon.AddonOperator
+	rocketmqoperator      addon.AddonOperator
 
 	// instanceinfoSyncCancelFunc
 	instanceinfoSyncCancelFunc context.CancelFunc
@@ -460,6 +462,8 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
 	k.daemonsetoperator = daemonsetoperator
 	k.sourcecovoperator = sourcecov.New(k, client, k, ns)
+	rocketmqoperator := rocketmq.New(k, ns, client, k)
+	k.rocketmqoperator = rocketmqoperator
 	return k, nil
 }
 
@@ -718,6 +722,7 @@ func (k *Kubernetes) CapacityInfo() apistructs.CapacityInfoData {
 	r.CanalOperator = k.canaloperator.IsSupported()
 	r.DaemonsetOperator = k.daemonsetoperator.IsSupported()
 	r.SourcecovOperator = k.sourcecovoperator.IsSupported()
+	r.RocketMQOperator = k.rocketmqoperator.IsSupported()
 	return r
 }
 
@@ -1320,6 +1325,8 @@ func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error)
 		return k.daemonsetoperator, nil
 	case apistructs.AddonSourcecov:
 		return k.sourcecovoperator, nil
+	case apistructs.AddonRocketMQ:
+		return k.rocketmqoperator, nil
 	}
 	return nil, fmt.Errorf("not found")
 }

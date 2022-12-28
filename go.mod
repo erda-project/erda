@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	bou.ke/monkey v1.0.2
+	erda.cloud/rocketmq v0.0.0-20221216094959-4f1e33965edc
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2
 	github.com/ClickHouse/clickhouse-go/v2 v2.2.0
 	github.com/DATA-DOG/go-sqlmock v1.5.0
@@ -190,7 +191,7 @@ require (
 	k8s.io/kubernetes v1.21.0
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
 	modernc.org/mathutil v1.0.0
-	sigs.k8s.io/controller-runtime v0.13.0
+	sigs.k8s.io/controller-runtime v0.13.1
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.3.0
 )
@@ -445,6 +446,7 @@ require (
 )
 
 replace (
+	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
 	github.com/erda-project/erda-infra => github.com/erda-project/erda-infra v0.0.0-20220928061127-9fca81f05238

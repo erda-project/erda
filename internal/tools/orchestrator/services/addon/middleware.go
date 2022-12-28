@@ -88,6 +88,9 @@ func isOperatorAddon(addon dbclient.AddonInstance) bool {
 	if addon.AddonName == "terminus-elasticsearch" && version.Compare(addon.Version, "6.8.9", ">=") {
 		return true
 	}
+	if addon.AddonName == "rocketmq" && version.Compare(addon.Version, "5.0.0", ">=") {
+		return true
+	}
 	return false
 }
 
