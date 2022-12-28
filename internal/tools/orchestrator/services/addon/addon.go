@@ -1975,7 +1975,12 @@ func (a *Addon) doAddonScale(addonInstance *dbclient.AddonInstance, addonInstanc
 }
 
 func addonCanScale(addonName, addonId, plan, version, status, action string) error {
-	if addonName == apistructs.AddonES && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "6.8.9" || version == "6.8.22") {
+	if addonName == apistructs.AddonES && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "6.8.9" || version == "6.8.22" || version == "7.17.7") {
+		errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
+		return errors.New(errMsg)
+	}
+
+	if addonName == apistructs.AddonRocketMQ && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "5.0.0") {
 		errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
 		return errors.New(errMsg)
 	}

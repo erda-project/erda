@@ -843,6 +843,7 @@ type CapacityInfoData struct {
 	CanalOperator         bool `json:"canalOperator"`
 	DaemonsetOperator     bool `json:"daemonsetOperator"`
 	SourcecovOperator     bool `json:"sourcecovOperator"`
+	RocketMQOperator      bool `json:"rocketMQOperator"`
 }
 
 type ComponentInfoResponse struct {

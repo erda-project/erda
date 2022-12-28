@@ -18,7 +18,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func TestSetlabelsFromOptions(t *testing.T) {
@@ -52,4 +56,64 @@ func TestSetlabelsFromOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildRocketMQOperaotrServiceItem(t *testing.T) {
+	params := &apistructs.AddonHandlerCreateItem{
+		Options: map[string]string{},
+		Plan:    "basic",
+	}
+	addonIns := &dbclient.AddonInstance{
+		ID: "1",
+	}
+	addonSpec := &apistructs.AddonExtension{
+		Name: "rocketmq",
+		Plan: map[string]apistructs.AddonPlanItem{
+			"basic": {
+				InsideMoudle: map[string]apistructs.AddonPlanItem{
+					"rocketmq-namesrv": {
+						CPU:   1,
+						Mem:   2048,
+						Nodes: 1,
+					},
+					"rocketmq-broker": {
+						CPU:   1,
+						Mem:   2048,
+						Nodes: 1,
+					},
+					"rocketmq-console": {
+						CPU:   0.5,
+						Mem:   1024,
+						Nodes: 1,
+					},
+				},
+			},
+		},
+	}
+	addonDice := &diceyml.Object{
+		Services: diceyml.Services{
+			"rocketmq-namesrv": {
+				Labels: map[string]string{},
+				Envs: map[string]string{
+					"ADON_TYPE": "rocketmq",
+				},
+			},
+			"rocketmq-broker": {
+				Labels: map[string]string{},
+				Envs: map[string]string{
+					"ADON_TYPE": "rocketmq",
+				},
+			},
+			"rocketmq-console": {
+				Labels: map[string]string{},
+				Envs: map[string]string{
+					"ADON_TYPE": "rocketmq",
+				},
+			},
+		},
+	}
+	a := &Addon{}
+
+	err := a.BuildRocketMQOperaotrServiceItem(params, addonIns, addonSpec, addonDice, nil, "5.0.0")
+	assert.NoError(t, err)
 }
