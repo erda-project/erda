@@ -26,3 +26,11 @@ func TestNotClickhouseMetaInit(t *testing.T) {
 	manage.sources[ClickhouseMetaSource] = true
 	require.NoError(t, manage.Init())
 }
+
+func TestClickhouseMetaInit(t *testing.T) {
+	manage := Manager{}
+	manage.sources = make(map[MetaSource]bool)
+	manage.sources[ClickhouseMetaSource] = true
+	manage.ckMetaLoader = mockMeta{}
+	require.NoError(t, manage.Init())
+}

@@ -128,19 +128,17 @@ func (m *Manager) Init() error {
 		m.metricProviders = append(m.metricProviders, func() MetricMetaProvider { return mp })
 	}
 
-	if m.sources[ClickhouseMetaSource] {
-		if m.ckMetaLoader != nil {
-			gp, err := NewMetaClickhouseGroupProvider(m.ckMetaLoader)
-			if err != nil {
-				return err
-			}
-			m.groupProviders = append(m.groupProviders, func() GroupProvider { return gp })
-			mp, err := NewMetaClickhouseGroupProvider(m.ckMetaLoader)
-			if err != nil {
-				return err
-			}
-			m.metricProviders = append(m.metricProviders, func() MetricMetaProvider { return mp })
+	if m.sources[ClickhouseMetaSource] && m.ckMetaLoader != nil {
+		gp, err := NewMetaClickhouseGroupProvider(m.ckMetaLoader)
+		if err != nil {
+			return err
 		}
+		m.groupProviders = append(m.groupProviders, func() GroupProvider { return gp })
+		mp, err := NewMetaClickhouseGroupProvider(m.ckMetaLoader)
+		if err != nil {
+			return err
+		}
+		m.metricProviders = append(m.metricProviders, func() MetricMetaProvider { return mp })
 	}
 	return nil
 }
