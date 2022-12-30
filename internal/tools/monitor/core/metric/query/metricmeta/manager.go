@@ -128,7 +128,7 @@ func (m *Manager) Init() error {
 		m.metricProviders = append(m.metricProviders, func() MetricMetaProvider { return mp })
 	}
 
-	if m.sources[ClickhouseMetaSource] {
+	if m.sources[ClickhouseMetaSource] && m.ckMetaLoader != nil {
 		gp, err := NewMetaClickhouseGroupProvider(m.ckMetaLoader)
 		if err != nil {
 			return err
