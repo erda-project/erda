@@ -15,6 +15,7 @@
 package math
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,6 +75,7 @@ func TestTwoDecimalPlaces(t *testing.T) {
 		{"case6", args{value: 1.2355567, digitsNumber: 4}, 1.2356},
 		{"case7", args{value: 0.35110000000000003, digitsNumber: 4}, 0.3511},
 		{"case8", args{value: 0.7011000000000001, digitsNumber: 4}, 0.7011},
+		{"case9", args{value: math.Inf(4), digitsNumber: 4}, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
