@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/recallsong/go-utils/reflectx"
+
+	erdamath "github.com/erda-project/erda/pkg/math"
 )
 
 // Operator .
@@ -914,7 +916,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				if bv == 0 {
 					return 0, nil // ErrDivideByZero
 				}
-				return av / bv, nil
+				return formatFloat(av / bv), nil
 			case string:
 				if len(bv) == 0 {
 					return nil, nil // ErrDivideByZero
@@ -963,7 +965,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				if bv == 0 {
 					return nil, nil // ErrDivideByZero
 				}
-				return an / bv, nil
+				return formatFloat(an / bv), nil
 			case string:
 				if len(bv) == 0 {
 					return nil, nil // ErrDivideByZero
@@ -2225,4 +2227,7 @@ func boolToInt(v bool) int64 {
 		return 1
 	}
 	return 0
+}
+func formatFloat(v float64) float64 {
+	return erdamath.DecimalPlacesWithDigitsNumber(v, 4)
 }
