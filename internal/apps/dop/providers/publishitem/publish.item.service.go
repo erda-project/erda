@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/publishitem/db"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -305,6 +306,7 @@ func (s *PublishItemService) QueryPublishItem(ctx context.Context, req *pb.Query
 	if err != nil {
 		return nil, apierrors.ErrQueryPublishItem.NotLogin()
 	}
+	internalClient := apis.GetInternalClient(ctx)
 	req.OrgID = orgID
 	queryPublishItemResult, err := s.db.QueryPublishItem(req)
 	if err != nil {
@@ -322,6 +324,11 @@ func (s *PublishItemService) QueryPublishItem(ctx context.Context, req *pb.Query
 			if err == nil && len(versions.List) > 0 {
 				item.LatestVersion = versions.List[0].Version
 			}
+		}
+		// if it is not an internal call, desensitize the sensitive information
+		if internalClient == "" {
+			item.AK = ""
+			item.AI = ""
 		}
 	}
 	return &pb.QueryPublishItemResponse{Data: queryPublishItemResult}, nil
@@ -440,7 +447,7 @@ func (s *PublishItemService) QueryMyPublishItem(ctx context.Context, req *pb.Que
 	}
 	req.OrgID = orgID
 	req.PublisherId = int64(publishers.List[0].ID)
-	res, err := s.QueryPublishItem(ctx, req)
+	res, err := s.QueryPublishItem(apis.WithInternalClientContext(ctx, discover.DOP()), req)
 	if err != nil {
 		return nil, err
 	}
