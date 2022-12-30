@@ -287,6 +287,18 @@ func Test_addonCanScale(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Test_10",
+			args: args{
+				addonName:    "rocketmq",
+				addonId:      "z44f5f6543f004d54ac2a2538efd4e9ec",
+				action:       apistructs.ScaleActionDown,
+				status:       string(apistructs.AddonOffline),
+				addonPlan:    "basic",
+				addonVersion: "4.2.0",
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -462,7 +462,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
 	k.daemonsetoperator = daemonsetoperator
 	k.sourcecovoperator = sourcecov.New(k, client, k, ns)
-	rocketmqoperator := rocketmq.New(k, ns, client, k)
+	rocketmqoperator := rocketmq.New(k, ns, client, k, sts)
 	k.rocketmqoperator = rocketmqoperator
 	return k, nil
 }

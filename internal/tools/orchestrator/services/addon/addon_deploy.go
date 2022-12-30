@@ -575,7 +575,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			buildErr = a.BuildEsServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 		}
 	case apistructs.AddonRocketMQ:
-		if capacity.RocketMQOperator && version.Compare(addonSpec.Version, "5.0.0", ">=") {
+		if capacity.RocketMQOperator && version.Compare(addonSpec.Version, "4.2.0", ">=") {
 			buildErr = a.BuildRocketMQOperaotrServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo, addonSpec.Version)
 		} else {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "3"
