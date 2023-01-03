@@ -15,15 +15,30 @@
 package endpoints
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 )
 
 func TestEndpoints_checkProjectPermission(t *testing.T) {
 	e := Endpoints{}
+	s := &permission.Permission{}
+	e.permission = s
+	monkey.PatchInstanceMethod(reflect.TypeOf(s), "CheckPermission",
+		func(s *permission.Permission, req *apistructs.PermissionCheckRequest) (bool, error) {
+			// suppose we have project permission for: 1
+			if req.ScopeID == 1 {
+				return true, nil
+			}
+			return false, fmt.Errorf("no permission")
+		},
+	)
 
 	// no projectID
 	err := e.checkProjectPermission(apistructs.IdentityInfo{}, 0, "")
@@ -32,4 +47,12 @@ func TestEndpoints_checkProjectPermission(t *testing.T) {
 	// internal-client
 	err = e.checkProjectPermission(apistructs.IdentityInfo{InternalClient: "test"}, 1, "")
 	assert.NoError(t, err)
+
+	// project: 1
+	err = e.checkProjectPermission(apistructs.IdentityInfo{UserID: "1"}, 1, "mock")
+	assert.NoError(t, err)
+
+	// project: 2
+	err = e.checkProjectPermission(apistructs.IdentityInfo{UserID: "1"}, 2, "mock")
+	assert.Error(t, err)
 }
