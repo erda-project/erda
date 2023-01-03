@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -41,6 +42,9 @@ func (e *Endpoints) CreateLabel(ctx context.Context, r *http.Request, vars map[s
 	}
 	req.IdentityInfo = identityInfo
 	logrus.Debugf("create label request body: %+v", req)
+	if err := e.checkProjectPermission(identityInfo, req.ProjectID, apistructs.UpdateAction); err != nil {
+		return errorresp.ErrResp(err)
+	}
 
 	labelID, err := e.label.Create(&req)
 	if err != nil {
@@ -59,9 +63,18 @@ func (e *Endpoints) DeleteLabel(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrDeleteLabel.InvalidParameter(err).ToResp(), nil
 	}
 
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrDeleteLabel.NotLogin().ToResp(), nil
+	}
+
 	label, err := e.label.GetByID(labelID)
 	if err != nil {
-		logrus.Errorf("when get label for audit faild %v", err)
+		return apierrors.ErrDeleteLabel.InternalError(err).ToResp(), nil
+	}
+
+	if err := e.checkProjectPermission(identityInfo, label.ProjectID, apistructs.UpdateAction); err != nil {
+		return errorresp.ErrResp(err)
 	}
 
 	if err := e.label.Delete(labelID); err != nil {
@@ -96,6 +109,21 @@ func (e *Endpoints) UpdateLabel(ctx context.Context, r *http.Request, vars map[s
 
 	req.ID = labelID
 
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdateLabel.NotLogin().ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+
+	label, err := e.label.GetByID(labelID)
+	if err != nil {
+		return apierrors.ErrUpdateLabel.InternalError(err).ToResp(), nil
+	}
+
+	if err := e.checkProjectPermission(identityInfo, label.ProjectID, apistructs.UpdateAction); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	// 更新label至DB
 	if err = e.label.Update(&req); err != nil {
 		return errorresp.ErrResp(err)
@@ -107,13 +135,18 @@ func (e *Endpoints) UpdateLabel(ctx context.Context, r *http.Request, vars map[s
 // ListLabel 获取标签列表
 func (e *Endpoints) ListLabel(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
-	if _, err := user.GetIdentityInfo(r); err != nil {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
 		return apierrors.ErrGetLabels.NotLogin().ToResp(), nil
 	}
 
 	var req apistructs.ProjectLabelListRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrGetLabels.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err := e.checkProjectPermission(identityInfo, req.ProjectID, apistructs.GetAction); err != nil {
+		return errorresp.ErrResp(err)
 	}
 
 	total, labels, err := e.label.List(&req)
@@ -135,7 +168,8 @@ func (e *Endpoints) ListLabel(ctx context.Context, r *http.Request, vars map[str
 // GetLabel 通过id获取label
 func (e *Endpoints) GetLabel(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
-	if _, err := user.GetIdentityInfo(r); err != nil {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
 		return apierrors.ErrGetLabels.NotLogin().ToResp(), nil
 	}
 
@@ -150,19 +184,28 @@ func (e *Endpoints) GetLabel(ctx context.Context, r *http.Request, vars map[stri
 		return errorresp.ErrResp(err)
 	}
 
+	if err := e.checkProjectPermission(identityInfo, label.ProjectID, apistructs.GetAction); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	return httpserver.OkResp(label)
 }
 
 // ListByNamesAndProjectID list label by names and projectID
 func (e *Endpoints) ListByNamesAndProjectID(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
-	if _, err := user.GetIdentityInfo(r); err != nil {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
 		return apierrors.ErrListByNamesAndProjectID.NotLogin().ToResp(), nil
 	}
 
 	var req apistructs.ListByNamesAndProjectIDRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrListByNamesAndProjectID.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err := e.checkProjectPermission(identityInfo, req.ProjectID, apistructs.GetAction); err != nil {
+		return errorresp.ErrResp(err)
 	}
 
 	labels, err := e.label.ListByNamesAndProjectID(req)
@@ -176,8 +219,13 @@ func (e *Endpoints) ListByNamesAndProjectID(ctx context.Context, r *http.Request
 // ListLabelByIDs list label by ids
 func (e *Endpoints) ListLabelByIDs(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
-	if _, err := user.GetIdentityInfo(r); err != nil {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
 		return apierrors.ErrListLabelByIDs.NotLogin().ToResp(), nil
+	}
+	// is internal api, only for internal client
+	if !identityInfo.IsInternalClient() {
+		return apierrors.ErrListLabelByIDs.AccessDenied().ToResp(), nil
 	}
 
 	var req apistructs.ListLabelByIDsRequest
@@ -191,4 +239,30 @@ func (e *Endpoints) ListLabelByIDs(ctx context.Context, r *http.Request, vars ma
 	}
 
 	return httpserver.OkResp(labels)
+}
+
+func (e *Endpoints) checkProjectPermission(identityInfo apistructs.IdentityInfo, projectID uint64, action string) error {
+	if projectID == 0 {
+		return apierrors.ErrCheckPermission.InvalidParameter(fmt.Errorf("no projectID"))
+	}
+	if identityInfo.IsInternalClient() {
+		return nil
+	}
+	access, err := e.permission.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:       identityInfo.UserID,
+		Scope:        apistructs.ProjectScope,
+		ScopeID:      projectID,
+		Resource:     apistructs.ProjectResource,
+		Action:       action,
+		ResourceRole: "",
+	})
+	if err != nil {
+		logrus.Errorf("failed to check project permission, userID: %s, projectID: %d, action: %s, err: %v", identityInfo.UserID, projectID, action, err)
+		// return 403. Do Not disclose specific errors to clients, such as: project not found
+		return apierrors.ErrCheckPermission.AccessDenied()
+	}
+	if !access {
+		return apierrors.ErrCheckPermission.AccessDenied()
+	}
+	return nil
 }
