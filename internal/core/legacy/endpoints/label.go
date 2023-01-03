@@ -223,6 +223,10 @@ func (e *Endpoints) ListLabelByIDs(ctx context.Context, r *http.Request, vars ma
 	if err != nil {
 		return apierrors.ErrListLabelByIDs.NotLogin().ToResp(), nil
 	}
+	// is internal api, only for internal client
+	if !identityInfo.IsInternalClient() {
+		return apierrors.ErrListLabelByIDs.AccessDenied().ToResp(), nil
+	}
 
 	var req apistructs.ListLabelByIDsRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
@@ -232,16 +236,6 @@ func (e *Endpoints) ListLabelByIDs(ctx context.Context, r *http.Request, vars ma
 	labels, err := e.label.ListLabelByIDs(req.IDs)
 	if err != nil {
 		return errorresp.ErrResp(err)
-	}
-
-	projectIDMap := make(map[uint64]struct{})
-	for _, label := range labels {
-		projectIDMap[label.ProjectID] = struct{}{}
-	}
-	for id := range projectIDMap {
-		if err := e.checkProjectPermission(identityInfo, id, apistructs.GetAction); err != nil {
-			return errorresp.ErrResp(err)
-		}
 	}
 
 	return httpserver.OkResp(labels)
