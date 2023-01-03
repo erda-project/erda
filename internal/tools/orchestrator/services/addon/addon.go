@@ -1980,7 +1980,7 @@ func addonCanScale(addonName, addonId, plan, version, status, action string) err
 		return errors.New(errMsg)
 	}
 
-	if addonName == apistructs.AddonRocketMQ && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "5.0.0") {
+	if addonName == apistructs.AddonRocketMQ && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "4.2.0" || version == "4.3.0" || version == "5.0.0") {
 		errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
 		return errors.New(errMsg)
 	}

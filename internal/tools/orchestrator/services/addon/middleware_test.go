@@ -32,4 +32,12 @@ func TestIsOperator(t *testing.T) {
 		AddonName: apistructs.AddonES,
 		Version:   "5.8.8",
 	}), false)
+	assert.Equal(t, isOperatorAddon(dbclient.AddonInstance{
+		AddonName: apistructs.AddonRocketMQ,
+		Version:   "4.2.0",
+	}), true)
+	assert.Equal(t, isOperatorAddon(dbclient.AddonInstance{
+		AddonName: apistructs.AddonRocketMQ,
+		Version:   "4.3.0",
+	}), true)
 }
