@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -45,18 +46,20 @@ var (
 )
 
 type RocketMQOperator struct {
-	k8s        addon.K8SUtil
-	ns         addon.NamespaceUtil
-	client     *httpclient.HTTPClient
-	overcommit addon.OvercommitUtil
+	k8s         addon.K8SUtil
+	ns          addon.NamespaceUtil
+	client      *httpclient.HTTPClient
+	overcommit  addon.OvercommitUtil
+	statefulset addon.StatefulsetUtil
 }
 
-func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, client *httpclient.HTTPClient, overcommit addon.OvercommitUtil) *RocketMQOperator {
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, client *httpclient.HTTPClient, overcommit addon.OvercommitUtil, sts addon.StatefulsetUtil) *RocketMQOperator {
 	return &RocketMQOperator{
-		k8s:        k8s,
-		ns:         ns,
-		client:     client,
-		overcommit: overcommit,
+		k8s:         k8s,
+		ns:          ns,
+		client:      client,
+		overcommit:  overcommit,
+		statefulset: sts,
 	}
 }
 
@@ -187,6 +190,15 @@ func (r *RocketMQOperator) Inspect(sg *apistructs.ServiceGroup) (*apistructs.Ser
 
 func (r *RocketMQOperator) Remove(sg *apistructs.ServiceGroup) error {
 	ns := genK8SNamespace(sg.Type, sg.ID)
+	if err := r.statefulset.Delete(ns, svcNameSrv); err != nil && err != k8serror.ErrNotFound {
+		return err
+	}
+	if err := r.statefulset.Delete(ns, svcBroker); err != nil && err != k8serror.ErrNotFound {
+		return err
+	}
+	if err := r.statefulset.Delete(ns, svcConsole); err != nil && err != k8serror.ErrNotFound {
+		return err
+	}
 	var b bytes.Buffer
 	resp, err := r.client.Delete(r.k8s.GetK8SAddr()).
 		Path(fmt.Sprintf("/apis/addons.erda.cloud/v1alpha1/namespaces/%s/rocketmqs/%s", ns, sg.ID)).
@@ -196,10 +208,7 @@ func (r *RocketMQOperator) Remove(sg *apistructs.ServiceGroup) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete rocketmq, %s/%s, err: %v", ns, sg.ID, err)
 	}
-	if !resp.IsOK() {
-		if resp.IsNotfound() {
-			return nil
-		}
+	if !resp.IsOK() && !resp.IsNotfound() {
 		return fmt.Errorf("failed to delete rocketmq, %s/%s, statuscode: %v, body: %v", ns, sg.ID, resp.StatusCode(), b.String())
 	}
 	if err := r.ns.Delete(ns); err != nil {
