@@ -105,7 +105,7 @@ func (w *worker) uploadFile(filePath, token string) (string, error) {
 	}
 
 	request := httpclient.New(httpclient.WithCompleteRedirect(),
-		httpclient.WithTimeout(15*time.Second, 300*time.Second)).Post(w.r.Conf.OpenAPI).
+		httpclient.WithTimeout(15*time.Second, time.Duration(w.conf.UploadTimeoutSec)*time.Second)).Post(w.r.Conf.OpenAPI).
 		Path("/api/files").
 		Param("fileFrom", "runner-cli").
 		Param("expiredIn", "3600s").

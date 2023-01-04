@@ -23,4 +23,5 @@ type Conf struct {
 	FailedTaskKeepHours int               `json:"failed_task_keep_hours"`
 	Params              map[string]string `json:"params"`
 	StartupCommands     []string          `json:"startup_commands"`
+	UploadTimeoutSec    uint64            `json:"upload_timeout_sec"`
 }
