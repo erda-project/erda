@@ -16,11 +16,13 @@ package actionrunner
 
 // Conf .
 type Conf struct {
-	BuildPath           string            `json:"build_path"`
-	OpenAPI             string            `json:"open_api"`
-	Token               string            `json:"token"`
-	MaxTask             int               `json:"max_task"`
-	FailedTaskKeepHours int               `json:"failed_task_keep_hours"`
-	Params              map[string]string `json:"params"`
-	StartupCommands     []string          `json:"startup_commands"`
+	BuildPath              string            `json:"build_path"`
+	OpenAPI                string            `json:"open_api"`
+	Token                  string            `json:"token"`
+	MaxTask                int               `json:"max_task"`
+	FailedTaskKeepHours    int               `json:"failed_task_keep_hours"`
+	Params                 map[string]string `json:"params"`
+	StartupCommands        []string          `json:"startup_commands"`
+	UploadTimeoutSec       uint64            `json:"upload_timeout_sec"`
+	PrintUploadIntervalSec uint64            `json:"print_upload_interval_sec"`
 }

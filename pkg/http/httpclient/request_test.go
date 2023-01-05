@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 )
 
 //import (
@@ -189,4 +190,16 @@ func TestWriteBody(t *testing.T) {
 func TestRequest_SetParam(t *testing.T) {
 	var request = new(Request)
 	request.SetParam("key", "value")
+}
+
+func TestProgressPrint(t *testing.T) {
+	pr := &Progress{
+		printProgress: true,
+		totalSize:     100,
+		bytesRead:     1,
+		updatedAt:     time.Now(),
+	}
+	t.Run("print progress", func(t *testing.T) {
+		pr.Print()
+	})
 }

@@ -333,6 +333,49 @@ func (r *Request) FormBody(form url.Values) *Request {
 	return r
 }
 
+type Progress struct {
+	totalSize        int64
+	bytesRead        int64
+	intervalSize     int64
+	updatedAt        time.Time
+	printProgress    bool
+	latestPrintAt    time.Time
+	printIntervalSec time.Duration
+}
+
+func (pr *Progress) Write(p []byte) (n int, err error) {
+	n, err = len(p), nil
+	pr.bytesRead += int64(n)
+	pr.intervalSize = int64(n)
+	pr.Print()
+	pr.updatedAt = time.Now()
+	return
+}
+
+func (pr *Progress) Print() {
+	if !pr.printProgress {
+		return
+	}
+	if pr.bytesRead == pr.totalSize {
+		fmt.Println("\nUploaded file successfully!")
+		return
+	}
+	if !pr.latestPrintAt.IsZero() && time.Now().Sub(pr.latestPrintAt) < pr.printIntervalSec {
+		return
+	}
+	var printStr string
+	var uploadSpeed = float64(pr.intervalSize) / (time.Now().Sub(pr.updatedAt).Seconds() * 1024 * 1024)
+	if pr.totalSize > 0 {
+		percent := (float64(pr.bytesRead) / float64(pr.totalSize)) * 100
+		printStr = fmt.Sprintf("File upload in progress: %d bytes, percent: %.2f%%, speed: %.2fMB/s",
+			pr.bytesRead, percent, uploadSpeed)
+	} else {
+		printStr = fmt.Sprintf("File upload in progress: %d, speed: %.2fMB/s", pr.bytesRead, uploadSpeed)
+	}
+	fmt.Println(printStr)
+	pr.latestPrintAt = time.Now()
+}
+
 func (r *Request) MultipartFormDataBody(fields map[string]MultipartItem) *Request {
 	pipeReader, pipeWriter := io.Pipe()
 	w := multipart.NewWriter(pipeWriter)
@@ -345,11 +388,22 @@ func (r *Request) MultipartFormDataBody(fields map[string]MultipartItem) *Reques
 		for field, item := range fields {
 			var fw io.Writer
 			var err error
+			pr := &Progress{
+				printProgress:    r.option.printUploadProgress,
+				updatedAt:        time.Now(),
+				printIntervalSec: r.option.printIntervalSec,
+			}
 			switch item.Reader.(type) {
 			case *os.File:
 				if item.Filename == "" {
 					item.Filename = filepath.Base(item.Reader.(*os.File).Name())
 				}
+				fileInfo, err := item.Reader.(*os.File).Stat()
+				if err != nil {
+					r.err = err
+					return
+				}
+				pr.totalSize = fileInfo.Size()
 				fw, err = w.CreateFormFile(field, item.Filename)
 			default:
 				fw, err = w.CreateFormFile(field, item.Filename)
@@ -359,7 +413,7 @@ func (r *Request) MultipartFormDataBody(fields map[string]MultipartItem) *Reques
 				r.err = err
 				return
 			}
-			if _, err := io.Copy(fw, item.Reader); err != nil {
+			if _, err := io.Copy(fw, io.TeeReader(item.Reader, pr)); err != nil {
 				r.err = err
 				return
 			}

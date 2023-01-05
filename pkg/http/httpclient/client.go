@@ -70,7 +70,9 @@ type Option struct {
 	dialContext   func(ctx context.Context, network, addr string) (net.Conn, error)
 	clientTimeout time.Duration
 
-	enableAutoRetry bool
+	enableAutoRetry     bool
+	printUploadProgress bool
+	printIntervalSec    time.Duration
 }
 
 type OpOption func(*Option)
@@ -199,6 +201,13 @@ func WithCookieJar(jar http.CookieJar) OpOption {
 func WithEnableAutoRetry(enableAutoRetry bool) OpOption {
 	return func(r *Option) {
 		r.enableAutoRetry = enableAutoRetry
+	}
+}
+
+func WithPrintUploadProgress(printIntervalSec uint64) OpOption {
+	return func(r *Option) {
+		r.printIntervalSec = time.Duration(printIntervalSec) * time.Second
+		r.printUploadProgress = true
 	}
 }
 

@@ -67,6 +67,13 @@ func readConfig(path string) *actionrunner.Conf {
 		conf.FailedTaskKeepHours = 3
 	}
 	conf.MaxTask = convInt(getEnv("MAX_TASK", strconv.Itoa(conf.MaxTask)))
+	// set default 500 seconds timeout
+	if conf.UploadTimeoutSec == 0 {
+		conf.UploadTimeoutSec = 500
+	}
+	if conf.PrintUploadIntervalSec == 0 {
+		conf.PrintUploadIntervalSec = 5
+	}
 	return &conf
 }
 

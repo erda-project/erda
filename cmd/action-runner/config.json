@@ -12,5 +12,7 @@
     "export SASS_BINARY_SITE=https://npm.taobao.org/mirrors/node-sass/",
     "security unlock-keychain -p {{user_password}} {{osx_keychains_path}}",
     "security set-key-partition-list -S apple-tool:,apple: -s -k \"{{user_password}}\"  ~/Library/Keychains/login.keychain"
-  ]
+  ],
+  "upload_timeout_sec": 500,
+  "print_upload_interval_sec": 5
 }
