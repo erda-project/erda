@@ -444,10 +444,11 @@ func (i *IssueService) UpdateIssue(ctx context.Context, req *pb.UpdateIssueReque
 		if err := i.query.UpdateLabels(id, issueModel.ProjectID, req.Labels); err != nil {
 			return nil, apierrors.ErrUpdateIssue.InternalError(err)
 		}
-		// 生成活动记录
-		// issueStreamFields 保存字段更新前后的值，用于生成活动记录
+		// generate stream records
+		// issueStreamFields save the value before and after the field update, used to generate active records
 		issueStreamFields := make(map[string][]interface{})
-		issueStreamFields["label"] = []interface{}{"1", "2"}
+		// label does not display event details, so just pass a empty value
+		issueStreamFields["label"] = []interface{}{}
 		_ = i.stream.CreateStream(req, issueStreamFields)
 	}
 
