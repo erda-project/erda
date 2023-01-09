@@ -83,6 +83,7 @@ func Test_importIssueBuilder(t *testing.T) {
 		req       pb.Issue
 		request   *pb.ImportExcelIssueRequest
 		memberMap map[string]string
+		stages    []dao.IssueStage
 	}
 	tests := []struct {
 		name string
@@ -92,12 +93,21 @@ func Test_importIssueBuilder(t *testing.T) {
 		{
 			args: args{
 				req: pb.Issue{
-					Id:      1,
-					Creator: "2",
+					Id:       1,
+					Creator:  "2",
+					BugStage: "代码研发",
+					Type:     pb.IssueTypeEnum_BUG,
 				},
 				request: &pb.ImportExcelIssueRequest{
 					IdentityInfo: &commonpb.IdentityInfo{
 						UserID: "3",
+					},
+				},
+				stages: []dao.IssueStage{
+					{
+						Name:      "代码研发",
+						Value:     "codeDevelopment",
+						IssueType: "BUG",
 					},
 				},
 			},
@@ -108,8 +118,45 @@ func Test_importIssueBuilder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := importIssueBuilder(tt.args.req, tt.args.request, tt.args.memberMap); !reflect.DeepEqual(got.Creator, tt.want.Creator) {
+			if got := importIssueBuilder(tt.args.req, tt.args.request, tt.args.memberMap, tt.args.stages); !reflect.DeepEqual(got.Creator, tt.want.Creator) {
 				t.Errorf("importIssueBuilder() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getStageValue(t *testing.T) {
+	type args struct {
+		stages []dao.IssueStage
+		issue  pb.Issue
+		name   string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			args: args{
+				stages: []dao.IssueStage{
+					{
+						Name:      "代码研发",
+						Value:     "codeDevelopment",
+						IssueType: "BUG",
+					},
+				},
+				issue: pb.Issue{
+					BugStage: "代码研发",
+					Type:     pb.IssueTypeEnum_BUG,
+				},
+			},
+			want: "codeDevelopment",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getStageValue(tt.args.issue, tt.args.stages); got != tt.want {
+				t.Errorf("getStageValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
