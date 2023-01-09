@@ -130,6 +130,15 @@ func (e *Endpoints) OrgClusterInfo(ctx context.Context, r *http.Request, vars ma
 			})
 		}
 	}()
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return nil, errorresp.New(errorresp.WithCode(http.StatusUnauthorized, ""), errorresp.WithMessage(err.Error()))
+	}
+	if !identityInfo.IsInternalClient() {
+		if err := e.PermissionCheck(identityInfo.UserID, "", "", apistructs.GetAction); err != nil {
+			return nil, errorresp.New(errorresp.WithCode(http.StatusUnauthorized, ""), errorresp.WithMessage(err.Error()))
+		}
+	}
 	req := apistructs.OrgClusterInfoRequest{}
 	req.OrgName = r.URL.Query().Get("orgName")
 	req.ClusterType = r.URL.Query().Get("clusterType")
