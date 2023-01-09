@@ -349,11 +349,33 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) {
 	i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, Description: desc, ApiFileUUID: res.UUID, State: apistructs.FileRecordStateFail})
 }
 
+func getStageValue(issue pb.Issue, stages []dao.IssueStage) string {
+	val := common.GetStage(&issue)
+	for _, stage := range stages {
+		if stage.Name == val && issue.Type.String() == stage.IssueType {
+			return stage.Value
+		}
+	}
+	return val
+}
+
 func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues []pb.Issue, instances []*pb.CreateIssuePropertyInstanceRequest, excelIndex []int,
 	falseIssue []int, falseReason []string, member []apistructs.Member) ([]int, []string) {
 	memberMap := make(map[string]string)
 	for _, m := range member {
 		memberMap[m.Nick] = m.UserID
+	}
+	orgID, err := strconv.ParseInt(request.IdentityInfo.OrgID, 10, 64)
+	if err != nil {
+		falseIssue = append(falseIssue, excelIndex[0])
+		falseReason = append(falseReason, "failed to parse orgID")
+		return falseIssue, falseReason
+	}
+	stages, err := i.db.GetIssuesStageByOrgID(orgID)
+	if err != nil {
+		falseIssue = append(falseIssue, excelIndex[0])
+		falseReason = append(falseReason, "get stages failed")
+		return falseIssue, falseReason
 	}
 	for index, req := range issues {
 		if req.Type.String() != request.Type {
@@ -386,7 +408,7 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 			issue.Creator = memberMap[req.Creator]
 			issue.Assignee = memberMap[req.Assignee]
 			issue.Source = req.Source
-			issue.Stage = common.GetStage(&req)
+			issue.Stage = getStageValue(req, stages)
 			issue.Owner = memberMap[req.Owner]
 			if req.IssueManHour != nil && req.IssueManHour.EstimateTime > 0 {
 				var oldManHour apistructs.IssueManHour
@@ -458,7 +480,7 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 				}
 			}
 		} else {
-			create := importIssueBuilder(req, request, memberMap)
+			create := importIssueBuilder(req, request, memberMap, stages)
 			if create.Type != request.Type {
 				falseIssue = append(falseIssue, excelIndex[index])
 				falseReason = append(falseReason, "创建任务失败, err:事件类型不符合")
@@ -513,7 +535,7 @@ func (i *IssueService) storeExcel2DB(request *pb.ImportExcelIssueRequest, issues
 	return falseIssue, falseReason
 }
 
-func importIssueBuilder(issue pb.Issue, request *pb.ImportExcelIssueRequest, memberMap map[string]string) dao.Issue {
+func importIssueBuilder(issue pb.Issue, request *pb.ImportExcelIssueRequest, memberMap map[string]string, stages []dao.IssueStage) dao.Issue {
 	create := dao.Issue{
 		PlanStartedAt:  common.ToIssueTime(issue.PlanStartedAt),
 		PlanFinishedAt: common.ToIssueTime(issue.PlanFinishedAt),
@@ -531,7 +553,7 @@ func importIssueBuilder(issue pb.Issue, request *pb.ImportExcelIssueRequest, mem
 		Assignee:       memberMap[issue.Assignee],
 		Source:         issue.Source,
 		External:       true,
-		Stage:          common.GetStage(&issue),
+		Stage:          getStageValue(issue, stages),
 		Owner:          memberMap[issue.Owner],
 	}
 	if issue.IssueManHour != nil && issue.IssueManHour.EstimateTime > 0 {
