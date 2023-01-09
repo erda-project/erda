@@ -57,7 +57,7 @@ type provider struct {
 }
 
 func (p *provider) getMemoryHeapLineGraph(ctx context.Context, startTime, endTime int64, tenantId, instanceId, serviceId string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(avg(committed::field), 2),round_float(avg(init::field), 2),round_float(max(max::field), 2),round_float(avg(used::field), 2) " +
+	statement := fmt.Sprintf("SELECT round_float(max(committed::field), 2),round_float(max(init::field), 2),round_float(max(max::field), 2),round_float(max(used::field), 2) " +
 		"FROM jvm_memory " +
 		"WHERE terminus_key::tag=$terminus_key " +
 		"AND service_id::tag=$service_id " +
@@ -116,7 +116,7 @@ func (p *provider) getMemoryHeapLineGraph(ctx context.Context, startTime, endTim
 }
 
 func (p *provider) getMemoryNonHeapLineGraph(ctx context.Context, startTime, endTime int64, tenantId, instanceId, serviceId string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(avg(committed::field), 2),round_float(avg(init::field), 2),round_float(avg(used::field), 2) " +
+	statement := fmt.Sprintf("SELECT round_float(max(committed::field), 2),round_float(max(init::field), 2),round_float(max(used::field), 2) " +
 		"FROM jvm_memory " +
 		"WHERE terminus_key::tag=$terminus_key " +
 		"AND service_id::tag=$service_id " +
@@ -168,7 +168,7 @@ func (p *provider) getMemoryNonHeapLineGraph(ctx context.Context, startTime, end
 }
 
 func (p *provider) getMemoryEdenSpaceLineGraph(ctx context.Context, startTime, endTime int64, tenantId, instanceId, serviceId string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(avg(committed::field), 2),round_float(avg(init::field), 2),round_float(max(max::field), 2),round_float(avg(used::field), 2) " +
+	statement := fmt.Sprintf("SELECT round_float(max(committed::field), 2),round_float(max(init::field), 2),round_float(max(max::field), 2),round_float(max(used::field), 2) " +
 		"FROM jvm_memory " +
 		"WHERE terminus_key::tag=$terminus_key " +
 		"AND service_id::tag=$service_id " +
