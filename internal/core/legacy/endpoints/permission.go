@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -246,6 +247,30 @@ func (e *Endpoints) buildScopeInfo(accessReq apistructs.ScopeRoleAccessRequest, 
 		permission.ScopeInfo.ProjectName = project.DisplayName
 	}
 	return permission, nil
+}
+
+// isManager judge whether the user is manager of the scope
+func (e *Endpoints) isManager(userID string, scopeType apistructs.ScopeType, scopeID string) error {
+	req := apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: scopeType,
+			ID:   scopeID,
+		},
+	}
+	scopeRole, err := e.bdl.ScopeRoleAccess(userID, &req)
+	if err != nil {
+		return err
+	}
+	logrus.Debugf("scopeRole: %+v", scopeRole)
+	if scopeRole.Access {
+		for _, role := range scopeRole.Roles {
+			if e.bdl.CheckIfRoleIsManager(role) {
+				return nil
+			}
+		}
+	}
+	err = fmt.Errorf("access denied")
+	return err
 }
 
 // 获取权限

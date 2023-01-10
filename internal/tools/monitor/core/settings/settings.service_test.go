@@ -15,12 +15,17 @@
 package settings
 
 import (
-	context "context"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
 
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
+	"bou.ke/monkey"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
 
 func Test_settingsService_GetSettings(t *testing.T) {
@@ -189,6 +194,78 @@ func Test_settingsService_RegisterMonitorConfig(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("settingsService.RegisterMonitorConfig() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_checkOrgPermission(t *testing.T) {
+	type args struct {
+		identityInfo *commonpb.IdentityInfo
+		orgID        uint64
+		action       string
+	}
+	bdl := bundle.New()
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(_ *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		if req.UserID == "1" {
+			return &apistructs.PermissionCheckResponseData{Access: false}, nil
+		}
+		return &apistructs.PermissionCheckResponseData{Access: true}, nil
+	})
+	defer pm1.Unpatch()
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "invalid orgID",
+			args: args{
+				identityInfo: &commonpb.IdentityInfo{},
+				orgID:        0,
+				action:       apistructs.GetAction,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid identityInfo",
+			args: args{
+				orgID:        1,
+				action:       apistructs.GetAction,
+				identityInfo: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "permission less user",
+			args: args{
+				orgID:  1,
+				action: apistructs.GetAction,
+				identityInfo: &commonpb.IdentityInfo{
+					UserID: "1",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "sys admin user",
+			args: args{
+				orgID:  1,
+				action: apistructs.GetAction,
+				identityInfo: &commonpb.IdentityInfo{
+					UserID: "2",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	e := &settingsService{
+		bundle: bdl,
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := e.checkOrgPermission(tt.args.identityInfo, tt.args.orgID, tt.args.action); (err != nil) != tt.wantErr {
+				t.Errorf("checkOrgPermission() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

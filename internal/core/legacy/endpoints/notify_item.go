@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
+	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -31,6 +32,15 @@ func (e *Endpoints) QueryNotifyItems(ctx context.Context, r *http.Request, vars 
 	locale := e.GetLocale(r)
 	pageNo := getInt(r.URL, "pageNo", 1)
 	pageSize := getInt(r.URL, "pageSize", 10)
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrQueryNotifyItem.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		if err := e.isManager(identityInfo.UserID, apistructs.SysScope, ""); err != nil {
+			return apierrors.ErrQueryNotifyItem.AccessDenied().ToResp(), nil
+		}
+	}
 	queryReq := apistructs.QueryNotifyItemRequest{
 		PageSize:  pageSize,
 		PageNo:    pageNo,
@@ -53,6 +63,15 @@ func (e *Endpoints) UpdateNotifyItem(ctx context.Context, r *http.Request, vars 
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return apierrors.ErrUpdateNotifyItem.InvalidParameter(err).ToResp(), nil
+	}
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrQueryNotifyItem.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		if err := e.isManager(identityInfo.UserID, apistructs.SysScope, ""); err != nil {
+			return apierrors.ErrUpdateNotifyItem.AccessDenied().ToResp(), nil
+		}
 	}
 
 	var request apistructs.UpdateNotifyItemRequest
