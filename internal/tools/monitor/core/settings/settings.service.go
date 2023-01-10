@@ -26,9 +26,12 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/discover"
@@ -61,6 +64,10 @@ type settingsService struct {
 }
 
 func (s *settingsService) GetSettings(ctx context.Context, req *pb.GetSettingsRequest) (*pb.GetSettingsResponse, error) {
+	identityInfo := apis.GetIdentityInfo(ctx)
+	if err := s.checkOrgPermission(identityInfo, uint64(req.OrgID), apistructs.GetAction); err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	var list []*globalSetting
 	if len(req.Workspace) > 0 {
 		req.Workspace = strings.ToLower(req.Workspace)
@@ -130,6 +137,10 @@ func (s *settingsService) GetSettings(ctx context.Context, req *pb.GetSettingsRe
 }
 
 func (s *settingsService) PutSettings(ctx context.Context, req *pb.PutSettingsRequest) (*pb.PutSettingsResponse, error) {
+	identityInfo := apis.GetIdentityInfo(ctx)
+	if err := s.checkOrgPermission(identityInfo, uint64(req.OrgID), apistructs.UpdateAction); err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	orgName, err := s.getOrgName(req.OrgID)
 	if err != nil {
 		return nil, errors.NewServiceInvokingError("org", err)
@@ -181,6 +192,33 @@ func (s *settingsService) PutSettings(ctx context.Context, req *pb.PutSettingsRe
 		return nil, errors.NewDatabaseError(err)
 	}
 	return &pb.PutSettingsResponse{Data: "OK"}, nil
+}
+
+func (e *settingsService) checkOrgPermission(identityInfo *commonpb.IdentityInfo, orgID uint64, action string) error {
+	if orgID == 0 {
+		return apierrors.ErrCheckPermission.InvalidParameter(fmt.Errorf("no orgID"))
+	}
+	if identityInfo == nil {
+		return apierrors.ErrCheckPermission.InvalidParameter(fmt.Errorf("no identityInfo"))
+	}
+	if identityInfo.InternalClient != "" {
+		return nil
+	}
+	access, err := e.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:       identityInfo.UserID,
+		Scope:        apistructs.SysScope,
+		ScopeID:      orgID,
+		Resource:     apistructs.OrgResource,
+		Action:       action,
+		ResourceRole: "",
+	})
+	if err != nil {
+		return apierrors.ErrCheckPermission.AccessDenied()
+	}
+	if !access.Access {
+		return apierrors.ErrCheckPermission.AccessDenied()
+	}
+	return nil
 }
 
 type configDefine struct {
