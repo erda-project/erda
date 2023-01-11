@@ -96,7 +96,7 @@ func appendOrderedExpression(expr *goqu.SelectDataset, express exp.IdentifierExp
 	return expr
 }
 func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectDataset, columns map[string]string) (*goqu.SelectDataset, error) {
-	col := deepcopy.Copy(columns).(map[string]string)
+	copiedColumns := deepcopy.Copy(columns).(map[string]string)
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 
 	var tailOrderExpress []exp.OrderedExpression
@@ -116,25 +116,28 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 				}
 				column = script
 			}
-			if column == p.ctx.timeKey || column == timeBucketColumn || column == "*" {
-				if column == p.ctx.timeKey {
-					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
-				} else if column == timeBucketColumn {
-					tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
-				}
+			if column == p.ctx.timeKey {
+				tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+				continue
+			} else if column == timeBucketColumn {
+				tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
 				continue
 			}
-			if v, ok := col[column]; ok {
-				delete(col, column)
+
+			if column == "*" {
+				continue
+			}
+
+			if v, ok := copiedColumns[column]; ok {
+				delete(copiedColumns, column)
 				expr = appendOrderedExpression(expr, goqu.C(v), field.Ascending)
 			} else {
 				expr = appendOrderedExpression(expr, goqu.C(column), field.Ascending)
 			}
-
 		}
 	}
 
-	for _, column := range col {
+	for _, column := range copiedColumns {
 		if column == p.ctx.timeKey || column == timeBucketColumn || column == "*" {
 			continue
 		}
