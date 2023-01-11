@@ -1307,6 +1307,27 @@ func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem,
 	masterServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
 	// set options for label
 	SetlabelsFromOptions(params.Options, masterServiceItem.Labels)
+	if masterServiceItem.SideCars == nil {
+		masterServiceItem.SideCars = make(map[string]*diceyml.SideCar)
+	}
+	masterServiceItem.Labels["ADDON_ID"] = addonIns.ID
+	masterServiceItem.Labels[apistructs.EnvDiceOrgName] = params.Options[apistructs.LabelOrgName]
+	masterServiceItem.Labels[apistructs.DICE_CLUSTER_NAME.String()] = params.ClusterName
+	exporterEnvs := map[string]string{
+		"ADDON_ID":                            addonIns.ID,
+		apistructs.EnvDiceOrgName:             params.Options[apistructs.LabelOrgName],
+		apistructs.DICE_CLUSTER_NAME.String(): params.ClusterName,
+		"REDIS_PASSWORD":                      password,
+		"REDIS_ADDR":                          "redis://localhost:6379",
+	}
+	masterServiceItem.SideCars[apistructs.RedisExporterNamePrefix] = &diceyml.SideCar{
+		Image: "registry.erda.cloud/retag/redis-exporter:v1.45.0",
+		Envs:  exporterEnvs,
+	}
+	masterServiceItem.Ports = append(masterServiceItem.Ports, diceyml.ServicePort{
+		Protocol: "TCP",
+		Port:     9121,
+	})
 
 	serviceMap[apistructs.RedisMasterNamePrefix] = masterServiceItem
 

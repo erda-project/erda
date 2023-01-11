@@ -18,10 +18,15 @@ import (
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -95,19 +100,19 @@ func TestBuildRocketMQOperaotrServiceItem(t *testing.T) {
 			"rocketmq-namesrv": {
 				Labels: map[string]string{},
 				Envs: map[string]string{
-					"ADON_TYPE": "rocketmq",
+					"ADDON_TYPE": "rocketmq",
 				},
 			},
 			"rocketmq-broker": {
 				Labels: map[string]string{},
 				Envs: map[string]string{
-					"ADON_TYPE": "rocketmq",
+					"ADDON_TYPE": "rocketmq",
 				},
 			},
 			"rocketmq-console": {
 				Labels: map[string]string{},
 				Envs: map[string]string{
-					"ADON_TYPE": "rocketmq",
+					"ADDON_TYPE": "rocketmq",
 				},
 			},
 		},
@@ -116,4 +121,76 @@ func TestBuildRocketMQOperaotrServiceItem(t *testing.T) {
 
 	err := a.BuildRocketMQOperaotrServiceItem(params, addonIns, addonSpec, addonDice, nil, "5.0.0")
 	assert.NoError(t, err)
+}
+
+func TestBuildRedisServiceItem(t *testing.T) {
+	params := &apistructs.AddonHandlerCreateItem{
+		Options: map[string]string{},
+		Plan:    "basic",
+	}
+	addonIns := &dbclient.AddonInstance{
+		ID: "1",
+	}
+	addonSpec := &apistructs.AddonExtension{
+		Name: "redis",
+		Plan: map[string]apistructs.AddonPlanItem{
+			"basic": {
+				CPU:   0.5,
+				Mem:   256,
+				Nodes: 1,
+			},
+		},
+	}
+	addonDice := &diceyml.Object{
+		Services: diceyml.Services{
+			"redis-master": {
+				Labels: map[string]string{},
+				Envs: map[string]string{
+					"ADDON_TYPE":     "redis",
+					"ADDON_GROUP_ID": "redis",
+				},
+			},
+			"redis-slave": {
+				Labels: map[string]string{},
+				Envs: map[string]string{
+					"ADDON_TYPE":     "redis",
+					"ADDON_GROUP_ID": "redis",
+				},
+			},
+			"redis-sentinel": {
+				Labels: map[string]string{},
+				Envs: map[string]string{
+					"ADDON_TYPE":     "redis",
+					"ADDON_GROUP_ID": "redis",
+				},
+			},
+		},
+	}
+	bdl := bundle.New()
+
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "KMSEncrypt", func(_ *bundle.Bundle, req apistructs.KMSEncryptRequest) (*kmstypes.EncryptResponse, error) {
+		return &kmstypes.EncryptResponse{KeyID: "1", CiphertextBase64: "xxx"}, nil
+	})
+	defer pm1.Unpatch()
+
+	db := &dbclient.DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: &gorm.DB{},
+		},
+	}
+	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "CreateAddonInstanceExtra", func(_ *dbclient.DBClient, addonInstanceExtra *dbclient.AddonInstanceExtra) error {
+		return nil
+	})
+	defer pm2.Unpatch()
+
+	pm3 := monkey.PatchInstanceMethod(reflect.TypeOf(&gorm.DB{}), "Create", func(_ *gorm.DB, value interface{}) *gorm.DB {
+		return &gorm.DB{}
+	})
+	defer pm3.Unpatch()
+
+	a := &Addon{db: db, bdl: bdl}
+	err := a.BuildRedisServiceItem(params, addonIns, addonSpec, addonDice)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(addonDice.Services[apistructs.RedisMasterNamePrefix].SideCars))
 }
