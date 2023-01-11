@@ -32,15 +32,6 @@ func (e *Endpoints) QueryNotifyItems(ctx context.Context, r *http.Request, vars 
 	locale := e.GetLocale(r)
 	pageNo := getInt(r.URL, "pageNo", 1)
 	pageSize := getInt(r.URL, "pageSize", 10)
-	identityInfo, err := user.GetIdentityInfo(r)
-	if err != nil {
-		return apierrors.ErrQueryNotifyItem.NotLogin().ToResp(), nil
-	}
-	if !identityInfo.IsInternalClient() {
-		if err := e.isManager(identityInfo.UserID, apistructs.SysScope, ""); err != nil {
-			return apierrors.ErrQueryNotifyItem.AccessDenied().ToResp(), nil
-		}
-	}
 	queryReq := apistructs.QueryNotifyItemRequest{
 		PageSize:  pageSize,
 		PageNo:    pageNo,
