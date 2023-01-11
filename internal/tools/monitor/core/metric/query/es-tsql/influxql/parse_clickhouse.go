@@ -735,7 +735,7 @@ func (p *Parser) parseKeyConditionOnExpr(ref *influxql.VarRef, op influxql.Token
 }
 
 func (p *Parser) ckGetKey(ref *influxql.VarRef, deftyp influxql.DataType) (string, _column) {
-	column := _column{rootColumn: ref.String()}
+	column := _column{rootColumn: ref.Val}
 	if newColumn, ok := originColumn[ref.Val]; ok {
 		column.key = newColumn
 		column.isNoArrayKey = true
