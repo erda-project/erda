@@ -213,6 +213,7 @@ const (
 	RedisMasterNamePrefix    string = "redis-master"
 	RedisSlaveNamePrefix     string = "redis-slave"
 	RedisSentinelNamePrefix  string = "redis-sentinel"
+	RedisExporterNamePrefix  string = "redis-exporter"
 	RedisSentinelQuorum      string = "2"
 	RedisSentinelDownAfter   string = "12000"
 	RedisSentinelFailover    string = "12000"
