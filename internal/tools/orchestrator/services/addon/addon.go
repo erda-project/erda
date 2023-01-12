@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/pkg/addonutil"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
@@ -285,7 +286,7 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 	}
 	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] != apistructs.EDAS {
 		for i, v := range req.Addons {
-			newAddonName := a.parseAddonName(v.Type)
+			newAddonName := addonutil.TransAddonName(v.Type)
 			// 如果zk具备canDeploy属性，则对外展现,可以对外发布
 			// zkCanDeploy属性是针对特定的集群，添加的策略，有些私有化集群，如兖矿、家家悦，烟草，他们是已经上线的集群，不能让他们走多租户注册中心
 			// 所以要提供zookeeper的部署。
@@ -316,7 +317,7 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 	addonPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons)) // 新增 addons
 	newPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons))   // 新 addons 列表
 	for _, v := range req.Addons {
-		newAddonName := a.parseAddonName(v.Type)
+		newAddonName := addonutil.TransAddonName(v.Type)
 		if old, ok := existBuildMap[fmt.Sprintf("%d%s%s", req.RuntimeID, newAddonName, v.Name)]; ok {
 			switch old.DeleteStatus {
 			case apistructs.AddonPrebuildDiceYmlDeleted: // 若 addon 在 prebuild 已存在，且历史从 dice.yml 删除
@@ -2971,7 +2972,7 @@ func (a *Addon) checkCreateParams(req *apistructs.AddonCreateRequest) error {
 	// 校验 dicde.yml 里指定 addon & version 是否合法
 	addonKeys := make([]string, 0, len(req.Addons))
 	for _, v := range req.Addons {
-		key := a.parseAddonName(v.Type)
+		key := addonutil.TransAddonName(v.Type)
 		if version, ok := v.Options["version"]; ok {
 			key = strutil.Concat(key, "@", version)
 		}
@@ -2992,17 +2993,6 @@ func (a *Addon) checkCreateParams(req *apistructs.AddonCreateRequest) error {
 	}
 
 	return nil
-}
-
-// transAddonName 名称转换，用户dice.yml中可能会写zookeeper，但是市场中是terminus-zookeeper，需要做兼容
-func (a *Addon) transAddonName(addonName string) string {
-	if addonName == "zookeeper" {
-		return apistructs.AddonZookeeper
-	}
-	if addonName == "elasticsearch" {
-		return apistructs.AddonES
-	}
-	return addonName
 }
 
 // deployAddons addons 部署
@@ -3467,7 +3457,7 @@ func (a *Addon) ParsePreBuild(appID, runtimeID uint64, runtimeName, workspace st
 		GitBranch:     runtimeName,
 		Env:           workspace,
 		InstanceName:  addon.Name,
-		AddonName:     a.parseAddonName(addon.Type),
+		AddonName:     addonutil.TransAddonName(addon.Type),
 		Plan:          addon.Plan,
 		Deleted:       apistructs.AddonNotDeleted,
 	}
@@ -3533,20 +3523,6 @@ func (a *Addon) getDefaultPreBuildList(appID, runtimeID uint64, runtimeName, wor
 	defaults = append(defaults, *item)
 
 	return defaults
-}
-
-// 兼容老版
-func (a *Addon) parseAddonName(addonType string) string {
-	switch addonType {
-	case "zookeeper":
-		return apistructs.AddonZookeeper
-	case "elasticsearch":
-		return apistructs.AddonES
-	case "configcenter":
-		return apistructs.AddonConfigCenter
-	default:
-		return addonType
-	}
 }
 
 func (a *Addon) convertTenantInstance(t *dbclient.AddonInstanceTenant, routingInstance *dbclient.AddonInstanceRouting) apistructs.AddonFetchResponseData {

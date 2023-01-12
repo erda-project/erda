@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/internal/pkg/addonutil"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
@@ -195,7 +196,7 @@ func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) (string, er
 	}
 	addonItem := apistructs.AddonHandlerCreateItem{
 		InstanceName:  baseAddons[0].Name,
-		AddonName:     a.parseAddonName(baseAddons[0].Type),
+		AddonName:     addonutil.TransAddonName(baseAddons[0].Type),
 		Plan:          baseAddons[0].Plan,
 		ClusterName:   req.ClusterName,
 		Workspace:     strutil.ToUpper(req.Workspace),
