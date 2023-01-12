@@ -721,6 +721,26 @@ func TestOrderBy(t *testing.T) {
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
 		},
 		{
+			name: "order by c1,c2,c3 desc",
+			sql:  "select column1,column2,column3 from table order by column3 desc",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column3\" DESC,\"column1\" ASC,\"column2\" ASC",
+		},
+		{
+			name: "order by column desc, default",
+			sql:  "select column1 from table order by column1 desc",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" DESC",
+		},
+		{
+			name: "order by column desc, column2 asc",
+			sql:  "select column1,column2 from table order by column1 desc,column2 asc",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\", toNullable(number_field_values[indexOf(number_field_keys,'column2')]) AS \"column2\" FROM \"table\" ORDER BY \"column1\" DESC,\"column2\" ASC",
+		},
+		{
+			name: "order by column1 asc, column2 desc",
+			sql:  "select column1,column2 from table order by column1 asc,column2 desc",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\", toNullable(number_field_values[indexOf(number_field_keys,'column2')]) AS \"column2\" FROM \"table\" ORDER BY \"column1\" ASC,\"column2\" DESC",
+		},
+		{
 			name: "none order by",
 			sql:  "select column1 from table",
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
@@ -776,12 +796,16 @@ func TestOrderBy(t *testing.T) {
 				// column is map, maybe disorder by order
 				orderWantExpr := strings.ReplaceAll(test.want[strings.Index(test.want, "ORDER BY")+8:], " ", "")
 				orderGotExpr := strings.ReplaceAll(sql[strings.Index(sql, "ORDER BY")+8:], " ", "")
-				require.ElementsMatch(t, strings.Split(orderWantExpr, ","), strings.Split(orderGotExpr, ","))
 
-				sql = sql[:strings.Index(sql, "ORDER BY")]
-				test.want = test.want[:strings.Index(test.want, "ORDER BY")]
+				got := strings.Split(orderGotExpr, ",")
+				want := strings.Split(orderWantExpr, ",")
+				require.Equalf(t, len(want), len(got), "length should by equal, should by %v, but is %v", orderWantExpr, orderGotExpr)
+
+				for i, w := range want {
+					require.Equalf(t, w, got[i], "[%v] not equal", i)
+				}
+
 			}
-			require.Equal(t, test.want, sql)
 		})
 	}
 }

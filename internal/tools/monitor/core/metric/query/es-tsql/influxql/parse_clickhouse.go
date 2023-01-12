@@ -25,6 +25,7 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/influxdata/influxql"
+	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/model"
@@ -86,58 +87,66 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 	}, nil
 }
 
+func appendOrderedExpression(expr *goqu.SelectDataset, express exp.IdentifierExpression, isAsc bool) *goqu.SelectDataset {
+	if !isAsc {
+		expr = expr.OrderAppend(express.Desc())
+	} else {
+		expr = expr.OrderAppend(express.Asc())
+	}
+	return expr
+}
 func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectDataset, columns map[string]string) (*goqu.SelectDataset, error) {
-	sortFields := make(map[string]bool)
+	copiedColumns := deepcopy.Copy(columns).(map[string]string)
+	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
+
+	var tailOrderExpress []exp.OrderedExpression
+
 	if len(s) > 0 {
 		for _, field := range s {
 			if field.Expr == nil {
 				continue
 			}
-
+			var column string
 			if v, ok := field.Expr.(*influxql.VarRef); ok {
-				c, _ := p.ckGetKeyName(v, influxql.AnyField)
-				sortFields[c] = field.Ascending
+				column, _ = p.ckGetKeyName(v, influxql.AnyField)
 			} else {
 				script, err := getAggsOrderScript(p.ctx, field.Expr)
 				if err != nil {
 					return nil, err
 				}
-				sortFields[script] = field.Ascending
+				column = script
+			}
+			if column == p.ctx.timeKey {
+				tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+				continue
+			} else if column == timeBucketColumn {
+				tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
+				continue
+			}
+
+			if column == "*" {
+				continue
+			}
+
+			if v, ok := copiedColumns[column]; ok {
+				delete(copiedColumns, column)
+				expr = appendOrderedExpression(expr, goqu.C(v), field.Ascending)
+			} else {
+				expr = appendOrderedExpression(expr, goqu.C(column), field.Ascending)
 			}
 		}
 	}
 
-	for script, column := range columns {
-		asc := true
-		if _asc, ok := sortFields[script]; ok {
-			delete(sortFields, script)
-			asc = _asc
-		}
-		sortFields[column] = asc
-	}
-
-	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
-
-	for column, asc := range sortFields {
+	for _, column := range copiedColumns {
 		if column == p.ctx.timeKey || column == timeBucketColumn || column == "*" {
 			continue
 		}
-		if !asc {
-			expr = expr.OrderAppend(goqu.C(column).Desc())
-		} else {
-			expr = expr.OrderAppend(goqu.C(column).Asc())
-		}
+		expr = expr.OrderAppend(goqu.C(column).Asc())
 	}
 
-	// time order expr should be tail
-	if _, ok := sortFields[p.ctx.timeKey]; ok {
-		expr = expr.OrderAppend(goqu.C(p.ctx.timeKey).Asc())
+	for _, express := range tailOrderExpress {
+		expr = expr.OrderAppend(express)
 	}
-
-	if _, ok := sortFields[timeBucketColumn]; ok {
-		expr = expr.OrderAppend(goqu.C(timeBucketColumn).Asc())
-	}
-
 	return expr, nil
 }
 
