@@ -25,6 +25,7 @@ import (
 	"gotest.tools/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/apistructs"
@@ -475,7 +476,7 @@ func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
 func Test_runtimeIDMatch(t *testing.T) {
 	type args struct {
 		podRuntimeID string
-		labels       map[string]string
+		pod          apiv1.Pod
 	}
 	tests := []struct {
 		name string
@@ -486,8 +487,13 @@ func Test_runtimeIDMatch(t *testing.T) {
 			name: "Test_01",
 			args: args{
 				podRuntimeID: "1",
-				labels: map[string]string{
-					"DICE_RUNTIME": "1",
+				pod: apiv1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"DICE_RUNTIME": "1"},
+					},
+					Spec:   apiv1.PodSpec{},
+					Status: apiv1.PodStatus{},
 				},
 			},
 			want: true,
@@ -496,8 +502,13 @@ func Test_runtimeIDMatch(t *testing.T) {
 			name: "Test_02",
 			args: args{
 				podRuntimeID: "1",
-				labels: map[string]string{
-					"DICE_RUNTIME_ID": "1",
+				pod: apiv1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"DICE_RUNTIME_ID": "1"},
+					},
+					Spec:   apiv1.PodSpec{},
+					Status: apiv1.PodStatus{},
 				},
 			},
 			want: true,
@@ -505,9 +516,51 @@ func Test_runtimeIDMatch(t *testing.T) {
 		{
 			name: "Test_03",
 			args: args{
-				podRuntimeID: "",
-				labels: map[string]string{
-					"DICE_RUNTIME_ID": "1",
+				podRuntimeID: "1",
+				pod: apiv1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"DICE_RUNTIME_XX": "1"},
+					},
+					Spec: apiv1.PodSpec{
+						Containers: []apiv1.Container{
+							{
+								Env: []apiv1.EnvVar{
+									{
+										Name:  "DICE_RUNTIME",
+										Value: "1",
+									},
+								},
+							},
+						},
+					},
+					Status: apiv1.PodStatus{},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Test_04",
+			args: args{
+				podRuntimeID: "1",
+				pod: apiv1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"DICE_RUNTIME_XX": "1"},
+					},
+					Spec: apiv1.PodSpec{
+						Containers: []apiv1.Container{
+							{
+								Env: []apiv1.EnvVar{
+									{
+										Name:  "DICE_RUNTIME_ID",
+										Value: "1",
+									},
+								},
+							},
+						},
+					},
+					Status: apiv1.PodStatus{},
 				},
 			},
 			want: true,
@@ -515,7 +568,7 @@ func Test_runtimeIDMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := runtimeIDMatch(tt.args.podRuntimeID, tt.args.labels); got != tt.want {
+			if got := runtimeIDMatch(tt.args.podRuntimeID, tt.args.pod); got != tt.want {
 				t.Errorf("runtimeIDMatch() = %v, want %v", got, tt.want)
 			}
 		})

@@ -1184,7 +1184,7 @@ func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName
 				continue
 			}
 
-			if !runtimeIDMatch(podRuntimeID, pod.Labels) {
+			if !runtimeIDMatch(podRuntimeID, pod) {
 				continue
 			}
 
@@ -1194,6 +1194,16 @@ func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName
 			} else {
 				serviceName = pod.Labels["DICE_SERVICE_NAME"]
 			}
+
+			if serviceName == "" {
+				for _, v := range pod.Spec.Containers[0].Env {
+					if v.Name == "DICE_SERVICE" || v.Name == "DICE_SERVICE_NAME" {
+						serviceName = v.Value
+						break
+					}
+				}
+			}
+
 			if serviceName == "" {
 				continue
 			}
@@ -1224,14 +1234,23 @@ func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName
 	return nil
 }
 
-func runtimeIDMatch(podRuntimeID string, labels map[string]string) bool {
+func runtimeIDMatch(podRuntimeID string, pod apiv1.Pod) bool {
 	if podRuntimeID == "" {
 		return true
 	}
 	runtimeIDFromPod := ""
-	runtimeIDFromPod, ok := labels["DICE_RUNTIME"]
+	runtimeIDFromPod, ok := pod.Labels["DICE_RUNTIME"]
 	if !ok {
-		runtimeIDFromPod, ok = labels["DICE_RUNTIME_ID"]
+		runtimeIDFromPod, ok = pod.Labels["DICE_RUNTIME_ID"]
+	}
+
+	if runtimeIDFromPod == "" {
+		for _, v := range pod.Spec.Containers[0].Env {
+			if v.Name == "DICE_RUNTIME" || v.Name == "DICE_RUNTIME_ID" {
+				runtimeIDFromPod = v.Value
+				break
+			}
+		}
 	}
 
 	if runtimeIDFromPod != "" && runtimeIDFromPod == podRuntimeID {

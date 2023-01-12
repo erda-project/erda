@@ -152,6 +152,7 @@ type Pod struct {
 	Phase         string         `json:"phase"`
 	Message       string         `json:"message"`
 	StartedAt     string         `json:"startedAt"`
+	UpdatedAt     string         `json:"updatedAt"`
 	Service       string         `json:"service"`
 	ClusterName   string         `json:"clusterName"`
 	PodName       string         `json:"podName"`

@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -230,6 +231,7 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 	pods := make(apistructs.Pods, 0, len(podList))
 	for _, v := range podList {
 		startat := ""
+		updateat := ""
 		podHealthy := PodStatusUnHealthy
 		switch v.Phase {
 		case string(apiv1.PodRunning):
@@ -258,6 +260,7 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 						CpuLimit:   v.CpuLimit,
 					},
 				})
+				updateat = cInstance.StartedAt
 				break
 			}
 		}
@@ -269,6 +272,7 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 			Phase:         podHealthy,
 			Message:       v.Message,
 			StartedAt:     startat,
+			UpdatedAt:     updateat,
 			Service:       v.ServiceName,
 			ClusterName:   v.Cluster,
 			PodName:       v.PodName,
@@ -418,6 +422,17 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 			pod.Status.StartTime = &pod.CreationTimestamp
 		}
 
+		var updateTime *metav1.Time
+		for _, v := range pod.Status.Conditions {
+			if v.Type == apiv1.PodReady {
+				lt := v.LastTransitionTime
+				updateTime = &lt
+			}
+		}
+		if updateTime == nil {
+			updateTime = pod.Status.StartTime
+		}
+
 		currPods = append(currPods, apistructs.Pod{
 			Uid:           string(pod.UID),
 			IPAddress:     pod.Status.PodIP,
@@ -425,6 +440,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 			Phase:         podHealthy,
 			Message:       containersResource[0].Message,
 			StartedAt:     pod.Status.StartTime.Format(time.RFC3339Nano),
+			UpdatedAt:     updateTime.Format(time.RFC3339Nano),
 			Service:       serviceName,
 			ClusterName:   clusterName,
 			PodName:       pod.Name,
