@@ -142,6 +142,7 @@ func TestEndpoints_getPodStatusFromK8s(t *testing.T) {
 		Phase:         "Healthy",
 		Message:       containers[0].Message,
 		StartedAt:     "2022-08-02T11:40:15+08:00",
+		UpdatedAt:     "2022-08-02T11:40:15+08:00",
 		Service:       "test",
 		ClusterName:   "local-cluster",
 		PodName:       "test-b8e0431e45-6b745f9665-xn9c5",
