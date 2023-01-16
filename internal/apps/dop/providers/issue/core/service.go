@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	issuemodel "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	stream "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
@@ -341,9 +342,16 @@ func (i *IssueService) GetIssue(ctx context.Context, req *pb.GetIssueRequest) (*
 			return nil, apierrors.ErrGetIssue.AccessDenied()
 		}
 	}
+	userIDs := append(issue.Subscribers, issue.Creator, issue.Assignee, issue.Owner)
+	for _, property := range issue.PropertyInstances {
+		tryUserID := (*issuemodel.PropertyInstanceForShow)(property).TryGetUserID()
+		if tryUserID != "" {
+			userIDs = append(userIDs, tryUserID)
+		}
+	}
 	return &pb.GetIssueResponse{
 		Data:    issue,
-		UserIDs: strutil.DedupSlice(append(issue.Subscribers, issue.Creator, issue.Assignee, issue.Owner), true),
+		UserIDs: strutil.DedupSlice(userIDs, true),
 	}, nil
 }
 
