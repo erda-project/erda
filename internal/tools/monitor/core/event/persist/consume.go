@@ -92,7 +92,7 @@ func mapRelations(relation *commonPb.Relation) map[string]string {
 	mapRelations["res_type"] = relation.ResType
 	mapRelations["res_id"] = relation.ResID
 	// ignore ResourceKeys
-	_ = relation.ResourceKeys
+	//_ = relation.ResourceKeys
 
 	return mapRelations
 }
