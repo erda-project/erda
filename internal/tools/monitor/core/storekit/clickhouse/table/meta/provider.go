@@ -45,6 +45,7 @@ type config struct {
 	ReloadInterval time.Duration `file:"reload_interval" default:"5m"`
 	CacheKeyPrefix string        `file:"cache_key_prefix" default:"clickhouse-meta-loader"`
 	MetaStartTime  time.Duration `file:"meta_start_time" default:"-1h"`
+	IgnoreGap      time.Duration `file:"ignore_gap" default:"1h"`
 	Once           bool
 }
 
