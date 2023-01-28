@@ -69,7 +69,7 @@ func (p *provider) confirmErrorHandler(err error) error {
 func (p *provider) normalize(input *pb.Event) *event.Event {
 	tags := make(map[string]string)
 	for k, v := range input.Attributes {
-		tags[k] = v.String()
+		tags[k] = v.GetStringValue()
 	}
 	return &event.Event{
 		EventID:   input.EventID,
