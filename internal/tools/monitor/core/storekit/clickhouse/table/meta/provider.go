@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/appscode/go/strings"
 	"github.com/go-redis/redis"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -125,6 +126,23 @@ func (p *provider) updateMetrics(metas []MetricMeta) chan struct{} {
 	}
 	p.updateMetricsCh <- &req
 	return ch
+}
+
+func (meta *MetricMeta) check(scope, scopeId string) bool {
+	if scope == "org" {
+		return meta.Scope == scopeId
+	}
+	if scope == "micro_service" {
+		return meta.ScopeId == scopeId
+	}
+
+	if meta.Scope != scope {
+		return false
+	}
+	if !strings.IsEmpty(&scopeId) {
+		return meta.ScopeId == scopeId
+	}
+	return true
 }
 
 func init() {

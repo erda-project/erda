@@ -17,8 +17,6 @@ package meta
 import (
 	"context"
 	"time"
-
-	"github.com/appscode/go/strings"
 )
 
 type Interface interface {
@@ -41,13 +39,8 @@ func (p *provider) GetMeta(ctx context.Context, scope, scopeId string, names ...
 				continue
 			}
 		}
-		if v.Scope != scope {
+		if !v.check(scope, scopeId) {
 			continue
-		}
-		if !strings.IsEmpty(&scopeId) {
-			if v.ScopeId != scopeId {
-				continue
-			}
 		}
 		result = append(result, v)
 	}
