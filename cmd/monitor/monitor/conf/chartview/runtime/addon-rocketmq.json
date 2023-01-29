@@ -1,0 +1,850 @@
+{
+  "id": "addon-rocketmq",
+  "name": "Rocketmq监控",
+  "version": "v2",
+  "desc": "",
+  "scope": "org",
+  "scopeId": "terminus",
+  "viewConfig": [
+    {
+      "w": 12,
+      "h": 9,
+      "x": 0,
+      "y": 0,
+      "i": "view-mer9T1th",
+      "view": {
+        "title": "Produce TPS",
+        "description": "The number of messages produced per second per topic",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-2",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filterrfDpyuSe",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "type8JX82F2I",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_producer_tps",
+                "field": "rocketmq-rocketmq_producer_tps::field",
+                "key": "valueUtHaKowD",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "type8JX82F2I",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueUtHaKowD",
+                "expr": "round_float(rocketmq_producer_tps::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 12,
+      "h": 9,
+      "x": 12,
+      "y": 0,
+      "i": "view-uN6aPa9R",
+      "view": {
+        "title": "Producer Message Size",
+        "description": "The size of a message produced per second by a topic (in bytes)",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-3",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filter5h0eNoJ9",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeGYyqG2mY",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_producer_message_size",
+                "field": "rocketmq-rocketmq_producer_message_size::field",
+                "key": "valueoLrXUyIu",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeGYyqG2mY",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueoLrXUyIu",
+                "expr": "round_float(rocketmq_producer_message_size::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 9,
+      "i": "view-CDtlGsMa",
+      "view": {
+        "title": "Consumer TPS",
+        "description": "The number of messages consumed per second by a consumer group",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-4",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filteryIxLL4r0",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeS1dZk4UM",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_consumer_tps",
+                "field": "rocketmq-rocketmq_consumer_tps::field",
+                "key": "valueNvx4FF7I",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeS1dZk4UM",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueNvx4FF7I",
+                "expr": "round_float(rocketmq_consumer_tps::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 8,
+      "y": 9,
+      "i": "view-HicDe7Tr",
+      "view": {
+        "title": "Consumer Message Size",
+        "description": "The size of the message consumed by the consumer group per second (in bytes)",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-5",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filter73rR1vm0",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeYnlqIqbl",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_consumer_message_size",
+                "field": "rocketmq-rocketmq_consumer_message_size::field",
+                "key": "valuexhjp5QxT",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeYnlqIqbl",
+                "expr": "time()"
+              },
+              {
+                "alias": "valuexhjp5QxT",
+                "expr": "round_float(rocketmq_consumer_message_size::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 16,
+      "y": 9,
+      "i": "view-FMv5VzTI",
+      "view": {
+        "title": "Consumer Fail Message Count",
+        "description": "The number of messages consumed fail in one hour",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-6",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filterJDhVGDt3",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeAuU0ZqrY",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_client_consume_fail_msg_count",
+                "field": "rocketmq-rocketmq_client_consume_fail_msg_count::field",
+                "key": "valuetNWfZlRE",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeAuU0ZqrY",
+                "expr": "time()"
+              },
+              {
+                "alias": "valuetNWfZlRE",
+                "expr": "round_float(rocketmq_client_consume_fail_msg_count::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 8,
+      "y": 18,
+      "i": "view-rVJC0DvK",
+      "view": {
+        "title": "Consumer Fail Message TPS",
+        "description": "The number of messages consumed fail per second",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-8",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filterlCOMBKZ5",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeTQoDoeun",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_client_consume_fail_msg_tps",
+                "field": "rocketmq-rocketmq_client_consume_fail_msg_tps::field",
+                "key": "valueMHKC2uNh",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeTQoDoeun",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueMHKC2uNh",
+                "expr": "round_float(rocketmq_client_consume_fail_msg_tps::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 18,
+      "i": "view-arnNrpVH",
+      "view": {
+        "title": "Consumer Ok Message TPS",
+        "description": "The number of messages consumed success per second",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-7",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filterFLqKrvAb",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeni6nPmiM",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_client_consume_ok_msg_tps",
+                "field": "rocketmq-rocketmq_client_consume_ok_msg_tps::field",
+                "key": "valueQomWrPVv",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeni6nPmiM",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueQomWrPVv",
+                "expr": "round_float(rocketmq_client_consume_ok_msg_tps::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 27,
+      "i": "view-vxgCS7As",
+      "view": {
+        "title": "Consumer RT",
+        "description": "The average time of consuming every message",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-10",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filterJfacr6PL",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeQY7OiUih",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_client_consume_rt",
+                "field": "rocketmq-rocketmq_client_consume_rt::field",
+                "key": "valueDMEd46be",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeQY7OiUih",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueDMEd46be",
+                "expr": "round_float(rocketmq_client_consume_rt::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 16,
+      "y": 18,
+      "i": "view-3CX5d8Cd",
+      "view": {
+        "title": "Consumer Pull RT",
+        "description": "The average time of pulling every message",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-9",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filter63mE2U8b",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeWa20V8xm",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_client_consumer_pull_rt",
+                "field": "rocketmq-rocketmq_client_consumer_pull_rt::field",
+                "key": "valuembT9GFSB",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeWa20V8xm",
+                "expr": "time()"
+              },
+              {
+                "alias": "valuembT9GFSB",
+                "expr": "round_float(rocketmq_client_consumer_pull_rt::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 8,
+      "y": 27,
+      "i": "view-ETvPO2O8",
+      "view": {
+        "title": "Consumer Pull TPS",
+        "description": "The number of messages pulled by client per second",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@rocketmq"
+            ],
+            "resultFilters": [
+              {
+                "alias": "表达式-11",
+                "expr": "addon_id::tag='{{addonId}}'",
+                "key": "filterynWI1paH",
+                "type": "expr"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeT9sbPzFI",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "rocketmq_client_consumer_pull_tps",
+                "field": "rocketmq-rocketmq_client_consumer_pull_tps::field",
+                "key": "valuecVxH7701",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "rocketmq"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeT9sbPzFI",
+                "expr": "time()"
+              },
+              {
+                "alias": "valuecVxH7701",
+                "expr": "round_float(rocketmq_client_consumer_pull_tps::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": 1674977822259,
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": 1674974222259,
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    }
+  ]
+}
