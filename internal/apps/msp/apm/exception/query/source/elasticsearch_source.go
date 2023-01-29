@@ -157,7 +157,7 @@ func (source *ElasticsearchSource) fetchErdaErrorFromES(ctx context.Context, req
 			End:          endTime * 1e6,
 			PageNo:       1,
 			PageSize:     200,
-			Debug:        false,
+			Debug:        req.Debug,
 		}
 		items, err := source.fetchErdaEventFromES(ctx, eventReq)
 		if err != nil {
