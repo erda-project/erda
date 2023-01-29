@@ -134,6 +134,7 @@ func Test_provider_ConvertWithoutButton(t *testing.T) {
 
 func Test_provider_Convert(t *testing.T) {
 	var db *dao.DBClient
+
 	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssueSubscribersByIssueID",
 		func(d *dao.DBClient, issueID int64) ([]dao.IssueSubscriber, error) {
 			return []dao.IssueSubscriber{
@@ -170,7 +171,24 @@ func Test_provider_Convert(t *testing.T) {
 	)
 	defer p3.Unpatch()
 
-	_, err := p.Convert(dao.Issue{BaseModel: dbengine.BaseModel{ID: 1}}, nil)
+	p4 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "GetIssuePropertyInstance",
+		func(p *provider, req *pb.GetIssuePropertyInstanceRequest) (*pb.IssueAndPropertyAndValue, error) {
+			return &pb.IssueAndPropertyAndValue{
+				IssueID: req.IssueID,
+				Property: []*pb.IssuePropertyExtraProperty{
+					{
+						PropertyID: 1,
+					},
+				},
+			}, nil
+		})
+	defer p4.Unpatch()
+
+	_, err := p.Convert(dao.Issue{BaseModel: dbengine.BaseModel{ID: 1}}, &commonpb.IdentityInfo{
+		UserID: "1",
+		OrgID:  "1",
+	})
+
 	assert.NoError(t, err)
 }
 
