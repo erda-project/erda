@@ -72,7 +72,7 @@ stages:
             - cp -r ${{ dirs.erda-addons-enterprise }} extensions
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
-            - DOCKER_PLATFORM=linux/arm64 make build-push-all
+            - ARCH=((arch)) make build-push-all # can specify arch=xxx or arch=((dice.arch))
           loop:
             break: task_status == 'Success'
             strategy:
@@ -91,7 +91,7 @@ stages:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare-cli
-            - DOCKER_PLATFORM=linux/arm64 make build-push-image MODULE_PATH=cli
+            - ARCH=((arch)) make build-push-image MODULE_PATH=cli
           loop:
             break: task_status == 'Success'
             strategy:
@@ -109,7 +109,7 @@ stages:
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - DOCKER_PLATFORM=linux/arm64 MODULE_PATH=cluster-agent make build-push-image
+            - ARCH=((arch)) MODULE_PATH=cluster-agent make build-push-image
           loop:
             break: task_status == 'Success'
             strategy:
@@ -128,7 +128,7 @@ stages:
             - make ci-build-local -e SKIP_TEST=true
             - cd ${{ dirs.erda }}
             - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
-            - DOCKER_PLATFORM=linux/arm64 make build-push-image MODULE_PATH=monitor/agent-injector
+            - ARCH=((arch)) make build-push-image MODULE_PATH=monitor/agent-injector
           resources:
             cpu: 1
             mem: 1024
@@ -138,7 +138,7 @@ stages:
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - DOCKER_PLATFORM=linux/arm64 make build-push-image MODULE_PATH=monitor/diagnotor-agent
+            - ARCH=((arch)) make build-push-image MODULE_PATH=monitor/diagnotor-agent
           resources:
             cpu: 1
             mem: 1024

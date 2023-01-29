@@ -77,8 +77,8 @@ if [ -n "${DOCKER_REGISTRY}" ]; then
     DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 fi
 
-if [ -z "${DOCKER_PLATFORM}" ]; then
-    DOCKER_PLATFORM="linux/amd64"
+if [ -z "${ARCH}" ]; then
+    ARCH="amd64"
 fi
 
 # print details
@@ -89,7 +89,8 @@ print_details() {
     echo "Dockerfile     : ${DOCKERFILE}"
     echo "Docker Image   : ${DOCKER_IMAGE}"
     echo "Build Command  : ${MAKE_BUILD_CMD}"
-    echo "Docker Platform: ${DOCKER_PLATFORM}"
+    echo "Arch           : ${ARCH}"
+    echo "Docker Platform: linux/${ARCH}"
 }
 print_details
 
@@ -102,7 +103,7 @@ docker_login() {
 
 # build docker image
 build_image()  {
-    DOCKER_BUILDKIT=1 docker buildx build --pull --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
+    DOCKER_BUILDKIT=1 docker buildx build --pull --platform "linux/${ARCH}" --progress=plain -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
