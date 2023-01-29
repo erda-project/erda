@@ -47,4 +47,4 @@ RUN cd "$HOME" && \
     git clone https://github.com/libgit2/libgit2.git -b v1.3.2 --depth 1 && \
     cd libgit2 && \
     rm -rf build && mkdir build && cd build && \
-    cmake .. -DBUILD_CLAR=OFF && cmake --build . --target install
+    cmake .. -DBUILD_CLAR=OFF -DCMAKE_INSTALL_PREFIX=$TARGET && cmake --build . --target install
