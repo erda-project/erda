@@ -101,13 +101,6 @@ docker_login() {
 
 # build docker image
 build_image()  {
-    if [[ -n "${BUILD_BASE}" ]] || [[ -z "${DOCKER_REGISTRY}" && ${DOCKERFILE} == ${DOCKERFILE_DEFAULT} ]]; then
-        BASE_IMAGE_ID="$(docker images ${BASE_DOCKER_IMAGE} -q)"
-        if [ -z "${BASE_IMAGE_ID}" ]; then
-            echo "base image '${BASE_DOCKER_IMAGE}' not exist, start build base image ..."
-            build/scripts/base_image.sh build
-        fi
-    fi
     DOCKER_BUILDKIT=1 docker buildx build --pull --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
