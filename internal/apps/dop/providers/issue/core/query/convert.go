@@ -51,6 +51,20 @@ func (p *provider) Convert(model dao.Issue, identityInfo *commonpb.IdentityInfo)
 	for _, v := range subscribers {
 		issue.Subscribers = append(issue.Subscribers, v.UserID)
 	}
+	if identityInfo != nil && identityInfo.OrgID != "" {
+		orgID, err := strconv.ParseUint(identityInfo.OrgID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		propertyInstances, err := p.GetIssuePropertyInstance(&pb.GetIssuePropertyInstanceRequest{
+			IssueID: issue.Id,
+			OrgID:   int64(orgID),
+		})
+		if err != nil {
+			return nil, err
+		}
+		issue.PropertyInstances = propertyInstances.Property
+	}
 
 	return issue, nil
 }
