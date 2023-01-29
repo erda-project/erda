@@ -52,6 +52,7 @@ func TestMetricMetaWantSQL(t *testing.T) {
 		Cfg: &config{
 			MetaStartTime: time.Hour * -2,
 			MetaTable:     "metric_meta",
+			IgnoreGap:     time.Hour,
 		},
 		updateMetricsCh: mockUpdateChn,
 	}
