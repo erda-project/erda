@@ -721,9 +721,9 @@ func TestOrderBy(t *testing.T) {
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
 		},
 		{
-			name: "order by c1,c2,c3 desc",
-			sql:  "select column1,column2,column3 from table order by column3 desc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column3\" DESC,\"column1\" ASC,\"column2\" ASC",
+			name: "order by c1,c2 desc,",
+			sql:  "select column1 from table order by column2 desc",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"number_field_values[indexOf(number_field_keys,'column2')]\" DESC,\"column1\" ASC",
 		},
 		{
 			name: "order by column desc, default",

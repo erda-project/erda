@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"time"
 
+	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
 	"github.com/erda-project/erda-proto-go/oap/event/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/event"
 )
@@ -68,7 +69,7 @@ func (p *provider) confirmErrorHandler(err error) error {
 func (p *provider) normalize(input *pb.Event) *event.Event {
 	tags := make(map[string]string)
 	for k, v := range input.Attributes {
-		tags[k] = v.String()
+		tags[k] = v.GetStringValue()
 	}
 	return &event.Event{
 		EventID:   input.EventID,
@@ -78,5 +79,20 @@ func (p *provider) normalize(input *pb.Event) *event.Event {
 		Timestamp: int64(input.TimeUnixNano),
 		Time:      time.Unix(0, int64(input.TimeUnixNano)),
 		Tags:      tags,
+		Relations: mapRelations(input.Relations),
 	}
+}
+
+func mapRelations(relation *commonPb.Relation) map[string]string {
+	mapRelations := make(map[string]string)
+	if relation == nil {
+		return mapRelations
+	}
+	mapRelations["trace_id"] = relation.TraceID
+	mapRelations["res_type"] = relation.ResType
+	mapRelations["res_id"] = relation.ResID
+	// ignore ResourceKeys
+	//_ = relation.ResourceKeys
+
+	return mapRelations
 }
