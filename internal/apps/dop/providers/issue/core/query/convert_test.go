@@ -258,6 +258,7 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 		pro       *pb.IssuePropertyIndex
 		relations []dao.IssuePropertyRelation
 		mp        map[pair]string
+		users     map[string]string
 	}
 	tests := []struct {
 		name string
@@ -410,10 +411,42 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 			},
 			want: "",
 		},
+		{
+			name: "check date",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_Date,
+				},
+				relations: []dao.IssuePropertyRelation{
+					{PropertyID: 1, ArbitraryValue: "2023-01-17T00:00:00+08:00"},
+				},
+				mp:    map[pair]string{},
+				users: map[string]string{},
+			},
+			want: "2023-01-17 00:00:00",
+		},
+		{
+			name: "check person",
+			args: args{
+				pro: &pb.IssuePropertyIndex{
+					PropertyID:   1,
+					PropertyType: pb.PropertyTypeEnum_Person,
+				},
+				relations: []dao.IssuePropertyRelation{
+					{PropertyID: 1, ArbitraryValue: "1001"},
+				},
+				mp: map[pair]string{},
+				users: map[string]string{
+					"1001": "nickname",
+				},
+			},
+			want: "nickname",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getCustomPropertyColumnValue(tt.args.pro, tt.args.relations, tt.args.mp); got != tt.want {
+			if got := getCustomPropertyColumnValue(tt.args.pro, tt.args.relations, tt.args.mp, tt.args.users); got != tt.want {
 				t.Errorf("getCustomPropertyColumnValue() = %v, want %v", got, tt.want)
 			}
 		})
