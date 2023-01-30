@@ -137,6 +137,7 @@ func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric) *
 			"env":           m.Env,
 			"metric":        strconv.FormatInt(m.ID, 10),
 			"metric_name":   m.Name,
+			"org_name":      apis.GetOrg(ctx),
 		},
 	}
 	s.addTenantTags(ck, m.TenantId)
