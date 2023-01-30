@@ -4,6 +4,8 @@
 
 set -o errexit -o pipefail
 
+echo "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}"
+
 # check parameters and print usage if need
 usage() {
     echo "docker_build.sh MODULE [ACTION]"
@@ -32,7 +34,8 @@ cd $(git rev-parse --show-toplevel)
 VERSION="$(build/scripts/make-version.sh)"
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
-BASE_DOCKER_IMAGE="registry.erda.cloud/erda/erda-base:20220928"
+ARCH="${ARCH:-$(go env GOARCH)}"
+BASE_DOCKER_IMAGE="registry.erda.cloud/erda/${ARCH}/erda-base:20230130"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
 
 # setup single module envionment variables
@@ -74,10 +77,6 @@ if [ -n "${DOCKER_REGISTRY}" ]; then
     DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 fi
 
-if [ -z "${DOCKER_PLATFORM}" ]; then
-    DOCKER_PLATFORM="linux/amd64"
-fi
-
 # print details
 print_details() {
     echo "Module Path    : ${MODULE_PATH}"
@@ -86,7 +85,8 @@ print_details() {
     echo "Dockerfile     : ${DOCKERFILE}"
     echo "Docker Image   : ${DOCKER_IMAGE}"
     echo "Build Command  : ${MAKE_BUILD_CMD}"
-    echo "Docker Platform: ${DOCKER_PLATFORM}"
+    echo "Arch           : ${ARCH}"
+    echo "Docker Platform: linux/${ARCH}"
 }
 print_details
 
@@ -99,14 +99,7 @@ docker_login() {
 
 # build docker image
 build_image()  {
-    if [[ -n "${BUILD_BASE}" ]] || [[ -z "${DOCKER_REGISTRY}" && ${DOCKERFILE} == ${DOCKERFILE_DEFAULT} ]]; then
-        BASE_IMAGE_ID="$(docker images ${BASE_DOCKER_IMAGE} -q)"
-        if [ -z "${BASE_IMAGE_ID}" ]; then
-            echo "base image '${BASE_DOCKER_IMAGE}' not exist, start build base image ..."
-            build/scripts/base_image.sh build
-        fi
-    fi
-    DOCKER_BUILDKIT=1 docker build --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
+    DOCKER_BUILDKIT=1 docker buildx build --pull --platform "linux/${ARCH}" --progress=plain -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
@@ -115,7 +108,9 @@ build_image()  {
         --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
+        --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
         --build-arg GOPROXY="${GOPROXY}" \
+        --push \
         -f "${DOCKERFILE}" .
 }
 
@@ -135,7 +130,7 @@ push_image() {
 # build and push
 build_push_image() {
     build_image
-    push_image
+#    push_image
     echo "action meta: image=${DOCKER_IMAGE}"
     echo "action meta: tag=${IMAGE_TAG}"
 }

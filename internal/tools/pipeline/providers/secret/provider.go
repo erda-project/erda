@@ -28,6 +28,7 @@ import (
 )
 
 type config struct {
+	DefaultDiceArch string `file:"default_dice_arch" env:"DEFAULT_DICE_ARCH" default:"amd64"`
 }
 
 type provider struct {

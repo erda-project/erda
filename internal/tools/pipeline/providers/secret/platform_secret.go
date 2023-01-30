@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -85,6 +86,7 @@ func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, i
 		// dice version
 		"dice.version": version.Version,
 		// dice
+		"dice.arch":                strutil.FirstNoneEmpty(clusterInfo.CM.Get(apistructs.DICE_ARCH), s.Cfg.DefaultDiceArch, "amd64"),
 		"dice.org.id":              p.Labels[apistructs.LabelOrgID],
 		"dice.org.name":            p.GetOrgName(),
 		"dice.project.id":          p.Labels[apistructs.LabelProjectID],
