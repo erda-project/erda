@@ -62,7 +62,7 @@ stages:
   - stage:
       - custom-script:
           alias: build-erda
-          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230129
+          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230130
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions
@@ -86,7 +86,7 @@ stages:
           timeout: 7200
       - custom-script:
           alias: build-erda-cli
-          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230129
+          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230130
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -105,7 +105,7 @@ stages:
           timeout: 7200
       - custom-script:
           alias: build-cluster-agent
-          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230129
+          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230130
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -134,7 +134,7 @@ stages:
             mem: 1024
       - custom-script:
           alias: build-diagnotor-agent
-          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230129
+          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230130
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -144,7 +144,7 @@ stages:
             mem: 1024
       - custom-script:
           alias: build-erda-cli-linux
-          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230129
+          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230130
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
@@ -162,7 +162,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli-mac
-          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230129
+          image: registry.erda.cloud/erda/((dice.arch))/erda-base:20230130
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
