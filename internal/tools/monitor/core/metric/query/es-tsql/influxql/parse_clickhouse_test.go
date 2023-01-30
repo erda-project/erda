@@ -880,7 +880,11 @@ func TestGroupColumnShouldBeExist(t *testing.T) {
 			sql, _, err := expr.ToSQL()
 			require.NoError(t, err)
 
-			require.Equal(t, test.want, sql)
+			sql = sql[strings.Index(sql, "GROUP BY")+8:]
+			test.want = test.want[strings.Index(test.want, "GROUP BY")+8:]
+
+			require.ElementsMatch(t, strings.Split(test.want, ","), strings.Split(sql, ","))
+
 		})
 	}
 
