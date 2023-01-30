@@ -31,11 +31,11 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
 
-func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent, stopCh chan struct{}, lstore *sync.Map) {
+func (e *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent, stopCh chan struct{}, lstore *sync.Map) {
 	o11 := discover.Orchestrator()
 	eventAddr := "http://" + o11 + "/api/events/runtimes/actions/sync"
 
-	name := string(m.name)
+	name := string(e.name)
 
 	logrus.Infof("edas registerEventChanAndLocalStore, name: %s", name)
 
@@ -50,11 +50,11 @@ func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent,
 		if t == storetypes.Del {
 			_, ok := lstore.Load(runtimeName)
 			if ok {
-				var e events.RuntimeEvent
-				e.RuntimeName = runtimeName
-				e.IsDeleted = true
+				var event events.RuntimeEvent
+				event.RuntimeName = runtimeName
+				event.IsDeleted = true
 				lstore.Delete(runtimeName)
-				m.notifier.Send(e, events.WithSender(name+events.SUFFIX_EDAS), events.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
+				e.notifier.Send(e, events.WithSender(name+events.SUFFIX_EDAS), events.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
 			}
 			return nil
 		}
@@ -95,11 +95,11 @@ func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent,
 }
 
 // Currently edas does not use an event-driven mechanism, so it uses polling to simulate each time
-func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
+func (e *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 	o11 := discover.Orchestrator()
 	eventAddr := "http://" + o11 + "/api/events/runtimes/actions/sync"
 
-	logrus.Infof("executor(%s) in waitEvent", m.name)
+	logrus.Infof("executor(%s) in waitEvent", e.name)
 
 	initStore := func(k string, v interface{}) error {
 		reKey := etcdKeyToMapKey(k)
@@ -108,7 +108,7 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 		}
 
 		r := v.(*apistructs.ServiceGroup)
-		if r.Executor != string(m.name) {
+		if r.Executor != string(e.name) {
 			return nil
 		}
 		lstore.Store(reKey, *r)
@@ -117,7 +117,7 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 
 	em := events.GetEventManager()
 	if err := em.MemEtcdStore.ForEach(context.Background(), "/dice/service/", apistructs.ServiceGroup{}, initStore); err != nil {
-		logrus.Errorf("executor(%s) foreach initStore error: %v", m.name, err)
+		logrus.Errorf("executor(%s) foreach initStore error: %v", e.name, err)
 	}
 
 	keys := make([]string, 0)
@@ -126,7 +126,7 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 		r := v.(apistructs.ServiceGroup)
 
 		// double check
-		if r.Executor != string(m.name) {
+		if r.Executor != string(e.name) {
 			return true
 		}
 
@@ -139,9 +139,9 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 		go func() {
 			start := time.Now()
 			defer func() {
-				logrus.Infof("edas executor(%s) get status for key(%s) took %v", m.name, k.(string), time.Since(start))
+				logrus.Infof("edas executor(%s) get status for key(%s) took %v", e.name, k.(string), time.Since(start))
 			}()
-			_, err = m.Status(ctx, r)
+			_, err = e.Status(ctx, r)
 			c <- struct{}{}
 		}()
 
@@ -150,26 +150,26 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 		select {
 		case <-c:
 			if err != nil {
-				logrus.Errorf("executor(%s)'s key(%s) for edas get status error: %v", m.name, k, err)
+				logrus.Errorf("executor(%s)'s key(%s) for edas get status error: %v", e.name, k, err)
 				return true
 			}
 
-			var e events.RuntimeEvent
-			e.EventType = events.EVENTS_TOTAL
-			e.RuntimeName = k.(string)
-			e.ServiceStatuses = make([]events.ServiceStatus, len(r.Services))
+			var event events.RuntimeEvent
+			event.EventType = events.EVENTS_TOTAL
+			event.RuntimeName = k.(string)
+			event.ServiceStatuses = make([]events.ServiceStatus, len(r.Services))
 			for i, srv := range r.Services {
-				e.ServiceStatuses[i].ServiceName = srv.Name
-				e.ServiceStatuses[i].Replica = srv.Scale
-				e.ServiceStatuses[i].ServiceStatus = convertServiceStatus(srv.Status)
+				event.ServiceStatuses[i].ServiceName = srv.Name
+				event.ServiceStatuses[i].Replica = srv.Scale
+				event.ServiceStatuses[i].ServiceStatus = convertServiceStatus(srv.Status)
 				// Status is empty string
-				if len(e.ServiceStatuses[i].ServiceStatus) == 0 {
-					e.ServiceStatuses[i].ServiceStatus = convertServiceStatus(apistructs.StatusProgressing)
+				if len(event.ServiceStatuses[i].ServiceStatus) == 0 {
+					event.ServiceStatuses[i].ServiceStatus = convertServiceStatus(apistructs.StatusProgressing)
 				}
 				//Get the service status through the Status interface of edas. Currently there is no instance information attached.
 				//If the upper layer sets the number of instances of a service to 0, then the edas service is set to a healthy state
-				if e.ServiceStatuses[i].Replica == 0 {
-					e.ServiceStatuses[i].ServiceStatus = string(apistructs.StatusHealthy)
+				if event.ServiceStatuses[i].Replica == 0 {
+					event.ServiceStatuses[i].ServiceStatus = string(apistructs.StatusHealthy)
 				}
 				/*
 					e.ServiceStatuses[i].InstanceStatuses = make([]events.InstanceStatus, len(srv.InstanceInfos))
@@ -186,11 +186,11 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 				*/
 			}
 
-			go m.notifier.Send(e, events.WithSender(string(m.name)+events.SUFFIX_EDAS), events.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
+			go e.notifier.Send(e, events.WithSender(string(e.name)+events.SUFFIX_EDAS), events.WithDest(map[string]interface{}{"HTTP": []string{eventAddr}}))
 			return true
 
 		case <-ctx.Done():
-			logrus.Errorf("executor(%s)'s key(%s) get status timeout", m.name, k)
+			logrus.Errorf("executor(%s)'s key(%s) get status timeout", e.name, k)
 			return true
 		}
 	}
@@ -198,13 +198,13 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 	for {
 		select {
 		case <-stopCh:
-			logrus.Errorf("edas executor(%s) got stop chan message", m.name)
+			logrus.Errorf("edas executor(%s) got stop chan message", e.name)
 			return
 		case <-time.After(10 * time.Second):
 			lstore.Range(f)
 		}
 
-		logrus.Infof("executor(%s) edas keys list: %v", m.name, keys)
+		logrus.Infof("executor(%s) edas keys list: %v", e.name, keys)
 		keys = nil
 	}
 }
