@@ -959,9 +959,7 @@ func (e *EDAS) insertApp(spec *ServiceSpec) (string, error) {
 	logrus.Infof("[EDAS] Start to insert app: %s", spec.Name)
 
 	req = api.CreateInsertK8sApplicationRequest()
-	req.Headers["Pragma"] = "no-cache"
-	req.Headers["Cache-Control"] = "no-cache"
-	req.Headers["Connection"] = "keep-alive"
+	req.Headers = AppendCommonHeaders(req.Headers)
 	req.SetDomain(e.addr)
 	req.ClusterId = e.clusterID
 	if len(e.logicalRegionID) != 0 {
@@ -1002,7 +1000,7 @@ func (e *EDAS) insertApp(spec *ServiceSpec) (string, error) {
 
 	logrus.Debugf("[EDAS] insertApp response, code: %d, message: %s, applicationInfo: %+v", resp.Code, resp.Message, resp.ApplicationInfo)
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return "", errors.Errorf("failed to insert app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
@@ -1033,9 +1031,7 @@ func (e *EDAS) abortAndRollbackChangeOrder(changeOrderID string) error {
 	//var resp *api.AbortAndRollbackChangeOrderResponse
 	var err error
 	req = api.CreateAbortAndRollbackChangeOrderRequest()
-	req.Headers["Pragma"] = "no-cache"
-	req.Headers["Cache-Control"] = "no-cache"
-	req.Headers["Connection"] = "keep-alive"
+	req.Headers = AppendCommonHeaders(req.Headers)
 	req.SetDomain(e.addr)
 	req.ChangeOrderId = changeOrderID
 	_, err = e.client.AbortAndRollbackChangeOrder(req)
@@ -1050,9 +1046,7 @@ func (e *EDAS) abortChangeOrder(changeOrderID string) error {
 	var req *api.AbortChangeOrderRequest
 	var err error
 	req = api.CreateAbortChangeOrderRequest()
-	req.Headers["Pragma"] = "no-cache"
-	req.Headers["Cache-Control"] = "no-cache"
-	req.Headers["Connection"] = "keep-alive"
+	req.Headers = AppendCommonHeaders(req.Headers)
 	req.SetDomain(e.addr)
 	req.ChangeOrderId = changeOrderID
 	_, err = e.client.AbortChangeOrder(req)
@@ -1088,23 +1082,64 @@ func (e *EDAS) deleteAppByName(appName string) error {
 	return e.deleteAppByID(appID)
 }
 
+func (e *EDAS) stopAppByID(id string) error {
+	logrus.Infof("[EDAS] Stop app first, id: %s", id)
+
+	stopReq := api.CreateStopK8sApplicationRequest()
+	stopReq.Headers = AppendCommonHeaders(stopReq.Headers)
+	stopReq.SetDomain(e.addr)
+	stopReq.AppId = id
+
+	stopResp, err := e.client.StopK8sApplication(stopReq)
+	if err != nil {
+		return errors.Errorf("response http context: %s, error: %v", stopResp.GetHttpContentString(), err)
+	}
+
+	if stopResp != nil && stopResp.Code != http.StatusOK {
+		return errors.Errorf("failed to stop app(%s), edasCode: %d, message: %s",
+			id, stopResp.Code, stopResp.Message)
+	} else if stopResp == nil {
+		return errors.New("response is null")
+	}
+
+	logrus.Debugf("[EDAS] stop app(%s) response, requestID: %s, code: %d, message: %s, changeOrderID: %s",
+		id, stopResp.RequestId, stopResp.Code, stopResp.Message, stopResp.ChangeOrderId)
+
+	if len(stopResp.ChangeOrderId) != 0 {
+		logrus.Infof("[EDAS] Start to load stop change order status, change order id: %s", stopResp.ChangeOrderId)
+
+		status, err := e.loopTerminationStatus(stopResp.ChangeOrderId)
+		if err != nil {
+			return errors.Wrapf(err, "get stop status by loop")
+		}
+
+		if status != CHANGE_ORDER_STATUS_SUCC {
+			return errors.Errorf("failed to get the status of stopping app(%s), status = %s",
+				id, ChangeOrderStatusString[status])
+		}
+	}
+
+	logrus.Infof("[EDAS] Successfully to stop app by id: %s", id)
+
+	return nil
+}
+
 // delete application by app id
 func (e *EDAS) deleteAppByID(id string) error {
-	var req *api.DeleteK8sApplicationRequest
-	var resp *api.DeleteK8sApplicationResponse
-	var err error
-
 	logrus.Infof("[EDAS] Start to delete app by id: %s", id)
 
-	req = api.CreateDeleteK8sApplicationRequest()
-	req.Headers["Pragma"] = "no-cache"
-	req.Headers["Cache-Control"] = "no-cache"
-	req.Headers["Connection"] = "keep-alive"
+	// stop application first
+	if err := e.stopAppByID(id); err != nil {
+		return err
+	}
+
+	req := api.CreateDeleteK8sApplicationRequest()
+	req.Headers = AppendCommonHeaders(req.Headers)
 	req.SetDomain(e.addr)
 	req.AppId = id
 
 	// DeleteApplicationRequest
-	resp, err = e.client.DeleteK8sApplication(req)
+	resp, err := e.client.DeleteK8sApplication(req)
 	if err != nil {
 		return errors.Errorf("response http context: %s, error: %v", resp.GetHttpContentString(), err)
 	}
@@ -1116,7 +1151,7 @@ func (e *EDAS) deleteAppByID(id string) error {
 	logrus.Debugf("[EDAS] delete app(%s) response, requestID: %s, code: %d, message: %s, changeOrderID: %s",
 		id, resp.RequestId, resp.Code, resp.Message, resp.ChangeOrderId)
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return errors.Errorf("failed to delete app(%s), edasCode: %d, message: %s", id, resp.Code, resp.Message)
 	}
 
@@ -1154,7 +1189,7 @@ func (e *EDAS) getAppID(name string) (string, error) {
 		return "", errors.Errorf("response is null")
 	}
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return "", errors.Errorf("failed to list app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
@@ -1241,7 +1276,7 @@ func (e *EDAS) getChangeOrderInfo(orderID string) (ChangeOrderStatus, error) {
 		return CHANGE_ORDER_STATUS_ERROR, errors.Errorf("response is null")
 	}
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return CHANGE_ORDER_STATUS_ERROR, errors.Errorf("failed to get change order info, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
@@ -1270,7 +1305,7 @@ func (e *EDAS) listRecentChangeOrderInfo(appID string) (*api.ChangeOrderList, er
 		return nil, errors.Errorf("response is null")
 	}
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return nil, errors.Errorf("failed to list recent change order info, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
@@ -1304,7 +1339,7 @@ func (e *EDAS) queryAppStatus(appName string) (AppStatus, error) {
 	logrus.Debugf("[EDAS] queryAppStatus response, appName: %s, code: %d, message: %s, app: %+v",
 		appName, resp.Code, resp.Message, resp.AppInfo)
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return state, errors.Errorf("failed to query edas app(%s) status, edasCode: %d, message: %s", appName, resp.Code, resp.Message)
 	}
 
@@ -1843,9 +1878,7 @@ func (e *EDAS) deployApp(appID string, spec *ServiceSpec) error {
 	logrus.Infof("[EDAS] Start to deploy app, id: %s", appID)
 
 	req = api.CreateDeployK8sApplicationRequest()
-	req.Headers["Pragma"] = "no-cache"
-	req.Headers["Cache-Control"] = "no-cache"
-	req.Headers["Connection"] = "keep-alive"
+	req.Headers = AppendCommonHeaders(req.Headers)
 	req.SetDomain(e.addr)
 
 	// Compatible with edas proprietary cloud version 3.7.1
@@ -1895,7 +1928,7 @@ func (e *EDAS) deployApp(appID string, spec *ServiceSpec) error {
 	logrus.Debugf("[EDAS] deployApp response, requestID: %s, code: %d, message: %s, ChangeOrderId: %+v",
 		resp.RequestId, resp.Code, resp.Message, resp.ChangeOrderId)
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return errors.Errorf("failed to deploy app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
@@ -1935,9 +1968,7 @@ func (e *EDAS) scaleApp(name string, scale int) error {
 	}
 
 	req = api.CreateScaleK8sApplicationRequest()
-	req.Headers["Pragma"] = "no-cache"
-	req.Headers["Cache-Control"] = "no-cache"
-	req.Headers["Connection"] = "keep-alive"
+	req.Headers = AppendCommonHeaders(req.Headers)
 	req.SetDomain(e.addr)
 
 	req.AppId = appID
@@ -1952,7 +1983,7 @@ func (e *EDAS) scaleApp(name string, scale int) error {
 		return errors.Errorf("response is null")
 	}
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return errors.Errorf("failed to scale app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
@@ -1989,9 +2020,7 @@ func (e *EDAS) updateAppResources(name string, mem int) error {
 	}
 
 	req = api.CreateUpdateK8sApplicationConfigRequest()
-	req.Headers["Pragma"] = "no-cache"
-	req.Headers["Cache-Control"] = "no-cache"
-	req.Headers["Connection"] = "keep-alive"
+	req.Headers = AppendCommonHeaders(req.Headers)
 	req.SetDomain(e.addr)
 
 	req.AppId = appID
@@ -2011,7 +2040,7 @@ func (e *EDAS) updateAppResources(name string, mem int) error {
 
 	logrus.Debugf("[EDAS] updateAppResources response, code: %d, message: %s, ChangeOrderId: %+v", resp.Code, resp.Message, resp.ChangeOrderId)
 
-	if resp.Code != 200 {
+	if resp.Code != http.StatusOK {
 		return errors.Errorf("failed to scale app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
@@ -2162,11 +2191,11 @@ func (e *EDAS) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoData, err
 	}, nil
 }
 
-func (*EDAS) CleanUpBeforeDelete() {}
-func (*EDAS) JobVolumeCreate(ctx context.Context, spec interface{}) (string, error) {
+func (e *EDAS) CleanUpBeforeDelete() {}
+func (e *EDAS) JobVolumeCreate(ctx context.Context, spec interface{}) (string, error) {
 	return "", fmt.Errorf("not support for edas")
 }
-func (*EDAS) KillPod(podname string) error {
+func (e *EDAS) KillPod(podname string) error {
 	return fmt.Errorf("not support for edas")
 }
 
@@ -2263,7 +2292,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 					logrus.Errorf(errMsg)
 					errString <- errMsg
 				}
-				if resp.Code != 200 {
+				if resp.Code != http.StatusOK {
 					errMsg := fmt.Sprintf("scale k8s application resp err: %v", resp.Message)
 					logrus.Errorf(errMsg)
 					errString <- errMsg
