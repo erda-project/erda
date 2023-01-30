@@ -52,6 +52,7 @@ func TestMetricMetaWantSQL(t *testing.T) {
 		Cfg: &config{
 			MetaStartTime: time.Hour * -2,
 			MetaTable:     "metric_meta",
+			IgnoreGap:     time.Hour,
 		},
 		updateMetricsCh: mockUpdateChn,
 	}
@@ -244,6 +245,123 @@ func TestClickhouseMetaLoader(t *testing.T) {
 			metas, ok := p.Meta.Load().([]MetricMeta)
 			require.True(t, ok)
 			require.ElementsMatch(t, test.want, metas)
+		})
+	}
+}
+
+func TestMetaCheck(t *testing.T) {
+	tests := []struct {
+		name           string
+		meta           MetricMeta
+		scope, scopeId string
+		want           bool
+	}{
+		{
+			name: "cloud manage meta group, org",
+			meta: MetricMeta{
+				Scope:   "erda-development",
+				ScopeId: "111",
+			},
+			scope:   "org",
+			scopeId: "erda-development",
+			want:    true,
+		},
+		{
+			name: "micro service, tenant_id",
+			meta: MetricMeta{
+				Scope:   "erda-development",
+				ScopeId: "111",
+			},
+			scope:   "micro_service",
+			scopeId: "111",
+			want:    true,
+		},
+		{
+			name: "metric query, only org",
+			meta: MetricMeta{
+				Scope:   "erda-development",
+				ScopeId: "111",
+			},
+			scope:   "erda-development",
+			scopeId: "",
+			want:    true,
+		},
+		{
+			name: "metric query, scope id",
+			meta: MetricMeta{
+				Scope:   "erda-development",
+				ScopeId: "111",
+			},
+			scope:   "erda-development",
+			scopeId: "111",
+			want:    true,
+		},
+		{
+			name: "cloud manage meta group,org false",
+			meta: MetricMeta{
+				Scope:   "erda",
+				ScopeId: "111",
+			},
+			scope:   "org",
+			scopeId: "erda-development",
+			want:    false,
+		},
+		{
+			// check tenant id, not check org
+			name: "micro service,tenant_id,org false",
+			meta: MetricMeta{
+				Scope:   "erda",
+				ScopeId: "111",
+			},
+			scope:   "micro_service",
+			scopeId: "111",
+			want:    true,
+		},
+		{
+			name: "metric query,only org,org false",
+			meta: MetricMeta{
+				Scope:   "erda",
+				ScopeId: "111",
+			},
+			scope:   "erda-development",
+			scopeId: "",
+			want:    false,
+		},
+		{
+			name: "metric query,scope id,org false",
+			meta: MetricMeta{
+				Scope:   "erda",
+				ScopeId: "111",
+			},
+			scope:   "erda-development",
+			scopeId: "111",
+			want:    false,
+		},
+
+		{
+			name: "micro service, tenant_id,false",
+			meta: MetricMeta{
+				Scope:   "erda-development",
+				ScopeId: "0",
+			},
+			scope:   "micro_service",
+			scopeId: "111",
+			want:    false,
+		},
+		{
+			name: "metric query, scope id,false",
+			meta: MetricMeta{
+				Scope:   "erda-development",
+				ScopeId: "0",
+			},
+			scope:   "erda-development",
+			scopeId: "111",
+			want:    false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.want, test.meta.check(test.scope, test.scopeId))
 		})
 	}
 }

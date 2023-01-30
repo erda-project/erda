@@ -105,7 +105,12 @@ func (p *provider) reloadMetaFromClickhouse(ctx context.Context) error {
 		TTL toDateTime(timestamp) + INTERVAL <ttl_in_days> DAY;
 	*/
 
-	end := now().UnixNano() - int64(1*time.Hour)
+	/*
+	  When time series data is just written, a large number of timelines will be generated
+	  In order to reduce the number of scanned rows and improve execution efficiency, try to use the data after clickhouse merge to participate in the calculation
+	  The data gap will be calculated for a period of time
+	*/
+	end := now().UnixNano() - int64(p.Cfg.IgnoreGap)
 	start := end + int64(p.Cfg.MetaStartTime)
 
 	expr := goqu.From(fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.MetaTable))
