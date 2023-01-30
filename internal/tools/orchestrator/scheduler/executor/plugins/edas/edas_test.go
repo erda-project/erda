@@ -14,7 +14,14 @@
 
 package edas
 
-import "testing"
+import (
+	"net/http"
+	"reflect"
+	"testing"
+
+	"bou.ke/monkey"
+	api "github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
+)
 
 func Test_Set_Annotations(t *testing.T) {
 	type args struct {
@@ -57,5 +64,50 @@ func Test_Set_Annotations(t *testing.T) {
 				t.Errorf("SetAnnotations() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func initClient() *api.Client {
+	c := &api.Client{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "StopK8sApplication", func(c *api.Client,
+		request *api.StopK8sApplicationRequest) (response *api.StopK8sApplicationResponse, err error) {
+		return &api.StopK8sApplicationResponse{
+			Code: http.StatusOK,
+		}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteK8sApplication", func(c *api.Client,
+		request *api.DeleteK8sApplicationRequest) (response *api.DeleteK8sApplicationResponse, err error) {
+		return &api.DeleteK8sApplicationResponse{
+			Code: http.StatusOK,
+		}, nil
+	})
+	return c
+}
+
+func TestDeleteAppByID(t *testing.T) {
+	c := initClient()
+	e := EDAS{
+		addr:   "cn-hangzhou",
+		client: c,
+	}
+
+	defer monkey.UnpatchAll()
+
+	if err := e.deleteAppByID("app1"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestStopAppByID(t *testing.T) {
+	c := initClient()
+	e := EDAS{
+		addr:   "cn-hangzhou",
+		client: c,
+	}
+
+	defer monkey.UnpatchAll()
+
+	if err := e.stopAppByID("app1"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
