@@ -71,6 +71,11 @@ func GetOrgID(ctx context.Context) string {
 	return GetHeader(ctx, "org-id")
 }
 
+// GetOrg .
+func GetOrg(ctx context.Context) string {
+	return GetHeader(ctx, "org")
+}
+
 // GetIntOrgID .
 func GetIntOrgID(ctx context.Context) (int64, error) {
 	return strconv.ParseInt(GetOrgID(ctx), 10, 64)
