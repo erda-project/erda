@@ -128,7 +128,11 @@ func (p *provider) continuousUpdateClient(ctx context.Context) {
 func (p *provider) emitClientEvent(ctx context.Context, eventDetail apistructs.ClusterManagerClientDetail) {
 	p.Lock()
 	for _, handler := range p.eventHandlers {
-		go handler(ctx, eventDetail)
+		eventDup := apistructs.ClusterManagerClientDetail{}
+		for k, v := range eventDetail {
+			eventDup[k] = v
+		}
+		go handler(ctx, eventDup)
 	}
 	p.Unlock()
 }
