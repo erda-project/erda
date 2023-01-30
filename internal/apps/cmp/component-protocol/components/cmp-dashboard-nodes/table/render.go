@@ -48,7 +48,7 @@ func (t *Table) initTables() {
 	ct.Init(t.SDK)
 	t.CpuTable = ct
 	pt := &podTable.PodInfoTable{}
-	pt.Init(t.SDK)
+	pt.Init(t.SDK, steveServer)
 	t.PodTable = pt
 }
 func (t *Table) Init(ctx servicehub.Context) error {

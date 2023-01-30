@@ -18,8 +18,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/internal/apps/cmp"
 	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
@@ -31,6 +34,10 @@ func (t NopTranslator) Text(lang i18n.LanguageCodes, key string) string { return
 
 func (t NopTranslator) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	return fmt.Sprintf(key, args...)
+}
+
+type mockSteveServer struct {
+	cmp.SteveServer
 }
 
 func TestPodInfoTable_getProps(t *testing.T) {
@@ -59,4 +66,11 @@ func TestPodInfoTable_getProps(t *testing.T) {
 			ct.GetProps()
 		})
 	}
+}
+
+func TestInit(t *testing.T) {
+	pt := &PodInfoTable{}
+	pt.Init(nil, &mockSteveServer{})
+
+	assert.NotNil(t, steveServer)
 }
