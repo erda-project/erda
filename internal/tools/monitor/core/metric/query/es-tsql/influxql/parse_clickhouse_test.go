@@ -569,6 +569,11 @@ func TestGroupBy(t *testing.T) {
 			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"bucket_timestamp\"",
 		},
 		{
+			name: "group_not_select_column",
+			sql:  "select column from table group by max(column),column",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"table\"",
+		},
+		{
 			name: "time(2h)",
 			sql:  "select column from table group by time(2h)",
 			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(7200),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", \"bucket_timestamp\"",
