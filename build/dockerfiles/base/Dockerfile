@@ -43,6 +43,7 @@ RUN mkdir -p /etc/apt/keyrings \
 # libgit2 - normal installation if specific version cannot install through APT.
 ## doc: https://github.com/libgit2/git2go#installing
 ## summary: This project wraps the functionality provided by libgit2. If you're using a versioned branch, install it to your system via your system's package manager and then install git2go.
+ENV TARGET /usr
 RUN cd "$HOME" && \
     git clone https://github.com/libgit2/libgit2.git -b v1.3.2 --depth 1 && \
     cd libgit2 && \

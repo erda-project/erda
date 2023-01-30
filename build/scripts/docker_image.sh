@@ -4,7 +4,7 @@
 
 set -o errexit -o pipefail
 
-echo "GO_BUILD_OPTIONS111=${GO_BUILD_OPTIONS}"
+echo "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}"
 
 # check parameters and print usage if need
 usage() {
@@ -34,7 +34,7 @@ cd $(git rev-parse --show-toplevel)
 VERSION="$(build/scripts/make-version.sh)"
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
-ARCH="$(go env GOARCH)"
+ARCH="${ARCH:-$(go env GOARCH)}"
 BASE_DOCKER_IMAGE="registry.erda.cloud/erda/${ARCH}/erda-base:20230129"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
 
@@ -75,10 +75,6 @@ esac
 
 if [ -n "${DOCKER_REGISTRY}" ]; then
     DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
-fi
-
-if [ -z "${ARCH}" ]; then
-    ARCH="amd64"
 fi
 
 # print details
