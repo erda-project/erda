@@ -28,7 +28,8 @@ import (
 
 var steveServer cmp.SteveServer
 
-func (pt *PodInfoTable) Init(sdk *cptype.SDK) {
+func (pt *PodInfoTable) Init(sdk *cptype.SDK, steveSrv cmp.SteveServer) {
+	steveServer = steveSrv
 	pt.SDK = sdk
 }
 
