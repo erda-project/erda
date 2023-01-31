@@ -267,6 +267,8 @@ type AddonType string
 const (
 	// AddonZookeeper zookeeper
 	AddonZookeeper = "terminus-zookeeper"
+	// AddonZookeeperAlias terminus-zookeeper alias name
+	AddonZookeeperAlias = "zookeeper"
 	// AddonApacheZookeeper real-zookeeper
 	AddonApacheZookeeper = "apache-zookeeper"
 	// AddonRoost 注册中心
@@ -279,6 +281,8 @@ const (
 	AddonRedis = "redis"
 	//AddonES elasticsearch
 	AddonES = "terminus-elasticsearch"
+	// AddonESAlias terminus-elasticsearch alias name
+	AddonESAlias = "elasticsearch"
 	// AddonRocketMQ rocketmq
 	AddonRocketMQ = "rocketmq"
 	// AddonRabbitMQ rabbitmq
@@ -299,6 +303,8 @@ const (
 	AddonDiscovery = "discovery"
 	// AddonConfigCenter terminus-configcenter
 	AddonConfigCenter = "terminus-configcenter"
+	// AddonConfigCenterAlias terminus-configcenter alias name
+	AddonConfigCenterAlias = "configcenter"
 	// AddonNewConfigCenter configcenter
 	AddonNewConfigCenter = "configcenter"
 	//AddonTerminusRoost 注册中心

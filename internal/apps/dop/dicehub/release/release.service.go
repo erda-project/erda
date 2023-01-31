@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/apierrors"
 	"github.com/erda-project/erda/internal/apps/dop/dicehub/service/release_rule"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/pkg/addonutil"
 	extensiondb "github.com/erda-project/erda/internal/pkg/extension/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -1339,12 +1340,18 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 				}
 				version = extensionVersion.Version
 			}
+
+			ext, ok := extensionMap[addonutil.TransAddonName(name)]
+			if !ok {
+				return nil, errors.Errorf("extension %s not support", name)
+			}
+
 			addons = append(addons, &pb.AddonInfo{
-				DisplayName: extensionMap[name].DisplayName,
+				DisplayName: ext.DisplayName,
 				Plan:        plan,
 				Version:     version,
-				Category:    extensionMap[name].Category,
-				LogoURL:     extensionMap[name].LogoUrl,
+				Category:    ext.Category,
+				LogoURL:     ext.LogoUrl,
 			})
 		}
 		logrus.Infoln("[DEBUG] end make addon info")
