@@ -114,21 +114,6 @@ func (db *DBClient) GetAddonInstance(id string) (*AddonInstance, error) {
 	return &instance, nil
 }
 
-// GetConfigCenterAddonInstance 获取配置中心的instance
-func (db *DBClient) GetConfigCenterAddonInstance() (*AddonInstance, error) {
-	var instance AddonInstance
-	if err := db.Where("addon_name = ?", apistructs.AddonConfigCenter).
-		Where("is_deleted = ?", apistructs.AddonNotDeleted).
-		Find(&instance).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return &instance, nil
-}
-
 // GetInstancesByIDs 根据 ID 查询实例
 func (db *DBClient) GetInstancesByIDs(ids []string) (*[]AddonInstance, error) {
 	var instances []AddonInstance
