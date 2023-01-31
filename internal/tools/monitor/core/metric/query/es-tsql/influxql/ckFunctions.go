@@ -45,7 +45,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					return goqu.MAX(lit).As(id), nil
 				}
 
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
+				f, _ := p.ckGetKey(field, influxql.AnyField)
 				return goqu.MAX(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -100,7 +100,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.SUM(lit).As(id), nil
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
+				f, _ := p.ckGetKey(field, influxql.AnyField)
 				return goqu.SUM(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -226,7 +226,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.SUM(field).As(id), nil
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
+				f, _ := p.ckGetKey(field, influxql.AnyField)
 				return goqu.SUM(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {
@@ -253,7 +253,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 				if lit != nil {
 					return goqu.MAX(lit).As(id), nil
 				}
-				f, _ := p.ckGetKeyName(field, influxql.AnyField)
+				f, _ := p.ckGetKey(field, influxql.AnyField)
 				return goqu.MAX(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {

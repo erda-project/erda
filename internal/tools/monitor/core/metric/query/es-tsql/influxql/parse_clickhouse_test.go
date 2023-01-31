@@ -569,6 +569,11 @@ func TestGroupBy(t *testing.T) {
 			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"bucket_timestamp\"",
 		},
 		{
+			name: "group_not_select_column",
+			sql:  "select column from table group by max(column),column",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"table\"",
+		},
+		{
 			name: "time(2h)",
 			sql:  "select column from table group by time(2h)",
 			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(7200),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", \"bucket_timestamp\"",
@@ -808,4 +813,79 @@ func TestOrderBy(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGroupColumnShouldBeExist(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+		want string
+	}{
+		{
+			name: "normal single group",
+			sql:  "select column from table group by column",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column\"",
+		},
+		{
+			name: "normal single group tag column",
+			sql:  "select column::tag from table group by column::tag",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'column')]) AS \"column::tag\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column::tag\"",
+		},
+		{
+			name: "normal single group field column",
+			sql:  "select column::field from table group by column::field",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column::field\"",
+		},
+		{
+			name: "column and agg function",
+			sql:  "select column::field,max(column) from table group by column::field",
+			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column::field\"",
+		},
+		{
+			name: "time",
+			sql:  "select column::field from table group by time()",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60)),9) AS \"bucket_timestamp\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column::field\", \"bucket_timestamp\"",
+		},
+		{
+			name: "origin column",
+			sql:  "select tenant_id,timestamp,org_name from table group by tenant_id,timestamp,org_name",
+			want: "SELECT toNullable(tenant_id) AS \"tenant_id\", toNullable(timestamp) AS \"timestamp\", toNullable(org_name) AS \"org_name\" FROM \"table\" GROUP BY \"tenant_id\", \"timestamp\", \"org_name\"",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			p := Parser{
+				ctx: &Context{
+					originalTimeUnit: tsql.Nanosecond,
+					targetTimeUnit:   tsql.Millisecond,
+					dimensions:       make(map[string]bool),
+				},
+			}
+			parse := influxql.NewParser(strings.NewReader(test.sql))
+
+			q, err := parse.ParseQuery()
+
+			require.NoError(t, err)
+			selectStmt, ok := q.Statements[0].(*influxql.SelectStatement)
+
+			expr := goqu.From("table")
+			require.Truef(t, ok, "parse query is not select statement")
+
+			expr, handler, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
+
+			expr, _, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handler, columns)
+
+			require.NoError(t, err)
+
+			sql, _, err := expr.ToSQL()
+			require.NoError(t, err)
+
+			sql = sql[strings.Index(sql, "GROUP BY")+8:]
+			test.want = test.want[strings.Index(test.want, "GROUP BY")+8:]
+
+			require.ElementsMatch(t, strings.Split(test.want, ","), strings.Split(sql, ","))
+
+		})
+	}
+
 }
