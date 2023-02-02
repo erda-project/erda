@@ -23,8 +23,6 @@ erda.oap.collector.core:
       - receivers:
           - "erda.oap.collector.receiver.jaeger"
           - "erda.oap.collector.receiver.opentelemetry"
-        processors:
-          - "erda.oap.collector.processor.modifier@opentelemetry"
         exporters:
           - "erda.oap.collector.exporter.kafka@erda-spans"
     #          - "erda.oap.collector.exporter.stdout"
@@ -88,14 +86,6 @@ erda.oap.collector.processor.k8s-tagger@prw:
         - indexer: pod_name_container
           matcher: "%{namespace}/%{pod}/%{container}"
 
-erda.oap.collector.processor.modifier@opentelemetry:
-  rules:
-    - action: set
-      key: tags.service_agent_platform
-      value: 'unknown'
-      condition:
-        op: value_empty
-        key: tags.service_agent_platform
 erda.oap.collector.processor.modifier:
   keypass:
     name: [ "kubelet_cadvisor" ]

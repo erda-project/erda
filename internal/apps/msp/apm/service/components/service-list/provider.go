@@ -115,7 +115,7 @@ func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int
 
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(errors_sum::field)/sum(count_sum::field) " +
 		"FROM application_http_service,application_rpc_service " +
-		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
+		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) and target_service_id::tag != '' " +
 		"GROUP BY target_service_id::tag ")
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(tenantId.(string)),
@@ -178,7 +178,7 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,avg(elapsed_mean::field) " +
 		"FROM application_http,application_rpc " +
-		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
+		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) and target_service_id::tag != '' " +
 		"GROUP BY target_service_id::tag " +
 		"ORDER BY avg(elapsed_mean::field) DESC " +
 		"LIMIT 5")
@@ -224,7 +224,7 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(count_sum::field)/%v "+
 		"FROM application_http_service,application_rpc_service "+
-		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
+		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) and target_service_id::tag != '' "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(count_sum::field) ASC "+
 		"LIMIT 5", interval)
@@ -272,7 +272,7 @@ func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64,
 
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(count_sum::field)/%v "+
 		"FROM application_http_service,application_rpc_service "+
-		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
+		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) and target_service_id::tag != '' "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(count_sum::field) DESC "+
 		"LIMIT 5", interval)
