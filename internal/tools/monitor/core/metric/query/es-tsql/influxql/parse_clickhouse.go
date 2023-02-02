@@ -220,10 +220,6 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 	if len(liters) > 0 {
 		for script, column := range columns {
 			groupExpress[script] = goqu.C(column.asName)
-			rootKey := column.modelKey()
-			if rootKey != "" {
-				expr = expr.Where(goqu.L(fmt.Sprintf("has(%s,'%s')", column.modelKey(), column.rootColumn)))
-			}
 		}
 		for _, liter := range liters {
 			if _, ok := groupExpress[liter]; !ok {
