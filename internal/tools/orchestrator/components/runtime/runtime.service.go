@@ -399,7 +399,7 @@ func fillInspectDataWithServiceGroup(data *pb.RuntimeInspect, targetService dice
 
 		for _, v := range sg.Services {
 			statusServiceMap[v.Name] = string(v.StatusDesc.Status)
-			replicaMap[v.Name] = int(v.ReadyReplicas)
+			replicaMap[v.Name] = int(v.DesiredReplicas)
 			resourceMap[v.Name] = &pb.Resources{
 				Cpu:  v.Resources.Cpu,
 				Mem:  int64(int(v.Resources.Mem)),

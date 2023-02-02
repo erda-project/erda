@@ -15,6 +15,11 @@
 package edas
 
 import (
+	"context"
+	"github.com/erda-project/erda/apistructs"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	"net/http"
 	"reflect"
 	"testing"
@@ -109,5 +114,71 @@ func TestStopAppByID(t *testing.T) {
 
 	if err := e.stopAppByID("app1"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestStatus(t *testing.T) {
+	fc := fakeclientset.NewSimpleClientset(&appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "service-1-app-demo",
+			Namespace: defaultNamespace,
+			Labels: map[string]string{
+				"edas-domain":  "edas-admin",
+				"edas.appname": "service-1-app-demo",
+			},
+		},
+		Status: appsv1.DeploymentStatus{
+			Conditions: []appsv1.DeploymentCondition{
+				{
+					Type:   appsv1.DeploymentAvailable,
+					Status: "True",
+				},
+			},
+			Replicas:          1,
+			ReadyReplicas:     1,
+			AvailableReplicas: 1,
+			UpdatedReplicas:   1,
+		},
+	})
+
+	e := EDAS{
+		cs: fc,
+	}
+
+	type args struct {
+		specObject interface{}
+	}
+
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "case1",
+			args: args{
+				specObject: apistructs.ServiceGroup{
+					Dice: apistructs.Dice{
+						ID:   "1",
+						Type: "service",
+						Services: []apistructs.Service{
+							{
+								Name:  "app-demo",
+								Image: "busybox",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: add more ut
+			_, err := e.Status(context.Background(), tt.args.specObject)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
