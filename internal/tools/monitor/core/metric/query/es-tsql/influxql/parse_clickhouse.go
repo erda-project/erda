@@ -300,9 +300,8 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 				intervalSeconds := interval / int64(tsql.Second)
 
-				exprSelect = exprSelect.SelectAppend(goqu.L(fmt.Sprintf("toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(%v)),9)", intervalSeconds)).As(timeBucketColumn))
-
-				exprList = append(exprList, timeBucketColumn)
+				exprSelect = exprSelect.SelectAppend(goqu.MIN("timestamp").As(timeBucketColumn))
+				exprList = append(exprList, fmt.Sprintf("intDiv(toRelativeSecondNum(timestamp), %v)", intervalSeconds))
 
 				var newHandler []*SQLColumnHandler
 
@@ -313,7 +312,6 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 					},
 					ctx: p.ctx,
 				})
-				columns[timeBucketColumn] = _column{asName: timeBucketColumn, isNoArrayKey: true, isTimeKey: true}
 				newHandler = append(newHandler, *handler...)
 				*handler = newHandler
 				p.ctx.dimensions[timeBucketColumn] = true

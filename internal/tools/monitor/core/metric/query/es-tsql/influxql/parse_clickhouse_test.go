@@ -566,7 +566,7 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "time(),max(column)",
 			sql:  "select max(column) from table group by time()",
-			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"bucket_timestamp\"",
+			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY intDiv(toRelativeSecondNum(timestamp), 60)",
 		},
 		{
 			name: "group_not_select_column",
@@ -576,17 +576,17 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "time(2h)",
 			sql:  "select column from table group by time(2h)",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(7200),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", \"bucket_timestamp\"",
+			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", MIN(timestamp) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", intDiv(toRelativeSecondNum(timestamp),7200)",
 		},
 		{
 			name: "groupby,time()",
 			sql:  "select sum(http_status_code_count::field),http_status_code::tag from table GROUP BY time(),http_status_code::tag",
-			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code:tag\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", \"bucket_timestamp\"",
+			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code:tag\", MIN(timestamp) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", intDiv(toRelativeSecondNum(timestamp),60)",
 		},
 		{
 			name: "time(),column",
 			sql:  "select http_status_code::tag from table GROUP BY time()",
-			want: "SELECT tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code::tag\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60),'UTC'),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", \"bucket_timestamp\"",
+			want: "SELECT tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code::tag\", MIN(timestamp) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", intDiv(toRelativeSecondNum(timestamp),60)",
 		},
 		{
 			name: "no group",
@@ -601,7 +601,7 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "group sub function",
 			sql:  "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') as state from table group by time()",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60)),9) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"service_instance_id::tag\", \"timestamp\", \"bucket_timestamp\"",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", MIN(timestamp(60) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"service_instance_id::tag\", \"timestamp\", intDiv(toRelativeSecondNum(timestamp),60)",
 		},
 	}
 
@@ -640,6 +640,8 @@ func TestGroupBy(t *testing.T) {
 			}
 
 			t.Log(sql)
+			t.Log(test.want)
+
 			if strings.Index(test.want, strings.ToUpper("group by")) <= 0 {
 				require.Equal(t, test.want, sql)
 				return
@@ -844,7 +846,7 @@ func TestGroupColumnShouldBeExist(t *testing.T) {
 		{
 			name: "time",
 			sql:  "select column::field from table group by time()",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\", toDateTime64(toStartOfInterval(timestamp, toIntervalSecond(60)),9) AS \"bucket_timestamp\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column::field\", \"bucket_timestamp\"",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column::field\", intDiv(toRelativeSecondNum(timestamp), 60)",
 		},
 		{
 			name: "origin column",
@@ -880,6 +882,8 @@ func TestGroupColumnShouldBeExist(t *testing.T) {
 			sql, _, err := expr.ToSQL()
 			require.NoError(t, err)
 
+			t.Log(sql)
+			t.Log(test.want)
 			sql = sql[strings.Index(sql, "GROUP BY")+8:]
 			test.want = test.want[strings.Index(test.want, "GROUP BY")+8:]
 
