@@ -45,7 +45,19 @@ func (e *Endpoints) CreateTestCase(ctx context.Context, r *http.Request, vars ma
 	}
 	req.IdentityInfo = identityInfo
 
-	// TODO:鉴权
+	// check permission
+	if !req.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.CreateAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrCreateTestCase.AccessDenied().ToResp(), nil
+		}
+	}
 
 	tcID, err := e.testcase.CreateTestCase(req)
 	if err != nil {
@@ -71,7 +83,19 @@ func (e *Endpoints) BatchCreateTestCases(ctx context.Context, r *http.Request, v
 	}
 	req.IdentityInfo = identityInfo
 
-	// TODO:鉴权
+	// check permission
+	if !req.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.CreateAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrCreateTestCase.AccessDenied().ToResp(), nil
+		}
+	}
 
 	testCaseIDs, err := e.testcase.BatchCreateTestCases(req)
 	if err != nil {
@@ -93,8 +117,6 @@ func (e *Endpoints) UpdateTestCase(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrUpdateTestCase.InvalidParameter("testCaseID").ToResp(), nil
 	}
 
-	// TODO:鉴权
-
 	// 校验 body 合法性
 	if r.ContentLength == 0 {
 		return apierrors.ErrUpdateTestCase.MissingParameter("request body").ToResp(), nil
@@ -106,6 +128,21 @@ func (e *Endpoints) UpdateTestCase(ctx context.Context, r *http.Request, vars ma
 
 	req.ID = testCaseID
 	req.IdentityInfo = identityInfo
+
+	// check permission
+	if !req.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.UpdateAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrUpdateTestCase.AccessDenied().ToResp(), nil
+		}
+	}
+
 	if err := e.testcase.UpdateTestCase(req); err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -115,12 +152,33 @@ func (e *Endpoints) UpdateTestCase(ctx context.Context, r *http.Request, vars ma
 
 // GetTestCase 获取测试用例详情
 func (e *Endpoints) GetTestCase(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrGetTestCase.NotLogin().ToResp(), nil
+	}
+
 	tcID, err := strconv.ParseUint(vars["testCaseID"], 10, 64)
 	if err != nil {
 		return apierrors.ErrGetTestCase.InvalidParameter("testCaseID").ToResp(), nil
 	}
+	projectID, err := strconv.ParseUint(r.URL.Query().Get("projectID"), 10, 64)
+	if err != nil {
+		return apierrors.ErrGetTestCase.InvalidParameter("projectID").ToResp(), nil
+	}
 
-	// TODO: 操作鉴权
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  projectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.GetAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrGetTestCase.AccessDenied().ToResp(), nil
+		}
+	}
 
 	tc, err := e.testcase.GetTestCase(tcID)
 	if err != nil {
@@ -137,8 +195,6 @@ func (e *Endpoints) BatchUpdateTestCases(ctx context.Context, r *http.Request, v
 		return apierrors.ErrBatchUpdateTestCases.NotLogin().ToResp(), nil
 	}
 
-	// TODO:鉴权
-
 	// 校验 body 合法性
 	var req apistructs.TestCaseBatchUpdateRequest
 	if r.ContentLength == 0 {
@@ -148,6 +204,20 @@ func (e *Endpoints) BatchUpdateTestCases(ctx context.Context, r *http.Request, v
 		return apierrors.ErrBatchUpdateTestCases.InvalidParameter(err).ToResp(), nil
 	}
 	req.IdentityInfo = identityInfo
+
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.UpdateAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrUpdateTestCase.AccessDenied().ToResp(), nil
+		}
+	}
 
 	if err := e.testcase.BatchUpdateTestCases(req); err != nil {
 		return errorresp.ErrResp(err)
@@ -173,7 +243,19 @@ func (e *Endpoints) BatchCopyTestCases(ctx context.Context, r *http.Request, var
 	}
 	req.IdentityInfo = identityInfo
 
-	// TODO:鉴权
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.CreateAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrCreateTestCase.AccessDenied().ToResp(), nil
+		}
+	}
 
 	copiedTestCaseIDs, err := e.testcase.BatchCopyTestCases(req)
 	if err != nil {
@@ -198,6 +280,20 @@ func (e *Endpoints) BatchCleanTestCasesFromRecycleBin(ctx context.Context, r *ht
 	}
 	req.IdentityInfo = identityInfo
 
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.DeleteAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrDeleteTestCase.AccessDenied().ToResp(), nil
+		}
+	}
+
 	if err := e.testcase.BatchCleanFromRecycleBin(req); err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -207,6 +303,11 @@ func (e *Endpoints) BatchCleanTestCasesFromRecycleBin(ctx context.Context, r *ht
 
 // PagingTestCases 获取测试用例列表
 func (e *Endpoints) PagingTestCases(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrBatchCleanTestCasesFromRecycleBin.NotLogin().ToResp(), nil
+	}
+
 	var req apistructs.TestCasePagingRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrPagingTestCases.InvalidParameter(err).ToResp(), nil
@@ -215,6 +316,20 @@ func (e *Endpoints) PagingTestCases(ctx context.Context, r *http.Request, vars m
 	pagingResult, err := e.testcase.PagingTestCases(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
+	}
+
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.GetAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrGetTestCase.AccessDenied().ToResp(), nil
+		}
 	}
 
 	return httpserver.OkResp(pagingResult, pagingResult.UserIDs)
@@ -236,7 +351,19 @@ func (e *Endpoints) ExportTestCases(ctx context.Context, r *http.Request, vars m
 	l := e.bdl.GetLocaleByRequest(r)
 	req.Locale = l.Name()
 
-	// TODO:鉴权
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.GetAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrGetTestCase.AccessDenied().ToResp(), nil
+		}
+	}
 
 	fileID, err := e.testcase.Export(req)
 	if err != nil {
@@ -270,7 +397,19 @@ func (e *Endpoints) ImportTestCases(ctx context.Context, r *http.Request, vars m
 	}
 	req.IdentityInfo = identityInfo
 
-	// TODO:鉴权
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.CreateAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrCreateTestCase.AccessDenied().ToResp(), nil
+		}
+	}
 
 	importResult, err := e.testcase.Import(req, r)
 	if err != nil {

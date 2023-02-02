@@ -723,6 +723,29 @@
   action: LIST
 ## 自动化测试场景 end #
 
+## 功能测试 start ##
+- role: Owner,Lead,PM,PD,Dev,QA
+  scope: project
+  resource: testcase
+  action: CREATE
+- role: Owner,Lead,PM,PD,Dev,QA
+  scope: project
+  resource: testcase
+  action: UPDATE
+- role: Owner,Lead,PM,PD,Dev,QA
+  scope: project
+  resource: testcase
+  action: DELETE
+- role: Owner,Lead,PM,PD,Dev,QA,Support,Reporter,Guest
+  scope: project
+  resource: testcase
+  action: GET
+- role: Owner,Lead,PM,PD,Dev,QA,Support,Reporter,Guest
+  scope: project
+  resource: testcase
+  action: LIST
+## 功能测试 end #
+
 ## 分支规则管理 start ##
 - role: Owner,Lead
   scope: project

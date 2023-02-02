@@ -73,6 +73,7 @@ const (
 	AutotestSceneResource      string = "autotest-scene"
 	SceneSetResource           string = "sceneset"
 	CustomAddonResource        string = "customAddon"
+	TestCaseResource           string = "testcase"
 )
 
 // 权限操作集
