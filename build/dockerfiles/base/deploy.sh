@@ -3,6 +3,9 @@ set -eo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+# create docker buildx builder
+docker buildx create --name erda-base-builder --platform linux/amd64,linux/arm64 --use || true
+
 images=()
 
 archs=(amd64 arm64)
