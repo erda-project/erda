@@ -16,16 +16,17 @@ package edas
 
 import (
 	"context"
-	"github.com/erda-project/erda/apistructs"
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	"net/http"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	api "github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func Test_Set_Annotations(t *testing.T) {
