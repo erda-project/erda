@@ -245,14 +245,15 @@ type TestSetWithPlanCaseRels struct {
 
 // TestCaseUpdateRequest 更新测试用例请求
 type TestCaseUpdateRequest struct {
-	ID             uint64                  `json:"-"`                  // 程序内部赋值使用
-	Name           string                  `json:"name"`               // 用例名称
-	Priority       TestCasePriority        `json:"priority"`           // 优先级
-	PreCondition   string                  `json:"preCondition"`       // 前置条件，即使为空也会被更新
-	StepAndResults []TestCaseStepAndResult `json:"stepAndResults"`     // 步骤及结果，即使为空也会被更新
-	APIs           []*ApiTestInfo          `json:"apis"`               // 接口测试集合，更新、创建或删除
-	Desc           string                  `json:"desc"`               // 补充说明
-	LabelIDs       []uint64                `json:"labelIDs,omitempty"` // 标签列表
+	ID             uint64                  `json:"-"`                  // assignment inside the program uses
+	Name           string                  `json:"name"`               // usecase name
+	Priority       TestCasePriority        `json:"priority"`           // priority
+	PreCondition   string                  `json:"preCondition"`       // precondition, will be updated even if empty
+	StepAndResults []TestCaseStepAndResult `json:"stepAndResults"`     // steps and results, will be updated even if empty
+	APIs           []*ApiTestInfo          `json:"apis"`               // interface test collection, update, create or delete
+	Desc           string                  `json:"desc"`               // supplementary Note
+	LabelIDs       []uint64                `json:"labelIDs,omitempty"` // label list
+	ProjectID      uint64                  `json:"projectID"`          // project id
 
 	IdentityInfo
 }
@@ -270,6 +271,7 @@ type TestCaseBatchUpdateRequest struct {
 	// labelIDs
 
 	TestCaseIDs []uint64 `json:"testCaseIDs"`
+	ProjectID   uint64   `json:"projectID"`
 
 	IdentityInfo
 }
@@ -277,6 +279,7 @@ type TestCaseBatchUpdateRequest struct {
 // TestCaseBatchCleanFromRecycleBinRequest 从回收站彻底删除测试用例
 type TestCaseBatchCleanFromRecycleBinRequest struct {
 	TestCaseIDs []uint64 `json:"testCaseIDs"`
+	ProjectID   uint64   `json:"projectID"`
 
 	IdentityInfo
 }
