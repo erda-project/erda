@@ -131,7 +131,11 @@ func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, dep
 				statusDesc.LastMessage = fmt.Sprintf("deployment(%s) replica is 0, been deleting", deployment.Name)
 			}
 		}
-		statusDesc.DesiredReplicas = status.Replicas
+		var desiredReplicas int32
+		if deployment.Spec.Replicas != nil {
+			desiredReplicas = *deployment.Spec.Replicas
+		}
+		statusDesc.DesiredReplicas = desiredReplicas
 		statusDesc.ReadyReplicas = status.ReadyReplicas
 	}
 
