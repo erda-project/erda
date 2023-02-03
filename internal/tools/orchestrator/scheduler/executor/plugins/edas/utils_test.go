@@ -45,3 +45,35 @@ func TestAppendCommonHeaders(t *testing.T) {
 		})
 	}
 }
+
+func TestEDASAppInfo(t *testing.T) {
+	type args struct {
+		sgType      string
+		sgID        string
+		serviceName string
+	}
+
+	tests := []struct {
+		name   string
+		args   args
+		expect string
+	}{
+		{
+			name: "compose app info",
+			args: args{
+				sgType:      "service",
+				sgID:        "1",
+				serviceName: "app-demo",
+			},
+			expect: "service-1-app-demo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := composeEDASAppInfo(tt.args.sgType, tt.args.sgID, tt.args.serviceName); got != tt.expect {
+				t.Fatalf("composeEDASAppInfo, expecte: %v, got: %v", tt.expect, got)
+			}
+		})
+	}
+}
