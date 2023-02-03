@@ -33,9 +33,12 @@ import (
 	api "github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apilabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -61,7 +64,7 @@ const (
 	// The number of cycles to query the deployment results
 	loopCount = 2 * 60
 	// edas k8s service namespace
-	defaultNamespace = "default"
+	defaultNamespace = metav1.NamespaceDefault
 	// json prefix key
 	prefixKey = "/dice/plugins/edas/"
 	// k8s min ready seconds
@@ -173,6 +176,7 @@ func init() {
 			k8sSvcClient:    k8sSvcClient,
 			unlimitCPU:      unlimitCPU,
 			resourceInfo:    resourceInfo,
+			cs:              k8sClient.ClientSet,
 		}
 
 		if disableEvent := os.Getenv("DISABLE_EVENT"); disableEvent == "true" {
@@ -209,6 +213,7 @@ type EDAS struct {
 	notifier        events.Notifier
 	k8sDeployClient *deployment.Deployment
 	k8sSvcClient    *k8sservice.Service
+	cs              kubernetes.Interface
 	// Whether to limit the application of CPU resources less than 1c
 	unlimitCPU   string
 	resourceInfo *resourceinfo.ResourceInfo
@@ -311,31 +316,55 @@ func (e *EDAS) Destroy(ctx context.Context, specObj interface{}) error {
 
 // Status edas status of runtime
 func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.StatusDesc, error) {
-	var status apistructs.StatusDesc
-
-	// Initialize it to prevent the upper console from being unrecognized
-	status.Status = apistructs.StatusUnknown
+	var (
+		// Initialize it to prevent the upper console from being unrecognized
+		status = apistructs.StatusDesc{
+			Status: apistructs.StatusUnknown,
+		}
+		failReason  string
+		lastMessage string
+		isReady     = true
+	)
 
 	runtime, ok := specObj.(apistructs.ServiceGroup)
 	if !ok {
 		return status, errors.New("edas k8s status: invalid runtime spec")
 	}
+
 	group := runtime.Type + "-" + runtime.ID
 	for i, svc := range runtime.Services {
 		svc.Namespace = runtime.Type
 		// init status
-		runtime.Services[i].Status = apistructs.StatusUnknown
+		rtStatusDesc := apistructs.StatusDesc{
+			Status: apistructs.StatusUnknown,
+		}
 
 		// check k8s deployment status
-		status, _, err := e.getDeploymentStatus(group, &svc)
+		deployStatus, _, err := e.getDeploymentStatus(group, &svc)
 		if err != nil {
 			logrus.Errorf("[edas] get deployment from k8s error: %+v", err)
+
+			runtime.Services[i].StatusDesc = rtStatusDesc
+			isReady = false
 			continue
 		}
-		if status.Status != apistructs.StatusReady {
-			status.LastMessage = fmt.Sprintf("deployment(%s) status is %v", runtime.ID, status)
-			status.Status = apistructs.StatusError
-			logrus.Errorf("[edas] k8s deployment(%s) status is not ready: %+v", group, status.LastMessage)
+
+		// set replicas
+		rtStatusDesc.ReadyReplicas = deployStatus.ReadyReplicas
+		rtStatusDesc.DesiredReplicas = deployStatus.DesiredReplicas
+
+		if deployStatus.Status != apistructs.StatusReady {
+			logrus.Errorf("[edas] k8s deployment(%s) status is not ready: %+v", group, deployStatus.LastMessage)
+
+			rtStatusDesc.LastMessage = fmt.Sprintf("deployment(%s) status is not ready, status: %s",
+				runtime.ID, deployStatus.LastMessage)
+			rtStatusDesc.Status = apistructs.StatusError
+			rtStatusDesc.Reason = deployStatus.Reason
+			runtime.Services[i].StatusDesc = rtStatusDesc
+
+			isReady = false
+			failReason = rtStatusDesc.Reason
+			lastMessage = rtStatusDesc.LastMessage
 			continue
 		}
 
@@ -343,27 +372,29 @@ func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.Stat
 
 		if len(svc.Ports) != 0 {
 			if _, err := e.getK8sService(appName); err != nil {
-				status.LastMessage = fmt.Sprintf("deployment(%s): service(%s) is not found or error", runtime.ID, appName)
 				logrus.Errorf("[edas] k8s service status is not ready: %+v", status.LastMessage)
-				status.Status = apistructs.StatusError
+
+				rtStatusDesc.LastMessage = fmt.Sprintf("deployment(%s): service(%s) is not found or error", runtime.ID, appName)
+				rtStatusDesc.Status = apistructs.StatusError
+				runtime.Services[i].StatusDesc = rtStatusDesc
+
+				isReady = false
+				lastMessage = rtStatusDesc.LastMessage
 				continue
 			}
 		}
 
-		runtime.Services[i].Status = apistructs.StatusReady
-	}
-
-	isReady := true
-	for _, s := range runtime.Services {
-		if s.Status != apistructs.StatusReady {
-			isReady = false
-			break
-		}
+		rtStatusDesc.Status = apistructs.StatusReady
+		runtime.Services[i].StatusDesc = rtStatusDesc
 	}
 
 	//All services are ready, the runtime is set to ready, otherwise the state remains as the value during the calculation process
 	if isReady {
 		status.Status = apistructs.StatusReady
+	} else {
+		status.Status = apistructs.StatusError
+		status.LastMessage = lastMessage
+		status.Reason = failReason
 	}
 
 	return status, nil
@@ -916,7 +947,7 @@ func (e *EDAS) deleteK8sDeployment(group string, s *apistructs.Service) error {
 		return err
 	}
 
-	depName := dep.Metadata.Name
+	depName := dep.Name
 
 	resp, err := e.kubeClient.Delete(e.kubeAddr).
 		Path("/apis/apps/v1beta1/namespaces/" + defaultNamespace + "/deployments/" + depName).
@@ -1466,10 +1497,14 @@ func (e *EDAS) getDeploymentStatus(group string, srv *apistructs.Service) (apist
 	for _, c := range dps.Conditions {
 		if c.Type == k8sapi.DeploymentReplicaFailure && c.Status == "True" {
 			status.Status = apistructs.StatusFailing
+			status.LastMessage = c.Message
+			status.Reason = c.Reason
 			return status, "", nil
 		}
 		if c.Type == k8sapi.DeploymentAvailable && c.Status == "False" {
 			status.Status = apistructs.StatusFailing
+			status.LastMessage = c.Message
+			status.Reason = c.Reason
 			return status, "", nil
 		}
 	}
@@ -1479,52 +1514,48 @@ func (e *EDAS) getDeploymentStatus(group string, srv *apistructs.Service) (apist
 		dps.Replicas == dps.UpdatedReplicas {
 		if dps.Replicas > 0 {
 			status.Status = apistructs.StatusReady
-			status.LastMessage = fmt.Sprintf("deployment(%s) is running", dep.Metadata.Name)
+			status.LastMessage = fmt.Sprintf("deployment(%s) is running", dep.Name)
 		} else {
 			// This state is only present at the moment of deletion
-			status.LastMessage = fmt.Sprintf("deployment(%s) replica is 0", dep.Metadata.Name)
+			status.LastMessage = fmt.Sprintf("deployment(%s) replica is 0", dep.Name)
 		}
 	}
 
-	labels := dep.Metadata.Labels["edas.appid"] + "," + dep.Metadata.Labels["edas.groupid"]
+	labels := dep.Labels["edas.appid"] + "," + dep.Labels["edas.groupid"]
 	return status, labels, nil
 }
 
-func (e *EDAS) getDeploymentInfo(group string, srv *apistructs.Service) (*k8sapi.Deployment, error) {
-	deps := &k8sapi.DeploymentList{}
-	iDep := &k8sapi.Deployment{}
+func (e *EDAS) getDeploymentInfo(group string, srv *apistructs.Service) (*appsv1.Deployment, error) {
+	fullName := group + "-" + srv.Name
 
-	prefix := group + "-" + srv.Name
+	// edas.controlplane is edas-oam: edas.oam.acname
+	// older version: edas.appname
+	labels := []string{"edas.oam.acname", "edas.appname"}
 
-	// TODO: use label selector
-	resp, err := e.kubeClient.Get(e.kubeAddr).
-		Path("/apis/apps/v1/namespaces/"+defaultNamespace+"/deployments").
-		Header("Content-Type", "application/json").
-		Do().
-		JSON(&deps)
-	if err != nil {
-		return nil, err
-	}
+	for _, label := range labels {
+		labelSelector := apilabels.FormatLabels(map[string]string{
+			"edas-domain": "edas-admin",
+			label:         fullName,
+		})
 
-	if resp == nil {
-		return nil, errors.Errorf("response is null")
-	}
+		deploy, err := e.cs.AppsV1().Deployments(defaultNamespace).List(context.Background(), metav1.ListOptions{
+			LabelSelector: labelSelector,
+		})
+		if err != nil {
+			return nil, errors.Errorf("failed to find deployment, app: %v, err: %v", fullName, err)
+		}
 
-	if !resp.IsOK() {
-		return nil, errors.Errorf("failed to get deployment info, namespace: %s, service name: %s, statusCode: %d",
-			srv.Namespace, srv.Name, resp.StatusCode())
-	}
-
-	for _, dep := range deps.Items {
-		i := dep
-		if strings.Contains(dep.Metadata.Name, prefix) &&
-			strings.Compare(dep.Metadata.Labels["edas-domain"], "edas-admin") == 0 {
-			iDep = &i
-			// return &dep, nil
+		switch len(deploy.Items) {
+		case 0:
+			continue
+		case 1:
+			return &deploy.Items[0], nil
+		default:
+			return nil, errors.Errorf("get multi deployment, app: %v, count: %d", fullName, len(deploy.Items))
 		}
 	}
-	return iDep, nil
-	// return nil, errors.Errorf("not found k8s deployment")
+
+	return nil, errors.Errorf("failed to find deployment, app: %v", fullName)
 }
 
 func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.ServiceGroup) (map[string]string, error) {
