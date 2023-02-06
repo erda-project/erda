@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
@@ -194,7 +194,8 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 
 	currPods, err := e.getPodStatusFromK8s(runtimeID, serviceName)
 	if err != nil {
-		logrus.Warnf("get runtimeId %s service %s current pods failed: %v", runtimeID, serviceName, err)
+		logrus.Warnf("get pod status from kubernetes failed, runtime: %s, service: %s, err: %v",
+			runtimeID, serviceName, err)
 	}
 
 	if len(currPods) > 0 {
@@ -234,13 +235,13 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 		updateat := ""
 		podHealthy := PodStatusUnHealthy
 		switch v.Phase {
-		case string(apiv1.PodRunning):
+		case string(corev1.PodRunning):
 			podHealthy = PodStatusHealthy
-		case string(apiv1.PodPending):
+		case string(corev1.PodPending):
 			podHealthy = PodStatusCreating
-		case string(apiv1.PodFailed), string(apiv1.PodUnknown):
+		case string(corev1.PodFailed), string(corev1.PodUnknown):
 			podHealthy = PodStatusUnHealthy
-		case string(apiv1.PodSucceeded):
+		case string(corev1.PodSucceeded):
 			podHealthy = PodStatusTerminated
 		}
 		if v.StartedAt != nil {
@@ -298,14 +299,14 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 		return currPods, errors.Errorf("get runtimeId %d service %s current pods failed: no pods found in sg.Extra for service", runtimeId, serviceName)
 	}
 
-	var k8sPods []apiv1.Pod
+	var k8sPods []corev1.Pod
 	err = json.Unmarshal([]byte(sg.Extra[serviceName]), &k8sPods)
 	if err != nil {
 		return currPods, errors.Errorf("get runtimeId %d service %s current pods failed: %v", runtimeId, serviceName, err)
 	}
 
 	for _, pod := range k8sPods {
-		if pod.Status.Phase != apiv1.PodPending && pod.Status.Phase != apiv1.PodRunning {
+		if pod.Status.Phase != corev1.PodPending && pod.Status.Phase != corev1.PodRunning {
 			logrus.Warnf("Pod %s/%s had Status in terminated or unknown, ignoring it.", pod.Namespace, pod.Name)
 			continue
 		}
@@ -323,7 +324,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 		containersResource := make([]apistructs.PodContainer, 0)
 		podHealthy := PodStatusHealthy
 		switch pod.Status.Phase {
-		case apiv1.PodPending:
+		case corev1.PodPending:
 			podHealthy = PodStatusCreating
 			containerResource := apistructs.ContainerResource{}
 			nameToIndex := make(map[string]int)
@@ -367,7 +368,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 
 		default:
 			for _, podCondition := range pod.Status.Conditions {
-				if podCondition.Status != apiv1.ConditionTrue {
+				if podCondition.Status != corev1.ConditionTrue {
 					podHealthy = PodStatusUnHealthy
 					break
 				}
@@ -385,6 +386,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 				}
 
 				if podContainerStatus.Ready != true {
+					podHealthy = PodStatusUnHealthy
 					message = getPodContainerMessage(podContainerStatus.State)
 				}
 
@@ -424,7 +426,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 
 		var updateTime *metav1.Time
 		for _, v := range pod.Status.Conditions {
-			if v.Type == apiv1.PodReady {
+			if v.Type == corev1.PodReady {
 				lt := v.LastTransitionTime
 				updateTime = &lt
 			}
@@ -456,7 +458,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 	return currPods, nil
 }
 
-func getPodContainerMessage(containerState apiv1.ContainerState) string {
+func getPodContainerMessage(containerState corev1.ContainerState) string {
 	message := ""
 	switch {
 	case containerState.Waiting != nil:
