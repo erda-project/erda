@@ -14,9 +14,36 @@
 
 package edas
 
+import "fmt"
+
 func AppendCommonHeaders(source map[string]string) map[string]string {
 	source["Pragma"] = "no-cache"
 	source["Cache-Control"] = "no-cache"
 	source["Connection"] = "keep-alive"
 	return source
+}
+
+func composeEDASAppGroup(sgType, sgID string) string {
+	return fmt.Sprintf("%s-%s", sgType, sgID)
+}
+
+func composeEDASAppNameWithGroup(group string, serviceName string) string {
+	return fmt.Sprintf("%s-%s", group, serviceName)
+}
+
+func composeEDASAppName(sgType, sgID, serviceName string) string {
+	return composeEDASAppNameWithGroup(composeEDASAppGroup(sgType, sgID), serviceName)
+}
+
+func composeEDASAppInfo(sgType, sgID, serviceName string) (string, string) {
+	group := composeEDASAppGroup(sgType, sgID)
+	return group, composeEDASAppNameWithGroup(group, serviceName)
+}
+
+func getReplicasFromPointer(replicas *int32) int32 {
+	var result int32
+	if replicas != nil {
+		result = *replicas
+	}
+	return result
 }

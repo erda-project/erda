@@ -234,7 +234,7 @@ func makeEdasKey(namespace, name string) string {
 }
 
 func checkRuntime(r *apistructs.ServiceGroup) error {
-	group := r.Type + "-" + r.ID
+	group := composeEDASAppGroup(r.Type, r.ID)
 	length := appNameLengthLimit - len(group)
 
 	var regexString = "^[A-Za-z_][A-Za-z0-9_]*$"
@@ -279,7 +279,7 @@ func (e *EDAS) Create(ctx context.Context, specObj interface{}) (interface{}, er
 
 	logrus.Debugf("[EDAS] Create runtime, object: %+v", runtime)
 
-	group := runtime.Type + "-" + runtime.ID
+	group := composeEDASAppGroup(runtime.Type, runtime.ID)
 
 	flows, err := util.ParseServiceDependency(&runtime)
 	if err != nil {
@@ -331,7 +331,7 @@ func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.Stat
 		return status, errors.New("edas k8s status: invalid runtime spec")
 	}
 
-	group := runtime.Type + "-" + runtime.ID
+	group := composeEDASAppGroup(runtime.Type, runtime.ID)
 	for i, svc := range runtime.Services {
 		svc.Namespace = runtime.Type
 		// init status
@@ -368,7 +368,7 @@ func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.Stat
 			continue
 		}
 
-		appName := group + "-" + svc.Name
+		appName := composeEDASAppNameWithGroup(group, svc.Name)
 
 		if len(svc.Ports) != 0 {
 			if _, err := e.getK8sService(appName); err != nil {
@@ -412,7 +412,7 @@ func (e *EDAS) Remove(ctx context.Context, specObj interface{}) error {
 		return errors.New("edas k8s remove: invalid runtime spec")
 	}
 
-	group := runtime.Type + "-" + runtime.ID
+	group := composeEDASAppGroup(runtime.Type, runtime.ID)
 
 	go func(ss []apistructs.Service) {
 		for _, srv := range ss {
@@ -522,15 +522,15 @@ func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apist
 
 // Inspect Query runtime information
 func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, error) {
-
 	runtime, ok := specObj.(apistructs.ServiceGroup)
 	if !ok {
 		return nil, errors.New("edas k8s inspect: invalid runtime spec")
 	}
 
 	if serviceName, ok := runtime.Labels["GET_RUNTIME_STATELESS_SERVICE_POD"]; ok && serviceName != "" {
-		ns := defaultNamespace
-		pods, err := e.getPods(ns, serviceName)
+		pods, err := e.cs.CoreV1().Pods(defaultNamespace).List(context.Background(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app=%s", composeEDASAppName(runtime.Type, runtime.ID, serviceName)),
+		})
 		if err != nil {
 			return nil, fmt.Errorf("get pods for servicegroup %+v failed: %v", runtime, err)
 		}
@@ -539,9 +539,10 @@ func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, e
 			runtime.Extra = make(map[string]string)
 		}
 
-		podsBytes, err := json.Marshal(pods)
+		podsBytes, err := json.Marshal(pods.Items)
 		if err != nil {
-			return nil, fmt.Errorf("json marshall edas service pods in ns %s for service %s err: %v", ns, serviceName, err)
+			return nil, fmt.Errorf("failed to json marshall edas service pods in ns %s for service %s err: %v",
+				defaultNamespace, serviceName, err)
 		}
 		runtime.Extra[serviceName] = string(podsBytes)
 		return &runtime, nil
@@ -555,12 +556,12 @@ func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, e
 
 	logrus.Infof("[EDAS] Inspect runtime(%s) status: %+v", runtime.ID, status)
 
-	group := runtime.Type + "-" + runtime.ID
+	group := composeEDASAppGroup(runtime.Type, runtime.ID)
 	runtime.Status = status.Status
 	runtime.LastMessage = status.LastMessage
 
 	for i, svc := range runtime.Services {
-		appName := group + "-" + svc.Name
+		appName := composeEDASAppNameWithGroup(group, svc.Name)
 
 		if len(svc.Ports) > 0 {
 			kubeSvc, err := e.getK8sService(appName)
@@ -580,8 +581,7 @@ func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, e
 }
 
 func (e *EDAS) runAppFlow(ctx context.Context, flows [][]*apistructs.Service, runtime *apistructs.ServiceGroup) error {
-
-	group := runtime.Type + "-" + runtime.ID
+	group := composeEDASAppGroup(runtime.Type, runtime.ID)
 
 	for i, batch := range flows {
 		logrus.Infof("[EDAS] create runtime: %s run batch %d %+v", group, i+1, batch)
@@ -594,7 +594,8 @@ func (e *EDAS) runAppFlow(ctx context.Context, flows [][]*apistructs.Service, ru
 				service = s
 				logrus.Infof("[EDAS] run app flow to create service %s", s.Name)
 				if err = e.createService(ctx, runtime, service); err != nil {
-					logrus.Errorf("[EDAS] failed to create service: %s, error: %v", group+"-"+s.Name, err)
+					logrus.Errorf("[EDAS] failed to create service: %s, error: %v",
+						composeEDASAppNameWithGroup(group, s.Name), err)
 				}
 			}()
 			time.Sleep(1 * time.Second)
@@ -621,8 +622,7 @@ func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGro
 		return errors.Wrap(err, "edas create app")
 	}
 
-	group := runtime.Type + "-" + runtime.ID
-	appName := group + "-" + s.Name
+	appName := composeEDASAppName(runtime.Type, runtime.ID, s.Name)
 
 	//create k8s service
 	if err := e.createK8sService(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
@@ -669,7 +669,7 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 	var appName, appID string
 	var err error
 
-	appName = runtime.Type + "-" + runtime.ID + "-" + s.Name
+	appName = composeEDASAppName(runtime.Type, runtime.ID, s.Name)
 
 	// Check whether the service exists, if it does not exist, create a new one; otherwise, update it
 	if appID, err = e.getAppID(appName); err != nil {
@@ -719,7 +719,7 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 func (e *EDAS) removeService(ctx context.Context, group string, s *apistructs.Service) error {
 	var err error
 
-	appName := group + "-" + s.Name
+	appName := composeEDASAppGroup(group, s.Name)
 	err = e.deleteAppByName(appName)
 	if err != nil {
 		logrus.Errorf("[EDAS] Failed to delete app(%s): %v", appName, err)
@@ -743,7 +743,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 	var err error
 
 	errChan := make(chan error, 1)
-	group := newRuntime.Type + "-" + newRuntime.ID
+	group := composeEDASAppGroup(newRuntime.Type, newRuntime.ID)
 
 	// Resolve dependencies
 	flows, err := util.ParseServiceDependency(newRuntime)
@@ -759,7 +759,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		// 2. The service whose port has been modified
 		svcs := checkoutServicesToDelete(newRuntime, oldRuntime)
 		for _, svc := range *svcs {
-			appName := group + "-" + svc.Name
+			appName := composeEDASAppNameWithGroup(group, svc.Name)
 			logrus.Warningf("[EDAS] need to delete service(%s) because the user modified name or ports !!!", appName)
 
 			err := e.removeService(ctx, group, &svc)
@@ -774,7 +774,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				var oldSvc *apistructs.Service
 
 				svcName := newSvc.Name
-				appName := group + "-" + svcName
+				appName := composeEDASAppNameWithGroup(group, svcName)
 				// add service
 				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
 					logrus.Infof("[EDAS] cyclicupdate to create service %s", svcName)
@@ -860,7 +860,7 @@ func (e *EDAS) removeAndCreateRuntime(ctx context.Context, runtime *apistructs.S
 	var copyRun apistructs.ServiceGroup
 
 	errChan := make(chan error, 1)
-	group := runtime.Type + "-" + runtime.ID
+	group := composeEDASAppGroup(runtime.Type, runtime.ID)
 
 	copyRun.Type = runtime.Type
 	copyRun.ID = runtime.ID
@@ -893,7 +893,7 @@ func (e *EDAS) removeAndCreateRuntime(ctx context.Context, runtime *apistructs.S
 
 func (e *EDAS) deleteDeploymentAndService(group string, service *apistructs.Service) error {
 
-	appName := group + "-" + service.Name
+	appName := composeEDASAppNameWithGroup(group, service.Name)
 
 	// Only services with externally exposed ports have corresponding k8s service
 	if len(service.Ports) > 0 {
@@ -910,7 +910,7 @@ func (e *EDAS) deleteK8sService(group string, s *apistructs.Service) error {
 	var kubeSvc *k8sapi.Service
 	var err error
 
-	appName := group + "-" + s.Name
+	appName := composeEDASAppNameWithGroup(group, s.Name)
 
 	if kubeSvc, err = e.getK8sService(appName); err != nil {
 		return errors.Wrapf(err, "get k8s service: %s", appName)
@@ -1485,7 +1485,7 @@ func (e *EDAS) getDeploymentStatus(group string, srv *apistructs.Service) (apist
 	}
 
 	dps := dep.Status
-	status.DesiredReplicas = dps.Replicas
+	status.DesiredReplicas = getReplicasFromPointer(dep.Spec.Replicas)
 	status.ReadyReplicas = dps.ReadyReplicas
 	// this would not happen in theory
 	if len(dps.Conditions) == 0 {
@@ -1526,7 +1526,7 @@ func (e *EDAS) getDeploymentStatus(group string, srv *apistructs.Service) (apist
 }
 
 func (e *EDAS) getDeploymentInfo(group string, srv *apistructs.Service) (*appsv1.Deployment, error) {
-	fullName := group + "-" + srv.Name
+	fullName := composeEDASAppNameWithGroup(group, srv.Name)
 
 	// edas.controlplane is edas-oam: edas.oam.acname
 	// older version: edas.appname
@@ -1561,17 +1561,14 @@ func (e *EDAS) getDeploymentInfo(group string, srv *apistructs.Service) (*appsv1
 func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.ServiceGroup) (map[string]string, error) {
 	var envs map[string]string
 
-	group := runtime.Type + "-" + runtime.ID
-
-	appName := group + "-" + s.Name
-
+	group, appName := composeEDASAppInfo(runtime.Type, runtime.ID, s.Name)
 	envs = s.Env
 	if envs == nil {
 		envs = make(map[string]string, 10)
 	}
 
 	addEnv := func(s *apistructs.Service, envs *map[string]string) error {
-		appName := group + "-" + s.Name
+		appName := composeEDASAppNameWithGroup(group, s.Name)
 		kubeSvc, err := e.getK8sService(appName)
 		if err != nil {
 			return err
@@ -1625,7 +1622,7 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 				return nil, err
 			}
 
-			depAppName := group + "-" + depSvc.Name
+			depAppName := composeEDASAppNameWithGroup(group, depSvc.Name)
 			if s.Labels["IS_ENDPOINT"] == "true" && len(depSvc.Ports) > 0 {
 				kubeSvc, err := e.getK8sService(depAppName)
 				if err != nil {
@@ -1659,8 +1656,7 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 	var envs map[string]string
 	var err error
 
-	group := runtime.Type + "-" + runtime.ID
-	appName := group + "-" + s.Name
+	appName := composeEDASAppName(runtime.Type, runtime.ID, s.Name)
 
 	logrus.Debugf("[EDAS] Start to fill service spec: %s", appName)
 
@@ -1832,7 +1828,7 @@ func (e *EDAS) waitRuntimeRunningOnBatch(ctx context.Context, batch []*apistruct
 			if _, ok := done[srv.Name]; ok {
 				continue
 			}
-			appName := group + "-" + srv.Name
+			appName := composeEDASAppNameWithGroup(group, srv.Name)
 			// 1. Confirm app status from edas
 			if status, err = e.queryAppStatus(appName); err != nil {
 				logrus.Errorf("[EDAS] failed to query app(name: %s) status: %v", appName, err)
@@ -2122,32 +2118,6 @@ func (e *EDAS) getPodsStatus(namespace string, label string) ([]k8sapi.PodItem, 
 	return pi, nil
 }
 
-func (e *EDAS) getPods(namespace string, label string) ([]apiv1.Pod, error) {
-	var b bytes.Buffer
-
-	resp, err := e.kubeClient.Get(e.kubeAddr).
-		Path("/api/v1/namespaces/"+namespace+"/pods").
-		Param("labelSelector", "app="+label).
-		JSONBody(&deleteOptions).
-		Do().
-		Body(&b)
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "k8s get pods by label(%s) err: %v", err, label)
-	}
-
-	if !resp.IsOK() {
-		return nil, errors.Errorf("k8s get pods by label(%s) status code: %d, resp body: %v", label, resp.StatusCode(), b.String())
-	}
-
-	var pl apiv1.PodList
-	if err := json.Unmarshal(b.Bytes(), &pl); err != nil {
-		return nil, err
-	}
-
-	return pl.Items, nil
-}
-
 // Confirm whether to delete the service list
 // The conditions are as follows:
 // 1.Deleted service
@@ -2261,7 +2231,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 	destService := sg.Services[0]
 	originService := &apistructs.Service{}
 
-	appName := sg.Type + "-" + sg.ID + "-" + destService.Name
+	appName := composeEDASAppName(sg.Type, sg.ID, destService.Name)
 	var (
 		appID string
 		err   error
@@ -2280,7 +2250,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 		}
 	}
 
-	logrus.Infof("[EDAS] start to get k8s deployment %s", strutil.Concat(sg.Type, "-", sg.ID))
+	logrus.Infof("[EDAS] start to get k8s deployment %s", composeEDASAppGroup(sg.Type, sg.ID))
 	if _, err = e.getK8sDeployList(sg.Type, sg.ID, &services); err != nil {
 		logrus.Debugf("[EDAS] Get deploy from k8s error: %+v", err)
 		return nil, err
