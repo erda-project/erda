@@ -31,10 +31,10 @@ ACTION=$2
 cd $(git rev-parse --show-toplevel)
 
 # image version and url
-VERSION="$(build/scripts/make-version.sh)"
-IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
-DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 ARCH="${ARCH:-$(go env GOARCH)}"
+VERSION="$(build/scripts/make-version.sh)"
+IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}-${ARCH}"
+DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 BASE_DOCKER_IMAGE="registry.erda.cloud/erda/${ARCH}/erda-base:20230130"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
 
@@ -99,7 +99,7 @@ docker_login() {
 
 # build docker image
 build_image()  {
-    DOCKER_BUILDKIT=1 docker buildx build --pull --platform "linux/${ARCH}" --progress=plain -t "${DOCKER_IMAGE}" \
+    DOCKER_BUILDKIT=1 docker build --pull --platform "linux/${ARCH}" --progress=plain -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
@@ -110,7 +110,6 @@ build_image()  {
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
         --build-arg GOPROXY="${GOPROXY}" \
-        --push \
         -f "${DOCKERFILE}" .
 }
 
@@ -130,7 +129,7 @@ push_image() {
 # build and push
 build_push_image() {
     build_image
-#    push_image
+    push_image
     echo "action meta: image=${DOCKER_IMAGE}"
     echo "action meta: tag=${IMAGE_TAG}"
 }
