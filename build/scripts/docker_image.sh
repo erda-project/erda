@@ -33,7 +33,7 @@ cd $(git rev-parse --show-toplevel)
 # image version and url
 ARCH="${ARCH:-$(go env GOARCH)}"
 VERSION="$(build/scripts/make-version.sh)"
-IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}-${ARCH}"
+IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 BASE_DOCKER_IMAGE="registry.erda.cloud/erda/${ARCH}/erda-base:20230130"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
@@ -51,7 +51,7 @@ setup_single_module_env() {
     elif [ -d "build/dockerfiles/${APP_NAME}" ];then
         DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
     fi
-    DOCKER_IMAGE=${APP_NAME}:${IMAGE_TAG}
+    DOCKER_IMAGE="${ARCH}/${APP_NAME}:${IMAGE_TAG}"
 }
 
 # setup envionment variables for build all
