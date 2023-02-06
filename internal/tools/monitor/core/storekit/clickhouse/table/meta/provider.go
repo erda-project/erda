@@ -130,7 +130,7 @@ func (p *provider) updateMetrics(metas []MetricMeta) chan struct{} {
 
 func (meta *MetricMeta) check(scope, scopeId string) bool {
 	if scope == "org" {
-		return meta.Scope == scopeId
+		return meta.Scope == scopeId || meta.Scope == ""
 	}
 	if scope == "micro_service" {
 		return meta.ScopeId == scopeId
