@@ -17,6 +17,7 @@ package topology
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -233,6 +234,7 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 	tagInfo := parserTag(param)
 	tg := &graphTopo{adj: map[string]map[string]struct{}{}, nodes: map[string]Node{}}
 	table, _ := topology.Loader.GetSearchTable(orgName)
+	var allNodeRelations []*relation
 	for key, typeIndices := range typeMetricGroupMap {
 		aggregationConditions, _ := clickhousesource.SelectRelation(key)
 		for _, agg := range aggregationConditions {
@@ -258,8 +260,12 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 				return nil, fmt.Errorf("do query: %w", err)
 			}
 
-			topology.parseToTypologyNodeV2(lang, rows, tg)
+			allNodeRelations = append(allNodeRelations, topology.parseToTypologyNodeV2(lang, rows, tg)...)
 		}
+	}
+	handleTargetOtherNodesByHttpUrl(allNodeRelations, topology.Cfg.TargetOtherNodeOptions)
+	for _, rel := range allNodeRelations {
+		tg.addDirectEdge(rel)
 	}
 
 	nodes := tg.toNodes()
@@ -277,7 +283,8 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 	return nodes, nil
 }
 
-func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows driver.Rows, tg *graphTopo) {
+func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows driver.Rows, tg *graphTopo) []*relation {
+	allRelations := make([]*relation, 0)
 	for rows.Next() {
 		cnode := chNodeEdge{}
 		err := rows.ScanStruct(&cnode)
@@ -294,7 +301,54 @@ func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows dr
 		targetNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(targetNode.Type))
 		sourceNode.TypeDisplay = topology.t.Text(lang, strings.ToLower(sourceNode.Type))
 		rel := &relation{target: *targetNode, source: *sourceNode, stats: *edge.Metric}
-		tg.addDirectEdge(rel)
+		allRelations = append(allRelations, rel)
+	}
+	return allRelations
+}
+
+func handleTargetOtherNodesByHttpUrl(allRels []*relation, opts targetOtherNodeOptions) {
+	// get other nodes number
+	targetOtherNodes := make([]*Node, 0, len(allRels)*2)
+	httpUrlCount := map[string]struct{}{}
+	httpUrlWithoutQueryParamsCount := map[string]struct{}{}
+	for _, rel := range allRels {
+		nodes := []*Node{&rel.source, &rel.target}
+		for _, node := range nodes {
+			if node.Type == TypeExternal {
+				// when node type is TargetOtherNode, node name is http url
+				httpUrlCount[node.Name] = struct{}{}
+				targetOtherNodes = append(targetOtherNodes, node)
+			}
+		}
+	}
+	if len(httpUrlCount) <= opts.MaxNum {
+		return
+	}
+	// re calculate node id by name
+	defer func() {
+		for _, node := range targetOtherNodes {
+			node.Id = calculateTargetOtherNodeId(node)
+		}
+	}()
+	// ignore query params firstly
+	for _, node := range targetOtherNodes {
+		// http url remove query params
+		node.Name = strings.SplitN(node.Name, "?", 2)[0]
+		httpUrlWithoutQueryParamsCount[node.Name] = struct{}{}
+		if len(httpUrlWithoutQueryParamsCount) > opts.MaxNum {
+			// need to handle host, fast break
+			break
+		}
+	}
+	if len(httpUrlWithoutQueryParamsCount) <= opts.MaxNum {
+		return
+	}
+	// only host
+	for _, node := range targetOtherNodes {
+		u, err := url.Parse(node.Name)
+		if err == nil {
+			node.Name = u.Host
+		}
 	}
 }
 

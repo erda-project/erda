@@ -61,6 +61,14 @@ func (d *define) Creator() servicehub.Creator {
 
 type config struct {
 	TopologyFromClickHouse bool `file:"topology_from_click_house"`
+
+	TargetOtherNodeOptions targetOtherNodeOptions `file:"target_other_node_options"`
+}
+
+type targetOtherNodeOptions struct {
+	// If Count(TargetOtherNode) > count_to_ignore_query_param, ignore query param;
+	// If Count(TargetOtherNode without query param) > count_to_ignore_query_param, ignore path and only reserve host.
+	MaxNum int `file:"max_num" env:"TOPOLOGY_TARGET_OTHER_NODE_MAX_NUM" default:"10"`
 }
 
 func (topology *provider) Init(ctx servicehub.Context) (err error) {

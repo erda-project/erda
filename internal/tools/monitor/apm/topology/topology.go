@@ -1862,7 +1862,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 			node.Type = TypeInternal
 		}
 		node.Name = tags.HttpUrl
-		node.Id = encodeTypeToKey(node.Name + apm.Sep1 + node.Type)
+		node.Id = calculateTargetOtherNodeId(&node)
 	case OtherNode:
 		node.Type = TypeService
 		node.ApplicationId = tags.ApplicationId
@@ -1877,6 +1877,10 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 	node.DashboardId = getDashboardId(node.Type)
 
 	return &node
+}
+
+func calculateTargetOtherNodeId(node *Node) string {
+	return encodeTypeToKey(node.Name + apm.Sep1 + node.Type)
 }
 
 func findDataBuckets(filter *elastic.Aggregations, field *GroupByField) *[]*elastic.AggregationBucketKeyItem {
