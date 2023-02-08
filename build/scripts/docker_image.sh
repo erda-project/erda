@@ -109,7 +109,8 @@ build_image()  {
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
-        --build-arg GOPROXY="${GOPROXY}" \
+        --build-arg "GOPROXY=${GOPROXY}" \
+        --build-arg "ARCH=${ARCH}" \
         -f "${DOCKERFILE}" .
 }
 
