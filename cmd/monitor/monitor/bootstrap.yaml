@@ -361,6 +361,9 @@ entity-storage-clickhouse:
 #apm-runtime:
 apm-topology:
   topology_from_click_house: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
+  target_other_node_options:
+    max_num: ${TOPOLOGY_TARGET_OTHER_NODE_MAX_NUM:10}
+
 #apm-report:
 
 erda.core.monitor.alert:
