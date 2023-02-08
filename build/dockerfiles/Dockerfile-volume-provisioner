@@ -1,30 +1,37 @@
-FROM registry.erda.cloud/erda/golang-base:210416 as build
+# syntax = docker/dockerfile:1.2
+ARG BASE_DOCKER_IMAGE
+FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} as build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
 
-ARG APP_NAME
-ARG CONFIG_PATH
 ARG MODULE_PATH
 ARG DOCKER_IMAGE
-RUN make build APP_NAME=${APP_NAME} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} \
-    && ln -s $GOPATH/src/github.com/erda-project/erda /tmp/erda
+ARG MAKE_BUILD_CMD
+ARG GOPROXY
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GOPROXY=${GOPROXY}
 
-FROM alpine:3.12
 
-RUN echo "http://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories \
-    && echo "http://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories \
-    && apk add --no-cache jq \
-    && apk add util-linux
+FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE} as app-handler
+ARG MODULE_PATH
+ENV PROJ_ROOT="/go/src/github.com/erda-project/erda"
 
-WORKDIR /app
+COPY --from=build "${PROJ_ROOT}" /erda
+WORKDIR /erda
+# handle app
+RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handled
 
-ARG APP_NAME
-ARG CONFIG_PATH
-ENV APP_NAME=${APP_NAME}
-COPY --from=build "/tmp/erda/bin/${APP_NAME}" "/app/${APP_NAME}"
-COPY --from=build "/tmp/erda/conf/${CONFIG_PATH}" "/app/conf/${CONFIG_PATH}"
-COPY --from=build "/tmp/erda/pkg/erda-configs" "/app/erda-configs"
 
-CMD ["sh", "-c", "/app/${APP_NAME}"]
+FROM --platform=$TARGETPLATFORM debian:bullseye-slim
+ARG MODULE_PATH
+ENV MODULE_PATH=${MODULE_PATH}
+
+COPY --from=app-handler /erda-handled /erda
+RUN apt update  \
+    && apt install -y --no-install-recommends --no-install-suggests util-linux
+
+WORKDIR /erda
+ENTRYPOINT ["bash", "-c", "/erda/cmd/${MODULE_PATH}/bin"]
