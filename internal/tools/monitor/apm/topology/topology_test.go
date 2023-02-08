@@ -1191,3 +1191,7 @@ func (m mockI18n) Text(lang i18n.LanguageCodes, key string) string {
 func (m mockI18n) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	return key
 }
+
+func Test_calculateTargetOtherNodeId(t *testing.T) {
+	assert.Equal(t, "", calculateTargetOtherNodeId(&Node{Name: ""}))
+}
