@@ -229,8 +229,7 @@ func (topology *provider) topology(r *http.Request, params Vo) interface{} {
 	// default get time: 1 hour.
 	if params.EndTime == 0 {
 		params.EndTime = time.Now().UnixNano() / 1e6
-		h, _ := time.ParseDuration("-1h")
-		params.StartTime = time.Now().Add(h).UnixNano() / 1e6
+		params.StartTime = time.Now().Add(-time.Hour).UnixNano() / 1e6
 	}
 
 	now := time.Now().UnixNano() / 1e6

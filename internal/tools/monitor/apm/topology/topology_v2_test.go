@@ -95,3 +95,71 @@ func Test_graphTopo_toNodes(t *testing.T) {
 func mockRelation(sid, tid string, stats Metric) *relation {
 	return &relation{source: Node{Id: sid}, target: Node{Id: tid}, stats: stats}
 }
+
+func Test_handleTargetOtherNodesByHttpUrl(t *testing.T) {
+	opts := targetOtherNodeOptions{MaxNum: 3}
+
+	// count <= 3, return directly
+	allRels := []*relation{
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://erda.cloud"},
+		},
+	}
+	handleTargetOtherNodesByHttpUrl(allRels, opts)
+	assert.Equal(t, allRels[0].target.Name, "https://erda.cloud")
+
+	// count = 4, trigger remove query param, and got 1
+	allRels = []*relation{
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://erda.cloud"},
+		},
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://erda.cloud?a=b"},
+		},
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://erda.cloud?a=c"},
+		},
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://erda.cloud?a=d"},
+		},
+	}
+	handleTargetOtherNodesByHttpUrl(allRels, opts)
+	newNodeId := calculateTargetOtherNodeId(&Node{Type: TypeExternal, Name: "https://erda.cloud"})
+	for _, rel := range allRels {
+		assert.Equal(t, newNodeId, rel.target.Id)
+	}
+
+	// count = 4, trigger remove query param, and got 4, so trigger only host
+	allRels = []*relation{
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://erda.cloud"},
+		},
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "http://erda.cloud?a=b"},
+		},
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://www.erda.cloud?a=c"},
+		},
+		{
+			source: Node{Type: TypeService, Name: "monitor"},
+			target: Node{Type: TypeExternal, Name: "https://github.com/erda-project/erda?a=d"},
+		},
+	}
+	handleTargetOtherNodesByHttpUrl(allRels, opts)
+	assert.Equal(t, allRels[0].target.Name, "erda.cloud")
+	assert.Equal(t, calculateTargetOtherNodeId(&Node{Name: "erda.cloud", Type: TypeExternal}), allRels[0].target.Id)
+	assert.Equal(t, allRels[1].target.Name, "erda.cloud")
+	assert.Equal(t, calculateTargetOtherNodeId(&Node{Name: "erda.cloud", Type: TypeExternal}), allRels[1].target.Id)
+	assert.Equal(t, allRels[2].target.Name, "www.erda.cloud")
+	assert.Equal(t, calculateTargetOtherNodeId(&Node{Name: "www.erda.cloud", Type: TypeExternal}), allRels[2].target.Id)
+	assert.Equal(t, allRels[3].target.Name, "github.com")
+	assert.Equal(t, calculateTargetOtherNodeId(&Node{Name: "github.com", Type: TypeExternal}), allRels[3].target.Id)
+}
