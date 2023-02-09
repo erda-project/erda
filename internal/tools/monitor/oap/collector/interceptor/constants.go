@@ -61,6 +61,11 @@ var (
 	TAG_JAEGER                  = "jaeger"
 	TAG_JAEGER_VERSION          = "jaeger_version"
 
+	//use to compatible the span data from erda java-agent to otlp java-agent
+	TAG_IS_FROM_ERDA   = "is_from_erda"
+	TAG_TRACE_ID       = "trace_id"
+	TAG_PARENT_SPAN_ID = "parent_span_id"
+
 	TAG_ERDA_ENV_ID    = "erda_env_id"
 	TAG_ERDA_ENV_TOKEN = "erda_env_token"
 	TAG_ERDA_ORG       = "erda_org"
