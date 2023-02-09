@@ -122,6 +122,11 @@ func convertSpans(tracesData *otlpv1.TracesData) []*tracepb.Span {
 							if otlpSpan.ParentSpanId != nil {
 								span.ParentSpanID = hex.EncodeToString(otlpSpan.ParentSpanId[:])
 							}
+
+							if attributes[interceptor.TAG_IS_FROM_ERDA] == "true" {
+								span.TraceID = attributes[interceptor.TAG_TRACE_ID]
+								span.ParentSpanID = attributes[interceptor.TAG_PARENT_SPAN_ID]
+							}
 							spans = append(spans, span)
 						}
 					}
