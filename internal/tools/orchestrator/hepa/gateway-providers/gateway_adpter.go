@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kong
+package gateway_providers
 
 import (
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 )
 
-type KongAdapter interface {
-	KongExist() bool
+type GatewayAdapter interface {
+	GatewayProviderExist() bool
 	GetVersion() (string, error)
 	CheckPluginEnabled(pluginName string) (bool, error)
 	CreateConsumer(req *KongConsumerReqDto) (*KongConsumerRespDto, error)

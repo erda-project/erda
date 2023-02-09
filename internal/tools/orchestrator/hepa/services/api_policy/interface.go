@@ -29,7 +29,8 @@ type GatewayApiPolicyService interface {
 	SetPackageDefaultPolicyConfig(category, packageId string, az *orm.GatewayAzInfo, config []byte, helper ...*service.SessionHelper) (string, error)
 	GetPolicyConfig(category, packageId, packageApiId string) (interface{}, error)
 	SetPolicyConfig(category, packageId, packageApiId string, config []byte) (interface{}, error)
-	RefreshZoneIngress(zone orm.GatewayZone, az orm.GatewayAzInfo) error
-	SetZonePolicyConfig(zone *orm.GatewayZone, category string, config []byte, helper *service.SessionHelper, needDeployTag ...bool) (apipolicy.PolicyDto, string, error)
-	SetZoneDefaultPolicyConfig(packageId string, zone *orm.GatewayZone, az *orm.GatewayAzInfo, session ...*service.SessionHelper) (map[string]*string, *string, *service.SessionHelper, error)
+	RefreshZoneIngress(zone orm.GatewayZone, az orm.GatewayAzInfo, namespace string, useKong bool) error
+	GetGatewayProvider(clusterName string) (string, error)
+	SetZonePolicyConfig(zone *orm.GatewayZone, runtimeService *orm.GatewayRuntimeService, category string, config []byte, helper *service.SessionHelper, needDeployTag ...bool) (apipolicy.PolicyDto, string, error)
+	SetZoneDefaultPolicyConfig(packageId string, runtimeService *orm.GatewayRuntimeService, zone *orm.GatewayZone, az *orm.GatewayAzInfo, session ...*service.SessionHelper) (map[string]*string, *string, *service.SessionHelper, error)
 }

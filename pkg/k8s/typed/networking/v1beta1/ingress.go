@@ -16,6 +16,7 @@ package v1beta1
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	. "k8s.io/api/networking/v1beta1"
@@ -83,6 +84,9 @@ func (ing IngressHelper) NewIngress(material union_interface.IngressMaterial) in
 			},
 		})
 	}
+	if material.GatewayProvider != "" {
+		ingress.Spec.IngressClassName = &material.GatewayProvider
+	}
 	return ingress
 }
 
@@ -93,6 +97,16 @@ func (ing IngressHelper) IngressAnnotationBatchSet(ingress interface{}, kvs map[
 	}
 	if len(instance.Annotations) == 0 {
 		instance.Annotations = map[string]string{}
+	}
+	if len(instance.Labels) == 0 {
+		instance.Labels = map[string]string{}
+	}
+	for key, value := range kvs {
+		if strings.HasPrefix(key, "erda.gateway.") {
+			instance.Labels[key] = value
+			continue
+		}
+		instance.Annotations[key] = value
 	}
 	for key, value := range kvs {
 		instance.Annotations[key] = value

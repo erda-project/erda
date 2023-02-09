@@ -20,19 +20,24 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
+	"os"
+	"os/exec"
 	"runtime/debug"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/custom"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -85,6 +90,7 @@ type GatewayApiPolicyServiceImpl struct {
 	domainBiz       *domain.GatewayDomainService
 	packageBiz      *endpoint_api.GatewayOpenapiService
 	reqCtx          context.Context
+	runtimeDb       service.GatewayRuntimeServiceService
 }
 
 var once sync.Once
@@ -102,6 +108,7 @@ func NewGatewayApiPolicyServiceImpl() error {
 			packageApiDb, _ := service.NewGatewayPackageApiServiceImpl()
 			routeDB, _ := service.NewGatewayRouteServiceImpl()
 			engine, _ := orm.GetSingleton()
+			runtimeDb, _ := service.NewGatewayRuntimeServiceServiceImpl()
 			api_policy.Service = &GatewayApiPolicyServiceImpl{
 				azDb:            azDb,
 				kongDb:          kongDb,
@@ -118,6 +125,7 @@ func NewGatewayApiPolicyServiceImpl() error {
 				engine:          engine,
 				domainBiz:       &domain.Service,
 				packageBiz:      &endpoint_api.Service,
+				runtimeDb:       runtimeDb,
 			}
 		})
 	return nil
@@ -135,6 +143,10 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 			logrus.Errorf("error happened, err:%+v", err)
 		}
 	}()
+	var gatewayProvider string
+	var policyEngine apipolicy.PolicyEngine
+	var projectName string
+	var api *orm.GatewayPackageApi
 	if category == "" || packageId == "" {
 		// keep compatible
 		result = map[string]interface{}{
@@ -148,14 +160,32 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	if err != nil {
 		return
 	}
-	policyEngine, err := apipolicy.GetPolicyEngine(category)
+
+	gatewayProvider, err = impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		logrus.Errorf("get gateway provider failed for cluster %s: %v\n", pack.DiceClusterName, err)
+		return
+	}
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP {
+			//TODO: 不同的 gateway provider 的插件配置情况是否需要调整,还是旧使用以前默认的 Kong 的方式，对于 mse 的情况返回结果一样，但有些插件不生效?
+			logrus.Warnf("gateway provider %s no policy config for policy %s\n", gatewayProvider, category)
+		}
+	case "":
+	default:
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return
+	}
+	policyEngine, err = apipolicy.GetPolicyEngine(category)
 	if err != nil {
 		return
 	}
 	info := dto.DiceInfo{
 		ProjectId: pack.DiceProjectId,
 	}
-	projectName, err := (*impl.globalBiz).GetProjectName(info)
+	projectName, err = (*impl.globalBiz).GetProjectName(info)
 	if err != nil || projectName == "" {
 		err = errors.Errorf("get projectName failed, info:%+v, err:%+v", info, err)
 		return
@@ -175,7 +205,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 		result = dto
 		return
 	}
-	api, err := impl.packageApiDb.Get(packageApiId)
+	api, err = impl.packageApiDb.Get(packageApiId)
 	if err != nil {
 		return
 	}
@@ -190,7 +220,8 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 			return
 		}
 	}
-	dto, err := policyEngine.GetConfig(category, packageId, zone, ctx)
+	var dto interface{}
+	dto, err = policyEngine.GetConfig(category, packageId, zone, ctx)
 	if err != nil {
 		return
 	}
@@ -198,7 +229,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	return
 }
 
-func (impl GatewayApiPolicyServiceImpl) RefreshZoneIngress(zone orm.GatewayZone, az orm.GatewayAzInfo) error {
+func (impl GatewayApiPolicyServiceImpl) RefreshZoneIngress(zone orm.GatewayZone, az orm.GatewayAzInfo, namespace string, useKong bool) error {
 	exist, err := (*impl.zoneBiz).GetZone(zone.Id)
 	if err != nil {
 		return err
@@ -219,15 +250,39 @@ func (impl GatewayApiPolicyServiceImpl) RefreshZoneIngress(zone orm.GatewayZone,
 	if err != nil {
 		return err
 	}
-	namespace, _, err := impl.kongDb.GetK8SInfo(&orm.GatewayKongInfo{
-		ProjectId: zone.DiceProjectId,
-		Az:        zone.DiceClusterName,
-		Env:       zone.DiceEnv,
-	})
-	if err != nil {
-		return err
+	if useKong {
+		namespace, _, err = impl.kongDb.GetK8SInfo(&orm.GatewayKongInfo{
+			ProjectId: zone.DiceProjectId,
+			Az:        zone.DiceClusterName,
+			Env:       zone.DiceEnv,
+		})
+		if err != nil {
+			return err
+		}
 	}
-	err = impl.deployIngressChanges(k8sAdapter, namespace, zone, *changes)
+	if namespace == "" {
+		runtimes, err := impl.runtimeDb.SelectByAny(&orm.GatewayRuntimeService{
+			ProjectId:   zone.DiceProjectId,
+			Workspace:   zone.DiceEnv,
+			ClusterName: az.Az,
+		})
+		if err != nil {
+			logrus.Errorf("RefreshZoneIngress try to get namespace form tb_gateway_runtime_service failed: %v", err)
+			return errors.Errorf("RefreshZoneIngress try to get namespace form tb_gateway_runtime_service failed: %v", err)
+		}
+
+		if len(runtimes) == 0 {
+			logrus.Errorf("RefreshZoneIngress no records found from tb_gateway_runtime_service")
+			return errors.Errorf("RefreshZoneIngress no records found from tb_gateway_runtime_service")
+		} else {
+			namespace = runtimes[0].ProjectNamespace
+		}
+	}
+	if namespace == "" {
+		// 走到这里表示 是按 url 转发，因此，namespace 是固定的
+		namespace = "project-" + zone.DiceProjectId + "-" + strings.ToLower(zone.DiceEnv)
+	}
+	err = impl.deployIngressChanges(k8sAdapter, namespace, useKong, zone, *changes)
 	if err != nil {
 		return err
 	}
@@ -298,7 +353,7 @@ func (impl GatewayApiPolicyServiceImpl) deployControllerChanges(k8sAdapter k8s.K
 		}
 	}
 	if len(configmap) > 0 || mainSnippet != nil || httpSnippet != nil || serverSnippet != nil {
-		err := k8sAdapter.UpdateIngressConroller(configmap, mainSnippet, httpSnippet, serverSnippet)
+		err := k8sAdapter.UpdateIngressController(configmap, mainSnippet, httpSnippet, serverSnippet)
 		if err != nil {
 			return err
 		}
@@ -338,7 +393,7 @@ func (impl GatewayApiPolicyServiceImpl) deployAnnotationChanges(k8sAdapter k8s.K
 		return err
 	}
 	if len(annotation) > 0 || locationSnippet != nil {
-		err = k8sAdapter.UpdateIngressAnnotaion(namespace, zone.Name, annotation, locationSnippet)
+		err = k8sAdapter.UpdateIngressAnnotation(namespace, zone.Name, annotation, locationSnippet)
 		if err != nil {
 			cause := err.Error()
 			lines := strings.Split(cause, "\n")
@@ -353,7 +408,8 @@ func (impl GatewayApiPolicyServiceImpl) deployAnnotationChanges(k8sAdapter k8s.K
 	}
 	return nil
 }
-func (impl GatewayApiPolicyServiceImpl) deployIngressChanges(k8sAdapter k8s.K8SAdapter, namespace string, zone orm.GatewayZone, changes service.IngressChanges, annotationReset ...bool) error {
+
+func (impl GatewayApiPolicyServiceImpl) deployIngressChanges(k8sAdapter k8s.K8SAdapter, namespace string, useKong bool, zone orm.GatewayZone, changes service.IngressChanges, annotationReset ...bool) error {
 	logrus.Debugf("deploy ingress zone:%+v, changes:%+v", zone, changes)
 	var err error
 	if len(annotationReset) > 0 && annotationReset[0] {
@@ -361,15 +417,20 @@ func (impl GatewayApiPolicyServiceImpl) deployIngressChanges(k8sAdapter k8s.K8SA
 		if err != nil {
 			return err
 		}
+		if useKong {
+			err = impl.deployControllerChanges(k8sAdapter, changes)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if useKong {
 		err = impl.deployControllerChanges(k8sAdapter, changes)
 		if err != nil {
 			return err
 		}
-		return nil
-	}
-	err = impl.deployControllerChanges(k8sAdapter, changes)
-	if err != nil {
-		return err
 	}
 	err = impl.deployAnnotationChanges(k8sAdapter, zone, changes, namespace)
 	if err != nil {
@@ -422,7 +483,7 @@ func (impl GatewayApiPolicyServiceImpl) setIngressPolicyDaoConfig(policyDao *orm
 	return nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZone, category string, engine apipolicy.PolicyEngine, config []byte, dto apipolicy.PolicyDto, ctx map[string]interface{}, policyService service.GatewayIngressPolicyService, k8sAdapter k8s.K8SAdapter, helper *service.SessionHelper, needDeployTag ...bool) error {
+func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZone, runtimeService *orm.GatewayRuntimeService, category string, engine apipolicy.PolicyEngine, config []byte, dto apipolicy.PolicyDto, ctx map[string]interface{}, policyService service.GatewayIngressPolicyService, k8sAdapter k8s.K8SAdapter, helper *service.SessionHelper, needDeployTag ...bool) error {
 	var apiService service.GatewayPackageApiService
 	var packService service.GatewayPackageService
 	var kongService service.GatewayKongInfoService
@@ -466,20 +527,36 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 	if err != nil {
 		return err
 	}
-	namespace, _, err := kongService.GetK8SInfo(&orm.GatewayKongInfo{
-		ProjectId: zone.DiceProjectId,
-		Az:        zone.DiceClusterName,
-		Env:       zone.DiceEnv,
-	})
-	if err != nil {
-		return err
+
+	namespace := ""
+	useKong := true
+	if _, ok := ctx[apipolicy.CTX_KONG_ADAPTER]; !ok {
+		useKong = false
 	}
+	if useKong {
+		namespace, _, err = kongService.GetK8SInfo(&orm.GatewayKongInfo{
+			ProjectId: zone.DiceProjectId,
+			Az:        zone.DiceClusterName,
+			Env:       zone.DiceEnv,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		if runtimeService != nil && runtimeService.ProjectNamespace != "" {
+			namespace = runtimeService.ProjectNamespace
+		} else {
+			// 走到这里表示 是按 url 转发，因此，namespace 是固定的
+			namespace = "project-" + zone.DiceProjectId + "-" + strings.ToLower(zone.DiceEnv)
+		}
+	}
+
 	if needDeployIngress {
 		changes, err := policyService.GetChangesByRegionsImpl(zone.DiceClusterName, policyDao.Regions, zone.Id)
 		if err != nil {
 			return err
 		}
-		err = impl.deployIngressChanges(k8sAdapter, namespace, *zone, *changes, policyConfig.AnnotationReset)
+		err = impl.deployIngressChanges(k8sAdapter, namespace, useKong, *zone, *changes, policyConfig.AnnotationReset)
 		if err != nil {
 			return err
 		}
@@ -493,7 +570,7 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 				return err
 			}
 			if api != nil {
-				err = (*impl.openapiRuleBiz).SetPackageApiKongPolicies(api, helper)
+				err = (*impl.openapiRuleBiz).SetPackageApiKongPolicies(api, useKong, helper)
 				if err != nil {
 					return err
 				}
@@ -516,7 +593,20 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 	return nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZone, category string, config []byte, helper *service.SessionHelper, needDeployTag ...bool) (apipolicy.PolicyDto, string, error) {
+func (impl GatewayApiPolicyServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+
+	return "", nil
+}
+
+func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZone, runtimeService *orm.GatewayRuntimeService, category string, config []byte, helper *service.SessionHelper, needDeployTag ...bool) (apipolicy.PolicyDto, string, error) {
 	needDeployIngress := true
 	if len(needDeployTag) > 0 {
 		needDeployIngress = needDeployTag[0]
@@ -544,6 +634,10 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		mutex.Lock()
 		defer mutex.Unlock()
 	}
+	gatewayProvider, err := impl.GetGatewayProvider(zone.DiceClusterName)
+	if err != nil {
+		return nil, "", err
+	}
 
 	policyEngine, err := apipolicy.GetPolicyEngine(category)
 	if err != nil {
@@ -565,24 +659,32 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 	if err != nil {
 		return nil, "", err
 	}
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+
 	ctx := map[string]interface{}{
-		apipolicy.CTX_K8S_CLIENT:   k8sAdapter,
-		apipolicy.CTX_IDENTIFY:     zone.Name,
-		apipolicy.CTX_KONG_ADAPTER: kongAdapter,
-		apipolicy.CTX_ZONE:         zone,
+		apipolicy.CTX_K8S_CLIENT: k8sAdapter,
+		apipolicy.CTX_IDENTIFY:   zone.Name,
+		apipolicy.CTX_ZONE:       zone,
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+	case "":
+		gatewayAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+		ctx[apipolicy.CTX_KONG_ADAPTER] = gatewayAdapter
+	default:
+		logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return nil, "", errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
 
-	err = impl.executePolicyEngine(zone, category, policyEngine, config, dto, ctx, policyService, k8sAdapter, helper, needDeployTag...)
+	err = impl.executePolicyEngine(zone, runtimeService, category, policyEngine, config, dto, ctx, policyService, k8sAdapter, helper, needDeployTag...)
 	if err != nil {
 		return nil, fmt.Sprintf("执行策略失败, 失败原因:\n%s", errors.Cause(err)), err
 	}
-	if category != "built-in" {
-		builtinEngine, err := apipolicy.GetPolicyEngine("built-in")
+	if category != apipolicy.Policy_Engine_Built_in {
+		builtinEngine, err := apipolicy.GetPolicyEngine(apipolicy.Policy_Engine_Built_in)
 		if err != nil {
 			return nil, "", err
 		}
-		err = impl.executePolicyEngine(zone, "built-in", builtinEngine, nil, nil, ctx, policyService, k8sAdapter, helper, needDeployTag...)
+		err = impl.executePolicyEngine(zone, runtimeService, apipolicy.Policy_Engine_Built_in, builtinEngine, nil, nil, ctx, policyService, k8sAdapter, helper, needDeployTag...)
 		if err != nil {
 			return nil, fmt.Sprintf("更新内置策略失败, 失败原因:\n%s", errors.Cause(err)), err
 		}
@@ -590,7 +692,7 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 	return dto, "", nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId string, zone *orm.GatewayZone, az *orm.GatewayAzInfo, helper ...*service.SessionHelper) (map[string]*string, *string, *service.SessionHelper, error) {
+func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId string, runtimeService *orm.GatewayRuntimeService, zone *orm.GatewayZone, az *orm.GatewayAzInfo, helper ...*service.SessionHelper) (map[string]*string, *string, *service.SessionHelper, error) {
 	mutex := getAzMutex(az.Az)
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -612,13 +714,13 @@ func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId str
 		return nil, nil, nil, err
 	}
 	for _, policy := range policies {
-		_, _, err = impl.SetZonePolicyConfig(zone, policy.Name, policy.Config, session, false)
+		_, _, err = impl.SetZonePolicyConfig(zone, runtimeService, policy.Name, policy.Config, session, false)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 	}
 	if len(policies) == 0 {
-		_, _, err = impl.SetZonePolicyConfig(zone, "built-in", nil, session, false)
+		_, _, err = impl.SetZonePolicyConfig(zone, runtimeService, apipolicy.Policy_Engine_Built_in, nil, session, false)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -627,22 +729,40 @@ func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId str
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	controllerChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.GLOBAL_REGIONS, "|"))
-	if err != nil {
-		return nil, nil, nil, err
-	}
+
 	zoneChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.ZONE_REGIONS, "|"), zone.Id)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	k8sAdapter, err := k8s.NewAdapter(az.Az)
+
+	useKong := true
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(az.Az)
 	if err != nil {
+		logrus.Errorf("get ClusterInfoDto for cluster %s failed: %v", az.Az, err)
 		return nil, nil, nil, err
 	}
-	err = impl.deployControllerChanges(k8sAdapter, *controllerChange)
-	if err != nil {
-		return nil, nil, nil, err
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		useKong = false
 	}
+
+	if useKong {
+		k8sAdapter, err := k8s.NewAdapter(az.Az)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		controllerChange, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.GLOBAL_REGIONS, "|"))
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		err = impl.deployControllerChanges(k8sAdapter, *controllerChange)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
 	annotations, locationSnippet, err := impl.getAnnotationChanges(*zoneChange)
 	if err != nil {
 		return nil, nil, nil, err
@@ -663,6 +783,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 	defer mutex.Unlock()
 	var err error
 	transSucc := false
+	useKongGateWay := true
 	var helper *service.SessionHelper
 	if len(helperOption) == 0 {
 		helper, err = service.NewSessionHelper()
@@ -681,25 +802,25 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		helper = helperOption[0]
 	}
 	var zones []orm.GatewayZone
-	defer func() {
+	defer func(useKong bool) {
 		if !transSucc {
 			_ = helper.Rollback()
 			wg := sync.WaitGroup{}
 			for _, zone := range zones {
 				wg.Add(1)
-				go func(z orm.GatewayZone) {
+				go func(z orm.GatewayZone, isKong bool) {
 					defer doRecover()
-					err = impl.RefreshZoneIngress(z, *az)
+					err = impl.RefreshZoneIngress(z, *az, "", isKong)
 					if err != nil {
 						logrus.Errorf("refresh zone ingress failed, %+v", err)
 					}
 					wg.Done()
-				}(zone)
+				}(zone, useKong)
 			}
 			wg.Wait()
 			logrus.Info("zone ingress rollback done")
 		}
-	}()
+	}(useKongGateWay)
 	packageDb, err := impl.packageDb.NewSession(helper)
 	if err != nil {
 		return "", err
@@ -707,6 +828,11 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 	pack, err := packageDb.Get(packageId)
 	if err != nil {
 		return "", err
+	}
+
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(pack.DiceClusterName)
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		useKongGateWay = false
 	}
 	if pack.Scene == orm.UnityScene || pack.Scene == orm.HubScene {
 		zone, err := (*impl.zoneBiz).GetZone(pack.ZoneId, helper)
@@ -762,7 +888,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 			return "", err
 		}
 		if policy == nil || len(policy.Config) == 0 {
-			_, msg, err = impl.SetZonePolicyConfig(&zone, category, config, helper, false)
+			_, msg, err = impl.SetZonePolicyConfig(&zone, nil, category, config, helper, false)
 			if err != nil {
 				return msg, err
 			}
@@ -818,14 +944,18 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		if err != nil {
 			return "", err
 		}
-		err = impl.deployControllerChanges(k8sAdapter, *controllerChanges)
-		if err != nil {
-			return "", err
+		if useKongGateWay {
+			err = impl.deployControllerChanges(k8sAdapter, *controllerChanges)
+			if err != nil {
+				return "", err
+			}
 		}
 	} else {
-		err = impl.deployControllerChanges(k8sAdapter, *controllerChanges)
-		if err != nil {
-			return "", err
+		if useKongGateWay {
+			err = impl.deployControllerChanges(k8sAdapter, *controllerChanges)
+			if err != nil {
+				return "", err
+			}
 		}
 		err = deployZoneFunc()
 		if err != nil {
@@ -848,6 +978,9 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, packageApiId string, config []byte) (result interface{}, rerr error) {
 	auditCtx := map[string]interface{}{}
 	var pack *orm.GatewayPackage
+	useKong := true
+	var gatewayProvider string
+	logrus.Infof("Set policy config for %s, packageId=%s, packageApiId=%s config=[%s]\n", category, packageId, packageApiId, string(config))
 	defer func() {
 		if rerr != nil {
 			logrus.Errorf("error happened, err:%+v", rerr)
@@ -889,6 +1022,20 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		rerr = errors.New("invalid argument")
 		return
 	}
+
+	// 校验 custom 配置语法有效性
+	if category == apipolicy.Policy_Engine_Custom {
+		policyDto := &custom.PolicyDto{}
+		rerr = json.Unmarshal(config, policyDto)
+		if rerr != nil {
+			return
+		}
+		rerr = validateCustomNginxConf(category, policyDto.Config)
+		if rerr != nil {
+			return
+		}
+	}
+
 	pack, rerr = impl.packageDb.Get(packageId)
 	if rerr != nil {
 		return
@@ -897,8 +1044,31 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		rerr = errors.New("endpoint not found")
 		return
 	}
-	az, rerr := impl.azDb.GetAzInfoByClusterName(pack.DiceClusterName)
+	az, azInfo, rerr := impl.azDb.GetAzInfoByClusterName(pack.DiceClusterName)
 	if rerr != nil {
+		return
+	}
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		useKong = false
+	}
+	gatewayProvider, rerr = impl.GetGatewayProvider(pack.DiceClusterName)
+	if rerr != nil {
+		logrus.Errorf("get gateway provider failed for cluster %s: %v\n", pack.DiceClusterName, rerr)
+		return
+	}
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		useKong = false
+		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP {
+			rerr = errors.Errorf("gateway provider %s not support set policy %s", gatewayProvider, category)
+			return
+		}
+	case "":
+		useKong = true
+	default:
+		logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		rerr = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 		return
 	}
 	if packageApiId == "" {
@@ -914,8 +1084,9 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		result = true
 		return
 	}
-	api, rerr := impl.packageApiDb.Get(packageApiId)
-	if rerr != nil {
+	api, err := impl.packageApiDb.Get(packageApiId)
+	if err != nil {
+		rerr = err
 		return
 	}
 	if api == nil {
@@ -953,8 +1124,9 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 			return
 		}
 	}
-	helper, rerr := service.NewSessionHelper()
-	if rerr != nil {
+	helper, err := service.NewSessionHelper()
+	if err != nil {
+		rerr = err
 		return
 	}
 	transSucc := false
@@ -963,7 +1135,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 			_ = helper.Commit()
 		} else {
 			_ = helper.Rollback()
-			err := impl.RefreshZoneIngress(*zone, *az)
+			err := impl.RefreshZoneIngress(*zone, *az, "", useKong)
 			if err != nil {
 				logrus.Errorf("refresh zone ingress failed, %+v", err)
 			}
@@ -971,16 +1143,27 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		}
 		helper.Close()
 	}()
-	dto, msg, rerr := impl.SetZonePolicyConfig(zone, category, config, helper)
-	if rerr != nil {
-		logrus.Errorf("set zone policy config failed, err:%+v", rerr)
+
+	err = impl.checkDuplicatedPolicyConfig(gatewayProvider, packageId, packageApiId, category, config, zone, helper)
+	if err != nil {
+		logrus.Errorf("has deplicated policy config for policy %s: %v\n", category, err)
+		rerr = err
+		return
+	}
+
+	dto, msg, err := impl.SetZonePolicyConfig(zone, nil, category, config, helper)
+	if err != nil {
+		logrus.Errorf("set zone policy config failed, err:%+v", err)
 		if msg != "" {
 			rerr = errors.Errorf("update config failed: %s", msg)
+		} else {
+			rerr = errors.Errorf("set zone policy config failed, err:%+v", err)
 		}
 		return
 	}
-	ingressPolicyService, rerr := impl.ingressPolicyDb.NewSession(helper)
-	if rerr != nil {
+	ingressPolicyService, err := impl.ingressPolicyDb.NewSession(helper)
+	if err != nil {
+		rerr = err
 		return
 	}
 	if dto.IsGlobal() {
@@ -998,4 +1181,335 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 	transSucc = true
 	result = dto
 	return
+}
+
+// checkDuplicatedPolicyConfig 检查各种路由策略之间是否彼此有造成 nginx 无法重新加载的配置项
+func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvider, packageId, packageApiId, category string, category_config []byte, zone *orm.GatewayZone, helper *service.SessionHelper) error {
+	var kongService service.GatewayKongInfoService
+	var err error
+	if helper != nil {
+		kongService, err = impl.kongDb.NewSession(helper)
+		if err != nil {
+			return err
+		}
+	} else {
+		kongService = impl.kongDb
+	}
+
+	k8sAdapter, err := k8s.NewAdapter(zone.DiceClusterName)
+	if err != nil {
+		return err
+	}
+	kongInfo, err := kongService.GetKongInfo(&orm.GatewayKongInfo{
+		Az:        zone.DiceClusterName,
+		ProjectId: zone.DiceProjectId,
+		Env:       zone.DiceEnv,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx := map[string]interface{}{
+		apipolicy.CTX_K8S_CLIENT: k8sAdapter,
+		apipolicy.CTX_IDENTIFY:   zone.Name,
+		apipolicy.CTX_ZONE:       zone,
+	}
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+	case "":
+		gatewayAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+		ctx[apipolicy.CTX_KONG_ADAPTER] = gatewayAdapter
+	default:
+		return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
+
+	policyEngine, err := apipolicy.GetPolicyEngine(category)
+	if err != nil {
+		return errors.Errorf("apipolicy.GetPolicyEngine error:%v\n", err)
+	}
+
+	category_dto, err, _ := policyEngine.UnmarshalConfig(category_config)
+	if err != nil {
+		logrus.Errorf("policyEngine.UnmarshalConfig for %s error:%v\n", category, err)
+		return errors.Errorf("policyEngine.UnmarshalConfig for %s error:%v\n", category, err)
+	}
+
+	policyConfig, err := policyEngine.ParseConfig(category_dto, ctx)
+	if err != nil {
+		logrus.Errorf("parseConfig error:%v\n", err)
+		return errors.Errorf("parseConfig error:%v\n", err)
+	}
+
+	categories := make([]string, 0)
+
+	switch category {
+	case apipolicy.Policy_Engine_Custom:
+		// custom 策略需要跟其他所有策略校验冲突
+		categories = []string{apipolicy.Policy_Engine_Built_in, apipolicy.Policy_Engine_WAF, apipolicy.Policy_Engine_Service_Guard, apipolicy.Policy_Engine_CORS,
+			apipolicy.Policy_Engine_IP, apipolicy.Policy_Engine_Proxy, apipolicy.Policy_Engine_SBAC, apipolicy.Policy_Engine_CSRF}
+	default:
+		categories = []string{apipolicy.Policy_Engine_Custom}
+	}
+
+	policyConfigs := make(map[string]apipolicy.PolicyConfig)
+	for _, ca := range categories {
+		if ca == category {
+			// 主要是与其他插件策略对比冲突，因此忽略自己当前的设置
+			continue
+		}
+		if ca != apipolicy.Policy_Engine_Built_in {
+			dto, err := impl.GetPolicyConfig(ca, packageId, packageApiId)
+			if err != nil {
+				return errors.Errorf("GetPolicyConfig for policy %s error:%v\n", ca, err)
+			}
+
+			sDto, ok := dto.(apipolicy.PolicyDto)
+			if !ok {
+				return errors.Errorf("parse policy %s config failed: GetPolicyConfig() return invalid config %v\n", ca, dto)
+			}
+
+			pEngine, err := apipolicy.GetPolicyEngine(ca)
+			if err != nil {
+				logrus.Errorf("GetPolicyEngine for %s error:%v\n", ca, err)
+				return err
+			}
+
+			pc, err := pEngine.ParseConfig(sDto, ctx)
+			if err != nil {
+				logrus.Errorf("parseConfig for policy %s error:%v\n", ca, err)
+				return errors.Errorf("parseConfig for policy %s error:%v\n", ca, err)
+			}
+			policyConfigs[ca] = pc
+		} else {
+			var sDto apipolicy.PolicyDto
+			pEngine, err := apipolicy.GetPolicyEngine(ca)
+			if err != nil {
+				return errors.Errorf("GetPolicyEngine for policy %s error:%v\n", ca, err)
+			}
+
+			pc, err := pEngine.ParseConfig(sDto, ctx)
+			if err != nil {
+				logrus.Errorf("parseConfig for policy %s error:%v\n", ca, err)
+				return err
+			}
+			policyConfigs[ca] = pc
+		}
+	}
+
+	for ca, pc := range policyConfigs {
+		logrus.Infof("check duplicated config for policy: p1=%s   p2=%s\n", category, ca)
+		duplicated, err := hasDuplicatedConfig(policyConfig, pc)
+		if err != nil {
+			return errors.Errorf("check duplicated config for policy [%s, %s] error:%v\n", category, ca, err)
+		}
+		if duplicated != "" {
+			logrus.Errorf("duplicated config [%s] have set in policy %s\n", duplicated, ca)
+			return errors.Errorf("duplicated config [%s] have set in policy %s\n", duplicated, ca)
+		}
+	}
+	return nil
+}
+
+// 判断两个策略配置是否有冲突，如果有，则返回发现的第一个冲突的配置项
+func hasDuplicatedConfig(p1, p2 apipolicy.PolicyConfig) (string, error) {
+	if p2.IngressAnnotation == nil && p2.IngressController == nil {
+		return "", nil
+	}
+	p1_Nginx, err := getNginxConfFromPolicyConfig(p1)
+	if err != nil {
+		return "", err
+	}
+	p2_Nginx, err := getNginxConfFromPolicyConfig(p2)
+	if err != nil {
+		return "", err
+	}
+
+	for k := range p1_Nginx {
+		if val, ok := p2_Nginx[k]; ok {
+			return k + fmt.Sprintf("=%s", val), nil
+		}
+	}
+	return "", nil
+}
+
+// 提取单个策略对应的 key/value 格式配置用于判断两个策略的 key 是否冲突
+func getNginxConfFromPolicyConfig(p apipolicy.PolicyConfig) (map[string]string, error) {
+	ret := make(map[string]string)
+
+	if p.IngressAnnotation != nil {
+		for k, v := range p.IngressAnnotation.Annotation {
+			keys := strings.Split(k, "/")
+			logrus.Infof("p.IngressAnnotation.Annotation k=%s    keys=%v\n   p.IngressAnnotation.Annotation[%s]=%v", k, keys, k, p.IngressAnnotation.Annotation[k])
+			l := len(keys)
+
+			key := strings.ReplaceAll(keys[l-1], "-", "_")
+			if _, ok := ret[key]; ok {
+				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page 等允许多次设置
+				if key != "more_set_headers" && key != "proxy_set_header" && key != "set" && key != "limit_req" && key != "limit_conn" && key != "error_page" {
+					return ret, errors.Errorf("Annotation nginx conf %s duplicated", key)
+				}
+			}
+			if v == nil {
+				ret[key] = ""
+			} else {
+				ret[key] = *v
+			}
+		}
+
+		if p.IngressAnnotation.LocationSnippet != nil {
+			src := *(p.IngressAnnotation.LocationSnippet)
+			err := extractConfigFromString("p.IngressAnnotation.LocationSnippet", src, ret)
+			if err != nil {
+				return ret, err
+			}
+		}
+	}
+
+	if p.IngressController != nil {
+		for k, v := range p.IngressController.ConfigOption {
+			logrus.Infof("p.IngressController.ConfigOption[%s]=%v \n", k, p.IngressController.ConfigOption[k])
+			key := strings.ReplaceAll(k, "-", "_")
+			if _, ok := ret[key]; ok {
+				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page 等允许多次设置
+				if key != "more_set_headers" && key != "proxy_set_header" && key != "set" && key != "limit_req" && key != "limit_conn" && key != "error_page" {
+					return ret, errors.Errorf("ConfigOption nginx conf %s duplicated", key)
+				}
+			}
+			if v == nil {
+				ret[key] = ""
+			} else {
+				ret[key] = *v
+			}
+		}
+
+		if p.IngressController.MainSnippet != nil {
+			src := *(p.IngressController.MainSnippet)
+			err := extractConfigFromString("p.IngressController.MainSnippet", src, ret)
+			if err != nil {
+				return ret, err
+			}
+		}
+
+		if p.IngressController.HttpSnippet != nil {
+			src := *(p.IngressController.HttpSnippet)
+			err := extractConfigFromString("p.IngressController.HttpSnippet", src, ret)
+			if err != nil {
+				return ret, err
+			}
+		}
+
+		if p.IngressController.ServerSnippet != nil {
+			src := *(p.IngressController.ServerSnippet)
+			err := extractConfigFromString("p.IngressController.ServerSnippet", src, ret)
+			if err != nil {
+				return ret, err
+			}
+		}
+	}
+	return ret, nil
+}
+
+func extractConfigFromString(kind, src string, ret map[string]string) error {
+	if src != "" {
+		kvs := strings.Split(trimAllPrefixShift(src), "\n")
+		for idx, v := range kvs {
+			v = strings.TrimSpace(v)
+			if hasSpecialSubstr(v) {
+				continue
+			}
+			logrus.Infof("%s:  index=%d  val=%v\n", kind, idx, v)
+			kv := strings.Split(strings.TrimSuffix(strings.TrimSuffix(strings.TrimSpace(v), "\n"), ";"), " ")
+			if len(kv) >= 2 {
+				key := strings.ReplaceAll(kv[0], "-", "_")
+				if _, ok := ret[key]; ok {
+					// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page 等允许多次设置
+					if key != "more_set_headers" && key != "proxy_set_header" && key != "set" && key != "limit_req" && key != "limit_conn" && key != "error_page" {
+						return errors.Errorf("%s nginx conf %s duplicated", kind, key)
+					}
+				}
+				ret[key] = strings.Join(kv[1:], " ")
+			}
+		}
+	}
+	return nil
+}
+
+// 去掉 /n 前缀及前后空格
+func trimAllPrefixShift(src string) string {
+	src = strings.TrimSpace(src)
+	for strings.HasPrefix(src, "\n") {
+		src = strings.TrimPrefix(src, "\n")
+		src = strings.TrimSpace(src)
+	}
+	return src
+}
+
+// 特殊语法，不校验冲突
+func hasSpecialSubstr(v string) bool {
+	return strings.HasPrefix(v, "lua_ingress.rewrite") ||
+		strings.HasPrefix(v, "force_ssl_redirect") ||
+		strings.HasPrefix(v, "use_port_in_redirects") ||
+		strings.HasPrefix(v, "balancer.rewrite()") ||
+		strings.HasPrefix(v, "plugins.run()") ||
+		strings.HasPrefix(v, "monitor.call()") ||
+		strings.HasPrefix(v, "balancer.log()") ||
+		strings.HasPrefix(v, "location") ||
+		strings.HasPrefix(v, "if") ||
+		strings.HasPrefix(v, "{") ||
+		strings.HasPrefix(v, "}") ||
+		v == "\n"
+}
+
+// 校验 nginx 自定义 路由策略(custom) 的语义有效性
+func validateCustomNginxConf(category, config string) error {
+	if category != apipolicy.Policy_Engine_Custom {
+		return nil
+	}
+
+	conf := fmt.Sprintf(`
+events {
+	accept_mutex on;   
+	multi_accept on;  
+	worker_connections  1024;
+}
+
+http {  
+    keepalive_time 1h;  # nginx 1.19.10  引入
+	server {
+		listen 80;
+		server_name example.com;
+		root /var/www/example;
+		keepalive_time 1h;  # nginx 1.19.10  引入
+
+		location / {
+			keepalive_time 1h; # nginx 1.19.10  引入
+			%s
+		}
+	}
+}
+`, config)
+
+	logrus.Infof("custom Nginx config:\n%s\n", conf)
+	fileName := fmt.Sprintf("/tmp/nginx-%v", time.Now().UnixNano())
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return errors.Errorf("validate custom nginx config failed, open file %s failed,err:", err)
+	}
+
+	defer os.Remove(fileName)
+	defer file.Close()
+
+	_, err = file.WriteString(conf)
+	if err != nil {
+		return errors.Errorf("validate custom nginx config failed, Write file %s Error: %v\n", fileName, err)
+	}
+
+	cmd := exec.Command("nginx", "-t", "-c", fileName)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.Errorf("validate custom nginx config failed, validate output: %s\n with error: %v", string(out), err)
+	}
+
+	return nil
 }

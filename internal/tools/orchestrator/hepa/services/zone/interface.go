@@ -33,11 +33,13 @@ type ZoneRoute struct {
 
 type ZoneConfig struct {
 	*ZoneRoute
-	Name      string
-	ProjectId string
-	Env       string
-	Az        string
-	Type      string
+	Name        string
+	ProjectId   string
+	Env         string
+	Az          string
+	Type        string
+	Namespace   string
+	ServiceName string
 }
 
 var Service GatewayZoneService
@@ -45,13 +47,14 @@ var Service GatewayZoneService
 type GatewayZoneService interface {
 	CreateZoneWithoutIngress(ZoneConfig, ...*service.SessionHelper) (*orm.GatewayZone, error)
 	CreateZone(ZoneConfig, ...*service.SessionHelper) (*orm.GatewayZone, error)
-	DeleteZoneRoute(string, ...*service.SessionHelper) error
-	UpdateZoneRoute(string, ZoneRoute, ...*service.SessionHelper) (bool, error)
+	DeleteZoneRoute(string, string, ...*service.SessionHelper) error
+	UpdateZoneRoute(string, ZoneRoute, *orm.GatewayRuntimeService, string, ...*service.SessionHelper) (bool, error)
 	// trigger domain-policy update
 	SetZoneKongPolicies(string, dto.ZoneKongPolicies, *service.SessionHelper) error
 	SetZoneKongPoliciesWithoutDomainPolicy(zoneId string, policies *dto.ZoneKongPolicies, helper *service.SessionHelper) error
 	UpdateKongDomainPolicy(az, projectId, env string, helper *service.SessionHelper) error
-	DeleteZone(string) error
+	GetGatewayProvider(az string) (string, error)
+	DeleteZone(string, string) error
 	UpdateBuiltinPolicies(string) error
 	GetZone(string, ...*service.SessionHelper) (*orm.GatewayZone, error)
 }

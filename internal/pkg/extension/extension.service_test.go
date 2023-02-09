@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/extension/db"
 	"github.com/erda-project/erda/pkg/i18n"
 )
@@ -164,7 +165,8 @@ jobs:
 		},
 	}
 	p := &provider{
-		db: cli,
+		db:  cli,
+		bdl: &bundle.Bundle{},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -19,9 +19,11 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	gatewayproviders "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -72,12 +74,12 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
 			LocationSnippet: &emptyStr,
 			Annotation: map[string]*string{
-				ANNOTATION_REQ_BUFFER:         nil,
-				ANNOTATION_RESP_BUFFER:        nil,
-				ANNOTATION_REQ_LIMIT:          nil,
-				ANNOTATION_PROXY_REQ_TIMEOUT:  nil,
-				ANNOTATION_PROXY_RESP_TIMEOUT: nil,
-				ANNOTATION_SSL_REDIRECT:       nil,
+				string(annotationscommon.AnnotationProxyRequestBuffering): nil,
+				string(annotationscommon.AnnotationProxyBuffering):        nil,
+				string(annotationscommon.AnnotationProxyBodySize):         nil,
+				string(annotationscommon.AnnotationProxySendTimeout):      nil,
+				string(annotationscommon.AnnotationProxyReadTimeout):      nil,
+				string(annotationscommon.AnnotationSSLRedirect):           nil,
 			},
 		}
 		return res, nil
@@ -85,33 +87,33 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	annotation := map[string]*string{}
 	if policyDto.ReqBuffer {
 		value := "on"
-		annotation[ANNOTATION_REQ_BUFFER] = &value
+		annotation[string(annotationscommon.AnnotationProxyRequestBuffering)] = &value
 	} else {
 		value := "off"
-		annotation[ANNOTATION_REQ_BUFFER] = &value
+		annotation[string(annotationscommon.AnnotationProxyRequestBuffering)] = &value
 	}
 	if policyDto.RespBuffer {
 		value := "on"
-		annotation[ANNOTATION_RESP_BUFFER] = &value
+		annotation[string(annotationscommon.AnnotationProxyBuffering)] = &value
 	} else {
 		value := "off"
-		annotation[ANNOTATION_RESP_BUFFER] = &value
+		annotation[string(annotationscommon.AnnotationProxyBuffering)] = &value
 	}
 	if policyDto.SSLRedirect {
 		value := "true"
-		annotation[ANNOTATION_SSL_REDIRECT] = &value
+		annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
 	} else {
 		value := "false"
-		annotation[ANNOTATION_SSL_REDIRECT] = &value
+		annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
 	}
 	limit := fmt.Sprintf("%dm", policyDto.ClientReqLimit)
-	annotation[ANNOTATION_REQ_LIMIT] = &limit
+	annotation[string(annotationscommon.AnnotationProxyBodySize)] = &limit
 	reqTimeout := fmt.Sprintf("%d", policyDto.ProxyReqTimeout)
-	annotation[ANNOTATION_PROXY_REQ_TIMEOUT] = &reqTimeout
+	annotation[string(annotationscommon.AnnotationProxySendTimeout)] = &reqTimeout
 	respTimeout := fmt.Sprintf("%d", policyDto.ProxyRespTimeout)
-	annotation[ANNOTATION_PROXY_RESP_TIMEOUT] = &respTimeout
+	annotation[string(annotationscommon.AnnotationProxyReadTimeout)] = &respTimeout
 	clientHeaderTimeout := fmt.Sprintf("client_header_timeout %ds;", policyDto.ClientReqTimeout)
-	annotation[ANNOTATION_SERVER_SNIPPET] = &clientHeaderTimeout
+	annotation[string(annotationscommon.AnnotationServerSnippet)] = &clientHeaderTimeout
 	snippet := fmt.Sprintf(`
 client_body_timeout %ds;
 send_timeout %ds;
@@ -123,9 +125,11 @@ send_timeout %ds;
 
 	value, ok := ctx[apipolicy.CTX_KONG_ADAPTER]
 	if !ok {
-		return res, errors.Errorf("get identify failed:%+v", ctx)
+		//TODO: MSE support proxy policy?
+		logrus.Infof("use MSE Adapter, no need set proxy policy")
+		return res, nil
 	}
-	adapter, ok := value.(kong.KongAdapter)
+	adapter, ok := value.(gatewayproviders.GatewayAdapter)
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
@@ -172,7 +176,7 @@ send_timeout %ds;
 		policyDao := &orm.GatewayPolicy{
 			ZoneId:     zone.Id,
 			PluginName: "host-passthrough",
-			Category:   "proxy",
+			Category:   apipolicy.Policy_Category_Proxy,
 			PluginId:   resp.Id,
 			Config:     configByte,
 			Enabled:    1,
@@ -188,7 +192,7 @@ send_timeout %ds;
 }
 
 func init() {
-	err := apipolicy.RegisterPolicyEngine("proxy", &Policy{})
+	err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_Proxy, &Policy{})
 	if err != nil {
 		panic(err)
 	}

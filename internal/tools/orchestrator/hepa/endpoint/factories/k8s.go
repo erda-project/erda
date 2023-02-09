@@ -61,7 +61,7 @@ func (impl K8SFactory) TouchRoute(material endpoint.EndpointMaterial) error {
 		ServicePort: material.ServicePort,
 	}
 	_, err := impl.k8sAdapter.CreateOrUpdateIngress(impl.k8sNamespace(material),
-		serviceName, k8sRoutes, backend, material.K8SRouteOptions)
+		serviceName, k8sRoutes, backend, material.GatewayProvider, material.K8SRouteOptions)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (impl K8SFactory) TouchComponentRoute(material endpoint.EndpointMaterial) e
 	if material.K8SNamespace != "" {
 		namespace = material.K8SNamespace
 	}
-	_, err := impl.k8sAdapter.CreateOrUpdateIngress(namespace, material.IngressName, k8sRoutes, backend, material.K8SRouteOptions)
+	_, err := impl.k8sAdapter.CreateOrUpdateIngress(namespace, material.IngressName, k8sRoutes, backend, material.GatewayProvider, material.K8SRouteOptions)
 	if err != nil {
 		return err
 	}

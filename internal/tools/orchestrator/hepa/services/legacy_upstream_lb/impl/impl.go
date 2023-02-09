@@ -25,8 +25,10 @@ import (
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -39,6 +41,7 @@ type GatewayUpstreamLbServiceImpl struct {
 	upstreamLbTargetDb db.GatewayUpstreamLbTargetService
 	engine             *orm.OrmEngine
 	reqCtx             context.Context
+	azDb               db.GatewayAzInfoService
 }
 
 var once sync.Once
@@ -50,11 +53,13 @@ func NewGatewayUpstreamLbServiceImpl() error {
 			upstreamLbDb, _ := db.NewGatewayUpstreamLbServiceImpl()
 			upstreamLbTargetDb, _ := db.NewGatewayUpstreamLbTargetServiceImpl()
 			engine, _ := orm.GetSingleton()
+			azDb, _ := db.NewGatewayAzInfoServiceImpl()
 			legacy_upstream_lb.Service = &GatewayUpstreamLbServiceImpl{
 				kongDb:             kongDb,
 				upstreamLbDb:       upstreamLbDb,
 				upstreamLbTargetDb: upstreamLbTargetDb,
 				engine:             engine,
+				azDb:               azDb,
 			}
 		})
 	return nil
@@ -66,7 +71,7 @@ func (impl GatewayUpstreamLbServiceImpl) Clone(ctx context.Context) legacy_upstr
 	return newService
 }
 
-func (impl GatewayUpstreamLbServiceImpl) touchUpstreamLb(kongAdapter kong.KongAdapter, lb *orm.GatewayUpstreamLb) (*orm.GatewayUpstreamLb, string, string, error) {
+func (impl GatewayUpstreamLbServiceImpl) touchUpstreamLb(gatewayAdapter gateway_providers.GatewayAdapter, lb *orm.GatewayUpstreamLb) (*orm.GatewayUpstreamLb, string, string, error) {
 	if lb == nil {
 		return nil, "", "", errors.New(ERR_INVALID_ARG)
 	}
@@ -115,7 +120,7 @@ func (impl GatewayUpstreamLbServiceImpl) touchUpstreamLb(kongAdapter kong.KongAd
 		return existLb, existLb.Id, existLb.KongUpstreamId, nil
 	}
 	log.Debug("not find after GetForUpdate")
-	kongResp, err := kongAdapter.CreateUpstream(&kongDto.KongUpstreamDto{
+	kongResp, err := gatewayAdapter.CreateUpstream(&kongDto.KongUpstreamDto{
 		Name:         lb.LbName,
 		Healthchecks: kongDto.NewHealthchecks(lb.HealthcheckPath),
 	})
@@ -140,7 +145,7 @@ func (impl GatewayUpstreamLbServiceImpl) touchUpstreamLb(kongAdapter kong.KongAd
 	return nil, lb.Id, lb.KongUpstreamId, nil
 }
 
-func (impl GatewayUpstreamLbServiceImpl) deleteTarget(kongAdapter kong.KongAdapter, kongUpstreamId string, targetDao orm.GatewayUpstreamLbTarget, force bool) error {
+func (impl GatewayUpstreamLbServiceImpl) deleteTarget(gatewayAdapter gateway_providers.GatewayAdapter, kongUpstreamId string, targetDao orm.GatewayUpstreamLbTarget, force bool) error {
 	// err := kongAdapter.DeleteUpstreamTarget(kongUpstreamId, targetDao.KongTargetId)
 	// safe check
 	if !force {
@@ -163,7 +168,7 @@ func (impl GatewayUpstreamLbServiceImpl) deleteTarget(kongAdapter kong.KongAdapt
 			}
 		}
 	}
-	err := kongAdapter.DeleteUpstreamTarget(kongUpstreamId, targetDao.Target)
+	err := gatewayAdapter.DeleteUpstreamTarget(kongUpstreamId, targetDao.Target)
 
 	if err != nil {
 		log.Errorf("delete target from kong failed, targetDao:%+v, err:%+v",
@@ -179,7 +184,7 @@ func (impl GatewayUpstreamLbServiceImpl) deleteTarget(kongAdapter kong.KongAdapt
 	return nil
 }
 
-func (impl GatewayUpstreamLbServiceImpl) clearStaleOnNewDeploy(kongAdapter kong.KongAdapter, lbId string, deploymentId int, freshTime int64, count int) error {
+func (impl GatewayUpstreamLbServiceImpl) clearStaleOnNewDeploy(gatewayAdapter gateway_providers.GatewayAdapter, lbId string, deploymentId int, freshTime int64, count int) error {
 	upstreamLb, err := impl.upstreamLbDb.GetById(lbId)
 	if err != nil {
 		return err
@@ -192,7 +197,7 @@ func (impl GatewayUpstreamLbServiceImpl) clearStaleOnNewDeploy(kongAdapter kong.
 			upstreamLb.LastDeploymentId, deploymentId)
 		return nil
 	}
-	resp, err := kongAdapter.GetUpstreamStatus(upstreamLb.KongUpstreamId)
+	resp, err := gatewayAdapter.GetUpstreamStatus(upstreamLb.KongUpstreamId)
 	if err != nil {
 		log.Errorf("clearStaleOnNewDeploy failed, err:%+v", err)
 		return err
@@ -222,7 +227,7 @@ func (impl GatewayUpstreamLbServiceImpl) clearStaleOnNewDeploy(kongAdapter kong.
 					freshAllHealthy = &status
 				}
 			} else if targetDto.Health == "UNHEALTHY" {
-				err = impl.deleteTarget(kongAdapter, upstreamLb.KongUpstreamId, targetDao, false)
+				err = impl.deleteTarget(gatewayAdapter, upstreamLb.KongUpstreamId, targetDao, false)
 				if err != nil {
 					log.Errorf("delete target failed, err:%+v", err)
 					continue
@@ -239,7 +244,7 @@ func (impl GatewayUpstreamLbServiceImpl) clearStaleOnNewDeploy(kongAdapter kong.
 		if freshAllHealthy != nil && (*freshAllHealthy || finalCount) {
 			for i := len(readyToDels) - 1; i >= 0; i-- {
 				targetDao := readyToDels[i]
-				err = impl.deleteTarget(kongAdapter, upstreamLb.KongUpstreamId, targetDao, false)
+				err = impl.deleteTarget(gatewayAdapter, upstreamLb.KongUpstreamId, targetDao, false)
 				if err != nil {
 					log.Errorf("delete target failed, err:%+v", err)
 					continue
@@ -256,12 +261,12 @@ func (impl GatewayUpstreamLbServiceImpl) clearStaleOnNewDeploy(kongAdapter kong.
 	time.AfterFunc(time.Duration(config.ServerConf.StaleTargetCheckInterval)*time.Second,
 		func() {
 			count--
-			_ = impl.clearStaleOnNewDeploy(kongAdapter, lbId, deploymentId, freshTime, count)
+			_ = impl.clearStaleOnNewDeploy(gatewayAdapter, lbId, deploymentId, freshTime, count)
 		})
 	return nil
 }
 
-func (impl GatewayUpstreamLbServiceImpl) clearUnhealthyOnUnexpectDeploy(kongAdapter kong.KongAdapter, lbId string, freshTime int64) error {
+func (impl GatewayUpstreamLbServiceImpl) clearUnhealthyOnUnexpectDeploy(gatewayAdapter gateway_providers.GatewayAdapter, lbId string, freshTime int64) error {
 	upstreamLb, err := impl.upstreamLbDb.GetById(lbId)
 	if err != nil {
 		return err
@@ -270,7 +275,7 @@ func (impl GatewayUpstreamLbServiceImpl) clearUnhealthyOnUnexpectDeploy(kongAdap
 		return errors.Errorf("get upstreamLb failed, lbId:%s", lbId)
 	}
 
-	resp, err := kongAdapter.GetUpstreamStatus(upstreamLb.KongUpstreamId)
+	resp, err := gatewayAdapter.GetUpstreamStatus(upstreamLb.KongUpstreamId)
 	if err != nil {
 		log.Errorf("clearStaleOnNewDeploy failed, err:%+v", err)
 		return err
@@ -289,7 +294,7 @@ func (impl GatewayUpstreamLbServiceImpl) clearUnhealthyOnUnexpectDeploy(kongAdap
 		}
 		for _, targetDao := range targetDaos {
 			if targetDto.Health == "UNHEALTHY" {
-				err = impl.deleteTarget(kongAdapter, upstreamLb.KongUpstreamId, targetDao, false)
+				err = impl.deleteTarget(gatewayAdapter, upstreamLb.KongUpstreamId, targetDao, false)
 				if err != nil {
 					log.Errorf("delete target failed, err:%+v", err)
 					continue
@@ -302,6 +307,18 @@ func (impl GatewayUpstreamLbServiceImpl) clearUnhealthyOnUnexpectDeploy(kongAdap
 	return nil
 }
 
+func (impl GatewayUpstreamLbServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
+}
+
 func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLbDto) (result bool, err error) {
 	defer func() {
 		if err != nil {
@@ -312,7 +329,13 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		err = errors.New("dto is nil")
 		return
 	}
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	lbName := dto.LbName
+	gatewayProvider := ""
+	gatewayProvider, err = impl.GetGatewayProvider(dto.Az)
+	if err != nil {
+		return
+	}
 	upstreamLb := orm.GatewayUpstreamLb{
 		OrgId:            dto.OrgId,
 		ProjectId:        dto.ProjectId,
@@ -322,8 +345,17 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		LastDeploymentId: dto.DeploymentId,
 		HealthcheckPath:  dto.HealthcheckPath,
 	}
-	kongAdapter := kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
-	oldLb, lbId, kongUpstreamId, err := impl.touchUpstreamLb(kongAdapter, &upstreamLb)
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		log.Debugf("mse gateway not really support UpstreamTargetOnline process logic.")
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
+	default:
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return
+	}
+	oldLb, lbId, kongUpstreamId, err := impl.touchUpstreamLb(gatewayAdapter, &upstreamLb)
 	if err != nil {
 		return
 	}
@@ -337,7 +369,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 			Target: target,
 		}
 		var kongTargetResp *kongDto.KongTargetDto
-		kongTargetResp, err = kongAdapter.AddUpstreamTarget(kongUpstreamId, kongTargetReq)
+		kongTargetResp, err = gatewayAdapter.AddUpstreamTarget(kongUpstreamId, kongTargetReq)
 		if err != nil {
 			return
 		}
@@ -362,12 +394,12 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		if dto.DeploymentId != oldLb.LastDeploymentId {
 			time.AfterFunc(time.Duration(config.ServerConf.StaleTargetCheckInterval)*time.Second,
 				func() {
-					_ = impl.clearStaleOnNewDeploy(kongAdapter, lbId, dto.DeploymentId, freshTime,
+					_ = impl.clearStaleOnNewDeploy(gatewayAdapter, lbId, dto.DeploymentId, freshTime,
 						config.ServerConf.StaleTargetKeepTime/config.ServerConf.StaleTargetCheckInterval)
 				})
 		} else if time.Since(oldLb.UpdateTime).Seconds() > float64(config.ServerConf.UnexpectDeployInterval) {
 			log.Infof("unexpect deploy, now:%s, old time:%s, wait duration:%d seconds", time.Now().String(), oldLb.UpdateTime.String(), config.ServerConf.UnexpectDeployInterval)
-			err = impl.clearUnhealthyOnUnexpectDeploy(kongAdapter, lbId, freshTime)
+			err = impl.clearUnhealthyOnUnexpectDeploy(gatewayAdapter, lbId, freshTime)
 			if err != nil {
 				log.Errorf("clearUnhealthyOnUnexpectDeploy failed, err:%+v", err)
 			}
@@ -378,6 +410,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 }
 
 func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOffline(dto *gw.UpstreamLbDto) (result bool, err error) {
+	errorHappened := false
 	defer func() {
 		if err != nil {
 			log.Errorf("error happened, err:%+v", err)
@@ -387,6 +420,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOffline(dto *gw.UpstreamL
 		err = errors.New("dto is nil")
 		return
 	}
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	lbName := dto.LbName
 	cond := &orm.GatewayUpstreamLb{
 		OrgId:     dto.OrgId,
@@ -395,13 +429,28 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOffline(dto *gw.UpstreamL
 		Az:        dto.Az,
 		LbName:    lbName,
 	}
-	kongAdapter := kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
+
+	gatewayProvider, err := impl.GetGatewayProvider(dto.Az)
+	if err != nil {
+		err = errors.Errorf("get gateway provider failed for cluster %s:%v", dto.Az, err)
+		return
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		log.Debugf("mse gateway not support UpstreamTargetOffline process logic.")
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
+	default:
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return
+	}
 	existLb, err := impl.upstreamLbDb.Get(cond)
 	if err != nil || existLb == nil {
 		err = errors.Errorf("can't find upstreamLb, cond:%+v, err:%+v", cond, err)
 		return
 	}
-	errorHappened := false
+
 	for _, target := range dto.Targets {
 		targetDaos, err := impl.upstreamLbTargetDb.Select(existLb.Id, target)
 		if err != nil || len(targetDaos) == 0 {
@@ -410,7 +459,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOffline(dto *gw.UpstreamL
 			continue
 		}
 		for _, targetDao := range targetDaos {
-			err = impl.deleteTarget(kongAdapter, existLb.KongUpstreamId, targetDao, true)
+			err = impl.deleteTarget(gatewayAdapter, existLb.KongUpstreamId, targetDao, true)
 			if err != nil {
 				log.Errorf("delete target failed, targetDao:%+v, err:%+v", targetDao, err)
 				errorHappened = true

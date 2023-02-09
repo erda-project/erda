@@ -27,6 +27,7 @@ var Service GatewayGlobalService
 
 type GatewayGlobalService interface {
 	Clone(context.Context) GatewayGlobalService
+	GetGatewayProvider(string) (string, error)
 	GetDiceHealth() dto.DiceHealthDto
 	GenTenantGroup(projectId, env, clusterName string) (string, error)
 	GetGatewayFeatures(clusterName string) map[string]string

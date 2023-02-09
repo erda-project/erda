@@ -34,6 +34,8 @@ type DiceArgsDto struct {
 	PageSize    int64
 	SortField   string
 	SortType    string
+	Namespace   string
+	ServiceName string
 }
 
 func (impl DiceArgsDto) GenSelectOptions() []orm.SelectOption {

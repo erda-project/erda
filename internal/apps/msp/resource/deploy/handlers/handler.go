@@ -64,6 +64,13 @@ const (
 )
 
 const (
+	GatewayProviderVendorKey = "GATEWAY_PROVIDER"
+	GatewayEndpoint          = "PROVIDER_GATEWAY_ENDPOINT"
+	// Aliyun MSE Gateway
+	GatewayProviderMSE = "MSE"
+)
+
+const (
 	DeployModeSAAS = "SAAS"
 	DeployModePAAS = "PAAS"
 )

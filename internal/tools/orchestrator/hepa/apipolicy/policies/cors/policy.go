@@ -21,6 +21,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type Policy struct {
@@ -108,16 +111,31 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
+
+	value, ok := ctx[apipolicy.CTX_ZONE]
+	if !ok {
+		return res, errors.Errorf("get identify failed:%+v", ctx)
+	}
+	zone, ok := value.(*orm.GatewayZone)
+	if !ok {
+		return res, errors.Errorf("convert failed:%+v", value)
+	}
+
+	gatewayProvider, err := policy.GetGatewayProvider(zone.DiceClusterName)
+	if err != nil {
+		return res, errors.Errorf("get gateway provider failed for cluster %s:%v\n", zone.DiceClusterName, err)
+	}
+
 	if !policyDto.Switch {
 		emptyStr := ""
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
 			Annotation: map[string]*string{
-				ANNOTATION_CORS_ENABLE:      nil,
-				ANNOTATION_CORS_METHODS:     nil,
-				ANNOTATION_CORS_HEADERS:     nil,
-				ANNOTATION_CORS_ORIGIN:      nil,
-				ANNOTATION_CORS_CREDENTIALS: nil,
-				ANNOTATION_CORS_MAXAGE:      nil,
+				string(annotationscommon.AnnotationEnableCORS):           nil,
+				string(annotationscommon.AnnotationCORSAllowMethods):     nil,
+				string(annotationscommon.AnnotationCORSAllowHeaders):     nil,
+				string(annotationscommon.AnnotationCORSAllowOrigin):      nil,
+				string(annotationscommon.AnnotationCORSAllowCredentials): nil,
+				string(annotationscommon.AnnotationCORSMaxAge):           nil,
 			},
 			LocationSnippet: &emptyStr,
 		}
@@ -140,16 +158,14 @@ more_set_headers 'Access-Control-Allow-Headers: %s';
 }
 %s
 `, coreSnippet, policyDto.MaxAge, coreSnippet)
-	res.IngressAnnotation = &apipolicy.IngressAnnotation{
-		Annotation: map[string]*string{
-			ANNOTATION_CORS_ENABLE:      nil,
-			ANNOTATION_CORS_METHODS:     nil,
-			ANNOTATION_CORS_HEADERS:     nil,
-			ANNOTATION_CORS_ORIGIN:      nil,
-			ANNOTATION_CORS_CREDENTIALS: nil,
-			ANNOTATION_CORS_MAXAGE:      nil,
-		},
-		LocationSnippet: &locationSnippet,
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		res.IngressAnnotation = policy.setIngressAnnotations(gatewayProvider, policyDto, locationSnippet)
+	case "":
+		res.IngressAnnotation = policy.setIngressAnnotations(gatewayProvider, policyDto, locationSnippet)
+	default:
+		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
 	emptyStr := ""
 	// trigger httpsnippet update
@@ -159,8 +175,48 @@ more_set_headers 'Access-Control-Allow-Headers: %s';
 	return res, nil
 }
 
+func (policy Policy) setIngressAnnotations(gatewayProvider string, policyDto *PolicyDto, locationSnippet string) *apipolicy.IngressAnnotation {
+	var ret *apipolicy.IngressAnnotation
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		corsEnable := "true"
+		corsMethods := policyDto.Methods
+		corsHeaders := policyDto.Headers
+		corsOrigin := policyDto.Origin
+		corsCredentials := fmt.Sprintf("%v", policyDto.Credentials)
+		corsMaxAge := "86400"
+		if policyDto.MaxAge > 0 {
+			corsMaxAge = fmt.Sprintf("%v", policyDto.MaxAge)
+		}
+		ret = &apipolicy.IngressAnnotation{
+			Annotation: map[string]*string{
+				string(annotationscommon.AnnotationEnableCORS):           &corsEnable,
+				string(annotationscommon.AnnotationCORSAllowMethods):     &corsMethods,
+				string(annotationscommon.AnnotationCORSAllowHeaders):     &corsHeaders,
+				string(annotationscommon.AnnotationCORSAllowOrigin):      &corsOrigin,
+				string(annotationscommon.AnnotationCORSAllowCredentials): &corsCredentials,
+				string(annotationscommon.AnnotationCORSMaxAge):           &corsMaxAge,
+			},
+			LocationSnippet: &locationSnippet,
+		}
+	default:
+		ret = &apipolicy.IngressAnnotation{
+			Annotation: map[string]*string{
+				string(annotationscommon.AnnotationEnableCORS):           nil,
+				string(annotationscommon.AnnotationCORSAllowMethods):     nil,
+				string(annotationscommon.AnnotationCORSAllowHeaders):     nil,
+				string(annotationscommon.AnnotationCORSAllowOrigin):      nil,
+				string(annotationscommon.AnnotationCORSAllowCredentials): nil,
+				string(annotationscommon.AnnotationCORSMaxAge):           nil,
+			},
+			LocationSnippet: &locationSnippet,
+		}
+	}
+	return ret
+}
+
 func init() {
-	err := apipolicy.RegisterPolicyEngine("cors", &Policy{})
+	err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_CORS, &Policy{})
 	if err != nil {
 		panic(err)
 	}

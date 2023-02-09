@@ -41,6 +41,7 @@ var allowsCors = `
 type PolicyDto struct {
 	apipolicy.BaseDto
 	MaxTps         int64  `json:"maxTps,omitempty"`
+	Busrt          int64  `json:"burst,omitempty"`
 	ExtraLatency   int64  `json:"extraLatency,omitempty"`
 	RefuseCode     int64  `json:"refuseCode,omitempty"`
 	RefuseResponse string `json:"refuseResponse,omitempty"`

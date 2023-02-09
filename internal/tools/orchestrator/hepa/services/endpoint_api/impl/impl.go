@@ -27,6 +27,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
@@ -36,8 +39,10 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/i18n"
@@ -53,7 +58,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/openapi_rule"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/runtime_service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+)
+
+const (
+	K8S_SVC_CLUSTER_DOMAIN = ".svc.cluster.local"
 )
 
 type GatewayOpenapiServiceImpl struct {
@@ -217,6 +227,10 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 	case gw.AT_SIGN_AUTH:
 		authRule.Config = gw.SIGNAUTH_CONFIG
 	case gw.AT_HMAC_AUTH:
+		gatewayProvider, err := impl.GetGatewayProvider(pack.DiceClusterName)
+		if err != nil {
+			return nil, err
+		}
 		kongInfo, err := impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
 			Az:        pack.DiceClusterName,
 			ProjectId: pack.DiceProjectId,
@@ -225,8 +239,16 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 		if err != nil {
 			return nil, err
 		}
-		kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
-		enabled, err := kongAdapter.CheckPluginEnabled(gw.AT_HMAC_AUTH)
+		var gatewayAdapter gateway_providers.GatewayAdapter
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			gatewayAdapter = mse.NewMseAdapter()
+		case "":
+			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		default:
+			return nil, errors.Errorf("Unknown gatewayProvider: %v\n", gatewayProvider)
+		}
+		enabled, err := gatewayAdapter.CheckPluginEnabled(gw.AT_HMAC_AUTH)
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +312,15 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *g
 			}
 		}
 	}()
+	orgId := args.OrgId
+	if orgId == "" {
+		orgId = apis.GetOrgID(impl.reqCtx)
+	}
+	if orgId == "" {
+		orgId, _ = (*impl.globalBiz).GetOrgId(args.ProjectId)
+	}
 	az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		Env:       args.Env,
 		ProjectId: args.ProjectId,
 	})
@@ -306,6 +336,7 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *g
 		return
 	}
 	diceInfo = gw.DiceInfo{
+		OrgId:     args.OrgId,
 		ProjectId: args.ProjectId,
 		Env:       args.Env,
 		Az:        az,
@@ -316,11 +347,13 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *g
 	}
 	// create self zone
 	z, err = (*impl.zoneBiz).CreateZone(zone.ZoneConfig{
-		Name:      "package-" + dto.Name,
-		ProjectId: args.ProjectId,
-		Env:       args.Env,
-		Az:        az,
-		Type:      db.ZONE_TYPE_PACKAGE_NEW,
+		Name:        "package-" + dto.Name,
+		ProjectId:   args.ProjectId,
+		Env:         args.Env,
+		Az:          az,
+		Type:        db.ZONE_TYPE_PACKAGE_NEW,
+		ServiceName: args.ServiceName,
+		Namespace:   args.Namespace,
 	}, helper)
 	if err != nil {
 		return
@@ -331,6 +364,7 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *g
 		return
 	}
 	pack = &orm.GatewayPackage{
+		DiceOrgId:       args.OrgId,
 		DiceProjectId:   args.ProjectId,
 		DiceEnv:         args.Env,
 		DiceClusterName: az,
@@ -562,16 +596,24 @@ func (impl GatewayOpenapiServiceImpl) packageDto(dao *orm.GatewayPackage, domain
 	if dao == nil {
 		return &res
 	}
+
+	gatewayProvider, err := impl.GetGatewayProvider(dao.DiceClusterName)
+	if err != nil {
+		logrus.Errorf("get gateway provider for cluster %s failed: %v\n", dao.DiceClusterName, err)
+		return &res
+	}
+
 	res = gw.PackageInfoDto{
 		Id:       dao.Id,
 		CreateAt: dao.CreateTime.Format("2006-01-02T15:04:05"),
 		PackageDto: gw.PackageDto{
-			Name:        dao.PackageName,
-			BindDomain:  domains,
-			AuthType:    dao.AuthType,
-			AclType:     dao.AclType,
-			Description: dao.Description,
-			Scene:       dao.Scene,
+			Name:            dao.PackageName,
+			BindDomain:      domains,
+			AuthType:        dao.AuthType,
+			AclType:         dao.AclType,
+			Description:     dao.Description,
+			Scene:           dao.Scene,
+			GatewayProvider: gatewayProvider,
 		},
 	}
 	return &res
@@ -588,7 +630,16 @@ func (impl GatewayOpenapiServiceImpl) GetPackagesName(args *gw.GetPackagesDto) (
 	}
 	list = []gw.PackageInfoDto{}
 	var daos []orm.GatewayPackage
+
+	orgId := args.OrgId
+	if orgId == "" {
+		orgId = apis.GetOrgID(impl.reqCtx)
+	}
+	if orgId == "" {
+		orgId, _ = (*impl.globalBiz).GetOrgId(args.ProjectId)
+	}
 	az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		Env:       args.Env,
 		ProjectId: args.ProjectId,
 	})
@@ -617,6 +668,12 @@ func (impl GatewayOpenapiServiceImpl) GetPackagesName(args *gw.GetPackagesDto) (
 }
 
 func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPackage, hosts []string) error {
+	var gatewayAdapter gateway_providers.GatewayAdapter
+	gatewayProvider, err := impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		return err
+	}
+
 	kongInfo, err := impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
 		Az:        pack.DiceClusterName,
 		ProjectId: pack.DiceProjectId,
@@ -625,7 +682,16 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 	if err != nil {
 		return err
 	}
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		logrus.Debugf("mse gateway no need update GatewayRoute.")
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
 	apis, err := impl.packageApiDb.SelectByAny(&orm.GatewayPackageApi{
 		PackageId:    pack.Id,
 		RedirectType: gw.RT_URL,
@@ -648,7 +714,7 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 		req.RouteId = route.RouteId
 		req.Hosts = hosts
 		req.AddTag("package_api_id", api.Id)
-		resp, err := kongAdapter.UpdateRoute(req)
+		resp, err := gatewayAdapter.UpdateRoute(req)
 		if err != nil {
 			return err
 		}
@@ -721,6 +787,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 		return
 	}
 	diceInfo = gw.DiceInfo{
+		OrgId:     orgId,
 		ProjectId: dao.DiceProjectId,
 		Env:       dao.DiceEnv,
 		Az:        dao.DiceClusterName,
@@ -747,7 +814,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 					Hosts: domains,
 					Path:  "/",
 				},
-			})
+			}, nil, "")
 			if err != nil {
 				return
 			}
@@ -969,7 +1036,7 @@ func (impl *GatewayOpenapiServiceImpl) deletePackage(id string, session *db.Sess
 		return err
 	}
 	if dao.ZoneId != "" {
-		err = (*impl.zoneBiz).DeleteZone(dao.ZoneId)
+		err = (*impl.zoneBiz).DeleteZone(dao.ZoneId, "")
 		if err != nil {
 			return err
 		}
@@ -1082,7 +1149,7 @@ func (impl GatewayOpenapiServiceImpl) kongServiceDao(dto *kongDto.KongServiceRes
 	}
 }
 
-func (impl GatewayOpenapiServiceImpl) touchKongService(adapter kong.KongAdapter, dto *gw.OpenapiDto, apiId string,
+func (impl GatewayOpenapiServiceImpl) touchKongService(adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiDto, apiId string,
 	helper ...*db.SessionHelper) (string, error) {
 	var serviceSession db.GatewayServiceService
 	var err error
@@ -1127,7 +1194,7 @@ func (impl GatewayOpenapiServiceImpl) touchKongService(adapter kong.KongAdapter,
 	return resp.Id, nil
 }
 
-func (impl GatewayOpenapiServiceImpl) deleteKongService(adapter kong.KongAdapter, apiId string) error {
+func (impl GatewayOpenapiServiceImpl) deleteKongService(adapter gateway_providers.GatewayAdapter, apiId string) error {
 	service, err := impl.serviceDb.GetByApiId(apiId)
 	if err != nil {
 		return err
@@ -1183,7 +1250,7 @@ func (impl GatewayOpenapiServiceImpl) kongRouteDao(dto *kongDto.KongRouteRespDto
 	}
 }
 
-func (impl GatewayOpenapiServiceImpl) touchKongRoute(adapter kong.KongAdapter, dto *gw.OpenapiDto, apiId string,
+func (impl GatewayOpenapiServiceImpl) touchKongRoute(adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiDto, apiId string,
 	helper ...*db.SessionHelper) (string, error) {
 	var routeSession db.GatewayRouteService
 	var err error
@@ -1229,7 +1296,7 @@ func (impl GatewayOpenapiServiceImpl) touchKongRoute(adapter kong.KongAdapter, d
 	return resp.Id, nil
 }
 
-func (impl GatewayOpenapiServiceImpl) deleteKongRoute(adapter kong.KongAdapter, apiId string) error {
+func (impl GatewayOpenapiServiceImpl) deleteKongRoute(adapter gateway_providers.GatewayAdapter, apiId string) error {
 	route, err := impl.routeDb.GetByApiId(apiId)
 	if err != nil {
 		return err
@@ -1248,7 +1315,7 @@ func (impl GatewayOpenapiServiceImpl) deleteKongRoute(adapter kong.KongAdapter, 
 	return nil
 }
 
-func (impl GatewayOpenapiServiceImpl) DeleteKongApi(adapter kong.KongAdapter, apiId string) error {
+func (impl GatewayOpenapiServiceImpl) DeleteKongApi(adapter gateway_providers.GatewayAdapter, apiId string) error {
 	err := impl.deleteKongRoute(adapter, apiId)
 	if err != nil {
 		return err
@@ -1260,7 +1327,19 @@ func (impl GatewayOpenapiServiceImpl) DeleteKongApi(adapter kong.KongAdapter, ap
 	return nil
 }
 
-func (impl GatewayOpenapiServiceImpl) createOrUpdatePlugins(adapter kong.KongAdapter, dto *gw.OpenapiDto) error {
+func (impl GatewayOpenapiServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
+}
+
+func (impl GatewayOpenapiServiceImpl) createOrUpdatePlugins(adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiDto) error {
 	if dto.ServiceRewritePath != "" {
 		reqDto := &kongDto.KongPluginReqDto{
 			Name: "path-variable",
@@ -1298,7 +1377,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	exist := false
 	var pack *orm.GatewayPackage
 	var kongInfo *orm.GatewayKongInfo
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var dao *orm.GatewayPackageApi
 	var unique bool
 	var serviceId, routeId string
@@ -1308,6 +1387,9 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	var zoneId string
 	var domains []string
 	var audit *apistructs.Audit
+	var ingressNamespace string
+	gatewayProvider := ""
+
 	needUpdateDomainPolicy := false
 	method := dto.Method
 	if valid, msg := dto.CheckValid(); !valid {
@@ -1327,6 +1409,11 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	}
 	if method == "" {
 		method = "all"
+	}
+	gatewayProvider, err = impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		logrus.Errorf("get cluster zaInfo failed: %v", err)
+		goto failed
 	}
 	audit = common.MakeAuditInfo(impl.reqCtx, common.ScopeInfo{
 		ProjectId: pack.DiceProjectId,
@@ -1396,22 +1483,30 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 		if err != nil {
 			goto failed
 		}
-		kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
-		serviceId, err = impl.touchKongService(kongAdapter, dto, dao.Id, session)
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			gatewayAdapter = mse.NewMseAdapter()
+		case "":
+			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		default:
+			logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+			goto failed
+		}
+		serviceId, err = impl.touchKongService(gatewayAdapter, dto, dao.Id, session)
 		if err != nil {
 			goto failed
 		}
 		dto.ServiceId = serviceId
-		routeId, err = impl.touchKongRoute(kongAdapter, dto, dao.Id, session)
+		routeId, err = impl.touchKongRoute(gatewayAdapter, dto, dao.Id, session)
 		if err != nil {
 			goto failed
 		}
 		dto.RouteId = routeId
-		err = impl.createOrUpdatePlugins(kongAdapter, dto)
+		err = impl.createOrUpdatePlugins(gatewayAdapter, dto)
 		if err != nil {
 			goto failed
 		}
-	} else if dto.RedirectType == gw.RT_SERVICE {
+	} else {
 		var runtimeSession db.GatewayRuntimeServiceService
 		runtimeSession, err = impl.runtimeDb.NewSession(session)
 		if err != nil {
@@ -1434,6 +1529,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 			err = errors.New("find runtime service failed")
 			goto failed
 		}
+		ingressNamespace = runtimeService.ProjectNamespace
 		dao.RuntimeServiceId = runtimeService.Id
 		err = apiSession.Insert(dao)
 		if err != nil {
@@ -1446,10 +1542,6 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	}
 	if dao.ZoneId == "" {
 		dao.ZoneId = zoneId
-		err = apiSession.Update(dao)
-		if err != nil {
-			goto failed
-		}
 	}
 	err = apiSession.Update(dao)
 	if err != nil {
@@ -1458,6 +1550,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	if dto.AllowPassAuth {
 		var authRule, aclRule *gw.OpenapiRule
 		diceInfo := gw.DiceInfo{
+			OrgId:     pack.DiceOrgId,
 			ProjectId: pack.DiceProjectId,
 			Env:       pack.DiceEnv,
 			Az:        pack.DiceClusterName,
@@ -1489,13 +1582,13 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	return false, dao.Id, audit, nil
 failed:
 	if serviceId != "" {
-		_ = kongAdapter.DeleteService(serviceId)
+		_ = gatewayAdapter.DeleteService(serviceId)
 	}
 	if routeId != "" {
-		_ = kongAdapter.DeleteRoute(routeId)
+		_ = gatewayAdapter.DeleteRoute(routeId)
 	}
 	if zoneId != "" {
-		zerr := (*impl.zoneBiz).DeleteZoneRoute(zoneId, session)
+		zerr := (*impl.zoneBiz).DeleteZoneRoute(zoneId, ingressNamespace, session)
 		if zerr != nil {
 			logrus.Errorf("delete zone route failed, err:%+v", zerr)
 		}
@@ -1503,20 +1596,87 @@ failed:
 	return exist, "", audit, err
 }
 
+func (impl GatewayOpenapiServiceImpl) touchServiceForExternalService(info endpoint_api.PackageApiInfo, z orm.GatewayZone) (*corev1.Service, error) {
+	hostAndPathStr := strings.Split(info.RedirectAddr, "://")[1]
+	hostAndPortStr := strings.Split(hostAndPathStr, "/")[0]
+	protolHosts := strings.Split(hostAndPortStr, ":")
+	HttpPort := 80
+	externalName := protolHosts[0]
+	if len(protolHosts) > 1 {
+		HttpPort, _ = strconv.Atoi(protolHosts[1])
+	}
+
+	servicePorts := make([]corev1.ServicePort, 0)
+	servicePorts = append(servicePorts, corev1.ServicePort{
+		Name:       "target",
+		Protocol:   corev1.ProtocolTCP,
+		Port:       int32(HttpPort),
+		TargetPort: intstr.FromInt(HttpPort),
+	})
+
+	service := &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      strings.ToLower(z.Name),
+			Namespace: "project-" + info.ProjectId + "-" + strings.ToLower(info.Env),
+			Labels: map[string]string{
+				"packageId":                info.PackageId,
+				"erda.gateway.projectId":   info.ProjectId,
+				"erda.gateway.appName":     info.DiceApp,
+				"erda.gateway.serviceName": info.DiceService,
+				"erda.gateway.workspace":   info.Env,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			ExternalName: externalName,
+			Type:         corev1.ServiceTypeExternalName,
+			Ports:        servicePorts,
+		},
+	}
+
+	return service, nil
+}
+
 func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.PackageApiInfo, session ...*db.SessionHelper) (string, error) {
 	var runtimeSession db.GatewayRuntimeServiceService
+	var kongSession db.GatewayKongInfoService
+	var externalSvc *corev1.Service
+	var k8sAdapter k8s.K8SAdapter
 	var err error
 	if len(session) > 0 {
 		runtimeSession, err = impl.runtimeDb.NewSession(session[0])
 		if err != nil {
 			return "", err
 		}
+		kongSession, err = impl.kongDb.NewSession(session[0])
+		if err != nil {
+			return "", err
+		}
 	} else {
 		runtimeSession = impl.runtimeDb
+		kongSession = impl.kongDb
 	}
-	az, err := impl.azDb.GetAzInfoByClusterName(info.Az)
+
+	kongInfo, err := kongSession.GetKongInfo(&orm.GatewayKongInfo{
+		Az:        info.Az,
+		ProjectId: info.ProjectId,
+		Env:       info.Env,
+	})
 	if err != nil {
 		return "", err
+	}
+
+	useKong := true
+	az, azInfo, err := impl.azDb.GetAzInfoByClusterName(info.Az)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		useKong = false
 	}
 	// set route config
 	routeConfig := zone.RouteConfig{
@@ -1524,8 +1684,9 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 		Path:  info.ApiPath,
 	}
 	routeConfig.InjectRuntimeDomain = info.InjectRuntimeDomain
+	var runtimeService *orm.GatewayRuntimeService
 	if info.RedirectType == gw.RT_SERVICE {
-		runtimeService, err := runtimeSession.Get(info.RuntimeServiceId)
+		runtimeService, err = runtimeSession.Get(info.RuntimeServiceId)
 		if err != nil {
 			return "", err
 		}
@@ -1545,9 +1706,12 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 		}
 		routeConfig.UseRegex = true
 		routeConfig.RewriteHost = &innerHost
-		rewritePath, err := (*impl.globalBiz).GetRuntimeServicePrefix(runtimeService)
-		if err != nil {
-			return "", err
+		rewritePath := "/"
+		if useKong {
+			rewritePath, err = (*impl.globalBiz).GetRuntimeServicePrefix(runtimeService)
+			if err != nil {
+				return "", err
+			}
 		}
 		// avoid dup slash in redirect path
 		if strings.HasSuffix(info.RedirectPath, "/") {
@@ -1564,13 +1728,41 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 			rewritePath += info.RedirectPath + "$1"
 		}
 		routeConfig.RewritePath = &rewritePath
+
+		runtimeServiceProjectName := kongInfo.ProjectName
+		runtimeServiceProjectId := runtimeService.ProjectId
+		runtimeServiceClusterName := runtimeService.ClusterName
+		runtimeServiceRuntimeId := runtimeService.RuntimeId
+		runtimeServiceServiceName := runtimeService.ServiceName
+		runtimeServiceAppName := runtimeService.AppName
+		routeConfig.Annotations = map[string]*string{
+			k8s.Erda_Runtime_Project_Id:  &runtimeServiceProjectId,
+			k8s.Erda_Runtime_ProjectName: &runtimeServiceProjectName,
+			k8s.Erda_Runtime_ClusterName: &runtimeServiceClusterName,
+			k8s.Erda_Runtime_Runtime_Id:  &runtimeServiceRuntimeId,
+			k8s.Erda_Runtime_ServiceName: &runtimeServiceServiceName,
+			k8s.Erda_Runtime_AppName:     &runtimeServiceAppName,
+		}
 	} else {
-		routeConfig.BackendProtocol = &[]k8s.BackendProtocl{k8s.HTTPS}[0]
-		routeConfig.UseRegex = true
-		routeConfig.Path += ".*"
 		routeConfig.Annotations = map[string]*string{}
-		routeConfig.Annotations[k8s.REWRITE_HOST_KEY] = nil
-		routeConfig.Annotations[k8s.REWRITE_PATH_KEY] = nil
+		if useKong {
+			routeConfig.BackendProtocol = &[]k8s.BackendProtocl{k8s.HTTPS}[0]
+			routeConfig.UseRegex = true
+			routeConfig.Path += ".*"
+			routeConfig.Annotations = map[string]*string{}
+			routeConfig.Annotations[k8s.REWRITE_HOST_KEY] = nil
+			routeConfig.Annotations[k8s.REWRITE_PATH_KEY] = nil
+		} else {
+			rewriteHost := info.RedirectAddr
+			if len(strings.Split(info.RedirectAddr, "://")) == 2 {
+				rewriteHost = strings.Split(info.RedirectAddr, "://")[1]
+			}
+			rewriteHost = strings.Split(rewriteHost, "/")[0]
+			rewriteHost = strings.Split(rewriteHost, ":")[0]
+			routeConfig.Annotations[k8s.REWRITE_HOST_KEY] = &rewriteHost
+			rewritePath := info.RedirectPath
+			routeConfig.Annotations[k8s.REWRITE_PATH_KEY] = &rewritePath
+		}
 	}
 	if info.ZoneId == "" {
 		//create zone
@@ -1585,32 +1777,90 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 		if err != nil {
 			return "", err
 		}
-		transSucc := false
-		annotations, locationSnippet, retSession, err := (*impl.policyBiz).SetZoneDefaultPolicyConfig(info.PackageId, z, az, session...)
-		if len(session) == 0 {
-			defer func() {
-				if transSucc {
-					_ = retSession.Commit()
-				} else {
-					_ = retSession.Rollback()
+
+		// mse for RedirectType == gw.RT_URL need create External Service
+		if !useKong && info.RedirectType == gw.RT_URL {
+			k8sAdapter, err = k8s.NewAdapter(info.Az)
+			if err != nil {
+				return "", err
+			}
+			svc, err := impl.touchServiceForExternalService(info, *z)
+			if err != nil {
+				return "", err
+			}
+
+			// 转发地址为内部地址，相当于此做一个内部 Service 的 Spec 拷贝
+			if strings.Contains(svc.Spec.ExternalName, K8S_SVC_CLUSTER_DOMAIN) {
+				svcNameAndNamespace := strings.Split(strings.TrimSuffix(svc.Spec.ExternalName, K8S_SVC_CLUSTER_DOMAIN), ".")
+				if len(svcNameAndNamespace) <= 1 {
+					return "", errors.Errorf("get svc name and namespace from inner addr %s failed\n", svc.Spec.ExternalName)
 				}
-				retSession.Close()
-			}()
+				svcNamespace := svcNameAndNamespace[1]
+				svcName := svcNameAndNamespace[0]
+				innerSvc, err := k8sAdapter.GetServiceByName(svcNamespace, svcName)
+				if err != nil {
+					logrus.Errorf("GetServiceByName failed:%v\n", err)
+					return "", err
+				}
+				svc.Spec.ExternalName = ""
+				svc.Spec.Ports = innerSvc.Spec.Ports
+				svc.Spec.Type = innerSvc.Spec.Type
+				svc.Spec.Selector = innerSvc.Spec.Selector
+				svc.Spec.SessionAffinity = innerSvc.Spec.SessionAffinity
+			}
+
+			externalSvc, err = k8sAdapter.CreateOrUpdateService(svc)
+			if err != nil {
+				return "", err
+			}
 		}
-		if err != nil {
-			return "", err
+		transSucc := false
+		if info.PackageId != "" {
+			// 表示不是从 SDK 注册的 api
+			annotations, locationSnippet, retSession, err := (*impl.policyBiz).SetZoneDefaultPolicyConfig(info.PackageId, runtimeService, z, az, session...)
+			if len(session) == 0 {
+				defer func() {
+					if transSucc {
+						_ = retSession.Commit()
+					} else {
+						_ = retSession.Rollback()
+					}
+					retSession.Close()
+				}()
+			}
+			if err != nil {
+				if externalSvc != nil {
+					if delSvcErr := k8sAdapter.DeleteService(externalSvc.Namespace, externalSvc.Name); delSvcErr != nil {
+						logrus.Warnf("delete external service %s/%s failed: %v", externalSvc.Namespace, externalSvc.Name, delSvcErr)
+					}
+				}
+				return "", err
+			}
+
+			if routeConfig.Annotations == nil {
+				routeConfig.Annotations = make(map[string]*string)
+			}
+			for k, v := range annotations {
+				routeConfig.Annotations[k] = v
+			}
+			routeConfig.LocationSnippet = locationSnippet
 		}
-		routeConfig.Annotations = annotations
-		routeConfig.LocationSnippet = locationSnippet
-		_, err = (*impl.zoneBiz).UpdateZoneRoute(z.Id, zone.ZoneRoute{routeConfig}, session...)
+
+		_, err = (*impl.zoneBiz).UpdateZoneRoute(z.Id, zone.ZoneRoute{routeConfig}, runtimeService, info.RedirectType, session...)
 		if err != nil {
+			if externalSvc != nil {
+				if delSvcErr := k8sAdapter.DeleteService(externalSvc.Namespace, externalSvc.Name); delSvcErr != nil {
+					logrus.Warnf("delete external service %s/%s failed: %v", externalSvc.Namespace, externalSvc.Name, delSvcErr)
+				}
+			}
 			return "", err
 		}
 		transSucc = true
 		return z.Id, nil
 	}
+
 	//update zone route
-	exist, err := (*impl.zoneBiz).UpdateZoneRoute(info.ZoneId, zone.ZoneRoute{routeConfig})
+	exist, err := (*impl.zoneBiz).UpdateZoneRoute(info.ZoneId, zone.ZoneRoute{routeConfig}, runtimeService, info.RedirectType)
 	if err != nil {
 		return "", err
 	}
@@ -1619,7 +1869,7 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 		if err != nil {
 			return "", err
 		}
-		err = (*impl.policyBiz).RefreshZoneIngress(*z, *az)
+		err = (*impl.policyBiz).RefreshZoneIngress(*z, *az, runtimeService.ProjectNamespace, useKong)
 		if err != nil {
 			return "", err
 		}
@@ -1744,6 +1994,7 @@ func (impl GatewayOpenapiServiceImpl) deleteApiPassAuthRules(apiId string) error
 func (impl GatewayOpenapiServiceImpl) createApiPassAuthRules(pack *orm.GatewayPackage, apiId string) error {
 	var authRule, aclRule *gw.OpenapiRule
 	diceInfo := gw.DiceInfo{
+		OrgId:     pack.DiceOrgId,
 		ProjectId: pack.DiceProjectId,
 		Env:       pack.DiceEnv,
 		Az:        pack.DiceClusterName,
@@ -1783,6 +2034,20 @@ func (impl GatewayOpenapiServiceImpl) GetPackageApis(ctx context.Context, id str
 	var list []gw.OpenapiInfoDto
 	var daos []orm.GatewayPackageApi
 	var ok bool
+	pack, err := impl.packageDb.Get(id)
+	if err != nil {
+		return
+	}
+	if pack == nil {
+		err = errors.Errorf("GatewayPackage not found with id %s\n", id)
+		return
+	}
+
+	gatewayProvider, err := impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		logrus.Errorf("get gateway provider for cluster %s failed: %v\n", pack.DiceClusterName, err)
+		return
+	}
 	page, err := impl.packageApiDb.GetPage(options, (*common.Page)(pageInfo))
 	if err != nil {
 		return
@@ -1794,6 +2059,7 @@ func (impl GatewayOpenapiServiceImpl) GetPackageApis(ctx context.Context, id str
 	}
 	for _, dao := range daos {
 		dto := impl.openapiDto(&dao)
+		dto.GatewayProvider = gatewayProvider
 		list = append(list, *dto)
 	}
 	result = common.NewPages(list, pageInfo.TotalNum)
@@ -1808,12 +2074,13 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 	var dao, updateDao *orm.GatewayPackageApi
 	var pack *orm.GatewayPackage
 	var kongInfo *orm.GatewayKongInfo
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var unique bool
 	var serviceId, routeId string
 	var domains []string
 	needUpdateDomainPolicy := false
 	auditCtx := map[string]interface{}{}
+	gatewayProvider := ""
 	defer func() {
 		if err != nil {
 			logrus.Errorf("error happened, err:%+v", err)
@@ -1853,6 +2120,18 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 		return
 	}
 	dto.Hosts = domains
+	pack, err = impl.packageDb.Get(packageId)
+	if err != nil {
+		return
+	}
+	if pack == nil {
+		err = errors.New("can't find endpoint")
+		return
+	}
+	gatewayProvider, err = impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		return
+	}
 	err = dto.Adjust()
 	if err != nil {
 		return
@@ -1865,14 +2144,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 		err = errors.New("api not exist")
 		return
 	}
-	pack, err = impl.packageDb.Get(packageId)
-	if err != nil {
-		return
-	}
-	if pack == nil {
-		err = errors.New("can't find endpoint")
-		return
-	}
+
 	auditCtx["endpoint"] = pack.PackageName
 	if pack.Scene == orm.UnityScene || pack.Scene == orm.HubScene {
 		var defaultPath string
@@ -1892,7 +2164,16 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 	if err != nil {
 		return
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return
+	}
 	updateDao = impl.packageApiDao(dto)
 	updateDao.ZoneId = dao.ZoneId
 	//mutable check
@@ -1927,12 +2208,12 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 			updateDao.DiceApp = ""
 			updateDao.DiceService = ""
 			if dto.RedirectAddr != dao.RedirectAddr || dto.ApiPath != dao.ApiPath || dto.Method != dao.Method {
-				serviceId, err = impl.touchKongService(kongAdapter, dto, apiId)
+				serviceId, err = impl.touchKongService(gatewayAdapter, dto, apiId)
 				if err != nil {
 					return
 				}
 				dto.ServiceId = serviceId
-				routeId, err = impl.touchKongRoute(kongAdapter, dto, apiId)
+				routeId, err = impl.touchKongRoute(gatewayAdapter, dto, apiId)
 				if err != nil {
 					return
 				}
@@ -1949,14 +2230,14 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 				}
 				dto.RouteId = route.RouteId
 			}
-			err = impl.createOrUpdatePlugins(kongAdapter, dto)
+			err = impl.createOrUpdatePlugins(gatewayAdapter, dto)
 			if err != nil {
 				return
 			}
 		} else if updateDao.RedirectType == gw.RT_SERVICE {
 			var runtimeService *orm.GatewayRuntimeService
 			if dao.RedirectType == gw.RT_URL {
-				err = impl.DeleteKongApi(kongAdapter, apiId)
+				err = impl.DeleteKongApi(gatewayAdapter, apiId)
 				if err != nil {
 					return
 				}
@@ -2031,7 +2312,8 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 	var pack *orm.GatewayPackage
 	var dao *orm.GatewayPackageApi
 	var kongInfo *orm.GatewayKongInfo
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
+	var ingressNamespace string
 	auditCtx := map[string]interface{}{}
 	defer func() {
 		if err != nil {
@@ -2066,10 +2348,24 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		result = true
 		return
 	}
+	if dao.RuntimeServiceId != "" {
+		runtimeService, err := impl.runtimeDb.Get(dao.RuntimeServiceId)
+		if err != nil {
+			return result, err
+		}
+		ingressNamespace = runtimeService.ProjectNamespace
+	}
 	pack, err = impl.packageDb.Get(packageId)
 	if err != nil {
 		return
 	}
+
+	gatewayProvider := ""
+	gatewayProvider, err = impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		return
+	}
+
 	kongInfo, err = impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
 		Az:        pack.DiceClusterName,
 		ProjectId: pack.DiceProjectId,
@@ -2078,7 +2374,17 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 	if err != nil {
 		return
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return
+	}
 	err = (*impl.ruleBiz).DeleteByPackageApi(pack, dao)
 	if err != nil {
 		return
@@ -2121,13 +2427,17 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		}
 
 	} else if dao.Origin == string(gw.FROM_CUSTOM) || dao.Origin == string(gw.FROM_DICEYML) {
-		err = impl.DeleteKongApi(kongAdapter, apiId)
+		err = impl.DeleteKongApi(gatewayAdapter, apiId)
 		if err != nil {
 			return
 		}
 	}
 	if dao.ZoneId != "" {
-		err = (*impl.zoneBiz).DeleteZone(dao.ZoneId)
+		if gatewayProvider == mse.Mse_Provider_Name {
+			impl.deleteMSEApi(dao, pack, ingressNamespace)
+		}
+
+		err = (*impl.zoneBiz).DeleteZone(dao.ZoneId, ingressNamespace)
 		if err != nil {
 			return
 		}
@@ -2140,7 +2450,45 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 	return
 }
 
+func (impl GatewayOpenapiServiceImpl) deleteMSEApi(dao *orm.GatewayPackageApi, pack *orm.GatewayPackage, ingressNamespace string) error {
+	apiRedirectType := gw.RT_SERVICE
+	var packageApi *orm.GatewayPackageApi
+	packageApi, err := impl.packageApiDb.GetByAny(&orm.GatewayPackageApi{
+		ZoneId: dao.ZoneId,
+	})
+	if err != nil {
+		return err
+	}
+	if packageApi != nil {
+		apiRedirectType = packageApi.RedirectType
+	}
+
+	if apiRedirectType == gw.RT_URL {
+		// use mse for url redirect, need delete external Service
+		if ingressNamespace == "" {
+			ingressNamespace = "project-" + pack.DiceProjectId + "-" + strings.ToLower(pack.DiceEnv)
+		}
+
+		var zone *orm.GatewayZone
+		zone, err = (*impl.zoneBiz).GetZone(dao.ZoneId)
+		if err != nil {
+			return err
+		}
+		var k8sAdapter k8s.K8SAdapter
+		k8sAdapter, err = k8s.NewAdapter(pack.DiceClusterName)
+		if err != nil {
+			return err
+		}
+		err = k8sAdapter.DeleteService(ingressNamespace, strings.ToLower(zone.Name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (impl GatewayOpenapiServiceImpl) TouchRuntimePackageMeta(endpoint *orm.GatewayRuntimeService, session *db.SessionHelper) (string, bool, error) {
+	var namespace, svcName string
 	packSession, err := impl.packageDb.NewSession(session)
 	if err != nil {
 		return "", false, err
@@ -2155,17 +2503,25 @@ func (impl GatewayOpenapiServiceImpl) TouchRuntimePackageMeta(endpoint *orm.Gate
 		return dao.Id, false, nil
 	}
 	name := endpoint.AppName + "/" + endpoint.ServiceName + "/" + endpoint.RuntimeName
+	namespace = endpoint.ProjectNamespace
+	svcName = endpoint.ServiceName + "-" + endpoint.GroupName
+
 	z, err := (*impl.zoneBiz).CreateZone(zone.ZoneConfig{
-		Name:      regexp.MustCompile(`([^0-9a-zA-z]+|_+|\\+)`).ReplaceAllString("package-"+name, "-"),
-		ProjectId: endpoint.ProjectId,
-		Env:       endpoint.Workspace,
-		Az:        endpoint.ClusterName,
-		Type:      db.ZONE_TYPE_PACKAGE_NEW,
+		Name:        regexp.MustCompile(`([^0-9a-zA-z]+|_+|\\+)`).ReplaceAllString("package-"+name, "-"),
+		ProjectId:   endpoint.ProjectId,
+		Env:         endpoint.Workspace,
+		Az:          endpoint.ClusterName,
+		Type:        db.ZONE_TYPE_PACKAGE_NEW,
+		Namespace:   namespace,
+		ServiceName: svcName,
 	}, session)
 	if err != nil {
 		return "", false, err
 	}
+
+	orgId, _ := (*impl.globalBiz).GetOrgId(endpoint.ProjectId)
 	pack := &orm.GatewayPackage{
+		DiceOrgId:        orgId,
 		DiceProjectId:    endpoint.ProjectId,
 		DiceEnv:          endpoint.Workspace,
 		DiceClusterName:  endpoint.ClusterName,
@@ -2321,7 +2677,7 @@ func (impl GatewayOpenapiServiceImpl) CreateUnityPackageZone(packageId string, s
 	return z, nil
 }
 
-func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, session *db.SessionHelper) error {
+func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, gatewayProvider string, session *db.SessionHelper) error {
 	kongSession, err := impl.kongDb.NewSession(session)
 	if err != nil {
 		return err
@@ -2355,24 +2711,37 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 	}
 	route.RewriteHost = &rewriteHost
 	route.UseRegex = true
-	z, err := (*impl.zoneBiz).CreateZone(zone.ZoneConfig{
+
+	zoneConf := zone.ZoneConfig{
 		ZoneRoute: &zone.ZoneRoute{Route: route},
 		Name:      "unity",
 		ProjectId: kongInfo.ProjectId,
 		Env:       kongInfo.Env,
 		Az:        kongInfo.Az,
 		Type:      db.ZONE_TYPE_UNITY,
-	}, session)
+	}
+	// 兼容 MSE 等网关，类似于做信息传递，后续处理逻辑中会恢复为  db.ZONE_TYPE_UNITY
+	if gatewayProvider != "" {
+		zoneConf.Type = db.ZONE_TYPE_UNITY_Provider
+	}
+
+	z, err := (*impl.zoneBiz).CreateZone(zoneConf, session)
 	if err != nil {
 		return err
 	}
+
 	var orgId string
 	var pack *orm.GatewayPackage
 	packageSession, err := impl.packageDb.NewSession(session)
 	if err != nil {
 		goto clear_route
 	}
+	orgId, err = (*impl.globalBiz).GetOrgId(kongInfo.ProjectId)
+	if err != nil {
+		goto clear_route
+	}
 	pack = &orm.GatewayPackage{
+		DiceOrgId:       orgId,
 		DiceProjectId:   kongInfo.ProjectId,
 		DiceEnv:         kongInfo.Env,
 		DiceClusterName: kongInfo.Az,
@@ -2384,54 +2753,69 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 	if err != nil {
 		goto clear_route
 	}
-	orgId, err = (*impl.globalBiz).GetOrgId(pack.DiceProjectId)
-	if err != nil {
-		goto clear_route
-	}
+
 	_, err = (*impl.domainBiz).TouchPackageDomain(orgId, pack.Id, kongInfo.Az, []string{outerHost}, session)
 	if err != nil {
 		goto clear_route
 	}
-	_, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, "built-in", nil, session)
-	if err != nil {
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		logrus.Warnf("Mse gateway provider not support build-in plugin in kong")
+	case "":
+		_, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, nil, apipolicy.Policy_Engine_Built_in, nil, session)
+		if err != nil {
+			goto clear_route
+		}
+	default:
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 		goto clear_route
 	}
 	{
-		var policyEngine apipolicy.PolicyEngine
-		var corsConfig apipolicy.PolicyDto
-		var configByte []byte
-		var azInfo *orm.GatewayAzInfo
-		azInfo, err = impl.azDb.GetAzInfoByClusterName(kongInfo.Az)
-		if err != nil {
-			goto clear_route
-		}
-		if azInfo == nil {
-			err = errors.New("az not found")
-			goto clear_route
-		}
-		policyEngine, err = apipolicy.GetPolicyEngine("cors")
-		if err != nil {
-			goto clear_route
-		}
-		corsConfig = policyEngine.CreateDefaultConfig(nil)
-		corsConfig.SetEnable(true)
-		configByte, err = json.Marshal(corsConfig)
-		if err != nil {
-			err = errors.WithStack(err)
-			goto clear_route
-		}
 		//TODO
 		_ = session.Commit()
-		_, err = (*impl.policyBiz).SetPackageDefaultPolicyConfig("cors", pack.Id, azInfo, configByte)
-		if err != nil {
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			logrus.Warnf("Mse gateway provider not support cors plugin in kong")
+		case "":
+			var policyEngine apipolicy.PolicyEngine
+			var corsConfig apipolicy.PolicyDto
+			var configByte []byte
+			var azInfo *orm.GatewayAzInfo
+			azInfo, _, err = impl.azDb.GetAzInfoByClusterName(kongInfo.Az)
+			if err != nil {
+				goto clear_route
+			}
+			if azInfo == nil {
+				err = errors.New("az not found")
+				goto clear_route
+			}
+			policyEngine, err = apipolicy.GetPolicyEngine(apipolicy.Policy_Engine_CORS)
+			if err != nil {
+				goto clear_route
+			}
+			corsConfig = policyEngine.CreateDefaultConfig(nil)
+			corsConfig.SetEnable(true)
+			configByte, err = json.Marshal(corsConfig)
+			if err != nil {
+				err = errors.WithStack(err)
+				goto clear_route
+			}
+			_, err = (*impl.policyBiz).SetPackageDefaultPolicyConfig(apipolicy.Policy_Engine_CORS, pack.Id, azInfo, configByte)
+			if err != nil {
+				goto clear_route
+			}
+		default:
+			err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 			goto clear_route
 		}
 	}
 	return nil
 clear_route:
-	delErr := (*impl.zoneBiz).DeleteZoneRoute(z.Id, session)
-	if delErr != nil {
-		logrus.Errorf("delete zone failed, err:%+v", delErr)
+	if gatewayProvider == "" {
+		delErr := (*impl.zoneBiz).DeleteZoneRoute(z.Id, "", session)
+		if delErr != nil {
+			logrus.Errorf("delete zone failed, err:%+v", delErr)
+		}
 	}
 	return err
 }
@@ -2497,6 +2881,7 @@ func (impl GatewayOpenapiServiceImpl) createTenantHubPackages(ctx context.Contex
 
 func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Context, hubInfo *orm.GatewayHubInfo, orgID, projectId, env,
 	clusterName string, session *db.SessionHelper) (*orm.GatewayPackage, error) {
+	var gatewayProvider string
 	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry().WithFields(map[string]interface{}{
 		"orgID":       orgID,
@@ -2584,12 +2969,26 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		goto clear_route
 	}
 
+	gatewayProvider, err = impl.GetGatewayProvider(clusterName)
+	if err != nil {
+		l.WithError(err).Errorf("get gateway provider failed for cluster %s: %v\n", clusterName, err)
+		goto clear_route
+	}
 	if _, err = (*impl.domainBiz).TouchPackageDomain(orgID, pkg.Id, clusterName, route.Hosts, session); err != nil {
 		l.WithError(err).Errorln("failed to TouchPackageDomain")
 		goto clear_route
 	}
-	if _, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, "built-in", nil, session); err != nil {
-		l.WithError(err).Errorln("failed to SetZonePolicyConfig")
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		logrus.Warnf("mse gateway provider not support kong built-in policy yet\n")
+	case "":
+		if _, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, nil, apipolicy.Policy_Engine_Built_in, nil, session); err != nil {
+			l.WithError(err).Errorln("failed to SetZonePolicyConfig")
+			goto clear_route
+		}
+	default:
+		logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 		goto clear_route
 	}
 
@@ -2598,7 +2997,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		var corsConfig apipolicy.PolicyDto
 		var configByte []byte
 		var azInfo *orm.GatewayAzInfo
-		azInfo, err = impl.azDb.GetAzInfoByClusterName(clusterName)
+		azInfo, _, err = impl.azDb.GetAzInfoByClusterName(clusterName)
 		if err != nil {
 			goto clear_route
 		}
@@ -2606,7 +3005,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 			err = errors.New("az not found")
 			goto clear_route
 		}
-		policyEngine, err = apipolicy.GetPolicyEngine("cors")
+		policyEngine, err = apipolicy.GetPolicyEngine(apipolicy.Policy_Engine_CORS)
 		if err != nil {
 			goto clear_route
 		}
@@ -2619,8 +3018,17 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		}
 		//TODO
 		_ = session.Commit()
-		_, err = (*impl.policyBiz).SetPackageDefaultPolicyConfig("cors", pkg.Id, azInfo, configByte)
-		if err != nil {
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			logrus.Warnf("mse gateway provider not support kong cors policy yet\n")
+		case "":
+			_, err = (*impl.policyBiz).SetPackageDefaultPolicyConfig(apipolicy.Policy_Engine_CORS, pkg.Id, azInfo, configByte)
+			if err != nil {
+				goto clear_route
+			}
+		default:
+			logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+			err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 			goto clear_route
 		}
 	}
@@ -2628,7 +3036,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 	return pkg, nil
 
 clear_route:
-	if delErr := (*impl.zoneBiz).DeleteZoneRoute(z.Id, session); delErr != nil {
+	if delErr := (*impl.zoneBiz).DeleteZoneRoute(z.Id, "", session); delErr != nil {
 		l.WithError(err).Errorln("failed to delete zone")
 	}
 	return nil, err
@@ -2674,7 +3082,7 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageRootApi(packageId string, reqD
 
 func (impl GatewayOpenapiServiceImpl) endpointPadding(endpoint *diceyml.Endpoint, service *orm.GatewayRuntimeService) error {
 	if strings.HasSuffix(endpoint.Domain, ".*") {
-		azInfo, err := impl.azDb.GetAzInfoByClusterName(service.ClusterName)
+		azInfo, _, err := impl.azDb.GetAzInfoByClusterName(service.ClusterName)
 		if err != nil {
 			return err
 		}
@@ -2715,9 +3123,20 @@ func (impl GatewayOpenapiServiceImpl) getPackageIdByDomain(domain, projectId, wo
 
 func (impl GatewayOpenapiServiceImpl) createRuntimeEndpointPackage(ctx context.Context, domain string, service *orm.GatewayRuntimeService) (id string, err error) {
 	packageName := domain
+	namespace := service.ProjectNamespace
+	svcName := service.ServiceName + "-" + service.GroupName
+	orgId := ""
+	orgId = apis.GetOrgID(ctx)
+	if orgId == "" {
+		orgId, _ = (*impl.globalBiz).GetOrgId(service.ProjectId)
+	}
+
 	dto, _, err := impl.CreatePackage(ctx, &gw.DiceArgsDto{
-		ProjectId: service.ProjectId,
-		Env:       service.Workspace,
+		OrgId:       orgId,
+		ProjectId:   service.ProjectId,
+		Env:         service.Workspace,
+		Namespace:   namespace,
+		ServiceName: svcName,
 	}, &gw.PackageDto{
 		Name:       packageName,
 		BindDomain: []string{domain},
@@ -2825,13 +3244,13 @@ func (impl GatewayOpenapiServiceImpl) clearRoutePolicy(category, packageId, pack
 
 func (impl GatewayOpenapiServiceImpl) setRuntimeEndpointRoutePolicy(packageId, packageApiId string, policies diceyml.EndpointPolicies) error {
 	if policies.Cors != nil {
-		err := impl.setRoutePolicy("cors", packageId, packageApiId, *policies.Cors)
+		err := impl.setRoutePolicy(apipolicy.Policy_Engine_CORS, packageId, packageApiId, *policies.Cors)
 		if err != nil {
 			return err
 		}
 	} else {
 		// clear
-		err := impl.clearRoutePolicy("cors", packageId, packageApiId)
+		err := impl.clearRoutePolicy(apipolicy.Policy_Engine_CORS, packageId, packageApiId)
 		if err != nil {
 			return err
 		}

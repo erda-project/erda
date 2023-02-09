@@ -16,6 +16,7 @@ package custom
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -24,6 +25,17 @@ import (
 
 type Policy struct {
 	apipolicy.BasePolicy
+}
+
+// 如下参数在 nginx-template 中有全局设置，因此不能在 cunstom 中再次设置
+var UNSETABLE_KEYS = map[string]string{"client_max_body_size": "100m",
+	"proxy_connect_timeout": "5s",
+	"proxy_buffer_size":     "256k",
+	"proxy_buffers":         "4 256k",
+	"proxy_http_version":    "1.1",
+	"proxy_cookie_domain":   "off",
+	"proxy_cookie_path":     "off",
+	"port_in_redirect":      "off",
 }
 
 func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
@@ -58,6 +70,33 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		}
 		return res, nil
 	}
+
+	// 如下参数在 nginx-template 中有全局设置，因此不能在 custom 中再次设置
+	src := strings.TrimSpace(policyDto.Config)
+	for strings.HasPrefix(src, "\n") {
+		src = strings.TrimPrefix(src, "\n")
+		src = strings.TrimSpace(src)
+	}
+	kvs := strings.Split(src, "\n")
+	for _, kv := range kvs {
+		kv = strings.TrimSpace(kv)
+		for strings.HasPrefix(kv, "\n") {
+			kv = strings.TrimPrefix(kv, "\n")
+			kv = strings.TrimSpace(kv)
+		}
+
+		kvPair := strings.Split(kv, " ")
+		if len(kvPair) >= 1 {
+			if _, ok := UNSETABLE_KEYS[kvPair[0]]; ok {
+				if kvPair[0] != "client_max_body_size" {
+					return res, errors.Errorf("invalid config: %s not allowed set in custom policy, it have set in configmap nginx-template", kvPair[0])
+				} else {
+					return res, errors.Errorf("invalid config: %s not allowed set in custom policy, it have set in configmap nginx-template, please set it in policy proxy or do not set it ", kvPair[0])
+				}
+			}
+		}
+	}
+
 	if policyDto.Config != "" {
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
 			LocationSnippet: &policyDto.Config,
@@ -67,7 +106,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 }
 
 func init() {
-	err := apipolicy.RegisterPolicyEngine("custom", &Policy{})
+	err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_Custom, &Policy{})
 	if err != nil {
 		panic(err)
 	}
