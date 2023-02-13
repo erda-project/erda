@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/auto-test-space-list/i18n"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/core/legacy/conf"
 )
 
 type Column struct {
@@ -198,7 +197,7 @@ func (r *RecordTable) setData() error {
 			},
 			Result: Result{
 				RenderType: "downloadUrl",
-				URL:        fmt.Sprintf("%s/api/files/%s", conf.RootDomain(), fileRecord.ApiFileUUID),
+				URL:        fmt.Sprintf("/api/files/%s", fileRecord.ApiFileUUID),
 			},
 		})
 	}
