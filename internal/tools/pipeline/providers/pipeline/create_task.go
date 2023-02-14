@@ -64,6 +64,9 @@ func (s *pipelineService) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipe
 		Memory: conf.TaskDefaultMEM(),
 		Disk:   0,
 	}
+	if action.Resources.Network != nil {
+		task.Extra.RuntimeResource.Network = action.Resources.Network
+	}
 	// task.Extra.SelfInputs
 	// task.Extra.SelfOutputs
 	if isFlinkSparkAction(action.Type.String()) {

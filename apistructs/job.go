@@ -111,6 +111,7 @@ type JobFromUser struct {
 	BackoffLimit            int                    `json:"backoffLimit,omitempty"`
 	Params                  map[string]interface{} `json:"params,omitempty"`
 	TaskContainers          []TaskContainer        `json:"taskContainers"`
+	Network                 map[string]string      `json:"network,omitempty"`
 
 	ContainerInstanceProvider *ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"` // ContainerInstanceProvider pointer type if not hitted of specified, it will be nil
 }

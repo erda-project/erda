@@ -376,6 +376,9 @@ type Resources struct {
 	Disk                     float64 `json:"disk,omitempty"`
 	EmptyDirCapacity         int     `json:"emptydir_size"`
 	EphemeralStorageCapacity int     `json:"ephemeral_storage_size"`
+
+	// network
+	Network map[string]string `json:"network,omitempty"`
 }
 
 // health check to check container healthy

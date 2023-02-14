@@ -284,11 +284,12 @@ func (that PipelineTaskExecutorName) Check() bool {
 }
 
 type RuntimeResource struct {
-	CPU       float64 `json:"cpu"`
-	Memory    float64 `json:"memory"`
-	Disk      float64 `json:"disk"`
-	MaxCPU    float64 `json:"maxCPU"`
-	MaxMemory float64 `json:"maxMemory"`
+	CPU       float64           `json:"cpu"`
+	Memory    float64           `json:"memory"`
+	Disk      float64           `json:"disk"`
+	MaxCPU    float64           `json:"maxCPU"`
+	MaxMemory float64           `json:"maxMemory"`
+	Network   map[string]string `json:"network"`
 }
 
 type Volume struct {

@@ -432,6 +432,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 	if err != nil {
 		return nil, err
 	}
+	isHostNetwork := job.Network != nil && job.Network["mode"] == "host"
 
 	backofflimit := int32(job.BackoffLimit)
 	kubeJob := &batchv1.Job{
@@ -486,6 +487,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 					Volumes:               vols,
 					EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
 					ShareProcessNamespace: func(b bool) *bool { return &b }(false),
+					HostNetwork:           isHostNetwork,
 				},
 			},
 		},
