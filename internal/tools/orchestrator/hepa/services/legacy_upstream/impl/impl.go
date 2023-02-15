@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/xormplus/xorm"
 
@@ -30,9 +29,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
+	endpoint_impl "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_consumer"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/legacy_upstream"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/micro_api"
@@ -132,44 +134,55 @@ func (impl GatewayUpstreamServiceImpl) getUpstreamApisWithFunc(upstreamId, regis
 	return res, nil
 }
 
-func safeChange(apis []orm.GatewayUpstreamApi, change func(orm.GatewayUpstreamApi), errorHappened *bool) {
+func safeChange(gatewayProvider string, apis []orm.GatewayUpstreamApi, change func(orm.GatewayUpstreamApi), errorHappened *bool) {
 	if *errorHappened {
 		return
 	}
 	size := len(apis)
-	batchCount := size / config.ServerConf.RegisterSliceSize
-	leaves := size % config.ServerConf.RegisterSliceSize
-	log.Debugf("size:%d batchCont:%d leaves:%d", size, batchCount, leaves)
-	for i := 0; i < batchCount; i++ {
-		for j := 0; j < config.ServerConf.RegisterSliceSize; j++ {
-			change(apis[i*config.ServerConf.RegisterSliceSize+j])
+	if gatewayProvider == mse.Mse_Provider_Name {
+		for i := 0; i < size; i++ {
+			change(apis[i])
 			if *errorHappened {
 				return
 			}
 		}
-		time.Sleep(time.Duration(config.ServerConf.RegisterInterval) * time.Second)
-	}
-	for i := size - leaves; i < size; i++ {
-		change(apis[i])
-		if *errorHappened {
-			return
+	} else {
+		batchCount := size / config.ServerConf.RegisterSliceSize
+		leaves := size % config.ServerConf.RegisterSliceSize
+		log.Debugf("size:%d batchCont:%d leaves:%d", size, batchCount, leaves)
+		for i := 0; i < batchCount; i++ {
+			for j := 0; j < config.ServerConf.RegisterSliceSize; j++ {
+				change(apis[i*config.ServerConf.RegisterSliceSize+j])
+				if *errorHappened {
+					return
+				}
+			}
+			time.Sleep(time.Duration(config.ServerConf.RegisterInterval) * time.Second)
+		}
+		for i := size - leaves; i < size; i++ {
+			change(apis[i])
+			if *errorHappened {
+				return
+			}
 		}
 	}
 }
 
 func (impl GatewayUpstreamServiceImpl) UpstreamValidAsync(ctx context.Context, context map[string]interface{}, dto *gw.UpstreamRegisterDto) (err error) {
-	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	ctx = context1.WithLoggerIfWithout(ctx, log.StandardLogger())
 
+	var consumer *orm.GatewayConsumer
 	consumerI, ok := context["register_consumer"]
 	if !ok {
 		err = errors.New("can't find consumer from context")
 		return
 	}
-	consumer, ok := consumerI.(*orm.GatewayConsumer)
+	cs, ok := consumerI.(*orm.GatewayConsumer)
 	if !ok {
 		err = errors.New("acquire consumer failed")
 		return
 	}
+	consumer = cs
 	daoI, ok := context["register_dao"]
 	if !ok {
 		err = errors.New("can't find dao from context")
@@ -181,11 +194,10 @@ func (impl GatewayUpstreamServiceImpl) UpstreamValidAsync(ctx context.Context, c
 		return
 	}
 	return impl.UpstreamValid(ctx, consumer, dao, dto)
-
 }
 
 func (impl GatewayUpstreamServiceImpl) UpstreamValid(ctx context.Context, consumer *orm.GatewayConsumer, dao *orm.GatewayUpstream, dto *gw.UpstreamRegisterDto) (err error) {
-	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	ctx = context1.WithLoggerIfWithout(ctx, log.StandardLogger())
 
 	prefix := ""
 	if dto.PathPrefix != nil {
@@ -193,6 +205,7 @@ func (impl GatewayUpstreamServiceImpl) UpstreamValid(ctx context.Context, consum
 	}
 	err = impl.upstreamValid(ctx, consumer, dao, dto.RegisterId, prefix, dto.OFlag)
 	if err != nil {
+		log.Errorf("upstreamValid in UpstreamValid failed: %v\n", err)
 		return
 	}
 	return
@@ -204,7 +217,7 @@ func (impl GatewayUpstreamServiceImpl) apiNeedUpdate(old, new orm.GatewayUpstrea
 }
 
 func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consumer *orm.GatewayConsumer, upstream *orm.GatewayUpstream, validId string, aliasPath, oFlag string) error {
-	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	ctx = context1.WithLoggerIfWithout(ctx, log.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
 
 	if consumer == nil || upstream == nil || len(upstream.Id) == 0 || validId == "" {
@@ -220,6 +233,20 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 	if err != nil {
 		return err
 	}
+
+	gatewayProvider, err := impl.GetGatewayProvider(consumer.Az)
+	if err != nil {
+		log.Errorf("get gateway provider for cluster %s failed: %v\n", consumer.Az, err)
+		return err
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+	case "":
+	default:
+		log.Errorf("unknown gateway provider %s for cluster %s\n", gatewayProvider, consumer.Az)
+		return errors.Errorf("unknown gateway provider %s for cluster %s\n", gatewayProvider, consumer.Az)
+	}
+
 	oldValidId, err := impl.upstreamDb.GetValidIdForUpdate(upstream.Id, session)
 	if err != nil {
 		return err
@@ -367,10 +394,12 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 		}
 		apiId, err := (*impl.apiBiz).CreateUpstreamBindApi(ctx, consumer, upstream.DiceApp, upstream.DiceService, upstream.RuntimeServiceId, &upApi, aliasPath)
 		if err == kong.ErrInvalidReq {
+			log.Errorf("CreateUpstreamBindApi failed in addFunc ErrInvalidReq: %v\n", err)
 			l.WithError(err).Errorf("invalid api ignored, upApi:%+v", upApi)
 			return
 		}
 		if err != nil {
+			log.Errorf("CreateUpstreamBindApi failed in addFunc: %v\n", err)
 			l.WithError(err).Errorf("create upstream api failed: %+v, upApi:%+v, exist apiId:%s", err, upApi, apiId)
 			errHappened = true
 			return
@@ -383,7 +412,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 			errHappened = true
 		}
 	}
-	safeChange(adds, addFunc, &errHappened)
+	safeChange(gatewayProvider, adds, addFunc, &errHappened)
 	// for range updates update api, use kong put method will create if not exist
 	updateFunc := func(upApi orm.GatewayUpstreamApi) {
 		if errHappened {
@@ -406,7 +435,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 			errHappened = true
 		}
 	}
-	safeChange(updates, updateFunc, &errHappened)
+	safeChange(gatewayProvider, updates, updateFunc, &errHappened)
 	// for range dels delete api
 	delFunc := func(upApi orm.GatewayUpstreamApi) {
 		if errHappened {
@@ -424,7 +453,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 		}
 		deled = append(deled, upApi)
 	}
-	safeChange(dels, delFunc, &errHappened)
+	safeChange(gatewayProvider, dels, delFunc, &errHappened)
 	if errHappened {
 		// recover:
 		for i := len(deled) - 1; i >= 0; i-- {
@@ -582,10 +611,11 @@ func (impl GatewayUpstreamServiceImpl) saveUpstream(ctx context.Context, dao *or
 //
 // Saves the upstream with the request dto.
 func (impl GatewayUpstreamServiceImpl) upstreamRegister(ctx context.Context, dto *gw.UpstreamRegisterDto) (*orm.GatewayUpstream, *orm.GatewayConsumer, error) {
-	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	ctx = context1.WithLoggerIfWithout(ctx, log.StandardLogger())
 
 	var err error
 	var az string
+	//var gatewayProvider string
 	if dto == nil {
 		err = errors.Errorf("invalid dto:%+v", dto)
 		return nil, nil, err
@@ -662,19 +692,69 @@ func (impl GatewayUpstreamServiceImpl) upstreamRegister(ctx context.Context, dto
 	return dao, consumer, nil
 }
 
+func (impl GatewayUpstreamServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
+}
+
 func (impl GatewayUpstreamServiceImpl) UpstreamRegisterAsync(ctx context.Context, dto *gw.UpstreamRegisterDto) (result bool, err error) {
-	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	var az string
+	var gatewayProvider string
+	ctx = context1.WithLoggerIfWithout(ctx, log.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
 
 	defer func() {
 		if err != nil {
-			logrus.Errorf("error Happened: %+v", err)
+			log.Errorf("error Happened: %+v", err)
 		}
 	}()
-	dao, consumer, err := impl.upstreamRegister(ctx, dto)
-	if dao == nil || consumer == nil {
-		err = errors.New("invalid params")
+
+	if len(dto.Az) == 0 {
+		az, err = impl.azDb.GetAz(&orm.GatewayAzInfo{
+			Env:       dto.Env,
+			OrgId:     dto.OrgId,
+			ProjectId: dto.ProjectId,
+		})
+		if err != nil {
+			log.Errorf("impl.azDb.GetAz with error: %v\n", err)
+			return
+		}
+	} else {
+		az = dto.Az
+	}
+	gatewayProvider, err = impl.GetGatewayProvider(az)
+	if err != nil {
+		log.Errorf("get gateway provider failed for cluster %s: %v\n", az, err)
 		return
+	}
+
+	if gatewayProvider == mse.Mse_Provider_Name {
+		err = impl.isInternalServiceExisted(dto)
+		if err != nil {
+			log.Errorf("check service existed failed: %v\n", err)
+			l.WithError(err).Errorln("failed to UpstreamValidAsync, check service existed failed:")
+			result = false
+			return
+		}
+	}
+	dao, consumer, err := impl.upstreamRegister(ctx, dto)
+	if dao == nil {
+		err = errors.New("upstreamRegister return nil GatewayUpstream")
+		return
+	}
+	if consumer == nil {
+		if gatewayProvider == "" {
+			// kong gateway need consumer
+			err = errors.New("invalid params")
+			return
+		}
 	}
 	if dao.AutoBind == 0 {
 		log.Infof("dto[%+v] registerd without bind", dto)
@@ -684,24 +764,134 @@ func (impl GatewayUpstreamServiceImpl) UpstreamRegisterAsync(ctx context.Context
 	meta := make(map[string]interface{})
 	meta["register_consumer"] = consumer
 	meta["register_dao"] = dao
-	go func() {
-		if err := impl.UpstreamValidAsync(ctx, meta, dto); err != nil {
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		err = impl.UpstreamValidAsync(ctx, meta, dto)
+		if err != nil {
+			log.Errorf("UpstreamValidAsync failed: %v\n", err)
 			l.WithError(err).Errorln("failed to UpstreamValidAsync")
+			result = false
+			return
 		}
-	}()
-	result = true
-	return
+		result = true
+		return
+	case "":
+		go func() {
+			if err := impl.UpstreamValidAsync(ctx, meta, dto); err != nil {
+				l.WithError(err).Errorln("failed to UpstreamValidAsync")
+			}
+		}()
+		result = true
+		return
+	default:
+		err = errors.Errorf("unknown gateway provider %s for cluster %s\n", gatewayProvider, az)
+		result = false
+		return
+	}
+}
+
+func (impl GatewayUpstreamServiceImpl) isInternalServiceExisted(dto *gw.UpstreamRegisterDto) error {
+	var az string
+	var err error
+	if len(dto.Az) == 0 {
+		az, err = impl.azDb.GetAz(&orm.GatewayAzInfo{
+			Env:       dto.Env,
+			OrgId:     dto.OrgId,
+			ProjectId: dto.ProjectId,
+		})
+		if err != nil {
+			log.Errorf("impl.azDb.GetAz with error: %v\n", err)
+			return err
+		}
+	} else {
+		az = dto.Az
+	}
+
+	k8sAdapter, err := k8s.NewAdapter(az)
+	if err != nil {
+		log.Errorf("Generate k8sAdapter failed: %v\n", err)
+		return errors.Errorf("Generate k8sAdapter failed: %v\n", err)
+	}
+
+	for _, api := range dto.ApiList {
+		if strings.Contains(api.Address, endpoint_impl.K8S_SVC_CLUSTER_DOMAIN) {
+			err = getService(api.Address, k8sAdapter)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func getService(address string, k8sAdapter k8s.K8SAdapter) error {
+	strs := strings.Split(address, endpoint_impl.K8S_SVC_CLUSTER_DOMAIN)
+	if len(strs) == 0 {
+		log.Errorf("can not get service and namespace from %s, not an inner k8s addr\n", address)
+		return errors.Errorf("can not get service and namespace from %s, not an inner k8s addr\n", address)
+	}
+	strs = strings.Split(strs[0], "://")
+	if len(strs) <= 1 {
+		log.Errorf("can not get service and namespace from %s\n", strs[0])
+		return errors.Errorf("can not get service and namespace from %s\n", strs[0])
+	}
+	serviceAndNamespace := strings.Split(strs[1], ".")
+	if len(serviceAndNamespace) < 2 {
+		log.Errorf("can not get service and namespace from %s\n", strs[1])
+		return errors.Errorf("can not get service and namespace from %s\n", strs[1])
+	}
+	_, err := k8sAdapter.GetServiceByName(serviceAndNamespace[1], serviceAndNamespace[0])
+	if err != nil {
+		log.Errorf("can not get service %s in namespace %s: %v\n", serviceAndNamespace[0], serviceAndNamespace[1], err)
+		return errors.Errorf("can not get service %s in namespace %s: %v\n", serviceAndNamespace[0], serviceAndNamespace[1], err)
+	}
+	return nil
 }
 
 func (impl GatewayUpstreamServiceImpl) UpstreamRegister(ctx context.Context, dto *gw.UpstreamRegisterDto) (result bool, err error) {
-	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	ctx = context1.WithLoggerIfWithout(ctx, log.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
+	var az string
+	var gatewayProvider string
 
 	defer func() {
 		if err != nil {
-			logrus.Errorf("error Happened: %+v", err)
+			log.Errorf("error Happened: %+v", err)
 		}
 	}()
+
+	if len(dto.Az) == 0 {
+		az, err = impl.azDb.GetAz(&orm.GatewayAzInfo{
+			Env:       dto.Env,
+			OrgId:     dto.OrgId,
+			ProjectId: dto.ProjectId,
+		})
+		if err != nil {
+			return
+		}
+	} else {
+		az = dto.Az
+	}
+
+	gatewayProvider, err = impl.GetGatewayProvider(az)
+	if err != nil {
+		log.Errorf("get gateway provider failed for cluster %s: %v\n", az, err)
+		return
+	}
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		err = impl.isInternalServiceExisted(dto)
+		if err != nil {
+			log.Errorf("check service existed in UpstreamRegister() failed: %v\n", err)
+			return
+		}
+	case "":
+	default:
+		log.Errorf("unknown gateway provider failed for cluster %s: %v\n", az, err)
+		err = errors.Errorf("unknown gateway provider failed for cluster %s: %v\n", az, err)
+		return
+	}
 
 	// do upstream register
 	dao, consumer, err := impl.upstreamRegister(ctx, dto)
@@ -713,7 +903,7 @@ func (impl GatewayUpstreamServiceImpl) UpstreamRegister(ctx context.Context, dto
 		err = errors.Errorf("invalid params: %s", "invalid GatewayUpstream")
 		return
 	}
-	if consumer == nil {
+	if consumer == nil && gatewayProvider == "" {
 		err = errors.Errorf("invalid params: %s", "invalid consumer")
 		return
 	}

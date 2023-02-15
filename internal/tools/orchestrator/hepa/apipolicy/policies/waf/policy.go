@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 )
 
 type Policy struct {
@@ -85,19 +86,19 @@ SecAuditLog /dev/stderr
 	if policyDto.RemoveRules != "" && modSnippet != nil {
 		*modSnippet = *modSnippet + fmt.Sprintf("SecRuleRemoveById %s\n", policyDto.RemoveRules)
 	}
-	res.IngressAnnotation.Annotation[MODSECURITY_SNIPPET] = modSnippet
+	res.IngressAnnotation.Annotation[string(annotationscommon.AnnotationModsecuritySnippet)] = modSnippet
 	if modSnippet != nil {
 		enable := "true"
-		res.IngressAnnotation.Annotation[MODSECURITY_ENABLE] = &enable
+		res.IngressAnnotation.Annotation[string(annotationscommon.AnnotationEnableModsecurity)] = &enable
 	} else {
-		res.IngressAnnotation.Annotation[MODSECURITY_ENABLE] = nil
+		res.IngressAnnotation.Annotation[string(annotationscommon.AnnotationEnableModsecurity)] = nil
 	}
 	return res, nil
 
 }
 
 func init() {
-	err := apipolicy.RegisterPolicyEngine("safety-waf", &Policy{})
+	err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_WAF, &Policy{})
 	if err != nil {
 		panic(err)
 	}

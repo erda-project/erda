@@ -23,6 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/base"
 	v2 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/v2"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -46,7 +47,7 @@ var (
 	ErrInvalidReq = errors.New("kongAdapter: invalid request")
 )
 
-func newKongAdapter(kongAddr string, client *http.Client) KongAdapter {
+func newKongAdapter(kongAddr string, client *http.Client) gateway_providers.GatewayAdapter {
 	var empty *base.KongAdapterImpl
 	base := &base.KongAdapterImpl{
 		KongAddr: kongAddr,
@@ -68,7 +69,7 @@ func newKongAdapter(kongAddr string, client *http.Client) KongAdapter {
 	return empty
 }
 
-func NewKongAdapter(kongAddr string) KongAdapter {
+func NewKongAdapter(kongAddr string) gateway_providers.GatewayAdapter {
 	client := &http.Client{Timeout: time.Second * 30}
 	if config.ServerConf.KongDebug {
 		return newKongAdapter(config.ServerConf.KongDebugAddr, client)
@@ -76,7 +77,7 @@ func NewKongAdapter(kongAddr string) KongAdapter {
 	return newKongAdapter(kongAddr, client)
 }
 
-func NewKongAdapterForConsumer(consumer *orm.GatewayConsumer) KongAdapter {
+func NewKongAdapterForConsumer(consumer *orm.GatewayConsumer) gateway_providers.GatewayAdapter {
 	client := &http.Client{}
 	if config.ServerConf.KongDebug {
 		return newKongAdapter(config.ServerConf.KongDebugAddr, client)
@@ -98,7 +99,7 @@ func NewKongAdapterForConsumer(consumer *orm.GatewayConsumer) KongAdapter {
 	return NewKongAdapterForProject(az, consumer.Env, consumer.ProjectId)
 }
 
-func NewKongAdapterForProject(az, env, projectId string) KongAdapter {
+func NewKongAdapterForProject(az, env, projectId string) gateway_providers.GatewayAdapter {
 	client := &http.Client{}
 	if config.ServerConf.KongDebug {
 		return newKongAdapter(config.ServerConf.KongDebugAddr, client)
@@ -124,7 +125,7 @@ func NewKongAdapterForProject(az, env, projectId string) KongAdapter {
 	return newKongAdapter(kong.KongAddr, client)
 }
 
-func NewKongAdapterByConsumerId(consumerDb service.GatewayConsumerService, consumerId string) KongAdapter {
+func NewKongAdapterByConsumerId(consumerDb service.GatewayConsumerService, consumerId string) gateway_providers.GatewayAdapter {
 	client := &http.Client{}
 	if config.ServerConf.KongDebug {
 		return newKongAdapter(config.ServerConf.KongDebugAddr, client)

@@ -114,4 +114,5 @@ type GatewayTenantRequest struct {
 	InnerAddr       string `json:"innerAddr"`
 	ServiceName     string `json:"serviceName"`
 	InstanceId      string `json:"instanceId"`
+	GatewayProvider string `json:"gatewayProvider,omitempty"`
 }

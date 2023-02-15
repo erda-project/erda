@@ -27,19 +27,31 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/hepa/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/assembler"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/micro_api"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone"
+)
+
+const varSlot = ""
+
+const (
+	processStrStatus = iota
+	processVarStatus
 )
 
 type GatewayApiServiceImpl struct {
@@ -58,6 +70,9 @@ type GatewayApiServiceImpl struct {
 	kongDb          db.GatewayKongInfoService
 	runtimeDb       db.GatewayRuntimeServiceService
 	domainDB        db.GatewayDomainService
+	zoneDb          db.GatewayZoneService
+	zoneBiz         *zone.GatewayZoneService
+	packageBiz      *endpoint_api.GatewayOpenapiService
 	globalBiz       *global.GatewayGlobalService
 	kongAssembler   assembler.GatewayKongAssembler
 	dbAssembler     assembler.GatewayDbAssembler
@@ -84,6 +99,7 @@ func NewGatewayApiServiceImpl() error {
 			zoneInPackageDb, _ := db.NewGatewayZoneInPackageServiceImpl()
 			runtimeDb, _ := db.NewGatewayRuntimeServiceServiceImpl()
 			domainDB, _ := db.NewGatewayDomainServiceImpl()
+			zoneDb, _ := db.NewGatewayZoneServiceImpl()
 			micro_api.Service = &GatewayApiServiceImpl{
 				apiInPackageDb:  apiInPackageDb,
 				zoneInPackageDb: zoneInPackageDb,
@@ -100,6 +116,9 @@ func NewGatewayApiServiceImpl() error {
 				kongDb:          kongDb,
 				runtimeDb:       runtimeDb,
 				domainDB:        domainDB,
+				zoneDb:          zoneDb,
+				zoneBiz:         &zone.Service,
+				packageBiz:      &endpoint_api.Service,
 				globalBiz:       &global.Service,
 				kongAssembler:   assembler.GatewayKongAssemblerImpl{},
 				dbAssembler:     assembler.GatewayDbAssemblerImpl{},
@@ -157,11 +176,10 @@ func (impl GatewayApiServiceImpl) acquirePolicies(apiPolices []string) map[strin
 		}
 		res[policy.PluginName] = *policy
 	}
-
 	return res
 }
 
-func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(ctx context.Context, apiId, projectId, env, az string) error {
+func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(ctx context.Context, apiId, projectId, env, az string, redirectPath string) error {
 	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
 
@@ -182,7 +200,12 @@ func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(ctx context.Contex
 		l.Warnf("unity package not found, projectId:%s, env:%s, az:%s", projectId, env, az)
 		return nil
 	}
-	err = impl.packageApiDb.Insert(&orm.GatewayPackageApi{
+	gatewayProvider, err := impl.GetGatewayProvider(az)
+	if err != nil {
+		logrus.Errorf("get gateway provider in CreateUnityPackageShadowApi failed for cluster %s: %v\n", az, err)
+		return err
+	}
+	gatewayPackageApi := &orm.GatewayPackageApi{
 		PackageId:    pack.Id,
 		ApiPath:      gatewayApi.ApiPath,
 		Method:       gatewayApi.Method,
@@ -193,7 +216,11 @@ func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(ctx context.Contex
 		Origin:       string(gw.FROM_SHADOW),
 		DiceApiId:    apiId,
 		RedirectType: gw.RT_URL,
-	})
+	}
+	if gatewayProvider == mse.Mse_Provider_Name {
+		gatewayPackageApi.RedirectPath = redirectPath
+	}
+	err = impl.packageApiDb.Insert(gatewayPackageApi)
 	if err != nil {
 		return err
 	}
@@ -203,6 +230,15 @@ func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(ctx context.Contex
 	})
 	if err != nil {
 		return err
+	}
+
+	//  必要时（SDK 注册）创建 service 和 对应的 ingress
+	if gatewayProvider == mse.Mse_Provider_Name {
+		// 创建 service 和 对应的 ingress
+		err = impl.createServiceAndIngress(strings.Split(gatewayApi.Domains, ","), gatewayPackageApi, apiId, projectId, env, az)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -323,13 +359,13 @@ func (impl GatewayApiServiceImpl) createUpstreamBindApiWithoutRuntimeService(ctx
 		return apiId, err
 	}
 	if upstreamApi.Domains == "" {
-		return apiId, impl.CreateUnityPackageShadowApi(ctx, apiId, consumer.ProjectId, consumer.Env, consumer.Az)
+		return apiId, impl.CreateUnityPackageShadowApi(ctx, apiId, consumer.ProjectId, consumer.Env, consumer.Az, upstreamApi.Path)
 	}
 	domains := strings.Split(upstreamApi.Domains, ",")
 	for _, domain := range domains {
 		if isProd := strings.EqualFold(consumer.Env, "prod"); (isProd && strings.EqualFold(domain, kongInfo.Endpoint)) ||
 			(!isProd && strings.EqualFold(domain, consumer.Env+"-"+kongInfo.Endpoint)) {
-			return apiId, impl.CreateUnityPackageShadowApi(ctx, apiId, consumer.ProjectId, consumer.Env, consumer.Az)
+			return apiId, impl.CreateUnityPackageShadowApi(ctx, apiId, consumer.ProjectId, consumer.Env, consumer.Az, upstreamApi.Path)
 		}
 	}
 	return apiId, impl.CreateHubPackageShadowApi(ctx, apiId, consumer.ProjectId, consumer.Env, consumer.Az, upstreamApi.Domains)
@@ -496,13 +532,6 @@ func (impl GatewayApiServiceImpl) apiPathExist(ctx context.Context, consumer *or
 	l.Infoln("apiPath doesn't exist because no domain and path matched")
 	return false, "", nil
 }
-
-const varSlot = ""
-
-const (
-	processStrStatus = iota
-	processVarStatus
-)
 
 func (impl GatewayApiServiceImpl) pathVariableSplit(path string) ([]string, []string, error) {
 	status := processStrStatus
@@ -680,6 +709,7 @@ func (impl GatewayApiServiceImpl) GetRuntimeApis(runtimeServiceId string, regist
 // And create Kong Service, Kong Route and Kong plugins.
 func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*db.SessionHelper) (string, StandardErrorCode, error) {
 	var err error
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	dto.OuterNetEnable = true
 	apiDb := impl.apiDb
 	routeDb := impl.routeDb
@@ -765,7 +795,19 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 	if err != nil {
 		return "", PARAMS_IS_NULL, err
 	}
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+	gatewayProvider, err := impl.GetGatewayProvider(runtimeService.ClusterName)
+	if err != nil {
+		return "", PARAMS_IS_NULL, err
+	}
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return "", PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
 	dto.KongInfoEndpoint = kongInfo.Endpoint
 	dto.Hosts = append(dto.Hosts, kong.InnerHost)
 	if dto.RedirectType == gw.RT_SERVICE {
@@ -811,7 +853,7 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 		if err != nil {
 			goto errorHappened
 		}
-		serviceResp, err = kongAdapter.CreateOrUpdateService(serviceReq)
+		serviceResp, err = gatewayAdapter.CreateOrUpdateService(serviceReq)
 		if err != nil {
 			goto errorHappened
 		}
@@ -839,9 +881,16 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 			logrus.WithError(errors.New("not found")).Warnf("failed to packageAPIDb.GetByAny(&orm.GatewayPackageApi{DiceApiId: %s})", gatewayApi.Id)
 		}
 		if packageApi != nil {
+			if gatewayProvider == mse.Mse_Provider_Name {
+				// 创建 service 和 对应的 ingress
+				err = impl.createServiceAndIngress(strings.Split(gatewayApi.Domains, ","), packageApi, gatewayApi.Id, runtimeService.ProjectId, runtimeService.Workspace, runtimeService.ClusterName)
+				if err != nil {
+					goto errorHappened
+				}
+			}
 			routeReq.AddTag("package_api_id", packageApi.Id)
 		}
-		routeResp, err = kongAdapter.CreateOrUpdateRoute(routeReq)
+		routeResp, err = gatewayAdapter.CreateOrUpdateRoute(routeReq)
 		if err != nil {
 			goto errorHappened
 		}
@@ -896,7 +945,7 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 			if err != nil {
 				goto errorHappened
 			}
-			pluginResp, err = kongAdapter.AddPlugin(pluginReq)
+			pluginResp, err = gatewayAdapter.AddPlugin(pluginReq)
 			if err != nil {
 				goto errorHappened
 			}
@@ -929,10 +978,10 @@ errorHappened:
 		kerr = apiDb.RealDeleteById(gatewayApi.Id)
 	}
 	if serviceResp != nil {
-		kerr = kongAdapter.DeleteService(serviceResp.Id)
+		kerr = gatewayAdapter.DeleteService(serviceResp.Id)
 	}
 	if routeResp != nil {
-		kerr = kongAdapter.DeleteRoute(routeResp.Id)
+		kerr = gatewayAdapter.DeleteRoute(routeResp.Id)
 	}
 	if kerr != nil {
 		logrus.Errorf("delete failed, err:%+v", kerr)
@@ -975,6 +1024,12 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 	var err error
 	var serviceResp *kongDto.KongServiceRespDto
 	var routeResp *kongDto.KongRouteRespDto
+	var gatewayAdapter gateway_providers.GatewayAdapter
+
+	gatewayProvider, err := impl.GetGatewayProvider(consumer.Az)
+	if err != nil {
+		return "", PARAMS_IS_NULL, errors.Errorf("get gateway provider failed for cluster %s: %v", consumer.Az, err)
+	}
 	gatewayPolicies := []orm.GatewayPolicy{}
 	pluginRespList := []kongDto.KongPluginRespDto{}
 	// all api OuterNetEnable
@@ -991,7 +1046,14 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 		return "", PARAMS_IS_NULL, err
 	}
 	dto.KongInfoEndpoint = kongInfo.Endpoint
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return "", PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
 	if len(dto.Hosts) == 0 {
 		dto.Hosts = append(dto.Hosts, kong.InnerHost)
 		if dto.OuterNetEnable {
@@ -1023,7 +1085,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 			return "", ret, err
 		}
 
-		serviceResp, err = kongAdapter.CreateOrUpdateService(serviceReq)
+		serviceResp, err = gatewayAdapter.CreateOrUpdateService(serviceReq)
 		if err != nil {
 			ret = CREATE_API_SERVICE_FAIL
 			l.WithError(err).Errorln(ret)
@@ -1043,7 +1105,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 		for _, id := range upstreamApiId {
 			routeReq.AddTag("upstream_api_id", id)
 		}
-		routeResp, err = kongAdapter.CreateOrUpdateRoute(routeReq)
+		routeResp, err = gatewayAdapter.CreateOrUpdateRoute(routeReq)
 		if err != nil {
 			ret = CREATE_API_ROUTE_FAIL
 			l.WithError(err).Errorln(ret)
@@ -1062,7 +1124,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 			apiPolices := optionDto.Policies
 			policyMap := impl.acquirePolicies(apiPolices)
 			for _, policy := range policyMap {
-				if policy.Category == "auth" {
+				if policy.Category == apipolicy.Policy_Category_Auth {
 					// 只能有一种auth策略
 					if needAuth {
 						continue
@@ -1134,7 +1196,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 		// 3.3 增加插件
 		for _, policy := range policies {
 			if policy.PluginName == "oauth2" {
-				_ = kongAdapter.TouchRouteOAuthMethod(routeResp.Id)
+				_ = gatewayAdapter.TouchRouteOAuthMethod(routeResp.Id)
 			}
 			var pluginReq *kongDto.KongPluginReqDto
 			var pluginResp *kongDto.KongPluginRespDto
@@ -1144,7 +1206,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 				l.WithError(err).Errorln(err)
 				return "", ret, err
 			}
-			pluginResp, err = kongAdapter.AddPlugin(pluginReq)
+			pluginResp, err = gatewayAdapter.AddPlugin(pluginReq)
 			if err != nil {
 				ret = CREATE_API_PLUGIN_FAIL
 				l.WithError(err).Errorln(ret)
@@ -1172,7 +1234,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 					"allow_host": gw.INNER_HOSTS,
 				},
 			}
-			_, err = kongAdapter.CreateOrUpdatePlugin(pluginReq)
+			_, err = gatewayAdapter.CreateOrUpdatePlugin(pluginReq)
 			if err != nil {
 				ret = CREATE_API_PLUGIN_FAIL
 				l.WithError(err).Errorln(ret)
@@ -1191,6 +1253,62 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 		}
 		return apiId, ret, nil
 	}
+}
+
+func (impl GatewayApiServiceImpl) createServiceAndIngress(hosts []string, packageApi *orm.GatewayPackageApi, apiId, projectId, env, az string) error {
+	if packageApi == nil {
+		return errors.Errorf("packageApi api is nil")
+	}
+	outHosts := make([]string, 0)
+	for _, host := range hosts {
+		if strings.HasSuffix(host, "gateway.inner") {
+			continue
+		}
+		outHosts = append(outHosts, host)
+	}
+	if len(outHosts) == 0 {
+		logrus.Errorf("no hosts to expose for external in [%v]\n", hosts)
+		return errors.Errorf("no hosts to expose for external in [%v]\n", hosts)
+	}
+
+	pkgApiInfo := endpoint_api.PackageApiInfo{
+		GatewayPackageApi:   packageApi,
+		Hosts:               outHosts,
+		ProjectId:           projectId,
+		Env:                 env,
+		Az:                  az,
+		InjectRuntimeDomain: false,
+	}
+
+	zoneId, err := (*impl.packageBiz).TouchPackageApiZone(pkgApiInfo)
+	if err != nil {
+		logrus.Errorf("failed to TouchPackageApiZone: %v\n", err)
+		return err
+	}
+	z, err := (*impl.zoneBiz).GetZone(zoneId)
+	if err != nil || z == nil {
+		logrus.Errorf("failed to GetZone, zone=%+v, error: %v\n", z, err)
+		return errors.Errorf("failed to GetZone, zone=%+v, error: %v\n", z, err)
+	}
+
+	gatewayApi, err := impl.apiDb.GetById(apiId)
+	if err != nil {
+		logrus.Errorf("failed to get gatewayApi: %v\n", err)
+		return err
+	}
+	gatewayApi.ZoneId = zoneId
+	err = impl.apiDb.Update(gatewayApi)
+	if err != nil {
+		logrus.Errorf("failed to Update gatewayApi: %v\n", err)
+		return err
+	}
+	packageApi.ZoneId = zoneId
+	err = impl.packageApiDb.Update(packageApi)
+	if err != nil {
+		logrus.Errorf("failed to Update GatewayPackageApi: %v\n", err)
+		return err
+	}
+	return nil
 }
 
 func (impl GatewayApiServiceImpl) CreateApi(ctx context.Context, req *gw.ApiReqDto) (apiId string, err error) {
@@ -1302,6 +1420,7 @@ func (impl GatewayApiServiceImpl) verifyGetApiInfosParams(orgId string, projectI
 		return res.SetReturnCode(PARAMS_IS_NULL)
 	}
 	az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		ProjectId: projectId,
 		Env:       env,
 	})
@@ -1569,9 +1688,12 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 	var gatewayRoute *orm.GatewayRoute
 	var gatewayService *orm.GatewayService
 	var gatewayApi *orm.GatewayApi
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var kongInfo *orm.GatewayKongInfo
 	var runtimeService *orm.GatewayRuntimeService
+	var consumer *orm.GatewayConsumer
+	var packageApi *orm.GatewayPackageApi
+	gatewayProvider := ""
 	ret := UNKNOW_ERROR
 	var err error = nil
 	var inPackage []orm.GatewayApiInPackage
@@ -1589,6 +1711,21 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 		ret = API_NOT_EXIST
 		return ret, nil
 	}
+
+	if gatewayApi.ConsumerId != "" {
+		consumer, err = impl.consumerDb.GetById(gatewayApi.ConsumerId)
+		if err != nil {
+			goto errorHappened
+		}
+
+		if consumer != nil && consumer.Az != "" {
+			gatewayProvider, err = impl.GetGatewayProvider(consumer.Az)
+			if err != nil {
+				goto errorHappened
+			}
+		}
+	}
+
 	inPackage, err = impl.apiInPackageDb.SelectByApi(apiId)
 	if err != nil {
 		goto errorHappened
@@ -1600,13 +1737,40 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 			goto errorHappened
 		}
 		for _, dao := range inPackage {
-			_ = impl.packageApiDb.DeleteByPackageDiceApi(dao.PackageId, apiId)
-			_ = impl.apiInPackageDb.Delete(dao.PackageId, apiId)
+			if gatewayProvider == mse.Mse_Provider_Name {
+				// 删除 Service 和 Ingress
+				packageApi, err = impl.packageApiDb.GetByAny(&orm.GatewayPackageApi{
+					PackageId: dao.PackageId,
+					DiceApiId: dao.DiceApiId,
+				})
+				if err != nil {
+					ret = DELETE_API_IN_PACKAGE_ERROR
+					goto errorHappened
+				}
+				if packageApi != nil {
+					_, err = (*impl.packageBiz).DeletePackageApi(dao.PackageId, packageApi.Id)
+					if err != nil {
+						ret = DELETE_API_IN_PACKAGE_ERROR
+						goto errorHappened
+					}
+				}
+			} else {
+				_ = impl.packageApiDb.DeleteByPackageDiceApi(dao.PackageId, apiId)
+				_ = impl.apiInPackageDb.Delete(dao.PackageId, apiId)
+			}
 		}
 	}
 
 	if gatewayApi.ConsumerId != "" {
-		kongAdapter = kong.NewKongAdapterByConsumerId(impl.consumerDb, gatewayApi.ConsumerId)
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			gatewayAdapter = mse.NewMseAdapter()
+		case "":
+			gatewayAdapter = kong.NewKongAdapterByConsumerId(impl.consumerDb, gatewayApi.ConsumerId)
+		default:
+			logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+			goto errorHappened
+		}
 	} else if gatewayApi.RuntimeServiceId != "" {
 		runtimeService, err = impl.runtimeDb.Get(gatewayApi.RuntimeServiceId)
 		if err != nil {
@@ -1614,6 +1778,12 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 		}
 		if runtimeService == nil {
 			goto errorHappened
+		}
+		if runtimeService.ClusterName != "" {
+			gatewayProvider, err = impl.GetGatewayProvider(runtimeService.ClusterName)
+			if err != nil {
+				goto errorHappened
+			}
 		}
 		defer func() {
 			method := gatewayApi.Method
@@ -1644,31 +1814,39 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 			}
 		}()
 
-		kongInfo, err = impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
-			Az:        runtimeService.ClusterName,
-			ProjectId: runtimeService.ProjectId,
-			Env:       runtimeService.Workspace,
-		})
-		if err != nil {
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			gatewayAdapter = mse.NewMseAdapter()
+		case "":
+			kongInfo, err = impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
+				Az:        runtimeService.ClusterName,
+				ProjectId: runtimeService.ProjectId,
+				Env:       runtimeService.Workspace,
+			})
+			if err != nil {
+				goto errorHappened
+			}
+			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		default:
+			logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 			goto errorHappened
 		}
-		kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	} else {
 		err = errors.Errorf("invalid api: %+v", gatewayApi)
 		goto errorHappened
 	}
-	if kongAdapter == nil {
-		return ret, errors.Errorf("kongAdapter is nil")
+	if gatewayAdapter == nil {
+		return ret, errors.Errorf("gatewayAdapter is nil")
 	}
 	if gatewayRoute, err = impl.routeDb.GetByApiId(apiId); err == nil && gatewayRoute != nil {
-		err = kongAdapter.DeleteRoute(gatewayRoute.RouteId)
+		err = gatewayAdapter.DeleteRoute(gatewayRoute.RouteId)
 		err = impl.routeDb.DeleteById(gatewayRoute.Id)
 	}
 	if err != nil {
 		goto errorHappened
 	}
 	if gatewayService, err = impl.serviceDb.GetByApiId(apiId); err == nil && gatewayService != nil {
-		err = kongAdapter.DeleteService(gatewayService.ServiceId)
+		err = gatewayAdapter.DeleteService(gatewayService.ServiceId)
 		err = impl.serviceDb.DeleteById(gatewayService.Id)
 	}
 	if err != nil {
@@ -1726,7 +1904,7 @@ func (impl GatewayApiServiceImpl) verifyApiUpdateParams(apiId string, req *gw.Ap
 	return res.SetSuccessAndData(gatewayApi)
 }
 
-func (impl GatewayApiServiceImpl) updateService(kongAdapter kong.KongAdapter, req *gw.ApiDto, gatewayApi *orm.GatewayApi) (*orm.GatewayService, error) {
+func (impl GatewayApiServiceImpl) updateService(gatewayAdapter gateway_providers.GatewayAdapter, req *gw.ApiDto, gatewayApi *orm.GatewayApi) (*orm.GatewayService, error) {
 	service, err := impl.serviceDb.GetByApiId(gatewayApi.Id)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -1740,7 +1918,7 @@ func (impl GatewayApiServiceImpl) updateService(kongAdapter kong.KongAdapter, re
 		if err != nil {
 			return service, errors.WithStack(err)
 		}
-		serviceResp, err := kongAdapter.CreateOrUpdateService(serviceReq)
+		serviceResp, err := gatewayAdapter.CreateOrUpdateService(serviceReq)
 		if err != nil {
 			return service, errors.WithStack(err)
 		}
@@ -1756,7 +1934,7 @@ func (impl GatewayApiServiceImpl) updateService(kongAdapter kong.KongAdapter, re
 	return service, nil
 }
 
-func (impl GatewayApiServiceImpl) updateRoute(kongAdapter kong.KongAdapter, req *gw.ApiDto, gatewayApi *orm.GatewayApi, service *orm.GatewayService, isRegexPath bool, normalPath string) (*orm.GatewayRoute, error) {
+func (impl GatewayApiServiceImpl) updateRoute(gatewayAdapter gateway_providers.GatewayAdapter, req *gw.ApiDto, gatewayApi *orm.GatewayApi, service *orm.GatewayService, isRegexPath bool, normalPath string) (*orm.GatewayRoute, error) {
 	route, err := impl.routeDb.GetByApiId(gatewayApi.Id)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -1779,7 +1957,7 @@ func (impl GatewayApiServiceImpl) updateRoute(kongAdapter kong.KongAdapter, req 
 		if err != nil {
 			return route, errors.WithStack(err)
 		}
-		routeResp, err := kongAdapter.CreateOrUpdateRoute(routeReq)
+		routeResp, err := gatewayAdapter.CreateOrUpdateRoute(routeReq)
 		if err != nil {
 			return route, err
 		}
@@ -1795,7 +1973,7 @@ func (impl GatewayApiServiceImpl) updateRoute(kongAdapter kong.KongAdapter, req 
 	return route, nil
 }
 
-func (impl GatewayApiServiceImpl) updatePolicy(kongAdapter kong.KongAdapter, req *gw.ApiDto, reqOption *gw.ApiReqOptionDto, gatewayApi *orm.GatewayApi, service *orm.GatewayService, route *orm.GatewayRoute, serviceRewritePath string, dbDto *gw.ApiDto) error {
+func (impl GatewayApiServiceImpl) updatePolicy(gatewayAdapter gateway_providers.GatewayAdapter, req *gw.ApiDto, reqOption *gw.ApiReqOptionDto, gatewayApi *orm.GatewayApi, service *orm.GatewayService, route *orm.GatewayRoute, serviceRewritePath string, dbDto *gw.ApiDto) error {
 	adds := []orm.GatewayPolicy{}
 	updates := []orm.GatewayPolicy{}
 	dels := []orm.GatewayPolicy{}
@@ -1856,7 +2034,7 @@ func (impl GatewayApiServiceImpl) updatePolicy(kongAdapter kong.KongAdapter, req
 			logrus.Error("gatewayPolicy is nil")
 			continue
 		}
-		if gatewayPolicy.Category != "basic" {
+		if gatewayPolicy.Category != apipolicy.Policy_Category_Basic {
 			policyMap[plugin.PluginName] = *gatewayPolicy
 		}
 		if gatewayPolicy.PluginName == "acl" {
@@ -1865,11 +2043,11 @@ func (impl GatewayApiServiceImpl) updatePolicy(kongAdapter kong.KongAdapter, req
 	}
 	needAuth := false
 	for name, policy := range reqMap {
-		if policy.Category == "auth" {
+		if policy.Category == apipolicy.Policy_Category_Auth {
 			needAuth = true
 		}
 		if policy.PluginName == "oauth2" {
-			_ = kongAdapter.TouchRouteOAuthMethod(route.RouteId)
+			_ = gatewayAdapter.TouchRouteOAuthMethod(route.RouteId)
 		}
 		if _, exist := policyMap[name]; !exist {
 			adds = append(adds, policy)
@@ -1918,7 +2096,7 @@ func (impl GatewayApiServiceImpl) updatePolicy(kongAdapter kong.KongAdapter, req
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		pluginResp, err := kongAdapter.AddPlugin(pluginReq)
+		pluginResp, err := gatewayAdapter.AddPlugin(pluginReq)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -1954,7 +2132,7 @@ func (impl GatewayApiServiceImpl) updatePolicy(kongAdapter kong.KongAdapter, req
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		pluginResp, err := kongAdapter.PutPlugin(pluginReq)
+		pluginResp, err := gatewayAdapter.PutPlugin(pluginReq)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -1986,7 +2164,7 @@ func (impl GatewayApiServiceImpl) updatePolicy(kongAdapter kong.KongAdapter, req
 			logrus.Error("oldPlugin is nil")
 			continue
 		}
-		err = kongAdapter.RemovePlugin(oldPlugin.PluginId)
+		err = gatewayAdapter.RemovePlugin(oldPlugin.PluginId)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -2003,12 +2181,12 @@ func (impl GatewayApiServiceImpl) updatePolicy(kongAdapter kong.KongAdapter, req
 		},
 	}
 	if req.IsInner == 1 {
-		_, err = kongAdapter.CreateOrUpdatePlugin(pluginReq)
+		_, err = gatewayAdapter.CreateOrUpdatePlugin(pluginReq)
 		if err != nil {
 			return err
 		}
 	} else {
-		err = kongAdapter.DeletePluginIfExist(pluginReq)
+		err = gatewayAdapter.DeletePluginIfExist(pluginReq)
 		if err != nil {
 			return err
 		}
@@ -2022,7 +2200,7 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 	var service *orm.GatewayService
 	var route *orm.GatewayRoute
 	var newGatewayApi *orm.GatewayApi
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var isRegexPath bool
 	var dbDto gw.ApiDto
 	var inPackages []orm.GatewayApiInPackage
@@ -2032,6 +2210,7 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 	auditCtx := map[string]interface{}{}
 	dto.OuterNetEnable = true
 	serviceRewritePath := ""
+	gatewayProvider := ""
 	runtimeDb := impl.runtimeDb
 	if len(session) > 0 {
 		ret = PARAMS_IS_NULL
@@ -2087,7 +2266,19 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 	if err != nil {
 		return nil, PARAMS_IS_NULL, err
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+
+	gatewayProvider, err = impl.GetGatewayProvider(runtimeService.ClusterName)
+	if err != nil {
+		return nil, PARAMS_IS_NULL, err
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return nil, PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
 	dto.KongInfoEndpoint = kongInfo.Endpoint
 	dto.Hosts = append(dto.Hosts, kong.InnerHost)
 	if dto.RedirectType == gw.RT_SERVICE {
@@ -2120,17 +2311,17 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 		}
 
 	}
-	service, err = impl.updateService(kongAdapter, dto, gatewayApi)
+	service, err = impl.updateService(gatewayAdapter, dto, gatewayApi)
 	if err != nil {
 		ret = UPDATE_API_SERVICE_FAIL
 		goto errorHappened
 	}
-	route, err = impl.updateRoute(kongAdapter, dto, gatewayApi, service, isRegexPath, dbDto.Path)
+	route, err = impl.updateRoute(gatewayAdapter, dto, gatewayApi, service, isRegexPath, dbDto.Path)
 	if err != nil {
 		ret = UPDATE_API_ROUTE_FAIL
 		goto errorHappened
 	}
-	err = impl.updatePolicy(kongAdapter, dto, nil, gatewayApi, service, route, serviceRewritePath, &dbDto)
+	err = impl.updatePolicy(gatewayAdapter, dto, nil, gatewayApi, service, route, serviceRewritePath, &dbDto)
 	if err != nil {
 		ret = UPDATE_API_PLUGIN_FAIL
 		goto errorHappened
@@ -2166,6 +2357,13 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 			if err != nil {
 				goto errorHappened
 			}
+
+			if gatewayProvider == mse.Mse_Provider_Name {
+				err = impl.createServiceAndIngress(strings.Split(newGatewayApi.Domains, ","), packageApi, newGatewayApi.Id, runtimeService.ProjectId, runtimeService.Workspace, runtimeService.ClusterName)
+				if err != nil {
+					goto errorHappened
+				}
+			}
 		}
 	}
 
@@ -2185,7 +2383,7 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 	var service *orm.GatewayService
 	var route *orm.GatewayRoute
 	var newGatewayApi = new(orm.GatewayApi)
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var gatewayPolicies []orm.GatewayPolicy
 	var isRegexPath bool
 	var dbDto gw.ApiDto
@@ -2199,7 +2397,19 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 	if err != nil {
 		return nil, PARAMS_IS_NULL, err
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+
+	gatewayProvider, err := impl.GetGatewayProvider(consumer.Az)
+	if err != nil {
+		return nil, PARAMS_IS_NULL, err
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return nil, PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
 	dto.KongInfoEndpoint = kongInfo.Endpoint
 	if len(dto.Hosts) == 0 {
 		dto.Hosts = append(dto.Hosts, kong.InnerHost, kongInfo.Endpoint)
@@ -2219,18 +2429,18 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 			return nil, API_EXIST, errors.Errorf("api path[%s] method[%s] conflict", dto.Path, dto.Method)
 		}
 	}
-	service, err = impl.updateService(kongAdapter, dto, gatewayApi)
+	service, err = impl.updateService(gatewayAdapter, dto, gatewayApi)
 	if err != nil {
 		ret = UPDATE_API_SERVICE_FAIL
 		goto errorHappened
 	}
-	route, err = impl.updateRoute(kongAdapter, dto, gatewayApi, service, isRegexPath, dbDto.Path)
+	route, err = impl.updateRoute(gatewayAdapter, dto, gatewayApi, service, isRegexPath, dbDto.Path)
 	if err != nil {
 		ret = UPDATE_API_ROUTE_FAIL
 		goto errorHappened
 	}
 	if optionDto != nil {
-		err = impl.updatePolicy(kongAdapter, dto, optionDto, gatewayApi, service, route, serviceRewritePath, &dbDto)
+		err = impl.updatePolicy(gatewayAdapter, dto, optionDto, gatewayApi, service, route, serviceRewritePath, &dbDto)
 		if err != nil {
 			ret = UPDATE_API_PLUGIN_FAIL
 			goto errorHappened
@@ -2280,6 +2490,13 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 			err = impl.packageApiDb.Update(packageApi)
 			if err != nil {
 				goto errorHappened
+			}
+
+			if gatewayProvider == mse.Mse_Provider_Name {
+				err = impl.createServiceAndIngress(strings.Split(newGatewayApi.Domains, ","), packageApi, newGatewayApi.Id, consumer.ProjectId, consumer.Env, consumer.Az)
+				if err != nil {
+					goto errorHappened
+				}
 			}
 		}
 	}
@@ -2336,6 +2553,18 @@ func (impl GatewayApiServiceImpl) UpdateApi(apiId string, req *gw.ApiReqDto) (ap
 		return
 	}
 	return
+}
+
+func (impl GatewayApiServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
 }
 
 func (impl GatewayApiServiceImpl) ClearRuntimeApi(dao *orm.GatewayRuntimeService) error {

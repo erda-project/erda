@@ -33,6 +33,7 @@ type EndpointMaterial struct {
 	ProjectNamespace      string
 	IngressName           string
 	K8SRouteOptions       k8s.RouteOptions
+	GatewayProvider       string
 }
 
 type EndpointFactory interface {

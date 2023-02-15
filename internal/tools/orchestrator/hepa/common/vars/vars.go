@@ -46,6 +46,8 @@ var (
 	KONG_SERVICE_PORT       = 8000
 	BIND_DOMAIN_INGRESS_TAG = "-domain"
 	INNER_INGRESS_TAG       = "-inner"
+
+	DEFALUT_SERVICE_PORT = 80
 )
 
 type StandardErrorCode struct {
@@ -97,6 +99,7 @@ var (
 	CONSUMER_EXIST                     = StandardErrorCode{"GW_100043", "consumer 已经存在"}
 	CONSUMER_ID_MISS                   = StandardErrorCode{"GW_100044", "consumerId 缺失"}
 	CONSUMER_PARAMS_MISS               = StandardErrorCode{"GW_100045", "参数缺失"}
+	CONSUMER_NOT_SUPPORT               = StandardErrorCode{"GW_100046", "mse 不支持创建 consumer"}
 
 	//业务网关注册
 	TRANSFORM_REGIS_NO_SOLUTION = StandardErrorCode{"GW_200001", "solution 为空"}
@@ -110,13 +113,14 @@ var (
 	CLUSTER_NOT_K8S   = StandardErrorCode{"GW_400003", "非k8s集群不支持此功能"}
 	DOMAIN_EXIST      = StandardErrorCode{"GW_400004", "域名已经被占用"}
 
-	PACKAGE_IN_CONSUMER  = StandardErrorCode{"GW_400005", "请取消该流量入口的所有授权后再删除"}
-	PACKAGE_EXIST        = StandardErrorCode{"GW_400006", "已存在同名流量入口"}
-	DICE_API_NOT_MUTABLE = StandardErrorCode{"GW_400007", "不可修改依赖服务API的路由信息"}
-	INVALID_LIMIT_RULE   = StandardErrorCode{"GW_400008", "流量限制参数错误"}
-	INVALID_LIMIT_API    = StandardErrorCode{"GW_400009", "只能限制流量入口中已存在的API"}
-	API_IN_PACKAGE       = StandardErrorCode{"GW_400010", "API被其他流量入口引用,不可更改或删除"}
-	LIMIT_RULE_EXIST     = StandardErrorCode{"GW_400011", "该规则已存在，请直接编辑"}
+	PACKAGE_IN_CONSUMER         = StandardErrorCode{"GW_400005", "请取消该流量入口的所有授权后再删除"}
+	PACKAGE_EXIST               = StandardErrorCode{"GW_400006", "已存在同名流量入口"}
+	DICE_API_NOT_MUTABLE        = StandardErrorCode{"GW_400007", "不可修改依赖服务API的路由信息"}
+	INVALID_LIMIT_RULE          = StandardErrorCode{"GW_400008", "流量限制参数错误"}
+	INVALID_LIMIT_API           = StandardErrorCode{"GW_400009", "只能限制流量入口中已存在的API"}
+	API_IN_PACKAGE              = StandardErrorCode{"GW_400010", "API被其他流量入口引用,不可更改或删除"}
+	LIMIT_RULE_EXIST            = StandardErrorCode{"GW_400011", "该规则已存在，请直接编辑"}
+	DELETE_API_IN_PACKAGE_ERROR = StandardErrorCode{"GW_400012", "删除 API 失败, 请稍后重试"}
 )
 
 type PolicyCategory struct {

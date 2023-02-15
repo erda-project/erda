@@ -43,4 +43,5 @@ type GatewayDomainService interface {
 	TouchPackageDomain(orgId, packageId, clusterName string, domains []string, session *service.SessionHelper) ([]string, error)
 	GetPackageDomains(packageId string, session ...*service.SessionHelper) ([]string, error)
 	IsPackageDomainsDiff(packageId, clusterName string, domains []string, session *service.SessionHelper) (bool, error)
+	GetGatewayProvider(clusterName string) (string, error)
 }

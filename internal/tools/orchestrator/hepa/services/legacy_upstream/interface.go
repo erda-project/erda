@@ -26,4 +26,5 @@ type GatewayUpstreamService interface {
 	Clone(context.Context) GatewayUpstreamService
 	UpstreamRegister(context.Context, *dto.UpstreamRegisterDto) (bool, error)
 	UpstreamRegisterAsync(context.Context, *dto.UpstreamRegisterDto) (bool, error)
+	GetGatewayProvider(string) (string, error)
 }

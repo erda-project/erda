@@ -34,4 +34,5 @@ type GatewayConsumerService interface {
 	UpdateConsumerInfo(string, *dto.ConsumerDto) *common.StandardResult
 	GetConsumerList(string, string, string) *common.StandardResult
 	DeleteConsumer(string) *common.StandardResult
+	GetGatewayProvider(string) (string, error)
 }

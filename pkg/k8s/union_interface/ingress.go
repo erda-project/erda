@@ -41,11 +41,12 @@ type IngressBackend struct {
 }
 
 type IngressMaterial struct {
-	Name      string
-	Namespace string
-	Routes    []IngressRoute
-	Backend   IngressBackend
-	NeedTLS   bool
+	Name            string
+	Namespace       string
+	Routes          []IngressRoute
+	Backend         IngressBackend
+	NeedTLS         bool
+	GatewayProvider string
 }
 
 type IngressesHelper interface {

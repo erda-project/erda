@@ -16,6 +16,8 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/hepa/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -56,6 +59,7 @@ type ClusterInfoDto struct {
 	DiceRootDomain  string `json:"DICE_ROOT_DOMAIN"`
 	MasterAddr      string `json:"MASTER_VIP_ADDR"`
 	NetportalUrl    string `json:"NETPORTAL_URL"`
+	GatewayProvider string `json:"GATEWAY_PROVIDER"`
 }
 
 type GatewayAzInfoServiceImpl struct {
@@ -125,25 +129,25 @@ func fillInfo(info *orm.GatewayAzInfo, clusterInfo *ClusterInfoDto) {
 	}
 }
 
-func (impl *GatewayAzInfoServiceImpl) GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, error) {
+func (impl *GatewayAzInfoServiceImpl) GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, *ClusterInfoDto, error) {
 	info := &orm.GatewayAzInfo{
 		Az: name,
 	}
 	cluster, err := bundle.Bundle.GetCluster(name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	clusterResp := &ClusterInfoDto{}
 	cm, err := json.Marshal(cluster.CM)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	err = json.Unmarshal(cm, clusterResp)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	fillInfo(info, clusterResp)
-	return info, nil
+	return info, clusterResp, nil
 }
 
 func (impl *GatewayAzInfoServiceImpl) GetAzInfo(cond *orm.GatewayAzInfo) (*orm.GatewayAzInfo, error) {
@@ -160,6 +164,25 @@ func (impl *GatewayAzInfoServiceImpl) GetAzInfo(cond *orm.GatewayAzInfo) (*orm.G
 		now.Sub(info.UpdateTime).Seconds() > 0)) {
 		return info, nil
 	}
+
+	if cond.OrgId == "" {
+		if orgDTO, ok := orgCache.GetOrgByProjectID(cond.ProjectId); ok {
+			cond.OrgId = fmt.Sprintf("%d", orgDTO.ID)
+		}
+	}
+	if cond.OrgId == "" {
+		pID, _ := strconv.ParseInt(cond.ProjectId, 10, 64)
+		projectInfo, err := bundle.Bundle.GetProject(uint64(pID))
+		if err == nil {
+			log.Infof("Get projectInfo: %+v\n", *projectInfo)
+			cond.OrgId = fmt.Sprintf("%d", projectInfo.OrgID)
+		}
+	}
+
+	if cond.OrgId == "" {
+		return nil, errors.Errorf("can not get orgId, need orgId")
+	}
+
 	code, body, err := util.CommonRequest("GET", discover.ErdaServer()+"/api/projects/"+cond.ProjectId, nil,
 		map[string]string{"Internal-Client": "hepa-gateway", httputil.OrgHeader: cond.OrgId})
 	if err != nil {

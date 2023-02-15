@@ -43,6 +43,7 @@ func (s *upstreamService) Register(ctx context.Context, req *pb.RegisterRequest)
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
 		return
 	}
+	logrus.Infof("Call /api/gateway/register_async with Req: %+v\n", *(req.GetUpstream()))
 	if req.GetUpstream().GetRuntimeId() == "" || req.GetUpstream().GetOnlyRuntimePath() {
 		return s.register(ctx, req)
 	}
@@ -91,6 +92,8 @@ func (s *upstreamService) register(ctx context.Context, req *pb.RegisterRequest)
 // AsyncRegister PUT /api/gateway/register_async
 func (s *upstreamService) AsyncRegister(ctx context.Context, req *pb.AsyncRegisterRequest) (resp *pb.AsyncRegisterResponse, err error) {
 	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
+	l := ctx.(*context1.LogContext).Entry()
+	l.WithError(nil).Infof("Call /api/gateway/register_async with Req: %+v\n", *(req.GetUpstream()))
 
 	if req.Upstream == nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
@@ -141,7 +144,6 @@ func (s *upstreamService) asyncRegister(ctx context.Context, req *pb.AsyncRegist
 		Data: result,
 	}
 	return
-
 }
 
 func (s *upstreamService) patchHubInfo(ctx context.Context, reqDto *dto.UpstreamRegisterDto) error {

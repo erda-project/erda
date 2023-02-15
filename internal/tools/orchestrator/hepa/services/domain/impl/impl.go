@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/runtime_service"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -204,7 +205,7 @@ func (impl GatewayDomainServiceImpl) acquireComponenetEndpointFactory(clusterNam
 }
 
 func (impl GatewayDomainServiceImpl) acquireEndpointFactory(runtimeService *orm.GatewayRuntimeService) (bool, endpoint.EndpointFactory, error) {
-	azInfo, err := impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
+	azInfo, _, err := impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
 	if azInfo == nil {
 		return false, nil, errors.New("az not found")
 	}
@@ -519,7 +520,7 @@ func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(orgId string, runtimeSer
 			return "", err
 		}
 	}
-	az, err := impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
+	az, _, err := impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
 	if err != nil {
 		return "", err
 	}
@@ -624,10 +625,16 @@ func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(orgId string, runtimeSer
 }
 
 func (impl GatewayDomainServiceImpl) RefreshRuntimeDomain(runtimeService *orm.GatewayRuntimeService, session *db.SessionHelper) error {
-	material, err := runtime_service.MakeEndpointMaterial(runtimeService)
+	gatewayProvider, err := impl.GetGatewayProvider(runtimeService.ClusterName)
+	if err != nil {
+		log.Errorf("get gateway provider failed for cluster %s: %v\n", runtimeService.ClusterName, err)
+		return err
+	}
+	material, err := runtime_service.MakeEndpointMaterial(runtimeService, gatewayProvider)
 	if err != nil {
 		return err
 	}
+
 	domainSession, err := impl.domainDb.NewSession(session)
 	if err != nil {
 		return err
@@ -679,6 +686,18 @@ func (impl GatewayDomainServiceImpl) IsPackageDomainsDiff(packageId, clusterName
 	adds, dels, _ := diffDomains(domainDtos, packageDomains)
 	log.Debugf("package domains, adds:%+v, dels:%+v, packageId:%s, req domain: %+v, domainDto: %+v, packageDomains: %+v", adds, dels, packageId, domains, domainDtos, packageDomains) // output for debug
 	return len(adds) != 0 || len(dels) != 0, nil
+}
+
+func (impl GatewayDomainServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
 }
 
 func (impl GatewayDomainServiceImpl) checkDomainsValid(clusterName string, domains []string) error {
@@ -845,7 +864,12 @@ func (impl GatewayDomainServiceImpl) GetTenantDomains(projectId, env string) (re
 	domainMap := map[string]bool{}
 	var packages []orm.GatewayPackage
 	var runtimes []orm.GatewayRuntimeService
+	orgId := apis.GetOrgID(impl.reqCtx)
+	if orgId == "" {
+		orgId, _ = (*impl.globalBiz).GetOrgId(projectId)
+	}
 	az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		ProjectId: projectId,
 		Env:       env,
 	})
@@ -943,7 +967,7 @@ func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string) (result
 		appName = leader.AppName
 		var azInfo *orm.GatewayAzInfo
 		var kongInfo *orm.GatewayKongInfo
-		azInfo, err = impl.azDb.GetAzInfoByClusterName(leader.ClusterName)
+		azInfo, _, err = impl.azDb.GetAzInfoByClusterName(leader.ClusterName)
 		if err != nil {
 			return
 		}
@@ -995,7 +1019,7 @@ func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string) (result
 			}
 		}
 		apisData, _ := json.Marshal(apis)
-		log.Infof("apis: %s\n, packageIDs: %v", string(apisData), packageIDs)
+		log.Debugf("apis: %s\n, packageIDs: %v", string(apisData), packageIDs)
 
 		// 查找这些路由的域名
 		var redirectDomains []orm.GatewayDomain
@@ -1062,6 +1086,8 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 	var runtimeService *orm.GatewayRuntimeService
 	var domains []gw.EndpointDomainDto
 	var rootDomain string
+	var clusterInfo *db.ClusterInfoDto
+	var gatewayProvider string
 	audits := []apistructs.Audit{}
 	session, err := db.NewSessionHelper()
 	if err != nil {
@@ -1120,13 +1146,20 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 	// acquire root domain
 	{
 		var azInfo *orm.GatewayAzInfo
-		azInfo, err = impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
+		azInfo, clusterInfo, err = impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
 		if err != nil {
 			return
 		}
 		if azInfo == nil {
 			err = errors.New("cluster info not found")
 			return
+		}
+		if clusterInfo == nil {
+			err = errors.New("clusterInfo not found")
+			return
+		}
+		if clusterInfo.GatewayProvider != "" {
+			gatewayProvider = clusterInfo.GatewayProvider
 		}
 		rootDomain = azInfo.WildcardDomain
 	}
@@ -1144,7 +1177,7 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 	if err != nil {
 		return
 	}
-	material, err = runtime_service.MakeEndpointMaterial(runtimeService)
+	material, err = runtime_service.MakeEndpointMaterial(runtimeService, gatewayProvider)
 	if err != nil {
 		return
 	}
@@ -1162,6 +1195,7 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 
 func (impl GatewayDomainServiceImpl) CreateOrUpdateComponentIngress(req apistructs.ComponentIngressUpdateRequest) (res bool, err error) {
 	var session *db.SessionHelper
+	var gatewayProvider string
 	defer func() {
 		if err != nil {
 			log.Errorf("error happened: %+v", err)
@@ -1179,6 +1213,12 @@ func (impl GatewayDomainServiceImpl) CreateOrUpdateComponentIngress(req apistruc
 	}()
 	err = req.CheckValid()
 	if err != nil {
+		return
+	}
+
+	gatewayProvider, err = impl.GetGatewayProvider(req.ClusterName)
+	if err != nil {
+		log.Errorf("get gateway provider failed for cluster %s: %v\n", req.ClusterName, err)
 		return
 	}
 	session, err = db.NewSessionHelper()
@@ -1242,10 +1282,11 @@ func (impl GatewayDomainServiceImpl) CreateOrUpdateComponentIngress(req apistruc
 		}
 	}
 	material := endpoint.EndpointMaterial{
-		K8SNamespace: req.K8SNamespace,
-		ServiceName:  req.ComponentName,
-		ServicePort:  req.ComponentPort,
-		IngressName:  req.IngressName,
+		K8SNamespace:    req.K8SNamespace,
+		ServiceName:     req.ComponentName,
+		ServicePort:     req.ComponentPort,
+		IngressName:     req.IngressName,
+		GatewayProvider: gatewayProvider,
 	}
 	var routes []endpoint.Route
 	for _, route := range req.Routes {
@@ -1264,7 +1305,7 @@ func (impl GatewayDomainServiceImpl) CreateOrUpdateComponentIngress(req apistruc
 	}
 	annotations := map[string]*string{}
 	// disable log by default
-	annotations["nginx.ingress.kubernetes.io/enable-access-log"] = &[]string{"false"}[0]
+	annotations[string(common.AnnotationEnableAccessLog)] = &[]string{"false"}[0]
 	for key, value := range req.RouteOptions.Annotations {
 		annotations[key] = &value
 	}

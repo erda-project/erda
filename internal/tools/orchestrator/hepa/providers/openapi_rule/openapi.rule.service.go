@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/openapi_rule"
+	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -54,11 +55,13 @@ func (s *openapiRuleService) GetLimits(ctx context.Context, req *pb.GetLimitsReq
 	}
 	return
 }
+
 func (s *openapiRuleService) CreateLimit(ctx context.Context, req *pb.CreateLimitRequest) (resp *pb.CreateLimitResponse, err error) {
 	service := openapi_rule.Service.Clone(ctx)
 	result, existed, err := service.CreateLimitRule(&dto.DiceArgsDto{
 		ProjectId: req.ProjectId,
 		Env:       req.Env,
+		OrgId:     apis.GetOrgID(ctx),
 	}, dto.FromLimitRequest(req.LimitRequest))
 	if existed {
 		err = erdaErr.NewAlreadyExistsError("rule")
@@ -73,6 +76,7 @@ func (s *openapiRuleService) CreateLimit(ctx context.Context, req *pb.CreateLimi
 	}
 	return
 }
+
 func (s *openapiRuleService) UpdateLimit(ctx context.Context, req *pb.UpdateLimitRequest) (resp *pb.UpdateLimitResponse, err error) {
 	service := openapi_rule.Service.Clone(ctx)
 	result, err := service.UpdateLimitRule(req.RuleId, dto.FromLimitRequest(req.LimitRequest))
@@ -96,6 +100,7 @@ func (s *openapiRuleService) UpdateLimit(ctx context.Context, req *pb.UpdateLimi
 	}
 	return
 }
+
 func (s *openapiRuleService) DeleteLimit(ctx context.Context, req *pb.DeleteLimitRequest) (resp *pb.DeleteLimitResponse, err error) {
 	service := openapi_rule.Service.Clone(ctx)
 	result, err := service.DeleteLimitRule(req.RuleId)

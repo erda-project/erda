@@ -51,14 +51,15 @@ func (list SortBySceneList) Less(i, j int) bool {
 
 func (dto PackageInfoDto) ToEndpoint() *pb.Endpoint {
 	return &pb.Endpoint{
-		Id:          dto.Id,
-		CreateAt:    dto.CreateAt,
-		Name:        dto.Name,
-		BindDomain:  dto.BindDomain,
-		AuthType:    dto.AuthType,
-		AclType:     dto.AclType,
-		Scene:       dto.Scene,
-		Description: dto.Description,
+		Id:              dto.Id,
+		CreateAt:        dto.CreateAt,
+		Name:            dto.Name,
+		BindDomain:      dto.BindDomain,
+		AuthType:        dto.AuthType,
+		AclType:         dto.AclType,
+		Scene:           dto.Scene,
+		Description:     dto.Description,
+		GatewayProvider: dto.GatewayProvider,
 	}
 }
 

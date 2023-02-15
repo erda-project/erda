@@ -29,6 +29,7 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/hepa/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
@@ -256,10 +257,15 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(ctx context.Context, r
 		return
 	}
 	diceObj = diceYaml.Obj()
-	azInfo, err = impl.azDb.GetAzInfoByClusterName(reqDto.ClusterName)
+	azInfo, azClusterInfo, err := impl.azDb.GetAzInfoByClusterName(reqDto.ClusterName)
 	if err != nil {
 		return
 	}
+	useKong := true
+	if azClusterInfo != nil && azClusterInfo.GatewayProvider != "" {
+		useKong = false
+	}
+
 	isK8S = (azInfo.Type == orm.AT_K8S || azInfo.Type == orm.AT_EDAS) && !config.ServerConf.UseAdminEndpoint
 	kongInfo, err = impl.kongDb.GetByAny(&orm.GatewayKongInfo{
 		Az: reqDto.ClusterName,
@@ -374,19 +380,23 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(ctx context.Context, r
 		}
 		_ = session.Begin()
 		if kongInfo != nil {
-			var namespace string
-			namespace, _, err = impl.kongDb.GenK8SInfo(kongInfo)
-			if err != nil {
-				return
-			}
-			if isK8S && serviceRelease.MeshEnable != nil && *serviceRelease.MeshEnable {
-				err = k8sAdapter.MakeGatewaySupportMesh(namespace)
+			var namespace, svcName string
+			if useKong {
+				namespace, svcName, err = impl.kongDb.GenK8SInfo(kongInfo)
 				if err != nil {
 					return
 				}
+
+				if isK8S && serviceRelease.MeshEnable != nil && *serviceRelease.MeshEnable {
+					err = k8sAdapter.MakeGatewaySupportMesh(namespace)
+					if err != nil {
+						return
+					}
+				}
 			}
+
 			if isK8S && serviceRelease.TrafficSecurity.Mode == "https" {
-				err = k8sAdapter.MakeGatewaySupportHttps(namespace)
+				err = k8sAdapter.MakeGatewaySupportHttps(namespace, svcName)
 				if err != nil {
 					return
 				}
@@ -453,7 +463,12 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(ctx context.Context, r
 }
 
 func (impl GatewayRuntimeServiceServiceImpl) clearDomain(dao *orm.GatewayRuntimeService, session *db.SessionHelper) error {
-	material, err := runtime_service.MakeEndpointMaterial(dao)
+	gatewayProvider, err := impl.GetGatewayProvider(dao.ClusterName)
+	if err != nil {
+		logrus.Errorf("get gateway provider failed for cluster %s: %v\n", dao.ClusterName, err)
+		return err
+	}
+	material, err := runtime_service.MakeEndpointMaterial(dao, gatewayProvider)
 	if err != nil {
 		return err
 	}
@@ -536,7 +551,14 @@ func (impl GatewayRuntimeServiceServiceImpl) GetRegisterAppInfo(projectId, env s
 	}
 	appMap := map[string]map[string]bool{}
 	var runtimeServices []orm.GatewayRuntimeService
+	orgId := apis.GetOrgID(impl.reqCtx)
+	if orgId == "" {
+		if orgDTO, ok := orgCache.GetOrgByProjectID(projectId); ok {
+			orgId = fmt.Sprintf("%d", orgDTO.ID)
+		}
+	}
 	az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		ProjectId: projectId,
 		Env:       env,
 	})
@@ -588,6 +610,18 @@ func (impl GatewayRuntimeServiceServiceImpl) GetRegisterAppInfo(projectId, env s
 	return
 }
 
+func (impl GatewayRuntimeServiceServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
+}
+
 func (impl GatewayRuntimeServiceServiceImpl) GetServiceRuntimes(projectId, env, app, service string) (result []orm.GatewayRuntimeService, err error) {
 	defer func() {
 		if err != nil {
@@ -599,7 +633,14 @@ func (impl GatewayRuntimeServiceServiceImpl) GetServiceRuntimes(projectId, env, 
 		return
 	}
 	var daos []orm.GatewayRuntimeService
+	orgId := apis.GetOrgID(impl.reqCtx)
+	if orgId == "" {
+		if orgDTO, ok := orgCache.GetOrgByProjectID(projectId); ok {
+			orgId = fmt.Sprintf("%d", orgDTO.ID)
+		}
+	}
 	az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		ProjectId: projectId,
 		Env:       env,
 	})

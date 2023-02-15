@@ -40,4 +40,5 @@ type GatewayApiService interface {
 	DeleteUpstreamBindApi(*orm.GatewayUpstreamApi) error
 	TouchRuntimeApi(*orm.GatewayRuntimeService, *service.SessionHelper, bool) error
 	ClearRuntimeApi(*orm.GatewayRuntimeService) error
+	GetGatewayProvider(az string) (string, error)
 }

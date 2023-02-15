@@ -17,6 +17,7 @@ package impl
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -24,9 +25,12 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/hepa/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/exdto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -34,6 +38,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/domain"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/openapi_rule"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/zone"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type GatewayOpenapiRuleServiceImpl struct {
@@ -167,7 +172,7 @@ func (impl GatewayOpenapiRuleServiceImpl) openLimitRule(dto *gw.OpenLimitRuleDto
 	return rule
 }
 
-func (impl GatewayOpenapiRuleServiceImpl) SetPackageApiKongPolicies(packageApi *orm.GatewayPackageApi, session *db.SessionHelper) error {
+func (impl GatewayOpenapiRuleServiceImpl) SetPackageApiKongPolicies(packageApi *orm.GatewayPackageApi, useKong bool, session *db.SessionHelper) error {
 	packageSession, err := impl.packageDb.NewSession(session)
 	if err != nil {
 		return err
@@ -187,9 +192,12 @@ func (impl GatewayOpenapiRuleServiceImpl) SetPackageApiKongPolicies(packageApi *
 	if !needUpdate {
 		return nil
 	}
-	err = (*impl.zoneBiz).UpdateKongDomainPolicy(pack.DiceClusterName, pack.DiceProjectId, pack.DiceEnv, session)
-	if err != nil {
-		return err
+
+	if useKong {
+		err = (*impl.zoneBiz).UpdateKongDomainPolicy(pack.DiceClusterName, pack.DiceProjectId, pack.DiceEnv, session)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -469,6 +477,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateOrUpdateLimitRule(consumerId, pa
 			return
 		}
 		err = impl.CreateRule(gw.DiceInfo{
+			OrgId:     pack.DiceOrgId,
 			ProjectId: pack.DiceProjectId,
 			Env:       pack.DiceEnv,
 		}, impl.openLimitRule(limitDto), session)
@@ -505,7 +514,17 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateLimitRule(args *gw.DiceArgsDto, 
 		err = errors.New("package not find")
 		return
 	}
+	orgId := args.OrgId
+	if orgId == "" {
+		orgId = apis.GetOrgID(impl.reqCtx)
+	}
+	if orgId == "" {
+		if orgDTO, ok := orgCache.GetOrgByProjectID(args.ProjectId); ok {
+			orgId = fmt.Sprintf("%d", orgDTO.ID)
+		}
+	}
 	az, err = impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		Env:       args.Env,
 		ProjectId: args.ProjectId,
 	})
@@ -513,6 +532,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateLimitRule(args *gw.DiceArgsDto, 
 		return
 	}
 	diceInfo = gw.DiceInfo{
+		OrgId:     args.OrgId,
 		Env:       args.Env,
 		ProjectId: args.ProjectId,
 		Az:        az,
@@ -793,7 +813,7 @@ func (impl GatewayOpenapiRuleServiceImpl) kongPluginReq(dto *gw.OpenapiRule, hel
 	return reqDto, nil
 }
 
-func (impl GatewayOpenapiRuleServiceImpl) createOrUpdateKongPlugin(adapter kong.KongAdapter, dto *gw.OpenapiRule, helper *db.SessionHelper) (string, error) {
+func (impl GatewayOpenapiRuleServiceImpl) createOrUpdateKongPlugin(adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiRule, helper *db.SessionHelper) (string, error) {
 	req, err := impl.kongPluginReq(dto, helper)
 	if err != nil {
 		return "", err
@@ -805,12 +825,13 @@ func (impl GatewayOpenapiRuleServiceImpl) createOrUpdateKongPlugin(adapter kong.
 	return resp.Id, nil
 }
 
-func (impl GatewayOpenapiRuleServiceImpl) deleteKongPlugin(adapter kong.KongAdapter, pluginId string) error {
+func (impl GatewayOpenapiRuleServiceImpl) deleteKongPlugin(adapter gateway_providers.GatewayAdapter, pluginId string) error {
 	return adapter.RemovePlugin(pluginId)
 }
 
 func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule *gw.OpenapiRule, helper *db.SessionHelper) error {
 	var ruleDbService db.GatewayPackageRuleService
+	var gatewayProvider string
 	var err error
 	if helper != nil {
 		ruleDbService, err = impl.ruleDb.NewSession(helper)
@@ -824,14 +845,30 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 	if dao == nil {
 		return errors.Errorf("convert to dao failed, rule:%+v", rule)
 	}
+
 	if !rule.NotKongPlugin {
+		orgId := diceInfo.OrgId
+		if orgId == "" {
+			orgId = apis.GetOrgID(impl.reqCtx)
+		}
+		if orgId == "" {
+			if orgDTO, ok := orgCache.GetOrgByProjectID(diceInfo.ProjectId); ok {
+				orgId = fmt.Sprintf("%d", orgDTO.ID)
+			}
+		}
 		az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+			OrgId:     orgId,
 			Env:       diceInfo.Env,
 			ProjectId: diceInfo.ProjectId,
 		})
 		if err != nil {
 			return err
 		}
+		gatewayProvider, err = impl.GetGatewayProvider(az)
+		if err != nil {
+			return err
+		}
+
 		kongInfo, err := impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
 			Az:        az,
 			ProjectId: diceInfo.ProjectId,
@@ -840,15 +877,23 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 		if err != nil {
 			return err
 		}
-		kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
-		pluginId, err := impl.createOrUpdateKongPlugin(kongAdapter, rule, helper)
+		var gatewayAdapter gateway_providers.GatewayAdapter
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			gatewayAdapter = mse.NewMseAdapter()
+		case "":
+			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		default:
+			return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		}
+		pluginId, err := impl.createOrUpdateKongPlugin(gatewayAdapter, rule, helper)
 		if err != nil {
 			return err
 		}
 		dao.PluginId = pluginId
 		err = ruleDbService.Insert(dao)
 		if err != nil {
-			_ = impl.deleteKongPlugin(kongAdapter, pluginId)
+			_ = impl.deleteKongPlugin(gatewayAdapter, pluginId)
 			return err
 		}
 	} else {
@@ -861,6 +906,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 }
 
 func (impl GatewayOpenapiRuleServiceImpl) UpdateRule(ruleId string, rule *gw.OpenapiRule) (*orm.GatewayPackageRule, error) {
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	if ruleId == "" {
 		return nil, errors.New("empty ruleId")
 	}
@@ -871,6 +917,13 @@ func (impl GatewayOpenapiRuleServiceImpl) UpdateRule(ruleId string, rule *gw.Ope
 	if dao == nil {
 		return nil, errors.New("rule not find")
 	}
+
+	gatewayProvider := ""
+	gatewayProvider, err = impl.GetGatewayProvider(dao.DiceClusterName)
+	if err != nil {
+		return nil, err
+	}
+
 	if rule.PackageId != dao.PackageId || rule.ConsumerId != dao.ConsumerId ||
 		rule.PluginName != dao.PluginName {
 		return nil, errors.New("field can't change when update rule")
@@ -884,8 +937,15 @@ func (impl GatewayOpenapiRuleServiceImpl) UpdateRule(ruleId string, rule *gw.Ope
 	if err != nil {
 		return nil, err
 	}
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
-	_, err = impl.createOrUpdateKongPlugin(kongAdapter, rule, nil)
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return nil, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
+	_, err = impl.createOrUpdateKongPlugin(gatewayAdapter, rule, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -903,11 +963,24 @@ func (impl GatewayOpenapiRuleServiceImpl) UpdateRule(ruleId string, rule *gw.Ope
 	return dao, nil
 }
 
+func (impl GatewayOpenapiRuleServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
+}
+
 func (impl GatewayOpenapiRuleServiceImpl) DeleteRule(ruleId string, helper *db.SessionHelper) error {
 	if ruleId == "" {
 		return errors.New("empty ruleId")
 	}
 	var ruleDbService db.GatewayPackageRuleService
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var err error
 	if helper != nil {
 		ruleDbService, err = impl.ruleDb.NewSession(helper)
@@ -924,6 +997,13 @@ func (impl GatewayOpenapiRuleServiceImpl) DeleteRule(ruleId string, helper *db.S
 	if dao == nil {
 		return nil
 	}
+
+	gatewayProvider := ""
+	gatewayProvider, err = impl.GetGatewayProvider(dao.DiceClusterName)
+	if err != nil {
+		return err
+	}
+
 	kongInfo, err := impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
 		Az:        dao.DiceClusterName,
 		ProjectId: dao.DiceProjectId,
@@ -933,8 +1013,16 @@ func (impl GatewayOpenapiRuleServiceImpl) DeleteRule(ruleId string, helper *db.S
 		return err
 	}
 	if dao.PluginId != "" {
-		kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
-		err = impl.deleteKongPlugin(kongAdapter, dao.PluginId)
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			gatewayAdapter = mse.NewMseAdapter()
+		case "":
+			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		default:
+			log.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+			return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		}
+		err = impl.deleteKongPlugin(gatewayAdapter, dao.PluginId)
 		if err != nil {
 			return err
 		}

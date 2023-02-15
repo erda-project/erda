@@ -35,6 +35,8 @@ FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
 ENV MODULE_PATH=${MODULE_PATH}
 
+ARG ARCH
+
 # use for ops
 RUN curl -o /usr/bin/orgalorg https://terminus-dice.oss.aliyuncs.com/installer/orgalorg && \
     chmod 755 /usr/bin/orgalorg
@@ -42,6 +44,9 @@ RUN curl -o /usr/bin/orgalorg https://terminus-dice.oss.aliyuncs.com/installer/o
 RUN \
     npm i -g jackson-converter@1.0.10 && \
     pip3 install dicttoxml xmindparser
+
+RUN wget  https://terminus-dice.oss-cn-hangzhou.aliyuncs.com/installer/nginx_1.20.2-1~bullseye_${ARCH}.deb && \
+        dpkg -i nginx_1.20.2-1~bullseye_${ARCH}.deb
 
 COPY --from=app-handler /erda-handled /erda
 

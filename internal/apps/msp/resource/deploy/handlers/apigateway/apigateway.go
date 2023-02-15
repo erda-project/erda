@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
@@ -35,6 +37,53 @@ import (
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
 	return tmc.Engine == handlers.ResourceApiGateway
+}
+
+func (p *provider) CheckIfHasCustomConfig(clusterConfig map[string]string) (map[string]string, bool) {
+	GatewayProvider, ok := clusterConfig[handlers.GatewayProviderVendorKey]
+	if !ok || GatewayProvider == "" {
+		return nil, false
+	}
+
+	GatewayEndpoint := ""
+	switch GatewayProvider {
+	case handlers.GatewayProviderMSE:
+		GatewayEndpoint, ok = clusterConfig[handlers.GatewayEndpoint]
+		if !ok || GatewayEndpoint == "" {
+			GatewayEndpoint = clusterConfig["DICE_ROOT_DOMAIN"]
+			if GatewayEndpoint == "" {
+				return nil, false
+			}
+		}
+	case "":
+	default:
+		p.Log.Errorf("Unknown gatewayProvider: %v\n", GatewayProvider)
+		return nil, false
+	}
+
+	mainClusterDomain := p.Cfg.MainClusterInfo.RootDomain
+	mainClusterScheme := p.Cfg.MainClusterInfo.Protocol
+	mainClusterHTTPPort := p.Cfg.MainClusterInfo.HttpPort
+	mainClusterHTTPSPort := p.Cfg.MainClusterInfo.HttpsPort
+
+	config := map[string]string{}
+
+	schema := mainClusterScheme
+	var port string
+	if strings.Contains(schema, "https") {
+		schema = "https"
+		port = mainClusterHTTPSPort
+	} else if strings.Contains(schema, "http") {
+		schema = "http"
+		port = mainClusterHTTPPort
+	}
+
+	config["HEPA_GATEWAY_HOST"] = schema + "://hepa." + strings.Split(mainClusterDomain, ",")[0]
+	config["HEPA_GATEWAY_PORT"] = port
+	config["GATEWAY_ENDPOINT"] = GatewayEndpoint
+	//config["GATEWAY_INSTANCE_ID"] = tmcInstance.ID
+
+	return config, true
 }
 
 func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstance *db.Instance) error {
@@ -234,6 +283,24 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 		AdminAddr:       instanceConfig["ADMIN_ENDPOINT"],
 		GatewayEndpoint: instanceConfig["GATEWAY_ENDPOINT"],
 	}
+	p.Log.Infof("Before gatewayReq-GatewayEndpoint=%v\n", gatewayReq.GatewayEndpoint)
+	// 对接 MSE 等其他网关解决方案
+	GatewayProvider, ok := clusterConfig[handlers.GatewayProviderVendorKey]
+	if ok && GatewayProvider != "" {
+		gatewayReq.InnerAddr = ""
+		gatewayReq.GatewayProvider = GatewayProvider
+		switch GatewayProvider {
+		case handlers.GatewayProviderMSE:
+			GatewayEndpoint, ok := clusterConfig[handlers.GatewayEndpoint]
+			if !ok || GatewayEndpoint == "" {
+				GatewayEndpoint = clusterConfig["DICE_ROOT_DOMAIN"]
+			}
+			gatewayReq.GatewayEndpoint = "gateway." + GatewayEndpoint
+		default:
+			return nil, errors.Errorf("unknown gateway provider:%v\n", GatewayProvider)
+		}
+	}
+	p.Log.Infof("End gatewayReq-GatewayEndpoint=%v\n", gatewayReq.GatewayEndpoint)
 	err := p.Bdl.CreateGatewayTenant(&gatewayReq)
 	success := err == nil // for debug purpose
 	if !success {

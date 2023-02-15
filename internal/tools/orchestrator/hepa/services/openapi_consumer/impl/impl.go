@@ -29,8 +29,10 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -89,26 +91,26 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetKongConsumerName(consumer *orm.
 	return fmt.Sprintf("%s.%s.%s.%s:%s", consumer.OrgId, consumer.ProjectId, consumer.Env, consumer.Az, consumer.ConsumerName)
 }
 
-func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(kongAdapter kong.KongAdapter, consumerId string) (map[string]kongDto.KongCredentialListDto, error) {
-	kCredentials, err := kongAdapter.GetCredentialList(consumerId, orm.KEYAUTH)
+func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter gateway_providers.GatewayAdapter, consumerId string) (map[string]kongDto.KongCredentialListDto, error) {
+	kCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.KEYAUTH)
 	if err != nil {
 		kCredentials = &kongDto.KongCredentialListDto{
 			Data: []kongDto.KongCredentialDto{},
 		}
 	}
-	oCredentials, err := kongAdapter.GetCredentialList(consumerId, orm.OAUTH2)
+	oCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.OAUTH2)
 	if err != nil {
 		oCredentials = &kongDto.KongCredentialListDto{
 			Data: []kongDto.KongCredentialDto{},
 		}
 	}
-	sCredentials, err := kongAdapter.GetCredentialList(consumerId, orm.SIGNAUTH)
+	sCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.SIGNAUTH)
 	if err != nil {
 		sCredentials = &kongDto.KongCredentialListDto{
 			Data: []kongDto.KongCredentialDto{},
 		}
 	}
-	hCredentials, err := kongAdapter.GetCredentialList(consumerId, orm.HMACAUTH)
+	hCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.HMACAUTH)
 	if err != nil {
 		hCredentials = &kongDto.KongCredentialListDto{
 			Data: []kongDto.KongCredentialDto{},
@@ -122,13 +124,13 @@ func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(kongAdapter kong
 	}, nil
 }
 
-func (impl GatewayOpenapiConsumerServiceImpl) createCredential(kongAdapter kong.KongAdapter, pluginName string, consumerId string, config *kongDto.KongCredentialDto) (*kongDto.KongCredentialDto, error) {
+func (impl GatewayOpenapiConsumerServiceImpl) createCredential(gatewayAdapter gateway_providers.GatewayAdapter, pluginName string, consumerId string, config *kongDto.KongCredentialDto) (*kongDto.KongCredentialDto, error) {
 	req := &kongDto.KongCredentialReqDto{}
 	req.ConsumerId = consumerId
 	req.PluginName = pluginName
 	req.Config = config
 	if pluginName == orm.HMACAUTH {
-		enabled, err := kongAdapter.CheckPluginEnabled(pluginName)
+		enabled, err := gatewayAdapter.CheckPluginEnabled(pluginName)
 		if err != nil {
 			return nil, err
 		}
@@ -136,10 +138,11 @@ func (impl GatewayOpenapiConsumerServiceImpl) createCredential(kongAdapter kong.
 			return &kongDto.KongCredentialDto{}, nil
 		}
 	}
-	return kongAdapter.CreateCredential(req)
+	return gatewayAdapter.CreateCredential(req)
 }
 
 func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, clientId, clientSecret, clusterName string) (consumer *orm.GatewayConsumer, err error) {
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	dao, err := impl.consumerDb.GetByAny(&orm.GatewayConsumer{
 		ConsumerName: clientName,
 		Az:           clusterName,
@@ -169,12 +172,24 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 	if err != nil {
 		return
 	}
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+	gatewayProvider, err := impl.GetGatewayProvider(clusterName)
+	if err != nil {
+		return
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		log.Errorf("Unknown gatewayProvider: %v", gatewayProvider)
+		return
+	}
 	reqDto := &kongDto.KongConsumerReqDto{
 		Username: clientName,
 		CustomId: consumerId,
 	}
-	respDto, err := kongAdapter.CreateConsumer(reqDto)
+	respDto, err := gatewayAdapter.CreateConsumer(reqDto)
 	if err != nil {
 		return
 	}
@@ -183,17 +198,17 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 	if err != nil {
 		return
 	}
-	err = kongAdapter.CreateAclGroup(respDto.Id, reqDto.Username)
+	err = gatewayAdapter.CreateAclGroup(respDto.Id, reqDto.Username)
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.KEYAUTH, respDto.Id, &kongDto.KongCredentialDto{
+	_, err = impl.createCredential(gatewayAdapter, orm.KEYAUTH, respDto.Id, &kongDto.KongCredentialDto{
 		Key: clientId,
 	})
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.OAUTH2, respDto.Id,
+	_, err = impl.createCredential(gatewayAdapter, orm.OAUTH2, respDto.Id,
 		&kongDto.KongCredentialDto{
 			Name:         clientName,
 			RedirectUrl:  []string{"http://none"},
@@ -203,14 +218,14 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.SIGNAUTH, respDto.Id, &kongDto.KongCredentialDto{
+	_, err = impl.createCredential(gatewayAdapter, orm.SIGNAUTH, respDto.Id, &kongDto.KongCredentialDto{
 		Key:    clientId,
 		Secret: clientSecret,
 	})
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.HMACAUTH, respDto.Id, &kongDto.KongCredentialDto{
+	_, err = impl.createCredential(gatewayAdapter, orm.HMACAUTH, respDto.Id, &kongDto.KongCredentialDto{
 		Key:    clientId,
 		Secret: clientSecret,
 	})
@@ -246,7 +261,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 	var consumer *orm.GatewayConsumer
 	var unique bool
 	var kongInfo *orm.GatewayKongInfo
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var reqDto *kongDto.KongConsumerReqDto
 	var respDto *kongDto.KongConsumerRespDto
 	var customId string
@@ -290,13 +305,25 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 	if err != nil {
 		return
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	gatewayProvider, err := impl.GetGatewayProvider(az)
+	if err != nil {
+		return
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		log.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return
+	}
 	kongConsumerName = impl.GetKongConsumerName(consumer)
 	reqDto = &kongDto.KongConsumerReqDto{
 		Username: kongConsumerName,
 		CustomId: customId,
 	}
-	respDto, err = kongAdapter.CreateConsumer(reqDto)
+	respDto, err = gatewayAdapter.CreateConsumer(reqDto)
 	if err != nil {
 		return
 	}
@@ -305,18 +332,18 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 	if err != nil {
 		return
 	}
-	err = kongAdapter.CreateAclGroup(respDto.Id, kongConsumerName)
+	err = gatewayAdapter.CreateAclGroup(respDto.Id, kongConsumerName)
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.KEYAUTH, respDto.Id,
+	_, err = impl.createCredential(gatewayAdapter, orm.KEYAUTH, respDto.Id,
 		&kongDto.KongCredentialDto{
 			Key: key,
 		})
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.OAUTH2, respDto.Id,
+	_, err = impl.createCredential(gatewayAdapter, orm.OAUTH2, respDto.Id,
 		&kongDto.KongCredentialDto{
 			Name:         "App",
 			RedirectUrl:  []string{"http://none"},
@@ -326,7 +353,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.SIGNAUTH, respDto.Id,
+	_, err = impl.createCredential(gatewayAdapter, orm.SIGNAUTH, respDto.Id,
 		&kongDto.KongCredentialDto{
 			Key:    key,
 			Secret: secret,
@@ -334,7 +361,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(kongAdapter, orm.HMACAUTH, respDto.Id,
+	_, err = impl.createCredential(gatewayAdapter, orm.HMACAUTH, respDto.Id,
 		&kongDto.KongCredentialDto{
 			Key:    key,
 			Secret: secret,
@@ -399,6 +426,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumers(args *gw.GetOpenConsu
 	})
 	for _, dao := range daos {
 		if strings.HasSuffix(strings.ToLower(dao.ConsumerName), strings.ToLower(defaultName)) {
+			pageInfo.TotalNum--
 			continue
 		}
 		list = append(list, *impl.openConsumerDto(&dao))
@@ -502,7 +530,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 		return
 	}
 	var kongInfo *orm.GatewayKongInfo
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	consumer, err = impl.consumerDb.GetById(id)
 	if err != nil {
 		return
@@ -527,8 +555,20 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 	if err != nil {
 		return
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
-	err = kongAdapter.DeleteConsumer(consumer.ConsumerId)
+
+	gatewayProvider, err := impl.GetGatewayProvider(consumer.Az)
+	if err != nil {
+		return
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
+	err = gatewayAdapter.DeleteConsumer(consumer.ConsumerId)
 	if err != nil {
 		return
 	}
@@ -538,6 +578,18 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 	}
 	res = true
 	return
+}
+
+func (impl GatewayOpenapiConsumerServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
 }
 
 func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerCredentials(id string) (res gw.ConsumerCredentialsDto, err error) {
@@ -551,7 +603,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerCredentials(id string) 
 		return
 	}
 	var kongInfo *orm.GatewayKongInfo
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var credentialListMap map[string]kongDto.KongCredentialListDto
 	consumer, err := impl.consumerDb.GetById(id)
 	if err != nil {
@@ -569,8 +621,20 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerCredentials(id string) 
 	if err != nil {
 		return
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
-	credentialListMap, err = impl.getCredentialList(kongAdapter, consumer.ConsumerId)
+
+	gatewayProvider, err := impl.GetGatewayProvider(consumer.Az)
+	if err != nil {
+		return
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
+	credentialListMap, err = impl.getCredentialList(gatewayAdapter, consumer.ConsumerId)
 	if err != nil {
 		return
 	}
@@ -630,7 +694,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 		return
 	}
 	var kongInfo *orm.GatewayKongInfo
-	var kongAdapter kong.KongAdapter
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var credentialListMap map[string]kongDto.KongCredentialListDto
 	newAuth := dto.AuthConfig
 	adds := map[string][]kongDto.KongCredentialDto{}
@@ -651,8 +715,20 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 	if err != nil {
 		return
 	}
-	kongAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
-	credentialListMap, err = impl.getCredentialList(kongAdapter, consumer.ConsumerId)
+	gatewayProvider, err := impl.GetGatewayProvider(consumer.Az)
+	if err != nil {
+		return
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return
+	}
+	credentialListMap, err = impl.getCredentialList(gatewayAdapter, consumer.ConsumerId)
 	if err != nil {
 		return
 	}
@@ -684,7 +760,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 	}
 	for authType, credentials := range dels {
 		for _, credential := range credentials {
-			err = kongAdapter.DeleteCredential(consumer.ConsumerId, authType, credential.Id)
+			err = gatewayAdapter.DeleteCredential(consumer.ConsumerId, authType, credential.Id)
 			if err != nil {
 				return
 			}
@@ -714,7 +790,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 				}
 			}
 			if authType == orm.HMACAUTH {
-				hmacEnabled, err = kongAdapter.CheckPluginEnabled(orm.HMACAUTH)
+				hmacEnabled, err = gatewayAdapter.CheckPluginEnabled(orm.HMACAUTH)
 				if err != nil {
 					return
 				}
@@ -723,7 +799,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 					continue
 				}
 			}
-			_, err = impl.createCredential(kongAdapter, authType, consumer.ConsumerId, &credential)
+			_, err = impl.createCredential(gatewayAdapter, authType, consumer.ConsumerId, &credential)
 			if err != nil {
 				log.Errorf("create credential failed, err:%+v", err)
 				existsByte, _ := json.Marshal(credential)
@@ -732,7 +808,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 			}
 		}
 	}
-	credentialListMap, err = impl.getCredentialList(kongAdapter, consumer.ConsumerId)
+	credentialListMap, err = impl.getCredentialList(gatewayAdapter, consumer.ConsumerId)
 	if err != nil {
 		return
 	}
@@ -864,7 +940,6 @@ func (impl GatewayOpenapiConsumerServiceImpl) adjustConsumers(pack *orm.GatewayP
 		}
 	}
 	return consumers
-
 }
 
 func (impl GatewayOpenapiConsumerServiceImpl) GetPackageAcls(id string) (result []gw.PackageAclInfoDto, err error) {
@@ -1064,6 +1139,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			Region:       gw.API_RULE,
 		}
 		err = (*impl.ruleBiz).CreateRule(gw.DiceInfo{
+			OrgId:     pack.DiceOrgId,
 			ProjectId: pack.DiceProjectId,
 			Env:       pack.DiceEnv,
 			Az:        pack.DiceClusterName,

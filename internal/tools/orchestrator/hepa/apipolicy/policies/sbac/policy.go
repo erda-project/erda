@@ -22,19 +22,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
 
-const (
-	// Name "sbac" is ServerBasedAccessControl
-	Name = "sbac"
-)
-
 func init() {
-	if err := apipolicy.RegisterPolicyEngine(Name, new(Policy)); err != nil {
+	if err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_SBAC, new(Policy)); err != nil {
 		panic(err)
 	}
 }
@@ -63,23 +58,25 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 }
 
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
-	l := logrus.WithField("pluginName", Name).WithField("func", "ParseConfig")
+	l := logrus.WithField("pluginName", apipolicy.Policy_Engine_SBAC).WithField("func", "ParseConfig")
 	l.Infof("dto: %+v", dto)
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
-	adapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER].(kong.KongAdapter)
+	adapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER].(gateway_providers.GatewayAdapter)
 	if !ok {
-		return res, errors.Errorf("failed to get identify with %s: %+v", apipolicy.CTX_KONG_ADAPTER, ctx)
+		//TODO: MSE support sbac policy?
+		logrus.Infof("use MSE Adapter, no need set sbac policy")
+		return res, nil
 	}
 	kongVersion, err := adapter.GetVersion()
 	if err != nil {
 		return res, errors.Wrap(err, "failed to retrieve Kong version")
 	}
-	if !strings.HasPrefix(kongVersion, "2.") {
-		return res, errors.Errorf("the plugin %s is not supportted on the Kong version %s", Name, kongVersion)
+	if !strings.HasPrefix(kongVersion, "2.") && !strings.HasPrefix(kongVersion, "mse-") {
+		return res, errors.Errorf("the plugin %s is not supportted on the Kong version %s", apipolicy.Policy_Engine_SBAC, kongVersion)
 	}
 	zone, ok := ctx[apipolicy.CTX_ZONE].(*orm.GatewayZone)
 	if !ok {
@@ -88,7 +85,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	policyDb, _ := db.NewGatewayPolicyServiceImpl()
 	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
-		PluginName: Name,
+		PluginName: apipolicy.Policy_Engine_SBAC,
 	})
 	if err != nil {
 		return res, err
@@ -131,8 +128,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		}
 		policyDao := &orm.GatewayPolicy{
 			ZoneId:     zone.Id,
-			PluginName: Name,
-			Category:   "safety",
+			PluginName: apipolicy.Policy_Engine_SBAC,
+			Category:   apipolicy.Policy_Category_Safety,
 			PluginId:   resp.Id,
 			Config:     configByte,
 			Enabled:    1,

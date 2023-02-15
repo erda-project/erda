@@ -56,6 +56,7 @@ type OpenapiDto struct {
 	Env                string   `json:"-"`
 	RuntimeServiceId   string   `json:"-"`
 	Hosts              []string `json:"hosts"`
+	GatewayProvider    string   `json:"gatewayProvider"`
 }
 
 func (dto OpenapiDto) ToEndpointApi() *pb.EndpointApi {

@@ -27,6 +27,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
@@ -36,8 +38,11 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
@@ -92,7 +97,7 @@ func NewGatewayGlobalServiceImpl(clusterSvc clusterpb.ClusterServiceServer, tena
 					}
 				}()
 				for range time.Tick(time.Second * 60) {
-					newHealthInfo := impl.checkKongHealth()
+					newHealthInfo := impl.checkGatewayHealth()
 					diceHealth = &newHealthInfo
 				}
 			}()
@@ -100,7 +105,7 @@ func NewGatewayGlobalServiceImpl(clusterSvc clusterpb.ClusterServiceServer, tena
 	return
 }
 
-func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
+func (impl *GatewayGlobalServiceImpl) checkGatewayHealth() (dto gw.DiceHealthDto) {
 	var err error
 	dto.Status = gw.DiceHealthOK
 	defer func() {
@@ -129,8 +134,9 @@ func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
 		if err != nil || kongInfo.KongAddr == "" || kongInfo.InnerAddr == "" {
 			continue
 		}
-		adapter := kong.NewKongAdapter(kongInfo.KongAddr)
-		_, err = adapter.GetRoutes()
+
+		gatewayProvider := ""
+		gatewayProvider, err = impl.GetGatewayProvider(az.Az)
 		if err != nil {
 			dto.Status = gw.DiceHealthFail
 			dto.Modules = append(dto.Modules, gw.DiceHealthModule{
@@ -138,8 +144,62 @@ func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
 				Status:  gw.DiceHealthFail,
 				Message: errors.Cause(err).Error(),
 			})
-			log.Errorf("error happened:%+v", err)
+			log.Errorf("error happened when get gateway provider for cluster %s:%v", az.Az, err)
+			continue
 		}
+		var gatewayAdapter gateway_providers.GatewayAdapter
+		switch gatewayProvider {
+		case mse.Mse_Provider_Name:
+			gatewayAdapter = mse.NewMseAdapter()
+			k8sAdapter, err := k8s.NewAdapter(az.Az)
+			if err != nil {
+				dto.Status = gw.DiceHealthFail
+				dto.Modules = append(dto.Modules, gw.DiceHealthModule{
+					Name:    fmt.Sprintf("cluster-gateway-control-%s", az.Az),
+					Status:  gw.DiceHealthFail,
+					Message: errors.Cause(err).Error(),
+				})
+				log.Errorf("error happened:%+v", err)
+				continue
+			}
+
+			deploy, err := k8sAdapter.GetDeployment(mse.Mse_Ingress_Controller_ACK_Namespace, mse.Mse_Ingress_Controller_ACK_DeploymentName)
+			if err != nil {
+				dto.Status = gw.DiceHealthFail
+				dto.Modules = append(dto.Modules, gw.DiceHealthModule{
+					Name:    fmt.Sprintf("cluster-gateway-control-%s", az.Az),
+					Status:  gw.DiceHealthFail,
+					Message: errors.Cause(err).Error(),
+				})
+				log.Errorf("error happened:%+v", err)
+				continue
+			}
+
+			for _, condition := range deploy.Status.Conditions {
+				if condition.Type == appsv1.DeploymentAvailable && condition.Status != corev1.ConditionTrue {
+					err = errors.Errorf("mse controller deployment %s/%s is not available status\n", mse.Mse_Ingress_Controller_ACK_Namespace, mse.Mse_Ingress_Controller_ACK_DeploymentName)
+					dto.Status = gw.DiceHealthFail
+					dto.Modules = append(dto.Modules, gw.DiceHealthModule{
+						Name:    fmt.Sprintf("cluster-gateway-control-%s", az.Az),
+						Status:  gw.DiceHealthFail,
+						Message: errors.Cause(err).Error(),
+					})
+					log.Errorf("error happened:%+v", err)
+				}
+			}
+
+		case "":
+			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+			_, err = gatewayAdapter.GetRoutes()
+			if err != nil {
+				dto.Status = gw.DiceHealthFail
+				dto.Modules = append(dto.Modules, gw.DiceHealthModule{
+					Name:    fmt.Sprintf("cluster-gateway-control-%s", az.Az),
+					Status:  gw.DiceHealthFail,
+					Message: errors.Cause(err).Error(),
+				})
+				log.Errorf("error happened:%+v", err)
+			}
 		// proxyAddr := kongInfo.InnerAddr
 		// if !strings.HasPrefix(proxyAddr, "inet") && strings.HasPrefix(kongInfo.KongAddr, "inet") {
 		// 	addrsplit := strings.Split(kongInfo.KongAddr, "/")
@@ -159,6 +219,9 @@ func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
 		// 	})
 		// 	log.Errorf("error happened:%+v", err)
 		// }
+		default:
+			log.Errorf("Unknown gatewayProvider: %v\n", gatewayProvider)
+		}
 	}
 	return
 }
@@ -167,6 +230,18 @@ func (impl GatewayGlobalServiceImpl) Clone(ctx context.Context) global.GatewayGl
 	newService := impl
 	newService.reqCtx = ctx
 	return &newService
+}
+
+func (impl *GatewayGlobalServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
 }
 
 func (impl *GatewayGlobalServiceImpl) GetDiceHealth() gw.DiceHealthDto {
@@ -196,6 +271,7 @@ func (impl *GatewayGlobalServiceImpl) GetClusterUIType(orgId, projectId, env str
 		return res.SetReturnCode(PARAMS_IS_NULL)
 	}
 	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		Env:       env,
 		ProjectId: projectId,
 	})
@@ -376,6 +452,8 @@ func (impl *GatewayGlobalServiceImpl) CreateTenant(tenant *gw.TenantDto) (result
 	var session *db.SessionHelper
 	var kongSession db.GatewayKongInfoService
 	var az *orm.GatewayAzInfo
+	var azInfo *db.ClusterInfoDto
+	var gatewayProvider string
 	defer func() {
 		if err != nil {
 			log.Errorf("error happened, err:%+v", err)
@@ -445,7 +523,7 @@ func (impl *GatewayGlobalServiceImpl) CreateTenant(tenant *gw.TenantDto) (result
 		if err != nil {
 			return
 		}
-		az, err = impl.azDb.GetAzInfoByClusterName(tenant.Az)
+		az, azInfo, err = impl.azDb.GetAzInfoByClusterName(tenant.Az)
 		if err != nil {
 			return
 		}
@@ -453,8 +531,12 @@ func (impl *GatewayGlobalServiceImpl) CreateTenant(tenant *gw.TenantDto) (result
 			err = errors.Errorf("get az failed, tenant:%+v", tenant)
 			return
 		}
+		if azInfo != nil && azInfo.GatewayProvider != "" {
+			gatewayProvider = azInfo.GatewayProvider
+		}
+
 		if (az.Type == orm.AT_K8S || az.Type == orm.AT_EDAS) && !config.ServerConf.UseAdminEndpoint {
-			err = (*impl.packageBiz).CreateTenantPackage(tenant.Id, session)
+			err = (*impl.packageBiz).CreateTenantPackage(tenant.Id, gatewayProvider, session)
 			if err != nil {
 				return
 			}

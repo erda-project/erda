@@ -24,14 +24,15 @@ import (
 	"unsafe"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 
+	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	kErrors "github.com/erda-project/erda/internal/tools/orchestrator/hepa/errors"
@@ -42,10 +43,16 @@ import (
 )
 
 const (
-	REWRITE_HOST_KEY = "nginx.ingress.kubernetes.io/upstream-vhost"
-	REWRITE_PATH_KEY = "nginx.ingress.kubernetes.io/rewrite-target"
-	USE_REGEX_KEY    = "nginx.ingress.kubernetes.io/use-regex"
-	SERVICE_PROTOCOL = "nginx.ingress.kubernetes.io/backend-protocol"
+	REWRITE_HOST_KEY         = string(annotationscommon.AnnotationRewriteUpstreamVHost)
+	REWRITE_PATH_KEY         = string(annotationscommon.AnnotationRewriteRewriteTarget)
+	USE_REGEX_KEY            = string(annotationscommon.AnnotationUseRegex)
+	SERVICE_PROTOCOL         = string(annotationscommon.AnnotationBackendProtocol)
+	Erda_Runtime_Project_Id  = "erda.gateway.projectId"
+	Erda_Runtime_ProjectName = "erda.gateway.projectName"
+	Erda_Runtime_ClusterName = "erda.gateway.clusterName"
+	Erda_Runtime_Runtime_Id  = "erda.gateway.runtimeId"
+	Erda_Runtime_ServiceName = "erda.gateway.serviceName"
+	Erda_Runtime_AppName     = "erda.gateway.appName"
 )
 
 type BackendProtocl string
@@ -74,20 +81,24 @@ type IngressRoute union_interface.IngressRoute
 type IngressBackend union_interface.IngressBackend
 
 type K8SAdapter interface {
-	IsGatewaySupportHttps(namespace string) (bool, error)
-	MakeGatewaySupportHttps(namespace string) error
+	IsGatewaySupportHttps(namespace, svcName string) (bool, error)
+	MakeGatewaySupportHttps(namespace, svcName string) error
 	MakeGatewaySupportMesh(namespace string) error
 	CountIngressController() (int, error)
 	CheckDomainExist(name string) (bool, error)
 	DeleteIngress(namespace, name string) error
-	CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error)
+	CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, gatewayProvider string, options ...RouteOptions) (bool, error)
 	SetUpstreamHost(namespace, name, host string) error
 	SetRewritePath(namespace, name, target string) error
 	EnableRegex(namespace, name string) error
 	CheckIngressExist(namespace, name string) (bool, error)
-	UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error
-	UpdateIngressConroller(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error
+	UpdateIngressAnnotation(namespace, name string, annotaion map[string]*string, snippet *string) error
+	UpdateIngressController(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error
 	ListAllServices(namespace string) ([]v1.Service, error)
+	GetServiceByName(namespace, name string) (*v1.Service, error)
+	CreateOrUpdateService(service *v1.Service) (*v1.Service, error)
+	DeleteService(namespace, name string) error
+	GetDeployment(namespace, name string) (*appsv1.Deployment, error)
 }
 
 type K8SAdapterImpl struct {
@@ -106,7 +117,7 @@ const (
 	INGRESS_APP_LABEL_NEW   = "app=ingress-nginx"
 	INGRESS_CONFIG_NAME     = "nginx-configuration"
 	INGRESS_CONFIG_NAME_NEW = "ingress-nginx-controller"
-	LOC_SNIPPET_KEY         = "nginx.ingress.kubernetes.io/configuration-snippet"
+	LOC_SNIPPET_KEY         = string(annotationscommon.AnnotationConfigurationSnippet)
 	MAIN_SNIPPET_KEY        = "main-snippet"
 	HTTP_SNIPPET_KEY        = "http-snippet"
 	SERVER_SNIPPET_KEY      = "server-snippet"
@@ -120,7 +131,7 @@ func (impl *K8SAdapterImpl) countIngressController(namespace string) (int, error
 		return 0, errors.WithStack(err)
 	}
 	if pods == nil || len(pods.Items) == 0 {
-		logrus.Warnf("can't find any ingress controllers with label:%s", INGRESS_APP_LABEL)
+		log.Warnf("can't find any ingress controllers with label:%s", INGRESS_APP_LABEL)
 		pods, err = impl.client.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: INGRESS_APP_LABEL_NEW,
 		})
@@ -128,7 +139,7 @@ func (impl *K8SAdapterImpl) countIngressController(namespace string) (int, error
 			return 0, errors.WithStack(err)
 		}
 		if pods == nil || len(pods.Items) == 0 {
-			logrus.Warnf("can't find any ingress controllers with label:%s, use default count:1", INGRESS_APP_LABEL_NEW)
+			log.Warnf("can't find any ingress controllers with label:%s, use default count:1", INGRESS_APP_LABEL_NEW)
 			return 1, nil
 		}
 	}
@@ -144,8 +155,11 @@ func (impl *K8SAdapterImpl) CountIngressController() (count int, err error) {
 	return
 }
 
-func (impl *K8SAdapterImpl) IsGatewaySupportHttps(namespace string) (bool, error) {
-	svc, err := impl.client.CoreV1().Services(namespace).Get(context.Background(), GATEWAY_SVC_NAME, metav1.GetOptions{})
+func (impl *K8SAdapterImpl) IsGatewaySupportHttps(namespace, svcName string) (bool, error) {
+	if svcName == "" {
+		svcName = GATEWAY_SVC_NAME
+	}
+	svc, err := impl.client.CoreV1().Services(namespace).Get(context.Background(), svcName, metav1.GetOptions{})
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
@@ -221,9 +235,12 @@ func (impl *K8SAdapterImpl) MakeGatewaySupportMesh(namespace string) error {
 	return nil
 }
 
-func (impl *K8SAdapterImpl) MakeGatewaySupportHttps(namespace string) error {
+func (impl *K8SAdapterImpl) MakeGatewaySupportHttps(namespace, svcName string) error {
+	if svcName == "" {
+		svcName = GATEWAY_SVC_NAME
+	}
 	ns := impl.client.CoreV1().Services(namespace)
-	svc, err := ns.Get(context.Background(), GATEWAY_SVC_NAME, metav1.GetOptions{})
+	svc, err := ns.Get(context.Background(), svcName, metav1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -302,18 +319,18 @@ func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
 		return err
 	}
 	if !exist {
-		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, ingressName)
+		log.Warnf("ingress not found, namespace:%s, name:%s", namespace, ingressName)
 		return nil
 	}
 	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), ingressName, metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	logrus.Infof("ingress deleted, namespace:%s, name:%s", namespace, ingressName)
+	log.Infof("ingress deleted, namespace:%s, name:%s", namespace, ingressName)
 	return nil
 }
 
-func (impl *K8SAdapterImpl) newIngress(ns, name string, routes []IngressRoute, backend IngressBackend, needTLS bool) interface{} {
+func (impl *K8SAdapterImpl) newIngress(ns, name string, routes []IngressRoute, backend IngressBackend, needTLS bool, gatewayProvider string) interface{} {
 	material := union_interface.IngressMaterial{
 		Name:      strings.ToLower(name),
 		Namespace: ns,
@@ -321,13 +338,21 @@ func (impl *K8SAdapterImpl) newIngress(ns, name string, routes []IngressRoute, b
 		Backend:   union_interface.IngressBackend(backend),
 		NeedTLS:   needTLS,
 	}
-	for i := 0; i < len(material.Routes); i++ {
-		pth, err := hepautils.RenderKongUri(material.Routes[i].Path)
-		if err != nil {
-			return errors.Wrap(err, "failed to render service path")
-		}
-		material.Routes[i].Path = pth
+	if gatewayProvider != "" {
+		// Use MSE or other gateway provider, not kong
+		material.GatewayProvider = strings.ToLower(gatewayProvider)
 	}
+	if gatewayProvider == "" {
+		// Use Kong
+		for i := 0; i < len(material.Routes); i++ {
+			pth, err := hepautils.RenderKongUri(material.Routes[i].Path)
+			if err != nil {
+				return errors.Wrap(err, "failed to render service path")
+			}
+			material.Routes[i].Path = pth
+		}
+	}
+
 	return impl.ingressesHelper.NewIngress(material)
 }
 
@@ -384,7 +409,7 @@ func (impl *K8SAdapterImpl) setOptionAnnotations(ingress interface{}, options Ro
 	return nil
 }
 
-func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error) {
+func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, gatewayProvider string, options ...RouteOptions) (bool, error) {
 	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingName := strings.ToLower(name)
 	exist, err := ns.Get(context.Background(), ingName, metav1.GetOptions{})
@@ -396,7 +421,7 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 	if len(options) > 0 {
 		routeOptions = options[0]
 	}
-	ing = impl.newIngress(namespace, ingName, routes, backend, routeOptions.EnableTLS)
+	ing = impl.newIngress(namespace, ingName, routes, backend, routeOptions.EnableTLS, gatewayProvider)
 	if k8serrors.IsNotFound(err) {
 		return impl.createIngress(context.Background(), ns, ing, routeOptions, ingName, namespace)
 	}
@@ -457,7 +482,7 @@ func (impl *K8SAdapterImpl) SetUpstreamHost(namespace, name, host string) error 
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	err = impl.ingressesHelper.IngressAnnotationSet(ingress, "nginx.ingress.kubernetes.io/upstream-vhost", host)
+	err = impl.ingressesHelper.IngressAnnotationSet(ingress, string(annotationscommon.AnnotationRewriteUpstreamVHost), host)
 	if err != nil {
 		return err
 	}
@@ -476,7 +501,7 @@ func (impl *K8SAdapterImpl) SetRewritePath(namespace, name, target string) error
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	err = impl.ingressesHelper.IngressAnnotationSet(ingress, "nginx.ingress.kubernetes.io/rewrite-target", target)
+	err = impl.ingressesHelper.IngressAnnotationSet(ingress, string(annotationscommon.AnnotationRewriteRewriteTarget), target)
 	if err != nil {
 		return err
 	}
@@ -495,7 +520,7 @@ func (impl *K8SAdapterImpl) EnableRegex(namespace, name string) error {
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	err = impl.ingressesHelper.IngressAnnotationSet(ingress, "nginx.ingress.kubernetes.io/use-regex", "true")
+	err = impl.ingressesHelper.IngressAnnotationSet(ingress, string(annotationscommon.AnnotationUseRegex), "true")
 	if err != nil {
 		return err
 	}
@@ -547,7 +572,7 @@ func (impl *K8SAdapterImpl) CheckIngressExist(namespace, name string) (bool, err
 	return true, nil
 }
 
-func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error {
+func (impl *K8SAdapterImpl) UpdateIngressAnnotation(namespace, name string, annotaion map[string]*string, snippet *string) error {
 	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
 	ingress, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
@@ -581,11 +606,11 @@ func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annot
 	return nil
 }
 
-func (impl *K8SAdapterImpl) UpdateIngressConroller(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) (err error) {
-	err = impl.updateIngressConroller(INGRESS_NS, INGRESS_CONFIG_NAME_NEW, options, mainSnippet, httpSnippet, serverSnippet)
+func (impl *K8SAdapterImpl) UpdateIngressController(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) (err error) {
+	err = impl.updateIngressController(INGRESS_NS, INGRESS_CONFIG_NAME_NEW, options, mainSnippet, httpSnippet, serverSnippet)
 	if err != nil {
 		// use old version ingress
-		err = impl.updateIngressConroller(SYSTEM_NS, INGRESS_CONFIG_NAME, options, mainSnippet, httpSnippet, serverSnippet)
+		err = impl.updateIngressController(SYSTEM_NS, INGRESS_CONFIG_NAME, options, mainSnippet, httpSnippet, serverSnippet)
 	}
 	return
 }
@@ -598,7 +623,90 @@ func (impl *K8SAdapterImpl) ListAllServices(namespace string) ([]v1.Service, err
 	return services.Items, nil
 }
 
-func (impl *K8SAdapterImpl) updateIngressConroller(namespace, cmName string, options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error {
+func (impl *K8SAdapterImpl) GetServiceByName(namespace, name string) (*v1.Service, error) {
+	_, err := impl.client.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	service, err := impl.client.CoreV1().Services(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return service, nil
+}
+
+func (impl *K8SAdapterImpl) CreateOrUpdateService(service *v1.Service) (*v1.Service, error) {
+	_, err := impl.client.CoreV1().Namespaces().Get(context.Background(), service.Namespace, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			_, err = impl.createNamespace(service.Namespace)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, err
+	}
+	svc, err := impl.client.CoreV1().Services(service.Namespace).Get(context.Background(), service.Name, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return impl.createService(service)
+		}
+		return nil, err
+	}
+
+	svc, err = impl.client.CoreV1().Services(service.Namespace).Update(context.Background(), service, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return svc, nil
+}
+
+func (impl *K8SAdapterImpl) createService(service *v1.Service) (*v1.Service, error) {
+	//svc , err := impl.client.CoreV1().Services(service.Namespace).Get(context.Background(), service.Name, metav1.GetOptions{})
+	svc, err := impl.client.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+	if err != nil {
+		log.Errorf("create service %s/%s with error: %v\n", service.Namespace, service.Name, err)
+		return nil, err
+	}
+	return svc, nil
+}
+func (impl *K8SAdapterImpl) createNamespace(namespace string) (*v1.Namespace, error) {
+	//svc , err := impl.client.CoreV1().Services(service.Namespace).Get(context.Background(), service.Name, metav1.GetOptions{})
+	ns := &v1.Namespace{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Namespace",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+	ns, err := impl.client.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+	if err != nil {
+		log.Errorf("create namespace %s with error: %v\n", namespace, err)
+		return nil, err
+	}
+	return ns, nil
+}
+
+func (impl *K8SAdapterImpl) DeleteService(namespace, name string) error {
+	err := impl.client.CoreV1().Services(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
+func (impl *K8SAdapterImpl) GetDeployment(namespace, name string) (*appsv1.Deployment, error) {
+	deploy, err := impl.client.AppsV1().Deployments(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return deploy, nil
+}
+
+func (impl *K8SAdapterImpl) updateIngressController(namespace, cmName string, options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error {
 	ns := impl.client.CoreV1().ConfigMaps(namespace)
 	configmap, err := ns.Get(context.Background(), cmName, metav1.GetOptions{})
 	if err != nil {

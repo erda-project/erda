@@ -40,9 +40,10 @@ type GatewayRuntimeServiceService interface {
 	GetServiceRuntimes(projectId, env, app, service string) ([]orm.GatewayRuntimeService, error)
 	// 获取指定服务的API前缀
 	GetServiceApiPrefix(*dto.ApiPrefixReqDto) ([]string, error)
+	GetGatewayProvider(string) (string, error)
 }
 
-func MakeEndpointMaterial(runtimeService *orm.GatewayRuntimeService) (endpoint.EndpointMaterial, error) {
+func MakeEndpointMaterial(runtimeService *orm.GatewayRuntimeService, gatewayProvider string) (endpoint.EndpointMaterial, error) {
 	material := endpoint.EndpointMaterial{}
 	material.ServiceName = runtimeService.ServiceName
 	material.ServicePort = runtimeService.ServicePort
@@ -61,5 +62,6 @@ func MakeEndpointMaterial(runtimeService *orm.GatewayRuntimeService) (endpoint.E
 	case "fastcgi":
 		material.K8SRouteOptions.BackendProtocol = &[]k8s.BackendProtocl{k8s.FCGI}[0]
 	}
+	material.GatewayProvider = gatewayProvider
 	return material, nil
 }
