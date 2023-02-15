@@ -32,7 +32,9 @@ import (
 	"github.com/erda-project/erda/internal/pkg/cron"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -127,6 +129,7 @@ func (s *endpointApiService) GetEndpoints(ctx context.Context, req *pb.GetEndpoi
 	}
 	return
 }
+
 func (s *endpointApiService) GetEndpoint(ctx context.Context, req *pb.GetEndpointRequest) (resp *pb.GetEndpointResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	ep, err := service.GetPackage(req.PackageId)
@@ -185,6 +188,7 @@ func (s *endpointApiService) UpdateEndpoint(ctx context.Context, req *pb.UpdateE
 	}
 	return
 }
+
 func (s *endpointApiService) DeleteEndpoint(ctx context.Context, req *pb.DeleteEndpointRequest) (resp *pb.DeleteEndpointResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	result, err := service.DeletePackage(req.PackageId)
@@ -197,6 +201,7 @@ func (s *endpointApiService) DeleteEndpoint(ctx context.Context, req *pb.DeleteE
 	}
 	return
 }
+
 func (s *endpointApiService) GetEndpointApis(ctx context.Context, req *pb.GetEndpointApisRequest) (resp *pb.GetEndpointApisResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	reqDto := &dto.GetOpenapiDto{}
@@ -225,6 +230,7 @@ func (s *endpointApiService) GetEndpointApis(ctx context.Context, req *pb.GetEnd
 	}
 	return
 }
+
 func (s *endpointApiService) CreateEndpointApi(ctx context.Context, req *pb.CreateEndpointApiRequest) (resp *pb.CreateEndpointApiResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	if req.EndpointApi == nil {
@@ -245,6 +251,7 @@ func (s *endpointApiService) CreateEndpointApi(ctx context.Context, req *pb.Crea
 	}
 	return
 }
+
 func (s *endpointApiService) UpdateEndpointApi(ctx context.Context, req *pb.UpdateEndpointApiRequest) (resp *pb.UpdateEndpointApiResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	if req.EndpointApi == nil {
@@ -265,6 +272,7 @@ func (s *endpointApiService) UpdateEndpointApi(ctx context.Context, req *pb.Upda
 	}
 	return
 }
+
 func (s *endpointApiService) DeleteEndpointApi(ctx context.Context, req *pb.DeleteEndpointApiRequest) (resp *pb.DeleteEndpointApiResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	result, err := service.DeletePackageApi(req.PackageId, req.ApiId)
@@ -277,6 +285,7 @@ func (s *endpointApiService) DeleteEndpointApi(ctx context.Context, req *pb.Dele
 	}
 	return
 }
+
 func (s *endpointApiService) ChangeEndpointRoot(ctx context.Context, req *pb.ChangeEndpointRootRequest) (resp *pb.ChangeEndpointRootResponse, err error) {
 	service := endpoint_api.Service.Clone(ctx)
 	if req.EndpointApi == nil {
@@ -351,7 +360,20 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *p
 	if err != nil {
 		return nil, err
 	}
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
+	gatewayProvider := ""
+	var gatewayAdapter gateway_providers.GatewayAdapter
+	gatewayProvider, err = service.(*endpointApiImpl.GatewayOpenapiServiceImpl).GetGatewayProvider(req.ClusterName)
+	if err != nil {
+		return nil, err
+	}
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return nil, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
 	err = s.rangeInvalidEndpointApi(ctx, req.GetClusterName(), func(item *pb.ListInvalidEndpointApiItem) {
 		if item.GetType() == invalidTypePackage {
 			l.Infof("delete package: %+v", item)
@@ -373,7 +395,7 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *p
 					Warnln("failed to DeleteEndpointApi")
 			}
 			if item.GetKongRouteID() != "" || item.GetKongServiceID() != "" {
-				if err := service.(*endpointApiImpl.GatewayOpenapiServiceImpl).DeleteKongApi(kongAdapter, item.GetPackageApiID()); err != nil {
+				if err := service.(*endpointApiImpl.GatewayOpenapiServiceImpl).DeleteKongApi(gatewayAdapter, item.GetPackageApiID()); err != nil {
 					l.WithError(err).WithField("packageAPIID", item.GetPackageApiID()).Warnln("failed to DeleteKongApi")
 				}
 			}
@@ -626,7 +648,6 @@ func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, cluste
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -689,6 +710,5 @@ func matchEndpointApi(endpointApi dto.OpenapiInfoDto, paths map[string]*pb.ListP
 			}
 		}
 	}
-
 	return false
 }

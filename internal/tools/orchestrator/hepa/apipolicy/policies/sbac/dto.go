@@ -44,7 +44,7 @@ func (pc PolicyDto) IsValidDto() error {
 
 func (pc PolicyDto) ToPluginReqDto() *kongDto.KongPluginReqDto {
 	var req = &kongDto.KongPluginReqDto{
-		Name:    Name,
+		Name:    apipolicy.Policy_Engine_SBAC,
 		Enabled: &pc.Switch,
 		Config: map[string]interface{}{
 			"access_control_api": pc.AccessControlAPI,

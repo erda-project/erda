@@ -47,7 +47,7 @@ type KongAdapterImpl struct {
 	*base.KongAdapterImpl
 }
 
-func (impl *KongAdapterImpl) KongExist() bool {
+func (impl *KongAdapterImpl) GatewayProviderExist() bool {
 	if impl == nil || impl.KongAdapterImpl == nil {
 		return false
 	}

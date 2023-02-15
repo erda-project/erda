@@ -45,6 +45,7 @@ type PackageDto struct {
 	Scene            string   `json:"scene"`
 	Description      string   `json:"description"`
 	NeedBindCloudapi bool     `json:"needBindCloudapi"`
+	GatewayProvider  string   `json:"gatewayProvider"` // "MSE" 或 ""
 }
 
 func (dto PackageDto) CheckValid() error {

@@ -35,6 +35,7 @@ type GatewayOpenapiConsumerService interface {
 	UpdateConsumer(string, *dto.OpenConsumerDto) (*dto.OpenConsumerInfoDto, error)
 	DeleteConsumer(string) (bool, error)
 	GetConsumerCredentials(string) (dto.ConsumerCredentialsDto, error)
+	GetGatewayProvider(string) (string, error)
 	UpdateConsumerCredentials(string, *dto.ConsumerCredentialsDto) (dto.ConsumerCredentialsDto, string, error)
 	GetConsumerAcls(string) ([]dto.ConsumerAclInfoDto, error)
 	UpdateConsumerAcls(string, *dto.ConsumerAclsDto) (bool, error)

@@ -18,12 +18,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseannotation "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type Policy struct {
@@ -62,8 +67,16 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		emptyStr := ""
 		// use empty str trigger regions update
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
+			Annotation: map[string]*string{
+				string(annotationscommon.AnnotationWhiteListSourceRange): nil,
+				string(mseannotation.AnnotationMSEBlackListSourceRange):  nil,
+				string(annotationscommon.AnnotationLimitConnections):     nil,
+				//string(mseannotation.AnnotationMSEDomainWhitelistSourceRange):     nil,
+				//string(mseannotation.AnnotationMSEDomainBlacklistSourceRange):     nil,
+			},
 			LocationSnippet: &emptyStr,
 		}
+
 		res.IngressController = &apipolicy.IngressController{
 			HttpSnippet: &emptyStr,
 		}
@@ -86,11 +99,21 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
-	count, err := adapter.CountIngressController()
-	if err != nil {
-		count = 1
-		logrus.Errorf("get ingress controller count failed, err:%+v", err)
+
+	value, ok = ctx[apipolicy.CTX_ZONE]
+	if !ok {
+		return res, errors.Errorf("get identify failed:%+v", ctx)
 	}
+	zone, ok := value.(*orm.GatewayZone)
+	if !ok {
+		return res, errors.Errorf("convert failed:%+v", value)
+	}
+
+	gatewayProvider, err := policy.GetGatewayProvider(zone.DiceClusterName)
+	if err != nil {
+		return res, errors.Errorf("get gateway provider failed for cluster %s:%v\n", zone.DiceClusterName, err)
+	}
+
 	ipSource := ""
 	if policyDto.IpSource != REMOTE_IP {
 		ipSource += "set_real_ip_from 0.0.0.0/0;\n"
@@ -116,43 +139,90 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		}
 		acls += bottom
 	}
-	limitConnZone := ""
-	limitConn := ""
-	if policyDto.IpMaxConnections > 0 {
-		limitConnZone = fmt.Sprintf("limit_conn_zone $binary_remote_addr zone=ip-conn-%s:10m;\n", id)
-		maxConn := int64(math.Ceil(float64(policyDto.IpMaxConnections) / float64(count)))
-		limitConn = fmt.Sprintf("limit_conn ip-conn-%s %d;\n", id, maxConn)
-	} else {
-		limitConnZone = fmt.Sprintf("limit_conn_zone $binary_remote_addr zone=ip-conn-%s:10m;\n", id)
-	}
-	limitReqZone := ""
-	limitReq := ""
-	if policyDto.IpRate != nil {
-		unit := "r/s"
-		if policyDto.IpRate.Unit == MINUTE {
-			unit = "r/m"
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		if policyDto.IpRate != nil {
+			logrus.Warningf("Current use MSE gateway, please set rate in policy %s", apipolicy.Policy_Engine_Service_Guard)
 		}
-		maxReq := int64(math.Ceil(float64(policyDto.IpRate.Rate) / float64(count)))
-		limitReqZone = fmt.Sprintf("limit_req_zone $binary_remote_addr zone=ip-req-%s:10m rate=%d%s;\n",
-			id, maxReq, unit)
-		limitReq = fmt.Sprintf("limit_req zone=ip-req-%s nodelay;\n", id)
-	} else {
-		limitReqZone = fmt.Sprintf("limit_req_zone $binary_remote_addr zone=ip-req-%s:10m rate=%d%s;\n",
-			id, 10000, "r/s")
-	}
-	locationSnippet := ipSource + acls + limitConn + limitReq
-	res.IngressAnnotation = &apipolicy.IngressAnnotation{
-		LocationSnippet: &locationSnippet,
-	}
-	httpSnippet := limitConnZone + limitReqZone
-	res.IngressController = &apipolicy.IngressController{
-		HttpSnippet: &httpSnippet,
+		res.IngressAnnotation = setMseIngressAnnotations(policyDto)
+
+	case "":
+		limitConnZone := ""
+		limitConn := ""
+		limitReqZone := ""
+		limitReq := ""
+		count, err := adapter.CountIngressController()
+		if err != nil {
+			count = 1
+			logrus.Errorf("get ingress controller count failed, err:%+v", err)
+		}
+
+		if policyDto.IpMaxConnections > 0 {
+			limitConnZone = fmt.Sprintf("limit_conn_zone $binary_remote_addr zone=ip-conn-%s:10m;\n", id)
+			maxConn := int64(math.Ceil(float64(policyDto.IpMaxConnections) / float64(count)))
+			limitConn = fmt.Sprintf("limit_conn ip-conn-%s %d;\n", id, maxConn)
+		} else {
+			limitConnZone = fmt.Sprintf("limit_conn_zone $binary_remote_addr zone=ip-conn-%s:10m;\n", id)
+		}
+
+		if policyDto.IpRate != nil {
+			unit := "r/s"
+			if policyDto.IpRate.Unit == MINUTE {
+				unit = "r/m"
+			}
+			maxReq := int64(math.Ceil(float64(policyDto.IpRate.Rate) / float64(count)))
+			limitReqZone = fmt.Sprintf("limit_req_zone $binary_remote_addr zone=ip-req-%s:10m rate=%d%s;\n",
+				id, maxReq, unit)
+			limitReq = fmt.Sprintf("limit_req zone=ip-req-%s nodelay;\n", id)
+		} else {
+			limitReqZone = fmt.Sprintf("limit_req_zone $binary_remote_addr zone=ip-req-%s:10m rate=%d%s;\n",
+				id, 10000, "r/s")
+		}
+		locationSnippet := ipSource + acls + limitConn + limitReq
+		res.IngressAnnotation = &apipolicy.IngressAnnotation{
+			LocationSnippet: &locationSnippet,
+		}
+		httpSnippet := limitConnZone + limitReqZone
+		res.IngressController = &apipolicy.IngressController{
+			HttpSnippet: &httpSnippet,
+		}
+	default:
+		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
 	return res, nil
 }
 
+func setMseIngressAnnotations(policyDto *PolicyDto) *apipolicy.IngressAnnotation {
+	emptyStr := ""
+	ingressAnnotations := &apipolicy.IngressAnnotation{
+		Annotation: map[string]*string{
+			string(annotationscommon.AnnotationWhiteListSourceRange): nil,
+			string(mseannotation.AnnotationMSEBlackListSourceRange):  nil,
+			string(annotationscommon.AnnotationLimitConnections):     nil,
+		},
+		LocationSnippet: &emptyStr,
+	}
+
+	switch policyDto.IpAclType {
+	case ACL_BLACK:
+		bl := strings.Join(policyDto.IpAclList, ",")
+		ingressAnnotations.Annotation[string(mseannotation.AnnotationMSEBlackListSourceRange)] = &bl
+	default:
+		wl := strings.Join(policyDto.IpAclList, ",")
+		ingressAnnotations.Annotation[string(annotationscommon.AnnotationWhiteListSourceRange)] = &wl
+	}
+
+	limit_connections := ""
+	if policyDto.IpMaxConnections > 0 {
+		limit_connections = fmt.Sprintf("%v", policyDto.IpMaxConnections)
+	}
+	ingressAnnotations.Annotation[string(annotationscommon.AnnotationLimitConnections)] = &limit_connections
+	return ingressAnnotations
+}
+
 func init() {
-	err := apipolicy.RegisterPolicyEngine("safety-ip", &Policy{})
+	err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_IP, &Policy{})
 	if err != nil {
 		panic(err)
 	}

@@ -43,5 +43,6 @@ type GatewayOpenapiRuleService interface {
 	DeleteByPackage(*orm.GatewayPackage) error
 	DeleteByPackageApi(*orm.GatewayPackage, *orm.GatewayPackageApi) error
 	SetPackageKongPolicies(*orm.GatewayPackage, *service.SessionHelper) error
-	SetPackageApiKongPolicies(packageApi *orm.GatewayPackageApi, session *service.SessionHelper) error
+	SetPackageApiKongPolicies(packageApi *orm.GatewayPackageApi, useKong bool, session *service.SessionHelper) error
+	GetGatewayProvider(az string) (string, error)
 }

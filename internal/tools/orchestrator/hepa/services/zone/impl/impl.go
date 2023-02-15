@@ -25,11 +25,14 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	gconfig "github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -103,6 +106,7 @@ func (impl GatewayZoneServiceImpl) GetRegisterAppInfo(orgId, projectId, env stri
 		return res.SetReturnCode(PARAMS_IS_NULL)
 	}
 	az, err := impl.azDb.GetAz(&orm.GatewayAzInfo{
+		OrgId:     orgId,
 		Env:       env,
 		ProjectId: projectId,
 	})
@@ -155,11 +159,23 @@ func (impl GatewayZoneServiceImpl) UpdateBuiltinPolicies(zoneId string) error {
 	if err != nil {
 		return err
 	}
-	_, _, err = (*impl.apiPolicyBiz).SetZonePolicyConfig(zone, "built-in", nil, nil)
+	_, _, err = (*impl.apiPolicyBiz).SetZonePolicyConfig(zone, nil, apipolicy.Policy_Engine_Built_in, nil, nil)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (impl GatewayZoneServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+	return "", nil
 }
 
 func (impl GatewayZoneServiceImpl) UpdateKongDomainPolicy(az, projectId, env string, helper *db.SessionHelper) error {
@@ -167,6 +183,7 @@ func (impl GatewayZoneServiceImpl) UpdateKongDomainPolicy(az, projectId, env str
 	var packDbService db.GatewayPackageService
 	var packageApiService db.GatewayPackageApiService
 	var kongService db.GatewayKongInfoService
+	var gatewayAdapter gateway_providers.GatewayAdapter
 	var err error
 	if helper != nil {
 		zoneDbService, err = impl.zoneDb.NewSession(helper)
@@ -191,6 +208,13 @@ func (impl GatewayZoneServiceImpl) UpdateKongDomainPolicy(az, projectId, env str
 		packageApiService = impl.packageApiDb
 		kongService = impl.kongDb
 	}
+
+	gatewayProvider := ""
+	gatewayProvider, err = impl.GetGatewayProvider(az)
+	if err != nil {
+		return err
+	}
+
 	kongInfo, err := kongService.GetKongInfo(&orm.GatewayKongInfo{
 		Az:        az,
 		ProjectId: projectId,
@@ -263,8 +287,15 @@ func (impl GatewayZoneServiceImpl) UpdateKongDomainPolicy(az, projectId, env str
 		denvs = append(denvs, kongPolicies.Env)
 	}
 
-	kongAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
-	_, err = kongAdapter.CreateOrUpdatePlugin(&kongDto.KongPluginReqDto{
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		gatewayAdapter = mse.NewMseAdapter()
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
+	_, err = gatewayAdapter.CreateOrUpdatePlugin(&kongDto.KongPluginReqDto{
 		Name: "domain-policy",
 		Config: map[string]interface{}{
 			"regexs":   regexs,
@@ -346,7 +377,7 @@ func (impl GatewayZoneServiceImpl) SetZoneKongPolicies(zoneId string, policies g
 	return nil
 }
 
-func (impl GatewayZoneServiceImpl) DeleteZone(zoneId string) error {
+func (impl GatewayZoneServiceImpl) DeleteZone(zoneId, namespace string) error {
 	zone, err := impl.zoneDb.GetById(zoneId)
 	if err != nil {
 		return err
@@ -354,7 +385,7 @@ func (impl GatewayZoneServiceImpl) DeleteZone(zoneId string) error {
 	if zone == nil {
 		return nil
 	}
-	err = impl.DeleteZoneRoute(zoneId)
+	err = impl.DeleteZoneRoute(zoneId, namespace)
 	if err != nil {
 		return err
 	}
@@ -405,6 +436,9 @@ func (impl GatewayZoneServiceImpl) CreateZoneWithoutIngress(config zone.ZoneConf
 func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ...*db.SessionHelper) (*orm.GatewayZone, error) {
 	var kongSession db.GatewayKongInfoService
 	var err error
+	var azInfo *db.ClusterInfoDto
+	var gatewayProvider string
+	var namespace, svcName string
 	if len(session) > 0 {
 		kongSession, err = impl.kongDb.NewSession(session[0])
 		if err != nil {
@@ -413,17 +447,32 @@ func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ..
 	} else {
 		kongSession = impl.kongDb
 	}
+	// 对接 MSE 这个字段用来识别是不是要创建后续的 Nginx-Kong 的 Ingress 对象，处理之前进行还原操作
+	if config.Type == db.ZONE_TYPE_UNITY_Provider {
+		config.Type = db.ZONE_TYPE_UNITY
+		zone, err := impl.CreateZoneWithoutIngress(config, session...)
+		if err != nil {
+			return nil, err
+		}
+		return zone, nil
+	}
 	zone, err := impl.CreateZoneWithoutIngress(config, session...)
 	if err != nil {
 		return nil, err
 	}
-	az, err := impl.azDb.GetAzInfoByClusterName(config.Az)
+	az, azInfo, err := impl.azDb.GetAzInfoByClusterName(config.Az)
 	if err != nil {
 		return nil, err
 	}
 	if az == nil {
 		return nil, errors.New("find cluster failed")
 	}
+
+	if azInfo == nil {
+		return nil, errors.New("find clusterInfo failed")
+	}
+	gatewayProvider = azInfo.GatewayProvider
+
 	if (az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS) || gconfig.ServerConf.UseAdminEndpoint {
 		return zone, nil
 	}
@@ -434,15 +483,35 @@ func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ..
 	if err != nil {
 		return nil, err
 	}
-	namespace, svcName, err := kongSession.GetK8SInfo(&orm.GatewayKongInfo{
-		ProjectId: config.ProjectId,
-		Az:        config.Az,
-		Env:       config.Env,
-	})
-	if err != nil {
-		return nil, err
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		//TODO: get svcName
+		namespace = config.Namespace
+		svcName = config.ServiceName
+		if config.Type == db.ZONE_TYPE_PACKAGE_NEW || config.Type == db.ZONE_TYPE_UNITY {
+			// 走到这里表示 mse 网关创建网关入口，无需创建对应的 ingress
+			return zone, nil
+		}
+	case "":
+		namespace, svcName, err = kongSession.GetK8SInfo(&orm.GatewayKongInfo{
+			ProjectId: config.ProjectId,
+			Az:        config.Az,
+			Env:       config.Env,
+		})
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
-	_, err = createOrUpdateZoneIngress(adapter, namespace, svcName, zone.Name, config.Route)
+
+	if namespace == "" || svcName == "" {
+		// 走到这里表示 mse 网关需要创建 路由对应的 ingress， 但是无法获取目标服务对应的 k8s Service 名称和 Namespace
+		log.Errorf("use mse gateway but can not get Service name or namespace: [namespace=%s] [svcName=%s] \n", namespace, svcName)
+		return zone, errors.Errorf("use mse gateway but can not get Service name or namespace: [namespace=%s] [svcName=%s] \n", namespace, svcName)
+	}
+
+	_, err = createOrUpdateZoneIngress(adapter, namespace, svcName, zone.Name, config.Route, gatewayProvider)
 	if err != nil {
 		goto clear_ingress
 	}
@@ -455,7 +524,7 @@ clear_ingress:
 	return nil, err
 }
 
-func (impl GatewayZoneServiceImpl) UpdateZoneRoute(zoneId string, route zone.ZoneRoute, session ...*db.SessionHelper) (bool, error) {
+func (impl GatewayZoneServiceImpl) UpdateZoneRoute(zoneId string, route zone.ZoneRoute, runtimeService *orm.GatewayRuntimeService, redirectType string, session ...*db.SessionHelper) (bool, error) {
 	var zoneService db.GatewayZoneService
 	var err error
 	if len(session) > 0 {
@@ -473,9 +542,15 @@ func (impl GatewayZoneServiceImpl) UpdateZoneRoute(zoneId string, route zone.Zon
 	if zone == nil {
 		return false, errors.Errorf("zone not find, id:%s", zoneId)
 	}
-	az, err := impl.azDb.GetAzInfoByClusterName(zone.DiceClusterName)
+
+	az, azInfo, err := impl.azDb.GetAzInfoByClusterName(zone.DiceClusterName)
 	if err != nil {
 		return false, err
+	}
+
+	useKong := true
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		useKong = false
 	}
 	if (az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS) || gconfig.ServerConf.UseAdminEndpoint {
 		return false, errors.Errorf("clusterType:%s, not support api route config", az.Type)
@@ -484,22 +559,51 @@ func (impl GatewayZoneServiceImpl) UpdateZoneRoute(zoneId string, route zone.Zon
 	if err != nil {
 		return false, err
 	}
-	namespace, svcName, err := impl.kongDb.GetK8SInfo(&orm.GatewayKongInfo{
-		ProjectId: zone.DiceProjectId,
-		Az:        zone.DiceClusterName,
-		Env:       zone.DiceEnv,
-	})
-	if err != nil {
-		return false, err
+	namespace := ""
+	svcName := ""
+	if useKong {
+		namespace, svcName, err = impl.kongDb.GetK8SInfo(&orm.GatewayKongInfo{
+			ProjectId: zone.DiceProjectId,
+			Az:        zone.DiceClusterName,
+			Env:       zone.DiceEnv,
+		})
+		if err != nil {
+			return false, err
+		}
+	} else {
+		// 从 tb_gateway_runtime_service 获取到 namespace
+		if runtimeService != nil {
+			if runtimeService.ProjectNamespace != "" {
+				namespace = runtimeService.ProjectNamespace
+			}
+			svcName = runtimeService.ServiceName + "-" + runtimeService.GroupName
+		}
+
+		// 按地址转发， namespace 和 svcName 固定
+		if (namespace == "" || svcName == "") && redirectType == gw.RT_URL {
+			namespace = "project-" + zone.DiceProjectId + "-" + strings.ToLower(zone.DiceEnv)
+			svcName = strings.ToLower(zone.Name)
+		}
 	}
-	exist, err := createOrUpdateZoneIngress(adapter, namespace, svcName, zone.Name, route.Route)
+
+	if namespace == "" || svcName == "" {
+		if err != nil {
+			return false, errors.Errorf("can not get namespace or svcName")
+		}
+	}
+
+	gatewayProvider := ""
+	if !useKong {
+		gatewayProvider = azInfo.GatewayProvider
+	}
+	exist, err := createOrUpdateZoneIngress(adapter, namespace, svcName, zone.Name, route.Route, gatewayProvider)
 	if err != nil {
 		return exist, err
 	}
 	return exist, nil
 }
 
-func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, session ...*db.SessionHelper) error {
+func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, namespace string, session ...*db.SessionHelper) error {
 	var zoneSession db.GatewayZoneService
 	var kongSession db.GatewayKongInfoService
 	var err error
@@ -527,18 +631,37 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, session ...*db
 	if !zone.HasIngress() {
 		return nil
 	}
+
+	gatewayProvider := ""
+	gatewayProvider, err = impl.GetGatewayProvider(zone.DiceClusterName)
+	if err != nil {
+		return err
+	}
+
 	adapter, err := k8s.NewAdapter(zone.DiceClusterName)
 	if err != nil {
 		return err
 	}
-	namespace, _, err := kongSession.GetK8SInfo(&orm.GatewayKongInfo{
-		ProjectId: zone.DiceProjectId,
-		Az:        zone.DiceClusterName,
-		Env:       zone.DiceEnv,
-	})
-	if err != nil {
-		return err
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		if namespace == "" {
+			// 走到这里，应该是按地址转发，设置固定 namespace
+			namespace = "project-" + zone.DiceProjectId + "-" + strings.ToLower(zone.DiceEnv)
+		}
+	case "":
+		namespace, _, err = kongSession.GetK8SInfo(&orm.GatewayKongInfo{
+			ProjectId: zone.DiceProjectId,
+			Az:        zone.DiceClusterName,
+			Env:       zone.DiceEnv,
+		})
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
+
 	return clearZoneIngress(adapter, namespace, zone.Name)
 }
 
@@ -550,7 +673,7 @@ func clearZoneIngress(adapter k8s.K8SAdapter, namespace, zoneName string) error 
 	return nil
 }
 
-func createOrUpdateZoneIngress(adapter k8s.K8SAdapter, namespace, svcName, ingName string, config zone.RouteConfig) (bool, error) {
+func createOrUpdateZoneIngress(adapter k8s.K8SAdapter, namespace, svcName, ingName string, config zone.RouteConfig, gatewayProvider string) (bool, error) {
 	var routes []k8s.IngressRoute
 	for _, host := range config.Hosts {
 		routes = append(routes, k8s.IngressRoute{
@@ -560,23 +683,47 @@ func createOrUpdateZoneIngress(adapter k8s.K8SAdapter, namespace, svcName, ingNa
 	}
 	//TODO: 支持配置
 	config.EnableTLS = true
-	kongBackend := k8s.IngressBackend{
-		ServiceName: svcName,
-		ServicePort: KONG_SERVICE_PORT,
-	}
-	if config.BackendProtocol != nil && *config.BackendProtocol == k8s.HTTPS {
-		supportHttps, err := adapter.IsGatewaySupportHttps(namespace)
+
+	kongBackend := k8s.IngressBackend{}
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		kongBackend.ServiceName = svcName
+		services, err := adapter.ListAllServices(namespace)
 		if err != nil {
 			return false, err
 		}
-		if supportHttps {
-			kongBackend.ServicePort = KONG_HTTPS_SERVICE_PORT
-		} else {
-			// use http if not support https
-			config.BackendProtocol = nil
+		if len(services) == 0 {
+			return false, errors.Errorf("not found service in namespace %s", namespace)
 		}
+		kongBackend.ServicePort = DEFALUT_SERVICE_PORT
+		for _, svc := range services {
+			if svc.Name == svcName {
+				kongBackend.ServicePort = int(svc.Spec.Ports[0].Port)
+				break
+			}
+		}
+	case "":
+		kongBackend.ServiceName = svcName
+		kongBackend.ServicePort = KONG_SERVICE_PORT
+		if config.BackendProtocol != nil && *config.BackendProtocol == k8s.HTTPS {
+			supportHttps, err := adapter.IsGatewaySupportHttps(namespace, svcName)
+			if err != nil {
+				return false, err
+			}
+			if supportHttps {
+				kongBackend.ServicePort = KONG_HTTPS_SERVICE_PORT
+			} else {
+				// use http if not support https
+				config.BackendProtocol = nil
+			}
+		}
+	default:
+		log.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+		return false, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
-	exist, err := adapter.CreateOrUpdateIngress(namespace, ingName, routes, kongBackend, config.RouteOptions)
+
+	exist, err := adapter.CreateOrUpdateIngress(namespace, ingName, routes, kongBackend, gatewayProvider, config.RouteOptions)
 	if err != nil {
 		return exist, err
 	}

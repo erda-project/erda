@@ -209,7 +209,7 @@ func TestK8SAdapterImpl_CreateOrUpdateIngress(t *testing.T) {
 				ingressesHelper: tt.fields.ingressesHelper,
 				pool:            tt.fields.pool,
 			}
-			got, err := impl.CreateOrUpdateIngress(tt.args.namespace, tt.args.name, tt.args.routes, tt.args.backend, tt.args.options...)
+			got, err := impl.CreateOrUpdateIngress(tt.args.namespace, tt.args.name, tt.args.routes, tt.args.backend, "", tt.args.options...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("K8SAdapterImpl.CreateOrUpdateIngress() error = %v, wantErr %v", err, tt.wantErr)
 				return

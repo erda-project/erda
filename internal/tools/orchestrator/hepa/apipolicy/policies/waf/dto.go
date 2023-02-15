@@ -23,11 +23,9 @@ import (
 )
 
 const (
-	WAF_SWITCH_ON       = "on"
-	WAF_SWITCH_OFF      = "off"
-	WAF_SWITCH_WATCH    = "watch"
-	MODSECURITY_SNIPPET = "nginx.ingress.kubernetes.io/modsecurity-snippet"
-	MODSECURITY_ENABLE  = "nginx.ingress.kubernetes.io/enable-modsecurity"
+	WAF_SWITCH_ON    = "on"
+	WAF_SWITCH_OFF   = "off"
+	WAF_SWITCH_WATCH = "watch"
 )
 
 type PolicyDto struct {

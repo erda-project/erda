@@ -18,16 +18,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 )
 
-const (
-	ANNOTATION_REQ_BUFFER         = "nginx.ingress.kubernetes.io/proxy-request-buffering"
-	ANNOTATION_RESP_BUFFER        = "nginx.ingress.kubernetes.io/proxy-buffering"
-	ANNOTATION_REQ_LIMIT          = "nginx.ingress.kubernetes.io/proxy-body-size"
-	ANNOTATION_PROXY_REQ_TIMEOUT  = "nginx.ingress.kubernetes.io/proxy-send-timeout"
-	ANNOTATION_PROXY_RESP_TIMEOUT = "nginx.ingress.kubernetes.io/proxy-read-timeout"
-	ANNOTATION_SERVER_SNIPPET     = "nginx.ingress.kubernetes.io/server-snippet"
-	ANNOTATION_SSL_REDIRECT       = "nginx.ingress.kubernetes.io/ssl-redirect"
-)
-
 type PolicyDto struct {
 	apipolicy.BaseDto
 	ReqBuffer         bool  `json:"reqBuffer"`

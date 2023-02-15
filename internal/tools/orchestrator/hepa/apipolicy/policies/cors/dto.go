@@ -18,15 +18,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 )
 
-const (
-	ANNOTATION_CORS_ENABLE      = "nginx.ingress.kubernetes.io/enable-cors"
-	ANNOTATION_CORS_METHODS     = "nginx.ingress.kubernetes.io/cors-allow-methods"
-	ANNOTATION_CORS_HEADERS     = "nginx.ingress.kubernetes.io/cors-allow-headers"
-	ANNOTATION_CORS_ORIGIN      = "nginx.ingress.kubernetes.io/cors-allow-origin"
-	ANNOTATION_CORS_CREDENTIALS = "nginx.ingress.kubernetes.io/cors-allow-credentials"
-	ANNOTATION_CORS_MAXAGE      = "nginx.ingress.kubernetes.io/cors-max-age"
-)
-
 type PolicyDto struct {
 	apipolicy.BaseDto
 	Methods     string `json:"methods"`

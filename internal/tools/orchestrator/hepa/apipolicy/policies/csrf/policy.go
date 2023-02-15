@@ -24,19 +24,18 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
 
 const (
-	PolicyName = "safety-csrf"
 	PluginName = "csrf-token"
 )
 
 func init() {
-	if err := apipolicy.RegisterPolicyEngine(PolicyName, new(Policy)); err != nil {
+	if err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_CSRF, new(Policy)); err != nil {
 		panic(err)
 	}
 }
@@ -116,15 +115,17 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
-	adapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER].(kong.KongAdapter)
+	adapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER].(gateway_providers.GatewayAdapter)
 	if !ok {
-		return res, errors.Errorf("failed to get identify with %s: %+v", apipolicy.CTX_KONG_ADAPTER, ctx)
+		//TODO: MSE support csrf-token policy?
+		l.Infof("Not use Kong Adapter, no need set csrf-token policy")
+		return res, nil
 	}
 	kongVersion, err := adapter.GetVersion()
 	if err != nil {
 		return res, errors.Wrap(err, "failed to retrieve Kong version")
 	}
-	if !strings.HasPrefix(kongVersion, "2.") {
+	if !strings.HasPrefix(kongVersion, "2.") && !strings.HasPrefix(kongVersion, "mse-") {
 		return res, errors.Errorf("the plugin %s is not supportted on the Kong version %s", PluginName, kongVersion)
 	}
 	zone, ok := ctx[apipolicy.CTX_ZONE].(*orm.GatewayZone)
@@ -178,7 +179,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		policyDao := &orm.GatewayPolicy{
 			ZoneId:     zone.Id,
 			PluginName: PluginName,
-			Category:   "safety",
+			Category:   apipolicy.Policy_Category_Safety,
 			PluginId:   resp.Id,
 			Config:     configByte,
 			Enabled:    1,

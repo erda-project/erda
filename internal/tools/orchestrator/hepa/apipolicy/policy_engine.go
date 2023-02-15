@@ -52,6 +52,22 @@ const (
 	CTX_KONG_ADAPTER = "kong_adapter"
 	CTX_ZONE         = "zone"
 	CTX_SERVICE_INFO = "service_info"
+
+	Policy_Engine_Service_Guard = "safety-server-guard"
+	Policy_Engine_Built_in      = "built-in"
+	Policy_Engine_WAF           = "safety-waf"
+	Policy_Engine_CORS          = "cors"
+	Policy_Engine_Custom        = "custom"
+	Policy_Engine_IP            = "safety-ip"
+	Policy_Engine_Proxy         = "proxy"
+	Policy_Engine_SBAC          = "sbac" // "sbac" is ServerBasedAccessControl
+	Policy_Engine_CSRF          = "safety-csrf"
+
+	Policy_Category_Basic   = "basic"
+	Policy_Category_BuiltIn = "built-in"
+	Policy_Category_Safety  = "safety"
+	Policy_Category_Proxy   = "proxy"
+	Policy_Category_Auth    = "auth"
 )
 
 type PolicyEngine interface {
@@ -116,11 +132,28 @@ func (dto BaseDto) IsGlobal() bool {
 }
 
 type BasePolicy struct {
-	policyName string
+	PolicyName string
 }
 
 func (policy BasePolicy) MergeDiceConfig(map[string]interface{}) (PolicyDto, error) {
 	return nil, nil
+}
+
+func (policy BasePolicy) GetGatewayProvider(clusterName string) (string, error) {
+	azDb, err := db.NewGatewayAzInfoServiceImpl()
+	if err != nil {
+		return "", err
+	}
+	_, azInfo, err := azDb.GetAzInfoByClusterName(clusterName)
+	if err != nil {
+		return "", err
+	}
+
+	if azInfo != nil && azInfo.GatewayProvider != "" {
+		return azInfo.GatewayProvider, nil
+	}
+
+	return "", nil
 }
 
 func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone, ctx map[string]interface{}) (PolicyDto, error) {
@@ -184,11 +217,11 @@ func (policy BasePolicy) CreateDefaultConfig(map[string]interface{}) interface{}
 }
 
 func (policy *BasePolicy) SetName(name string) {
-	policy.policyName = name
+	policy.PolicyName = name
 }
 
 func (policy BasePolicy) GetName() string {
-	return policy.policyName
+	return policy.PolicyName
 }
 
 func (policy BasePolicy) NeedResetAnnotation(dto PolicyDto) bool {

@@ -18,12 +18,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	msecommm "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
 type Policy struct {
@@ -107,11 +111,33 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
+
+	value, ok := ctx[apipolicy.CTX_ZONE]
+	if !ok {
+		return res, errors.Errorf("get identify failed:%+v", ctx)
+	}
+	zone, ok := value.(*orm.GatewayZone)
+	if !ok {
+		return res, errors.Errorf("convert failed:%+v", value)
+	}
+
+	gatewayProvider, err := policy.GetGatewayProvider(zone.DiceClusterName)
+	if err != nil {
+		return res, errors.Errorf("get gateway provider failed for cluster %s:%v\n", zone.DiceClusterName, err)
+	}
+
 	if !policyDto.Switch {
+		// Kong
 		emptyStr := ""
 		// use empty str trigger regions update
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
 			LocationSnippet: &emptyStr,
+		}
+		if gatewayProvider == mse.Mse_Provider_Name {
+			annotations := make(map[string]*string)
+			annotations[string(msecommm.AnnotationMSELimitRouteLimitRPS)] = nil
+			annotations[string(msecommm.AnnotationMSELimitRouteLimitBurstMultiplier)] = nil
+			res.IngressAnnotation.Annotation = annotations
 		}
 		res.IngressController = &apipolicy.IngressController{
 			HttpSnippet:   &emptyStr,
@@ -120,42 +146,51 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		res.AnnotationReset = true
 		return res, nil
 	}
-	value, ok := ctx[apipolicy.CTX_IDENTIFY]
-	if !ok {
-		return res, errors.Errorf("get identify failed:%+v", ctx)
-	}
-	id, ok := value.(string)
-	if !ok {
-		return res, errors.Errorf("convert failed:%+v", value)
-	}
-	value, ok = ctx[apipolicy.CTX_K8S_CLIENT]
-	if !ok {
-		return res, errors.Errorf("get k8s client failed:%+v", ctx)
-	}
-	adapter, ok := value.(k8s.K8SAdapter)
-	if !ok {
-		return res, errors.Errorf("convert failed:%+v", value)
-	}
-	count, err := adapter.CountIngressController()
-	if err != nil {
-		count = 1
-		logrus.Errorf("get ingress controller count failed, err:%+v", err)
-	}
-	tps := int64(math.Ceil(float64(policyDto.MaxTps) / float64(count)))
-	burst := int64(math.Ceil(float64(policyDto.ExtraLatency) * float64(tps) / 1000))
-	limitReqZone := fmt.Sprintf("limit_req_zone 1 zone=server-guard-%s:1m rate=%dr/s;\n", id, tps)
-	var limitReq string
-	if burst != 0 {
-		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d;\n", id, burst)
-	} else {
-		// set burst=tps by default when user set a zero extra latency
-		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d nodelay;\n", id, tps)
-	}
-	limitReqStatus := fmt.Sprintf("limit_req_status %d;\n", LIMIT_INNER_STATUS)
-	errorPage := fmt.Sprintf("error_page %d = @LIMIT-%s;\n", LIMIT_INNER_STATUS, id)
-	var namedLocation string
-	if policyDto.RefuseResponse == "" {
-		namedLocation = fmt.Sprintf(`
+
+	switch gatewayProvider {
+	case mse.Mse_Provider_Name:
+		res.AnnotationReset = true
+		if res.IngressAnnotation == nil {
+			res.IngressAnnotation = &apipolicy.IngressAnnotation{}
+		}
+		setMSEIngressAnnotation(policyDto, res.IngressAnnotation)
+	case "":
+		value, ok = ctx[apipolicy.CTX_IDENTIFY]
+		if !ok {
+			return res, errors.Errorf("get identify failed:%+v", ctx)
+		}
+		id, ok := value.(string)
+		if !ok {
+			return res, errors.Errorf("convert failed:%+v", value)
+		}
+		value, ok = ctx[apipolicy.CTX_K8S_CLIENT]
+		if !ok {
+			return res, errors.Errorf("get k8s client failed:%+v", ctx)
+		}
+		adapter, ok := value.(k8s.K8SAdapter)
+		if !ok {
+			return res, errors.Errorf("convert failed:%+v", value)
+		}
+		count, err := adapter.CountIngressController()
+		if err != nil {
+			count = 1
+			logrus.Errorf("get ingress controller count failed, err:%+v", err)
+		}
+		tps := int64(math.Ceil(float64(policyDto.MaxTps) / float64(count)))
+		burst := int64(math.Ceil(float64(policyDto.ExtraLatency) * float64(tps) / 1000))
+		limitReqZone := fmt.Sprintf("limit_req_zone 1 zone=server-guard-%s:1m rate=%dr/s;\n", id, tps)
+		var limitReq string
+		if burst != 0 {
+			limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d;\n", id, burst)
+		} else {
+			// set burst=tps by default when user set a zero extra latency
+			limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d nodelay;\n", id, tps)
+		}
+		limitReqStatus := fmt.Sprintf("limit_req_status %d;\n", LIMIT_INNER_STATUS)
+		errorPage := fmt.Sprintf("error_page %d = @LIMIT-%s;\n", LIMIT_INNER_STATUS, id)
+		var namedLocation string
+		if policyDto.RefuseResponse == "" {
+			namedLocation = fmt.Sprintf(`
 location @LIMIT-%s {
     log_by_lua_block {
         plugins.run()
@@ -169,8 +204,8 @@ location @LIMIT-%s {
     return %d;
 }
 `, id, policyDto.RefuseCode)
-	} else if policyDto.RefuseCode >= 300 && policyDto.RefuseCode < 400 {
-		namedLocation = fmt.Sprintf(`
+		} else if policyDto.RefuseCode >= 300 && policyDto.RefuseCode < 400 {
+			namedLocation = fmt.Sprintf(`
 location @LIMIT-%s {
     log_by_lua_block {
         plugins.run()
@@ -184,12 +219,12 @@ location @LIMIT-%s {
     return %d "%s";
 }
 `, id, policyDto.RefuseCode, policyDto.RefuseResponse)
-	} else {
-		contentType := "text/plain; charset=utf-8"
-		if policyDto.RefuseResonseCanBeJson() {
-			contentType = "application/json"
-		}
-		namedLocation = fmt.Sprintf(`
+		} else {
+			contentType := "text/plain; charset=utf-8"
+			if policyDto.RefuseResonseCanBeJson() {
+				contentType = "application/json"
+			}
+			namedLocation = fmt.Sprintf(`
 location @LIMIT-%s {
     log_by_lua_block {
         plugins.run()
@@ -203,22 +238,46 @@ location @LIMIT-%s {
     return %d %s;
 }
 `, id, contentType, policyDto.RefuseCode, policyDto.RefuseResponseQuote())
+		}
+		locationSnippet := limitReq + limitReqStatus + errorPage
+		res.IngressAnnotation = &apipolicy.IngressAnnotation{
+			LocationSnippet: &locationSnippet,
+		}
+		httpSnippet := limitReqZone
+		serverSnippet := namedLocation
+		res.IngressController = &apipolicy.IngressController{
+			HttpSnippet:   &httpSnippet,
+			ServerSnippet: &serverSnippet,
+		}
+	default:
+		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
-	locationSnippet := limitReq + limitReqStatus + errorPage
-	res.IngressAnnotation = &apipolicy.IngressAnnotation{
-		LocationSnippet: &locationSnippet,
-	}
-	httpSnippet := limitReqZone
-	serverSnippet := namedLocation
-	res.IngressController = &apipolicy.IngressController{
-		HttpSnippet:   &httpSnippet,
-		ServerSnippet: &serverSnippet,
-	}
+
 	return res, nil
+}
+func setMSEIngressAnnotation(policyDto *PolicyDto, ingressAnnotations *apipolicy.IngressAnnotation) {
+	annotations := make(map[string]*string)
+	rateStr := strconv.FormatInt(policyDto.MaxTps, 10)
+	multiplier := mse.MseBurstMultiplier
+	if policyDto.Busrt > 0 {
+		multiplier = strconv.FormatInt(policyDto.Busrt, 10)
+	}
+	annotations[string(msecommm.AnnotationMSELimitRouteLimitRPS)] = &rateStr
+	annotations[string(msecommm.AnnotationMSELimitRouteLimitBurstMultiplier)] = &multiplier
+	if ingressAnnotations == nil {
+		ingressAnnotations = &apipolicy.IngressAnnotation{}
+	}
+	if ingressAnnotations.Annotation == nil {
+		ingressAnnotations.Annotation = annotations
+	} else {
+		for k, v := range annotations {
+			ingressAnnotations.Annotation[k] = v
+		}
+	}
 }
 
 func init() {
-	err := apipolicy.RegisterPolicyEngine("safety-server-guard", &Policy{})
+	err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_Service_Guard, &Policy{})
 	if err != nil {
 		panic(err)
 	}

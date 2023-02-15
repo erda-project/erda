@@ -21,8 +21,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -47,11 +48,11 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
 	res := apipolicy.PolicyConfig{}
 	annotation := map[string]*string{}
-	annotation["nginx.ingress.kubernetes.io/proxy-next-upstream"] = &config.ServerConf.NextUpstreams
+	annotation[string(annotationscommon.AnnotationProxyNextUpstream)] = &config.ServerConf.NextUpstreams
 	nextTries := "4"
-	annotation["nginx.ingress.kubernetes.io/proxy-next-upstream-tries"] = &nextTries
+	annotation[string(annotationscommon.AnnotationProxyNextUpstreamRetries)] = &nextTries
 	nextTimeout := "5"
-	annotation["nginx.ingress.kubernetes.io/proxy-next-upstream-timeout"] = &nextTimeout
+	annotation[string(annotationscommon.AnnotationProxyNextUpstreamTimeOut)] = &nextTimeout
 	snippet := `
 proxy_intercept_errors on;
 `
@@ -69,9 +70,11 @@ proxy_intercept_errors on;
 
 	value, ok := ctx[apipolicy.CTX_KONG_ADAPTER]
 	if !ok {
-		return res, errors.Errorf("get identify failed:%+v", ctx)
+		//TODO: MSE support built-in?
+		log.Infof("Not use Kong Adapter, no need set built-in policy")
+		return res, nil
 	}
-	kongAdapter, ok := value.(kong.KongAdapter)
+	gatewayAdapter, ok := value.(gateway_providers.GatewayAdapter)
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
@@ -86,7 +89,7 @@ proxy_intercept_errors on;
 	policyDb, _ := db.NewGatewayPolicyServiceImpl()
 	plugins, err := policyDb.SelectByAny(&orm.GatewayPolicy{
 		ZoneId:   zone.Id,
-		Category: "built-in",
+		Category: apipolicy.Policy_Category_BuiltIn,
 	})
 	if err != nil {
 		return res, err
@@ -99,7 +102,7 @@ proxy_intercept_errors on;
 			}
 		}
 		if !exist {
-			err = kongAdapter.RemovePlugin(plugin.PluginId)
+			err = gatewayAdapter.RemovePlugin(plugin.PluginId)
 			if err != nil {
 				return res, err
 			}
@@ -114,7 +117,7 @@ proxy_intercept_errors on;
 		"tags_header_prefix": config.ServerConf.SpotTagsHeaderPrefix,
 		"host_ip_key":        config.ServerConf.SpotHostIpKey,
 		"instance_key":       config.ServerConf.SpotInstanceKey,
-	}, kongAdapter)
+	}, gatewayAdapter)
 	if err != nil {
 		return res, err
 	}
@@ -122,10 +125,9 @@ proxy_intercept_errors on;
 		res.KongPolicyChange = true
 	}
 	return res, nil
-
 }
 
-func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, pluginName string, config map[string]interface{}, adapter kong.KongAdapter) (bool, error) {
+func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, pluginName string, config map[string]interface{}, adapter gateway_providers.GatewayAdapter) (bool, error) {
 	enable := false
 	for _, name := range builtinPlugins {
 		if name == pluginName {
@@ -179,7 +181,7 @@ func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, p
 	policyDao := &orm.GatewayPolicy{
 		ZoneId:     zoneId,
 		PluginName: pluginName,
-		Category:   "built-in",
+		Category:   apipolicy.Policy_Category_BuiltIn,
 		PluginId:   resp.Id,
 		Config:     configByte,
 		Enabled:    1,
@@ -189,11 +191,10 @@ func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, p
 		return false, err
 	}
 	return true, nil
-
 }
 
 func init() {
-	err := apipolicy.RegisterPolicyEngine("built-in", &Policy{})
+	err := apipolicy.RegisterPolicyEngine(apipolicy.Policy_Engine_Built_in, &Policy{})
 	if err != nil {
 		panic(err)
 	}

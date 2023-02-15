@@ -44,7 +44,7 @@ type GatewayOpenapiService interface {
 	TouchRuntimePackageMeta(*orm.GatewayRuntimeService, *service.SessionHelper) (string, bool, error)
 	RefreshRuntimePackage(string, *orm.GatewayRuntimeService, *service.SessionHelper) error
 	CreateUnityPackageZone(string, *service.SessionHelper) (*orm.GatewayZone, error)
-	CreateTenantPackage(string, *service.SessionHelper) error
+	CreateTenantPackage(string, string, *service.SessionHelper) error
 	CreateTenantHubPackages(ctx context.Context, tenantID string, session *service.SessionHelper) error
 	CreatePackage(context.Context, *dto.DiceArgsDto, *dto.PackageDto) (*dto.PackageInfoDto, string, error)
 	GetPackages(context.Context, *dto.GetPackagesDto) (common.NewPageQuery, error)

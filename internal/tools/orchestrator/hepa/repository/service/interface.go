@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	ZONE_TYPE_DICE_APP    = "diceApp" //已废弃
-	ZONE_TYPE_PACKAGE     = "package" // 老的入口
-	ZONE_TYPE_PACKAGE_NEW = "packageNew"
-	ZONE_TYPE_PACKAGE_API = "packageApi"
-	ZONE_TYPE_UNITY       = "unity"
+	ZONE_TYPE_DICE_APP       = "diceApp" //已废弃
+	ZONE_TYPE_PACKAGE        = "package" // 老的入口
+	ZONE_TYPE_PACKAGE_NEW    = "packageNew"
+	ZONE_TYPE_PACKAGE_API    = "packageApi"
+	ZONE_TYPE_UNITY          = "unity"
+	ZONE_TYPE_UNITY_Provider = "unityProvider"
 )
 
 var GLOBAL_REGIONS = []string{"option", "main", "http", "server"}
@@ -331,7 +332,7 @@ type GatewayUpstreamRegisterRecordService interface {
 
 type GatewayAzInfoService interface {
 	GetAz(*GatewayAzInfo) (string, error)
-	GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, error)
+	GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, *ClusterInfoDto, error)
 	GetAzInfo(*GatewayAzInfo) (*GatewayAzInfo, error)
 	SelectByAny(*GatewayAzInfo) ([]GatewayAzInfo, error)
 	SelectValidAz() ([]GatewayAzInfo, error)

@@ -49,7 +49,7 @@ type KongAdapterImpl struct {
 	Client   *http.Client
 }
 
-func (impl *KongAdapterImpl) KongExist() bool {
+func (impl *KongAdapterImpl) GatewayProviderExist() bool {
 	return impl != nil
 }
 
