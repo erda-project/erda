@@ -36,7 +36,24 @@ func (p *provider) initDefaultDDLs() error {
 		table.DatabaseNameKey, p.Cfg.Database,
 		table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10),
 	)
-	return p.executeDDLs(p.Cfg.DefaultDDLs, replacer)
+	err := p.executeDDLs(p.Cfg.DefaultDDLs, replacer)
+	if err != nil {
+		return err
+	}
+	if p.Cfg.ColdHotEnable {
+		tableName, meta := p.Loader.GetSearchTable("")
+		if meta.HasColdHotTTL() {
+			return nil
+		}
+		replacer := strings.NewReplacer(
+			table.DatabaseNameKey, p.Cfg.Database,
+			table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10),
+			table.TableNameKey, tableName,
+			table.TtlHotDataDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultHotDataTTL()/time.Hour/24), 10),
+		)
+		return p.executeDDLs(p.Cfg.ColdHotDDLs, replacer)
+	}
+	return nil
 }
 
 func (p *provider) initTenantDDLs() {
@@ -56,9 +73,13 @@ func (p *provider) initTenantDDLs() {
 			table.DatabaseNameKey, database,
 			table.TableNameKey, writeTable,
 			table.AliasTableNameKey, searchTable,
-			table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10))
+			table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10),
+			table.TtlHotDataDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultHotDataTTL()/time.Hour/24), 10))
 
 		_ = p.executeDDLs(p.Cfg.TenantDDLs, replacer)
+		if p.Cfg.ColdHotEnable && !tableMeta.HasColdHotTTL() {
+			_ = p.executeDDLs(p.Cfg.ColdHotDDLs, replacer)
+		}
 	}
 }
 

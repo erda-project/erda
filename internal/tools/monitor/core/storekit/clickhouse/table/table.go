@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	TableNameKey      = "<table_name>"
-	AliasTableNameKey = "<alias_table_name>"
-	DatabaseNameKey   = "<database>"
-	TtlDaysNameKey    = "<ttl_in_days>"
+	TableNameKey          = "<table_name>"
+	AliasTableNameKey     = "<alias_table_name>"
+	DatabaseNameKey       = "<database>"
+	TtlDaysNameKey        = "<ttl_in_days>"
+	TtlHotDataDaysNameKey = "<ttl_in_hot_days>"
 )
 
 var keyReplacer = strings.NewReplacer(
