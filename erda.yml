@@ -84,6 +84,9 @@ services:
       - port: 9431
         protocol: "TCP"
         l4_protocol: "TCP"
+      - port: 7098
+        protocol: "TCP"
+        l4_protocol: "TCP"
     expose:
       - 9529
     binds:
@@ -119,6 +122,9 @@ services:
         protocol: TCP
         l4_protocol: TCP
       - port: 9095
+        protocol: TCP
+        l4_protocol: TCP
+      - port: 9093
         protocol: TCP
         l4_protocol: TCP
     envs:
@@ -209,6 +215,9 @@ services:
       - port: 7098
         protocol: "TCP"
         l4_protocol: "TCP"
+      - port: 7078
+        protocol: "TCP"
+        l4_protocol: "TCP"
     envs:
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
       COLLECTOR_BROWSER_SAMPLING_RATE: "100"
@@ -245,6 +254,9 @@ services:
         l4_protocol: "TCP"
         expose: true
       - port: 7098
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 7078
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
@@ -370,6 +382,9 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
       - port: 7080
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 7098
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
