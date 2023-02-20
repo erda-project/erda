@@ -36,7 +36,24 @@ func (p *provider) initDefaultDDLs() error {
 		table.DatabaseNameKey, p.Cfg.Database,
 		table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10),
 	)
-	return p.executeDDLs(p.Cfg.DefaultDDLs, replacer)
+	err := p.executeDDLs(p.Cfg.DefaultDDLs, replacer)
+	if err != nil {
+		return err
+	}
+	if p.Cfg.ColdHotEnable {
+		tableName, meta := p.Loader.GetSearchTable("")
+		if meta.HasColdHotTTL() {
+			return nil
+		}
+		replacer := strings.NewReplacer(
+			table.DatabaseNameKey, p.Cfg.Database,
+			table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10),
+			table.TableNameKey, tableName,
+			table.TtlHotDataDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultHotDataTTL()/time.Hour/24), 10),
+		)
+		return p.executeDDLs(p.Cfg.ColdHotDDLs, replacer)
+	}
+	return nil
 }
 
 func (p *provider) initTenantDDLs() {
@@ -56,15 +73,20 @@ func (p *provider) initTenantDDLs() {
 			table.DatabaseNameKey, database,
 			table.TableNameKey, writeTable,
 			table.AliasTableNameKey, searchTable,
-			table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10))
+			table.TtlDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultTTL()/time.Hour/24), 10),
+			table.TtlHotDataDaysNameKey, strconv.FormatInt(int64(p.Retention.DefaultHotDataTTL()/time.Hour/24), 10))
 
 		_ = p.executeDDLs(p.Cfg.TenantDDLs, replacer)
+		if p.Cfg.ColdHotEnable && !tableMeta.HasColdHotTTL() {
+			_ = p.executeDDLs(p.Cfg.ColdHotDDLs, replacer)
+		}
 	}
 }
 
 func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tables map[string]*loader.TableMeta) (database, tenant, key string, ok bool) {
 	distTableName := fmt.Sprintf("%s_all", table)
 	if _, o := tables[distTableName]; !o {
+		fmt.Println(table, "not all")
 		return
 	}
 
@@ -72,6 +94,7 @@ func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tab
 	for {
 		index := strings.LastIndex(searchWindow, "_")
 		if index < 0 {
+			fmt.Println(table, "not _")
 			return
 		}
 		tenant = table[:index]
@@ -83,6 +106,7 @@ func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tab
 
 		arr := strings.SplitN(tenant, fmt.Sprintf(".%s_", p.Cfg.TablePrefix), 2)
 		if len(arr) != 2 {
+			fmt.Println(table, "not ._")
 			return
 		}
 

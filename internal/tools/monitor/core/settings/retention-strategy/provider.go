@@ -17,6 +17,7 @@ package retention
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -29,10 +30,28 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 )
 
+type TTL struct {
+	// hot data ttl
+	HotData time.Duration
+
+	// entire data ttl, cold data = ttl - hot ttl
+	All time.Duration
+}
+
+func (t TTL) GetHotTTLByDays() int64 {
+	return int64(math.Ceil(math.Max(t.HotData.Hours()/24, 1)))
+}
+
+func (t TTL) GetTTLByDays() int64 {
+	return int64(math.Ceil(math.Max(t.All.Hours()/24, 1)))
+}
+
 // Interface .
 type Interface interface {
-	GetTTL(key string) time.Duration
+	GetTTL(key string) *TTL
 	DefaultTTL() time.Duration
+	Default() *TTL
+	DefaultHotDataTTL() time.Duration
 	GetConfigKey(name string, tags map[string]string) string
 	GetTTLByTags(name string, tags map[string]string) time.Duration
 	Loading(ctx context.Context)
@@ -43,6 +62,7 @@ var _ Interface = (*provider)(nil)
 type (
 	config struct {
 		DefaultTTL       time.Duration `file:"default_ttl" default:"168h"`
+		DefaultHotTTL    time.Duration `file:"default_hot_ttl" default:"72h"`
 		LoadFromDatabase bool          `file:"load_from_database"`
 		ReloadInterval   time.Duration `file:"ttl_reload_interval" default:"3m"`
 		PrintDetails     bool          `file:"print_details"`

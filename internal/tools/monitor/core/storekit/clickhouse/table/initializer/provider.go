@@ -35,9 +35,11 @@ type ddlFile struct {
 type config struct {
 	DefaultDDLs     []ddlFile     `file:"default_ddl_files"`
 	TenantDDLs      []ddlFile     `file:"tenant_ddl_files"`
+	ColdHotDDLs     []ddlFile     `file:"tenant_ddl_files"`
 	Database        string        `file:"database" default:"monitor"`
 	TablePrefix     string        `file:"table_prefix"`
 	TTLSyncInterval time.Duration `file:"ttl_sync_interval" default:"24h"`
+	ColdHotEnable   bool          `file:"cold_hot_enable" default:"false"`
 }
 
 type provider struct {

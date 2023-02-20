@@ -15,16 +15,17 @@
 package table
 
 import (
-	"math"
 	"strings"
-	"time"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 )
 
 const (
-	TableNameKey      = "<table_name>"
-	AliasTableNameKey = "<alias_table_name>"
-	DatabaseNameKey   = "<database>"
-	TtlDaysNameKey    = "<ttl_in_days>"
+	TableNameKey          = "<table_name>"
+	AliasTableNameKey     = "<alias_table_name>"
+	DatabaseNameKey       = "<database>"
+	TtlDaysNameKey        = "<ttl_in_days>"
+	TtlHotDataDaysNameKey = "<ttl_in_hot_days>"
 )
 
 var keyReplacer = strings.NewReplacer(
@@ -37,6 +38,6 @@ func NormalizeKey(s string) string {
 	return keyReplacer.Replace(strings.ToLower(s))
 }
 
-func FormatTTLToDays(ttl time.Duration) int64 {
-	return int64(math.Ceil(math.Max(ttl.Hours()/24, 1)))
+func FormatTTLToDays(ttl *retention.TTL) int64 {
+	return ttl.GetTTLByDays()
 }

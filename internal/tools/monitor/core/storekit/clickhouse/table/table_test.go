@@ -19,23 +19,31 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 )
 
 func Test_formatTTLToDays(t *testing.T) {
 	tests := []struct {
-		ttl  time.Duration
+		ttl  *retention.TTL
 		want int64
 	}{
 		{
-			ttl:  time.Hour * 7 * 24,
+			ttl: &retention.TTL{
+				All: time.Hour * 7 * 24,
+			},
 			want: 7,
 		},
 		{
-			ttl:  time.Hour,
+			ttl: &retention.TTL{
+				All: time.Hour,
+			},
 			want: 1,
 		},
 		{
-			ttl:  time.Hour*8*24 + time.Hour,
+			ttl: &retention.TTL{
+				All: time.Hour*8*24 + time.Hour,
+			},
 			want: 9,
 		},
 	}

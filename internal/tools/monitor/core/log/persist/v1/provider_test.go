@@ -27,6 +27,7 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 
@@ -151,9 +152,23 @@ func (m *mockLogSchema) ValidateOrg(orgName string) bool {
 
 type mockRetention struct{}
 
+func (r *mockRetention) Default() *retention.TTL {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *mockRetention) DefaultHotDataTTL() time.Duration {
+	//TODO implement me
+	panic("implement me")
+}
+
 const mockTTL = 7 * 24 * time.Hour
 
-func (r *mockRetention) GetTTL(key string) time.Duration                         { return mockTTL }
+var mockTTLType = &retention.TTL{
+	All: mockTTL,
+}
+
+func (r *mockRetention) GetTTL(key string) *retention.TTL                        { return mockTTLType }
 func (r *mockRetention) DefaultTTL() time.Duration                               { return mockTTL }
 func (r *mockRetention) GetConfigKey(name string, tags map[string]string) string { return "" }
 func (r *mockRetention) GetTTLByTags(name string, tags map[string]string) time.Duration {

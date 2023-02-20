@@ -50,13 +50,6 @@ type setTablesRequest struct {
 	Done   chan struct{}
 }
 
-type TableMeta struct {
-	Engine       string
-	Columns      map[string]*TableColumn
-	TTLDays      int64
-	TTLBaseField string
-}
-
 type ColumnType string
 
 type TableColumn struct {
