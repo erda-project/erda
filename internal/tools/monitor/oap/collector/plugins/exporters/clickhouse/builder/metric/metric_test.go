@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
 )
@@ -204,6 +205,21 @@ func (m *mockLoader) Database() string {
 }
 
 type mockRetention struct {
+}
+
+func (m mockRetention) GetTTLv2(key string) *retention.TTL {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m mockRetention) Default() *retention.TTL {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m mockRetention) DefaultHotDataTTL() time.Duration {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m mockRetention) GetTTL(key string) time.Duration {
