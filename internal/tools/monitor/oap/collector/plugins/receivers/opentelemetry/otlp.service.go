@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	otppb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/jsonmarshal"
 )
@@ -41,5 +42,10 @@ func (s *otlpService) Export(ctx context.Context, req *otppb.PostSpansRequest) (
 			}
 		}
 	}
+	return &common.VoidResponse{}, nil
+}
+
+func (s *otlpService) ExportMetric(ctx context.Context, req *otppb.ExportMetricsServiceRequest) (*common.VoidResponse, error) {
+	//TODO: convert otlp metric to erda metric
 	return &common.VoidResponse{}, nil
 }

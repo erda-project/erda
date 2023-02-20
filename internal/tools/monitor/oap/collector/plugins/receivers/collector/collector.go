@@ -88,7 +88,6 @@ func (p *provider) parseJSON(ctx echo.Context, name string) error {
 		if err != nil {
 			return
 		}
-
 		if err := p.sendRaw(name, value); err != nil {
 			p.Log.Errorf("sendRaw err: %s", err)
 		}

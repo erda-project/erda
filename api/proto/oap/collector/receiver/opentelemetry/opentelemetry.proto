@@ -9,6 +9,7 @@ import "google/protobuf/duration.proto";
 
 import "common/http.proto";
 import "oap/trace/tracing.proto";
+import "oap/opentelemetry/metrics.proto";
 import "oap/common/common.proto";
 
 
@@ -16,10 +17,27 @@ message PostSpansRequest {
   repeated erda.oap.trace.Span spans = 1;
 }
 
+message ExportMetricsServiceRequest {
+  // An array of ResourceMetrics.
+  // For data coming from a single resource this array will typically contain one
+  // element. Intermediary nodes (such as OpenTelemetry Collector) that receive
+  // data from multiple origins typically batch the data before forwarding further and
+  // in that case this array will contain multiple elements.
+  repeated erda.oap.opentelemetry.ResourceMetrics resource_metrics = 1;
+}
+
 service OpenTelemetryService {
   rpc Export (PostSpansRequest) returns (erda.common.VoidResponse) {
     option (google.api.http) = {
       post: "/api/otlp/v1/traces",
+    };
+  }
+}
+
+service OpenTelemetryMetricService {
+    rpc ExportMetric (ExportMetricsServiceRequest) returns (erda.common.VoidResponse) {
+    option (google.api.http) = {
+      post: "/api/otlp/v1/metrics",
     };
   }
 }
