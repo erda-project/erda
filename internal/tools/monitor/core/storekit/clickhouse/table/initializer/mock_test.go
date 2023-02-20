@@ -18,18 +18,28 @@ import (
 	"context"
 	"time"
 
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 type MockRetention struct {
 }
 
-func (r MockRetention) GetTTL(key string) time.Duration {
+func (r MockRetention) Default() *retention.TTL {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r MockRetention) DefaultHotDataTTL() time.Duration {
+	return time.Second
+}
+
+func (r MockRetention) GetTTL(key string) *retention.TTL {
 	panic("implement me")
 }
 
 func (r MockRetention) DefaultTTL() time.Duration {
-	panic("implement me")
+	return time.Second
 }
 
 func (r MockRetention) GetConfigKey(name string, tags map[string]string) string {

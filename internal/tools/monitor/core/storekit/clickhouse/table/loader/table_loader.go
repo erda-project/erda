@@ -103,13 +103,13 @@ func (p *provider) reloadTablesFromClickhouse(ctx context.Context) error {
 	}
 	tablesMeta := map[string]*TableMeta{}
 	for _, table := range tables {
-		ttlBaseTime, ttl := p.extractTTLDays(table.CreateTableSql)
-		tablesMeta[fmt.Sprintf("%s.%s", table.Database, table.Name)] = &TableMeta{
-			Engine:       table.Engine,
-			Columns:      map[string]*TableColumn{},
-			TTLDays:      ttl,
-			TTLBaseField: ttlBaseTime,
+		meta := &TableMeta{
+			Engine:         table.Engine,
+			Columns:        map[string]*TableColumn{},
+			CreateTableSQL: table.CreateTableSql,
 		}
+		meta.extractTTLDays()
+		tablesMeta[fmt.Sprintf("%s.%s", table.Database, table.Name)] = meta
 	}
 
 	var columns []struct {

@@ -17,11 +17,13 @@ package initializer
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
-	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
@@ -40,29 +42,36 @@ func (p *provider) syncTTL(ctx context.Context) {
 			default:
 			}
 
-			if meta.TTLDays == 0 || len(meta.TTLBaseField) == 0 {
+			if meta.TTLDays == 0 || len(meta.TimeKey) == 0 {
 				continue
 			}
 
-			// default table
-			if t == fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.TablePrefix) && meta.TTLDays != table.FormatTTLToDays(p.Retention.DefaultTTL()) {
-				p.AlterTableTTL(t, meta, table.FormatTTLToDays(p.Retention.DefaultTTL()))
-				continue
-			}
+			var ttl *retention.TTL
+			if t == fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.TablePrefix) {
+				// default table
+				ttl = p.Retention.Default()
+				if !p.needTTLUpdate(ttl, meta) {
+					continue
+				}
 
-			// tenant table
-			database, tenant, key, ok := p.extractTenantAndKey(t, meta, tables)
-			if !ok {
+				p.AlterTableTTL(t, meta, ttl)
 				continue
-			}
 
-			ttl := table.FormatTTLToDays(p.Retention.GetTTL(key))
-			if meta.TTLDays == ttl {
-				continue
-			}
+			} else {
+				// tenant table
+				database, tenant, key, ok := p.extractTenantAndKey(t, meta, tables)
 
-			writeTable := fmt.Sprintf("%s.%s_%s_%s", database, p.Cfg.TablePrefix, tenant, key)
-			p.AlterTableTTL(writeTable, meta, ttl)
+				if !ok {
+					continue
+				}
+
+				ttl := p.Retention.GetTTL(key)
+				if !p.needTTLUpdate(ttl, meta) {
+					continue
+				}
+				writeTable := fmt.Sprintf("%s.%s_%s_%s", database, p.Cfg.TablePrefix, tenant, key)
+				p.AlterTableTTL(writeTable, meta, ttl)
+			}
 		}
 
 		select {
@@ -73,15 +82,35 @@ func (p *provider) syncTTL(ctx context.Context) {
 	}
 }
 
-func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttlDays int64) {
-	p.Log.Infof("start change ttl of table[%s]", tableName)
-	sql := fmt.Sprintf("ALTER TABLE %s ON CLUSTER '{cluster}' MODIFY TTL %s + INTERVAL %v DAY;", tableName, meta.TTLBaseField, ttlDays)
+func (p *provider) needTTLUpdate(ttl *retention.TTL, meta *loader.TableMeta) bool {
+	if p.Cfg.ColdHotEnable {
+		return meta.TTLDays != ttl.GetTTLByDays() || !meta.HasColdHotTTL() || meta.HotTTLDays != ttl.GetHotTTLByDays()
+	} else {
+		return meta.TTLDays != ttl.GetTTLByDays()
+	}
+}
+
+func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttl *retention.TTL) {
+	sql := "ALTER TABLE <table> ON CLUSTER '{cluster}' MODIFY TTL <time_key> + INTERVAL <ddl_days> DAY;"
+	if p.Cfg.ColdHotEnable {
+		sql = "ALTER TABLE <table> ON CLUSTER '{cluster}' MODIFY TTL <time_key> + toIntervalDay(<hot_ddl_days>) TO VOLUME 'slow', <time_key> + toIntervalDay(<ddl_days>);"
+	}
+	if len(meta.TimeKey) <= 0 {
+		p.Log.Warnf("failed exec ttl, not time key!!", tableName)
+		return
+	}
+	replacer := strings.NewReplacer(
+		"<time_key>", meta.TimeKey,
+		"<ddl_days>", strconv.FormatInt(ttl.GetTTLByDays(), 10),
+		"<table>", tableName,
+		"<hot_ddl_days>", strconv.FormatInt(ttl.GetHotTTLByDays(), 10))
+	sql = replacer.Replace(sql)
 	err := p.Clickhouse.Client().Exec(clickhouse.Context(context.Background(), clickhouse.WithSettings(map[string]interface{}{
 		"materialize_ttl_after_modify": 0,
 	})), sql)
 	if err != nil {
-		p.Log.Warnf("failed to change ttl of table[%s] to %v day, sql: %s", tableName, ttlDays, sql)
+		p.Log.Warnf("failed to change ttl of table[%s] to %v day, sql: %s", tableName, meta, sql)
 	} else {
-		p.Log.Infof("finish change ttl of table[%s] to %v day", tableName, ttlDays)
+		p.Log.Infof("finish change ttl of table[%s] to %v day", tableName, meta)
 	}
 }

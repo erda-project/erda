@@ -86,6 +86,7 @@ clickhouse.table.initializer@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "logs"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_LOG_TTL_SYNC_INTERVAL:1h}"
+  cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
   default_ddl_files:
     - path: "conf/clickhouse/logs_ddl_create_db.sql"
       ignore_err: "false"
@@ -593,6 +594,7 @@ clickhouse.table.initializer@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "spans"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
   default_ddl_files:
     - path: "conf/clickhouse/spans/ddl_create_db.sql.tpl"
       ignore_err: "false"
@@ -641,6 +643,7 @@ clickhouse.table.initializer@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "metrics"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_METRIC_TTL_SYNC_INTERVAL:1h}"
+  cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
   default_ddl_files:
     - path: "conf/clickhouse/metrics/ddl_create_db.sql.tpl"
       ignore_err: "false"
@@ -669,6 +672,7 @@ clickhouse.table.initializer@event:
   _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "events"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
   default_ddl_files:
     - path: "conf/clickhouse/events_ddl_create_db.sql"
       ignore_err: "false"
@@ -702,6 +706,7 @@ clickhouse.table.initializer@entity:
   _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
   table_prefix: "entities"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
+  cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
   default_ddl_files:
     - path: "conf/clickhouse/entities_ddl_create_db.sql"
       ignore_err: "false"
