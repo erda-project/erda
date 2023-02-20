@@ -60,11 +60,12 @@ func (p *provider) syncTTL(ctx context.Context) {
 			} else {
 				// tenant table
 				database, tenant, key, ok := p.extractTenantAndKey(t, meta, tables)
+
 				if !ok {
 					continue
 				}
 
-				ttl := p.Retention.GetTTLv2(key)
+				ttl := p.Retention.GetTTL(key)
 				if !p.needTTLUpdate(ttl, meta) {
 					continue
 				}
@@ -113,17 +114,3 @@ func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttl *
 		p.Log.Infof("finish change ttl of table[%s] to %v day", tableName, meta)
 	}
 }
-
-//
-//func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttl *retention.TTL) {
-//	p.Log.Infof("start change ttl of table[%s]", tableName)
-//	sql := fmt.Sprintf("ALTER TABLE %s ON CLUSTER '{cluster}' MODIFY TTL %s + INTERVAL %v DAY;", tableName, meta.TTLBaseField, ttlDays)
-//	err := p.Clickhouse.Client().Exec(clickhouse.Context(context.Background(), clickhouse.WithSettings(map[string]interface{}{
-//		"materialize_ttl_after_modify": 0,
-//	})), sql)
-//	if err != nil {
-//		p.Log.Warnf("failed to change ttl of table[%s] to %v day, sql: %s", tableName, ttlDays, sql)
-//	} else {
-//		p.Log.Infof("finish change ttl of table[%s] to %v day", tableName, ttlDays)
-//	}
-//}

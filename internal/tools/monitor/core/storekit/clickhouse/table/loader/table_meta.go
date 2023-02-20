@@ -31,6 +31,9 @@ type TableMeta struct {
 }
 
 func (meta *TableMeta) HasColdHotTTL() bool {
+	if len(meta.TTLBaseField) < 0 {
+		return false
+	}
 	return strings.Index(meta.TTLBaseField, "slow") != -1
 }
 

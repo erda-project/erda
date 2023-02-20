@@ -25,27 +25,21 @@ import (
 type MockRetention struct {
 }
 
-func (r MockRetention) GetTTLv2(key string) *retention.TTL {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (r MockRetention) Default() *retention.TTL {
 	//TODO implement me
 	panic("implement me")
 }
 
 func (r MockRetention) DefaultHotDataTTL() time.Duration {
-	//TODO implement me
-	panic("implement me")
+	return time.Second
 }
 
-func (r MockRetention) GetTTL(key string) time.Duration {
+func (r MockRetention) GetTTL(key string) *retention.TTL {
 	panic("implement me")
 }
 
 func (r MockRetention) DefaultTTL() time.Duration {
-	panic("implement me")
+	return time.Second
 }
 
 func (r MockRetention) GetConfigKey(name string, tags map[string]string) string {

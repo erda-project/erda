@@ -86,6 +86,7 @@ func (p *provider) initTenantDDLs() {
 func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tables map[string]*loader.TableMeta) (database, tenant, key string, ok bool) {
 	distTableName := fmt.Sprintf("%s_all", table)
 	if _, o := tables[distTableName]; !o {
+		fmt.Println(table, "not all")
 		return
 	}
 
@@ -93,6 +94,7 @@ func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tab
 	for {
 		index := strings.LastIndex(searchWindow, "_")
 		if index < 0 {
+			fmt.Println(table, "not _")
 			return
 		}
 		tenant = table[:index]
@@ -104,6 +106,7 @@ func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tab
 
 		arr := strings.SplitN(tenant, fmt.Sprintf(".%s_", p.Cfg.TablePrefix), 2)
 		if len(arr) != 2 {
+			fmt.Println(table, "not ._")
 			return
 		}
 

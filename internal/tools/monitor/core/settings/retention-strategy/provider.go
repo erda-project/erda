@@ -48,8 +48,7 @@ func (t TTL) GetTTLByDays() int64 {
 
 // Interface .
 type Interface interface {
-	GetTTL(key string) time.Duration
-	GetTTLv2(key string) *TTL
+	GetTTL(key string) *TTL
 	DefaultTTL() time.Duration
 	Default() *TTL
 	DefaultHotDataTTL() time.Duration

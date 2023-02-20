@@ -15,9 +15,9 @@
 package table
 
 import (
-	"math"
 	"strings"
-	"time"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 )
 
 const (
@@ -38,6 +38,6 @@ func NormalizeKey(s string) string {
 	return keyReplacer.Replace(strings.ToLower(s))
 }
 
-func FormatTTLToDays(ttl time.Duration) int64 {
-	return int64(math.Ceil(math.Max(ttl.Hours()/24, 1)))
+func FormatTTLToDays(ttl *retention.TTL) int64 {
+	return ttl.GetTTLByDays()
 }

@@ -23,36 +23,43 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
 
 func Test_syncTTL(t *testing.T) {
 
 	var (
-		database          = "monitor"
-		defaultDuration   = time.Hour * 24 * 7
-		unchangedDuration = time.Hour * 24
-		tablePrefix       = "logs"
-		tableMetas        = map[string]*loader.TableMeta{
-			"monitor.logs":              {TTLBaseField: "toDateTime(timestamp)", TTLDays: 1},
+		database   = "monitor"
+		defaultTTL = &retention.TTL{
+			HotData: time.Hour * 24 * 3,
+			All:     time.Hour * 24 * 7,
+		}
+		ttl = &retention.TTL{
+			HotData: time.Hour * 3,
+			All:     time.Hour * 24,
+		}
+		tablePrefix = "logs"
+		tableMetas  = map[string]*loader.TableMeta{
+			"monitor.logs":              {TTLBaseField: "toDateTime(timestamp)", TTLDays: 1, TimeKey: "timestamp"},
 			"monitor.logs_all":          {},
-			"monitor.logs_erda_xxx":     {TTLBaseField: "toDateTime(timestamp)", TTLDays: 7},
+			"monitor.logs_erda_xxx":     {TTLBaseField: "toDateTime(timestamp)", TTLDays: 7, TimeKey: "timestamp"},
 			"monitor.logs_erda_search":  {},
 			"monitor.logs_erda_xxx_all": {},
 		}
 	)
 
 	var (
-		changingTTLDays = map[string]int64{}
+		changingTTL = map[string]*retention.TTL{}
 	)
 
-	monkey.Patch((*MockRetention).DefaultTTL, func(ret *MockRetention) time.Duration {
-		return defaultDuration
+	monkey.Patch((*MockRetention).Default, func(ret *MockRetention) *retention.TTL {
+		return defaultTTL
 	})
-	defer monkey.Unpatch((*MockRetention).DefaultTTL)
+	defer monkey.Unpatch((*MockRetention).Default)
 
-	monkey.Patch((*MockRetention).GetTTL, func(ret *MockRetention, key string) time.Duration {
-		return unchangedDuration
+	monkey.Patch((*MockRetention).GetTTL, func(ret *MockRetention, key string) *retention.TTL {
+		return ttl
 	})
 	defer monkey.Unpatch((*MockRetention).GetTTL)
 
@@ -61,8 +68,8 @@ func Test_syncTTL(t *testing.T) {
 	})
 	defer monkey.Unpatch((*MockLoader).WaitAndGetTables)
 
-	monkey.Patch((*provider).AlterTableTTL, func(p *provider, tableName string, meta *loader.TableMeta, ttlDays int64) {
-		changingTTLDays[tableName] = ttlDays
+	monkey.Patch((*provider).AlterTableTTL, func(p *provider, tableName string, meta *loader.TableMeta, ttl *retention.TTL) {
+		changingTTL[tableName] = ttl
 	})
 	defer monkey.Unpatch((*provider).AlterTableTTL)
 
@@ -81,8 +88,96 @@ func Test_syncTTL(t *testing.T) {
 	defer cancel()
 	p.syncTTL(ctx)
 
-	assert.EqualValues(t, 2, len(changingTTLDays))
-	assert.EqualValues(t, 7, changingTTLDays["monitor.logs"])
-	assert.EqualValues(t, 1, changingTTLDays["monitor.logs_erda_xxx"])
+	assert.EqualValues(t, 2, len(changingTTL))
 
+	assert.EqualValues(t, 7, changingTTL["monitor.logs"].GetTTLByDays())
+
+	assert.EqualValues(t, 1, changingTTL["monitor.logs_erda_xxx"].GetTTLByDays())
+
+}
+
+func Test_syncHotColdTTL(t *testing.T) {
+
+	var (
+		database   = "monitor"
+		defaultTTL = &retention.TTL{
+			HotData: time.Hour * 24 * 3,
+			All:     time.Hour * 24 * 7,
+		}
+		ttl = &retention.TTL{
+			HotData: time.Hour * 24 * 1,
+			All:     time.Hour * 24 * 2,
+		}
+		tablePrefix = "logs"
+		tableMetas  = map[string]*loader.TableMeta{
+			"monitor.logs":               {TTLBaseField: "toDateTime(timestamp)", TTLDays: 1, TimeKey: "timestamp"},                // default table
+			"monitor.logs_erda_xxx":      {TTLBaseField: "toDateTime(timestamp)", TTLDays: 7, TimeKey: "timestamp"},                // not default
+			"monitor.logs_erda_xxx2":     {TTLBaseField: "toDateTime(timestamp)", TTLDays: 7, HotTTLDays: 2, TimeKey: "timestamp"}, // not default
+			"monitor.logs_erda_xxx3":     {TTLBaseField: "toDateTime(timestamp)", TTLDays: 1, HotTTLDays: 1, TimeKey: "timestamp"}, // not default
+			"monitor.logs_erda_xxx4":     {TTLBaseField: "toDateTime(timestamp)", TTLDays: 2, HotTTLDays: 2, TimeKey: "timestamp"}, // not default
+			"monitor.logs_all":           {},                                                                                       //no ttl base field
+			"monitor.logs_erda_search":   {},                                                                                       //no ttl base field
+			"monitor.logs_erda_xxx_all":  {},                                                                                       //no ttl base field
+			"monitor.logs_erda_xxx2_all": {},                                                                                       //no ttl base field
+			"monitor.logs_erda_xxx3_all": {},                                                                                       //no ttl base field
+			"monitor.logs_erda_xxx4_all": {},                                                                                       //no ttl base field
+		}
+	)
+
+	var (
+		changingTTL = map[string]*retention.TTL{}
+	)
+
+	monkey.Patch((*MockRetention).Default, func(ret *MockRetention) *retention.TTL {
+		return defaultTTL
+	})
+	defer monkey.Unpatch((*MockRetention).Default)
+
+	monkey.Patch((*MockRetention).GetTTL, func(ret *MockRetention, key string) *retention.TTL {
+		return ttl
+	})
+	defer monkey.Unpatch((*MockRetention).GetTTL)
+
+	monkey.Patch((*MockLoader).WaitAndGetTables, func(l *MockLoader, ctx context.Context) map[string]*loader.TableMeta {
+		return tableMetas
+	})
+	defer monkey.Unpatch((*MockLoader).WaitAndGetTables)
+
+	monkey.Patch((*provider).AlterTableTTL, func(p *provider, tableName string, meta *loader.TableMeta, ttl *retention.TTL) {
+		changingTTL[tableName] = ttl
+	})
+	defer monkey.Unpatch((*provider).AlterTableTTL)
+
+	p := &provider{
+		Cfg: &config{
+			Database:        database,
+			TablePrefix:     tablePrefix,
+			TTLSyncInterval: time.Millisecond,
+			ColdHotEnable:   true,
+		},
+		Log:       logrusx.New(),
+		Retention: &MockRetention{},
+		Loader:    &MockLoader{},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+	defer cancel()
+	p.syncTTL(ctx)
+
+	assert.EqualValues(t, 5, len(changingTTL))
+
+	assert.EqualValues(t, 3, changingTTL["monitor.logs"].GetHotTTLByDays())
+	assert.EqualValues(t, 7, changingTTL["monitor.logs"].GetTTLByDays())
+
+	assert.EqualValues(t, 1, changingTTL["monitor.logs_erda_xxx"].GetHotTTLByDays())
+	assert.EqualValues(t, 2, changingTTL["monitor.logs_erda_xxx"].GetTTLByDays())
+
+	assert.EqualValues(t, 1, changingTTL["monitor.logs_erda_xxx2"].GetHotTTLByDays())
+	assert.EqualValues(t, 2, changingTTL["monitor.logs_erda_xxx2"].GetTTLByDays())
+
+	assert.EqualValues(t, 1, changingTTL["monitor.logs_erda_xxx3"].GetHotTTLByDays())
+	assert.EqualValues(t, 2, changingTTL["monitor.logs_erda_xxx3"].GetTTLByDays())
+
+	assert.EqualValues(t, 1, changingTTL["monitor.logs_erda_xxx4"].GetHotTTLByDays())
+	assert.EqualValues(t, 2, changingTTL["monitor.logs_erda_xxx4"].GetTTLByDays())
 }

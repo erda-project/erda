@@ -152,11 +152,6 @@ func (m *mockLogSchema) ValidateOrg(orgName string) bool {
 
 type mockRetention struct{}
 
-func (r *mockRetention) GetTTLv2(key string) *retention.TTL {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (r *mockRetention) Default() *retention.TTL {
 	//TODO implement me
 	panic("implement me")
@@ -169,7 +164,11 @@ func (r *mockRetention) DefaultHotDataTTL() time.Duration {
 
 const mockTTL = 7 * 24 * time.Hour
 
-func (r *mockRetention) GetTTL(key string) time.Duration                         { return mockTTL }
+var mockTTLType = &retention.TTL{
+	All: mockTTL,
+}
+
+func (r *mockRetention) GetTTL(key string) *retention.TTL                        { return mockTTLType }
 func (r *mockRetention) DefaultTTL() time.Duration                               { return mockTTL }
 func (r *mockRetention) GetConfigKey(name string, tags map[string]string) string { return "" }
 func (r *mockRetention) GetTTLByTags(name string, tags map[string]string) time.Duration {

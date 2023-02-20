@@ -207,11 +207,6 @@ func (m *mockLoader) Database() string {
 type mockRetention struct {
 }
 
-func (m mockRetention) GetTTLv2(key string) *retention.TTL {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (m mockRetention) Default() *retention.TTL {
 	//TODO implement me
 	panic("implement me")
@@ -222,8 +217,8 @@ func (m mockRetention) DefaultHotDataTTL() time.Duration {
 	panic("implement me")
 }
 
-func (m mockRetention) GetTTL(key string) time.Duration {
-	return time.Second
+func (m mockRetention) GetTTL(key string) *retention.TTL {
+	return &retention.TTL{}
 }
 
 func (m mockRetention) DefaultTTL() time.Duration {

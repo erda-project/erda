@@ -39,18 +39,8 @@ func (p *provider) getConfig(ctx context.Context) *retentionConfig {
 	return v
 }
 
-// GetTTL ttl and hot_ttl
-func (p *provider) GetTTL(key string) time.Duration {
-	cfg := p.getConfig(context.Background())
-	d, ok := cfg.keysTTL[key]
-	if ok {
-		return d.All
-	}
-	return p.Cfg.DefaultTTL
-}
-
-// GetTTLv2 return hot and all ttl
-func (p *provider) GetTTLv2(key string) *TTL {
+// GetTTL return hot and all ttl
+func (p *provider) GetTTL(key string) *TTL {
 	cfg := p.getConfig(context.Background())
 	d, ok := cfg.keysTTL[key]
 	if ok {
