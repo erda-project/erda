@@ -86,8 +86,6 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 					Unit:  s.t.Text(langs, "days"),
 				}
 			},
-		}
-		cd.defaults = map[string]func(langs i18n.LanguageCodes) *pb.ConfigItem{
 			"metrics_hot_ttl": func(langs i18n.LanguageCodes) *pb.ConfigItem {
 				return &pb.ConfigItem{
 					Key:   "metrics_hot_ttl",
@@ -98,6 +96,7 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 				}
 			},
 		}
+
 		cd.convert = func(langs i18n.LanguageCodes, ns string, cg *pb.ConfigGroup) *pb.ConfigGroup {
 			cg.Name = s.t.Text(langs, cg.Key)
 			for _, item := range cg.Items {
