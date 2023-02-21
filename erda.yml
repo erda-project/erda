@@ -475,7 +475,7 @@ services:
       cpu: ${request_cpu:0.5}
       mem: ${request_mem:1024}
       max_cpu: 1.5
-      max_mem: 2048
+      max_mem: 4096
       network:
         mode: "container"
     binds:
@@ -483,7 +483,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: ${replicas:2}
+      replicas: ${replicas:4}
       labels:
         GROUP: "spot-v2"
     health_check:
