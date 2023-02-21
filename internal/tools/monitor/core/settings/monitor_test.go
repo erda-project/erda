@@ -63,7 +63,7 @@ func Test_insertOrgFilter(t *testing.T) {
 
 func Test_getConfigFromDays(t *testing.T) {
 	type args struct {
-		days int64
+		days ttl
 	}
 	tests := []struct {
 		name string
@@ -73,9 +73,11 @@ func Test_getConfigFromDays(t *testing.T) {
 		{
 			name: "test_getConfigFromDays",
 			args: args{
-				3,
+				ttl{
+					TTL: 3,
+				},
 			},
-			want: `{"ttl":"72h0m0s"}`,
+			want: `{"ttl":"72h0m0s","hot_ttl":""}`,
 		},
 	}
 	for _, tt := range tests {

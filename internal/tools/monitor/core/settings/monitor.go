@@ -37,12 +37,20 @@ import (
 )
 
 func (s *settingsService) monitorConfigMap(ns string) *configDefine {
-	var metricDays, logDays int
+	var metric, log ttl
 	switch ns {
 	case "prod":
-		metricDays, logDays = 7, 7
+		metric.TTL = 7
+		metric.HotTTL = 3
+
+		log.TTL = 7
+		log.HotTTL = 3
 	default:
-		metricDays, logDays = 3, 3
+		metric.TTL = 3
+		metric.HotTTL = 1
+
+		log.TTL = 3
+		log.HotTTL = 1
 	}
 	ttl := os.Getenv("METRIC_INDEX_TTL")
 	if len(ttl) > 0 {
@@ -50,7 +58,7 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 		if err != nil {
 			s.p.Log.Errorf("fail to parse metric ttl: %s", err)
 		} else {
-			metricDays = int(math.Ceil(d.Hours() / 24))
+			metric.TTL = int64(math.Ceil(d.Hours() / 24))
 		}
 	}
 	ttl = os.Getenv("LOG_TTL")
@@ -60,7 +68,7 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 			s.p.Log.Errorf("fail to parse log ttl: %s", err)
 		} else {
 			const daySec = float64(24 * 60 * 60)
-			logDays = int(math.Ceil(float64(sed) / daySec))
+			log.TTL = int64(math.Ceil(float64(sed) / daySec))
 		}
 	}
 	cd := &configDefine{
@@ -74,7 +82,18 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 					Key:   "metrics_ttl",
 					Name:  s.t.Text(langs, "base") + " " + s.t.Text(langs, "metrics_ttl"),
 					Type:  "number",
-					Value: structpb.NewNumberValue(float64(metricDays)),
+					Value: structpb.NewNumberValue(float64(metric.TTL)),
+					Unit:  s.t.Text(langs, "days"),
+				}
+			},
+		}
+		cd.defaults = map[string]func(langs i18n.LanguageCodes) *pb.ConfigItem{
+			"metrics_hot_ttl": func(langs i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
+					Key:   "metrics_hot_ttl",
+					Name:  s.t.Text(langs, "base") + " " + s.t.Text(langs, "metrics_hot_ttl"),
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(metric.HotTTL)),
 					Unit:  s.t.Text(langs, "days"),
 				}
 			},
@@ -97,7 +116,16 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 					Key:   "logs_ttl",
 					Name:  s.t.Text(lang, "logs_ttl"),
 					Type:  "number",
-					Value: structpb.NewNumberValue(float64(logDays)),
+					Value: structpb.NewNumberValue(float64(log.TTL)),
+					Unit:  s.t.Text(lang, "days"),
+				}
+			},
+			"logs_hot_ttl": func(lang i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
+					Key:   "logs_hot_ttl",
+					Name:  s.t.Text(lang, "logs_hot_ttl"),
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(log.HotTTL)),
 					Unit:  s.t.Text(lang, "days"),
 				}
 			},
@@ -106,7 +134,16 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 					Key:   "metrics_ttl",
 					Name:  s.t.Text(lang, "metrics_ttl"),
 					Type:  "number",
-					Value: structpb.NewNumberValue(float64(metricDays)),
+					Value: structpb.NewNumberValue(float64(metric.TTL)),
+					Unit:  s.t.Text(lang, "days"),
+				}
+			},
+			"metrics_hot_ttl": func(lang i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
+					Key:   "metrics_hot_ttl",
+					Name:  s.t.Text(lang, "metrics_hot_ttl"),
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(metric.HotTTL)),
 					Unit:  s.t.Text(lang, "days"),
 				}
 			},
@@ -156,36 +193,54 @@ func (s *settingsService) updateMonitorConfig(tx *gorm.DB, orgid int64, orgName,
 	}
 	orgID := strconv.FormatInt(orgid, 10)
 	key := md5x.SumString(orgID + "/" + ns).String16()
-	for k, v := range keys {
-		var typ string
-		if k == "metrics_ttl" {
-			typ = "metric"
-		} else if k == "logs_ttl" {
-			typ = "log"
-		} else {
-			continue
-		}
-		days := conv.ToInt64(v, -1)
-		if days < 0 {
-			return fmt.Errorf("invalid value %v for key %s", v, k)
-		}
-		var list []*monitorConfigRegister
-		err := tx.Table(monitorConfigRegisterTableName).
-			Where("`scope`='org' AND (`scope_id`=? OR `scope_id`='') AND `namespace`=? AND `type`=?", orgID, ns, typ).
-			Find(&list).Error
-		if err != nil {
-			return fmt.Errorf("fail to get register monitor config: %s", err)
-		}
-		err = s.syncMonitorConfig(tx, orgid, orgID, orgName, ns, typ, key, list, days)
-		if err != nil {
-			return fmt.Errorf("fail to get sync monitor config: %s", err)
-		}
+
+	ttl := ttl{}
+
+	if v, ok := keys["metrics_ttl"]; ok {
+		ttl.TTL = conv.ToInt64(v, -1)
+	}
+
+	if v, ok := keys["metrics_hot_ttl"]; ok {
+		ttl.HotTTL = conv.ToInt64(v, -1)
+	}
+
+	if err := s.updateMonitor("metric", ttl, tx, orgid, orgID, orgName, ns, key); err != nil {
+		return fmt.Errorf("update monitor metric failed: %v", err)
+	}
+
+	if v, ok := keys["logs_ttl"]; ok {
+		ttl.TTL = conv.ToInt64(v, -1)
+	}
+
+	if v, ok := keys["logs_hot_ttl"]; ok {
+		ttl.HotTTL = conv.ToInt64(v, -1)
+	}
+	if err := s.updateMonitor("log", ttl, tx, orgid, orgID, orgName, ns, key); err != nil {
+		return fmt.Errorf("update log metric failed: %v", err)
 	}
 	return nil
 }
 
-func (s *settingsService) syncMonitorConfig(tx *gorm.DB, orgid int64, orgID, orgName, env, typ, key string, list []*monitorConfigRegister, days int64) (err error) {
-	cfg := getConfigFromDays(days)
+func (s *settingsService) updateMonitor(typ string, ttl ttl, tx *gorm.DB, orgid int64, orgID, orgName, ns, key string) error {
+	if ttl.TTL < 0 {
+		return fmt.Errorf("invalid value %v for key", typ)
+	}
+	var list []*monitorConfigRegister
+	err := tx.Table(monitorConfigRegisterTableName).
+		Where("`scope`='org' AND (`scope_id`=? OR `scope_id`='') AND `namespace`=? AND `type`=?", orgID, ns, typ).
+		Find(&list).Error
+	if err != nil {
+		return fmt.Errorf("fail to get register monitor config: %s", err)
+	}
+	err = s.syncMonitorConfig(tx, orgid, orgID, orgName, ns, typ, key, list, ttl)
+	if err != nil {
+		return fmt.Errorf("fail to get sync monitor config: %s", err)
+	}
+	return nil
+}
+
+func (s *settingsService) syncMonitorConfig(tx *gorm.DB, orgid int64, orgID, orgName, env, typ, key string, list []*monitorConfigRegister, ttl ttl) (err error) {
+	cfg := getConfigFromDays(ttl)
 	now := time.Now()
 	for _, item := range list {
 		if len(item.ScopeID) <= 0 {
@@ -231,13 +286,8 @@ func insertOrgFilter(typ, orgID, orgName, filters string) (string, error) {
 	return string(byts), nil
 }
 
-func getConfigFromDays(days int64) string {
-	c := struct {
-		TTL string `json:"ttl"`
-	}{
-		TTL: time.Duration(days * 24 * int64(time.Hour)).String(),
-	}
-	byts, _ := json.Marshal(&c)
+func getConfigFromDays(ttl ttl) string {
+	byts, _ := json.Marshal(&ttl)
 	return string(byts)
 }
 
@@ -324,7 +374,10 @@ func (s *settingsService) RegisterMonitorConfig(ctx context.Context, req *pb.Reg
 					s.p.Log.Errorf("fail to parse metric ttl to int: %s", err)
 					continue
 				}
-				err = s.syncMonitorConfig(tx, orgid, orgID, gs.OrgName, env, typ, key, list, days)
+
+				err = s.syncMonitorConfig(tx, orgid, orgID, gs.OrgName, env, typ, key, list, ttl{
+					TTL: days,
+				})
 				if err != nil {
 					tx.Rollback()
 					return nil, errors.NewDatabaseError(fmt.Errorf("fail to get sync monitor config: %s", err))
