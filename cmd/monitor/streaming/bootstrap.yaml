@@ -174,8 +174,8 @@ log-persist:
       initial: earliest
   id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
-  buffer_size: ${LOG_BATCH_SIZE:200}
-  parallelism: ${LOG_PERSIST_PARALLELISM:3}
+  buffer_size: ${LOG_BATCH_SIZE:4096}
+  parallelism: ${LOG_PERSIST_PARALLELISM:6}
   storage_writer_service: "${LOG_STORAGE_WRITER_SERVICE:log-storage-clickhouse-writer}"
   print_invalid_log: false
 
