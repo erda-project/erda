@@ -325,7 +325,7 @@ func (e *Endpoints) ListAddon(ctx context.Context, r *http.Request, vars map[str
 		if err != nil {
 			return apierrors.ErrListAddon.InvalidParameter("value should be integer").ToResp(), nil
 		}
-		addonList, err = e.addon.ListByRuntime(runtimeID, projectID, workspace)
+		addonList, err = e.addon.ListByRuntime(orgID, runtimeID, projectID, workspace)
 	case "project_addon_workbench":
 		projectID, err := strconv.ParseUint(r.URL.Query().Get("projectId"), 10, 64)
 		if err != nil {

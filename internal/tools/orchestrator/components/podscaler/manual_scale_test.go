@@ -180,7 +180,7 @@ func Test_podScalerService_processRuntimeScaleRecord(t *testing.T) {
 				})
 
 			m4 := monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "GetUnDeletableAttachMentsByRuntimeID",
-				func(_ *dbServiceImpl, runtimeID uint64) (*[]dbclient.AddonAttachment, error) {
+				func(_ *dbServiceImpl, orgID, runtimeID uint64) (*[]dbclient.AddonAttachment, error) {
 					return nil, nil
 				})
 

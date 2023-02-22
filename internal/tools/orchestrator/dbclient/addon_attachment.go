@@ -157,9 +157,10 @@ func (db *DBClient) GetAttachMentsByRuntimeID(runtimeID uint64) (*[]AddonAttachm
 }
 
 // GetUnDeletableAttachMentsByRuntimeID 根据runtimeID获取不可删除的attachment信息
-func (db *DBClient) GetUnDeletableAttachMentsByRuntimeID(runtimeID uint64) (*[]AddonAttachment, error) {
+func (db *DBClient) GetUnDeletableAttachMentsByRuntimeID(orgID, runtimeID uint64) (*[]AddonAttachment, error) {
 	var attachments []AddonAttachment
 	if err := db.
+		Where("org_id = ?", orgID).
 		Where("app_id = ?", runtimeID).
 		Where("is_deleted != ?", apistructs.AddonDeleted).
 		Find(&attachments).Error; err != nil {
