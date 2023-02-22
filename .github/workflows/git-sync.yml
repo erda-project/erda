@@ -14,8 +14,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: unshallow
-        run: git fetch --unshallow origin
       - name: add remote
         run: git remote add mirror https://${{ secrets.ERDA_CLOUD_MIRROR_GIT_USERNAME }}:${{ secrets.ERDA_CLOUD_MIRROR_GIT_PASSWORD }}@erda.cloud/erda/dop/erda-project/erda
       - name: push
@@ -36,7 +34,6 @@ jobs:
           fetch-depth: 0
       - name: unshallow
         run: |
-          git fetch --unshallow origin
           ss=${{ steps.list.outputs.pullRequestNumbers }}
           ss=${ss:1:${#ss}-2}
           IFS=', ' read -r -a arr <<< "$ss"
