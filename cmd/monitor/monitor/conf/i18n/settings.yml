@@ -1,13 +1,17 @@
 en:
     logs_ttl: "Log TTL"
+    logs_hot_ttl: "Log Hot TTL"
     metrics_ttl: "Metrics TTL"
+    metrics_hot_ttl: "Metrics Hot TTL"
     days: "days"
     app: "Application"
     base: "Base"
 
 zh:
     logs_ttl: "日志保存时间"
+    logs_hot_ttl: "日志热数据保存时间"
     metrics_ttl: "指标保存时间"
+    metrics_hot_ttl: "指标热数据保存时间"
     days: "天"
     app: "应用"
     base: "基础"
