@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: unshallow
         run: git fetch --unshallow origin
       - name: add remote
@@ -30,6 +32,8 @@ jobs:
           state: 'open'
           window: '24'
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: unshallow
         run: |
           git fetch --unshallow origin

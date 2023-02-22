@@ -137,6 +137,8 @@ jobs:
     steps:
       - run: echo "No CODE-COV required"
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Download codecov reports from another workflow
         uses: dawidd6/action-download-artifact@v2
         with:
