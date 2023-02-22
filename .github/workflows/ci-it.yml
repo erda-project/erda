@@ -74,6 +74,8 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Fetch proto-go
         uses: actions/download-artifact@v3
         with:
@@ -104,6 +106,8 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Fetch proto-go
         uses: actions/download-artifact@v3
         with:
@@ -164,6 +168,8 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Fetch proto-go
         uses: actions/download-artifact@v3
         with:
@@ -213,6 +219,8 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Download coverage reports
         uses: actions/download-artifact@v3
         with:
