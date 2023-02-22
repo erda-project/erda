@@ -92,7 +92,7 @@ func (p *provider) needTTLUpdate(ttl *retention.TTL, meta *loader.TableMeta) boo
 
 func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttl *retention.TTL) {
 	sql := "ALTER TABLE <table> ON CLUSTER '{cluster}' MODIFY TTL <time_key> + INTERVAL <ddl_days> DAY;"
-	if p.Cfg.ColdHotEnable {
+	if p.Cfg.ColdHotEnable && meta.HotTTLDays > 0 && meta.TTLDays > meta.HotTTLDays {
 		sql = "ALTER TABLE <table> ON CLUSTER '{cluster}' MODIFY TTL <time_key> + toIntervalDay(<hot_ddl_days>) TO VOLUME 'slow', <time_key> + toIntervalDay(<ddl_days>);"
 	}
 	if len(meta.TimeKey) <= 0 {

@@ -15,12 +15,15 @@
 package settings
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
 )
 
 func Test_insertOrgFilter(t *testing.T) {
@@ -63,7 +66,7 @@ func Test_insertOrgFilter(t *testing.T) {
 
 func Test_getConfigFromDays(t *testing.T) {
 	type args struct {
-		days int64
+		days ttl
 	}
 	tests := []struct {
 		name string
@@ -73,9 +76,11 @@ func Test_getConfigFromDays(t *testing.T) {
 		{
 			name: "test_getConfigFromDays",
 			args: args{
-				3,
+				ttl{
+					TTL: 3,
+				},
 			},
-			want: `{"ttl":"72h0m0s"}`,
+			want: `{"ttl":"72h0m0s","hot_ttl":"0s"}`,
 		},
 	}
 	for _, tt := range tests {
@@ -101,7 +106,7 @@ type MockTranslator struct {
 }
 
 func (t *MockTranslator) Text(lang i18n.LanguageCodes, key string) string {
-	return ""
+	return key
 }
 
 func Test_provider_monitorConfigMap(t *testing.T) {
@@ -113,14 +118,101 @@ func Test_provider_monitorConfigMap(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *configDefine
+		want map[string]*pb.ConfigItem
 	}{
 		{
-			name: "test_provider_monitorConfigMap",
+			name: "prod test",
 			args: args{
 				ns: "prod",
 			},
-			want: nil,
+			want: map[string]*pb.ConfigItem{
+				"logs_ttl": {
+					Key:   "logs_ttl",
+					Name:  "logs_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(7)),
+					Unit:  "days",
+				},
+				"logs_hot_ttl": {
+					Key:   "logs_hot_ttl",
+					Name:  "logs_hot_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(3)),
+					Unit:  "days",
+				},
+				"metrics_ttl": {
+					Key:   "metrics_ttl",
+					Name:  "metrics_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(7)),
+					Unit:  "days",
+				},
+				"metrics_hot_ttl": {
+					Key:   "metrics_hot_ttl",
+					Name:  "metrics_hot_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(3)),
+					Unit:  "days",
+				},
+			},
+		},
+		{
+			name: "default test",
+			args: args{
+				ns: "default",
+			},
+			want: map[string]*pb.ConfigItem{
+				"logs_ttl": {
+					Key:   "logs_ttl",
+					Name:  "logs_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(3)),
+					Unit:  "days",
+				},
+				"logs_hot_ttl": {
+					Key:   "logs_hot_ttl",
+					Name:  "logs_hot_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(1)),
+					Unit:  "days",
+				},
+				"metrics_ttl": {
+					Key:   "metrics_ttl",
+					Name:  "metrics_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(3)),
+					Unit:  "days",
+				},
+				"metrics_hot_ttl": {
+					Key:   "metrics_hot_ttl",
+					Name:  "metrics_hot_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(1)),
+					Unit:  "days",
+				},
+			},
+		},
+		{
+			name: "general",
+			args: args{
+				ns: "general",
+			},
+			want: map[string]*pb.ConfigItem{
+				"metrics_ttl": &pb.ConfigItem{
+					Key:   "metrics_ttl",
+					Name:  "base metrics_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(3)),
+					Unit:  "days",
+				},
+				"metrics_hot_ttl": &pb.ConfigItem{
+					Key:   "metrics_hot_ttl",
+					Name:  "base metrics_hot_ttl",
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(1)),
+					Unit:  "days",
+				},
+			},
 		},
 	}
 	ss := &settingsService{
@@ -133,108 +225,14 @@ func Test_provider_monitorConfigMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ss.monitorConfigMap(tt.args.ns); got != nil {
-				fmt.Printf("monitorConfigMap() = %+v", got)
+			configDefine := ss.monitorConfigMap(tt.args.ns)
+			require.NotNil(t, configDefine)
+			require.NotNil(t, configDefine.defaults)
+
+			t.Log(configDefine.defaults, "defaults!")
+			for k, v := range tt.want {
+				require.EqualValuesf(t, v, configDefine.defaults[k](i18n.LanguageCodes{}), "key:%s", k)
 			}
 		})
 	}
 }
-
-// func Test_provider_syncMonitorConfig(t *testing.T) {
-// 	p := &provider{
-// 		L: &pjyLog{
-// 			Entry: &logrus.Entry{
-// 				Logger: &logrus.Logger{},
-// 			},
-// 		},
-// 	}
-// 	db := &gorm.DB{}
-// 	exec := monkey.PatchInstanceMethod(reflect.TypeOf(db), "Exec", func(_ *gorm.DB,
-// 		sql string, values ...interface{}) *gorm.DB {
-// 		return &gorm.DB{
-// 			Error: nil,
-// 		}
-// 	})
-// 	defer exec.Unpatch()
-// 	orgid := 1
-// 	orgName := "terminus"
-// 	list := []*monitorConfigRegister{
-// 		{
-// 			ScopeID: "18",
-// 			Filters: `[{"key":"erda","value":"pjy"}]`,
-// 			Names:   "terminus",
-// 		},
-// 	}
-// 	err := p.syncMonitorConfig(db, orgid, "1", orgName, "local", "metric", "erda", list, 3)
-// 	assert.Equal(t, nil, err)
-// }
-
-// func Test_insertOrgFilter1(t *testing.T) {
-// 	type args struct {
-// 		typ     string
-// 		orgID   string
-// 		orgName string
-// 		filters string
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    string
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "test_insertOrgFilter1",
-// 			args: args{
-// 				typ:     "metric",
-// 				orgID:   "",
-// 				orgName: "terminus",
-// 				filters: `[{"key":"erda","value":"pjy"}]`,
-// 			},
-// 		},
-// 		{
-// 			name: "test_insertOrgFilter1",
-// 			args: args{
-// 				typ:     "log",
-// 				orgID:   "",
-// 				orgName: "terminus",
-// 				filters: `[{"key":"erda","value":"pjy"}]`,
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := insertOrgFilter(tt.args.typ, tt.args.orgID, tt.args.orgName, tt.args.filters)
-// 			if err != nil {
-// 				t.Errorf("insertOrgFilter() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			fmt.Printf("insertOrgFilter() got = %+v", got)
-// 		})
-// 	}
-// }
-
-// func Test_getConfigFromDays1(t *testing.T) {
-// 	type args struct {
-// 		days int64
-// 	}
-// 	tests := []struct {
-// 		name string
-// 		args args
-// 		want string
-// 	}{
-// 		{
-// 			name: "test_getConfigFromDays1",
-// 			args: args{
-// 				days: 3,
-// 			},
-// 			want: `{"ttl":"72h0m0s"}`,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if got := getConfigFromDays(tt.args.days); got != tt.want {
-// 				t.Errorf("getConfigFromDays() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
