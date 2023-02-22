@@ -45,7 +45,8 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 
-	otlpService pb.OpenTelemetryServiceServer
+	otlpService       pb.OpenTelemetryServiceServer
+	otleMetricService pb.OpenTelemetryMetricServiceServer
 
 	Register     transport.Register       `autowired:"service-register" optional:"true"`
 	Interceptors interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
@@ -68,11 +69,20 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		p.otlpService = &otlpService{Log: p.Log, p: p}
+		p.otleMetricService = &otlpService{
+			Log: p.Log,
+			p:   p,
+		}
 		pb.RegisterOpenTelemetryServiceImp(
 			p.Register,
 			p.otlpService,
 			transport.WithHTTPOptions(transhttp.WithDecoder(ProtoDecoder), transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
 			transport.WithInterceptors(p.Interceptors.SpanTagOverwrite),
+		)
+
+		pb.RegisterOpenTelemetryMetricServiceImp(
+			p.Register,
+			p.otleMetricService,
 		)
 	}
 	return nil

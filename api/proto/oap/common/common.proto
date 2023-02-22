@@ -27,3 +27,44 @@ message Principal {
 
     string accessSecret = 3;
 }
+
+// KeyValueList is a list of KeyValue messages. We need KeyValueList as a message
+// since `oneof` in AnyValue does not allow repeated fields. Everywhere else where we need
+// a list of KeyValue messages (e.g. in Span) we use `repeated KeyValue` directly to
+// avoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches
+// are semantically equivalent.
+message KeyValueList {
+  // A collection of key/value pairs of key-value pairs. The list may be empty (may
+  // contain 0 elements).
+  // The keys MUST be unique (it is not allowed to have more than one
+  // value with the same key).
+  repeated KeyValue values = 1;
+}
+
+// KeyValue is a key-value pair that is used to store Span attributes, Link
+// attributes, etc.
+message KeyValue {
+  string key = 1;
+}
+
+// InstrumentationScope is a message representing the instrumentation scope information
+// such as the fully qualified name and version. 
+message InstrumentationScope {
+  // An empty instrumentation scope name means the name is unknown.
+  string name = 1;
+  string version = 2;
+  repeated KeyValue attributes = 3;
+  uint32 dropped_attributes_count = 4;
+}
+
+// Resource information.
+message Resource {
+  // Set of attributes that describe the resource.
+  // Attribute keys MUST be unique (it is not allowed to have more than one
+  // attribute with the same key).
+  repeated KeyValue attributes = 1;
+
+  // dropped_attributes_count is the number of dropped attributes. If the value is 0, then
+  // no attributes were dropped.
+  uint32 dropped_attributes_count = 2;
+}
