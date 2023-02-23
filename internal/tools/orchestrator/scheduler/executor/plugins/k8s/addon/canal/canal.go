@@ -151,9 +151,15 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	}
 
 	props := ""
+	canalOptions := make(map[string]string)
 	for k, v := range canal.Env {
-		if strings.HasPrefix(k, "canal.") {
-			props += k + "=" + v + "\n"
+		switch k {
+		case "canal.zkServers", "canal.zookeeper.flush.period":
+			canalOptions[k] = v
+		default:
+			if strings.HasPrefix(k, "canal.") {
+				props += k + "=" + v + "\n"
+			}
 		}
 	}
 
@@ -171,9 +177,10 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 			Replicas: canal.Scale,
 
-			Affinity:  &affinity,
-			Resources: resources,
-			Labels:    make(map[string]string),
+			Affinity:     &affinity,
+			Resources:    resources,
+			Labels:       make(map[string]string),
+			CanalOptions: canalOptions,
 			Annotations: map[string]string{
 				"_destination": canal.Env["CANAL_DESTINATION"],
 				"_props":       props,
