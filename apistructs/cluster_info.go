@@ -100,8 +100,8 @@ func (info ClusterInfoData) Get(key ClusterInfoMapKey) string {
 	return info[key]
 }
 
-func (info ClusterInfoData) ToMap() map[string]string {
-	dat := make(map[string]string)
+func (info ClusterInfoData) ToStringMap() map[string]string {
+	dat := make(map[string]string, len(info))
 	for k, v := range info {
 		dat[k.String()] = v
 	}

@@ -192,7 +192,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
 	extSearchReq = append(extSearchReq, pre.ActionMgr.MakeActionTypeVersion(&task.Extra.Action))
 	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ActionMgr.SearchActions(extSearchReq,
-		actionmgr.SearchOpWithRender(map[string]string{"storageMountPoint": mountPoint}))
+		actionmgr.SearchOpWithRender(map[string]string{"storageMountPoint": mountPoint}),
+		actionmgr.SearchOpWithClusterInfo(clusterInfo.ToStringMap()))
 	if err != nil {
 		return true, err
 	}
@@ -294,12 +295,6 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.Image = diceYmlJob.Image
 	if action.Image != "" {
 		task.Extra.Image = action.Image
-	} else {
-		task.Extra.Image, err = pre.renderActionImage(diceYmlJob.Image, allSecrets)
-		if err != nil {
-			return false, apierrors.ErrRunPipeline.InvalidState(
-				fmt.Sprintf("failed to replace extension image, actionImage: %s, err: %v", diceYmlJob.Image, err))
-		}
 	}
 	// 将 action dice.yml 中声明的 envs 注入运行时
 	for k, v := range diceYmlJob.Envs {
@@ -726,14 +721,6 @@ func getLoopOptions(actionSpec apistructs.ActionSpec, taskLoop *apistructs.Pipel
 	}
 
 	return &opt
-}
-
-func (pre *prepare) renderActionImage(diceImage string, secrets map[string]string) (string, error) {
-	image, err := pipelineyml.RenderSecrets([]byte(diceImage), secrets)
-	if err != nil {
-		return "", err
-	}
-	return string(image), nil
 }
 
 func condition(task *spec.PipelineTask) bool {

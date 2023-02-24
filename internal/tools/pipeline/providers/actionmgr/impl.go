@@ -61,7 +61,12 @@ func (s *provider) SearchActions(items []string, ops ...OpOption) (map[string]*d
 			}
 			diceYmlStr = string(rendered)
 		}
-		diceYml, err := diceyml.New([]byte(diceYmlStr), false)
+
+		diceYmlOps := make([]diceyml.Options, 0)
+		if so.ClusterInfo != nil {
+			diceYmlOps = append(diceYmlOps, diceyml.WithPlatformInfo(so.ClusterInfo))
+		}
+		diceYml, err := diceyml.New([]byte(diceYmlStr), false, diceYmlOps...)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to parse action's dice.yml, action: %s, err: %v", nameVersion, err)
 			logrus.Errorf("[alert] %s, action's dice.yml: %#v", errMsg, action.Dice)

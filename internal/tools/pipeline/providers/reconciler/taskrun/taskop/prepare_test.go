@@ -203,21 +203,3 @@ func Test_contextVolumes(t *testing.T) {
 	fields := contextVolumes(taskContext)
 	assert.Equal(t, 2, len(fields))
 }
-
-func Test_renderActionImage(t *testing.T) {
-	pre := &prepare{}
-	secrets := map[string]string{
-		"dice.arch": "amd64",
-	}
-	image, err := pre.renderActionImage("erda.cloud/((dice.arch))/custom-script-action:latest", secrets)
-	assert.NoError(t, err)
-	assert.Equal(t, "erda.cloud/amd64/custom-script-action:latest", image)
-
-	image, err = pre.renderActionImage("erda.cloud/custom-script-action:latest", secrets)
-	assert.NoError(t, err)
-	assert.Equal(t, "erda.cloud/custom-script-action:latest", image)
-
-	image, err = pre.renderActionImage("erda.cloud/((dice.xxx))/custom-script-action:latest", secrets)
-	assert.NoError(t, err)
-	assert.Equal(t, "erda.cloud/((dice.xxx))/custom-script-action:latest", image)
-}

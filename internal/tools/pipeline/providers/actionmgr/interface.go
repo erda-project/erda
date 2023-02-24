@@ -31,6 +31,7 @@ type Interface interface {
 type SearchOption struct {
 	NeedRender   bool
 	Placeholders map[string]string
+	ClusterInfo  map[string]string
 }
 type OpOption func(*SearchOption)
 
@@ -38,5 +39,11 @@ func SearchOpWithRender(placeholders map[string]string) OpOption {
 	return func(so *SearchOption) {
 		so.NeedRender = true
 		so.Placeholders = placeholders
+	}
+}
+
+func SearchOpWithClusterInfo(clusterInfo map[string]string) OpOption {
+	return func(so *SearchOption) {
+		so.ClusterInfo = clusterInfo
 	}
 }
