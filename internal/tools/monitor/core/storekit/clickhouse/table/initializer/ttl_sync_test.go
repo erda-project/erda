@@ -21,6 +21,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
@@ -180,4 +181,72 @@ func Test_syncHotColdTTL(t *testing.T) {
 
 	assert.EqualValues(t, 1, changingTTL["monitor.logs_erda_xxx4"].GetHotTTLByDays())
 	assert.EqualValues(t, 2, changingTTL["monitor.logs_erda_xxx4"].GetTTLByDays())
+}
+
+func TestAlterTableTTL(t *testing.T) {
+	tests := []struct {
+		name string
+		meta *loader.TableMeta
+		ttl  *retention.TTL
+		want string
+	}{
+		{
+			name: "no hot ttl",
+			ttl: &retention.TTL{
+				All: 10,
+			},
+			meta: &loader.TableMeta{
+				TimeKey: "timestamp",
+			},
+			want: "ALTER TABLE table ON CLUSTER '{cluster}' MODIFY TTL timestamp + INTERVAL 1 DAY;",
+		},
+		{
+			name: "normal ttl",
+			ttl: &retention.TTL{
+				All:     time.Hour * 24 * 2,
+				HotData: time.Hour * 24 * 1,
+			},
+			meta: &loader.TableMeta{
+				TimeKey: "timestamp",
+			},
+			want: "ALTER TABLE table ON CLUSTER '{cluster}' MODIFY TTL timestamp + toIntervalDay(1) TO VOLUME 'slow', timestamp + toIntervalDay(2);",
+		},
+		{
+			name: "ttl<=hot ttl",
+			ttl: &retention.TTL{
+				All:     time.Hour * 24 * 1,
+				HotData: time.Hour * 24 * 1,
+			},
+			meta: &loader.TableMeta{
+				TimeKey: "timestamp",
+			},
+			want: "ALTER TABLE table ON CLUSTER '{cluster}' MODIFY TTL timestamp + INTERVAL 1 DAY;",
+		},
+		{
+			name: "not time key",
+			ttl: &retention.TTL{
+				All:     time.Hour * 24 * 1,
+				HotData: time.Hour * 24 * 1,
+			},
+			meta: &loader.TableMeta{},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCk := MockClickhouse{checkExec: func(sql string) {
+				require.Equal(t, tt.want, sql)
+			}}
+			p := provider{
+				Clickhouse: mockCk,
+				Log:        logrusx.New(),
+				Cfg: &config{
+					ColdHotEnable: true,
+				},
+			}
+			p.AlterTableTTL("table", tt.meta, tt.ttl)
+		})
+	}
+
 }

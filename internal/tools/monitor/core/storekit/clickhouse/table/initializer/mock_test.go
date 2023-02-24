@@ -18,6 +18,9 @@ import (
 	"context"
 	"time"
 
+	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+
+	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 )
@@ -78,5 +81,68 @@ func (m MockLoader) WaitAndGetTables(ctx context.Context) map[string]*loader.Tab
 }
 
 func (m MockLoader) Database() string {
+	panic("implement me")
+}
+
+type MockClickhouse struct {
+	checkExec func(sql string)
+}
+
+func (m MockClickhouse) NewWriter(opts *clickhouse.WriterOptions) *clickhouse.Writer {
+	panic("implement me")
+}
+
+func (m MockClickhouse) Client() ckdriver.Conn {
+	return MockCkDriver{
+		checkExec: m.checkExec,
+	}
+}
+
+type MockCkDriver struct {
+	checkExec func(sql string)
+}
+
+func (m MockCkDriver) Contributors() []string {
+	panic("implement me")
+}
+
+func (m MockCkDriver) ServerVersion() (*ckdriver.ServerVersion, error) {
+	panic("implement me")
+}
+
+func (m MockCkDriver) Select(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	return nil
+}
+
+func (m MockCkDriver) Query(ctx context.Context, query string, args ...interface{}) (ckdriver.Rows, error) {
+	panic("implement me")
+}
+
+func (m MockCkDriver) QueryRow(ctx context.Context, query string, args ...interface{}) ckdriver.Row {
+	panic("implement me")
+}
+
+func (m MockCkDriver) PrepareBatch(ctx context.Context, query string) (ckdriver.Batch, error) {
+	panic("implement me")
+}
+
+func (m MockCkDriver) Exec(ctx context.Context, query string, args ...interface{}) error {
+	m.checkExec(query)
+	return nil
+}
+
+func (m MockCkDriver) AsyncInsert(ctx context.Context, query string, wait bool) error {
+	panic("implement me")
+}
+
+func (m MockCkDriver) Ping(ctx context.Context) error {
+	panic("implement me")
+}
+
+func (m MockCkDriver) Stats() ckdriver.Stats {
+	panic("implement me")
+}
+
+func (m MockCkDriver) Close() error {
 	panic("implement me")
 }

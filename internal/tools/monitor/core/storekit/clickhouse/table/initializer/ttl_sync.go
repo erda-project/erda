@@ -92,7 +92,9 @@ func (p *provider) needTTLUpdate(ttl *retention.TTL, meta *loader.TableMeta) boo
 
 func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttl *retention.TTL) {
 	sql := "ALTER TABLE <table> ON CLUSTER '{cluster}' MODIFY TTL <time_key> + INTERVAL <ddl_days> DAY;"
-	if p.Cfg.ColdHotEnable && meta.HotTTLDays > 0 && meta.TTLDays > meta.HotTTLDays {
+	ttlHotDays, ttlDays := ttl.GetHotTTLByDays(), ttl.GetTTLByDays()
+
+	if p.Cfg.ColdHotEnable && ttlHotDays > 0 && ttlDays > ttlHotDays {
 		sql = "ALTER TABLE <table> ON CLUSTER '{cluster}' MODIFY TTL <time_key> + toIntervalDay(<hot_ddl_days>) TO VOLUME 'slow', <time_key> + toIntervalDay(<ddl_days>);"
 	}
 	if len(meta.TimeKey) <= 0 {
@@ -101,9 +103,9 @@ func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttl *
 	}
 	replacer := strings.NewReplacer(
 		"<time_key>", meta.TimeKey,
-		"<ddl_days>", strconv.FormatInt(ttl.GetTTLByDays(), 10),
+		"<ddl_days>", strconv.FormatInt(ttlDays, 10),
 		"<table>", tableName,
-		"<hot_ddl_days>", strconv.FormatInt(ttl.GetHotTTLByDays(), 10))
+		"<hot_ddl_days>", strconv.FormatInt(ttlHotDays, 10))
 	sql = replacer.Replace(sql)
 	err := p.Clickhouse.Client().Exec(clickhouse.Context(context.Background(), clickhouse.WithSettings(map[string]interface{}{
 		"materialize_ttl_after_modify": 0,
