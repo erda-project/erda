@@ -54,22 +54,38 @@ func (e EnvType) String() string {
 	}
 }
 
+type Options func(diceYaml *DiceYaml)
+
 type DiceYaml struct {
 	data     []byte
 	obj      *Object
 	validate bool
+
+	platformInfo map[string]string
 }
 
 // 得到的 DiceYaml 是环境无关的，不能用于获取环境相关的信息
-func New(b []byte, validate bool) (*DiceYaml, error) {
-
+func New(b []byte, validate bool, ops ...Options) (*DiceYaml, error) {
 	d := &DiceYaml{
 		data:     b,
 		validate: validate,
 	}
+	for _, op := range ops {
+		op(d)
+	}
+
 	if err := d.Parse(validate); err != nil {
 		return nil, err
 	}
+
+	if d.platformInfo != nil {
+		platformVisitor := NewPlatformVisitor(d.platformInfo)
+		d.obj.Accept(platformVisitor)
+		if len(platformVisitor.CollectErrors()) != 0 {
+			return nil, errors.Errorf("platform visitor error: %v", platformVisitor.CollectErrors())
+		}
+	}
+
 	return d, nil
 }
 
@@ -109,6 +125,12 @@ func (d *DiceYaml) Parse(validate bool) error {
 
 	d.obj = &obj
 	return nil
+}
+
+func WithPlatformInfo(platform map[string]string) Options {
+	return func(d *DiceYaml) {
+		d.platformInfo = platform
+	}
 }
 
 // validate result is a map , key: regexp of problem-position-element, value: error info
