@@ -52,16 +52,12 @@ func (p *PlatformVisitor) VisitObject(v DiceYmlVisitor, obj *Object) {
 func (p *PlatformVisitor) renderPlatformInfo(input []byte) []byte {
 	rePlaceholder := regexp.MustCompile(`\${platform\.([^\}]+)}`)
 
-	inputStr := string(input)
-	if !rePlaceholder.MatchString(inputStr) {
-		return input
-	}
-
-	return []byte(rePlaceholder.ReplaceAllStringFunc(inputStr, func(match string) string {
+	return []byte(rePlaceholder.ReplaceAllStringFunc(string(input), func(match string) string {
 		subMatch := rePlaceholder.FindStringSubmatch(match)
 		if len(subMatch) < 2 {
 			return match
 		}
+
 		if val, ok := p.platformInfo[subMatch[1]]; !ok {
 			notSupportErr := errors.Errorf("placeholder %s doesn't support", subMatch[1])
 			p.errs = append(p.errs, notSupportErr)

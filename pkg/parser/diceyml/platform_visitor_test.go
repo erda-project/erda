@@ -46,7 +46,6 @@ services:
       mem: 500
     endpoints:
     - domain: test-${platform.DICE_PROJECT_NAME}-${platform.DICE_CLUSTER_NAME}.*
-    - domain: test-${platform.DICE_PROJECT_NAME}-${platform.DICE_PROJECT_NAME}-${platform.DICE_PROJECT_NAME}.*
     deployments:
       replicas: 1
 `,
@@ -134,6 +133,55 @@ services:
 			},
 			want:    "registry/demo/arm64/busybox",
 			wantErr: true,
+		},
+		{
+			name: "not platform tag",
+			args: args{
+				diceYml: `
+services:
+  app-demo:
+    ports:
+      - port: 5000
+        expose: true
+    resources:
+      cpu: 0.5
+      mem: 500
+    image: busybox
+    cmd: ${APP_DEMO}-${platform.DICE_PROJECT_NAME}-dev.sh
+    deployments:
+      replicas: 1
+`,
+				platformInfo: map[string]string{
+					"DICE_PROJECT_NAME": "app",
+				},
+			},
+			gotFunc: func(object *Object) string {
+				return object.Services["app-demo"].Cmd
+			},
+			want: "${APP_DEMO}-app-dev.sh",
+		},
+		{
+			name: "no need to replace",
+			args: args{
+				diceYml: `
+services:
+  app-demo:
+    ports:
+      - port: 5000
+        expose: true
+    resources:
+      cpu: 0.5
+      mem: 500
+    image: busybox
+    deployments:
+      replicas: 1
+`,
+				platformInfo: nil,
+			},
+			gotFunc: func(object *Object) string {
+				return object.Services["app-demo"].Image
+			},
+			want: "busybox",
 		},
 	}
 
