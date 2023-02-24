@@ -89,6 +89,10 @@ var diceAddonsInfoKeys = []string{
 	"ISTIO_VERSION",
 }
 
+var clusterInfoDefaultMap = map[string]string{
+	apistructs.DICE_ARCH.String(): "amd64",
+}
+
 // ClusterInfo is the object to encapsulate cluster info
 type ClusterInfo struct {
 	load_mutex           sync.Mutex
@@ -190,10 +194,17 @@ func (ci *ClusterInfo) Load() error {
 		}
 	}
 
+	// set default values
+	for k, v := range clusterInfoDefaultMap {
+		if _, ok := ci.data[k]; !ok {
+			ci.data[k] = v
+		}
+	}
+
 	// netportal addr
 	netportal, err := parseNetportalURL(ci.addr)
 	if err != nil {
-		logrus.Errorf("failed to parse netportal address, (%v)", err)
+		logrus.Debugf("failed to parse netportal address, (%v)", err)
 	}
 	ci.data[netportalURLKeyName] = netportal
 

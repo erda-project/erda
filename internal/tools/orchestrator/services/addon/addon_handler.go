@@ -26,7 +26,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -91,7 +93,7 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	}
 	// 检查是否有plan
 	if params.Plan == "" {
-		params.Plan = string(apistructs.AddonBasic)
+		params.Plan = apistructs.AddonBasic
 	}
 	if len(params.Options) == 0 {
 		params.Options = map[string]string{}
@@ -112,17 +114,32 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		params.Options = map[string]string{}
 	}
 	params.Options["version"] = addonSpec.Version
-	// dice.yml强制转换为string类型
-	diceYmlBytes, err := json.Marshal(addon.Dice)
+
+	if addon.Dice == nil {
+		return &addonSpec, &diceyml.Object{}, nil
+	}
+
+	diceYmlBytes, err := yaml.Marshal(addon.Dice)
 	if err != nil {
-		logrus.Errorf("ext market %s ExtensionVersion.Dice is not string type", addon.Name)
+		marshalErr := errors.Errorf("ext market %s ExtensionVersion.Dice is not string type, err: %v", addon.Name, err)
+		logrus.Error(marshalErr)
+		return nil, nil, marshalErr
 	}
-	addonDice := diceyml.Object{}
-	diceErr := json.Unmarshal(diceYmlBytes, &addonDice)
-	if diceErr != nil {
-		return nil, nil, errors.Wrap(diceErr, "failed to parse addon dice")
+
+	ctx := apis.WithInternalClientContext(context.Background(), discover.Orchestrator())
+	clusterInfo, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{
+		IdOrName: params.ClusterName,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get cluster info")
 	}
-	return &addonSpec, &addonDice, nil
+
+	diceYml, err := diceyml.New(diceYmlBytes, true, diceyml.WithPlatformInfo(clusterInfo.Data.Cm))
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to parse addon dice")
+	}
+
+	return &addonSpec, diceYml.Obj(), nil
 }
 
 func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {

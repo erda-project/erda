@@ -756,6 +756,7 @@ type DiceYmlVisitor interface {
 	VisitBinds(v DiceYmlVisitor, obj *Binds)
 	VisitK8SSnippet(v DiceYmlVisitor, obj *K8SSnippet)
 	VisitContainerSnippet(v DiceYmlVisitor, obj *ContainerSnippet)
+	CollectErrors() []error
 }
 
 func (obj *Object) Accept(v DiceYmlVisitor) {
@@ -893,3 +894,4 @@ func (*DefaultVisitor) VisitDeployments(v DiceYmlVisitor, obj *Deployments)     
 func (*DefaultVisitor) VisitBinds(v DiceYmlVisitor, obj *Binds)                       {}
 func (*DefaultVisitor) VisitK8SSnippet(v DiceYmlVisitor, obj *K8SSnippet)             {}
 func (*DefaultVisitor) VisitContainerSnippet(v DiceYmlVisitor, obj *ContainerSnippet) {}
+func (*DefaultVisitor) CollectErrors() []error                                        { return []error{} }
