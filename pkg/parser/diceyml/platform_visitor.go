@@ -15,14 +15,10 @@
 package diceyml
 
 import (
-	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type PlatformVisitor struct {
@@ -54,40 +50,26 @@ func (p *PlatformVisitor) VisitObject(v DiceYmlVisitor, obj *Object) {
 }
 
 func (p *PlatformVisitor) renderPlatformInfo(input []byte) []byte {
-	var (
-		left, right, platformTag = "${", "}", "platform."
-		rePlaceholder            = regexp.MustCompile("\\$\\{(.+?)\\}")
-		fullPlaceholderMap       = make(map[string]string)
-	)
+	rePlaceholder := regexp.MustCompile(`\${platform\.([^\}]+)}`)
 
-	replaced := string(input)
-	if !rePlaceholder.MatchString(replaced) {
+	inputStr := string(input)
+	if !rePlaceholder.MatchString(inputStr) {
 		return input
 	}
 
-	for _, r := range rePlaceholder.FindAllString(replaced, -1) {
-		placeholder, start, end, err := strutil.FirstCustomPlaceholder(r, left, right)
-		if err != nil || start == end || !strings.HasPrefix(placeholder, platformTag) {
-			formatErr := errors.Errorf("placeholder %s format error, %v", placeholder, err)
-			p.errs = append(p.errs, formatErr)
-			return input
+	return []byte(rePlaceholder.ReplaceAllStringFunc(inputStr, func(match string) string {
+		subMatch := rePlaceholder.FindStringSubmatch(match)
+		if len(subMatch) < 2 {
+			return match
 		}
-		fmt.Println(placeholder)
-
-		if val, ok := p.platformInfo[strings.Trim(placeholder, platformTag)]; !ok {
-			notSupportErr := errors.Errorf("placeholder %s doesn't support", placeholder)
+		if val, ok := p.platformInfo[subMatch[1]]; !ok {
+			notSupportErr := errors.Errorf("placeholder %s doesn't support", subMatch[1])
 			p.errs = append(p.errs, notSupportErr)
-			return input
-		} else if _, ok := fullPlaceholderMap[placeholder]; !ok {
-			fullPlaceholderMap[r] = val
+			return match
+		} else {
+			return val
 		}
-	}
-
-	for fullPlaceholder, val := range fullPlaceholderMap {
-		replaced = strings.ReplaceAll(replaced, fullPlaceholder, val)
-	}
-
-	return []byte(replaced)
+	}))
 }
 
 func (p *PlatformVisitor) CollectErrors() []error {
