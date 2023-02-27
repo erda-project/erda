@@ -83,8 +83,8 @@ func (p *provider) syncTTL(ctx context.Context) {
 }
 
 func (p *provider) needTTLUpdate(ttl *retention.TTL, meta *loader.TableMeta) bool {
-	if p.Cfg.ColdHotEnable {
-		return meta.TTLDays != ttl.GetTTLByDays() || !meta.HasColdHotTTL() || meta.HotTTLDays != ttl.GetHotTTLByDays()
+	if p.Cfg.ColdHotEnable && ttl.GetTTLByDays() > 0 && ttl.All > ttl.HotData {
+		return meta.TTLDays != ttl.GetTTLByDays() || meta.HotTTLDays != ttl.GetHotTTLByDays()
 	} else {
 		return meta.TTLDays != ttl.GetTTLByDays()
 	}
