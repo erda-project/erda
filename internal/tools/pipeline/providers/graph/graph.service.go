@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
 
@@ -40,6 +41,8 @@ type graphService struct {
 }
 
 func (s *graphService) PipelineYmlGraph(ctx context.Context, req *pb.PipelineYmlGraphRequest) (*pb.PipelineYmlGraphResponse, error) {
+	ctx, span := otel.Tracer("graph").Start(ctx, "pipeline-graph")
+	defer span.End()
 	graph, err := pipelineyml.ConvertToGraphPipelineYml([]byte(req.PipelineYmlContent))
 	if err != nil {
 		return nil, apierrors.ErrParsePipelineYml.InvalidParameter(err)
