@@ -174,7 +174,6 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 
 	instanceOptions := map[string]string{}
 	utils.JsonConvertObjToType(tmcInstance.Options, &instanceOptions)
-
 	for name, service := range resourceInfo.Dice.Services {
 		delete(service.Envs, "LOCATION-CLUSTER-SERVICE")
 
@@ -190,6 +189,22 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 			"KONG_PG_USER":                  instanceOptions["POSTGRESQL_USER"],
 			"KONG_PG_PASSWORD":              instanceOptions["POSTGRESQL_PASSWORD"],
 			"KONG_PG_DATABASE":              instanceOptions["POSTGRESQL_DATABASE"],
+			"KONG_PLUGINS": strings.Join([]string{
+				"path-variable",
+				"host-passthrough",
+				"sbac",
+				"acl",
+				"oauth2",
+				"spot-metrics",
+				"sign-auth",
+				"key-auth",
+				"rate-limiting",
+				"csrf-token",
+				"zone",
+				"host-check",
+				"hmac-auth",
+				"prometheus",
+			}, ","),
 		}
 		utils.AppendMap(service.Envs, env)
 
