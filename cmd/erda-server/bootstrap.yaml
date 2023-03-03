@@ -521,7 +521,7 @@ etcd-election@table-loader:
   _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:true}
   root_path: "/erda/monitor-ck-table-loader-election"
 etcd-mutex:
-  root_path: "/erda/streaming"
+  root_path: "/erda/msp-addon-deployment"
 erda.msp.apm.exception.query:
   query_source:
     elasticsearch: "${QUERY_EVENT_FROM_ES_ENABLE|QUERY_EVENT_FROM_CLICKHOUSE_ENABLE:true}"

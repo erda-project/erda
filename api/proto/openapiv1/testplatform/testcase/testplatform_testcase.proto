@@ -21,6 +21,7 @@ message GET_Request {
 }
 message TestCaseBatchCleanFromRecycleBinRequest {
     repeated uint64 testCaseIDs = 1;
+    uint64 projectID = 2;
 }
 message TestCaseBatchCleanFromRecycleBinResponse {
 }
@@ -37,6 +38,7 @@ message TestCaseBatchUpdateRequest {
     optional bool recycled = 2;
     optional uint64 moveToTestSetID = 3;
     repeated uint64 testCaseIDs = 4;
+    uint64 projectID = 5;
 }
 message TestCaseBatchUpdateResponse {
     bool data = 1;
@@ -123,7 +125,8 @@ message TestCaseUpdateRequest {
     repeated google.protobuf.Value aPIs = 6 [json_name = "apis"];
     string desc = 7;
     repeated uint64 labelIDs = 8;
-    string testCaseID = 9; // generated from path variable: testCaseID. You should change the proto type if necessary.
+    uint64 projectID = 9;
+    string testCaseID = 10; // generated from path variable: testCaseID. You should change the proto type if necessary.
 }
 message TestCaseUpdateResponse {
 }

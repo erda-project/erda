@@ -82,10 +82,6 @@ message BatchUpgradeEdgeClusterRequest {
 }
 message BatchUpgradeEdgeClusterResponse {
 }
-message CMP_ALERT_CONDITIONS_Request {
-}
-message CMP_ALERT_CONDITIONS_VALUE_Request {
-}
 message CMP_CLOUD_RESOURCE_ACCOUNT_LIST_Request {
 }
 message CMP_CLOUD_RESOURCE_ECS_TREND_Request {
@@ -1127,38 +1123,6 @@ service cmp {
                 check_basic_auth: false,
             },
             doc: "调用scheduler api 获取 addon status",
-        };
-    };
-    rpc CMP_ALERT_CONDITIONS (CMP_ALERT_CONDITIONS_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/cmp/alerts/conditions",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/cmp/alerts/conditions",
-            auth: {
-                no_check: true,
-                check_login: false,
-                try_check_login: false,
-                check_token: false,
-                check_basic_auth: false,
-            },
-            doc: "",
-        };
-    };
-    rpc CMP_ALERT_CONDITIONS_VALUE (CMP_ALERT_CONDITIONS_VALUE_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            post: "/api/cmp/alerts/conditions/value",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/cmp/alerts/conditions/value",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: false,
-                check_basic_auth: false,
-            },
-            doc: "",
         };
     };
     rpc CMP_CLOUD_CLUSTERS (CloudClusterRequest) returns (CloudClusterResponse) {
