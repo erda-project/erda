@@ -473,12 +473,13 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 	if err != nil {
 		return nil, err
 	}
+	l := logrus.WithField("namespace/name", runtime.Type+"/"+runtime.ID)
 
 	if runtime.ProjectNamespace != "" {
 		k.setProjectServiceName(runtime)
 	}
 
-	logrus.Infof("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
+	l.Infof("start to create runtime, serviceGroup: %s", strutil.MustString(runtime))
 
 	ok, reason, err := k.checkQuota(ctx, runtime)
 	if err != nil {
@@ -491,6 +492,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 
 	operator, ok := runtime.Labels["USE_OPERATOR"]
 	if ok {
+		l.Infof("use operator %s, to create by operator", operator)
 		op, err := k.whichOperator(operator)
 		if err != nil {
 			return nil, fmt.Errorf("not found addonoperator: %v", operator)
@@ -499,8 +501,9 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		return nil, addon.Create(op, runtime)
 	}
 
+	l.Infof("not use operator, to create runtime normaly")
 	if err = k.createRuntime(ctx, runtime); err != nil {
-		logrus.Errorf("failed to create runtime, namespace: %s, name: %s, (%v)",
+		l.Errorf("failed to create runtime, namespace: %s, name: %s, (%v)",
 			runtime.Type, runtime.ID, err)
 		return nil, err
 	}

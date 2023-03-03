@@ -20,6 +20,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/pkg/strutil"
+
 	"github.com/erda-project/erda/apistructs"
 	conf "github.com/erda-project/erda/cmd/erda-server/conf/msp"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
@@ -139,26 +143,34 @@ func (h *provider) DoDeploy(serviceGroupDeployRequest interface{}, resourceInfo 
 
 func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployResult interface{}, clusterConfig map[string]string) (map[string]string, error) {
 	serviceGroup := serviceGroupDeployResult.(*apistructs.ServiceGroup)
-	mysqlMap := parseResp2MySQLDtoMap(tmcInstance, serviceGroup)
-	err := p.initMysql(mysqlMap, clusterConfig)
-	if err != nil {
-		return nil, err
+	mysqlMap := ParseResp2MySQLDtoMap(tmcInstance, serviceGroup)
+	var deployByOperator = serviceGroup.Labels["USE_OPERATOR"] == "mysql"
+	if err := p.initMysql(mysqlMap, clusterConfig, deployByOperator); err != nil {
+		p.Log.Infof("failure to initMySQL, mysqlMqp: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
+			strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
+		return nil, errors.Wrap(err, "failure to initMySQL")
 	}
 
 	time.Sleep(2 * time.Second)
 
-	err = p.checkSalveStatus(mysqlMap, clusterConfig, err)
-	if err != nil {
-		return nil, err
+	if !deployByOperator {
+		if err := p.checkSalveStatus(mysqlMap, clusterConfig); err != nil {
+			p.Log.Errorf("failure to checkSalveStatus, mysqlMap: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
+				strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
+			return nil, errors.Wrap(err, "failure to checkSalveStatus")
+		}
 	}
 
-	resultConfig := map[string]string{
-		"MYSQL_HOST":       mysqlMap["mysql"].mysqlHost,
-		"MYSQL_PORT":       mysqlMap["mysql"].mysqlPort,
-		"MYSQL_USERNAME":   "mysql",
-		"MYSQL_PASSWORD":   mysqlMap["mysql"].password,
-		"MYSQL_SLAVE_HOST": mysqlMap["mysql-slave"].mysqlHost,
-		"MYSQL_SLAVE_PORT": mysqlMap["mysql-slave"].mysqlPort,
+	var resultConfig = make(map[string]string)
+	if dto := mysqlMap["mysql"]; dto != nil {
+		resultConfig["MYSQL_HOST"] = dto.MySQLHost
+		resultConfig["MYSQL_PORT"] = dto.MySQLPort
+		resultConfig["MYSQL_USERNAME"] = "mysql"
+		resultConfig["MYSQL_PASSWORD"] = dto.Password
+	}
+	if dto := mysqlMap["mysql-slave"]; dto != nil {
+		resultConfig["MYSQL_SLAVE_HOST"] = dto.MySQLHost
+		resultConfig["MYSQL_SLAVE_PORT"] = dto.MySQLPort
 	}
 
 	return resultConfig, nil
@@ -176,10 +188,10 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	tenantOptions := map[string]string{}
 	utils.JsonConvertObjToType(tenant.Options, &tenantOptions)
+	tenantConfig["MYSQL_DATABASES"] = tenantOptions["create_dbs"]
 
 	// if custom resource, the database should created outside?
 	if tmcInstance.IsCustom == "Y" {
-		tenantConfig["MYSQL_DATABASES"] = tenantOptions["create_dbs"]
 		return tenantConfig, nil
 	}
 
@@ -187,11 +199,11 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 	utils.JsonConvertObjToType(tmcInstance.Config, &instanceConfig)
 
 	mysqldto := mysqlDto{
-		mysqlHost: instanceConfig["MYSQL_HOST"],
-		mysqlPort: instanceConfig["MYSQL_PORT"],
-		user:      instanceConfig["MYSQL_USERNAME"],
-		password:  instanceConfig["MYSQL_PASSWORD"],
-		options:   tenantOptions,
+		MySQLHost: instanceConfig["MYSQL_HOST"],
+		MySQLPort: instanceConfig["MYSQL_PORT"],
+		User:      instanceConfig["MYSQL_USERNAME"],
+		Password:  instanceConfig["MYSQL_PASSWORD"],
+		Options:   tenantOptions,
 	}
 
 	dbNames, err := p.createDb(mysqldto, clusterConfig, tenantConfig)
@@ -213,39 +225,56 @@ func (p *provider) initDb(dbNames []string, mysqldto mysqlDto, clusterConfig map
 		return nil
 	}
 
-	initSql := mysqldto.options["init_sql"]
+	initSql := mysqldto.Options["init_sql"]
 	if len(initSql) == 0 {
 		return nil
 	}
 
 	mysqlExec := &mysqlhelper.Request{
 		ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
-		Url:        "jdbc:mysql://" + mysqldto.mysqlHost + ":" + mysqldto.mysqlPort,
-		User:       mysqldto.user,
-		Password:   mysqldto.password,
+		Url:        "jdbc:mysql://" + mysqldto.MySQLHost + ":" + mysqldto.MySQLPort,
+		User:       mysqldto.User,
+		Password:   mysqldto.Password,
 		CreateDbs:  dbNames,
 	}
 
+	// Check if the script has been executed
+	p.Log.Infof("[%s] to check if the SQL script has been executed", initSql)
+	ok, err := mysqlExec.HasRecord(initSql)
+	if err != nil {
+		return errors.Wrapf(err, "failure to check the init sql record for %s", initSql)
+	}
+	if ok {
+		p.Log.Infof("[%s] there is already a record for the SQL script, skip this initialization", initSql)
+		return nil
+	}
+
+	p.Log.Infof("[%s] the SQL script has not been executed, to execute it", initSql)
 	sql, err := p.tryReadFile(initSql)
 	if err != nil {
 		return err
 	}
 	mysqlExec.Sqls = []string{sql}
 
-	err = mysqlExec.Exec()
-	return err
+	if err = mysqlExec.Exec(); err != nil {
+		return err
+	}
+
+	// Logging script execution record
+	p.Log.Infof("[%s] to record the SQL script execution history", initSql)
+	return mysqlExec.Record(initSql)
 }
 
 type mysqlDto struct {
-	mysqlHost string
-	mysqlPort string
-	user      string
-	password  string
-	options   map[string]string
-	shortHost string
+	MySQLHost string            `json:"mySQLHost"`
+	MySQLPort string            `json:"mySQLPort"`
+	User      string            `json:"user"`
+	Password  string            `json:"password"`
+	Options   map[string]string `json:"options"`
+	ShortHost string            `json:"shortHost"`
 }
 
-func parseResp2MySQLDtoMap(instance *db.Instance, serviceGroup *apistructs.ServiceGroup) map[string]*mysqlDto {
+func ParseResp2MySQLDtoMap(instance *db.Instance, serviceGroup *apistructs.ServiceGroup) map[string]*mysqlDto {
 	resultMap := map[string]*mysqlDto{}
 
 	options := map[string]string{}
@@ -253,70 +282,78 @@ func parseResp2MySQLDtoMap(instance *db.Instance, serviceGroup *apistructs.Servi
 
 	for _, service := range serviceGroup.Services {
 		resultMap[service.Name] = &mysqlDto{
-			mysqlHost: service.Vip,
-			mysqlPort: "3306",
-			user:      "root",
-			password:  options["MYSQL_ROOT_PASSWORD"],
-			shortHost: service.ShortVIP,
-			options:   options, // reuse same options
+			MySQLHost: service.Vip,
+			MySQLPort: "3306",
+			User:      "root",
+			Password:  options["MYSQL_ROOT_PASSWORD"],
+			ShortHost: service.ShortVIP,
+			Options:   options, // reuse same options
 		}
 	}
 
 	return resultMap
 }
 
-func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string) error {
-	password := mysqlMap["mysql"].password
-	masterShortHost := mysqlMap["mysql"].shortHost
+// create mysql account "mysql" and grant users
+func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string, deployByOperator bool) error {
+	password := mysqlMap["mysql"].Password
+	masterShortHost := mysqlMap["mysql"].ShortHost
+	p.Log.Infof("mysqlMap: %s", strutil.MustString(mysqlMap))
 
 	linkList := list.New()
 	for name, service := range mysqlMap {
-		execDto := &mysqlhelper.Request{
-			ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
-			Url:        "jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort,
-			User:       service.user,
-			Password:   service.password,
+		var configs = []option{
+			withUseOperator(deployByOperator),
+			withClusterKey(clusterConfig["DICE_CLUSTER_NAME"]),
+			withAddress(service.MySQLHost + ":" + service.MySQLPort),
+			withUsername(service.User),
+			withPassword(service.Password),
+			withOperatorCli(p.MyOperaInsCli),
 		}
-
 		if name == "mysql" {
-			execDto.Sqls = []string{strings.Replace(apistructs.AddonMysqlMasterGrantBackupSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
+			var item = NewInstanceAdapter(append(configs, withQueries([]string{
+				strings.Replace(apistructs.AddonMysqlMasterGrantBackupSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				strings.Replace(apistructs.AddonMysqlCreateMysqlUserSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				apistructs.AddonMysqlGrantMysqlUserSqls,
-				apistructs.AddonMysqlFlushSqls}
-			linkList.PushFront(execDto) // master at first
+				apistructs.AddonMysqlFlushSqls,
+			}))...)
+			linkList.PushFront(item)
 		} else {
-			execDto.Sqls = []string{strings.Replace(strings.Replace(apistructs.AddonMysqlSlaveChangeMasterSqls, "${MYSQL_ROOT_PASSWORD}", password, -1), "${MASTER_HOST}", masterShortHost, -1),
+			var item = NewInstanceAdapter(append(configs, withQueries([]string{
+				strings.Replace(strings.Replace(apistructs.AddonMysqlSlaveChangeMasterSqls, "${MYSQL_ROOT_PASSWORD}", password, -1), "${MASTER_HOST}", masterShortHost, -1),
 				apistructs.AddonMysqlSlaveResetSlaveSqls,
 				apistructs.AddonMysqlSlaveStartSlaveSqls,
 				strings.Replace(apistructs.AddonMysqlCreateMysqlUserSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				apistructs.AddonMysqlGrantSelectMysqlUserSqls,
-				apistructs.AddonMysqlFlushSqls}
-			linkList.PushBack(execDto)
+				apistructs.AddonMysqlFlushSqls,
+			}))...)
+			linkList.PushBack(item)
 		}
 	}
 
-	for p := linkList.Front(); p != nil; p = p.Next() {
-		err := p.Value.(*mysqlhelper.Request).Exec()
-		if err != nil {
-			return err
+	for e := linkList.Front(); e != nil; e = e.Next() {
+		if err := e.Value.(InstanceAdapter).ExecSQLs(); err != nil {
+			p.Log.Errorf("failure to Exec SQLs for %s", strutil.MustString(e.Value))
+			return errors.Wrap(err, "failure to Exec SQLs")
 		}
 	}
 
 	return nil
 }
 
-func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string, err error) error {
+func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string) error {
 	service := mysqlMap["mysql-slave"]
 	mysqlExec := &mysqlhelper.Request{
 		ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
-		Url:        "jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort,
-		User:       service.user,
-		Password:   service.password,
+		Url:        "jdbc:mysql://" + service.MySQLHost + ":" + service.MySQLPort,
+		User:       service.User,
+		Password:   service.Password,
 	}
 
 	status, err := mysqlExec.GetSlaveState()
 	if err != nil {
-		return err
+		p.Log.Errorf("failure to GetSlaveState, MySQL request: %s, err: %v", strutil.MustString(mysqlExec), err)
+		return errors.Wrap(err, "failure to GetSlaveState, MySQL request")
 	}
 
 	if !strings.EqualFold(status.IORunning, "connecting") &&
@@ -331,13 +368,13 @@ func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig
 func (p *provider) createDb(mysqldto mysqlDto, clusterConfig map[string]string, tenantConfig map[string]string) ([]string, error) {
 	mysqlExec := &mysqlhelper.Request{
 		ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
-		Url:        "jdbc:mysql://" + mysqldto.mysqlHost + ":" + mysqldto.mysqlPort,
-		User:       mysqldto.user,
-		Password:   mysqldto.password,
+		Url:        "jdbc:mysql://" + mysqldto.MySQLHost + ":" + mysqldto.MySQLPort,
+		User:       mysqldto.User,
+		Password:   mysqldto.Password,
 	}
 
 	var createdDbNames []string
-	createDbs := strings.Split(mysqldto.options["create_dbs"], ",")
+	createDbs := strings.Split(mysqldto.Options["create_dbs"], ",")
 	var sqls []string
 	for _, createDb := range createDbs {
 		dbName := strings.Trim(createDb, " ")
