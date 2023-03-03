@@ -174,6 +174,7 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 
 	instanceOptions := map[string]string{}
 	utils.JsonConvertObjToType(tmcInstance.Options, &instanceOptions)
+
 	for name, service := range resourceInfo.Dice.Services {
 		delete(service.Envs, "LOCATION-CLUSTER-SERVICE")
 
