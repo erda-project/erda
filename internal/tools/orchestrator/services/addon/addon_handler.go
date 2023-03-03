@@ -134,7 +134,7 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		return nil, nil, errors.Wrap(err, "failed to get cluster info")
 	}
 
-	diceYml, err := diceyml.New(diceYmlBytes, true, diceyml.WithPlatformInfo(clusterInfo.Data.Cm))
+	diceYml, err := diceyml.New(diceYmlBytes, false, diceyml.WithPlatformInfo(clusterInfo.Data.Cm))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to parse addon dice")
 	}
