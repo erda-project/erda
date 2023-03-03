@@ -15,7 +15,10 @@
 package coordinator
 
 import (
+	"context"
 	"fmt"
+	"github.com/pkg/errors"
+	"strings"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
@@ -62,6 +65,23 @@ func (p *provider) CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bo
 }
 
 func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
+	ctx := context.Background()
+	mu, err := p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
+	if err != nil {
+		p.Log.Errorf("failure to New a global distributed lock (ETCD Mutex) before deploying %s on az %s: %v\n", req.Engine, req.Az, err)
+		return nil, errors.Wrap(err, "failure to New ETCD Mutex")
+	}
+	defer func() {
+		if mu != nil {
+			if err := mu.Unlock(ctx); err != nil {
+				p.Log.Errorf("failure to Unlock the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
+			}
+			if err := mu.Close(); err != nil {
+				p.Log.Errorf("failure to Close the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
+			}
+		}
+	}()
+
 	var result handlers.ResourceDeployResult
 
 	// get resource info : tmc + extension info

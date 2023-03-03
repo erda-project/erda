@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 )
 
@@ -32,7 +33,8 @@ type config struct {
 type provider struct {
 	Cfg            *config
 	Log            logs.Logger
-	DB             *gorm.DB `autowired:"mysql-client"`
+	DB             *gorm.DB        `autowired:"mysql-client"`
+	Mutex          mutex.Interface `autowired:"etcd-mutex"`
 	defaultHandler *handlers.DefaultDeployHandler
 	handlers       map[string]handlers.ResourceDeployHandler
 }
