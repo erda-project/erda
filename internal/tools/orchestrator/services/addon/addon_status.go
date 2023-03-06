@@ -1228,6 +1228,7 @@ func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCre
 	if len(serviceItem.Labels) == 0 {
 		serviceItem.Labels = map[string]string{}
 	}
+	serviceItem.Labels["ADDON_ID"] = addonIns.ID
 	SetlabelsFromOptions(params.Options, serviceItem.Labels)
 
 	// Use volumes 代替 Binds
