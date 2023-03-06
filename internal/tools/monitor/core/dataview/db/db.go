@@ -88,7 +88,7 @@ func (db *CustomViewDB) GetCreatorsByFields(fields map[string]interface{}) ([]st
 		return nil, err
 	}
 	var list []*CustomView
-	if err := query.Where("creator_id != ?", "").Order("created_at DESC").Find(&list).Error; err != nil {
+	if err := query.Where("creator_id != ?", "").Order("creator_id ASC").Find(&list).Error; err != nil {
 		return nil, err
 	}
 	var result []string
