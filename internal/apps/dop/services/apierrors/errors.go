@@ -455,6 +455,7 @@ var (
 	ErrCreateProject = err("ErrCreateProject", "创建项目失败")
 	ErrDeleteProject = err("ErrDeleteProject", "删除项目失败")
 	ErrListProject   = err("ErrListProject", "获取项目列表失败")
+	ErrUpdateProject = err("ErrUpdateProject", "更新项目失败")
 
 	ErrExportProjectTemplate = err("ErrExportProjectTemplate", "导出项目模版失败")
 	ErrImportProjectTemplate = err("ErrImportProjectTemplate", "导入项目模版失败")
