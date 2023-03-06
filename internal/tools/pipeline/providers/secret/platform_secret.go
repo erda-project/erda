@@ -82,11 +82,13 @@ func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, i
 		storageURL = strings.Replace(storageURL, convertURL.Path, filepath.Join(mountPoint, convertURL.Path), -1)
 	}
 
+	arch := strutil.FirstNoneEmpty(clusterInfo.CM.Get(apistructs.DICE_ARCH), s.Cfg.DefaultDiceArch, "amd64")
+
 	r = map[string]string{
 		// dice version
 		"dice.version": version.Version,
 		// dice
-		"dice.arch":                strutil.FirstNoneEmpty(clusterInfo.CM.Get(apistructs.DICE_ARCH), s.Cfg.DefaultDiceArch, "amd64"),
+		"dice.arch":                arch,
 		"dice.org.id":              p.Labels[apistructs.LabelOrgID],
 		"dice.org.name":            p.GetOrgName(),
 		"dice.project.id":          p.Labels[apistructs.LabelProjectID],
@@ -129,6 +131,9 @@ func (s *provider) FetchPlatformSecrets(ctx context.Context, p *spec.Pipeline, i
 		// collector 用于主动日志上报(action-agent)
 		"collector.addr":       discover.Collector(),
 		"collector.public.url": conf.CollectorPublicURL(),
+
+		// arch
+		"arch": arch,
 
 		// others
 		"date.YYYYMMDD": time.Now().Format("20060102"),
