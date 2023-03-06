@@ -23,8 +23,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/dop/projecthome/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -41,6 +43,21 @@ func (s *projectHomeService) GetProjectHome(ctx context.Context, req *pb.GetProj
 	projectID, err := strconv.ParseUint(req.ProjectID, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid projectID: %s, err: %v", req.ProjectID, err)
+	}
+	if !apis.IsInternalClient(ctx) {
+		userID := apis.GetUserID(ctx)
+		if userID == "" {
+			return nil, fmt.Errorf("not login")
+		}
+		if access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   userID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  projectID,
+			Action:   apistructs.GetAction,
+			Resource: apistructs.ProjectResource,
+		}); err != nil || !access.Access {
+			return nil, apierrors.ErrGetProject.AccessDenied()
+		}
 	}
 	_, err = s.bdl.GetProjectWithSetter(projectID, httpclient.SetHeaders(
 		http.Header{
@@ -67,9 +84,22 @@ func (s *projectHomeService) GetProjectHome(ctx context.Context, req *pb.GetProj
 }
 
 func (s *projectHomeService) CreateOrUpdateProjectHome(ctx context.Context, req *pb.CreateOrUpdateProjectHomeRequest) (*pb.CreateOrUpdateProjectHomeResponse, error) {
+	projectID, err := strconv.ParseUint(req.ProjectID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid projectID: %s, err: %v", req.ProjectID, err)
+	}
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("not login")
+	}
+	if access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  projectID,
+		Action:   apistructs.UpdateAction,
+		Resource: apistructs.ProjectResource,
+	}); err != nil || !access.Access {
+		return nil, apierrors.ErrUpdateProject.AccessDenied()
 	}
 	linkStr, err := json.Marshal(req.Links)
 	if err != nil {
