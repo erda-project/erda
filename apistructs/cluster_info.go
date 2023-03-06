@@ -100,6 +100,14 @@ func (info ClusterInfoData) Get(key ClusterInfoMapKey) string {
 	return info[key]
 }
 
+func (info ClusterInfoData) ToStringMap() map[string]string {
+	dat := make(map[string]string, len(info))
+	for k, v := range info {
+		dat[k.String()] = v
+	}
+	return dat
+}
+
 // {DICE_PROTOCOL}://{组件名}.{DICE_ROOT_DOMAIN}:{DICE_HTTP_PORT or DICE_HTTPS_PORT}
 func (info ClusterInfoData) MustGetPublicURL(component string) string {
 	// default is `http`

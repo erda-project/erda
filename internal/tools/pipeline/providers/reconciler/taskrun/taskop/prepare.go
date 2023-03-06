@@ -192,7 +192,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
 	extSearchReq = append(extSearchReq, pre.ActionMgr.MakeActionTypeVersion(&task.Extra.Action))
 	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ActionMgr.SearchActions(extSearchReq,
-		actionmgr.SearchOpWithRender(map[string]string{"storageMountPoint": mountPoint}))
+		actionmgr.SearchOpWithRender(map[string]string{"storageMountPoint": mountPoint}),
+		actionmgr.SearchOpWithClusterInfo(clusterInfo.ToStringMap()))
 	if err != nil {
 		return true, err
 	}
@@ -292,7 +293,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 			fmt.Sprintf("not found image, actionType: %q, version: %q", action.Type, action.Version))
 	}
 	task.Extra.Image = diceYmlJob.Image
-	if action.Type.IsCustom() && action.Image != "" {
+	if action.Image != "" {
 		task.Extra.Image = action.Image
 	}
 	// 将 action dice.yml 中声明的 envs 注入运行时
