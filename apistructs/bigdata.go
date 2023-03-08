@@ -24,9 +24,11 @@ const (
 )
 
 type BigdataResource struct {
-	CPU     string `json:"cpu"`
-	Memory  string `json:"memory"`
-	Replica int32  `json:"replica"`
+	CPU       string `json:"cpu"`
+	Memory    string `json:"memory"`
+	Replica   int32  `json:"replica"`
+	MaxCPU    string `json:"maxCPU,omitempty"`
+	MaxMemory string `json:"maxMemory,omitempty"`
 }
 
 type BigdataMetadata struct {
