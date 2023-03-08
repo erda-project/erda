@@ -94,7 +94,7 @@ func getStringPoints(s string) *string {
 }
 
 func composeResources(res apistructs.BigdataResource) corev1.ResourceRequirements {
-	return corev1.ResourceRequirements{
+	bigdataResource := corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse(res.CPU),
 			corev1.ResourceMemory: resource.MustParse(res.Memory),
@@ -104,6 +104,13 @@ func composeResources(res apistructs.BigdataResource) corev1.ResourceRequirement
 			corev1.ResourceMemory: resource.MustParse(res.Memory),
 		},
 	}
+	if res.MaxCPU != "" {
+		bigdataResource.Limits[corev1.ResourceCPU] = resource.MustParse(res.MaxCPU)
+	}
+	if res.MaxMemory != "" {
+		bigdataResource.Limits[corev1.ResourceMemory] = resource.MustParse(res.MaxMemory)
+	}
+	return bigdataResource
 }
 
 func composeEnvs(envs map[string]string) []corev1.EnvVar {

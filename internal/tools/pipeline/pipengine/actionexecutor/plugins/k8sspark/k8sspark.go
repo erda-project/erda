@@ -560,6 +560,12 @@ func (k *K8sSpark) appendResource(podSpec *sparkv1beta2.SparkPodSpec, resource *
 	podSpec.Cores = int32ptr(int32(cpu))
 	podSpec.CoreLimit = stringptr(cpuString)
 	podSpec.Memory = stringptr(memory)
+	if resource.MaxCPU != "" {
+		podSpec.CoreLimit = &resource.MaxCPU
+	}
+	if resource.MaxMemory != "" {
+		podSpec.MemoryOverhead = &resource.MaxMemory
+	}
 }
 
 func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apistructs.BigdataResource, podName, podType string) {
