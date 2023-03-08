@@ -245,11 +245,11 @@ func (p *provider) doQuerySql(ctx context.Context, statement string, params map[
 	if response != nil && len(response.Results) > 0 && len(response.Results[0].Series) > 0 {
 		rows := response.Results[0].Series[0].Rows
 		if len(rows) == 0 || len(rows[0].Values) == 0 {
-			return 0, errors.NewInternalServerErrorMessage("empty query result")
+			return 0, nil
 		}
 
 		val := rows[0].Values[0].GetNumberValue()
 		return val, nil
 	}
-	return 0, errors.NewInternalServerErrorMessage("empty query result")
+	return 0, nil
 }
