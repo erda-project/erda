@@ -72,7 +72,10 @@ func (b *BaseCard) QueryAsServiceCard(ctx context.Context, statement string, par
 
 	rows := response.Results[0].Series[0].Rows
 	if len(rows) == 0 || len(rows[0].Values) == 0 {
-		return nil, errors.NewInternalServerErrorMessage("empty query result")
+		return &ServiceCard{
+			Name: name,
+			Unit: unit,
+		}, nil
 	}
 
 	val := rows[0].Values[0].GetNumberValue()

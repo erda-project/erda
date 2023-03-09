@@ -105,7 +105,10 @@ func (s *SimpleChart) getUnRecoverAlertEventsChart() (*Chart, error) {
 	}
 	rows := response.Results[0].Series[0].Rows
 	if len(rows) == 0 {
-		return nil, errors.NewInternalServerErrorMessage("empty query result")
+		return &Chart{
+			XAxis:  make([]string, 0),
+			Series: make([]SeriesData, 0),
+		}, nil
 	}
 
 	var xAxis []string
