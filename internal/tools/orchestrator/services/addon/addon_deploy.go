@@ -517,6 +517,9 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			_, addonOperatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
 				AddonName: apistructs.AddonRedis + "-operator",
 				Plan:      apistructs.AddonBasic,
+				Options: map[string]string{
+					"version": params.Options["version"],
+				},
 			})
 			if err != nil {
 				return nil, err

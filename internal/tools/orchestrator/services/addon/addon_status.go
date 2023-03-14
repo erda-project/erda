@@ -1406,6 +1406,7 @@ func (a *Addon) BuildRedisOperatorServiceItem(options map[string]string, addonIn
 			"ADDON_ID":      addonIns.ID,
 			"ADDON_NODE_ID": a.getRandomId(),
 			"requirepass":   password,
+			"version":       addonDice.Version,
 		}
 		// set options for label
 		if len(v.Labels) == 0 {
