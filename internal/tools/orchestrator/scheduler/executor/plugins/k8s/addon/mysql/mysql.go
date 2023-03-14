@@ -193,6 +193,10 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 	addon.SetAddonLabelsAndAnnotations(mysql, obj.Spec.Labels, obj.Spec.Annotations)
 
+	if addonID, ok := mysql.Env["ADDON_ID"]; ok {
+		obj.Spec.Labels["ADDON_ID"] = addonID
+	}
+
 	return obj
 }
 
