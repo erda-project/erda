@@ -50,6 +50,7 @@ func (p *provider) syncTTL(ctx context.Context) {
 			if t == fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.TablePrefix) {
 				// default table
 				ttl = p.Retention.Default()
+				p.Log.Debugf("check default %s table ttl, hot: %v->%v, cold: %v->%v", t, meta.HotTTLDays, ttl.GetHotTTLByDays(), meta.TTLDays, ttl.GetTTLByDays())
 				if !p.needTTLUpdate(ttl, meta) {
 					continue
 				}
@@ -66,6 +67,8 @@ func (p *provider) syncTTL(ctx context.Context) {
 				}
 
 				ttl := p.Retention.GetTTL(key)
+				p.Log.Debugf("check org %s table ttl, hot: %v->%v, cold: %v->%v", t, meta.HotTTLDays, ttl.GetHotTTLByDays(), meta.TTLDays, ttl.GetTTLByDays())
+
 				if !p.needTTLUpdate(ttl, meta) {
 					continue
 				}
