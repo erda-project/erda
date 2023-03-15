@@ -75,7 +75,7 @@ clickhouse:
   conn_open_strategy: "round_robin"
   conn_max_lifetime: "${CLICKHOUSE_CONN_MAX_LIFETIME:1m}"
   max_idle_conns: "${CLICKHOUSE_MAX_IDLE_CONNS:10}"
-  max_open_conns: "${CLICKHOUSE_MAX_OPEN_CONNS:20}"
+  max_open_conns: "${CLICKHOUSE_MAX_OPEN_CONNS:200}"
   dail_timeout: "${CLICKHOUSE_DAIL_TIMEOUT:1s}"
 
 
