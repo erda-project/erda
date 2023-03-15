@@ -16,6 +16,7 @@ package project
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
@@ -351,6 +352,26 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 	project, err := s.GetProjectInfo(apis.Language(ctx), req.ProjectID)
 	if err != nil {
 		return nil, err
+	}
+
+	projectID, err := strconv.ParseUint(req.ProjectID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid projectID: %s, err: %v", req.ProjectID, err)
+	}
+	if !apis.IsInternalClient(ctx) {
+		userID := apis.GetUserID(ctx)
+		if userID == "" {
+			return nil, fmt.Errorf("not login")
+		}
+		if access, err := s.p.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   userID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  projectID,
+			Action:   apistructs.GetAction,
+			Resource: apistructs.ProjectResource,
+		}); err != nil || !access.Access {
+			return nil, fmt.Errorf("no oermission")
+		}
 	}
 
 	if project == nil {
