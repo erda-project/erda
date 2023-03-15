@@ -334,7 +334,7 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 
 func (ro *RedisOperator) convertRedis(svc apistructs.Service) RedisSettings {
 	settings := RedisSettings{}
-	settings.Version = "3.2.12"
+	settings.Version = svc.Env["version"]
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = RedisFailoverResources{
