@@ -1228,7 +1228,6 @@ func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCre
 	if len(serviceItem.Labels) == 0 {
 		serviceItem.Labels = map[string]string{}
 	}
-	serviceItem.Labels["ADDON_ID"] = addonIns.ID
 	SetlabelsFromOptions(params.Options, serviceItem.Labels)
 
 	// Use volumes 代替 Binds
@@ -1407,6 +1406,7 @@ func (a *Addon) BuildRedisOperatorServiceItem(options map[string]string, addonIn
 			"ADDON_ID":      addonIns.ID,
 			"ADDON_NODE_ID": a.getRandomId(),
 			"requirepass":   password,
+			"version":       addonDice.Version,
 		}
 		// set options for label
 		if len(v.Labels) == 0 {
