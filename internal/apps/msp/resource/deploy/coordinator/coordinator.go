@@ -66,7 +66,7 @@ func (p *provider) CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bo
 }
 
 func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
-	return p.mutexWrap(p.deploy)(req)
+	return p.mutexDeploy(p.deploy, req)
 }
 
 // deploy 是部署 addon 的主要业务逻辑
@@ -281,36 +281,34 @@ func (p *provider) UnDeploy(resourceId string) error {
 	return nil
 }
 
-// mutexWrap 为 deploy 函数包一层全局分布式锁, 确保某集群内某类 engine 的 addon 只能有一个实例正在部署,
+// mutexDeploy 为 deploy 函数包一层全局分布式锁, 确保某集群内某类 engine 的 addon 只能有一个实例正在部署,
 // 以防止重复拉起实例.
 // deploy 是部署的主逻辑.
-func (p *provider) mutexWrap(f deploy) deploy {
-	return func(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
-		// get the lock at the "<addon engine>/<cluster>" granularity before deploying to avoid duplicate instances
-		ctx := context.Background()
-		mu, err := p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
-		if err != nil {
-			p.Log.Errorf("failure to New a global distributed lock (ETCD Mutex) before deploying %s on az %s: %v\n", req.Engine, req.Az, err)
-			return nil, errors.Wrapf(err, "failure to New ETCD Mutex for %s/%s", req.Engine, req.Az)
-		}
-		if err = mu.Lock(ctx); err != nil {
-			p.Log.Errorf("failure to Lock for %s/%s: %v\n", req.Engine, req.Az, err)
-			if err == context.Canceled {
-				return nil, errors.Wrapf(err, "failure to Lock for %s/%s", req.Engine, req.Az)
-			}
-		}
-		defer func() {
-			if mu != nil {
-				if err := mu.Unlock(ctx); err != nil {
-					p.Log.Errorf("failure to Unlock the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
-				}
-				if err := mu.Close(); err != nil {
-					p.Log.Errorf("failure to Close the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
-				}
-			}
-		}()
-		return f(req)
+func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error), req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
+	// get the lock at the "<addon engine>/<cluster>" granularity before deploying to avoid duplicate instances
+	p.Log.Infof("to deploy %s/%s with ETCD Mutex\n", req.Engine, req.Az)
+	ctx := context.Background()
+	mu, err := p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
+	if err != nil {
+		p.Log.Errorf("failure to New a global distributed lock (ETCD Mutex) before deploying %s on az %s: %v\n", req.Engine, req.Az, err)
+		return nil, errors.Wrapf(err, "failure to New ETCD Mutex for %s/%s", req.Engine, req.Az)
 	}
+	if err = mu.Lock(ctx); err != nil {
+		p.Log.Errorf("failure to Lock for %s/%s: %v\n", req.Engine, req.Az, err)
+		if err == context.Canceled {
+			return nil, errors.Wrapf(err, "failure to Lock for %s/%s", req.Engine, req.Az)
+		}
+	}
+	defer func() {
+		if mu != nil {
+			p.Log.Infof("to release ETCD Mutex for %s/%s\n", req.Engine, req.Az)
+			if err := mu.Unlock(ctx); err != nil {
+				p.Log.Errorf("failure to Unlock the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
+			}
+			if err := mu.Close(); err != nil {
+				p.Log.Errorf("failure to Close the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
+			}
+		}
+	}()
+	return deploy(req)
 }
-
-type deploy func(request handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error)
