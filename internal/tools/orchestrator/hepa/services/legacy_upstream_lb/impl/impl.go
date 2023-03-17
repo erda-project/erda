@@ -205,7 +205,7 @@ func (impl GatewayUpstreamLbServiceImpl) clearStaleOnNewDeploy(gatewayAdapter ga
 	var readyToDels []orm.GatewayUpstreamLbTarget
 	var freshAllHealthy *bool
 	for _, targetDto := range resp.Data {
-		if targetDto.CreatedAt > freshTime {
+		if targetDto.GetCreatedAt() > freshTime {
 			log.Infof("target is newer than fresh, targetDto:%+v freshTime:%d",
 				targetDto, freshTime)
 			continue
@@ -281,7 +281,7 @@ func (impl GatewayUpstreamLbServiceImpl) clearUnhealthyOnUnexpectDeploy(gatewayA
 		return err
 	}
 	for _, targetDto := range resp.Data {
-		if targetDto.CreatedAt > freshTime {
+		if targetDto.GetCreatedAt() > freshTime {
 			log.Infof("target is newer than fresh, targetDto:%+v freshTime:%d",
 				targetDto, freshTime)
 			continue
@@ -373,7 +373,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		if err != nil {
 			return
 		}
-		freshTime = kongTargetResp.CreatedAt
+		freshTime = kongTargetResp.GetCreatedAt()
 		if freshTime == 0 {
 			err = errors.Errorf("invalid kongTargetResp, resp:%+v", kongTargetResp)
 			return
