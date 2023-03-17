@@ -29,7 +29,7 @@ FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
 ARG ARCH
 ENV MODULE_PATH=${MODULE_PATH}
-ENV KUBECTL_VERSION=v1.20.11
+ENV KUBECTL_VERSION=v1.24.6
 
 COPY --from=app-handler /erda-handled /erda
 COPY --from=app-handler /erda/build/scripts/cluster-agent/* /usr/bin/
