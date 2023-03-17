@@ -105,7 +105,7 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 	return policyDto, nil, ""
 }
 
-func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
+func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
 	if !ok {

@@ -62,7 +62,8 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 	return policyDto, nil, ""
 }
 
-func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
+// forValidate 用于识别解析的目的，如果解析是用来做鱼 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
 	if !ok {
@@ -150,43 +151,47 @@ send_timeout %ds;
 		return res, err
 	}
 	if exist != nil && !policyDto.HostPassthrough {
-		err = adapter.RemovePlugin(exist.PluginId)
-		if err != nil {
-			return res, err
+		if !forValidate {
+			err = adapter.RemovePlugin(exist.PluginId)
+			if err != nil {
+				return res, err
+			}
+			policyDb, _ := db.NewGatewayPolicyServiceImpl()
+			_ = policyDb.DeleteById(exist.Id)
+			res.KongPolicyChange = true
 		}
-		policyDb, _ := db.NewGatewayPolicyServiceImpl()
-		_ = policyDb.DeleteById(exist.Id)
-		res.KongPolicyChange = true
 	}
 	if exist == nil && policyDto.HostPassthrough {
-		disable := false
-		kongReq := &kongDto.KongPluginReqDto{
-			Name:    "host-passthrough",
-			Config:  map[string]interface{}{},
-			Enabled: &disable,
+		if !forValidate {
+			disable := false
+			kongReq := &kongDto.KongPluginReqDto{
+				Name:    "host-passthrough",
+				Config:  map[string]interface{}{},
+				Enabled: &disable,
+			}
+			resp, err := adapter.AddPlugin(kongReq)
+			if err != nil {
+				return res, err
+			}
+			configByte, err := json.Marshal(resp.Config)
+			if err != nil {
+				return res, err
+			}
+			policyDao := &orm.GatewayPolicy{
+				ZoneId:     zone.Id,
+				PluginName: "host-passthrough",
+				Category:   apipolicy.Policy_Category_Proxy,
+				PluginId:   resp.Id,
+				Config:     configByte,
+				Enabled:    1,
+			}
+			policyDb, _ := db.NewGatewayPolicyServiceImpl()
+			err = policyDb.Insert(policyDao)
+			if err != nil {
+				return res, err
+			}
+			res.KongPolicyChange = true
 		}
-		resp, err := adapter.AddPlugin(kongReq)
-		if err != nil {
-			return res, err
-		}
-		configByte, err := json.Marshal(resp.Config)
-		if err != nil {
-			return res, err
-		}
-		policyDao := &orm.GatewayPolicy{
-			ZoneId:     zone.Id,
-			PluginName: "host-passthrough",
-			Category:   apipolicy.Policy_Category_Proxy,
-			PluginId:   resp.Id,
-			Config:     configByte,
-			Enabled:    1,
-		}
-		policyDb, _ := db.NewGatewayPolicyServiceImpl()
-		err = policyDb.Insert(policyDao)
-		if err != nil {
-			return res, err
-		}
-		res.KongPolicyChange = true
 	}
 	return res, nil
 }
