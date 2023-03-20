@@ -547,7 +547,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, structure.Time, "ns", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, structure.Time, structure.Millisecond, graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmClassLoader:
 			graph, err := p.getClassCountLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
