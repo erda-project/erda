@@ -566,7 +566,7 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "time(),max(column)",
 			sql:  "select max(column) from table group by time()",
-			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY intDiv(toRelativeSecondNum(timestamp), 60)",
+			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"bucket_timestamp\"",
 		},
 		{
 			name: "group_not_select_column",
@@ -576,17 +576,17 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "time(2h)",
 			sql:  "select column from table group by time(2h)",
-			want: "SELECT number_field_values[indexOf(number_field_keys,'column')] AS \"column\", MIN(timestamp) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", intDiv(toRelativeSecondNum(timestamp),7200)",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", \"bucket_timestamp\"",
 		},
 		{
 			name: "groupby,time()",
 			sql:  "select sum(http_status_code_count::field),http_status_code::tag from table GROUP BY time(),http_status_code::tag",
-			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code:tag\", MIN(timestamp) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", intDiv(toRelativeSecondNum(timestamp),60)",
+			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", toNullable(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"http_status_code::tag\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", \"bucket_timestamp\"",
 		},
 		{
 			name: "time(),column",
 			sql:  "select http_status_code::tag from table GROUP BY time()",
-			want: "SELECT tag_values[indexOf(tag_keys,'http_status_code')] AS \"http_status_code::tag\", MIN(timestamp) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", intDiv(toRelativeSecondNum(timestamp),60)",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"http_status_code::tag\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", \"bucket_timestamp\"",
 		},
 		{
 			name: "no group",
@@ -601,7 +601,7 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "group sub function",
 			sql:  "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') as state from table group by time()",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", MIN(timestamp(60) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"service_instance_id::tag\", \"timestamp\", intDiv(toRelativeSecondNum(timestamp),60)",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"timestamp\", \"bucket_timestamp\", \"service_instance_id::tag\"",
 		},
 	}
 
@@ -639,8 +639,9 @@ func TestGroupBy(t *testing.T) {
 				sql = sql[:strings.Index(sql, "ORDER BY")]
 			}
 
-			t.Log(sql)
-			t.Log(test.want)
+			t.Log("arg sql", test.sql)
+			t.Log("got", sql)
+			t.Log("want", test.want)
 
 			if strings.Index(test.want, strings.ToUpper("group by")) <= 0 {
 				require.Equal(t, test.want, sql)
@@ -769,14 +770,17 @@ func TestOrderBy(t *testing.T) {
 		},
 		{
 			name: "timestamp should by first order",
-			sql:  "select time(),service_id::tag from table GROUP BY service_id::tag,time() ORDER BY service_id::tag asc",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"service_id::tag\" ASC",
+			sql:  "select time(),service_id::tag from table GROUP BY service_id::tag,time() ORDER BY service_id::tag desc",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"service_id::tag\" DESC,\"bucket_timestamp\" ASC",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			p := Parser{
-				ctx: &Context{},
+				ctx: &Context{
+					dimensions: make(map[string]bool),
+					timeKey:    "timestamp",
+				},
 			}
 			parse := influxql.NewParser(strings.NewReader(test.sql))
 			if len(test.params) > 0 {
@@ -790,7 +794,10 @@ func TestOrderBy(t *testing.T) {
 			expr := goqu.From("table")
 			require.Truef(t, ok, "parse query is not select statement")
 
-			expr, _, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
+			expr, handlers, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
+
+			expr, _, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handlers, columns)
+			require.NoError(t, err, "parse group by error")
 
 			expr, err = p.ParseOrderByOnExpr(selectStmt.SortFields, expr, columns)
 
@@ -846,7 +853,7 @@ func TestGroupColumnShouldBeExist(t *testing.T) {
 		{
 			name: "time",
 			sql:  "select column::field from table group by time()",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" WHERE has(tag_keys,'column') GROUP BY \"column::field\", intDiv(toRelativeSecondNum(timestamp), 60)",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column::field\", \"bucket_timestamp\"",
 		},
 		{
 			name: "origin column",
@@ -882,8 +889,9 @@ func TestGroupColumnShouldBeExist(t *testing.T) {
 			sql, _, err := expr.ToSQL()
 			require.NoError(t, err)
 
-			t.Log(sql)
-			t.Log(test.want)
+			t.Log(test.sql)
+			t.Log("got", sql)
+			t.Log("want", test.want)
 			sql = sql[strings.Index(sql, "GROUP BY")+8:]
 			test.want = test.want[strings.Index(test.want, "GROUP BY")+8:]
 

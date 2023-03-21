@@ -168,7 +168,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	}
 
 	for _, column := range copiedColumns {
-		if column.isWildcard || column.isTimeKey {
+		if column.isWildcard {
 			continue
 		}
 		expr = expr.OrderAppend(goqu.C(column.asName).Asc())
@@ -296,8 +296,15 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 				intervalSeconds := interval / int64(tsql.Second)
 
+				timeBucketExpr := fmt.Sprintf("intDiv(toRelativeSecondNum(timestamp), %v)", intervalSeconds)
+
+				columns[timeBucketExpr] = _column{
+					key:       p.ctx.TimeKey(),
+					asName:    timeBucketColumn,
+					isTimeKey: true,
+				}
 				exprSelect = exprSelect.SelectAppend(goqu.MIN("timestamp").As(timeBucketColumn))
-				exprList = append(exprList, fmt.Sprintf("intDiv(toRelativeSecondNum(timestamp), %v)", intervalSeconds))
+				exprList = append(exprList, timeBucketExpr)
 
 				var newHandler []*SQLColumnHandler
 
