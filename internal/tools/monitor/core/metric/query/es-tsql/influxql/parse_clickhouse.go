@@ -40,6 +40,7 @@ type _column struct {
 	isTimeKey     bool
 	isNumberField bool
 	isStringField bool
+	expr          string
 	flag          model.ColumnFlag
 }
 
@@ -219,7 +220,11 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 	groupExpress := make(map[string]goqu.Expression)
 	if len(liters) > 0 {
 		for script, column := range columns {
-			groupExpress[script] = goqu.C(column.asName)
+			if column.isTimeKey {
+				groupExpress[script] = goqu.L(column.expr)
+			} else {
+				groupExpress[script] = goqu.C(column.asName)
+			}
 		}
 		for _, liter := range liters {
 			if _, ok := groupExpress[liter]; !ok {
@@ -299,9 +304,11 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				timeBucketExpr := fmt.Sprintf("intDiv(toRelativeSecondNum(timestamp), %v)", intervalSeconds)
 
 				columns[timeBucketExpr] = _column{
-					key:       p.ctx.TimeKey(),
-					asName:    timeBucketColumn,
-					isTimeKey: true,
+					key:        p.ctx.TimeKey(),
+					expr:       timeBucketExpr,
+					asName:     timeBucketColumn,
+					rootColumn: timeBucketColumn,
+					isTimeKey:  true,
 				}
 				exprSelect = exprSelect.SelectAppend(goqu.MIN("timestamp").As(timeBucketColumn))
 				exprList = append(exprList, timeBucketExpr)
