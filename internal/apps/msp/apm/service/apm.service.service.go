@@ -433,7 +433,7 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 func (s *apmServiceService) GetWithRequestService(ctx context.Context, tenantId string, start int64, end int64) (int64, []string, error) {
 	// withoutRequest Count
 	statement := "SELECT target_service_id::tag,if(gt(sum(elapsed_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
-	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key "
+	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key and target_service_id::tag != ''"
 	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
 	queryParams := map[string]*structpb.Value{
 		"target_terminus_key": structpb.NewStringValue(tenantId),
@@ -468,7 +468,7 @@ func (s *apmServiceService) GetWithRequestService(ctx context.Context, tenantId 
 func (s *apmServiceService) GetHasErrorService(ctx context.Context, tenantId string, start int64, end int64) (int64, []string, error) {
 	// hasError Count
 	statement := "SELECT target_service_id::tag,if(gt(sum(errors_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
-	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 "
+	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 and target_service_id::tag != '' "
 	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
 
 	queryParams := map[string]*structpb.Value{
@@ -506,7 +506,7 @@ func (s *apmServiceService) GetHasErrorService(ctx context.Context, tenantId str
 
 func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
 	// calculate total Count
-	condition := " terminus_key::tag=$terminus_key "
+	condition := " terminus_key::tag=$terminus_key and target_service_id::tag != '' "
 	statement := "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
 	statement = strings.ReplaceAll(statement, "$condition", condition)
 	queryParams := map[string]*structpb.Value{
