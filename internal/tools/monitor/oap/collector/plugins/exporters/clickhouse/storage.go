@@ -16,6 +16,7 @@ package clickhouse
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -78,8 +79,13 @@ func (st *Storage) sendBatch(ctx context.Context, b driver.Batch) {
 
 	backoffDelay := time.Second
 	maxBackoffDelay := 30 * time.Second
-	backoffSleep := func() {
-		time.Sleep(backoffDelay)
+	backoffSleep := func(success bool) {
+		if success {
+			backoffDelay = time.Second
+			return
+		}
+		// sleep range, avoid avalanches
+		time.Sleep(backoffDelay + time.Duration(rand.Intn(int(backoffDelay/2))))
 		backoffDelay *= 2
 		if backoffDelay > maxBackoffDelay {
 			backoffDelay = maxBackoffDelay
@@ -90,10 +96,11 @@ func (st *Storage) sendBatch(ctx context.Context, b driver.Batch) {
 	go func() {
 		for i := 0; i < st.cfg.RetryNum; i++ {
 			if err := b.Send(); err != nil {
-				st.logger.Errorf("send bactch to clickhouse: %s, retry after: %s", err, backoffDelay)
-				backoffSleep()
+				st.logger.Errorf("send bach ch to clickhouse: %s, retry after: %s", err, backoffDelay)
+				backoffSleep(false)
 				continue
 			} else {
+				backoffSleep(true)
 				break
 			}
 		}
