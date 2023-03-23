@@ -628,6 +628,9 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	// Configure health check
 	SetHealthCheck(&deployment.Spec.Template.Spec.Containers[0], service)
 
+	// Add default lifecycle
+	k.AddLifeCycle(service, &deployment.Spec.Template.Spec)
+
 	if err := k.AddContainersEnv(deployment.Spec.Template.Spec.Containers /*containers*/, service, serviceGroup); err != nil {
 		return nil, err
 	}
