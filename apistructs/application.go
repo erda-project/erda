@@ -16,6 +16,7 @@ package apistructs
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -333,6 +334,10 @@ const (
 	ProdWorkspace DiceWorkspace = "PROD"
 )
 
+const (
+	DiceWorkspaceEnvKey = "DICE_WORKSPACE"
+)
+
 var DiceWorkspaceSlice = []DiceWorkspace{DevWorkspace, TestWorkspace, StagingWorkspace, ProdWorkspace}
 
 // Deployable 是否可部署的合法环境
@@ -372,4 +377,8 @@ func (mode ApplicationMode) CheckAppMode() error {
 
 func (w DiceWorkspace) String() string {
 	return string(w)
+}
+
+func (w DiceWorkspace) Equal(t DiceWorkspace) bool {
+	return strings.ToUpper(w.String()) == strings.ToUpper(t.String())
 }

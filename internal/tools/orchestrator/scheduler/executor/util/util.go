@@ -354,3 +354,11 @@ func ParseAnnotationFromEnv(k string) string {
 	}
 	return ""
 }
+
+func GetDiceWorkspaceFromEnvs(envs map[string]string) (apistructs.DiceWorkspace, error) {
+	if workspace, ok := envs[apistructs.DiceWorkspaceEnvKey]; ok {
+		return apistructs.DiceWorkspace(strings.ToUpper(workspace)), nil
+	} else {
+		return "", errors.New("not found workspace env")
+	}
+}
