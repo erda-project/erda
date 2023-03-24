@@ -74,7 +74,7 @@ type PolicyEngine interface {
 	GetConfig(string, string, *orm.GatewayZone, map[string]interface{}) (PolicyDto, error)
 	MergeDiceConfig(map[string]interface{}) (PolicyDto, error)
 	CreateDefaultConfig(map[string]interface{}) PolicyDto
-	ParseConfig(PolicyDto, map[string]interface{}) (PolicyConfig, error)
+	ParseConfig(PolicyDto, map[string]interface{}, bool) (PolicyConfig, error)
 	NeedResetAnnotation(PolicyDto) bool
 	UnmarshalConfig([]byte) (PolicyDto, error, string)
 	SetName(name string)

@@ -510,7 +510,7 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 	if len(needDeployTag) > 0 {
 		needDeployIngress = needDeployTag[0]
 	}
-	policyConfig, err := engine.ParseConfig(dto, ctx)
+	policyConfig, err := engine.ParseConfig(dto, ctx, false)
 	if err != nil {
 		return err
 	}
@@ -1235,7 +1235,7 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 		return errors.Errorf("policyEngine.UnmarshalConfig for %s error:%v\n", category, err)
 	}
 
-	policyConfig, err := policyEngine.ParseConfig(category_dto, ctx)
+	policyConfig, err := policyEngine.ParseConfig(category_dto, ctx, true)
 	if err != nil {
 		logrus.Errorf("parseConfig error:%v\n", err)
 		return errors.Errorf("parseConfig error:%v\n", err)
@@ -1275,7 +1275,7 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 				return err
 			}
 
-			pc, err := pEngine.ParseConfig(sDto, ctx)
+			pc, err := pEngine.ParseConfig(sDto, ctx, true)
 			if err != nil {
 				logrus.Errorf("parseConfig for policy %s error:%v\n", ca, err)
 				return errors.Errorf("parseConfig for policy %s error:%v\n", ca, err)
@@ -1288,7 +1288,7 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 				return errors.Errorf("GetPolicyEngine for policy %s error:%v\n", ca, err)
 			}
 
-			pc, err := pEngine.ParseConfig(sDto, ctx)
+			pc, err := pEngine.ParseConfig(sDto, ctx, true)
 			if err != nil {
 				logrus.Errorf("parseConfig for policy %s error:%v\n", ca, err)
 				return err
