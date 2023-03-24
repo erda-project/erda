@@ -566,7 +566,7 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "time(),max(column)",
 			sql:  "select max(column) from table group by time()",
-			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"bucket_timestamp\"",
+			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY intDiv(toRelativeSecondNum(timestamp), 60)",
 		},
 		{
 			name: "group_not_select_column",
@@ -576,17 +576,17 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "time(2h)",
 			sql:  "select column from table group by time(2h)",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", \"bucket_timestamp\"",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column\", intDiv(toRelativeSecondNum(timestamp), 7200)",
 		},
 		{
 			name: "groupby,time()",
 			sql:  "select sum(http_status_code_count::field),http_status_code::tag from table GROUP BY time(),http_status_code::tag",
-			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", toNullable(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"http_status_code::tag\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", \"bucket_timestamp\"",
+			want: "SELECT SUM(number_field_values[indexOf(number_field_keys,'http_status_code_count')]) AS \"339c9df3d700c4f0\", toNullable(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"http_status_code::tag\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", intDiv(toRelativeSecondNum(timestamp), 60)",
 		},
 		{
 			name: "time(),column",
 			sql:  "select http_status_code::tag from table GROUP BY time()",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"http_status_code::tag\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", \"bucket_timestamp\"",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"http_status_code::tag\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"http_status_code::tag\", intDiv(toRelativeSecondNum(timestamp), 60)",
 		},
 		{
 			name: "no group",
@@ -601,7 +601,7 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "group sub function",
 			sql:  "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') as state from table group by time()",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"timestamp\", \"bucket_timestamp\", \"service_instance_id::tag\"",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"timestamp\", intDiv(toRelativeSecondNum(timestamp), 60), \"service_instance_id::tag\"",
 		},
 	}
 
@@ -806,6 +806,10 @@ func TestOrderBy(t *testing.T) {
 			sql, _, err := expr.ToSQL()
 			require.NoError(t, err)
 
+			t.Log(test.sql)
+			t.Log("got", sql)
+			t.Log("want", test.want)
+
 			if strings.Index(test.want, "ORDER BY") != -1 {
 				// column is map, maybe disorder by order
 				orderWantExpr := strings.ReplaceAll(test.want[strings.Index(test.want, "ORDER BY")+8:], " ", "")
@@ -853,7 +857,7 @@ func TestGroupColumnShouldBeExist(t *testing.T) {
 		{
 			name: "time",
 			sql:  "select column::field from table group by time()",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column::field\", \"bucket_timestamp\"",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column')]) AS \"column::field\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"column::field\", intDiv(toRelativeSecondNum(timestamp), 60)",
 		},
 		{
 			name: "origin column",
