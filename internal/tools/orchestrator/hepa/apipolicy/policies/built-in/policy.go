@@ -45,7 +45,8 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 	return nil, nil, ""
 }
 
-func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
+// forValidate 用于识别解析的目的，如果解析是用来做鱼 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	res := apipolicy.PolicyConfig{}
 	annotation := map[string]*string{}
 	annotation[string(annotationscommon.AnnotationProxyNextUpstream)] = &config.ServerConf.NextUpstreams
@@ -102,28 +103,33 @@ proxy_intercept_errors on;
 			}
 		}
 		if !exist {
-			err = gatewayAdapter.RemovePlugin(plugin.PluginId)
-			if err != nil {
-				return res, err
+			if !forValidate {
+				err = gatewayAdapter.RemovePlugin(plugin.PluginId)
+				if err != nil {
+					return res, err
+				}
+				_ = policyDb.DeleteById(plugin.Id)
+				res.KongPolicyChange = true
 			}
-			_ = policyDb.DeleteById(plugin.Id)
+		}
+	}
+	if !forValidate {
+		newPlugin, err := policy.touchPluginIfNeed(zone.Id, builtinPlugins, "spot-collector", map[string]interface{}{
+			"send_port":          config.ServerConf.SpotSendPort,
+			"addon_name":         config.ServerConf.SpotAddonName,
+			"metric_name":        config.ServerConf.SpotMetricName,
+			"tags_header_prefix": config.ServerConf.SpotTagsHeaderPrefix,
+			"host_ip_key":        config.ServerConf.SpotHostIpKey,
+			"instance_key":       config.ServerConf.SpotInstanceKey,
+		}, gatewayAdapter)
+		if err != nil {
+			return res, err
+		}
+		if newPlugin {
 			res.KongPolicyChange = true
 		}
 	}
-	newPlugin, err := policy.touchPluginIfNeed(zone.Id, builtinPlugins, "spot-collector", map[string]interface{}{
-		"send_port":          config.ServerConf.SpotSendPort,
-		"addon_name":         config.ServerConf.SpotAddonName,
-		"metric_name":        config.ServerConf.SpotMetricName,
-		"tags_header_prefix": config.ServerConf.SpotTagsHeaderPrefix,
-		"host_ip_key":        config.ServerConf.SpotHostIpKey,
-		"instance_key":       config.ServerConf.SpotInstanceKey,
-	}, gatewayAdapter)
-	if err != nil {
-		return res, err
-	}
-	if newPlugin {
-		res.KongPolicyChange = true
-	}
+
 	return res, nil
 }
 

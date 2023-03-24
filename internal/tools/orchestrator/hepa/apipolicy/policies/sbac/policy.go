@@ -57,7 +57,8 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 	return dto.ToPluginReqDto()
 }
 
-func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
+// forValidate 用于识别解析的目的，如果解析是用来做鱼 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	l := logrus.WithField("pluginName", apipolicy.Policy_Engine_SBAC).WithField("func", "ParseConfig")
 	l.Infof("dto: %+v", dto)
 	res := apipolicy.PolicyConfig{}
@@ -91,7 +92,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		return res, err
 	}
 	if !policyDto.Switch {
-		if exist != nil {
+		if exist != nil && !forValidate {
 			err = adapter.RemovePlugin(exist.PluginId)
 			if err != nil {
 				return res, err
@@ -101,44 +102,78 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		}
 		return res, nil
 	}
+
 	req := policy.buildPluginReq(policyDto)
+	packageAPIDB, _ := db.NewGatewayPackageApiServiceImpl()
+	packageApi, err := packageAPIDB.GetByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
+	if err != nil {
+		l.WithError(err).Warnf("sbac: packageAPIDB.GetByAny(&orm.GatewayPackageApi{ZoneId: %s})", zone.Id)
+		return res, err
+	}
+	if packageApi == nil {
+		l.WithError(err).Warnf("sbac: not found packageAPIDB.GetByAny(&orm.GatewayPackageApi{ZoneId: %s})", zone.Id)
+		return res, nil
+	}
+
+	routeDb, _ := db.NewGatewayRouteServiceImpl()
+	route, err := routeDb.GetByApiId(packageApi.Id)
+	if err != nil {
+		l.WithError(err).Warnf("sbac: routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
+		return res, nil
+	}
+
+	if route == nil {
+		l.WithError(err).Warnf("sbac: not found routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
+		return res, nil
+	}
+
+	logrus.Infof("set sbac policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
+	req.RouteId = route.RouteId
+	req.Route = &kongDto.KongObj{
+		Id: route.RouteId,
+	}
+
 	if exist != nil {
-		req.Id = exist.PluginId
-		resp, err := adapter.CreateOrUpdatePluginById(req)
-		if err != nil {
-			return res, err
-		}
-		configByte, err := json.Marshal(resp.Config)
-		if err != nil {
-			return res, err
-		}
-		exist.Config = configByte
-		err = policyDb.Update(exist)
-		if err != nil {
-			return res, err
+		if !forValidate {
+			req.Id = exist.PluginId
+			resp, err := adapter.CreateOrUpdatePluginById(req)
+			if err != nil {
+				return res, err
+			}
+			configByte, err := json.Marshal(resp.Config)
+			if err != nil {
+				return res, err
+			}
+			exist.Config = configByte
+			err = policyDb.Update(exist)
+			if err != nil {
+				return res, err
+			}
 		}
 	} else {
-		resp, err := adapter.AddPlugin(req)
-		if err != nil {
-			return res, err
+		if !forValidate {
+			resp, err := adapter.AddPlugin(req)
+			if err != nil {
+				return res, err
+			}
+			configByte, err := json.Marshal(resp.Config)
+			if err != nil {
+				return res, err
+			}
+			policyDao := &orm.GatewayPolicy{
+				ZoneId:     zone.Id,
+				PluginName: apipolicy.Policy_Engine_SBAC,
+				Category:   apipolicy.Policy_Category_Safety,
+				PluginId:   resp.Id,
+				Config:     configByte,
+				Enabled:    1,
+			}
+			err = policyDb.Insert(policyDao)
+			if err != nil {
+				return res, err
+			}
+			res.KongPolicyChange = true
 		}
-		configByte, err := json.Marshal(resp.Config)
-		if err != nil {
-			return res, err
-		}
-		policyDao := &orm.GatewayPolicy{
-			ZoneId:     zone.Id,
-			PluginName: apipolicy.Policy_Engine_SBAC,
-			Category:   apipolicy.Policy_Category_Safety,
-			PluginId:   resp.Id,
-			Config:     configByte,
-			Enabled:    1,
-		}
-		err = policyDb.Insert(policyDao)
-		if err != nil {
-			return res, err
-		}
-		res.KongPolicyChange = true
 	}
 	return res, nil
 }
