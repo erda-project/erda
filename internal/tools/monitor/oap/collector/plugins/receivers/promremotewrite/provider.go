@@ -16,6 +16,7 @@ package promremotewrite
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -64,7 +65,12 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 			return p.consumerFunc(record)
 		})
 	})
-	defer ctx.Request().Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			p.Log.Errorf("close body error: %v", err)
+		}
+	}(ctx.Request().Body)
 
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("parse stream: %s", err))
