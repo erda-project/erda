@@ -30,6 +30,16 @@ const (
 	AT_ALIYUN_APP = "aliyun-app"
 )
 
+// MSE Gateway AuthType
+const (
+	MSE_AT_KEY_AUTH   = "key-auth"
+	MSE_AT_BASIC_AUTH = "basic-auth"
+	MSE_AT_HMAC_AUTH  = "hmac-auth"
+	MSE_AT_OAUTH2     = "oauth2"
+	MSE_AT_SIGN_AUTH  = "sign-auth"
+	MSE_AT_ALIYUN_APP = "aliyun-app"
+)
+
 // AclType
 const (
 	ACL      = "acl"

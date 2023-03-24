@@ -107,18 +107,21 @@ func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter g
 				Data: []providerDto.CredentialDto{},
 			}
 		}
+
 		oCredentials, err := gatewayAdapter.GetCredentialList(consumerID, orm.OAUTH2)
 		if err != nil {
 			oCredentials = &providerDto.CredentialListDto{
 				Data: []providerDto.CredentialDto{},
 			}
 		}
+
 		sCredentials, err := gatewayAdapter.GetCredentialList(consumerID, orm.SIGNAUTH)
 		if err != nil {
 			sCredentials = &providerDto.CredentialListDto{
 				Data: []providerDto.CredentialDto{},
 			}
 		}
+
 		hCredentials, err := gatewayAdapter.GetCredentialList(consumerID, orm.HMACAUTH)
 		if err != nil {
 			hCredentials = &providerDto.CredentialListDto{
@@ -133,6 +136,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter g
 		}, nil
 
 	} else {
+
 		credentials, err := impl.credentialDb.SelectByConsumerId(consumerID)
 		kCredentials := &providerDto.CredentialListDto{
 			Data: []providerDto.CredentialDto{},
