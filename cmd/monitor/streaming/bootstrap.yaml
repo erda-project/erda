@@ -545,6 +545,8 @@ erda.oap.collector.core:
         exporters:
           - "erda.oap.collector.exporter.clickhouse@span"
         batch_size: ${EXPORTER_CLICKHOUSE_SPAN_BATCH_SIZE:81920}
+        flush_interval: ${EXPORTER_CLICKHOUSE_SPAN_FLUSH_INTERVAL}
+        flush_jitter: ${EXPORTER_CLICKHOUSE_SPAN_FLUSH_JITTER}
         _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
 
     metrics:
@@ -554,6 +556,8 @@ erda.oap.collector.core:
         exporters:
           - "erda.oap.collector.exporter.clickhouse@metric"
         batch_size: ${EXPORTER_CLICKHOUSE_METRIC_BATCH_SIZE:81920}
+        flush_interval: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_INTERVAL}
+        flush_jitter: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_JITTER}
         _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
 # --- data pipeline block ---
 
