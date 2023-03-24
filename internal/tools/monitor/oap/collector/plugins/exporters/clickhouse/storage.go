@@ -96,7 +96,7 @@ func (st *Storage) sendBatch(ctx context.Context, b driver.Batch) {
 	go func() {
 		for i := 0; i < st.cfg.RetryNum; i++ {
 			if err := b.Send(); err != nil {
-				st.logger.Errorf("send bach ch to clickhouse: %s, retry after: %s", err, backoffDelay)
+				st.logger.Errorf("send batch to clickhouse: %s, retry after: %s", err, backoffDelay)
 				backoffSleep(false)
 				continue
 			} else {
