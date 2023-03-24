@@ -402,7 +402,7 @@ monitor-collector:
     force: ${COLLECTOR_AUTH_FORCE:false}
     skip: ${COLLECTOR_AUTH_SKIP:false}
 
-pprof:
 http-server@admin:
-  addr: ":7078"
+  addr: ":7098"
+pprof:
 prometheus:
