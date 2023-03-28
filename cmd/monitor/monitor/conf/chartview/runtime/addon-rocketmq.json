@@ -77,11 +77,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -161,11 +161,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -245,11 +245,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -329,11 +329,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -413,11 +413,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -497,11 +497,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -581,11 +581,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -665,11 +665,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -749,11 +749,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
@@ -833,11 +833,11 @@
           },
           "method": "post",
           "query": {
-            "end": 1674977822259,
+            "end": "{{endTime}}",
             "epoch": "ms",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "start": 1674974222259,
+            "start": "{{startTime}}",
             "type": "_"
           },
           "url": "/api/orgCenter/metrics-query"
