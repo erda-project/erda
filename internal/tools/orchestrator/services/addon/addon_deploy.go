@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
 	"time"
@@ -403,19 +404,19 @@ func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlEx
 	return err
 }
 
-func (a *Addon) getCreateDBsAndInitSQL(addonOptions string) ([]string, string, error) {
+func (a *Addon) getCreateDBsAndInitSQL(addonOptions string) (createDBs []string, initSQL, username string, err error) {
 	var optionsMap map[string]string
 
 	if addonOptions != "" {
 		err := json.Unmarshal([]byte(addonOptions), &optionsMap)
 		if err != nil {
-			return nil, "", errors.Wrapf(err, "instance optiosn Unmarshal error, body %s", addonOptions)
+			return nil, "", "", errors.Wrapf(err, "instance optiosn Unmarshal error, body %s", addonOptions)
 		}
 	}
 
-	createDBs := strings.Split(optionsMap["create_dbs"], ",")
+	createDBs = strings.Split(optionsMap["create_dbs"], ",")
 	if len(createDBs) == 0 || optionsMap["create_dbs"] == "" {
-		return nil, "", nil
+		return nil, "", "", nil
 	}
 
 	initSql := optionsMap["init_sql"]
@@ -430,12 +431,40 @@ func (a *Addon) getCreateDBsAndInitSQL(addonOptions string) ([]string, string, e
 			}
 		}
 		if err != nil {
-			return nil, "", err
+			return nil, "", "", err
 		}
 		initSql = f.Name()
 	}
+	username = optionsMap["username"]
+	if username == "" {
+		username = apistructs.AddonMysqlUser
+	}
 
-	return createDBs, initSql, nil
+	return createDBs, initSql, username, nil
+}
+
+type additionalInit struct {
+	DB       string `json:"db" yaml:"db"`
+	Username string `json:"username" yaml:"username"`
+	Password string `json:"password" yaml:"password"`
+}
+
+func (a *Addon) getAdditionalInits(addonOptions string) ([]additionalInit, error) {
+	if addonOptions == "" {
+		return nil, nil
+	}
+	var m map[string]json.RawMessage
+	if err := yaml.Unmarshal([]byte(addonOptions), &m); err != nil {
+		return nil, err
+	}
+
+	data, ok := m["additional_inits"]
+	if !ok {
+		return nil, errors.New("no additional_inits")
+	}
+	var additionalInits []additionalInit
+	err := yaml.Unmarshal(data, &additionalInits)
+	return additionalInits, err
 }
 
 // BuildAddonRequestGroup build请求serviceGroup的body信息

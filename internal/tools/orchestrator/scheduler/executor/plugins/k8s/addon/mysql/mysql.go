@@ -49,7 +49,13 @@ func (my *MysqlOperator) Name(sg *apistructs.ServiceGroup) string {
 	return "mysql-" + sg.ID[:10]
 }
 func (my *MysqlOperator) Namespace(sg *apistructs.ServiceGroup) string {
-	return sg.ProjectNamespace
+	if sg.ProjectNamespace != "" {
+		return sg.ProjectNamespace
+	}
+	if len(sg.Services) > 0 {
+		return sg.Services[0].Namespace
+	}
+	return ""
 }
 func (my *MysqlOperator) NamespacedName(sg *apistructs.ServiceGroup) string {
 	return my.Namespace(sg) + "/" + my.Name(sg)

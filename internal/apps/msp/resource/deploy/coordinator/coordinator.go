@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -87,7 +88,7 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 		}
 	}()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failure to defaultHandler.GetResourceInfo for %s:%s/%s", req.Engine, req.Options["version"], req.Az)
 	}
 
 	handler := p.findHandler(resourceInfo.Tmc)
@@ -95,15 +96,16 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 		return nil, fmt.Errorf("could not find deploy handler for %s", req.Engine)
 	}
 
-	// pre-check if need do further deploy
+	// pre-check if it needs to further deploy
 	tmcInstance, needDeployInstance, err := handler.CheckIfNeedTmcInstance(&req, resourceInfo)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failure to CheckIfNeedTmcInstance for %s/%s", req.Engine, req.Az)
 	}
 	tenant, needApplyTenant, err := handler.CheckIfNeedTmcInstanceTenant(&req, resourceInfo)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failure to CheckIfNeedTmcInstanceTenant for %s/%s", req.Engine, req.Az)
 	}
+	p.Log.Infof("[%s/%s] check if it needs to deploy tmc instance %v,  needs to apply tenant: %v\n", req.Engine, req.Az, needDeployInstance, needApplyTenant)
 
 	var subResults []*handlers.ResourceDeployResult
 	// resolve dependency resources
@@ -131,7 +133,7 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 				var subResult *handlers.ResourceDeployResult
 				subResult, err = p.Deploy(*subReq)
 				if err != nil {
-					return nil, err
+					return nil, errors.Wrapf(err, "failure to Deploy sub addon %s:%s/%s", subReq.Engine, subReq.Options["version"], subReq.Az)
 				}
 				subResults = append(subResults, subResult)
 				handler.BuildRequestRelation(req.Uuid, subResult.ID)
@@ -143,13 +145,13 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 	var clusterConfig map[string]string
 	clusterConfig, err = handler.GetClusterConfig(req.Az)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failure to GetClusterConfig(%s)", req.Az)
 	}
 	if needDeployInstance {
 		// initialize tmc_instance
 		tmcInstance, err = handler.InitializeTmcInstance(&req, resourceInfo, subResults)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failure to InitializeTmcInstance")
 		}
 		defer func() {
 			// delete instance if error occur,
@@ -168,7 +170,7 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 		} else {
 			// do pre-deploy job if any
 			if err = handler.DoPreDeployJob(resourceInfo, tmcInstance); err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "failure to DoPreDeployJob")
 			}
 
 			// do deploy and wait for ready
@@ -184,7 +186,7 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 				sgReq := handler.BuildServiceGroupRequest(resourceInfo, tmcInstance, clusterConfig)
 				sgDeployResult, err = handler.DoDeploy(sgReq, resourceInfo, tmcInstance, clusterConfig)
 				if err != nil {
-					return nil, err
+					return nil, errors.Wrap(err, "failure to DoDeploy")
 				}
 			}
 
@@ -192,7 +194,7 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 			additionalConfig := map[string]string{}
 			additionalConfig, err = handler.DoPostDeployJob(tmcInstance, sgDeployResult, clusterConfig)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "failure to DoPostDeployJob for tmc_instance %+v", tmcInstance)
 			}
 
 			// update tmc_instance config and status
@@ -205,7 +207,7 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 		// create tmc_instance_tenant record
 		tenant, err = handler.InitializeTmcInstanceTenant(&req, tmcInstance, subResults)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failure to InitializeTmcInstanceTenant")
 		}
 		defer func() {
 			// delete tenant if error occur
@@ -219,13 +221,13 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 		var config map[string]string
 		config, err = handler.DoApplyTmcInstanceTenant(&req, resourceInfo, tmcInstance, tenant, clusterConfig)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failure to DoApplyTmcInstanceTenant for %+v", tmcInstance)
 		}
 
 		// update and persistent applied config
 		tenant, err = handler.UpdateTmcInstanceTenantOnFinish(tenant, config)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failure to UpdateTmcInstanceTenantOnFinish")
 		}
 	}
 
@@ -286,29 +288,31 @@ func (p *provider) UnDeploy(resourceId string) error {
 // deploy 是部署的主逻辑.
 func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error), req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
 	// get the lock at the "<addon engine>/<cluster>" granularity before deploying to avoid duplicate instances
-	p.Log.Infof("to deploy %s/%s with ETCD Mutex\n", req.Engine, req.Az)
-	ctx := context.Background()
+	p.Log.Infof("[%s/%s] to get the ETCD Mutex", req.Engine, req.Az)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*12)
 	mu, err := p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
 	if err != nil {
-		p.Log.Errorf("failure to New a global distributed lock (ETCD Mutex) before deploying %s on az %s: %v\n", req.Engine, req.Az, err)
+		p.Log.Errorf("[%s/%s] failure to New a global distributed lock (ETCD Mutex) before deploying: %v\n", req.Engine, req.Az, err)
 		return nil, errors.Wrapf(err, "failure to New ETCD Mutex for %s/%s", req.Engine, req.Az)
 	}
 	if err = mu.Lock(ctx); err != nil {
-		p.Log.Errorf("failure to Lock for %s/%s: %v\n", req.Engine, req.Az, err)
+		p.Log.Errorf("[%s/%s] failure to Lock: %v\n", req.Engine, req.Az, err)
 		if err == context.Canceled {
 			return nil, errors.Wrapf(err, "failure to Lock for %s/%s", req.Engine, req.Az)
 		}
 	}
 	defer func() {
 		if mu != nil {
-			p.Log.Infof("to release ETCD Mutex for %s/%s\n", req.Engine, req.Az)
+			p.Log.Infof("[%s/%s] to release ETCD Mutex\n", req.Engine, req.Az)
 			if err := mu.Unlock(ctx); err != nil {
-				p.Log.Errorf("failure to Unlock the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
+				p.Log.Errorf("[%s/%s] failure to Unlock the global distributed lock (ETCD Mutex) after deployed: %v\n", req.Engine, req.Az, err)
 			}
 			if err := mu.Close(); err != nil {
-				p.Log.Errorf("failure to Close the global distributed lock (ETCD Mutex) %s/%s after deployed: %v\n", req.Engine, req.Az, err)
+				p.Log.Errorf("[%s/%s] failure to Close the global distributed lock (ETCD Mutex) after deployed: %v\n", req.Engine, req.Az, err)
 			}
 		}
+		cancel()
 	}()
+	p.Log.Infof("[%s/%s] to deploy: %+v\n", req.Engine, req.Az, req)
 	return deploy(req)
 }

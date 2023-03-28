@@ -40,8 +40,8 @@ import (
 )
 
 var (
-	runtimeNameFormat                = `^[a-zA-Z0-9\-]+$`
-	runtimeFormater   *regexp.Regexp = regexp.MustCompile(runtimeNameFormat)
+	runtimeNameFormat = `^[a-zA-Z0-9\-]+$`
+	runtimeFormatter  = regexp.MustCompile(runtimeNameFormat)
 
 	LastRestartTimeKey      = "lastRestartTime"
 	LastConfigUpdateTimeKey = "lastConfigUpdateTime"
@@ -158,10 +158,10 @@ func mkServiceGroupKey(namespace, name string) string {
 	return filepath.Join("/dice/service", namespace, name)
 }
 func validateServiceGroupName(name string) bool {
-	return len(name) > 0 && runtimeFormater.MatchString(name)
+	return len(name) > 0 && runtimeFormatter.MatchString(name)
 }
 func validateServiceGroupNamespace(namespace string) bool {
-	return len(namespace) > 0 && runtimeFormater.MatchString(namespace)
+	return len(namespace) > 0 && runtimeFormatter.MatchString(namespace)
 }
 
 // When the executor of the servicegroup is empty, set the executor according to the cluster value
@@ -174,7 +174,7 @@ func setServiceGroupExecutorByCluster(sg *apistructs.ServiceGroup, clusterinfo c
 	}
 
 	// Determine whether it is edas deployment addon scenario
-	isEdasStatefull := isEdasStatefull(sg, clusterinfo)
+	isEdasStatefull := isEdsStateful(sg, clusterinfo)
 
 	if isEdasStatefull {
 		sg.Executor = clusterutil.GenerateExecutorByCluster(sg.ClusterName, clusterutil.EdasKindInK8s)
@@ -185,7 +185,7 @@ func setServiceGroupExecutorByCluster(sg *apistructs.ServiceGroup, clusterinfo c
 	return nil
 }
 
-func isEdasStatefull(sg *apistructs.ServiceGroup, clusterinfo clusterinfo.ClusterInfo) bool {
+func isEdsStateful(sg *apistructs.ServiceGroup, clusterinfo clusterinfo.ClusterInfo) bool {
 	info, err := clusterinfo.Info(sg.ClusterName)
 	if err != nil {
 		logrus.Errorf("failed to get cluster info, clusterName: %s, (%v)", sg.ClusterName, err)
@@ -209,8 +209,11 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 	sg := apistructs.ServiceGroup{}
 	sg.ClusterName = req.ClusterName
 	sg.Force = true
-	if !validateServiceGroupName(req.ID) || !validateServiceGroupNamespace(req.Type) {
-		return apistructs.ServiceGroup{}, errors.New("invalid Name or Namespace")
+	if !validateServiceGroupName(req.ID) {
+		return apistructs.ServiceGroup{}, errors.Errorf("invalid name %s", req.ID)
+	}
+	if !validateServiceGroupNamespace(req.Type) {
+		return apistructs.ServiceGroup{}, errors.Errorf("invalid namespace %s", req.Type)
 	}
 
 	// build match tags and exclude tags

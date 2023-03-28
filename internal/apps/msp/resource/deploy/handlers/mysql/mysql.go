@@ -17,6 +17,8 @@ package mysql
 import (
 	"container/list"
 	"fmt"
+	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/pkg/errors"
 	"strings"
 	"time"
 
@@ -140,16 +142,23 @@ func (h *provider) DoDeploy(serviceGroupDeployRequest interface{}, resourceInfo 
 func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployResult interface{}, clusterConfig map[string]string) (map[string]string, error) {
 	serviceGroup := serviceGroupDeployResult.(*apistructs.ServiceGroup)
 	mysqlMap := parseResp2MySQLDtoMap(tmcInstance, serviceGroup)
-	err := p.initMysql(mysqlMap, clusterConfig)
-	if err != nil {
-		return nil, err
+	if false { // todo: debug
+		err := p.initMysql(mysqlMap, clusterConfig)
+		if err != nil {
+			p.Log.Infof("failure to initMySQL, mysqlMqp: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
+				strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
+			return nil, errors.Wrap(err, "failure to initMySQL")
+		}
 	}
 
 	time.Sleep(2 * time.Second)
 
-	err = p.checkSalveStatus(mysqlMap, clusterConfig, err)
-	if err != nil {
-		return nil, err
+	if false {
+		if err := p.checkSalveStatus(mysqlMap, clusterConfig); err != nil {
+			p.Log.Errorf("failure to checkSalveStatus, mysqlMap: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
+				strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
+			return nil, errors.Wrap(err, "failure to checkSalveStatus")
+		}
 	}
 
 	resultConfig := map[string]string{
@@ -226,14 +235,31 @@ func (p *provider) initDb(dbNames []string, mysqldto mysqlDto, clusterConfig map
 		CreateDbs:  dbNames,
 	}
 
+	// Check if the script has been executed
+	p.Log.Infof("[%s] to check if the SQL script has been executed", initSql)
+	ok, err := mysqlExec.HasRecord(initSql)
+	if err != nil {
+		return errors.Wrapf(err, "failure to check the init sql record for %s", initSql)
+	}
+	if ok {
+		p.Log.Infof("[%s] there is already a record for the SQL script, skip this initialization", initSql)
+		return nil
+	}
+
+	p.Log.Infof("[%s] the SQL script has not been executed, to execute it", initSql)
 	sql, err := p.tryReadFile(initSql)
 	if err != nil {
 		return err
 	}
 	mysqlExec.Sqls = []string{sql}
 
-	err = mysqlExec.Exec()
-	return err
+	if err = mysqlExec.Exec(); err != nil {
+		return err
+	}
+
+	// Logging script execution record
+	p.Log.Infof("[%s] to record the SQL script execution history", initSql)
+	return mysqlExec.Record(initSql)
 }
 
 type mysqlDto struct {
@@ -265,6 +291,7 @@ func parseResp2MySQLDtoMap(instance *db.Instance, serviceGroup *apistructs.Servi
 	return resultMap
 }
 
+// create mysql account "mysql" and grant users
 func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string) error {
 	password := mysqlMap["mysql"].password
 	masterShortHost := mysqlMap["mysql"].shortHost
@@ -295,17 +322,18 @@ func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[st
 		}
 	}
 
-	for p := linkList.Front(); p != nil; p = p.Next() {
-		err := p.Value.(*mysqlhelper.Request).Exec()
+	for e := linkList.Front(); e != nil; e = e.Next() {
+		err := e.Value.(*mysqlhelper.Request).Exec()
 		if err != nil {
-			return err
+			p.Log.Errorf("failure to Exec SQLs for %s", strutil.MustString(e.Value))
+			return errors.Wrap(err, "failure to Exec SQLs")
 		}
 	}
 
 	return nil
 }
 
-func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string, err error) error {
+func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string) error {
 	service := mysqlMap["mysql-slave"]
 	mysqlExec := &mysqlhelper.Request{
 		ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
@@ -316,7 +344,8 @@ func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig
 
 	status, err := mysqlExec.GetSlaveState()
 	if err != nil {
-		return err
+		p.Log.Errorf("failure to GetSlaveState, MySQL request: %s, err: %v", strutil.MustString(mysqlExec), err)
+		return errors.Wrap(err, "failure to GetSlaveState, MySQL request")
 	}
 
 	if !strings.EqualFold(status.IORunning, "connecting") &&

@@ -121,51 +121,25 @@ build_image()  {
         -f "${DOCKERFILE}" .
 }
 
-build_multi_arch()  {
+build_multi_arch() {
     DOCKER_IMAGE="${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
-    echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
-    echo "[STEP-1] build for amd64/${MODULE_PATH}:${IMAGE_TAG}"
-    DOCKER_BUILDKIT=1 docker build --pull --platform "linux/amd64" -t "amd64/${MODULE_PATH}:${IMAGE_TAG}" \
-        --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
-        --label "commit=$(git rev-parse HEAD)" \
-        --label "build-time=$(date '+%Y-%m-%d %T%z')" \
-        --build-arg "MODULE_PATH=${MODULE_PATH}" \
-        --build-arg "APP_NAME=${APP_NAME}" \
-        --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
-        --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
-        --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
-        --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
-        --build-arg "GOPROXY=${GOPROXY}" \
-        --build-arg "ARCH=amd64" \
-        -f "${DOCKERFILE}" .
-    echo "[STEP-2] build for arm64/${MODULE_PATH}:${IMAGE_TAG}"
-    DOCKER_BUILDKIT=1 docker build --pull --platform "linux/arm64" -t "arm64/${MODULE_PATH}:${IMAGE_TAG}" \
-        --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
-        --label "commit=$(git rev-parse HEAD)" \
-        --label "build-time=$(date '+%Y-%m-%d %T%z')" \
-        --build-arg "MODULE_PATH=${MODULE_PATH}" \
-        --build-arg "APP_NAME=${APP_NAME}" \
-        --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
-        --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
-        --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
-        --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
-        --build-arg "GOPROXY=${GOPROXY}" \
-        --build-arg "ARCH=arm64" \
-        -f "${DOCKERFILE}" .
-    echo "[STEP-3] save image local"
-    docker save -o "${MODULE_PATH}.amd64.tar" "amd64/${MODULE_PATH}:${IMAGE_TAG}"
-    docker save -o "${MODULE_PATH}.arm64.tar" "arm64/${MODULE_PATH}:${IMAGE_TAG}"
-    echo "[STEP-4] try to rmi ${DOCKER_IMAGE} if it existed"
-    set +e; podman rmi "${DOCKER_IMAGE}"; set -e;
-    echo "[STEP-5] podman manifest create ${DOCKER_IMAGE}"
-    podman manifest create "${DOCKER_IMAGE}" docker-archive:"${MODULE_PATH}.amd64.tar" docker-archive:"${MODULE_PATH}.arm64.tar"
-    echo "[STEP-6] podman manifest push --all ${DOCKER_IMAGE} docker://${DOCKER_IMAGE}"
-    podman manifest push --all "${DOCKER_IMAGE}" docker://"${DOCKER_IMAGE}"
-    echo "[STEP-7] gc"
-    set +e; rm -f "${MODULE_PATH}.amd64.tar" "${MODULE_PATH}.arm64.tar"; set -e;
-    set +e; docker rmi "amd64/${MODULE_PATH}:${IMAGE_TAG}" "arm64/${MODULE_PATH}:${IMAGE_TAG}"; set -e;
-    set +e; podman rmi "${DOCKER_IMAGE}"; set -e;
-    set +e; docker manifest inspect "${DOCKER_IMAGE}"; set -e;
+    DOCKER_BUILDKIT=1 docker buildx build \
+      --platform linux/amd64 \
+      --platform linux/arm64 \
+      --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
+      --label "commit=$(git rev-parse HEAD)" \
+      --label "build-time=$(date '+%Y-%m-%d %T%z')" \
+      --build-arg "MODULE_PATH=${MODULE_PATH}" \
+      --build-arg "APP_NAME=${APP_NAME}" \
+      --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
+      --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
+      --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
+      --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
+      --build-arg "GOPROXY=${GOPROXY}" \
+      -f "${DOCKERFILE}" \
+      -t "${DOCKER_IMAGE}" \
+      --push .
+    echo "action meta: image=${DOCKER_IMAGE}"
 }
 
 # push docker image

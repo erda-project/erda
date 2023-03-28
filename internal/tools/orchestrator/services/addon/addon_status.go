@@ -125,7 +125,7 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 			return nil, errors.New("mysql-operator: no write host")
 		}
 
-		createDBs, initSQL, err := a.getCreateDBsAndInitSQL(addonIns.Options)
+		createDBs, initSQL, username, err := a.getCreateDBsAndInitSQL(addonIns.Options)
 		if err != nil {
 			logrus.Errorf("mysql-operator: getCreateDBsAndInitSQL: %s", err.Error())
 			return nil, err
@@ -135,9 +135,10 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 			defer os.Remove(initSQL)
 		}
 
+		logrus.Info("to create username and init databases (if specified)")
 		if len(createDBs) > 0 {
 			for _, db := range createDBs {
-				err = createUserDB(apistructs.AddonMysqlUser, decPwd, db, writeHost, clusterKey)
+				err = createUserDB(username, decPwd, db, writeHost, clusterKey)
 				if err != nil {
 					logrus.Errorf("mysql-operator: createUserDB: %s", err.Error())
 					return nil, err
@@ -145,17 +146,42 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 			}
 
 			if initSQL != "" {
-				err = runSQL(apistructs.AddonMysqlUser, decPwd, createDBs[0], initSQL, writeHost, clusterKey)
+				err = runSQL(username, decPwd, createDBs[0], initSQL, writeHost, clusterKey)
 				if err != nil {
 					logrus.Errorf("mysql-operator: runSQL: %s", err.Error())
 					return nil, err
 				}
 			}
 		} else {
-			err = createUserDB(apistructs.AddonMysqlUser, decPwd, "", writeHost, clusterKey)
+			err = createUserDB(username, decPwd, "", writeHost, clusterKey)
 			if err != nil {
 				logrus.Errorf("mysql-operator: createUserDB: %s", err.Error())
 				return nil, err
+			}
+		}
+
+		/*	如果指定了额外的初始化 db 和 username 列表, 则创建这些 username 和 db, 例如:
+			addons:
+			  mysql:
+			      plan: mysql:basic
+			      options:
+			        init_sql: file://tmc/nacos.tar.gz
+			        additional_inits:
+			          - db: nacos_config
+			            username: mysql
+		*/
+		logrus.Infof("to to additional inits (if specified)")
+		inits, err := a.getAdditionalInits(addonIns.Options)
+		if err != nil {
+			logrus.WithError(err).Error("mysql-operator: failure to getAdditionalInits")
+		} else {
+			for _, init := range inits {
+				if init.Username != "" && init.DB != "" {
+					if err := createUserDB(init.Username, decPwd, init.DB, writeHost, clusterKey); err != nil {
+						logrus.WithError(err).Error("mysql-operator: createUserDB")
+						return nil, err
+					}
+				}
 			}
 		}
 	} else {
