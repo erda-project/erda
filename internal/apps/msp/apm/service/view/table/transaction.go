@@ -38,7 +38,7 @@ var (
 
 var TransactionTableSortFieldSqlMap = map[string]string{
 	columnReqCount.Key:    "sum(elapsed_count::field)",
-	columnErrorCount.Key:  "count(error::tag)",
+	columnErrorCount.Key:  "sum(if(eq(error::tag, 'true'),elapsed_count::field,0))",
 	columnAvgDuration.Key: "avg(elapsed_mean::field)",
 }
 
