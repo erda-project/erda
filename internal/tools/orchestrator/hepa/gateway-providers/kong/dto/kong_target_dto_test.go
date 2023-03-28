@@ -16,8 +16,9 @@ package dto_test
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"testing"
+
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 )
 
 func TestKongTargetDto_JSONUnmarshal(t *testing.T) {
