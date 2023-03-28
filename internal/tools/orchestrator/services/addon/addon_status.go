@@ -28,6 +28,7 @@ import (
 	"github.com/labstack/gommon/random"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
@@ -661,6 +662,15 @@ func (a *Addon) BuildEsServiceItem(params *apistructs.AddonHandlerCreateItem, ad
 		//  /usr/share/elasticsearch/data volume
 		vol01 := SetAddonVolumes(params.Options, "/usr/share/elasticsearch/data", false)
 		serviceItem.Volumes = diceyml.Volumes{vol01}
+		serviceItem.K8SSnippet = &diceyml.K8SSnippet{
+			Container: &diceyml.ContainerSnippet{
+				SecurityContext: &corev1.SecurityContext{
+					RunAsUser:    &[]int64{1000}[0],
+					RunAsNonRoot: &[]bool{true}[0],
+					RunAsGroup:   &[]int64{1000}[0],
+				},
+			},
+		}
 
 		//health check
 		serviceItem.HealthCheck.HTTP = &diceyml.HTTPCheck{Port: 9200, Path: "/_cluster/health", Duration: 180}
