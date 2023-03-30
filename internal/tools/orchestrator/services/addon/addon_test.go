@@ -15,6 +15,7 @@
 package addon
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"strings"
@@ -25,8 +26,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/tools/cluster-manager/cluster"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime/mock"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
@@ -1216,4 +1219,55 @@ func TestAddon2(t *testing.T) {
 	a.GetMiddleware(1, "1", "1")
 
 	a.InnerGetMiddleware("1")
+}
+
+func TestGetAddonExtention(t *testing.T) {
+	bdl := &bundle.Bundle{}
+	clusterSvc := &cluster.ClusterService{}
+	a := New(WithBundle(bdl), WithClusterSvc(clusterSvc))
+	ext := []apistructs.ExtensionVersion{
+		{
+			Name:    "custom",
+			Version: "1.0",
+			Spec: apistructs.AddonExtension{
+				Type: "addon",
+				Name: "custom",
+				Plan: map[string]apistructs.AddonPlanItem{
+					"custom": {},
+				},
+			},
+			Dice: diceyml.Object{
+				Version: "1.0",
+				Services: map[string]*diceyml.Service{
+					"custom": &diceyml.Service{},
+				},
+			},
+		},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(a.bdl), "QueryExtensionVersions",
+		func(bdl *bundle.Bundle, req apistructs.ExtensionVersionQueryRequest) ([]apistructs.ExtensionVersion, error) {
+			return ext, nil
+		},
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(a.clusterSvc), "GetCluster",
+		func(*cluster.ClusterService, context.Context, *pb.GetClusterRequest) (*pb.GetClusterResponse, error) {
+			return &pb.GetClusterResponse{
+				Data: &pb.ClusterInfo{
+					Name: "erda",
+					Cm: map[string]string{
+						"ADDON_CUSTOM": "1.0",
+					},
+				},
+			}, nil
+		})
+
+	addon, _, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
+		AddonName: "custom",
+		Options: map[string]string{
+			"version": "1.0",
+		},
+		ClusterName: "erda",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, addon.Name, "custom")
 }
