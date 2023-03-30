@@ -15,11 +15,19 @@
 package mysql
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"io"
+	"mime/multipart"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,6 +43,14 @@ import (
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+const (
+	myletUserDBURI  = "/api/addons/mylet/user-db"
+	myletExecSQLURI = "/api/addons/mylet/run-sql"
+)
+
+var _ pb.AddonMySQLServiceServer = (*mysqlService)(nil)
+var _ pb.MySQLOperatorInstanceServiceServer = (*mysqlService)(nil)
 
 type mysqlService struct {
 	logger logs.Logger
@@ -89,52 +105,6 @@ func (s *mysqlService) ToDTO(acc *dbclient.MySQLAccount, decrypt bool) *pb.MySQL
 		Username:   acc.Username,
 		Password:   pass,
 	}
-}
-
-type connConfig struct {
-	Host string `json:"MYSQL_HOST"`
-	Port string `json:"MYSQL_PORT"`
-	User string `json:"MYSQL_USERNAME"`
-	Pass string `json:"MYSQL_PASSWORD"`
-}
-
-func (s *mysqlService) getConnConfig(ins *dbclient.AddonInstance) (*connConfig, error) {
-	var mysqlConfig connConfig
-	if err := json.Unmarshal([]byte(ins.Config), &mysqlConfig); err != nil {
-		return nil, err
-	}
-	if mysqlConfig.Host == "" || mysqlConfig.Port == "" || mysqlConfig.User == "" || mysqlConfig.Pass == "" {
-		return nil, fmt.Errorf("missing key MYSQL_HOST | MYSQL_PASSWORD | MYSQL_PORT | MYSQL_USERNAME")
-	}
-	decryptData, err := s.kms.Decrypt(mysqlConfig.Pass, ins.KmsKey)
-	if err != nil {
-		return nil, err
-	}
-	b, err := base64.StdEncoding.DecodeString(decryptData.PlaintextBase64)
-	if err != nil {
-		return nil, err
-	}
-	pass := string(b)
-	mysqlConfig.Pass = pass
-	return &mysqlConfig, nil
-}
-
-func (s *mysqlService) execSql(ins *dbclient.AddonInstance, sql ...string) error {
-	if len(sql) == 0 {
-		return nil
-	}
-	mysqlConfig, err := s.getConnConfig(ins)
-	if err != nil {
-		return err
-	}
-
-	var req mysqlhelper.Request
-	req.Url = mysqlConfig.Host + ":" + mysqlConfig.Port
-	req.User = mysqlConfig.User
-	req.Password = mysqlConfig.Pass
-	req.Sqls = sql
-	req.ClusterKey = ins.Cluster
-	return req.Exec()
 }
 
 func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.GenerateMySQLAccountRequest) (*pb.GenerateMySQLAccountResponse, error) {
@@ -347,6 +317,94 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 	return &pb.UpdateAttachmentAccountResponse{}, nil
 }
 
+func (s *mysqlService) CreateUserSchema(ctx context.Context, req *pb.CreateUserSchemaRequest) (*pb.CreateUserSchemaResponse, error) {
+	var m = make(map[string]any)
+	resp, err := httpclient.New(httpclient.WithClusterDialer(s.getClusterKey())).
+		Post(req.GetConfig().GetWAddress()).Path(myletUserDBURI).
+		Header("Token", symmetricEncrypt(req.GetConfig().GetWAddress(), req.GetConfig().GetPassword())).
+		FormBody(createUserSchemaRequestToForm(req)).
+		Do().
+		JSON(&m)
+	if err != nil {
+		return nil, err
+	}
+	if !resp.IsOK() {
+		return nil, errors.Errorf("failure to create schema and user, status code: %d", resp.StatusCode())
+	}
+	if err, ok := m["Error"]; ok && err != nil {
+		return nil, errors.Errorf("failure to create schema and uesr, error: %v", err)
+	}
+	return new(pb.CreateUserSchemaResponse), nil
+}
+
+func (s *mysqlService) ExecSQL(ctx context.Context, req *pb.ExecSQLRequest) (*pb.ExecSQLResponse, error) {
+	if req.GetQueryType() != pb.QueryType_sql {
+		return nil, errors.Errorf("execution for query type %s not implement", req.GetQueryType().String())
+	}
+	body, contentType, err := execSQLRequestToMultipartBody(req)
+	if err != nil {
+		return nil, err
+	}
+	var m = make(map[string]any)
+	resp, err := httpclient.New(httpclient.WithClusterDialer(s.getClusterKey())).
+		Post(req.GetConfig().GetWAddress()).
+		Path(myletExecSQLURI).
+		Header("Token", symmetricEncrypt(req.GetConfig().GetWAddress(), req.GetConfig().GetPassword())).
+		Header("Content-Type", contentType).
+		RawBody(body).
+		Do().
+		JSON(&m)
+	if err != nil {
+		return nil, err
+	}
+	if !resp.IsOK() {
+		return nil, errors.Errorf("failure to request to run SQL, status code: %d", resp.StatusCode())
+	}
+	if err, ok := m["Error"]; ok && err != nil {
+		return nil, errors.Errorf("failure to request to run SQL, error: %v", err)
+	}
+	return new(pb.ExecSQLResponse), nil
+}
+
+func (s *mysqlService) getConnConfig(ins *dbclient.AddonInstance) (*connConfig, error) {
+	var mysqlConfig connConfig
+	if err := json.Unmarshal([]byte(ins.Config), &mysqlConfig); err != nil {
+		return nil, err
+	}
+	if mysqlConfig.Host == "" || mysqlConfig.Port == "" || mysqlConfig.User == "" || mysqlConfig.Pass == "" {
+		return nil, fmt.Errorf("missing key MYSQL_HOST | MYSQL_PASSWORD | MYSQL_PORT | MYSQL_USERNAME")
+	}
+	decryptData, err := s.kms.Decrypt(mysqlConfig.Pass, ins.KmsKey)
+	if err != nil {
+		return nil, err
+	}
+	b, err := base64.StdEncoding.DecodeString(decryptData.PlaintextBase64)
+	if err != nil {
+		return nil, err
+	}
+	pass := string(b)
+	mysqlConfig.Pass = pass
+	return &mysqlConfig, nil
+}
+
+func (s *mysqlService) execSql(ins *dbclient.AddonInstance, sql ...string) error {
+	if len(sql) == 0 {
+		return nil
+	}
+	mysqlConfig, err := s.getConnConfig(ins)
+	if err != nil {
+		return err
+	}
+
+	var req mysqlhelper.Request
+	req.Url = mysqlConfig.Host + ":" + mysqlConfig.Port
+	req.User = mysqlConfig.User
+	req.Password = mysqlConfig.Pass
+	req.Sqls = sql
+	req.ClusterKey = ins.Cluster
+	return req.Exec()
+}
+
 func (s *mysqlService) decrypt(acc *dbclient.MySQLAccount) (string, error) {
 	pass := acc.Password
 	if acc.KMSKey != "" {
@@ -492,4 +550,68 @@ func (s *mysqlService) audit(ctx context.Context, userID string, orgID string, r
 		ClientIP:     apis.GetClientIP(ctx),
 	}
 	return s.perm.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit})
+}
+
+func (s *mysqlService) getClusterKey() string {
+	//todo:
+	panic("not implement")
+}
+
+type connConfig struct {
+	Host string `json:"MYSQL_HOST"`
+	Port string `json:"MYSQL_PORT"`
+	User string `json:"MYSQL_USERNAME"`
+	Pass string `json:"MYSQL_PASSWORD"`
+}
+
+// symmetricEncrypt
+// 一个简单的对称加密生成连接 mysql 实例的 token, 使用了大量的硬编码.
+func symmetricEncrypt(writeHost, localPassword string) string {
+	name := strings.TrimSuffix(strings.Split(writeHost, ".")[0], "-write")
+	groupToken := hex.EncodeToString(sha256.New().Sum([]byte("root:" + localPassword + "@" + name)))
+	return name + "-myctl:0@" + groupToken
+}
+
+func createUserSchemaRequestToForm(req *pb.CreateUserSchemaRequest) url.Values {
+	return url.Values{
+		"username":  []string{req.GetConfig().GetUsername()},
+		"password":  []string{req.GetConfig().GetPassword()},
+		"dbname":    []string{req.GetConfig().GetSchema()},
+		"charset":   []string{req.GetCharset()},
+		"collation": []string{req.GetCollation()},
+	}
+}
+
+func execSQLRequestToMultipartBody(req *pb.ExecSQLRequest) (io.Reader, string, error) {
+	var (
+		buf  = bytes.NewBuffer(nil)
+		w    = multipart.NewWriter(buf)
+		keys = []string{
+			"username",
+			"password",
+			"dbname",
+			"query",
+		}
+		form = map[string][]byte{
+			"username": []byte(req.GetConfig().GetUsername()),
+			"password": []byte(req.GetConfig().GetPassword()),
+			"dbname":   []byte(req.GetConfig().GetSchema()),
+			"query":    []byte(req.GetQuery()),
+		}
+	)
+	defer func() {
+		if err := w.Close(); err != nil {
+			logrus.WithError(err).Error("failure to close multipart writer")
+		}
+	}()
+	for _, key := range keys {
+		field, err := w.CreateFormField(key)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "failure to CreateFormField(%s)", key)
+		}
+		if _, err = field.Write(form[key]); err != nil {
+			return nil, "", errors.Wrapf(err, "failure to Write value for multipart key %s", key)
+		}
+	}
+	return buf, w.FormDataContentType(), nil
 }

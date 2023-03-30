@@ -15,6 +15,7 @@
 package mysql
 
 import (
+	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -31,6 +32,8 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 	DB  *gorm.DB `autowired:"mysql-client"`
+	// MyOperaInsCli orchestrator 提供的与 MySQLOperator Instance 交互的 gRPC 客户端
+	MyOperaInsCli pb.MySQLOperatorInstanceServiceServer `autowired:"erda.orchestrator.addon.mysql.MySQLOperatorInstanceService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

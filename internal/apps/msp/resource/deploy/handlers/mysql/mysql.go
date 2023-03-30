@@ -142,18 +142,17 @@ func (h *provider) DoDeploy(serviceGroupDeployRequest interface{}, resourceInfo 
 func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployResult interface{}, clusterConfig map[string]string) (map[string]string, error) {
 	serviceGroup := serviceGroupDeployResult.(*apistructs.ServiceGroup)
 	mysqlMap := parseResp2MySQLDtoMap(tmcInstance, serviceGroup)
-	if false { // todo: debug
-		err := p.initMysql(mysqlMap, clusterConfig)
-		if err != nil {
-			p.Log.Infof("failure to initMySQL, mysqlMqp: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
-				strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
-			return nil, errors.Wrap(err, "failure to initMySQL")
-		}
+
+	err := p.initMysql(mysqlMap, clusterConfig)
+	if err != nil {
+		p.Log.Infof("failure to initMySQL, mysqlMqp: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
+			strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
+		return nil, errors.Wrap(err, "failure to initMySQL")
 	}
 
 	time.Sleep(2 * time.Second)
 
-	if false {
+	if false { // todo:
 		if err := p.checkSalveStatus(mysqlMap, clusterConfig); err != nil {
 			p.Log.Errorf("failure to checkSalveStatus, mysqlMap: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
 				strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
@@ -295,36 +294,41 @@ func parseResp2MySQLDtoMap(instance *db.Instance, serviceGroup *apistructs.Servi
 func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string) error {
 	password := mysqlMap["mysql"].password
 	masterShortHost := mysqlMap["mysql"].shortHost
+	_, userOperator := mysqlMap["mysql"].options["USE_OPERATOR"]
+	p.Log.Infof("mysqlMap: %s", strutil.MustString(mysqlMap))
 
 	linkList := list.New()
 	for name, service := range mysqlMap {
-		execDto := &mysqlhelper.Request{
-			ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
-			Url:        "jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort,
-			User:       service.user,
-			Password:   service.password,
+		var configs = []options{
+			withUseOperator(userOperator),
+			withClusterKey(clusterConfig["DICE_CLUSTER_NAME"]),
+			withAddress("jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort),
+			withUsername(service.user),
+			withPassword(service.password),
 		}
-
 		if name == "mysql" {
-			execDto.Sqls = []string{strings.Replace(apistructs.AddonMysqlMasterGrantBackupSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
+			var item = NewInstanceAdapter(append(configs, withQueries([]string{
+				strings.Replace(apistructs.AddonMysqlMasterGrantBackupSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				strings.Replace(apistructs.AddonMysqlCreateMysqlUserSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				apistructs.AddonMysqlGrantMysqlUserSqls,
-				apistructs.AddonMysqlFlushSqls}
-			linkList.PushFront(execDto) // master at first
+				apistructs.AddonMysqlFlushSqls,
+			}))...)
+			linkList.PushFront(item)
 		} else {
-			execDto.Sqls = []string{strings.Replace(strings.Replace(apistructs.AddonMysqlSlaveChangeMasterSqls, "${MYSQL_ROOT_PASSWORD}", password, -1), "${MASTER_HOST}", masterShortHost, -1),
+			var item = NewInstanceAdapter(append(configs, withQueries([]string{
+				strings.Replace(strings.Replace(apistructs.AddonMysqlSlaveChangeMasterSqls, "${MYSQL_ROOT_PASSWORD}", password, -1), "${MASTER_HOST}", masterShortHost, -1),
 				apistructs.AddonMysqlSlaveResetSlaveSqls,
 				apistructs.AddonMysqlSlaveStartSlaveSqls,
 				strings.Replace(apistructs.AddonMysqlCreateMysqlUserSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				apistructs.AddonMysqlGrantSelectMysqlUserSqls,
-				apistructs.AddonMysqlFlushSqls}
-			linkList.PushBack(execDto)
+				apistructs.AddonMysqlFlushSqls,
+			}))...)
+			linkList.PushBack(item)
 		}
 	}
 
 	for e := linkList.Front(); e != nil; e = e.Next() {
-		err := e.Value.(*mysqlhelper.Request).Exec()
-		if err != nil {
+		if err := e.Value.(InstanceAdapter).ExecSQLs(); err != nil {
 			p.Log.Errorf("failure to Exec SQLs for %s", strutil.MustString(e.Value))
 			return errors.Wrap(err, "failure to Exec SQLs")
 		}

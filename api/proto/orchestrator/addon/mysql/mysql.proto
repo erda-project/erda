@@ -34,6 +34,15 @@ service AddonMySQLService {
   }
 }
 
+service MySQLOperatorInstanceService {
+  rpc CreateUserSchema (CreateUserSchemaRequest) returns (CreateUserSchemaResponse) {
+
+  }
+  rpc ExecSQL(ExecSQLRequest) returns (ExecSQLResponse) {
+
+  }
+}
+
 message MySQLAccount {
   string id = 1;
   string instanceId = 2;
@@ -96,4 +105,37 @@ message UpdateAttachmentAccountRequest {
 }
 
 message UpdateAttachmentAccountResponse {
+}
+
+message CreateUserSchemaRequest {
+  OperatorInstanceBasicConfig config = 1;
+  string charset = 11;
+  string collation = 12;
+}
+
+message CreateUserSchemaResponse {
+
+}
+
+message ExecSQLRequest {
+  OperatorInstanceBasicConfig config = 1;
+  QueryType queryType = 11;
+  string query = 12;
+}
+
+message ExecSQLResponse {
+
+}
+
+enum QueryType {
+  sql = 0;
+  file = 1;
+}
+
+message OperatorInstanceBasicConfig {
+  string wAddress = 100;
+  string clusterKey = 200;
+  string username = 1;
+  string password = 2;
+  string schema = 3;
 }
