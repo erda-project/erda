@@ -992,6 +992,7 @@ func (a *Addon) BuildMysqlServiceItem(params *apistructs.AddonHandlerCreateItem,
 		}
 
 		SetlabelsFromOptions(params.Options, serviceItem.Labels)
+		serviceItem.Labels["ADDON_ID"] = addonIns.ID
 
 		/*
 			// volume信息
