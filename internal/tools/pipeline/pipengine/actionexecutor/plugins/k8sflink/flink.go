@@ -297,7 +297,8 @@ func (k *K8sFlink) GetFlinkClusterInfo(ctx context.Context, data apistructs.Bigd
 		Namespace: data.Namespace,
 	}, &flinkCluster)
 	if err != nil {
-		return nil, fmt.Errorf("get flinkcluster %s in ns %s is err: %s", data.Name, data.Namespace, err.Error())
+		logrus.Errorf("%s failed to get flinkcluster %s in ns %s, err: %v", K8SFlinkLogPrefix, data.Name, data.Namespace, err)
+		return nil, err
 	}
 
 	return &flinkCluster, nil
