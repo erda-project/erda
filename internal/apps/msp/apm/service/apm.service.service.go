@@ -506,7 +506,7 @@ func (s *apmServiceService) GetHasErrorService(ctx context.Context, tenantId str
 
 func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
 	// calculate total Count
-	condition := " terminus_key::tag=$terminus_key and target_service_id::tag != '' "
+	condition := " terminus_key::tag=$terminus_key"
 	statement := "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
 	statement = strings.ReplaceAll(statement, "$condition", condition)
 	queryParams := map[string]*structpb.Value{
