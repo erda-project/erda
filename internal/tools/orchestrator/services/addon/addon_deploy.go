@@ -520,6 +520,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 				Options: map[string]string{
 					"version": params.Options["version"],
 				},
+				ClusterName: params.ClusterName,
 			})
 			if err != nil {
 				return nil, err
@@ -550,9 +551,10 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			}
 
 			operatorSpec, operatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
-				AddonName: params.AddonName,
-				Plan:      params.Plan,
-				Options:   params.Options,
+				AddonName:   params.AddonName,
+				Plan:        params.Plan,
+				Options:     params.Options,
+				ClusterName: params.ClusterName,
 			})
 			if err != nil {
 				return nil, err

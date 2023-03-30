@@ -126,15 +126,19 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		return nil, nil, marshalErr
 	}
 
-	ctx := apis.WithInternalClientContext(context.Background(), discover.Orchestrator())
-	clusterInfo, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{
-		IdOrName: params.ClusterName,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get cluster info")
+	var diceYmlOps []diceyml.Options
+	if len(params.ClusterName) > 0 {
+		ctx := apis.WithInternalClientContext(context.Background(), discover.Orchestrator())
+		clusterInfo, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{
+			IdOrName: params.ClusterName,
+		})
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to get cluster info")
+		}
+		diceYmlOps = append(diceYmlOps, diceyml.WithPlatformInfo(clusterInfo.Data.Cm))
 	}
 
-	diceYml, err := diceyml.New(diceYmlBytes, false, diceyml.WithPlatformInfo(clusterInfo.Data.Cm))
+	diceYml, err := diceyml.New(diceYmlBytes, false, diceYmlOps...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to parse addon dice")
 	}
@@ -169,6 +173,7 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 			Options: map[string]string{
 				"version": addonIns.Version,
 			},
+			ClusterName: addonIns.Cluster,
 		})
 		if err != nil {
 			return err
