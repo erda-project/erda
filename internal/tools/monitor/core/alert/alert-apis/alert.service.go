@@ -874,7 +874,7 @@ func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertReq
 
 func (m *alertService) GetAlert(ctx context.Context, request *pb.GetAlertRequest) (*pb.GetAlertResponse, error) {
 	lang := apis.Language(ctx)
-	data, err := m.p.a.GetAlert(lang, uint64(request.Id))
+	data, err := m.p.a.GetAlertDetailByScope(lang, request.Scope, request.ScopeId, uint64(request.Id))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -889,6 +889,9 @@ func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertD
 	data, err := m.p.a.GetAlertDetailByScope(lang, request.Scope, request.ScopeId, uint64(request.Id))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
+	}
+	if data == nil {
+		return nil, nil
 	}
 	result := &pb.GetAlertDetailResponse{}
 	result.Data = data

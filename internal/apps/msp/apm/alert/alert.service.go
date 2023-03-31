@@ -120,6 +120,9 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if resp == nil {
+		return nil, nil
+	}
 	if resp.Data.AlertScope != MicroServiceScope || resp.Data.AlertScopeId != request.TenantGroup {
 		return nil, errors.NewPermissionError("monitor_project_alert", "GET", "alertScope or alertScopeId is invalidate")
 	}
@@ -297,6 +300,9 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if resp == nil {
+		return nil, nil
+	}
 	if MicroServiceScope != resp.Data.AlertScope || request.TenantGroup != resp.Data.AlertScopeId {
 		return nil, errors.NewPermissionError("monitor_project_alert", "update", "scope or scopeId is invalidate")
 	}
@@ -376,6 +382,9 @@ func (a *alertService) UpdateAlertEnable(ctx context.Context, request *alert.Upd
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if resp == nil {
+		return nil, nil
+	}
 	if MicroServiceScope != resp.Data.AlertScope || request.TenantGroup != resp.Data.AlertScopeId {
 		return nil, errors.NewPermissionError("monitor_project_alert", "update", "scope or scopeId is invalidate")
 	}
@@ -423,6 +432,9 @@ func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAle
 	resp, err := a.p.Monitor.GetAlert(ctx, getAlertRequest)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
+	}
+	if resp == nil {
+		return nil, nil
 	}
 	if MicroServiceScope != resp.Data.AlertScope || request.TenantGroup != resp.Data.AlertScopeId {
 		return nil, errors.NewPermissionError("monitor_project_alert", "update", "scope or scopeId is invalidate")
