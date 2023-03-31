@@ -118,9 +118,9 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 	}
 	resp, err := a.p.Monitor.GetAlertDetail(ctx, alertDetailRequest)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return &alert.GetAlertResponse{}, errors.NewInternalServerError(err)
 	}
-	if resp == nil {
+	if resp == nil || resp.Data == nil {
 		return nil, nil
 	}
 	if resp.Data.AlertScope != MicroServiceScope || resp.Data.AlertScopeId != request.TenantGroup {
@@ -300,7 +300,7 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if resp == nil {
+	if resp == nil || resp.Data == nil {
 		return nil, nil
 	}
 	if MicroServiceScope != resp.Data.AlertScope || request.TenantGroup != resp.Data.AlertScopeId {
@@ -382,7 +382,7 @@ func (a *alertService) UpdateAlertEnable(ctx context.Context, request *alert.Upd
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if resp == nil {
+	if resp == nil || resp.Data == nil {
 		return nil, nil
 	}
 	if MicroServiceScope != resp.Data.AlertScope || request.TenantGroup != resp.Data.AlertScopeId {
@@ -433,7 +433,7 @@ func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if resp == nil {
+	if resp == nil || resp.Data == nil {
 		return nil, nil
 	}
 	if MicroServiceScope != resp.Data.AlertScope || request.TenantGroup != resp.Data.AlertScopeId {

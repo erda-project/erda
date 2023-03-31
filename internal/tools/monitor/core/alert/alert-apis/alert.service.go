@@ -891,7 +891,9 @@ func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertD
 		return nil, errors.NewInternalServerError(err)
 	}
 	if data == nil {
-		return nil, nil
+		return &pb.GetAlertDetailResponse{
+			Data: nil,
+		}, nil
 	}
 	result := &pb.GetAlertDetailResponse{}
 	result.Data = data
