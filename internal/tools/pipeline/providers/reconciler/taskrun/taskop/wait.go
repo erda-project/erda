@@ -201,7 +201,7 @@ func (w *wait) TuneTriggers() taskrun.TaskOpTuneTriggers {
 func (w *wait) calculateNextLoopTimeDuration(loopedTimes uint64) time.Duration {
 	lastSleepTime := time.Second
 	lastSleepTime = time.Duration(float64(lastSleepTime) * math.Pow(declineRatio, float64(loopedTimes)))
-	if lastSleepTime > declineLimit {
+	if lastSleepTime.Abs() > declineLimit {
 		return declineLimit
 	}
 	return lastSleepTime
