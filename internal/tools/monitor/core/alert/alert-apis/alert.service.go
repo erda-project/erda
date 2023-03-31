@@ -886,7 +886,7 @@ func (m *alertService) GetAlert(ctx context.Context, request *pb.GetAlertRequest
 
 func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertDetailRequest) (*pb.GetAlertDetailResponse, error) {
 	lang := apis.Language(ctx)
-	data, err := m.p.a.GetAlertDetail(lang, uint64(request.Id))
+	data, err := m.p.a.GetAlertDetailByScope(lang, request.Scope, request.ScopeId, uint64(request.Id))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

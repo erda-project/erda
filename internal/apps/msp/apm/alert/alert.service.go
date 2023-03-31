@@ -112,7 +112,9 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 
 func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequest) (*alert.GetAlertResponse, error) {
 	alertDetailRequest := &monitor.GetAlertDetailRequest{
-		Id: request.Id,
+		Id:      request.Id,
+		Scope:   MicroServiceScope,
+		ScopeId: request.TenantGroup,
 	}
 	resp, err := a.p.Monitor.GetAlertDetail(ctx, alertDetailRequest)
 	if err != nil {
@@ -287,7 +289,9 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	}
 
 	getAlertRequest := &monitor.GetAlertRequest{
-		Id: int64(request.Id),
+		Id:      int64(request.Id),
+		Scope:   MicroServiceScope,
+		ScopeId: request.TenantGroup,
 	}
 	resp, err := a.p.Monitor.GetAlert(ctx, getAlertRequest)
 	if err != nil {
@@ -364,7 +368,9 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 
 func (a *alertService) UpdateAlertEnable(ctx context.Context, request *alert.UpdateAlertEnableRequest) (*alert.UpdateAlertEnableResponse, error) {
 	getAlertRequest := &monitor.GetAlertRequest{
-		Id: request.Id,
+		Id:      request.Id,
+		Scope:   MicroServiceScope,
+		ScopeId: request.TenantGroup,
 	}
 	resp, err := a.p.Monitor.GetAlert(ctx, getAlertRequest)
 	if err != nil {
@@ -410,7 +416,9 @@ func (a *alertService) UpdateAlertEnable(ctx context.Context, request *alert.Upd
 
 func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAlertRequest) (*alert.DeleteAlertResponse, error) {
 	getAlertRequest := &monitor.GetAlertRequest{
-		Id: request.Id,
+		Id:      request.Id,
+		Scope:   MicroServiceScope,
+		ScopeId: request.TenantGroup,
 	}
 	resp, err := a.p.Monitor.GetAlert(ctx, getAlertRequest)
 	if err != nil {
