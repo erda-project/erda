@@ -194,3 +194,38 @@ func TestBuildRedisServiceItem(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(addonDice.Services[apistructs.RedisMasterNamePrefix].SideCars))
 }
+
+func TestBuildEsServiceItem(t *testing.T) {
+	params := &apistructs.AddonHandlerCreateItem{
+		Options: map[string]string{},
+		Plan:    "basic",
+	}
+	addonIns := &dbclient.AddonInstance{
+		ID: "1",
+	}
+	addonSpec := &apistructs.AddonExtension{
+		Name: "elasticsearch",
+		Plan: map[string]apistructs.AddonPlanItem{
+			"basic": {
+				CPU:   0.5,
+				Mem:   256,
+				Nodes: 1,
+			},
+		},
+	}
+	addonDice := &diceyml.Object{
+		Services: diceyml.Services{
+			"elasticsearch": {
+				Labels: map[string]string{},
+				Envs: map[string]string{
+					"ADDON_TYPE": "elasticsearch",
+				},
+			},
+		},
+	}
+
+	a := &Addon{}
+	err := a.BuildEsServiceItem(params, addonIns, addonSpec, addonDice, &apistructs.ClusterInfoData{})
+	assert.NoError(t, err)
+	assert.Equal(t, &[]int64{1000}[0], addonDice.Services["elasticsearch-1"].K8SSnippet.Container.SecurityContext.RunAsUser)
+}

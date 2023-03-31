@@ -352,6 +352,12 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 			},
 			Spec: corev1.PodSpec{
 				Affinity: &corev1.Affinity{NodeAffinity: affinity},
+				SecurityContext: &corev1.PodSecurityContext{
+					FSGroup:      &[]int64{1000}[0],
+					RunAsUser:    &[]int64{1000}[0],
+					RunAsNonRoot: &[]bool{true}[0],
+					RunAsGroup:   &[]int64{1000}[0],
+				},
 				Containers: []corev1.Container{
 					{
 						Name: "elasticsearch",
