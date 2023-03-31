@@ -71,6 +71,14 @@ func TestCalculateNextLoopTimeDuration(t *testing.T) {
 			loopedTimes: 9,
 			want:        "10s",
 		},
+		{
+			loopedTimes: 100,
+			want:        "10s",
+		},
+		{
+			loopedTimes: 1000,
+			want:        "10s",
+		},
 	}
 
 	w := NewWait(&taskrun.TaskRun{})
