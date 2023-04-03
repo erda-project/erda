@@ -26,6 +26,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
@@ -137,6 +138,12 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 	} else {
 		k8sService.Labels = selectors
 	}
+	for k, v := range k8sService.Labels {
+		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
+			logrus.Warnf("service %s/%s label: %s value: %s is invalid, will be ignored in lables, err: %v", service.Namespace, service.Name, k, v, errs)
+			delete(k8sService.Labels, k)
+		}
+	}
 
 	for i, port := range service.Ports {
 		k8sService.Spec.Ports = append(k8sService.Spec.Ports, apiv1.ServicePort{
@@ -225,7 +232,9 @@ func getServiceName(service *apistructs.Service) string {
 
 func setServiceLabelSelector(k8sService *apiv1.Service, selectors map[string]string) {
 	for k, v := range selectors {
-		k8sService.Spec.Selector[k] = v
+		if errs := validation.IsValidLabelValue(v); len(errs) == 0 {
+			k8sService.Spec.Selector[k] = v
+		}
 	}
 }
 
