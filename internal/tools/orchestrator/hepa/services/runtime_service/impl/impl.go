@@ -611,6 +611,9 @@ func (impl GatewayRuntimeServiceServiceImpl) GetRegisterAppInfo(projectId, env s
 }
 
 func (impl GatewayRuntimeServiceServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err

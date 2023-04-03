@@ -14,7 +14,7 @@
 
 package dto
 
-type KongServiceReqDto struct {
+type ServiceReqDto struct {
 	// 服务名称,选填
 	Name string `json:"name,omitempty"`
 	// 具体路径，如果设置了这个可以不设下面4个
@@ -40,6 +40,6 @@ type KongServiceReqDto struct {
 }
 
 // IsEmpty
-func (dto KongServiceReqDto) IsEmpty() bool {
+func (dto ServiceReqDto) IsEmpty() bool {
 	return len(dto.Url) == 0 && len(dto.Host) == 0
 }

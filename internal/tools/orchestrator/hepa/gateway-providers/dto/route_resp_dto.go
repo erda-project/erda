@@ -14,16 +14,17 @@
 
 package dto
 
-type KongCredentialReqDto struct {
-	// 消费者id，必填
-	ConsumerId string `json:"consumer_id"`
-	// 插件名称
-	PluginName string `json:"plugin_name,omitempty"`
-	// 其余选填配置
-	Config *KongCredentialDto `json:"config,omitempty"`
+type RouteRespDto struct {
+	Id        string   `json:"id"`
+	CreatedAt int64    `json:"created_at"`
+	UpdatedAt int64    `json:"updated_at"`
+	Protocols []string `json:"protocols"`
+	Methods   []string `json:"methods"`
+	Hosts     []string `json:"hosts"`
+	Paths     []string `json:"paths"`
+	Service   Service  `json:"service"`
 }
 
-// IsEmpty
-func (dto KongCredentialReqDto) IsEmpty() bool {
-	return len(dto.ConsumerId) == 0 || len(dto.PluginName) == 0
+type KongRoutesRespDto struct {
+	Routes []RouteRespDto `json:"data"`
 }

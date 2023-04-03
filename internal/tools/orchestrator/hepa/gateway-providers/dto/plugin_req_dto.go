@@ -16,7 +16,7 @@ package dto
 
 import "strings"
 
-type KongPluginReqDto struct {
+type PluginReqDto struct {
 	// 插件名称,必填
 	Name string `json:"name"`
 	// 1、服务id
@@ -36,17 +36,20 @@ type KongPluginReqDto struct {
 	CreatedAt int64                  `json:"created_at,omitempty"`
 	// 插件id，删除或更新时使用
 	PluginId string `json:"-"`
+
+	ZoneName     string `json:"zone_name,omitempty"`
+	MSERouteName string `json:"mse_route_name,omitempty"`
 }
 
 // IsEmpty
-func (dto KongPluginReqDto) IsEmpty() bool {
+func (dto PluginReqDto) IsEmpty() bool {
 	return len(dto.PluginId) == 0 && (len(dto.Name) == 0 ||
 		(len(dto.ServiceId) == 0 && len(dto.RouteId) == 0 &&
 			len(dto.ConsumerId) == 0))
 }
 
 // ToV2
-func (dto *KongPluginReqDto) ToV2() {
+func (dto *PluginReqDto) ToV2() {
 	if dto == nil {
 		return
 	}

@@ -21,12 +21,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 )
 
-type KongCredentialListDto struct {
-	Total int64               `json:"total"`
-	Data  []KongCredentialDto `json:"data"`
+type CredentialListDto struct {
+	Total int64           `json:"total"`
+	Data  []CredentialDto `json:"data"`
 }
 
-func (dto KongCredentialDto) ToCredential() *pb.Credential {
+func (dto CredentialDto) ToCredential() *pb.Credential {
 	res := &pb.Credential{
 		ConsumerId:   dto.ConsumerId,
 		CreatedAt:    dto.CreatedAt,
@@ -44,8 +44,8 @@ func (dto KongCredentialDto) ToCredential() *pb.Credential {
 	return res
 }
 
-func FromCredential(cred *pb.Credential) KongCredentialDto {
-	res := KongCredentialDto{
+func FromCredential(cred *pb.Credential) CredentialDto {
+	res := CredentialDto{
 		ConsumerId:   cred.ConsumerId,
 		CreatedAt:    cred.CreatedAt,
 		Id:           cred.Id,
@@ -61,7 +61,7 @@ func FromCredential(cred *pb.Credential) KongCredentialDto {
 	return res
 }
 
-type KongCredentialDto struct {
+type CredentialDto struct {
 	ConsumerId string `json:"consumer_id,omitempty"`
 	CreatedAt  int64  `json:"created_at,omitempty"`
 	Id         string `json:"id,omitempty"`
@@ -78,9 +78,19 @@ type KongCredentialDto struct {
 	Secret string `json:"secret,omitempty"`
 	// hmac-auth
 	Username string `json:"username,omitempty"`
+
+	// aliyun MSE jwt-auth plugin
+	Issuer           string   `json:"issuer,omitempty"`             // for jwt-auth only
+	Jwks             string   `json:"jwks,omitempty"`               // for jwt-auth only
+	FromParams       []string `json:"from_params,omitempty"`        // for jwt-auth only   default: ["access_token"]
+	FromCookies      []string `json:"from_cookies,omitempty"`       // for jwt-auth only   default: -
+	KeepToken        *bool    `json:"keep_token,omitempty"`         // for jwt-auth only   default: true
+	ClockSkewSeconds *int     `json:"clock_skew_seconds,omitempty"` // for jwt-auth only   default: 60
+	//ClaimsToHeaders  []Object `json:"claims_to_headers,omitempty"` // for jwt-auth only   default: -   对象结构是啥不明确
+	//FromHeaders      []Object `json:"from_headers,omitempty"`      // for jwt-auth only   default: {"name":"Authorization","value_prefix":"Bearer "}  对象结构是啥不明确
 }
 
-func (dto *KongCredentialDto) ToHmacReq() {
+func (dto *CredentialDto) ToHmacReq() {
 	if dto == nil {
 		return
 	}
@@ -90,7 +100,7 @@ func (dto *KongCredentialDto) ToHmacReq() {
 	}
 }
 
-func (dto *KongCredentialDto) ToHmacResp() {
+func (dto *CredentialDto) ToHmacResp() {
 	if dto == nil {
 		return
 	}
@@ -100,7 +110,7 @@ func (dto *KongCredentialDto) ToHmacResp() {
 	}
 }
 
-func (dto *KongCredentialDto) ToV2() {
+func (dto *CredentialDto) ToV2() {
 	if dto == nil {
 		return
 	}
@@ -110,13 +120,13 @@ func (dto *KongCredentialDto) ToV2() {
 	}
 }
 
-func (dto *KongCredentialDto) Compatiable() {
+func (dto *CredentialDto) Compatiable() {
 	if dto == nil {
 		return
 	}
 	dto.RedirectUrl = dto.RedirectUrls
 }
 
-func (dto *KongCredentialDto) AdjustCreatedAt() {
+func (dto *CredentialDto) AdjustCreatedAt() {
 	dto.CreatedAt *= 1000
 }

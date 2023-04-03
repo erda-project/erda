@@ -19,26 +19,104 @@ import (
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
+	mseclient "github.com/alibabacloud-go/mse-20190531/v3/client"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
-	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
 )
 
 func TestNewMseAdapter(t *testing.T) {
+	type args struct {
+		az string
+	}
 	tests := []struct {
-		name string
-		want gateway_providers.GatewayAdapter
+		name    string
+		args    args
+		want    gateway_providers.GatewayAdapter
+		wantErr bool
 	}{
 		{
 			name: "Test_01",
-			want: &MseAdapterImpl{
-				ProviderName: Mse_Provider_Name,
+			args: args{
+				az: "test",
 			},
+			want: &MseAdapterImpl{
+				ProviderName:    mseCommon.Mse_Provider_Name,
+				Bdl:             &bundle.Bundle{},
+				AccessKeyID:     "aliyunaccesskeyid",
+				AccessKeySecret: "aliyunaccesskeysecret",
+				GatewayUniqueID: "aliyunmsegatewayid",
+				GatewayEndpoint: "mse.cn-hangzhou.aliyuncs.com",
+			},
+		},
+		{
+			name: "Test_02",
+			args: args{
+				az: "test",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Test_03",
+			args: args{
+				az: "test",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Test_04",
+			args: args{
+				az: "test",
+			},
+			want:    nil,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewMseAdapter(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMseAdapter() = %v, want %v", got, tt.want)
+			adapter := &MseAdapterImpl{
+				Bdl:             &bundle.Bundle{},
+				GatewayEndpoint: "mse.cn-hangzhou.aliyuncs.com",
+			}
+			monkey.PatchInstanceMethod(reflect.TypeOf(adapter.Bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
+				if tt.name == "Test_02" {
+					return apistructs.ClusterInfoData{"ALIYUN_ACCESS_KEY_SECRET": "aliyunaccesskeysecret", "ALIYUN_MSE_GATEWAY_ID": "aliyunmsegatewayid"}, nil
+				}
+				if tt.name == "Test_03" {
+					return apistructs.ClusterInfoData{"ALIYUN_ACCESS_KEY_ID": "aliyunaccesskeyid", "ALIYUN_MSE_GATEWAY_ID": "aliyunmsegatewayid"}, nil
+				}
+				if tt.name == "Test_04" {
+					return apistructs.ClusterInfoData{"ALIYUN_ACCESS_KEY_ID": "aliyunaccesskeyid", "ALIYUN_ACCESS_KEY_SECRET": "aliyunaccesskeysecret"}, nil
+				}
+
+				return apistructs.ClusterInfoData{"ALIYUN_ACCESS_KEY_ID": "aliyunaccesskeyid", "ALIYUN_ACCESS_KEY_SECRET": "aliyunaccesskeysecret", "ALIYUN_MSE_GATEWAY_ID": "aliyunmsegatewayid"}, nil
+			})
+			defer monkey.UnpatchAll()
+
+			got, err := NewMseAdapter(tt.args.az)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewMseAdapter() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.name == "Test_01" {
+				gotResult, ok := got.(*MseAdapterImpl)
+				if !ok {
+					t.Errorf("NewMseAdapter() got = %+v, want %+v", got, tt.want)
+				}
+				wantResult, _ := tt.want.(*MseAdapterImpl)
+
+				gotResult.Bdl = wantResult.Bdl
+
+				if !reflect.DeepEqual(gotResult, wantResult) {
+					t.Errorf("NewMseAdapter() got = %+v, want %+v", got, tt.want)
+				}
 			}
 		})
 	}
@@ -66,6 +144,12 @@ func TestMseAdapterImpl_GatewayProviderExist(t *testing.T) {
 			impl := &MseAdapterImpl{
 				ProviderName: tt.fields.ProviderName,
 			}
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "GetMSEGatewayByAPI", func(_ *MseAdapterImpl) (*mseclient.GetGatewayResponseBodyData, error) {
+				return &mseclient.GetGatewayResponseBodyData{}, nil
+			})
+			defer monkey.UnpatchAll()
+
 			if got := impl.GatewayProviderExist(); got != tt.want {
 				t.Errorf("GatewayProviderExist() = %v, want %v", got, tt.want)
 			}
@@ -87,7 +171,7 @@ func TestMseAdapterImpl_GetVersion(t *testing.T) {
 		{
 			name:    "Test_01",
 			fields:  fields{ProviderName: "MSE"},
-			want:    Mse_Version,
+			want:    mseCommon.Mse_Version,
 			wantErr: false,
 		},
 	}
@@ -184,19 +268,19 @@ func TestMseAdapterImpl_CreateOrUpdateRoute(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongRouteReqDto
+		req *RouteReqDto
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongRouteRespDto
+		want    *RouteRespDto
 		wantErr bool
 	}{
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
-			args: args{req: &KongRouteReqDto{
+			args: args{req: &RouteReqDto{
 				Protocols:     []string{"http", "https"},
 				Methods:       []string{"GET, PUT, POST, DELETE, PATCH, OPTIONS"},
 				Hosts:         []string{"test.io"},
@@ -209,7 +293,7 @@ func TestMseAdapterImpl_CreateOrUpdateRoute(t *testing.T) {
 				PathHandling:  nil,
 				Tags:          nil,
 			}},
-			want: &KongRouteRespDto{
+			want: &RouteRespDto{
 				Id:        "1",
 				Protocols: []string{"http", "https"},
 				Methods:   []string{"GET, PUT, POST, DELETE, PATCH, OPTIONS"},
@@ -274,19 +358,19 @@ func TestMseAdapterImpl_UpdateRoute(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongRouteReqDto
+		req *RouteReqDto
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongRouteRespDto
+		want    *RouteRespDto
 		wantErr bool
 	}{
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
-			args: args{req: &KongRouteReqDto{
+			args: args{req: &RouteReqDto{
 				Protocols:     []string{"http", "https"},
 				Methods:       []string{"GET, PUT, POST, DELETE, PATCH, OPTIONS"},
 				Hosts:         []string{"test.io"},
@@ -299,7 +383,7 @@ func TestMseAdapterImpl_UpdateRoute(t *testing.T) {
 				PathHandling:  nil,
 				Tags:          nil,
 			}},
-			want:    &KongRouteRespDto{},
+			want:    &RouteRespDto{},
 			wantErr: false,
 		},
 	}
@@ -325,24 +409,24 @@ func TestMseAdapterImpl_CreateCredential(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongCredentialReqDto
+		req *CredentialReqDto
 	}
 	tTime := time.Now().Unix()
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongCredentialDto
+		want    *CredentialDto
 		wantErr bool
 	}{
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
 			args: args{
-				req: &KongCredentialReqDto{
+				req: &CredentialReqDto{
 					ConsumerId: "1",
 					PluginName: "cors",
-					Config: &KongCredentialDto{
+					Config: &CredentialDto{
 						ConsumerId:   "1",
 						CreatedAt:    0,
 						Id:           "1",
@@ -357,7 +441,7 @@ func TestMseAdapterImpl_CreateCredential(t *testing.T) {
 					},
 				},
 			},
-			want: &KongCredentialDto{
+			want: &CredentialDto{
 				ConsumerId:   "1",
 				CreatedAt:    tTime,
 				Id:           "1",
@@ -395,22 +479,29 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongPluginReqDto
+		req *PluginReqDto
 	}
+	reqConfig := make(map[string]interface{})
+	consumers := make([]dto.Consumers, 0)
+	consumers = append(consumers, dto.Consumers{
+		Name:       "abc",
+		Credential: "xxxxyyyy",
+	})
+	reqConfig["whitelist"] = consumers
 	tTime := time.Now().Unix()
 	enable := true
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongPluginRespDto
+		want    *PluginRespDto
 		wantErr bool
 	}{
 		{
 			name:   "Test_01",
-			fields: fields{ProviderName: "MSE"},
+			fields: fields{ProviderName: mseCommon.Mse_Provider_Name},
 			args: args{
-				req: &KongPluginReqDto{
+				req: &PluginReqDto{
 					Name:       "xxx",
 					ServiceId:  "1",
 					RouteId:    "1",
@@ -424,7 +515,28 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 					PluginId:   "1",
 				},
 			},
-			want: &KongPluginRespDto{
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:   "Test_02",
+			fields: fields{ProviderName: mseCommon.Mse_Provider_Name},
+			args: args{
+				req: &PluginReqDto{
+					Name:       mseCommon.MsePluginKeyAuth,
+					ServiceId:  "1",
+					RouteId:    "1",
+					ConsumerId: "1",
+					Route:      &KongObj{Id: "1"},
+					Service:    &KongObj{Id: "1"},
+					Consumer:   &KongObj{Id: "1"},
+					Config:     reqConfig,
+					Enabled:    &enable,
+					Id:         "1",
+					PluginId:   "1",
+				},
+			},
+			want: &PluginRespDto{
 				Id:         "1",
 				ServiceId:  "1",
 				RouteId:    "1",
@@ -432,8 +544,8 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 				Route:      &KongObj{Id: "1"},
 				Service:    &KongObj{Id: "1"},
 				Consumer:   &KongObj{Id: "1"},
-				Name:       "xxx",
-				Config:     nil,
+				Name:       mseCommon.MsePluginKeyAuth,
+				Config:     reqConfig,
 				Enabled:    true,
 				CreatedAt:  tTime,
 				PolicyId:   "1",
@@ -446,13 +558,41 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 			impl := &MseAdapterImpl{
 				ProviderName: tt.fields.ProviderName,
 			}
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "GetMSEPluginConfigByIDByAPI", func(impl *MseAdapterImpl, pluginId *int64) (*mseclient.GetPluginConfigResponseBodyData, error) {
+				cfList := make([]*mseclient.GetPluginConfigResponseBodyDataGatewayConfigList, 0)
+				config := "consumers: \n# 注意！该凭证仅做示例使用，请勿用于具体业务，造成安全风险\n- credential: 5d1a401b3aef4ee5bc39a99654672f92\n  name: bbb\n- credential: 5d1a401b3aef4ee5bc39a99654672f91\n  name: aaa\nkeys:\n- apikey\n- x-api-key\n_rules_:\n# 规则一：按路由名称匹配生效\n- _match_route_:\n  - project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3\n  allow:\n  - aaa\n- _match_route_:\n  - project-5846-test-dice-test-5846-api-66f56a64312143cfbbbd04eca82eca56-bff529-51ec627a-ccaae83a5fe7846d18d4ac80940a8fdc3\n  allow:\n  - bbb\n  \n"
+				var configLevel int32 = 0
+				var id int64 = 154
+				cfList = append(cfList, &mseclient.GetPluginConfigResponseBodyDataGatewayConfigList{
+					Config:      &config,
+					ConfigLevel: &configLevel,
+					Id:          &id,
+				})
+				return &mseclient.GetPluginConfigResponseBodyData{
+					GatewayConfigList: cfList,
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "UpdateMSEPluginConfigByIDByAPI", func(impl *MseAdapterImpl, pluginId *int64, configId *int64, config *string, configLevel *int32, enable *bool) (*mseclient.UpdatePluginConfigResponseBody, error) {
+				return &mseclient.UpdatePluginConfigResponseBody{}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "GetMSEGatewayRouteNameByZoneName", func(impl *MseAdapterImpl, zoneName string, domainName *string) (string, error) {
+				return "xxxxyyyy", nil
+			})
+
+			defer monkey.UnpatchAll()
+
 			got, err := impl.CreateOrUpdatePluginById(tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateOrUpdatePluginById() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateOrUpdatePluginById() got = %v, want %v", got, tt.want)
+			if tt.want != nil {
+				if !reflect.DeepEqual(*got, *tt.want) {
+					t.Errorf("CreateOrUpdatePluginById() got = %v, want %v", *got, *tt.want)
+				}
 			}
 		})
 	}
@@ -463,21 +603,21 @@ func TestMseAdapterImpl_CreateOrUpdateService(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongServiceReqDto
+		req *ServiceReqDto
 	}
 	retry := 5
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongServiceRespDto
+		want    *ServiceRespDto
 		wantErr bool
 	}{
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
 			args: args{
-				req: &KongServiceReqDto{
+				req: &ServiceReqDto{
 					Name:           "xxx",
 					Url:            "/test",
 					Protocol:       "http",
@@ -491,7 +631,7 @@ func TestMseAdapterImpl_CreateOrUpdateService(t *testing.T) {
 					ServiceId:      "1",
 				},
 			},
-			want: &KongServiceRespDto{
+			want: &ServiceRespDto{
 				Id:       "1",
 				Name:     "xxx",
 				Protocol: "http",
@@ -556,7 +696,7 @@ func TestMseAdapterImpl_DeletePluginIfExist(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongPluginReqDto
+		req *PluginReqDto
 	}
 	tests := []struct {
 		name    string
@@ -568,7 +708,7 @@ func TestMseAdapterImpl_DeletePluginIfExist(t *testing.T) {
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
 			args: args{
-				req: &KongPluginReqDto{
+				req: &PluginReqDto{
 					Name:       "xxx",
 					ServiceId:  "1",
 					RouteId:    "1",
@@ -601,7 +741,7 @@ func TestMseAdapterImpl_CreateOrUpdatePlugin(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongPluginReqDto
+		req *PluginReqDto
 	}
 	enable := true
 	tTime := time.Now().Unix()
@@ -609,13 +749,13 @@ func TestMseAdapterImpl_CreateOrUpdatePlugin(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *KongPluginRespDto
+		want    *PluginRespDto
 		wantErr bool
 	}{
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
-			args: args{req: &KongPluginReqDto{
+			args: args{req: &PluginReqDto{
 				Name:       "xxx",
 				ServiceId:  "1",
 				RouteId:    "1",
@@ -655,14 +795,14 @@ func TestMseAdapterImpl_AddPlugin(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongPluginReqDto
+		req *PluginReqDto
 	}
 	tTime := time.Now().Unix()
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongPluginRespDto
+		want    *PluginRespDto
 		wantErr bool
 	}{
 		{
@@ -671,7 +811,7 @@ func TestMseAdapterImpl_AddPlugin(t *testing.T) {
 				ProviderName: "MSE",
 			},
 			args: args{
-				req: &KongPluginReqDto{
+				req: &PluginReqDto{
 					Name:       "xxx",
 					ServiceId:  "1",
 					RouteId:    "1",
@@ -686,7 +826,7 @@ func TestMseAdapterImpl_AddPlugin(t *testing.T) {
 					PluginId:   "x0001",
 				},
 			},
-			want: &KongPluginRespDto{
+			want: &PluginRespDto{
 				Id:         "001",
 				ServiceId:  "1",
 				RouteId:    "1",
@@ -725,13 +865,13 @@ func TestMseAdapterImpl_PutPlugin(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongPluginReqDto
+		req *PluginReqDto
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongPluginRespDto
+		want    *PluginRespDto
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -765,7 +905,7 @@ func TestMseAdapterImpl_UpdatePlugin(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongPluginReqDto
+		req *PluginReqDto
 	}
 	enable := true
 	tTime := time.Now().Unix()
@@ -773,14 +913,14 @@ func TestMseAdapterImpl_UpdatePlugin(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *KongPluginRespDto
+		want    *PluginRespDto
 		wantErr bool
 	}{
 		// TODO: Add test cases.
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
-			args: args{req: &KongPluginReqDto{
+			args: args{req: &PluginReqDto{
 				Name:       "xxx",
 				ServiceId:  "1",
 				RouteId:    "1",
@@ -794,7 +934,7 @@ func TestMseAdapterImpl_UpdatePlugin(t *testing.T) {
 				CreatedAt:  tTime,
 				PluginId:   "1",
 			}},
-			want: &KongPluginRespDto{
+			want: &PluginRespDto{
 				Id:         "1",
 				ServiceId:  "1",
 				RouteId:    "1",
@@ -862,12 +1002,17 @@ func TestMseAdapterImpl_RemovePlugin(t *testing.T) {
 
 func TestMseAdapterImpl_DeleteCredential(t *testing.T) {
 	type fields struct {
-		ProviderName string
+		Bdl             *bundle.Bundle
+		ProviderName    string
+		AccessKeyID     string
+		AccessKeySecret string
+		GatewayUniqueID string
+		GatewayEndpoint string
 	}
 	type args struct {
-		consumerId   string
-		pluginName   string
-		credentialId string
+		consumerId    string
+		pluginName    string
+		credentialStr string
 	}
 	tests := []struct {
 		name    string
@@ -876,12 +1021,19 @@ func TestMseAdapterImpl_DeleteCredential(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "Test_01",
-			fields: fields{ProviderName: "MSE"},
+			name: "Test_01",
+			fields: fields{
+				Bdl:             nil,
+				ProviderName:    "",
+				AccessKeyID:     "",
+				AccessKeySecret: "",
+				GatewayUniqueID: "",
+				GatewayEndpoint: "",
+			},
 			args: args{
-				consumerId:   "1",
-				pluginName:   "cors",
-				credentialId: "1",
+				consumerId:    "",
+				pluginName:    mseCommon.MsePluginKeyAuth,
+				credentialStr: "xxxxyyyyzzzz",
 			},
 			wantErr: false,
 		},
@@ -889,9 +1041,34 @@ func TestMseAdapterImpl_DeleteCredential(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			impl := &MseAdapterImpl{
-				ProviderName: tt.fields.ProviderName,
+				Bdl:             tt.fields.Bdl,
+				ProviderName:    tt.fields.ProviderName,
+				AccessKeyID:     tt.fields.AccessKeyID,
+				AccessKeySecret: tt.fields.AccessKeySecret,
+				GatewayUniqueID: tt.fields.GatewayUniqueID,
+				GatewayEndpoint: tt.fields.GatewayEndpoint,
 			}
-			if err := impl.DeleteCredential(tt.args.consumerId, tt.args.pluginName, tt.args.credentialId); (err != nil) != tt.wantErr {
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "GetMSEPluginConfigByIDByAPI", func(impl *MseAdapterImpl, pluginId *int64) (*mseclient.GetPluginConfigResponseBodyData, error) {
+				cfList := make([]*mseclient.GetPluginConfigResponseBodyDataGatewayConfigList, 0)
+				config := "consumers: \n# 注意！该凭证仅做示例使用，请勿用于具体业务，造成安全风险\n- credential: 5d1a401b3aef4ee5bc39a99654672f92\n  name: bbb\n- credential: 5d1a401b3aef4ee5bc39a99654672f91\n  name: aaa\nkeys:\n- apikey\n- x-api-key\n_rules_:\n# 规则一：按路由名称匹配生效\n- _match_route_:\n  - project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3\n  allow:\n  - aaa\n- _match_route_:\n  - project-5846-test-dice-test-5846-api-66f56a64312143cfbbbd04eca82eca56-bff529-51ec627a-ccaae83a5fe7846d18d4ac80940a8fdc3\n  allow:\n  - bbb\n  \n"
+				var configLevel int32 = 0
+				cfList = append(cfList, &mseclient.GetPluginConfigResponseBodyDataGatewayConfigList{
+					Config:      &config,
+					ConfigLevel: &configLevel,
+				})
+				return &mseclient.GetPluginConfigResponseBodyData{
+					GatewayConfigList: cfList,
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "UpdateMSEPluginConfigByIDByAPI", func(impl *MseAdapterImpl, pluginId *int64, configId *int64, config *string, configLevel *int32, enable *bool) (*mseclient.UpdatePluginConfigResponseBody, error) {
+				return &mseclient.UpdatePluginConfigResponseBody{}, nil
+			})
+
+			defer monkey.UnpatchAll()
+
+			if err := impl.DeleteCredential(tt.args.consumerId, tt.args.pluginName, tt.args.credentialStr); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteCredential() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -910,7 +1087,7 @@ func TestMseAdapterImpl_GetCredentialList(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *KongCredentialListDto
+		want    *CredentialListDto
 		wantErr bool
 	}{
 		{
@@ -920,7 +1097,7 @@ func TestMseAdapterImpl_GetCredentialList(t *testing.T) {
 				consumerId: "1",
 				pluginName: "cors",
 			},
-			want:    &KongCredentialListDto{},
+			want:    &CredentialListDto{},
 			wantErr: false,
 		},
 	}
@@ -982,24 +1159,24 @@ func TestMseAdapterImpl_CreateUpstream(t *testing.T) {
 		ProviderName string
 	}
 	type args struct {
-		req *KongUpstreamDto
+		req *UpstreamDto
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *KongUpstreamDto
+		want    *UpstreamDto
 		wantErr bool
 	}{
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
-			args: args{req: &KongUpstreamDto{
+			args: args{req: &UpstreamDto{
 				Id:           "1",
 				Name:         "xx",
 				Healthchecks: HealthchecksDto{},
 			}},
-			want: &KongUpstreamDto{
+			want: &UpstreamDto{
 				Id:           "1",
 				Name:         "xx",
 				Healthchecks: HealthchecksDto{},
@@ -1035,16 +1212,15 @@ func TestMseAdapterImpl_GetUpstreamStatus(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *KongUpstreamStatusRespDto
+		want    *UpstreamStatusRespDto
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
 			args:   args{upstreamId: "1"},
-			want: &KongUpstreamStatusRespDto{
-				Data: []KongTargetDto{},
+			want: &UpstreamStatusRespDto{
+				Data: []TargetDto{},
 			},
 			wantErr: false,
 		},
@@ -1141,13 +1317,13 @@ func TestMseAdapterImpl_GetRoutes(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    []KongRouteRespDto
+		want    []RouteRespDto
 		wantErr bool
 	}{
 		{
 			name:    "Test_01",
 			fields:  fields{ProviderName: "MSE"},
-			want:    []KongRouteRespDto{},
+			want:    []RouteRespDto{},
 			wantErr: false,
 		},
 	}
@@ -1179,14 +1355,14 @@ func TestMseAdapterImpl_GetRoutesWithTag(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []KongRouteRespDto
+		want    []RouteRespDto
 		wantErr bool
 	}{
 		{
 			name:    "Test_01",
 			fields:  fields{},
 			args:    args{tag: "xxx"},
-			want:    []KongRouteRespDto{},
+			want:    []RouteRespDto{},
 			wantErr: false,
 		},
 	}

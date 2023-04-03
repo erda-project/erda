@@ -15,37 +15,37 @@
 package gateway_providers
 
 import (
-	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 )
 
 type GatewayAdapter interface {
 	GatewayProviderExist() bool
 	GetVersion() (string, error)
 	CheckPluginEnabled(pluginName string) (bool, error)
-	CreateConsumer(req *KongConsumerReqDto) (*KongConsumerRespDto, error)
+	CreateConsumer(req *ConsumerReqDto) (*ConsumerRespDto, error)
 	DeleteConsumer(string) error
-	CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error)
+	CreateOrUpdateRoute(req *RouteReqDto) (*RouteRespDto, error)
 	DeleteRoute(string) error
-	UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error)
-	CreateOrUpdateService(req *KongServiceReqDto) (*KongServiceRespDto, error)
+	UpdateRoute(req *RouteReqDto) (*RouteRespDto, error)
+	CreateOrUpdateService(req *ServiceReqDto) (*ServiceRespDto, error)
 	DeleteService(string) error
-	DeletePluginIfExist(req *KongPluginReqDto) error
-	CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error)
-	CreateOrUpdatePluginById(req *KongPluginReqDto) (*KongPluginRespDto, error)
-	GetPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error)
-	AddPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error)
-	UpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error)
-	PutPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error)
+	DeletePluginIfExist(req *PluginReqDto) error
+	CreateOrUpdatePlugin(req *PluginReqDto) (*PluginRespDto, error)
+	CreateOrUpdatePluginById(req *PluginReqDto) (*PluginRespDto, error)
+	GetPlugin(req *PluginReqDto) (*PluginRespDto, error)
+	AddPlugin(req *PluginReqDto) (*PluginRespDto, error)
+	UpdatePlugin(req *PluginReqDto) (*PluginRespDto, error)
+	PutPlugin(req *PluginReqDto) (*PluginRespDto, error)
 	RemovePlugin(string) error
-	CreateCredential(req *KongCredentialReqDto) (*KongCredentialDto, error)
+	CreateCredential(req *CredentialReqDto) (*CredentialDto, error)
 	DeleteCredential(string, string, string) error
-	GetCredentialList(string, string) (*KongCredentialListDto, error)
+	GetCredentialList(string, string) (*CredentialListDto, error)
 	CreateAclGroup(string, string) error
-	CreateUpstream(req *KongUpstreamDto) (*KongUpstreamDto, error)
-	GetUpstreamStatus(string) (*KongUpstreamStatusRespDto, error)
-	AddUpstreamTarget(string, *KongTargetDto) (*KongTargetDto, error)
+	CreateUpstream(req *UpstreamDto) (*UpstreamDto, error)
+	GetUpstreamStatus(string) (*UpstreamStatusRespDto, error)
+	AddUpstreamTarget(string, *TargetDto) (*TargetDto, error)
 	DeleteUpstreamTarget(string, string) error
 	TouchRouteOAuthMethod(string) error
-	GetRoutes() ([]KongRouteRespDto, error)
-	GetRoutesWithTag(tag string) ([]KongRouteRespDto, error)
+	GetRoutes() ([]RouteRespDto, error)
+	GetRoutesWithTag(tag string) ([]RouteRespDto, error)
 }

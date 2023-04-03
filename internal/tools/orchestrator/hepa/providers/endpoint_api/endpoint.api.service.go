@@ -35,6 +35,7 @@ import (
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -367,8 +368,12 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *p
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(req.ClusterName)
+		if err != nil {
+			return nil, err
+		}
+
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:

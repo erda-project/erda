@@ -273,6 +273,7 @@ type GatewayConsumerService interface {
 	GetPage(options []SelectOption, page *Page) (*PageQuery, error)
 	Count(options []SelectOption) (int64, error)
 	SelectByOptions(options []SelectOption) ([]GatewayConsumer, error)
+	GetByConsumerId(consumerId string) (*orm.GatewayConsumer, error)
 }
 
 type GatewayConsumerApiService interface {
@@ -397,4 +398,15 @@ type GatewayHubInfoService interface {
 	GetByAny(*GatewayHubInfo) (*GatewayHubInfo, bool, error)
 	SelectByAny(*GatewayHubInfo) ([]GatewayHubInfo, error)
 	Insert(*GatewayHubInfo) error
+}
+
+type GatewayCredentialService interface {
+	Insert(credential *GatewayCredential) error
+	Update(*GatewayCredential) error
+	DeleteById(id string) error
+	DeleteByConsumerId(consumerId string) error
+	GetByConsumerAndApi(string, string) (*GatewayCredential, error)
+	GetById(string) (*GatewayCredential, error)
+	GetByConsumerId(string) (*GatewayCredential, error)
+	SelectByConsumerId(string) ([]GatewayCredential, error)
 }

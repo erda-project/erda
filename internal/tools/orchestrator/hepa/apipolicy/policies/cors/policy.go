@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
 
@@ -160,7 +160,7 @@ more_set_headers 'Access-Control-Allow-Headers: %s';
 `, coreSnippet, policyDto.MaxAge, coreSnippet)
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		res.IngressAnnotation = policy.setIngressAnnotations(gatewayProvider, policyDto, locationSnippet)
 	case "":
 		res.IngressAnnotation = policy.setIngressAnnotations(gatewayProvider, policyDto, locationSnippet)
@@ -178,7 +178,7 @@ more_set_headers 'Access-Control-Allow-Headers: %s';
 func (policy Policy) setIngressAnnotations(gatewayProvider string, policyDto *PolicyDto, locationSnippet string) *apipolicy.IngressAnnotation {
 	var ret *apipolicy.IngressAnnotation
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		corsEnable := "true"
 		corsMethods := policyDto.Methods
 		corsHeaders := policyDto.Headers

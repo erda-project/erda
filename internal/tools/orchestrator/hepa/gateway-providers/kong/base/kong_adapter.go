@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
-	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 )
 
@@ -53,7 +53,7 @@ func (impl *KongAdapterImpl) GatewayProviderExist() bool {
 	return impl != nil
 }
 
-func (impl *KongAdapterImpl) CreateConsumer(req *KongConsumerReqDto) (*KongConsumerRespDto, error) {
+func (impl *KongAdapterImpl) CreateConsumer(req *ConsumerReqDto) (*ConsumerRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -65,7 +65,7 @@ func (impl *KongAdapterImpl) CreateConsumer(req *KongConsumerReqDto) (*KongConsu
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 {
-		respDto := &KongConsumerRespDto{}
+		respDto := &ConsumerRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -92,7 +92,7 @@ func (impl *KongAdapterImpl) DeleteConsumer(id string) error {
 	return errors.Errorf("DeleteConsumer failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error) {
+func (impl *KongAdapterImpl) UpdateRoute(req *RouteReqDto) (*RouteRespDto, error) {
 	timeNow := time.Now()
 	defer func() {
 		log.Infof("*KongAdapterImpl.UpdateRoute costs %dms", time.Now().Sub(timeNow).Milliseconds())
@@ -118,7 +118,7 @@ func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDt
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 || code == 200 {
-		respDto := &KongRouteRespDto{}
+		respDto := &RouteRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -133,7 +133,7 @@ func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDt
 	return nil, errors.Errorf("CreateOrUpdateRoute failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error) {
+func (impl *KongAdapterImpl) CreateOrUpdateRoute(req *RouteReqDto) (*RouteRespDto, error) {
 	timeNow := time.Now()
 	defer func() {
 		log.Infof("*KongAdapterImpl.CreateOrUpdateRoute costs %dms", time.Now().Sub(timeNow).Milliseconds())
@@ -165,7 +165,7 @@ func (impl *KongAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRou
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 || code == 200 {
-		respDto := &KongRouteRespDto{}
+		respDto := &RouteRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -189,7 +189,7 @@ func (impl *KongAdapterImpl) TouchRouteOAuthMethod(id string) error {
 		return errors.Wrap(err, "request failed")
 	}
 	needTouch := true
-	respDto := &KongRouteRespDto{}
+	respDto := &RouteRespDto{}
 	if code == 200 || code == 201 {
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
@@ -239,7 +239,7 @@ func (impl *KongAdapterImpl) DeleteRoute(id string) error {
 	}
 	return errors.Errorf("DeleteRoute failed: code[%d] msg[%s]", code, body)
 }
-func (impl *KongAdapterImpl) CreateOrUpdateService(req *KongServiceReqDto) (*KongServiceRespDto, error) {
+func (impl *KongAdapterImpl) CreateOrUpdateService(req *ServiceReqDto) (*ServiceRespDto, error) {
 	timeNow := time.Now()
 	defer func() {
 		log.Infof("*KongAdapterImpl.CreateOrUpdateService costs %dms", time.Now().Sub(timeNow).Milliseconds())
@@ -268,7 +268,7 @@ func (impl *KongAdapterImpl) CreateOrUpdateService(req *KongServiceReqDto) (*Kon
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 || code == 200 {
-		respDto := &KongServiceRespDto{}
+		respDto := &ServiceRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "json unmarshal failed [%s]", body)
@@ -300,7 +300,7 @@ func (impl *KongAdapterImpl) DeleteService(id string) error {
 	return errors.Errorf("DeleteService failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) GetPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) GetPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -337,7 +337,7 @@ func (impl *KongAdapterImpl) GetPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 	return nil, errors.Errorf("get plugin failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -355,7 +355,7 @@ func (impl *KongAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*K
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 || code == 200 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -374,7 +374,7 @@ func (impl *KongAdapterImpl) GetVersion() (string, error) {
 		return "", err
 	}
 	if code == 200 {
-		respDto := &KongConfigsDto{}
+		respDto := &PluginConfigsDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return "", errors.Wrapf(err, "json Unmarshal failed, body:%s", body)
@@ -393,7 +393,7 @@ func (impl *KongAdapterImpl) CheckPluginEnabled(pluginName string) (bool, error)
 		return false, err
 	}
 	if code == 200 {
-		respDto := &KongConfigsDto{}
+		respDto := &PluginConfigsDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return false, errors.Wrapf(err, "json Unmarshal failed, body:%s", body)
@@ -410,7 +410,7 @@ func (impl *KongAdapterImpl) CheckPluginEnabled(pluginName string) (bool, error)
 	return false, errors.Errorf("check plugin enabled failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
+func (impl *KongAdapterImpl) DeletePluginIfExist(req *PluginReqDto) error {
 	enabled, err := impl.CheckPluginEnabled(req.Name)
 	if err != nil {
 		return err
@@ -429,7 +429,7 @@ func (impl *KongAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
 	return impl.RemovePlugin(exist.Id)
 }
 
-func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	timeNow := time.Now()
 	defer func() {
 		log.Infof("*KongAdapterImpl.CreateOrUpdatePlugin costs %dms", time.Now().Sub(timeNow).Milliseconds())
@@ -455,7 +455,7 @@ func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongP
 	return impl.PutPlugin(req)
 }
 
-func (impl *KongAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) AddPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -475,7 +475,7 @@ func (impl *KongAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -485,7 +485,7 @@ func (impl *KongAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 	return nil, errors.Errorf("AddPlugin failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) PutPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) PutPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -507,7 +507,7 @@ func (impl *KongAdapterImpl) PutPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 || code == 201 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "body[%s] Unmarshal failed", body)
@@ -517,7 +517,7 @@ func (impl *KongAdapterImpl) PutPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 	return nil, errors.Errorf("UpdatePlugin failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) UpdatePlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -529,7 +529,7 @@ func (impl *KongAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginRes
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 || code == 201 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "body[%s] Unmarshal failed", body)
@@ -544,7 +544,7 @@ func (impl *KongAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginRes
 	// 		return nil, errors.Wrap(err, "request failed")
 	// 	}
 	// 	if code == 200 {
-	// 		respDto := &KongPluginRespDto{}
+	// 		respDto := &PluginRespDto{}
 	// 		err = json.Unmarshal(body, respDto)
 	// 		if err != nil {
 	// 			return nil, errors.Wrapf(err, "body[%s] Unmarshal failed", body)
@@ -570,7 +570,7 @@ func (impl *KongAdapterImpl) RemovePlugin(id string) error {
 	}
 	return errors.Errorf("RemovePlugin failed: code[%d] msg[%s]", code, body)
 }
-func (impl *KongAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongCredentialDto, error) {
+func (impl *KongAdapterImpl) CreateCredential(req *CredentialReqDto) (*CredentialDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -585,7 +585,7 @@ func (impl *KongAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongC
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 {
-		respDto := &KongCredentialDto{}
+		respDto := &CredentialDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -612,7 +612,7 @@ func (impl *KongAdapterImpl) DeleteCredential(consumerId, pluginName, credential
 	return errors.Errorf("DeleteCredential failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) GetCredentialList(consumerId, pluginName string) (*KongCredentialListDto, error) {
+func (impl *KongAdapterImpl) GetCredentialList(consumerId, pluginName string) (*CredentialListDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -621,7 +621,7 @@ func (impl *KongAdapterImpl) GetCredentialList(consumerId, pluginName string) (*
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 {
-		respDto := &KongCredentialListDto{}
+		respDto := &CredentialListDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "json unmashal failed, body:%s", body)
@@ -655,7 +655,7 @@ func (impl *KongAdapterImpl) CreateAclGroup(consumerId string, customId string) 
 	return errors.Errorf("CreateAclGroup failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) CreateUpstream(req *KongUpstreamDto) (*KongUpstreamDto, error) {
+func (impl *KongAdapterImpl) CreateUpstream(req *UpstreamDto) (*UpstreamDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -667,7 +667,7 @@ func (impl *KongAdapterImpl) CreateUpstream(req *KongUpstreamDto) (*KongUpstream
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 || code == 201 {
-		respDto := &KongUpstreamDto{}
+		respDto := &UpstreamDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unmashal body failed, body:%s", body)
@@ -677,7 +677,7 @@ func (impl *KongAdapterImpl) CreateUpstream(req *KongUpstreamDto) (*KongUpstream
 	return nil, errors.Errorf("CreateUpstream failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) GetUpstreamStatus(upstreamId string) (*KongUpstreamStatusRespDto, error) {
+func (impl *KongAdapterImpl) GetUpstreamStatus(upstreamId string) (*UpstreamStatusRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -689,7 +689,7 @@ func (impl *KongAdapterImpl) GetUpstreamStatus(upstreamId string) (*KongUpstream
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 {
-		respDto := &KongUpstreamStatusRespDto{}
+		respDto := &UpstreamStatusRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unmarshal body failed, body:%s", body)
@@ -699,7 +699,7 @@ func (impl *KongAdapterImpl) GetUpstreamStatus(upstreamId string) (*KongUpstream
 	return nil, errors.Errorf("GetUpstreamStatus failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) AddUpstreamTarget(upstreamId string, req *KongTargetDto) (*KongTargetDto, error) {
+func (impl *KongAdapterImpl) AddUpstreamTarget(upstreamId string, req *TargetDto) (*TargetDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -711,7 +711,7 @@ func (impl *KongAdapterImpl) AddUpstreamTarget(upstreamId string, req *KongTarge
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 || code == 201 {
-		respDto := &KongTargetDto{}
+		respDto := &TargetDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unmarshal body failed, body:%s", body)
@@ -738,7 +738,7 @@ func (impl *KongAdapterImpl) DeleteUpstreamTarget(upstreamId, targetId string) e
 	return errors.Errorf("DeleteUpstreamTarget failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) GetRoutes() ([]KongRouteRespDto, error) {
+func (impl *KongAdapterImpl) GetRoutes() ([]RouteRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -757,7 +757,7 @@ func (impl *KongAdapterImpl) GetRoutes() ([]KongRouteRespDto, error) {
 	return nil, errors.Errorf("get routes failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) GetRoutesWithTag(tag string) ([]KongRouteRespDto, error) {
+func (impl *KongAdapterImpl) GetRoutesWithTag(tag string) ([]RouteRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}

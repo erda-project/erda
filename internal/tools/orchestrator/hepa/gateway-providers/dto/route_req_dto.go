@@ -28,7 +28,7 @@ type KongObj struct {
 	Id string `json:"id"`
 }
 
-type KongRouteReqDto struct {
+type RouteReqDto struct {
 	// 协议列表，默认["http", "https"]
 	Protocols []string `json:"protocols,omitempty"`
 	// 以下三个参数至少需要填一个
@@ -70,10 +70,10 @@ type KongRouteReqDto struct {
 	tags url.Values
 }
 
-func NewKongRouteReqDto() *KongRouteReqDto {
+func NewKongRouteReqDto() *RouteReqDto {
 	stripPath := true
 	pathHandling := "v1"
-	return &KongRouteReqDto{
+	return &RouteReqDto{
 		StripPath:    &stripPath,
 		PathHandling: &pathHandling,
 		tags:         make(url.Values),
@@ -81,18 +81,18 @@ func NewKongRouteReqDto() *KongRouteReqDto {
 }
 
 // IsEmpty
-func (dto KongRouteReqDto) IsEmpty() bool {
+func (dto RouteReqDto) IsEmpty() bool {
 	return dto.Service == nil || len(dto.Service.Id) == 0 ||
 		(len(dto.Methods) == 0 && len(dto.Hosts) == 0 && len(dto.Paths) == 0)
 }
 
-func (dto *KongRouteReqDto) Adjust(opts ...Option) {
+func (dto *RouteReqDto) Adjust(opts ...Option) {
 	for _, opt := range opts {
 		opt(dto)
 	}
 }
 
-func (dto *KongRouteReqDto) AddTag(key, value string) {
+func (dto *RouteReqDto) AddTag(key, value string) {
 	if dto.tags == nil {
 		dto.tags = make(url.Values)
 	}
@@ -100,7 +100,7 @@ func (dto *KongRouteReqDto) AddTag(key, value string) {
 	dto.refreshTags()
 }
 
-func (dto *KongRouteReqDto) refreshTags() {
+func (dto *RouteReqDto) refreshTags() {
 	var tags []string
 	for k := range dto.tags {
 		vs := dto.tags[k]
@@ -111,10 +111,10 @@ func (dto *KongRouteReqDto) refreshTags() {
 	dto.Tags = tags
 }
 
-type Option func(dto *KongRouteReqDto)
+type Option func(dto *RouteReqDto)
 
 func Versioning(i interface{ GetVersion() (string, error) }) Option {
-	return func(dto *KongRouteReqDto) {
+	return func(dto *RouteReqDto) {
 		if version, err := i.GetVersion(); err == nil && strings.HasPrefix(version, "2.") {
 			pathHandling := "v1"
 			dto.PathHandling = &pathHandling

@@ -14,17 +14,20 @@
 
 package dto
 
-type KongRouteRespDto struct {
-	Id        string   `json:"id"`
-	CreatedAt int64    `json:"created_at"`
-	UpdatedAt int64    `json:"updated_at"`
-	Protocols []string `json:"protocols"`
-	Methods   []string `json:"methods"`
-	Hosts     []string `json:"hosts"`
-	Paths     []string `json:"paths"`
-	Service   Service  `json:"service"`
+type ConsumerReqDto struct {
+	// 用户名，必填
+	Username string `json:"username"`
+	// 第三方唯一id，选填
+	CustomId string `json:"custom_id,omitempty"`
 }
 
-type KongRoutesRespDto struct {
-	Routes []KongRouteRespDto `json:"data"`
+func (dto ConsumerReqDto) IsEmpty() bool {
+	return len(dto.Username) == 0
+}
+
+func NewKongConsumerReqDto(name string, customId string) *ConsumerReqDto {
+	return &ConsumerReqDto{
+		Username: name,
+		CustomId: customId,
+	}
 }

@@ -19,10 +19,12 @@ import (
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	mseDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/api_policy"
@@ -183,6 +185,214 @@ func TestGatewayOpenapiServiceImpl_touchServiceForExternalService(t *testing.T) 
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("touchServiceForExternalService() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGatewayOpenapiServiceImpl_mseConsumerConfig(t *testing.T) {
+	type fields struct {
+		packageDb       service.GatewayPackageService
+		packageApiDb    service.GatewayPackageApiService
+		zoneInPackageDb service.GatewayZoneInPackageService
+		apiInPackageDb  service.GatewayApiInPackageService
+		packageInDb     service.GatewayPackageInConsumerService
+		serviceDb       service.GatewayServiceService
+		routeDb         service.GatewayRouteService
+		consumerDb      service.GatewayConsumerService
+		apiDb           service.GatewayApiService
+		upstreamApiDb   service.GatewayUpstreamApiService
+		azDb            service.GatewayAzInfoService
+		kongDb          service.GatewayKongInfoService
+		hubInfoDb       service.GatewayHubInfoService
+		credentialDb    service.GatewayCredentialService
+		apiBiz          *micro_api.GatewayApiService
+		zoneBiz         *zone.GatewayZoneService
+		ruleBiz         *openapi_rule.GatewayOpenapiRuleService
+		consumerBiz     *openapi_consumer.GatewayOpenapiConsumerService
+		globalBiz       *global.GatewayGlobalService
+		policyBiz       *api_policy.GatewayApiPolicyService
+		runtimeDb       service.GatewayRuntimeServiceService
+		domainBiz       *domain.GatewayDomainService
+		ctx             context.Context
+		reqCtx          context.Context
+	}
+	credentialDb, _ := service.NewGatewayCredentialServiceImpl()
+	type args struct {
+		consumers []orm.GatewayConsumer
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []mseDto.Consumers
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			fields: fields{
+				credentialDb: credentialDb,
+			},
+			args: args{
+				consumers: []orm.GatewayConsumer{{
+					ConsumerId:   "b13878b8-9686-4a1c-a897-3bd5e34785ef",
+					ConsumerName: "abc",
+					OrgId:        "633",
+					ProjectId:    "5846",
+					Env:          "TEST",
+					Az:           "test",
+					BaseRow: orm.BaseRow{
+						Id: "22255a42f7a848619f9ffe0fa1fdf85b",
+					},
+				}},
+			},
+			want: []mseDto.Consumers{
+				{
+					Name:       "633.5846.TEST.test:abc",
+					Credential: "dae6ece8afc24c9581172dfd95b298e4",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test_02",
+			fields: fields{
+				credentialDb: credentialDb,
+			},
+			args: args{
+				consumers: []orm.GatewayConsumer{{
+					ConsumerId:   "b13878b8-9686-4a1c-a897-3bd5e34785ef",
+					ConsumerName: "abc",
+					OrgId:        "633",
+					ProjectId:    "5846",
+					Env:          "TEST",
+					Az:           "test",
+					BaseRow: orm.BaseRow{
+						Id: "22255a42f7a848619f9ffe0fa1fdf85b",
+					},
+				}},
+			},
+			want: []mseDto.Consumers{
+				{
+					Name:   "633.5846.TEST.test:abc",
+					Key:    "dae6ece8afc24c9581172dfd95b298e4",
+					Secret: "335698f06d2b4977b1060b034c3006a1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test_03",
+			fields: fields{
+				credentialDb: credentialDb,
+			},
+			args: args{
+				consumers: []orm.GatewayConsumer{{
+					ConsumerId:   "b13878b8-9686-4a1c-a897-3bd5e34785ef",
+					ConsumerName: "abc",
+					OrgId:        "633",
+					ProjectId:    "5846",
+					Env:          "TEST",
+					Az:           "test",
+					BaseRow: orm.BaseRow{
+						Id: "22255a42f7a848619f9ffe0fa1fdf85b",
+					},
+				}},
+			},
+			want: []mseDto.Consumers{
+				{
+					Name:             "633.5846.TEST.test:abc",
+					FromParams:       []string{"test"},
+					FromCookies:      []string{"test"},
+					KeepToken:        true,
+					ClockSkewSeconds: 30,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			impl := GatewayOpenapiServiceImpl{
+				packageDb:       tt.fields.packageDb,
+				packageApiDb:    tt.fields.packageApiDb,
+				zoneInPackageDb: tt.fields.zoneInPackageDb,
+				apiInPackageDb:  tt.fields.apiInPackageDb,
+				packageInDb:     tt.fields.packageInDb,
+				serviceDb:       tt.fields.serviceDb,
+				routeDb:         tt.fields.routeDb,
+				consumerDb:      tt.fields.consumerDb,
+				apiDb:           tt.fields.apiDb,
+				upstreamApiDb:   tt.fields.upstreamApiDb,
+				azDb:            tt.fields.azDb,
+				kongDb:          tt.fields.kongDb,
+				hubInfoDb:       tt.fields.hubInfoDb,
+				credentialDb:    tt.fields.credentialDb,
+				apiBiz:          tt.fields.apiBiz,
+				zoneBiz:         tt.fields.zoneBiz,
+				ruleBiz:         tt.fields.ruleBiz,
+				consumerBiz:     tt.fields.consumerBiz,
+				globalBiz:       tt.fields.globalBiz,
+				policyBiz:       tt.fields.policyBiz,
+				runtimeDb:       tt.fields.runtimeDb,
+				domainBiz:       tt.fields.domainBiz,
+				ctx:             tt.fields.ctx,
+				reqCtx:          tt.fields.reqCtx,
+			}
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(impl.credentialDb), "SelectByConsumerId", func(*service.GatewayCredentialServiceImpl, string) ([]orm.GatewayCredential, error) {
+				switch tt.name {
+				case "Test_02":
+					return []orm.GatewayCredential{{
+						ConsumerId:   "b13878b8-9686-4a1c-a897-3bd5e34785ef",
+						ConsumerName: "abc",
+						PluginName:   "hmac-auth",
+						OrgId:        "633",
+						ProjectId:    "5846",
+						Env:          "TEST",
+						Az:           "test",
+						Key:          "dae6ece8afc24c9581172dfd95b298e4",
+						Secret:       "335698f06d2b4977b1060b034c3006a1",
+					}}, nil
+				case "Test_03":
+					return []orm.GatewayCredential{{
+						ConsumerId:       "b13878b8-9686-4a1c-a897-3bd5e34785ef",
+						ConsumerName:     "abc",
+						PluginName:       "jwt-auth",
+						OrgId:            "633",
+						ProjectId:        "5846",
+						Env:              "TEST",
+						Az:               "test",
+						Key:              "dae6ece8afc24c9581172dfd95b298e4",
+						Secret:           "335698f06d2b4977b1060b034c3006a1",
+						FromCookies:      "test",
+						FromParams:       "test",
+						KeepToken:        "Y",
+						ClockSkewSeconds: "30",
+					}}, nil
+				default:
+					return []orm.GatewayCredential{{
+						ConsumerId:   "b13878b8-9686-4a1c-a897-3bd5e34785ef",
+						ConsumerName: "abc",
+						PluginName:   "key-auth",
+						OrgId:        "633",
+						ProjectId:    "5846",
+						Env:          "TEST",
+						Az:           "test",
+						Key:          "dae6ece8afc24c9581172dfd95b298e4",
+					}}, nil
+
+				}
+			})
+			defer monkey.UnpatchAll()
+
+			got, err := impl.mseConsumerConfig(tt.args.consumers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("mseConsumerConfig() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("mseConsumerConfig() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

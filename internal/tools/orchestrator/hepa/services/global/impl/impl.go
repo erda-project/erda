@@ -41,6 +41,7 @@ import (
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -149,8 +150,11 @@ func (impl *GatewayGlobalServiceImpl) checkGatewayHealth() (dto gw.DiceHealthDto
 		}
 		var gatewayAdapter gateway_providers.GatewayAdapter
 		switch gatewayProvider {
-		case mse.Mse_Provider_Name:
-			gatewayAdapter = mse.NewMseAdapter()
+		case mseCommon.Mse_Provider_Name:
+			gatewayAdapter, err = mse.NewMseAdapter(az.Az)
+			if err != nil {
+				return
+			}
 			k8sAdapter, err := k8s.NewAdapter(az.Az)
 			if err != nil {
 				dto.Status = gw.DiceHealthFail
@@ -163,7 +167,7 @@ func (impl *GatewayGlobalServiceImpl) checkGatewayHealth() (dto gw.DiceHealthDto
 				continue
 			}
 
-			deploy, err := k8sAdapter.GetDeployment(mse.Mse_Ingress_Controller_ACK_Namespace, mse.Mse_Ingress_Controller_ACK_DeploymentName)
+			deploy, err := k8sAdapter.GetDeployment(mseCommon.MseIngressControllerAckNamespace, mseCommon.MseIngressControllerAckDeploymentName)
 			if err != nil {
 				dto.Status = gw.DiceHealthFail
 				dto.Modules = append(dto.Modules, gw.DiceHealthModule{
@@ -177,7 +181,7 @@ func (impl *GatewayGlobalServiceImpl) checkGatewayHealth() (dto gw.DiceHealthDto
 
 			for _, condition := range deploy.Status.Conditions {
 				if condition.Type == appsv1.DeploymentAvailable && condition.Status != corev1.ConditionTrue {
-					err = errors.Errorf("mse controller deployment %s/%s is not available status\n", mse.Mse_Ingress_Controller_ACK_Namespace, mse.Mse_Ingress_Controller_ACK_DeploymentName)
+					err = errors.Errorf("mse controller deployment %s/%s is not available status\n", mseCommon.MseIngressControllerAckNamespace, mseCommon.MseIngressControllerAckDeploymentName)
 					dto.Status = gw.DiceHealthFail
 					dto.Modules = append(dto.Modules, gw.DiceHealthModule{
 						Name:    fmt.Sprintf("cluster-gateway-control-%s", az.Az),
@@ -233,6 +237,9 @@ func (impl GatewayGlobalServiceImpl) Clone(ctx context.Context) global.GatewayGl
 }
 
 func (impl *GatewayGlobalServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err

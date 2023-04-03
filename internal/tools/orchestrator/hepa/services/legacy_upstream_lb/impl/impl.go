@@ -26,9 +26,10 @@ import (
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -120,9 +121,9 @@ func (impl GatewayUpstreamLbServiceImpl) touchUpstreamLb(gatewayAdapter gateway_
 		return existLb, existLb.Id, existLb.KongUpstreamId, nil
 	}
 	log.Debug("not find after GetForUpdate")
-	kongResp, err := gatewayAdapter.CreateUpstream(&kongDto.KongUpstreamDto{
+	kongResp, err := gatewayAdapter.CreateUpstream(&providerDto.UpstreamDto{
 		Name:         lb.LbName,
-		Healthchecks: kongDto.NewHealthchecks(lb.HealthcheckPath),
+		Healthchecks: providerDto.NewHealthchecks(lb.HealthcheckPath),
 	})
 	if err != nil {
 		return nil, "", "", err
@@ -308,6 +309,9 @@ func (impl GatewayUpstreamLbServiceImpl) clearUnhealthyOnUnexpectDeploy(gatewayA
 }
 
 func (impl GatewayUpstreamLbServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err
@@ -346,9 +350,12 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		HealthcheckPath:  dto.HealthcheckPath,
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		log.Debugf("mse gateway not really support UpstreamTargetOnline process logic.")
-		gatewayAdapter = mse.NewMseAdapter()
+		gatewayAdapter, err = mse.NewMseAdapter(dto.Az)
+		if err != nil {
+			return
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
 	default:
@@ -365,10 +372,10 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 	}
 	var freshTime int64
 	for _, target := range dto.Targets {
-		kongTargetReq := &kongDto.KongTargetDto{
+		kongTargetReq := &providerDto.TargetDto{
 			Target: target,
 		}
-		var kongTargetResp *kongDto.KongTargetDto
+		var kongTargetResp *providerDto.TargetDto
 		kongTargetResp, err = gatewayAdapter.AddUpstreamTarget(kongUpstreamId, kongTargetReq)
 		if err != nil {
 			return
@@ -436,9 +443,12 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOffline(dto *gw.UpstreamL
 		return
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		log.Debugf("mse gateway not support UpstreamTargetOffline process logic.")
-		gatewayAdapter = mse.NewMseAdapter()
+		gatewayAdapter, err = mse.NewMseAdapter(dto.Az)
+		if err != nil {
+			return
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
 	default:

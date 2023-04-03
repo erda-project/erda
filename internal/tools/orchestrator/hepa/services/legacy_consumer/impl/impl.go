@@ -30,9 +30,10 @@ import (
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/assembler"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
@@ -49,6 +50,7 @@ type GatewayConsumerServiceImpl struct {
 	consumerApiDb db.GatewayConsumerApiService
 	azDb          db.GatewayAzInfoService
 	kongDb        db.GatewayKongInfoService
+	credentialDb  db.GatewayCredentialService
 	kongAssembler assembler.GatewayKongAssembler
 	dbAssembler   assembler.GatewayDbAssembler
 	globalBiz     *global.GatewayGlobalService
@@ -65,6 +67,7 @@ func NewGatewayConsumerServiceImpl() error {
 			apiDb, _ := db.NewGatewayApiServiceImpl()
 			azDb, _ := db.NewGatewayAzInfoServiceImpl()
 			kongDb, _ := db.NewGatewayKongInfoServiceImpl()
+			credentialDb, _ := db.NewGatewayCredentialServiceImpl()
 			consumerApiDb, _ := db.NewGatewayConsumerApiServiceImpl()
 
 			legacy_consumer.Service = &GatewayConsumerServiceImpl{
@@ -74,6 +77,7 @@ func NewGatewayConsumerServiceImpl() error {
 				consumerApiDb: consumerApiDb,
 				azDb:          azDb,
 				kongDb:        kongDb,
+				credentialDb:  credentialDb,
 				kongAssembler: assembler.GatewayKongAssemblerImpl{},
 				dbAssembler:   assembler.GatewayDbAssemblerImpl{},
 				globalBiz:     &global.Service,
@@ -97,22 +101,25 @@ func (impl GatewayConsumerServiceImpl) CreateDefaultConsumer(orgId, projectId, e
 	}), false)
 }
 
-func (impl GatewayConsumerServiceImpl) getCredentialList(gatewayAdapter gateway_providers.GatewayAdapter, consumerId string) (map[string]kongDto.KongCredentialListDto, error) {
+func (impl GatewayConsumerServiceImpl) getCredentialList(gatewayAdapter gateway_providers.GatewayAdapter, consumerId string) (map[string]providerDto.CredentialListDto, error) {
 	kCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.KEYAUTH)
 	if err != nil {
-		kCredentials = &kongDto.KongCredentialListDto{}
+		kCredentials = &providerDto.CredentialListDto{}
 	}
 	oCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.OAUTH2)
 	if err != nil {
-		oCredentials = &kongDto.KongCredentialListDto{}
+		oCredentials = &providerDto.CredentialListDto{}
 	}
-	return map[string]kongDto.KongCredentialListDto{
+	return map[string]providerDto.CredentialListDto{
 		orm.KEYAUTH: *kCredentials,
 		orm.OAUTH2:  *oCredentials,
 	}, nil
 }
 
 func (impl GatewayConsumerServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err
@@ -143,8 +150,11 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 
 	var gatewayAdapter gateway_providers.GatewayAdapter
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(clusterName)
+		if err != nil {
+			return res
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapterForConsumer(consumer)
 	default:
@@ -157,10 +167,10 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 		return res
 	}
 	newAuth := consumerInfo.AuthConfig
-	adds := map[string][]kongDto.KongCredentialDto{}
-	dels := map[string][]kongDto.KongCredentialDto{}
+	adds := map[string][]providerDto.CredentialDto{}
+	dels := map[string][]providerDto.CredentialDto{}
 	for _, item := range newAuth.Auths {
-		var oldCredentials []kongDto.KongCredentialDto
+		var oldCredentials []providerDto.CredentialDto
 		credentialList := item.AuthData
 		oldCredentialList, ok := credentialListMap[item.AuthType]
 		if !ok {
@@ -221,10 +231,31 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 	}
 	for authType, credentials := range dels {
 		for _, credential := range credentials {
-			err = gatewayAdapter.DeleteCredential(consumer.ConsumerId, authType, credential.Id)
-			if err != nil {
-				log.Errorf("delete credential failed, err:%+v", err)
-				return res
+			if gatewayProvider == mseCommon.Mse_Provider_Name {
+				credentialStr, marshalErr := json.Marshal(credential)
+				if marshalErr != nil {
+					err = marshalErr
+					log.Errorf("update consumer info for mse plugin %s marshl credential %v failed: %v\n", authType, credential, err)
+					return res
+				}
+
+				err = gatewayAdapter.DeleteCredential(consumer.ConsumerId, authType, string(credentialStr))
+				if err != nil {
+					log.Errorf("delete credential for consumer %s for mse plugin %s failed: %v\n", consumer.ConsumerName, authType, err)
+					return res
+				}
+
+				err = impl.credentialDb.DeleteById(credential.Id)
+				if err != nil {
+					log.Errorf("delete credential by id %s failed: %v\n", credential.Id, err)
+					return res
+				}
+			} else {
+				err = gatewayAdapter.DeleteCredential(consumer.ConsumerId, authType, credential.Id)
+				if err != nil {
+					log.Errorf("delete credential failed, err:%+v", err)
+					return res
+				}
 			}
 		}
 	}
@@ -257,7 +288,7 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 
 func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az, consumerName string, withCredential bool) (*orm.GatewayConsumer, *orm.ConsumerAuthConfig, StandardErrorCode, error) {
 	ret := UNKNOW_ERROR
-	var respDto *kongDto.KongConsumerRespDto
+	var respDto *providerDto.ConsumerRespDto
 	var gatewayAdapter gateway_providers.GatewayAdapter
 	consumer, err := impl.consumerDb.GetByName(consumerName)
 	if err != nil {
@@ -273,10 +304,10 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 		var customId string
 		customId, _ = util.GenUniqueId()
 		var gatewayConsumer *orm.GatewayConsumer
-		var keyAuth, oauth2 *kongDto.KongCredentialDto
+		var keyAuth, oauth2 *providerDto.CredentialDto
 		var consumerAuthConfig *orm.ConsumerAuthConfig
 		var gatewayProvider string
-		reqDto := &kongDto.KongConsumerReqDto{
+		reqDto := &providerDto.ConsumerReqDto{
 			Username: consumerName,
 			CustomId: customId,
 		}
@@ -285,8 +316,11 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 			goto errorHappened
 		}
 		switch gatewayProvider {
-		case mse.Mse_Provider_Name:
-			gatewayAdapter = mse.NewMseAdapter()
+		case mseCommon.Mse_Provider_Name:
+			gatewayAdapter, err = mse.NewMseAdapter(az)
+			if err != nil {
+				goto errorHappened
+			}
 		case "":
 			gatewayAdapter = kong.NewKongAdapterForProject(az, env, projectId)
 		default:
@@ -318,7 +352,7 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 				goto errorHappened
 			}
 			oauth2, err = impl.createCredential(gatewayAdapter, orm.OAUTH2, respDto.Id,
-				&kongDto.KongCredentialDto{
+				&providerDto.CredentialDto{
 					Name:        "App",
 					RedirectUrl: []string{"http://none"},
 				})
@@ -330,16 +364,16 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 					{
 						AuthTips: orm.KeyAuthTips,
 						AuthType: orm.KEYAUTH,
-						AuthData: kongDto.KongCredentialListDto{
+						AuthData: providerDto.CredentialListDto{
 							Total: 1,
-							Data:  []kongDto.KongCredentialDto{*keyAuth},
+							Data:  []providerDto.CredentialDto{*keyAuth},
 						},
 					},
 					{
 						AuthType: orm.OAUTH2,
-						AuthData: kongDto.KongCredentialListDto{
+						AuthData: providerDto.CredentialListDto{
 							Total: 1,
-							Data:  []kongDto.KongCredentialDto{*oauth2},
+							Data:  []providerDto.CredentialDto{*oauth2},
 						},
 					},
 				},
@@ -403,8 +437,8 @@ errorHappened:
 	return res.SetReturnCode(ret)
 }
 
-func (impl GatewayConsumerServiceImpl) createCredential(gatewayAdapter gateway_providers.GatewayAdapter, pluginName string, consumerId string, config *kongDto.KongCredentialDto) (*kongDto.KongCredentialDto, error) {
-	req := &kongDto.KongCredentialReqDto{}
+func (impl GatewayConsumerServiceImpl) createCredential(gatewayAdapter gateway_providers.GatewayAdapter, pluginName string, consumerId string, config *providerDto.CredentialDto) (*providerDto.CredentialDto, error) {
+	req := &providerDto.CredentialReqDto{}
 	req.ConsumerId = consumerId
 	req.PluginName = pluginName
 	req.Config = config
@@ -426,8 +460,11 @@ func (impl GatewayConsumerServiceImpl) GetConsumerInfo(consumerId string) *commo
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
+		if err != nil {
+			return res
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapterForConsumer(consumer)
 	default:

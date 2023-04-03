@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	gatewayproviders "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -62,7 +62,7 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 	return policyDto, nil, ""
 }
 
-// forValidate 用于识别解析的目的，如果解析是用来做鱼 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+// forValidate 用于识别解析的目的，如果解析是用来做 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
@@ -164,7 +164,7 @@ send_timeout %ds;
 	if exist == nil && policyDto.HostPassthrough {
 		if !forValidate {
 			disable := false
-			kongReq := &kongDto.KongPluginReqDto{
+			kongReq := &providerDto.PluginReqDto{
 				Name:    "host-passthrough",
 				Config:  map[string]interface{}{},
 				Enabled: &disable,

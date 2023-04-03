@@ -24,8 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	msecommm "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
@@ -133,22 +132,24 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
 			LocationSnippet: &emptyStr,
 		}
-		if gatewayProvider == mse.Mse_Provider_Name {
+		if gatewayProvider == mseCommon.Mse_Provider_Name {
 			annotations := make(map[string]*string)
-			annotations[string(msecommm.AnnotationMSELimitRouteLimitRPS)] = nil
-			annotations[string(msecommm.AnnotationMSELimitRouteLimitBurstMultiplier)] = nil
+			annotations[string(mseCommon.AnnotationMSELimitRouteLimitRPS)] = nil
+			annotations[string(mseCommon.AnnotationMSELimitRouteLimitBurstMultiplier)] = nil
 			res.IngressAnnotation.Annotation = annotations
 		}
 		res.IngressController = &apipolicy.IngressController{
 			HttpSnippet:   &emptyStr,
 			ServerSnippet: &emptyStr,
 		}
-		res.AnnotationReset = true
+		if !forValidate {
+			res.AnnotationReset = true
+		}
 		return res, nil
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		res.AnnotationReset = true
 		if res.IngressAnnotation == nil {
 			res.IngressAnnotation = &apipolicy.IngressAnnotation{}
@@ -258,12 +259,12 @@ location @LIMIT-%s {
 func setMSEIngressAnnotation(policyDto *PolicyDto, ingressAnnotations *apipolicy.IngressAnnotation) {
 	annotations := make(map[string]*string)
 	rateStr := strconv.FormatInt(policyDto.MaxTps, 10)
-	multiplier := mse.MseBurstMultiplier
+	multiplier := mseCommon.MseBurstMultiplier
 	if policyDto.Busrt > 0 {
 		multiplier = strconv.FormatInt(policyDto.Busrt, 10)
 	}
-	annotations[string(msecommm.AnnotationMSELimitRouteLimitRPS)] = &rateStr
-	annotations[string(msecommm.AnnotationMSELimitRouteLimitBurstMultiplier)] = &multiplier
+	annotations[string(mseCommon.AnnotationMSELimitRouteLimitRPS)] = &rateStr
+	annotations[string(mseCommon.AnnotationMSELimitRouteLimitBurstMultiplier)] = &multiplier
 	if ingressAnnotations == nil {
 		ingressAnnotations = &apipolicy.IngressAnnotation{}
 	}

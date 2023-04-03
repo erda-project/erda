@@ -14,7 +14,7 @@
 
 package dto
 
-type KongPluginRespDto struct {
+type PluginRespDto struct {
 	Id         string                 `json:"id"`
 	ServiceId  string                 `json:"service_id"`
 	RouteId    string                 `json:"route_id"`
@@ -30,11 +30,11 @@ type KongPluginRespDto struct {
 }
 
 type KongPluginsDto struct {
-	Total int64               `json:"total"`
-	Data  []KongPluginRespDto `json:"data"`
+	Total int64           `json:"total"`
+	Data  []PluginRespDto `json:"data"`
 }
 
-func (dto *KongPluginRespDto) Compatiable() {
+func (dto *PluginRespDto) Compatiable() {
 	if dto == nil {
 		return
 	}

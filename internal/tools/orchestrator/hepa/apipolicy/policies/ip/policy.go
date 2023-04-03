@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	mseannotation "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -80,7 +80,9 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		res.IngressController = &apipolicy.IngressController{
 			HttpSnippet: &emptyStr,
 		}
-		res.AnnotationReset = true
+		if !forValidate {
+			res.AnnotationReset = true
+		}
 		return res, nil
 	}
 	value, ok := ctx[apipolicy.CTX_IDENTIFY]
@@ -141,7 +143,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		if policyDto.IpRate != nil {
 			logrus.Warningf("Current use MSE gateway, please set rate in policy %s", apipolicy.Policy_Engine_Service_Guard)
 		}

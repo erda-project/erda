@@ -499,6 +499,8 @@
   white:
     patterns:
       - ".*-base$"
+    filenames:
+      - "20230331-hepa-gateway-consumer-credential.sql"
   meta:
     columnName:
       - created_at
@@ -509,6 +511,8 @@
   white:
     patterns:
       - ".*-base$"
+    filenames:
+      - "20230331-hepa-gateway-consumer-credential.sql"
   meta:
     columnName:
       - updated_at

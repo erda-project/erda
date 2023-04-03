@@ -130,6 +130,10 @@ func fillInfo(info *orm.GatewayAzInfo, clusterInfo *ClusterInfoDto) {
 }
 
 func (impl *GatewayAzInfoServiceImpl) GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, *ClusterInfoDto, error) {
+	if name == "" {
+		return nil, nil, errors.Errorf("GetAzInfoByClusterName name  is nil")
+	}
+
 	info := &orm.GatewayAzInfo{
 		Az: name,
 	}

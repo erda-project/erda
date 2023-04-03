@@ -24,7 +24,7 @@ import (
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -45,7 +45,7 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 	return nil, nil, ""
 }
 
-// forValidate 用于识别解析的目的，如果解析是用来做鱼 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+// forValidate 用于识别解析的目的，如果解析是用来做 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	res := apipolicy.PolicyConfig{}
 	annotation := map[string]*string{}
@@ -102,17 +102,16 @@ proxy_intercept_errors on;
 				exist = true
 			}
 		}
-		if !exist {
-			if !forValidate {
-				err = gatewayAdapter.RemovePlugin(plugin.PluginId)
-				if err != nil {
-					return res, err
-				}
-				_ = policyDb.DeleteById(plugin.Id)
-				res.KongPolicyChange = true
+		if !exist && !forValidate {
+			err = gatewayAdapter.RemovePlugin(plugin.PluginId)
+			if err != nil {
+				return res, err
 			}
+			_ = policyDb.DeleteById(plugin.Id)
+			res.KongPolicyChange = true
 		}
 	}
+
 	if !forValidate {
 		newPlugin, err := policy.touchPluginIfNeed(zone.Id, builtinPlugins, "spot-collector", map[string]interface{}{
 			"send_port":          config.ServerConf.SpotSendPort,
@@ -145,7 +144,7 @@ func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, p
 		return false, nil
 	}
 	disable := false
-	req := &kongDto.KongPluginReqDto{
+	req := &providerDto.PluginReqDto{
 		Name:    pluginName,
 		Config:  config,
 		Enabled: &disable,

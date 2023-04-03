@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/exdto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -45,4 +46,5 @@ type GatewayOpenapiRuleService interface {
 	SetPackageKongPolicies(*orm.GatewayPackage, *service.SessionHelper) error
 	SetPackageApiKongPolicies(packageApi *orm.GatewayPackageApi, useKong bool, session *service.SessionHelper) error
 	GetGatewayProvider(az string) (string, error)
+	CreateOrUpdatePlugin(adapter gateway_providers.GatewayAdapter, dto *dto.OpenapiRule, helper *service.SessionHelper) (string, error)
 }

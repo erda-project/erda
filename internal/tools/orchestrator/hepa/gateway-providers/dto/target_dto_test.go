@@ -12,15 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dto
+package dto_test
 
-type KongServiceRespDto struct {
-	Id        string `json:"id"`
-	CreatedAt int64  `json:"created_at"`
-	UpdatedAt int64  `json:"updated_at"`
-	Name      string `json:"name"`
-	Protocol  string `json:"protocol"`
-	Host      string `json:"host"`
-	Port      int    `json:"port"`
-	Path      string `json:"path"`
+import (
+	"encoding/json"
+	"testing"
+
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+)
+
+func TestKongTargetDto_JSONUnmarshal(t *testing.T) {
+	var body = `{"created_at":1679018347.926,"id":"39c8ae64-5b4c-476c-a44d-1c850c00d433","tags":null,"weight":100,"target":"172.16.142.209:8080","upstream":{"id":"397a3af9-f77b-4e1c-92f3-2dfef6034229"}}`
+	var data dto.TargetDto
+	if err := json.Unmarshal([]byte(body), &data); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%+v", data)
+	t.Logf("createdAt: %v", data.GetCreatedAt())
 }

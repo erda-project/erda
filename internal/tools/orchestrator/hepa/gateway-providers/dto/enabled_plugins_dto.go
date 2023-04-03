@@ -14,11 +14,11 @@
 
 package dto
 
-type KongConfiguration struct {
+type PluginNameConfiguration struct {
 	Plugins []string `json:"plugins"`
 }
 
-type KongConfigsDto struct {
-	Configuration KongConfiguration `json:"configuration"`
-	Version       string            `json:"version"`
+type PluginConfigsDto struct {
+	Configuration PluginNameConfiguration `json:"configuration"`
+	Version       string                  `json:"version"`
 }

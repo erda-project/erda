@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -556,7 +557,9 @@ func (s *Syncer) watchVPA(ctx context.Context) {
 		case <-time.After(10 * time.Second):
 		}
 		if err := s.podScaledObject.WatchVPAsAllNamespaces(ctx, callback); err != nil {
-			logrus.Errorf("failed to watch vpa: %v, addr: %s", err, s.addr)
+			if !strings.Contains(err.Error(), "could not find the requested resource") {
+				logrus.Errorf("failed to watch vpa: %v, addr: %s", err, s.addr)
+			}
 		}
 	}
 }

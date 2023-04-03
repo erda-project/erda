@@ -689,6 +689,9 @@ func (impl GatewayDomainServiceImpl) IsPackageDomainsDiff(packageId, clusterName
 }
 
 func (impl GatewayDomainServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err
