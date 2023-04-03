@@ -19,9 +19,12 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
@@ -49,4 +52,70 @@ func TestCreateOrPutService(t *testing.T) {
 		},
 	}, map[string]string{})
 	assert.NoError(t, err)
+}
+
+func Test_newService(t *testing.T) {
+	type args struct {
+		service *apistructs.Service
+		labels  map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *v1.Service
+	}{
+		{
+			name: "test new service",
+			args: args{
+				service: &apistructs.Service{
+					Name:      "fake-service",
+					Namespace: apiv1.NamespaceDefault,
+					Ports: []diceyml.ServicePort{
+						{Port: 80, Protocol: "TCP"},
+					},
+				},
+				labels: map[string]string{
+					"app": "fake-service",
+					"svc": "fake-service.default.svc.cluster.local",
+					// invalid label, value must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z])
+					"invalid": "manager.addon-idxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.erda.cloud",
+				},
+			},
+			want: &v1.Service{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "v1",
+					Kind:       "Service",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-service",
+					Namespace: apiv1.NamespaceDefault,
+					Labels: map[string]string{
+						"app": "fake-service",
+						"svc": "fake-service.default.svc.cluster.local",
+					},
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{
+						{
+							Name:       "tcp-0",
+							Port:       80,
+							TargetPort: intstr.FromInt(80),
+						},
+					},
+					Selector: map[string]string{
+						"app": "fake-service",
+						"svc": "fake-service.default.svc.cluster.local",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := newService(tt.args.service, tt.args.labels)
+			if d := cmp.Diff(got, tt.want); d != "" {
+				t.Errorf("newService() mismatch (-want +got):\n%s", d)
+			}
+		})
+	}
 }
