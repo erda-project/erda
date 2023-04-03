@@ -302,16 +302,16 @@ func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[st
 
 	linkList := list.New()
 	for name, service := range mysqlMap {
-		var configs = []option{
-			withUseOperator(deployByOperator),
-			withClusterKey(clusterConfig["DICE_CLUSTER_NAME"]),
-			withAddress(service.MySQLHost + ":" + service.MySQLPort),
-			withUsername(service.User),
-			withPassword(service.Password),
-			withOperatorCli(p.MyOperaInsCli),
+		var configs = []Option{
+			WithUseOperator(deployByOperator),
+			WithClusterKey(clusterConfig["DICE_CLUSTER_NAME"]),
+			WithAddress(service.MySQLHost + ":" + service.MySQLPort),
+			WithUsername(service.User),
+			WithPassword(service.Password),
+			WithOperatorCli(p.MyOperaInsCli),
 		}
 		if name == "mysql" {
-			var item = NewInstanceAdapter(append(configs, withQueries([]string{
+			var item = NewInstanceAdapter(append(configs, WithQueries([]string{
 				strings.Replace(apistructs.AddonMysqlMasterGrantBackupSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				strings.Replace(apistructs.AddonMysqlCreateMysqlUserSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				apistructs.AddonMysqlGrantMysqlUserSqls,
@@ -319,7 +319,7 @@ func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[st
 			}))...)
 			linkList.PushFront(item)
 		} else {
-			var item = NewInstanceAdapter(append(configs, withQueries([]string{
+			var item = NewInstanceAdapter(append(configs, WithQueries([]string{
 				strings.Replace(strings.Replace(apistructs.AddonMysqlSlaveChangeMasterSqls, "${MYSQL_ROOT_PASSWORD}", password, -1), "${MASTER_HOST}", masterShortHost, -1),
 				apistructs.AddonMysqlSlaveResetSlaveSqls,
 				apistructs.AddonMysqlSlaveStartSlaveSqls,

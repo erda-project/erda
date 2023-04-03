@@ -33,7 +33,7 @@ type InstanceAdapter interface {
 	ExecSQLs() error
 }
 
-func NewInstanceAdapter(options ...option) InstanceAdapter {
+func NewInstanceAdapter(options ...Option) InstanceAdapter {
 	var cia = commonInstanceAdapter{
 		useOperator:    false,
 		execSQLRequest: new(pb.ExecSQLRequest),
@@ -82,15 +82,15 @@ type commonInstanceAdapter struct {
 	operatorInsCli pb.MySQLOperatorInstanceServiceServer
 }
 
-type option func(o *commonInstanceAdapter)
+type Option func(o *commonInstanceAdapter)
 
-func withUseOperator(useOperator bool) option {
+func WithUseOperator(useOperator bool) Option {
 	return func(o *commonInstanceAdapter) {
 		o.useOperator = useOperator
 	}
 }
 
-func withOperatorCli(cli pb.MySQLOperatorInstanceServiceServer) option {
+func WithOperatorCli(cli pb.MySQLOperatorInstanceServiceServer) Option {
 	if cli == nil {
 		panic("pb.MySQLOperatorInstanceServiceServer is nil, is it not autowired ?")
 	}
@@ -99,37 +99,37 @@ func withOperatorCli(cli pb.MySQLOperatorInstanceServiceServer) option {
 	}
 }
 
-func withUsername(username string) option {
+func WithUsername(username string) Option {
 	return func(cia *commonInstanceAdapter) {
 		cia.execSQLRequest.Username = username
 	}
 }
 
-func withPassword(password string) option {
+func WithPassword(password string) Option {
 	return func(cia *commonInstanceAdapter) {
 		cia.execSQLRequest.Password = password
 	}
 }
 
-func withSchema(schema string) option {
+func WithSchema(schema string) Option {
 	return func(cia *commonInstanceAdapter) {
 		cia.execSQLRequest.Schema = schema
 	}
 }
 
-func withClusterKey(clusterKey string) option {
+func WithClusterKey(clusterKey string) Option {
 	return func(cia *commonInstanceAdapter) {
 		cia.execSQLRequest.ClusterKey = clusterKey
 	}
 }
 
-func withAddress(host string) option {
+func WithAddress(host string) Option {
 	return func(cia *commonInstanceAdapter) {
 		cia.execSQLRequest.WAddress = host
 	}
 }
 
-func withQueries(queries []string) option {
+func WithQueries(queries []string) Option {
 	return func(cia *commonInstanceAdapter) {
 		cia.execSQLRequest.Queries = queries
 	}
