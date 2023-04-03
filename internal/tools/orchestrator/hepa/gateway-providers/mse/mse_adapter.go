@@ -15,6 +15,8 @@
 package mse
 
 import (
+	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -460,7 +462,7 @@ func (impl *MseAdapterImpl) AddUpstreamTarget(upstreamId string, req *KongTarget
 		Target:     req.Target,
 		Weight:     req.Weight,
 		UpstreamId: upstreamId,
-		CreatedAt:  time.Now().Unix(),
+		CreatedAt:  json.Number(strconv.FormatInt(time.Now().Unix(), 10)),
 		Health:     req.Health,
 	}, nil
 }
