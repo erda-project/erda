@@ -12,21 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dto_test
+package dto
 
-import (
-	"encoding/json"
-	"testing"
+type CredentialReqDto struct {
+	// 消费者id，必填
+	ConsumerId string `json:"consumer_id"`
+	// 插件名称
+	PluginName string `json:"plugin_name,omitempty"`
+	// 其余选填配置
+	Config *CredentialDto `json:"config,omitempty"`
+}
 
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
-)
-
-func TestKongTargetDto_JSONUnmarshal(t *testing.T) {
-	var body = `{"created_at":1679018347.926,"id":"39c8ae64-5b4c-476c-a44d-1c850c00d433","tags":null,"weight":100,"target":"172.16.142.209:8080","upstream":{"id":"397a3af9-f77b-4e1c-92f3-2dfef6034229"}}`
-	var data dto.KongTargetDto
-	if err := json.Unmarshal([]byte(body), &data); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("%+v", data)
-	t.Logf("createdAt: %v", data.GetCreatedAt())
+// IsEmpty
+func (dto CredentialReqDto) IsEmpty() bool {
+	return len(dto.ConsumerId) == 0 || len(dto.PluginName) == 0
 }

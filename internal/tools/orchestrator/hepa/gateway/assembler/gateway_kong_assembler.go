@@ -22,8 +22,8 @@ import (
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	kongConst "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
-	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
@@ -31,11 +31,11 @@ import (
 type GatewayKongAssemblerImpl struct {
 }
 
-func (GatewayKongAssemblerImpl) BuildKongServiceReq(serviceId string, dto *gw.ApiDto) (*kong.KongServiceReqDto, error) {
+func (GatewayKongAssemblerImpl) BuildKongServiceReq(serviceId string, dto *gw.ApiDto) (*providerDto.ServiceReqDto, error) {
 	if dto == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
-	req := &kong.KongServiceReqDto{}
+	req := &providerDto.ServiceReqDto{}
 	req.Url = dto.RedirectAddr
 	req.ConnectTimeout = 5000
 	req.ReadTimeout = 600000
@@ -47,12 +47,12 @@ func (GatewayKongAssemblerImpl) BuildKongServiceReq(serviceId string, dto *gw.Ap
 	}
 	return req, nil
 }
-func (GatewayKongAssemblerImpl) BuildKongRouteReq(routeId string, dto *gw.ApiDto, serviceId string, isRegexPath bool) (*kong.KongRouteReqDto, error) {
+func (GatewayKongAssemblerImpl) BuildKongRouteReq(routeId string, dto *gw.ApiDto, serviceId string, isRegexPath bool) (*providerDto.RouteReqDto, error) {
 	if dto == nil || len(serviceId) == 0 {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
-	req := kong.NewKongRouteReqDto()
-	req.Service = &kong.Service{}
+	req := providerDto.NewKongRouteReqDto()
+	req.Service = &providerDto.Service{}
 	req.Service.Id = serviceId
 	if len(routeId) != 0 {
 		req.RouteId = routeId
@@ -84,11 +84,11 @@ func (GatewayKongAssemblerImpl) BuildKongRouteReq(routeId string, dto *gw.ApiDto
 	}
 	return req, nil
 }
-func (GatewayKongAssemblerImpl) BuildKongPluginReqDto(pluginId string, policy *db.GatewayPolicy, serviceId string, routeId string, consumerId string) (*kong.KongPluginReqDto, error) {
+func (GatewayKongAssemblerImpl) BuildKongPluginReqDto(pluginId string, policy *db.GatewayPolicy, serviceId string, routeId string, consumerId string) (*providerDto.PluginReqDto, error) {
 	if policy == nil || len(policy.PluginName) == 0 {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
-	req := &kong.KongPluginReqDto{}
+	req := &providerDto.PluginReqDto{}
 	configMap := &map[string]interface{}{}
 	err := json.Unmarshal([]byte(policy.Config), configMap)
 	if err != nil {

@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -53,11 +53,11 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 	return &policyDto, nil, ""
 }
 
-func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
+func (policy Policy) buildPluginReq(dto *PolicyDto) *providerDto.PluginReqDto {
 	return dto.ToPluginReqDto()
 }
 
-// forValidate 用于识别解析的目的，如果解析是用来做鱼 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+// forValidate 用于识别解析的目的，如果解析是用来做 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	l := logrus.WithField("pluginName", apipolicy.Policy_Engine_SBAC).WithField("func", "ParseConfig")
 	l.Infof("dto: %+v", dto)
@@ -66,6 +66,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
+	logrus.Infof("sbac policyDto=%+v, ctx=%v", *policyDto, ctx)
 	adapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER].(gateway_providers.GatewayAdapter)
 	if !ok {
 		//TODO: MSE support sbac policy?
@@ -83,6 +84,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("failed to get identify with %s: %+v", apipolicy.CTX_ZONE, ctx)
 	}
+	logrus.Infof("set sbac policy for zone=%+v", *zone)
 	policyDb, _ := db.NewGatewayPolicyServiceImpl()
 	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
@@ -91,8 +93,9 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if err != nil {
 		return res, err
 	}
-	if !policyDto.Switch {
-		if exist != nil && !forValidate {
+
+	if !policyDto.Switch && !forValidate {
+		if exist != nil {
 			err = adapter.RemovePlugin(exist.PluginId)
 			if err != nil {
 				return res, err
@@ -104,6 +107,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	}
 
 	req := policy.buildPluginReq(policyDto)
+
 	packageAPIDB, _ := db.NewGatewayPackageApiServiceImpl()
 	packageApi, err := packageAPIDB.GetByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
 	if err != nil {
@@ -129,7 +133,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 
 	logrus.Infof("set sbac policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
 	req.RouteId = route.RouteId
-	req.Route = &kongDto.KongObj{
+	req.Route = &providerDto.KongObj{
 		Id: route.RouteId,
 	}
 
@@ -145,6 +149,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 				return res, err
 			}
 			exist.Config = configByte
+			logrus.Infof("update exist sbac gateway policy=%+v", *exist)
 			err = policyDb.Update(exist)
 			if err != nil {
 				return res, err
@@ -168,6 +173,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 				Config:     configByte,
 				Enabled:    1,
 			}
+			logrus.Infof("Insert sbac gateway policy=%+v", *policyDao)
 			err = policyDb.Insert(policyDao)
 			if err != nil {
 				return res, err

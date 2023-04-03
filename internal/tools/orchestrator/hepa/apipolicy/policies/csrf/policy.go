@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -80,8 +80,8 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 	return &policyDto, nil, ""
 }
 
-func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
-	req := &kongDto.KongPluginReqDto{
+func (policy Policy) buildPluginReq(dto *PolicyDto) *providerDto.PluginReqDto {
+	req := &providerDto.PluginReqDto{
 		Name:    PluginName,
 		Config:  map[string]interface{}{},
 		Enabled: &dto.Switch,
@@ -107,7 +107,8 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 }
 
 // ParseConfig is used to parse the policy configuration .
-// forValidate 用于识别解析的目的，如果解析是用来做鱼 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+// forValidate 用于识别解析的目的，如果解析是用来做 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
+
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	l := logrus.WithField("pluginName", PluginName).WithField("func", "ParseConfig")
 	l.Infof("dto: %+v", dto)
@@ -142,7 +143,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		return res, err
 	}
 	if !policyDto.Switch {
-		if exist != nil {
+		if exist != nil && !forValidate {
 			err = adapter.RemovePlugin(exist.PluginId)
 			if err != nil {
 				return res, err
@@ -178,7 +179,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 
 	logrus.Infof("set csrf policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
 	req.RouteId = route.RouteId
-	req.Route = &kongDto.KongObj{
+	req.Route = &providerDto.KongObj{
 		Id: route.RouteId,
 	}
 

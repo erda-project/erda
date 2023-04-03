@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dto
+package dto_test
 
-type KongConsumerReqDto struct {
-	// 用户名，必填
-	Username string `json:"username"`
-	// 第三方唯一id，选填
-	CustomId string `json:"custom_id,omitempty"`
-}
+import (
+	"testing"
+	"time"
 
-func (dto KongConsumerReqDto) IsEmpty() bool {
-	return len(dto.Username) == 0
-}
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+)
 
-func NewKongConsumerReqDto(name string, customId string) *KongConsumerReqDto {
-	return &KongConsumerReqDto{
-		Username: name,
-		CustomId: customId,
-	}
+// need not test on method AdjustCreatedAt
+func TestCredentialDto_AdjustCreatedAt(t *testing.T) {
+	var d dto.CredentialDto
+	now := time.Now().Unix()
+	d.CreatedAt = now
+	d.AdjustCreatedAt()
+	t.Logf("now: %d, createdAt: %d", now, d.CreatedAt)
 }

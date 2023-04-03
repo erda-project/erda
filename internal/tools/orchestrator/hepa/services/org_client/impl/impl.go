@@ -22,7 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/exdto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -207,16 +207,16 @@ func (impl GatewayOrgClientServiceImpl) UpdateCredentials(id string, secret ...s
 		Auths: []orm.AuthItem{
 			{
 				AuthType: orm.KEYAUTH,
-				AuthData: kongDto.KongCredentialListDto{
-					Data: []kongDto.KongCredentialDto{
+				AuthData: providerDto.CredentialListDto{
+					Data: []providerDto.CredentialDto{
 						{Key: dao.Id},
 					},
 				},
 			},
 			{
 				AuthType: orm.SIGNAUTH,
-				AuthData: kongDto.KongCredentialListDto{
-					Data: []kongDto.KongCredentialDto{
+				AuthData: providerDto.CredentialListDto{
+					Data: []providerDto.CredentialDto{
 						{
 							Key:    dao.Id,
 							Secret: dao.ClientSecret,
@@ -226,8 +226,8 @@ func (impl GatewayOrgClientServiceImpl) UpdateCredentials(id string, secret ...s
 			},
 			{
 				AuthType: orm.OAUTH2,
-				AuthData: kongDto.KongCredentialListDto{
-					Data: []kongDto.KongCredentialDto{
+				AuthData: providerDto.CredentialListDto{
+					Data: []providerDto.CredentialDto{
 						{
 							Name:         dao.Name,
 							ClientId:     dao.Id,
