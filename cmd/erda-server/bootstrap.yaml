@@ -520,7 +520,7 @@ clickhouse.table.loader@span:
 etcd-election@table-loader:
   _enable: ${QUERY_SPAN_FROM_CLICKHOUSE_ENABLE:true}
   root_path: "/erda/monitor-ck-table-loader-election"
-etcd-mutex:
+etcd-mutex@msp-addon-deployment:
   root_path: "/erda/msp-addon-deployment"
 erda.msp.apm.exception.query:
   query_source:

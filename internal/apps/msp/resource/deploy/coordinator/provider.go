@@ -34,7 +34,7 @@ type provider struct {
 	Cfg            *config
 	Log            logs.Logger
 	DB             *gorm.DB        `autowired:"mysql-client"`
-	Mutex          mutex.Interface `autowired:"etcd-mutex"`
+	Mutex          mutex.Interface `autowired:"etcd-mutex@msp-addon-deployment"`
 	defaultHandler *handlers.DefaultDeployHandler
 	handlers       map[string]handlers.ResourceDeployHandler
 }
