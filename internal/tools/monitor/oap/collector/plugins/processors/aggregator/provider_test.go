@@ -127,6 +127,13 @@ func Test_provider_add(t *testing.T) {
 							"counter_a": float64(3),
 						},
 					},
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397603),
+						Fields: map[string]interface{}{
+							"counter_a": float64(3),
+						},
+					},
 				},
 			},
 			want: []*metric.Metric{
@@ -151,6 +158,96 @@ func Test_provider_add(t *testing.T) {
 					Fields: map[string]interface{}{
 						"counter_a": float64(3),
 						"rate_a":    float64(100),
+					},
+				},
+				{
+					Name:      "name",
+					Timestamp: int64(1649397603 * time.Second),
+					Fields: map[string]interface{}{
+						"counter_a": float64(3),
+						"rate_a":    float64(0),
+					},
+				},
+			},
+		},
+		{
+			fields: fields{
+				Cfg: &config{
+					Rules: []RuleConfig{
+						{
+							Func:      "rate",
+							Args:      []interface{}{"container_oom_events_total"},
+							TargetKey: "oomkilled",
+						},
+						{
+							Func:      ">",
+							Args:      []interface{}{"oomkilled", 0},
+							TargetKey: "oomkilled",
+						},
+					},
+				},
+			},
+			args: args{
+				in: []*metric.Metric{
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397600),
+						Fields: map[string]interface{}{
+							"container_oom_events_total": float64(0),
+						},
+					},
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397601),
+						Fields: map[string]interface{}{
+							"container_oom_events_total": float64(1),
+						},
+					},
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397602),
+						Fields: map[string]interface{}{
+							"container_oom_events_total": float64(1),
+						},
+					},
+					{
+						Name:      "name",
+						Timestamp: int64(time.Second * 1649397603),
+						Fields: map[string]interface{}{
+							"container_oom_events_total": float64(2),
+						},
+					},
+				},
+			},
+			want: []*metric.Metric{
+				{
+					Name:      "name",
+					Timestamp: int64(1649397600 * time.Second),
+					Fields: map[string]interface{}{
+						"container_oom_events_total": float64(0),
+					},
+				},
+				{
+					Name:      "name",
+					Timestamp: int64(1649397601 * time.Second),
+					Fields: map[string]interface{}{
+						"container_oom_events_total": float64(1),
+						"oomkilled":                  true,
+					},
+				},
+				{
+					Name:      "name",
+					Timestamp: int64(1649397602 * time.Second),
+					Fields: map[string]interface{}{
+						"container_oom_events_total": float64(1),
+					},
+				},
+				{
+					Name:      "name",
+					Timestamp: int64(1649397603 * time.Second),
+					Fields: map[string]interface{}{
+						"container_oom_events_total": float64(2),
+						"oomkilled":                  true,
 					},
 				},
 			},

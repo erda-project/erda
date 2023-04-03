@@ -335,6 +335,25 @@ erda.oap.collector.processor.aggregator@cpu-usage:
       args: [ "cpu_usage_percent", 100 ]
       target_key: "cpu_usage_percent"
 
+erda.oap.collector.processor.aggregator@oomkilled:
+  keypass:
+    name: [ "docker_container_summary" ]
+  keydrop:
+    container: [ "POD" ]
+  keyinclude:
+    - "name"
+    - "fields.container_oom_events_total"
+    - "tags.cluster_name"
+    - "tags.id"
+
+  rules:
+    - func: "rate"
+      args: [ "container_oom_events_total" ]
+      target_key: "oomkilled"
+    - func: ">"
+      args: [ "oomkilled", 0 ]
+      target_key: "oomkilled"
+
 erda.oap.collector.processor.aggregator@mem-percent:
   keypass:
     name: [ "docker_container_summary" ]
