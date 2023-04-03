@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
-	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -31,7 +31,7 @@ import (
 type GatewayDbAssemblerImpl struct {
 }
 
-func (GatewayDbAssemblerImpl) Resp2GatewayService(resp *kong.KongServiceRespDto, service *db.GatewayService) error {
+func (GatewayDbAssemblerImpl) Resp2GatewayService(resp *providerDto.ServiceRespDto, service *db.GatewayService) error {
 	if resp == nil || service == nil {
 		return errors.New(ERR_INVALID_ARG)
 	}
@@ -44,7 +44,7 @@ func (GatewayDbAssemblerImpl) Resp2GatewayService(resp *kong.KongServiceRespDto,
 	return nil
 }
 
-func (impl GatewayDbAssemblerImpl) Resp2GatewayServiceByApi(resp *kong.KongServiceRespDto, apiDto gw.ApiDto, apiId string) (*db.GatewayService, error) {
+func (impl GatewayDbAssemblerImpl) Resp2GatewayServiceByApi(resp *providerDto.ServiceRespDto, apiDto gw.ApiDto, apiId string) (*db.GatewayService, error) {
 	if resp == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
@@ -58,7 +58,7 @@ func (impl GatewayDbAssemblerImpl) Resp2GatewayServiceByApi(resp *kong.KongServi
 	return res, nil
 }
 
-func (GatewayDbAssemblerImpl) Resp2GatewayRoute(resp *kong.KongRouteRespDto, route *db.GatewayRoute) error {
+func (GatewayDbAssemblerImpl) Resp2GatewayRoute(resp *providerDto.RouteRespDto, route *db.GatewayRoute) error {
 	if resp == nil || route == nil {
 		return errors.New(ERR_INVALID_ARG)
 	}
@@ -85,7 +85,7 @@ func (GatewayDbAssemblerImpl) Resp2GatewayRoute(resp *kong.KongRouteRespDto, rou
 	route.Methods = string(methods)
 	return nil
 }
-func (impl GatewayDbAssemblerImpl) Resp2GatewayRouteByAPi(resp *kong.KongRouteRespDto, serviceId string, apiId string) (*db.GatewayRoute, error) {
+func (impl GatewayDbAssemblerImpl) Resp2GatewayRouteByAPi(resp *providerDto.RouteRespDto, serviceId string, apiId string) (*db.GatewayRoute, error) {
 	if resp == nil || len(serviceId) == 0 || len(apiId) == 0 {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
@@ -99,7 +99,7 @@ func (impl GatewayDbAssemblerImpl) Resp2GatewayRouteByAPi(resp *kong.KongRouteRe
 	return res, nil
 
 }
-func (GatewayDbAssemblerImpl) Resp2GatewayPluginInstance(resp *kong.KongPluginRespDto, params PluginParams) (*db.GatewayPluginInstance, error) {
+func (GatewayDbAssemblerImpl) Resp2GatewayPluginInstance(resp *providerDto.PluginRespDto, params PluginParams) (*db.GatewayPluginInstance, error) {
 	if resp == nil {
 		return nil, errors.Errorf("invalid resp[%+v] params[%+v]", resp, params)
 	}

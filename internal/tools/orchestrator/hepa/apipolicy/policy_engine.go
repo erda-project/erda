@@ -140,6 +140,9 @@ func (policy BasePolicy) MergeDiceConfig(map[string]interface{}) (PolicyDto, err
 }
 
 func (policy BasePolicy) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	azDb, err := db.NewGatewayAzInfoServiceImpl()
 	if err != nil {
 		return "", err

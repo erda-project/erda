@@ -56,7 +56,7 @@ type HealthchecksDto struct {
 	Passive PassiveHealthcheckDto `json:"passive,omitempty"`
 }
 
-type KongUpstreamDto struct {
+type UpstreamDto struct {
 	Id           string          `json:"id,omitempty"`
 	Name         string          `json:"name"`
 	Healthchecks HealthchecksDto `json:"healthchecks"`

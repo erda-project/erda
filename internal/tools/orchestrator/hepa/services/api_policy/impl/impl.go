@@ -37,7 +37,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -168,7 +168,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP {
 			//TODO: 不同的 gateway provider 的插件配置情况是否需要调整,还是旧使用以前默认的 Kong 的方式，对于 mse 的情况返回结果一样，但有些插件不生效?
 			logrus.Warnf("gateway provider %s no policy config for policy %s\n", gatewayProvider, category)
@@ -594,6 +594,9 @@ func (impl GatewayApiPolicyServiceImpl) executePolicyEngine(zone *orm.GatewayZon
 }
 
 func (impl GatewayApiPolicyServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err
@@ -666,7 +669,7 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		apipolicy.CTX_ZONE:       zone,
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 	case "":
 		gatewayAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
 		ctx[apipolicy.CTX_KONG_ADAPTER] = gatewayAdapter
@@ -1058,7 +1061,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		useKong = false
 		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP {
 			rerr = errors.Errorf("gateway provider %s not support set policy %s", gatewayProvider, category)
@@ -1129,6 +1132,13 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		rerr = err
 		return
 	}
+	err = impl.checkDuplicatedPolicyConfig(gatewayProvider, packageId, packageApiId, category, config, zone, helper)
+	if err != nil {
+		logrus.Errorf("has deplicated policy config for policy %s: %v\n", category, err)
+		rerr = err
+		return
+	}
+
 	transSucc := false
 	defer func() {
 		if transSucc {
@@ -1143,13 +1153,6 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		}
 		helper.Close()
 	}()
-
-	err = impl.checkDuplicatedPolicyConfig(gatewayProvider, packageId, packageApiId, category, config, zone, helper)
-	if err != nil {
-		logrus.Errorf("has deplicated policy config for policy %s: %v\n", category, err)
-		rerr = err
-		return
-	}
 
 	dto, msg, err := impl.SetZonePolicyConfig(zone, nil, category, config, helper)
 	if err != nil {
@@ -1216,7 +1219,7 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 	case "":
 		gatewayAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
 		ctx[apipolicy.CTX_KONG_ADAPTER] = gatewayAdapter

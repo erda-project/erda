@@ -24,8 +24,8 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/base"
-	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 )
 
 const (
@@ -54,7 +54,7 @@ func (impl *KongAdapterImpl) GatewayProviderExist() bool {
 	return true
 }
 
-func (impl *KongAdapterImpl) GetPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) GetPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -91,7 +91,7 @@ func (impl *KongAdapterImpl) GetPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 	return nil, errors.Errorf("get plugin failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -111,7 +111,7 @@ func (impl *KongAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*K
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 || code == 200 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -122,7 +122,7 @@ func (impl *KongAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*K
 	return nil, errors.Errorf("CreateOrUpdatePlugin failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
+func (impl *KongAdapterImpl) DeletePluginIfExist(req *PluginReqDto) error {
 	enabled, err := impl.CheckPluginEnabled(req.Name)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func (impl *KongAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
 	return impl.RemovePlugin(exist.Id)
 }
 
-func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	timeNow := time.Now()
 	defer func() {
 		log.Infof("*KongAdapterImpl.CreateOrUpdatePlugin costs %dms", time.Now().Sub(timeNow).Milliseconds())
@@ -167,7 +167,7 @@ func (impl *KongAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongP
 	return impl.PutPlugin(req)
 }
 
-func (impl *KongAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) AddPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -188,7 +188,7 @@ func (impl *KongAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -199,7 +199,7 @@ func (impl *KongAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 	return nil, errors.Errorf("AddPlugin failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) PutPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) PutPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -220,7 +220,7 @@ func (impl *KongAdapterImpl) PutPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 || code == 201 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "body[%s] Unmarshal failed", body)
@@ -231,7 +231,7 @@ func (impl *KongAdapterImpl) PutPlugin(req *KongPluginReqDto) (*KongPluginRespDt
 	return nil, errors.Errorf("UpdatePlugin failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *KongAdapterImpl) UpdatePlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -244,7 +244,7 @@ func (impl *KongAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginRes
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 || code == 201 {
-		respDto := &KongPluginRespDto{}
+		respDto := &PluginRespDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "body[%s] Unmarshal failed", body)
@@ -254,7 +254,7 @@ func (impl *KongAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginRes
 	}
 	return nil, errors.Errorf("UpdatePlugin failed: code[%d] msg[%s]", code, body)
 }
-func (impl *KongAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongCredentialDto, error) {
+func (impl *KongAdapterImpl) CreateCredential(req *CredentialReqDto) (*CredentialDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -270,7 +270,7 @@ func (impl *KongAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongC
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 201 {
-		respDto := &KongCredentialDto{}
+		respDto := &CredentialDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrap(err, ERR_JSON_FAIL)
@@ -284,7 +284,7 @@ func (impl *KongAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongC
 	return nil, errors.Errorf("CreateCredential failed: code[%d] msg[%s]", code, body)
 }
 
-func (impl *KongAdapterImpl) GetCredentialList(consumerId, pluginName string) (*KongCredentialListDto, error) {
+func (impl *KongAdapterImpl) GetCredentialList(consumerId, pluginName string) (*CredentialListDto, error) {
 	if impl == nil {
 		return nil, errors.New("kong can't be attached")
 	}
@@ -293,7 +293,7 @@ func (impl *KongAdapterImpl) GetCredentialList(consumerId, pluginName string) (*
 		return nil, errors.Wrap(err, "request failed")
 	}
 	if code == 200 {
-		respDto := &KongCredentialListDto{}
+		respDto := &CredentialListDto{}
 		err = json.Unmarshal(body, respDto)
 		if err != nil {
 			return nil, errors.Wrapf(err, "json unmashal failed, body:%s", body)

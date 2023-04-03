@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dto_test
+package dto
 
-import (
-	"testing"
-	"time"
-
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
-)
-
-// need not test on method AdjustCreatedAt
-func TestKongCredentialDto_AdjustCreatedAt(t *testing.T) {
-	var d dto.KongCredentialDto
-	now := time.Now().Unix()
-	d.CreatedAt = now
-	d.AdjustCreatedAt()
-	t.Logf("now: %d, createdAt: %d", now, d.CreatedAt)
+type ServiceRespDto struct {
+	Id        string `json:"id"`
+	CreatedAt int64  `json:"created_at"`
+	UpdatedAt int64  `json:"updated_at"`
+	Name      string `json:"name"`
+	Protocol  string `json:"protocol"`
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Path      string `json:"path"`
 }

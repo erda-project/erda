@@ -16,11 +16,11 @@ package dto
 
 import "encoding/json"
 
-type KongUpstreamStatusRespDto struct {
-	Data []KongTargetDto `json:"data"`
+type UpstreamStatusRespDto struct {
+	Data []TargetDto `json:"data"`
 }
 
-type KongTargetDto struct {
+type TargetDto struct {
 	Id     string `json:"id,omitempty"`
 	Target string `json:"target"`
 	// 默认是100
@@ -30,7 +30,7 @@ type KongTargetDto struct {
 	Health     string      `json:"health,omitempty"`
 }
 
-func (dto KongTargetDto) GetCreatedAt() int64 {
+func (dto TargetDto) GetCreatedAt() int64 {
 	if i, err := dto.CreatedAt.Int64(); err == nil {
 		return i
 	}

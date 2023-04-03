@@ -30,9 +30,10 @@ import (
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	gconfig "github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -167,6 +168,9 @@ func (impl GatewayZoneServiceImpl) UpdateBuiltinPolicies(zoneId string) error {
 }
 
 func (impl GatewayZoneServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err
@@ -288,28 +292,31 @@ func (impl GatewayZoneServiceImpl) UpdateKongDomainPolicy(az, projectId, env str
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(az)
+		if err != nil {
+			return err
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		_, err = gatewayAdapter.CreateOrUpdatePlugin(&providerDto.PluginReqDto{
+			Name: "domain-policy",
+			Config: map[string]interface{}{
+				"regexs":   regexs,
+				"ids":      ids,
+				"enables":  enables,
+				"disables": disables,
+				"allows":   allows,
+				"packs":    packs,
+				"dpids":    dpids,
+				"denvs":    denvs,
+			},
+		})
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
-	}
-	_, err = gatewayAdapter.CreateOrUpdatePlugin(&kongDto.KongPluginReqDto{
-		Name: "domain-policy",
-		Config: map[string]interface{}{
-			"regexs":   regexs,
-			"ids":      ids,
-			"enables":  enables,
-			"disables": disables,
-			"allows":   allows,
-			"packs":    packs,
-			"dpids":    dpids,
-			"denvs":    denvs,
-		},
-	})
-	if err != nil {
-		return err
 	}
 	return nil
 }
@@ -484,7 +491,7 @@ func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ..
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		//TODO: get svcName
 		namespace = config.Namespace
 		svcName = config.ServiceName
@@ -644,7 +651,7 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, namespace stri
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		if namespace == "" {
 			// 走到这里，应该是按地址转发，设置固定 namespace
 			namespace = "project-" + zone.DiceProjectId + "-" + strings.ToLower(zone.DiceEnv)
@@ -687,7 +694,7 @@ func createOrUpdateZoneIngress(adapter k8s.K8SAdapter, namespace, svcName, ingNa
 	kongBackend := k8s.IngressBackend{}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		kongBackend.ServiceName = svcName
 		services, err := adapter.ListAllServices(namespace)
 		if err != nil {
