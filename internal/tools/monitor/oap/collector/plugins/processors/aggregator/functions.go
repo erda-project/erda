@@ -114,7 +114,7 @@ func (r *ruler) parseFunction(name string) (functionCall, error) {
 	switch name {
 	case "rate":
 		return r.rateCall, nil
-	case "+", "-", "*", "/":
+	case "+", "-", "*", "/", ">":
 		return r.binaryFactory(name), nil
 	default:
 		return nil, fmt.Errorf("invalide func: %s", name)
@@ -196,6 +196,12 @@ func (r *ruler) binaryFactory(op string) functionCall {
 			cur.Fields[r.Alias] = p1 + p2
 		case "-":
 			cur.Fields[r.Alias] = p1 - p2
+		case ">":
+			if p1 > p2 {
+				cur.Fields[r.Alias] = true
+			} else {
+				delete(cur.Fields, r.Alias)
+			}
 		}
 		return cur
 	}
