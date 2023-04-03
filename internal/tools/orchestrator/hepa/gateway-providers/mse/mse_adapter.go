@@ -19,39 +19,102 @@ import (
 	"strconv"
 	"time"
 
+	mseclient "github.com/alibabacloud-go/mse-20190531/v3/client"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
-	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
+	mseplugins "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/plugins"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
-)
-
-const (
-	Mse_Version                               = "mse-1.0.5"
-	Mse_Provider_Name                         = "MSE"
-	MseBurstMultiplier                        = "2"
-	Mse_Ingress_Controller_ACK_Namespace      = "mse-ingress-controller"
-	Mse_Ingress_Controller_ACK_DeploymentName = "ack-mse-ingress-controller"
-	Mse_Need_Drop_Annotation                  = "need_drop_annotation"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type MseAdapterImpl struct {
+	Bdl          *bundle.Bundle
 	ProviderName string
+	// Aliyun AccessKey ID
+	AccessKeyID string
+	// Aliyun AccessKey Secret
+	AccessKeySecret string
+	// Aliyun Mse Gateway unique ID ("gw-eeab5d74e29d435f87bcxxxxxxxxxxxxx")
+	GatewayUniqueID string
+	// Aliyun Mse Gateway EndPoint ("mse.cn-hangzhou.aliyuncs.com")
+	GatewayEndpoint string
 }
 
-func NewMseAdapter() gateway_providers.GatewayAdapter {
-	return &MseAdapterImpl{
-		ProviderName: Mse_Provider_Name,
+func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
+	adapter := &MseAdapterImpl{
+		Bdl: bundle.New(bundle.WithScheduler(),
+			bundle.WithOrchestrator(),
+			bundle.WithHepa(),
+			bundle.WithCMDB(),
+			bundle.WithErdaServer(),
+			bundle.WithPipeline(),
+			bundle.WithMonitor(),
+			bundle.WithCollector(),
+			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))),
+		),
+		ProviderName:    common.Mse_Provider_Name,
+		GatewayEndpoint: common.MseDefaultServerEndpoint,
 	}
+
+	configmap, err := adapter.Bdl.QueryClusterInfo(az)
+	if err != nil {
+		log.Errorf("bundle QueryClusterInfo for cluster %s failed: %v\n", az, err)
+		return nil, err
+	}
+
+	config := map[string]string{}
+	err = utils.JsonConvertObjToType(configmap, &config)
+	if err != nil {
+		log.Errorf("JsonConvertObjToType cluster %s  configmap failed: %v\n", az, err)
+		return nil, err
+	}
+
+	accessKeyID, ok := config["ALIYUN_ACCESS_KEY_ID"]
+	if !ok || accessKeyID == "" {
+		log.Errorf("ALIYUN_ACCESS_KEY_ID not set in cluster %s  configmap", az)
+		return nil, errors.Errorf("ALIYUN_ACCESS_KEY_ID not set in cluster %s  configmap", az)
+	}
+	adapter.AccessKeyID = accessKeyID
+
+	accessKeySecret, ok := config["ALIYUN_ACCESS_KEY_SECRET"]
+	if !ok || accessKeySecret == "" {
+		log.Errorf("ALIYUN_ACCESS_KEY_SECRET not set in cluster %s  configmap", az)
+		return nil, errors.Errorf("ALIYUN_ACCESS_KEY_SECRET not set in cluster %s  configmap", az)
+	}
+	adapter.AccessKeySecret = accessKeySecret
+
+	gatewayUniqueID, ok := config["ALIYUN_MSE_GATEWAY_ID"]
+	if !ok || gatewayUniqueID == "" {
+		log.Errorf("ALIYUN_MSE_GATEWAY_ID not set in cluster %s  configmap", az)
+		return nil, errors.Errorf("ALIYUN_MSE_GATEWAY_ID not set in cluster %s  configmap", az)
+	}
+	adapter.GatewayUniqueID = gatewayUniqueID
+
+	mseGatewayEndpoint, ok := config["ALIYUN_MSE_GATEWAY_ENDPOINT"]
+	if ok && mseGatewayEndpoint != "" {
+		adapter.GatewayEndpoint = mseGatewayEndpoint
+	}
+
+	return adapter, nil
 }
 
 func (impl *MseAdapterImpl) GatewayProviderExist() bool {
 	//TODO:
 	// check Deployment mse-ingress-controller/ack-mse-ingress-controller in k8s cluster
-	if impl == nil || impl.ProviderName != Mse_Provider_Name {
+	if impl == nil || impl.ProviderName != common.Mse_Provider_Name {
+		return false
+	}
+	_, err := impl.GetMSEGatewayByAPI()
+	if err != nil {
+		log.Errorf("get MSE gateway info failed: %v", err)
 		return false
 	}
 	return true
@@ -59,15 +122,33 @@ func (impl *MseAdapterImpl) GatewayProviderExist() bool {
 
 func (impl *MseAdapterImpl) GetVersion() (string, error) {
 	log.Debugf("GetVersion is not implemented in Mse gateway provider.")
-	return Mse_Version, nil
+	return common.Mse_Version, nil
 }
 
 func (impl *MseAdapterImpl) CheckPluginEnabled(pluginName string) (bool, error) {
-	log.Debugf("CheckPluginEnabled is not implemented in Mse gateway provider.")
+	if pluginName == "" {
+		return false, errors.Errorf("plugin name not set")
+	}
+
+	id, ok := common.MSEPluginNameToID[pluginName]
+	if !ok {
+		log.Debugf("plugin %s not support by MSE Gateway now", pluginName)
+		return true, nil
+	}
+
+	pl, err := impl.GetMSEPluginConfigByIDByAPI(id)
+	if err != nil {
+		return false, err
+	}
+
+	if pl == nil {
+		return false, errors.Errorf("plugin %s config not found for MSE Gateway", pluginName)
+	}
+	// 不检测插件是否启用，只检查插件是否支持，因为开启后续对插件的更新，都显式设置其为启用状态
 	return true, nil
 }
 
-func (impl *MseAdapterImpl) CreateConsumer(req *KongConsumerReqDto) (*KongConsumerRespDto, error) {
+func (impl *MseAdapterImpl) CreateConsumer(req *ConsumerReqDto) (*ConsumerRespDto, error) {
 	log.Debugf("CreateConsumer is not really implemented in Mse gateway provider.")
 	if impl == nil {
 		return nil, errors.New("mse can't be attached")
@@ -81,7 +162,7 @@ func (impl *MseAdapterImpl) CreateConsumer(req *KongConsumerReqDto) (*KongConsum
 		return nil, errors.Wrap(err, "failed to generate id for CreateConsumer")
 	}
 
-	return &KongConsumerRespDto{
+	return &ConsumerRespDto{
 		CustomId:  req.CustomId,
 		CreatedAt: time.Now().Unix(),
 		Id:        uuid.String(),
@@ -93,7 +174,7 @@ func (impl *MseAdapterImpl) DeleteConsumer(id string) error {
 	return nil
 }
 
-func (impl *MseAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error) {
+func (impl *MseAdapterImpl) CreateOrUpdateRoute(req *RouteReqDto) (*RouteRespDto, error) {
 	log.Debugf("CreateOrUpdateRoute is not really implemented in Mse gateway provider.")
 	timeNow := time.Now()
 	defer func() {
@@ -126,7 +207,7 @@ func (impl *MseAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRout
 		req.RouteId = uuid.String()
 	}
 
-	return &KongRouteRespDto{
+	return &RouteRespDto{
 		Id:        routeId,
 		Protocols: req.Protocols,
 		Methods:   req.Methods,
@@ -141,11 +222,11 @@ func (impl *MseAdapterImpl) DeleteRoute(routeId string) error {
 	return nil
 }
 
-func (impl *MseAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDto, error) {
-	return &KongRouteRespDto{}, nil
+func (impl *MseAdapterImpl) UpdateRoute(req *RouteReqDto) (*RouteRespDto, error) {
+	return &RouteRespDto{}, nil
 }
 
-func (impl *MseAdapterImpl) CreateOrUpdateService(req *KongServiceReqDto) (*KongServiceRespDto, error) {
+func (impl *MseAdapterImpl) CreateOrUpdateService(req *ServiceReqDto) (*ServiceRespDto, error) {
 	log.Debugf("CreateOrUpdateService is not really implemented in Mse gateway provider.")
 	timeNow := time.Now()
 	defer func() {
@@ -178,7 +259,7 @@ func (impl *MseAdapterImpl) CreateOrUpdateService(req *KongServiceReqDto) (*Kong
 	if req.Port > 0 {
 		port = req.Port
 	}
-	return &KongServiceRespDto{
+	return &ServiceRespDto{
 		Id:       serviceId,
 		Name:     req.Name,
 		Protocol: req.Protocol,
@@ -193,7 +274,7 @@ func (impl *MseAdapterImpl) DeleteService(serviceId string) error {
 	return nil
 }
 
-func (impl *MseAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
+func (impl *MseAdapterImpl) DeletePluginIfExist(req *PluginReqDto) error {
 	log.Debugf("DeletePluginIfExist is not really implemented in Mse gateway provider.")
 	enabled, err := impl.CheckPluginEnabled(req.Name)
 	if err != nil {
@@ -213,8 +294,8 @@ func (impl *MseAdapterImpl) DeletePluginIfExist(req *KongPluginReqDto) error {
 	return impl.RemovePlugin(exist.Id)
 }
 
-func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*KongPluginRespDto, error) {
-	log.Debugf("CreateOrUpdatePluginById is not really implemented in Mse gateway provider.")
+func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*PluginRespDto, error) {
+	log.Infof("CreateOrUpdatePluginById with Req: %+v\n", *req)
 	if impl == nil {
 		return nil, errors.New("mse can't be attached")
 	}
@@ -231,13 +312,64 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*Ko
 		}
 		req.PluginId = uuid.String()
 	}
-
+	// enabled 设置网关一直启用状态
 	enabled := true
-	if req.Enabled != nil {
-		enabled = *req.Enabled
+
+	// The application scope of the plug-in.
+	// *   0: global
+	// *   1: domain names
+	// *   2: routes
+	var configLevel int32 = 0 // 目前(2023.02) 只支持设置为 0
+
+	pluginId, ok := common.MSEPluginNameToID[req.Name]
+	if !ok {
+		return nil, errors.Errorf("plugin %s not support in MSE Gateway", req.Name)
+	}
+	pluginConfig, err := impl.GetMSEPluginConfigByIDByAPI(pluginId)
+	if err != nil {
+		return nil, errors.Errorf("failed to get plugin %s config for CreateOrUpdatePluginById, error: %v", req.Name, err)
 	}
 
-	return &KongPluginRespDto{
+	// map[configLevel]GetPluginConfigResponseBodyDataGatewayConfigList
+	confList := make(map[string][]mseclient.GetPluginConfigResponseBodyDataGatewayConfigList)
+
+	if pluginConfig != nil && len(pluginConfig.GatewayConfigList) > 0 {
+		for _, cf := range pluginConfig.GatewayConfigList {
+			log.Infof("cf.ConfigLevel=%d  cf.Config=%s", *cf.ConfigLevel, *cf.Config)
+			mapKey := ""
+			switch *cf.ConfigLevel {
+			case mseplugins.MsePluginConfigLevelDomainNumber:
+				mapKey = mseplugins.MsePluginConfigLevelDomain
+			case mseplugins.MsePluginConfigLevelRouteNumber:
+				mapKey = mseplugins.MsePluginConfigLevelRoute
+			default:
+				mapKey = mseplugins.MsePluginConfigLevelGlobal
+			}
+			if _, exist := confList[mapKey]; !exist {
+				confList[mapKey] = make([]mseclient.GetPluginConfigResponseBodyDataGatewayConfigList, 0)
+			}
+			confList[mapKey] = append(confList[mapKey], *cf)
+		}
+	} else {
+		return nil, errors.Errorf("failed to get plugin %s config for CreateOrUpdatePluginById: no config found for this plugin", req.Name)
+	}
+
+	routeName, err := impl.GetMSEGatewayRouteNameByZoneName(req.ZoneName, nil)
+	if err != nil {
+		return nil, errors.Errorf("GetMSEGatewayRouteNameByZoneName failed for plugin %s for zone_name %s CreateOrUpdatePluginById, error: %v", req.Name, req.ZoneName, err)
+	}
+
+	req.MSERouteName = routeName
+	config, configId, err := impl.createPluginConfig(req, confList)
+	if err != nil {
+		return nil, errors.Errorf("createPluginConfig failed for plugin %s for CreateOrUpdatePluginById, error: %v", req.Name, err)
+	}
+	_, err = impl.UpdateMSEPluginConfigByIDByAPI(pluginId, &configId, &config, &configLevel, &enabled)
+	if err != nil {
+		return nil, errors.Errorf("failed to update plugin %s config for CreateOrUpdatePluginById, error: %v", req.Name, err)
+	}
+
+	return &PluginRespDto{
 		Id:         req.PluginId,
 		ServiceId:  req.ServiceId,
 		RouteId:    req.RouteId,
@@ -253,8 +385,7 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *KongPluginReqDto) (*Ko
 	}, nil
 }
 
-func (impl *MseAdapterImpl) GetPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
-	log.Debugf("GetPlugin is not  really implemented in Mse gateway provider.")
+func (impl *MseAdapterImpl) GetPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if req == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
@@ -262,7 +393,39 @@ func (impl *MseAdapterImpl) GetPlugin(req *KongPluginReqDto) (*KongPluginRespDto
 	if req.Enabled != nil {
 		enabled = *req.Enabled
 	}
-	return &KongPluginRespDto{
+
+	pluginId, ok := common.MSEPluginNameToID[req.Name]
+	if !ok {
+		log.Debugf("plugin %s not support in MSE Gateway", req.Name)
+		return &PluginRespDto{
+			Id:         req.PluginId,
+			ServiceId:  req.ServiceId,
+			RouteId:    req.RouteId,
+			ConsumerId: req.ConsumerId,
+			Route:      req.Route,
+			Service:    req.Service,
+			Consumer:   req.Consumer,
+			Name:       req.Name,
+			Config:     req.Config,
+			Enabled:    enabled,
+			CreatedAt:  req.CreatedAt,
+			PolicyId:   req.Id,
+		}, nil
+	}
+
+	pluginConfig, err := impl.GetMSEPluginConfigByIDByAPI(pluginId)
+	if err != nil {
+		return nil, errors.Errorf("failed to get plugin %s config for CreateOrUpdatePluginById, error: %v", req.Name, err)
+	}
+
+	// 插件名称到插件配置列表的映射: map[pluginName]GatewayConfigList
+	//config := make(map[string][]*mseclient.GetPluginConfigResponseBodyDataGatewayConfigList, 0)
+	config := make(map[string]interface{}, 0)
+	if pluginConfig != nil && len(pluginConfig.GatewayConfigList) > 0 {
+		config[req.Name] = pluginConfig.GatewayConfigList
+	}
+
+	return &PluginRespDto{
 		Id:         req.PluginId,
 		ServiceId:  req.ServiceId,
 		RouteId:    req.RouteId,
@@ -271,14 +434,14 @@ func (impl *MseAdapterImpl) GetPlugin(req *KongPluginReqDto) (*KongPluginRespDto
 		Service:    req.Service,
 		Consumer:   req.Consumer,
 		Name:       req.Name,
-		Config:     req.Config,
+		Config:     config,
 		Enabled:    enabled,
 		CreatedAt:  req.CreatedAt,
 		PolicyId:   req.Id,
 	}, nil
 }
 
-func (impl *MseAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *MseAdapterImpl) CreateOrUpdatePlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	log.Debugf("CreateOrUpdatePlugin is not implemented in Mse gateway provider.")
 	timeNow := time.Now()
 	defer func() {
@@ -305,7 +468,7 @@ func (impl *MseAdapterImpl) CreateOrUpdatePlugin(req *KongPluginReqDto) (*KongPl
 	return impl.PutPlugin(req)
 }
 
-func (impl *MseAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *MseAdapterImpl) AddPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	log.Debugf("AddPlugin is not implemented in Mse gateway provider.")
 	if impl == nil {
 		return nil, errors.New("mse can't be attached")
@@ -326,7 +489,7 @@ func (impl *MseAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDto
 		pluginEnabled = *req.Enabled
 	}
 
-	return &KongPluginRespDto{
+	return &PluginRespDto{
 		Id:         req.Id,
 		ServiceId:  req.ServiceId,
 		RouteId:    req.RouteId,
@@ -342,25 +505,76 @@ func (impl *MseAdapterImpl) AddPlugin(req *KongPluginReqDto) (*KongPluginRespDto
 	}, nil
 }
 
-func (impl *MseAdapterImpl) PutPlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
+func (impl *MseAdapterImpl) PutPlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	log.Debugf("PutPlugin is not implemented in Mse gateway provider.")
 	return nil, nil
 }
 
-func (impl *MseAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginRespDto, error) {
-	log.Debugf("UpdatePlugin is not really implemented in Mse gateway provider.")
+// UpdatePlugin 更新 req.Name 对应的插件的配置
+func (impl *MseAdapterImpl) UpdatePlugin(req *PluginReqDto) (*PluginRespDto, error) {
 	if impl == nil {
 		return nil, errors.New("mse can't be attached")
 	}
 	if req == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
-	enabled := true
-	if req.Enabled != nil {
-		enabled = *req.Enabled
+
+	if req.Name == "" {
+		return nil, errors.New("plugin name not set")
 	}
 
-	return &KongPluginRespDto{
+	// enabled 设置网关一直启用状态
+	enabled := true
+	pluginId, ok := common.MSEPluginNameToID[req.Name]
+	if !ok {
+		log.Debugf("plugin %s not support in MSE Gateway", req.Name)
+		return &PluginRespDto{
+			Id:         req.Id,
+			ServiceId:  req.ServiceId,
+			RouteId:    req.RouteId,
+			ConsumerId: req.ConsumerId,
+			Route:      req.Route,
+			Service:    req.Service,
+			Consumer:   req.Consumer,
+			Name:       req.Name,
+			Config:     req.Config,
+			Enabled:    enabled,
+			CreatedAt:  req.CreatedAt,
+			PolicyId:   req.PluginId,
+		}, nil
+	}
+
+	if len(req.Config) == 0 {
+		return nil, errors.New("config info not set")
+	}
+
+	confList, ok := req.Config[req.Name]
+	if !ok {
+		return nil, errors.Errorf("plugin %s config not set", req.Name)
+	}
+
+	clist, ok := confList.([]*mseclient.GetPluginConfigResponseBodyDataGatewayConfigList)
+	if !ok {
+		return nil, errors.Errorf("not valid mse gateway config list for plugin %s: %+v", req.Name, confList)
+	}
+
+	var cf *mseclient.GetPluginConfigResponseBodyDataGatewayConfigList = nil
+	for idx := range clist {
+		// 因为当前(2022.02.23) MSE 网关插件配置只支持全局配置（ConfigLevel 为 0）
+		if *clist[idx].ConfigLevel == 0 {
+			cf = clist[idx]
+		}
+	}
+	if cf == nil {
+		return nil, errors.Errorf("no mse gateway global config list for plugin %s: %+v", req.Name, confList)
+	}
+
+	_, err := impl.UpdateMSEPluginConfigByIDByAPI(pluginId, cf.Id, cf.Config, cf.ConfigLevel, &enabled)
+	if err != nil {
+		return nil, errors.Errorf("call UpdateMSEPluginConfigByIDByAPI for plugin %s with config [%s] failed, error: %+v", req.Name, *cf.Config, err)
+	}
+
+	return &PluginRespDto{
 		Id:         req.Id,
 		ServiceId:  req.ServiceId,
 		RouteId:    req.RouteId,
@@ -377,11 +591,11 @@ func (impl *MseAdapterImpl) UpdatePlugin(req *KongPluginReqDto) (*KongPluginResp
 }
 
 func (impl *MseAdapterImpl) RemovePlugin(id string) error {
-	log.Debugf("RemovePlugin is not implemented in Mse gateway provider.")
+	log.Debugf("RemovePlugin is not needed in Mse gateway provider when Mse Gateway use global config.")
 	return nil
 }
 
-func (impl *MseAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongCredentialDto, error) {
+func (impl *MseAdapterImpl) CreateCredential(req *CredentialReqDto) (*CredentialDto, error) {
 	log.Debugf("CreateCredential is not really implemented in Mse gateway provider.")
 	if impl == nil {
 		return nil, errors.New("mse can't be attached")
@@ -392,7 +606,7 @@ func (impl *MseAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongCr
 	if req.PluginName == "hmac-auth" {
 		req.Config.ToHmacReq()
 	}
-	return &KongCredentialDto{
+	return &CredentialDto{
 		ConsumerId:   req.ConsumerId,
 		CreatedAt:    time.Now().Unix(),
 		Id:           req.Config.Id,
@@ -407,14 +621,57 @@ func (impl *MseAdapterImpl) CreateCredential(req *KongCredentialReqDto) (*KongCr
 	}, nil
 }
 
-func (impl *MseAdapterImpl) DeleteCredential(consumerId, pluginName, credentialId string) error {
+func (impl *MseAdapterImpl) DeleteCredential(consumerId, pluginName, credentialStr string) error {
 	log.Debugf("DeleteCredential is not implemented in Mse gateway provider.")
+
+	_, ok := common.MSEPluginNameToID[pluginName]
+	if !ok {
+		log.Debugf("plugin %s not support in MSE Gateway", pluginName)
+		return nil
+	}
+
+	pluginConf, err := impl.GetPlugin(&PluginReqDto{
+		Name: pluginName,
+	})
+	if err != nil {
+		log.Errorf("update mse plugin %s when get plugin conf failed: %v\n", pluginName, err)
+		return err
+	}
+
+	pluginConfig, ok := pluginConf.Config[pluginName]
+	if !ok {
+		return nil
+	}
+
+	credential := CredentialDto{}
+	err = json.Unmarshal([]byte(credentialStr), &credential)
+
+	confList, err := mseplugins.UpdatePluginConfigWhenDeleteCredential(pluginName, credential, pluginConfig)
+	if err != nil {
+		log.Errorf("update mse plugin %s when delete credential failed: %v\n", pluginName, err)
+		return err
+	}
+
+	if confList != nil {
+		newConfig := make(map[string]interface{})
+		newConfig[pluginName] = confList
+
+		_, err = impl.UpdatePlugin(&PluginReqDto{
+			Name:   pluginName,
+			Config: newConfig,
+		})
+		if err != nil {
+			log.Errorf("update mse plugin %s with config %v failed: %v\n", pluginName, newConfig, err)
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (impl *MseAdapterImpl) GetCredentialList(consumerId, pluginName string) (*KongCredentialListDto, error) {
+func (impl *MseAdapterImpl) GetCredentialList(consumerId, pluginName string) (*CredentialListDto, error) {
 	log.Debugf("GetCredentialList is not implemented in Mse gateway provider.")
-	return &KongCredentialListDto{}, nil
+	return &CredentialListDto{}, nil
 }
 
 func (impl *MseAdapterImpl) CreateAclGroup(consumerId, customId string) error {
@@ -422,7 +679,7 @@ func (impl *MseAdapterImpl) CreateAclGroup(consumerId, customId string) error {
 	return nil
 }
 
-func (impl *MseAdapterImpl) CreateUpstream(req *KongUpstreamDto) (*KongUpstreamDto, error) {
+func (impl *MseAdapterImpl) CreateUpstream(req *UpstreamDto) (*UpstreamDto, error) {
 	log.Debugf("CreateUpstream is not really implemented in Mse gateway provider.")
 	if impl == nil {
 		return nil, errors.New("mse can't be attached")
@@ -440,14 +697,14 @@ func (impl *MseAdapterImpl) CreateUpstream(req *KongUpstreamDto) (*KongUpstreamD
 	return req, nil
 }
 
-func (impl *MseAdapterImpl) GetUpstreamStatus(upstreamId string) (*KongUpstreamStatusRespDto, error) {
+func (impl *MseAdapterImpl) GetUpstreamStatus(upstreamId string) (*UpstreamStatusRespDto, error) {
 	log.Debugf("GetUpstreamStatus is not really implemented in Mse gateway provider.")
-	return &KongUpstreamStatusRespDto{
-		Data: []KongTargetDto{},
+	return &UpstreamStatusRespDto{
+		Data: []TargetDto{},
 	}, nil
 }
 
-func (impl *MseAdapterImpl) AddUpstreamTarget(upstreamId string, req *KongTargetDto) (*KongTargetDto, error) {
+func (impl *MseAdapterImpl) AddUpstreamTarget(upstreamId string, req *TargetDto) (*TargetDto, error) {
 	log.Debugf("AddUpstreamTarget is not really implemented in Mse gateway provider.")
 	if upstreamId == "" || req == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
@@ -457,7 +714,7 @@ func (impl *MseAdapterImpl) AddUpstreamTarget(upstreamId string, req *KongTarget
 		return nil, errors.Wrap(err, "failed to generate id for UpstreamTarget")
 	}
 
-	return &KongTargetDto{
+	return &TargetDto{
 		Id:         uuid.String(),
 		Target:     req.Target,
 		Weight:     req.Weight,
@@ -477,12 +734,12 @@ func (impl *MseAdapterImpl) TouchRouteOAuthMethod(id string) error {
 	return nil
 }
 
-func (impl *MseAdapterImpl) GetRoutes() ([]KongRouteRespDto, error) {
+func (impl *MseAdapterImpl) GetRoutes() ([]RouteRespDto, error) {
 	log.Debugf("GetRoutes is not implemented in Mse gateway provider.")
-	return []KongRouteRespDto{}, nil
+	return []RouteRespDto{}, nil
 }
 
-func (impl *MseAdapterImpl) GetRoutesWithTag(tag string) ([]KongRouteRespDto, error) {
+func (impl *MseAdapterImpl) GetRoutesWithTag(tag string) ([]RouteRespDto, error) {
 	log.Debugf("GetRoutesWithTag is not implemented in Mse gateway provider.")
-	return []KongRouteRespDto{}, nil
+	return []RouteRespDto{}, nil
 }

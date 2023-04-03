@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -27,12 +28,16 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
+	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/hepa/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
+	mseDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
+	mseplugins "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/plugins"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -48,6 +53,7 @@ type GatewayOpenapiConsumerServiceImpl struct {
 	kongDb         db.GatewayKongInfoService
 	packageInDb    db.GatewayPackageInConsumerService
 	packageApiInDb db.GatewayPackageApiInConsumerService
+	credentialDb   db.GatewayCredentialService
 	ruleBiz        *openapi_rule.GatewayOpenapiRuleService
 	reqCtx         context.Context
 }
@@ -64,6 +70,7 @@ func NewGatewayOpenapiConsumerServiceImpl() error {
 			kongDb, _ := db.NewGatewayKongInfoServiceImpl()
 			packageInDb, _ := db.NewGatewayPackageInConsumerServiceImpl()
 			packageApiInDb, _ := db.NewGatewayPackageApiInConsumerServiceImpl()
+			credentialDb, _ := db.NewGatewayCredentialServiceImpl()
 			openapi_consumer.Service = &GatewayOpenapiConsumerServiceImpl{
 				consumerDb:     consumerDb,
 				azDb:           azDb,
@@ -72,6 +79,7 @@ func NewGatewayOpenapiConsumerServiceImpl() error {
 				packageApiInDb: packageApiInDb,
 				packageDb:      packageDb,
 				packageApiDb:   packageApiDb,
+				credentialDb:   credentialDb,
 				ruleBiz:        &openapi_rule.Service,
 			}
 		})
@@ -91,54 +99,276 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetKongConsumerName(consumer *orm.
 	return fmt.Sprintf("%s.%s.%s.%s:%s", consumer.OrgId, consumer.ProjectId, consumer.Env, consumer.Az, consumer.ConsumerName)
 }
 
-func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter gateway_providers.GatewayAdapter, consumerId string) (map[string]kongDto.KongCredentialListDto, error) {
-	kCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.KEYAUTH)
-	if err != nil {
-		kCredentials = &kongDto.KongCredentialListDto{
-			Data: []kongDto.KongCredentialDto{},
+func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter gateway_providers.GatewayAdapter, consumerID string) (map[string]providerDto.CredentialListDto, error) {
+	if _, ok := gatewayAdapter.(*mse.MseAdapterImpl); !ok {
+		kCredentials, err := gatewayAdapter.GetCredentialList(consumerID, orm.KEYAUTH)
+		if err != nil {
+			kCredentials = &providerDto.CredentialListDto{
+				Data: []providerDto.CredentialDto{},
+			}
 		}
-	}
-	oCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.OAUTH2)
-	if err != nil {
-		oCredentials = &kongDto.KongCredentialListDto{
-			Data: []kongDto.KongCredentialDto{},
+		oCredentials, err := gatewayAdapter.GetCredentialList(consumerID, orm.OAUTH2)
+		if err != nil {
+			oCredentials = &providerDto.CredentialListDto{
+				Data: []providerDto.CredentialDto{},
+			}
 		}
-	}
-	sCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.SIGNAUTH)
-	if err != nil {
-		sCredentials = &kongDto.KongCredentialListDto{
-			Data: []kongDto.KongCredentialDto{},
+		sCredentials, err := gatewayAdapter.GetCredentialList(consumerID, orm.SIGNAUTH)
+		if err != nil {
+			sCredentials = &providerDto.CredentialListDto{
+				Data: []providerDto.CredentialDto{},
+			}
 		}
-	}
-	hCredentials, err := gatewayAdapter.GetCredentialList(consumerId, orm.HMACAUTH)
-	if err != nil {
-		hCredentials = &kongDto.KongCredentialListDto{
-			Data: []kongDto.KongCredentialDto{},
+		hCredentials, err := gatewayAdapter.GetCredentialList(consumerID, orm.HMACAUTH)
+		if err != nil {
+			hCredentials = &providerDto.CredentialListDto{
+				Data: []providerDto.CredentialDto{},
+			}
 		}
+		return map[string]providerDto.CredentialListDto{
+			orm.KEYAUTH:  *kCredentials,
+			orm.OAUTH2:   *oCredentials,
+			orm.SIGNAUTH: *sCredentials,
+			orm.HMACAUTH: *hCredentials,
+		}, nil
+
+	} else {
+		credentials, err := impl.credentialDb.SelectByConsumerId(consumerID)
+		kCredentials := &providerDto.CredentialListDto{
+			Data: []providerDto.CredentialDto{},
+		}
+		oCredentials := &providerDto.CredentialListDto{
+			Data: []providerDto.CredentialDto{},
+		}
+		sCredentials := &providerDto.CredentialListDto{
+			Data: []providerDto.CredentialDto{},
+		}
+		hCredentials := &providerDto.CredentialListDto{
+			Data: []providerDto.CredentialDto{},
+		}
+		if err != nil || len(credentials) == 0 {
+			if err != nil {
+				log.Errorf("get credentials for consumer %s failed, error: %v\n", consumerID, err)
+			}
+			return map[string]providerDto.CredentialListDto{
+				orm.KEYAUTH:  *kCredentials,
+				orm.OAUTH2:   *oCredentials,
+				orm.SIGNAUTH: *sCredentials,
+				orm.HMACAUTH: *hCredentials,
+			}, nil
+		}
+
+		for _, credential := range credentials {
+			switch credential.PluginName {
+			case orm.OAUTH2:
+				// TODO: MSE 暂不支持 Oauth2
+				oCredentials.Total++
+				oCredentials.Data = append(oCredentials.Data, providerDto.CredentialDto{
+					ConsumerId:   consumerID,
+					CreatedAt:    credential.CreateTime.Unix() * 1000,
+					Id:           credential.Id,
+					Name:         credential.Name,
+					RedirectUrl:  strings.Split(credential.RedirectUrl, ","),
+					ClientId:     credential.ClientId,
+					ClientSecret: credential.ClientSecret,
+				})
+			case orm.KEYAUTH:
+				kCredentials.Total++
+				kCredentials.Data = append(kCredentials.Data, providerDto.CredentialDto{
+					ConsumerId: consumerID,
+					CreatedAt:  credential.CreateTime.Unix() * 1000,
+					Id:         credential.Id,
+					Key:        credential.Key,
+				})
+			case orm.SIGNAUTH:
+				// TODO: MSE 暂不支持 sign-auth
+				sCredentials.Total++
+				sCredentials.Data = append(sCredentials.Data, providerDto.CredentialDto{
+					ConsumerId: consumerID,
+					CreatedAt:  credential.CreateTime.Unix() * 1000,
+					Id:         credential.Id,
+					Key:        credential.Key,
+					Secret:     credential.Secret,
+				})
+			case orm.HMACAUTH:
+				hCredentials.Total++
+				hCredentials.Data = append(hCredentials.Data, providerDto.CredentialDto{
+					ConsumerId: consumerID,
+					CreatedAt:  credential.CreateTime.Unix() * 1000,
+					Id:         credential.Id,
+					Key:        credential.Key,
+					Secret:     credential.Secret,
+					Username:   credential.Username,
+				})
+			case orm.MSEBasicAuth:
+				//wlConsumer.Credential = credential.Key
+				continue
+			case orm.MSEJWTAuth:
+				/*
+					if credential.FromParams != "" {
+						wlConsumer.FromParams = strings.Split(credential.FromParams, ",")
+					}
+					if credential.FromCookies != "" {
+						wlConsumer.FromCookies = strings.Split(credential.FromCookies, ",")
+					}
+					if credential.KeepToken == "N" {
+						wlConsumer.KeepToken = false
+					} else {
+						wlConsumer.KeepToken = true
+					}
+
+					wlConsumer.ClockSkewSeconds = 60
+					if credential.ClockSkewSeconds != "" {
+						csSeconds, err := strconv.Atoi(credential.ClockSkewSeconds)
+						if err == nil && csSeconds > 0 {
+							wlConsumer.ClockSkewSeconds = csSeconds
+						}
+					}
+				*/
+				continue
+			}
+		}
+
+		return map[string]providerDto.CredentialListDto{
+			orm.KEYAUTH:  *kCredentials,
+			orm.OAUTH2:   *oCredentials,
+			orm.SIGNAUTH: *sCredentials,
+			orm.HMACAUTH: *hCredentials,
+		}, nil
 	}
-	return map[string]kongDto.KongCredentialListDto{
-		orm.KEYAUTH:  *kCredentials,
-		orm.OAUTH2:   *oCredentials,
-		orm.SIGNAUTH: *sCredentials,
-		orm.HMACAUTH: *hCredentials,
-	}, nil
 }
 
-func (impl GatewayOpenapiConsumerServiceImpl) createCredential(gatewayAdapter gateway_providers.GatewayAdapter, pluginName string, consumerId string, config *kongDto.KongCredentialDto) (*kongDto.KongCredentialDto, error) {
-	req := &kongDto.KongCredentialReqDto{}
+func (impl GatewayOpenapiConsumerServiceImpl) createCredential(gatewayAdapter gateway_providers.GatewayAdapter, pluginName string, consumerId string, config *providerDto.CredentialDto) (*providerDto.CredentialDto, error) {
+	req := &providerDto.CredentialReqDto{}
 	req.ConsumerId = consumerId
 	req.PluginName = pluginName
 	req.Config = config
-	if pluginName == orm.HMACAUTH {
+
+	// Kong 网关
+	if _, ok := gatewayAdapter.(*mse.MseAdapterImpl); !ok {
+		if pluginName == orm.HMACAUTH {
+			enabled, err := gatewayAdapter.CheckPluginEnabled(pluginName)
+			if err != nil {
+				return nil, err
+			}
+			if !enabled {
+				return &providerDto.CredentialDto{}, nil
+			}
+		}
+	}
+
+	// MSE 网关
+	if _, ok := gatewayAdapter.(*mse.MseAdapterImpl); ok {
 		enabled, err := gatewayAdapter.CheckPluginEnabled(pluginName)
 		if err != nil {
 			return nil, err
 		}
 		if !enabled {
-			return &kongDto.KongCredentialDto{}, nil
+			return &providerDto.CredentialDto{}, nil
+		}
+		err = impl.createMseGatewayCredential(req, config)
+		if err != nil {
+			return nil, err
 		}
 	}
+
 	return gatewayAdapter.CreateCredential(req)
+}
+
+func (impl GatewayOpenapiConsumerServiceImpl) createMseGatewayCredential(req *providerDto.CredentialReqDto, config *providerDto.CredentialDto) error {
+	log.Infof("save Credential data for MSE beginning.....")
+
+	if req.ConsumerId == "" {
+		return errors.Errorf("not set ConsumerId in CredentialReqDto")
+	}
+
+	redirectUrl := ""
+	if urls, ok := config.RedirectUrl.([]string); ok {
+		redirectUrl = strings.Join(urls, ",")
+	}
+
+	redirectUrls := ""
+	if len(config.RedirectUrls) > 0 {
+		redirectUrls = strings.Join(config.RedirectUrls, ",")
+	}
+
+	fromParams := ""
+	if len(config.FromParams) > 0 {
+		fromParams = strings.Join(config.FromParams, ",")
+	}
+
+	fromCookies := ""
+	if len(config.FromCookies) > 0 {
+		fromCookies = strings.Join(config.FromCookies, ",")
+	}
+
+	keepToken := "Y"
+	if config.KeepToken != nil {
+		if *config.KeepToken == false {
+			keepToken = "N"
+		}
+	}
+
+	clockSkewSeconds := "60"
+	if config.ClockSkewSeconds != nil {
+		if *config.ClockSkewSeconds > 0 {
+			clockSkewSeconds = fmt.Sprintf("%d", *config.ClockSkewSeconds)
+		}
+	}
+
+	consumer, err := impl.consumerDb.GetByConsumerId(req.ConsumerId)
+	if err != nil {
+		return err
+	}
+
+	consumerName := ""
+	orgID := ""
+	orgName := ""
+	projectID := ""
+	env := ""
+	az := ""
+
+	if orgDTO, ok := orgCache.GetOrgByOrgID(consumer.OrgId); ok {
+		orgName = orgDTO.Name
+	}
+
+	if consumer != nil {
+		consumerName = consumer.ConsumerName
+		orgID = consumer.OrgId
+		projectID = consumer.ProjectId
+		env = consumer.Env
+		az = consumer.Az
+	}
+
+	err = impl.credentialDb.Insert(&orm.GatewayCredential{
+		ConsumerId:       req.ConsumerId,
+		ConsumerName:     consumerName,
+		PluginName:       req.PluginName,
+		OrgName:          orgName,
+		OrgId:            orgID,
+		ProjectId:        projectID,
+		Env:              env,
+		Az:               az,
+		Key:              config.Key,
+		Secret:           config.Secret,
+		Issuer:           config.Issuer,
+		Jwks:             config.Jwks,
+		FromParams:       fromParams,
+		FromCookies:      fromCookies,
+		KeepToken:        keepToken,
+		ClockSkewSeconds: clockSkewSeconds,
+		RedirectUrl:      redirectUrl,
+		RedirectUrls:     redirectUrls,
+		Name:             config.Name,
+		ClientId:         config.ClientId,
+		ClientSecret:     config.ClientSecret,
+		Username:         config.Username,
+	})
+	if err != nil {
+		return err
+	}
+	log.Infof("save Credential data for MSE successed....")
+	return nil
 }
 
 func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, clientId, clientSecret, clusterName string) (consumer *orm.GatewayConsumer, err error) {
@@ -177,15 +407,18 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 		return
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(clusterName)
+		if err != nil {
+			return
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		log.Errorf("Unknown gatewayProvider: %v", gatewayProvider)
 		return
 	}
-	reqDto := &kongDto.KongConsumerReqDto{
+	reqDto := &providerDto.ConsumerReqDto{
 		Username: clientName,
 		CustomId: consumerId,
 	}
@@ -202,14 +435,14 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(gatewayAdapter, orm.KEYAUTH, respDto.Id, &kongDto.KongCredentialDto{
+	_, err = impl.createCredential(gatewayAdapter, orm.KEYAUTH, respDto.Id, &providerDto.CredentialDto{
 		Key: clientId,
 	})
 	if err != nil {
 		return
 	}
 	_, err = impl.createCredential(gatewayAdapter, orm.OAUTH2, respDto.Id,
-		&kongDto.KongCredentialDto{
+		&providerDto.CredentialDto{
 			Name:         clientName,
 			RedirectUrl:  []string{"http://none"},
 			ClientId:     clientId,
@@ -218,14 +451,14 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(gatewayAdapter, orm.SIGNAUTH, respDto.Id, &kongDto.KongCredentialDto{
+	_, err = impl.createCredential(gatewayAdapter, orm.SIGNAUTH, respDto.Id, &providerDto.CredentialDto{
 		Key:    clientId,
 		Secret: clientSecret,
 	})
 	if err != nil {
 		return
 	}
-	_, err = impl.createCredential(gatewayAdapter, orm.HMACAUTH, respDto.Id, &kongDto.KongCredentialDto{
+	_, err = impl.createCredential(gatewayAdapter, orm.HMACAUTH, respDto.Id, &providerDto.CredentialDto{
 		Key:    clientId,
 		Secret: clientSecret,
 	})
@@ -262,8 +495,8 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 	var unique bool
 	var kongInfo *orm.GatewayKongInfo
 	var gatewayAdapter gateway_providers.GatewayAdapter
-	var reqDto *kongDto.KongConsumerReqDto
-	var respDto *kongDto.KongConsumerRespDto
+	var reqDto *providerDto.ConsumerReqDto
+	var respDto *providerDto.ConsumerRespDto
 	var customId string
 	key, _ := util.GenUniqueId()
 	secret, _ := util.GenUniqueId()
@@ -310,8 +543,11 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 		return
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(az)
+		if err != nil {
+			return
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
@@ -319,7 +555,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 		return
 	}
 	kongConsumerName = impl.GetKongConsumerName(consumer)
-	reqDto = &kongDto.KongConsumerReqDto{
+	reqDto = &providerDto.ConsumerReqDto{
 		Username: kongConsumerName,
 		CustomId: customId,
 	}
@@ -337,14 +573,14 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 		return
 	}
 	_, err = impl.createCredential(gatewayAdapter, orm.KEYAUTH, respDto.Id,
-		&kongDto.KongCredentialDto{
+		&providerDto.CredentialDto{
 			Key: key,
 		})
 	if err != nil {
 		return
 	}
 	_, err = impl.createCredential(gatewayAdapter, orm.OAUTH2, respDto.Id,
-		&kongDto.KongCredentialDto{
+		&providerDto.CredentialDto{
 			Name:         "App",
 			RedirectUrl:  []string{"http://none"},
 			ClientId:     key,
@@ -354,7 +590,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 		return
 	}
 	_, err = impl.createCredential(gatewayAdapter, orm.SIGNAUTH, respDto.Id,
-		&kongDto.KongCredentialDto{
+		&providerDto.CredentialDto{
 			Key:    key,
 			Secret: secret,
 		})
@@ -362,7 +598,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 		return
 	}
 	_, err = impl.createCredential(gatewayAdapter, orm.HMACAUTH, respDto.Id,
-		&kongDto.KongCredentialDto{
+		&providerDto.CredentialDto{
 			Key:    key,
 			Secret: secret,
 		})
@@ -561,16 +797,66 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 		return
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
+		if err != nil {
+			return
+		}
+		// 删除 MSE 插件配置中关于此 consumer 的配置信息放
+		pluginConsumerName := impl.GetKongConsumerName(consumer)
+		for pluginName := range mseCommon.MSEPluginNameToID {
+			// 暂时只支持 key-auth
+			if pluginName != mseCommon.MsePluginKeyAuth {
+				continue
+			}
+			pluginConf, getPluginConfErr := gatewayAdapter.GetPlugin(&providerDto.PluginReqDto{
+				Name: pluginName,
+			})
+			if getPluginConfErr != nil {
+				err = getPluginConfErr
+				return
+			}
+
+			pluginConfig, ok := pluginConf.Config[pluginName]
+			if !ok {
+				continue
+			}
+
+			confList, updateErr := mseplugins.UpdatePluginConfigWhenDeleteConsumer(pluginName, pluginConsumerName, pluginConfig)
+			if updateErr != nil {
+				err = updateErr
+				return
+			}
+
+			if confList != nil {
+				newConfig := make(map[string]interface{})
+				newConfig[pluginName] = confList
+
+				_, updatePluginErr := gatewayAdapter.UpdatePlugin(&providerDto.PluginReqDto{
+					Name:   pluginName,
+					Config: newConfig,
+				})
+				if updatePluginErr != nil {
+					err = updatePluginErr
+					return
+				}
+			}
+		}
+
+		// 删除 consumer 的 credential 信息
+		err = impl.credentialDb.DeleteByConsumerId(consumer.ConsumerId)
+		if err != nil {
+			return
+		}
+
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		err = gatewayAdapter.DeleteConsumer(consumer.ConsumerId)
+		if err != nil {
+			return
+		}
 	default:
 		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
-	}
-	err = gatewayAdapter.DeleteConsumer(consumer.ConsumerId)
-	if err != nil {
-		return
 	}
 	err = impl.consumerDb.DeleteById(id)
 	if err != nil {
@@ -581,6 +867,9 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 }
 
 func (impl GatewayOpenapiConsumerServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err
@@ -604,7 +893,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerCredentials(id string) 
 	}
 	var kongInfo *orm.GatewayKongInfo
 	var gatewayAdapter gateway_providers.GatewayAdapter
-	var credentialListMap map[string]kongDto.KongCredentialListDto
+	var credentialListMap map[string]providerDto.CredentialListDto
 	consumer, err := impl.consumerDb.GetById(id)
 	if err != nil {
 		return
@@ -627,8 +916,11 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerCredentials(id string) 
 		return
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
+		if err != nil {
+			return res, err
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
@@ -695,10 +987,10 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 	}
 	var kongInfo *orm.GatewayKongInfo
 	var gatewayAdapter gateway_providers.GatewayAdapter
-	var credentialListMap map[string]kongDto.KongCredentialListDto
+	var credentialListMap map[string]providerDto.CredentialListDto
 	newAuth := dto.AuthConfig
-	adds := map[string][]kongDto.KongCredentialDto{}
-	dels := map[string][]kongDto.KongCredentialDto{}
+	adds := map[string][]providerDto.CredentialDto{}
+	dels := map[string][]providerDto.CredentialDto{}
 	consumer, err = impl.consumerDb.GetById(id)
 	if err != nil {
 		return
@@ -720,8 +1012,11 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 		return
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
+		if err != nil {
+			return
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
@@ -733,7 +1028,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 		return
 	}
 	for _, item := range newAuth.Auths {
-		var oldCredentials []kongDto.KongCredentialDto
+		var oldCredentials []providerDto.CredentialDto
 		credentialList := item.AuthData
 		oldCredentialList, ok := credentialListMap[item.AuthType]
 		if !ok {
@@ -760,9 +1055,29 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 	}
 	for authType, credentials := range dels {
 		for _, credential := range credentials {
-			err = gatewayAdapter.DeleteCredential(consumer.ConsumerId, authType, credential.Id)
-			if err != nil {
-				return
+			if gatewayProvider == mseCommon.Mse_Provider_Name {
+				credentialStr, marshalErr := json.Marshal(credential)
+				if marshalErr != nil {
+					err = marshalErr
+					log.Errorf("update mse plugin %s marshl credential %v failed: %v\n", authType, credential, err)
+					return
+				}
+
+				err = gatewayAdapter.DeleteCredential(consumer.ConsumerId, authType, string(credentialStr))
+				if err != nil {
+					log.Errorf("delete credential for consumer %s for mse plugin %s failed: %v\n", consumer.ConsumerName, authType, err)
+					return
+				}
+				err = impl.credentialDb.DeleteById(credential.Id)
+				if err != nil {
+					log.Errorf("delete credential by id %s failed: %v\n", credential.Id, err)
+					return
+				}
+			} else {
+				err = gatewayAdapter.DeleteCredential(consumer.ConsumerId, authType, credential.Id)
+				if err != nil {
+					return
+				}
 			}
 		}
 	}
@@ -855,24 +1170,9 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 	unselect := []gw.PackageAclInfoDto{}
 	selectMap := map[string]bool{}
 	var apiAclRules []gw.OpenapiRuleInfo
+	var gatewayProvider string
 	if packageId == "" || packageApiId == "" {
 		err = errors.New("id is empty")
-		return
-	}
-	consumerIn, err := impl.packageApiInDb.SelectByPackageApi(packageId, packageApiId)
-	if err != nil {
-		return
-	}
-	apiAclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.ACL_RULE)
-	if err != nil {
-		return
-	}
-	packageRes, err = impl.GetPackageAcls(packageId)
-	if err != nil {
-		return
-	}
-	if len(apiAclRules) == 0 {
-		result = packageRes
 		return
 	}
 	pack, err = impl.packageDb.Get(packageId)
@@ -880,7 +1180,45 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 		return
 	}
 	if pack == nil {
-		err = errors.New("package not exist")
+		err = errors.Errorf("package %s not exist", packageId)
+		return
+	}
+
+	gatewayProvider, err = impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		return
+	}
+
+	switch gatewayProvider {
+	case mseCommon.Mse_Provider_Name:
+	case "":
+	default:
+		err = errors.Errorf("unknown gateway provider %s", gatewayProvider)
+		return
+	}
+	consumerIn, err := impl.packageApiInDb.SelectByPackageApi(packageId, packageApiId)
+	if err != nil {
+		return
+	}
+	switch gatewayProvider {
+	case mseCommon.Mse_Provider_Name:
+		apiAclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.AUTH_RULE)
+		if err != nil {
+			return
+		}
+	default:
+		apiAclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.ACL_RULE)
+		if err != nil {
+			return
+		}
+	}
+
+	packageRes, err = impl.GetPackageAcls(packageId)
+	if err != nil {
+		return
+	}
+	if len(apiAclRules) == 0 {
+		result = packageRes
 		return
 	}
 	consumers, err = impl.consumerDb.SelectByAny(&orm.GatewayConsumer{
@@ -1036,7 +1374,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdatePackageApiAcls(packageId, pa
 		return
 	}
 	if pack == nil {
-		err = errors.New("package not exist")
+		err = errors.Errorf("package %s not exist", packageId)
 		return
 	}
 	api, err = impl.packageApiDb.Get(packageApiId)
@@ -1044,7 +1382,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdatePackageApiAcls(packageId, pa
 		return
 	}
 	if api == nil {
-		err = errors.New("package api not exist")
+		err = errors.Errorf("package api %s not exist", packageApiId)
 		return
 	}
 	consumerIn, err = impl.packageApiInDb.SelectByPackageApi(packageId, packageApiId)
@@ -1100,27 +1438,63 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 	if pack == nil {
 		return errors.New("package not found")
 	}
+
+	gatewayProvider, err := impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		return errors.Errorf("can not detect gateway provider, error: %v", err)
+	}
+
+	config := map[string]interface{}{}
+
 	consumers, err := impl.GetConsumersOfPackageApi(packageId, packageApiId)
 	if err != nil {
 		return err
 	}
-	var buffer bytes.Buffer
-	for _, consumer := range consumers {
-		if buffer.Len() > 0 {
-			buffer.WriteString(",")
+
+	switch gatewayProvider {
+	case "":
+		var buffer bytes.Buffer
+		for _, consumer := range consumers {
+			if buffer.Len() > 0 {
+				buffer.WriteString(",")
+			}
+			buffer.WriteString(impl.GetKongConsumerName(&consumer))
 		}
-		buffer.WriteString(impl.GetKongConsumerName(&consumer))
+		wl := buffer.String()
+		//config := map[string]interface{}{}
+		if wl == "" {
+			wl = ","
+		}
+		config["whitelist"] = wl
+	case mseCommon.Mse_Provider_Name:
+		wlConsumers, err := impl.mseConsumerConfig(consumers)
+		if err != nil {
+			return err
+		}
+		// 避免变成全局策略
+		if len(wlConsumers) == 0 {
+			wlConsumers = append(wlConsumers, mseDto.Consumers{
+				Name: mseplugins.DEFAULT_MSE_CONSUMER_NAME,
+			})
+		}
+		config["whitelist"] = wlConsumers
+	default:
+		return errors.Errorf("unknown gateway provider %s", gatewayProvider)
 	}
-	wl := buffer.String()
-	config := map[string]interface{}{}
-	if wl == "" {
-		wl = ","
+
+	aclRules := make([]gw.OpenapiRuleInfo, 0)
+	if gatewayProvider == mseCommon.Mse_Provider_Name {
+		aclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.AUTH_RULE)
+		if err != nil {
+			return err
+		}
+	} else {
+		aclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.ACL_RULE)
+		if err != nil {
+			return err
+		}
 	}
-	config["whitelist"] = wl
-	aclRules, err := (*impl.ruleBiz).GetApiRules(packageApiId, gw.ACL_RULE)
-	if err != nil {
-		return err
-	}
+
 	for _, rule := range aclRules {
 		rule.Config = config
 		_, err = (*impl.ruleBiz).UpdateRule(rule.Id, &rule.OpenapiRule)
@@ -1137,6 +1511,19 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			Config:       config,
 			Enabled:      true,
 			Region:       gw.API_RULE,
+		}
+		if gatewayProvider == mseCommon.Mse_Provider_Name {
+			newAclRule.Category = gw.AUTH_RULE
+			switch pack.AuthType {
+			case gw.AT_KEY_AUTH:
+				newAclRule.PluginName = gw.AT_KEY_AUTH
+			case gw.AT_OAUTH2:
+				newAclRule.PluginName = gw.AT_OAUTH2
+			case gw.AT_SIGN_AUTH:
+				newAclRule.PluginName = gw.AT_SIGN_AUTH
+			case gw.AT_HMAC_AUTH:
+				newAclRule.PluginName = gw.AT_HMAC_AUTH
+			}
 		}
 		err = (*impl.ruleBiz).CreateRule(gw.DiceInfo{
 			OrgId:     pack.DiceOrgId,
@@ -1315,19 +1702,61 @@ func (impl GatewayOpenapiConsumerServiceImpl) updatePackageAclRules(packageId st
 	if err != nil {
 		return err
 	}
-	var buffer bytes.Buffer
+
+	clusterName := ""
 	for _, consumer := range consumers {
-		if buffer.Len() > 0 {
-			buffer.WriteString(",")
+		if consumer.Az != "" {
+			clusterName = consumer.Az
+			break
 		}
-		buffer.WriteString(impl.GetKongConsumerName(&consumer))
 	}
-	wl := buffer.String()
+	if clusterName == "" {
+		pack, err := impl.packageDb.Get(packageId)
+		if err != nil {
+			return err
+		}
+
+		if pack == nil {
+			return errors.Errorf("package %s not exist", packageId)
+		}
+		clusterName = pack.DiceClusterName
+	}
+
+	gatewayProvider, err := impl.GetGatewayProvider(clusterName)
+	if err != nil {
+		return errors.Errorf("can not detect gateway provider, error: %v", err)
+	}
+
 	config := map[string]interface{}{}
-	if wl == "" {
-		wl = ","
+	switch gatewayProvider {
+	case mseCommon.Mse_Provider_Name:
+		wlConsumers, err := impl.mseConsumerConfig(consumers)
+		if err != nil {
+			return err
+		}
+		if len(wlConsumers) == 0 {
+			wlConsumers = append(wlConsumers, mseDto.Consumers{
+				Name: mseplugins.DEFAULT_MSE_CONSUMER_NAME,
+			})
+		}
+		config["whitelist"] = wlConsumers
+	case "":
+		var buffer bytes.Buffer
+		for _, consumer := range consumers {
+			if buffer.Len() > 0 {
+				buffer.WriteString(",")
+			}
+			buffer.WriteString(impl.GetKongConsumerName(&consumer))
+		}
+		wl := buffer.String()
+		if wl == "" {
+			wl = ","
+		}
+		config["whitelist"] = wl
+	default:
+		return errors.Errorf("unknown gateway provider %s", gatewayProvider)
 	}
-	config["whitelist"] = wl
+
 	aclRules, err := (*impl.ruleBiz).GetPackageRules(packageId, nil, gw.ACL_RULE)
 	if err != nil {
 		return err
@@ -1340,6 +1769,62 @@ func (impl GatewayOpenapiConsumerServiceImpl) updatePackageAclRules(packageId st
 		}
 	}
 	return nil
+}
+
+func (impl GatewayOpenapiConsumerServiceImpl) mseConsumerConfig(consumers []orm.GatewayConsumer) ([]mseDto.Consumers, error) {
+	wlConsumers := make([]mseDto.Consumers, 0)
+	for _, consumer := range consumers {
+		wlConsumer := mseDto.Consumers{
+			Name: impl.GetKongConsumerName(&consumer),
+		}
+
+		credentials, err := impl.credentialDb.SelectByConsumerId(consumer.ConsumerId)
+		if err != nil {
+			return wlConsumers, err
+		}
+
+		if len(credentials) == 0 {
+			return wlConsumers, errors.Errorf("no credential info found for consumer %s", consumer.ConsumerName)
+		}
+
+		for _, credential := range credentials {
+			switch credential.PluginName {
+			case orm.OAUTH2:
+				// TODO: MSE 暂不支持 Oauth2
+			case orm.KEYAUTH:
+				wlConsumer.Credential = credential.Key
+			case orm.SIGNAUTH:
+				// TODO: MSE 暂不支持 sign-auth
+			case orm.HMACAUTH:
+				wlConsumer.Key = credential.Key
+				wlConsumer.Secret = credential.Secret
+			case orm.MSEBasicAuth:
+				wlConsumer.Credential = credential.Key
+			case orm.MSEJWTAuth:
+				if credential.FromParams != "" {
+					wlConsumer.FromParams = strings.Split(credential.FromParams, ",")
+				}
+				if credential.FromCookies != "" {
+					wlConsumer.FromCookies = strings.Split(credential.FromCookies, ",")
+				}
+				if credential.KeepToken == "N" {
+					wlConsumer.KeepToken = false
+				} else {
+					wlConsumer.KeepToken = true
+				}
+
+				wlConsumer.ClockSkewSeconds = 60
+				if credential.ClockSkewSeconds != "" {
+					csSeconds, err := strconv.Atoi(credential.ClockSkewSeconds)
+					if err == nil && csSeconds > 0 {
+						wlConsumer.ClockSkewSeconds = csSeconds
+					}
+				}
+			}
+		}
+		wlConsumers = append(wlConsumers, wlConsumer)
+	}
+	return wlConsumers, nil
 }
 
 func (impl GatewayOpenapiConsumerServiceImpl) GrantPackageToConsumer(consumerId, packageId string) error {
