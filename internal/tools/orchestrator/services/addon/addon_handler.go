@@ -60,26 +60,35 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 
 // GetAddonExtention 获取addon的spec，dice.yml信息
 func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
-	extentionsList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: true})
-	if err != nil {
+	extensionList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: true})
+	if err != nil || len(extensionList) == 0 {
 		return nil, nil, errors.New("没有匹配的addon信息")
 	}
 
 	// 查看用户是否设置了版本号，如果没有，则选择默认版本
-	var addon apistructs.ExtensionVersion
-	if len(extentionsList) == 1 {
-		addon = extentionsList[0]
+	var addon = extensionList[0]
+	for _, item := range extensionList {
+		if item.IsDefault {
+			addon = item
+		}
+		if version := params.Options["version"]; version != "" && version == item.Version {
+			addon = item
+		}
+	}
+
+	if len(extensionList) == 1 {
+		addon = extensionList[0]
 	} else {
 		if params.Options["version"] != "" {
-			for _, extentionItem := range extentionsList {
-				if extentionItem.Version == params.Options["version"] {
-					addon = extentionItem
+			for _, extensionItem := range extensionList {
+				if extensionItem.Version == params.Options["version"] {
+					addon = extensionItem
 					break
 				}
 			}
 		} else {
 			// 用户没有指定version，则选择默认版本
-			for _, extentionItem := range extentionsList {
+			for _, extentionItem := range extensionList {
 				if extentionItem.IsDefault {
 					logrus.Info("addon extension name ready")
 					addon = extentionItem
