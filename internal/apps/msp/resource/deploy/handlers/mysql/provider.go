@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 )
 
@@ -31,10 +32,15 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 	DB  *gorm.DB `autowired:"mysql-client"`
+	// MyOperaInsCli is a gRPC client provided by orchestrator that interacts with MySQLOperator Instance
+	MyOperaInsCli pb.MySQLOperatorInstanceServiceServer `autowired:"erda.orchestrator.addon.mysql.MySQLOperatorInstanceService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.DefaultDeployHandler = handlers.NewDefaultHandler(p.DB, p.Log)
+	if p.MyOperaInsCli == nil {
+		panic("MyOperaInsCli is nil, is it autowired ?")
+	}
 	return nil
 }
 
