@@ -479,7 +479,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		k.setProjectServiceName(runtime)
 	}
 
-	l.Infof("start to create runtime, serviceGroup: %s", strutil.MustString(runtime))
+	l.Infof("start to create runtime, serviceGroup: %s", strutil.TryGetJsonStr(runtime))
 
 	ok, reason, err := k.checkQuota(ctx, runtime)
 	if err != nil {

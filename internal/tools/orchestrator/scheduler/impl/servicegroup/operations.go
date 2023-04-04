@@ -67,7 +67,7 @@ func (s ServiceGroupImpl) Create(req apistructs.ServiceGroupCreateV2Request) (ap
 	sg, err := convertServiceGroupCreateV2Request(req, s.Clusterinfo)
 	if err != nil {
 		return apistructs.ServiceGroup{}, errors.Errorf("failed to convert sg createV2Request, req: %s, err: %v",
-			strutil.MustString(req), err)
+			strutil.TryGetJsonStr(req), err)
 	}
 
 	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), sg); err != nil {

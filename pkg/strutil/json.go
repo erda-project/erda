@@ -16,7 +16,7 @@ package strutil
 
 import "encoding/json"
 
-func MustString(v any) string {
+func TryGetJsonStr(v any) string {
 	data, _ := json.Marshal(v)
 	return string(data)
 }
