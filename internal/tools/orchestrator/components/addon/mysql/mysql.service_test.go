@@ -364,3 +364,11 @@ func Test_mysqlService_audit(t *testing.T) {
 		})
 	}
 }
+
+func TestSymmetricEncrypt(t *testing.T) {
+	var (
+		host          = "mysql-qefca8cb30-write.group-addon-mysql--qefca8cb3068a462daf247fb36e08859f:33080"
+		localPassword = "66f82e1711a449cc9a3b26751a8c7719"
+	)
+	t.Log(SymmetricEncrypt(host, localPassword))
+}

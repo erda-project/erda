@@ -95,6 +95,59 @@ func (r Request) Exec() error {
 	return err
 }
 
+func (r Request) Record(filename string) error {
+	db, err := r.dbOpen()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	if err := r.prepareHistoryTable(ctx, db); err != nil {
+		return err
+	}
+	query := `INSERT INTO erda_tmc_init_history.erda_tmc_init_history (filename) VALUES (?)`
+	_, err = db.ExecContext(ctx, query, filename)
+	return err
+}
+
+func (r Request) HasRecord(filename string) (bool, error) {
+	db, err := r.dbOpen()
+	if err != nil {
+		return false, err
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	if err := r.prepareHistoryTable(ctx, db); err != nil {
+		return false, err
+	}
+	query := `SELECT * FROM erda_tmc_init_history.erda_tmc_init_history WHERE filename = ?`
+	rows, err := db.QueryContext(ctx, query, filename)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	return rows.Next(), nil
+}
+
+func (r Request) prepareHistoryTable(ctx context.Context, db *sql.DB) error {
+	var query = `
+	CREATE DATABASE IF NOT EXISTS erda_tmc_init_history;
+	USE erda_tmc_init_history;
+	CREATE TABLE IF NOT EXISTS erda_tmc_init_history (
+	    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+	    filename VARCHAR(191) NOT NULL COMMENT 'init sql filename',
+	    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'created datetime',
+	    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'updated datetime'
+	);
+	`
+	_, err := db.ExecContext(ctx, query)
+	return err
+}
+
 type SlaveState struct {
 	IORunning  string
 	SQLRunning string

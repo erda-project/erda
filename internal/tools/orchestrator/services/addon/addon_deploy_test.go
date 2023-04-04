@@ -105,13 +105,13 @@ func Test_getCreateDBsAndInitSQL(t *testing.T) {
 		}
 	})
 
-	_, _, err := addon.getCreateDBsAndInitSQL("")
+	_, _, _, err := addon.getCreateDBsAndInitSQL("")
 	assert.NoError(t, err)
 
-	_, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2"}`)
+	_, _, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2"}`)
 	assert.NoError(t, err)
 
-	_, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2","init_sql":"http://www.baidu.com/"}`)
+	_, _, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2","init_sql":"http://www.baidu.com/"}`)
 	assert.NoError(t, err)
 }
 

@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/task"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var DeleteNotFound = errors.New("not found")
@@ -65,7 +66,8 @@ func (s ServiceGroupImpl) ConfigUpdate(sg apistructs.ServiceGroup) error {
 func (s ServiceGroupImpl) Create(req apistructs.ServiceGroupCreateV2Request) (apistructs.ServiceGroup, error) {
 	sg, err := convertServiceGroupCreateV2Request(req, s.Clusterinfo)
 	if err != nil {
-		return apistructs.ServiceGroup{}, errors.Errorf("failed to convert sg createV2Request, err: %v", err)
+		return apistructs.ServiceGroup{}, errors.Errorf("failed to convert sg createV2Request, req: %s, err: %v",
+			strutil.TryGetJsonStr(req), err)
 	}
 
 	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), sg); err != nil {

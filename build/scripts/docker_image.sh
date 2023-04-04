@@ -97,6 +97,13 @@ docker_login() {
     fi
 }
 
+# login
+podman_login() {
+    if [[ -n "${DOCKER_REGISTRY_USERNAME}" ]] && [[ -n "${DOCKER_REGISTRY}" ]] && [[ -n "${DOCKER_REGISTRY_PASSWORD}" ]]; then
+        podman login -u "${DOCKER_REGISTRY_USERNAME}" -p "${DOCKER_REGISTRY_PASSWORD}" ${DOCKER_REGISTRY}
+    fi
+}
+
 # build docker image
 build_image()  {
     DOCKER_BUILDKIT=1 docker build --pull --platform "linux/${ARCH}" --progress=plain -t "${DOCKER_IMAGE}" \
@@ -112,6 +119,27 @@ build_image()  {
         --build-arg "GOPROXY=${GOPROXY}" \
         --build-arg "ARCH=${ARCH}" \
         -f "${DOCKERFILE}" .
+}
+
+build_multi_arch() {
+    DOCKER_IMAGE="${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
+    DOCKER_BUILDKIT=1 docker buildx build \
+      --platform linux/amd64 \
+      --platform linux/arm64 \
+      --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
+      --label "commit=$(git rev-parse HEAD)" \
+      --label "build-time=$(date '+%Y-%m-%d %T%z')" \
+      --build-arg "MODULE_PATH=${MODULE_PATH}" \
+      --build-arg "APP_NAME=${APP_NAME}" \
+      --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
+      --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
+      --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
+      --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
+      --build-arg "GOPROXY=${GOPROXY}" \
+      -f "${DOCKERFILE}" \
+      -t "${DOCKER_IMAGE}" \
+      --push .
+    echo "action meta: image=${DOCKER_IMAGE}"
 }
 
 # push docker image
@@ -144,6 +172,9 @@ case "${ACTION}" in
         ;;
     "build-push")
         docker_login && build_push_image
+        ;;
+    "build-multi-arch")
+        podman_login && build_multi_arch
         ;;
     "")
         docker_login && build_image

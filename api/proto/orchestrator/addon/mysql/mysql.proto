@@ -34,6 +34,11 @@ service AddonMySQLService {
   }
 }
 
+service MySQLOperatorInstanceService {
+  rpc ExecSQL(ExecSQLRequest) returns (ExecSQLResponse) {
+  }
+}
+
 message MySQLAccount {
   string id = 1;
   string instanceId = 2;
@@ -96,4 +101,24 @@ message UpdateAttachmentAccountRequest {
 }
 
 message UpdateAttachmentAccountResponse {
+}
+
+message ExecSQLRequest {
+  string wAddress = 100;
+  string clusterKey = 200;
+  string username = 1;
+  string password = 2;
+  string schema = 3;
+  string charset = 4;
+  string collation = 5;
+  QueryType queryType = 11;
+  repeated string queries = 12;
+}
+
+message ExecSQLResponse {
+}
+
+enum QueryType {
+  sql = 0;
+  file = 1;
 }

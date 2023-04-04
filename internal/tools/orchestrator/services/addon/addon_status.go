@@ -126,7 +126,7 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 			return nil, errors.New("mysql-operator: no write host")
 		}
 
-		createDBs, initSQL, err := a.getCreateDBsAndInitSQL(addonIns.Options)
+		createDBs, initSQL, username, err := a.getCreateDBsAndInitSQL(addonIns.Options)
 		if err != nil {
 			logrus.Errorf("mysql-operator: getCreateDBsAndInitSQL: %s", err.Error())
 			return nil, err
@@ -136,9 +136,10 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 			defer os.Remove(initSQL)
 		}
 
+		logrus.Info("to create username and init databases (if specified)")
 		if len(createDBs) > 0 {
 			for _, db := range createDBs {
-				err = createUserDB(apistructs.AddonMysqlUser, decPwd, db, writeHost, clusterKey)
+				err = createUserDB(username, decPwd, db, writeHost, clusterKey)
 				if err != nil {
 					logrus.Errorf("mysql-operator: createUserDB: %s", err.Error())
 					return nil, err
@@ -146,14 +147,14 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 			}
 
 			if initSQL != "" {
-				err = runSQL(apistructs.AddonMysqlUser, decPwd, createDBs[0], initSQL, writeHost, clusterKey)
+				err = runSQL(username, decPwd, createDBs[0], initSQL, writeHost, clusterKey)
 				if err != nil {
 					logrus.Errorf("mysql-operator: runSQL: %s", err.Error())
 					return nil, err
 				}
 			}
 		} else {
-			err = createUserDB(apistructs.AddonMysqlUser, decPwd, "", writeHost, clusterKey)
+			err = createUserDB(username, decPwd, "", writeHost, clusterKey)
 			if err != nil {
 				logrus.Errorf("mysql-operator: createUserDB: %s", err.Error())
 				return nil, err

@@ -68,6 +68,9 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 	delete(req.GroupLabels, "LOCATION-CLUSTER-SERVICE")
 
 	for name, service := range resourceInfo.Dice.Services {
+		if name == "postgres-exporter" {
+			continue
+		}
 		delete(service.Envs, "LOCATION-CLUSTER-SERVICE")
 
 		// envs

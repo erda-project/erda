@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/pkg/registryhelper"
 )
 
-////go:generate mockgen -destination=./cluster_service_test.go -package registry github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb ClusterServiceServer
+// //go:generate mockgen -destination=./cluster_service_test.go -package registry github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb ClusterServiceServer
 func Test_DeleteManifests(t *testing.T) {
 	type args struct {
 		clusterName string

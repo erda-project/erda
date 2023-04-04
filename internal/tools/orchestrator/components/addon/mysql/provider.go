@@ -40,7 +40,10 @@ type provider struct {
 	DB       *gorm.DB `autowired:"mysql-client"`
 	Bdl      *bundle.Bundle
 
-	addonMySQLService pb.AddonMySQLServiceServer
+	addonMySQLService interface {
+		pb.AddonMySQLServiceServer
+		pb.MySQLOperatorInstanceServiceServer
+	}
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -65,13 +68,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	if p.Register != nil {
 		pb.RegisterAddonMySQLServiceImp(p.Register, p.addonMySQLService, apis.Options())
+		pb.RegisterMySQLOperatorInstanceServiceImp(p.Register, p.addonMySQLService, apis.Options())
 	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.orchestrator.addon.mysql.AddonMySQLService" || ctx.Type() == pb.AddonMySQLServiceServerType() || ctx.Type() == pb.AddonMySQLServiceHandlerType():
+	case ctx.Service() == "erda.orchestrator.addon.mysql.AddonMySQLService",
+		ctx.Type() == pb.AddonMySQLServiceServerType(),
+		ctx.Type() == pb.AddonMySQLServiceHandlerType(),
+		ctx.Service() == "erda.orchestrator.addon.mysql.MySQLOperatorInstanceService",
+		ctx.Type() == pb.MySQLOperatorInstanceServiceServerType(),
+		ctx.Type() == pb.MySQLOperatorInstanceServiceHandlerType():
 		return p.addonMySQLService
 	}
 	return p
