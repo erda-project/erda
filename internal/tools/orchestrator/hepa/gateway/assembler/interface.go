@@ -15,7 +15,7 @@
 package assembler
 
 import (
-	kong "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
@@ -30,11 +30,11 @@ type PluginParams struct {
 }
 
 type GatewayDbAssembler interface {
-	Resp2GatewayService(*kong.KongServiceRespDto, *db.GatewayService) error
-	Resp2GatewayServiceByApi(*kong.KongServiceRespDto, gw.ApiDto, string) (*db.GatewayService, error)
-	Resp2GatewayRoute(*kong.KongRouteRespDto, *db.GatewayRoute) error
-	Resp2GatewayRouteByAPi(*kong.KongRouteRespDto, string, string) (*db.GatewayRoute, error)
-	Resp2GatewayPluginInstance(*kong.KongPluginRespDto, PluginParams) (*db.GatewayPluginInstance, error)
+	Resp2GatewayService(*providerDto.ServiceRespDto, *db.GatewayService) error
+	Resp2GatewayServiceByApi(*providerDto.ServiceRespDto, gw.ApiDto, string) (*db.GatewayService, error)
+	Resp2GatewayRoute(*providerDto.RouteRespDto, *db.GatewayRoute) error
+	Resp2GatewayRouteByAPi(*providerDto.RouteRespDto, string, string) (*db.GatewayRoute, error)
+	Resp2GatewayPluginInstance(*providerDto.PluginRespDto, PluginParams) (*db.GatewayPluginInstance, error)
 	BuildGatewayApi(gw.ApiDto, string, []db.GatewayPolicy, string, ...string) (*db.GatewayApi, error)
 	BuildConsumerInfo(*db.GatewayConsumer) (*gw.ConsumerInfoDto, error)
 	BuildConsumerApiInfo(*db.GatewayConsumerApi, *db.GatewayApi) (*gw.ConsumerApiInfoDto, error)
@@ -42,9 +42,9 @@ type GatewayDbAssembler interface {
 }
 
 type GatewayKongAssembler interface {
-	BuildKongServiceReq(string, *gw.ApiDto) (*kong.KongServiceReqDto, error)
-	BuildKongRouteReq(string, *gw.ApiDto, string, bool) (*kong.KongRouteReqDto, error)
-	BuildKongPluginReqDto(string, *db.GatewayPolicy, string, string, string) (*kong.KongPluginReqDto, error)
+	BuildKongServiceReq(string, *gw.ApiDto) (*providerDto.ServiceReqDto, error)
+	BuildKongRouteReq(string, *gw.ApiDto, string, bool) (*providerDto.RouteReqDto, error)
+	BuildKongPluginReqDto(string, *db.GatewayPolicy, string, string, string) (*providerDto.PluginReqDto, error)
 }
 
 type GatewayGroupAssembler interface {

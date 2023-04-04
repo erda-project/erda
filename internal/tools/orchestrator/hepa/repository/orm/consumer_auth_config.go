@@ -16,7 +16,7 @@ package orm
 
 import (
 	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 )
 
 const (
@@ -26,11 +26,13 @@ const (
 	HMACAUTH     = "hmac-auth"
 	KeyAuthTips  = "请将appKey带在名为appKey的url参数或者名为X-App-Key的请求头上"
 	SignAuthTips = "请将appKey带在名为appKey的url参数上，将参数签名串带在名为sign的url参数上"
+	MSEBasicAuth = "basic-auth"
+	MSEJWTAuth   = "jwt-auth"
 )
 
 type AuthItem struct {
 	AuthType string                        `json:"authType"`
-	AuthData kongDto.KongCredentialListDto `json:"authData"`
+	AuthData providerDto.CredentialListDto `json:"authData"`
 	AuthTips string                        `json:"authTips"`
 }
 
@@ -63,12 +65,12 @@ func FromAuth(item *pb.ConsumerAuthItem) AuthItem {
 	if item.AuthData == nil {
 		return res
 	}
-	authData := kongDto.KongCredentialListDto{
+	authData := providerDto.CredentialListDto{
 		Total: item.AuthData.Total,
 	}
-	data := []kongDto.KongCredentialDto{}
+	data := []providerDto.CredentialDto{}
 	for _, auth := range item.AuthData.Data {
-		data = append(data, kongDto.FromCredential(auth))
+		data = append(data, providerDto.FromCredential(auth))
 	}
 	authData.Data = data
 	res.AuthData = authData

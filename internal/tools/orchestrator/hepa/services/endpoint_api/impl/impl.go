@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -40,9 +41,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
+	mseDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/plugins"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/hepautils"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/i18n"
@@ -80,6 +84,7 @@ type GatewayOpenapiServiceImpl struct {
 	azDb            db.GatewayAzInfoService
 	kongDb          db.GatewayKongInfoService
 	hubInfoDb       db.GatewayHubInfoService
+	credentialDb    db.GatewayCredentialService
 	apiBiz          *micro_api.GatewayApiService
 	zoneBiz         *zone.GatewayZoneService
 	ruleBiz         *openapi_rule.GatewayOpenapiRuleService
@@ -111,6 +116,7 @@ func NewGatewayOpenapiServiceImpl() error {
 			azDb, _ := db.NewGatewayAzInfoServiceImpl()
 			runtimeDb, _ := db.NewGatewayRuntimeServiceServiceImpl()
 			hubInfoDb, _ := db.NewGatewayHubInfoServiceImpl()
+			credentialDb, _ := db.NewGatewayCredentialServiceImpl()
 			endpoint_api.Service = &GatewayOpenapiServiceImpl{
 				packageDb:       packageDb,
 				packageApiDb:    packageApiDb,
@@ -125,6 +131,7 @@ func NewGatewayOpenapiServiceImpl() error {
 				kongDb:          kongDb,
 				azDb:            azDb,
 				hubInfoDb:       hubInfoDb,
+				credentialDb:    credentialDb,
 				zoneBiz:         &zone.Service,
 				apiBiz:          &micro_api.Service,
 				consumerBiz:     &openapi_consumer.Service,
@@ -144,8 +151,8 @@ func (impl GatewayOpenapiServiceImpl) Clone(ctx context.Context) endpoint_api.Ga
 	return &newService
 }
 
-func (impl GatewayOpenapiServiceImpl) createApiAclRule(aclType, packageId, apiId string) (*gw.OpenapiRule, error) {
-	rule, err := impl.createAclRule(aclType, packageId)
+func (impl GatewayOpenapiServiceImpl) createApiAclRule(aclType, packageId, apiId, clusterName string) (*gw.OpenapiRule, error) {
+	rule, err := impl.createAclRule(aclType, packageId, clusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -154,31 +161,60 @@ func (impl GatewayOpenapiServiceImpl) createApiAclRule(aclType, packageId, apiId
 	return rule, nil
 }
 
-func (impl GatewayOpenapiServiceImpl) createAclRule(aclType, packageId string) (*gw.OpenapiRule, error) {
+func (impl GatewayOpenapiServiceImpl) createAclRule(aclType, packageId, clusterName string) (*gw.OpenapiRule, error) {
 	var consumers []orm.GatewayConsumer
 	var aclRule *gw.OpenapiRule
 	consumers, err := (*impl.consumerBiz).GetConsumersOfPackage(packageId)
 	if err != nil {
 		return nil, err
 	}
+
+	if clusterName == "" {
+		err = errors.New("cluster name not provider")
+		return nil, err
+	}
+
 	aclRule = &gw.OpenapiRule{
 		PackageId:  packageId,
 		PluginName: gw.ACL,
 		Category:   gw.ACL_RULE,
 	}
-	var buffer bytes.Buffer
-	for _, consumer := range consumers {
-		if buffer.Len() > 0 {
-			buffer.WriteString(",")
+
+	gatewayProvider, err := impl.GetGatewayProvider(clusterName)
+	if err != nil {
+		return nil, errors.Errorf("can not detect gateway provider, error: %v", err)
+	}
+
+	config := make(map[string]interface{})
+	switch gatewayProvider {
+	case mseCommon.Mse_Provider_Name:
+		wlConsumers, err := impl.mseConsumerConfig(consumers)
+		if err != nil {
+			return nil, err
 		}
-		buffer.WriteString((*impl.consumerBiz).GetKongConsumerName(&consumer))
+		if len(wlConsumers) == 0 {
+			wlConsumers = append(wlConsumers, mseDto.Consumers{
+				Name: plugins.DEFAULT_MSE_CONSUMER_NAME,
+			})
+		}
+		config["whitelist"] = wlConsumers
+	case "":
+		var buffer bytes.Buffer
+		for _, consumer := range consumers {
+			if buffer.Len() > 0 {
+				buffer.WriteString(",")
+			}
+			buffer.WriteString((*impl.consumerBiz).GetKongConsumerName(&consumer))
+		}
+		wl := buffer.String()
+		if wl == "" {
+			wl = ","
+		}
+		config["whitelist"] = wl
+	default:
+		return nil, errors.Errorf("unknown gateway provider %s", gatewayProvider)
 	}
-	wl := buffer.String()
-	config := map[string]interface{}{}
-	if wl == "" {
-		wl = ","
-	}
-	config["whitelist"] = wl
+
 	aclRule.Config = config
 	switch aclType {
 	case gw.ACL_ON:
@@ -189,6 +225,62 @@ func (impl GatewayOpenapiServiceImpl) createAclRule(aclType, packageId string) (
 		return nil, errors.Errorf("invalid acl type:%s", aclType)
 	}
 	return aclRule, nil
+}
+
+func (impl GatewayOpenapiServiceImpl) mseConsumerConfig(consumers []orm.GatewayConsumer) ([]mseDto.Consumers, error) {
+	wlConsumers := make([]mseDto.Consumers, 0)
+	for _, consumer := range consumers {
+		wlConsumer := mseDto.Consumers{
+			Name: fmt.Sprintf("%s.%s.%s.%s:%s", consumer.OrgId, consumer.ProjectId, consumer.Env, consumer.Az, consumer.ConsumerName),
+		}
+
+		credentials, err := impl.credentialDb.SelectByConsumerId(consumer.ConsumerId)
+		if err != nil {
+			return wlConsumers, err
+		}
+
+		if len(credentials) == 0 {
+			return wlConsumers, errors.Errorf("no credential info found for consumer %s", consumer.ConsumerName)
+		}
+
+		for _, credential := range credentials {
+			switch credential.PluginName {
+			case orm.OAUTH2:
+				// TODO: MSE 暂不支持 Oauth2
+			case orm.KEYAUTH:
+				wlConsumer.Credential = credential.Key
+			case orm.SIGNAUTH:
+				// TODO: MSE 暂不支持 sign-auth
+			case orm.HMACAUTH:
+				wlConsumer.Key = credential.Key
+				wlConsumer.Secret = credential.Secret
+			case orm.MSEBasicAuth:
+				wlConsumer.Credential = credential.Key
+			case orm.MSEJWTAuth:
+				if credential.FromParams != "" {
+					wlConsumer.FromParams = strings.Split(credential.FromParams, ",")
+				}
+				if credential.FromCookies != "" {
+					wlConsumer.FromCookies = strings.Split(credential.FromCookies, ",")
+				}
+				if credential.KeepToken == "N" {
+					wlConsumer.KeepToken = false
+				} else {
+					wlConsumer.KeepToken = true
+				}
+
+				wlConsumer.ClockSkewSeconds = 60
+				if credential.ClockSkewSeconds != "" {
+					csSeconds, err := strconv.Atoi(credential.ClockSkewSeconds)
+					if err == nil && csSeconds > 0 {
+						wlConsumer.ClockSkewSeconds = csSeconds
+					}
+				}
+			}
+		}
+		wlConsumers = append(wlConsumers, wlConsumer)
+	}
+	return wlConsumers, nil
 }
 
 func (impl GatewayOpenapiServiceImpl) createApiAuthRule(packageId, apiId string, enable ...bool) (*gw.OpenapiRule, error) {
@@ -219,49 +311,103 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 		Category:   gw.AUTH_RULE,
 		Enabled:    ruleEnabled,
 	}
-	switch authType {
-	case gw.AT_KEY_AUTH:
-		authRule.Config = gw.KEYAUTH_CONFIG
-	case gw.AT_OAUTH2:
-		authRule.Config = gw.OAUTH2_CONFIG
-	case gw.AT_SIGN_AUTH:
-		authRule.Config = gw.SIGNAUTH_CONFIG
-	case gw.AT_HMAC_AUTH:
-		gatewayProvider, err := impl.GetGatewayProvider(pack.DiceClusterName)
+
+	gatewayProvider, err := impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	kongInfo, err := impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
+		Az:        pack.DiceClusterName,
+		ProjectId: pack.DiceProjectId,
+		Env:       pack.DiceEnv,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var gatewayAdapter gateway_providers.GatewayAdapter
+	switch gatewayProvider {
+	case mseCommon.Mse_Provider_Name:
+		consumers, err := (*impl.consumerBiz).GetConsumersOfPackage(pack.Id)
 		if err != nil {
 			return nil, err
 		}
-		kongInfo, err := impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
-			Az:        pack.DiceClusterName,
-			ProjectId: pack.DiceProjectId,
-			Env:       pack.DiceEnv,
-		})
+
+		gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
 		if err != nil {
 			return nil, err
 		}
-		var gatewayAdapter gateway_providers.GatewayAdapter
-		switch gatewayProvider {
-		case mse.Mse_Provider_Name:
-			gatewayAdapter = mse.NewMseAdapter()
-		case "":
-			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		pluginName := ""
+		switch authType {
+		case gw.AT_KEY_AUTH:
+			config := map[string]interface{}{}
+			wlConsumers, err := impl.mseConsumerConfig(consumers)
+			if err != nil {
+				return nil, err
+			}
+			if len(wlConsumers) == 0 {
+				wlConsumers = append(wlConsumers, mseDto.Consumers{
+					Name: plugins.DEFAULT_MSE_CONSUMER_NAME,
+				})
+			}
+			config["whitelist"] = wlConsumers
+			authRule.Config = config
+			pluginName = mseCommon.MsePluginKeyAuth
+		case gw.AT_OAUTH2:
+			authRule.Config = gw.OAUTH2_CONFIG
+			pluginName = gw.AT_OAUTH2
+		case gw.AT_SIGN_AUTH:
+			authRule.Config = gw.SIGNAUTH_CONFIG
+			pluginName = gw.AT_SIGN_AUTH
+		case gw.AT_HMAC_AUTH:
+			authRule.Config = gw.HMACAUTH_CONFIG
+			pluginName = mseCommon.MsePluginHmacAuth
+		case gw.AT_ALIYUN_APP:
+			authRule.Config = nil
+			pluginName = gw.AT_ALIYUN_APP
+			authRule.NotKongPlugin = true
 		default:
-			return nil, errors.Errorf("Unknown gatewayProvider: %v\n", gatewayProvider)
+			return nil, errors.Errorf("invalide auth type:%s", authType)
 		}
-		enabled, err := gatewayAdapter.CheckPluginEnabled(gw.AT_HMAC_AUTH)
+
+		enabled, err := gatewayAdapter.CheckPluginEnabled(pluginName)
 		if err != nil {
 			return nil, err
 		}
 		if !enabled {
-			return nil, errors.New("hmac-auth plugin is not enabled")
+			return nil, errors.Errorf("plugin %s is not support", pluginName)
 		}
-		authRule.Config = gw.HMACAUTH_CONFIG
-	case gw.AT_ALIYUN_APP:
-		authRule.Config = nil
-		authRule.NotKongPlugin = true
+		authRule.PluginName = pluginName
+
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+		switch authType {
+		case gw.AT_KEY_AUTH:
+			authRule.Config = gw.KEYAUTH_CONFIG
+		case gw.AT_OAUTH2:
+			authRule.Config = gw.OAUTH2_CONFIG
+		case gw.AT_SIGN_AUTH:
+			authRule.Config = gw.SIGNAUTH_CONFIG
+		case gw.AT_HMAC_AUTH:
+			enabled, err := gatewayAdapter.CheckPluginEnabled(gw.AT_HMAC_AUTH)
+			if err != nil {
+				return nil, err
+			}
+			if !enabled {
+				return nil, errors.New("hmac-auth plugin is not enabled")
+			}
+			authRule.Config = gw.HMACAUTH_CONFIG
+		case gw.AT_ALIYUN_APP:
+			authRule.Config = nil
+			authRule.NotKongPlugin = true
+		default:
+			return nil, errors.Errorf("invalide auth type:%s", authType)
+		}
 	default:
-		return nil, errors.Errorf("invalide auth type:%s", authType)
+		return nil, errors.Errorf("Unknown gatewayProvider: %v\n", gatewayProvider)
 	}
+
 	return authRule, nil
 }
 
@@ -399,19 +545,34 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *g
 			return
 		}
 		authRule.Region = gw.PACKAGE_RULE
-		aclRule, err = impl.createAclRule(dto.AclType, pack.Id)
-		if err != nil {
-			return
-		}
-		aclRule.Region = gw.PACKAGE_RULE
 		err = (*impl.ruleBiz).CreateRule(diceInfo, authRule, helper)
 		if err != nil {
 			return
 		}
-		err = (*impl.ruleBiz).CreateRule(diceInfo, aclRule, helper)
-		if err != nil {
+
+		gatewayProvider, errGetProvider := impl.GetGatewayProvider(az)
+		if errGetProvider != nil {
+			err = errGetProvider
 			return
 		}
+		switch gatewayProvider {
+		case mseCommon.Mse_Provider_Name:
+		case "":
+			// Kong 需要再创建 acl rule
+			aclRule, err = impl.createAclRule(dto.AclType, pack.Id, az)
+			if err != nil {
+				return
+			}
+			aclRule.Region = gw.PACKAGE_RULE
+			err = (*impl.ruleBiz).CreateRule(diceInfo, aclRule, helper)
+			if err != nil {
+				return
+			}
+		default:
+			err = errors.Errorf("unknown gateway provider %s", gatewayProvider)
+			return
+		}
+
 		// update zone kong polices
 		err = (*impl.ruleBiz).SetPackageKongPolicies(pack, helper)
 		if err != nil {
@@ -684,9 +845,12 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		logrus.Debugf("mse gateway no need update GatewayRoute.")
-		gatewayAdapter = mse.NewMseAdapter()
+		gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
+		if err != nil {
+			return err
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
@@ -710,7 +874,7 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 		if route == nil {
 			return errors.Errorf("can't find route of api:%s", api.Id)
 		}
-		req := kongDto.NewKongRouteReqDto()
+		req := providerDto.NewKongRouteReqDto()
 		req.RouteId = route.RouteId
 		req.Hosts = hosts
 		req.AddTag("package_api_id", api.Id)
@@ -898,7 +1062,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 		}
 		if dto.AclType != "" {
 			var aclRule *gw.OpenapiRule
-			aclRule, err = impl.createAclRule(dto.AclType, id)
+			aclRule, err = impl.createAclRule(dto.AclType, id, dao.DiceClusterName)
 			if err != nil {
 				return
 			}
@@ -1122,9 +1286,9 @@ func (impl GatewayOpenapiServiceImpl) packageApiDao(dto *gw.OpenapiDto) *orm.Gat
 	return dao
 }
 
-func (impl GatewayOpenapiServiceImpl) createKongServiceReq(dto *gw.OpenapiDto, serviceId ...string) *kongDto.KongServiceReqDto {
+func (impl GatewayOpenapiServiceImpl) createKongServiceReq(dto *gw.OpenapiDto, serviceId ...string) *providerDto.ServiceReqDto {
 	i := 0
-	reqDto := &kongDto.KongServiceReqDto{
+	reqDto := &providerDto.ServiceReqDto{
 		Url:            dto.AdjustRedirectAddr,
 		ConnectTimeout: 5000,
 		ReadTimeout:    60000,
@@ -1137,7 +1301,7 @@ func (impl GatewayOpenapiServiceImpl) createKongServiceReq(dto *gw.OpenapiDto, s
 	return reqDto
 }
 
-func (impl GatewayOpenapiServiceImpl) kongServiceDao(dto *kongDto.KongServiceRespDto, apiId string) *orm.GatewayService {
+func (impl GatewayOpenapiServiceImpl) kongServiceDao(dto *providerDto.ServiceRespDto, apiId string) *orm.GatewayService {
 	return &orm.GatewayService{
 		ServiceId:   dto.Id,
 		ServiceName: dto.Name,
@@ -1165,7 +1329,7 @@ func (impl GatewayOpenapiServiceImpl) touchKongService(adapter gateway_providers
 	if err != nil {
 		return "", err
 	}
-	var req *kongDto.KongServiceReqDto
+	var req *providerDto.ServiceReqDto
 	if service == nil {
 		req = impl.createKongServiceReq(dto)
 	} else {
@@ -1213,8 +1377,8 @@ func (impl GatewayOpenapiServiceImpl) deleteKongService(adapter gateway_provider
 	return nil
 }
 
-func (impl GatewayOpenapiServiceImpl) createKongRouteReq(dto *gw.OpenapiDto, serviceId string, routeId ...string) *kongDto.KongRouteReqDto {
-	reqDto := kongDto.NewKongRouteReqDto()
+func (impl GatewayOpenapiServiceImpl) createKongRouteReq(dto *gw.OpenapiDto, serviceId string, routeId ...string) *providerDto.RouteReqDto {
+	reqDto := providerDto.NewKongRouteReqDto()
 	if dto.Method != "" {
 		reqDto.Methods = []string{dto.Method}
 	}
@@ -1222,7 +1386,7 @@ func (impl GatewayOpenapiServiceImpl) createKongRouteReq(dto *gw.OpenapiDto, ser
 		reqDto.Paths = []string{dto.AdjustPath}
 	}
 	reqDto.Hosts = dto.Hosts
-	reqDto.Service = &kongDto.Service{}
+	reqDto.Service = &providerDto.Service{}
 	reqDto.Service.Id = serviceId
 	if dto.IsRegexPath {
 		ignore := strings.Count(dto.AdjustPath, "^/") + strings.Count(dto.AdjustPath, `\/`)
@@ -1234,7 +1398,7 @@ func (impl GatewayOpenapiServiceImpl) createKongRouteReq(dto *gw.OpenapiDto, ser
 	return reqDto
 }
 
-func (impl GatewayOpenapiServiceImpl) kongRouteDao(dto *kongDto.KongRouteRespDto, serviceId, apiId string) *orm.GatewayRoute {
+func (impl GatewayOpenapiServiceImpl) kongRouteDao(dto *providerDto.RouteRespDto, serviceId, apiId string) *orm.GatewayRoute {
 	protocols, _ := json.Marshal(dto.Protocols)
 	hosts, _ := json.Marshal(dto.Hosts)
 	paths, _ := json.Marshal(dto.Paths)
@@ -1266,7 +1430,7 @@ func (impl GatewayOpenapiServiceImpl) touchKongRoute(adapter gateway_providers.G
 	if err != nil {
 		return "", err
 	}
-	var req *kongDto.KongRouteReqDto
+	var req *providerDto.RouteReqDto
 	if route == nil {
 		req = impl.createKongRouteReq(dto, dto.ServiceId)
 	} else {
@@ -1328,6 +1492,9 @@ func (impl GatewayOpenapiServiceImpl) DeleteKongApi(adapter gateway_providers.Ga
 }
 
 func (impl GatewayOpenapiServiceImpl) GetGatewayProvider(clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.Errorf("clusterName is nil")
+	}
 	_, azInfo, err := impl.azDb.GetAzInfoByClusterName(clusterName)
 	if err != nil {
 		return "", err
@@ -1341,7 +1508,7 @@ func (impl GatewayOpenapiServiceImpl) GetGatewayProvider(clusterName string) (st
 
 func (impl GatewayOpenapiServiceImpl) createOrUpdatePlugins(adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiDto) error {
 	if dto.ServiceRewritePath != "" {
-		reqDto := &kongDto.KongPluginReqDto{
+		reqDto := &providerDto.PluginReqDto{
 			Name: "path-variable",
 			// ServiceId: dto.ServiceId,
 			RouteId: dto.RouteId,
@@ -1350,13 +1517,15 @@ func (impl GatewayOpenapiServiceImpl) createOrUpdatePlugins(adapter gateway_prov
 				"rewrite_path":  dto.ServiceRewritePath,
 			},
 		}
-		_, err := adapter.CreateOrUpdatePlugin(reqDto)
-		if err != nil {
-			return err
+		if _, ok := adapter.(*mse.MseAdapterImpl); !ok {
+			_, err := adapter.CreateOrUpdatePlugin(reqDto)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if config.ServerConf.HasRouteInfo {
-		reqDto := &kongDto.KongPluginReqDto{
+		reqDto := &providerDto.PluginReqDto{
 			Name:    "set-route-info",
 			RouteId: dto.RouteId,
 			Config: map[string]interface{}{
@@ -1365,9 +1534,11 @@ func (impl GatewayOpenapiServiceImpl) createOrUpdatePlugins(adapter gateway_prov
 				"api_path":   dto.ApiPath,
 			},
 		}
-		_, err := adapter.CreateOrUpdatePlugin(reqDto)
-		if err != nil {
-			return err
+		if _, ok := adapter.(*mse.MseAdapterImpl); !ok {
+			_, err := adapter.CreateOrUpdatePlugin(reqDto)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -1388,6 +1559,8 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	var domains []string
 	var audit *apistructs.Audit
 	var ingressNamespace string
+	var consumers []string
+	var packageAclInfoDto []gw.PackageAclInfoDto
 	gatewayProvider := ""
 
 	needUpdateDomainPolicy := false
@@ -1484,8 +1657,11 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 			goto failed
 		}
 		switch gatewayProvider {
-		case mse.Mse_Provider_Name:
-			gatewayAdapter = mse.NewMseAdapter()
+		case mseCommon.Mse_Provider_Name:
+			gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
+			if err != nil {
+				goto failed
+			}
 		case "":
 			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 		default:
@@ -1555,15 +1731,19 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 			Env:       pack.DiceEnv,
 			Az:        pack.DiceClusterName,
 		}
-		aclRule, err = impl.createApiAclRule(gw.ACL_OFF, dao.PackageId, dao.Id)
-		if err != nil {
-			goto failed
+		if gatewayProvider == "" {
+			// mse 网关，暂不创建 acl rule
+			aclRule, err = impl.createApiAclRule(gw.ACL_OFF, dao.PackageId, dao.Id, pack.DiceClusterName)
+			if err != nil {
+				goto failed
+			}
+
+			err = (*impl.ruleBiz).CreateRule(diceInfo, aclRule, session)
+			if err != nil {
+				goto failed
+			}
 		}
 		authRule, err = impl.createApiAuthRule(dao.PackageId, dao.Id, false)
-		if err != nil {
-			goto failed
-		}
-		err = (*impl.ruleBiz).CreateRule(diceInfo, aclRule, session)
 		if err != nil {
 			goto failed
 		}
@@ -1579,6 +1759,26 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 			goto failed
 		}
 	}
+	// MSE 网关 OpenAPI 流量入口中的路由，需要授权
+	if gatewayProvider == mseCommon.Mse_Provider_Name && pack.Scene == orm.OpenapiScene && dao.Id != "" {
+		packageAclInfoDto, err = (*impl.consumerBiz).GetPackageApiAcls(pack.Id, dao.Id)
+		if err != nil {
+			logrus.Errorf("Update package api authz for mse plugin failed: %v", err)
+			goto failed
+		}
+
+		if len(packageAclInfoDto) > 0 {
+			for _, aclInfo := range packageAclInfoDto {
+				if aclInfo.Selected {
+					consumers = append(consumers, aclInfo.Id)
+				}
+			}
+
+			logrus.Errorf("UpdatePackageApiAcls for MSE plugin for pack.Id=%s, dao.Id=%s  consumers=%+v", pack.Id, dao.Id, consumers)
+			go impl.UpdatePackageApiAclsWhenCreateApi(pack.Id, dao.Id, consumers)
+		}
+	}
+
 	return false, dao.Id, audit, nil
 failed:
 	if serviceId != "" {
@@ -1594,6 +1794,33 @@ failed:
 		}
 	}
 	return exist, "", audit, err
+}
+
+func (impl GatewayOpenapiServiceImpl) UpdatePackageApiAclsWhenCreateApi(packageId, packageApiId string, consumerIds []string) {
+	// MSE 网关路由是 MSE 控制器 watch ingress 发现，因此有延时，所以最多等待 30s
+	time.Sleep(10 * time.Second)
+	for i := 0; i < 3; i++ {
+		dao, err := impl.packageApiDb.Get(packageApiId)
+		if err != nil && i == 2 {
+			logrus.Errorf("UpdatePackageApiAclsWhenCreateApi when get package api failed: %v", err)
+		}
+		if dao == nil && i == 2 {
+			logrus.Errorf("UpdatePackageApiAclsWhenCreateApi when get package api failed: not found")
+		}
+
+		authzResult, err := (*impl.consumerBiz).UpdatePackageApiAcls(packageId, packageApiId, &gw.PackageAclsDto{Consumers: consumerIds})
+		if err != nil && i == 2 {
+			logrus.Errorf("UpdatePackageApiAclsWhenCreateApi when update package api authz failed: %v", err)
+		}
+
+		if !authzResult && i == 2 {
+			logrus.Errorf("UpdatePackageApiAclsWhenCreateApi when update package api authz failed")
+		}
+		if authzResult {
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
 }
 
 func (impl GatewayOpenapiServiceImpl) touchServiceForExternalService(info endpoint_api.PackageApiInfo, z orm.GatewayZone) (*corev1.Service, error) {
@@ -1999,7 +2226,7 @@ func (impl GatewayOpenapiServiceImpl) createApiPassAuthRules(pack *orm.GatewayPa
 		Env:       pack.DiceEnv,
 		Az:        pack.DiceClusterName,
 	}
-	aclRule, err := impl.createApiAclRule(gw.ACL_OFF, pack.Id, apiId)
+	aclRule, err := impl.createApiAclRule(gw.ACL_OFF, pack.Id, apiId, pack.DiceClusterName)
 	if err != nil {
 		return err
 	}
@@ -2165,8 +2392,11 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 		return
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
+		if err != nil {
+			return
+		}
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
@@ -2376,8 +2606,35 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 	}
 
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
-		gatewayAdapter = mse.NewMseAdapter()
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
+		if err != nil {
+			return
+		}
+		// 删除 MSE 全局插件配置中，相对于当前要删除的路由的配置项，采用
+		aclRules := make([]gw.OpenapiRuleInfo, 0)
+		aclRules, err = (*impl.ruleBiz).GetApiRules(apiId, gw.AUTH_RULE)
+		if err != nil {
+			return
+		}
+
+		// 因为是删除路由，路由相关的 mse 插件配置都需要删除，因此对应的 规则的 consumer 只保留默认的 consumer，用于后续逻辑处理
+		// 其他 consumer 直接清除掉
+		config := map[string]interface{}{}
+		wlConsumers := make([]mseDto.Consumers, 0)
+		wlConsumers = append(wlConsumers, mseDto.Consumers{
+			Name: plugins.DEFAULT_MSE_CONSUMER_NAME,
+		})
+
+		config["whitelist"] = wlConsumers
+		for _, rule := range aclRules {
+			rule.Config = config
+			_, err = (*impl.ruleBiz).CreateOrUpdatePlugin(gatewayAdapter, &rule.OpenapiRule, nil)
+			if err != nil {
+				return
+			}
+		}
+
 	case "":
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
@@ -2433,7 +2690,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		}
 	}
 	if dao.ZoneId != "" {
-		if gatewayProvider == mse.Mse_Provider_Name {
+		if gatewayProvider == mseCommon.Mse_Provider_Name {
 			impl.deleteMSEApi(dao, pack, ingressNamespace)
 		}
 
@@ -2759,7 +3016,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, gatew
 		goto clear_route
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		logrus.Warnf("Mse gateway provider not support build-in plugin in kong")
 	case "":
 		_, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, nil, apipolicy.Policy_Engine_Built_in, nil, session)
@@ -2774,7 +3031,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, gatew
 		//TODO
 		_ = session.Commit()
 		switch gatewayProvider {
-		case mse.Mse_Provider_Name:
+		case mseCommon.Mse_Provider_Name:
 			logrus.Warnf("Mse gateway provider not support cors plugin in kong")
 		case "":
 			var policyEngine apipolicy.PolicyEngine
@@ -2979,7 +3236,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		goto clear_route
 	}
 	switch gatewayProvider {
-	case mse.Mse_Provider_Name:
+	case mseCommon.Mse_Provider_Name:
 		logrus.Warnf("mse gateway provider not support kong built-in policy yet\n")
 	case "":
 		if _, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, nil, apipolicy.Policy_Engine_Built_in, nil, session); err != nil {
@@ -3019,7 +3276,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		//TODO
 		_ = session.Commit()
 		switch gatewayProvider {
-		case mse.Mse_Provider_Name:
+		case mseCommon.Mse_Provider_Name:
 			logrus.Warnf("mse gateway provider not support kong cors policy yet\n")
 		case "":
 			_, err = (*impl.policyBiz).SetPackageDefaultPolicyConfig(apipolicy.Policy_Engine_CORS, pkg.Id, azInfo, configByte)

@@ -26,6 +26,7 @@ const (
 	AT_OAUTH2     = "oauth2"
 	AT_SIGN_AUTH  = "sign-auth"
 	AT_HMAC_AUTH  = "hmac-auth"
+	AT_BASIC_AUTH = "basic-auth"
 	AT_ALIYUN_APP = "aliyun-app"
 )
 

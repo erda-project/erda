@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	kongDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong/dto"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 )
 
 type PolicyDto struct {
@@ -42,8 +42,8 @@ func (pc PolicyDto) IsValidDto() error {
 	return err
 }
 
-func (pc PolicyDto) ToPluginReqDto() *kongDto.KongPluginReqDto {
-	var req = &kongDto.KongPluginReqDto{
+func (pc PolicyDto) ToPluginReqDto() *providerDto.PluginReqDto {
+	var req = &providerDto.PluginReqDto{
 		Name:    apipolicy.Policy_Engine_SBAC,
 		Enabled: &pc.Switch,
 		Config: map[string]interface{}{

@@ -14,7 +14,7 @@
 
 package dto
 
-type KongConsumerRespDto struct {
+type ConsumerRespDto struct {
 	CustomId  string `json:"custom_id"`
 	CreatedAt int64  `json:"created_at"`
 	// consumerId

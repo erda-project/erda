@@ -117,6 +117,21 @@ func (impl *GatewayConsumerServiceImpl) GetByName(name string) (*orm.GatewayCons
 	return consumer, nil
 }
 
+func (impl *GatewayConsumerServiceImpl) GetByConsumerId(consumerId string) (*orm.GatewayConsumer, error) {
+	if len(consumerId) == 0 {
+		return nil, errors.New(ERR_INVALID_ARG)
+	}
+	consumer := &orm.GatewayConsumer{}
+	succ, err := orm.Get(impl.engine, consumer, "consumer_id = ?", consumerId)
+	if err != nil {
+		return nil, errors.Wrap(err, ERR_SQL_FAIL)
+	}
+	if !succ {
+		return nil, nil
+	}
+	return consumer, nil
+}
+
 func (impl *GatewayConsumerServiceImpl) DeleteById(id string) error {
 	if len(id) == 0 {
 		return errors.New(ERR_INVALID_ARG)
