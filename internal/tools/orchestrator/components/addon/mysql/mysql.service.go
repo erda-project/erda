@@ -354,10 +354,10 @@ func (s *mysqlService) ExecSQL(ctx context.Context, req *pb.ExecSQLRequest) (*pb
 		return nil, err
 	}
 	if !resp.IsOK() {
-		return nil, errors.Errorf("failure to request to run SQL, status code: %d", resp.StatusCode())
+		return nil, errors.Errorf("failed to request to run SQL, status code: %d", resp.StatusCode())
 	}
 	if err, ok := m["Error"]; ok && err != nil {
-		return nil, errors.Errorf("failure to request to run SQL, error: %v", err)
+		return nil, errors.Errorf("failed to request to run SQL, error: %v", err)
 	}
 	return new(pb.ExecSQLResponse), nil
 }
@@ -582,16 +582,16 @@ func execSQLRequestToMultipartBody(form url.Values) (io.Reader, string, error) {
 	)
 	defer func() {
 		if err := w.Close(); err != nil {
-			logrus.WithError(err).Error("failure to close multipart writer")
+			logrus.WithError(err).Error("failed to close multipart writer")
 		}
 	}()
 	for _, key := range keys {
 		field, err := w.CreateFormField(key)
 		if err != nil {
-			return nil, "", errors.Wrapf(err, "failure to CreateFormField(%s)", key)
+			return nil, "", errors.Wrapf(err, "failed to CreateFormField(%s)", key)
 		}
 		if _, err = field.Write([]byte(form.Get(key))); err != nil {
-			return nil, "", errors.Wrapf(err, "failure to Write value for multipart key %s", key)
+			return nil, "", errors.Wrapf(err, "failed to Write value for multipart key %s", key)
 		}
 	}
 	return buf, w.FormDataContentType(), nil

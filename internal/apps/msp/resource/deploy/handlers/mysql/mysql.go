@@ -146,18 +146,18 @@ func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployR
 	mysqlMap := ParseResp2MySQLDtoMap(tmcInstance, serviceGroup)
 	var deployByOperator = serviceGroup.Labels["USE_OPERATOR"] == "mysql"
 	if err := p.initMysql(mysqlMap, clusterConfig, deployByOperator); err != nil {
-		p.Log.Infof("failure to initMySQL, mysqlMqp: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
+		p.Log.Infof("failed to initMySQL, mysqlMqp: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
 			strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
-		return nil, errors.Wrap(err, "failure to initMySQL")
+		return nil, errors.Wrap(err, "failed to initMySQL")
 	}
 
 	time.Sleep(2 * time.Second)
 
 	if !deployByOperator {
 		if err := p.checkSalveStatus(mysqlMap, clusterConfig); err != nil {
-			p.Log.Errorf("failure to checkSalveStatus, mysqlMap: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
+			p.Log.Errorf("failed to checkSalveStatus, mysqlMap: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
 				strutil.MustString(mysqlMap), strutil.MustString(clusterConfig), strutil.MustString(tmcInstance), strutil.MustString(serviceGroup), err)
-			return nil, errors.Wrap(err, "failure to checkSalveStatus")
+			return nil, errors.Wrap(err, "failed to checkSalveStatus")
 		}
 	}
 
@@ -242,7 +242,7 @@ func (p *provider) initDb(dbNames []string, mysqldto mysqlDto, clusterConfig map
 	p.Log.Infof("[%s] to check if the SQL script has been executed", initSql)
 	ok, err := mysqlExec.HasRecord(initSql)
 	if err != nil {
-		return errors.Wrapf(err, "failure to check the init sql record for %s", initSql)
+		return errors.Wrapf(err, "failed to check the init sql record for %s", initSql)
 	}
 	if ok {
 		p.Log.Infof("[%s] there is already a record for the SQL script, skip this initialization", initSql)
@@ -333,8 +333,8 @@ func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[st
 
 	for e := linkList.Front(); e != nil; e = e.Next() {
 		if err := e.Value.(InstanceAdapter).ExecSQLs(); err != nil {
-			p.Log.Errorf("failure to Exec SQLs for %s", strutil.MustString(e.Value))
-			return errors.Wrap(err, "failure to Exec SQLs")
+			p.Log.Errorf("failed to Exec SQLs for %s", strutil.MustString(e.Value))
+			return errors.Wrap(err, "failed to Exec SQLs")
 		}
 	}
 
@@ -352,8 +352,8 @@ func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig
 
 	status, err := mysqlExec.GetSlaveState()
 	if err != nil {
-		p.Log.Errorf("failure to GetSlaveState, MySQL request: %s, err: %v", strutil.MustString(mysqlExec), err)
-		return errors.Wrap(err, "failure to GetSlaveState, MySQL request")
+		p.Log.Errorf("failed to GetSlaveState, MySQL request: %s, err: %v", strutil.MustString(mysqlExec), err)
+		return errors.Wrap(err, "failed to GetSlaveState, MySQL request")
 	}
 
 	if !strings.EqualFold(status.IORunning, "connecting") &&
