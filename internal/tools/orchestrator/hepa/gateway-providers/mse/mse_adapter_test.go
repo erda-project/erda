@@ -46,21 +46,12 @@ func TestNewMseAdapter(t *testing.T) {
 				az: "test",
 			},
 			want: &MseAdapterImpl{
-<<<<<<< HEAD
 				ProviderName:    mseCommon.Mse_Provider_Name,
 				Bdl:             &bundle.Bundle{},
 				AccessKeyID:     "aliyunaccesskeyid",
 				AccessKeySecret: "aliyunaccesskeysecret",
 				GatewayUniqueID: "aliyunmsegatewayid",
 				GatewayEndpoint: "mse.cn-hangzhou.aliyuncs.com",
-=======
-				ProviderName:      mseCommon.Mse_Provider_Name,
-				Bdl:               &bundle.Bundle{},
-				AccessKeyId:       "aliyunaccesskeyid",
-				AccessKeySecret:   "aliyunaccesskeysecret",
-				GatewayUniqueId:   "aliyunmsegatewayid",
-				GatewayBindDomain: "mse.cn-hangzhou.aliyuncs.com",
->>>>>>> b676570a9 (feat: heap support mse key-auth plugin)
 			},
 		},
 		{
@@ -91,13 +82,8 @@ func TestNewMseAdapter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			adapter := &MseAdapterImpl{
-<<<<<<< HEAD
 				Bdl:             &bundle.Bundle{},
 				GatewayEndpoint: "mse.cn-hangzhou.aliyuncs.com",
-=======
-				Bdl:               &bundle.Bundle{},
-				GatewayBindDomain: "mse.cn-hangzhou.aliyuncs.com",
->>>>>>> b676570a9 (feat: heap support mse key-auth plugin)
 			}
 			monkey.PatchInstanceMethod(reflect.TypeOf(adapter.Bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
 				if tt.name == "Test_02" {
@@ -1016,21 +1002,12 @@ func TestMseAdapterImpl_RemovePlugin(t *testing.T) {
 
 func TestMseAdapterImpl_DeleteCredential(t *testing.T) {
 	type fields struct {
-<<<<<<< HEAD
 		Bdl             *bundle.Bundle
 		ProviderName    string
 		AccessKeyID     string
 		AccessKeySecret string
 		GatewayUniqueID string
 		GatewayEndpoint string
-=======
-		Bdl               *bundle.Bundle
-		ProviderName      string
-		AccessKeyId       string
-		AccessKeySecret   string
-		GatewayUniqueId   string
-		GatewayBindDomain string
->>>>>>> b676570a9 (feat: heap support mse key-auth plugin)
 	}
 	type args struct {
 		consumerId    string
@@ -1046,21 +1023,12 @@ func TestMseAdapterImpl_DeleteCredential(t *testing.T) {
 		{
 			name: "Test_01",
 			fields: fields{
-<<<<<<< HEAD
 				Bdl:             nil,
 				ProviderName:    "",
 				AccessKeyID:     "",
 				AccessKeySecret: "",
 				GatewayUniqueID: "",
 				GatewayEndpoint: "",
-=======
-				Bdl:               nil,
-				ProviderName:      "",
-				AccessKeyId:       "",
-				AccessKeySecret:   "",
-				GatewayUniqueId:   "",
-				GatewayBindDomain: "",
->>>>>>> b676570a9 (feat: heap support mse key-auth plugin)
 			},
 			args: args{
 				consumerId:    "",
@@ -1073,21 +1041,12 @@ func TestMseAdapterImpl_DeleteCredential(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			impl := &MseAdapterImpl{
-<<<<<<< HEAD
 				Bdl:             tt.fields.Bdl,
 				ProviderName:    tt.fields.ProviderName,
 				AccessKeyID:     tt.fields.AccessKeyID,
 				AccessKeySecret: tt.fields.AccessKeySecret,
 				GatewayUniqueID: tt.fields.GatewayUniqueID,
 				GatewayEndpoint: tt.fields.GatewayEndpoint,
-=======
-				Bdl:               tt.fields.Bdl,
-				ProviderName:      tt.fields.ProviderName,
-				AccessKeyId:       tt.fields.AccessKeyId,
-				AccessKeySecret:   tt.fields.AccessKeySecret,
-				GatewayUniqueId:   tt.fields.GatewayUniqueId,
-				GatewayBindDomain: tt.fields.GatewayBindDomain,
->>>>>>> b676570a9 (feat: heap support mse key-auth plugin)
 			}
 
 			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "GetMSEPluginConfigByIDByAPI", func(impl *MseAdapterImpl, pluginId *int64) (*mseclient.GetPluginConfigResponseBodyData, error) {

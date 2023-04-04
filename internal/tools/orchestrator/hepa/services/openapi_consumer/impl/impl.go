@@ -136,8 +136,6 @@ func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter g
 		}, nil
 
 	} else {
-
-		credentials, err := impl.credentialDb.SelectByConsumerId(consumerID)
 		kCredentials := &providerDto.CredentialListDto{
 			Data: []providerDto.CredentialDto{},
 		}
@@ -150,6 +148,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter g
 		hCredentials := &providerDto.CredentialListDto{
 			Data: []providerDto.CredentialDto{},
 		}
+		credentials, err := impl.credentialDb.SelectByConsumerId(consumerID)
 		if err != nil || len(credentials) == 0 {
 			if err != nil {
 				log.Errorf("get credentials for consumer %s failed, error: %v\n", consumerID, err)
@@ -809,41 +808,43 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 		// 删除 MSE 插件配置中关于此 consumer 的配置信息放
 		pluginConsumerName := impl.GetKongConsumerName(consumer)
 		for pluginName := range mseCommon.MSEPluginNameToID {
-			// 暂时只支持 key-auth
-			if pluginName != mseCommon.MsePluginKeyAuth {
-				continue
-			}
-			pluginConf, getPluginConfErr := gatewayAdapter.GetPlugin(&providerDto.PluginReqDto{
-				Name: pluginName,
-			})
-			if getPluginConfErr != nil {
-				err = getPluginConfErr
-				return
-			}
-
-			pluginConfig, ok := pluginConf.Config[pluginName]
-			if !ok {
-				continue
-			}
-
-			confList, updateErr := mseplugins.UpdatePluginConfigWhenDeleteConsumer(pluginName, pluginConsumerName, pluginConfig)
-			if updateErr != nil {
-				err = updateErr
-				return
-			}
-
-			if confList != nil {
-				newConfig := make(map[string]interface{})
-				newConfig[pluginName] = confList
-
-				_, updatePluginErr := gatewayAdapter.UpdatePlugin(&providerDto.PluginReqDto{
-					Name:   pluginName,
-					Config: newConfig,
+			switch pluginName {
+			// 暂时只支持 key-auth, hmac-auth
+			case mseCommon.MsePluginKeyAuth, mseCommon.MsePluginHmacAuth:
+				pluginConf, getPluginConfErr := gatewayAdapter.GetPlugin(&providerDto.PluginReqDto{
+					Name: pluginName,
 				})
-				if updatePluginErr != nil {
-					err = updatePluginErr
+				if getPluginConfErr != nil {
+					err = getPluginConfErr
 					return
 				}
+
+				pluginConfig, ok := pluginConf.Config[pluginName]
+				if !ok {
+					continue
+				}
+
+				confList, updateErr := mseplugins.UpdatePluginConfigWhenDeleteConsumer(pluginName, pluginConsumerName, pluginConfig)
+				if updateErr != nil {
+					err = updateErr
+					return
+				}
+
+				if confList != nil {
+					newConfig := make(map[string]interface{})
+					newConfig[pluginName] = confList
+
+					_, updatePluginErr := gatewayAdapter.UpdatePlugin(&providerDto.PluginReqDto{
+						Name:   pluginName,
+						Config: newConfig,
+					})
+					if updatePluginErr != nil {
+						err = updatePluginErr
+						return
+					}
+				}
+			default:
+				continue
 			}
 		}
 

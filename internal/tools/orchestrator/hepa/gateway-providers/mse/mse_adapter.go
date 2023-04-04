@@ -394,7 +394,7 @@ func (impl *MseAdapterImpl) GetPlugin(req *PluginReqDto) (*PluginRespDto, error)
 		enabled = *req.Enabled
 	}
 
-	pluginId, ok := common.MSEPluginNameToID[req.Name]
+	pluginID, ok := common.MSEPluginNameToID[req.Name]
 	if !ok {
 		log.Debugf("plugin %s not support in MSE Gateway", req.Name)
 		return &PluginRespDto{
@@ -413,7 +413,7 @@ func (impl *MseAdapterImpl) GetPlugin(req *PluginReqDto) (*PluginRespDto, error)
 		}, nil
 	}
 
-	pluginConfig, err := impl.GetMSEPluginConfigByIDByAPI(pluginId)
+	pluginConfig, err := impl.GetMSEPluginConfigByIDByAPI(pluginID)
 	if err != nil {
 		return nil, errors.Errorf("failed to get plugin %s config for CreateOrUpdatePluginById, error: %v", req.Name, err)
 	}
