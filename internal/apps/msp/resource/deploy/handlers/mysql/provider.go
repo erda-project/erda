@@ -32,7 +32,7 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 	DB  *gorm.DB `autowired:"mysql-client"`
-	// MyOperaInsCli orchestrator 提供的与 MySQLOperator Instance 交互的 gRPC 客户端
+	// MyOperaInsCli is a gRPC client provided by orchestrator that interacts with MySQLOperator Instance
 	MyOperaInsCli pb.MySQLOperatorInstanceServiceServer `autowired:"erda.orchestrator.addon.mysql.MySQLOperatorInstanceService"`
 }
 

@@ -70,7 +70,7 @@ func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 	return p.mutexDeploy(p.deploy, req)
 }
 
-// deploy 是部署 addon 的主要业务逻辑
+// deploy is the main logic for deploying addon
 func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
 	var result handlers.ResourceDeployResult
 
@@ -284,9 +284,9 @@ func (p *provider) UnDeploy(resourceId string) error {
 	return nil
 }
 
-// mutexDeploy 为 deploy 函数包一层全局分布式锁, 确保某集群内某类 engine 的 addon 只能有一个实例正在部署,
-// 以防止重复拉起实例.
-// deploy 是部署的主逻辑.
+// mutexDeploy wraps a global distributed lock around the function deploy to ensure that only one instance of an addon of a certain type of engine is being
+// deployed within a cluster, to prevent duplicate instances from being pulled up.
+// deploy is the main logic for deployment.
 func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error), req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
 	// get the lock at the "<addon engine>/<cluster>" granularity before deploying to avoid duplicate instances
 	p.Log.Infof("[%s/%s] to get the ETCD Mutex", req.Engine, req.Az)
