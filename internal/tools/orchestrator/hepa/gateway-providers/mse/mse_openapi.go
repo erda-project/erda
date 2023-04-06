@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	mseplugins "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/plugins"
 )
 
@@ -43,6 +42,7 @@ func (impl *MseAdapterImpl) CreateMSEClientByAPI() (client *mseclient.Client, er
 		// 必填，您的 AccessKey Secret
 		AccessKeySecret: &impl.AccessKeySecret,
 	}
+
 	// MSE Gateway Endpoint
 	config.Endpoint = &impl.GatewayEndpoint
 	client = &mseclient.Client{}
@@ -259,31 +259,5 @@ func (impl *MseAdapterImpl) GetMSEGatewayRouteNameByZoneName(zoneName string, do
 }
 
 func (impl *MseAdapterImpl) createPluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPluginConfigResponseBodyDataGatewayConfigList) (string, int64, error) {
-
-	switch req.Name {
-	case mseCommon.MsePluginKeyAuth:
-		//return fmt.Sprintf("consumers: \n# 注意！该凭证仅做示例使用，请勿用于具体业务，造成安全风险\n- credential: example-key\n  name: consumer1\nkeys:\n- apikey\n- x-api-key\n")
-		return mseplugins.CreateKeyAuthConfig(req, confList)
-	case mseCommon.MsePluginBasicAuth:
-		return "", -1, nil
-	case mseCommon.MsePluginHmacAuth:
-		return "", -1, nil
-	case mseCommon.MsePluginCustomResponse:
-		return "", -1, nil
-	case mseCommon.MsePluginRequestBlock:
-		return "", -1, nil
-	case mseCommon.MsePluginBotDetect:
-		return "", -1, nil
-	case mseCommon.MsePluginKeyRateLimit:
-		//return fmt.Sprintf("limit_by_header: x-api-key\nlimit_keys:\n- key: example-key-a\n  #query_per_second: 10\n  query_per_minute: 1\n- key: example-key-b\n  #query_per_second: 1\n  query_per_minute: 1\n")
-		return "", -1, nil
-	case mseCommon.MsePluginHttp2Misdirect:
-		return "", -1, nil
-	case mseCommon.MsePluginJwtAuth:
-		return "", -1, nil
-	case mseCommon.MsePluginHttpRealIP:
-		return "", -1, nil
-	default:
-		return "", -1, nil
-	}
+	return mseplugins.CreatePluginConfig(req, confList)
 }
