@@ -27,28 +27,34 @@ const (
 // MSE 支持的插件名称及ID (通过 MSE 的获取网关插件列表的 API 获取，并非随意自定义)
 const (
 	//Plugin name
-	MsePluginKeyAuth        string = "key-auth"
-	MsePluginBasicAuth      string = "basic-auth"
-	MsePluginHmacAuth       string = "hmac-auth"
-	MsePluginCustomResponse string = "custom-response"
-	MsePluginRequestBlock   string = "request-block"
-	MsePluginBotDetect      string = "bot-detect"
-	MsePluginKeyRateLimit   string = "key-rate-limit"
-	MsePluginHttp2Misdirect string = "http2-misdirect"
-	MsePluginJwtAuth        string = "jwt-auth"
-	MsePluginHttpRealIP     string = "http-real-ip"
+	MsePluginKeyAuth         string = "key-auth"
+	MsePluginBasicAuth       string = "basic-auth"
+	MsePluginHmacAuth        string = "hmac-auth"
+	MsePluginCustomResponse  string = "custom-response"
+	MsePluginRequestBlock    string = "request-block"
+	MsePluginBotDetect       string = "bot-detect"
+	MsePluginKeyRateLimit    string = "key-rate-limit"
+	MsePluginHttp2Misdirect  string = "http2-misdirect"
+	MsePluginJwtAuth         string = "jwt-auth"
+	MsePluginHttpRealIP      string = "http-real-ip"
+	MsePluginEDASServiceAuth string = "edas-service-auth"
+	MsePluginWaf             string = "waf"
+	MsePluginParaSignAuth    string = "para-sign-auth"
 
 	// Plugin ID
-	MsePluginKeyAuthID        int64 = 1
-	MsePluginBasicAuthID      int64 = 2
-	MsePluginHmacAuthID       int64 = 3
-	MsePluginCustomResponseID int64 = 4
-	MsePluginRequestBlockID   int64 = 5
-	MsePluginBotDetectID      int64 = 6
-	MsePluginKeyRateLimitID   int64 = 7
-	MsePluginHttp2MisdirectID int64 = 23
-	MsePluginJwtAuthID        int64 = 34
-	MsePluginHttpRealIPID     int64 = 43
+	MsePluginKeyAuthID         int64 = 1
+	MsePluginBasicAuthID       int64 = 2
+	MsePluginHmacAuthID        int64 = 3
+	MsePluginCustomResponseID  int64 = 4
+	MsePluginRequestBlockID    int64 = 5
+	MsePluginBotDetectID       int64 = 6
+	MsePluginKeyRateLimitID    int64 = 7
+	MsePluginHttp2MisdirectID  int64 = 23
+	MsePluginJwtAuthID         int64 = 34
+	MsePluginHttpRealIPID      int64 = 43
+	MsePluginEDASServiceAuthID int64 = 114
+	MsePluginWafID             int64 = 119
+	MsePluginParaSignAuthID    int64 = 129
 )
 
 var MSEPluginNameToID map[string]*int64

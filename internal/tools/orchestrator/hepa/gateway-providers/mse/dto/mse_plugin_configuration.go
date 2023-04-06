@@ -14,27 +14,11 @@
 
 package dto
 
-type MsePluginKeyAuthConfig struct {
+type MsePluginConfig struct {
 	Consumers []Consumers `json:"consumers" yaml:"consumers"`
 	Keys      []string    `json:"keys,omitempty" yaml:"keys,omitempty"`
 	InQuery   bool        `json:"in_query,omitempty" yaml:"in_query,omitempty"`   // [in_query 和 in_header 至少一个为 true] 配置 true 时，网关会尝试从 URL 参数中解析 API Key, 默认 true
 	InHeader  bool        `json:"in_header,omitempty" yaml:"in_header,omitempty"` // [in_query 和 in_header 至少一个为 true] 配置 true 时，网关会尝试从 HTTP 请求头中解析 API Key, 默认 true
-	Rules     []Rules     `json:"_rules_,omitempty" yaml:"_rules_,omitempty"`
-}
-
-type MsePluginBasicAuthConfig struct {
-	Consumers []Consumers `json:"consumers" yaml:"consumers"`
-	Rules     []Rules     `json:"_rules_,omitempty" yaml:"_rules_,omitempty"`
-}
-
-type MsePluginHmacAuthConfig struct {
-	Consumers []Consumers `json:"consumers" yaml:"consumers"`
-	Rules     []Rules     `json:"_rules_,omitempty" yaml:"_rules_,omitempty"`
-	//DateOffset number    `json:"date_offset" yaml:"date_offset"` // 配置允许的客户端最大时间偏移，单位为秒，根据请求头Date解析客户端 UTC 时间，可用于避免请求重放；未配置时，不做校验
-}
-
-type MsePluginJWTAuthConfig struct {
-	Consumers []Consumers `json:"consumers" yaml:"consumers"`
 	Rules     []Rules     `json:"_rules_,omitempty" yaml:"_rules_,omitempty"`
 }
 

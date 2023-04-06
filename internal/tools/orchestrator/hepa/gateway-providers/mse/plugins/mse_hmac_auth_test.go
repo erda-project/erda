@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
 )
 
-func Test_mergeKeyAuthConfig(t *testing.T) {
+func Test_mergeHmacAuthConfig(t *testing.T) {
 	type args struct {
 		CurrentKeyAutoConfig dto.MsePluginConfig
 		updateKeyAutoConfig  dto.MsePluginConfig
@@ -33,24 +33,22 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 		want    dto.MsePluginConfig
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "Test_01",
 			args: args{
 				CurrentKeyAutoConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
-							Name:       "aaa",
-							Credential: "5d1a401b3aef4ee5bc39a99654672f91",
+							Name:   "aaa",
+							Key:    "5d1a401b3aef4ee5bc39a99654672f91",
+							Secret: "902450a7405942f5b205aaa1aa828caa",
 						},
 						{
-							Name:       "bbb",
-							Credential: "5d1a401b3aef4ee5bc39a99654672f92",
+							Name:   "bbb",
+							Key:    "5d1a401b3aef4ee5bc39a99654672f92",
+							Secret: "902450a7405942f5b205aaa1aa828cbb",
 						},
 					},
-					Keys:     []string{"apikey", "x-api-key"},
-					InQuery:  true,
-					InHeader: true,
 					Rules: []dto.Rules{
 						{
 							MatchRoute: []string{"project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3"},
@@ -65,13 +63,11 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 				updateKeyAutoConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
-							Name:       "633.5846.TEST.erda-jicheng:abc",
-							Credential: "8d22576204d74e869179dd7d19503570",
+							Name:   "633.5846.TEST.erda-jicheng:abc",
+							Key:    "8d22576204d74e869179dd7d19503570",
+							Secret: "902450a7405942f5b205aaa1aa828c0b",
 						},
 					},
-					Keys:     []string{"apikey", "x-api-key"},
-					InQuery:  true,
-					InHeader: true,
 					Rules: []dto.Rules{
 						{
 							MatchRoute: []string{"project-5846-test-dice-test-5846-api-3170552e65d444e984a82e33ec44727f-93ac19-96b79390-ccaae83a5fe7846d18d4ac80940a8fdc3"},
@@ -83,25 +79,26 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 			want: dto.MsePluginConfig{
 				Consumers: []dto.Consumers{
 					{
-						Name:       "aaa",
-						Credential: "5d1a401b3aef4ee5bc39a99654672f91",
+						Name:   "aaa",
+						Key:    "5d1a401b3aef4ee5bc39a99654672f91",
+						Secret: "902450a7405942f5b205aaa1aa828caa",
 					},
 					{
-						Name:       "bbb",
-						Credential: "5d1a401b3aef4ee5bc39a99654672f92",
+						Name:   "bbb",
+						Key:    "5d1a401b3aef4ee5bc39a99654672f92",
+						Secret: "902450a7405942f5b205aaa1aa828cbb",
 					},
 					{
-						Name:       "633.5846.TEST.erda-jicheng:abc",
-						Credential: "8d22576204d74e869179dd7d19503570",
+						Name:   "633.5846.TEST.erda-jicheng:abc",
+						Key:    "8d22576204d74e869179dd7d19503570",
+						Secret: "902450a7405942f5b205aaa1aa828c0b",
 					},
 					{
-						Name:       DEFAULT_MSE_CONSUMER_NAME,
-						Credential: DEFAULT_MSE_CONSUMER_CREDENTIAL,
+						Name:   DEFAULT_MSE_CONSUMER_NAME,
+						Key:    DEFAULT_MSE_CONSUMER_KEY,
+						Secret: DEFAULT_MSE_CONSUMER_SECRET,
 					},
 				},
-				Keys:     []string{"appKey", "x-app-key"},
-				InQuery:  true,
-				InHeader: true,
 				Rules: []dto.Rules{
 					{
 						MatchRoute: []string{"project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3"},
@@ -129,17 +126,16 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 				CurrentKeyAutoConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
-							Name:       "aaa",
-							Credential: "5d1a401b3aef4ee5bc39a99654672f91",
+							Name:   "aaa",
+							Key:    "5d1a401b3aef4ee5bc39a99654672f91",
+							Secret: "902450a7405942f5b205aaa1aa828caa",
 						},
 						{
-							Name:       "bbb",
-							Credential: "5d1a401b3aef4ee5bc39a99654672f92",
+							Name:   "bbb",
+							Key:    "5d1a401b3aef4ee5bc39a99654672f92",
+							Secret: "902450a7405942f5b205aaa1aa828cbb",
 						},
 					},
-					Keys:     []string{"apikey", "x-api-key"},
-					InQuery:  true,
-					InHeader: true,
 					Rules: []dto.Rules{
 						{
 							MatchRoute: []string{"project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3"},
@@ -154,13 +150,11 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 				updateKeyAutoConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
-							Name:       "aaa",
-							Credential: "5d1a401b3aef4ee5bc39a99654672f91",
+							Name:   "aaa",
+							Key:    "5d1a401b3aef4ee5bc39a99654672f91",
+							Secret: "902450a7405942f5b205aaa1aa828caa",
 						},
 					},
-					Keys:     []string{"apikey", "x-api-key"},
-					InQuery:  true,
-					InHeader: true,
 					Rules: []dto.Rules{
 						{
 							MatchRoute: []string{"project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3"},
@@ -172,22 +166,26 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 			want: dto.MsePluginConfig{
 				Consumers: []dto.Consumers{
 					{
-						Name:       "aaa",
-						Credential: "5d1a401b3aef4ee5bc39a99654672f91",
+						Name:   "aaa",
+						Key:    "5d1a401b3aef4ee5bc39a99654672f91",
+						Secret: "902450a7405942f5b205aaa1aa828caa",
 					},
 					{
-						Name:       "bbb",
-						Credential: "5d1a401b3aef4ee5bc39a99654672f92",
+						Name:   "bbb",
+						Key:    "5d1a401b3aef4ee5bc39a99654672f92",
+						Secret: "902450a7405942f5b205aaa1aa828cbb",
 					},
 					{
-						Name:       DEFAULT_MSE_CONSUMER_NAME,
-						Credential: DEFAULT_MSE_CONSUMER_CREDENTIAL,
+						Name:   DEFAULT_MSE_CONSUMER_NAME,
+						Key:    DEFAULT_MSE_CONSUMER_KEY,
+						Secret: DEFAULT_MSE_CONSUMER_SECRET,
 					},
 				},
-				Keys:     []string{"appKey", "x-app-key"},
-				InQuery:  true,
-				InHeader: true,
 				Rules: []dto.Rules{
+					{
+						MatchRoute: []string{DEFAULT_MSE_ROUTE_NAME},
+						Allow:      []string{DEFAULT_MSE_CONSUMER_NAME},
+					},
 					{
 						MatchRoute: []string{"project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3"},
 						Allow:      []string{"aaa"},
@@ -196,10 +194,6 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 						MatchRoute: []string{"project-5846-test-dice-test-5846-api-66f56a64312143cfbbbd04eca82eca56-bff529-51ec627a-ccaae83a5fe7846d18d4ac80940a8fdc3"},
 						Allow:      []string{"bbb"},
 					},
-					{
-						MatchRoute: []string{DEFAULT_MSE_ROUTE_NAME},
-						Allow:      []string{DEFAULT_MSE_CONSUMER_NAME},
-					},
 				},
 			},
 			wantErr: false,
@@ -207,17 +201,17 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := mergeKeyAuthConfig(tt.args.CurrentKeyAutoConfig, tt.args.updateKeyAutoConfig)
+			got, err := mergeHmacAuthConfig(tt.args.CurrentKeyAutoConfig, tt.args.updateKeyAutoConfig)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("mergeKeyAuthConfig() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("mergeHmacAuthConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			sort.Sort(dto.SortConsumers{got.Consumers, func(p, q *dto.Consumers) bool {
-				return p.Credential < q.Credential // Credential 递增排序
+				return p.Key < q.Key // Credential 递增排序
 			}})
 			sort.Sort(dto.SortConsumers{tt.want.Consumers, func(p, q *dto.Consumers) bool {
-				return p.Credential < q.Credential // Credential 递增排序
+				return p.Key < q.Key // Credential 递增排序
 			}})
 
 			sort.Sort(dto.SortRules{got.Rules, func(p, q *dto.Rules) bool {
@@ -228,7 +222,7 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 			}})
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("mergeKeyAuthConfig() got = %v, want %v", got, tt.want)
+				t.Errorf("mergeHmacAuthConfig() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
