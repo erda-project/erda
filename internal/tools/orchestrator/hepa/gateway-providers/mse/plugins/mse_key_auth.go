@@ -24,20 +24,9 @@ import (
 	mseDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
 )
 
-const (
-	// Plugin Config Level
-	MsePluginConfigLevelGlobal string = "global"
-	MsePluginConfigLevelDomain string = "domain"
-	MsePluginConfigLevelRoute  string = "route"
-
-	MsePluginConfigLevelGlobalNumber int32 = 0
-	MsePluginConfigLevelDomainNumber int32 = 1
-	MsePluginConfigLevelRouteNumber  int32 = 2
-)
-
 func CreateKeyAuthConfig(req *PluginReqDto, confList map[string][]mseclient.GetPluginConfigResponseBodyDataGatewayConfigList) (string, int64, error) {
 	var configId int64 = -1
-	keyAutoConfig := mseDto.MsePluginKeyAuthConfig{}
+	keyAutoConfig := mseDto.MsePluginConfig{}
 
 	// 只看全局配置对应的列表的第一个，因为当前(2023.02.23)只支持全局配置,且只会有一条配置记录
 	if globalConfig, ok := confList[MsePluginConfigLevelGlobal]; ok {
@@ -73,7 +62,7 @@ func CreateKeyAuthConfig(req *PluginReqDto, confList map[string][]mseclient.GetP
 		matchRoutes = append(matchRoutes, req.MSERouteName)
 	}
 
-	updateKeyAutoConfig := mseDto.MsePluginKeyAuthConfig{
+	updateKeyAutoConfig := mseDto.MsePluginConfig{
 		Consumers: consumers,
 		Keys:      []string{"appkey", "x-app-key"},
 		InQuery:   true,
@@ -96,27 +85,28 @@ func CreateKeyAuthConfig(req *PluginReqDto, confList map[string][]mseclient.GetP
 	return string(configBytes), configId, nil
 }
 
-func mergeKeyAuthConfig(CurrentKeyAutoConfig, updateKeyAutoConfig mseDto.MsePluginKeyAuthConfig) (mseDto.MsePluginKeyAuthConfig, error) {
-	configBytes, _ := yaml.Marshal(&CurrentKeyAutoConfig)
-	logrus.Infof("Current KeyAuth config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
-	configBytes, _ = yaml.Marshal(&updateKeyAutoConfig)
-	logrus.Infof("Update KeyAuth config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
+func mergeKeyAuthConfig(CurrentKeyAuthConfig, updateKeyAuthConfig mseDto.MsePluginConfig) (mseDto.MsePluginConfig, error) {
+	configBytes, _ := yaml.Marshal(&CurrentKeyAuthConfig)
+
+	logrus.Debugf("Current KeyAuth config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
+	configBytes, _ = yaml.Marshal(&updateKeyAuthConfig)
+	logrus.Debugf("Update KeyAuth config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
 
 	// 当前配置项转换
 	// Key-auth 的 Credential 是唯一性的（但 name 不唯一，因为一个 name 可以有多个 credential）
-	mapCurrentKeyAuthCredentialToConsumer, mapCurrentKeyAuthRouteToConsumers := getCredentialsAndRoutesMaps(CurrentKeyAutoConfig.Consumers, CurrentKeyAutoConfig.Rules)
+	mapCurrentKeyAuthCredentialToConsumer, mapCurrentKeyAuthRouteToConsumers := getCredentialsAndRoutesMaps(CurrentKeyAuthConfig.Consumers, CurrentKeyAuthConfig.Rules)
 
 	// 更新配置项转换
-	mapUpdateKeyAuthCrendentailToConsumer, mapUpdateKeyAuthRouteToConsumers := getCredentialsAndRoutesMaps(updateKeyAutoConfig.Consumers, updateKeyAutoConfig.Rules)
+	mapUpdateKeyAuthCredentialToConsumer, mapUpdateKeyAuthRouteToConsumers := getCredentialsAndRoutesMaps(updateKeyAuthConfig.Consumers, updateKeyAuthConfig.Rules)
 
 	// 1. 更新 consumers (加入)
-	for credential, name := range mapUpdateKeyAuthCrendentailToConsumer {
+	for credential, name := range mapUpdateKeyAuthCredentialToConsumer {
 		csName, ok := mapCurrentKeyAuthCredentialToConsumer[credential]
 		if !ok {
 			mapCurrentKeyAuthCredentialToConsumer[credential] = name
 		} else {
 			if csName != name {
-				return CurrentKeyAutoConfig, errors.Errorf("existed consumer %s has the same credential with new consumer %s\n", csName, name)
+				return CurrentKeyAuthConfig, errors.Errorf("existed consumer %s has the same credential with new consumer %s\n", csName, name)
 			}
 		}
 	}
@@ -208,9 +198,9 @@ func mergeKeyAuthConfig(CurrentKeyAutoConfig, updateKeyAutoConfig mseDto.MsePlug
 		})
 	}
 
-	result := mseDto.MsePluginKeyAuthConfig{
+	result := mseDto.MsePluginConfig{
 		Consumers: consumers,
-		Keys:      []string{"appkey", "x-app-key"},
+		Keys:      []string{"appKey", "x-app-key"},
 		InQuery:   true,
 		InHeader:  true,
 		Rules:     rules,
