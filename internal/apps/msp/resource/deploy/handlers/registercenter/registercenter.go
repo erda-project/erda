@@ -49,7 +49,7 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 	utils.JsonConvertObjToType(tmcInstance.Options, &options)
 
 	config["NACOS_ADDRESS"] = options["NACOS_ADDRESS"]
-
+	config["NACOS_GRPC_ADDRESS"] = options["NACOS_GRPC_ADDRESS"]
 	if _, ok := options["ZOOKEEPER_ADDRESS"]; ok {
 		config["ZOOKEEPER_ADDRESS"] = options["ZOOKEEPER_ADDRESS"]
 		config["ELASTICJOB_HOST"] = options["ZOOKEEPER_ADDRESS"]
