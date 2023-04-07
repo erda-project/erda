@@ -29,9 +29,15 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 	config := map[string]string{}
 	options := map[string]string{}
 	utils.JsonConvertObjToType(tmcInstance.Options, &options)
-	if v, ok := options["NACOS_ADDRESS"]; ok {
-		config["CONFIGCENTER_ADDRESS"] = v
+	for optionsKey, configKey := range map[string]string{
+		"NACOS_ADDRESS":      "CONFIGCENTER_ADDRESS",
+		"NACOS_GRPC_ADDRESS": "CONFIGCENTER_GRPC_ADDRESS",
+	} {
+		if address, ok := options[optionsKey]; ok {
+			config[configKey] = address
+		}
 	}
+
 	return config
 }
 
