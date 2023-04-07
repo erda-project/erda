@@ -42,7 +42,7 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dlclark/regexp2 v1.4.0
-	github.com/docker/docker v20.10.20+incompatible
+	github.com/docker/docker v20.10.24+incompatible
 	github.com/docker/spdystream v0.2.0
 	github.com/doug-martin/goqu/v9 v9.18.0
 	github.com/dustin/go-humanize v1.0.0
@@ -51,7 +51,6 @@ require (
 	github.com/erda-project/erda-infra v1.0.8
 	github.com/erda-project/erda-infra/tools v0.0.0-20220922112628-1965c0260662
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
-	github.com/erda-project/erda-proto-go v1.4.0
 	github.com/erda-project/erda-sourcecov v0.1.0
 	github.com/extrame/xls v0.0.1
 	github.com/fatih/color v1.13.0
@@ -265,7 +264,6 @@ require (
 	github.com/elastic/go-sysinfo v1.7.1 // indirect
 	github.com/elastic/go-ucfg v0.8.6 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
-	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
