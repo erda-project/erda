@@ -238,3 +238,14 @@ jobs:
           name: pure-coverage
           path: ./coverage/
           retention-days: 30
+
+  QODANA:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@main
+        env:
+          QODANA_TOKEN: ${{ secrets.eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJvcmdhbml6YXRpb24iOiIzeTI2RSIsInByb2plY3QiOiJwMk85ZyIsInRva2VuIjoiM2s5a20ifQ.UiRN_k_B9HfNNSEkX7QkRySMll6ltUIMpTNYwp7SKOI }}
