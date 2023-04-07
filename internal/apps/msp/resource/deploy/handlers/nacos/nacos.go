@@ -16,6 +16,7 @@ package nacos
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
@@ -98,11 +99,13 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 	}
 
 	config := map[string]string{
-		"NACOS_USER":     "nacos",
-		"NACOS_PASSWORD": "nacos",
-		"NACOS_HOST":     vip,
-		"NACOS_PORT":     "8848",
-		"NACOS_ADDRESS":  vip + ":8848",
+		"NACOS_USER":         "nacos",
+		"NACOS_PASSWORD":     "nacos",
+		"NACOS_HOST":         vip,
+		"NACOS_PORT":         "8848",
+		"NACOS_GRPC_PORT":    "9848",
+		"NACOS_ADDRESS":      net.JoinHostPort(vip, "8848"),
+		"NACOS_GRPC_ADDRESS": net.JoinHostPort(vip, "9848"),
 	}
 
 	return config

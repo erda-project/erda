@@ -136,7 +136,7 @@ full-test:
 # docker image
 build-image: prepare
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
-build-multi-arch:
+build-multi-arch: prepare
 	./build/scripts/docker_image.sh ${MODULE_PATH} build-multi-arch
 
 push-image:
