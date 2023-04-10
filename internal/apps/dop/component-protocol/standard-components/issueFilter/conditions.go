@@ -16,6 +16,7 @@ package issueFilter
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
@@ -64,6 +65,31 @@ type FrontendConditions struct {
 	ClosedAtStartEnd   []*int64 `json:"closedAtStartEnd,omitempty"`
 	Complexities       []string `json:"complexities,omitempty"`
 	ParticipantIDs     []string `json:"participantIDs,omitempty"`
+}
+
+func (f *FrontendConditions) IsEmpty() bool {
+	v := reflect.ValueOf(f).Elem()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+
+		switch field.Kind() {
+		case reflect.String:
+			if field.String() != "" {
+				return false
+			}
+		case reflect.Slice:
+			if field.Len() > 0 {
+				return false
+			}
+		case reflect.Ptr:
+			if !field.IsNil() {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {

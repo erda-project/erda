@@ -98,7 +98,7 @@ func (f *IssueFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				panic(err)
 			}
 		}
-		if f.State.WithStateCondition && f.State.FrontendConditionValues.States == nil {
+		if f.State.WithStateCondition && f.State.FrontendConditionValues.IsEmpty() {
 			if err := f.setDefaultState(); err != nil {
 				panic(err)
 			}
