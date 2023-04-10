@@ -191,9 +191,10 @@ erda.oap.collector.processor.modifier@docker_container_summary:
       value: fields.tx_errors
     - action: regex
       key: tags.id
-      value: '\/kubepods.*?(?P<container_id>\w{64})$' #  have kubepods and match 64-character
+      value: '\/kubepods.*?(?P<container_id>\w{64})' #  have kubepods and match 64-character
       # containerd arm: /system.slice/containerd.service/kubepods-burstable-pod29c95a11_3435_474a_be34_226976d3035f.slice:cri-containerd:01c5cfd0633692a2a14bfa656e947cd4c23e5d17492382f354f262c72f27802d
       # /kubepods/burstable/podc15fa300-e090-4b5d-a850-eb65900a8dac/0fa5d0a7434e23d87f13617f2ab16186530c32ef877724842f96bbe8d4ba8935
+      # /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod314d3a36_aea1_4a0b_9a62_7254ed0f187e.slice/docker-37975252123ac98398aeb6fdc9feb3b35eaaf35e7536430ad2cb8a8c67303ee1.scope
     - action: rename
       key: fields.container_resources_memory_request
       value: fields.mem_request
