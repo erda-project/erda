@@ -84,7 +84,7 @@ func TestBuildRocketMQOperaotrServiceItem(t *testing.T) {
 					"rocketmq-broker": {
 						CPU:   1,
 						Mem:   2048,
-						Nodes: 1,
+						Nodes: 2,
 					},
 					"rocketmq-console": {
 						CPU:   0.5,
@@ -121,6 +121,7 @@ func TestBuildRocketMQOperaotrServiceItem(t *testing.T) {
 
 	err := a.BuildRocketMQOperaotrServiceItem(params, addonIns, addonSpec, addonDice, nil, "5.0.0")
 	assert.NoError(t, err)
+	assert.Equal(t, 2, addonDice.Services["rocketmq-broker"].Deployments.Replicas)
 }
 
 func TestBuildRedisServiceItem(t *testing.T) {
