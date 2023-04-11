@@ -903,9 +903,9 @@ message AlertNotifySilence {
 }
 
 message GetAlertRequest {
-  string scope   = 1;
-  string scopeId = 2;
-  int64 id = 3 [(validate.rules).int64.gt = 0];
+  int64 id       = 1 [(validate.rules).int64.gt = 0];
+  string scope   = 2;
+  string scopeId = 3;
 }
 
 message GetAlertResponse {
@@ -913,9 +913,9 @@ message GetAlertResponse {
 }
 
 message GetAlertDetailRequest {
-  string scope   = 1;
-  string scopeId = 2;
-  int64 id = 3 [(validate.rules).int64.gt = 0];
+  int64 id       = 1 [(validate.rules).int64.gt = 0];
+  string scope   = 2;
+  string scopeId = 3;
 }
 
 message GetAlertDetailResponse {
@@ -964,10 +964,10 @@ message UpdateAlertResponse {
 }
 
 message UpdateAlertEnableRequest {
-  string scope   = 1;
-  string scopeId = 2;
-  int64 id     = 3 [(validate.rules).int64.gt = 0];
-  bool  enable = 4;
+  int64 id       = 1 [(validate.rules).int64.gt = 0];
+  bool  enable   = 2;
+  string scope   = 3;
+  string scopeId = 4;
 }
 
 message UpdateAlertEnableResponse {
