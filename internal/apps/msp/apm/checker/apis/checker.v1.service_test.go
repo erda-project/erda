@@ -285,5 +285,15 @@ func (m mockMetricQuery) GeneralSearch(ctx context.Context, request *metricpb.Ge
 }
 
 func TestQueryMetricData(t *testing.T) {
-
+	service := checkerV1Service{
+		metricq: mockMetricQuery{
+			check: func(ctx context.Context, request *metricpb.QueryWithInfluxFormatRequest) {
+				require.Equal(t, "select * from table limit 200 offset 0", request.Statement)
+			},
+		},
+	}
+	_, err := service.queryMetricData(context.Background(), &metricpb.QueryWithInfluxFormatRequest{
+		Statement: "select * from table",
+	})
+	require.NoError(t, err)
 }
