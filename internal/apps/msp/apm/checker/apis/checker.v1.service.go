@@ -505,9 +505,8 @@ func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(ctx context.Cont
 	return s.queryCheckerMetrics(ctx, lang, start, end, `
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
-	WHERE project_id::tag=$projectID 
-	GROUP BY time($interval), metric::tag, status_name::tag 
-	LIMIT 200`,
+	WHERE project_id::tag=$projectID
+	GROUP BY time($interval), metric::tag, status_name::tag`,
 		map[string]*structpb.Value{
 			"projectID": structpb.NewStringValue(strconv.FormatInt(projectID, 10)),
 			"interval":  interval,
@@ -538,12 +537,61 @@ func (s *checkerV1Service) queryCheckerMetrics(ctx context.Context, lang i18n.La
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
-	resp, err := s.metricq.QueryWithInfluxFormat(ctx, req)
+	serie, err := s.queryMetricData(ctx, req)
 	if err != nil {
 		return err
 	}
-	s.parseMetricSummaryResponse(lang, resp, metrics)
+	if serie != nil {
+		s.parseMetricSummaryResponse(lang, serie, metrics)
+	}
 	return nil
+}
+
+func (s *checkerV1Service) queryMetricData(ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest) (*metricpb.Serie, error) {
+	// Initialize the final result and offset
+	var finalResult *metricpb.Serie
+	statement := req.Statement
+	offset := 0
+	limit := 200
+
+	for {
+		// Modify the request query to add limit and offset
+		req.Statement = fmt.Sprintf("%s limit %d offset %d", statement, limit, offset)
+
+		// Query the data
+		resp, err := s.metricq.QueryWithInfluxFormat(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if there is no more data to process
+		if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
+			break
+		}
+
+		// Append the results
+		if finalResult == nil {
+			finalResult = resp.Results[0].Series[0]
+		} else {
+			finalResult.Rows = append(finalResult.Rows, resp.Results[0].Series[0].Rows...)
+		}
+
+		// Check if the fetched data is less than the limit, which means it's the last page
+		if len(resp.Results[0].Series[0].Rows) < limit {
+			break
+		}
+
+		// Update the offset for the next query
+		offset += limit
+	}
+
+	// Check if finalResult is still nil, which means there were no results
+	// No data
+	if finalResult == nil {
+		return nil, nil
+	}
+
+	return finalResult, nil
 }
 
 const (
@@ -552,7 +600,7 @@ const (
 	StatusMiss  = "Miss"
 )
 
-func (s *checkerV1Service) parseMetricSummaryResponse(lang i18n.LanguageCodes, resp *metricpb.QueryWithInfluxFormatResponse, metrics map[int64]*pb.DescribeItemV1) {
+func (s *checkerV1Service) parseMetricSummaryResponse(lang i18n.LanguageCodes, serie *metricpb.Serie, metrics map[int64]*pb.DescribeItemV1) {
 	type summaryItem struct {
 		time  []int64
 		avg   []float64
@@ -561,9 +609,8 @@ func (s *checkerV1Service) parseMetricSummaryResponse(lang i18n.LanguageCodes, r
 		sum   []float64
 		count []int64
 	}
-	if len(resp.Results) > 0 && len(resp.Results[0].Series) > 0 {
+	if serie == nil || len(serie.Columns) > 0 {
 		summary := make(map[string]map[string]*summaryItem)
-		serie := resp.Results[0].Series[0]
 		groupedRows := groupSerieRows(serie.Rows, 2, 3)
 		for _, group := range groupedRows {
 			if len(group.keys) < 2 {
