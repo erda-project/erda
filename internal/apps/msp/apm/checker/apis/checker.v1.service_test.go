@@ -283,3 +283,7 @@ func (m mockMetricQuery) GeneralQuery(ctx context.Context, request *metricpb.Gen
 func (m mockMetricQuery) GeneralSearch(ctx context.Context, request *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
 	return nil, nil
 }
+
+func TestQueryMetricData(t *testing.T) {
+
+}
