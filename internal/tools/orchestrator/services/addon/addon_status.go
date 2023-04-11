@@ -1139,6 +1139,7 @@ func (a *Addon) BuildRocketMQOperaotrServiceItem(params *apistructs.AddonHandler
 	//  /opt/logs volume
 	nameSrvVol02 := SetAddonVolumes(params.Options, "/opt/logs", false)
 	nameServiceItem.Volumes = diceyml.Volumes{nameSrvVol01, nameSrvVol02}
+	nameServiceItem.Deployments.Replicas = nameSrvPlan.Nodes
 	serviceMap[addonSpec.Name+"-namesrv"] = &nameServiceItem
 
 	// broker item
@@ -1148,6 +1149,7 @@ func (a *Addon) BuildRocketMQOperaotrServiceItem(params *apistructs.AddonHandler
 	if len(brokerServiceItem.Labels) == 0 {
 		brokerServiceItem.Labels = map[string]string{}
 	}
+	brokerServiceItem.Deployments.Replicas = brokerPlan.Nodes
 	brokerServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-broker"
 	SetlabelsFromOptions(params.Options, brokerServiceItem.Labels)
 	// envs
@@ -1177,6 +1179,7 @@ func (a *Addon) BuildRocketMQOperaotrServiceItem(params *apistructs.AddonHandler
 	if len(consoleServiceItem.Labels) == 0 {
 		consoleServiceItem.Labels = map[string]string{}
 	}
+	consoleServiceItem.Deployments.Replicas = consolePlan.Nodes
 	consoleServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-console"
 	SetlabelsFromOptions(params.Options, consoleServiceItem.Labels)
 	// envs
