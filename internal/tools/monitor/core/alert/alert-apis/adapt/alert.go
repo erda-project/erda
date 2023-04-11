@@ -407,6 +407,45 @@ func (a *Adapt) GetAlertDetail(lang i18n.LanguageCodes, id uint64) (*pb.Alert, e
 	return data, nil
 }
 
+// GetAlertDetailByScope .
+func (a *Adapt) GetAlertDetailByScope(lang i18n.LanguageCodes, scope string, scopeId string, id uint64) (*pb.Alert, error) {
+	alert, err := a.db.Alert.GetByScopeAndScopeIDAndId(scope, scopeId, id)
+	if err != nil {
+		return nil, err
+	} else if alert == nil {
+		return nil, nil
+	}
+	// get alert expression
+	expressions, err := a.getAlertExpressionsByAlertID(alert.ID)
+	if err != nil {
+		return nil, err
+	}
+	// filter alarm expressions that do not match the rule
+	var indices []string
+	for _, item := range expressions {
+		indices = append(indices, item.AlertIndex)
+	}
+	rulesMap, err := a.getEnabledAlertRulesByScopeAndIndices(lang, alert.AlertScope, alert.AlertScopeID, indices)
+	if err != nil {
+		return nil, err
+	}
+	var rules []*pb.AlertExpression
+	for _, expression := range expressions {
+		if _, ok := rulesMap[expression.AlertIndex]; ok {
+			rules = append(rules, expression)
+		}
+	}
+	// get alert notify
+	notifys, err := a.getAlertNotifysByAlertID(alert.ID)
+	if err != nil {
+		return nil, err
+	}
+	data := FromDBAlertModel(alert)
+	data.Rules = rules
+	data.Notifies = notifys
+	return data, nil
+}
+
 func (a *Adapt) getAlertExpressionsByAlertID(alertID uint64) ([]*pb.AlertExpression, error) {
 	expressions, err := a.db.AlertExpression.QueryByAlertIDs([]uint64{alertID})
 	if err != nil {

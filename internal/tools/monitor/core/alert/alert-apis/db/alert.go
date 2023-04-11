@@ -37,6 +37,22 @@ func (db *AlertDB) GetByID(id uint64) (*Alert, error) {
 	return &alert, nil
 }
 
+// GetByScopeAndScopeIDAndId .
+func (db *AlertDB) GetByScopeAndScopeIDAndId(scope, scopeID string, id uint64) (*Alert, error) {
+	var alert Alert
+	if err := db.
+		Where("alert_scope=?", scope).
+		Where("alert_scope_id=?", scopeID).
+		Where("id=?", id).
+		Find(&alert).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &alert, nil
+}
+
 // GetByScopeAndScopeIDAndName .
 func (db *AlertDB) GetByScopeAndScopeIDAndName(scope, scopeID, name string) (*Alert, error) {
 	var alert Alert
