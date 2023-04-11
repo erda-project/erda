@@ -1,4 +1,4 @@
-CREATE TABLE `tb_gateway_credential`
+CREATE TABLE IF NOT EXISTS `tb_gateway_credential`
 (
     `id`                      VARCHAR(36)   NOT NULL DEFAULT '' COMMENT '唯一id',
     `create_time`             DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
