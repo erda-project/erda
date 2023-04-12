@@ -136,6 +136,14 @@ func Test_getCreateDBsAndInitSQL(t *testing.T) {
 			}
 		}()
 	})
+	t.Run("username specified but empty", func(t *testing.T) {
+		options, err := addon.unmarshalAddonOptions(`{"username": ""}`)
+		assert.NoError(t, err)
+		username := addon.getInitMySQLUsername(options)
+		if username != apistructs.AddonMysqlUser {
+			t.Fatalf("failure to getInitMySQLUsername, expected: %s, actual: %s", apistructs.AddonMysqlUser, username)
+		}
+	})
 	t.Run("create_dbs specified", func(t *testing.T) {
 		options, err := addon.unmarshalAddonOptions(`{"create_dbs":"test1,test2"}`)
 		assert.NoError(t, err)

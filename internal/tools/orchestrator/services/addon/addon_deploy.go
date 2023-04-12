@@ -417,7 +417,9 @@ func (a *Addon) getInitMySQLUsername(addonOptions map[string]json.RawMessage) st
 	if username := addonOptions["username"]; len(username) > 0 {
 		var name string
 		_ = json.Unmarshal(username, &name)
-		return name
+		if len(name) > 0 {
+			return name
+		}
 	}
 	return apistructs.AddonMysqlUser
 }
