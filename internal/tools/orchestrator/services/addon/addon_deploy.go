@@ -283,7 +283,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 		}
 		var optionsMap map[string]string
 		if err := json.Unmarshal([]byte(addonIns.Options), &optionsMap); err != nil {
-			return nil, errors.Wrapf(err, "instance optiosn Unmarshal error, body %s", addonIns.Options)
+			return nil, errors.Wrapf(err, "instance options Unmarshal error, body %s", addonIns.Options)
 		}
 		dbNamesStr = optionsMap["create_dbs"]
 
