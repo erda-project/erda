@@ -109,7 +109,8 @@ func Test_getCreateDBsAndInitSQL(t *testing.T) {
 		options, err := addon.unmarshalAddonOptions("")
 		assert.NoError(t, err)
 		_ = addon.getInitMySQLUsername(options)
-		_ = addon.getInitMySQLDatabases(options)
+		_, err = addon.getInitMySQLDatabases(options)
+		assert.NoError(t, err)
 		_, gc, err := addon.getInitSQL(options)
 		assert.NoError(t, err)
 		defer func() {
@@ -125,7 +126,8 @@ func Test_getCreateDBsAndInitSQL(t *testing.T) {
 		if username != "custom" {
 			t.Fatalf("failure to getInitMySQLUsername, expected: %s, actual: %s", "custom", username)
 		}
-		_ = addon.getInitMySQLDatabases(options)
+		_, err = addon.getInitMySQLDatabases(options)
+		assert.NoError(t, err)
 		_, gc, err := addon.getInitSQL(options)
 		assert.NoError(t, err)
 		defer func() {
@@ -138,7 +140,8 @@ func Test_getCreateDBsAndInitSQL(t *testing.T) {
 		options, err := addon.unmarshalAddonOptions(`{"create_dbs":"test1,test2"}`)
 		assert.NoError(t, err)
 		_ = addon.getInitMySQLUsername(options)
-		_ = addon.getInitMySQLDatabases(options)
+		_, err = addon.getInitMySQLDatabases(options)
+		assert.NoError(t, err)
 		_, gc, err := addon.getInitSQL(options)
 		assert.NoError(t, err)
 		defer func() {
@@ -151,7 +154,8 @@ func Test_getCreateDBsAndInitSQL(t *testing.T) {
 		options, err := addon.unmarshalAddonOptions(`{"create_dbs":"test1,test2","init_sql":"http://www.baidu.com/"}`)
 		assert.NoError(t, err)
 		_ = addon.getInitMySQLUsername(options)
-		_ = addon.getInitMySQLDatabases(options)
+		_, err = addon.getInitMySQLDatabases(options)
+		assert.NoError(t, err)
 		_, gc, err := addon.getInitSQL(options)
 		assert.NoError(t, err)
 		defer func() {

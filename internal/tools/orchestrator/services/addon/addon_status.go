@@ -131,10 +131,14 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 			return nil, err
 		}
 		username := a.getInitMySQLUsername(addonOptions)
-		createDBs := a.getInitMySQLDatabases(addonOptions)
+		createDBs, err := a.getInitMySQLDatabases(addonOptions)
+		if err != nil {
+			return nil, err
+		}
 		initSQL, gc, err := a.getInitSQL(addonOptions)
 		if err != nil {
 			logrus.WithError(err).Errorln("[mysql-operator] failed to getInitSQL")
+			return nil, err
 		}
 		defer func() {
 			if gc != nil {

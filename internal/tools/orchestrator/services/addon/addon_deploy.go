@@ -415,25 +415,41 @@ func (a *Addon) unmarshalAddonOptions(addonOptions string) (map[string]json.RawM
 
 func (a *Addon) getInitMySQLUsername(addonOptions map[string]json.RawMessage) string {
 	if username := addonOptions["username"]; len(username) > 0 {
-		return string(username)
+		var name string
+		_ = json.Unmarshal(username, &name)
+		return name
 	}
 	return apistructs.AddonMysqlUser
 }
 
-func (a *Addon) getInitMySQLDatabases(addonOptions map[string]json.RawMessage) []string {
-	dbs := addonOptions["create_dbs"]
-	if len(dbs) == 0 {
-		return nil
+func (a *Addon) getInitMySQLDatabases(addonOptions map[string]json.RawMessage) ([]string, error) {
+	data, ok := addonOptions["create_dbs"]
+	if !ok {
+		return nil, nil
 	}
-	databases := strings.Split(string(dbs), ",")
+	var dbs string
+	if err := json.Unmarshal(data, &dbs); err != nil {
+		return nil, err
+	}
+	if len(dbs) == 0 {
+		return nil, nil
+	}
+	databases := strings.Split(dbs, ",")
 	for i := 0; i < len(databases); i++ {
 		databases[i] = strings.TrimSpace(databases[i])
 	}
-	return databases
+	return databases, nil
 }
 
 func (a *Addon) getInitSQL(addonOptions map[string]json.RawMessage) (string, func(), error) {
-	initSQL := addonOptions["init_sql"]
+	data, ok := addonOptions["init_sql"]
+	if !ok {
+		return "", nil, nil
+	}
+	var initSQL string
+	if err := json.Unmarshal(data, &initSQL); err != nil {
+		return "", nil, err
+	}
 	if len(initSQL) == 0 {
 		return "", nil, nil
 	}
@@ -443,7 +459,7 @@ func (a *Addon) getInitSQL(addonOptions map[string]json.RawMessage) (string, fun
 	}
 	defer f.Close()
 
-	res, err := a.hc.Get(string(initSQL)).Do().Body(f)
+	res, err := a.hc.Get(initSQL).Do().Body(f)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to Get init_sql: %s", initSQL)
 	}
