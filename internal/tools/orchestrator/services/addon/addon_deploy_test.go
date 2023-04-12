@@ -105,14 +105,61 @@ func Test_getCreateDBsAndInitSQL(t *testing.T) {
 		}
 	})
 
-	_, _, _, err := addon.getCreateDBsAndInitSQL("")
-	assert.NoError(t, err)
-
-	_, _, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2"}`)
-	assert.NoError(t, err)
-
-	_, _, _, err = addon.getCreateDBsAndInitSQL(`{"create_dbs":"test1,test2","init_sql":"http://www.baidu.com/"}`)
-	assert.NoError(t, err)
+	t.Run("empty addon options", func(t *testing.T) {
+		options, err := addon.unmarshalAddonOptions("")
+		assert.NoError(t, err)
+		_ = addon.getInitMySQLUsername(options)
+		_ = addon.getInitMySQLDatabases(options)
+		_, gc, err := addon.getInitSQL(options)
+		assert.NoError(t, err)
+		defer func() {
+			if gc != nil {
+				gc()
+			}
+		}()
+	})
+	t.Run("username specified", func(t *testing.T) {
+		options, err := addon.unmarshalAddonOptions(`{"username": "custom"}`)
+		assert.NoError(t, err)
+		username := addon.getInitMySQLUsername(options)
+		if username != "custom" {
+			t.Fatalf("failure to getInitMySQLUsername, expected: %s, actual: %s", "custom", username)
+		}
+		_ = addon.getInitMySQLDatabases(options)
+		_, gc, err := addon.getInitSQL(options)
+		assert.NoError(t, err)
+		defer func() {
+			if gc != nil {
+				gc()
+			}
+		}()
+	})
+	t.Run("create_dbs specified", func(t *testing.T) {
+		options, err := addon.unmarshalAddonOptions(`{"create_dbs":"test1,test2"}`)
+		assert.NoError(t, err)
+		_ = addon.getInitMySQLUsername(options)
+		_ = addon.getInitMySQLDatabases(options)
+		_, gc, err := addon.getInitSQL(options)
+		assert.NoError(t, err)
+		defer func() {
+			if gc != nil {
+				gc()
+			}
+		}()
+	})
+	t.Run("create_dbs and init_sql specified", func(t *testing.T) {
+		options, err := addon.unmarshalAddonOptions(`{"create_dbs":"test1,test2","init_sql":"http://www.baidu.com/"}`)
+		assert.NoError(t, err)
+		_ = addon.getInitMySQLUsername(options)
+		_ = addon.getInitMySQLDatabases(options)
+		_, gc, err := addon.getInitSQL(options)
+		assert.NoError(t, err)
+		defer func() {
+			if gc != nil {
+				gc()
+			}
+		}()
+	})
 }
 
 func TestMySQLDeployStatus(t *testing.T) {
