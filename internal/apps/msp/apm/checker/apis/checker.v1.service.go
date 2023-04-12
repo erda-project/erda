@@ -521,8 +521,7 @@ func (s *checkerV1Service) QueryCheckersLatencySummary(ctx context.Context, lang
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE metric::tag=$metric 
-	GROUP BY time($interval), metric::tag, status_name::tag 
-	LIMIT 200`, map[string]*structpb.Value{
+	GROUP BY time($interval), metric::tag, status_name::tag`, map[string]*structpb.Value{
 		"metric":   structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
 		"interval": interval,
 	}, metrics)
