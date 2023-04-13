@@ -37,6 +37,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+var (
+	EnvKafkaExporter          = "KAFKA_EXPORTER"
+	DefaultKafkaExporterImage = "registry.erda.cloud/retag/kminion:v2.2.0"
+)
+
 // CommonDeployStatus 通用addon状态拉取
 func (a *Addon) CommonDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup *apistructs.ServiceGroup,
 	addonDice *diceyml.Object, addonSpec *apistructs.AddonExtension) (map[string]string, error) {
@@ -743,6 +748,7 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 		nodeID := a.getRandomId()
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
+		exportImage := getKafkaExporterImage(serviceItem)
 		// Resource资源
 		serviceItem.Resources = diceyml.Resources{CPU: kafkaPlan.CPU, MaxCPU: kafkaPlan.MaxCPU, Mem: kafkaPlan.Mem, MaxMem: kafkaPlan.MaxMem}
 		// label
@@ -750,6 +756,9 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-cluster"
+		serviceItem.Labels["ADDON_ID"] = addonIns.ID
+		serviceItem.Labels[apistructs.DICE_CLUSTER_NAME.String()] = params.ClusterName
+		serviceItem.Labels["app"] = addonSpec.Name + "-cluster"
 		SetlabelsFromOptions(params.Options, serviceItem.Labels)
 		// envs
 		heapSize := getHeapSize(kafkaPlan.Mem)
@@ -777,6 +786,26 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 			vol01 := SetAddonVolumes(params.Options, "/kafka/data", false)
 			serviceItem.Volumes = diceyml.Volumes{vol01}
 		}
+
+		// kafka exporter sidecar
+		exporterSidecar := &diceyml.SideCar{
+			Image: exportImage,
+			Envs:  serviceItem.Envs,
+		}
+		exporterSidecar.Envs["TELEMETRY_HOST"] = "0.0.0.0"
+		exporterSidecar.Envs["TELEMETRY_PORT"] = "8080"
+		exporterSidecar.Envs["KAFKA_BROKERS"] = "localhost:9092"
+		exporterSidecar.Envs["MINION_ENDTOEND_ENABLED"] = "false"
+		exporterSidecar.Envs["EXPORTER_IGNORE_SYSTEM_TOPICS"] = "true"
+		exporterSidecar.Envs["KAFKA_CONSUMER_OFFSETS_TOPIC_NAME"] = "__consumer_offsets"
+		serviceItem.SideCars = map[string]*diceyml.SideCar{
+			"exporter": exporterSidecar,
+		}
+		serviceItem.Ports = append(serviceItem.Ports, diceyml.ServicePort{
+			Port:       8080,
+			Protocol:   "TCP",
+			L4Protocol: "TCP",
+		})
 
 		// 设置service
 		serviceMap[strings.Join([]string{addonSpec.Name, strconv.Itoa(i)}, "-")] = &serviceItem
@@ -806,6 +835,8 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 	managerServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-manager"
 	managerServiceItem.Labels["HAPROXY_GROUP"] = "external"
 	managerServiceItem.Labels["HAPROXY_0_VHOST"] = strings.Join([]string{addonSpec.Name + "-manager", "-", addonIns.ID, ".", (*clusterInfo)[apistructs.DICE_ROOT_DOMAIN]}, "")
+	managerServiceItem.Labels["ADDON_ID"] = addonIns.ID
+	managerServiceItem.Labels[apistructs.DICE_CLUSTER_NAME.String()] = params.ClusterName
 
 	SetlabelsFromOptions(params.Options, managerServiceItem.Labels)
 	// 设置service
@@ -1983,4 +2014,11 @@ func SetlabelsFromOptions(options, labels map[string]string) {
 			labels[apistructs.EnvDiceOrgName] = v
 		}
 	}
+}
+
+func getKafkaExporterImage(addonService diceyml.Service) string {
+	if image, ok := addonService.Envs[EnvKafkaExporter]; ok {
+		return image
+	}
+	return DefaultKafkaExporterImage
 }

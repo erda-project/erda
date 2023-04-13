@@ -1,0 +1,1340 @@
+{
+  "id": "addon-kafka",
+  "name": "Kafka 监控",
+  "version": "v2",
+  "desc": "kafka",
+  "scope": "org",
+  "scopeId": "terminus",
+  "viewConfig": [
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 0,
+      "i": "view-TYY94u4X",
+      "view": {
+        "title": "CPU Usage",
+        "description": "cpu 使用率",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filtertBsm0sNA",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeKrXuSHct",
+                "type": "time"
+              },
+              {
+                "alias": "service",
+                "field": "kafka-service::tag",
+                "key": "typejv3c5A6r",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "表达式-1",
+                "expr": "diff(process_cpu_seconds_total)",
+                "key": "value4LkXPx35",
+                "type": "expr"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "service::tag"
+            ],
+            "select": [
+              {
+                "alias": "typeKrXuSHct",
+                "expr": "time()"
+              },
+              {
+                "alias": "typejv3c5A6r",
+                "expr": "service::tag"
+              },
+              {
+                "alias": "value4LkXPx35",
+                "expr": "diff(process_cpu_seconds_total)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 8,
+      "y": 0,
+      "i": "view-mZwC5Yb5",
+      "view": {
+        "title": "Memory Usage",
+        "description": "内存使用情况",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filteriCnBynnC",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeCciyNkZS",
+                "type": "time"
+              },
+              {
+                "alias": "service",
+                "field": "kafka-service::tag",
+                "key": "type9ULOXarn",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "process_virtual_memory_bytes",
+                "field": "kafka-process_virtual_memory_bytes::field",
+                "key": "valueBulxJEJo",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "service::tag"
+            ],
+            "select": [
+              {
+                "alias": "typeCciyNkZS",
+                "expr": "time()"
+              },
+              {
+                "alias": "type9ULOXarn",
+                "expr": "service::tag"
+              },
+              {
+                "alias": "valueBulxJEJo",
+                "expr": "round_float(process_virtual_memory_bytes::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 9,
+      "i": "view-il86hEua",
+      "view": {
+        "title": "broker log size total",
+        "description": "The summed size in bytes of all log dirs for a given broker",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filter1GeTPJoQ",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typean2qhmuN",
+                "type": "time"
+              },
+              {
+                "alias": "broker_id",
+                "field": "kafka-broker_id::tag",
+                "key": "typeTRNlSYlZ",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_broker_log_dir_size_total_bytes",
+                "field": "kafka-kminion_kafka_broker_log_dir_size_total_bytes::field",
+                "key": "valuefeSNgdA3",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "broker_id::tag"
+            ],
+            "select": [
+              {
+                "alias": "typean2qhmuN",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeTRNlSYlZ",
+                "expr": "broker_id::tag"
+              },
+              {
+                "alias": "valuefeSNgdA3",
+                "expr": "round_float(kminion_kafka_broker_log_dir_size_total_bytes::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 16,
+      "y": 0,
+      "i": "view-qUN01Z0n",
+      "view": {
+        "title": "topic log total size",
+        "description": "The summed size in bytes of partitions for a given topic. This includes the used space for replica partitions.",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterGpV6KCaW",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typey3ZYLEkF",
+                "type": "time"
+              },
+              {
+                "alias": "topic_name",
+                "field": "kafka-topic_name::tag",
+                "key": "typebAiIvAI6",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_topic_log_dir_size_total_bytes",
+                "field": "kafka-kminion_kafka_topic_log_dir_size_total_bytes::field",
+                "key": "value40Yld3IJ",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "topic_name::tag"
+            ],
+            "select": [
+              {
+                "alias": "typey3ZYLEkF",
+                "expr": "time()"
+              },
+              {
+                "alias": "typebAiIvAI6",
+                "expr": "topic_name::tag"
+              },
+              {
+                "alias": "value40Yld3IJ",
+                "expr": "round_float(kminion_kafka_topic_log_dir_size_total_bytes::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 16,
+      "y": 9,
+      "i": "view-t9uIoOYs",
+      "view": {
+        "title": "Topic partition low water",
+        "description": "Partition Low Water Mark",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filter8cNK7SJt",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "type233k5ent",
+                "type": "time"
+              },
+              {
+                "alias": "partition_id",
+                "field": "kafka-partition_id::tag",
+                "key": "typeqDVoTFZi",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_topic_partition_low_water_mark",
+                "field": "kafka-kminion_kafka_topic_partition_low_water_mark::field",
+                "key": "valueZRKlZKFx",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "partition_id::tag"
+            ],
+            "select": [
+              {
+                "alias": "type233k5ent",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeqDVoTFZi",
+                "expr": "partition_id::tag"
+              },
+              {
+                "alias": "valueZRKlZKFx",
+                "expr": "round_float(kminion_kafka_topic_partition_low_water_mark::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 8,
+      "y": 9,
+      "i": "view-SZ1zLD6E",
+      "view": {
+        "title": "Topic partition high water",
+        "description": "Partition Low Water Mark",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterxQN06Pfc",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "sortDimensions": [],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeqmdLmSAy",
+                "type": "time"
+              },
+              {
+                "alias": "partition_id",
+                "field": "kafka-partition_id::tag",
+                "key": "typeZdExZDsM",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_topic_partition_high_water_mark",
+                "field": "kafka-kminion_kafka_topic_partition_high_water_mark::field",
+                "key": "valuei3JPBEhq",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "partition_id::tag"
+            ],
+            "select": [
+              {
+                "alias": "typeqmdLmSAy",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeZdExZDsM",
+                "expr": "partition_id::tag"
+              },
+              {
+                "alias": "valuei3JPBEhq",
+                "expr": "round_float(kminion_kafka_topic_partition_high_water_mark::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 18,
+      "i": "view-GJ5HFZWn",
+      "view": {
+        "title": "Topic low water sum",
+        "description": "Sum of all the topic's partition low water marks",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterP5iOTAsb",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typefLLIFGXy",
+                "type": "time"
+              },
+              {
+                "alias": "topic_name",
+                "field": "kafka-topic_name::tag",
+                "key": "typeUxnHs7Cr",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_topic_low_water_mark_sum",
+                "field": "kafka-kminion_kafka_topic_low_water_mark_sum::field",
+                "key": "valueAal6MoI8",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "topic_name::tag"
+            ],
+            "select": [
+              {
+                "alias": "typefLLIFGXy",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeUxnHs7Cr",
+                "expr": "topic_name::tag"
+              },
+              {
+                "alias": "valueAal6MoI8",
+                "expr": "round_float(kminion_kafka_topic_low_water_mark_sum::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 8,
+      "y": 18,
+      "i": "view-1gZmhfHq",
+      "view": {
+        "title": "Topic high water sum",
+        "description": "Sum of all the topic's partition high water marks",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filter5ZTHTlyG",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeuGHLQElx",
+                "type": "time"
+              },
+              {
+                "alias": "topic_name",
+                "field": "kafka-topic_name::tag",
+                "key": "typeclia4tqZ",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_topic_high_water_mark_sum",
+                "field": "kafka-kminion_kafka_topic_high_water_mark_sum::field",
+                "key": "valuepNZnTXWX",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "topic_name::tag"
+            ],
+            "select": [
+              {
+                "alias": "typeuGHLQElx",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeclia4tqZ",
+                "expr": "topic_name::tag"
+              },
+              {
+                "alias": "valuepNZnTXWX",
+                "expr": "round_float(kminion_kafka_topic_high_water_mark_sum::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 16,
+      "y": 18,
+      "i": "view-6zVHPC8W",
+      "view": {
+        "title": "Consumer group members",
+        "description": "Consumer Group member count metrics. It will report the number of members in the consumer group",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterixFXQsWL",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typedhBWv2IK",
+                "type": "time"
+              },
+              {
+                "alias": "group_id",
+                "field": "kafka-group_id::tag",
+                "key": "type9xebuWHf",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_consumer_group_members",
+                "field": "kafka-kminion_kafka_consumer_group_members::field",
+                "key": "valuefLPi0Loo",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "group_id::tag"
+            ],
+            "select": [
+              {
+                "alias": "typedhBWv2IK",
+                "expr": "time()"
+              },
+              {
+                "alias": "type9xebuWHf",
+                "expr": "group_id::tag"
+              },
+              {
+                "alias": "valuefLPi0Loo",
+                "expr": "round_float(kminion_kafka_consumer_group_members::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 8,
+      "y": 27,
+      "i": "view-lXs5Owsq",
+      "view": {
+        "title": "Consumer group empty members",
+        "description": "Consumer Group member count metrics. It will report the number of members in the consumer group",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterYJKgZt6p",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeA9LmiCij",
+                "type": "time"
+              },
+              {
+                "alias": "group_id",
+                "field": "kafka-group_id::tag",
+                "key": "type1yn0aaoX",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_consumer_group_members",
+                "field": "kafka-kminion_kafka_consumer_group_members::field",
+                "key": "valueS8r3fYkH",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "group_id::tag"
+            ],
+            "select": [
+              {
+                "alias": "typeA9LmiCij",
+                "expr": "time()"
+              },
+              {
+                "alias": "type1yn0aaoX",
+                "expr": "group_id::tag"
+              },
+              {
+                "alias": "valueS8r3fYkH",
+                "expr": "round_float(kminion_kafka_consumer_group_members::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 27,
+      "i": "view-vkSjLpkr",
+      "view": {
+        "title": "Consumer group topic partition lag",
+        "description": "The number of messages a consumer group is lagging behind the latest offset of a partition",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {},
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterxoZVrvI1",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeLzdBMs81",
+                "type": "time"
+              },
+              {
+                "alias": "group_id",
+                "field": "kafka-group_id::tag",
+                "key": "type8mkyhF5m",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "topic_name",
+                "field": "kafka-topic_name::tag",
+                "key": "typeozN0kpKu",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_consumer_group_topic_partition_lag",
+                "field": "kafka-kminion_kafka_consumer_group_topic_partition_lag::field",
+                "key": "valueQKVMVNJr",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "group_id::tag",
+              "topic_name::tag"
+            ],
+            "select": [
+              {
+                "alias": "typeLzdBMs81",
+                "expr": "time()"
+              },
+              {
+                "alias": "type8mkyhF5m",
+                "expr": "group_id::tag"
+              },
+              {
+                "alias": "typeozN0kpKu",
+                "expr": "topic_name::tag"
+              },
+              {
+                "alias": "valueQKVMVNJr",
+                "expr": "round_float(kminion_kafka_consumer_group_topic_partition_lag::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 0,
+      "y": 36,
+      "i": "view-VXvtdgxy",
+      "view": {
+        "title": "Consumer group topic lag",
+        "description": "The number of messages a consumer group is lagging behind across all partitions in a topic",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": null,
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterFwg2uSnY",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typex9CxfEdc",
+                "type": "time"
+              },
+              {
+                "alias": "topic_name",
+                "field": "kafka-topic_name::tag",
+                "key": "type40RIDy08",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "group_id",
+                "field": "kafka-group_id::tag",
+                "key": "typePjnCBvZH",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "kminion_kafka_consumer_group_topic_lag",
+                "field": "kafka-kminion_kafka_consumer_group_topic_lag::field",
+                "key": "valueSupg0KtW",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "topic_name::tag",
+              "group_id::tag"
+            ],
+            "select": [
+              {
+                "alias": "typex9CxfEdc",
+                "expr": "time()"
+              },
+              {
+                "alias": "type40RIDy08",
+                "expr": "topic_name::tag"
+              },
+              {
+                "alias": "typePjnCBvZH",
+                "expr": "group_id::tag"
+              },
+              {
+                "alias": "valueSupg0KtW",
+                "expr": "round_float(kminion_kafka_consumer_group_topic_lag::field, 2)"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    },
+    {
+      "w": 8,
+      "h": 9,
+      "x": 16,
+      "y": 27,
+      "i": "view-jKEZ8t5I",
+      "view": {
+        "title": "Consumer group offset total",
+        "description": "The number of offsets committed by a group",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": null,
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "all",
+              "all@kafka"
+            ],
+            "resultFilters": [
+              {
+                "alias": "addon_id",
+                "field": "kafka-addon_id::tag",
+                "filter": {
+                  "operation": "=",
+                  "value": "{{addonId}}"
+                },
+                "key": "filterZAbb4dN4",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "type1xlqxbSi",
+                "type": "time"
+              },
+              {
+                "alias": "group_id",
+                "field": "kafka-group_id::tag",
+                "key": "typebM6DJnJj",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "表达式-3",
+                "expr": "kminion_kafka_consumer_group_offset_commits_total",
+                "key": "valuedLpr6YTV",
+                "type": "expr"
+              }
+            ]
+          }
+        },
+        "api": {
+          "body": {
+            "from": [
+              "kafka"
+            ],
+            "groupby": [
+              "time()",
+              "group_id::tag"
+            ],
+            "select": [
+              {
+                "alias": "type1xlqxbSi",
+                "expr": "time()"
+              },
+              {
+                "alias": "typebM6DJnJj",
+                "expr": "group_id::tag"
+              },
+              {
+                "alias": "valuedLpr6YTV",
+                "expr": "kminion_kafka_consumer_group_offset_commits_total"
+              }
+            ],
+            "where": [
+              "addon_id::tag='{{addonId}}'"
+            ]
+          },
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null,
+        "i18n": null
+      }
+    }
+  ]
+}
