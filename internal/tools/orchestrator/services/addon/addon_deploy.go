@@ -25,14 +25,12 @@ import (
 	"github.com/mcuadros/go-version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -285,7 +283,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 		}
 		var optionsMap map[string]string
 		if err := json.Unmarshal([]byte(addonIns.Options), &optionsMap); err != nil {
-			return nil, errors.Wrapf(err, "instance optiosn Unmarshal error, body %s", addonIns.Options)
+			return nil, errors.Wrapf(err, "instance options Unmarshal error, body %s", addonIns.Options)
 		}
 		dbNamesStr = optionsMap["create_dbs"]
 
@@ -404,67 +402,75 @@ func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlEx
 	return err
 }
 
-func (a *Addon) getCreateDBsAndInitSQL(addonOptions string) (createDBs []string, initSQL, username string, err error) {
-	var optionsMap map[string]string
-
-	if addonOptions != "" {
-		err := json.Unmarshal([]byte(addonOptions), &optionsMap)
-		if err != nil {
-			return nil, "", "", errors.Wrapf(err, "instance optiosn Unmarshal error, body %s", addonOptions)
-		}
-	}
-
-	createDBs = strings.Split(optionsMap["create_dbs"], ",")
-	if len(createDBs) == 0 || optionsMap["create_dbs"] == "" {
-		return nil, "", "", nil
-	}
-
-	initSql := optionsMap["init_sql"]
-	if initSql != "" {
-		f, err := os.CreateTemp("", "*.sql.gz")
-		if err == nil {
-			defer f.Close()
-			var res *httpclient.Response
-			res, err = a.hc.Get(initSql).Do().Body(f)
-			if err == nil && !res.IsOK() {
-				err = errors.Errorf("get init_sql status code: %d", res.StatusCode())
-			}
-		}
-		if err != nil {
-			return nil, "", "", err
-		}
-		initSql = f.Name()
-	}
-	username = optionsMap["username"]
-	if username == "" {
-		username = apistructs.AddonMysqlUser
-	}
-
-	return createDBs, initSql, username, nil
-}
-
-type additionalInit struct {
-	DB       string `json:"db" yaml:"db"`
-	Username string `json:"username" yaml:"username"`
-	Password string `json:"password" yaml:"password"`
-}
-
-func (a *Addon) getAdditionalInits(addonOptions string) ([]additionalInit, error) {
+func (a *Addon) unmarshalAddonOptions(addonOptions string) (map[string]json.RawMessage, error) {
+	var m = make(map[string]json.RawMessage)
 	if addonOptions == "" {
+		return m, nil
+	}
+	if err := json.Unmarshal([]byte(addonOptions), &m); err != nil {
+		return m, errors.Wrapf(err, "instance optiosn Unmarshal error, body %s", addonOptions)
+	}
+	return m, nil
+}
+
+func (a *Addon) getInitMySQLUsername(addonOptions map[string]json.RawMessage) string {
+	if username := addonOptions["username"]; len(username) > 0 {
+		var name string
+		_ = json.Unmarshal(username, &name)
+		if len(name) > 0 {
+			return name
+		}
+	}
+	return apistructs.AddonMysqlUser
+}
+
+func (a *Addon) getInitMySQLDatabases(addonOptions map[string]json.RawMessage) ([]string, error) {
+	data, ok := addonOptions["create_dbs"]
+	if !ok {
 		return nil, nil
 	}
-	var m map[string]json.RawMessage
-	if err := yaml.Unmarshal([]byte(addonOptions), &m); err != nil {
+	var dbs string
+	if err := json.Unmarshal(data, &dbs); err != nil {
 		return nil, err
 	}
-
-	data, ok := m["additional_inits"]
-	if !ok {
-		return nil, errors.New("no additional_inits")
+	if len(dbs) == 0 {
+		return nil, nil
 	}
-	var additionalInits []additionalInit
-	err := yaml.Unmarshal(data, &additionalInits)
-	return additionalInits, err
+	databases := strings.Split(dbs, ",")
+	for i := 0; i < len(databases); i++ {
+		databases[i] = strings.TrimSpace(databases[i])
+	}
+	return databases, nil
+}
+
+func (a *Addon) getInitSQL(addonOptions map[string]json.RawMessage) (string, func(), error) {
+	data, ok := addonOptions["init_sql"]
+	if !ok {
+		return "", nil, nil
+	}
+	var initSQL string
+	if err := json.Unmarshal(data, &initSQL); err != nil {
+		return "", nil, err
+	}
+	if len(initSQL) == 0 {
+		return "", nil, nil
+	}
+	f, err := os.CreateTemp("", "*.sql.gz")
+	if err != nil {
+		return "", nil, err
+	}
+	defer f.Close()
+
+	res, err := a.hc.Get(initSQL).Do().Body(f)
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "failed to Get init_sql: %s", initSQL)
+	}
+	if !res.IsOK() {
+		return "", nil, errors.Errorf("failed to Get init_sql: %s, status code: %v", initSQL, res.StatusCode())
+	}
+	return f.Name(), func() {
+		_ = os.Remove(f.Name())
+	}, nil
 }
 
 // BuildAddonRequestGroup build请求serviceGroup的body信息
