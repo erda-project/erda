@@ -52,6 +52,7 @@ func TestNewMseAdapter(t *testing.T) {
 				AccessKeySecret: "aliyunaccesskeysecret",
 				GatewayUniqueID: "aliyunmsegatewayid",
 				GatewayEndpoint: "mse.cn-hangzhou.aliyuncs.com",
+				ClusterName:     "test",
 			},
 		},
 		{
@@ -85,6 +86,19 @@ func TestNewMseAdapter(t *testing.T) {
 				Bdl:             &bundle.Bundle{},
 				GatewayEndpoint: "mse.cn-hangzhou.aliyuncs.com",
 			}
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(adapter), "GetMSEPluginsByAPI", func(_ *MseAdapterImpl, name *string, category *int32, enableOnly *bool) ([]*mseclient.GetPluginsResponseBodyData, error) {
+				pluginName := "key-auth"
+				var id int64 = 3
+
+				return []*mseclient.GetPluginsResponseBodyData{
+					{
+						Id:   &id,
+						Name: &pluginName,
+					},
+				}, nil
+			})
+
 			monkey.PatchInstanceMethod(reflect.TypeOf(adapter.Bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
 				if tt.name == "Test_02" {
 					return apistructs.ClusterInfoData{"ALIYUN_ACCESS_KEY_SECRET": "aliyunaccesskeysecret", "ALIYUN_MSE_GATEWAY_ID": "aliyunmsegatewayid"}, nil
@@ -559,15 +573,22 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 				ProviderName: tt.fields.ProviderName,
 			}
 
+			var keyAuthID int64 = 1
+
+			mseCommon.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName] = make(map[string]*int64)
+			mseCommon.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName][mseCommon.MsePluginKeyAuth] = &keyAuthID
+
 			monkey.PatchInstanceMethod(reflect.TypeOf(impl), "GetMSEPluginConfigByIDByAPI", func(impl *MseAdapterImpl, pluginId *int64) (*mseclient.GetPluginConfigResponseBodyData, error) {
 				cfList := make([]*mseclient.GetPluginConfigResponseBodyDataGatewayConfigList, 0)
 				config := "consumers: \n# 注意！该凭证仅做示例使用，请勿用于具体业务，造成安全风险\n- credential: 5d1a401b3aef4ee5bc39a99654672f92\n  name: bbb\n- credential: 5d1a401b3aef4ee5bc39a99654672f91\n  name: aaa\nkeys:\n- apikey\n- x-api-key\n_rules_:\n# 规则一：按路由名称匹配生效\n- _match_route_:\n  - project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3\n  allow:\n  - aaa\n- _match_route_:\n  - project-5846-test-dice-test-5846-api-66f56a64312143cfbbbd04eca82eca56-bff529-51ec627a-ccaae83a5fe7846d18d4ac80940a8fdc3\n  allow:\n  - bbb\n  \n"
 				var configLevel int32 = 0
 				var id int64 = 154
+				enabled := true
 				cfList = append(cfList, &mseclient.GetPluginConfigResponseBodyDataGatewayConfigList{
 					Config:      &config,
 					ConfigLevel: &configLevel,
 					Id:          &id,
+					Enable:      &enabled,
 				})
 				return &mseclient.GetPluginConfigResponseBodyData{
 					GatewayConfigList: cfList,

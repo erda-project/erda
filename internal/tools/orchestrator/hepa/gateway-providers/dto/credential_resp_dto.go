@@ -78,16 +78,6 @@ type CredentialDto struct {
 	Secret string `json:"secret,omitempty"`
 	// hmac-auth
 	Username string `json:"username,omitempty"`
-
-	// aliyun MSE jwt-auth plugin
-	Issuer           string   `json:"issuer,omitempty"`             // for jwt-auth only
-	Jwks             string   `json:"jwks,omitempty"`               // for jwt-auth only
-	FromParams       []string `json:"from_params,omitempty"`        // for jwt-auth only   default: ["access_token"]
-	FromCookies      []string `json:"from_cookies,omitempty"`       // for jwt-auth only   default: -
-	KeepToken        *bool    `json:"keep_token,omitempty"`         // for jwt-auth only   default: true
-	ClockSkewSeconds *int     `json:"clock_skew_seconds,omitempty"` // for jwt-auth only   default: 60
-	//ClaimsToHeaders  []Object `json:"claims_to_headers,omitempty"` // for jwt-auth only   default: -   对象结构是啥不明确
-	//FromHeaders      []Object `json:"from_headers,omitempty"`      // for jwt-auth only   default: {"name":"Authorization","value_prefix":"Bearer "}  对象结构是啥不明确
 }
 
 func (dto *CredentialDto) ToHmacReq() {
