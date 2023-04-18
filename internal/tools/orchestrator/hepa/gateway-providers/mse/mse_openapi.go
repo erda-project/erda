@@ -91,10 +91,20 @@ func (impl *MseAdapterImpl) GetMSEPluginsByAPI(name *string, category *int32, en
 
 	getPluginsRequest := &mseclient.GetPluginsRequest{
 		GatewayUniqueId: &impl.GatewayUniqueID,
-		Name:            name,
-		Category:        category,
-		EnableOnly:      enableOnly,
 	}
+
+	if name != nil && *name != "" {
+		getPluginsRequest.Name = name
+	}
+
+	if category != nil {
+		getPluginsRequest.Category = category
+	}
+
+	if enableOnly != nil {
+		getPluginsRequest.EnableOnly = enableOnly
+	}
+
 	runtime := &util.RuntimeOptions{}
 
 	gatewayPluginsResponse, err := client.GetPluginsWithOptions(getPluginsRequest, runtime)

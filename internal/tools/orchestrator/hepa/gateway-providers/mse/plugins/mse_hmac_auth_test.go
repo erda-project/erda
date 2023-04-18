@@ -24,8 +24,8 @@ import (
 
 func Test_mergeHmacAuthConfig(t *testing.T) {
 	type args struct {
-		CurrentKeyAutoConfig dto.MsePluginConfig
-		updateKeyAutoConfig  dto.MsePluginConfig
+		CurrentHmacAuthConfig dto.MsePluginConfig
+		updateHmacAuthConfig  dto.MsePluginConfig
 	}
 	tests := []struct {
 		name    string
@@ -36,7 +36,7 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 		{
 			name: "Test_01",
 			args: args{
-				CurrentKeyAutoConfig: dto.MsePluginConfig{
+				CurrentHmacAuthConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
 							Name:   "aaa",
@@ -60,7 +60,7 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 						},
 					},
 				},
-				updateKeyAutoConfig: dto.MsePluginConfig{
+				updateHmacAuthConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
 							Name:   "633.5846.TEST.erda-jicheng:abc",
@@ -123,7 +123,7 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 		{
 			name: "Test_02",
 			args: args{
-				CurrentKeyAutoConfig: dto.MsePluginConfig{
+				CurrentHmacAuthConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
 							Name:   "aaa",
@@ -147,7 +147,7 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 						},
 					},
 				},
-				updateKeyAutoConfig: dto.MsePluginConfig{
+				updateHmacAuthConfig: dto.MsePluginConfig{
 					Consumers: []dto.Consumers{
 						{
 							Name:   "aaa",
@@ -201,7 +201,7 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := mergeHmacAuthConfig(tt.args.CurrentKeyAutoConfig, tt.args.updateKeyAutoConfig)
+			got, err := mergeHmacAuthConfig(tt.args.CurrentHmacAuthConfig, tt.args.updateHmacAuthConfig)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("mergeHmacAuthConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
