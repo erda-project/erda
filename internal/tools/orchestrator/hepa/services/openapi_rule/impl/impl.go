@@ -762,7 +762,7 @@ func (impl GatewayOpenapiRuleServiceImpl) packageRuleDao(diceInfo gw.DiceInfo, d
 	return res
 }
 
-func (impl GatewayOpenapiRuleServiceImpl) pluginReq(dto *gw.OpenapiRule, helper *db.SessionHelper) (*providerDto.PluginReqDto, error) {
+func (impl GatewayOpenapiRuleServiceImpl) pluginReq(gatewayProvider string, dto *gw.OpenapiRule, helper *db.SessionHelper) (*providerDto.PluginReqDto, error) {
 	var routeDb db.GatewayRouteService
 	var apiDb db.GatewayPackageApiService
 	var err error
@@ -811,7 +811,7 @@ func (impl GatewayOpenapiRuleServiceImpl) pluginReq(dto *gw.OpenapiRule, helper 
 			reqDto.RouteId = route.RouteId
 		}
 
-		if api.ZoneId != "" {
+		if gatewayProvider == mseCommon.Mse_Provider_Name && api.ZoneId != "" {
 			zone, err := (*impl.zoneBiz).GetZone(api.ZoneId)
 			if err != nil {
 				return nil, err
@@ -822,8 +822,8 @@ func (impl GatewayOpenapiRuleServiceImpl) pluginReq(dto *gw.OpenapiRule, helper 
 	return reqDto, nil
 }
 
-func (impl GatewayOpenapiRuleServiceImpl) CreateOrUpdatePlugin(adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiRule, helper *db.SessionHelper) (string, error) {
-	req, err := impl.pluginReq(dto, helper)
+func (impl GatewayOpenapiRuleServiceImpl) CreateOrUpdatePlugin(gatewayProvider string, adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiRule, helper *db.SessionHelper) (string, error) {
+	req, err := impl.pluginReq(gatewayProvider, dto, helper)
 	if err != nil {
 		return "", err
 	}
@@ -834,8 +834,8 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateOrUpdatePlugin(adapter gateway_p
 	return resp.Id, nil
 }
 
-func (impl GatewayOpenapiRuleServiceImpl) getMSEPluginCurrentConfig(adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiRule, helper *db.SessionHelper) (*providerDto.PluginRespDto, error) {
-	req, err := impl.pluginReq(dto, helper)
+func (impl GatewayOpenapiRuleServiceImpl) getMSEPluginCurrentConfig(gatewayProvider string, adapter gateway_providers.GatewayAdapter, dto *gw.OpenapiRule, helper *db.SessionHelper) (*providerDto.PluginRespDto, error) {
+	req, err := impl.pluginReq(gatewayProvider, dto, helper)
 	if err != nil {
 		return nil, err
 	}
@@ -909,7 +909,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 				return err
 			}
 
-			pluginOldConf, err := impl.getMSEPluginCurrentConfig(gatewayAdapter, rule, helper)
+			pluginOldConf, err := impl.getMSEPluginCurrentConfig(gatewayProvider, gatewayAdapter, rule, helper)
 			if err != nil {
 				return err
 			}
@@ -920,7 +920,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 			return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 		}
 
-		pluginId, err := impl.CreateOrUpdatePlugin(gatewayAdapter, rule, helper)
+		pluginId, err := impl.CreateOrUpdatePlugin(gatewayProvider, gatewayAdapter, rule, helper)
 		if err != nil {
 			return err
 		}
@@ -931,7 +931,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 				// 还原到更新前的配置
 				rule.Config = msePluginConfig
 				if msePluginConfig != nil {
-					req, _ := impl.pluginReq(rule, helper)
+					req, _ := impl.pluginReq(gatewayProvider, rule, helper)
 					if req != nil {
 						gatewayAdapter.UpdatePlugin(req)
 					}
@@ -993,7 +993,7 @@ func (impl GatewayOpenapiRuleServiceImpl) UpdateRule(ruleId string, rule *gw.Ope
 	default:
 		return nil, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
-	_, err = impl.CreateOrUpdatePlugin(gatewayAdapter, rule, nil)
+	_, err = impl.CreateOrUpdatePlugin(gatewayProvider, gatewayAdapter, rule, nil)
 	if err != nil {
 		return nil, err
 	}

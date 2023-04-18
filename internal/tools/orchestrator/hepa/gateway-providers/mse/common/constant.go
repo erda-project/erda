@@ -40,54 +40,10 @@ const (
 	MsePluginEDASServiceAuth string = "edas-service-auth"
 	MsePluginWaf             string = "waf"
 	MsePluginParaSignAuth    string = "para-sign-auth"
-
-	// Plugin ID
-	MsePluginKeyAuthID         int64 = 1
-	MsePluginBasicAuthID       int64 = 2
-	MsePluginHmacAuthID        int64 = 3
-	MsePluginCustomResponseID  int64 = 4
-	MsePluginRequestBlockID    int64 = 5
-	MsePluginBotDetectID       int64 = 6
-	MsePluginKeyRateLimitID    int64 = 7
-	MsePluginHttp2MisdirectID  int64 = 23
-	MsePluginJwtAuthID         int64 = 34
-	MsePluginHttpRealIPID      int64 = 43
-	MsePluginEDASServiceAuthID int64 = 114
-	MsePluginWafID             int64 = 119
-	MsePluginParaSignAuthID    int64 = 129
 )
 
-var MSEPluginNameToID map[string]*int64
+var MapClusterNameToMSEPluginNameToPluginID map[string]map[string]*int64
 
 func init() {
-	MSEPluginNameToID = make(map[string]*int64)
-	keyAuthID := MsePluginKeyAuthID
-	MSEPluginNameToID[MsePluginKeyAuth] = &keyAuthID
-
-	basicAuthID := MsePluginBasicAuthID
-	MSEPluginNameToID[MsePluginBasicAuth] = &basicAuthID
-
-	hmacAuthID := MsePluginHmacAuthID
-	MSEPluginNameToID[MsePluginHmacAuth] = &hmacAuthID
-
-	customResponseID := MsePluginCustomResponseID
-	MSEPluginNameToID[MsePluginCustomResponse] = &customResponseID
-
-	requestBlockID := MsePluginRequestBlockID
-	MSEPluginNameToID[MsePluginRequestBlock] = &requestBlockID
-
-	botDetectID := MsePluginBotDetectID
-	MSEPluginNameToID[MsePluginBotDetect] = &botDetectID
-
-	keyRateLimitID := MsePluginKeyRateLimitID
-	MSEPluginNameToID[MsePluginKeyRateLimit] = &keyRateLimitID
-
-	http2MisdirectID := MsePluginHttp2MisdirectID
-	MSEPluginNameToID[MsePluginHttp2Misdirect] = &http2MisdirectID
-
-	jwtAuthID := MsePluginJwtAuthID
-	MSEPluginNameToID[MsePluginJwtAuth] = &jwtAuthID
-
-	httpRealIpID := MsePluginHttpRealIPID
-	MSEPluginNameToID[MsePluginHttpRealIP] = &httpRealIpID
+	MapClusterNameToMSEPluginNameToPluginID = make(map[string]map[string]*int64)
 }

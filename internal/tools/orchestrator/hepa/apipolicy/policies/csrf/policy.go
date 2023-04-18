@@ -177,10 +177,12 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		return res, nil
 	}
 
-	logrus.Infof("set csrf policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
-	req.RouteId = route.RouteId
-	req.Route = &providerDto.KongObj{
-		Id: route.RouteId,
+	if route != nil {
+		logrus.Infof("set csrf policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
+		req.RouteId = route.RouteId
+		req.Route = &providerDto.KongObj{
+			Id: route.RouteId,
+		}
 	}
 
 	if exist != nil {

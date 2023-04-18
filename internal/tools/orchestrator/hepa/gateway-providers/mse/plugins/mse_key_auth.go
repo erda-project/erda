@@ -15,75 +15,12 @@
 package plugins
 
 import (
-	mseclient "github.com/alibabacloud-go/mse-20190531/v3/client"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
-	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	mseDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
 )
-
-func CreateKeyAuthConfig(req *PluginReqDto, confList map[string][]mseclient.GetPluginConfigResponseBodyDataGatewayConfigList) (string, int64, error) {
-	var configId int64 = -1
-	keyAutoConfig := mseDto.MsePluginConfig{}
-
-	// 只看全局配置对应的列表的第一个，因为当前(2023.02.23)只支持全局配置,且只会有一条配置记录
-	if globalConfig, ok := confList[MsePluginConfigLevelGlobal]; ok {
-		if len(globalConfig) > 0 {
-			configId = *globalConfig[0].Id
-			err := yaml.Unmarshal([]byte(*globalConfig[0].Config), &keyAutoConfig)
-			if err != nil {
-				return "", -1, err
-			}
-		}
-	}
-
-	matchRoutes := make([]string, 0)
-	cons, ok := req.Config["whitelist"]
-	if !ok {
-		return "", -1, errors.Errorf("no whitelist in PluginReqDto Config")
-	}
-	consumers, ok := cons.([]mseDto.Consumers)
-	if !ok {
-		return "", -1, errors.Errorf("PluginReqDto.Config[whitelist] is not Type []Consumers ")
-	}
-
-	allows := make([]string, 0)
-	for idx, cs := range consumers {
-		if cs.Name == DEFAULT_MSE_CONSUMER_NAME {
-			matchRoutes = append(matchRoutes, DEFAULT_MSE_ROUTE_NAME)
-			consumers[idx].Credential = DEFAULT_MSE_CONSUMER_CREDENTIAL
-		}
-		allows = append(allows, cs.Name)
-	}
-
-	if req.MSERouteName != "" {
-		matchRoutes = append(matchRoutes, req.MSERouteName)
-	}
-
-	updateKeyAutoConfig := mseDto.MsePluginConfig{
-		Consumers: consumers,
-		Keys:      []string{"appkey", "x-app-key"},
-		InQuery:   true,
-		InHeader:  true,
-		Rules: []mseDto.Rules{
-			{
-				MatchRoute: matchRoutes,
-				Allow:      allows,
-			},
-		},
-	}
-
-	keyAutoConfig, err := mergeKeyAuthConfig(keyAutoConfig, updateKeyAutoConfig)
-	if err != nil {
-		return "", -1, err
-	}
-
-	configBytes, _ := yaml.Marshal(&keyAutoConfig)
-	logrus.Infof("merge KeyAuth config result:\n************************************************************\n%s\n********************************************************", string(configBytes))
-	return string(configBytes), configId, nil
-}
 
 func mergeKeyAuthConfig(CurrentKeyAuthConfig, updateKeyAuthConfig mseDto.MsePluginConfig) (mseDto.MsePluginConfig, error) {
 	configBytes, _ := yaml.Marshal(&CurrentKeyAuthConfig)

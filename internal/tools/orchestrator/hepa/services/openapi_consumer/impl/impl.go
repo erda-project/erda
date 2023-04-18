@@ -207,27 +207,6 @@ func (impl GatewayOpenapiConsumerServiceImpl) getCredentialList(gatewayAdapter g
 				//wlConsumer.Credential = credential.Key
 				continue
 			case orm.MSEJWTAuth:
-				/*
-					if credential.FromParams != "" {
-						wlConsumer.FromParams = strings.Split(credential.FromParams, ",")
-					}
-					if credential.FromCookies != "" {
-						wlConsumer.FromCookies = strings.Split(credential.FromCookies, ",")
-					}
-					if credential.KeepToken == "N" {
-						wlConsumer.KeepToken = false
-					} else {
-						wlConsumer.KeepToken = true
-					}
-
-					wlConsumer.ClockSkewSeconds = 60
-					if credential.ClockSkewSeconds != "" {
-						csSeconds, err := strconv.Atoi(credential.ClockSkewSeconds)
-						if err == nil && csSeconds > 0 {
-							wlConsumer.ClockSkewSeconds = csSeconds
-						}
-					}
-				*/
 				continue
 			}
 		}
@@ -295,30 +274,6 @@ func (impl GatewayOpenapiConsumerServiceImpl) createMseGatewayCredential(req *pr
 		redirectUrls = strings.Join(config.RedirectUrls, ",")
 	}
 
-	fromParams := ""
-	if len(config.FromParams) > 0 {
-		fromParams = strings.Join(config.FromParams, ",")
-	}
-
-	fromCookies := ""
-	if len(config.FromCookies) > 0 {
-		fromCookies = strings.Join(config.FromCookies, ",")
-	}
-
-	keepToken := "Y"
-	if config.KeepToken != nil {
-		if *config.KeepToken == false {
-			keepToken = "N"
-		}
-	}
-
-	clockSkewSeconds := "60"
-	if config.ClockSkewSeconds != nil {
-		if *config.ClockSkewSeconds > 0 {
-			clockSkewSeconds = fmt.Sprintf("%d", *config.ClockSkewSeconds)
-		}
-	}
-
 	consumer, err := impl.consumerDb.GetByConsumerId(req.ConsumerId)
 	if err != nil {
 		return err
@@ -354,12 +309,12 @@ func (impl GatewayOpenapiConsumerServiceImpl) createMseGatewayCredential(req *pr
 		Az:               az,
 		Key:              config.Key,
 		Secret:           config.Secret,
-		Issuer:           config.Issuer,
-		Jwks:             config.Jwks,
-		FromParams:       fromParams,
-		FromCookies:      fromCookies,
-		KeepToken:        keepToken,
-		ClockSkewSeconds: clockSkewSeconds,
+		Issuer:           "",
+		Jwks:             "",
+		FromParams:       "",
+		FromCookies:      "",
+		KeepToken:        "",
+		ClockSkewSeconds: "",
 		RedirectUrl:      redirectUrl,
 		RedirectUrls:     redirectUrls,
 		Name:             config.Name,
@@ -807,10 +762,10 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 		}
 		// 删除 MSE 插件配置中关于此 consumer 的配置信息放
 		pluginConsumerName := impl.GetKongConsumerName(consumer)
-		for pluginName := range mseCommon.MSEPluginNameToID {
+		for pluginName := range mseCommon.MapClusterNameToMSEPluginNameToPluginID[consumer.Az] {
 			switch pluginName {
-			// 暂时只支持 key-auth, hmac-auth
-			case mseCommon.MsePluginKeyAuth, mseCommon.MsePluginHmacAuth:
+			// 暂时只支持 key-auth, hmac-auth, para-sign-auth
+			case mseCommon.MsePluginKeyAuth, mseCommon.MsePluginHmacAuth, mseCommon.MsePluginParaSignAuth:
 				pluginConf, getPluginConfErr := gatewayAdapter.GetPlugin(&providerDto.PluginReqDto{
 					Name: pluginName,
 				})
@@ -1466,7 +1421,6 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			buffer.WriteString(impl.GetKongConsumerName(&consumer))
 		}
 		wl := buffer.String()
-		//config := map[string]interface{}{}
 		if wl == "" {
 			wl = ","
 		}
@@ -1521,13 +1475,13 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			newAclRule.Category = gw.AUTH_RULE
 			switch pack.AuthType {
 			case gw.AT_KEY_AUTH:
-				newAclRule.PluginName = gw.AT_KEY_AUTH
+				newAclRule.PluginName = mseCommon.MsePluginKeyAuth
 			case gw.AT_OAUTH2:
 				newAclRule.PluginName = gw.AT_OAUTH2
 			case gw.AT_SIGN_AUTH:
-				newAclRule.PluginName = gw.AT_SIGN_AUTH
+				newAclRule.PluginName = mseCommon.MsePluginParaSignAuth
 			case gw.AT_HMAC_AUTH:
-				newAclRule.PluginName = gw.AT_HMAC_AUTH
+				newAclRule.PluginName = mseCommon.MsePluginHmacAuth
 			}
 		}
 		err = (*impl.ruleBiz).CreateRule(gw.DiceInfo{
@@ -1800,6 +1754,8 @@ func (impl GatewayOpenapiConsumerServiceImpl) mseConsumerConfig(consumers []orm.
 				wlConsumer.Credential = credential.Key
 			case orm.SIGNAUTH:
 				// TODO: MSE 暂不支持 sign-auth
+				wlConsumer.Key = credential.Key
+				wlConsumer.Secret = credential.Secret
 			case orm.HMACAUTH:
 				wlConsumer.Key = credential.Key
 				wlConsumer.Secret = credential.Secret

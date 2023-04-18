@@ -15,11 +15,12 @@
 package dto
 
 type MsePluginConfig struct {
-	Consumers []Consumers `json:"consumers" yaml:"consumers"`
-	Keys      []string    `json:"keys,omitempty" yaml:"keys,omitempty"`
-	InQuery   bool        `json:"in_query,omitempty" yaml:"in_query,omitempty"`   // [in_query 和 in_header 至少一个为 true] 配置 true 时，网关会尝试从 URL 参数中解析 API Key, 默认 true
-	InHeader  bool        `json:"in_header,omitempty" yaml:"in_header,omitempty"` // [in_query 和 in_header 至少一个为 true] 配置 true 时，网关会尝试从 HTTP 请求头中解析 API Key, 默认 true
-	Rules     []Rules     `json:"_rules_,omitempty" yaml:"_rules_,omitempty"`
+	Consumers  []Consumers `json:"consumers,omitempty" yaml:"consumers,omitempty"`
+	Keys       []string    `json:"keys,omitempty" yaml:"keys,omitempty"`
+	InQuery    bool        `json:"in_query,omitempty" yaml:"in_query,omitempty"`       // [key-auth 参数] [in_query 和 in_header 至少一个为 true] 配置 true 时，网关会尝试从 URL 参数中解析 API Key, 默认 true
+	InHeader   bool        `json:"in_header,omitempty" yaml:"in_header,omitempty"`     // [key-auth 参数] [in_query 和 in_header 至少一个为 true] 配置 true 时，网关会尝试从 HTTP 请求头中解析 API Key, 默认 true
+	DateOffset int         `json:"date_offset,omitempty" yaml:"date_offset,omitempty"` // [para-sign-auth、hmac-auth 参数], 单位 秒, 默认 300s
+	Rules      []Rules     `json:"_rules_,omitempty" yaml:"_rules_,omitempty"`
 }
 
 type Consumers struct {
@@ -59,6 +60,11 @@ type Rules struct {
 	Allow      []string `json:"allow,omitempty" yaml:"allow,omitempty"`
 	// 暂时只支持路由生效
 	// MatchDomain []string `json:"_match_domain_,omitempty" yaml:"_match_domain_,omitempty"` // 域名生效 (与 路由生效 二选一)
+
+	// 以下为自定义开发 MSE 插件使用的配置
+	Consumers            []Consumers `json:"consumers,omitempty" yaml:"consumers,omitempty"`
+	RequestBodySizeLimit int         `json:"request_body_size_limit,omitempty" yaml:"request_body_size_limit,omitempty"` // [para-sign-auth 参数], 单位 Byte, 默认 10MB
+	DateOffset           int         `json:"date_offset,omitempty" yaml:"date_offset,omitempty"`                         // [para-sign-auth], 单位 秒, 默认 300s
 }
 
 type SortConsumers struct {
