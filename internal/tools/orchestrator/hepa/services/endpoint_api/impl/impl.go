@@ -358,10 +358,36 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 			authRule.Config = gw.OAUTH2_CONFIG
 			pluginName = gw.AT_OAUTH2
 		case gw.AT_SIGN_AUTH:
-			authRule.Config = gw.SIGNAUTH_CONFIG
-			pluginName = gw.AT_SIGN_AUTH
+			config := map[string]interface{}{}
+			wlConsumers, err := impl.mseConsumerConfig(consumers)
+			if err != nil {
+				return nil, err
+			}
+			if len(wlConsumers) == 0 {
+				wlConsumers = append(wlConsumers, mseDto.Consumers{
+					Name:   plugins.DEFAULT_MSE_CONSUMER_NAME,
+					Key:    plugins.DEFAULT_MSE_CONSUMER_KEY,
+					Secret: plugins.DEFAULT_MSE_CONSUMER_SECRET,
+				})
+			}
+			config["whitelist"] = wlConsumers
+			authRule.Config = config
+			pluginName = mseCommon.MsePluginParaSignAuth
 		case gw.AT_HMAC_AUTH:
-			authRule.Config = gw.HMACAUTH_CONFIG
+			config := map[string]interface{}{}
+			wlConsumers, err := impl.mseConsumerConfig(consumers)
+			if err != nil {
+				return nil, err
+			}
+			if len(wlConsumers) == 0 {
+				wlConsumers = append(wlConsumers, mseDto.Consumers{
+					Name:   plugins.DEFAULT_MSE_CONSUMER_NAME,
+					Key:    plugins.DEFAULT_MSE_CONSUMER_KEY,
+					Secret: plugins.DEFAULT_MSE_CONSUMER_SECRET,
+				})
+			}
+			config["whitelist"] = wlConsumers
+			authRule.Config = config
 			pluginName = mseCommon.MsePluginHmacAuth
 		case gw.AT_ALIYUN_APP:
 			authRule.Config = nil
@@ -539,40 +565,49 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *g
 		return
 	}
 	if dto.Scene == orm.OpenapiScene {
-		// create auth, acl rule
-		authRule, err = impl.createAuthRule(dto.AuthType, pack)
-		if err != nil {
-			return
-		}
-		authRule.Region = gw.PACKAGE_RULE
-		err = (*impl.ruleBiz).CreateRule(diceInfo, authRule, helper)
-		if err != nil {
-			return
-		}
-
 		gatewayProvider, errGetProvider := impl.GetGatewayProvider(az)
 		if errGetProvider != nil {
 			err = errGetProvider
 			return
 		}
+
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
 		case "":
-			// Kong 需要再创建 acl rule
+			authRule, err = impl.createAuthRule(dto.AuthType, pack)
+			if err != nil {
+				return
+			}
+			authRule.Region = gw.PACKAGE_RULE
 			aclRule, err = impl.createAclRule(dto.AclType, pack.Id, az)
 			if err != nil {
 				return
 			}
 			aclRule.Region = gw.PACKAGE_RULE
+			err = (*impl.ruleBiz).CreateRule(diceInfo, authRule, helper)
+			if err != nil {
+				return
+			}
 			err = (*impl.ruleBiz).CreateRule(diceInfo, aclRule, helper)
 			if err != nil {
 				return
 			}
+
+		case mseCommon.Mse_Provider_Name:
+			// create auth, acl rule
+			authRule, err = impl.createAuthRule(dto.AuthType, pack)
+			if err != nil {
+				return
+			}
+			authRule.Region = gw.PACKAGE_RULE
+			err = (*impl.ruleBiz).CreateRule(diceInfo, authRule, helper)
+			if err != nil {
+				return
+			}
+
 		default:
 			err = errors.Errorf("unknown gateway provider %s", gatewayProvider)
 			return
 		}
-
 		// update zone kong polices
 		err = (*impl.ruleBiz).SetPackageKongPolicies(pack, helper)
 		if err != nil {
@@ -1731,25 +1766,33 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 			Env:       pack.DiceEnv,
 			Az:        pack.DiceClusterName,
 		}
-		if gatewayProvider == "" {
+		if gatewayProvider == mseCommon.Mse_Provider_Name {
 			// mse 网关，暂不创建 acl rule
+			authRule, err = impl.createApiAuthRule(dao.PackageId, dao.Id, false)
+			if err != nil {
+				goto failed
+			}
+			err = (*impl.ruleBiz).CreateRule(diceInfo, authRule, session)
+			if err != nil {
+				goto failed
+			}
+		} else {
 			aclRule, err = impl.createApiAclRule(gw.ACL_OFF, dao.PackageId, dao.Id, pack.DiceClusterName)
 			if err != nil {
 				goto failed
 			}
-
+			authRule, err = impl.createApiAuthRule(dao.PackageId, dao.Id, false)
+			if err != nil {
+				goto failed
+			}
 			err = (*impl.ruleBiz).CreateRule(diceInfo, aclRule, session)
 			if err != nil {
 				goto failed
 			}
-		}
-		authRule, err = impl.createApiAuthRule(dao.PackageId, dao.Id, false)
-		if err != nil {
-			goto failed
-		}
-		err = (*impl.ruleBiz).CreateRule(diceInfo, authRule, session)
-		if err != nil {
-			goto failed
+			err = (*impl.ruleBiz).CreateRule(diceInfo, authRule, session)
+			if err != nil {
+				goto failed
+			}
 		}
 		needUpdateDomainPolicy = true
 	}
@@ -2629,7 +2672,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		config["whitelist"] = wlConsumers
 		for _, rule := range aclRules {
 			rule.Config = config
-			_, err = (*impl.ruleBiz).CreateOrUpdatePlugin(gatewayAdapter, &rule.OpenapiRule, nil)
+			_, err = (*impl.ruleBiz).CreateOrUpdatePlugin(gatewayProvider, gatewayAdapter, &rule.OpenapiRule, nil)
 			if err != nil {
 				return
 			}

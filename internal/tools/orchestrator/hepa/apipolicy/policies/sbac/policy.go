@@ -73,6 +73,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		logrus.Infof("use MSE Adapter, no need set sbac policy")
 		return res, nil
 	}
+
 	kongVersion, err := adapter.GetVersion()
 	if err != nil {
 		return res, errors.Wrap(err, "failed to retrieve Kong version")
@@ -93,7 +94,6 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if err != nil {
 		return res, err
 	}
-
 	if !policyDto.Switch && !forValidate {
 		if exist != nil {
 			err = adapter.RemovePlugin(exist.PluginId)
@@ -125,16 +125,17 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		l.WithError(err).Warnf("sbac: routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
 		return res, nil
 	}
-
 	if route == nil {
 		l.WithError(err).Warnf("sbac: not found routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
 		return res, nil
 	}
 
-	logrus.Infof("set sbac policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
-	req.RouteId = route.RouteId
-	req.Route = &providerDto.KongObj{
-		Id: route.RouteId,
+	if route != nil {
+		logrus.Infof("set sbac policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
+		req.RouteId = route.RouteId
+		req.Route = &providerDto.KongObj{
+			Id: route.RouteId,
+		}
 	}
 
 	if exist != nil {

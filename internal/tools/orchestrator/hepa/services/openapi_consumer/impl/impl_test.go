@@ -54,8 +54,6 @@ func TestGatewayOpenapiConsumerServiceImpl_createMseGatewayCredential(t *testing
 	consumerDb, _ := service.NewGatewayConsumerServiceImpl()
 	credentialDb, _ := service.NewGatewayCredentialServiceImpl()
 	redirecturl := []string{"/test01", "test02"}
-	keepToken := true
-	clockSkewSeconds := 30
 
 	tests := []struct {
 		name    string
@@ -74,13 +72,9 @@ func TestGatewayOpenapiConsumerServiceImpl_createMseGatewayCredential(t *testing
 					ConsumerId: "b13878b8-9686-4a1c-a897-3bd5e34785ef",
 					PluginName: "key-auth",
 					Config: &providerDto.CredentialDto{
-						ConsumerId:       "b13878b8-9686-4a1c-a897-3bd5e34785ef",
-						RedirectUrl:      redirecturl,
-						RedirectUrls:     []string{"/a", "/b"},
-						FromParams:       []string{"A", "B"},
-						FromCookies:      []string{"C", "D"},
-						KeepToken:        &keepToken,
-						ClockSkewSeconds: &clockSkewSeconds,
+						ConsumerId:   "b13878b8-9686-4a1c-a897-3bd5e34785ef",
+						RedirectUrl:  redirecturl,
+						RedirectUrls: []string{"/a", "/b"},
 					},
 				},
 				config: &providerDto.CredentialDto{

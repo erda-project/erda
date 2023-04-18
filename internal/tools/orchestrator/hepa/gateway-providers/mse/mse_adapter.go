@@ -46,6 +46,8 @@ type MseAdapterImpl struct {
 	GatewayUniqueID string
 	// Aliyun Mse Gateway EndPoint ("mse.cn-hangzhou.aliyuncs.com")
 	GatewayEndpoint string
+	// 用于映射不同集群的插件列表
+	ClusterName string
 }
 
 func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
@@ -62,6 +64,7 @@ func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
 		),
 		ProviderName:    common.Mse_Provider_Name,
 		GatewayEndpoint: common.MseDefaultServerEndpoint,
+		ClusterName:     az,
 	}
 
 	configmap, err := adapter.Bdl.QueryClusterInfo(az)
@@ -103,6 +106,20 @@ func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
 		adapter.GatewayEndpoint = mseGatewayEndpoint
 	}
 
+	// 避免动态添加自定义插件之后无法感知，因此每次 adapter 初始化都刷新一遍对应集群的插件 ID 列表
+	if _, ok = common.MapClusterNameToMSEPluginNameToPluginID[az]; !ok {
+		common.MapClusterNameToMSEPluginNameToPluginID[az] = make(map[string]*int64)
+	}
+	plugins, err := adapter.GetMSEPluginsByAPI(nil, nil, nil)
+	if err != nil {
+		log.Errorf("get mse plugin list for cluster %s failed: %v", az, err)
+		return nil, errors.Errorf("ALIYUN_MSE_GATEWAY_ID not set in cluster %s  configmap", az)
+	}
+	for _, plugin := range plugins {
+		common.MapClusterNameToMSEPluginNameToPluginID[az][*plugin.Name] = plugin.Id
+		log.Debugf("cluster %s MSE Gateay Plugin %s ID=%d ", az, *plugin.Name, *plugin.Id)
+	}
+
 	return adapter, nil
 }
 
@@ -130,7 +147,7 @@ func (impl *MseAdapterImpl) CheckPluginEnabled(pluginName string) (bool, error) 
 		return false, errors.Errorf("plugin name not set")
 	}
 
-	id, ok := common.MSEPluginNameToID[pluginName]
+	id, ok := common.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName][pluginName]
 	if !ok {
 		log.Debugf("plugin %s not support by MSE Gateway now", pluginName)
 		return true, nil
@@ -321,7 +338,7 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*Plugin
 	// *   2: routes
 	var configLevel int32 = 0 // 目前(2023.02) 只支持设置为 0
 
-	pluginId, ok := common.MSEPluginNameToID[req.Name]
+	pluginId, ok := common.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName][req.Name]
 	if !ok {
 		return nil, errors.Errorf("plugin %s not support in MSE Gateway", req.Name)
 	}
@@ -332,6 +349,49 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*Plugin
 
 	// map[configLevel]GetPluginConfigResponseBodyDataGatewayConfigList
 	confList := make(map[string][]mseclient.GetPluginConfigResponseBodyDataGatewayConfigList)
+	if pluginConfig != nil && len(pluginConfig.GatewayConfigList) > 0 {
+		// Step 1: 如果插未启用，则先启用插件
+		for _, cf := range pluginConfig.GatewayConfigList {
+			if cf.ConfigLevel == nil {
+				cfLevel := mseplugins.MsePluginConfigLevelGlobalNumber
+				cf.ConfigLevel = &cfLevel
+			}
+			if cf.Enable == nil {
+				enablePlugin := false
+				cf.Enable = &enablePlugin
+			}
+			if *cf.ConfigLevel == mseplugins.MsePluginConfigLevelGlobalNumber && *cf.Enable == false {
+				// Step 1: 如果插未启用，则先启用插件
+				// 启用 插件，对应才会有插件配置 ID，否则因为无插件配置 ID 会导致后续无法更新插件
+				defaultConfig := ""
+				switch req.Name {
+				case common.MsePluginKeyAuth:
+					defaultConfig = mseplugins.DEFAULT_MSE_KEY_AUTH_CONFIG
+				case common.MsePluginHmacAuth:
+					defaultConfig = mseplugins.DEFAULT_MSE_HMAC_AUTH_CONFIG
+				case common.MsePluginParaSignAuth:
+					defaultConfig = mseplugins.DEFAULT_MSE_PARA_SIGN_AUTH_CONFIG
+				}
+				resp, err := impl.UpdateMSEPluginConfigByIDByAPI(pluginId, nil, &defaultConfig, &configLevel, &enabled)
+				if err != nil {
+					log.Errorf("failed to enable plugin %s for CreateOrUpdatePluginById, error: %v", req.Name, err)
+					return nil, errors.Errorf("failed to enable plugin %s for CreateOrUpdatePluginById, error: %v", req.Name, err)
+				}
+				if resp.Data != nil {
+					log.Debugf("plugin %s ConfigID=%d", req.Name, *resp.Data)
+				}
+
+				// Step 2: 重新获取插件配置
+				pluginConfig, err = impl.GetMSEPluginConfigByIDByAPI(pluginId)
+				if err != nil {
+					return nil, errors.Errorf("failed to get plugin %s config for CreateOrUpdatePluginById, error: %v", req.Name, err)
+				}
+				break
+			}
+		}
+	} else {
+		return nil, errors.Errorf("failed to get plugin %s config for CreateOrUpdatePluginById: no config found for this plugin", req.Name)
+	}
 
 	if pluginConfig != nil && len(pluginConfig.GatewayConfigList) > 0 {
 		for _, cf := range pluginConfig.GatewayConfigList {
@@ -394,7 +454,7 @@ func (impl *MseAdapterImpl) GetPlugin(req *PluginReqDto) (*PluginRespDto, error)
 		enabled = *req.Enabled
 	}
 
-	pluginID, ok := common.MSEPluginNameToID[req.Name]
+	pluginID, ok := common.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName][req.Name]
 	if !ok {
 		log.Debugf("plugin %s not support in MSE Gateway", req.Name)
 		return &PluginRespDto{
@@ -525,7 +585,7 @@ func (impl *MseAdapterImpl) UpdatePlugin(req *PluginReqDto) (*PluginRespDto, err
 
 	// enabled 设置网关一直启用状态
 	enabled := true
-	pluginId, ok := common.MSEPluginNameToID[req.Name]
+	pluginId, ok := common.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName][req.Name]
 	if !ok {
 		log.Debugf("plugin %s not support in MSE Gateway", req.Name)
 		return &PluginRespDto{
@@ -624,7 +684,7 @@ func (impl *MseAdapterImpl) CreateCredential(req *CredentialReqDto) (*Credential
 func (impl *MseAdapterImpl) DeleteCredential(consumerId, pluginName, credentialStr string) error {
 	log.Debugf("DeleteCredential is not implemented in Mse gateway provider.")
 
-	_, ok := common.MSEPluginNameToID[pluginName]
+	_, ok := common.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName][pluginName]
 	if !ok {
 		log.Debugf("plugin %s not support in MSE Gateway", pluginName)
 		return nil

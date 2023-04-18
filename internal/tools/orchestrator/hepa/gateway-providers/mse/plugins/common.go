@@ -32,6 +32,13 @@ const (
 	DEFAULT_MSE_CONSUMER_CREDENTIAL = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
 	DEFAULT_MSE_CONSUMER_KEY        = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
 	DEFAULT_MSE_CONSUMER_SECRET     = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+
+	DEFAULT_MSE_KEY_AUTH_CONFIG       = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\nkeys:\n  - appKey\n  - x-app-key\nin_query: true\nin_header: true\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
+	DEFAULT_MSE_HMAC_AUTH_CONFIG      = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
+	DEFAULT_MSE_PARA_SIGN_AUTH_CONFIG = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  request_body_size_limit: 10485760\n  date_offset: 600\n  consumers:\n  - name: consumer-erda-default\n    key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n    secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5"
+
+	MSE_PLUGIN_REQUEST_BODY_SIZE_LIMIT = 33554432
+	MSE_PLUGIN_REQUEST_DATE_OFFSET     = 300
 )
 
 const (
@@ -44,6 +51,16 @@ const (
 	MsePluginConfigLevelDomainNumber int32 = 1
 	MsePluginConfigLevelRouteNumber  int32 = 2
 )
+
+const (
+	REQUEST_BODY_SIZE_LIMIT int = 32 * 1024 * 1024 //32MB
+)
+
+type KeySecretConsumer struct {
+	Name   string
+	Key    string
+	Secret string
+}
 
 func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPluginConfigResponseBodyDataGatewayConfigList) (string, int64, error) {
 	var configId int64 = -1
@@ -77,7 +94,7 @@ func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPl
 			switch req.Name {
 			case common.MsePluginKeyAuth:
 				consumers[idx].Credential = DEFAULT_MSE_CONSUMER_CREDENTIAL
-			case common.MsePluginHmacAuth:
+			case common.MsePluginHmacAuth, common.MsePluginParaSignAuth:
 				consumers[idx].Key = DEFAULT_MSE_CONSUMER_KEY
 				consumers[idx].Secret = DEFAULT_MSE_CONSUMER_SECRET
 			}
@@ -91,9 +108,6 @@ func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPl
 
 	updateConfig := mseDto.MsePluginConfig{
 		Consumers: consumers,
-		Keys:      []string{"appKey", "x-app-key"},
-		InQuery:   true,
-		InHeader:  true,
 		Rules: []mseDto.Rules{
 			{
 				MatchRoute: matchRoutes,
@@ -105,10 +119,6 @@ func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPl
 	var err error = nil
 	switch req.Name {
 	case common.MsePluginKeyAuth:
-		updateConfig.Keys = []string{"appKey", "x-app-key"}
-		updateConfig.InQuery = true
-		updateConfig.InHeader = true
-
 		pluginConfig, err = mergeKeyAuthConfig(pluginConfig, updateConfig)
 		if err != nil {
 			return "", -1, err
@@ -119,10 +129,25 @@ func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPl
 		if err != nil {
 			return "", -1, err
 		}
+	case common.MsePluginParaSignAuth:
+		updateConfig = mseDto.MsePluginConfig{
+			Rules: []mseDto.Rules{
+				{
+					MatchRoute:           matchRoutes,
+					Consumers:            consumers,
+					RequestBodySizeLimit: MSE_PLUGIN_REQUEST_BODY_SIZE_LIMIT,
+					//DateOffset:           MSE_PLUGIN_REQUEST_DATE_OFFSET,
+				},
+			},
+		}
+		pluginConfig, err = mergeParaSignAuthConfig(pluginConfig, updateConfig)
+		if err != nil {
+			return "", -1, err
+		}
 	}
 
 	configBytes, _ := yaml.Marshal(&pluginConfig)
-	logrus.Infof("merge KeyAuth config result:\n************************************************************\n%s\n********************************************************", string(configBytes))
+	logrus.Infof("merge %s config result:\n************************************************************\n%s\n********************************************************", req.Name, string(configBytes))
 
 	return string(configBytes), configId, nil
 }
@@ -152,7 +177,7 @@ func UpdatePluginConfigWhenDeleteConsumer(pluginName, consumerName string, confi
 		if err != nil {
 			return nil, err
 		}
-		mapCredentialToConsumerName, mapKeyToConsumerName, mapKeyToConsumerSecret, mapConsumerNameToRoutes := updateWithDeleteConsumer(pluginName, consumerName, msePluginConfig.Consumers, msePluginConfig.Rules)
+		mapCredentialToConsumerName, mapKeyToConsumerName, mapKeyToConsumerSecret, mapConsumerNameToRoutes, customPluginRules := updateWithDeleteConsumer(pluginName, consumerName, msePluginConfig.Consumers, msePluginConfig.Rules)
 
 		switch pluginName {
 		case common.MsePluginKeyAuth:
@@ -189,6 +214,8 @@ func UpdatePluginConfigWhenDeleteConsumer(pluginName, consumerName string, confi
 				})
 			}
 
+		case common.MsePluginParaSignAuth:
+			msePluginConfig.Rules = customPluginRules
 		case common.MsePluginCustomResponse:
 		case common.MsePluginRequestBlock:
 		case common.MsePluginBotDetect:
@@ -203,9 +230,8 @@ func UpdatePluginConfigWhenDeleteConsumer(pluginName, consumerName string, confi
 		}
 
 		currentConf = string(configBytes)
-		logrus.Debugf("Yaml file content: \n%s\n", string(configBytes))
+		logrus.Debugf("plugin %s config Yaml file content: \n%s\n", pluginName, string(configBytes))
 		pluginConfig[index].Config = &currentConf
-
 	}
 
 	return pluginConfig, nil
@@ -236,7 +262,7 @@ func UpdatePluginConfigWhenDeleteCredential(pluginName string, credential provid
 		if err != nil {
 			return nil, err
 		}
-		mapCredentialToConsumerName, mapKeyToConsumerName, mapKeyToConsumerSecret := updateWithDeleteCredential(pluginName, credential, msePluginConfig.Consumers)
+		mapCredentialToConsumerName, mapKeyToConsumerName, mapKeyToConsumerSecret, customPluginConfig := updateWithDeleteCredential(pluginName, credential, msePluginConfig)
 
 		switch pluginName {
 		case common.MsePluginKeyAuth:
@@ -257,6 +283,9 @@ func UpdatePluginConfigWhenDeleteCredential(pluginName string, credential provid
 					Secret: mapKeyToConsumerSecret[key],
 				})
 			}
+
+		case common.MsePluginParaSignAuth:
+			msePluginConfig = customPluginConfig
 		case common.MsePluginCustomResponse:
 		case common.MsePluginRequestBlock:
 		case common.MsePluginBotDetect:
@@ -279,7 +308,7 @@ func UpdatePluginConfigWhenDeleteCredential(pluginName string, credential provid
 	return pluginConfig, nil
 }
 
-func updateWithDeleteConsumer(pluginName, consumerName string, consumers []mseDto.Consumers, rules []mseDto.Rules) (map[string]string, map[string]string, map[string]string, map[string][]string) {
+func updateWithDeleteConsumer(pluginName, consumerName string, consumers []mseDto.Consumers, rules []mseDto.Rules) (map[string]string, map[string]string, map[string]string, map[string][]string, []mseDto.Rules) {
 	mapCredentialToConsumerName := make(map[string]string)
 	mapKeyToConsumerName := make(map[string]string)
 	mapKeyToConsumerSecret := make(map[string]string)
@@ -312,20 +341,38 @@ func updateWithDeleteConsumer(pluginName, consumerName string, consumers []mseDt
 
 	switch pluginName {
 	case common.MsePluginKeyAuth:
-		return mapCredentialToConsumerName, nil, nil, mapConsumerNameToRoutes
+		return mapCredentialToConsumerName, nil, nil, mapConsumerNameToRoutes, nil
 	case common.MsePluginHmacAuth:
-		return nil, mapKeyToConsumerName, mapKeyToConsumerSecret, mapConsumerNameToRoutes
+		return nil, mapKeyToConsumerName, mapKeyToConsumerSecret, mapConsumerNameToRoutes, nil
+	case common.MsePluginParaSignAuth:
+		paraSignConfigRules := make([]mseDto.Rules, 0)
+		for _, rule := range rules {
+			ruleNewConsumers := make([]mseDto.Consumers, 0)
+			for _, consumer := range rule.Consumers {
+				if consumer.Name == consumerName {
+					continue
+				}
+				ruleNewConsumers = append(ruleNewConsumers, consumer)
+			}
+			rule.Consumers = ruleNewConsumers
+			if len(ruleNewConsumers) > 0 {
+				rule.Consumers = ruleNewConsumers
+				paraSignConfigRules = append(paraSignConfigRules, rule)
+			}
+		}
+		return nil, nil, nil, nil, paraSignConfigRules
 	default:
-		return nil, nil, nil, nil
+		return nil, nil, nil, nil, nil
 	}
 }
 
-func updateWithDeleteCredential(pluginName string, credential providerDto.CredentialDto, consumers []mseDto.Consumers) (map[string]string, map[string]string, map[string]string) {
+func updateWithDeleteCredential(pluginName string, credential providerDto.CredentialDto, msePluginConfig mseDto.MsePluginConfig) (map[string]string, map[string]string, map[string]string, mseDto.MsePluginConfig) {
 	mapCredentialToConsumerName := make(map[string]string)
 	mapKeyToConsumerName := make(map[string]string)
 	mapKeyToConsumerSecret := make(map[string]string)
+	var customPluginConfig mseDto.MsePluginConfig
 
-	for _, consumer := range consumers {
+	for _, consumer := range msePluginConfig.Consumers {
 		if consumer.Credential == credential.Key {
 			continue
 		}
@@ -335,10 +382,28 @@ func updateWithDeleteCredential(pluginName string, credential providerDto.Creden
 		case common.MsePluginHmacAuth:
 			mapKeyToConsumerName[consumer.Key] = consumer.Name
 			mapKeyToConsumerSecret[consumer.Key] = consumer.Secret
+		case common.MsePluginParaSignAuth:
+			mapKeyToConsumerName[consumer.Key] = consumer.Name
+			mapKeyToConsumerSecret[consumer.Key] = consumer.Secret
 		}
 	}
 
-	return mapCredentialToConsumerName, mapKeyToConsumerName, mapKeyToConsumerSecret
+	if pluginName == common.MsePluginParaSignAuth {
+		for _, rule := range msePluginConfig.Rules {
+			consumers := make([]mseDto.Consumers, 0)
+			for _, consumer := range rule.Consumers {
+				if consumer.Credential != credential.Key {
+					consumers = append(consumers, consumer)
+				}
+			}
+			if len(consumers) > 0 {
+				rule.Consumers = consumers
+				customPluginConfig.Rules = append(customPluginConfig.Rules, rule)
+			}
+		}
+	}
+
+	return mapCredentialToConsumerName, mapKeyToConsumerName, mapKeyToConsumerSecret, customPluginConfig
 }
 
 // isInList 判断 ele 是否在 list 中

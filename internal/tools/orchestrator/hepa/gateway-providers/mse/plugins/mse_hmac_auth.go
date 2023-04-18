@@ -22,18 +22,18 @@ import (
 	mseDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
 )
 
-func mergeHmacAuthConfig(CurrentKeyAutoConfig, updateKeyAutoConfig mseDto.MsePluginConfig) (mseDto.MsePluginConfig, error) {
-	configBytes, _ := yaml.Marshal(&CurrentKeyAutoConfig)
+func mergeHmacAuthConfig(CurrentHmacAuthConfig, updateHmacAuthConfig mseDto.MsePluginConfig) (mseDto.MsePluginConfig, error) {
+	configBytes, _ := yaml.Marshal(&CurrentHmacAuthConfig)
 	logrus.Debugf("Current HmacAuth config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
-	configBytes, _ = yaml.Marshal(&updateKeyAutoConfig)
+	configBytes, _ = yaml.Marshal(&updateHmacAuthConfig)
 	logrus.Debugf("Update HmacAuth config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
 
 	// 当前配置项转换
 	// Hmac-auth 的 key 是唯一性的
-	mapCurrentHmacAuthKeyToConsumer, mapCurrentHmacAuthRouteToConsumers := getConsumersAndRoutesMaps(CurrentKeyAutoConfig.Consumers, CurrentKeyAutoConfig.Rules)
+	mapCurrentHmacAuthKeyToConsumer, mapCurrentHmacAuthRouteToConsumers := getConsumersAndRoutesMaps(CurrentHmacAuthConfig.Consumers, CurrentHmacAuthConfig.Rules)
 
 	// 更新配置项转换
-	mapUpdateHmacAuthKeyToConsumer, mapUpdateHmacAuthRouteToConsumers := getConsumersAndRoutesMaps(updateKeyAutoConfig.Consumers, updateKeyAutoConfig.Rules)
+	mapUpdateHmacAuthKeyToConsumer, mapUpdateHmacAuthRouteToConsumers := getConsumersAndRoutesMaps(updateHmacAuthConfig.Consumers, updateHmacAuthConfig.Rules)
 
 	// 1. 更新 consumers (加入)
 	for key, hmacAuthConsumer := range mapUpdateHmacAuthKeyToConsumer {
@@ -42,7 +42,7 @@ func mergeHmacAuthConfig(CurrentKeyAutoConfig, updateKeyAutoConfig mseDto.MsePlu
 			mapCurrentHmacAuthKeyToConsumer[key] = hmacAuthConsumer
 		} else {
 			if currentHmacAuthConsumer.Name != hmacAuthConsumer.Name {
-				return CurrentKeyAutoConfig, errors.Errorf("existed consumer %s has the same key with new consumer %s\n", currentHmacAuthConsumer.Name, hmacAuthConsumer.Name)
+				return CurrentHmacAuthConfig, errors.Errorf("existed consumer %s has the same key with new consumer %s\n", currentHmacAuthConsumer.Name, hmacAuthConsumer.Name)
 			}
 		}
 	}
@@ -106,7 +106,7 @@ func mergeHmacAuthConfig(CurrentKeyAutoConfig, updateKeyAutoConfig mseDto.MsePlu
 
 	// 如果 mapCurrentHmacAuthKeyToConsumer  中不包含默认的 consumer（默认的路由用于确保插件配置不会成为 全局配置），则添加
 	if _, ok := mapCurrentHmacAuthKeyToConsumer[DEFAULT_MSE_CONSUMER_CREDENTIAL]; !ok {
-		mapCurrentHmacAuthKeyToConsumer[DEFAULT_MSE_CONSUMER_CREDENTIAL] = HmacAuthConsumer{
+		mapCurrentHmacAuthKeyToConsumer[DEFAULT_MSE_CONSUMER_CREDENTIAL] = KeySecretConsumer{
 			Name:   DEFAULT_MSE_CONSUMER_NAME,
 			Key:    DEFAULT_MSE_CONSUMER_KEY,
 			Secret: DEFAULT_MSE_CONSUMER_SECRET,
@@ -122,7 +122,7 @@ func mergeHmacAuthConfig(CurrentKeyAutoConfig, updateKeyAutoConfig mseDto.MsePlu
 		})
 	}
 
-	// 如果 mapCurrentKeyAuthRouteToConsumers 中不包含默认的路由（默认的路由用于确保插件配置不会成为 全局配置），则添加
+	// 如果 mapCurrentHmacAuthRouteToConsumers 中不包含默认的路由（默认的路由用于确保插件配置不会成为 全局配置），则添加
 	if _, ok := mapCurrentHmacAuthRouteToConsumers[DEFAULT_MSE_ROUTE_NAME]; !ok {
 		mapCurrentHmacAuthRouteToConsumers[DEFAULT_MSE_ROUTE_NAME] = []string{DEFAULT_MSE_CONSUMER_NAME}
 	}
@@ -147,18 +147,12 @@ func mergeHmacAuthConfig(CurrentKeyAutoConfig, updateKeyAutoConfig mseDto.MsePlu
 	return result, nil
 }
 
-type HmacAuthConsumer struct {
-	Name   string
-	Key    string
-	Secret string
-}
-
-func getConsumersAndRoutesMaps(consumers []mseDto.Consumers, rules []mseDto.Rules) (map[string]HmacAuthConsumer, map[string][]string) {
-	mapKeyToConsumer := make(map[string]HmacAuthConsumer)
+func getConsumersAndRoutesMaps(consumers []mseDto.Consumers, rules []mseDto.Rules) (map[string]KeySecretConsumer, map[string][]string) {
+	mapKeyToConsumer := make(map[string]KeySecretConsumer)
 	mapRouteToConsumers := make(map[string][]string)
 
 	for _, cs := range consumers {
-		mapKeyToConsumer[cs.Key] = HmacAuthConsumer{
+		mapKeyToConsumer[cs.Key] = KeySecretConsumer{
 			Name:   cs.Name,
 			Key:    cs.Key,
 			Secret: cs.Secret,

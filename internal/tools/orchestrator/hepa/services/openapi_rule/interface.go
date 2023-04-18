@@ -46,5 +46,5 @@ type GatewayOpenapiRuleService interface {
 	SetPackageKongPolicies(*orm.GatewayPackage, *service.SessionHelper) error
 	SetPackageApiKongPolicies(packageApi *orm.GatewayPackageApi, useKong bool, session *service.SessionHelper) error
 	GetGatewayProvider(az string) (string, error)
-	CreateOrUpdatePlugin(adapter gateway_providers.GatewayAdapter, dto *dto.OpenapiRule, helper *service.SessionHelper) (string, error)
+	CreateOrUpdatePlugin(gatewayProvider string, adapter gateway_providers.GatewayAdapter, dto *dto.OpenapiRule, helper *service.SessionHelper) (string, error)
 }

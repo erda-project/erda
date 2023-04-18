@@ -136,11 +136,11 @@ func TestCreatePluginConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, got1, err := CreatePluginConfig(tt.args.req, tt.args.confList)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateKeyAuthConfig() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CreatePluginConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got1 != tt.want1 {
-				t.Errorf("CreateKeyAuthConfig() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("CreatePluginConfig() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
