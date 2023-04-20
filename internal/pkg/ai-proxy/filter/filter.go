@@ -37,11 +37,11 @@ type Filter interface {
 }
 
 type RequestFilter interface {
-	OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) Signal
+	OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (Signal, error)
 }
 
 type ResponseFilter interface {
-	OnHttpResponse(ctx context.Context, w http.ResponseWriter, r *http.Request) Signal
+	OnHttpResponse(ctx context.Context, response *http.Response, r *http.Request) (Signal, error)
 }
 
 type Config struct {
@@ -52,10 +52,11 @@ type Config struct {
 type Signal int
 
 // RouteCtxKey 用以从 context.Context 中获取 route.Route 以获取 route.Route 的更多配置信息
-type RouteCtxKey struct{}
-
-type ProviderCtxKey struct{}
-
+type (
+	RouteCtxKey     struct{}
+	ProvidersCtxKey struct{}
+	FiltersCtxKey   struct{}
+)
 type InstantiateFunc func(config json.RawMessage) (Filter, error)
 
 func Register(name string, inst InstantiateFunc) {

@@ -56,14 +56,13 @@ func (fil *ProtocolTranslator) OnHttpRequest(ctx context.Context, w http.Respons
 	}
 	rout, ok := ctx.Value(filter.RouteCtxKey{}).(*route.Route)
 	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": "failed to retrieve route info",
 		})
 		return filter.Intercept, nil
 	}
-	if strutil.Equal(rout.Protocol, fil.Config.Protocol) {
+	if strutil.EqualFold(rout.Protocol, fil.Config.Protocol) {
 		return filter.Continue, nil
 	}
 	fil.responseNotImplementTranslator(w, rout.Protocol, fil.Config.Protocol)
@@ -76,7 +75,6 @@ func (fil *ProtocolTranslator) OnHttpResponse(ctx context.Context, response *htt
 }
 
 func (fil *ProtocolTranslator) responseNotImplementTranslator(w http.ResponseWriter, from, to any) {
-	w.Header().Set("server", "ai-proxy/erda")
 	w.WriteHeader(http.StatusNotImplemented)
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"error": "not implement translator",

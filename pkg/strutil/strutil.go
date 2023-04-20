@@ -363,6 +363,10 @@ func Equal[T ~string, S ~string](s S, t T, ignorecase ...bool) bool {
 	return strings.EqualFold(string(s), string(t))
 }
 
+func EqualFold[T ~string, S ~string](s1 T, s2 S) bool {
+	return strings.EqualFold(string(s1), string(s2))
+}
+
 // Atoi64 parse string to int64
 //
 // Atoi64("6") => (6, nil)
