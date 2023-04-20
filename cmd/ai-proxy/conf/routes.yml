@@ -1,0 +1,50 @@
+routes:
+  - path: /v1/chat/completions
+    protocol: chatgpt/v1
+    methods:
+      "GET": { }
+    filters:
+      - name: audit
+      - name: acl
+      - name: hmac-auth
+      - name: rate-limit
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: chatgpt/v1
+          apiName: completions
+          host: ""
+          path: ""
+          methodsMap:
+            "GET": "GET"
+  - path: /v1/models
+    protocol: chatgpt/v1
+    methods:
+      "GET": { }
+    filters:
+      - name: audit
+      - name: acl
+      - name: hmac-auth
+      - name: rate-limit
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: chatgpt/v1
+          apiName: completions
+          host: ""
+          path: ""
+  - path: /v1/models/{model}
+    protocol: chatgpt/v1
+    filters:
+      - name: audit
+      - name: acl
+      - name: hmac-auth
+      - name: rate-limit
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: chatgpt/v1
+          apiName: completions
+          host: ""
+          path: ""
+

@@ -30,10 +30,10 @@ const (
 type Routes []*Route
 
 type Route struct {
-	Path     string          `json:"path" yaml:"path"`
-	Protocol Protocol        `json:"protocol" yaml:"protocol"`
-	Methods  map[string]any  `json:"methods" yaml:"methods"`
-	Filters  []filter.Filter `json:"filters" yaml:"filters"`
+	Path     string           `json:"path" yaml:"path"`
+	Protocol Protocol         `json:"protocol" yaml:"protocol"`
+	Methods  map[string]any   `json:"methods" yaml:"methods"`
+	Filters  []*filter.Config `json:"filters" yaml:"filters"`
 }
 
 func (r *Route) Match(path, method string) bool {
