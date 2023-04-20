@@ -71,6 +71,6 @@ func Deregister(name string) {
 }
 
 func GetFilterFactory(name string) (InstantiateFunc, bool) {
-	f, ok := instFuncs["name"]
+	f, ok := instFuncs[name]
 	return f, ok
 }

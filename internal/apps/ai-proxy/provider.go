@@ -88,6 +88,7 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			p.L.Errorf("failed to GetFilterFactory, filter name: %s", name)
 			p.responseNoSuchFilter(w, name)
+			return
 		}
 		f, err := factory(config)
 		if err != nil {
