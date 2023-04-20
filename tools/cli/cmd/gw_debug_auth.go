@@ -15,8 +15,10 @@
 package cmd
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -82,13 +84,13 @@ var GwDebugAuth = command.Command{
 }
 
 func RunGwDebugAuth(ctx *command.Context, auth, ak, sk, contentType, data, method, uri string, timestamp bool) error {
-	ctx.Info("auth: %s, ak: %s, sk: %s, content-type: %s, data: %s, method: %s, uri: %s, with timestampe: %v",
+	ctx.Info("auth: %s, ak: %s, sk: %s, content-type: %s, data: %s, method: %s, uri: %s, with timestamp: %v",
 		auth, ak, sk, contentType, data, method, uri, timestamp)
 	if ak == "" {
-		return errors.New("invalid ak")
+		return errors.New("invalid ak (AccessKeyId)")
 	}
 	if sk == "" {
-		return errors.New("invalid sk")
+		return errors.New("invalid sk (AccessKeySecret)")
 	}
 
 	u, err := url.Parse(uri)
@@ -122,7 +124,10 @@ func runGwDebugSignAuth(ctx *command.Context, ak, sk, contentType, data, method 
 }
 
 func runGwDebugHmacAuth(ctx *command.Context, ak, sk, contentType, data, method string, uri *url.URL, timestamp bool) error {
-	return errors.New("hmac not implement yet")
+	if len(data) == 0 {
+		return hmacAuthWithoutData(ctx, ak, sk, contentType, method, uri)
+	}
+	return hmacAuthWithData(ctx, ak, sk, contentType, data, method, uri)
 }
 
 func signAuthOnUrl(ctx *command.Context, ak, sk, method string, u *url.URL, timestamp bool) error {
@@ -201,6 +206,73 @@ func signAuthOnJson(ctx *command.Context, ak, sk, contentType, data, method stri
 	return nil
 }
 
+func hmacAuthWithData(ctx *command.Context, ak, sk, contentType string, data, method string, u *url.URL) error {
+	logrus.Infof("hamc-auth with raw data: %s", data)
+	digest, err := HmacGenDigest([]byte(data))
+	if err != nil {
+		return err
+	}
+	logrus.Infof("digest: %s", digest)
+	date, err := HmacGenDate()
+	if err != nil {
+		return err
+	}
+	logrus.Infof("date: %s", date)
+	signingString := HmacGenSigningString(date, method, u.RequestURI(), digest)
+	logrus.Infof("signing string: %s", signingString)
+	signature, err := HmacGenSignature(signingString, sk)
+	if err != nil {
+		return err
+	}
+	logrus.Infof("signature: %s", signature)
+	authorization := HmacGenAuthorization(ak, signature, digest)
+	logrus.Infof("authorization: %s", authorization)
+	logrus.Infoln("output curl command")
+	fmt.Printf(`curl -v -X %s '%s' \
+	-H 'Content-Type: %s' \
+	-H 'date: %s' \
+	-H 'digest: %s' \
+	-H 'Authorization: %s' \
+	--data '%s'
+`, strings.ToUpper(method), u.String(),
+		contentType,
+		date,
+		digest,
+		authorization,
+		data,
+	)
+	return nil
+}
+
+func hmacAuthWithoutData(ctx *command.Context, ak, sk, contentType, method string, u *url.URL) error {
+	logrus.Infoln("hmac-auth without data")
+	date, err := HmacGenDate()
+	if err != nil {
+		return err
+	}
+	logrus.Infof("date: %s", date)
+	signingString := HmacGenSigningString(date, method, u.RequestURI(), "")
+	logrus.Infof("signing string: %s", signingString)
+	signature, err := HmacGenSignature(signingString, sk)
+	if err != nil {
+		return err
+	}
+	logrus.Infof("signature: %s", signature)
+	authorization := HmacGenAuthorization(ak, signature, "")
+	logrus.Infof("authorization: %s", authorization)
+	logrus.Infoln("output curl command")
+	fmt.Printf(`curl -v -X %s '%s' \
+	-H 'Content-Type: %s' \
+	-H 'date: %s' \
+	-H 'Authorization: %s'
+`, strings.ToUpper(method), u.String(),
+		contentType,
+		date,
+		authorization,
+	)
+	return nil
+}
+
 func Sha512(s string) string {
 	h := sha512.New()
 	h.Write([]byte(s))
@@ -221,4 +293,48 @@ func GenSHA256HashCode(stringMessage string) string {
 	hashCode := hex.EncodeToString(bytes)
 	//返回哈希值
 	return hashCode
+}
+
+// HmacGenDigest implements the digest algorithm for raw bodies.
+// Note: When computing the signature, encode it from binary to string using the Base64 method.
+func HmacGenDigest(data []byte) (string, error) {
+	h := sha256.New()
+	if _, err := h.Write(data); err != nil {
+		return "", err
+	}
+	return "SHA-256=" + base64.StdEncoding.EncodeToString(h.Sum(nil)), nil
+}
+
+// HmacGenDate outputs the current time in the format required by the erda gateway hmac-auth policy.
+func HmacGenDate() (string, error) {
+	location, err := time.LoadLocation("Etc/GMT+0")
+	if err != nil {
+		return "", err
+	}
+	return time.Now().In(location).Format(time.RFC1123), nil
+}
+
+// HmacGenSigningString generates the string to be signed
+func HmacGenSigningString(date, method, requestLine, digest string) string {
+	if digest == "" {
+		return fmt.Sprintf("date: %s\n%s %s HTTP/1.1", date, method, requestLine)
+	}
+	return fmt.Sprintf("date: %s\n%s %s HTTP/1.1\ndigest: %s", date, method, requestLine, digest)
+}
+
+// HmacGenSignature generates a signature based on the given date, method, reqeustLine, digest and sk.
+func HmacGenSignature(signingString, sk string) (string, error) {
+	h := hmac.New(sha256.New, []byte(sk))
+	if _, err := h.Write([]byte(signingString)); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(h.Sum(nil)), nil
+}
+
+// HmacGenAuthorization constructs the value of the request header Authorization
+func HmacGenAuthorization(ak, signature, digest string) string {
+	if digest == "" {
+		return fmt.Sprintf(`Authorization: hmac appkey="%s", algorithm="hmac-sha256", headers="date request-line", signature="%s"`, ak, signature)
+	}
+	return fmt.Sprintf(`Authorization: hmac appkey="%s", algorithm="hmac-sha256", headers="date request-line digest", signature="%s"`, ak, signature)
 }
