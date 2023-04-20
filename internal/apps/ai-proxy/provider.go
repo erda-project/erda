@@ -21,7 +21,8 @@ import (
 	"os"
 	"reflect"
 
-	"gopkg.in/yaml.v3"
+	"github.com/pkg/errors"
+	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -62,12 +63,12 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.parseRoutesConfig(); err != nil {
-		return err
-	}
-	if err := p.parseProvidersConfig(); err != nil {
-		return err
+		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
 	p.L.Info("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
+	if err := p.parseProvidersConfig(); err != nil {
+		return errors.Wrap(err, "failed to parseProvidersConfig")
+	}
 	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 	p.HttpServer.Any("/", p.ServeHTTP)
 	return nil
@@ -117,14 +118,12 @@ func (p *provider) parseProvidersConfig() error {
 }
 
 func (p *provider) parseConfig(ref, key string, i interface{}) error {
-	file, err := os.Open(ref)
+	data, err := os.ReadFile(ref)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-
 	var m = make(map[string]json.RawMessage)
-	if err := yaml.NewDecoder(file).Decode(&m); err != nil {
+	if err := yaml.Unmarshal(data, &m); err != nil {
 		return err
 	}
 	data, ok := m[key]
