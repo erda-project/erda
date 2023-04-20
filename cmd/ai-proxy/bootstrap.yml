@@ -3,5 +3,5 @@ http-server:
 health:
 
 erda.app.ai-proxy:
-  routesRef: cmd/ai-proxy/conf/routes.yml
-  providerRef: cmd/ai-proxy/conf/providers.yml
+  routesRef: conf/routes.yml
+  providersRef: conf/providers.yml
