@@ -29,6 +29,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/health"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
+	reverse_proxy "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -80,7 +81,6 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.responseNoSuchRoute(w, r.URL.Path)
 		return
 	}
-	var ctx = p.ctxWith(rout, p.Config.providers)
 	var filters []filter.Filter
 	for i := 0; i < len(rout.Filters); i++ {
 		var name, config = rout.Filters[i].Name, rout.Filters[i].Config
@@ -98,13 +98,14 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		filters = append(filters, f)
 	}
+	var ctx = p.ctxWith(rout, p.Config.providers, filters)
 	for i := 0; i < len(filters); i++ {
-		if signal := filters[i].OnHttpRequest(ctx, w, r); signal != filter.Continue {
+		signal, err := filters[i].OnHttpRequest(ctx, w, r)
+		if err != nil {
+			reverse_proxy.ResponseErrorHandler(w, r, err)
 			return
 		}
-	}
-	for i := len(filters) - 1; i >= 0; i-- {
-		if signal := filters[i].OnHttpResponse(ctx, w, r); signal != filter.Continue {
+		if signal != filter.Continue {
 			return
 		}
 	}
@@ -171,8 +172,8 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 	})
 }
 
-func (p *provider) ctxWith(route *route2.Route, providers provider2.Providers) context.Context {
-	return context.WithValue(context.WithValue(context.Background(), filter.RouteCtxKey{}, route), filter.ProviderCtxKey{}, providers)
+func (p *provider) ctxWith(route *route2.Route, providers provider2.Providers, filters []filter.Filter) context.Context {
+	return context.WithValue(context.WithValue(context.WithValue(context.Background(), filter.RouteCtxKey{}, route), filter.ProvidersCtxKey{}, providers), filter.FiltersCtxKey{}, filters)
 }
 
 type config struct {

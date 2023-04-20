@@ -1,9 +1,10 @@
 providers:
   - name: chatgpt/v1
     host: api.openai.com
+    scheme: https
     description: openai 提供的 chatgpt 能力
     docSite: https://platform.openai.com/docs/api-reference
-    appKey: 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
+    appKey: ${ env.OPENAI_API_KEY }
 
     # 只有在 apis 列表中的接口才会被支持
     apis:
