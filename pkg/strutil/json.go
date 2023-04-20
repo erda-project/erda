@@ -14,9 +14,18 @@
 
 package strutil
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"sigs.k8s.io/yaml"
+)
 
 func TryGetJsonStr(v any) string {
 	data, _ := json.Marshal(v)
+	return string(data)
+}
+
+func TryGetYamlStr(v any) string {
+	data, _ := yaml.Marshal(v)
 	return string(data)
 }
