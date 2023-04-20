@@ -13,3 +13,7 @@
 // limitations under the License.
 
 package ai_proxy
+
+import (
+	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
+)

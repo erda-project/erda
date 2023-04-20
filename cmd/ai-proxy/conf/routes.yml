@@ -3,16 +3,16 @@ routes:
     protocol: chatgpt/v1
     methods:
       "GET": { }
-      "POST": {}
     filters:
-      - name: protocol-translator
-        protocol: chatgpt/v1
+      - name: audit
+      - name: acl
+      - name: hmac-auth
+      - name: rate-limit
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"
           provider: chatgpt/v1
           apiName: completions
-          scheme: ""
           host: ""
           path: ""
           methodsMap:
@@ -22,8 +22,10 @@ routes:
     methods:
       "GET": { }
     filters:
-      - name: protocol-translator
-        protocol: chatgpt/v1
+      - name: audit
+      - name: acl
+      - name: hmac-auth
+      - name: rate-limit
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"
@@ -34,8 +36,10 @@ routes:
   - path: /v1/models/{model}
     protocol: chatgpt/v1
     filters:
-      - name: protocol-translator
-        protocol: chatgpt/v1
+      - name: audit
+      - name: acl
+      - name: hmac-auth
+      - name: rate-limit
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"

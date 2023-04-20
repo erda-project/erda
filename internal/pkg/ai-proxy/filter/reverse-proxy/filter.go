@@ -38,6 +38,10 @@ var (
 	_ filter.Filter = (*ReverseProxy)(nil)
 )
 
+func init() {
+	filter.Register("reverse-proxy", New)
+}
+
 type ReverseProxy struct {
 	Config *Config
 }

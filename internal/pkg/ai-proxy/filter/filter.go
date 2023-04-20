@@ -18,11 +18,17 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 )
 
 const (
 	Continue Signal = iota
 	Intercept
+)
+
+var (
+	instFuncs = make(map[string]InstantiateFunc)
+	l         = new(sync.Mutex)
 )
 
 type Filter interface {
@@ -38,7 +44,7 @@ type ResponseFilter interface {
 	OnHttpResponse(ctx context.Context, w http.ResponseWriter, r *http.Request) Signal
 }
 
-type DefaultFilter struct {
+type Config struct {
 	Name   string          `json:"name" yaml:"name"`
 	Config json.RawMessage `json:"config" yaml:"config"`
 }
@@ -49,3 +55,22 @@ type Signal int
 type RouteCtxKey struct{}
 
 type ProviderCtxKey struct{}
+
+type InstantiateFunc func(config json.RawMessage) (Filter, error)
+
+func Register(name string, inst InstantiateFunc) {
+	l.Lock()
+	defer l.Unlock()
+	instFuncs[name] = inst
+}
+
+func Deregister(name string) {
+	l.Lock()
+	defer l.Unlock()
+	delete(instFuncs, name)
+}
+
+func GetFilterFactory(name string) (InstantiateFunc, bool) {
+	f, ok := instFuncs["name"]
+	return f, ok
+}

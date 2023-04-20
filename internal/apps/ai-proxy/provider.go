@@ -18,7 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"reflect"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -38,7 +41,7 @@ var (
 		Summary:     "ai-proxy server",
 		Description: "Reverse proxy service between AI vendors and client applications, providing a cut-through for service access",
 		ConfigFunc: func() interface{} {
-			return new(config)
+			return new(config) // todo: 启动时支持从初始配置文件或配置中心(Nacos, ETCD, MySQL)获取配置
 		},
 		Types: []reflect.Type{providerType},
 		Creator: func() servicehub.Provider {
@@ -58,7 +61,13 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.L.Info("providers config:\n%s", strutil.TryGetYamlStr(p.Config.Providers))
+	if err := p.parseRoutesConfig(); err != nil {
+		return err
+	}
+	if err := p.parseProvidersConfig(); err != nil {
+		return err
+	}
+	p.L.Info("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
 	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 	p.HttpServer.Any("/", p.ServeHTTP)
 	return nil
@@ -70,17 +79,59 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.responseNoSuchRoute(w, r.URL.Path)
 		return
 	}
-	var ctx = p.ctxWith(rout, p.Config.Providers)
+	var ctx = p.ctxWith(rout, p.Config.providers)
+	var filters []filter.Filter
 	for i := 0; i < len(rout.Filters); i++ {
-		if signal := rout.Filters[i].OnHttpRequest(ctx, w, r); signal != filter.Continue {
+		var name, config = rout.Filters[i].Name, rout.Filters[i].Config
+		factory, ok := filter.GetFilterFactory(name)
+		if !ok {
+			p.L.Errorf("failed to GetFilterFactory, filter name: %s", name)
+			p.responseNoSuchFilter(w, name)
+		}
+		f, err := factory(config)
+		if err != nil {
+			p.L.Errorf("failed to instantiate filter, filter name: %s, config: %s", name, config)
+			p.responseInstantiateFilterError(w, name)
+			return
+		}
+		filters = append(filters, f)
+	}
+	for i := 0; i < len(filters); i++ {
+		if signal := filters[i].OnHttpRequest(ctx, w, r); signal != filter.Continue {
 			return
 		}
 	}
-	for i := len(rout.Filters) - 1; i >= 0; i-- {
-		if signal := rout.Filters[i].OnHttpResponse(ctx, w, r); signal != filter.Continue {
+	for i := len(filters) - 1; i >= 0; i-- {
+		if signal := filters[i].OnHttpResponse(ctx, w, r); signal != filter.Continue {
 			return
 		}
 	}
+}
+
+func (p *provider) parseRoutesConfig() error {
+	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
+}
+
+func (p *provider) parseProvidersConfig() error {
+	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.providers)
+}
+
+func (p *provider) parseConfig(ref, key string, i interface{}) error {
+	file, err := os.Open(ref)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var m = make(map[string]json.RawMessage)
+	if err := yaml.NewDecoder(file).Decode(&m); err != nil {
+		return err
+	}
+	data, ok := m[key]
+	if !ok {
+		return nil
+	}
+	return yaml.Unmarshal(data, i)
 }
 
 func (p *provider) matchRoute(path, method string) (*route2.Route, bool) {
@@ -102,6 +153,24 @@ func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path string) {
 	})
 }
 
+func (p *provider) responseNoSuchFilter(w http.ResponseWriter, filterName string) {
+	w.Header().Set("server", "ai-proxy/erda")
+	w.WriteHeader(http.StatusNotImplemented)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"error":  "no such filter",
+		"filter": filterName,
+	})
+}
+
+func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterName string) {
+	w.Header().Set("server", "ai-proxy/erda")
+	w.WriteHeader(http.StatusInternalServerError)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"error":  "failed to instantiate filter",
+		"filter": filterName,
+	})
+}
+
 func (p *provider) ctxWith(route *route2.Route, providers provider2.Providers) context.Context {
 	return context.WithValue(context.WithValue(context.Background(), filter.RouteCtxKey{}, route), filter.ProviderCtxKey{}, providers)
 }
@@ -110,6 +179,9 @@ type config struct {
 	HttpServer struct {
 		Addr string
 	} `json:"httpServer" yaml:"httpServer"`
-	Providers provider2.Providers `json:"providers" yaml:"providers"`
-	Routes    route2.Routes       `json:"routes" yaml:"routes"`
+	RoutesRef    string `json:"routesRef" yaml:"routesRef"`
+	ProvidersRef string `json:"providersRef" yaml:"providersRef"`
+
+	providers provider2.Providers
+	Routes    route2.Routes
 }

@@ -1,7 +1,6 @@
 providers:
   - name: chatgpt/v1
     host: api.openai.com
-    scheme: https
     description: openai 提供的 chatgpt 能力
     docSite: https://platform.openai.com/docs/api-reference
     appKey: ${ env.OPENAI_API_KEY }
