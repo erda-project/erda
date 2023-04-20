@@ -3,5 +3,80 @@ http-server:
 health:
 
 erda.app.ai-proxy:
-  routesRef: conf/routes.yml
-  providersRef: conf/providers.yml
+  routes:
+    - path: /v1/chat/completions
+      protocol: chatgpt/v1
+      methods:
+        "GET": { }
+      filters:
+        - name: audit
+        - name: acl
+        - name: hmac-auth
+        - name: rate-limit
+        - name: reverse-proxy
+          config:
+            to: provider # enum: "provider", "url"
+            provider: chatgpt/v1
+            apiName: completions
+            host: ""
+            path: ""
+            methodsMap:
+              "GET": "GET"
+    - path: /v1/models
+      protocol: chatgpt/v1
+      methods:
+        "GET": { }
+      filters:
+        - name: audit
+        - name: acl
+        - name: hmac-auth
+        - name: rate-limit
+        - name: reverse-proxy
+          config:
+            to: provider # enum: "provider", "url"
+            provider: chatgpt/v1
+            apiName: completions
+            host: ""
+            path: ""
+    - path: /v1/models/{model}
+      protocol: chatgpt/v1
+      filters:
+        - name: audit
+        - name: acl
+        - name: hmac-auth
+        - name: rate-limit
+        - name: reverse-proxy
+          config:
+            to: provider # enum: "provider", "url"
+            provider: chatgpt/v1
+            apiName: completions
+            host: ""
+            path: ""
+
+  providers:
+    - name: chatgpt/v1
+      host: api.openai.com
+      description: openai 提供的 chatgpt 能力
+      docSite: https://platform.openai.com/docs/api-reference
+      appKey: ${ env.OPENAI_API_KEY }
+
+      # 只有在 apis 列表中的接口才会被支持
+      apis:
+        - name: completions
+          path: /v1/chat/completions
+          swagger:
+            "get":
+              description: Creates a completion for the provided prompt and parameters.
+        - name: chatCompletion
+          path: /v1/chat/completions
+          swagger:
+            description:
+        - name: listModels
+          path: /v1/models
+          swagger: { }
+        - name: retrieveModel
+          path: /v1/models/{model}
+          swagger: { }
+
+    - name: wenxin
+    - name: tongyi

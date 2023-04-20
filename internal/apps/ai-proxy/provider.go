@@ -1,16 +1,15 @@
-// Copyright (c) 2021 Terminus, Inc.
+// Copyright (c) 2023 Terminus, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package ai_proxy
 
@@ -18,17 +17,13 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"reflect"
-
-	"github.com/pkg/errors"
-	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	_ "github.com/erda-project/erda-infra/providers/health"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
-	reverse_proxy "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -42,7 +37,7 @@ var (
 		Summary:     "ai-proxy server",
 		Description: "Reverse proxy service between AI vendors and client applications, providing a cut-through for service access",
 		ConfigFunc: func() interface{} {
-			return new(config) // todo: 启动时支持从初始配置文件或配置中心(Nacos, ETCD, MySQL)获取配置
+			return new(config)
 		},
 		Types: []reflect.Type{providerType},
 		Creator: func() servicehub.Provider {
@@ -62,15 +57,9 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	if err := p.parseRoutesConfig(); err != nil {
-		return errors.Wrap(err, "failed to parseRoutesConfig")
-	}
-	p.L.Info("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
-	if err := p.parseProvidersConfig(); err != nil {
-		return errors.Wrap(err, "failed to parseProvidersConfig")
-	}
+	p.L.Info("providers config:\n%s", strutil.TryGetYamlStr(p.Config.Providers))
 	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	p.HttpServer.Any("/**", p.ServeHTTP)
+	p.HttpServer.Any("/", p.ServeHTTP)
 	return nil
 }
 
@@ -80,58 +69,17 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.responseNoSuchRoute(w, r.URL.Path)
 		return
 	}
-	var filters []filter.Filter
+	var ctx = p.ctxWith(rout, p.Config.Providers)
 	for i := 0; i < len(rout.Filters); i++ {
-		var name, config = rout.Filters[i].Name, rout.Filters[i].Config
-		factory, ok := filter.GetFilterFactory(name)
-		if !ok {
-			p.L.Errorf("failed to GetFilterFactory, filter name: %s", name)
-			p.responseNoSuchFilter(w, name)
-			return
-		}
-		f, err := factory(config)
-		if err != nil {
-			p.L.Errorf("failed to instantiate filter, filter name: %s, config: %s", name, config)
-			p.responseInstantiateFilterError(w, name)
-			return
-		}
-		filters = append(filters, f)
-	}
-	var ctx = p.ctxWith(rout, p.Config.providers, filters)
-	for i := 0; i < len(filters); i++ {
-		signal, err := filters[i].OnHttpRequest(ctx, w, r)
-		if err != nil {
-			reverse_proxy.ResponseErrorHandler(w, r, err)
-			return
-		}
-		if signal != filter.Continue {
+		if signal := rout.Filters[i].OnHttpRequest(ctx, w, r); signal != filter.Continue {
 			return
 		}
 	}
-}
-
-func (p *provider) parseRoutesConfig() error {
-	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
-}
-
-func (p *provider) parseProvidersConfig() error {
-	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.providers)
-}
-
-func (p *provider) parseConfig(ref, key string, i interface{}) error {
-	data, err := os.ReadFile(ref)
-	if err != nil {
-		return err
+	for i := len(rout.Filters) - 1; i >= 0; i-- {
+		if signal := rout.Filters[i].OnHttpResponse(ctx, w, r); signal != filter.Continue {
+			return
+		}
 	}
-	var m = make(map[string]json.RawMessage)
-	if err := yaml.Unmarshal(data, &m); err != nil {
-		return err
-	}
-	data, ok := m[key]
-	if !ok {
-		return nil
-	}
-	return yaml.Unmarshal(data, i)
 }
 
 func (p *provider) matchRoute(path, method string) (*route2.Route, bool) {
@@ -153,35 +101,14 @@ func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path string) {
 	})
 }
 
-func (p *provider) responseNoSuchFilter(w http.ResponseWriter, filterName string) {
-	w.Header().Set("server", "ai-proxy/erda")
-	w.WriteHeader(http.StatusNotImplemented)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error":  "no such filter",
-		"filter": filterName,
-	})
-}
-
-func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterName string) {
-	w.Header().Set("server", "ai-proxy/erda")
-	w.WriteHeader(http.StatusInternalServerError)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error":  "failed to instantiate filter",
-		"filter": filterName,
-	})
-}
-
-func (p *provider) ctxWith(route *route2.Route, providers provider2.Providers, filters []filter.Filter) context.Context {
-	return context.WithValue(context.WithValue(context.WithValue(context.Background(), filter.RouteCtxKey{}, route), filter.ProvidersCtxKey{}, providers), filter.FiltersCtxKey{}, filters)
+func (p *provider) ctxWith(route *route2.Route, providers provider2.Providers) context.Context {
+	return context.WithValue(context.WithValue(context.Background(), filter.RouteCtxKey{}, route), filter.ProviderCtxKey{}, providers)
 }
 
 type config struct {
 	HttpServer struct {
 		Addr string
 	} `json:"httpServer" yaml:"httpServer"`
-	RoutesRef    string `json:"routesRef" yaml:"routesRef"`
-	ProvidersRef string `json:"providersRef" yaml:"providersRef"`
-
-	providers provider2.Providers
-	Routes    route2.Routes
+	Providers provider2.Providers `json:"providers" yaml:"providers"`
+	Routes    route2.Routes       `json:"routes" yaml:"routes"`
 }

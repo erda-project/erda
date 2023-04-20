@@ -25,7 +25,6 @@ const (
 type Provider struct {
 	Name        string `json:"name" yaml:"name"`
 	Host        string `json:"host" yaml:"host"`
-	Scheme      string `json:"scheme" yaml:"scheme"`
 	Description string `json:"description" yaml:"description"`
 	DocSite     string `json:"docSite" yaml:"docSite"`
 

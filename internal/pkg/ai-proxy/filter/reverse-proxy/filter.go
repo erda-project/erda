@@ -17,10 +17,10 @@ package reverse_proxy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
@@ -38,10 +38,6 @@ var (
 	_ filter.Filter = (*ReverseProxy)(nil)
 )
 
-func init() {
-	filter.Register(Name, New)
-}
-
 type ReverseProxy struct {
 	Config *Config
 }
@@ -54,52 +50,43 @@ func New(config json.RawMessage) (filter.Filter, error) {
 	return &ReverseProxy{Config: &cfg}, nil
 }
 
-func (fil *ReverseProxy) OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
-	switch fil.Config.To {
-	case "", ToProvider:
-		return fil.onHttpRequestToProvider(ctx, w, r)
-	default:
-		return fil.onHttpRequestToURL(ctx, w, r)
+func (fil *ReverseProxy) OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) filter.Signal {
+	if fil.Config.To != ToProvider {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": fmt.Sprintf("only support to reverse proxy to %v, not support to reverse proxy to %v", ToProvider, fil.Config.To),
+		})
+		return filter.Intercept
 	}
-}
 
-func (fil *ReverseProxy) OnHttpResponse(_ context.Context, _ *http.Response, _ *http.Request) (filter.Signal, error) {
-	return filter.Continue, nil
-}
-
-func (fil *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
 	rout, ok := ctx.Value(filter.RouteCtxKey{}).(*route.Route)
 	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": "failed to retrieve route info",
 		})
-		return filter.Intercept, nil
+		return filter.Intercept
 	}
 	_ = rout // todo: 似乎这里不需要获取 route 的配置
-	providers, ok := ctx.Value(filter.ProvidersCtxKey{}).(provider.Providers)
+	providers, ok := ctx.Value(filter.ProviderCtxKey{}).(provider.Providers)
 	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": "failed to retrieve providers info",
+			"error": "no AI provider",
 		})
-		return filter.Intercept, nil
+		return filter.Intercept
 	}
 	prov, ok := providers.GetProvider(fil.Config.Provider)
 	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":    "no such provider",
 			"provider": fil.Config.Provider,
 		})
-		return filter.Intercept, nil
+		return filter.Intercept
 	}
 	api, ok := prov.FindAPI(fil.Config.APIName, fil.Config.Path)
 	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":    "API not found",
@@ -108,27 +95,10 @@ func (fil *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Res
 			"apiPath":  fil.Config.Path,
 		})
 	}
-	filters, ok := ctx.Value(filter.FiltersCtxKey{}).([]filter.Filter)
-	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": "failed to retrieve filters info",
-		})
-	}
 
 	(&httputil.ReverseProxy{
 		Director: func(r *http.Request) {
-			r.URL.Scheme = "http"
-			if prov.Scheme != "" {
-				r.URL.Scheme = prov.Scheme
-			}
-			if fil.Config.Scheme != "" {
-				r.URL.Scheme = fil.Config.Scheme
-			}
 			r.URL.Host = prov.Host
-			r.Host = prov.Host
-			r.Header.Set("host", prov.Host)
 			if len(fil.Config.MethodsMap) > 0 {
 				if method, ok := fil.Config.MethodsMap[r.Method]; ok && method != "" {
 					r.Method = method
@@ -151,48 +121,24 @@ func (fil *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Res
 			}
 			prov.GetAppKey()
 		},
-		ModifyResponse: func(response *http.Response) error {
-			for i := len(filters) - 1; i >= 0; i-- {
-				signal, err := filters[i].OnHttpResponse(ctx, response, r)
-				if err != nil {
-					logrus.WithError(err).WithField("signal", signal).Errorln("failed to OnHttpResponse")
-					return err
-				}
-				if signal != filter.Continue {
-					return nil
-				}
-			}
-			return nil
-		},
-		ErrorHandler: ResponseErrorHandler,
+		// todo: ModifyResponse
+		//ModifyResponse: func(response *http.Response) error {
+		//
+		//},
 	}).ServeHTTP(w, r)
 
-	return filter.Continue, nil
+	return filter.Continue
 }
 
-func (fil *ReverseProxy) onHttpRequestToURL(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
-	w.Header().Set("server", "ai-proxy/erda")
-	w.WriteHeader(http.StatusNotImplemented)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": "not implement to reverse proxy to url",
-	})
-	return filter.Intercept, nil
+func (fil *ReverseProxy) OnHttpResponse(ctx context.Context, w http.ResponseWriter, r *http.Request) filter.Signal {
+	return filter.Continue
 }
 
 type Config struct {
 	To         string            `json:"to" yaml:"to"`
 	Provider   string            `json:"provider" yaml:"provider"`
 	APIName    string            `json:"APIName" yaml:"apiName"`
-	Scheme     string            `json:"scheme" yaml:"scheme"`
 	Host       string            `json:"host" yaml:"host"`
 	Path       string            `json:"path" yaml:"path"`
 	MethodsMap map[string]string `json:"methodsMap" yaml:"methodsMap"`
-}
-
-func ResponseErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
-	w.Header().Set("server", "ai-proxy/erda")
-	w.WriteHeader(http.StatusBadGateway)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": err.Error(),
-	})
 }

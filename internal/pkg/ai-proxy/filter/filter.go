@@ -18,17 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sync"
 )
 
 const (
 	Continue Signal = iota
 	Intercept
-)
-
-var (
-	instFuncs = make(map[string]InstantiateFunc)
-	l         = new(sync.Mutex)
 )
 
 type Filter interface {
@@ -37,14 +31,14 @@ type Filter interface {
 }
 
 type RequestFilter interface {
-	OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (Signal, error)
+	OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) Signal
 }
 
 type ResponseFilter interface {
-	OnHttpResponse(ctx context.Context, response *http.Response, r *http.Request) (Signal, error)
+	OnHttpResponse(ctx context.Context, w http.ResponseWriter, r *http.Request) Signal
 }
 
-type Config struct {
+type DefaultFilter struct {
 	Name   string          `json:"name" yaml:"name"`
 	Config json.RawMessage `json:"config" yaml:"config"`
 }
@@ -52,26 +46,6 @@ type Config struct {
 type Signal int
 
 // RouteCtxKey 用以从 context.Context 中获取 route.Route 以获取 route.Route 的更多配置信息
-type (
-	RouteCtxKey     struct{}
-	ProvidersCtxKey struct{}
-	FiltersCtxKey   struct{}
-)
-type InstantiateFunc func(config json.RawMessage) (Filter, error)
+type RouteCtxKey struct{}
 
-func Register(name string, inst InstantiateFunc) {
-	l.Lock()
-	defer l.Unlock()
-	instFuncs[name] = inst
-}
-
-func Deregister(name string) {
-	l.Lock()
-	defer l.Unlock()
-	delete(instFuncs, name)
-}
-
-func GetFilterFactory(name string) (InstantiateFunc, bool) {
-	f, ok := instFuncs[name]
-	return f, ok
-}
+type ProviderCtxKey struct{}

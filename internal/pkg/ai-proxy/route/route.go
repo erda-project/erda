@@ -14,13 +14,7 @@
 
 package route
 
-import (
-	"strings"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
-)
+import "github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 
 const (
 	BackendTypeProvider BackendType = "provider"
@@ -36,20 +30,16 @@ const (
 type Routes []*Route
 
 type Route struct {
-	Path     string           `json:"path" yaml:"path"`
-	Protocol Protocol         `json:"protocol" yaml:"protocol"`
-	Methods  map[string]any   `json:"methods" yaml:"methods"`
-	Filters  []*filter.Config `json:"filters" yaml:"filters"`
+	Path     string          `json:"path" yaml:"path"`
+	Protocol Protocol        `json:"protocol" yaml:"protocol"`
+	Methods  map[string]any  `json:"methods" yaml:"methods"`
+	Filters  []filter.Filter `json:"filters" yaml:"filters"`
 }
 
 func (r *Route) Match(path, method string) bool {
-	if len(r.Methods) > 0 {
-		if _, ok := r.Methods[strings.ToUpper(method)]; !ok {
-			return false
-		}
+	if _, ok := r.Methods[method]; !ok {
+		return false
 	}
-	logrus.Infof("r.Path: %s, path: %s", r.Path, path)
-	return true
 	return r.Path == path // todo: 需要实现匹配方法
 }
 
