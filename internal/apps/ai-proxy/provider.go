@@ -70,7 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
 	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	p.HttpServer.Any("/", p.ServeHTTP)
+	p.HttpServer.Any("/**", p.ServeHTTP)
 	return nil
 }
 
