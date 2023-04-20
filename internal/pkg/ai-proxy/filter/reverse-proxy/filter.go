@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
@@ -102,7 +103,12 @@ func (fil *ReverseProxy) OnHttpRequest(ctx context.Context, w http.ResponseWrite
 
 	(&httputil.ReverseProxy{
 		Director: func(r *http.Request) {
+			defer logrus.Printf("reverse proxied request: %+v", r)
+
+			r.URL.Scheme = "http" // todo: pr
 			r.URL.Host = prov.Host
+			r.Host = prov.Host
+			r.Header.Set("host", prov.Host)
 			if len(fil.Config.MethodsMap) > 0 {
 				if method, ok := fil.Config.MethodsMap[r.Method]; ok && method != "" {
 					r.Method = method

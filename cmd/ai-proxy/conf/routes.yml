@@ -4,10 +4,6 @@ routes:
     methods:
       "GET": { }
     filters:
-      - name: audit
-      - name: acl
-      - name: hmac-auth
-      - name: rate-limit
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"
@@ -22,10 +18,6 @@ routes:
     methods:
       "GET": { }
     filters:
-      - name: audit
-      - name: acl
-      - name: hmac-auth
-      - name: rate-limit
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"
@@ -36,10 +28,6 @@ routes:
   - path: /v1/models/{model}
     protocol: chatgpt/v1
     filters:
-      - name: audit
-      - name: acl
-      - name: hmac-auth
-      - name: rate-limit
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"

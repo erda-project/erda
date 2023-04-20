@@ -14,7 +14,13 @@
 
 package route
 
-import "github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
+import (
+	"strings"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
+)
 
 const (
 	BackendTypeProvider BackendType = "provider"
@@ -37,9 +43,13 @@ type Route struct {
 }
 
 func (r *Route) Match(path, method string) bool {
-	if _, ok := r.Methods[method]; !ok {
-		return false
+	if len(r.Methods) > 0 {
+		if _, ok := r.Methods[strings.ToUpper(method)]; !ok {
+			return false
+		}
 	}
+	logrus.Infof("r.Path: %s, path: %s", r.Path, path)
+	return true
 	return r.Path == path // todo: 需要实现匹配方法
 }
 
