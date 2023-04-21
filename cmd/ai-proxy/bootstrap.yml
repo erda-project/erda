@@ -1,0 +1,7 @@
+http-server:
+  addr: ":8080"
+health:
+
+erda.app.ai-proxy:
+  routesRef: conf/routes.yml
+  providersRef: conf/providers.yml

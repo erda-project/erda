@@ -1,0 +1,46 @@
+routes:
+  - path: /v1/chat/completions
+    protocol: chatgpt/v1
+    methods:
+      "GET": { }
+      "POST": {}
+    filters:
+      - name: protocol-translator
+        protocol: chatgpt/v1
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: chatgpt/v1
+          apiName: completions
+          scheme: ""
+          host: ""
+          path: ""
+          methodsMap:
+            "GET": "GET"
+  - path: /v1/models
+    protocol: chatgpt/v1
+    methods:
+      "GET": { }
+    filters:
+      - name: protocol-translator
+        protocol: chatgpt/v1
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: chatgpt/v1
+          apiName: completions
+          host: ""
+          path: ""
+  - path: /v1/models/{model}
+    protocol: chatgpt/v1
+    filters:
+      - name: protocol-translator
+        protocol: chatgpt/v1
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: chatgpt/v1
+          apiName: completions
+          host: ""
+          path: ""
+

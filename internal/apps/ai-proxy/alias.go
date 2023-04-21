@@ -12,20 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package strutil
+package ai_proxy
 
 import (
-	"encoding/json"
-
-	"sigs.k8s.io/yaml"
+	_ "github.com/erda-project/erda-infra/providers/health"
+	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/protocol-translator"
+	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
 )
-
-func TryGetJsonStr(v any) string {
-	data, _ := json.Marshal(v)
-	return string(data)
-}
-
-func TryGetYamlStr(v any) string {
-	data, _ := yaml.Marshal(v)
-	return string(data)
-}
