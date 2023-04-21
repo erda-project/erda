@@ -356,15 +356,11 @@ func Contains(s string, substrs ...string) bool {
 // Equal("aaa", "AAA") => false
 //
 // Equal("aaa", "AaA", true) => true
-func Equal(s, other string, ignorecase ...bool) bool {
+func Equal[T ~string, S ~string](s S, t T, ignorecase ...bool) bool {
 	if len(ignorecase) == 0 || !ignorecase[0] {
-		return strings.Compare(s, other) == 0
+		return string(s) == string(t)
 	}
-	return strings.EqualFold(s, other)
-}
-
-func EqualFold[T ~string, S ~string](s1 T, s2 S) bool {
-	return strings.EqualFold(string(s1), string(s2))
+	return strings.EqualFold(string(s), string(t))
 }
 
 // Atoi64 parse string to int64
