@@ -16,6 +16,7 @@ package ai_proxy
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -52,6 +53,9 @@ var (
 	}
 )
 
+//go:embed api-reference
+var webfs embed.FS
+
 func init() {
 	servicehub.Register(name, &spec)
 }
@@ -71,7 +75,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
 	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	p.HttpServer.GET("/swagger", p.ServerSwagger)
+	p.HttpServer.GET("/swagger.json", p.ServerSwagger)
+	p.HttpServer.Static("/swagger", "/api-reference", httpserver.WithFileSystem(http.FS(webfs)))
 	p.HttpServer.Any("/**", p.ServeAI)
 	return nil
 }
@@ -144,6 +149,11 @@ func (p *provider) ServerSwagger(w http.ResponseWriter, r *http.Request) {
 				p.L.Errorf("failure to yaml.Unmarshal swagger, swagger: %s, err: %v", string(api.Swagger), err)
 				continue
 			}
+			for _, o := range []*openapi3.Operation{item.Connect, item.Delete, item.Get, item.Head, item.Options, item.Patch, item.Post, item.Put, item.Trace} {
+				if o != nil {
+					o.Tags = append(o.Tags, prov.Name)
+				}
+			}
 			swagger.Paths[api.Path] = &item
 		}
 	}
@@ -151,7 +161,10 @@ func (p *provider) ServerSwagger(w http.ResponseWriter, r *http.Request) {
 		swagger.Tags = append(swagger.Tags, &openapi3.Tag{Name: tag})
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Add("Content-Disposition", "attachment; filename=swagger.json")
 	if err := json.NewEncoder(w).Encode(swagger); err != nil {
+		w.Header().Del("Content-Disposition")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": err.Error(),

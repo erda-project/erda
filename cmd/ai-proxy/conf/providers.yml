@@ -17,10 +17,12 @@ providers:
         path: /v1/chat/completions
         swagger:
           "get":
-            description:
+            description: 聊天接口
       - name: listModels
         path: /v1/models
-        swagger: { }
+        swagger:
+          "get":
+            description: 列举模型
       - name: retrieveModel
         path: /v1/models/{model}
         swagger:
@@ -31,6 +33,8 @@ providers:
               required: true
               schema:
                 type: string
+          "get":
+            description: 查询模型详情
 
   - name: wenxin
   - name: tongyi
