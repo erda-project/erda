@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package strutil
+package main
 
 import (
-	"encoding/json"
+	_ "embed"
 
-	"sigs.k8s.io/yaml"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy"
+	"github.com/erda-project/erda/pkg/common"
 )
 
-func TryGetJsonStr(v any) string {
-	data, _ := json.Marshal(v)
-	return string(data)
-}
+//go:embed bootstrap.yml
+var bootstrap string
 
-func TryGetYamlStr(v any) string {
-	data, _ := yaml.Marshal(v)
-	return string(data)
+func main() {
+	common.Run(&servicehub.RunOptions{
+		Content: bootstrap,
+	})
 }
