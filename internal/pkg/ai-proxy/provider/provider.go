@@ -15,7 +15,7 @@
 package provider
 
 import (
-	"github.com/getkin/kin-openapi/openapi3"
+	"encoding/json"
 )
 
 const (
@@ -59,9 +59,9 @@ func (p *Provider) FindAPI(name, path string) (*API, bool) {
 }
 
 type API struct {
-	Name    string             `json:"name" yaml:"name"`
-	Path    string             `json:"path" yaml:"path"`
-	Swagger *openapi3.PathItem `json:"swagger" yaml:"swagger"`
+	Name    string          `json:"name" yaml:"name"`
+	Path    string          `json:"path" yaml:"path"`
+	Swagger json.RawMessage `json:"swagger" yaml:"swagger"`
 }
 
 func (api *API) MatchPath(path string) bool {

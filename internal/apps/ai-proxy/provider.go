@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
@@ -70,11 +71,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
 	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	p.HttpServer.Any("/**", p.ServeHTTP)
+	p.HttpServer.GET("/swagger", p.ServerSwagger)
+	p.HttpServer.Any("/**", p.ServeAI)
 	return nil
 }
 
-func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
 	rout, ok := p.matchRoute(r.URL.Path, r.Method)
 	if !ok {
 		p.responseNoSuchRoute(w, r.URL.Path)
@@ -107,6 +109,53 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if signal != filter.Continue {
 			return
 		}
+	}
+}
+
+func (p *provider) ServerSwagger(w http.ResponseWriter, r *http.Request) {
+	swagger := &openapi3.Swagger{
+		ExtensionProps: openapi3.ExtensionProps{},
+		OpenAPI:        "3.0.0",
+		Components:     openapi3.Components{},
+		Info: &openapi3.Info{
+			ExtensionProps: openapi3.ExtensionProps{},
+			Title:          "Erda AI Providers",
+			Description:    "",
+			TermsOfService: "",
+			Contact:        nil,
+			License:        nil,
+			Version:        "",
+		},
+		Paths:        make(openapi3.Paths),
+		Security:     nil,
+		Servers:      nil,
+		Tags:         openapi3.Tags{},
+		ExternalDocs: nil,
+	}
+	var tags = make(map[string]any)
+	for _, prov := range p.Config.providers {
+		for _, api := range prov.APIs {
+			if api.Swagger == nil {
+				continue
+			}
+			tags[prov.Name] = nil
+			var item openapi3.PathItem
+			if err := yaml.Unmarshal(api.Swagger, &item); err != nil {
+				p.L.Errorf("failure to yaml.Unmarshal swagger, swagger: %s, err: %v", string(api.Swagger), err)
+				continue
+			}
+			swagger.Paths[api.Path] = &item
+		}
+	}
+	for tag := range tags {
+		swagger.Tags = append(swagger.Tags, &openapi3.Tag{Name: tag})
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	if err := json.NewEncoder(w).Encode(swagger); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"error": err.Error(),
+		})
 	}
 }
 

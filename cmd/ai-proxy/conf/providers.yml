@@ -11,18 +11,26 @@ providers:
       - name: completions
         path: /v1/chat/completions
         swagger:
-          "get":
+          "post":
             description: Creates a completion for the provided prompt and parameters.
       - name: chatCompletion
         path: /v1/chat/completions
         swagger:
-          description:
+          "get":
+            description:
       - name: listModels
         path: /v1/models
         swagger: { }
       - name: retrieveModel
         path: /v1/models/{model}
-        swagger: { }
+        swagger:
+          parameters:
+            - name: model
+              in: path
+              description: chatgpt model name
+              required: true
+              schema:
+                type: string
 
   - name: wenxin
   - name: tongyi
