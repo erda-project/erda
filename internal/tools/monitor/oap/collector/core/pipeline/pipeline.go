@@ -276,9 +276,11 @@ func (p *Pipeline) startReceivers(out chan<- odata2.ObservableData) {
 
 func (p *Pipeline) newConsumer(pctx context.Context, name string, out chan<- odata2.ObservableData) model.ObservableDataConsumerFunc {
 	return func(od odata2.ObservableData) error {
+		org := od.GetTags()["org_name"]
+
 		select {
 		case out <- od:
-			dataReceived.WithLabelValues(p.name, string(p.dtype), name, od.GetTags()["org_name"]).Inc()
+			dataReceived.WithLabelValues(p.name, string(p.dtype), name, org).Inc()
 		case <-pctx.Done():
 			return nil
 		}
