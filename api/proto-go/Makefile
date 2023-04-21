@@ -38,3 +38,6 @@ build-use-docker-image:
 		-e target_proj_root=$${target_proj_root} \
 		registry.erda.cloud/erda/gohub:1.0.8 \
 		sh -c 'cd /go/src/github.com/erda-project/erda && make proto-go-in-local'
+
+fetch-remote-proto:
+	@../proto/proto_fetcher.sh fetch

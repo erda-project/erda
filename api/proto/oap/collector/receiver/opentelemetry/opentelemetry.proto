@@ -5,10 +5,10 @@ package erda.oap.collector.receiver.opentelemetry;
 option go_package = "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb";
 
 import "google/api/annotations.proto";
+import "opentelemetry/proto/metrics/v1/metrics.proto";
 
 import "common/http.proto";
 import "oap/trace/tracing.proto";
-import "oap/opentelemetry/metrics/v1/metrics.proto";
 import "oap/common/common.proto";
 
 
@@ -22,7 +22,7 @@ message PostMetricsServiceRequest {
   // element. Intermediary nodes (such as OpenTelemetry Collector) that receive
   // data from multiple origins typically batch the data before forwarding further and
   // in that case this array will contain multiple elements.
-  repeated erda.oap.opentelemetry.metrics.v1.ResourceMetrics resource_metrics = 1;
+  repeated .opentelemetry.proto.metrics.v1.ResourceMetrics resource_metrics = 1;
 }
 
 service OpenTelemetryService {
