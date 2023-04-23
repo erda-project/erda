@@ -204,7 +204,9 @@ ifeq "$(SKIP_PREPARE)" ""
 endif
 
 proto-go-in-ci:
-	cd api/proto-go && make build-use-docker-image
+	cd api/proto-go && \
+ 	make build-use-docker-image
 
 proto-go-in-local:
-	cd api/proto-go && make clean && make build
+	cd api/proto-go && \
+	make fetch-remote-proto && make clean && make build
