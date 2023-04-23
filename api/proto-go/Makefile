@@ -40,4 +40,5 @@ build-use-docker-image:
 		sh -c 'cd /go/src/github.com/erda-project/erda && make proto-go-in-local'
 
 fetch-remote-proto:
-	@../proto/proto_fetcher.sh fetch
+	@../proto/proto_fetcher.sh cleanup && \
+	 ../proto/proto_fetcher.sh fetch

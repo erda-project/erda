@@ -17,7 +17,7 @@ if [ -z "$1" ]; then
     usage
 fi
 
-# common function: fetch code use git
+# general function: fetch code use git
 fetch_code() {
    while [ "$#" -gt 0 ]; do
       case "$1" in
@@ -67,13 +67,32 @@ fetch_code() {
   echo "fetch code done"
 }
 
-# common function: cleanup external repo
+# general function: cleanup external repo
 cleanup_external_repo() {
   echo "cleanup external repo dir: $EXTERNAL_REPO_DIR"
   rm -rf $EXTERNAL_REPO_DIR
 }
 
-# (options) common function: add // +SKIP_GO-FORM annotation
+# general function:  moves all .proto files from a source dir to a target dir
+move_proto_files() {
+  source_dir="$1"
+  target_dir="$2"
+
+  find "$source_dir" -type f -name "*.proto" | while read filepath
+  do
+    dir_path=$(dirname "$filepath")
+
+    target_subdir="${dir_path#$source_dir}"
+    target_subdir="${target_subdir#/}"
+    target_path="$target_dir/$target_subdir"
+
+    mkdir -p "$target_path"
+
+    mv "$filepath" "$target_path"
+  done
+}
+
+# (options) general function: add // +SKIP_GO-FORM annotation
 add_skip_go_from_annotation() {
   target_path=$1
   skip_annotation="// +SKIP_GO-FORM"
@@ -110,7 +129,7 @@ fetch_opentelemetry_proto() {
   echo -e "\n#2 [otel] mv proto files to erda proto dir"
   echo "  Source: $source_path"
   echo "  Target: $target_path"
-  mv $source_path $target_path
+  move_proto_files $source_path $target_path
   echo "#2 done"
 
   # rename go_package
@@ -131,6 +150,7 @@ fetch_opentelemetry_proto() {
   echo -e "\n#4 [otel] add // +SKIP_GO-FORM annotation"
   add_skip_go_from_annotation $target_path
   echo "#4 done"
+  cleanup_external_repo
 
   echo -e "\nfetch open-telemetry proto files done"
 }
@@ -138,7 +158,6 @@ fetch_opentelemetry_proto() {
 
 case "$1" in
     "fetch")
-        cleanup_external_repo
         # fetch open-telemetry proto files
         fetch_opentelemetry_proto
         # register your fetch function here
