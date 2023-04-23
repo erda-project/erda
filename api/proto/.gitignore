@@ -40,3 +40,7 @@
 /.env.*
 
 # generated files
+
+# external proto files
+externalrepo
+opentelemetry
