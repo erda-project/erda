@@ -39,8 +39,9 @@ type Pipeline struct {
 }
 
 type PipelineWrap struct {
-	Metrics []Pipeline `file:"metrics"`
-	Logs    []Pipeline `file:"logs"`
-	Spans   []Pipeline `file:"spans"`
-	Raws    []Pipeline `file:"raws"`
+	Metrics  []Pipeline `file:"metrics"`
+	Logs     []Pipeline `file:"logs"`
+	Spans    []Pipeline `file:"spans"`
+	Raws     []Pipeline `file:"raws"`
+	Profiles []Pipeline `file:"profiles"`
 }

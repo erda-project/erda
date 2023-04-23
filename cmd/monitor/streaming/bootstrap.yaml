@@ -559,6 +559,16 @@ erda.oap.collector.core:
         flush_interval: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_INTERVAL}
         flush_jitter: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_JITTER}
         _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+
+    profiles:
+      - receivers:
+          - "erda.oap.collector.receiver.kafka@spotprofile"
+        exporters:
+          - "erda.oap.collector.exporter.pyroscope@profile"
+        batch_size: ${EXPORTER_CLICKHOUSE_METRIC_BATCH_SIZE:81920}
+        flush_interval: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_INTERVAL}
+        flush_jitter: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_JITTER}
+        _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
 # --- data pipeline block ---
 
 # --- span to clickhouse block ---
@@ -575,6 +585,13 @@ erda.oap.collector.receiver.kafka@oapspan:
   consumer:
     topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace,erda-spans}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+
+erda.oap.collector.receiver.kafka@spotprofile:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  proto_parser: spotprofile
+  consumer:
+    topics: "${METRIC_TOPICS:spot-profiles}"
+    group: "${PROFILE_CH_GROUP_ID:spot-monitor-profiles-ch}"
 
 erda.oap.collector.processor.modifier@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
@@ -642,6 +659,8 @@ erda.oap.collector.exporter.clickhouse@metric:
   builder:
     data_type: metric
     tenant_id_key: _metric_scope_id
+
+erda.oap.collector.exporter.pyroscope@profile: {}
 
 clickhouse.table.initializer@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}

@@ -17,6 +17,7 @@ package collector
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,6 +69,21 @@ func (p *provider) collectLogsWithSource(ctx echo.Context, source string) error 
 		return fmt.Errorf("parse stream: %w", err)
 	}
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (p *provider) collectProfile(ctx echo.Context) error {
+	input, err := ingestInputFromRequest(ctx.Request())
+	if err != nil {
+		return ctx.NoContent(http.StatusBadRequest)
+	}
+	inputRaw, err := json.Marshal(input)
+	if err != nil {
+		return ctx.NoContent(http.StatusBadRequest)
+	}
+	if err := p.sendRaw("profile", inputRaw); err != nil {
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+	return ctx.NoContent(http.StatusOK)
 }
 
 // Collect internal metrics from outside

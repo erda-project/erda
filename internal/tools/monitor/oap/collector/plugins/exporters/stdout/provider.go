@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
@@ -119,6 +120,23 @@ func (p *provider) ExportRaw(items ...*odata.Raw) error {
 			continue
 		}
 		fmt.Printf("meta: %+v; data: %s\n", item.Meta, strutil.NoCopyBytesToString(item.Data))
+	}
+	if p.Cfg.Sleep > 0 {
+		time.Sleep(p.Cfg.Sleep)
+	}
+	return nil
+}
+
+func (p *provider) ExportProfile(items ...*profile.ProfileIngest) error {
+	for _, item := range items {
+		if !p.Cfg.Print {
+			continue
+		}
+		buf, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", string(buf))
 	}
 	if p.Cfg.Sleep > 0 {
 		time.Sleep(p.Cfg.Sleep)

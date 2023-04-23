@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	odata2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
 )
@@ -108,6 +109,12 @@ func (re *RuntimeExporter) flushOnce() error {
 		if err != nil {
 			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
 		}
+	case odata2.ProfileType:
+		items := re.Buffer.FlushAllProfiles()
+		err := re.Exporter.ExportProfile(items...)
+		if err != nil {
+			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
+		}
 	}
 	return nil
 }
@@ -119,6 +126,7 @@ type Exporter interface {
 	ExportLog(items ...*log.Log) error
 	ExportSpan(items ...*trace.Span) error
 	ExportRaw(items ...*odata2.Raw) error
+	ExportProfile(items ...*profile.ProfileIngest) error
 }
 
 type NoopExporter struct{}
