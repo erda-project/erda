@@ -97,8 +97,7 @@ func (fil *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Res
 		})
 		return filter.Intercept, nil
 	}
-	api, ok := prov.FindAPI(fil.Config.APIName, fil.Config.Path)
-	if !ok {
+	if ok := prov.FindAPI(fil.Config.APIName, fil.Config.Path); !ok {
 		w.Header().Set("server", "ai-proxy/erda")
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -107,6 +106,7 @@ func (fil *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Res
 			"apiName":  fil.Config.APIName,
 			"apiPath":  fil.Config.Path,
 		})
+		return filter.Intercept, nil
 	}
 	filters, ok := ctx.Value(filter.FiltersCtxKey{}).([]filter.Filter)
 	if !ok {
@@ -134,7 +134,7 @@ func (fil *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Res
 					r.Method = method
 				}
 			}
-			_ = api // todo: rewrite path
+			//_ = api // todo: rewrite path
 			// Rewrite provider credentials and add credential information according to the configuration
 			// if the original request does not carry credential information
 			// todo: 对每一个 provider 重写凭证的方式都抽成函数或进行抽象

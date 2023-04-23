@@ -1,0 +1,1157 @@
+openapi: 3.0.3
+info:
+  title: Erda AI-Proxy OpenAPI
+  description: The Openapi powered by Erda AI-Proxy.
+  version: 1.0.0
+servers:
+  - url: 'https'
+paths:
+  "/v1/models":
+    "get":
+      operationId: List Models
+      tags: [ "openai", "models" ]
+      summary: Lists the currently available models, and provides basic information about each one such as the owner and availability.
+      description: |-
+        Lists the currently available models, and provides basic information about each one such as the owner and availability.
+        
+        列出目前可用的模型，并提供每个模型的基本信息，如所有者和可用性。
+        
+        Example request:
+        
+        ```shell
+        curl https://api.openai.com/v1/models \
+          -H "Authorization: Bearer $OPENAI_API_KEY"
+        ```
+      parameters: [ ]
+      responses:
+        "200":
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "data":
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "id":
+                          type: string
+                          example: model-id-0
+                        "object":
+                          type: string
+                          example: model
+                        "owned_by":
+                          type: string
+                          example: organization-owner
+                        "permission":
+                          type: array
+                          items:
+                            type: string
+                  "object":
+                    type: string
+                    example: list
+                example: {
+                  "data": [
+                    {
+                      "id": "model-id-0",
+                      "object": "model",
+                      "owned_by": "organization-owner",
+                      "permission": [ ... ]
+                    },
+                    {
+                      "id": "model-id-1",
+                      "object": "model",
+                      "owned_by": "organization-owner",
+                      "permission": [ ... ]
+                    },
+                    {
+                      "id": "model-id-2",
+                      "object": "model",
+                      "owned_by": "openai",
+                      "permission": [ ... ]
+                    },
+                  ],
+                  "object": "list"
+                }
+
+  "/v1/models/{model}":
+    parameters:
+      - name: model
+        in: path
+        description: |-
+          The ID of the model to use for this request.
+          
+          这个请求要使用的模型的ID。
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [ "openai", "models" ]
+      summary: Retrieves a model instance, providing basic information about the model such as the owner and permissioning.
+      description: |-
+        Retrieves a model instance, providing basic information about the model such as the owner and permissioning.
+        
+        检索一个模型实例，提供关于模型的基本信息，如所有者和许可。
+        Example request:
+        
+        ```shell
+        curl https://api.openai.com/v1/models/text-davinci-003 \
+          -H "Authorization: Bearer $OPENAI_API_KEY"
+        ```
+      parameters: [ ]
+      responses:
+        "200":
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "id":
+                    type: string
+                    example: text-davinci-003
+                  "object":
+                    type: string
+                    example: model
+                  "owned_by":
+                    type: string
+                    example: openai
+                  "permission":
+                    type: array
+                    items:
+                      type: string
+                example: {
+                  "id": "text-davinci-003",
+                  "object": "model",
+                  "owned_by": "openai",
+                  "permission": [ ... ]
+                }
+
+  "/v1/completions":
+    post:
+      tags: [ "openai", "completions" ]
+      summary: Creates a completion for the provided prompt and parameters.
+      description: |-
+        Creates a completion for the provided prompt and parameters.
+        
+        为提供的提示和参数创建一个 completion。
+        
+        Example request:
+        
+        ```shell
+        curl https://api.openai.com/v1/completions \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $OPENAI_API_KEY" \
+        -d '{
+          "model": "text-davinci-003",
+          "prompt": "Say this is a test",
+          "max_tokens": 7,
+          "temperature": 0
+        }'
+        ```
+      requestBody:
+        description: ""
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                "model":
+                  type: string
+                  description: |-
+                    ID of the model to use. You can use the List models API to see all of your available models, or see our Model overview for descriptions of them.
+                    
+                    要使用的模型的ID。你可以使用List models API来查看你所有的可用模型，或者查看我们的模型概述来了解它们的描述。
+                  example: text-davinci-003
+                "prompt":
+                  type: array
+                  description: |-
+                    The prompt(s) to generate completions for, encoded as a string, array of strings, array of tokens, or array of token arrays.
+
+                    Note that <|endoftext|> is the document separator that the model sees during training, so if a prompt is not specified the model will generate as if from the beginning of a new document.
+                    
+                    要生成补语的提示，编码为字符串、字符串数组、标记数组或标记数组。
+
+                    请注意，<|endoftext|>是模型在训练过程中看到的文档分隔符，所以如果没有指定提示，模型会像从一个新文档的开头开始一样生成。
+                  items:
+                    type: string
+                  example: "Say this is a test"
+                "suffix":
+                  type: string
+                  description: |-
+                    The suffix that comes after a completion of inserted text.
+                    
+                    在插入的文本完成后的后缀。
+                  default: null
+                "max_tokens":
+                  type: number
+                  description: |-
+                    The maximum number of tokens to generate in the completion.
+
+                    The token count of your prompt plus `max_tokens` cannot exceed the model's context length. 
+                    Most models have a context length of 2048 tokens (except for the newest models, which support 4096).
+                    
+                    在完成中产生的最大数量的标记。
+
+                    你的提示符计数加上`max_tokens`不能超过模型的上下文长度。
+                    大多数模型的上下文长度为2048个标记（最新的模型除外，它支持4096个）。
+                  example: 7
+                "temperature":
+                  type: number
+                  description: |-
+                    What sampling temperature to use, between 0 and 2. 
+                    Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+
+                    We generally recommend altering this or `top_p` but not both.
+                    
+                    使用什么采样温度，在0和2之间。
+                    较高的值如0.8会使输出更加随机，而较低的值如0.2会使它更加集中和确定。
+
+                    我们通常建议改变这个值或`top_p'，但不能同时改变。
+                  example: 0
+                  default: 1
+                "top_p":
+                  type: number
+                  description: |-
+                    An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.
+                    
+                    We generally recommend altering this or `temperature` but not both.
+                    
+                    用温度取样的另一种方法，称为核取样，模型考虑具有top_p概率质量的令牌的结果。所以0.1意味着只考虑由前10%概率质量组成的标记。
+
+                    我们一般建议改变这个或`温度`，但不能同时改变。
+                  default: 1
+                "n":
+                  type: integer
+                  description: |-
+                    How many completions to generate for each prompt.
+
+                    **Note**: Because this parameter generates many completions, it can quickly consume your token quota. 
+                    Use carefully and ensure that you have reasonable settings for `max_tokens` and `stop`.
+                    
+                    为每个提示生成多少个完成度。
+
+                    **注意**： 因为这个参数会产生许多完成度，它可以迅速消耗你的令牌配额。
+                    谨慎使用，并确保你对`max_tokens`和`stop`有合理的设置。
+                  example: 0
+                  default: 1
+                "stream":
+                  type: boolean
+                  default: false
+                  description: |-
+                    Whether to stream back partial progress. 
+                    If set, tokens will be sent as data-only **server-sent events** as they become available, 
+                    with the stream terminated by a `data: [DONE]` message.
+                    
+                    是否流回部分进度。
+                    如果设置，令牌将作为仅有数据的**服务器发送的事件**发送，因为它们变得可用,数据流以 "data： [DONE]`消息来终止。
+                "logprobs":
+                  type: integer
+                  description: |-
+                    Include the log probabilities on the `logprobs` most likely tokens, as well the chosen tokens. 
+                    For example, if `logprobs` is 5, the API will return a list of the 5 most likely tokens. 
+                    The API will always return the `logprob` of the sampled token, so there may be up to logprobs+1 elements in the response.
+                    
+                    The maximum value for `logprobs` is 5. 
+                    If you need more than this, please contact us through our **Help center** and describe your use case.
+                    
+                    包括`logprobs`最可能的标记上的日志概率，以及所选择的标记。
+                    例如，如果`logprob`是5，API将返回5个最可能的令牌的列表。
+                    API将总是返回被取样标记的`logprob`，所以响应中可能有多达logprob+1的元素。
+
+                    `logprob'的最大值是5。
+                    如果你需要比这更多，请通过我们的**帮助中心**联系我们，并描述你的使用情况。
+                  example: 0
+                  default: null
+                "echo":
+                  type: boolean
+                  description: |-
+                    Echo back the prompt in addition to the completion
+                    
+                    除了完成之外，还返回 prompt.
+                  example: 0
+                  default: false
+                "stop":
+                  type: array
+                  description: |-
+                    Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.
+                    
+                    最多4个序列，API将停止生成进一步的标记。返回的文本将不包含停止序列。
+                  items:
+                    type: string
+                  example: 0
+                  default: null
+                "presence_penalty":
+                  type: number
+                  description: |-
+                    Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+                    
+                    [See more information about frequency and presence penalties](https://platform.openai.com/docs/api-reference/parameter-details).
+                    
+                    数值在-2.0和2.0之间。正值根据新标记是否在文本中出现而对其进行惩罚，增加模型谈论新话题的可能性。
+
+                    [参见关于频率和存在惩罚的更多信息]（https://platform.openai.com/docs/api-reference/parameter-details）。
+                  example: 0
+                  default: 0
+                "frequency_penalty":
+                  type: number
+                  description: |-
+                    Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
+                    
+                    [See more information about frequency and presence penalties](https://platform.openai.com/docs/api-reference/parameter-details).
+                    
+                    数值在-2.0和2.0之间。正值根据新标记在文本中的现有频率对其进行惩罚，减少了模型逐字重复同一行的可能性。
+
+                    [参见关于频率和存在性惩罚的更多信息](https://platform.openai.com/docs/api-reference/parameter-details)。
+                  example: 0
+                  default: 0
+                "best_of":
+                  type: integer
+                  description: |-
+                    Generates `best_of` completions server-side and returns the "best" (the one with the highest log probability per token). 
+                    Results cannot be streamed.
+                    
+                    When used with `n`, `best_of` controls the number of candidate completions and n specifies how many to return – 
+                    `best_of` must be greater than `n`.
+
+                    **Note**: Because this parameter generates many completions, it can quickly consume your token quota. 
+                    Use carefully and ensure that you have reasonable settings for `max_tokens` and `stop`.
+                    
+                    在服务器端生成 "最佳完成"，并返回 "最佳"（每个标记具有最高对数概率）。
+                    结果不能被流式处理。
+
+                    当与`n'一起使用时，`best_of'控制候选完成的数量，n指定返回的数量。
+                    `best_of'必须大于`n'.
+
+                    **注意**： 因为这个参数会产生很多完成度，它可以迅速消耗你的token配额。
+                    小心使用，并确保你对`max_tokens`和`stop`有合理的设置。
+                  example: 0
+                  default: 1
+                "logit_bias":
+                  type: object
+                  format: map
+                  description: |-
+                    Modify the likelihood of specified tokens appearing in the completion.
+                    
+                    Accepts a json object that maps tokens (specified by their token ID in the GPT tokenizer) to an associated bias value from -100 to 100. 
+                    You can use this tokenizer tool (which works for both GPT-2 and GPT-3) to convert text to token IDs. 
+                    Mathematically, the bias is added to the logits generated by the model prior to sampling. The exact effect will vary per model, but values between -1 and 1 should decrease or increase likelihood of selection; values like -100 or 100 should result in a ban or exclusive selection of the relevant token.
+
+                    As an example, you can pass `{"50256": -100}` to prevent the <|endoftext|> token from being generated.
+                    
+                    修改指定的标记在完成中出现的可能性。
+
+                    接受一个json对象，该对象将标记（由GPT标记器中的标记ID指定）映射到一个从-100到100的相关偏差值。
+                    你可以使用这个标记器工具（对GPT-2和GPT-3都有效）将文本转换为标记器ID。
+                    从数学上讲，偏差被添加到模型在采样前产生的对数中。每个模型的确切效果会有所不同，但是-1和1之间的值应该会减少或增加选择的可能性；像-100或100这样的值应该会导致禁止或独占选择相关的标记。
+
+                    作为一个例子，你可以通过`{"50256"： -100}`来阻止<|endoftext|>标记的生成。
+                  example: 0
+                  default: null
+                "user":
+                  type: string
+                  description: |-
+                    A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. 
+                    [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
+                    
+                    代表您的最终用户的唯一标识符，这可以帮助OpenAI监测和检测滥用。
+                    [了解更多](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids)。
+              required: [ "model" ]
+      responses:
+        200:
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "id":
+                    type: string
+                    example: "cmpl-uqkvlQyYK7bGYrRHQ0eXlWi7"
+                  "object":
+                    type: string
+                    example: "text_completion"
+                  "created":
+                    type: number
+                    example: 1589478378
+                  "model":
+                    type: string
+                    example: "text-davinci-003"
+                  "choices":
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "text":
+                          type: string
+                          example: "\n\nThis is indeed a test"
+                        "index":
+                          type: integer
+                          example: 0
+                        "logprobs":
+                          type: integer
+                          example: null
+                        "finish_reason":
+                          type: string
+                          example: "length"
+                  "usage":
+                    type: object
+                    properties:
+                      "prompt_tokens":
+                        type: number
+                        example: 5
+                      "completion_tokens":
+                        type: number
+                        example: 7
+                      "total_tokens":
+                        type: number
+                        example: 12
+
+  "/v1/chat/completions":
+    "post":
+      tags: [ "openai", "chat" ]
+      operationId: Create chat completion
+      summary: Creates a model response for the given chat conversation.
+      description: |-
+        Creates a model response for the given chat conversation.![Beta](https://img.shields.io/badge/-beta-orange)
+        
+        为给定的聊天对话创建一个响应模型。！[Beta](https://img.shields.io/badge/-beta-orange)
+        
+        Example request:
+        
+        ```shell
+        curl https://api.openai.com/v1/chat/completions \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $OPENAI_API_KEY" \
+          -d '{
+          "model": "gpt-3.5-turbo",
+          "messages": [{"role": "user", "content": "Hello!"}]
+        }'
+        ```
+      requestBody:
+        description: ""
+        content:
+          "application/json":
+            schema:
+              type: object
+              required: [ "model", "messages" ]
+              properties:
+                "model":
+                  type: string
+                  description: |-
+                    ID of the model to use. See the model endpoint compatibility table for details on which models work with the Chat API.
+                    
+                    要使用的模型的ID。请参阅模型端点兼容性表，了解哪些模型可以与聊天API一起使用。
+                  example: text-davinci-003
+                "messages":
+                  type: array
+                  description: A list of messages describing the conversation so far.
+                  items:
+                    type: object
+                    required: [ "role", "content" ]
+                    properties:
+                      "role":
+                        type: string
+                        description: |-
+                          The role of the author of this message. One of `system`, `user`, or `assistant`.
+                          
+                          这个消息的作者的角色。是 "系统"、"用户 "或 "助理 "之一。
+                        enum:
+                          - system
+                          - user
+                          - assistant
+                        example: assistant
+                      "content":
+                        type: string
+                        description: The contents of the message.
+                        example: text-davinci-003
+                      "name":
+                        type: string
+                        description: |-
+                          The name of the author of this message. May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.
+                          
+                          本消息作者的名字。可包含a-z、A-Z、0-9和下划线，最大长度为64个字符。
+                "temperature":
+                  type: number
+                  description: |-
+                    What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+
+                    We generally recommend altering this or `top_p` but not both.
+                    
+                    使用什么采样温度，在0和2之间。较高的值如0.8会使输出更加随机，而较低的值如0.2会使它更加集中和确定。
+
+                    我们通常建议改变这个值或`top_p'，但不能同时改变。
+                  default:  1
+                "top_p":
+                  type: number
+                  description: |-
+                    An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.
+
+                    We generally recommend altering this or `temperature` but not both.
+                    
+                    用 temperature 取样的另一种方法，称为核取样，模型考虑具有top_p概率质量的令牌的结果。所以0.1意味着只考虑由前10%概率质量组成的标记。
+
+                    我们一般建议改变这个或`temperature`，但不能同时改变。
+                  default: 1
+                "n":
+                  type: integer
+                  description: |-
+                    How many chat completion choices to generate for each input message.
+                    
+                    每条输入信息要生成多少个聊天完成选择。
+                  example: text-davinci-003
+                  default: 1
+                "stream":
+                  type: boolean
+                  description: |-
+                    If set, partial message deltas will be sent, like in ChatGPT. 
+                    Tokens will be sent as data-only [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format) as they become available, with the stream terminated by a `data: [DONE]` message. 
+                    See the OpenAI Cookbook for example code.
+                    
+                    如果设置，将发送部分消息三角洲，就像在ChatGPT中一样。
+                    令牌将在它们可用时作为纯数据的[服务器发送的事件](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format)发送，并以`数据'终止流： [DONE]`消息来终止。
+                    参见OpenAI Cookbook中的示例代码。
+                  default: false
+                "stop":
+                  type: array
+                  description: |-
+                    Up to 4 sequences where the API will stop generating further tokens.
+                    
+                    最多4个序列，在这些序列中，API将停止生成进一步的令牌。
+                  items:
+                    type: string
+                  default: null
+                "max_tokens":
+                  type: integer
+                  description: |-
+                    The maximum number of [tokens](https://platform.openai.com/tokenizer) to generate in the chat completion.
+
+                    The total length of input tokens and generated tokens is limited by the model's context length.
+                    
+                    聊天完成时要生成的最大[tokens](https://platform.openai.com/tokenizer)数量。
+
+                    输入的标记和生成的标记的总长度受模型的上下文长度限制。
+                  default: inf
+                "presence_penalty":
+                  type: number
+                  description: |-
+                    Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+
+                    [See more information about frequency and presence penalties](https://platform.openai.com/docs/api-reference/parameter-details).
+                    
+                    数值在-2.0和2.0之间。正值根据新标记是否在文本中出现而对其进行惩罚，增加模型谈论新话题的可能性。
+
+                    [参见关于频率和存在惩罚的更多信息]（https://platform.openai.com/docs/api-reference/parameter-details）。
+                  default: 0
+                "frequency_penalty":
+                  type: number
+                  description: |-
+                    Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
+
+                    [See more information about frequency and presence penalties](https://platform.openai.com/docs/api-reference/parameter-details).
+                    
+                    数值在-2.0和2.0之间。正值根据新标记在文本中的现有频率对其进行惩罚，减少了模型逐字重复同一行的可能性。
+
+                    [参见关于频率和存在性惩罚的更多信息](https://platform.openai.com/docs/api-reference/parameter-details)。
+                  default: 0
+                "logit_bias":
+                  type: object
+                  format: map
+                  description: |-
+                    Modify the likelihood of specified tokens appearing in the completion.
+                    
+                    Accepts a json object that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100. 
+                    Mathematically, the bias is added to the logits generated by the model prior to sampling. 
+                    The exact effect will vary per model, but values between -1 and 1 should decrease or increase likelihood of selection; values like -100 or 100 should result in a ban or exclusive selection of the relevant token.
+                    
+                    修改指定的令牌出现在完成度中的可能性。
+
+                    接受一个json对象，该对象将标记（由标记器中的标记ID指定）映射到-100到100的相关偏置值。
+                    在数学上，偏差被添加到模型在采样前产生的对数中。
+                    每个模型的确切效果会有所不同，但是-1和1之间的值应该减少或增加选择的可能性；像-100或100这样的值应该导致禁止或排斥选择相关的标记。
+                  default: null
+                "user":
+                  type: string
+                  description: |-
+                    A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. 
+                    [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
+                    
+                    代表您的终端用户的唯一标识符，这可以帮助OpenAI监测和检测滥用。
+                    [了解更多](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids)。
+
+      responses:
+        200:
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "id":
+                    type: string
+                    example: chatcmpl-123
+                  "object":
+                    type: string
+                    example: chat.completion
+                  "created":
+                    type: number
+                    example: 1677652288
+                  "choices":
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "index":
+                          type: integer
+                          example: 0
+                        "message":
+                          type: object
+                          properties:
+                            "role":
+                              type: string
+                              example: assistant
+                            "content":
+                              type: string
+                              example: "\n\nHello there, how may I assist you today?"
+                        "finish_reason":
+                          type: string
+                          example: stop
+                  "usage":
+                    type: object
+                    properties:
+                      "prompt_tokens":
+                        type: number
+                        example: 9
+                      "completion_tokens":
+                        type: number
+                        example: 12
+                      "total_tokens":
+                        type: number
+                        example: 21
+
+  "/v1/edits":
+    post:
+      tags: [ "openai", "edits" ]
+      operationId: Create edit
+      summary: Creates a new edit for the provided input, instruction, and parameters.
+      description: |-
+        Creates a new edit for the provided input, instruction, and parameters.
+        
+        为提供的输入、指令和参数创建一个新的 edit。
+        
+        Example request:
+        
+        ```shell
+        curl https://api.openai.com/v1/edits \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $OPENAI_API_KEY" \
+          -d '{
+          "model": "text-davinci-edit-001",
+          "input": "What day of the wek is it?",
+          "instruction": "Fix the spelling mistakes"
+        }'
+        ```
+        ```node.js
+        const { Configuration, OpenAIApi } = require("openai");
+        const configuration = new Configuration({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
+        const openai = new OpenAIApi(configuration);
+        const response = await openai.createEdit({
+          model: "text-davinci-edit-001",
+          input: "What day of the wek is it?",
+          instruction: "Fix the spelling mistakes",
+        });
+        ```
+
+      requestBody:
+        description: ""
+        content:
+          "application/json":
+            schema:
+              type: object
+              required: [ "model", "instruction" ]
+              properties:
+                "model":
+                  type: string
+                  description: |-
+                    ID of the model to use. You can use the `text-davinci-edit-001` or `code-davinci-edit-001` model with this endpoint.
+                    
+                    要使用的模型的ID。你可以使用`text-davinci-edit-001`或`code-davinci-edit-001`模型与此端点。
+                  example: text-davinci-edit-001
+                  default:
+                "instruction":
+                  type: string
+                  description: |-
+                    The instruction that tells the model how to edit the prompt.
+                    
+                    告诉模型如何编辑提示的指令。
+                  example: Fix the spelling mistakes
+                  default: ""
+                "input":
+                  type: string
+                  description: |-
+                    The input text to use as a starting point for the edit.
+                    
+                    用来作为编辑起点的输入文本。
+                  example: What day of the wek is it?
+                  default: ""
+                "n":
+                  type: integer
+                  description: |-
+                    How many edits to generate for the input and instruction.
+                    
+                    为输入和指令生成多少个 edit。
+                  example:
+                  default: 1
+                "temperature":
+                  type: string
+                  description: |-
+                    What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+                    
+                    We generally recommend altering this or `top_p` but not both.
+                    
+                    使用什么采样温度，在0和2之间。较高的值如0.8会使输出更加随机，而较低的值如0.2会使它更加集中和确定。
+
+                    我们通常建议改变这个值或`top_p'，但不能同时改变。
+                  example:
+                  default: 1
+                "top_p":
+                  type: number
+                  description: |-
+                    An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.
+                    
+                    We generally recommend altering this or `temperature` but not both.
+                    
+                    用温度取样的另一种方法，称为核取样，模型考虑具有top_p概率质量的令牌的结果。所以0.1意味着只考虑由前10%概率质量组成的标记。
+
+                    我们一般建议改变这个或`温度`，但不能同时改变。
+                  example:
+                  default: 1
+      responses:
+        200:
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "object":
+                    type: string
+                    example: "edit"
+                  "created":
+                    type: number
+                    example: 1589478378
+                  "choices":
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "text":
+                          type: string
+                          example: "What day of the week is it?"
+                        "index":
+                          type: number
+                          example: 0
+                  "usage":
+                    type: object
+                    properties:
+                      "prompt_tokens":
+                        type: integer
+                        example: 25
+                      "completion_tokens":
+                        type: integer
+                        example: 32
+                      "total_tokens":
+                        type: integer
+                        example: 57
+  /v1/images/generations:
+    post:
+      tags: [ "openai", "images" ]
+      operationId: Create image
+      summary: Creates a new edit for the provided input, instruction, and parameters.
+      description: |-
+        Creates an image given a prompt.
+        
+        根据提示创建一个图像。根据 prompt 创建一个图像。
+        
+        Example request:
+        
+        ```shell
+        curl https://api.openai.com/v1/images/generations \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $OPENAI_API_KEY" \
+          -d '{
+            "prompt": "A cute baby sea otter",
+            "n": 2,
+            "size": "1024x1024"
+          }'
+        ```
+        ```node.js
+        const { Configuration, OpenAIApi } = require("openai");
+        const configuration = new Configuration({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
+        const openai = new OpenAIApi(configuration);
+        const response = await openai.createImage({
+          prompt: "A cute baby sea otter",
+          n: 2,
+          size: "1024x1024",
+        });
+        ```
+      requestBody:
+        description: ""
+        content:
+          "application/json":
+            schema:
+              type: object
+              required: [ "prompt" ]
+              properties:
+                "prompt":
+                  type: string
+                  description: |-
+                    A text description of the desired image(s). The maximum length is 1000 characters.
+                    
+                    对所需图像的文字描述。最大长度为1000个字符。
+                  example: A cute baby sea otter
+                  default:
+                "n":
+                  type: integer
+                  description: |-
+                    The number of images to generate. Must be between 1 and 10.
+                    
+                    要生成的图像的数量。必须在1到10之间。
+                  example: 2
+                  default: 1
+                "size":
+                  type: string
+                  description: |-
+                    The size of the generated images. Must be one of `256x256`, `512x512`, or `1024x1024`.
+                    
+                    生成图像的大小。必须是`256x256`、`512x512`或`1024x1024`中的一个。
+                  example: 1024x1024
+                  default: 1024x1024
+                "response_format":
+                  type: string
+                  description: |-
+                    The format in which the generated images are returned. Must be one of `url` or `b64_json`.
+                    
+                    返回生成的图像的格式。必须是`url`或`b64_json`之一。
+                  example:
+                  default:
+                "user":
+                  type: string
+                  description: |-
+                    A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. 
+                    [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
+                    
+                    代表您的最终用户的唯一标识符，这可以帮助OpenAI监测和检测滥用。
+                    [了解更多](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids)
+                  example:
+                  default:
+      responses:
+        200:
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "created":
+                    type: number
+                    example: 1589478378
+                  "data":
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "url":
+                          type: string
+                          example: "https://..."
+
+  /v1/images/edits:
+    post:
+      tags: [ "openai", "images" ]
+      operationId: Create image edit
+      summary: Creates an edited or extended image given an original image and a prompt.
+      description: |-
+        Creates an edited or extended image given an original image and a prompt.![Beta](https://img.shields.io/badge/-beta-orange)
+        
+        给予原始图像和提示，创建一个经过编辑或扩展的图像。！[Beta](https://img.shields.io/badge/-beta-orange)
+        
+        ```shell
+        curl https://api.openai.com/v1/images/edits \
+          -H "Authorization: Bearer $OPENAI_API_KEY" \
+          -F image="@otter.png" \
+          -F mask="@mask.png" \
+          -F prompt="A cute baby sea otter wearing a beret" \
+          -F n=2 \
+          -F size="1024x1024"
+        ```
+        ```node.js
+        const { Configuration, OpenAIApi } = require("openai");
+        const configuration = new Configuration({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
+        const openai = new OpenAIApi(configuration);
+        const response = await openai.createImageEdit(
+          fs.createReadStream("otter.png"),
+          fs.createReadStream("mask.png"),
+          "A cute baby sea otter wearing a beret",
+          2,
+          "1024x1024"
+        );
+        ```
+      requestBody:
+        description: ""
+        content:
+          "multipart/form-data":
+            schema:
+              type: object
+              required: [ "image", "prompt" ]
+              properties:
+                "image":
+                  type: string
+                  format: binary
+                  description: |-
+                    The image to edit. Must be a valid PNG file, less than 4MB, and square. 
+                    If mask is not provided, image must have transparency, which will be used as the mask.
+                    
+                    要编辑的图像。必须是一个有效的PNG文件，小于4MB，并且是正方形。
+                    如果没有提供遮罩，图像必须有透明度，这将作为遮罩使用。
+                  example: "@otter.png"
+                  default:
+                "mask":
+                  type: string
+                  format: binary
+                  description: |-
+                    An additional image whose fully transparent areas (e.g. where alpha is zero) indicate where `image` should be edited. 
+                    Must be a valid PNG file, less than 4MB, and have the same dimensions as `image`.
+                    
+                    一个额外的图像，其完全透明的区域（例如，alpha为零）表明`image`应该被编辑。
+                    必须是一个有效的PNG文件，小于4MB，并且与`image`具有相同的尺寸。
+                    一个额外的图像，其完全透明的区域（例如，alpha为零）表明`image`应该被编辑。
+                    必须是一个有效的PNG文件，小于4MB，并且与`image`具有相同的尺寸。
+                  example: "@mask.png"
+                  default:
+                "prompt":
+                  type: string
+                  description: |-
+                    A text description of the desired image(s). The maximum length is 1000 characters.
+                    
+                    对所需图像的文字描述。最大长度为1000个字符。
+                  example: A cute baby sea otter wearing a beret
+                  default:
+                "n":
+                  type: string
+                  description: |-
+                    The number of images to generate. Must be between 1 and 10.
+                    
+                    要生成的图像的数量。必须在1到10之间。
+                  example:
+                  default: 1
+                "size":
+                  type: string
+                  description: |-
+                    The size of the generated images. Must be one of `256x256`, `512x512`, or `1024x1024`.
+                    
+                    生成图像的大小。必须是`256x256`、`512x512`或`1024x1024`中的一个。
+                  example: 1024x1024
+                  default: 1024x1024
+                "response_format":
+                  type: string
+                  description: |-
+                    The format in which the generated images are returned. Must be one of `url` or `b64_json`.
+                    
+                    返回生成的图像的格式。必须是`url`或`b64_json`之一。
+                  example:
+                  default: url
+                "user":
+                  type: string
+                  description: |-
+                    A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. 
+                    [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
+                    
+                    代表您的终端用户的唯一标识符，这可以帮助OpenAI监测和检测滥用。
+                    [了解更多](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids)。
+                  example:
+                  default:
+      responses:
+        200:
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "created":
+                    type: number
+                    example: 1589478378
+                  "data":
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "url":
+                          type: string
+                          example: "https://..."
+  /v1/images/variations:
+    post:
+      tags: [ "openai", "images" ]
+      operationId: Create image variation
+      summary: Creates a variation of a given image.
+      description: |-
+        Creates a variation of a given image.
+        
+        创建一个给定图像的变体。
+      
+        curl
+        ```shell
+        curl https://api.openai.com/v1/images/variations \
+          -H "Authorization: Bearer $OPENAI_API_KEY" \
+          -F image="@otter.png" \
+          -F n=2 \
+          -F size="1024x1024"
+        ```
+        
+        node.js
+        ```node.js
+        const { Configuration, OpenAIApi } = require("openai");
+        const configuration = new Configuration({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
+        const openai = new OpenAIApi(configuration);
+        const response = await openai.createImageVariation(
+          fs.createReadStream("otter.png"),
+          2,
+          "1024x1024"
+        );
+        ```
+      requestBody:
+        description: ""
+        content:
+          "multipart/form-data":
+            schema:
+              type: object
+              required: [ "image" ]
+              properties:
+                "image":
+                  type: string
+                  format: binary
+                  description: |-
+                    The image to use as the basis for the variation(s). Must be a valid PNG file, less than 4MB, and square.
+                    
+                    用来作为变体的基础的图像。必须是有效的PNG文件，小于4MB，并且是正方形。
+                  example:
+                  default: 1
+                "n":
+                  type: string
+                  description: |-
+                    The number of images to generate. Must be between 1 and 10.
+                    
+                    要生成的图像的数量。必须在1到10之间。
+                  example:
+                  default: 1
+                "size":
+                  type: string
+                  description: |-
+                    The size of the generated images. Must be one of `256x256`, `512x512`, or `1024x1024`.
+                    
+                    生成图像的大小。必须是`256x256`、`512x512`或`1024x1024`中的一个。
+                  example: 1024x1024
+                  default: 1024x1024
+                "response_format":
+                  type: string
+                  description: |-
+                    The format in which the generated images are returned. Must be one of `url` or `b64_json`.
+                    
+                    返回生成的图像的格式。必须是`url`或`b64_json`之一。
+                  example: url
+                  default: url
+                "user":
+                  type: string
+                  description: |-
+                    A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
+                    
+                    代表您的终端用户的唯一标识符，这可以帮助OpenAI监测和检测滥用。[了解更多](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids)。
+                  example:
+                  default: 1
+      responses:
+        200:
+          description: successful operation
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  "created":
+                    type: number
+                    example: 1589478378
+                  "data":
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "url":
+                          type: string
+                          example: "https://..."
+
+tags:
+  - name: openai
+    description: |-
+      The API provided by Openai.
+      
+      由Openai提供的API。
+    externalDocs:
+      description: Find out more
+      url: https://platform.openai.com/docs/api-reference
+  - name: models
+    description: |-
+      List and describe the various models available in the API. 
+      You can refer to the [Models](https://platform.openai.com/docs/models) documentation to understand what models are available and the differences between them.
+      
+      列出并描述API中可用的各种模型。
+      你可以参考[模型](https://platform.openai.com/docs/models)文档来了解有哪些模型可用以及它们之间的区别。
+    externalDocs:
+      description: Find out more
+      url: https://platform.openai.com/docs/api-reference/models
+  - name: completions
+    description: |-
+      Given a prompt, the model will return one or more predicted completions, 
+      and can also return the probabilities of alternative tokens at each position.
+      
+      给定一个提示，该模型将返回一个或多个预测的完成度、 
+      并可以返回每个位置上的备选标记的概率。
+    externalDocs:
+      description: Find out more
+      url: https://platform.openai.com/docs/api-reference/completions
+  - name: chat
+    description: |-
+      Given a list of messages describing a conversation, the model will return a response.![Beta](https://img.shields.io/badge/-beta-orange)
+      
+      给出一个描述对话的信息列表，模型将返回一个响应。！[Beta](https://img.shields.io/badge/-beta-orange)
+    externalDocs:
+      description: Find out more
+      url: https://platform.openai.com/docs/api-reference/chat
+  - name: edits
+    description: |-
+      Given a prompt and an instruction, the model will return an edited version of the prompt.
+      
+      给出一个提示和一个指令，该模型将返回一个经过编辑的提示版本。
+    externalDocs:
+      description: Find out more
+      url: https://platform.openai.com/docs/api-reference/edits
+  - name: images
+    description: |-
+      Given a prompt and/or an input image, the model will generate a new image.![Beta](https://img.shields.io/badge/-beta-orange)
+
+      Related guide: [Image generation](https://platform.openai.com/docs/guides/images)
+      
+      给出一个提示和/或一个输入图像，该模型将生成一个新的图像。！[Beta](https://img.shields.io/badge/-beta-orange)
+
+      相关的指南： [图像生成](https://platform.openai.com/docs/guides/images)
+    externalDocs:
+      description: Find out more
+      url: https://platform.openai.com/docs/api-reference/images

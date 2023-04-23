@@ -5,36 +5,6 @@ providers:
     description: openai 提供的 chatgpt 能力
     docSite: https://platform.openai.com/docs/api-reference
     appKey: ${ env.OPENAI_API_KEY }
-
-    # 只有在 apis 列表中的接口才会被支持
-    apis:
-      - name: completions
-        path: /v1/chat/completions
-        swagger:
-          "post":
-            description: Creates a completion for the provided prompt and parameters.
-      - name: chatCompletion
-        path: /v1/chat/completions
-        swagger:
-          "get":
-            description: 聊天接口
-      - name: listModels
-        path: /v1/models
-        swagger:
-          "get":
-            description: 列举模型
-      - name: retrieveModel
-        path: /v1/models/{model}
-        swagger:
-          parameters:
-            - name: model
-              in: path
-              description: chatgpt model name
-              required: true
-              schema:
-                type: string
-          "get":
-            description: 查询模型详情
-
-  - name: wenxin
-  - name: tongyi
+    organization: ""
+    openapi:
+      $ref: swaggers/api.openai.com.yaml

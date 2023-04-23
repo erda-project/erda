@@ -16,6 +16,9 @@ package provider
 
 import (
 	"encoding/json"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -32,8 +35,9 @@ type Provider struct {
 	// appKey provided by ai-proxy, you can use an expression like ${ env.CHATGPT_APP_KEY }
 	AppKey string `json:"appKey" yaml:"appKey"`
 	// secretKey provided by ai-proxy, you can use an expression like ${ env.CHATGPT_APP_KEY }
-	Organization string `json:"organization" yaml:"organization"`
-	APIs         []*API `json:"apis" yaml:"apis"`
+	Organization string            `json:"organization" yaml:"organization"`
+	Openapi      json.RawMessage   `json:"openapi" json:"openapi"`
+	Swagger      *openapi3.Swagger `json:"-" yaml:"-"`
 }
 
 func (p *Provider) GetAppKey() string {
@@ -44,29 +48,50 @@ func (p *Provider) GetOrganization() string {
 	return p.Organization // todo: get from env expr
 }
 
-func (p *Provider) FindAPI(name, path string) (*API, bool) {
-	for _, api := range p.APIs {
-		if api.Name == name {
-			return api, true
+func (p *Provider) LoadOpenapiSpec() error {
+	var m = make(map[string]string)
+	if err := yaml.Unmarshal(p.Openapi, &m); err == nil {
+		if filename, ok := m["$ref"]; ok && filename != "" {
+			swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromFile(filename)
+			if err != nil {
+				return err
+			}
+			p.Swagger = swagger
+			return nil
 		}
 	}
-	for _, api := range p.APIs {
-		if api.MatchPath(path) {
-			return api, true
+	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromData(p.Openapi)
+	if err != nil {
+		return err
+	}
+	p.Swagger = swagger
+	return nil
+}
+
+func (p *Provider) FindAPI(name, path string) bool {
+	for pth, item := range p.Swagger.Paths {
+		if path == "" {
+			for _, operation := range []*openapi3.Operation{
+				item.Connect,
+				item.Delete,
+				item.Get,
+				item.Head,
+				item.Options,
+				item.Patch,
+				item.Post,
+				item.Put,
+				item.Trace,
+			} {
+				if operation != nil && name == operation.OperationID {
+					return true
+				}
+			}
+		}
+		if MatchPath(pth, path) {
+			return true
 		}
 	}
-	return nil, false
-}
-
-type API struct {
-	Name    string          `json:"name" yaml:"name"`
-	Path    string          `json:"path" yaml:"path"`
-	Swagger json.RawMessage `json:"swagger" yaml:"swagger"`
-}
-
-func (api *API) MatchPath(path string) bool {
-	// todo: not implement
-	return true
+	return false
 }
 
 type Providers []*Provider
@@ -78,4 +103,8 @@ func (p Providers) GetProvider(name string) (*Provider, bool) {
 		}
 	}
 	return nil, false
+}
+
+func MatchPath(pattern, path string) bool {
+	return true // todo: not implement
 }

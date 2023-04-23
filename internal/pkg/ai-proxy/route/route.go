@@ -48,7 +48,7 @@ func (r *Route) Match(path, method string) bool {
 			return false
 		}
 	}
-	logrus.Infof("r.Path: %s, path: %s", r.Path, path)
+	logrus.Infof("route.Path: %s, request.path: %s", r.Path, path)
 	return true
 	return r.Path == path // todo: 需要实现匹配方法
 }

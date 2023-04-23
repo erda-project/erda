@@ -16,13 +16,12 @@ package ai_proxy
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
@@ -53,9 +52,6 @@ var (
 	}
 )
 
-//go:embed api-reference
-var webfs embed.FS
-
 func init() {
 	servicehub.Register(name, &spec)
 }
@@ -75,8 +71,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
 	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	p.HttpServer.GET("/swagger.json", p.ServerSwagger)
-	p.HttpServer.Static("/swagger", "/api-reference", httpserver.WithFileSystem(http.FS(webfs)))
+	p.HttpServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
+	p.HttpServer.Any("/swagger", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", "/swagger/"+strings.TrimPrefix(r.URL.Path, "/swagger"))
+		w.WriteHeader(http.StatusPermanentRedirect)
+	})
+	p.HttpServer.Any("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", "/swagger/")
+		w.WriteHeader(http.StatusPermanentRedirect)
+	})
+	p.HttpServer.Static("/swagger/**", "swagger-ui", http.FileServer(http.Dir("swagger-ui")))
 	p.HttpServer.Any("/**", p.ServeAI)
 	return nil
 }
@@ -117,67 +121,20 @@ func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *provider) ServerSwagger(w http.ResponseWriter, r *http.Request) {
-	swagger := &openapi3.Swagger{
-		ExtensionProps: openapi3.ExtensionProps{},
-		OpenAPI:        "3.0.0",
-		Components:     openapi3.Components{},
-		Info: &openapi3.Info{
-			ExtensionProps: openapi3.ExtensionProps{},
-			Title:          "Erda AI Providers",
-			Description:    "",
-			TermsOfService: "",
-			Contact:        nil,
-			License:        nil,
-			Version:        "",
-		},
-		Paths:        make(openapi3.Paths),
-		Security:     nil,
-		Servers:      nil,
-		Tags:         openapi3.Tags{},
-		ExternalDocs: nil,
-	}
-	var tags = make(map[string]any)
-	for _, prov := range p.Config.providers {
-		for _, api := range prov.APIs {
-			if api.Swagger == nil {
-				continue
-			}
-			tags[prov.Name] = nil
-			var item openapi3.PathItem
-			if err := yaml.Unmarshal(api.Swagger, &item); err != nil {
-				p.L.Errorf("failure to yaml.Unmarshal swagger, swagger: %s, err: %v", string(api.Swagger), err)
-				continue
-			}
-			for _, o := range []*openapi3.Operation{item.Connect, item.Delete, item.Get, item.Head, item.Options, item.Patch, item.Post, item.Put, item.Trace} {
-				if o != nil {
-					o.Tags = append(o.Tags, prov.Name)
-				}
-			}
-			swagger.Paths[api.Path] = &item
-		}
-	}
-	for tag := range tags {
-		swagger.Tags = append(swagger.Tags, &openapi3.Tag{Name: tag})
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Add("Content-Disposition", "attachment; filename=swagger.json")
-	if err := json.NewEncoder(w).Encode(swagger); err != nil {
-		w.Header().Del("Content-Disposition")
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"error": err.Error(),
-		})
-	}
-}
-
 func (p *provider) parseRoutesConfig() error {
 	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
 }
 
 func (p *provider) parseProvidersConfig() error {
-	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.providers)
+	if err := p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.providers); err != nil {
+		return err
+	}
+	for i := 0; i < len(p.Config.providers); i++ {
+		if err := p.Config.providers[i].LoadOpenapiSpec(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *provider) parseConfig(ref, key string, i interface{}) error {
