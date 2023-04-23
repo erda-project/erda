@@ -63,7 +63,7 @@ func (fil *ProtocolTranslator) OnHttpRequest(ctx context.Context, w http.Respons
 		})
 		return filter.Intercept, nil
 	}
-	if strutil.EqualFold(rout.Protocol, fil.Config.Protocol) {
+	if strutil.Equal(rout.Protocol, fil.Config.Protocol) {
 		return filter.Continue, nil
 	}
 	fil.responseNotImplementTranslator(w, rout.Protocol, fil.Config.Protocol)
