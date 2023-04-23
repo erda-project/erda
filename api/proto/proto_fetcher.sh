@@ -5,6 +5,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 EXTERNAL_REPO_DIR="externalrepo"
 
+# otel remote proto conf
+OTEL_PROTO_REPO="https://github.com/open-telemetry/opentelemetry-proto.git"
+OTEL_PROTO_COMMIT_ID="395c8422fe90080314c7d9b4114d701a0c049e1f"
+
 # usage
 usage() {
     echo "proto_fetcher.sh ACTION"
@@ -118,8 +122,8 @@ fetch_opentelemetry_proto() {
 
   # fetch code
   echo -e "\n#1 [otel] fetch code:"
-  fetch_code --repo=https://github.com/open-telemetry/opentelemetry-proto.git \
-             --commit-id=395c8422fe90080314c7d9b4114d701a0c049e1f \
+  fetch_code --repo=${OTEL_PROTO_REPO} \
+             --commit-id=${OTEL_PROTO_COMMIT_ID} \
              ${OTEL_PROTO_REPO_MIRROR:+--mirror=$OTEL_PROTO_REPO_MIRROR}
   echo "#1 done"
 
