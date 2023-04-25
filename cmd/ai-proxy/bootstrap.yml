@@ -6,6 +6,12 @@ erda.app.ai-proxy:
   routesRef: conf/routes.yml
   providersRef: conf/providers.yml
 
+erda.app.swagger-ui:
+  index: swagger-ui/index.html
+  swaggers:
+    openai: swaggers/api.openai.com.yaml
+    azure: swaggers/openai.azure.com.yaml
+
 gorm.v2:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"

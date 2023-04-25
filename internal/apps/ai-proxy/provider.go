@@ -15,11 +15,11 @@
 package ai_proxy
 
 import (
+	_ "embed"
 	"encoding/json"
 	"net/http"
 	"os"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	swagger_ui "github.com/erda-project/erda/internal/apps/swagger-ui"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	reverse_proxy "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
@@ -59,29 +60,29 @@ func init() {
 type provider struct {
 	L          logs.Logger
 	Config     *config
-	HttpServer httpserver.Router `autowired:"http-server"`
-	D          *gorm.DB          `autowired:"mysql-gorm.v2-client"`
+	HttpServer httpserver.Router    `autowired:"http-server"`
+	SwaggerUI  swagger_ui.Interface `autowired:"erda.app.swagger-ui.Server"`
+	D          *gorm.DB             `autowired:"mysql-gorm.v2-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
-	p.L.Info("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
+	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
 	if err := p.parseProvidersConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	p.HttpServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
-	p.HttpServer.Any("/swagger", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Location", "/swagger/"+strings.TrimPrefix(r.URL.Path, "/swagger"))
-		w.WriteHeader(http.StatusPermanentRedirect)
-	})
+
+	// register http api
 	p.HttpServer.Any("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Location", "/swagger/")
+		w.Header().Set("Location", "/swagger")
 		w.WriteHeader(http.StatusPermanentRedirect)
 	})
-	p.HttpServer.Static("/swagger/**", "swagger-ui", http.FileServer(http.Dir("swagger-ui")))
+	p.HttpServer.Any("/swagger", p.SwaggerUI)
+	p.HttpServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
+	//p.HttpServer.Static("/swagger/**", "swagger-ui", http.FileServer(http.Dir("swagger-ui")))
 	p.HttpServer.Any("/**", p.ServeAI)
 	return nil
 }
@@ -185,12 +186,8 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 }
 
 type config struct {
-	HttpServer struct {
-		Addr string
-	} `json:"httpServer" yaml:"httpServer"`
 	RoutesRef    string `json:"routesRef" yaml:"routesRef"`
 	ProvidersRef string `json:"providersRef" yaml:"providersRef"`
-
-	providers provider2.Providers
-	Routes    route2.Routes
+	providers    provider2.Providers
+	Routes       route2.Routes
 }
