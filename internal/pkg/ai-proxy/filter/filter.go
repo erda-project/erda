@@ -17,6 +17,7 @@ package filter
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"sync"
 )
@@ -31,9 +32,14 @@ var (
 	l         = new(sync.Mutex)
 )
 
-type Filter interface {
-	RequestFilter
-	ResponseFilter
+type Filter interface{}
+
+type RequestHeaderFilter interface {
+	OnHttpRequestHeader(ctx context.Context, header http.Header) (Signal, error)
+}
+
+type RequestBodyCopyFilter interface {
+	OnHttpRequestBodyCopy(ctx context.Context, buf io.Reader) (Signal, error)
 }
 
 type RequestFilter interface {
@@ -41,7 +47,7 @@ type RequestFilter interface {
 }
 
 type ResponseFilter interface {
-	OnHttpResponse(ctx context.Context, response *http.Response, r *http.Request) (Signal, error)
+	OnHttpResponse(ctx context.Context, response *http.Response) (Signal, error)
 }
 
 type Config struct {
@@ -51,12 +57,6 @@ type Config struct {
 
 type Signal int
 
-// RouteCtxKey 用以从 context.Context 中获取 route.Route 以获取 route.Route 的更多配置信息
-type (
-	RouteCtxKey     struct{}
-	ProvidersCtxKey struct{}
-	FiltersCtxKey   struct{}
-)
 type InstantiateFunc func(config json.RawMessage) (Filter, error)
 
 func Register(name string, inst InstantiateFunc) {

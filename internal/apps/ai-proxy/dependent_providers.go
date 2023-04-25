@@ -16,6 +16,6 @@ package ai_proxy
 
 import (
 	_ "github.com/erda-project/erda-infra/providers/health"
-	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/protocol-translator"
-	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
+	_ "github.com/erda-project/erda-infra/providers/httpserver"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 )

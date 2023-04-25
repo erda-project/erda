@@ -1,5 +1,6 @@
 providers:
-  - name: chatgpt/v1
+  - name: openai
+    instanceId: default
     host: api.openai.com
     scheme: https
     description: openai 提供的 chatgpt 能力
@@ -8,3 +9,16 @@ providers:
     organization: ""
     openapi:
       $ref: swaggers/api.openai.com.yaml
+    metadata: {}
+
+  - name: azure
+    instanceId: default
+    host: codeai.openai.azure.com
+    scheme: https
+    description: azure 提供的 ai 能力
+    docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
+    openapi:
+      $ref: swaggers/openai.azure.com.yaml
+    metadata:
+      RESOURCE_NAME: "codeai"
+      DEVELOPMENT_ID: "gpt-35-turbo-0301"

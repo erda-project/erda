@@ -15,7 +15,6 @@
 package ai_proxy
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -23,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -60,6 +60,7 @@ type provider struct {
 	L          logs.Logger
 	Config     *config
 	HttpServer httpserver.Router `autowired:"http-server"`
+	D          *gorm.DB          `autowired:"mysql-gorm.v2-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -70,7 +71,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.parseProvidersConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
-	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
+	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 	p.HttpServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
 	p.HttpServer.Any("/swagger", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Location", "/swagger/"+strings.TrimPrefix(r.URL.Path, "/swagger"))
@@ -86,9 +87,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
-	rout, ok := p.matchRoute(r.URL.Path, r.Method)
+	rout, ok := p.Config.Routes.FindRoute(r.URL.Path, r.Method)
 	if !ok {
-		p.responseNoSuchRoute(w, r.URL.Path)
+		p.responseNoSuchRoute(w, r.URL.Path, r.Method)
 		return
 	}
 	var filters []filter.Filter
@@ -108,15 +109,17 @@ func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
 		}
 		filters = append(filters, f)
 	}
-	var ctx = p.ctxWith(rout, p.Config.providers, filters)
+	var ctx = filter.NewContext(map[any]any{
+		filter.RouteCtxKey{}:     rout,
+		filter.ProvidersCtxKey{}: p.Config.providers,
+		filter.FiltersCtxKey{}:   filters, // todo: 风险: 将 filters 通过 context 传入, 后续的 filter 都能拿到和调用其他 filter
+		filter.DBCtxKey{}:        p.D,
+		filter.LoggerCtxKey{}:    p.L,
+	})
 	for i := 0; i < len(filters); i++ {
-		signal, err := filters[i].OnHttpRequest(ctx, w, r)
-		if err != nil {
-			reverse_proxy.ResponseErrorHandler(w, r, err)
-			return
-		}
-		if signal != filter.Continue {
-			return
+		if reflect.TypeOf(filters[i]) == reverse_proxy.Type {
+			_, _ = filters[i].(filter.RequestFilter).OnHttpRequest(ctx, w, r)
+			break
 		}
 	}
 }
@@ -153,22 +156,13 @@ func (p *provider) parseConfig(ref, key string, i interface{}) error {
 	return yaml.Unmarshal(data, i)
 }
 
-func (p *provider) matchRoute(path, method string) (*route2.Route, bool) {
-	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大
-	for _, r := range p.Config.Routes {
-		if r.Match(path, method) {
-			return r, true
-		}
-	}
-	return nil, false
-}
-
-func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path string) {
+func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path, method string) {
 	w.Header().Set("server", "ai-proxy/erda")
 	w.WriteHeader(http.StatusNotFound)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": "no such route",
-		"path":  path,
+		"error":  "no such route",
+		"path":   path,
+		"method": method,
 	})
 }
 
@@ -188,10 +182,6 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 		"error":  "failed to instantiate filter",
 		"filter": filterName,
 	})
-}
-
-func (p *provider) ctxWith(route *route2.Route, providers provider2.Providers, filters []filter.Filter) context.Context {
-	return context.WithValue(context.WithValue(context.WithValue(context.Background(), filter.RouteCtxKey{}, route), filter.ProvidersCtxKey{}, providers), filter.FiltersCtxKey{}, filters)
 }
 
 type config struct {

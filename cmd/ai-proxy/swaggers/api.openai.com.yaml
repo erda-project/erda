@@ -8,7 +8,7 @@ servers:
 paths:
   "/v1/models":
     "get":
-      operationId: List Models
+      operationId: ListModels
       tags: [ "openai", "models" ]
       summary: Lists the currently available models, and provides basic information about each one such as the owner and availability.
       description: |-
@@ -88,6 +88,7 @@ paths:
         schema:
           type: string
     get:
+      operationId: RetrieveModel
       tags: [ "openai", "models" ]
       summary: Retrieves a model instance, providing basic information about the model such as the owner and permissioning.
       description: |-
@@ -131,6 +132,7 @@ paths:
 
   "/v1/completions":
     post:
+      operationId: CreateCompletion
       tags: [ "openai", "completions" ]
       summary: Creates a completion for the provided prompt and parameters.
       description: |-
@@ -411,8 +413,8 @@ paths:
 
   "/v1/chat/completions":
     "post":
+      operationId: CreateChatCompletion
       tags: [ "openai", "chat" ]
-      operationId: Create chat completion
       summary: Creates a model response for the given chat conversation.
       description: |-
         Creates a model response for the given chat conversation.![Beta](https://img.shields.io/badge/-beta-orange)
@@ -633,8 +635,8 @@ paths:
 
   "/v1/edits":
     post:
+      operationId: CreateEdit
       tags: [ "openai", "edits" ]
-      operationId: Create edit
       summary: Creates a new edit for the provided input, instruction, and parameters.
       description: |-
         Creates a new edit for the provided input, instruction, and parameters.
@@ -769,8 +771,8 @@ paths:
                         example: 57
   /v1/images/generations:
     post:
+      operationId: CreateImageGeneration
       tags: [ "openai", "images" ]
-      operationId: Create image
       summary: Creates a new edit for the provided input, instruction, and parameters.
       description: |-
         Creates an image given a prompt.
@@ -873,8 +875,8 @@ paths:
 
   /v1/images/edits:
     post:
+      operationId: CreateImageEdit
       tags: [ "openai", "images" ]
-      operationId: Create image edit
       summary: Creates an edited or extended image given an original image and a prompt.
       description: |-
         Creates an edited or extended image given an original image and a prompt.![Beta](https://img.shields.io/badge/-beta-orange)
@@ -999,8 +1001,8 @@ paths:
                           example: "https://..."
   /v1/images/variations:
     post:
+      operationId: CreateImageVariation
       tags: [ "openai", "images" ]
-      operationId: Create image variation
       summary: Creates a variation of a given image.
       description: |-
         Creates a variation of a given image.

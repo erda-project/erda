@@ -5,3 +5,10 @@ health:
 erda.app.ai-proxy:
   routesRef: conf/routes.yml
   providersRef: conf/providers.yml
+
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
