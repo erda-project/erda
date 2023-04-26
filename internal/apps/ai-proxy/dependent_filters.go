@@ -16,6 +16,7 @@ package ai_proxy
 
 import (
 	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/audit"
+	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/log-http"
 	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/protocol-translator"
 	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
 )
