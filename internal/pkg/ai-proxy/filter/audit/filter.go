@@ -60,6 +60,7 @@ func (f *Audit) OnHttpRequestHeader(ctx context.Context, header http.Header) (fi
 	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit")
 	for name, set := range map[string]func(context.Context, http.Header) error{
 		"SetSessionId":          f.audit.SetSessionId,
+		"SetChat":               f.audit.SetChats,
 		"SetRequestAt":          f.audit.SetRequestAt,
 		"SetSource":             f.audit.SetSource,
 		"SetUserInfo":           f.audit.SetUserInfo,
@@ -100,6 +101,7 @@ func (f *Audit) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *htt
 }
 
 func (f *Audit) OnHttpResponse(ctx context.Context, response *http.Response) (filter.Signal, error) {
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpResponse")
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return filter.Intercept, err
@@ -115,7 +117,17 @@ func (f *Audit) OnHttpResponse(ctx context.Context, response *http.Response) (fi
 		f.audit.SetResponseBody,
 	} {
 		if err := set(ctx, response.Header, bytes.NewReader(data)); err != nil {
-			return filter.Intercept, err
+			l.Errorf("failed to do %T, err: %v", set, err)
+			continue
+		}
+	}
+	for _, set := range []func(ctx2 context.Context, response2 *http.Response) error{
+		f.audit.SetServer,
+		f.audit.SetStatus,
+	} {
+		if err := set(ctx, response); err != nil {
+			l.Errorf("failed to do %T, err: %v", set, err)
+			continue
 		}
 	}
 
@@ -136,12 +148,12 @@ type AiAudit struct {
 	CreatedAt time.Time        `json:"createdAt" yaml:"createdAt" gorm:"created_at"`
 	UpdatedAt time.Time        `json:"updatedAt" yaml:"updatedAt" gorm:"updated_at"`
 	DeletedAt fields.DeletedAt `json:"deletedAt" yaml:"deletedAt" gorm:"deleted_at"`
+
 	// SessionId records the uniqueness of the conversation
 	SessionId string `json:"sessionId" yaml:"sessionId" gorm:"session_id"`
-	// RequestAt is the request arrival time
-	RequestAt time.Time `json:"requestAt" yaml:"requestAt" gorm:"request_at"`
-	// ResponseAt is the response arrival time
-	ResponseAt time.Time `json:"responseAt" yaml:"responseAt" gorm:"response_at"`
+	ChatType  string `json:"chatType" yaml:"chatType" gorm:"chat_type"`
+	ChatTitle string `json:"chatTitle" yaml:"chatTitle" gorm:"chat_title"`
+	ChatId    string `json:"chatId" yaml:"chatId" gorm:"chat_id"`
 	// Source is the application source, like dingtalk, webui, vscode-plugin, jetbrains-plugin
 	Source string `json:"source" yaml:"source" gorm:"source"`
 	// UserInfo is a unique user identifier
@@ -158,17 +170,41 @@ type AiAudit struct {
 	// so if a prompt is not specified the model will generate as if from the beginning of a new document.
 	Prompt string `json:"prompt" yaml:"prompt" gorm:"prompt"`
 	// Completion returns the response to the client
-	Completion          string `json:"completion" yaml:"completion" gorm:"completion"`
+	Completion string `json:"completion" yaml:"completion" gorm:"completion"`
+
+	// RequestAt is the request arrival time
+	RequestAt time.Time `json:"requestAt" yaml:"requestAt" gorm:"request_at"`
+	// ResponseAt is the response arrival time
+	ResponseAt time.Time `json:"responseAt" yaml:"responseAt" gorm:"response_at"`
+	// UserAgent http client's User-Agent
+	UserAgent           string `json:"userAgent" yaml:"userAgent" gorm:"user_agent"`
 	RequestContentType  string `json:"requestContentType" yaml:"requestContentType" gorm:"request_content_type"`
 	RequestBody         string `json:"requestBody" yaml:"requestBody" gorm:"request_body"`
 	ResponseContentType string `json:"responseContentType" yaml:"responseContentType" gorm:"response_content_type"`
 	ResponseBody        string `json:"responseBody" yaml:"responseBody" gorm:"response_body"`
-	// UserAgent http client's User-Agent
-	UserAgent string `json:"userAgent" yaml:"userAgent" gorm:"user_agent"`
+	Server              string `json:"server" yaml:"server" gorm:"server"`
+	Status              string `json:"status" yaml:"status" gorm:"status"`
+	StatusCode          int    `json:"statusCode" yaml:"statusCode" gorm:"status_code"`
 }
 
 func (a *AiAudit) SetSessionId(_ context.Context, header http.Header) error {
-	a.SessionId = header.Get("x-ai-session-id") // todo: Temporary
+	a.SessionId = header.Get("X-Erda-AI-Proxy-SessionId") // todo: Temporary
+	return nil
+}
+
+func (a *AiAudit) SetChats(ctx context.Context, header http.Header) error {
+	a.ChatType = header.Get("X-Erda-AI-Proxy-ChatType")
+	a.ChatTitle = header.Get("X-Erda-AI-Proxy-ChatTitle")
+	a.ChatId = header.Get("X-Erda-AI-Proxy-ChatId")
+	for _, v := range []*string{
+		&a.ChatType,
+		&a.ChatTitle,
+		&a.ChatId,
+	} {
+		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
+			*v = string(decoded)
+		}
+	}
 	return nil
 }
 
@@ -183,7 +219,7 @@ func (a *AiAudit) SetResponseAt(_ context.Context, _ http.Header, _ io.Reader) e
 }
 
 func (a *AiAudit) SetSource(_ context.Context, header http.Header) error {
-	a.Source = header.Get("x-ai-source")
+	a.Source = header.Get("X-Erda-AI-Proxy-Source")
 	return nil
 }
 
@@ -331,6 +367,17 @@ func (a *AiAudit) SetResponseBody(ctx context.Context, _ http.Header, body io.Re
 		return nil
 	}
 	a.ResponseBody = string(data)
+	return nil
+}
+
+func (a *AiAudit) SetServer(ctx context.Context, response *http.Response) error {
+	a.Server = response.Header.Get("Server")
+	return nil
+}
+
+func (a *AiAudit) SetStatus(ctx context.Context, response *http.Response) error {
+	a.Status = response.Status
+	a.StatusCode = response.StatusCode
 	return nil
 }
 
