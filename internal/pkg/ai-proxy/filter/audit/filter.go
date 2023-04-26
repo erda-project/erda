@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -344,7 +345,7 @@ func (a *AiAudit) setFieldFromRequestBody(ctx context.Context, r *http.Request, 
 	if !strutil.Equal(r.Method, http.MethodPost) {
 		return nil
 	}
-	if !strutil.Equal(r.Header.Get("Content-Type"), "application/json") {
+	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 		return nil // todo: Only Content-Type: application/json auditing is supported for now.
 	}
 	if r.Body == nil {

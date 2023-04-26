@@ -148,7 +148,7 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 				"headers":    r.Header,
 				"remoteAddr": r.RemoteAddr,
 			}
-			if strutil.Equal(r.Header.Get("Content-Type"), "application/json", true) {
+			if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 				data, err := io.ReadAll(r.Body)
 				if err != nil {
 					l.Errorf(`[ReverseProxy] failed to io.ReadAll(r.Body), err: %v`, err)

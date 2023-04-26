@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
@@ -53,7 +54,7 @@ func (f *LogHttp) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *h
 		"headers":    r.Header,
 		"remoteAddr": r.RemoteAddr,
 	}
-	if strutil.Equal(r.Header.Get("Content-Type"), "application/json", true) {
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			l.Errorf(`[LogHttp] failed to io.ReadAll(r.Body), err: %v`, err)
@@ -75,7 +76,7 @@ func (f *LogHttp) OnHttpResponse(ctx context.Context, response *http.Response) (
 	var m = map[string]any{
 		"headers": response.Header,
 	}
-	if strutil.Equal(response.Header.Get("Content-Type"), "application/json", true) {
+	if strings.HasPrefix(response.Header.Get("Content-Type"), "application/json") {
 		data, err := io.ReadAll(response.Body)
 		if err != nil {
 			l.Errorf(`[LogHttp] failed to io.ReadAll(r.Body), err: %v`, err)
