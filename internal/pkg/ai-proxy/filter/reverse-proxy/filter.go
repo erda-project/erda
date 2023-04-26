@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -140,7 +141,27 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 		defer func() {
 			f.cachedURL = *r.URL
 			f.cachedHeader = r.Header
-			l.Infof(`[ReverseProxy] host: %s, uri: %s, headers: %v`, r.URL.Host, r.URL.RequestURI(), r.Header)
+			var m = map[string]any{
+				"scheme":     r.URL.Scheme,
+				"host":       r.Host,
+				"uri":        r.URL.RequestURI(),
+				"headers":    r.Header,
+				"remoteAddr": r.RemoteAddr,
+			}
+			if strutil.Equal(r.Header.Get("Content-Type"), "application/json", true) {
+				data, err := io.ReadAll(r.Body)
+				if err != nil {
+					l.Errorf(`[ReverseProxy] failed to io.ReadAll(r.Body), err: %v`, err)
+				} else {
+					defer func() {
+						r.Body = io.NopCloser(bytes.NewReader(data))
+					}()
+					var buf bytes.Buffer
+					_ = json.Indent(&buf, data, "  ", "  ")
+					m["body"] = buf.String()
+				}
+			}
+			l.Infof("[ReverseProxy] request info:\n%s\n", strutil.TryGetYamlStr(m))
 		}()
 
 		r.URL.Scheme = "http"

@@ -49,7 +49,7 @@ func (f *LogHttp) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *h
 	var m = map[string]any{
 		"scheme":     r.URL.Scheme,
 		"host":       r.Host,
-		"uri":        r.RequestURI,
+		"uri":        r.URL.RequestURI(),
 		"headers":    r.Header,
 		"remoteAddr": r.RemoteAddr,
 	}
