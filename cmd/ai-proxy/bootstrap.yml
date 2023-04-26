@@ -5,6 +5,7 @@ health:
 erda.app.ai-proxy:
   routesRef: conf/routes.yml
   providersRef: conf/providers.yml
+  logLevel: ${ env.LOG_LEVEL:debug }
 
 erda.app.swagger-ui:
   index: swagger-ui/index.html

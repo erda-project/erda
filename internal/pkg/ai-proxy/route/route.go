@@ -17,8 +17,6 @@ package route
 import (
 	"regexp"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -42,7 +40,6 @@ func (routes Routes) FindRoute(path, method string) (*Route, bool) {
 		if route.Match(path, method) {
 			return route, true
 		}
-		logrus.Infof("%T.FindRoute(%s, %s) not match, route.Path=%s, route.Method=%s", routes, path, method, route.Path, route.Method)
 	}
 	return nil, false
 }

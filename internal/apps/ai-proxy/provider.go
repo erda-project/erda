@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -66,6 +67,11 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	if err := p.L.SetLevel(p.Config.GetLogLevel()); err != nil {
+		return errors.Wrapf(err, "failed to %T.SetLevel, logLevel: %s", p.L, p.Config.GetLogLevel())
+	} else {
+		p.L.Infof("logLevel: %s", p.Config.GetLogLevel())
+	}
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
@@ -76,13 +82,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 
 	// register http api
+	// redirect to swagger page from root
 	p.HttpServer.Any("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Location", "/swagger")
 		w.WriteHeader(http.StatusPermanentRedirect)
 	})
+	// swagger ui page rendered from a html template
 	p.HttpServer.Any("/swagger", p.SwaggerUI)
+	// statics swagger files
 	p.HttpServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
-	//p.HttpServer.Static("/swagger/**", "swagger-ui", http.FileServer(http.Dir("swagger-ui")))
+	// reverse proxy to AI provider's server
 	p.HttpServer.Any("/**", p.ServeAI)
 	return nil
 }
@@ -115,7 +124,7 @@ func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
 		filter.ProvidersCtxKey{}: p.Config.providers,
 		filter.FiltersCtxKey{}:   filters, // todo: 风险: 将 filters 通过 context 传入, 后续的 filter 都能拿到和调用其他 filter
 		filter.DBCtxKey{}:        p.D,
-		filter.LoggerCtxKey{}:    p.L,
+		filter.LoggerCtxKey{}:    p.L.Sub(r.Header.Get("X-Request-Id")),
 	})
 	for i := 0; i < len(filters); i++ {
 		if reflect.TypeOf(filters[i]) == reverse_proxy.Type {
@@ -188,6 +197,29 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 type config struct {
 	RoutesRef    string `json:"routesRef" yaml:"routesRef"`
 	ProvidersRef string `json:"providersRef" yaml:"providersRef"`
+	LogLevel     string `json:"logLevel" yaml:"logLevel"`
 	providers    provider2.Providers
 	Routes       route2.Routes
+}
+
+func (c *config) GetLogLevel() string {
+	expr, start, end, err := strutil.FirstCustomExpression(c.LogLevel, "${", "}", func(s string) bool {
+		return strings.HasPrefix(strings.TrimSpace(s), "env.")
+	})
+	if err != nil || start == end {
+		return c.LogLevel
+	}
+	key := strings.TrimPrefix(expr, "env.")
+	keys := strings.Split(key, ":")
+	if len(keys) > 0 {
+		key = keys[0]
+	}
+	env, ok := os.LookupEnv(key)
+	if !ok {
+		if len(keys) > 1 {
+			return strings.Join(keys[1:], ":")
+		}
+		return "info"
+	}
+	return env
 }

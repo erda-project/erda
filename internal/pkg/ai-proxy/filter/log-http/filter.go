@@ -46,7 +46,7 @@ func New(_ json.RawMessage) (filter.Filter, error) {
 }
 
 func (f *LogHttp) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *http.Request) (filter.Signal, error) {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp")
 	var m = map[string]any{
 		"scheme":     r.URL.Scheme,
 		"host":       r.Host,
@@ -57,38 +57,37 @@ func (f *LogHttp) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *h
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
-			l.Errorf(`[LogHttp] failed to io.ReadAll(r.Body), err: %v`, err)
+			l.Errorf(`failed to io.ReadAll(r.Body), err: %v`, err)
 		} else {
 			defer func() {
 				r.Body = io.NopCloser(bytes.NewReader(data))
 			}()
-			var buf bytes.Buffer
-			_ = json.Indent(&buf, data, "  ", "  ")
-			m["body"] = buf.String()
+			m["body"] = json.RawMessage(data)
 		}
 	}
-	l.Infof("[LogHttp] request info:\n%s\n", strutil.TryGetYamlStr(m))
+	filter.WithValue(ctx, filter.LogHttpCtxKey{}, m)
+	l.Debugf("request info: %s", strutil.TryGetJsonStr(m))
 	return filter.Continue, nil
 }
 
 func (f *LogHttp) OnHttpResponse(ctx context.Context, response *http.Response) (filter.Signal, error) {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp")
 	var m = map[string]any{
-		"headers": response.Header,
+		"headers":     response.Header,
+		"status":      response.Status,
+		"status code": response.StatusCode,
 	}
 	if strings.HasPrefix(response.Header.Get("Content-Type"), "application/json") {
 		data, err := io.ReadAll(response.Body)
 		if err != nil {
-			l.Errorf(`[LogHttp] failed to io.ReadAll(r.Body), err: %v`, err)
+			l.Errorf(`failed to io.ReadAll(r.Body), err: %v`, err)
 		} else {
 			defer func() {
 				response.Body = io.NopCloser(bytes.NewReader(data))
 			}()
-			var buf bytes.Buffer
-			_ = json.Indent(&buf, data, "  ", "  ")
-			m["body"] = buf.String()
+			m["body"] = json.RawMessage(data)
 		}
 	}
-	l.Infof("[LogHttp] response info:\n%s\n", strutil.TryGetYamlStr(m))
+	l.Debugf("response info: %s", strutil.TryGetJsonStr(m))
 	return filter.Continue, nil
 }

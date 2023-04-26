@@ -35,6 +35,7 @@ type (
 	LoggerCtxKey       struct{ LoggerCtxKey any }
 	ReplacedPathCtxKey struct{ ReplacedPathCtxKey any }
 	AddQueriesCtxKey   struct{ AddQueriesCtxKey any }
+	LogHttpCtxKey      struct{ LogHttpCtxKey any }
 )
 
 type Context struct {

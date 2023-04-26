@@ -58,9 +58,7 @@ func New(config json.RawMessage) (filter.Filter, error) {
 }
 
 func (f *ProtocolTranslator) OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
 	if err := f.ProcessAll(ctx, r); err != nil {
-		l.Errorf(`[ProtocolTranslator].ProcessAll, err: %v`, err)
 		return filter.Intercept, err
 	}
 	return filter.Continue, nil
@@ -92,7 +90,7 @@ func (f *ProtocolTranslator) FindProcessor(ctx context.Context, processor string
 }
 
 func (f *ProtocolTranslator) ProcessAll(ctx context.Context, r *http.Request) error {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
 	var (
 		names      []string
 		processors []any
@@ -105,9 +103,8 @@ func (f *ProtocolTranslator) ProcessAll(ctx context.Context, r *http.Request) er
 		names = append(names, name)
 		processors = append(processors, processor)
 	}
-	l.Debugf(`[ProtocolTranslator].ProcessAll length of processors found: %v`, len(processors))
+	l.Debugf(`%v processors found: %v`, len(processors), names)
 	for i := 0; i < len(processors); i++ {
-		l.Debugf(`[ProtocolTranslator].ProcessAll processor %s is going to do`, names[i])
 		if processors[i] == nil {
 			panic("processor is nil")
 		}
@@ -151,11 +148,11 @@ func (f *ProtocolTranslator) SetAPIKeyIfNotSpecified(ctx context.Context, header
 }
 
 func (f *ProtocolTranslator) ReplaceURIPath(ctx context.Context, u *url.URL) {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
 	s := ctx.Value("ReplaceURIPath").(string)
 	s, err := strconv.Unquote(s)
 	if err != nil {
-		l.Errorf(`[ProtocolTranslator].ReplaceURIPath failed to strconv.Unquote(%s)`, ctx.Value(filter.ReplacedPathCtxKey{}).(string))
+		l.Errorf(`ReplaceURIPath failed to strconv.Unquote(%s)`, ctx.Value(filter.ReplacedPathCtxKey{}).(string))
 		return
 	}
 	p := ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider)
@@ -174,17 +171,15 @@ func (f *ProtocolTranslator) ReplaceURIPath(ctx context.Context, u *url.URL) {
 		}
 	}
 	u.Path = s
-
-	l.Debugf(`[ProtocolTranslator].ReplaceURIPath the url.Path after replaced: %s`, u.Path)
 }
 
 func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
 	s := ctx.Value("AddQueries").(string)
 	s, err := strconv.Unquote(s)
 	values, err := url.ParseQuery(s)
 	if err != nil {
-		l.Errorf(`[ProtocolTranslator].AddQueries failed to url.ParseQuery(%s)`, ctx.Value(filter.AddQueriesCtxKey{}).(string))
+		l.Errorf(`AddQueries failed to url.ParseQuery(%s)`, ctx.Value(filter.AddQueriesCtxKey{}).(string))
 		return
 	}
 	queries := u.Query()
@@ -194,7 +189,6 @@ func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
 		}
 	}
 	u.RawQuery = queries.Encode()
-	l.Debugf(`[ProtocolTranslator].AddQueries the u.RequestURI() after replaced: %s`, u.RequestURI())
 }
 
 func (f *ProtocolTranslator) responseNotImplementTranslator(w http.ResponseWriter, from, to any) {

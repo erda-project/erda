@@ -57,7 +57,7 @@ func New(_ json.RawMessage) (filter.Filter, error) {
 }
 
 func (f *Audit) OnHttpRequestHeader(ctx context.Context, header http.Header) (filter.Signal, error) {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit")
 	for name, set := range map[string]func(context.Context, http.Header) error{
 		"SetSessionId":          f.audit.SetSessionId,
 		"SetRequestAt":          f.audit.SetRequestAt,
@@ -68,7 +68,7 @@ func (f *Audit) OnHttpRequestHeader(ctx context.Context, header http.Header) (fi
 		"SetUserAgent":          f.audit.SetUserAgent,
 	} {
 		if err := set(ctx, header); err != nil {
-			l.Errorf(`[AiAudit] failed to %s, err: %v`, name)
+			l.Errorf(`failed to %s, err: %v`, name)
 			continue
 		}
 	}
@@ -188,7 +188,7 @@ func (a *AiAudit) SetSource(_ context.Context, header http.Header) error {
 }
 
 func (a *AiAudit) SetUserInfo(ctx context.Context, header http.Header) error {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
 	var m = map[string]string{
 		"dingTalkStaffId": header.Get("X-Erda-AI-Proxy-DingTalkStaffID"),
 		"jobNumber":       header.Get("X-Erda-AI-Proxy-JobNumber"),
@@ -203,7 +203,7 @@ func (a *AiAudit) SetUserInfo(ctx context.Context, header http.Header) error {
 	}
 	data, err := json.Marshal(m)
 	if err != nil {
-		l.Errorf("[AiAudit] failed to json.Marshal(%+v), err: %v", m, err)
+		l.Errorf("failed to json.Marshal(%+v), err: %v", m, err)
 		return err
 	}
 	a.UserInfo = string(data)
@@ -214,7 +214,7 @@ func (a *AiAudit) SetProvider(ctx context.Context, _ http.Header) error {
 	// a.Provider is passed in by filter reverse-proxy
 	prov, ok := ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider)
 	if !ok || prov == nil {
-		panic(`[AiAudit] provider was not set into the context`)
+		panic(`provider was not set into the context`)
 	}
 	a.Provider = prov.Name
 	return nil
@@ -228,10 +228,10 @@ func (a *AiAudit) SetOperationId(ctx context.Context, _ http.Header) error {
 	// a.OperationId is passed in by filter reverse-proxy
 	operation, ok := ctx.Value(filter.OperationCtxKey{}).(*openapi3.Operation)
 	if !ok {
-		panic(fmt.Sprintf(`[AiAudit] operation was not set into the context, ctx.Value(filter.OperationCtxKey{}) got %T`, ctx.Value(filter.OperationCtxKey{})))
+		panic(fmt.Sprintf(`operation was not set into the context, ctx.Value(filter.OperationCtxKey{}) got %T`, ctx.Value(filter.OperationCtxKey{})))
 	}
 	if operation == nil {
-		return errors.New("[AiAudit] operation not found")
+		return errors.New("operation not found")
 	}
 	a.OperationId = operation.OperationID
 	return nil
@@ -242,26 +242,26 @@ func (a *AiAudit) SetPrompt(ctx context.Context, r *http.Request) error {
 }
 
 func (a *AiAudit) SetCompletion(ctx context.Context, _ http.Header, body io.Reader) error {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(a.OperationId)
 	switch a.OperationId {
 	case "CreateCompletion", "CreateEdit":
 		var m = make(map[string]json.RawMessage)
 		if err := json.NewDecoder(body).Decode(&m); err != nil {
-			l.Errorf("[AiAudit][%s] failed to Decode p.Body to m (%T), err: %v", a.OperationId, m, err)
+			l.Errorf("failed to Decode p.Body to m (%T), err: %v", m, err)
 			return err
 		}
 		data, ok := m["choices"]
 		if !ok {
-			l.Debugf(`[AiAudit][%s] no field "choices" in the response body`, a.OperationId)
+			l.Debug(`no field "choices" in the response body`)
 			return nil
 		}
 		var choices []*CreateCompletionChoice
 		if err := json.Unmarshal(data, &choices); err != nil {
-			l.Errorf("[AiAudit][%s] failed to json.Unmarshal %s to choices (%T), err: %v", a.OperationId, string(data), choices, err)
+			l.Errorf("failed to json.Unmarshal %s to choices (%T), err: %v", string(data), choices, err)
 			return err
 		}
 		if len(choices) == 0 {
-			l.Debugf(`[AiAudit][%s] no choice item in p.Body["choices"]`, a.OperationId)
+			l.Debug(`no choice item in p.Body["choices"]`)
 			return nil
 		}
 		a.Completion = choices[0].Text
@@ -269,26 +269,26 @@ func (a *AiAudit) SetCompletion(ctx context.Context, _ http.Header, body io.Read
 	case "CreateChatCompletion":
 		var m = make(map[string]json.RawMessage)
 		if err := json.NewDecoder(body).Decode(&m); err != nil {
-			l.Errorf("[AiAudit][%s] failed to Decode p.Body to m (%T), err: %v", a.OperationId, m, err)
+			l.Errorf("failed to Decode p.Body to m (%T), err: %v", m, err)
 			return err
 		}
 		data, ok := m["choices"]
 		if !ok {
-			l.Debugf(`[AiAudit][%s] no field "choices" in the response body`, a.OperationId)
+			l.Debug(`no field "choices" in the response body`)
 			return nil
 		}
 		var choices []*CreateChatCompletionChoice
 		if err := json.Unmarshal(data, &choices); err != nil {
-			l.Errorf("[AiAudit][%s] failed to json.Unmarshal %s to choices (%T), err: %v", a.OperationId, string(data), choices, err)
+			l.Errorf("failed to json.Unmarshal %s to choices (%T), err: %v", string(data), choices, err)
 			return err
 		}
 		if len(choices) == 0 {
-			l.Debugf(`[AiAudit][%s] no choice item in p.Body["choices"]`, a.OperationId)
+			l.Debug(`no choice item in p.Body["choices"]`)
 			return nil
 		}
 		message := choices[0].Message
 		if message == nil {
-			l.Debug(`[AiAudit][%s] message not found in p.Body["choices"][0]`, a.OperationId)
+			l.Debug(`message not found in p.Body["choices"][0]`)
 			return nil
 		}
 		a.Prompt = message.Content
@@ -309,10 +309,10 @@ func (a *AiAudit) SetResponseContentType(_ context.Context, header http.Header, 
 }
 
 func (a *AiAudit) SetRequestBody(ctx context.Context, reader io.Reader) error {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		l.Errorf(`[AiAudit] failed to ReadAll(r.Body), err: %v`, err)
+		l.Errorf(`failed to ReadAll(r.Body), err: %v`, err)
 		return err
 	}
 	a.RequestBody = string(data)
@@ -320,14 +320,14 @@ func (a *AiAudit) SetRequestBody(ctx context.Context, reader io.Reader) error {
 }
 
 func (a *AiAudit) SetResponseBody(ctx context.Context, _ http.Header, body io.Reader) error {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
+	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
 	data, err := io.ReadAll(body)
 	if err != nil {
-		l.Errorf(`[AiAudit] failed to ReadAll(response.Body), err: %v`, err)
+		l.Errorf(`failed to ReadAll(response.Body), err: %v`, err)
 		return err
 	}
 	if len(data) == 0 {
-		l.Warnf(`[AiAudit][SetResponseBody] no data in response body`)
+		l.Warnf(`[SetResponseBody] no data in response body`)
 		return nil
 	}
 	a.ResponseBody = string(data)
@@ -346,8 +346,7 @@ func (a *AiAudit) SetUserAgent(_ context.Context, header http.Header) error {
 }
 
 func (a *AiAudit) setFieldFromRequestBody(ctx context.Context, r *http.Request, key string, value any) error {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
-	_ = l.SetLevel("debug")
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
 	if !strutil.Equal(r.Method, http.MethodPost) {
 		return nil
 	}
@@ -359,7 +358,7 @@ func (a *AiAudit) setFieldFromRequestBody(ctx context.Context, r *http.Request, 
 	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		l.Errorf(`[AiAudit] failed to io.ReadAll(r.Body): %v`, err)
+		l.Errorf(`failed to io.ReadAll(r.Body): %v`, err)
 		return err
 	}
 	defer func() {
@@ -367,16 +366,16 @@ func (a *AiAudit) setFieldFromRequestBody(ctx context.Context, r *http.Request, 
 	}()
 	var m = make(map[string]json.RawMessage)
 	if err := json.Unmarshal(body, &m); err != nil {
-		l.Errorf("[AiAudit] failed to Decode r.Body to m (%T), err: %v", m, err)
+		l.Errorf("failed to Decode r.Body to m (%T), err: %v", m, err)
 		return err
 	}
 	data, ok := m[key]
 	if !ok {
-		l.Debug(`[AiAudit] no field "model" in r.Body`)
+		l.Debug(`no field "model" in r.Body`)
 		return nil
 	}
 	if err := json.Unmarshal(data, &value); err != nil {
-		l.Errorf("[AiAudit] failed to json.Unmarshal %s to string, err: %v", string(data), err)
+		l.Errorf("failed to json.Unmarshal %s to string, err: %v", string(data), err)
 		return err
 	}
 	return nil
