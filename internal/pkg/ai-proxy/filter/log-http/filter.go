@@ -84,6 +84,6 @@ func (f *LogHttp) OnHttpResponse(ctx context.Context, response *http.Response) (
 			m["body"] = json.RawMessage(data)
 		}
 	}
-	l.Infof("[LogHttp] request info:\n%s\n", strutil.TryGetYamlStr(m))
+	l.Infof("[LogHttp] response info:\n%s\n", strutil.TryGetYamlStr(m))
 	return filter.Continue, nil
 }
