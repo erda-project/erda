@@ -17,6 +17,7 @@ package audit
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -188,12 +189,17 @@ func (a *AiAudit) SetSource(_ context.Context, header http.Header) error {
 
 func (a *AiAudit) SetUserInfo(ctx context.Context, header http.Header) error {
 	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger)
-	var m = map[string]any{
+	var m = map[string]string{
 		"dingTalkStaffId": header.Get("X-Erda-AI-Proxy-DingTalkStaffID"),
 		"jobNumber":       header.Get("X-Erda-AI-Proxy-JobNumber"),
 		"phone":           header.Get("X-Erda-AI-Proxy-Phone"),
 		"email":           header.Get("X-Erda-AI-Proxy-Email"),
 		"name":            header.Get("X-Erda-AI-Proxy-Name"),
+	}
+	for k, v := range m {
+		if decoded, err := base64.StdEncoding.DecodeString(v); err == nil {
+			m[k] = string(decoded)
+		}
 	}
 	data, err := json.Marshal(m)
 	if err != nil {
