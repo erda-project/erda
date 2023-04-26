@@ -61,7 +61,9 @@ func (f *LogHttp) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *h
 			defer func() {
 				r.Body = io.NopCloser(bytes.NewReader(data))
 			}()
-			m["body"] = json.RawMessage(data)
+			var buf bytes.Buffer
+			_ = json.Indent(&buf, data, "  ", "  ")
+			m["body"] = buf.String()
 		}
 	}
 	l.Infof("[LogHttp] request info:\n%s\n", strutil.TryGetYamlStr(m))
@@ -81,7 +83,9 @@ func (f *LogHttp) OnHttpResponse(ctx context.Context, response *http.Response) (
 			defer func() {
 				response.Body = io.NopCloser(bytes.NewReader(data))
 			}()
-			m["body"] = json.RawMessage(data)
+			var buf bytes.Buffer
+			_ = json.Indent(&buf, data, "  ", "  ")
+			m["body"] = buf.String()
 		}
 	}
 	l.Infof("[LogHttp] response info:\n%s\n", strutil.TryGetYamlStr(m))
