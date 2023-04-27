@@ -44,7 +44,7 @@ routes:
             - SetAuthorizationIfNotSpecified
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
-            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_ID }/completions")
+            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions")
             - AddQueries("api-version=2023-03-15-preview")
       - name: reverse-proxy
         config:
@@ -64,7 +64,7 @@ routes:
             - SetAuthorizationIfNotSpecified
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
-            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_ID }/chat/completions")
+            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions")
             - AddQueries("api-version=2023-03-15-preview")
       - name: reverse-proxy
         config:

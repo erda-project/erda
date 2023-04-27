@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -125,11 +126,12 @@ func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
 		filter.FiltersCtxKey{}:   filters, // todo: 风险: 将 filters 通过 context 传入, 后续的 filter 都能拿到和调用其他 filter
 		filter.DBCtxKey{}:        p.D,
 		filter.LoggerCtxKey{}:    p.L.Sub(r.Header.Get("X-Request-Id")),
+		filter.MutexCtxKey{}:     new(sync.Mutex),
 	})
 	for i := 0; i < len(filters); i++ {
 		if reflect.TypeOf(filters[i]) == reverse_proxy.Type {
 			_, _ = filters[i].(filter.RequestFilter).OnHttpRequest(ctx, w, r)
-			break
+			return
 		}
 	}
 }

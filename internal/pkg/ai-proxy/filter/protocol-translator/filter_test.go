@@ -36,9 +36,9 @@ func TestParseProcessorNameArgs(t *testing.T) {
 			Processor: "SetAPIKeyIfNotSpecified",
 			Name:      "SetAPIKeyIfNotSpecified",
 		}, {
-			Processor: `ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_ID }/completions")`,
+			Processor: `ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions")`,
 			Name:      "ReplaceURIPath",
-			Args:      `"/openai/deployments/${ provider.metadata.DEVELOPMENT_ID }/completions"`,
+			Args:      `"/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions"`,
 		},
 	}
 	for _, c := range cases {

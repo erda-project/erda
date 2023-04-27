@@ -20,9 +20,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
+	"reflect"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -33,7 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
-	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
@@ -41,7 +40,8 @@ const (
 )
 
 var (
-	_ filter.Filter = (*Audit)(nil)
+	_ filter.RequestGetterFilter  = (*Audit)(nil)
+	_ filter.ResponseGetterFilter = (*Audit)(nil)
 )
 
 func init() {
@@ -56,81 +56,60 @@ func New(_ json.RawMessage) (filter.Filter, error) {
 	return &Audit{audit: new(AiAudit)}, nil
 }
 
-func (f *Audit) OnHttpRequestHeader(ctx context.Context, header http.Header) (filter.Signal, error) {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit")
-	for name, set := range map[string]func(context.Context, http.Header) error{
-		"SetSessionId":          f.audit.SetSessionId,
-		"SetChat":               f.audit.SetChats,
-		"SetRequestAt":          f.audit.SetRequestAt,
-		"SetSource":             f.audit.SetSource,
-		"SetUserInfo":           f.audit.SetUserInfo,
-		"SetOperationId":        f.audit.SetOperationId,
-		"SetRequestContentType": f.audit.SetRequestContentType,
-		"SetUserAgent":          f.audit.SetUserAgent,
+func (f *Audit) OnHttpRequestGetter(ctx context.Context, g filter.HttpInfor) (filter.Signal, error) {
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpRequestGetter")
+	for _, set := range []func(context.Context, http.Header, *bytes.Buffer) error{
+		f.audit.SetSessionId,
+		f.audit.SetChats,
+		f.audit.SetRequestAt,
+		f.audit.SetSource,
+		f.audit.SetUserInfo,
+		f.audit.SetOperationId,
+		f.audit.SetRequestContentType,
+		f.audit.SetUserAgent,
+		f.audit.SetRequestBody,
+		f.audit.SetProvider,
+		f.audit.SetModel,
+		f.audit.SetPrompt,
 	} {
-		if err := set(ctx, header); err != nil {
-			l.Errorf(`failed to %s, err: %v`, name)
+		buf, err := g.Body()
+		if err != nil {
+			l.Errorf("failed to filter.HttpInfor.Body, err: %v", err)
+			continue
+		}
+		// todo: r.Clone every time is less efficient
+		if err := set(ctx, g.Header(), buf); err != nil {
+			l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			continue
 		}
 	}
 	return filter.Continue, nil
 }
 
-func (f *Audit) OnHttpRequestBodyCopy(ctx context.Context, reader io.Reader) (filter.Signal, error) {
-	for _, set := range []func(context.Context, io.Reader) error{
-		f.audit.SetRequestBody,
-	} {
-		if err := set(ctx, reader); err != nil {
-			return filter.Intercept, err
-		}
-	}
-	return filter.Continue, nil
-}
-
-func (f *Audit) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *http.Request) (filter.Signal, error) {
-	for _, set := range []func(ctx2 context.Context, r *http.Request) error{
-		f.audit.SetModel,
-		f.audit.SetPrompt,
-	} {
-		if err := set(ctx, r); err != nil {
-			return filter.Intercept, nil
-		}
-	}
-
-	return filter.Continue, nil
-}
-
-func (f *Audit) OnHttpResponse(ctx context.Context, response *http.Response) (filter.Signal, error) {
+func (f *Audit) OnHttpResponseGetter(ctx context.Context, getter filter.HttpInfor) (filter.Signal, error) {
 	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpResponse")
-	data, err := io.ReadAll(response.Body)
-	if err != nil {
-		return filter.Intercept, err
-	}
-	defer func() {
-		_ = response.Body.Close()
-		response.Body = io.NopCloser(bytes.NewReader(data))
-	}()
-	for _, set := range []func(context.Context, http.Header, io.Reader) error{
+	for _, set := range []func(context.Context, http.Header, *bytes.Buffer) error{
 		f.audit.SetResponseAt,
 		f.audit.SetCompletion,
 		f.audit.SetResponseContentType,
 		f.audit.SetResponseBody,
+		f.audit.SetServer,
 	} {
-		if err := set(ctx, response.Header, bytes.NewReader(data)); err != nil {
+		buf, err := getter.Body()
+		if err != nil {
+			return filter.Intercept, errors.Wrap(err, "failed to filter.HeadBodyGetter.Body()")
+		}
+		if err := set(ctx, getter.Header(), buf); err != nil {
 			l.Errorf("failed to do %T, err: %v", set, err)
-			continue
 		}
 	}
-	for _, set := range []func(ctx2 context.Context, response2 *http.Response) error{
-		f.audit.SetServer,
+	for _, set := range []func(context.Context, filter.HttpInfor) error{
 		f.audit.SetStatus,
 	} {
-		if err := set(ctx, response); err != nil {
+		if err := set(ctx, getter); err != nil {
 			l.Errorf("failed to do %T, err: %v", set, err)
-			continue
 		}
 	}
-
 	return filter.Continue, f.create(ctx)
 }
 
@@ -187,12 +166,12 @@ type AiAudit struct {
 	StatusCode          int    `json:"statusCode" yaml:"statusCode" gorm:"status_code"`
 }
 
-func (a *AiAudit) SetSessionId(_ context.Context, header http.Header) error {
+func (a *AiAudit) SetSessionId(_ context.Context, header http.Header, _ *bytes.Buffer) error {
 	a.SessionId = header.Get("X-Erda-AI-Proxy-SessionId") // todo: Temporary
 	return nil
 }
 
-func (a *AiAudit) SetChats(ctx context.Context, header http.Header) error {
+func (a *AiAudit) SetChats(_ context.Context, header http.Header, _ *bytes.Buffer) error {
 	a.ChatType = header.Get("X-Erda-AI-Proxy-ChatType")
 	a.ChatTitle = header.Get("X-Erda-AI-Proxy-ChatTitle")
 	a.ChatId = header.Get("X-Erda-AI-Proxy-ChatId")
@@ -208,22 +187,22 @@ func (a *AiAudit) SetChats(ctx context.Context, header http.Header) error {
 	return nil
 }
 
-func (a *AiAudit) SetRequestAt(_ context.Context, _ http.Header) error {
+func (a *AiAudit) SetRequestAt(_ context.Context, _ http.Header, _ *bytes.Buffer) error {
 	a.RequestAt = time.Now()
 	return nil
 }
 
-func (a *AiAudit) SetResponseAt(_ context.Context, _ http.Header, _ io.Reader) error {
+func (a *AiAudit) SetResponseAt(_ context.Context, _ http.Header, _ *bytes.Buffer) error {
 	a.ResponseAt = time.Now()
 	return nil
 }
 
-func (a *AiAudit) SetSource(_ context.Context, header http.Header) error {
+func (a *AiAudit) SetSource(_ context.Context, header http.Header, _ *bytes.Buffer) error {
 	a.Source = header.Get("X-Erda-AI-Proxy-Source")
 	return nil
 }
 
-func (a *AiAudit) SetUserInfo(ctx context.Context, header http.Header) error {
+func (a *AiAudit) SetUserInfo(ctx context.Context, header http.Header, _ *bytes.Buffer) error {
 	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
 	var m = map[string]string{
 		"dingTalkStaffId": header.Get("X-Erda-AI-Proxy-DingTalkStaffID"),
@@ -246,7 +225,7 @@ func (a *AiAudit) SetUserInfo(ctx context.Context, header http.Header) error {
 	return nil
 }
 
-func (a *AiAudit) SetProvider(ctx context.Context, _ http.Header) error {
+func (a *AiAudit) SetProvider(ctx context.Context, _ http.Header, _ *bytes.Buffer) error {
 	// a.Provider is passed in by filter reverse-proxy
 	prov, ok := ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider)
 	if !ok || prov == nil {
@@ -256,11 +235,11 @@ func (a *AiAudit) SetProvider(ctx context.Context, _ http.Header) error {
 	return nil
 }
 
-func (a *AiAudit) SetModel(ctx context.Context, r *http.Request) error {
-	return a.setFieldFromRequestBody(ctx, r, "model", &a.Model)
+func (a *AiAudit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
+	return a.setFieldFromRequestBody(ctx, header, buf, "model", &a.Model)
 }
 
-func (a *AiAudit) SetOperationId(ctx context.Context, _ http.Header) error {
+func (a *AiAudit) SetOperationId(ctx context.Context, _ http.Header, _ *bytes.Buffer) error {
 	// a.OperationId is passed in by filter reverse-proxy
 	operation, ok := ctx.Value(filter.OperationCtxKey{}).(*openapi3.Operation)
 	if !ok {
@@ -273,19 +252,21 @@ func (a *AiAudit) SetOperationId(ctx context.Context, _ http.Header) error {
 	return nil
 }
 
-func (a *AiAudit) SetPrompt(ctx context.Context, r *http.Request) error {
-	return a.setFieldFromRequestBody(ctx, r, "prompt", &a.Prompt) // todo: does not take into consideration the case where prompt is an array
+func (a *AiAudit) SetPrompt(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
+	return a.setFieldFromRequestBody(ctx, header, buf, "prompt", &a.Prompt) // todo: does not take into consideration the case where prompt is an array
 }
 
-func (a *AiAudit) SetCompletion(ctx context.Context, _ http.Header, body io.Reader) error {
+func (a *AiAudit) SetCompletion(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
 	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(a.OperationId)
+	if !httputil.HeaderContains(header, httputil.ApplicationJson) {
+		return nil
+	}
+	var m = make(map[string]json.RawMessage)
+	if err := json.NewDecoder(buf).Decode(&m); err != nil {
+		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", buf, m)
+	}
 	switch a.OperationId {
 	case "CreateCompletion", "CreateEdit":
-		var m = make(map[string]json.RawMessage)
-		if err := json.NewDecoder(body).Decode(&m); err != nil {
-			l.Errorf("failed to Decode p.Body to m (%T), err: %v", m, err)
-			return err
-		}
 		data, ok := m["choices"]
 		if !ok {
 			l.Debug(`no field "choices" in the response body`)
@@ -303,11 +284,6 @@ func (a *AiAudit) SetCompletion(ctx context.Context, _ http.Header, body io.Read
 		a.Completion = choices[0].Text
 		return nil
 	case "CreateChatCompletion":
-		var m = make(map[string]json.RawMessage)
-		if err := json.NewDecoder(body).Decode(&m); err != nil {
-			l.Errorf("failed to Decode p.Body to m (%T), err: %v", m, err)
-			return err
-		}
 		data, ok := m["choices"]
 		if !ok {
 			l.Debug(`no field "choices" in the response body`)
@@ -327,61 +303,45 @@ func (a *AiAudit) SetCompletion(ctx context.Context, _ http.Header, body io.Read
 			l.Debug(`message not found in p.Body["choices"][0]`)
 			return nil
 		}
-		a.Prompt = message.Content
+		a.Completion = message.Content
 		return nil
 	default:
 		return nil
 	}
 }
 
-func (a *AiAudit) SetRequestContentType(_ context.Context, header http.Header) error {
-	a.RequestContentType = header.Get("Content-Type")
+func (a *AiAudit) SetRequestContentType(_ context.Context, header http.Header, _ *bytes.Buffer) error {
+	a.RequestContentType = header.Get(httputil.ContentTypeKey)
 	return nil
 }
 
-func (a *AiAudit) SetResponseContentType(_ context.Context, header http.Header, _ io.Reader) error {
-	a.ResponseContentType = header.Get("Content-Type")
+func (a *AiAudit) SetResponseContentType(_ context.Context, header http.Header, _ *bytes.Buffer) error {
+	a.ResponseContentType = header.Get(httputil.ContentTypeKey)
 	return nil
 }
 
-func (a *AiAudit) SetRequestBody(ctx context.Context, reader io.Reader) error {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		l.Errorf(`failed to ReadAll(r.Body), err: %v`, err)
-		return err
-	}
-	a.RequestBody = string(data)
+func (a *AiAudit) SetRequestBody(_ context.Context, _ http.Header, buf *bytes.Buffer) error {
+	a.RequestBody = buf.String()
 	return nil
 }
 
-func (a *AiAudit) SetResponseBody(ctx context.Context, _ http.Header, body io.Reader) error {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
-	data, err := io.ReadAll(body)
-	if err != nil {
-		l.Errorf(`failed to ReadAll(response.Body), err: %v`, err)
-		return err
-	}
-	if len(data) == 0 {
-		l.Warnf(`[SetResponseBody] no data in response body`)
-		return nil
-	}
-	a.ResponseBody = string(data)
+func (a *AiAudit) SetResponseBody(_ context.Context, _ http.Header, buf *bytes.Buffer) error {
+	a.ResponseBody = buf.String()
 	return nil
 }
 
-func (a *AiAudit) SetServer(ctx context.Context, response *http.Response) error {
-	a.Server = response.Header.Get("Server")
+func (a *AiAudit) SetServer(_ context.Context, header http.Header, _ *bytes.Buffer) error {
+	a.Server = header.Get("Server")
 	return nil
 }
 
-func (a *AiAudit) SetStatus(ctx context.Context, response *http.Response) error {
-	a.Status = response.Status
-	a.StatusCode = response.StatusCode
+func (a *AiAudit) SetStatus(_ context.Context, getter filter.HttpInfor) error {
+	a.Status = getter.Status()
+	a.StatusCode = getter.StatusCode()
 	return nil
 }
 
-func (a *AiAudit) SetUserAgent(_ context.Context, header http.Header) error {
+func (a *AiAudit) SetUserAgent(_ context.Context, header http.Header, _ *bytes.Buffer) error {
 	a.UserAgent = header.Get("User-Agent")
 	if a.UserAgent == "" {
 		a.UserAgent = header.Get("X-User-Agent")
@@ -392,33 +352,20 @@ func (a *AiAudit) SetUserAgent(_ context.Context, header http.Header) error {
 	return nil
 }
 
-func (a *AiAudit) setFieldFromRequestBody(ctx context.Context, r *http.Request, key string, value any) error {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit")
-	if !strutil.Equal(r.Method, http.MethodPost) {
-		return nil
-	}
-	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+func (a *AiAudit) setFieldFromRequestBody(ctx context.Context, header http.Header, buf *bytes.Buffer, key string, value any) error {
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub("setFieldFromRequestBody")
+	if !httputil.HeaderContains(header[httputil.ContentTypeKey], httputil.ApplicationJson) {
 		return nil // todo: Only Content-Type: application/json auditing is supported for now.
 	}
-	if r.Body == nil {
-		return nil
-	}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		l.Errorf(`failed to io.ReadAll(r.Body): %v`, err)
-		return err
-	}
-	defer func() {
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
-	}()
+
 	var m = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(body, &m); err != nil {
+	if err := json.NewDecoder(buf).Decode(&m); err != nil {
 		l.Errorf("failed to Decode r.Body to m (%T), err: %v", m, err)
 		return err
 	}
 	data, ok := m[key]
 	if !ok {
-		l.Debug(`no field "model" in r.Body`)
+		l.Debugf(`no field "%s" in r.Body`, key)
 		return nil
 	}
 	if err := json.Unmarshal(data, &value); err != nil {
@@ -429,7 +376,7 @@ func (a *AiAudit) setFieldFromRequestBody(ctx context.Context, r *http.Request, 
 }
 
 func (*AiAudit) TableName() string {
-	return "filter_audit"
+	return "ai_proxy_filter_audit"
 }
 
 type CreateCompletionChoice struct {

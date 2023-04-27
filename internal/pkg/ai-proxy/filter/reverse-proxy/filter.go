@@ -15,10 +15,9 @@
 package reverse_proxy
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"reflect"
@@ -30,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
+	httputil2 "github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -40,8 +40,8 @@ const (
 )
 
 var (
-	_    filter.Filter = (*ReverseProxy)(nil)
-	Type               = reflect.TypeOf((*ReverseProxy)(nil))
+	_    filter.RequestFilter = (*ReverseProxy)(nil)
+	Type                      = reflect.TypeOf((*ReverseProxy)(nil))
 )
 
 func init() {
@@ -70,10 +70,6 @@ func (f *ReverseProxy) OnHttpRequest(ctx context.Context, w http.ResponseWriter,
 	default:
 		return f.onHttpRequestToURL(ctx, w, r)
 	}
-}
-
-func (f *ReverseProxy) OnHttpResponse(_ context.Context, _ *http.Response, _ *http.Request) (filter.Signal, error) {
-	return filter.Continue, nil
 }
 
 func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
@@ -134,28 +130,6 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 
 	var totalFilters int
 	var director = func(r *http.Request) {
-		defer func() {
-			var m = map[string]any{
-				"scheme":     r.URL.Scheme,
-				"host":       r.Host,
-				"uri":        r.URL.RequestURI(),
-				"headers":    r.Header,
-				"remoteAddr": r.RemoteAddr,
-			}
-			if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-				data, err := io.ReadAll(r.Body)
-				if err != nil {
-					l.Errorf(`failed to io.ReadAll(r.Body), err: %v`, err)
-				} else {
-					defer func() {
-						r.Body = io.NopCloser(bytes.NewReader(data))
-					}()
-					m["body"] = json.RawMessage(data)
-				}
-			}
-			l.Debugf("reverse proxying request info: %s", strutil.TryGetJsonStr(m))
-		}()
-
 		r.URL.Scheme = "http"
 		if prov.Scheme != "" {
 			r.URL.Scheme = prov.Scheme
@@ -186,25 +160,61 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 		default:
 			// pass
 		}
+
+		infor, err := filter.NewInfor(ctx, r)
+		if err != nil {
+			l.Errorf("failed to filter.NewInfor(ctx, r), err: %v")
+			return
+		}
+		var m = map[string]any{
+			"scheme":     infor.URL().Scheme,
+			"host":       infor.Host(),
+			"uri":        infor.URL().RequestURI(),
+			"headers":    infor.Header(),
+			"remoteAddr": infor.RemoteAddr(),
+		}
+		var curl = fmt.Sprintf(`curl --method %s -v '%s://%s%s'`, r.Method, infor.URL().Scheme, infor.Host(), infor.URL().RequestURI())
+		for k, vv := range infor.Header() {
+			for _, v := range vv {
+				curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
+			}
+		}
+		if httputil2.HeaderContains(infor.Header()[httputil2.ContentTypeKey], httputil2.ApplicationJson) {
+			if body, err := infor.Body(); err != nil {
+				l.Sub("defer func").Errorf("failed to infor.Body(), err: %v", err)
+			} else {
+				m["body"] = json.RawMessage(body.Bytes())
+				curl += fmt.Sprintf(` --data '%s'`, body.String())
+			}
+		}
+		l.Debugf("reverse proxying request info: %s, the curl command line: %s", strutil.TryGetJsonStr(m), curl)
 	}
 	var modifyResponse = func(p *http.Response) error {
 		if p.StatusCode < http.StatusOK || p.StatusCode > http.StatusMultipleChoices {
-			m := ctx.Value(filter.LogHttpCtxKey{}).(map[string]any)
-			m["status"] = p.Status
-			l.Errorf(`failed to request upstream server, some useful info: %v`, strutil.TryGetJsonStr(m))
+			l.Errorf("failed to request upstream server, status: %s", p.Status)
 		}
+		// Todo: How to handle err and signal
 		for i := totalFilters - 1; i >= 0; i-- {
 			if reflect.TypeOf(filters[i]) == Type {
 				continue
+			}
+			if on, ok := filters[i].(filter.ResponseGetterFilter); ok {
+				if infor, err := filter.NewInfor(ctx, p); err != nil {
+					l.Errorf("failed to filter.NewInfor(ctx, p), err: %v", err)
+				} else {
+					go func() {
+						l.Debugf(`%T.OnHttpResponseGetter(...)`, on)
+						signal, err := on.OnHttpResponseGetter(ctx, infor)
+						if err != nil {
+							l.Errorf("failed to %T.OnHttpResponse, signal: %v, err: %v", on, signal, err)
+						}
+					}()
+				}
 			}
 			if on, ok := filters[i].(filter.ResponseFilter); ok {
 				signal, err := on.OnHttpResponse(ctx, p)
 				if err != nil {
 					l.Errorf("failed to %T.OnHttpResponse, signal: %v, err: %v", on, signal, err)
-					continue
-				}
-				if signal != filter.Continue {
-					continue
 				}
 			}
 		}
@@ -216,39 +226,18 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 		if reflect.TypeOf(filters[i]) == Type {
 			continue
 		}
-		if on, ok := filters[i].(filter.RequestHeaderFilter); ok {
-			l.Debugf(`%T.OnHttpRequestHeader(...)`, on)
-			switch signal, err := on.OnHttpRequestHeader(ctx, r.Header); {
-			case err == nil && signal == filter.Continue:
-			case err != nil:
-				l.Errorf("failed to %T.OnHttpRequestHeader, err: %v", on, err)
-				ResponseErrorHandler(w, r, err)
-				fallthrough
-			default:
-				director = doNotDirect
-				break
-			}
-		}
-		if on, ok := filters[i].(filter.RequestBodyCopyFilter); ok {
-			data, err := io.ReadAll(r.Body)
+		if on, ok := filters[i].(filter.RequestGetterFilter); ok {
+			infor, err := filter.NewInfor(ctx, r)
 			if err != nil {
-				l.Errorf(`failed to io.ReadAll(r.Body)`)
-				ResponseErrorHandler(w, r, err)
-				director = doNotDirect
-				break
-			}
-			var buf = bytes.NewReader(data)
-			r.Body = io.NopCloser(bytes.NewReader(data))
-			l.Debugf(`%T.OnHttpRequestBodyCopy(...)`, on)
-			switch signal, err := on.OnHttpRequestBodyCopy(ctx, buf); {
-			case err == nil && signal == filter.Continue:
-			case err != nil:
-				l.Errorf("failed to %T.OnHttpRequestBodyCopy, err: %v", on, err)
-				ResponseErrorHandler(w, r, err)
-				fallthrough
-			default:
-				director = doNotDirect
-				break
+				l.Errorf("failed to filter.NewInfor(ctx, r), err: %v", err)
+			} else {
+				go func() {
+					l.Debugf(`%T.OnHttpRequestGetter(...)`, on)
+					signal, err := on.OnHttpRequestGetter(ctx, infor)
+					if err != nil {
+						l.Errorf("failed to %T.OnHttpRequestGetter, signal: %v, err: %v", on, signal, err)
+					}
+				}()
 			}
 		}
 		if on, ok := filters[i].(filter.RequestFilter); ok {
@@ -275,7 +264,7 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 	return filter.Continue, nil
 }
 
-func (f *ReverseProxy) onHttpRequestToURL(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
+func (f *ReverseProxy) onHttpRequestToURL(_ context.Context, w http.ResponseWriter, _ *http.Request) (filter.Signal, error) {
 	w.Header().Set("server", "ai-proxy/erda")
 	w.WriteHeader(http.StatusNotImplemented)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -316,7 +305,7 @@ type Config struct {
 	MethodsMap  map[string]string `json:"methodsMap" yaml:"methodsMap"`
 }
 
-func ResponseErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+func ResponseErrorHandler(w http.ResponseWriter, _ *http.Request, err error) {
 	w.Header().Set("server", "ai-proxy/erda")
 	w.WriteHeader(http.StatusBadGateway)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{

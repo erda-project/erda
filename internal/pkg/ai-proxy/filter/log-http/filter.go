@@ -15,15 +15,13 @@
 package log_http
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
-	"net/http"
-	"strings"
+	"os"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -32,7 +30,8 @@ const (
 )
 
 var (
-	_ filter.Filter = (*LogHttp)(nil)
+	_ filter.RequestGetterFilter  = (*LogHttp)(nil)
+	_ filter.ResponseGetterFilter = (*LogHttp)(nil)
 )
 
 func init() {
@@ -45,49 +44,52 @@ func New(_ json.RawMessage) (filter.Filter, error) {
 	return &LogHttp{}, nil
 }
 
-func (f *LogHttp) OnHttpRequest(ctx context.Context, _ http.ResponseWriter, r *http.Request) (filter.Signal, error) {
+func (f *LogHttp) OnHttpRequestGetter(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
+	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
+		return filter.Continue, nil
+	}
 	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp")
+	var url = infor.URL()
 	var m = map[string]any{
-		"scheme":     r.URL.Scheme,
-		"host":       r.Host,
-		"uri":        r.URL.RequestURI(),
-		"headers":    r.Header,
-		"remoteAddr": r.RemoteAddr,
+		"scheme":     url.Scheme,
+		"host":       infor.Host(),
+		"url.host":   url.Host,
+		"uri":        url.RequestURI(),
+		"headers":    infor.Header(),
+		"remoteAddr": infor.RemoteAddr(),
 	}
-	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-		data, err := io.ReadAll(r.Body)
-		if err != nil {
-			l.Errorf(`failed to io.ReadAll(r.Body), err: %v`, err)
-		} else {
-			defer func() {
-				r.Body = io.NopCloser(bytes.NewReader(data))
-			}()
-			m["body"] = json.RawMessage(data)
-		}
+	defer func() { l.Debugf("request info: %s", strutil.TryGetJsonStr(m)) }()
+	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) ||
+		infor.ContentLength() == 0 {
+		return filter.Continue, nil
 	}
-	filter.WithValue(ctx, filter.LogHttpCtxKey{}, m)
-	l.Debugf("request info: %s", strutil.TryGetJsonStr(m))
+	body, err := infor.Body()
+	if err != nil {
+		return filter.Intercept, err
+	}
+	m["body"] = body.String()
 	return filter.Continue, nil
 }
 
-func (f *LogHttp) OnHttpResponse(ctx context.Context, response *http.Response) (filter.Signal, error) {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp")
+func (f *LogHttp) OnHttpResponseGetter(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
+	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
+		return filter.Continue, nil
+	}
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnHttpResponseGetter")
 	var m = map[string]any{
-		"headers":     response.Header,
-		"status":      response.Status,
-		"status code": response.StatusCode,
+		"headers":     infor.Header(),
+		"status":      infor.Status(),
+		"status code": infor.StatusCode(),
 	}
-	if strings.HasPrefix(response.Header.Get("Content-Type"), "application/json") {
-		data, err := io.ReadAll(response.Body)
-		if err != nil {
-			l.Errorf(`failed to io.ReadAll(r.Body), err: %v`, err)
-		} else {
-			defer func() {
-				response.Body = io.NopCloser(bytes.NewReader(data))
-			}()
-			m["body"] = json.RawMessage(data)
-		}
+	defer func() { l.Debugf("response info: %s", strutil.TryGetJsonStr(m)) }()
+	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) {
+		return filter.Continue, nil
 	}
-	l.Debugf("response info: %s", strutil.TryGetJsonStr(m))
+	body, err := infor.Body()
+	if err != nil {
+		l.Errorf("failed to infor.Body(), err: %v", err)
+		return filter.Intercept, err
+	}
+	m["body"] = body.String()
 	return filter.Continue, nil
 }

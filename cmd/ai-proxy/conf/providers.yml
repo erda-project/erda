@@ -21,4 +21,4 @@ providers:
       $ref: swaggers/openai.azure.com.yaml
     metadata:
       RESOURCE_NAME: "codeai"
-      DEVELOPMENT_ID: "gpt-35-turbo-0301"
+      DEVELOPMENT_NAME: "gpt-35-turbo-0301"

@@ -14,6 +14,12 @@
 
 package httputil
 
+import (
+	"fmt"
+	"net/http"
+	"strings"
+)
+
 // dice 公共 Header
 const (
 	UserHeader                 = "User-ID"
@@ -27,3 +33,31 @@ const (
 	ClientIDHeader   = "Client-ID"
 	ClientNameHeader = "Client-Name"
 )
+
+func HeaderContains[Header http.Header | []String | []string | ~string, String ~string](header Header, s String) bool {
+	switch i := (interface{})(header).(type) {
+	case http.Header:
+		for _, vv := range i {
+			for _, v := range vv {
+				if strings.Contains(v, string(s)) {
+					return true
+				}
+			}
+		}
+	case []String:
+		for _, v := range i {
+			if strings.Contains(string(v), string(s)) {
+				return true
+			}
+		}
+	case []string:
+		for _, v := range i {
+			if strings.Contains(string(v), string(s)) {
+				return true
+			}
+		}
+	default:
+		return strings.Contains(fmt.Sprintf("%s", i), string(s))
+	}
+	return false
+}

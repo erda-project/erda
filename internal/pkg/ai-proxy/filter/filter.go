@@ -17,7 +17,6 @@ package filter
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"sync"
 )
@@ -34,16 +33,16 @@ var (
 
 type Filter interface{}
 
-type RequestHeaderFilter interface {
-	OnHttpRequestHeader(ctx context.Context, header http.Header) (Signal, error)
-}
-
-type RequestBodyCopyFilter interface {
-	OnHttpRequestBodyCopy(ctx context.Context, buf io.Reader) (Signal, error)
+type RequestGetterFilter interface {
+	OnHttpRequestGetter(ctx context.Context, g HttpInfor) (Signal, error)
 }
 
 type RequestFilter interface {
 	OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (Signal, error)
+}
+
+type ResponseGetterFilter interface {
+	OnHttpResponseGetter(ctx context.Context, g HttpInfor) (Signal, error)
 }
 
 type ResponseFilter interface {

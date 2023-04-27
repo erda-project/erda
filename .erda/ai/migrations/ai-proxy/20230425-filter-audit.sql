@@ -1,4 +1,4 @@
-CREATE TABLE `filter_audit`
+CREATE TABLE `ai_proxy_filter_audit`
 (
     `id`                    char(36)      NOT NULL COMMENT 'primary key',
     `created_at`            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
