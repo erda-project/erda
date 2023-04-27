@@ -29,11 +29,11 @@ import (
 // CreateMSEClientByAPI 创建客户端
 func (impl *MseAdapterImpl) CreateMSEClientByAPI() (client *mseclient.Client, err error) {
 	if impl.AccessKeyID == "" || impl.AccessKeySecret == "" {
-		return nil, errors.Errorf("Aliyun AccessKeyId or AccessKeySecret not set, please set them in env by ALIYUN_ACCESS_KEY_ID and ALIYUN_ACCESS_KEY_SECRET.")
+		return nil, errors.Errorf("Aliyun AccessKeyId or AccessKeySecret not set, please set them in configmap dice-cluster-info by ALIYUN_ACCESS_KEY_ID and ALIYUN_ACCESS_KEY_SECRET.")
 	}
 
 	if impl.GatewayEndpoint == "" {
-		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in env by ALIYUN_MSE_GATEWAY_DOMAIN.")
+		return nil, errors.Errorf("Aliyun Mse Gateway GatewayEndpoint not set, please set it in configmap dice-cluster-info by ALIYUN_MSE_GATEWAY_ENDPOINT.")
 	}
 
 	config := &mseopenapi.Config{
@@ -53,7 +53,7 @@ func (impl *MseAdapterImpl) CreateMSEClientByAPI() (client *mseclient.Client, er
 // GetMSEGatewayByAPI 获取网关详情
 func (impl *MseAdapterImpl) GetMSEGatewayByAPI() (*mseclient.GetGatewayResponseBodyData, error) {
 	if impl.GatewayUniqueID == "" {
-		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in env by ALIYUN_MSE_GATEWAY_ID.")
+		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in configmap dice-cluster-info by ALIYUN_MSE_GATEWAY_ID.")
 	}
 
 	client, err := impl.CreateMSEClientByAPI()
@@ -81,7 +81,7 @@ func (impl *MseAdapterImpl) GetMSEGatewayByAPI() (*mseclient.GetGatewayResponseB
 // GetMSEPluginsByAPI 获取网关插件列表
 func (impl *MseAdapterImpl) GetMSEPluginsByAPI(name *string, category *int32, enableOnly *bool) ([]*mseclient.GetPluginsResponseBodyData, error) {
 	if impl.GatewayUniqueID == "" {
-		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in env by ALIYUN_MSE_GATEWAY_ID.")
+		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in configmap dice-cluster-info by ALIYUN_MSE_GATEWAY_ID.")
 	}
 
 	client, err := impl.CreateMSEClientByAPI()
@@ -121,7 +121,7 @@ func (impl *MseAdapterImpl) GetMSEPluginsByAPI(name *string, category *int32, en
 // GetMSEPluginConfigByIDByAPI 获取网关指定 ID 的插件的配置信息
 func (impl *MseAdapterImpl) GetMSEPluginConfigByIDByAPI(pluginId *int64) (*mseclient.GetPluginConfigResponseBodyData, error) {
 	if impl.GatewayUniqueID == "" {
-		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in env by ALIYUN_MSE_GATEWAY_ID.")
+		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in configmap dice-cluster-info by ALIYUN_MSE_GATEWAY_ID.")
 	}
 	if pluginId == nil {
 		return nil, errors.Errorf("need set pluginId")
@@ -152,7 +152,7 @@ func (impl *MseAdapterImpl) GetMSEPluginConfigByIDByAPI(pluginId *int64) (*msecl
 // UpdateMSEPluginConfigByIDByAPI 获取网关指定 ID 的插件的配置信息
 func (impl *MseAdapterImpl) UpdateMSEPluginConfigByIDByAPI(pluginID *int64, configID *int64, config *string, configLevel *int32, enable *bool) (*mseclient.UpdatePluginConfigResponseBody, error) {
 	if impl.GatewayUniqueID == "" {
-		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in env by ALIYUN_MSE_GATEWAY_ID.")
+		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in configmap dice-cluster-info by ALIYUN_MSE_GATEWAY_ID.")
 	}
 	if pluginID == nil {
 		return nil, errors.Errorf("need set pluginId")
@@ -192,7 +192,7 @@ func (impl *MseAdapterImpl) UpdateMSEPluginConfigByIDByAPI(pluginID *int64, conf
 // ListMSEGatewayRoutesByAPI 获取指定网关下的路由列表，支持按域名筛选
 func (impl *MseAdapterImpl) ListMSEGatewayRoutesByAPI(domainName *string, pageNumber *int32, pageSize *int32) (*mseclient.ListGatewayRouteResponseBody, error) {
 	if impl.GatewayUniqueID == "" {
-		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in env by ALIYUN_MSE_GATEWAY_ID.")
+		return nil, errors.Errorf("Aliyun Mse Gateway UniqueId not set, please set it in configmap dice-cluster-info by ALIYUN_MSE_GATEWAY_ID.")
 	}
 
 	client, err := impl.CreateMSEClientByAPI()

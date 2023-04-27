@@ -19,12 +19,12 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	gatewayproviders "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -49,13 +49,13 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 	return dto
 }
 
-func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error, string) {
+func (policy Policy) UnmarshalConfig(config []byte, gatewayProvider string) (apipolicy.PolicyDto, error, string) {
 	policyDto := &PolicyDto{}
 	err := json.Unmarshal(config, policyDto)
 	if err != nil {
 		return nil, errors.Wrapf(err, "json parse config failed, config:%s", config), "Invalid config"
 	}
-	ok, msg := policyDto.IsValidDto()
+	ok, msg := policyDto.IsValidDto(gatewayProvider)
 	if !ok {
 		return nil, errors.Errorf("invalid policy dto, msg:%s", msg), msg
 	}
@@ -64,77 +64,111 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 
 // forValidate 用于识别解析的目的，如果解析是用来做 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
+	gatewayProvider := ""
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
+
+	var adapter gatewayproviders.GatewayAdapter
+	gatewayAdapter, gatewayProvider, err := policy.GetGatewayAdapter(ctx, apipolicy.Policy_Engine_Proxy)
+	if err != nil {
+		return res, err
+	}
+
+	adapter, ok = gatewayAdapter.(gatewayproviders.GatewayAdapter)
+	if !ok {
+		return res, errors.Errorf("convert failed:%+v", gatewayAdapter)
+	}
+
 	if !policyDto.Switch {
-		emptyStr := ""
-		// use empty str trigger regions update
-		res.IngressAnnotation = &apipolicy.IngressAnnotation{
-			LocationSnippet: &emptyStr,
-			Annotation: map[string]*string{
-				string(annotationscommon.AnnotationProxyRequestBuffering): nil,
-				string(annotationscommon.AnnotationProxyBuffering):        nil,
-				string(annotationscommon.AnnotationProxyBodySize):         nil,
-				string(annotationscommon.AnnotationProxySendTimeout):      nil,
-				string(annotationscommon.AnnotationProxyReadTimeout):      nil,
-				string(annotationscommon.AnnotationSSLRedirect):           nil,
-			},
+		switch gatewayProvider {
+		case mseCommon.Mse_Provider_Name:
+			res.IngressAnnotation = &apipolicy.IngressAnnotation{
+				Annotation: map[string]*string{
+					string(annotationscommon.AnnotationSSLRedirect): nil,
+					string(mseCommon.AnnotationMSETimeOut):          nil,
+				},
+			}
+		default:
+			emptyStr := ""
+			// use empty str trigger regions update
+			res.IngressAnnotation = &apipolicy.IngressAnnotation{
+				LocationSnippet: &emptyStr,
+				Annotation: map[string]*string{
+					string(annotationscommon.AnnotationProxyRequestBuffering): nil,
+					string(annotationscommon.AnnotationProxyBuffering):        nil,
+					string(annotationscommon.AnnotationProxyBodySize):         nil,
+					string(annotationscommon.AnnotationProxySendTimeout):      nil,
+					string(annotationscommon.AnnotationProxyReadTimeout):      nil,
+					string(annotationscommon.AnnotationSSLRedirect):           nil,
+				},
+			}
 		}
 		return res, nil
 	}
+
 	annotation := map[string]*string{}
-	if policyDto.ReqBuffer {
-		value := "on"
-		annotation[string(annotationscommon.AnnotationProxyRequestBuffering)] = &value
-	} else {
-		value := "off"
-		annotation[string(annotationscommon.AnnotationProxyRequestBuffering)] = &value
-	}
-	if policyDto.RespBuffer {
-		value := "on"
-		annotation[string(annotationscommon.AnnotationProxyBuffering)] = &value
-	} else {
-		value := "off"
-		annotation[string(annotationscommon.AnnotationProxyBuffering)] = &value
-	}
-	if policyDto.SSLRedirect {
-		value := "true"
-		annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
-	} else {
-		value := "false"
-		annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
-	}
-	limit := fmt.Sprintf("%dm", policyDto.ClientReqLimit)
-	annotation[string(annotationscommon.AnnotationProxyBodySize)] = &limit
-	reqTimeout := fmt.Sprintf("%d", policyDto.ProxyReqTimeout)
-	annotation[string(annotationscommon.AnnotationProxySendTimeout)] = &reqTimeout
-	respTimeout := fmt.Sprintf("%d", policyDto.ProxyRespTimeout)
-	annotation[string(annotationscommon.AnnotationProxyReadTimeout)] = &respTimeout
-	clientHeaderTimeout := fmt.Sprintf("client_header_timeout %ds;", policyDto.ClientReqTimeout)
-	annotation[string(annotationscommon.AnnotationServerSnippet)] = &clientHeaderTimeout
-	snippet := fmt.Sprintf(`
+	switch gatewayProvider {
+	case mseCommon.Mse_Provider_Name:
+		if policyDto.SSLRedirect {
+			value := "true"
+			annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
+		} else {
+			value := "false"
+			annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
+		}
+
+		if policyDto.ProxyReqTimeout > 0 {
+			value := fmt.Sprintf("%d", policyDto.ProxyReqTimeout)
+			annotation[string(mseCommon.AnnotationMSETimeOut)] = &value
+		}
+
+		res.IngressAnnotation = &apipolicy.IngressAnnotation{
+			Annotation: annotation,
+		}
+	default:
+		if policyDto.ReqBuffer {
+			value := "on"
+			annotation[string(annotationscommon.AnnotationProxyRequestBuffering)] = &value
+		} else {
+			value := "off"
+			annotation[string(annotationscommon.AnnotationProxyRequestBuffering)] = &value
+		}
+		if policyDto.RespBuffer {
+			value := "on"
+			annotation[string(annotationscommon.AnnotationProxyBuffering)] = &value
+		} else {
+			value := "off"
+			annotation[string(annotationscommon.AnnotationProxyBuffering)] = &value
+		}
+		if policyDto.SSLRedirect {
+			value := "true"
+			annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
+		} else {
+			value := "false"
+			annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value
+		}
+		limit := fmt.Sprintf("%dm", policyDto.ClientReqLimit)
+		annotation[string(annotationscommon.AnnotationProxyBodySize)] = &limit
+		reqTimeout := fmt.Sprintf("%d", policyDto.ProxyReqTimeout)
+		annotation[string(annotationscommon.AnnotationProxySendTimeout)] = &reqTimeout
+		respTimeout := fmt.Sprintf("%d", policyDto.ProxyRespTimeout)
+		annotation[string(annotationscommon.AnnotationProxyReadTimeout)] = &respTimeout
+		clientHeaderTimeout := fmt.Sprintf("client_header_timeout %ds;", policyDto.ClientReqTimeout)
+		annotation[string(annotationscommon.AnnotationServerSnippet)] = &clientHeaderTimeout
+		snippet := fmt.Sprintf(`
 client_body_timeout %ds;
 send_timeout %ds;
 `, policyDto.ClientReqTimeout, policyDto.ClientRespTimeout)
-	res.IngressAnnotation = &apipolicy.IngressAnnotation{
-		LocationSnippet: &snippet,
-		Annotation:      annotation,
+		res.IngressAnnotation = &apipolicy.IngressAnnotation{
+			LocationSnippet: &snippet,
+			Annotation:      annotation,
+		}
 	}
 
-	value, ok := ctx[apipolicy.CTX_KONG_ADAPTER]
-	if !ok {
-		//TODO: MSE support proxy policy?
-		logrus.Infof("use MSE Adapter, no need set proxy policy")
-		return res, nil
-	}
-	adapter, ok := value.(gatewayproviders.GatewayAdapter)
-	if !ok {
-		return res, errors.Errorf("convert failed:%+v", value)
-	}
-	value, ok = ctx[apipolicy.CTX_ZONE]
+	value, ok := ctx[apipolicy.CTX_ZONE]
 	if !ok {
 		return res, errors.Errorf("get identify failed:%+v", ctx)
 	}

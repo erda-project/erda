@@ -338,9 +338,25 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*Plugin
 	// *   2: routes
 	var configLevel int32 = 0 // 目前(2023.02) 只支持设置为 0
 
+	pResp := &PluginRespDto{
+		Id:         req.PluginId,
+		ServiceId:  req.ServiceId,
+		RouteId:    req.RouteId,
+		ConsumerId: req.ConsumerId,
+		Route:      req.Route,
+		Service:    req.Service,
+		Consumer:   req.Consumer,
+		Name:       req.Name,
+		Config:     req.Config,
+		Enabled:    enabled,
+		CreatedAt:  time.Now().Unix(),
+		PolicyId:   req.Id,
+	}
+
 	pluginId, ok := common.MapClusterNameToMSEPluginNameToPluginID[impl.ClusterName][req.Name]
 	if !ok {
-		return nil, errors.Errorf("plugin %s not support in MSE Gateway", req.Name)
+		log.Debugf("plugin %s not support in MSE Gateway", req.Name)
+		return pResp, nil
 	}
 	pluginConfig, err := impl.GetMSEPluginConfigByIDByAPI(pluginId)
 	if err != nil {
@@ -429,20 +445,7 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*Plugin
 		return nil, errors.Errorf("failed to update plugin %s config for CreateOrUpdatePluginById, error: %v", req.Name, err)
 	}
 
-	return &PluginRespDto{
-		Id:         req.PluginId,
-		ServiceId:  req.ServiceId,
-		RouteId:    req.RouteId,
-		ConsumerId: req.ConsumerId,
-		Route:      req.Route,
-		Service:    req.Service,
-		Consumer:   req.Consumer,
-		Name:       req.Name,
-		Config:     req.Config,
-		Enabled:    enabled,
-		CreatedAt:  time.Now().Unix(),
-		PolicyId:   req.Id,
-	}, nil
+	return pResp, nil
 }
 
 func (impl *MseAdapterImpl) GetPlugin(req *PluginReqDto) (*PluginRespDto, error) {

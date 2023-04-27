@@ -27,7 +27,7 @@ type PolicyDto struct {
 	MaxAge      int64  `json:"maxAge"`
 }
 
-func (dto PolicyDto) IsValidDto() (bool, string) {
+func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 	if !dto.Switch {
 		return true, ""
 	}
