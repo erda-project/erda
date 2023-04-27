@@ -219,11 +219,15 @@ func (k *K8sFlink) composeFlinkJob(job apistructs.JobFromUser, data apistructs.B
 		NodeSelector:    k.generateNodeSelector(job),
 		CancelRequested: nil,
 		PodAnnotations: map[string]string{
-			apistructs.MSPTerminusDefineTag: containers.MakeFlinkJobID(data.Name),
+			apistructs.MSPTerminusDefineTag:  containers.MakeFlinkJobID(data.Name),
+			apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+			apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 		},
 		Resources: corev1.ResourceRequirements{},
 		PodLabels: map[string]string{
-			apistructs.TerminusDefineTag: containers.MakeFlinkJobID(data.Name),
+			apistructs.TerminusDefineTag:     containers.MakeFlinkJobID(data.Name),
+			apistructs.MSPTerminusOrgIDTag:   job.GetOrgID(),
+			apistructs.MSPTerminusOrgNameTag: job.GetOrgName(),
 		},
 	}
 }
