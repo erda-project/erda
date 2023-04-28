@@ -15,6 +15,7 @@
 package swagger_ui
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -46,6 +47,9 @@ var (
 	}
 )
 
+//go:embed index.html
+var index string
+
 func init() {
 	servicehub.Register(name, &spec)
 }
@@ -63,11 +67,11 @@ type provider struct {
 	t *template.Template
 }
 
-func (p *provider) Init(ctx servicehub.Context) (err error) {
+func (p *provider) Init(_ servicehub.Context) (err error) {
 	p.L.Infof("[swagger-ui] configuration:\n%s", strutil.TryGetYamlStr(p.C))
-	p.t, err = template.ParseFiles(p.C.Index)
+	p.t, err = template.ParseGlob(index)
 	if err != nil {
-		p.L.Fatalf(`failed to template.ParseFiles("%s"), err: %v`, p.C.Index, err)
+		p.L.Fatalf(`failed to template.ParseGlob, err: %v`, err)
 	}
 	return err
 }
@@ -156,7 +160,6 @@ func (p *provider) ui(w http.ResponseWriter, filename string) {
 }
 
 type config struct {
-	Index    string       `json:"index" yaml:"index"`
 	Swaggers []swaggerRef `json:"swaggers" yaml:"swaggers"`
 }
 
