@@ -174,13 +174,13 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 			if reflect.TypeOf(filters[i]) == Type {
 				continue
 			}
-			if on, ok := filters[i].(filter.ResponseGetterFilter); ok {
+			if on, ok := filters[i].(filter.ResponseInforFilter); ok {
 				if infor, err := filter.NewInfor(ctx, p); err != nil {
 					l.Errorf("failed to filter.NewInfor(ctx, p), err: %v", err)
 				} else {
 					go func() {
-						l.Debugf(`%T.OnHttpResponseGetter(...)`, on)
-						signal, err := on.OnHttpResponseGetter(ctx, infor)
+						l.Debugf(`%T.OnHttpResponseInfor(...)`, on)
+						signal, err := on.OnHttpResponseInfor(ctx, infor)
 						if err != nil {
 							l.Errorf("failed to %T.OnHttpResponse, signal: %v, err: %v", on, signal, err)
 						}
@@ -202,16 +202,16 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 		if reflect.TypeOf(filters[i]) == Type {
 			continue
 		}
-		if on, ok := filters[i].(filter.RequestGetterFilter); ok {
+		if on, ok := filters[i].(filter.RequestInforFilter); ok {
 			infor, err := filter.NewInfor(ctx, r)
 			if err != nil {
 				l.Errorf("failed to filter.NewInfor(ctx, r), err: %v", err)
 			} else {
 				go func() {
-					l.Debugf(`%T.OnHttpRequestGetter(...)`, on)
-					signal, err := on.OnHttpRequestGetter(ctx, infor)
+					l.Debugf(`%T.OnHttpRequestInfor(...)`, on)
+					signal, err := on.OnHttpRequestInfor(ctx, infor)
 					if err != nil {
-						l.Errorf("failed to %T.OnHttpRequestGetter, signal: %v, err: %v", on, signal, err)
+						l.Errorf("failed to %T.OnHttpRequestInfor, signal: %v, err: %v", on, signal, err)
 					}
 				}()
 			}

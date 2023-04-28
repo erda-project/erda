@@ -30,8 +30,8 @@ const (
 )
 
 var (
-	_ filter.RequestGetterFilter  = (*LogHttp)(nil)
-	_ filter.ResponseGetterFilter = (*LogHttp)(nil)
+	_ filter.RequestInforFilter  = (*LogHttp)(nil)
+	_ filter.ResponseInforFilter = (*LogHttp)(nil)
 )
 
 func init() {
@@ -44,7 +44,7 @@ func New(_ json.RawMessage) (filter.Filter, error) {
 	return &LogHttp{}, nil
 }
 
-func (f *LogHttp) OnHttpRequestGetter(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
+func (f *LogHttp) OnHttpRequestInfor(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
 		return filter.Continue, nil
 	}
@@ -71,11 +71,11 @@ func (f *LogHttp) OnHttpRequestGetter(ctx context.Context, infor filter.HttpInfo
 	return filter.Continue, nil
 }
 
-func (f *LogHttp) OnHttpResponseGetter(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
+func (f *LogHttp) OnHttpResponseInfor(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
 	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
 		return filter.Continue, nil
 	}
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnHttpResponseGetter")
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnHttpResponseInfor")
 	var m = map[string]any{
 		"headers":     infor.Header(),
 		"status":      infor.Status(),

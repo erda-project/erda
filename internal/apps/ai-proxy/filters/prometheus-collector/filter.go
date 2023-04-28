@@ -32,8 +32,8 @@ const (
 )
 
 var (
-	_ filter.RequestGetterFilter  = (*PrometheusCollector)(nil)
-	_ filter.ResponseGetterFilter = (*PrometheusCollector)(nil)
+	_ filter.RequestInforFilter  = (*PrometheusCollector)(nil)
+	_ filter.ResponseInforFilter = (*PrometheusCollector)(nil)
 )
 
 func init() {
@@ -48,7 +48,7 @@ func New(_ json.RawMessage) (filter.Filter, error) {
 	return &PrometheusCollector{}, nil
 }
 
-func (f *PrometheusCollector) OnHttpRequestGetter(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
+func (f *PrometheusCollector) OnHttpRequestInfor(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
 	f.labels.ChatType = infor.Header().Get("X-Erda-AI-Proxy-ChatType")
 	f.labels.ChatTitle = infor.Header().Get("X-Erda-AI-Proxy-ChatTitle")
 	f.labels.Source = infor.Header().Get("X-Erda-AI-Proxy-Source")
@@ -63,7 +63,7 @@ func (f *PrometheusCollector) OnHttpRequestGetter(ctx context.Context, infor fil
 	return filter.Continue, nil
 }
 
-func (f *PrometheusCollector) OnHttpResponseGetter(_ context.Context, infor filter.HttpInfor) (filter.Signal, error) {
+func (f *PrometheusCollector) OnHttpResponseInfor(_ context.Context, infor filter.HttpInfor) (filter.Signal, error) {
 	f.labels.Status = infor.Status()
 	f.labels.StatusCode = strconv.FormatInt(int64(infor.StatusCode()), 10)
 	for _, v := range []*string{

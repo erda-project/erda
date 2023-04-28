@@ -33,20 +33,20 @@ var (
 
 type Filter interface{}
 
-type RequestGetterFilter interface {
-	OnHttpRequestGetter(ctx context.Context, g HttpInfor) (Signal, error)
+type RequestInforFilter interface {
+	OnHttpRequestInfor(context.Context, HttpInfor) (Signal, error)
 }
 
 type RequestFilter interface {
-	OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (Signal, error)
+	OnHttpRequest(context.Context, http.ResponseWriter, *http.Request) (Signal, error)
 }
 
-type ResponseGetterFilter interface {
-	OnHttpResponseGetter(ctx context.Context, g HttpInfor) (Signal, error)
+type ResponseInforFilter interface {
+	OnHttpResponseInfor(context.Context, HttpInfor) (Signal, error)
 }
 
 type ResponseFilter interface {
-	OnHttpResponse(ctx context.Context, response *http.Response) (Signal, error)
+	OnHttpResponse(context.Context, *http.Response) (Signal, error)
 }
 
 type Config struct {
@@ -60,14 +60,8 @@ type InstantiateFunc func(config json.RawMessage) (Filter, error)
 
 func Register(name string, inst InstantiateFunc) {
 	l.Lock()
-	defer l.Unlock()
 	instFuncs[name] = inst
-}
-
-func Deregister(name string) {
-	l.Lock()
-	defer l.Unlock()
-	delete(instFuncs, name)
+	l.Unlock()
 }
 
 func GetFilterFactory(name string) (InstantiateFunc, bool) {

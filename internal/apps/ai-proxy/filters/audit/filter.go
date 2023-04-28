@@ -38,8 +38,8 @@ const (
 )
 
 var (
-	_ filter.RequestGetterFilter  = (*Audit)(nil)
-	_ filter.ResponseGetterFilter = (*Audit)(nil)
+	_ filter.RequestInforFilter  = (*Audit)(nil)
+	_ filter.ResponseInforFilter = (*Audit)(nil)
 )
 
 func init() {
@@ -54,8 +54,8 @@ func New(_ json.RawMessage) (filter.Filter, error) {
 	return &Audit{audit: new(models.AIProxyFilterAudit)}, nil
 }
 
-func (f *Audit) OnHttpRequestGetter(ctx context.Context, g filter.HttpInfor) (filter.Signal, error) {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpRequestGetter")
+func (f *Audit) OnHttpRequestInfor(ctx context.Context, g filter.HttpInfor) (filter.Signal, error) {
+	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpRequestInfor")
 	for _, set := range []func(context.Context, http.Header, *bytes.Buffer) error{
 		f.SetSessionId,
 		f.SetChats,
@@ -91,7 +91,7 @@ func (f *Audit) OnHttpRequestGetter(ctx context.Context, g filter.HttpInfor) (fi
 	return filter.Continue, nil
 }
 
-func (f *Audit) OnHttpResponseGetter(ctx context.Context, getter filter.HttpInfor) (filter.Signal, error) {
+func (f *Audit) OnHttpResponseInfor(ctx context.Context, getter filter.HttpInfor) (filter.Signal, error) {
 	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpResponse")
 	for _, set := range []func(context.Context, http.Header, *bytes.Buffer) error{
 		f.SetResponseAt,
