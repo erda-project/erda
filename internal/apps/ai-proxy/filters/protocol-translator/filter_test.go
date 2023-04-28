@@ -17,7 +17,7 @@ package protocol_translator_test
 import (
 	"testing"
 
-	protocol_translator "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/protocol-translator"
+	protocol_translator "github.com/erda-project/erda/internal/apps/ai-proxy/filters/protocol-translator"
 )
 
 func TestParseProcessorNameArgs(t *testing.T) {

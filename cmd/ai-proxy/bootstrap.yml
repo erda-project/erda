@@ -1,5 +1,7 @@
-http-server:
+http-server@swagger:
   addr: ":8080"
+http-server@ai:
+  addr: ":8081"
 health:
 
 erda.app.ai-proxy:
@@ -10,8 +12,10 @@ erda.app.ai-proxy:
 erda.app.swagger-ui:
   index: swagger-ui/index.html
   swaggers:
-    openai: swaggers/api.openai.com.yaml
-    azure: swaggers/openai.azure.com.yaml
+    - name: openai
+      filename: swaggers/api.openai.com.yaml
+    - name: azure
+      filename: swaggers/openai.azure.com.yaml
 
 gorm.v2:
   host: "${MYSQL_HOST}"

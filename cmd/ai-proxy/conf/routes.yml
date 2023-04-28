@@ -2,6 +2,7 @@ routes:
   - path: /v1/models
     method: GET
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -19,6 +20,7 @@ routes:
   - path: /v1/models/{model}
     method: GET
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -36,6 +38,7 @@ routes:
   - path: /v1/completions
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -56,6 +59,7 @@ routes:
   - path: /v1/chat/completions
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -76,6 +80,7 @@ routes:
   - path: /v1/edits
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: reverse-proxy
@@ -88,6 +93,7 @@ routes:
   - path: /v1/images/generations
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: reverse-proxy
@@ -100,6 +106,7 @@ routes:
   - path: /v1/images/edits
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: reverse-proxy
@@ -112,6 +119,7 @@ routes:
   - path: /v1/image/variations
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: reverse-proxy
@@ -125,6 +133,7 @@ routes:
   - path: /openai/deployments/{deployment-id}/completions
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -145,6 +154,7 @@ routes:
   - path: /openai/deployments/{deployment-id}/embeddings
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -163,6 +173,7 @@ routes:
   - path: /openai/deployments/{deployment-id}/chat/completions
     method: POST
     filters:
+      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator

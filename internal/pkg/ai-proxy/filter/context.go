@@ -26,17 +26,21 @@ var (
 
 type (
 	// RouteCtxKey 用以从 context.Context 中获取 route.Route 以获取 route.Route 的更多配置信息
-	RouteCtxKey        struct{ RouteCtxKey any }
-	ProvidersCtxKey    struct{ ProvidersCtxKey any }
-	FiltersCtxKey      struct{ FiltersCtxKey any }
-	ProviderCtxKey     struct{ ProviderCtxKey any }
-	OperationCtxKey    struct{ OperationCtxKey any }
-	DBCtxKey           struct{ DBCtxKey any }
-	LoggerCtxKey       struct{ LoggerCtxKey any }
-	ReplacedPathCtxKey struct{ ReplacedPathCtxKey any }
-	AddQueriesCtxKey   struct{ AddQueriesCtxKey any }
-	LogHttpCtxKey      struct{ LogHttpCtxKey any }
-	MutexCtxKey        struct{ MutexCtxKey any }
+	RouteCtxKey         struct{ RouteCtxKey any }
+	ProvidersCtxKey     struct{ ProvidersCtxKey any }
+	FiltersCtxKey       struct{ FiltersCtxKey any }
+	ProviderCtxKey      struct{ ProviderCtxKey any }
+	OperationCtxKey     struct{ OperationCtxKey any }
+	DBCtxKey            struct{ DBCtxKey any }
+	LoggerCtxKey        struct{ LoggerCtxKey any }
+	ReplacedPathCtxKey  struct{ ReplacedPathCtxKey any }
+	AddQueriesCtxKey    struct{ AddQueriesCtxKey any }
+	LogHttpCtxKey       struct{ LogHttpCtxKey any }
+	MutexCtxKey         struct{ MutexCtxKey any }
+	PromCounterCtxKey   struct{ PromCounterCtxKey any }
+	PromGaugeCtxKey     struct{ PromGaugeKePromGaugeCtxKey any }
+	PromSummaryCtxKey   struct{ PromSummaryCtxKey any }
+	PromHistogramCtxKey struct{ PromHistogramCtxKey any }
 )
 
 type Context struct {

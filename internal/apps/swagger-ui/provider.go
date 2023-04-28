@@ -85,7 +85,7 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.HandleSwaggerName(providerName)(w, r)
 		return
 	}
-	p.redirectToRandomProvider(w, r)
+	p.redirectToFirstProvider(w, r)
 }
 
 func (p *provider) HandleSwaggerName(swaggerName string) func(w http.ResponseWriter, r *http.Request) {
@@ -94,12 +94,13 @@ func (p *provider) HandleSwaggerName(swaggerName string) func(w http.ResponseWri
 			p.badRequest(w, "provider name is needed")
 			return
 		}
-		filename, ok := p.C.Swaggers[swaggerName]
-		if !ok {
-			p.notFound(w, swaggerName)
-			return
+		for _, swagger := range p.C.Swaggers {
+			if swagger.Name == swaggerName {
+				p.HandleSwaggerFile(swagger.Filename)(w, r)
+				return
+			}
 		}
-		p.HandleSwaggerFile(filename)(w, r)
+		p.notFound(w, swaggerName)
 	}
 }
 
@@ -125,21 +126,22 @@ func (p *provider) notFound(w http.ResponseWriter, providerName string) {
 		"provider":  providerName,
 		"providers": []string{},
 	}
-	for key := range p.C.Swaggers {
-		m["providers"] = append(m["providers"].([]string), key)
+	for _, swagger := range p.C.Swaggers {
+		m["providers"] = append(m["providers"].([]string), swagger.Name)
 	}
 	_ = json.NewEncoder(w).Encode(m)
 }
 
-func (p *provider) redirectToRandomProvider(w http.ResponseWriter, r *http.Request) {
-	for key := range p.C.Swaggers {
-		query := r.URL.Query()
-		query.Set("provider", key)
-		r.URL.RawQuery = query.Encode()
-		w.Header().Set("Location", r.URL.RequestURI())
-		w.WriteHeader(http.StatusPermanentRedirect)
+func (p *provider) redirectToFirstProvider(w http.ResponseWriter, r *http.Request) {
+	if len(p.C.Swaggers) == 0 {
+		p.notFound(w, "")
 		return
 	}
+	query := r.URL.Query()
+	query.Set("provider", p.C.Swaggers[0].Name)
+	r.URL.RawQuery = query.Encode()
+	w.Header().Set("Location", r.URL.RequestURI())
+	w.WriteHeader(http.StatusPermanentRedirect)
 }
 
 func (p *provider) ui(w http.ResponseWriter, filename string) {
@@ -154,6 +156,11 @@ func (p *provider) ui(w http.ResponseWriter, filename string) {
 }
 
 type config struct {
-	Index    string            `json:"index" yaml:"index"`
-	Swaggers map[string]string `json:"swaggers" yaml:"swaggers"`
+	Index    string       `json:"index" yaml:"index"`
+	Swaggers []swaggerRef `json:"swaggers" yaml:"swaggers"`
+}
+
+type swaggerRef struct {
+	Name     string `json:"name" yaml:"name"`
+	Filename string `json:"filename" yaml:"filename"`
 }

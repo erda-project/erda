@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	_ filter.Filter = (*ProtocolTranslator)(nil)
+	_ filter.RequestFilter = (*ProtocolTranslator)(nil)
 )
 
 func init() {
@@ -61,11 +61,6 @@ func (f *ProtocolTranslator) OnHttpRequest(ctx context.Context, w http.ResponseW
 	if err := f.ProcessAll(ctx, r); err != nil {
 		return filter.Intercept, err
 	}
-	return filter.Continue, nil
-}
-
-func (f *ProtocolTranslator) OnHttpResponse(ctx context.Context, response *http.Response, r *http.Request) (filter.Signal, error) {
-	//return -1, errors.New("测试失败的返回")
 	return filter.Continue, nil
 }
 

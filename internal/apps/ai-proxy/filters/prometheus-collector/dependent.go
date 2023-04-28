@@ -12,25 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package audit
+package prometheus_collector
 
-import "encoding/json"
-
-func ExtractCompletionFromCreateCompletionResp(s string) (string, error) {
-	var m = make(map[string]json.RawMessage)
-	if err := json.Unmarshal([]byte(s), &m); err != nil {
-		return "", err
-	}
-	message, ok := m["choices"]
-	if !ok {
-		return "", nil
-	}
-	var choices []*CreateCompletionChoice
-	if err := json.Unmarshal(message, &choices); err != nil {
-		return "", err
-	}
-	if len(choices) == 0 {
-		return "", nil
-	}
-	return choices[0].Text, nil
-}
+import (
+	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/metrics"
+)

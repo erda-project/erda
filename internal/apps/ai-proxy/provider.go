@@ -24,15 +24,16 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gorm.io/gorm"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	reverse_proxy "github.com/erda-project/erda/internal/apps/ai-proxy/filters/reverse-proxy"
 	swagger_ui "github.com/erda-project/erda/internal/apps/swagger-ui"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
-	reverse_proxy "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -60,14 +61,15 @@ func init() {
 }
 
 type provider struct {
-	L          logs.Logger
-	Config     *config
-	HttpServer httpserver.Router    `autowired:"http-server"`
-	SwaggerUI  swagger_ui.Interface `autowired:"erda.app.swagger-ui.Server"`
-	D          *gorm.DB             `autowired:"mysql-gorm.v2-client"`
+	L             logs.Logger
+	Config        *config
+	SwaggerServer httpserver.Router    `autowired:"http-server@swagger"`
+	AiServer      httpserver.Router    `autowired:"http-server@ai"`
+	SwaggerUI     swagger_ui.Interface `autowired:"erda.app.swagger-ui.Server"`
+	D             *gorm.DB             `autowired:"mysql-gorm.v2-client"`
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
+func (p *provider) Init(_ servicehub.Context) error {
 	if err := p.L.SetLevel(p.Config.GetLogLevel()); err != nil {
 		return errors.Wrapf(err, "failed to %T.SetLevel, logLevel: %s", p.L, p.Config.GetLogLevel())
 	} else {
@@ -82,18 +84,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 
-	// register http api
-	// redirect to swagger page from root
-	p.HttpServer.Any("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Location", "/swagger")
-		w.WriteHeader(http.StatusPermanentRedirect)
-	})
-	// swagger ui page rendered from a html template
-	p.HttpServer.Any("/swagger", p.SwaggerUI)
 	// statics swagger files
-	p.HttpServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
+	p.SwaggerServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
+	// swagger ui page rendered from a html template
+	p.SwaggerServer.Any("/**", p.SwaggerUI)
+
+	// ai-proxy prometheus metrics
+	p.AiServer.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
-	p.HttpServer.Any("/**", p.ServeAI)
+	p.AiServer.Any("/**", p.ServeAI)
 	return nil
 }
 
@@ -197,11 +196,18 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 }
 
 type config struct {
-	RoutesRef    string `json:"routesRef" yaml:"routesRef"`
-	ProvidersRef string `json:"providersRef" yaml:"providersRef"`
-	LogLevel     string `json:"logLevel" yaml:"logLevel"`
+	RoutesRef    string             `json:"routesRef" yaml:"routesRef"`
+	ProvidersRef string             `json:"providersRef" yaml:"providersRef"`
+	LogLevel     string             `json:"logLevel" yaml:"logLevel"`
+	Exporter     configPromExporter `json:"exporter" yaml:"exporter"`
 	providers    provider2.Providers
 	Routes       route2.Routes
+}
+
+type configPromExporter struct {
+	Namespace string `json:"namespace" yaml:"namespace"`
+	Subsystem string `json:"subsystem" yaml:"subsystem"`
+	Name      string `json:"name" yaml:"name"`
 }
 
 func (c *config) GetLogLevel() string {
