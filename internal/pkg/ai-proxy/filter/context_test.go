@@ -22,17 +22,17 @@ import (
 
 func TestNewContext(t *testing.T) {
 	ctx := filter.NewContext(map[any]any{
-		filter.RouteCtxKey{}:     "routes",
+		filter.MutexCtxKey{}:     "mutex",
 		filter.ProvidersCtxKey{}: "providers",
 	})
-	routes, ok := ctx.Value(filter.RouteCtxKey{}).(string)
+	mutex, ok := ctx.Value(filter.MutexCtxKey{}).(string)
 	if !ok {
-		t.Fatal("failed to retrieve routes")
+		t.Fatal("failed to retrieve mutex")
 	}
-	if routes != "routes" {
-		t.Fatal("routes is error")
+	if mutex != "mutex" {
+		t.Fatal("mutex is error")
 	}
-	t.Logf("routes: %s", routes)
+	t.Logf("mutex: %s", mutex)
 
 	providers, ok := ctx.Value(filter.ProvidersCtxKey{}).(string)
 	if !ok {
