@@ -15,7 +15,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: openai
           instanceId: default
-          operationId: ListModels
           scheme: https
   - path: /v1/models/{model}
     method: GET
@@ -33,7 +32,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: openai
           instanceId: default
-          operationId: RetrieveModel
           scheme: https
   - path: /v1/completions
     method: POST
@@ -54,7 +52,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: azure
           instanceId: default
-          operationId: CreateCompletion
           scheme: https
   - path: /v1/chat/completions
     method: POST
@@ -75,7 +72,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: azure
           instanceId: default
-          operationId: CreateChatCompletion
           scheme: https
   - path: /v1/edits
     method: POST
@@ -88,7 +84,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: openai
           instanceId: default
-          operationId: CreateEdit
           scheme: https
   - path: /v1/images/generations
     method: POST
@@ -101,7 +96,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: openai
           instanceId: default
-          operationId: CreateImageGeneration
           scheme: https
   - path: /v1/images/edits
     method: POST
@@ -114,7 +108,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: openai
           instanceId: default
-          operationId: CreateImageEdit
           scheme: https
   - path: /v1/image/variations
     method: POST
@@ -127,7 +120,6 @@ routes:
           to: provider # enum: "provider", "url"
           provider: openai
           instanceId: default
-          operationId: CreateImageVariation
           scheme: https
 
   - path: /openai/deployments/{deployment-id}/completions
@@ -147,7 +139,6 @@ routes:
           to: provider
           provider: azure
           instanceId: default
-          operationId: CreateCompletion
           scheme: https
           host: ""
           path: ""
@@ -168,7 +159,6 @@ routes:
           to: provider
           provider: azure
           instanceId: default
-          operationId: CreateEmbeddings
           scheme: https
   - path: /openai/deployments/{deployment-id}/chat/completions
     method: POST
@@ -187,6 +177,5 @@ routes:
           to: provider
           provider: azure
           instanceId: default
-          operationId: CreateChatCompletion
           scheme: https
 

@@ -20,8 +20,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/getkin/kin-openapi/openapi3"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/metrics"
@@ -58,7 +56,10 @@ func (f *PrometheusCollector) OnHttpRequestGetter(ctx context.Context, infor fil
 	f.labels.UserName = infor.Header().Get("X-Erda-AI-Proxy-Name")
 	f.labels.Provider = ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider).Name
 	f.labels.Model = f.getModel(ctx, infor)
-	f.labels.OperationId = ctx.Value(filter.OperationCtxKey{}).(*openapi3.Operation).OperationID
+	f.labels.OperationId = infor.Method()
+	if infor.URL() != nil {
+		f.labels.OperationId += " " + infor.URL().Path
+	}
 	return filter.Continue, nil
 }
 

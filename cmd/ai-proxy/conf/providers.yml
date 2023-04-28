@@ -7,8 +7,6 @@ providers:
     docSite: https://platform.openai.com/docs/api-reference
     appKey: ${ env.OPENAI_API_KEY }
     organization: ""
-    openapi:
-      $ref: swaggers/api.openai.com.yaml
     metadata: {}
 
   - name: azure
@@ -17,8 +15,6 @@ providers:
     scheme: https
     description: azure 提供的 ai 能力
     docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
-    openapi:
-      $ref: swaggers/openai.azure.com.yaml
     metadata:
       RESOURCE_NAME: "codeai"
       DEVELOPMENT_NAME: "gpt-35-turbo-0301"

@@ -19,12 +19,10 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"reflect"
 	"time"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
@@ -64,7 +62,6 @@ func (f *Audit) OnHttpRequestGetter(ctx context.Context, g filter.HttpInfor) (fi
 		f.SetRequestAt,
 		f.SetSource,
 		f.SetUserInfo,
-		f.SetOperationId,
 		f.SetRequestContentType,
 		f.SetUserAgent,
 		f.SetRequestBody,
@@ -79,6 +76,14 @@ func (f *Audit) OnHttpRequestGetter(ctx context.Context, g filter.HttpInfor) (fi
 		}
 		// todo: r.Clone every time is less efficient
 		if err := set(ctx, g.Header(), buf); err != nil {
+			l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
+			continue
+		}
+	}
+	for _, set := range []func(ctx2 context.Context, infor filter.HttpInfor) error{
+		f.SetOperationId,
+	} {
+		if err := set(ctx, g); err != nil {
 			l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			continue
 		}
@@ -194,16 +199,11 @@ func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buf
 	return f.setFieldFromRequestBody(ctx, header, buf, "model", &f.audit.Model)
 }
 
-func (f *Audit) SetOperationId(ctx context.Context, _ http.Header, _ *bytes.Buffer) error {
-	// a.OperationId is passed in by filter reverse-proxy
-	operation, ok := ctx.Value(filter.OperationCtxKey{}).(*openapi3.Operation)
-	if !ok {
-		panic(fmt.Sprintf(`operation was not set into the context, ctx.Value(filter.OperationCtxKey{}) got %T`, ctx.Value(filter.OperationCtxKey{})))
+func (f *Audit) SetOperationId(ctx context.Context, infor filter.HttpInfor) error {
+	f.audit.OperationId = infor.Method()
+	if infor.URL() != nil {
+		f.audit.OperationId += " " + infor.URL().Path
 	}
-	if operation == nil {
-		return errors.New("operation not found")
-	}
-	f.audit.OperationId = operation.OperationID
 	return nil
 }
 
@@ -221,7 +221,7 @@ func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *byte
 		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", buf, m)
 	}
 	switch f.audit.OperationId {
-	case "CreateCompletion", "CreateEdit":
+	case "POST /v1/completions", "POST /v1/edits":
 		data, ok := m["choices"]
 		if !ok {
 			l.Debug(`no field "choices" in the response body`)
@@ -238,7 +238,7 @@ func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *byte
 		}
 		f.audit.Completion = choices[0].Text
 		return nil
-	case "CreateChatCompletion":
+	case "POST /v1/chat/completions":
 		data, ok := m["choices"]
 		if !ok {
 			l.Debug(`no field "choices" in the response body`)

@@ -15,13 +15,8 @@
 package provider
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
-
-	"github.com/getkin/kin-openapi/openapi3"
-	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -44,9 +39,7 @@ type Provider struct {
 	// secretKey provided by ai-proxy, you can use an expression like ${ env.CHATGPT_APP_KEY }
 	Organization string `json:"organization" yaml:"organization"`
 
-	Openapi  json.RawMessage   `json:"openapi" json:"openapi"`
 	Metadata map[string]string `json:"metadata" yaml:"metadata"`
-	Swagger  *openapi3.Swagger `json:"-" yaml:"-"`
 }
 
 func (p *Provider) GetHost() string {
@@ -59,33 +52,6 @@ func (p *Provider) GetAppKey() string {
 
 func (p *Provider) GetOrganization() string {
 	return p.Organization // todo: get from env expr
-}
-
-func (p *Provider) LoadOpenapiSpec() error {
-	var m = make(map[string]string)
-	if err := yaml.Unmarshal(p.Openapi, &m); err == nil {
-		if filename, ok := m["$ref"]; ok && filename != "" {
-			swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromFile(filename)
-			if err != nil {
-				return err
-			}
-			p.Swagger = swagger
-			return nil
-		}
-	}
-	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromData(p.Openapi)
-	if err != nil {
-		return err
-	}
-	p.Swagger = swagger
-	return nil
-}
-
-func (p *Provider) FindAPI(operationId, path, method string) (*openapi3.Operation, bool) {
-	if operationId != "" {
-		return p.findAPIByOperationId(operationId)
-	}
-	return p.findAPIByPathMethod(path, method)
 }
 
 func (p *Provider) getRendered(s string) string {
@@ -106,34 +72,6 @@ func (p *Provider) getRendered(s string) string {
 	return s
 }
 
-func (p *Provider) findAPIByOperationId(operationId string) (*openapi3.Operation, bool) {
-	if p.Swagger == nil || len(p.Swagger.Paths) == 0 {
-		return nil, false
-	}
-	for _, item := range p.Swagger.Paths {
-		for _, operation := range []*openapi3.Operation{
-			item.Connect,
-			item.Delete,
-			item.Get,
-			item.Head,
-			item.Options,
-			item.Patch,
-			item.Post,
-			item.Put,
-			item.Trace,
-		} {
-			if operation != nil && operation.OperationID == operationId {
-				return operation, true
-			}
-		}
-	}
-	return nil, false
-}
-
-func (p *Provider) findAPIByPathMethod(path, method string) (*openapi3.Operation, bool) {
-	panic(fmt.Sprintf("%T.findAPIByPathMethod not implement", p))
-}
-
 type Providers []*Provider
 
 func (p Providers) FindProvider(name, instanceId string) (*Provider, bool) {
@@ -143,8 +81,4 @@ func (p Providers) FindProvider(name, instanceId string) (*Provider, bool) {
 		}
 	}
 	return nil, false
-}
-
-func MatchPath(pattern, path string) bool {
-	return true // todo: not implement
 }

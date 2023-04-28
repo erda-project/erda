@@ -26,6 +26,7 @@ import (
 )
 
 type HttpInfor interface {
+	Method() string
 	URL() *url.URL
 	Status() string
 	StatusCode() int
@@ -41,15 +42,33 @@ func NewInfor[R httputil.RequestResponse](ctx context.Context, r R) (HttpInfor, 
 	if err != nil {
 		return nil, err
 	}
-	return headerBodyGetter[R]{r: i, l: ctx.Value(MutexCtxKey{}).(*sync.Mutex)}, nil // panic early
+	return infor[R]{r: i, l: ctx.Value(MutexCtxKey{}).(*sync.Mutex)}, nil // panic early
 }
 
-type headerBodyGetter[R httputil.RequestResponse] struct {
+type infor[R httputil.RequestResponse] struct {
 	r R
 	l *sync.Mutex
 }
 
-func (r headerBodyGetter[R]) RemoteAddr() string {
+func (r infor[R]) Method() string {
+	switch i := (interface{})(r.r).(type) {
+	case http.Request:
+		return i.Method
+	case *http.Request:
+		return i.Method
+	case http.Response:
+		if i.Request != nil {
+			return i.Request.Method
+		}
+	case *http.Response:
+		if i.Request != nil {
+			return i.Request.Method
+		}
+	}
+	return "UNKNOWN_METHOD"
+}
+
+func (r infor[R]) RemoteAddr() string {
 	switch i := (interface{})(r.r).(type) {
 	case http.Request:
 		return i.RemoteAddr
@@ -67,7 +86,7 @@ func (r headerBodyGetter[R]) RemoteAddr() string {
 	return ""
 }
 
-func (r headerBodyGetter[R]) Host() string {
+func (r infor[R]) Host() string {
 	switch i := (interface{})(r.r).(type) {
 	case http.Request:
 		return i.Host
@@ -85,7 +104,7 @@ func (r headerBodyGetter[R]) Host() string {
 	return ""
 }
 
-func (r headerBodyGetter[R]) URL() *url.URL {
+func (r infor[R]) URL() *url.URL {
 	switch i := (interface{})(r.r).(type) {
 	case http.Request:
 		return i.Clone(context.Background()).URL
@@ -103,7 +122,7 @@ func (r headerBodyGetter[R]) URL() *url.URL {
 	return &url.URL{}
 }
 
-func (r headerBodyGetter[R]) ContentLength() int64 {
+func (r infor[R]) ContentLength() int64 {
 	field := reflect.ValueOf(r.r)
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
@@ -111,7 +130,7 @@ func (r headerBodyGetter[R]) ContentLength() int64 {
 	return field.FieldByName("ContentLength").Int()
 }
 
-func (r headerBodyGetter[R]) Status() string {
+func (r infor[R]) Status() string {
 	field := reflect.ValueOf(r.r)
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
@@ -119,7 +138,7 @@ func (r headerBodyGetter[R]) Status() string {
 	return field.FieldByName("Status").String()
 }
 
-func (r headerBodyGetter[R]) StatusCode() int {
+func (r infor[R]) StatusCode() int {
 	field := reflect.ValueOf(r.r)
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
@@ -127,14 +146,14 @@ func (r headerBodyGetter[R]) StatusCode() int {
 	return int(field.FieldByName("StatusCode").Int())
 }
 
-func (r headerBodyGetter[R]) Header() http.Header {
+func (r infor[R]) Header() http.Header {
 	r.l.Lock()
 	header := httputil.CopyHeader(r.r)
 	r.l.Unlock()
 	return header
 }
 
-func (r headerBodyGetter[R]) Body() (*bytes.Buffer, error) {
+func (r infor[R]) Body() (*bytes.Buffer, error) {
 	r.l.Lock()
 	buf, err := httputil.NopCloseReadBody(r.r)
 	r.l.Unlock()

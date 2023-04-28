@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	httputil2 "github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -75,16 +74,6 @@ func (f *ReverseProxy) OnHttpRequest(ctx context.Context, w http.ResponseWriter,
 func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
 	// retrieve contexts: logger, route, providers, provider, operation, filters
 	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("ReverseProxy")
-	rout, ok := ctx.Value(filter.RouteCtxKey{}).(*route.Route)
-	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": "failed to retrieve route info",
-		})
-		return filter.Intercept, nil
-	}
-
 	providers, ok := ctx.Value(filter.ProvidersCtxKey{}).(provider.Providers)
 	if !ok {
 		w.Header().Set("server", "ai-proxy/erda")
@@ -106,19 +95,6 @@ func (f *ReverseProxy) onHttpRequestToProvider(ctx context.Context, w http.Respo
 	}
 	filter.WithValue(ctx, filter.ProviderCtxKey{}, prov)
 
-	operation, ok := prov.FindAPI(f.Config.OperationId, f.Config.Path, f.mappedMethod(rout.Method))
-	if !ok {
-		w.Header().Set("server", "ai-proxy/erda")
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"error":       "API not found",
-			"provider":    prov.Name,
-			"operationId": f.Config.OperationId,
-			"apiPath":     f.Config.Path,
-		})
-		return filter.Intercept, nil
-	}
-	filter.WithValue(ctx, filter.OperationCtxKey{}, operation)
 	filters, ok := ctx.Value(filter.FiltersCtxKey{}).([]filter.Filter)
 	if !ok {
 		w.Header().Set("server", "ai-proxy/erda")
@@ -295,14 +271,13 @@ func (f *ReverseProxy) mappedMethod(routeMethod string) string {
 }
 
 type Config struct {
-	To          string            `json:"to" yaml:"to"`
-	Provider    string            `json:"provider" yaml:"provider"`
-	InstanceId  string            `json:"instanceId" yaml:"instanceId"`
-	OperationId string            `json:"operationId" yaml:"operationId"`
-	Scheme      string            `json:"scheme" yaml:"scheme"`
-	Host        string            `json:"host" yaml:"host"`
-	Path        string            `json:"path" yaml:"path"`
-	MethodsMap  map[string]string `json:"methodsMap" yaml:"methodsMap"`
+	To         string            `json:"to" yaml:"to"`
+	Provider   string            `json:"provider" yaml:"provider"`
+	InstanceId string            `json:"instanceId" yaml:"instanceId"`
+	Scheme     string            `json:"scheme" yaml:"scheme"`
+	Host       string            `json:"host" yaml:"host"`
+	Path       string            `json:"path" yaml:"path"`
+	MethodsMap map[string]string `json:"methodsMap" yaml:"methodsMap"`
 }
 
 func ResponseErrorHandler(w http.ResponseWriter, _ *http.Request, err error) {

@@ -32,7 +32,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	reverse_proxy "github.com/erda-project/erda/internal/apps/ai-proxy/filters/reverse-proxy"
-	swagger_ui "github.com/erda-project/erda/internal/apps/swagger-ui"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
@@ -61,12 +60,10 @@ func init() {
 }
 
 type provider struct {
-	L             logs.Logger
-	Config        *config
-	SwaggerServer httpserver.Router    `autowired:"http-server@swagger"`
-	AiServer      httpserver.Router    `autowired:"http-server@ai"`
-	SwaggerUI     swagger_ui.Interface `autowired:"erda.app.swagger-ui.Server"`
-	D             *gorm.DB             `autowired:"mysql-gorm.v2-client"`
+	L        logs.Logger
+	Config   *config
+	AiServer httpserver.Router `autowired:"http-server@ai"`
+	D        *gorm.DB          `autowired:"mysql-gorm.v2-client"`
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -83,11 +80,6 @@ func (p *provider) Init(_ servicehub.Context) error {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-
-	// statics swagger files
-	p.SwaggerServer.Static("/swaggers", "swaggers", http.FileServer(http.Dir("swaggers")))
-	// swagger ui page rendered from a html template
-	p.SwaggerServer.Any("/**", p.SwaggerUI)
 
 	// ai-proxy prometheus metrics
 	p.AiServer.Any("/metrics", promhttp.Handler())
@@ -120,7 +112,6 @@ func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
 		filters = append(filters, f)
 	}
 	var ctx = filter.NewContext(map[any]any{
-		filter.RouteCtxKey{}:     rout,
 		filter.ProvidersCtxKey{}: p.Config.providers,
 		filter.FiltersCtxKey{}:   filters, // todo: 风险: 将 filters 通过 context 传入, 后续的 filter 都能拿到和调用其他 filter
 		filter.DBCtxKey{}:        p.D,
@@ -140,15 +131,7 @@ func (p *provider) parseRoutesConfig() error {
 }
 
 func (p *provider) parseProvidersConfig() error {
-	if err := p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.providers); err != nil {
-		return err
-	}
-	for i := 0; i < len(p.Config.providers); i++ {
-		if err := p.Config.providers[i].LoadOpenapiSpec(); err != nil {
-			return err
-		}
-	}
-	return nil
+	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.providers)
 }
 
 func (p *provider) parseConfig(ref, key string, i interface{}) error {
