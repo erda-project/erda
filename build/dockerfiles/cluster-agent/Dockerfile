@@ -27,14 +27,14 @@ RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handle
 
 FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
-ARG ARCH
+ARG TARGETARCH
 ENV MODULE_PATH=${MODULE_PATH}
 ENV KUBECTL_VERSION=v1.24.6
 
 COPY --from=app-handler /erda-handled /erda
 COPY --from=app-handler /erda/build/scripts/cluster-agent/* /usr/bin/
 
-RUN curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl \
+RUN curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl > /usr/bin/kubectl \
     && chmod +x /usr/bin/kubectl \
     && chmod 777 /usr/bin/kubectl-shell.sh /usr/bin/shell-setup.sh
 

@@ -62,7 +62,7 @@ stages:
   - stage:
       - custom-script:
           alias: build-erda
-          image: registry.erda.cloud/erda/erda-base:20230130
+          image: registry.erda.cloud/erda-actions/custom-script:2.0
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions
@@ -72,7 +72,7 @@ stages:
             - cp -r ${{ dirs.erda-addons-enterprise }} extensions
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
-            - ARCH=((target_arch)) make build-push-all
+            - make buildkit-image-all
           loop:
             break: task_status == 'Success'
             strategy:
@@ -86,12 +86,12 @@ stages:
           timeout: 7200
       - custom-script:
           alias: build-erda-cli
-          image: registry.erda.cloud/erda/erda-base:20230130
+          image: registry.erda.cloud/erda-actions/custom-script:2.0
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare-cli
-            - ARCH=((target_arch)) make build-push-image MODULE_PATH=cli
+            - MODULE_PATH=cli make buildkit-image
           loop:
             break: task_status == 'Success'
             strategy:
@@ -105,11 +105,11 @@ stages:
           timeout: 7200
       - custom-script:
           alias: build-cluster-agent
-          image: registry.erda.cloud/erda/erda-base:20230130
+          image: registry.erda.cloud/erda-actions/custom-script:2.0
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - ARCH=((target_arch)) MODULE_PATH=cluster-agent make build-push-image
+            - MODULE_PATH=cluster-agent make buildkit-image
           loop:
             break: task_status == 'Success'
             strategy:
@@ -122,23 +122,24 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-monitor-injector
+          image: registry.erda.cloud/erda-actions/custom-script:2.0
           commands:
             - cd ${{ dirs.erda-java-extensions }}
             - mkdir -p /root/.m2 && cp maven-settings-template.xml /root/.m2/settings.xml
             - make ci-build-local -e SKIP_TEST=true
             - cd ${{ dirs.erda }}
             - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
-            - ARCH=((target_arch)) make build-push-image MODULE_PATH=monitor/agent-injector
+            - MODULE_PATH=monitor/agent-injector make buildkit-image
           resources:
             cpu: 1
             mem: 1024
       - custom-script:
           alias: build-diagnotor-agent
-          image: registry.erda.cloud/erda/erda-base:20230130
+          image: registry.erda.cloud/erda-actions/custom-script:2.0
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - ARCH=((target_arch)) make build-push-image MODULE_PATH=monitor/diagnotor-agent
+            - MODULE_PATH=monitor/diagnotor-agent make buildkit-image
           resources:
             cpu: 1
             mem: 1024
