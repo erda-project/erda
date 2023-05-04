@@ -12,17 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
-
-import "net/textproto"
-
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
-)
-
-var (
-	ContentTypeKey = textproto.CanonicalMIMEHeaderKey("content-type")
-)
+package reverse_proxy_test

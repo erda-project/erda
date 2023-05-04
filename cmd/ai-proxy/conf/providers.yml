@@ -1,28 +1,20 @@
 providers:
-  - name: chatgpt/v1
+  - name: openai
+    instanceId: default
     host: api.openai.com
     scheme: https
     description: openai 提供的 chatgpt 能力
     docSite: https://platform.openai.com/docs/api-reference
     appKey: ${ env.OPENAI_API_KEY }
+    organization: ""
+    metadata: {}
 
-    # 只有在 apis 列表中的接口才会被支持
-    apis:
-      - name: completions
-        path: /v1/chat/completions
-        swagger:
-          "get":
-            description: Creates a completion for the provided prompt and parameters.
-      - name: chatCompletion
-        path: /v1/chat/completions
-        swagger:
-          description:
-      - name: listModels
-        path: /v1/models
-        swagger: { }
-      - name: retrieveModel
-        path: /v1/models/{model}
-        swagger: { }
-
-  - name: wenxin
-  - name: tongyi
+  - name: azure
+    instanceId: default
+    host: codeai.openai.azure.com
+    scheme: https
+    description: azure 提供的 ai 能力
+    docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
+    metadata:
+      RESOURCE_NAME: "codeai"
+      DEVELOPMENT_NAME: "gpt-35-turbo-0301"

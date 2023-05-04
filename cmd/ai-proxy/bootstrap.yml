@@ -1,7 +1,15 @@
-http-server:
-  addr: ":8080"
+http-server@ai:
+  addr: ":8081"
 health:
 
 erda.app.ai-proxy:
   routesRef: conf/routes.yml
   providersRef: conf/providers.yml
+  logLevel: ${ env.LOG_LEVEL:debug }
+
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"

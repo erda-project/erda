@@ -15,7 +15,10 @@
 package provider
 
 import (
-	"github.com/getkin/kin-openapi/openapi3"
+	"os"
+	"strings"
+
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -24,6 +27,7 @@ const (
 
 type Provider struct {
 	Name        string `json:"name" yaml:"name"`
+	InstanceId  string `json:"instanceId" yaml:"instanceId"`
 	Host        string `json:"host" yaml:"host"`
 	Scheme      string `json:"scheme" yaml:"scheme"`
 	Description string `json:"description" yaml:"description"`
@@ -31,49 +35,48 @@ type Provider struct {
 
 	// appKey provided by ai-proxy, you can use an expression like ${ env.CHATGPT_APP_KEY }
 	AppKey string `json:"appKey" yaml:"appKey"`
+
 	// secretKey provided by ai-proxy, you can use an expression like ${ env.CHATGPT_APP_KEY }
 	Organization string `json:"organization" yaml:"organization"`
-	APIs         []*API `json:"apis" yaml:"apis"`
+
+	Metadata map[string]string `json:"metadata" yaml:"metadata"`
+}
+
+func (p *Provider) GetHost() string {
+	return p.getRendered(p.Host)
 }
 
 func (p *Provider) GetAppKey() string {
-	return p.AppKey // todo: get from env expr
+	return p.getRendered(p.AppKey)
 }
 
 func (p *Provider) GetOrganization() string {
 	return p.Organization // todo: get from env expr
 }
 
-func (p *Provider) FindAPI(name, path string) (*API, bool) {
-	for _, api := range p.APIs {
-		if api.Name == name {
-			return api, true
+func (p *Provider) getRendered(s string) string {
+	for {
+		expr, start, end, err := strutil.FirstCustomExpression(s, "${", "}", func(s string) bool {
+			s = strings.TrimSpace(s)
+			return strings.HasPrefix(s, "env.") || strings.HasPrefix(s, "metadata.")
+		})
+		if err != nil || start == end {
+			break
+		}
+		if strings.HasPrefix(expr, "env.") {
+			s = strutil.Replace(s, os.Getenv(strings.TrimPrefix(expr, "env.")), start, end)
+		} else if strings.HasPrefix(expr, "metadata.") {
+			s = strutil.Replace(s, p.Metadata[strings.TrimPrefix(expr, "metadata.")], start, end)
 		}
 	}
-	for _, api := range p.APIs {
-		if api.MatchPath(path) {
-			return api, true
-		}
-	}
-	return nil, false
-}
-
-type API struct {
-	Name    string             `json:"name" yaml:"name"`
-	Path    string             `json:"path" yaml:"path"`
-	Swagger *openapi3.PathItem `json:"swagger" yaml:"swagger"`
-}
-
-func (api *API) MatchPath(path string) bool {
-	// todo: not implement
-	return true
+	return s
 }
 
 type Providers []*Provider
 
-func (p Providers) GetProvider(name string) (*Provider, bool) {
+func (p Providers) FindProvider(name, instanceId string) (*Provider, bool) {
 	for _, provider := range p {
-		if provider.Name == name {
+		if provider.Name == name && provider.InstanceId == instanceId {
 			return provider, true
 		}
 	}

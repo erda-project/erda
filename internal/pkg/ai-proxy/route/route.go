@@ -15,11 +15,10 @@
 package route
 
 import (
-	"strings"
-
-	"github.com/sirupsen/logrus"
+	"regexp"
 
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -35,22 +34,56 @@ const (
 
 type Routes []*Route
 
+func (routes Routes) FindRoute(path, method string) (*Route, bool) {
+	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大
+	for _, route := range routes {
+		if route.Match(path, method) {
+			return route, true
+		}
+	}
+	return nil, false
+}
+
 type Route struct {
-	Path     string           `json:"path" yaml:"path"`
-	Protocol Protocol         `json:"protocol" yaml:"protocol"`
-	Methods  map[string]any   `json:"methods" yaml:"methods"`
-	Filters  []*filter.Config `json:"filters" yaml:"filters"`
+	Path    string           `json:"path" yaml:"path"`
+	Method  string           `json:"method" yaml:"method"`
+	Filters []*filter.Config `json:"filters" yaml:"filters"`
+
+	matcher *regexp.Regexp
 }
 
 func (r *Route) Match(path, method string) bool {
-	if len(r.Methods) > 0 {
-		if _, ok := r.Methods[strings.ToUpper(method)]; !ok {
-			return false
+	return r.MatchMethod(method) && r.MatchPath(path)
+}
+
+func (r *Route) MatchMethod(method string) bool {
+	return strutil.Equal(r.Method, method)
+}
+
+func (r *Route) MatchPath(path string) bool {
+	return r.getMatcher().MatchString(path)
+}
+
+func (r *Route) PathRegex() string {
+	return r.getMatcher().String()
+}
+
+func (r *Route) getMatcher() *regexp.Regexp {
+	var p = r.Path
+	if r.matcher == nil {
+		for i := 0; i < len(p); i++ {
+			if p[i] == '{' {
+				for j := i; i < len(p); j++ {
+					if p[j] == '}' {
+						p = p[:i] + `([^/.]+)` + p[j+1:]
+						break
+					}
+				}
+			}
 		}
+		r.matcher = regexp.MustCompile(`^` + p + `$`)
 	}
-	logrus.Infof("r.Path: %s, path: %s", r.Path, path)
-	return true
-	return r.Path == path // todo: 需要实现匹配方法
+	return r.matcher
 }
 
 type Backend struct {
