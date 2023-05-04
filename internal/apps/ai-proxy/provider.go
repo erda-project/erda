@@ -15,20 +15,24 @@
 package ai_proxy
 
 import (
-	"context"
+	_ "embed"
 	"encoding/json"
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gorm.io/gorm"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	reverse_proxy "github.com/erda-project/erda/internal/apps/ai-proxy/filters/reverse-proxy"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
-	reverse_proxy "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -56,28 +60,38 @@ func init() {
 }
 
 type provider struct {
-	L          logs.Logger
-	Config     *config
-	HttpServer httpserver.Router `autowired:"http-server"`
+	L        logs.Logger
+	Config   *config
+	AiServer httpserver.Router `autowired:"http-server@ai"`
+	D        *gorm.DB          `autowired:"mysql-gorm.v2-client"`
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
+func (p *provider) Init(_ servicehub.Context) error {
+	if err := p.L.SetLevel(p.Config.GetLogLevel()); err != nil {
+		return errors.Wrapf(err, "failed to %T.SetLevel, logLevel: %s", p.L, p.Config.GetLogLevel())
+	} else {
+		p.L.Infof("logLevel: %s", p.Config.GetLogLevel())
+	}
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
-	p.L.Info("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
+	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
 	if err := p.parseProvidersConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
-	p.L.Info("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	p.HttpServer.Any("/**", p.ServeHTTP)
+	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
+
+	// ai-proxy prometheus metrics
+	p.AiServer.Any("/metrics", promhttp.Handler())
+	// reverse proxy to AI provider's server
+	p.AiServer.Any("/**", p.ServeAI)
 	return nil
 }
 
-func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rout, ok := p.matchRoute(r.URL.Path, r.Method)
+func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
+	rout, ok := p.Config.Routes.FindRoute(r.URL.Path, r.Method)
 	if !ok {
-		p.responseNoSuchRoute(w, r.URL.Path)
+		p.responseNoSuchRoute(w, r.URL.Path, r.Method)
 		return
 	}
 	var filters []filter.Filter
@@ -97,14 +111,16 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		filters = append(filters, f)
 	}
-	var ctx = p.ctxWith(rout, p.Config.providers, filters)
+	var ctx = filter.NewContext(map[any]any{
+		filter.ProvidersCtxKey{}: p.Config.providers,
+		filter.FiltersCtxKey{}:   filters, // todo: 风险: 将 filters 通过 context 传入, 后续的 filter 都能拿到和调用其他 filter
+		filter.DBCtxKey{}:        p.D,
+		filter.LoggerCtxKey{}:    p.L.Sub(r.Header.Get("X-Request-Id")),
+		filter.MutexCtxKey{}:     new(sync.Mutex),
+	})
 	for i := 0; i < len(filters); i++ {
-		signal, err := filters[i].OnHttpRequest(ctx, w, r)
-		if err != nil {
-			reverse_proxy.ResponseErrorHandler(w, r, err)
-			return
-		}
-		if signal != filter.Continue {
+		if reflect.TypeOf(filters[i]) == reverse_proxy.Type {
+			_, _ = filters[i].(filter.RequestFilter).OnHttpRequest(ctx, w, r)
 			return
 		}
 	}
@@ -134,22 +150,13 @@ func (p *provider) parseConfig(ref, key string, i interface{}) error {
 	return yaml.Unmarshal(data, i)
 }
 
-func (p *provider) matchRoute(path, method string) (*route2.Route, bool) {
-	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大
-	for _, r := range p.Config.Routes {
-		if r.Match(path, method) {
-			return r, true
-		}
-	}
-	return nil, false
-}
-
-func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path string) {
+func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path, method string) {
 	w.Header().Set("server", "ai-proxy/erda")
 	w.WriteHeader(http.StatusNotFound)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": "no such route",
-		"path":  path,
+		"error":  "no such route",
+		"path":   path,
+		"method": method,
 	})
 }
 
@@ -171,17 +178,39 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 	})
 }
 
-func (p *provider) ctxWith(route *route2.Route, providers provider2.Providers, filters []filter.Filter) context.Context {
-	return context.WithValue(context.WithValue(context.WithValue(context.Background(), filter.RouteCtxKey{}, route), filter.ProvidersCtxKey{}, providers), filter.FiltersCtxKey{}, filters)
+type config struct {
+	RoutesRef    string             `json:"routesRef" yaml:"routesRef"`
+	ProvidersRef string             `json:"providersRef" yaml:"providersRef"`
+	LogLevel     string             `json:"logLevel" yaml:"logLevel"`
+	Exporter     configPromExporter `json:"exporter" yaml:"exporter"`
+	providers    provider2.Providers
+	Routes       route2.Routes
 }
 
-type config struct {
-	HttpServer struct {
-		Addr string
-	} `json:"httpServer" yaml:"httpServer"`
-	RoutesRef    string `json:"routesRef" yaml:"routesRef"`
-	ProvidersRef string `json:"providersRef" yaml:"providersRef"`
+type configPromExporter struct {
+	Namespace string `json:"namespace" yaml:"namespace"`
+	Subsystem string `json:"subsystem" yaml:"subsystem"`
+	Name      string `json:"name" yaml:"name"`
+}
 
-	providers provider2.Providers
-	Routes    route2.Routes
+func (c *config) GetLogLevel() string {
+	expr, start, end, err := strutil.FirstCustomExpression(c.LogLevel, "${", "}", func(s string) bool {
+		return strings.HasPrefix(strings.TrimSpace(s), "env.")
+	})
+	if err != nil || start == end {
+		return c.LogLevel
+	}
+	key := strings.TrimPrefix(expr, "env.")
+	keys := strings.Split(key, ":")
+	if len(keys) > 0 {
+		key = keys[0]
+	}
+	env, ok := os.LookupEnv(key)
+	if !ok {
+		if len(keys) > 1 {
+			return strings.Join(keys[1:], ":")
+		}
+		return "info"
+	}
+	return env
 }

@@ -1,46 +1,181 @@
 routes:
-  - path: /v1/chat/completions
-    protocol: chatgpt/v1
-    methods:
-      "GET": { }
-      "POST": {}
-    filters:
-      - name: protocol-translator
-        protocol: chatgpt/v1
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: chatgpt/v1
-          apiName: completions
-          scheme: ""
-          host: ""
-          path: ""
-          methodsMap:
-            "GET": "GET"
   - path: /v1/models
-    protocol: chatgpt/v1
-    methods:
-      "GET": { }
+    method: GET
     filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
       - name: protocol-translator
-        protocol: chatgpt/v1
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - SetOpenAIOrganizationIfNotSpecified
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"
-          provider: chatgpt/v1
-          apiName: completions
-          host: ""
-          path: ""
+          provider: openai
+          instanceId: default
+          scheme: https
   - path: /v1/models/{model}
-    protocol: chatgpt/v1
+    method: GET
     filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
       - name: protocol-translator
-        protocol: chatgpt/v1
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - SetOpenAIOrganizationIfNotSpecified
       - name: reverse-proxy
         config:
           to: provider # enum: "provider", "url"
-          provider: chatgpt/v1
-          apiName: completions
+          provider: openai
+          instanceId: default
+          scheme: https
+  - path: /v1/completions
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions")
+            - AddQueries("api-version=2023-03-15-preview")
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: azure
+          instanceId: default
+          scheme: https
+  - path: /v1/chat/completions
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions")
+            - AddQueries("api-version=2023-03-15-preview")
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: azure
+          instanceId: default
+          scheme: https
+  - path: /v1/edits
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: openai
+          instanceId: default
+          scheme: https
+  - path: /v1/images/generations
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: openai
+          instanceId: default
+          scheme: https
+  - path: /v1/images/edits
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: openai
+          instanceId: default
+          scheme: https
+  - path: /v1/image/variations
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: reverse-proxy
+        config:
+          to: provider # enum: "provider", "url"
+          provider: openai
+          instanceId: default
+          scheme: https
+
+  - path: /openai/deployments/{deployment-id}/completions
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+      - name: reverse-proxy
+        config:
+          to: provider
+          provider: azure
+          instanceId: default
+          scheme: https
           host: ""
           path: ""
+  - path: /openai/deployments/{deployment-id}/embeddings
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+      - name: reverse-proxy
+        config:
+          to: provider
+          provider: azure
+          instanceId: default
+          scheme: https
+  - path: /openai/deployments/{deployment-id}/chat/completions
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+      - name: reverse-proxy
+        config:
+          to: provider
+          provider: azure
+          instanceId: default
+          scheme: https
 

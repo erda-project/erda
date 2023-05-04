@@ -12,17 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
+package prometheus_collector
 
-import "net/textproto"
-
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
-)
-
-var (
-	ContentTypeKey = textproto.CanonicalMIMEHeaderKey("content-type")
+import (
+	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/metrics"
 )

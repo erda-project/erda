@@ -15,7 +15,9 @@
 package ai_proxy
 
 import (
-	_ "github.com/erda-project/erda-infra/providers/health"
-	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/protocol-translator"
-	_ "github.com/erda-project/erda/internal/pkg/ai-proxy/filter/reverse-proxy"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/protocol-translator"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/reverse-proxy"
 )

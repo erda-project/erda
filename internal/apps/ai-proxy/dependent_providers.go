@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
+package ai_proxy
 
-import "net/textproto"
-
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
-)
-
-var (
-	ContentTypeKey = textproto.CanonicalMIMEHeaderKey("content-type")
+import (
+	_ "github.com/erda-project/erda-infra/providers/health"
+	_ "github.com/erda-project/erda-infra/providers/httpserver"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 )

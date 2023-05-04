@@ -31,17 +31,22 @@ var (
 	l         = new(sync.Mutex)
 )
 
-type Filter interface {
-	RequestFilter
-	ResponseFilter
+type Filter interface{}
+
+type RequestInforFilter interface {
+	OnHttpRequestInfor(context.Context, HttpInfor) (Signal, error)
 }
 
 type RequestFilter interface {
-	OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (Signal, error)
+	OnHttpRequest(context.Context, http.ResponseWriter, *http.Request) (Signal, error)
+}
+
+type ResponseInforFilter interface {
+	OnHttpResponseInfor(context.Context, HttpInfor) (Signal, error)
 }
 
 type ResponseFilter interface {
-	OnHttpResponse(ctx context.Context, response *http.Response, r *http.Request) (Signal, error)
+	OnHttpResponse(context.Context, *http.Response) (Signal, error)
 }
 
 type Config struct {
@@ -51,24 +56,12 @@ type Config struct {
 
 type Signal int
 
-// RouteCtxKey 用以从 context.Context 中获取 route.Route 以获取 route.Route 的更多配置信息
-type (
-	RouteCtxKey     struct{}
-	ProvidersCtxKey struct{}
-	FiltersCtxKey   struct{}
-)
 type InstantiateFunc func(config json.RawMessage) (Filter, error)
 
 func Register(name string, inst InstantiateFunc) {
 	l.Lock()
-	defer l.Unlock()
 	instFuncs[name] = inst
-}
-
-func Deregister(name string) {
-	l.Lock()
-	defer l.Unlock()
-	delete(instFuncs, name)
+	l.Unlock()
 }
 
 func GetFilterFactory(name string) (InstantiateFunc, bool) {
