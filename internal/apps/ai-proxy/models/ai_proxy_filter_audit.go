@@ -27,6 +27,12 @@ type AIProxyFilterAudit struct {
 	UpdatedAt time.Time        `json:"updatedAt" yaml:"updatedAt" gorm:"updated_at"`
 	DeletedAt fields.DeletedAt `json:"deletedAt" yaml:"deletedAt" gorm:"deleted_at"`
 
+	Username        string `json:"username" yaml:"username" gorm:"username"`
+	PhoneNumber     string `json:"phoneNumber" yaml:"phoneNumber" gorm:"phone_number"`
+	Email           string `json:"email" yaml:"email" gorm:"email"`
+	DingtalkStaffId string `json:"dingtalkStaffId" yaml:"dingtalkStaffId" gorm:"dingtalk_staff_id"`
+	JobNumber       string `json:"jobNumber" yaml:"jobNumber" yaml:"job_number"`
+
 	// SessionId records the uniqueness of the conversation
 	SessionId string `json:"sessionId" yaml:"sessionId" gorm:"session_id"`
 	ChatType  string `json:"chatType" yaml:"chatType" gorm:"chat_type"`
@@ -34,8 +40,6 @@ type AIProxyFilterAudit struct {
 	ChatId    string `json:"chatId" yaml:"chatId" gorm:"chat_id"`
 	// Source is the application source, like dingtalk, webui, vscode-plugin, jetbrains-plugin
 	Source string `json:"source" yaml:"source" gorm:"source"`
-	// UserInfo is a unique user identifier
-	UserInfo string `json:"UserInfo" yaml:"UserInfo" gorm:"user_info"`
 	// Provider is an AI capability provider, like openai:chatgpt/v1, baidu:wenxin, alibaba:tongyi
 	Provider string `json:"provider" yaml:"provider" gorm:"provider"`
 	// Model used for this request, e.g. gpt-3.5-turbo, gpt-4-8k
