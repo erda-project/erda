@@ -67,14 +67,11 @@ func (f *LogHttp) OnHttpRequestInfor(ctx context.Context, infor filter.HttpInfor
 	if err != nil {
 		return filter.Intercept, err
 	}
-	m["body"] = body.String()
+	m["body"] = json.RawMessage(body.Bytes())
 	return filter.Continue, nil
 }
 
 func (f *LogHttp) OnHttpResponseInfor(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
-	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
-		return filter.Continue, nil
-	}
 	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnHttpResponseInfor")
 	var m = map[string]any{
 		"headers":     infor.Header(),
@@ -90,6 +87,6 @@ func (f *LogHttp) OnHttpResponseInfor(ctx context.Context, infor filter.HttpInfo
 		l.Errorf("failed to infor.Body(), err: %v", err)
 		return filter.Intercept, err
 	}
-	m["body"] = body.String()
+	m["body"] = json.RawMessage(body.Bytes())
 	return filter.Continue, nil
 }
