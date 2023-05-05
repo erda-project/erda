@@ -70,11 +70,10 @@ func TestPolicy_setIngressAnnotations(t *testing.T) {
 					string(annotationscommon.AnnotationCORSAllowCredentials): &corsCredentials,
 					string(annotationscommon.AnnotationCORSMaxAge):           &corsMaxage,
 				},
-				LocationSnippet: &lSnippet,
 			},
 		},
 		{
-			name:   "Test_01",
+			name:   "Test_02",
 			fields: fields{BasePolicy: apipolicy.BasePolicy{PolicyName: "cors"}},
 			args: args{
 				gatewayProvider: "",

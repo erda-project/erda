@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -41,13 +42,14 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 	return nil
 }
 
-func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error, string) {
+func (policy Policy) UnmarshalConfig(config []byte, gatewayProvider string) (apipolicy.PolicyDto, error, string) {
 	return nil, nil, ""
 }
 
 // forValidate 用于识别解析的目的，如果解析是用来做 nginx 配置冲突相关的校验，则关于数据表、调用 kong 接口的操作都不会执行
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}, forValidate bool) (apipolicy.PolicyConfig, error) {
 	res := apipolicy.PolicyConfig{}
+	gatewayProvider := ""
 	annotation := map[string]*string{}
 	annotation[string(annotationscommon.AnnotationProxyNextUpstream)] = &config.ServerConf.NextUpstreams
 	nextTries := "4"
@@ -68,18 +70,16 @@ proxy_intercept_errors on;
 	}
 
 	builtinPlugins := config.ServerConf.BuiltinPlugins
+	gatewayAdapter, gatewayProvider, err := policy.GetGatewayAdapter(ctx, apipolicy.Policy_Engine_Built_in)
+	if err != nil {
+		return res, err
+	}
 
-	value, ok := ctx[apipolicy.CTX_KONG_ADAPTER]
+	adapter, ok := gatewayAdapter.(gateway_providers.GatewayAdapter)
 	if !ok {
-		//TODO: MSE support built-in?
-		log.Infof("Not use Kong Adapter, no need set built-in policy")
-		return res, nil
+		return res, errors.Errorf("convert failed:%+v", adapter)
 	}
-	gatewayAdapter, ok := value.(gateway_providers.GatewayAdapter)
-	if !ok {
-		return res, errors.Errorf("convert failed:%+v", value)
-	}
-	value, ok = ctx[apipolicy.CTX_ZONE]
+	value, ok := ctx[apipolicy.CTX_ZONE]
 	if !ok {
 		return res, errors.Errorf("get identify failed:%+v", ctx)
 	}
@@ -103,7 +103,7 @@ proxy_intercept_errors on;
 			}
 		}
 		if !exist && !forValidate {
-			err = gatewayAdapter.RemovePlugin(plugin.PluginId)
+			err = adapter.RemovePlugin(plugin.PluginId)
 			if err != nil {
 				return res, err
 			}
@@ -113,19 +113,21 @@ proxy_intercept_errors on;
 	}
 
 	if !forValidate {
-		newPlugin, err := policy.touchPluginIfNeed(zone.Id, builtinPlugins, "spot-collector", map[string]interface{}{
-			"send_port":          config.ServerConf.SpotSendPort,
-			"addon_name":         config.ServerConf.SpotAddonName,
-			"metric_name":        config.ServerConf.SpotMetricName,
-			"tags_header_prefix": config.ServerConf.SpotTagsHeaderPrefix,
-			"host_ip_key":        config.ServerConf.SpotHostIpKey,
-			"instance_key":       config.ServerConf.SpotInstanceKey,
-		}, gatewayAdapter)
-		if err != nil {
-			return res, err
-		}
-		if newPlugin {
-			res.KongPolicyChange = true
+		if gatewayProvider != mseCommon.Mse_Provider_Name {
+			newPlugin, err := policy.touchPluginIfNeed(zone.Id, builtinPlugins, "spot-collector", map[string]interface{}{
+				"send_port":          config.ServerConf.SpotSendPort,
+				"addon_name":         config.ServerConf.SpotAddonName,
+				"metric_name":        config.ServerConf.SpotMetricName,
+				"tags_header_prefix": config.ServerConf.SpotTagsHeaderPrefix,
+				"host_ip_key":        config.ServerConf.SpotHostIpKey,
+				"instance_key":       config.ServerConf.SpotInstanceKey,
+			}, adapter)
+			if err != nil {
+				return res, err
+			}
+			if newPlugin {
+				res.KongPolicyChange = true
+			}
 		}
 	}
 
@@ -204,3 +206,22 @@ func init() {
 		panic(err)
 	}
 }
+
+/*
+func GetGatewayAdapter(ctx map[string]interface{}, policy string) (gatewayAdapter interface{}, gatewayProvider string, err error) {
+	gatewayAdapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER]
+	if !ok {
+		gatewayAdapter, ok = ctx[apipolicy.CTX_MSE_ADAPTER]
+		if !ok {
+			errMsg := "convert failed: can not get gateway adapter from ctx"
+			log.Errorf(errMsg)
+			return nil, "", errors.Errorf(errMsg)
+		}
+		log.Debugf("use MSE gateway ParseConfig for policy %s", apipolicy.Policy_Engine_Built_in)
+		gatewayProvider = mseCommon.Mse_Provider_Name
+	} else {
+		log.Debugf("use Kong gateway ParseConfig for policy %s", apipolicy.Policy_Engine_Built_in)
+	}
+	return gatewayAdapter, gatewayProvider, nil
+}
+*/

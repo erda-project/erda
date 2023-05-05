@@ -22,10 +22,16 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 )
 
 const (
-	LIMIT_INNER_STATUS = 581
+	LIMIT_INNER_STATUS                  = 581
+	MSE_BURST_MULTIPLIER_THOUSAND int64 = 1000
+	MSE_BURST_MULTIPLIER_HUNDRED  int64 = 100
+	MSE_BURST_MULTIPLIER_TEN      int64 = 10
+
+	MSE_REFUSE_RESPONSE = "local_rate_limited"
 )
 
 var allowsCors = `
@@ -47,23 +53,32 @@ type PolicyDto struct {
 	RefuseResponse string `json:"refuseResponse,omitempty"`
 }
 
-func (dto PolicyDto) IsValidDto() (bool, string) {
+func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 	if !dto.Switch {
 		return true, ""
 	}
-	if dto.RefuseCode < 100 || dto.RefuseCode >= 600 {
-		return false, fmt.Sprintf("拒绝状态码非法: %d", dto.RefuseCode)
-	}
-	if dto.RefuseCode >= 300 && dto.RefuseCode < 400 {
-		if ok, _ := regexp.MatchString(`^(http://|https://).+`, dto.RefuseResponse); !ok {
-			return false, "拒绝状态码为3xx时，拒绝应答需要配置一个http地址"
+	if gatewayProvider == mseCommon.Mse_Provider_Name {
+		if dto.RefuseCode != 503 {
+			return false, "底层为 MSE 网关，拒绝状态码只能是为 503"
 		}
-	}
-	if dto.MaxTps == 0 {
-		return false, "最大吞吐必须配置，且不能为0"
-	}
-	if dto.ExtraLatency != 0 && dto.ExtraLatency < 1000/dto.MaxTps*2 {
-		return false, fmt.Sprintf("根据最大吞吐: %d 请求/秒，额外延时至少需要配置:%d 毫秒", dto.MaxTps, int64(math.Ceil(1000/float64(dto.MaxTps)*2)))
+		if dto.RefuseResponse != MSE_REFUSE_RESPONSE {
+			return false, "底层为 MSE 网关，拒绝应答只能为 " + MSE_REFUSE_RESPONSE
+		}
+	} else {
+		if dto.RefuseCode < 100 || dto.RefuseCode >= 600 {
+			return false, fmt.Sprintf("拒绝状态码非法: %d", dto.RefuseCode)
+		}
+		if dto.RefuseCode >= 300 && dto.RefuseCode < 400 {
+			if ok, _ := regexp.MatchString(`^(http://|https://).+`, dto.RefuseResponse); !ok {
+				return false, "拒绝状态码为3xx时，拒绝应答需要配置一个http地址"
+			}
+		}
+		if dto.MaxTps == 0 {
+			return false, "最大吞吐必须配置，且不能为0"
+		}
+		if dto.ExtraLatency != 0 && dto.ExtraLatency < 1000/dto.MaxTps*2 {
+			return false, fmt.Sprintf("根据最大吞吐: %d 请求/秒，额外延时至少需要配置:%d 毫秒", dto.MaxTps, int64(math.Ceil(1000/float64(dto.MaxTps)*2)))
+		}
 	}
 	return true, ""
 }

@@ -34,7 +34,7 @@ type PolicyDto struct {
 	WithBody         bool     `json:"withBody"`
 }
 
-func (pc PolicyDto) IsValidDto() error {
+func (pc PolicyDto) IsValidDto(gatewayProvider string) error {
 	if !pc.BaseDto.Switch {
 		return nil
 	}

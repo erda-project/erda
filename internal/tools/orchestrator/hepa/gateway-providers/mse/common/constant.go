@@ -18,7 +18,10 @@ const (
 	Mse_Version                           = "mse-1.2.15"
 	Mse_Provider_Name                     = "MSE"
 	MseDefaultServerEndpoint              = "mse.cn-hangzhou.aliyuncs.com"
-	MseBurstMultiplier                    = "2"
+	MseBurstMultiplier1X                  = "1"
+	MseBurstMultiplier2X                  = "2"
+	MseBurstMultiplier3X                  = "3"
+	MseBurstMultiplier4X                  = "4"
 	MseIngressControllerAckNamespace      = "mse-ingress-controller"
 	MseIngressControllerAckDeploymentName = "ack-mse-ingress-controller"
 	MseNeedDropAnnotation                 = "need_drop_annotation"
@@ -39,7 +42,8 @@ const (
 	MsePluginHttpRealIP      string = "http-real-ip"
 	MsePluginEDASServiceAuth string = "edas-service-auth"
 	MsePluginWaf             string = "waf"
-	MsePluginParaSignAuth    string = "para-sign-auth"
+	MsePluginParaSignAuth    string = "erda-para-sign-auth"
+	MsePluginIP              string = "erda-ip"
 )
 
 var MapClusterNameToMSEPluginNameToPluginID map[string]map[string]*int64

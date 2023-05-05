@@ -19,6 +19,7 @@ import (
 	"regexp"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 )
 
 const (
@@ -63,7 +64,7 @@ type PolicyDto struct {
 
 var matchRegex = regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+(\/\d+)?$`)
 
-func (dto PolicyDto) IsValidDto() (bool, string) {
+func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 	if !dto.Switch {
 		return true, ""
 	}
@@ -72,25 +73,33 @@ func (dto PolicyDto) IsValidDto() (bool, string) {
 			return false, fmt.Sprintf("IP地址非法: %s", ip)
 		}
 	}
+
 	if dto.IpSource != REMOTE_IP && dto.IpSource != X_REAL_IP && dto.IpSource != X_FORWARDED_FOR {
 		return false, fmt.Sprintf("IP来源字段非法: %s", dto.IpSource)
 	}
+
 	if dto.IpAclType != ACL_BLACK && dto.IpAclType != ACL_WHITE {
 		return false, fmt.Sprintf("黑白名单字段非法：%s", dto.IpAclType)
 	}
-	if dto.IpRate != nil {
-		if dto.IpRate.Rate <= 0 {
-			return false, "请求速率限制值需要大于0"
-		}
-		if dto.IpRate.Unit != SECOND && dto.IpRate.Unit != MINUTE {
-			return false, "请求速率单位非法"
-		}
-	}
+
 	if dto.IpAclType == ACL_WHITE && len(dto.IpAclList) == 0 {
 		return false, "白名单模式需要填写至少一个IP地址"
 	}
-	if dto.IpMaxConnections < 0 {
-		return false, "连接数限制需要大于0"
+
+	if gatewayProvider != mseCommon.Mse_Provider_Name {
+		if dto.IpRate != nil {
+			if dto.IpRate.Rate <= 0 {
+				return false, "请求速率限制值需要大于0"
+			}
+			if dto.IpRate.Unit != SECOND && dto.IpRate.Unit != MINUTE {
+				return false, "请求速率单位非法"
+			}
+		}
+
+		if dto.IpMaxConnections < 0 {
+			return false, "连接数限制需要大于0"
+		}
 	}
+
 	return true, ""
 }

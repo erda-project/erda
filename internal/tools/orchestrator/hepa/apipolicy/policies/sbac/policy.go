@@ -42,12 +42,12 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 	return new(PolicyDto)
 }
 
-func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error, string) {
+func (policy Policy) UnmarshalConfig(config []byte, gatewayProvider string) (apipolicy.PolicyDto, error, string) {
 	var policyDto PolicyDto
 	if err := json.Unmarshal(config, &policyDto); err != nil {
 		return nil, errors.Wrapf(err, "failed to Unmarshal config: %s", string(config)), "Invalid config"
 	}
-	if err := policyDto.IsValidDto(); err != nil {
+	if err := policyDto.IsValidDto(gatewayProvider); err != nil {
 		return nil, errors.Wrap(err, "Invalid config"), "Invalid config"
 	}
 	return &policyDto, nil, ""

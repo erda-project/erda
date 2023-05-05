@@ -193,10 +193,6 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 		}
 		utils.AppendMap(service.Envs, env)
 
-		// labels
-		service.Labels["HAPROXY_GROUP"] = "external"
-		service.Labels["HAPROXY_0_VHOST"] = p.getHaproxyVHost(clusterConfig["DICE_ROOT_DOMAIN"])
-
 		options := map[string]string{}
 		utils.JsonConvertObjToType(tmcInstance.Options, &options)
 		utils.SetlabelsFromOptions(options, service.Labels)
@@ -204,12 +200,6 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 		// volumes
 		//hostPath := tmcInstance.ID
 		if p.IsNotDCOSCluster(clusterConfig["DICE_CLUSTER_TYPE"]) {
-			/*
-				service.Binds = diceyml.Binds{
-					hostPath + ":/opt/backup:rw",
-				}
-			*/
-
 			//  /opt/backup volume
 			vol := addon.SetAddonVolumes(options, "/opt/backup", false)
 			service.Volumes = diceyml.Volumes{vol}
@@ -319,19 +309,4 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 	resultConfig["PUBLIC_HOST"] = str
 
 	return resultConfig, nil
-}
-
-func (p *provider) getHaproxyVHost(domain string) string {
-	domainPrefixes := []string{
-		"dev-gateway.",
-		"test-gateway.",
-		"staging-gateway.",
-		"gateway.",
-	}
-
-	for i, prefix := range domainPrefixes {
-		domainPrefixes[i] = prefix + domain
-	}
-
-	return strings.Join(domainPrefixes, ",")
 }

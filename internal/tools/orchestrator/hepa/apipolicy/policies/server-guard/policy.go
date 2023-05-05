@@ -91,13 +91,13 @@ func (policy Policy) MergeDiceConfig(conf map[string]interface{}) (apipolicy.Pol
 	return dto, nil
 }
 
-func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error, string) {
+func (policy Policy) UnmarshalConfig(config []byte, gatewayProvider string) (apipolicy.PolicyDto, error, string) {
 	policyDto := &PolicyDto{}
 	err := json.Unmarshal(config, policyDto)
 	if err != nil {
 		return nil, errors.Wrapf(err, "json parse config failed, config:%s", config), "Invalid config"
 	}
-	ok, msg := policyDto.IsValidDto()
+	ok, msg := policyDto.IsValidDto(gatewayProvider)
 	if !ok {
 		return nil, errors.Errorf("invalid policy dto, msg:%s", msg), msg
 	}
@@ -259,10 +259,22 @@ location @LIMIT-%s {
 func setMSEIngressAnnotation(policyDto *PolicyDto, ingressAnnotations *apipolicy.IngressAnnotation) {
 	annotations := make(map[string]*string)
 	rateStr := strconv.FormatInt(policyDto.MaxTps, 10)
-	multiplier := mseCommon.MseBurstMultiplier
+	multiplier := mseCommon.MseBurstMultiplier2X
 	if policyDto.Busrt > 0 {
 		multiplier = strconv.FormatInt(policyDto.Busrt, 10)
 	}
+
+	switch {
+	case policyDto.MaxTps > MSE_BURST_MULTIPLIER_THOUSAND:
+		multiplier = mseCommon.MseBurstMultiplier1X
+	case policyDto.MaxTps > MSE_BURST_MULTIPLIER_HUNDRED:
+		multiplier = mseCommon.MseBurstMultiplier2X
+	case policyDto.MaxTps > MSE_BURST_MULTIPLIER_TEN:
+		multiplier = mseCommon.MseBurstMultiplier3X
+	default:
+		multiplier = mseCommon.MseBurstMultiplier4X
+	}
+
 	annotations[string(mseCommon.AnnotationMSELimitRouteLimitRPS)] = &rateStr
 	annotations[string(mseCommon.AnnotationMSELimitRouteLimitBurstMultiplier)] = &multiplier
 	if ingressAnnotations == nil {

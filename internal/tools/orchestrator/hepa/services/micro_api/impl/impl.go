@@ -2288,21 +2288,6 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 		return nil, PARAMS_IS_NULL, err
 	}
 
-	gatewayProvider, err = impl.GetGatewayProvider(runtimeService.ClusterName)
-	if err != nil {
-		return nil, PARAMS_IS_NULL, err
-	}
-	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
-		gatewayAdapter, err = mse.NewMseAdapter(runtimeService.ClusterName)
-		if err != nil {
-			return nil, PARAMS_IS_NULL, err
-		}
-	case "":
-		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
-	default:
-		return nil, PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
-	}
 	dto.KongInfoEndpoint = kongInfo.Endpoint
 	dto.Hosts = append(dto.Hosts, kong.InnerHost)
 	if dto.RedirectType == gw.RT_SERVICE {
@@ -2335,6 +2320,23 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 		}
 
 	}
+
+	gatewayProvider, err = impl.GetGatewayProvider(runtimeService.ClusterName)
+	if err != nil {
+		return nil, PARAMS_IS_NULL, err
+	}
+	switch gatewayProvider {
+	case mseCommon.Mse_Provider_Name:
+		gatewayAdapter, err = mse.NewMseAdapter(runtimeService.ClusterName)
+		if err != nil {
+			return nil, PARAMS_IS_NULL, err
+		}
+	case "":
+		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
+	default:
+		return nil, PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
+	}
+
 	service, err = impl.updateService(gatewayAdapter, dto, gatewayApi)
 	if err != nil {
 		ret = UPDATE_API_SERVICE_FAIL
