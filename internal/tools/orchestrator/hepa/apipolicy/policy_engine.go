@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -50,6 +51,7 @@ const (
 	CTX_IDENTIFY     = "id"
 	CTX_K8S_CLIENT   = "k8s_client"
 	CTX_KONG_ADAPTER = "kong_adapter"
+	CTX_MSE_ADAPTER  = "mse_adapter"
 	CTX_ZONE         = "zone"
 	CTX_SERVICE_INFO = "service_info"
 
@@ -76,7 +78,7 @@ type PolicyEngine interface {
 	CreateDefaultConfig(map[string]interface{}) PolicyDto
 	ParseConfig(PolicyDto, map[string]interface{}, bool) (PolicyConfig, error)
 	NeedResetAnnotation(PolicyDto) bool
-	UnmarshalConfig([]byte) (PolicyDto, error, string)
+	UnmarshalConfig([]byte, string) (PolicyDto, error, string)
 	SetName(name string)
 	GetName() string
 	NeedSerialUpdate() bool
@@ -169,6 +171,7 @@ func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone
 		return nil, err
 	}
 	var policyConfig []byte
+	gatewayProvider := ""
 	useDefault := false
 	if zone != nil {
 		policyDao, err := policyDb.GetByAny(&orm.GatewayIngressPolicy{
@@ -181,6 +184,7 @@ func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone
 		}
 		if policyDao != nil && len(policyDao.Config) > 0 {
 			policyConfig = policyDao.Config
+			gatewayProvider, _ = policy.GetGatewayProvider(zone.DiceClusterName)
 			goto done
 		}
 	}
@@ -206,7 +210,7 @@ func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone
 		useDefault = true
 	}
 done:
-	dto, err, _ := engine.UnmarshalConfig(policyConfig)
+	dto, err, _ := engine.UnmarshalConfig(policyConfig, gatewayProvider)
 	if err != nil {
 		log.Errorf("unmarshal config failed, confg:%s, err:%+v", policyConfig, err)
 		return nil, err
@@ -240,4 +244,21 @@ func (policy BasePolicy) ParseConfig(interface{}, map[string]interface{}) (Polic
 
 func (policy BasePolicy) UnmarshalConfig([]byte) (interface{}, error, string) {
 	return nil, nil, ""
+}
+
+func (policy BasePolicy) GetGatewayAdapter(ctx map[string]interface{}, policyName string) (gatewayAdapter interface{}, gatewayProvider string, err error) {
+	gatewayAdapter, ok := ctx[CTX_KONG_ADAPTER]
+	if !ok {
+		gatewayAdapter, ok = ctx[CTX_MSE_ADAPTER]
+		if !ok {
+			errMsg := "convert failed: can not get gateway adapter from ctx"
+			log.Errorf(errMsg)
+			return nil, "", errors.Errorf(errMsg)
+		}
+		log.Debugf("use MSE gateway ParseConfig for policy %s", policyName)
+		gatewayProvider = mseCommon.Mse_Provider_Name
+	} else {
+		log.Debugf("use Kong gateway ParseConfig for policy %s", policyName)
+	}
+	return gatewayAdapter, gatewayProvider, nil
 }

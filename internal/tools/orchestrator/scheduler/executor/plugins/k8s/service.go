@@ -34,6 +34,8 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const LabelValueMaxLength int = 63
+
 // CreateService create k8s service
 func (k *Kubernetes) CreateService(service *apistructs.Service, selectors map[string]string) error {
 	svc := newService(service, selectors)
@@ -136,7 +138,13 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 			"app": service.Name,
 		}
 	} else {
-		k8sService.Labels = selectors
+		for k, v := range selectors {
+			if len(v) >= LabelValueMaxLength {
+				logrus.Warnf(" lable key=%s  value=%s  with too long value for service %s in namespace %s, need len(value)< 63", k, v, service.Name, service.Namespace)
+				continue
+			}
+			k8sService.Labels[k] = v
+		}
 	}
 	for k, v := range k8sService.Labels {
 		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
@@ -232,6 +240,10 @@ func getServiceName(service *apistructs.Service) string {
 
 func setServiceLabelSelector(k8sService *apiv1.Service, selectors map[string]string) {
 	for k, v := range selectors {
+		if len(v) >= LabelValueMaxLength {
+			logrus.Warnf(" lable selector key=%s  value=%s  with too long value for service %s in namespace %s, need len(value)< 63", k, v, k8sService.Name, k8sService.Namespace)
+			continue
+		}
 		if errs := validation.IsValidLabelValue(v); len(errs) == 0 {
 			k8sService.Spec.Selector[k] = v
 		}

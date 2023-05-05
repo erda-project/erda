@@ -1752,8 +1752,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) mseConsumerConfig(consumers []orm.
 				// TODO: MSE 暂不支持 Oauth2
 			case orm.KEYAUTH:
 				wlConsumer.Credential = credential.Key
-			case orm.SIGNAUTH:
-				// TODO: MSE 暂不支持 sign-auth
+			case mseCommon.MsePluginParaSignAuth:
 				wlConsumer.Key = credential.Key
 				wlConsumer.Secret = credential.Secret
 			case orm.HMACAUTH:

@@ -250,7 +250,8 @@ func (impl GatewayOpenapiServiceImpl) mseConsumerConfig(consumers []orm.GatewayC
 			case orm.KEYAUTH:
 				wlConsumer.Credential = credential.Key
 			case orm.SIGNAUTH:
-				// TODO: MSE 暂不支持 sign-auth
+				wlConsumer.Key = credential.Key
+				wlConsumer.Secret = credential.Secret
 			case orm.HMACAUTH:
 				wlConsumer.Key = credential.Key
 				wlConsumer.Secret = credential.Secret
@@ -1657,7 +1658,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 	if err != nil {
 		goto failed
 	}
-	logrus.Debugf("api dto after adjust %+v", dto) // output for debug
+	logrus.Debugf("api dto after adjust %+v", *dto) // output for debug
 	dao = impl.packageApiDao(dto)
 	dao.PackageId = id
 	apiSession, err = impl.packageApiDb.NewSession(session)

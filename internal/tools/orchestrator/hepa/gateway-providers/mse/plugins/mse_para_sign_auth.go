@@ -92,9 +92,18 @@ func mergeParaSignAuthConfig(currentParaSignAuthConfig, updateParaSignAuthConfig
 			continue
 		}
 
+		paraSignConsumers := make([]mseDto.Consumers, 0)
+		for _, cs := range paraSignConfig.Consumers {
+			paraSignConsumers = append(paraSignConsumers, mseDto.Consumers{
+				Name:   cs.Name,
+				Key:    cs.Key,
+				Secret: cs.Secret,
+			})
+		}
+
 		rule := mseDto.Rules{
 			MatchRoute: []string{route},
-			Consumers:  paraSignConfig.Consumers,
+			Consumers:  paraSignConsumers,
 		}
 
 		if paraSignConfig.RequestBodySizeLimit > 0 {

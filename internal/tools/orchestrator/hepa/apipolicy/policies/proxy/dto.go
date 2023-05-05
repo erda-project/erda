@@ -16,6 +16,7 @@ package proxy
 
 import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 )
 
 type PolicyDto struct {
@@ -31,24 +32,30 @@ type PolicyDto struct {
 	SSLRedirect       bool  `json:"sslRedirect"`
 }
 
-func (dto PolicyDto) IsValidDto() (bool, string) {
+func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 	if !dto.Switch {
 		return true, ""
 	}
-	if dto.ClientReqLimit <= 0 {
-		return false, "客户端请求限制需要大于0"
-	}
-	if dto.ClientReqTimeout <= 0 {
-		return false, "客户端请求超时需要大于0"
-	}
-	if dto.ClientRespTimeout <= 0 {
-		return false, "客户端应答超时需要大于0"
-	}
+
 	if dto.ProxyReqTimeout <= 0 {
 		return false, "后端请求超时需要大于0"
 	}
-	if dto.ProxyRespTimeout <= 0 {
-		return false, "后端应答超时需要大于0"
+
+	if gatewayProvider != mseCommon.Mse_Provider_Name {
+		// Kong 网关
+		if dto.ClientReqLimit <= 0 {
+			return false, "客户端请求限制需要大于0"
+		}
+		if dto.ClientReqTimeout <= 0 {
+			return false, "客户端请求超时需要大于0"
+		}
+		if dto.ClientRespTimeout <= 0 {
+			return false, "客户端应答超时需要大于0"
+		}
+		if dto.ProxyRespTimeout <= 0 {
+			return false, "后端应答超时需要大于0"
+		}
 	}
+
 	return true, ""
 }

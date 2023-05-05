@@ -28,7 +28,7 @@ func TestPolicy_CreateDefaultConfig(t *testing.T) {
 
 func TestPolicy_UnmarshalConfig(t *testing.T) {
 	var config = `{...}`
-	if _, err, _ := new(sbac.Policy).UnmarshalConfig([]byte(config)); err == nil {
+	if _, err, _ := new(sbac.Policy).UnmarshalConfig([]byte(config), ""); err == nil {
 		t.Fatal("error should be occurred")
 	}
 
@@ -41,7 +41,7 @@ func TestPolicy_UnmarshalConfig(t *testing.T) {
 		"withBody":true,
 		"withCookie":true
 	}`
-	if _, err, _ := new(sbac.Policy).UnmarshalConfig([]byte(config)); err == nil {
+	if _, err, _ := new(sbac.Policy).UnmarshalConfig([]byte(config), ""); err == nil {
 		t.Fatal("error should be occurred with accessControlAPI")
 	}
 
@@ -54,7 +54,7 @@ func TestPolicy_UnmarshalConfig(t *testing.T) {
 		"withBody":true,
 		"withCookie":true
 	}`
-	if _, err, _ := new(sbac.Policy).UnmarshalConfig([]byte(config)); err != nil {
+	if _, err, _ := new(sbac.Policy).UnmarshalConfig([]byte(config), ""); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -76,12 +76,12 @@ func TestPluginConfig_ToPluginReqDto(t *testing.T) {
 	}
 	pc.ToPluginReqDto()
 	pc.Switch = false
-	if err := pc.IsValidDto(); err != nil {
+	if err := pc.IsValidDto(""); err != nil {
 		t.Fatal(err)
 	}
 	pc.Switch = true
 	pc.AccessControlAPI = ""
-	if err := pc.IsValidDto(); err == nil {
+	if err := pc.IsValidDto(""); err == nil {
 		t.Fatal("should be err")
 	}
 }
