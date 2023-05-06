@@ -25,8 +25,8 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
-	mseannotation "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 )
@@ -44,13 +44,13 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 	return dto
 }
 
-func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error, string) {
+func (policy Policy) UnmarshalConfig(config []byte, gatewayProvider string) (apipolicy.PolicyDto, error, string) {
 	policyDto := &PolicyDto{}
 	err := json.Unmarshal(config, policyDto)
 	if err != nil {
 		return nil, errors.Wrapf(err, "json parse config failed, config:%s", config), "Invalid config"
 	}
-	ok, msg := policyDto.IsValidDto()
+	ok, msg := policyDto.IsValidDto(gatewayProvider)
 	if !ok {
 		return nil, errors.Errorf("invalid policy dto, msg:%s", msg), msg
 	}
@@ -69,10 +69,10 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
 			Annotation: map[string]*string{
 				string(annotationscommon.AnnotationWhiteListSourceRange): nil,
-				string(mseannotation.AnnotationMSEBlackListSourceRange):  nil,
+				string(mseCommon.AnnotationMSEBlackListSourceRange):      nil,
 				string(annotationscommon.AnnotationLimitConnections):     nil,
-				//string(mseannotation.AnnotationMSEDomainWhitelistSourceRange):     nil,
-				//string(mseannotation.AnnotationMSEDomainBlacklistSourceRange):     nil,
+				//string(mseCommon.AnnotationMSEDomainWhitelistSourceRange):     nil,
+				//string(mseCommon.AnnotationMSEDomainBlacklistSourceRange):     nil,
 			},
 			LocationSnippet: &emptyStr,
 		}
@@ -147,6 +147,11 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		if policyDto.IpRate != nil {
 			logrus.Warningf("Current use MSE gateway, please set rate in policy %s", apipolicy.Policy_Engine_Service_Guard)
 		}
+
+		if policyDto.IpSource != REMOTE_IP {
+			return res, errors.Errorf("current use MSE gateway with this proxy for IPSource=%s, untile mse plugin %s ready\n", policyDto.IpSource, mseCommon.MsePluginIP)
+			res.IngressAnnotation = setMseIngressAnnotations(policyDto)
+		}
 		res.IngressAnnotation = setMseIngressAnnotations(policyDto)
 
 	case "":
@@ -196,31 +201,33 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 }
 
 func setMseIngressAnnotations(policyDto *PolicyDto) *apipolicy.IngressAnnotation {
-	emptyStr := ""
 	ingressAnnotations := &apipolicy.IngressAnnotation{
 		Annotation: map[string]*string{
 			string(annotationscommon.AnnotationWhiteListSourceRange): nil,
-			string(mseannotation.AnnotationMSEBlackListSourceRange):  nil,
-			string(annotationscommon.AnnotationLimitConnections):     nil,
+			string(mseCommon.AnnotationMSEBlackListSourceRange):      nil,
 		},
-		LocationSnippet: &emptyStr,
 	}
 
 	switch policyDto.IpAclType {
 	case ACL_BLACK:
 		bl := strings.Join(policyDto.IpAclList, ",")
-		ingressAnnotations.Annotation[string(mseannotation.AnnotationMSEBlackListSourceRange)] = &bl
+		ingressAnnotations.Annotation[string(mseCommon.AnnotationMSEBlackListSourceRange)] = &bl
 	default:
 		wl := strings.Join(policyDto.IpAclList, ",")
 		ingressAnnotations.Annotation[string(annotationscommon.AnnotationWhiteListSourceRange)] = &wl
 	}
 
-	limit_connections := ""
-	if policyDto.IpMaxConnections > 0 {
-		limit_connections = fmt.Sprintf("%v", policyDto.IpMaxConnections)
-	}
-	ingressAnnotations.Annotation[string(annotationscommon.AnnotationLimitConnections)] = &limit_connections
 	return ingressAnnotations
+}
+
+func (policy Policy) buildPluginReq(dto *PolicyDto) *providerDto.PluginReqDto {
+	req := &providerDto.PluginReqDto{
+		Name:    mseCommon.MsePluginIP,
+		Config:  map[string]interface{}{},
+		Enabled: &dto.Switch,
+	}
+
+	return req
 }
 
 func init() {

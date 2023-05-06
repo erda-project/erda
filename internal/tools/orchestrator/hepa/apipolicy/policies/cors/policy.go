@@ -92,13 +92,13 @@ func (policy Policy) MergeDiceConfig(conf map[string]interface{}) (apipolicy.Pol
 	return dto, nil
 }
 
-func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error, string) {
+func (policy Policy) UnmarshalConfig(config []byte, gatewayProvider string) (apipolicy.PolicyDto, error, string) {
 	policyDto := &PolicyDto{}
 	err := json.Unmarshal(config, policyDto)
 	if err != nil {
 		return nil, errors.Wrapf(err, "json parse config failed, config:%s", config), "Invalid config"
 	}
-	ok, msg := policyDto.IsValidDto()
+	ok, msg := policyDto.IsValidDto(gatewayProvider)
 	if !ok {
 		return nil, errors.Errorf("invalid policy dto, msg:%s", msg), msg
 	}
@@ -124,6 +124,9 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	gatewayProvider, err := policy.GetGatewayProvider(zone.DiceClusterName)
 	if err != nil {
 		return res, errors.Errorf("get gateway provider failed for cluster %s:%v\n", zone.DiceClusterName, err)
+	}
+	if gatewayProvider != "" && gatewayProvider != mseCommon.Mse_Provider_Name {
+		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
 
 	if !policyDto.Switch {
@@ -159,14 +162,7 @@ more_set_headers 'Access-Control-Allow-Headers: %s';
 %s
 `, coreSnippet, policyDto.MaxAge, coreSnippet)
 
-	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
-		res.IngressAnnotation = policy.setIngressAnnotations(gatewayProvider, policyDto, locationSnippet)
-	case "":
-		res.IngressAnnotation = policy.setIngressAnnotations(gatewayProvider, policyDto, locationSnippet)
-	default:
-		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
-	}
+	res.IngressAnnotation = policy.setIngressAnnotations(gatewayProvider, policyDto, locationSnippet)
 	emptyStr := ""
 	// trigger httpsnippet update
 	res.IngressController = &apipolicy.IngressController{
@@ -197,7 +193,6 @@ func (policy Policy) setIngressAnnotations(gatewayProvider string, policyDto *Po
 				string(annotationscommon.AnnotationCORSAllowCredentials): &corsCredentials,
 				string(annotationscommon.AnnotationCORSMaxAge):           &corsMaxAge,
 			},
-			LocationSnippet: &locationSnippet,
 		}
 	default:
 		ret = &apipolicy.IngressAnnotation{

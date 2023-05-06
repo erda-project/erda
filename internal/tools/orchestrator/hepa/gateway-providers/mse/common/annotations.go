@@ -26,7 +26,7 @@ const (
 	AnnotationMSEHeaderControlResponseHeaderControlRemove Annotation = "mse.ingress.kubernetes.io/response-header-control-remove" // Ingress  请求收到后端服务响应后，在转发响应给客户端之前需要删除指定Header
 
 	// 流量治理--超时 timeout
-	AnnotationMSETimeOut Annotation = "mse.ingress.kubernetes.io/timeout" // Ingress  请求的超时时间，单位为秒。默认未配置超时时间
+	AnnotationMSETimeOut Annotation = "mse.ingress.kubernetes.io/timeout" // Ingress  请求的超时时间，单位为秒。默认未配置超时时间 (说明:超时设置作用在应用层，非传输层TCP。)
 
 	// 流量治理--单机限流 limit
 	AnnotationMSELimitRouteLimitRPM             Annotation = "mse.ingress.kubernetes.io/route-limit-rpm"              // Ingress  该Ingress定义的路由在每个网关实例上每分钟最大请求次数。瞬时最大请求次数为该值乘以limit-burst-multiplier

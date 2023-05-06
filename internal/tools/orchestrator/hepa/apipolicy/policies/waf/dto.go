@@ -36,7 +36,7 @@ type PolicyDto struct {
 
 var matchRegex = regexp.MustCompile(`^"?[0-9]+\-?[0-9]*"?$`)
 
-func (dto PolicyDto) IsValidDto() (bool, string) {
+func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 	if !dto.Switch {
 		return true, ""
 	}
