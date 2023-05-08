@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 
@@ -30,7 +29,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/reverseproxy"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -140,32 +138,6 @@ func (f *ProtocolTranslator) SetAPIKeyIfNotSpecified(ctx context.Context, header
 	if appKey := prov.GetAppKey(); appKey != "" && header.Get("Api-Key") == "" {
 		header.Set("Api-Key", appKey)
 	}
-}
-
-func (f *ProtocolTranslator) ReplaceURIPath(ctx context.Context, u *url.URL) {
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
-	s := ctx.Value("ReplaceURIPath").(string)
-	s, err := strconv.Unquote(s)
-	if err != nil {
-		l.Errorf(`ReplaceURIPath failed to strconv.Unquote(%s)`, ctx.Value(reverseproxy.ReplacedPathCtxKey{}).(string))
-		return
-	}
-	p := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
-	for {
-		expr, start, end, err := strutil.FirstCustomExpression(s, "${", "}", func(s string) bool {
-			s = strings.TrimSpace(s)
-			return strings.HasPrefix(s, "env.") || strings.HasPrefix(s, "provider.metadata.")
-		})
-		if err != nil || start == end {
-			break
-		}
-		if strings.HasPrefix(expr, "env.") {
-			s = strutil.Replace(s, os.Getenv(strings.TrimPrefix(expr, ".env")), start, end)
-		} else {
-			s = strutil.Replace(s, p.Metadata[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
-		}
-	}
-	u.Path = s
 }
 
 func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {

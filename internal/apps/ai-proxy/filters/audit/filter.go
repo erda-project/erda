@@ -156,7 +156,10 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 			l.Fatalf("%T not in cases", set)
 		}
 	}
-	return f.create(ctx)
+	if err := f.create(ctx); err != nil {
+		l.Warnf("failed to create audit row, err: %v", err)
+	}
+	return nil
 }
 
 func (f *Audit) create(ctx context.Context) error {

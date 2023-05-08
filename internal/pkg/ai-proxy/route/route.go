@@ -115,6 +115,11 @@ func (r *Route) PrepareHandler(ctx *reverseproxy.Context, options ...Option) err
 		if err != nil {
 			return errors.Wrapf(err, "failed to create filter %s", filterConfig.Name)
 		}
+		switch filter.(type) {
+		case reverseproxy.RequestFilter, reverseproxy.ResponseFilter:
+		default:
+			return errors.Errorf("filter must be of one type reverseproxy.RequestFilter or reverseproxy.ResponseFilter, got %T", filter)
+		}
 		r.reverseProxy.Filters = append(r.reverseProxy.Filters, reverseproxy.NamingFilter{Name: filterConfig.Name, Filter: filter})
 	}
 
