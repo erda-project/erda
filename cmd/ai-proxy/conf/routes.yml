@@ -1,6 +1,15 @@
 routes:
   - path: /v1/models
-    method: GET
+    pathMatcher: ""   # 不填写时, 默认为 `^/v1/models$`
+    method: GET       # * 表示匹配所有 http method
+    methodMatcher: "" # 不填写时为 contains, 对应 Go 实现是 strings.Contains(route.Method, request.Method)
+    headerMatcher: "" # 不填写时不将 http header 作为匹配条件
+    router:
+      to: openai      # 值为 provider 名称, 或 __upstream__
+      instanceId: ""  # 不填写时值为 default
+      scheme: ""      # 默认为 http, 缺省时使用 provider 指定的 scheme
+      host: ""        # 仅当值为 __upstream__ 时, 指定该值为 upstream 的 host
+      rewrite: ""     # 不填写时不进行 rewrite
     filters:
       - name: prometheus-collector
       - name: log-http
@@ -10,14 +19,13 @@ routes:
           processes:
             - SetAuthorizationIfNotSpecified
             - SetOpenAIOrganizationIfNotSpecified
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: openai
-          instanceId: default
-          scheme: https
+
   - path: /v1/models/{model}
+    pathMatcher: ""   # 不填写时, 默认为 `^/v1/models/([^/.]+)$`
     method: GET
+    router:
+      to: openai
+      instanceId: default
     filters:
       - name: prometheus-collector
       - name: log-http
@@ -27,14 +35,13 @@ routes:
           processes:
             - SetAuthorizationIfNotSpecified
             - SetOpenAIOrganizationIfNotSpecified
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: openai
-          instanceId: default
-          scheme: https
+
   - path: /v1/completions
     method: POST
+    router:
+      to: azure
+      instanceId: default
+      rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions
     filters:
       - name: prometheus-collector
       - name: log-http
@@ -45,16 +52,13 @@ routes:
             - SetAuthorizationIfNotSpecified
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
-            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions")
             - AddQueries("api-version=2023-03-15-preview")
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: azure
-          instanceId: default
-          scheme: https
+
   - path: /v1/chat/completions
     method: POST
+    router:
+      to: azure
+      rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions
     filters:
       - name: prometheus-collector
       - name: log-http
@@ -65,65 +69,48 @@ routes:
             - SetAuthorizationIfNotSpecified
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
-            - ReplaceURIPath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions")
             - AddQueries("api-version=2023-03-15-preview")
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: azure
-          instanceId: default
-          scheme: https
+
   - path: /v1/edits
     method: POST
+    router:
+      to: __not_found__
     filters:
       - name: prometheus-collector
       - name: log-http
       - name: audit
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: openai
-          instanceId: default
-          scheme: https
+
   - path: /v1/images/generations
     method: POST
+    router:
+      to: __not_found__
     filters:
       - name: prometheus-collector
       - name: log-http
       - name: audit
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: openai
-          instanceId: default
-          scheme: https
+
   - path: /v1/images/edits
     method: POST
+    router:
+      to: __not_found__
     filters:
       - name: prometheus-collector
       - name: log-http
       - name: audit
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: openai
-          instanceId: default
-          scheme: https
+
   - path: /v1/image/variations
     method: POST
+    router:
+      to: __not_found__
     filters:
       - name: prometheus-collector
       - name: log-http
       - name: audit
-      - name: reverse-proxy
-        config:
-          to: provider # enum: "provider", "url"
-          provider: openai
-          instanceId: default
-          scheme: https
 
-  - path: /openai/deployments/{deployment-id}/completions
+  - path: /openai/deployments/{deploymentId}/completions
     method: POST
+    router:
+      to: __not_found__
     filters:
       - name: prometheus-collector
       - name: log-http
@@ -134,48 +121,78 @@ routes:
             - SetAuthorizationIfNotSpecified
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
-      - name: reverse-proxy
-        config:
-          to: provider
-          provider: azure
-          instanceId: default
-          scheme: https
-          host: ""
-          path: ""
-  - path: /openai/deployments/{deployment-id}/embeddings
-    method: POST
-    filters:
-      - name: prometheus-collector
-      - name: log-http
-      - name: audit
-      - name: protocol-translator
-        config:
-          processes:
-            - SetAuthorizationIfNotSpecified
-            - ReplaceAuthorizationWithAPIKey
-            - SetAPIKeyIfNotSpecified
-      - name: reverse-proxy
-        config:
-          to: provider
-          provider: azure
-          instanceId: default
-          scheme: https
-  - path: /openai/deployments/{deployment-id}/chat/completions
-    method: POST
-    filters:
-      - name: prometheus-collector
-      - name: log-http
-      - name: audit
-      - name: protocol-translator
-        config:
-          processes:
-            - SetAuthorizationIfNotSpecified
-            - ReplaceAuthorizationWithAPIKey
-            - SetAPIKeyIfNotSpecified
-      - name: reverse-proxy
-        config:
-          to: provider
-          provider: azure
-          instanceId: default
-          scheme: https
 
+  - path: /openai/deployments/{deploymentId}/embeddings
+    router:
+      to: __not_found__
+    method: POST
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+
+  - path: /openai/deployments/{deploymentId}/chat/completions
+    method: POST
+    router:
+      to: __not_found__
+    filters:
+      - name: prometheus-collector
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+
+  # reverse proxy framework test here
+  - path: /test-api/not-found
+    method: '*'
+    router:
+      to: __not_found__
+    filters: [ ]
+  - path: /test-api/to-test-server
+    router:
+      to: test-server
+    filters:
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+  - path: /test-api/to-test-server/event-stream
+    router:
+      to: test-server
+    filters:
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+
+  - path: /test-api/rewrite
+    router:
+      to: test-server
+      rewrite: /test-api/${ provider.metadata.CUSTOM }/rewrite
+    filters:
+      - name: log-http
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified

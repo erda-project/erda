@@ -31,10 +31,9 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	reverse_proxy "github.com/erda-project/erda/internal/apps/ai-proxy/filters/reverse-proxy"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -81,6 +80,25 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 
+	// prepare handlers
+	for i := 0; i < len(p.Config.Routes); i++ {
+		rout := p.Config.Routes[i]
+		if err := rout.Validate(); err != nil {
+			return errors.Wrapf(err, "rout %d is invalid", i)
+		}
+		to := string(rout.Router.To)
+		if !strings.HasPrefix(to, "__") || !strings.HasSuffix(to, "__") {
+			prov, ok := p.Config.providers.FindProvider(to, rout.Router.InstanceId)
+			if !ok {
+				return errors.Errorf("no such provider routes[%d].Route.To: %s", i, p.Config.Routes[i].Router.To)
+			}
+			*rout = *(rout.With(route2.WithProvider(prov)))
+		}
+		if err := rout.PrepareHandler(reverseproxy.NewContext(make(map[any]any))); err != nil {
+			return errors.Wrap(err, "failed to PrepareHandler")
+		}
+	}
+
 	// ai-proxy prometheus metrics
 	p.AiServer.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
@@ -89,41 +107,19 @@ func (p *provider) Init(_ servicehub.Context) error {
 }
 
 func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
-	rout, ok := p.Config.Routes.FindRoute(r.URL.Path, r.Method)
+	rout, ok := p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header)
 	if !ok {
 		p.responseNoSuchRoute(w, r.URL.Path, r.Method)
 		return
 	}
-	var filters []filter.Filter
-	for i := 0; i < len(rout.Filters); i++ {
-		var name, config = rout.Filters[i].Name, rout.Filters[i].Config
-		factory, ok := filter.GetFilterFactory(name)
-		if !ok {
-			p.L.Errorf("failed to GetFilterFactory, filter name: %s", name)
-			p.responseNoSuchFilter(w, name)
-			return
-		}
-		f, err := factory(config)
-		if err != nil {
-			p.L.Errorf("failed to instantiate filter, filter name: %s, config: %s", name, config)
-			p.responseInstantiateFilterError(w, name)
-			return
-		}
-		filters = append(filters, f)
-	}
-	var ctx = filter.NewContext(map[any]any{
-		filter.ProvidersCtxKey{}: p.Config.providers,
-		filter.FiltersCtxKey{}:   filters, // todo: 风险: 将 filters 通过 context 传入, 后续的 filter 都能拿到和调用其他 filter
-		filter.DBCtxKey{}:        p.D,
-		filter.LoggerCtxKey{}:    p.L.Sub(r.Header.Get("X-Request-Id")),
-		filter.MutexCtxKey{}:     new(sync.Mutex),
+
+	var ctx = reverseproxy.NewContext(map[any]any{
+		reverseproxy.ProviderCtxKey{}: rout.GetProvider(),
+		reverseproxy.DBCtxKey{}:       p.D,
+		reverseproxy.LoggerCtxKey{}:   p.L.Sub(r.Header.Get("X-Request-Id")),
+		reverseproxy.MutexCtxKey{}:    new(sync.Mutex),
 	})
-	for i := 0; i < len(filters); i++ {
-		if reflect.TypeOf(filters[i]) == reverse_proxy.Type {
-			_, _ = filters[i].(filter.RequestFilter).OnHttpRequest(ctx, w, r)
-			return
-		}
-	}
+	rout.With(route2.WithContext(ctx)).ServeHTTP(w, r)
 }
 
 func (p *provider) parseRoutesConfig() error {

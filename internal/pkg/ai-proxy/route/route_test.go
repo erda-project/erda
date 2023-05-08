@@ -43,7 +43,7 @@ func TestRoute_MatchPath(t *testing.T) {
 			},
 		},
 		{
-			Route: &route.Route{Path: "/openai/deployments/{deployment-id}/completions"},
+			Route: &route.Route{Path: "/openai/deployments/{deploymentId}/completions"},
 			Paths: map[string]bool{
 				"/openai/deployments//completions":                         false,
 				"/openai/deployments/my-deployment-id/completions":         true,
@@ -54,8 +54,9 @@ func TestRoute_MatchPath(t *testing.T) {
 
 	for _, c := range cases {
 		for p, match := range c.Paths {
-			if ok := c.Route.MatchPath(p); ok != match {
-				t.Fatalf("match error, path: %s, path regex: %s, expect match: %v, got match: %v", p, c.Route.PathRegex(), match, ok)
+			_ = c.Route.Validate()
+			if ok := c.Route.Match(p, http.MethodGet, make(http.Header)); ok != match {
+				t.Fatalf("match error, path: %s, path regex: %s, expect match: %v, got match: %v", p, c.Route.PathRegexExpr(), match, ok)
 			}
 		}
 	}
@@ -69,6 +70,6 @@ func TestRoutes_FindRoute(t *testing.T) {
 			Filters: nil,
 		},
 	}
-	findRoute, ok := routes.FindRoute("/v1/completions", "POST")
+	findRoute, ok := routes.FindRoute("/v1/completions", "POST", make(http.Header))
 	t.Log(findRoute, ok)
 }

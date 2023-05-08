@@ -1,0 +1,93 @@
+// Copyright (c) 2023 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package reverseproxy
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"log"
+)
+
+var (
+	_ ResponseFilter = (*DefaultResponseFilter)(nil)
+	_ ResponseFilter = (*responseBodyWriter)(nil)
+)
+
+func NewDefaultResponseFilter() *DefaultResponseFilter {
+	return &DefaultResponseFilter{Buffer: bytes.NewBuffer(nil)}
+}
+
+// DefaultResponseFilter 的 OnResponseChunk 和 OnResponseEOF 将每一片 chunk 记录在自身的 buffer 中, 没有做其他任何事情.
+type DefaultResponseFilter struct {
+	*bytes.Buffer
+}
+
+// OnResponseChunk 将传入的 chunk 记录在自身的 buffer 中, 同时通过写入 w io.Writer 的方式传递给下一个 ResponseFilter, 没有做其他任何事情.
+func (d *DefaultResponseFilter) OnResponseChunk(ctx context.Context, _ HttpInfor, w Writer, chunk []byte) (signal Signal, err error) {
+	err = d.multiWrite(w, chunk)
+	if err != nil {
+		if l, ok := ctx.Value(LoggerCtxKey{}).(interface{ Errorf(string, ...interface{}) }); ok {
+			l.Errorf("failed to multiWrite OnResponseChunk, err: %v", err)
+		}
+	}
+	return map[bool]Signal{true: Continue, false: Intercept}[err == nil], err
+}
+
+// OnResponseEOF 将传入的 chunk 记录在自身的 buffer 中, 同时通过写入 w io.Writer 的方式传递给下一个 ResponseFilter, 没有做其他任何事情.
+func (d *DefaultResponseFilter) OnResponseEOF(ctx context.Context, _ HttpInfor, w Writer, chunk []byte) (err error) {
+	err = d.multiWrite(w, chunk)
+	if err != nil {
+		if l, ok := ctx.Value(LoggerCtxKey{}).(interface{ Errorf(string, ...interface{}) }); ok {
+			l.Errorf("failed to multiWrite OnResponseEOF, err: %v", err)
+		}
+	}
+	return err
+}
+
+func (d *DefaultResponseFilter) multiWrite(w io.Writer, in []byte) error {
+	_, err := io.MultiWriter(d, w).Write(in)
+	return err
+}
+
+type responseBodyWriter struct {
+	written int64
+	dst     io.Writer
+}
+
+func (r *responseBodyWriter) OnResponseChunk(ctx context.Context, infor HttpInfor, writer Writer, chunk []byte) (signal Signal, err error) {
+	return Intercept, r.write(chunk)
+}
+
+// OnResponseEOF responseBodyWriter 是一个特殊 ResponseFilter, 它不将数据写入传入的 io.Writer (即传递到下一个 filter),
+// 因为它已经没有下一个 filter 了.
+// 它直接将数据写入 r.dst, 这个 r.dst 即最终的 response body.
+func (r *responseBodyWriter) OnResponseEOF(ctx context.Context, infor HttpInfor, writer Writer, chunk []byte) error {
+	return r.write(chunk)
+}
+
+func (r *responseBodyWriter) write(in []byte) error {
+	n, err := r.dst.Write(in)
+	if n > 0 {
+		r.written += int64(n)
+	}
+	if err != nil {
+		return err
+	}
+	if n != len(in) {
+		log.Println(io.ErrShortWrite)
+		return io.ErrShortWrite
+	}
+	return nil
+}
