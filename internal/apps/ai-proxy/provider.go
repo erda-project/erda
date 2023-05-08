@@ -94,7 +94,9 @@ func (p *provider) Init(_ servicehub.Context) error {
 			}
 			*rout = *(rout.With(route2.WithProvider(prov)))
 		}
-		if err := rout.PrepareHandler(reverseproxy.NewContext(make(map[any]any))); err != nil {
+		if err := rout.PrepareHandler(reverseproxy.NewContext(map[any]any{
+			reverseproxy.LoggerCtxKey{}: p.L,
+		})); err != nil {
 			return errors.Wrap(err, "failed to PrepareHandler")
 		}
 	}

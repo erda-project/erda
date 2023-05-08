@@ -15,6 +15,8 @@
 package protocol_translator_test
 
 import (
+	"bytes"
+	"net/http"
 	"testing"
 
 	protocol_translator "github.com/erda-project/erda/internal/apps/ai-proxy/filters/protocol-translator"
@@ -54,4 +56,12 @@ func TestParseProcessorNameArgs(t *testing.T) {
 		}
 		t.Logf("name: %s, args: %s", name, args)
 	}
+}
+
+func TestProtocolTranslator_SetAuthorizationIfNotSpecified(t *testing.T) {
+	request, err := http.NewRequest(http.MethodPost, "http://localhost:8080", bytes.NewBufferString("mock body"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = request
 }

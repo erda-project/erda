@@ -196,3 +196,4 @@ routes:
             - SetAuthorizationIfNotSpecified
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
+            - AddQueries("api-version=2023-03-15-preview")

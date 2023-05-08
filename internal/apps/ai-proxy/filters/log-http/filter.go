@@ -55,26 +55,28 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
 		return reverseproxy.Continue, nil
 	}
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnRequest")
 	var url = infor.URL()
 	var m = map[string]any{
-		"scheme":     url.Scheme,
-		"host":       infor.Host(),
-		"url.host":   url.Host,
-		"uri":        url.RequestURI(),
-		"headers":    infor.Header(),
-		"remoteAddr": infor.RemoteAddr(),
+		"scheme":        url.Scheme,
+		"host":          infor.Host(),
+		"url.host":      url.Host,
+		"uri":           url.RequestURI(),
+		"headers":       infor.Header(),
+		"remoteAddr":    infor.RemoteAddr(),
+		"contentType":   infor.Header().Get("Content-Type"),
+		"contentLength": infor.ContentLength(),
 	}
-	defer func() { l.Debugf("request info: %s", strutil.TryGetJsonStr(m)) }()
-	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) ||
-		infor.ContentLength() == 0 {
-		return reverseproxy.Continue, nil
+	if httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) && infor.ContentLength() != 0 {
+		if body := infor.BodyBuffer(); body == nil {
+			l.Debug("request body is nil")
+			m["body"] = json.RawMessage("null")
+		} else {
+			l.Debugf("request body: %s", body.String())
+			m["body"] = json.RawMessage(body.Bytes())
+		}
 	}
-	body := infor.BodyBuffer()
-	if body == nil {
-		return reverseproxy.Intercept, err
-	}
-	m["body"] = json.RawMessage(body.Bytes())
+	l.Debugf("request info: %s", strutil.TryGetJsonStr(m))
 	return reverseproxy.Continue, nil
 }
 

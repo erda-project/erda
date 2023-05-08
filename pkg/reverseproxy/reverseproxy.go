@@ -295,7 +295,7 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		outreq.Header = make(http.Header) // Issue 33142: historical behavior was to always allocate
 	}
 
-	infor := NewInfor(p.FilterCxt, req)
+	infor := NewInfor(p.FilterCxt, outreq)
 	for i, item := range p.Filters {
 		if filter, ok := item.Filter.(RequestFilter); ok {
 			signal, err := filter.OnRequest(p.FilterCxt, rw, infor)
@@ -314,6 +314,7 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			break
 		}
 	}
+
 	p.Director(outreq)
 	if outreq.Form != nil {
 		outreq.URL.RawQuery = cleanQueryParams(outreq.URL.RawQuery)

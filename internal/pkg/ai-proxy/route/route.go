@@ -15,7 +15,10 @@
 package route
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -23,9 +26,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -88,21 +92,45 @@ func (r *Route) PrepareHandler(ctx *reverseproxy.Context, options ...Option) err
 
 	r.reverseProxy = &reverseproxy.ReverseProxy{
 		Director: func(req *http.Request) {
-			req.URL.Scheme = r.Router.Scheme
-			req.Host = r.Router.Host
-			req.URL.Host = r.Router.Host
-			req.Header.Set("Host", r.Router.Host)
-			req.Header.Set("X-Forwarded-Host", r.Router.Host)
+			switch {
+			case r.Router.Scheme != "":
+				req.URL.Scheme = r.Router.Scheme
+			case r.provider == nil, r.provider.Scheme == "":
+				req.URL.Scheme = "https"
+			case r.provider.Scheme == "https", r.provider.Scheme == "http":
+				req.URL.Scheme = r.provider.Scheme
+			default:
+				req.URL.Scheme = "https"
+			}
+			switch {
+			case r.Router.Host != "":
+				req.Host = r.Router.Host
+			case r.provider == nil || r.provider.Host == "":
+			default:
+				req.Host = r.provider.GetHost()
+			}
+			req.URL.Host = req.Host
+			req.Header.Set("Host", req.Host)
+			req.Header.Set("X-Forwarded-Host", req.Host)
 			req.URL.Path = r.rewrite()
 
-			log.Println(strutil.TryGetJsonStr(map[string]any{
-				"req.URL.Scheme":                 req.URL.Scheme,
-				"req.Host":                       req.Host,
-				"req.URL.Host":                   req.URL.Host,
-				`req.Header["Host"]`:             req.Header["Host"],
-				`req.Header["X-Forwarded-Host"]`: req.Header["X-Forwarded-Host"],
-				"req.URL.Path":                   req.URL.Path,
-			}))
+			var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
+			for k, vv := range req.Header {
+				for _, v := range vv {
+					curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
+				}
+			}
+			if httputil.HeaderContains(req.Header, httputil.ApplicationJson) && req.Body != nil {
+				var buf = bytes.NewBuffer(nil)
+				if _, err := buf.ReadFrom(req.Body); err == nil {
+					_ = req.Body.Close()
+					curl += ` --data '` + buf.String() + `'`
+					req.Body = io.NopCloser(buf)
+				}
+			}
+			if l, ok := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger); ok && l != nil {
+				l.Sub("Director").Debug("[reverse proxy] curl command: " + curl + "\n")
+			}
 		},
 		FlushInterval:  time.Millisecond * 100,
 		ModifyResponse: nil,
@@ -299,11 +327,8 @@ func (r *Router) validate() error {
 	if r.InstanceId == "" {
 		r.InstanceId = "default"
 	}
-	if r.Scheme == "" {
-		r.Scheme = "http"
-	}
 	switch r.Scheme {
-	case "http", "https":
+	case "", "http", "https":
 	default:
 		return errors.Errorf("invlaid scheme %s, it must be one of http or https", r.Scheme)
 	}
@@ -320,12 +345,6 @@ type Option func(route *Route)
 func WithProvider(prov *provider.Provider) Option {
 	return func(r *Route) {
 		r.provider = prov
-		if !strings.HasPrefix(string(r.Router.To), "__") || !strings.HasSuffix(string(r.Router.To), "__") {
-			if r.Router.Scheme == "" && (prov.Scheme == "http" || prov.Scheme == "https") {
-				r.Router.Scheme = prov.Scheme
-			}
-			r.Router.Host = prov.Host
-		}
 	}
 }
 
