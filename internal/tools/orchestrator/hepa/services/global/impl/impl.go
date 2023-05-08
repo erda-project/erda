@@ -150,7 +150,7 @@ func (impl *GatewayGlobalServiceImpl) checkGatewayHealth() (dto gw.DiceHealthDto
 		}
 		var gatewayAdapter gateway_providers.GatewayAdapter
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			gatewayAdapter, err = mse.NewMseAdapter(az.Az)
 			if err != nil {
 				return

@@ -94,9 +94,9 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 						Secret: "902450a7405942f5b205aaa1aa828c0b",
 					},
 					{
-						Name:   DEFAULT_MSE_CONSUMER_NAME,
-						Key:    DEFAULT_MSE_CONSUMER_KEY,
-						Secret: DEFAULT_MSE_CONSUMER_SECRET,
+						Name:   MseDefaultConsumerName,
+						Key:    MseDefaultConsumerKey,
+						Secret: MseDefaultConsumerSecret,
 					},
 				},
 				Rules: []dto.Rules{
@@ -113,8 +113,8 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 						Allow:      []string{"633.5846.TEST.erda-jicheng:abc"},
 					},
 					{
-						MatchRoute: []string{DEFAULT_MSE_ROUTE_NAME},
-						Allow:      []string{DEFAULT_MSE_CONSUMER_NAME},
+						MatchRoute: []string{MseDefaultRouteName},
+						Allow:      []string{MseDefaultConsumerName},
 					},
 				},
 			},
@@ -176,15 +176,15 @@ func Test_mergeHmacAuthConfig(t *testing.T) {
 						Secret: "902450a7405942f5b205aaa1aa828cbb",
 					},
 					{
-						Name:   DEFAULT_MSE_CONSUMER_NAME,
-						Key:    DEFAULT_MSE_CONSUMER_KEY,
-						Secret: DEFAULT_MSE_CONSUMER_SECRET,
+						Name:   MseDefaultConsumerName,
+						Key:    MseDefaultConsumerKey,
+						Secret: MseDefaultConsumerSecret,
 					},
 				},
 				Rules: []dto.Rules{
 					{
-						MatchRoute: []string{DEFAULT_MSE_ROUTE_NAME},
-						Allow:      []string{DEFAULT_MSE_CONSUMER_NAME},
+						MatchRoute: []string{MseDefaultRouteName},
+						Allow:      []string{MseDefaultConsumerName},
 					},
 					{
 						MatchRoute: []string{"project-5846-test-dice-test-5846-api-754bbce0af034774ac2b8f74c7e070a6-0149aa-058a61f1-ccaae83a5fe7846d18d4ac80940a8fdc3"},

@@ -365,7 +365,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(clusterName)
 		if err != nil {
 			return
@@ -501,7 +501,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(az)
 		if err != nil {
 			return
@@ -755,7 +755,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return
@@ -876,7 +876,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerCredentials(id string) 
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return res, err
@@ -972,7 +972,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return
@@ -1015,7 +1015,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 	}
 	for authType, credentials := range dels {
 		for _, credential := range credentials {
-			if gatewayProvider == mseCommon.Mse_Provider_Name {
+			if gatewayProvider == mseCommon.MseProviderName {
 				credentialStr, marshalErr := json.Marshal(credential)
 				if marshalErr != nil {
 					err = marshalErr
@@ -1150,7 +1150,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 	case "":
 	default:
 		err = errors.Errorf("unknown gateway provider %s", gatewayProvider)
@@ -1161,7 +1161,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		apiAclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.AUTH_RULE)
 		if err != nil {
 			return
@@ -1425,7 +1425,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			wl = ","
 		}
 		config["whitelist"] = wl
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		wlConsumers, err := impl.mseConsumerConfig(consumers)
 		if err != nil {
 			return err
@@ -1433,7 +1433,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 		// 避免变成全局策略
 		if len(wlConsumers) == 0 {
 			wlConsumers = append(wlConsumers, mseDto.Consumers{
-				Name: mseplugins.DEFAULT_MSE_CONSUMER_NAME,
+				Name: mseplugins.MseDefaultConsumerName,
 			})
 		}
 		config["whitelist"] = wlConsumers
@@ -1442,7 +1442,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 	}
 
 	aclRules := make([]gw.OpenapiRuleInfo, 0)
-	if gatewayProvider == mseCommon.Mse_Provider_Name {
+	if gatewayProvider == mseCommon.MseProviderName {
 		aclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.AUTH_RULE)
 		if err != nil {
 			return err
@@ -1471,7 +1471,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			Enabled:      true,
 			Region:       gw.API_RULE,
 		}
-		if gatewayProvider == mseCommon.Mse_Provider_Name {
+		if gatewayProvider == mseCommon.MseProviderName {
 			newAclRule.Category = gw.AUTH_RULE
 			switch pack.AuthType {
 			case gw.AT_KEY_AUTH:
@@ -1688,14 +1688,14 @@ func (impl GatewayOpenapiConsumerServiceImpl) updatePackageAclRules(packageId st
 
 	config := map[string]interface{}{}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		wlConsumers, err := impl.mseConsumerConfig(consumers)
 		if err != nil {
 			return err
 		}
 		if len(wlConsumers) == 0 {
 			wlConsumers = append(wlConsumers, mseDto.Consumers{
-				Name: mseplugins.DEFAULT_MSE_CONSUMER_NAME,
+				Name: mseplugins.MseDefaultConsumerName,
 			})
 		}
 		config["whitelist"] = wlConsumers

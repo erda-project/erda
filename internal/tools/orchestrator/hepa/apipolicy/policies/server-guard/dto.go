@@ -57,7 +57,7 @@ func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 	if !dto.Switch {
 		return true, ""
 	}
-	if gatewayProvider == mseCommon.Mse_Provider_Name {
+	if gatewayProvider == mseCommon.MseProviderName {
 		if dto.RefuseCode != 503 {
 			return false, "底层为 MSE 网关，拒绝状态码只能是为 503"
 		}

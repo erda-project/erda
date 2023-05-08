@@ -125,7 +125,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if err != nil {
 		return res, errors.Errorf("get gateway provider failed for cluster %s:%v\n", zone.DiceClusterName, err)
 	}
-	if gatewayProvider != "" && gatewayProvider != mseCommon.Mse_Provider_Name {
+	if gatewayProvider != "" && gatewayProvider != mseCommon.MseProviderName {
 		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
 
@@ -174,7 +174,7 @@ more_set_headers 'Access-Control-Allow-Headers: %s';
 func (policy Policy) setIngressAnnotations(gatewayProvider string, policyDto *PolicyDto, locationSnippet string) *apipolicy.IngressAnnotation {
 	var ret *apipolicy.IngressAnnotation
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		corsEnable := "true"
 		corsMethods := policyDto.Methods
 		corsHeaders := policyDto.Headers
