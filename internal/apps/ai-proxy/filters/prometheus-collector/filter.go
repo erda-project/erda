@@ -93,9 +93,11 @@ func (f *PrometheusCollector) getModel(ctx context.Context, infor reverseproxy.H
 		return "-" // todo: Only Content-Type: application/json auditing is supported for now.
 	}
 	var m = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(f.Bytes(), &m); err != nil {
-		l.Errorf("failed to Decode r.Body to m (%T), err: %v", m, err)
-		return "-"
+	if body := infor.BodyBuffer(); body != nil {
+		if err := json.NewDecoder(body).Decode(&m); err != nil {
+			l.Errorf("failed to Decode r.Body to m (%T), err: %v", m, err)
+			return "-"
+		}
 	}
 	data, ok := m["model"]
 	if !ok {

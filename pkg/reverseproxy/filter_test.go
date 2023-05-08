@@ -45,4 +45,7 @@ func TestInfor_Header(t *testing.T) {
 	u.RawQuery = values.Encode()
 
 	t.Logf("request.URL.RequestURI(): %s", request.URL.RequestURI())
+
+	t.Logf("infor.BodyBuffer(): %v", infor.BodyBuffer())
+	t.Logf("infor.Body(): %v", infor.Body())
 }

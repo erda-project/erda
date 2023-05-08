@@ -29,7 +29,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -120,7 +119,7 @@ func (r *Route) PrepareHandler(ctx *reverseproxy.Context, options ...Option) err
 					curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
 				}
 			}
-			if httputil.HeaderContains(req.Header, httputil.ApplicationJson) && req.Body != nil {
+			if req.Body != nil {
 				var buf = bytes.NewBuffer(nil)
 				if _, err := buf.ReadFrom(req.Body); err == nil {
 					_ = req.Body.Close()

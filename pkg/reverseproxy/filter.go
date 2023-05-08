@@ -94,6 +94,8 @@ func (r *infor[R]) Method() string {
 		if i.Request != nil {
 			return i.Request.Method
 		}
+	default:
+		panic("not expected type")
 	}
 	return "UNKNOWN_METHOD"
 }
@@ -112,6 +114,8 @@ func (r *infor[R]) RemoteAddr() string {
 		if i.Request != nil {
 			return i.Request.RemoteAddr
 		}
+	default:
+		panic("not expected type")
 	}
 	return ""
 }
@@ -130,6 +134,8 @@ func (r *infor[R]) Host() string {
 		if i.Request != nil {
 			return i.Request.Host
 		}
+	default:
+		panic("not expected type")
 	}
 	return ""
 }
@@ -148,6 +154,8 @@ func (r *infor[R]) URL() *url.URL {
 		if i.Request != nil {
 			return i.Request.URL
 		}
+	default:
+		panic("not expected type")
 	}
 	return nil
 }
@@ -190,40 +198,43 @@ func (r *infor[R]) Header() http.Header {
 
 // Body only for request body
 func (r *infor[R]) Body() io.ReadCloser {
-	switch i := (interface{})(r).(type) {
+	switch i := (interface{})(r.r).(type) {
 	case http.Request:
 		return i.Body
 	case *http.Request:
 		return i.Body
-	default:
+	case http.Response, *http.Response:
 		return nil
+	default:
+		panic("not expected type")
 	}
 }
 
 // BodyBuffer only for request body
 func (r *infor[R]) BodyBuffer() *bytes.Buffer {
 	var request *http.Request
-	switch i := (interface{})(r).(type) {
+	switch i := (interface{})(r.r).(type) {
 	case http.Request:
 		request = &i
 	case *http.Request:
 		request = i
-	default:
+	case http.Response, *http.Response:
 		return nil
+	default:
+		panic("not expected type")
 	}
 
 	if request.Body == nil {
 		return nil
 	}
 
-	var buf = bytes.NewBuffer(nil)
-	_, err := buf.ReadFrom(request.Body)
+	data, err := io.ReadAll(request.Body)
 	if err != nil {
 		return nil
 	}
 	_ = request.Body.Close()
-	request.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
-	return buf
+	request.Body = io.NopCloser(bytes.NewReader(data))
+	return bytes.NewBuffer(data)
 }
 
 func (r *infor[R]) Mutex() *sync.Mutex {
