@@ -17,13 +17,15 @@ package audit_test
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func TestAudit_SetPrompt(t *testing.T) {
@@ -59,7 +61,7 @@ func TestAudit_SetPrompt(t *testing.T) {
 	})
 }
 
-var _ filter.HttpInfor = (*mockedInfor)(nil)
+var _ reverseproxy.HttpInfor = (*mockedInfor)(nil)
 
 type mockedInfor struct {
 	u          *url.URL
@@ -68,6 +70,20 @@ type mockedInfor struct {
 	body       *bytes.Buffer
 	statusCode int
 	remoteAddr string
+}
+
+func (m *mockedInfor) Body() io.ReadCloser {
+	return io.NopCloser(m.body)
+}
+
+func (m *mockedInfor) BodyBuffer() *bytes.Buffer {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *mockedInfor) Mutex() *sync.Mutex {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m *mockedInfor) Method() string {
@@ -88,10 +104,6 @@ func (m *mockedInfor) StatusCode() int {
 
 func (m *mockedInfor) Header() http.Header {
 	return m.header
-}
-
-func (m *mockedInfor) Body() (*bytes.Buffer, error) {
-	return m.body, nil
 }
 
 func (m *mockedInfor) ContentLength() int64 {
