@@ -68,6 +68,9 @@ func TestRoutes_FindRoute(t *testing.T) {
 			Path:    "/v1/completions",
 			Method:  http.MethodPost,
 			Filters: nil,
+			Router: &route.Router{
+				To: "openai",
+			},
 		},
 	}
 	for _, rout := range routes {
@@ -75,6 +78,29 @@ func TestRoutes_FindRoute(t *testing.T) {
 			t.Log(err)
 		}
 	}
-	findRoute, ok := routes.FindRoute("/v1/completions", "POST", make(http.Header))
-	t.Log(findRoute, ok)
+	findRoute := routes.FindRoute("/v1/completions", "POST", make(http.Header))
+	t.Log(findRoute, findRoute.IsNotFoundRoute())
+	if findRoute.IsNotFoundRoute() {
+		t.Error("the route is not NotFoundRoute")
+	}
+}
+
+func TestRoute_Validate(t *testing.T) {
+	if err := (&route.Route{
+		Path:          "/",
+		PathMatcher:   "",
+		Method:        "",
+		MethodMatcher: "",
+		HeaderMatcher: nil,
+		Router: &route.Router{
+			To:         route.ToNotFound,
+			InstanceId: "",
+			Scheme:     "",
+			Host:       "",
+			Rewrite:    "",
+		},
+		Filters: nil,
+	}).Validate(); err != nil {
+		t.Fatal(err)
+	}
 }

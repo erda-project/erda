@@ -16,7 +16,6 @@ package reverseproxy
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -64,10 +63,6 @@ func (c *Context) Value(key any) any {
 	return c.inner.Value(key)
 }
 
-func WithValue(ctx context.Context, key any, value any) {
-	if c, ok := ctx.(*Context); ok {
-		c.inner = context.WithValue(c.inner, key, value)
-		return
-	}
-	panic(fmt.Sprintf("the ctx context.Context must be type %T, got %T", new(Context), ctx))
+func WithValue(ctx *Context, key any, value any) {
+	ctx.inner = context.WithValue(ctx.inner, key, value)
 }

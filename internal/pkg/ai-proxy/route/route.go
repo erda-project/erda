@@ -23,6 +23,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -38,16 +39,23 @@ const (
 	ToNotFound To = "__not_found__"
 )
 
+var (
+	NotFoundRoute = &Route{
+		Path:   "/",
+		Router: &Router{To: ToNotFound},
+	}
+)
+
 type Routes []*Route
 
-func (routes Routes) FindRoute(path, method string, header http.Header) (*Route, bool) {
+func (routes Routes) FindRoute(path, method string, header http.Header) *Route {
 	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大
 	for _, route := range routes {
 		if route.Match(path, method, header) {
-			return route, true
+			return route
 		}
 	}
-	return nil, false
+	return NotFoundRoute
 }
 
 type Route struct {
@@ -71,6 +79,7 @@ type Route struct {
 func (r *Route) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch r.Router.To {
 	case ToNotFound:
+		w.Header().Set("Server", "erda/ai-proxy")
 		http.Error(w, string(ToNotFound), http.StatusNotFound)
 		return
 	}
@@ -225,6 +234,10 @@ func (r *Route) Validate() error {
 	return nil
 }
 
+func (r *Route) IsNotFoundRoute() bool {
+	return r.Router != nil && strutil.Equal(r.Router.To, ToNotFound, true)
+}
+
 func (r *Route) GetProvider() *provider.Provider {
 	return r.provider
 }
@@ -350,5 +363,17 @@ func WithProvider(prov *provider.Provider) Option {
 func WithContext(ctx *reverseproxy.Context) Option {
 	return func(route *Route) {
 		route.reverseProxy.FilterCxt = ctx
+	}
+}
+
+func WithLogger(logger logs.Logger) Option {
+	return func(route *Route) {
+		reverseproxy.WithValue(route.reverseProxy.FilterCxt, reverseproxy.LoggerCtxKey{}, logger)
+	}
+}
+
+func WithMutex(l *sync.Mutex) Option {
+	return func(route *Route) {
+		reverseproxy.WithValue(route.reverseProxy.FilterCxt, reverseproxy.MutexCtxKey{}, l)
 	}
 }

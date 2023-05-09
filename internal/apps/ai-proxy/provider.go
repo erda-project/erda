@@ -83,9 +83,13 @@ func (p *provider) Init(_ servicehub.Context) error {
 	// prepare handlers
 	for i := 0; i < len(p.Config.Routes); i++ {
 		rout := p.Config.Routes[i]
+
+		// validate every route config
 		if err := rout.Validate(); err != nil {
 			return errors.Wrapf(err, "rout %d is invalid", i)
 		}
+
+		// find provider to router to
 		to := string(rout.Router.To)
 		if !strings.HasPrefix(to, "__") || !strings.HasSuffix(to, "__") {
 			prov, ok := p.Config.providers.FindProvider(to, rout.Router.InstanceId)
@@ -94,8 +98,12 @@ func (p *provider) Init(_ servicehub.Context) error {
 			}
 			*rout = *(rout.With(route2.WithProvider(prov)))
 		}
+
+		// prepare reverse proxy handler with contexts
 		if err := rout.PrepareHandler(reverseproxy.NewContext(map[any]any{
-			reverseproxy.LoggerCtxKey{}: p.L,
+			reverseproxy.ProviderCtxKey{}: rout.GetProvider(),
+			reverseproxy.DBCtxKey{}:       p.D,
+			reverseproxy.LoggerCtxKey{}:   p.L,
 		})); err != nil {
 			return errors.Wrap(err, "failed to PrepareHandler")
 		}
@@ -104,24 +112,15 @@ func (p *provider) Init(_ servicehub.Context) error {
 	// ai-proxy prometheus metrics
 	p.AiServer.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
-	p.AiServer.Any("/**", p.ServeAI)
+	p.AiServer.Any("/**", p)
 	return nil
 }
 
-func (p *provider) ServeAI(w http.ResponseWriter, r *http.Request) {
-	rout, ok := p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header)
-	if !ok {
-		p.responseNoSuchRoute(w, r.URL.Path, r.Method)
-		return
-	}
-
-	var ctx = reverseproxy.NewContext(map[any]any{
-		reverseproxy.ProviderCtxKey{}: rout.GetProvider(),
-		reverseproxy.DBCtxKey{}:       p.D,
-		reverseproxy.LoggerCtxKey{}:   p.L.Sub(r.Header.Get("X-Request-Id")),
-		reverseproxy.MutexCtxKey{}:    new(sync.Mutex),
-	})
-	rout.With(route2.WithContext(ctx)).ServeHTTP(w, r)
+func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
+		With(route2.WithLogger(p.L.Sub(r.Header.Get("X-Request-Id")))).
+		With(route2.WithMutex(new(sync.Mutex))).
+		ServeHTTP(w, r)
 }
 
 func (p *provider) parseRoutesConfig() error {

@@ -16,7 +16,6 @@ package reverseproxy_test
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"sync"
 	"testing"
@@ -25,13 +24,14 @@ import (
 )
 
 func TestInfor_Header(t *testing.T) {
-	ctx := context.WithValue(context.Background(), reverseproxy.MutexCtxKey{}, new(sync.Mutex))
 	request, err := http.NewRequest(http.MethodPost, "http://localhost:8080", bytes.NewBufferString("mock body"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	request.Header.Set("Content-Type", "application/json")
-	infor := reverseproxy.NewInfor(ctx, request)
+	infor := reverseproxy.NewInfor(reverseproxy.NewContext(map[any]any{
+		reverseproxy.MutexCtxKey{}: new(sync.Mutex),
+	}), request)
 	header := infor.Header()
 	t.Logf("Content-Type: %s", header.Get("Content-Type"))
 	header.Set("Accept", "*/*")
