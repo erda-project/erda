@@ -27,7 +27,7 @@ CREATE TABLE `ai_proxy_filter_audit`
     `request_content_type`  varchar(32)  NOT NULL COMMENT '请求使用的 Content-Type',
     `request_body`          text         NOT NULL COMMENT '请求的 Body',
     `response_content_type` varchar(32)  NOT NULL COMMENT '响应使用的 Content-Type',
-    `response_body`         text         NOT NULL COMMENT '响应的 Body',
+    `response_body`         longtext     NOT NULL COMMENT '响应的 Body',
     `user_agent`            varchar(128) NOT NULL COMMENT 'http 客户端 User-Agent',
     `server`                varchar(32)  NOT NULL COMMENT 'response server',
     `status`                varchar(32)  NOT NULL COMMENT 'http response status',
