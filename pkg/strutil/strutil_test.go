@@ -231,3 +231,15 @@ func TestFirstNoneEmpty(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleQuotes(t *testing.T) {
+	var data = `
+a{"dspo": "chen"} sdg
+--	{"message": "something"}
+aeeh
+{"age": 17}sdgh}
+`
+	HandleQuotes([]byte(data), [2]byte{'{', '}'}, func(buf []byte) {
+		t.Log(string(buf))
+	})
+}

@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -457,10 +458,62 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 }
 
 func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId)
-	if !httputil.HeaderContains(header, httputil.ApplicationJson) {
-		return nil
+	if httputil.HeaderContains(header, httputil.ApplicationJson) {
+		return f.setCompletionForApplicationJson(ctx, header, buf)
 	}
+	if httputil.HeaderContains(header, httputil.TextEventStream) {
+		return f.setCompletionForEventStream(ctx, header, buf)
+	}
+	return nil
+}
+
+func (f *Audit) SetRequestContentType(_ context.Context, header http.Header) error {
+	f.Audit.RequestContentType = header.Get(httputil.ContentTypeKey)
+	return nil
+}
+
+func (f *Audit) SetResponseContentType(_ context.Context, header http.Header) error {
+	f.Audit.ResponseContentType = header.Get(httputil.ContentTypeKey)
+	return nil
+}
+
+func (f *Audit) SetRequestBody(_ context.Context, buf *bytes.Buffer) error {
+	f.Audit.RequestBody = buf.String()
+	return nil
+}
+
+func (f *Audit) SetResponseBody(_ context.Context, buf *bytes.Buffer) error {
+	f.Audit.ResponseBody = buf.String()
+	return nil
+}
+
+func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
+	f.Audit.Server = header.Get("Server")
+	if f.Audit.Server == "" {
+		f.Audit.Server = ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider).Name
+	}
+	return nil
+}
+
+func (f *Audit) SetStatus(_ context.Context, infor reverseproxy.HttpInfor) error {
+	f.Audit.Status = infor.Status()
+	f.Audit.StatusCode = infor.StatusCode()
+	return nil
+}
+
+func (f *Audit) SetUserAgent(_ context.Context, header http.Header) error {
+	f.Audit.UserAgent = header.Get("User-Agent")
+	if f.Audit.UserAgent == "" {
+		f.Audit.UserAgent = header.Get("X-User-Agent")
+	}
+	if f.Audit.UserAgent == "" {
+		f.Audit.UserAgent = header.Get("X-Device-User-Agent")
+	}
+	return nil
+}
+
+func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId)
 	var m = make(map[string]json.RawMessage)
 	if err := json.NewDecoder(buf).Decode(&m); err != nil {
 		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", buf, m)
@@ -510,45 +563,30 @@ func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *byte
 	}
 }
 
-func (f *Audit) SetRequestContentType(_ context.Context, header http.Header) error {
-	f.Audit.RequestContentType = header.Get(httputil.ContentTypeKey)
-	return nil
-}
-
-func (f *Audit) SetResponseContentType(_ context.Context, header http.Header) error {
-	f.Audit.ResponseContentType = header.Get(httputil.ContentTypeKey)
-	return nil
-}
-
-func (f *Audit) SetRequestBody(_ context.Context, buf *bytes.Buffer) error {
-	f.Audit.RequestBody = buf.String()
-	return nil
-}
-
-func (f *Audit) SetResponseBody(_ context.Context, buf *bytes.Buffer) error {
-	f.Audit.ResponseBody = buf.String()
-	return nil
-}
-
-func (f *Audit) SetServer(_ context.Context, header http.Header) error {
-	f.Audit.Server = header.Get("Server")
-	return nil
-}
-
-func (f *Audit) SetStatus(_ context.Context, infor reverseproxy.HttpInfor) error {
-	f.Audit.Status = infor.Status()
-	f.Audit.StatusCode = infor.StatusCode()
-	return nil
-}
-
-func (f *Audit) SetUserAgent(_ context.Context, header http.Header) error {
-	f.Audit.UserAgent = header.Get("User-Agent")
-	if f.Audit.UserAgent == "" {
-		f.Audit.UserAgent = header.Get("X-User-Agent")
-	}
-	if f.Audit.UserAgent == "" {
-		f.Audit.UserAgent = header.Get("X-Device-User-Agent")
-	}
+func (f *Audit) setCompletionForEventStream(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId)
+	var completion string
+	strutil.HandleQuotes(buf.Bytes(), [2]byte{'{', '}'}, func(data []byte) {
+		var m = make(map[string]json.RawMessage)
+		if err := json.Unmarshal(data, &m); err != nil {
+			l.Errorf("failed to json.Unmarshal(%s, %T)", string(data), m)
+			return
+		}
+		choices, ok := m["choices"]
+		if !ok {
+			l.Warnf(`no field "choices" in the line %s`, string(data))
+		}
+		var items []EventStreamChunkChoice
+		if err := json.Unmarshal(choices, &items); err != nil {
+			l.Errorf("failed to json.Unmarshal(%s, %T)", string(choices), items)
+			return
+		}
+		if len(items) == 0 {
+			return
+		}
+		completion += items[len(items)-1].Delta.Content
+	})
+	f.Audit.Completion = completion
 	return nil
 }
 
@@ -568,6 +606,23 @@ type CreateChatCompletionChoice struct {
 type CreateChatCompletionChoiceMessage struct {
 	Role    string `json:"role" yaml:"role"`
 	Content string `json:"content" yaml:"content"`
+}
+
+type EventStreamChunk struct {
+	Id      string                   `json:"id"`
+	Object  string                   `json:"object"`
+	Created json.Number              `json:"created"`
+	Model   string                   `json:"model"`
+	Choices []EventStreamChunkChoice `json:"choices"`
+	Usage   interface{}              `json:"usage"`
+}
+
+type EventStreamChunkChoice struct {
+	Index        int         `json:"index"`
+	FinishReason interface{} `json:"finish_reason"`
+	Delta        struct {
+		Content string `json:"content"`
+	} `json:"delta"`
 }
 
 type NoPromptReason int

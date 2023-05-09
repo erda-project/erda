@@ -623,3 +623,28 @@ func FirstNoneEmpty(strs ...string) string {
 	}
 	return ""
 }
+
+func HandleQuotes(data []byte, quotes [2]byte, handler func([]byte)) {
+	var heap []byte
+	var buf []byte
+	var left, right = quotes[0], quotes[1]
+	for _, c := range data {
+		if c == left {
+			buf = append(buf, c)
+			heap = append(heap, c)
+			continue
+		}
+		if len(heap) == 0 {
+			if len(buf) != 0 {
+				handler(buf)
+				buf = nil
+			}
+			continue
+		}
+		buf = append(buf, c)
+		if c == right && heap[len(heap)-1] == left {
+			heap = heap[:len(heap)-1]
+			continue
+		}
+	}
+}
