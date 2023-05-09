@@ -64,10 +64,15 @@ type HttpInfor interface {
 	// BodyBuffer only for getting request body and only on request stage.
 	BodyBuffer() *bytes.Buffer
 	Mutex() *sync.Mutex
+	WithMutex(*sync.Mutex) HttpInfor
 }
 
-func NewInfor[R httputil.RequestResponse](ctx context.Context, r R) HttpInfor {
-	return &infor[R]{r: r, l: ctx.Value(MutexCtxKey{}).(*sync.Mutex)}
+func NewInfor[R httputil.RequestResponse](ctx *Context, r R) HttpInfor {
+	l, ok := ctx.Value(MutexCtxKey{}).(*sync.Mutex)
+	if ok {
+		return (&infor[R]{r: r}).WithMutex(l)
+	}
+	return (&infor[R]{r: r}).WithMutex(new(sync.Mutex))
 }
 
 type Writer interface {
@@ -239,6 +244,11 @@ func (r *infor[R]) BodyBuffer() *bytes.Buffer {
 
 func (r *infor[R]) Mutex() *sync.Mutex {
 	return r.l
+}
+
+func (r *infor[R]) WithMutex(mutex *sync.Mutex) HttpInfor {
+	r.l = mutex
+	return r
 }
 
 type Signal int

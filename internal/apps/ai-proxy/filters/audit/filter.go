@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -163,16 +162,8 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 	return nil
 }
 
-func (f *Audit) create(ctx context.Context) error {
-	db, ok := ctx.Value(reverseproxy.DBCtxKey{}).(*gorm.DB)
-	if !ok {
-		panic("no *gorm.DB set")
-	}
-	return db.Create(f.Audit).Error
-}
-
 func (f *Audit) SetSessionId(_ context.Context, header http.Header) error {
-	f.Audit.SessionId = header.Get("X-Erda-AI-Proxy-SessionId") // todo: Temporary
+	f.Audit.SessionId = header.Get("X-Erda-AI-Proxy-SessionId")
 	return nil
 }
 
@@ -512,6 +503,14 @@ func (f *Audit) SetUserAgent(_ context.Context, header http.Header) error {
 	return nil
 }
 
+func (f *Audit) create(ctx context.Context) error {
+	db, ok := ctx.Value(reverseproxy.DBCtxKey{}).(*gorm.DB)
+	if !ok {
+		panic("no *gorm.DB set")
+	}
+	return db.Create(f.Audit).Error
+}
+
 func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
 	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId)
 	var m = make(map[string]json.RawMessage)
@@ -628,5 +627,16 @@ type EventStreamChunkChoice struct {
 type NoPromptReason int
 
 func (n NoPromptReason) String() string {
-	return strconv.FormatInt(int64(n), 10)
+	return map[NoPromptReason]string{
+		NoPromptByDefault:      "NoPromptByDefault",
+		NoPromptByHttpMethod:   "NoPromptByHttpMethod",
+		NoPromptByContentType:  "NoPromptByContentType",
+		NoPromptByNilBody:      "NoPromptByNilBody",
+		NoPromptByNotParsed:    "NoPromptByNotParsed",
+		NoPromptByMissingField: "NoPromptByMissingField",
+		NoPromptByNoItem:       "NoPromptByNoItem",
+		NoPromptByNoPrompt:     "NoPromptByNoPrompt",
+		NoPromptByDeprecated:   "NoPromptByDeprecated",
+		NoPromptByNoSuchRoute:  "NoPromptByNoSuchRoute",
+	}[n]
 }
