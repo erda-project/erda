@@ -63,12 +63,24 @@ func TestInfor_Method(t *testing.T) {
 			if status, code := infor.Status(), infor.StatusCode(); status != "" || code != 0 {
 				t.Errorf("%d status error", i)
 			}
+			if body := infor.Body(); body == nil {
+				t.Errorf("%d Body error", i)
+			}
+			if buffer := infor.BodyBuffer(); buffer == nil {
+				t.Errorf("%d BodyBuffer error", i)
+			}
 		} else {
 			if contentLength := infor.ContentLength(); contentLength != response.ContentLength {
 				t.Errorf("%d contentLength error", i)
 			}
 			if status, code := infor.Status(), infor.StatusCode(); status != response.Status || code != response.StatusCode {
 				t.Errorf("%d status error", i)
+			}
+			if body := infor.Body(); body != nil {
+				t.Errorf("%d Body error", i)
+			}
+			if buffer := infor.BodyBuffer(); buffer != nil {
+				t.Errorf("%d BodyBuffer error", i)
 			}
 		}
 
