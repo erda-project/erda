@@ -70,6 +70,11 @@ func TestRoutes_FindRoute(t *testing.T) {
 			Filters: nil,
 		},
 	}
+	for _, rout := range routes {
+		if err := rout.Validate(); err != nil {
+			t.Log(err)
+		}
+	}
 	findRoute, ok := routes.FindRoute("/v1/completions", "POST", make(http.Header))
 	t.Log(findRoute, ok)
 }
