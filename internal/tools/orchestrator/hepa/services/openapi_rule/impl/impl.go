@@ -811,7 +811,7 @@ func (impl GatewayOpenapiRuleServiceImpl) pluginReq(gatewayProvider string, dto 
 			reqDto.RouteId = route.RouteId
 		}
 
-		if gatewayProvider == mseCommon.Mse_Provider_Name && api.ZoneId != "" {
+		if gatewayProvider == mseCommon.MseProviderName && api.ZoneId != "" {
 			zone, err := (*impl.zoneBiz).GetZone(api.ZoneId)
 			if err != nil {
 				return nil, err
@@ -903,7 +903,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 		var gatewayAdapter gateway_providers.GatewayAdapter
 		msePluginConfig := make(map[string]interface{})
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			gatewayAdapter, err = mse.NewMseAdapter(az)
 			if err != nil {
 				return err
@@ -927,7 +927,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 		dao.PluginId = pluginId
 		err = ruleDbService.Insert(dao)
 		if err != nil {
-			if gatewayProvider == mseCommon.Mse_Provider_Name {
+			if gatewayProvider == mseCommon.MseProviderName {
 				// 还原到更新前的配置
 				rule.Config = msePluginConfig
 				if msePluginConfig != nil {
@@ -983,7 +983,7 @@ func (impl GatewayOpenapiRuleServiceImpl) UpdateRule(ruleId string, rule *gw.Ope
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(dao.DiceClusterName)
 		if err != nil {
 			return nil, err
@@ -1065,7 +1065,7 @@ func (impl GatewayOpenapiRuleServiceImpl) DeleteRule(ruleId string, helper *db.S
 	}
 	if dao.PluginId != "" {
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			gatewayAdapter, err = mse.NewMseAdapter(dao.DiceClusterName)
 			if err != nil {
 				return err

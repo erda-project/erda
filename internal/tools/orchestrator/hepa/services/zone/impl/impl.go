@@ -292,7 +292,7 @@ func (impl GatewayZoneServiceImpl) UpdateKongDomainPolicy(az, projectId, env str
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(az)
 		if err != nil {
 			return err
@@ -491,7 +491,7 @@ func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ..
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		//TODO: get svcName
 		namespace = config.Namespace
 		svcName = config.ServiceName
@@ -651,7 +651,7 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, namespace stri
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		if namespace == "" {
 			// 走到这里，应该是按地址转发，设置固定 namespace
 			namespace = "project-" + zone.DiceProjectId + "-" + strings.ToLower(zone.DiceEnv)
@@ -694,7 +694,7 @@ func createOrUpdateZoneIngress(adapter k8s.K8SAdapter, namespace, svcName, ingNa
 	kongBackend := k8s.IngressBackend{}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		kongBackend.ServiceName = svcName
 		services, err := adapter.ListAllServices(namespace)
 		if err != nil {

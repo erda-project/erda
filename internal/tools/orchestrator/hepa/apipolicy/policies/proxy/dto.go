@@ -41,7 +41,7 @@ func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 		return false, "后端请求超时需要大于0"
 	}
 
-	if gatewayProvider != mseCommon.Mse_Provider_Name {
+	if gatewayProvider != mseCommon.MseProviderName {
 		// Kong 网关
 		if dto.ClientReqLimit <= 0 {
 			return false, "客户端请求限制需要大于0"

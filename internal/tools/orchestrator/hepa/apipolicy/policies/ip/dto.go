@@ -86,7 +86,7 @@ func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 		return false, "白名单模式需要填写至少一个IP地址"
 	}
 
-	if gatewayProvider != mseCommon.Mse_Provider_Name {
+	if gatewayProvider != mseCommon.MseProviderName {
 		if dto.IpRate != nil {
 			if dto.IpRate.Rate <= 0 {
 				return false, "请求速率限制值需要大于0"

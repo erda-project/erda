@@ -256,7 +256,7 @@ func (policy BasePolicy) GetGatewayAdapter(ctx map[string]interface{}, policyNam
 			return nil, "", errors.Errorf(errMsg)
 		}
 		log.Debugf("use MSE gateway ParseConfig for policy %s", policyName)
-		gatewayProvider = mseCommon.Mse_Provider_Name
+		gatewayProvider = mseCommon.MseProviderName
 	} else {
 		log.Debugf("use Kong gateway ParseConfig for policy %s", policyName)
 	}

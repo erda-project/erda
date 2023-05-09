@@ -95,8 +95,8 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 						Credential: "8d22576204d74e869179dd7d19503570",
 					},
 					{
-						Name:       DEFAULT_MSE_CONSUMER_NAME,
-						Credential: DEFAULT_MSE_CONSUMER_CREDENTIAL,
+						Name:       MseDefaultConsumerName,
+						Credential: MseDefaultConsumerCredential,
 					},
 				},
 				Keys:     []string{"appKey", "x-app-key"},
@@ -116,8 +116,8 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 						Allow:      []string{"633.5846.TEST.erda-jicheng:abc"},
 					},
 					{
-						MatchRoute: []string{DEFAULT_MSE_ROUTE_NAME},
-						Allow:      []string{DEFAULT_MSE_CONSUMER_NAME},
+						MatchRoute: []string{MseDefaultRouteName},
+						Allow:      []string{MseDefaultConsumerName},
 					},
 				},
 			},
@@ -180,8 +180,8 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 						Credential: "5d1a401b3aef4ee5bc39a99654672f92",
 					},
 					{
-						Name:       DEFAULT_MSE_CONSUMER_NAME,
-						Credential: DEFAULT_MSE_CONSUMER_CREDENTIAL,
+						Name:       MseDefaultConsumerName,
+						Credential: MseDefaultConsumerCredential,
 					},
 				},
 				Keys:     []string{"appKey", "x-app-key"},
@@ -197,8 +197,8 @@ func Test_mergeKeyAuthConfig(t *testing.T) {
 						Allow:      []string{"bbb"},
 					},
 					{
-						MatchRoute: []string{DEFAULT_MSE_ROUTE_NAME},
-						Allow:      []string{DEFAULT_MSE_CONSUMER_NAME},
+						MatchRoute: []string{MseDefaultRouteName},
+						Allow:      []string{MseDefaultConsumerName},
 					},
 				},
 			},

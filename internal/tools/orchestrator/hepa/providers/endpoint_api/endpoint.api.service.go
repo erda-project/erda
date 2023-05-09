@@ -368,7 +368,7 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *p
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(req.ClusterName)
 		if err != nil {
 			return nil, err

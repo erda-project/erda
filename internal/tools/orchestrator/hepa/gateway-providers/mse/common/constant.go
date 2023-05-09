@@ -15,8 +15,8 @@
 package common
 
 const (
-	Mse_Version                           = "mse-1.2.15"
-	Mse_Provider_Name                     = "MSE"
+	MseVersion                            = "mse-1.2.18"
+	MseProviderName                       = "MSE"
 	MseDefaultServerEndpoint              = "mse.cn-hangzhou.aliyuncs.com"
 	MseBurstMultiplier1X                  = "1"
 	MseBurstMultiplier2X                  = "2"
@@ -44,6 +44,21 @@ const (
 	MsePluginWaf             string = "waf"
 	MsePluginParaSignAuth    string = "erda-para-sign-auth"
 	MsePluginIP              string = "erda-ip"
+	MsePluginSbac            string = "erda-sbac"
+	MsePluginCsrf            string = "erda-csrf"
+)
+
+// MSE 自定义插件使用到的一些常量名称
+const (
+	MseErdaIpRouteSwitch         = "MSE_ERDA_IP_ROUTE_SWITCH"
+	MseErdaIpIpSource            = "IP_SOURCE"
+	MseErdaIpAclType             = "ACL_TYPE"
+	MseErdaIpAclList             = "ACL_LIST"
+	MseErdaIpAclBlack            = "black"
+	MseErdaIpAclWhite            = "white"
+	MseErdaIpSourceRemoteIP      = "remote-ip"
+	MseErdaIpSourceXRealIP       = "x-real-ip"
+	MseErdaIpSourceXForwardedFor = "x-forwarded-for"
 )
 
 var MapClusterNameToMSEPluginNameToPluginID map[string]map[string]*int64

@@ -169,7 +169,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP {
 			//TODO: 不同的 gateway provider 的插件配置情况是否需要调整,还是旧使用以前默认的 Kong 的方式，对于 mse 的情况返回结果一样，但有些插件不生效?
 			logrus.Warnf("gateway provider %s no policy config for policy %s\n", gatewayProvider, category)
@@ -239,8 +239,8 @@ func (impl GatewayApiPolicyServiceImpl) RefreshZoneIngress(zone orm.GatewayZone,
 		logrus.Infof("zone not exist, maybe session rollback, id:%s", zone.Id)
 		return nil
 	}
-	if exist.Type == service.ZONE_TYPE_UNITY && !useKong {
-		logrus.Infof("zone type is unity, and gateway provider is MSE, no need refresh ingress for zone: %+v", zone)
+	if exist.Type != service.ZONE_TYPE_PACKAGE_API && !useKong {
+		logrus.Infof("zone type is %s, and gateway provider is MSE, no need refresh ingress for zone: %+v", exist.Type, zone)
 		return nil
 	}
 	var zoneRegions []string
@@ -675,7 +675,7 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		apipolicy.CTX_ZONE:       zone,
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err := mse.NewMseAdapter(zone.DiceClusterName)
 		if err != nil {
 			return nil, "", errors.Errorf("init mse gateway adpter failed:%v\n", err)
@@ -849,7 +849,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		return "", err
 	}
 
-	if gatewayProvider == mseCommon.Mse_Provider_Name {
+	if gatewayProvider == mseCommon.MseProviderName {
 		useKongGateWay = false
 	}
 
@@ -899,6 +899,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		return "", err
 	}
 	for _, zone := range zones {
+		logrus.Infof("WWWW Set zone_id=%s  zone_name=%s for policy  %s", zone.Id, zone.Name, category)
 		policy, err := policyService.GetByAny(&orm.GatewayIngressPolicy{
 			Name:   category,
 			ZoneId: zone.Id,
@@ -912,6 +913,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 				return msg, err
 			}
 		}
+		logrus.Infof("WWWW Set zone_id=%s  zone_name=%s for policy  %s successfully.", zone.Id, zone.Name, category)
 	}
 	controllerChanges, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.GLOBAL_REGIONS, "|"))
 	if err != nil {
@@ -938,7 +940,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		Env:       pack.DiceEnv,
 		Az:        pack.DiceClusterName,
 	})
-	if gatewayProvider == mseCommon.Mse_Provider_Name {
+	if gatewayProvider == mseCommon.MseProviderName {
 		//使用 MSE 网关，ingress 的 namespace 获取方式不一样
 		runtimes, err := impl.runtimeDb.SelectByAny(&orm.GatewayRuntimeService{
 			ProjectId:   pack.DiceProjectId,
@@ -965,8 +967,8 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		wg := sync.WaitGroup{}
 		var err error
 		for i := 0; i < len(zones); i++ {
-			if zones[i].Type == service.ZONE_TYPE_UNITY && !useKongGateWay {
-				logrus.Infof("zone type is unity and gateway provider is MSE, no need refresh ingress for zone=%+v", zones[i])
+			if zones[i].Type != service.ZONE_TYPE_PACKAGE_API && !useKongGateWay {
+				logrus.Infof("zone type is %s and gateway provider is MSE, no need refresh ingress for zone=%+v", zones[i].Type, zones[i])
 				continue
 			}
 			wg.Add(1)
@@ -1082,7 +1084,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		useKong = false
 		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP && category != apipolicy.Policy_Engine_Proxy {
 			rerr = errors.Errorf("gateway provider %s not support set policy %s", gatewayProvider, category)
@@ -1172,7 +1174,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		rerr = err
 		return
 	}
-	if gatewayProvider != mseCommon.Mse_Provider_Name {
+	if gatewayProvider != mseCommon.MseProviderName {
 		err = impl.checkDuplicatedPolicyConfig(gatewayProvider, packageId, packageApiId, category, config, zone, helper)
 		if err != nil {
 			logrus.Errorf("has deplicated policy config for policy %s: %v\n", category, err)
@@ -1261,7 +1263,7 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err := mse.NewMseAdapter(zone.DiceClusterName)
 		if err != nil {
 			return errors.Errorf("init mse gateway adpter failed:%v\n", err)

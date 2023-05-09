@@ -113,7 +113,7 @@ proxy_intercept_errors on;
 	}
 
 	if !forValidate {
-		if gatewayProvider != mseCommon.Mse_Provider_Name {
+		if gatewayProvider != mseCommon.MseProviderName {
 			newPlugin, err := policy.touchPluginIfNeed(zone.Id, builtinPlugins, "spot-collector", map[string]interface{}{
 				"send_port":          config.ServerConf.SpotSendPort,
 				"addon_name":         config.ServerConf.SpotAddonName,
@@ -206,22 +206,3 @@ func init() {
 		panic(err)
 	}
 }
-
-/*
-func GetGatewayAdapter(ctx map[string]interface{}, policy string) (gatewayAdapter interface{}, gatewayProvider string, err error) {
-	gatewayAdapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER]
-	if !ok {
-		gatewayAdapter, ok = ctx[apipolicy.CTX_MSE_ADAPTER]
-		if !ok {
-			errMsg := "convert failed: can not get gateway adapter from ctx"
-			log.Errorf(errMsg)
-			return nil, "", errors.Errorf(errMsg)
-		}
-		log.Debugf("use MSE gateway ParseConfig for policy %s", apipolicy.Policy_Engine_Built_in)
-		gatewayProvider = mseCommon.Mse_Provider_Name
-	} else {
-		log.Debugf("use Kong gateway ParseConfig for policy %s", apipolicy.Policy_Engine_Built_in)
-	}
-	return gatewayAdapter, gatewayProvider, nil
-}
-*/

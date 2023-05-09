@@ -150,7 +150,7 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 
 	var gatewayAdapter gateway_providers.GatewayAdapter
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(clusterName)
 		if err != nil {
 			return res
@@ -231,7 +231,7 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 	}
 	for authType, credentials := range dels {
 		for _, credential := range credentials {
-			if gatewayProvider == mseCommon.Mse_Provider_Name {
+			if gatewayProvider == mseCommon.MseProviderName {
 				credentialStr, marshalErr := json.Marshal(credential)
 				if marshalErr != nil {
 					err = marshalErr
@@ -316,7 +316,7 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 			goto errorHappened
 		}
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			gatewayAdapter, err = mse.NewMseAdapter(az)
 			if err != nil {
 				goto errorHappened
@@ -460,7 +460,7 @@ func (impl GatewayConsumerServiceImpl) GetConsumerInfo(consumerId string) *commo
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return res

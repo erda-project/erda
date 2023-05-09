@@ -27,18 +27,18 @@ import (
 )
 
 const (
-	DEFAULT_MSE_ROUTE_NAME          = "route-erda-default"
-	DEFAULT_MSE_CONSUMER_NAME       = "consumer-erda-default"
-	DEFAULT_MSE_CONSUMER_CREDENTIAL = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
-	DEFAULT_MSE_CONSUMER_KEY        = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
-	DEFAULT_MSE_CONSUMER_SECRET     = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultRouteName          = "route-erda-default"
+	MseDefaultConsumerName       = "consumer-erda-default"
+	MseDefaultConsumerCredential = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultConsumerKey        = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultConsumerSecret     = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultKeyAuthConfig      = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\nkeys:\n  - appKey\n  - x-app-key\nin_query: true\nin_header: true\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
+	MseDefaultHmacAuthConfig     = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
+	MseDefaultParaSignAuthConfig = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  request_body_size_limit: 10485760\n  date_offset: 600\n  consumers:\n  - name: consumer-erda-default\n    key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n    secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultErdaIPConfig       = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"_match_route_\"、“ip_source”、\"ip_acl_type\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  ip_source: \"x-forwarded-for\"\n  ip_acl_type: \"black\"\n  ip_acl_list:\n  - 10.10.10.10\n  - 10.12.13.0/24"
 
-	DEFAULT_MSE_KEY_AUTH_CONFIG       = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\nkeys:\n  - appKey\n  - x-app-key\nin_query: true\nin_header: true\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
-	DEFAULT_MSE_HMAC_AUTH_CONFIG      = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
-	DEFAULT_MSE_PARA_SIGN_AUTH_CONFIG = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  request_body_size_limit: 10485760\n  date_offset: 600\n  consumers:\n  - name: consumer-erda-default\n    key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n    secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5"
-
-	MSE_PLUGIN_REQUEST_BODY_SIZE_LIMIT = 33554432
-	MSE_PLUGIN_REQUEST_DATE_OFFSET     = 300
+	MsePluginRequestBodySizeLimit = 33554432
+	MsePluginRequestDateOffset    = 300
 )
 
 const (
@@ -53,7 +53,7 @@ const (
 )
 
 const (
-	REQUEST_BODY_SIZE_LIMIT int = 32 * 1024 * 1024 //32MB
+	RequestBodySizeLimit int = 32 * 1024 * 1024 //32MB
 )
 
 type KeySecretConsumer struct {
@@ -78,69 +78,94 @@ func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPl
 	}
 
 	matchRoutes := make([]string, 0)
-	cons, ok := req.Config["whitelist"]
-	if !ok {
-		return "", -1, errors.Errorf("no whitelist in PluginReqDto Config")
-	}
-	consumers, ok := cons.([]mseDto.Consumers)
-	if !ok {
-		return "", -1, errors.Errorf("PluginReqDto.Config[whitelist] is not Type []Consumers ")
-	}
-
-	allows := make([]string, 0)
-	for idx, cs := range consumers {
-		if cs.Name == DEFAULT_MSE_CONSUMER_NAME {
-			matchRoutes = append(matchRoutes, DEFAULT_MSE_ROUTE_NAME)
-			switch req.Name {
-			case common.MsePluginKeyAuth:
-				consumers[idx].Credential = DEFAULT_MSE_CONSUMER_CREDENTIAL
-			case common.MsePluginHmacAuth, common.MsePluginParaSignAuth:
-				consumers[idx].Key = DEFAULT_MSE_CONSUMER_KEY
-				consumers[idx].Secret = DEFAULT_MSE_CONSUMER_SECRET
-			}
-		}
-		allows = append(allows, cs.Name)
-	}
-
 	if req.MSERouteName != "" {
 		matchRoutes = append(matchRoutes, req.MSERouteName)
 	}
 
-	updateConfig := mseDto.MsePluginConfig{
-		Consumers: consumers,
-		Rules: []mseDto.Rules{
-			{
-				MatchRoute: matchRoutes,
-				Allow:      allows,
-			},
-		},
-	}
-
 	var err error = nil
 	switch req.Name {
-	case common.MsePluginKeyAuth:
-		pluginConfig, err = mergeKeyAuthConfig(pluginConfig, updateConfig)
-		if err != nil {
-			return "", -1, err
+	case common.MsePluginKeyAuth, common.MsePluginHmacAuth, common.MsePluginParaSignAuth:
+		// 授权类，需要 consumers
+		cons, ok := req.Config["whitelist"]
+		if !ok {
+			return "", -1, errors.Errorf("no whitelist in PluginReqDto Config")
+		}
+		consumers, ok := cons.([]mseDto.Consumers)
+		if !ok {
+			return "", -1, errors.Errorf("PluginReqDto.Config[whitelist] is not Type []Consumers ")
 		}
 
-	case common.MsePluginHmacAuth:
-		pluginConfig, err = mergeHmacAuthConfig(pluginConfig, updateConfig)
-		if err != nil {
-			return "", -1, err
+		allows := make([]string, 0)
+		for idx, cs := range consumers {
+			if cs.Name == MseDefaultConsumerName {
+				matchRoutes = append(matchRoutes, MseDefaultRouteName)
+				switch req.Name {
+				case common.MsePluginKeyAuth:
+					consumers[idx].Credential = MseDefaultConsumerCredential
+				case common.MsePluginHmacAuth, common.MsePluginParaSignAuth:
+					consumers[idx].Key = MseDefaultConsumerKey
+					consumers[idx].Secret = MseDefaultConsumerSecret
+				}
+			}
+			allows = append(allows, cs.Name)
 		}
-	case common.MsePluginParaSignAuth:
-		updateConfig = mseDto.MsePluginConfig{
+
+		updateConfig := mseDto.MsePluginConfig{
+			Consumers: consumers,
 			Rules: []mseDto.Rules{
 				{
-					MatchRoute:           matchRoutes,
-					Consumers:            consumers,
-					RequestBodySizeLimit: MSE_PLUGIN_REQUEST_BODY_SIZE_LIMIT,
-					//DateOffset:           MSE_PLUGIN_REQUEST_DATE_OFFSET,
+					MatchRoute: matchRoutes,
+					Allow:      allows,
 				},
 			},
 		}
-		pluginConfig, err = mergeParaSignAuthConfig(pluginConfig, updateConfig)
+
+		switch req.Name {
+		case common.MsePluginKeyAuth:
+			pluginConfig, err = mergeKeyAuthConfig(pluginConfig, updateConfig)
+			if err != nil {
+				return "", -1, err
+			}
+
+		case common.MsePluginHmacAuth:
+			pluginConfig, err = mergeHmacAuthConfig(pluginConfig, updateConfig)
+			if err != nil {
+				return "", -1, err
+			}
+		case common.MsePluginParaSignAuth:
+			updateConfig = mseDto.MsePluginConfig{
+				Rules: []mseDto.Rules{
+					{
+						MatchRoute:           matchRoutes,
+						Consumers:            consumers,
+						RequestBodySizeLimit: MsePluginRequestBodySizeLimit,
+						//DateOffset:           MsePluginRequestDateOffset,
+					},
+				},
+			}
+			pluginConfig, err = mergeParaSignAuthConfig(pluginConfig, updateConfig)
+			if err != nil {
+				return "", -1, err
+			}
+		}
+	case common.MsePluginIP:
+		ipSource, ipAclType, ipAclList, disable, err := getErdaIPSourceConfig(req.Config)
+		if err != nil {
+			return "", -1, err
+		}
+
+		updateConfig := mseDto.MsePluginConfig{
+			Rules: []mseDto.Rules{
+				{
+					MatchRoute: matchRoutes,
+					IPSource:   ipSource,
+					IpAclType:  ipAclType,
+					IpAclList:  ipAclList,
+					//Disable:    disable,
+				},
+			},
+		}
+		pluginConfig, err = mergeErdaIPConfig(pluginConfig, updateConfig, disable)
 		if err != nil {
 			return "", -1, err
 		}

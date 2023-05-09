@@ -139,7 +139,7 @@ func safeChange(gatewayProvider string, apis []orm.GatewayUpstreamApi, change fu
 		return
 	}
 	size := len(apis)
-	if gatewayProvider == mseCommon.Mse_Provider_Name {
+	if gatewayProvider == mseCommon.MseProviderName {
 		for i := 0; i < size; i++ {
 			change(apis[i])
 			if *errorHappened {
@@ -240,7 +240,7 @@ func (impl GatewayUpstreamServiceImpl) upstreamValid(ctx context.Context, consum
 		return err
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 	case "":
 	default:
 		log.Errorf("unknown gateway provider %s for cluster %s\n", gatewayProvider, consumer.Az)
@@ -738,7 +738,7 @@ func (impl GatewayUpstreamServiceImpl) UpstreamRegisterAsync(ctx context.Context
 		return
 	}
 
-	if gatewayProvider == mseCommon.Mse_Provider_Name {
+	if gatewayProvider == mseCommon.MseProviderName {
 		err = impl.isInternalServiceExisted(dto)
 		if err != nil {
 			log.Errorf("check service existed failed: %v\n", err)
@@ -768,7 +768,7 @@ func (impl GatewayUpstreamServiceImpl) UpstreamRegisterAsync(ctx context.Context
 	meta["register_consumer"] = consumer
 	meta["register_dao"] = dao
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		err = impl.UpstreamValidAsync(ctx, meta, dto)
 		if err != nil {
 			log.Errorf("UpstreamValidAsync failed: %v\n", err)
@@ -883,7 +883,7 @@ func (impl GatewayUpstreamServiceImpl) UpstreamRegister(ctx context.Context, dto
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		err = impl.isInternalServiceExisted(dto)
 		if err != nil {
 			log.Errorf("check service existed in UpstreamRegister() failed: %v\n", err)

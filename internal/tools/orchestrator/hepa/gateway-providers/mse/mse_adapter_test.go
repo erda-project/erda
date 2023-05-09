@@ -46,7 +46,7 @@ func TestNewMseAdapter(t *testing.T) {
 				az: "test",
 			},
 			want: &MseAdapterImpl{
-				ProviderName:    mseCommon.Mse_Provider_Name,
+				ProviderName:    mseCommon.MseProviderName,
 				Bdl:             &bundle.Bundle{},
 				AccessKeyID:     "aliyunaccesskeyid",
 				AccessKeySecret: "aliyunaccesskeysecret",
@@ -185,7 +185,7 @@ func TestMseAdapterImpl_GetVersion(t *testing.T) {
 		{
 			name:    "Test_01",
 			fields:  fields{ProviderName: "MSE"},
-			want:    mseCommon.Mse_Version,
+			want:    mseCommon.MseVersion,
 			wantErr: false,
 		},
 	}
@@ -513,7 +513,7 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 	}{
 		{
 			name:   "Test_01",
-			fields: fields{ProviderName: mseCommon.Mse_Provider_Name},
+			fields: fields{ProviderName: mseCommon.MseProviderName},
 			args: args{
 				req: &PluginReqDto{
 					Name:       "xxx",
@@ -547,7 +547,7 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 		},
 		{
 			name:   "Test_02",
-			fields: fields{ProviderName: mseCommon.Mse_Provider_Name},
+			fields: fields{ProviderName: mseCommon.MseProviderName},
 			args: args{
 				req: &PluginReqDto{
 					Name:       mseCommon.MsePluginKeyAuth,

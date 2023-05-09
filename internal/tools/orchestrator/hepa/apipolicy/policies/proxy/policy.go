@@ -84,7 +84,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 
 	if !policyDto.Switch {
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			res.IngressAnnotation = &apipolicy.IngressAnnotation{
 				Annotation: map[string]*string{
 					string(annotationscommon.AnnotationSSLRedirect): nil,
@@ -111,7 +111,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 
 	annotation := map[string]*string{}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		if policyDto.SSLRedirect {
 			value := "true"
 			annotation[string(annotationscommon.AnnotationSSLRedirect)] = &value

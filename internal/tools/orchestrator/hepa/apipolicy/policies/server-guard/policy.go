@@ -132,7 +132,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		res.IngressAnnotation = &apipolicy.IngressAnnotation{
 			LocationSnippet: &emptyStr,
 		}
-		if gatewayProvider == mseCommon.Mse_Provider_Name {
+		if gatewayProvider == mseCommon.MseProviderName {
 			annotations := make(map[string]*string)
 			annotations[string(mseCommon.AnnotationMSELimitRouteLimitRPS)] = nil
 			annotations[string(mseCommon.AnnotationMSELimitRouteLimitBurstMultiplier)] = nil
@@ -149,7 +149,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		res.AnnotationReset = true
 		if res.IngressAnnotation == nil {
 			res.IngressAnnotation = &apipolicy.IngressAnnotation{}

@@ -62,9 +62,16 @@ type Rules struct {
 	// MatchDomain []string `json:"_match_domain_,omitempty" yaml:"_match_domain_,omitempty"` // 域名生效 (与 路由生效 二选一)
 
 	// 以下为自定义开发 MSE 插件使用的配置
+	// erda-para-sign-auth
 	Consumers            []Consumers `json:"consumers,omitempty" yaml:"consumers,omitempty"`
-	RequestBodySizeLimit int         `json:"request_body_size_limit,omitempty" yaml:"request_body_size_limit,omitempty"` // [para-sign-auth 参数], 单位 Byte, 默认 10MB
-	DateOffset           int         `json:"date_offset,omitempty" yaml:"date_offset,omitempty"`                         // [para-sign-auth], 单位 秒, 默认 300s
+	RequestBodySizeLimit int         `json:"request_body_size_limit,omitempty" yaml:"request_body_size_limit,omitempty"` // [erda-para-sign-auth 参数], 单位 Byte, 默认 10MB
+	DateOffset           int         `json:"date_offset,omitempty" yaml:"date_offset,omitempty"`                         // [erda-para-sign-auth], 单位 秒, 默认 300s
+
+	// erda-ip
+	IPSource  string `json:"ip_source,omitempty" yaml:"ip_source,omitempty"`
+	IpAclType string `json:"ip_acl_type,omitempty" yaml:"ip_acl_type,omitempty"`
+	// 白名单对应一定要设置，黑名单可以不设置
+	IpAclList []string `json:"ip_acl_list,omitempty" yaml:"ip_acl_list,omitempty"`
 }
 
 type SortConsumers struct {
