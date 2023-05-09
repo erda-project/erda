@@ -23,6 +23,58 @@ import (
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
+func TestInfor_Method(t *testing.T) {
+	mockedBody := bytes.NewBufferString("mocked-body")
+	request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/api", mockedBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.RemoteAddr = "127.0.0.1:3344"
+	request.Host = "localhost:8080"
+	request.ContentLength = int64(mockedBody.Len())
+	response := &http.Response{Request: request}
+	response.ContentLength = 0
+	response.StatusCode = http.StatusOK
+	response.Status = http.StatusText(response.StatusCode)
+	ctx := reverseproxy.NewContext(make(map[any]any))
+	infors := []reverseproxy.HttpInfor{
+		reverseproxy.NewInfor(ctx, *request),
+		reverseproxy.NewInfor(ctx, request),
+		reverseproxy.NewInfor(ctx, *response),
+		reverseproxy.NewInfor(ctx, response),
+	}
+	for i, infor := range infors {
+		if method := infor.Method(); method != request.Method {
+			t.Errorf("%d method error", i)
+		}
+		if remoteAddr := infor.RemoteAddr(); remoteAddr != request.RemoteAddr {
+			t.Errorf("%d remoteAddr error", i)
+		}
+		if host := infor.Host(); host != request.Host {
+			t.Errorf("%d host error", i)
+		}
+		if path := infor.URL().Path; path != "/api" {
+			t.Errorf("%d path error", i)
+		}
+		if i <= 1 {
+			if contentLength := infor.ContentLength(); contentLength != request.ContentLength {
+				t.Errorf("%d contentLength error", i)
+			}
+			if status, code := infor.Status(), infor.StatusCode(); status != "" || code != 0 {
+				t.Errorf("%d status error", i)
+			}
+		} else {
+			if contentLength := infor.ContentLength(); contentLength != response.ContentLength {
+				t.Errorf("%d contentLength error", i)
+			}
+			if status, code := infor.Status(), infor.StatusCode(); status != response.Status || code != response.StatusCode {
+				t.Errorf("%d status error", i)
+			}
+		}
+
+	}
+}
+
 func TestInfor_Header(t *testing.T) {
 	request, err := http.NewRequest(http.MethodPost, "http://localhost:8080", bytes.NewBufferString("mock body"))
 	if err != nil {

@@ -64,7 +64,6 @@ type HttpInfor interface {
 	// BodyBuffer only for getting request body and only on request stage.
 	BodyBuffer() *bytes.Buffer
 	Mutex() *sync.Mutex
-	WithMutex(*sync.Mutex) HttpInfor
 }
 
 func NewInfor[R httputil.RequestResponse](ctx *Context, r R) HttpInfor {
@@ -174,19 +173,29 @@ func (r *infor[R]) ContentLength() int64 {
 }
 
 func (r *infor[R]) Status() string {
-	field := reflect.ValueOf(r.r)
-	if field.Kind() == reflect.Ptr {
-		field = field.Elem()
+	switch i := (interface{})(r.r).(type) {
+	case http.Request, *http.Request:
+	case http.Response:
+		return i.Status
+	case *http.Response:
+		return i.Status
+	default:
+		panic("not expected type")
 	}
-	return field.FieldByName("Status").String()
+	return ""
 }
 
 func (r *infor[R]) StatusCode() int {
-	field := reflect.ValueOf(r.r)
-	if field.Kind() == reflect.Ptr {
-		field = field.Elem()
+	switch i := (interface{})(r.r).(type) {
+	case http.Request, *http.Request:
+	case http.Response:
+		return i.StatusCode
+	case *http.Response:
+		return i.StatusCode
+	default:
+		panic("not expected type")
 	}
-	return int(field.FieldByName("StatusCode").Int())
+	return 0
 }
 
 func (r *infor[R]) Header() http.Header {
