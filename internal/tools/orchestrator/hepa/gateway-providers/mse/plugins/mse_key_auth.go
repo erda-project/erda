@@ -106,8 +106,8 @@ func mergeKeyAuthConfig(CurrentKeyAuthConfig, updateKeyAuthConfig mseDto.MsePlug
 	}
 
 	// 如果 mapCurrentKeyAuthCredentialToConsumer  中不包含默认的consumer（默认的路由用于确保插件配置不会成为 全局配置），则添加
-	if _, ok := mapCurrentKeyAuthCredentialToConsumer[DEFAULT_MSE_CONSUMER_CREDENTIAL]; !ok {
-		mapCurrentKeyAuthCredentialToConsumer[DEFAULT_MSE_CONSUMER_CREDENTIAL] = DEFAULT_MSE_CONSUMER_NAME
+	if _, ok := mapCurrentKeyAuthCredentialToConsumer[MseDefaultConsumerCredential]; !ok {
+		mapCurrentKeyAuthCredentialToConsumer[MseDefaultConsumerCredential] = MseDefaultConsumerName
 	}
 	consumers := make([]mseDto.Consumers, 0)
 	for credential, csName := range mapCurrentKeyAuthCredentialToConsumer {
@@ -119,14 +119,14 @@ func mergeKeyAuthConfig(CurrentKeyAuthConfig, updateKeyAuthConfig mseDto.MsePlug
 
 	// 5. 更新 routes
 	// 如果 mapCurrentKeyAuthRouteToConsumers 中不包含默认的路由（默认的路由用于确保插件配置不会成为 全局配置），则添加
-	if _, ok := mapCurrentKeyAuthRouteToConsumers[DEFAULT_MSE_ROUTE_NAME]; !ok {
-		mapCurrentKeyAuthRouteToConsumers[DEFAULT_MSE_ROUTE_NAME] = []string{DEFAULT_MSE_CONSUMER_NAME}
+	if _, ok := mapCurrentKeyAuthRouteToConsumers[MseDefaultRouteName]; !ok {
+		mapCurrentKeyAuthRouteToConsumers[MseDefaultRouteName] = []string{MseDefaultConsumerName}
 	}
 
 	rules := make([]mseDto.Rules, 0)
 	for route, cs := range mapCurrentKeyAuthRouteToConsumers {
 		// 删除非默认的路由对应的只包含默认 Consumer 的  routes 项（这种一般表示路由无授权用户或者路由被从前端页面删除了）
-		if route != DEFAULT_MSE_ROUTE_NAME && len(cs) == 1 && cs[0] == DEFAULT_MSE_CONSUMER_NAME {
+		if route != MseDefaultRouteName && len(cs) == 1 && cs[0] == MseDefaultConsumerName {
 			continue
 		}
 		rules = append(rules, mseDto.Rules{

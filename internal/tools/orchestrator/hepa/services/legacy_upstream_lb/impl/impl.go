@@ -350,7 +350,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		HealthcheckPath:  dto.HealthcheckPath,
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		log.Debugf("mse gateway not really support UpstreamTargetOnline process logic.")
 		gatewayAdapter, err = mse.NewMseAdapter(dto.Az)
 		if err != nil {
@@ -443,7 +443,7 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOffline(dto *gw.UpstreamL
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		log.Debugf("mse gateway not support UpstreamTargetOffline process logic.")
 		gatewayAdapter, err = mse.NewMseAdapter(dto.Az)
 		if err != nil {

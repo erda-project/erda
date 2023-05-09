@@ -61,7 +61,7 @@ func mergeParaSignAuthConfig(currentParaSignAuthConfig, updateParaSignAuthConfig
 		if !ok {
 			// 1. 现有配置不存在，直接加入
 			if paraSignConfig.RequestBodySizeLimit == 0 {
-				paraSignConfig.RequestBodySizeLimit = REQUEST_BODY_SIZE_LIMIT
+				paraSignConfig.RequestBodySizeLimit = RequestBodySizeLimit
 			}
 			mapCurrentParaSignConfig[route] = paraSignConfig
 		} else {
@@ -85,10 +85,10 @@ func mergeParaSignAuthConfig(currentParaSignAuthConfig, updateParaSignAuthConfig
 	rules := make([]mseDto.Rules, 0)
 	for route, paraSignConfig := range mapCurrentParaSignConfig {
 		// 删除非默认的路由对应的只包含默认 Consumer 的  routes 项（这种一般表示路由无授权用户或者路由被从前端页面删除了）
-		if route != DEFAULT_MSE_ROUTE_NAME && len(paraSignConfig.Consumers) == 1 &&
-			paraSignConfig.Consumers[0].Key == DEFAULT_MSE_CONSUMER_KEY &&
-			paraSignConfig.Consumers[0].Name == DEFAULT_MSE_CONSUMER_NAME &&
-			paraSignConfig.Consumers[0].Secret == DEFAULT_MSE_CONSUMER_SECRET {
+		if route != MseDefaultRouteName && len(paraSignConfig.Consumers) == 1 &&
+			paraSignConfig.Consumers[0].Key == MseDefaultConsumerKey &&
+			paraSignConfig.Consumers[0].Name == MseDefaultConsumerName &&
+			paraSignConfig.Consumers[0].Secret == MseDefaultConsumerSecret {
 			continue
 		}
 
@@ -109,7 +109,7 @@ func mergeParaSignAuthConfig(currentParaSignAuthConfig, updateParaSignAuthConfig
 		if paraSignConfig.RequestBodySizeLimit > 0 {
 			rule.RequestBodySizeLimit = paraSignConfig.RequestBodySizeLimit
 		} else {
-			rule.RequestBodySizeLimit = REQUEST_BODY_SIZE_LIMIT
+			rule.RequestBodySizeLimit = RequestBodySizeLimit
 		}
 
 		if paraSignConfig.DateOffset > 0 {
@@ -126,7 +126,7 @@ func mergeParaSignAuthConfig(currentParaSignAuthConfig, updateParaSignAuthConfig
 	return result, nil
 }
 
-func getParaSignRouteNameToMatchRouteMap(pluginConfig mseDto.MsePluginConfig) map[string]ParaSignConfig /*(map[string]ParaSignConfig , map[string][]string) */ {
+func getParaSignRouteNameToMatchRouteMap(pluginConfig mseDto.MsePluginConfig) map[string]ParaSignConfig {
 	routeNameToConfig := make(map[string]ParaSignConfig)
 
 	for _, rule := range pluginConfig.Rules {
@@ -142,7 +142,7 @@ func getParaSignRouteNameToMatchRouteMap(pluginConfig mseDto.MsePluginConfig) ma
 			if rule.RequestBodySizeLimit > 0 {
 				paraSignConfig.RequestBodySizeLimit = rule.RequestBodySizeLimit
 			} else {
-				paraSignConfig.RequestBodySizeLimit = REQUEST_BODY_SIZE_LIMIT
+				paraSignConfig.RequestBodySizeLimit = RequestBodySizeLimit
 			}
 
 			if rule.DateOffset > 0 {

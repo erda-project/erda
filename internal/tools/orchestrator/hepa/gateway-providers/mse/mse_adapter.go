@@ -62,7 +62,7 @@ func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
 			bundle.WithCollector(),
 			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))),
 		),
-		ProviderName:    common.Mse_Provider_Name,
+		ProviderName:    common.MseProviderName,
 		GatewayEndpoint: common.MseDefaultServerEndpoint,
 		ClusterName:     az,
 	}
@@ -126,7 +126,7 @@ func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
 func (impl *MseAdapterImpl) GatewayProviderExist() bool {
 	//TODO:
 	// check Deployment mse-ingress-controller/ack-mse-ingress-controller in k8s cluster
-	if impl == nil || impl.ProviderName != common.Mse_Provider_Name {
+	if impl == nil || impl.ProviderName != common.MseProviderName {
 		return false
 	}
 	_, err := impl.GetMSEGatewayByAPI()
@@ -139,7 +139,7 @@ func (impl *MseAdapterImpl) GatewayProviderExist() bool {
 
 func (impl *MseAdapterImpl) GetVersion() (string, error) {
 	log.Debugf("GetVersion is not implemented in Mse gateway provider.")
-	return common.Mse_Version, nil
+	return common.MseVersion, nil
 }
 
 func (impl *MseAdapterImpl) CheckPluginEnabled(pluginName string) (bool, error) {
@@ -382,11 +382,13 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*Plugin
 				defaultConfig := ""
 				switch req.Name {
 				case common.MsePluginKeyAuth:
-					defaultConfig = mseplugins.DEFAULT_MSE_KEY_AUTH_CONFIG
+					defaultConfig = mseplugins.MseDefaultKeyAuthConfig
 				case common.MsePluginHmacAuth:
-					defaultConfig = mseplugins.DEFAULT_MSE_HMAC_AUTH_CONFIG
+					defaultConfig = mseplugins.MseDefaultHmacAuthConfig
 				case common.MsePluginParaSignAuth:
-					defaultConfig = mseplugins.DEFAULT_MSE_PARA_SIGN_AUTH_CONFIG
+					defaultConfig = mseplugins.MseDefaultParaSignAuthConfig
+				case common.MsePluginIP:
+					defaultConfig = mseplugins.MseDefaultErdaIPConfig
 				}
 				resp, err := impl.UpdateMSEPluginConfigByIDByAPI(pluginId, nil, &defaultConfig, &configLevel, &enabled)
 				if err != nil {

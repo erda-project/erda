@@ -105,11 +105,11 @@ func mergeHmacAuthConfig(CurrentHmacAuthConfig, updateHmacAuthConfig mseDto.MseP
 	}
 
 	// 如果 mapCurrentHmacAuthKeyToConsumer  中不包含默认的 consumer（默认的路由用于确保插件配置不会成为 全局配置），则添加
-	if _, ok := mapCurrentHmacAuthKeyToConsumer[DEFAULT_MSE_CONSUMER_CREDENTIAL]; !ok {
-		mapCurrentHmacAuthKeyToConsumer[DEFAULT_MSE_CONSUMER_CREDENTIAL] = KeySecretConsumer{
-			Name:   DEFAULT_MSE_CONSUMER_NAME,
-			Key:    DEFAULT_MSE_CONSUMER_KEY,
-			Secret: DEFAULT_MSE_CONSUMER_SECRET,
+	if _, ok := mapCurrentHmacAuthKeyToConsumer[MseDefaultConsumerCredential]; !ok {
+		mapCurrentHmacAuthKeyToConsumer[MseDefaultConsumerCredential] = KeySecretConsumer{
+			Name:   MseDefaultConsumerName,
+			Key:    MseDefaultConsumerKey,
+			Secret: MseDefaultConsumerSecret,
 		}
 	}
 
@@ -123,14 +123,14 @@ func mergeHmacAuthConfig(CurrentHmacAuthConfig, updateHmacAuthConfig mseDto.MseP
 	}
 
 	// 如果 mapCurrentHmacAuthRouteToConsumers 中不包含默认的路由（默认的路由用于确保插件配置不会成为 全局配置），则添加
-	if _, ok := mapCurrentHmacAuthRouteToConsumers[DEFAULT_MSE_ROUTE_NAME]; !ok {
-		mapCurrentHmacAuthRouteToConsumers[DEFAULT_MSE_ROUTE_NAME] = []string{DEFAULT_MSE_CONSUMER_NAME}
+	if _, ok := mapCurrentHmacAuthRouteToConsumers[MseDefaultRouteName]; !ok {
+		mapCurrentHmacAuthRouteToConsumers[MseDefaultRouteName] = []string{MseDefaultConsumerName}
 	}
 
 	rules := make([]mseDto.Rules, 0)
 	for route, cs := range mapCurrentHmacAuthRouteToConsumers {
 		// 删除非默认的路由对应的只包含默认 Consumer 的  routes 项（这种一般表示路由无授权用户或者路由被从前端页面删除了）
-		if route != DEFAULT_MSE_ROUTE_NAME && len(cs) == 1 && cs[0] == DEFAULT_MSE_CONSUMER_NAME {
+		if route != MseDefaultRouteName && len(cs) == 1 && cs[0] == MseDefaultConsumerName {
 			continue
 		}
 		rules = append(rules, mseDto.Rules{

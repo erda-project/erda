@@ -187,14 +187,14 @@ func (impl GatewayOpenapiServiceImpl) createAclRule(aclType, packageId, clusterN
 
 	config := make(map[string]interface{})
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		wlConsumers, err := impl.mseConsumerConfig(consumers)
 		if err != nil {
 			return nil, err
 		}
 		if len(wlConsumers) == 0 {
 			wlConsumers = append(wlConsumers, mseDto.Consumers{
-				Name: plugins.DEFAULT_MSE_CONSUMER_NAME,
+				Name: plugins.MseDefaultConsumerName,
 			})
 		}
 		config["whitelist"] = wlConsumers
@@ -329,7 +329,7 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 
 	var gatewayAdapter gateway_providers.GatewayAdapter
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		consumers, err := (*impl.consumerBiz).GetConsumersOfPackage(pack.Id)
 		if err != nil {
 			return nil, err
@@ -349,7 +349,7 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 			}
 			if len(wlConsumers) == 0 {
 				wlConsumers = append(wlConsumers, mseDto.Consumers{
-					Name: plugins.DEFAULT_MSE_CONSUMER_NAME,
+					Name: plugins.MseDefaultConsumerName,
 				})
 			}
 			config["whitelist"] = wlConsumers
@@ -366,9 +366,9 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 			}
 			if len(wlConsumers) == 0 {
 				wlConsumers = append(wlConsumers, mseDto.Consumers{
-					Name:   plugins.DEFAULT_MSE_CONSUMER_NAME,
-					Key:    plugins.DEFAULT_MSE_CONSUMER_KEY,
-					Secret: plugins.DEFAULT_MSE_CONSUMER_SECRET,
+					Name:   plugins.MseDefaultConsumerName,
+					Key:    plugins.MseDefaultConsumerKey,
+					Secret: plugins.MseDefaultConsumerSecret,
 				})
 			}
 			config["whitelist"] = wlConsumers
@@ -382,9 +382,9 @@ func (impl GatewayOpenapiServiceImpl) createAuthRule(authType string, pack *orm.
 			}
 			if len(wlConsumers) == 0 {
 				wlConsumers = append(wlConsumers, mseDto.Consumers{
-					Name:   plugins.DEFAULT_MSE_CONSUMER_NAME,
-					Key:    plugins.DEFAULT_MSE_CONSUMER_KEY,
-					Secret: plugins.DEFAULT_MSE_CONSUMER_SECRET,
+					Name:   plugins.MseDefaultConsumerName,
+					Key:    plugins.MseDefaultConsumerKey,
+					Secret: plugins.MseDefaultConsumerSecret,
 				})
 			}
 			config["whitelist"] = wlConsumers
@@ -593,7 +593,7 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(ctx context.Context, args *g
 				return
 			}
 
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			// create auth, acl rule
 			authRule, err = impl.createAuthRule(dto.AuthType, pack)
 			if err != nil {
@@ -881,7 +881,7 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		logrus.Debugf("mse gateway no need update GatewayRoute.")
 		gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
 		if err != nil {
@@ -1693,7 +1693,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 			goto failed
 		}
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
 			if err != nil {
 				goto failed
@@ -1767,7 +1767,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 			Env:       pack.DiceEnv,
 			Az:        pack.DiceClusterName,
 		}
-		if gatewayProvider == mseCommon.Mse_Provider_Name {
+		if gatewayProvider == mseCommon.MseProviderName {
 			// mse 网关，暂不创建 acl rule
 			authRule, err = impl.createApiAuthRule(dao.PackageId, dao.Id, false)
 			if err != nil {
@@ -1804,7 +1804,7 @@ func (impl GatewayOpenapiServiceImpl) SessionCreatePackageApi(id string, dto *gw
 		}
 	}
 	// MSE 网关 OpenAPI 流量入口中的路由，需要授权
-	if gatewayProvider == mseCommon.Mse_Provider_Name && pack.Scene == orm.OpenapiScene && dao.Id != "" {
+	if gatewayProvider == mseCommon.MseProviderName && pack.Scene == orm.OpenapiScene && dao.Id != "" {
 		packageAclInfoDto, err = (*impl.consumerBiz).GetPackageApiAcls(pack.Id, dao.Id)
 		if err != nil {
 			logrus.Errorf("Update package api authz for mse plugin failed: %v", err)
@@ -2436,7 +2436,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
 		if err != nil {
 			return
@@ -2650,7 +2650,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 	}
 
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		gatewayAdapter, err = mse.NewMseAdapter(pack.DiceClusterName)
 		if err != nil {
 			return
@@ -2667,7 +2667,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		config := map[string]interface{}{}
 		wlConsumers := make([]mseDto.Consumers, 0)
 		wlConsumers = append(wlConsumers, mseDto.Consumers{
-			Name: plugins.DEFAULT_MSE_CONSUMER_NAME,
+			Name: plugins.MseDefaultConsumerName,
 		})
 
 		config["whitelist"] = wlConsumers
@@ -2676,6 +2676,37 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 			_, err = (*impl.ruleBiz).CreateOrUpdatePlugin(gatewayProvider, gatewayAdapter, &rule.OpenapiRule, nil)
 			if err != nil {
 				return
+			}
+		}
+		// Delete erda-ip erda-sbac erda-csrf plugin config for this api
+		if dao.ZoneId != "" {
+			var zone *orm.GatewayZone
+			zone, err = (*impl.zoneBiz).GetZone(dao.ZoneId)
+			if err != nil {
+				return
+			}
+			policyPlugins := []string{mseCommon.MsePluginIP, mseCommon.MsePluginSbac, mseCommon.MsePluginCsrf}
+			for _, pluginName := range policyPlugins {
+				var pluginReq *providerDto.PluginReqDto
+				switch pluginName {
+				case mseCommon.MsePluginIP:
+					pluginReq = &providerDto.PluginReqDto{
+						Name: mseCommon.MsePluginIP,
+						Config: map[string]interface{}{
+							mseCommon.MseErdaIpIpSource:    mseCommon.MseErdaIpSourceXRealIP,
+							mseCommon.MseErdaIpAclType:     mseCommon.MseErdaIpAclBlack,
+							mseCommon.MseErdaIpAclList:     []string{},
+							mseCommon.MseErdaIpRouteSwitch: false,
+						},
+						ZoneName: strings.ToLower(zone.Name),
+					}
+					_, errr := gatewayAdapter.CreateOrUpdatePluginById(pluginReq)
+					if errr != nil {
+						err = errr
+						return
+					}
+				default:
+				}
 			}
 		}
 
@@ -2734,7 +2765,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 		}
 	}
 	if dao.ZoneId != "" {
-		if gatewayProvider == mseCommon.Mse_Provider_Name {
+		if gatewayProvider == mseCommon.MseProviderName {
 			impl.deleteMSEApi(dao, pack, ingressNamespace)
 		}
 
@@ -3060,7 +3091,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, gatew
 		goto clear_route
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		logrus.Warnf("Mse gateway provider not support build-in plugin in kong")
 	case "":
 		_, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, nil, apipolicy.Policy_Engine_Built_in, nil, session)
@@ -3075,7 +3106,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, gatew
 		//TODO
 		_ = session.Commit()
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			logrus.Warnf("Mse gateway provider not support cors plugin in kong")
 		case "":
 			var policyEngine apipolicy.PolicyEngine
@@ -3280,7 +3311,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		goto clear_route
 	}
 	switch gatewayProvider {
-	case mseCommon.Mse_Provider_Name:
+	case mseCommon.MseProviderName:
 		logrus.Warnf("mse gateway provider not support kong built-in policy yet\n")
 	case "":
 		if _, _, err = (*impl.policyBiz).SetZonePolicyConfig(z, nil, apipolicy.Policy_Engine_Built_in, nil, session); err != nil {
@@ -3320,7 +3351,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		//TODO
 		_ = session.Commit()
 		switch gatewayProvider {
-		case mseCommon.Mse_Provider_Name:
+		case mseCommon.MseProviderName:
 			logrus.Warnf("mse gateway provider not support kong cors policy yet\n")
 		case "":
 			_, err = (*impl.policyBiz).SetPackageDefaultPolicyConfig(apipolicy.Policy_Engine_CORS, pkg.Id, azInfo, configByte)
