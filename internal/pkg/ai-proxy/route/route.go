@@ -43,6 +43,9 @@ var (
 	NotFoundRoute = &Route{
 		Path:   "/",
 		Router: &Router{To: ToNotFound},
+		reverseProxy: &reverseproxy.ReverseProxy{
+			FilterCxt: reverseproxy.NewContext(make(map[any]any)),
+		},
 	}
 )
 
@@ -167,32 +170,8 @@ func (r *Route) Match(path, method string, header http.Header) bool {
 }
 
 func (r *Route) With(option Option) *Route {
-	clone := r.Clone()
-	option(clone)
-	return clone
-}
-
-func (r *Route) Clone() *Route {
-	return &Route{
-		Path:          r.Path,
-		PathMatcher:   r.PathMatcher,
-		Method:        r.Method,
-		MethodMatcher: r.MethodMatcher,
-		HeaderMatcher: r.HeaderMatcher,
-		Router: &Router{
-			To:         r.Router.To,
-			InstanceId: r.Router.InstanceId,
-			Scheme:     r.Router.Scheme,
-			Host:       r.Router.Host,
-			Rewrite:    r.Router.Rewrite,
-		},
-		Filters:       r.Filters,
-		pathMatcher:   r.pathMatcher,
-		methodMatcher: r.methodMatcher,
-		headerMatcher: r.headerMatcher,
-		provider:      r.provider,
-		reverseProxy:  r.reverseProxy,
-	}
+	option(r)
+	return r
 }
 
 func (r *Route) Validate() error {

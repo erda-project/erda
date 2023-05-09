@@ -96,7 +96,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 			if !ok {
 				return errors.Errorf("no such provider routes[%d].Route.To: %s", i, p.Config.Routes[i].Router.To)
 			}
-			*rout = *(rout.With(route2.WithProvider(prov)))
+			rout.With(route2.WithProvider(prov))
 		}
 
 		// prepare reverse proxy handler with contexts
