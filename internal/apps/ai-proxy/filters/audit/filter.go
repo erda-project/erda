@@ -87,9 +87,10 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 		f.SetPrompt,
 		f.SetRequestContentType,
 		f.SetRequestBody,
+		f.SetUserAgent,
 	} {
 		switch f := set.(type) {
-		case func(ctx2 context.Context) error:
+		case func(context.Context) error:
 			if err := f(ctx); err != nil {
 				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
@@ -107,7 +108,7 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 			if err := f(ctx, infor); err != nil {
 				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
-		case func(ctx2 context.Context, header http.Header, buffer *bytes.Buffer) error:
+		case func(context.Context, http.Header, *bytes.Buffer) error:
 			if buffer != nil {
 				if err := f(ctx, infor.Header(), buffer); err != nil {
 					l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
@@ -134,6 +135,7 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 		f.SetResponseContentType,
 		f.SetResponseBody,
 		f.SetServer,
+		f.SetStatus,
 	} {
 		switch fn := set.(type) {
 		case func(context.Context) error:
@@ -150,6 +152,10 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 			}
 		case func(context.Context, http.Header, *bytes.Buffer) error:
 			if err := fn(ctx, infor.Header(), f.Buffer); err != nil {
+				l.Errorf("failed to do %T, err: %v", set, err)
+			}
+		case func(context.Context, reverseproxy.HttpInfor) error:
+			if err := fn(ctx, infor); err != nil {
 				l.Errorf("failed to do %T, err: %v", set, err)
 			}
 		default:
