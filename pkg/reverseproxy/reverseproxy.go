@@ -242,7 +242,7 @@ func (p *ReverseProxy) Clone() *ReverseProxy {
 		ModifyResponse: p.ModifyResponse,
 		ErrorHandler:   p.ErrorHandler,
 		Filters:        p.Filters,
-		FilterCxt:      p.FilterCxt,
+		FilterCxt:      p.FilterCxt.Clone(),
 	}
 }
 
