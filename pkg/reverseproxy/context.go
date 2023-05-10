@@ -63,6 +63,10 @@ func (c *Context) Value(key any) any {
 	return c.inner.Value(key)
 }
 
+func (c *Context) Clone() *Context {
+	return &Context{inner: c.inner}
+}
+
 func WithValue(ctx *Context, key any, value any) {
 	ctx.inner = context.WithValue(ctx.inner, key, value)
 }

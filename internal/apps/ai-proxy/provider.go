@@ -96,17 +96,14 @@ func (p *provider) Init(_ servicehub.Context) error {
 			if !ok {
 				return errors.Errorf("no such provider routes[%d].Route.To: %s", i, p.Config.Routes[i].Router.To)
 			}
-			rout.With(route2.WithProvider(prov))
+			rout.With(reverseproxy.ProviderCtxKey{}, prov)
 		}
 
 		// prepare reverse proxy handler with contexts
-		if err := rout.PrepareHandler(reverseproxy.NewContext(map[any]any{
-			reverseproxy.ProviderCtxKey{}: rout.GetProvider(),
-			reverseproxy.DBCtxKey{}:       p.D,
-			reverseproxy.LoggerCtxKey{}:   p.L,
-		})); err != nil {
-			return errors.Wrap(err, "failed to PrepareHandler")
-		}
+		rout.With(
+			reverseproxy.DBCtxKey{}, p.D,
+			reverseproxy.LoggerCtxKey{}, p.L,
+		)
 	}
 
 	// ai-proxy prometheus metrics
@@ -118,8 +115,10 @@ func (p *provider) Init(_ servicehub.Context) error {
 
 func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
-		With(route2.WithLogger(p.L.Sub(r.Header.Get("X-Request-Id")))).
-		With(route2.WithMutex(new(sync.Mutex))).
+		With(
+			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
+			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
+		).
 		ServeHTTP(w, r)
 }
 
