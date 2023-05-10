@@ -23,16 +23,16 @@ import (
 var counter *prometheus.CounterVec
 
 func init() {
-	_ = Get()
+	_ = CounterVec()
 }
 
-func Get() *prometheus.CounterVec {
+func CounterVec() *prometheus.CounterVec {
 	if counter == nil {
 		counter = prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace:   "erda",
 			Subsystem:   "ai_proxy",
 			Name:        "request_total",
-			Help:        "Total number fo HTTP requests",
+			Help:        "Total number of HTTP requests",
 			ConstLabels: nil,
 		}, new(LabelValues).Labels())
 		prometheus.MustRegister(counter)
@@ -70,4 +70,14 @@ func (l LabelValues) Labels() []string {
 		keys[i] = t.Field(i).Tag.Get("json")
 	}
 	return keys
+}
+
+func (l LabelValues) LabelValues() []string {
+	labels := l.Labels()
+	values := l.Values()
+	result := make([]string, len(labels))
+	for i := 0; i < len(labels); i++ {
+		result[i] = labels[i] + "=" + values[i]
+	}
+	return result
 }

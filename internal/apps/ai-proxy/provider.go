@@ -24,6 +24,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gorm.io/gorm"
 	"sigs.k8s.io/yaml"
@@ -59,10 +60,11 @@ func init() {
 }
 
 type provider struct {
-	L        logs.Logger
-	Config   *config
-	AiServer httpserver.Router `autowired:"http-server@ai"`
-	D        *gorm.DB          `autowired:"mysql-gorm.v2-client"`
+	L         logs.Logger
+	Config    *config
+	AiServer  httpserver.Router    `autowired:"http-server@ai"`
+	D         *gorm.DB             `autowired:"mysql-gorm.v2-client"`
+	Collector prometheus.Collector `autowired:"erda.app.ai-proxy.metrics.Collectors"`
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -104,6 +106,11 @@ func (p *provider) Init(_ servicehub.Context) error {
 			reverseproxy.DBCtxKey{}, p.D,
 			reverseproxy.LoggerCtxKey{}, p.L,
 		)
+	}
+
+	if err := prometheus.Register(p.Collector); err != nil {
+		p.L.Infof("failed to prometheus.Register(%T), err: %v", p.Collector, err)
+		return err
 	}
 
 	// ai-proxy prometheus metrics
