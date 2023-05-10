@@ -17,7 +17,6 @@ package log_http
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"os"
 
@@ -83,11 +82,8 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 }
 
 func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
-	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
-		return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk)
-	}
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnResponseChunk")
-	if !f.headerPrinted {
+	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") && !f.headerPrinted {
+		var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnResponseChunk")
 		var m = map[string]any{
 			"headers":     infor.Header(),
 			"status":      infor.Status(),
@@ -96,23 +92,7 @@ func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpIn
 		l.Debugf("response info: %s", strutil.TryGetJsonStr(m))
 		f.headerPrinted = true
 	}
-	if _, err = w.Write(chunk); err != nil {
-		return reverseproxy.Intercept, err
-	}
-	for _, c := range chunk {
-		if err := f.WriteByte(c); err != nil {
-			return reverseproxy.Intercept, err
-		}
-		if c == '\n' {
-			data, err := io.ReadAll(f)
-			if err != nil {
-				return reverseproxy.Intercept, err
-			}
-			l.Debugf("response body line[%d]: %s", f.lineCount, string(data))
-			f.lineCount++
-		}
-	}
-	return reverseproxy.Continue, nil
+	return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk)
 }
 
 func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
@@ -122,11 +102,9 @@ func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfo
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
 		return nil
 	}
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return err
-	}
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnResponseEOF")
-	l.Debugf("response body last lines: %s", string(data))
+	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
+		l.Debugf("response body: %s", f.String())
+	}
 	return nil
 }

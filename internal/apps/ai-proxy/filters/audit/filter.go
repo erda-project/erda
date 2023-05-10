@@ -74,7 +74,6 @@ func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 
 func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpRequestInfor")
-	buffer := infor.BodyBuffer()
 	for _, set := range []any{
 		f.SetSessionId,
 		f.SetChats,
@@ -99,20 +98,16 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
 		case func(context.Context, *bytes.Buffer) error:
-			if buffer != nil {
-				if err := f(ctx, buffer); err != nil {
-					l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
-				}
+			if err := f(ctx, infor.BodyBuffer()); err != nil {
+				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
 		case func(context.Context, reverseproxy.HttpInfor) error:
 			if err := f(ctx, infor); err != nil {
 				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
 		case func(context.Context, http.Header, *bytes.Buffer) error:
-			if buffer != nil {
-				if err := f(ctx, infor.Header(), buffer); err != nil {
-					l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
-				}
+			if err := f(ctx, infor.Header(), infor.BodyBuffer()); err != nil {
+				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
 		default:
 			l.Fatalf("%T not in cases", set)
@@ -163,7 +158,7 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 		}
 	}
 	if err := f.create(ctx); err != nil {
-		l.Warnf("failed to create audit row, err: %v", err)
+		l.Errorf("failed to create audit row, err: %v", err)
 	}
 	return nil
 }
@@ -238,6 +233,9 @@ func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buf
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub("setFieldFromRequestBody")
 	if !httputil.HeaderContains(header[httputil.ContentTypeKey], httputil.ApplicationJson) {
 		return nil // todo: Only Content-Type: application/json auditing is supported for now.
+	}
+	if buf == nil {
+		return nil
 	}
 
 	var m = make(map[string]json.RawMessage)
@@ -455,6 +453,9 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 }
 
 func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
+	if buf == nil {
+		return nil
+	}
 	if httputil.HeaderContains(header, httputil.ApplicationJson) {
 		return f.setCompletionForApplicationJson(ctx, header, buf)
 	}
@@ -475,11 +476,17 @@ func (f *Audit) SetResponseContentType(_ context.Context, header http.Header) er
 }
 
 func (f *Audit) SetRequestBody(_ context.Context, buf *bytes.Buffer) error {
+	if buf == nil {
+		return nil
+	}
 	f.Audit.RequestBody = buf.String()
 	return nil
 }
 
 func (f *Audit) SetResponseBody(_ context.Context, buf *bytes.Buffer) error {
+	if buf == nil {
+		return nil
+	}
 	f.Audit.ResponseBody = buf.String()
 	return nil
 }
@@ -518,7 +525,11 @@ func (f *Audit) create(ctx context.Context) error {
 }
 
 func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId)
+	if buf == nil {
+		return nil
+	}
+
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId).Sub("setCompletionForApplicationJson")
 	var m = make(map[string]json.RawMessage)
 	if err := json.NewDecoder(buf).Decode(&m); err != nil {
 		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", buf, m)
@@ -569,9 +580,13 @@ func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http
 }
 
 func (f *Audit) setCompletionForEventStream(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId)
+	if buf == nil {
+		return nil
+	}
+
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId).Sub("setCompletionForEventStream")
 	var completion string
-	strutil.HandleQuotes(buf.Bytes(), [2]byte{'{', '}'}, func(data []byte) {
+	strutil.HandleQuotes(buf.Bytes(), [2]byte{'{', '\n'}, func(data []byte) {
 		var m = make(map[string]json.RawMessage)
 		if err := json.Unmarshal(data, &m); err != nil {
 			l.Errorf("failed to json.Unmarshal(%s, %T)", string(data), m)
