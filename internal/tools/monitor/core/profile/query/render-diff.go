@@ -57,13 +57,13 @@ func (p *provider) renderDiff(rw http.ResponseWriter, r *http.Request) {
 
 	leftOut, err := p.loadTree(ctx, &params.Left, params.Left.StartTime, params.Left.EndTime)
 	if err != nil {
-		httpserver.WriteErr(rw, "400", fmt.Sprintf("failed to load left tree: %w", err))
+		httpserver.WriteErr(rw, "400", fmt.Sprintf("failed to load left tree: %v", err))
 		return
 	}
 
 	rightOut, err := p.loadTree(ctx, &params.Right, params.Right.StartTime, params.Right.EndTime)
 	if err != nil {
-		httpserver.WriteErr(rw, "400", fmt.Sprintf("failed to load right tree: %w", err))
+		httpserver.WriteErr(rw, "400", fmt.Sprintf("failed to load right tree: %v", err))
 		return
 	}
 
@@ -97,7 +97,7 @@ func (p *provider) renderDiff(rw http.ResponseWriter, r *http.Request) {
 
 	combined, err := flamebearer.NewCombinedProfile(leftProfile, rightProfile)
 	if err != nil {
-		httpserver.WriteErr(rw, "400", fmt.Sprintf("failed to create combined profile: %w", err))
+		httpserver.WriteErr(rw, "400", fmt.Sprintf("failed to create combined profile: %v", err))
 		return
 	}
 

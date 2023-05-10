@@ -9,7 +9,7 @@ CREATE TABLE `erda_profile_app`
     `updated_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `deleted_at`      bigint(20) NOT NULL DEFAULT '0' COMMENT '删除时间',
-    `is_deleted`      varchar(1)  NOT NULL DEFAULT 'N' COMMENT '是否删除',
+    `is_deleted`      tinyint(1)  NOT NULL DEFAULT '0' COMMENT '是否删除',
     `org_id`          varchar(100) NOT NULL COMMENT '组织id',
     `org_name`        varchar(50)  NOT NULL COMMENT '组织名称',
     `project_id`      varchar(100) NOT NULL COMMENT '项目id',

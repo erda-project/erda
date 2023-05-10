@@ -133,13 +133,13 @@ func (p *provider) renderParametersFromRequest(r *http.Request, req *renderParam
 	case k != "":
 		sk, err := segment.ParseKey(k)
 		if err != nil {
-			return fmt.Errorf("name: parsing storage key: %w", err)
+			return fmt.Errorf("name: parsing storage key: %v", err)
 		}
 		req.gi.Key = sk
 	case q != "":
 		qry, err := flameql.ParseQuery(q)
 		if err != nil {
-			return fmt.Errorf("query: %w", err)
+			return fmt.Errorf("query: %v", err)
 		}
 		req.gi.Query = qry
 	}

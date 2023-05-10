@@ -87,7 +87,9 @@ func (p *provider) ExportProfile(items ...*profileinput.ProfileIngest) error {
 			Format:   item.Format,
 			Metadata: item.Metadata,
 		}
+
 		p.genRawProfile(ingestInput, item)
+
 		if err := p.profileParser.Ingest(context.Background(), ingestInput); err != nil {
 			return err
 		}
