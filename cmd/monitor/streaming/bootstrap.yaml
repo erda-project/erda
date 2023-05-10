@@ -96,6 +96,18 @@ clickhouse.table.initializer@log:
     - path: "conf/clickhouse/logs_ddl_create_tenant_tables.sql"
       ignore_err: "true"
 
+clickhouse.table.initializer@profile:
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_LOG_TTL_SYNC_INTERVAL:1h}"
+  cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
+  database: "pyroscope"
+  default_ddl_files:
+    - path: "conf/clickhouse/profiles_ddl_create_db.sql"
+      ignore_err: "false"
+    - path: "conf/clickhouse/profiles_ddl_create_default_tables.sql"
+      ignore_err: "false"
+
+
 clickhouse.table.creator@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/logs_ddl_create_tenant_tables.sql"
@@ -108,6 +120,13 @@ clickhouse.table.loader@log:
   table_prefix: "logs"
   default_search_table: "logs_all"
   cache_key_prefix: "clickhouse-table-log"
+
+clickhouse.table.loader@profile:
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
+  load_mode: ${QUERY_LOG_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
+  table_prefix: "main"
+  default_search_table: "main"
+  cache_key_prefix: "clickhouse-table-profile"
 
 log-storage-clickhouse:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
@@ -717,6 +736,13 @@ clickhouse.table.loader@event:
   table_prefix: "events"
   default_search_table: "events_all"
   cache_key_prefix: "clickhouse-table-event"
+
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
 
 event-storage-clickhouse:
   _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}

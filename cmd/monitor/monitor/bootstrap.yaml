@@ -290,6 +290,15 @@ erda.core.monitor.metric:
       - "conf/metricmeta/groups/micro_service.yml"
     metric_meta_path: "conf/metricmeta/metrics"
 
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
+
+erda.core.monitor.profile.render: {}
+
 metric-query-example:
   _enable: ${METRIC_QUERY_EXAMPLE_ENABLE:false}
 metrics-query-compatibility:
