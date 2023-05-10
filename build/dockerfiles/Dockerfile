@@ -35,8 +35,10 @@ FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
 ENV MODULE_PATH=${MODULE_PATH}
 
+ARG TARGETARCH
+
 # use for ops
-RUN curl -o /usr/bin/orgalorg https://terminus-dice.oss.aliyuncs.com/installer/orgalorg && \
+RUN curl -o /usr/bin/orgalorg https://erda-project.oss-cn-hangzhou.aliyuncs.com/k4s/$TARGETARCH/orgalorg && \
     chmod 755 /usr/bin/orgalorg
 
 RUN \

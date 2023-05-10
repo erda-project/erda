@@ -210,3 +210,8 @@ proto-go-in-ci:
 proto-go-in-local:
 	cd api/proto-go && \
 	make fetch-remote-proto && make clean && make build
+
+buildkit-image-all:
+	MAKE_BUILD_CMD=build-all ./build/scripts/buildkit_image.sh
+buildkit-image:
+	MAKE_BUILD_CMD=build-one ./build/scripts/buildkit_image.sh
