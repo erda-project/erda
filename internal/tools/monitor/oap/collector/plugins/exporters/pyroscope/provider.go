@@ -28,10 +28,13 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/health"
 	"github.com/pyroscope-io/pyroscope/pkg/ingestion"
 	"github.com/pyroscope-io/pyroscope/pkg/parser"
+	"github.com/pyroscope-io/pyroscope/pkg/service"
 	"github.com/pyroscope-io/pyroscope/pkg/storage"
+	"github.com/pyroscope-io/pyroscope/pkg/storage/segment"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	mysql "github.com/erda-project/erda-infra/providers/mysql/v2"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
@@ -47,7 +50,9 @@ type config struct{}
 
 // +provider
 type provider struct {
-	Cfg           *config
+	Cfg *config
+	DB  mysql.Interface
+
 	profileParser *parser.Parser
 }
 
@@ -55,9 +60,11 @@ var _ model.Exporter = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	logger := logrus.StandardLogger()
+	appMetadataSvc := service.NewApplicationMetadataService(p.DB.DB())
+	appMetadataSaver := service.NewApplicationMetadataCacheService(service.ApplicationMetadataCacheServiceConfig{}, appMetadataSvc)
 	st, err := storage.New(storage.NewConfig(&storageconfig.Server{
-		MaxNodesSerialization: 2048,
-	}).WithInMemory(), logger, prometheus.DefaultRegisterer, new(health.Controller), storage.NoopApplicationMetadataService{})
+		MaxNodesSerialization: 8192,
+	}), logger, prometheus.DefaultRegisterer, new(health.Controller), appMetadataSaver)
 	e, err := exporter.NewExporter(storageconfig.MetricsExportRules{}, prometheus.DefaultRegisterer)
 	if err != nil {
 		return err
@@ -105,6 +112,7 @@ func (p *provider) Connect() error {
 }
 
 func (p *provider) genRawProfile(input *ingestion.IngestInput, data *profileinput.ProfileIngest) {
+	input.Metadata.Key, _ = segment.ParseKey(data.Key)
 	contentType := data.ContentType
 	switch {
 	default:
