@@ -230,3 +230,33 @@ func TestBuildEsServiceItem(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, &[]int64{1000}[0], addonDice.Services["elasticsearch-1"].K8SSnippet.Container.SecurityContext.RunAsUser)
 }
+
+func Test_getKafkaExporterImage(t *testing.T) {
+	testCases := []struct {
+		name        string
+		serviceItem diceyml.Service
+		expect      string
+	}{
+		{
+			name: "specify image in env",
+			serviceItem: diceyml.Service{
+				Envs: diceyml.EnvMap{
+					EnvKafkaExporter: "kafka-exporter:1.0.0",
+				},
+			},
+			expect: "kafka-exporter:1.0.0",
+		},
+		{
+			name: "not specify image in env",
+			serviceItem: diceyml.Service{
+				Envs: diceyml.EnvMap{},
+			},
+			expect: DefaultKafkaExporterImage,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expect, getKafkaExporterImage(tc.serviceItem))
+		})
+	}
+}
