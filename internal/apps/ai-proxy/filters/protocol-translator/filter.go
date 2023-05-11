@@ -115,7 +115,7 @@ func (f *ProtocolTranslator) SetAuthorizationIfNotSpecified(ctx context.Context,
 }
 
 func (f *ProtocolTranslator) SetOpenAIOrganizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProvidersCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
 	if org := prov.GetOrganization(); org != "" && header.Get("OpenAI-Organization") == "" {
 		header.Set("OpenAI-Organization", org)
 	}
@@ -140,7 +140,7 @@ func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
 	s, err := strconv.Unquote(f.processorArgs["AddQueries"])
 	values, err := url.ParseQuery(s)
 	if err != nil {
-		l.Errorf(`AddQueries failed to url.ParseQuery(%s)`, ctx.Value(reverseproxy.AddQueriesCtxKey{}).(string))
+		l.Errorf(`AddQueries failed to url.ParseQuery(%s)`, s)
 		return
 	}
 	queries := u.Query()

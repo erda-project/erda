@@ -35,8 +35,8 @@ func RegisterFilterCreator(name string, creator FilterCreator) {
 
 func GetFilterCreator(name string) (FilterCreator, bool) {
 	registerFilterCreatorMutex.Lock()
-	defer registerFilterCreatorMutex.Unlock()
 	creator, ok := filterCreators[name]
+	registerFilterCreatorMutex.Unlock()
 	return creator, ok
 }
 

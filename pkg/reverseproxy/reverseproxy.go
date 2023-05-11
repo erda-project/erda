@@ -108,8 +108,8 @@ type ReverseProxy struct {
 	// a 502 Status Bad Gateway response.
 	ErrorHandler func(http.ResponseWriter, *http.Request, error)
 
-	Filters   []NamingFilter
-	FilterCxt *Context
+	Filters []NamingFilter
+	Context context.Context
 }
 
 // A BufferPool is an interface for getting and returning temporary
@@ -245,7 +245,7 @@ func (p *ReverseProxy) Clone() *ReverseProxy {
 		ModifyResponse: p.ModifyResponse,
 		ErrorHandler:   p.ErrorHandler,
 		Filters:        p.Filters,
-		FilterCxt:      p.FilterCxt.Clone(),
+		Context:        p.Context,
 	}
 }
 
@@ -299,15 +299,15 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	var logger = logrusx.New(logrusx.WithName(reflect.TypeOf(p).String()))
-	if logger_, ok := p.FilterCxt.Value(LoggerCtxKey{}).(logs.Logger); ok {
+	if logger_, ok := p.Context.Value(LoggerCtxKey{}).(logs.Logger); ok {
 		logger = logger_
 	}
 
-	infor := NewInfor(p.FilterCxt, outreq)
+	infor := NewInfor(p.Context, outreq)
 	for i, item := range p.Filters {
 		if filter, ok := item.Filter.(RequestFilter); ok {
-			WithValue(p.FilterCxt, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnRequest"))
-			signal, err := filter.OnRequest(p.FilterCxt, rw, infor)
+			ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnRequest"))
+			signal, err := filter.OnRequest(ctx, rw, infor)
 			if err == nil && signal == Continue {
 				continue
 			}
@@ -544,7 +544,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 	p.Filters = append(p.Filters, rw)
 
 	var logger = logrusx.New(logrusx.WithName(reflect.TypeOf(p).String()))
-	if logger_, ok := p.FilterCxt.Value(LoggerCtxKey{}).(logs.Logger); ok {
+	if logger_, ok := p.Context.Value(LoggerCtxKey{}).(logs.Logger); ok {
 		logger = logger_
 	}
 
@@ -565,8 +565,8 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 				if !ok {
 					continue
 				}
-				WithValue(p.FilterCxt, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseChunk"))
-				switch signal, err := filter.OnResponseChunk(p.FilterCxt, NewInfor(p.FilterCxt, response), &buffer, buf); {
+				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseChunk"))
+				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &buffer, buf); {
 				case err != nil:
 					p.logf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
@@ -587,8 +587,8 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					if !ok {
 						continue
 					}
-					WithValue(p.FilterCxt, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
-					if err := filter.OnResponseEOF(p.FilterCxt, NewInfor(p.FilterCxt, response), &buffer, buf); err != nil {
+					ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
+					if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &buffer, buf); err != nil {
 						return rw.Filter.(*responseBodyWriter).written, err
 					}
 					buf = buffer.Bytes()

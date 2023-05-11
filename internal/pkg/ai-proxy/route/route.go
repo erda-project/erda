@@ -16,6 +16,7 @@ package route
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -58,7 +59,7 @@ func (routes Routes) FindRoute(path, method string, header http.Header) *Route {
 }
 
 type Route struct {
-	Context *reverseproxy.Context
+	Context context.Context
 
 	Path          string          `json:"path" yaml:"path"`
 	PathMatcher   string          `json:"pathMatcher" yaml:"pathMatcher"`
@@ -138,7 +139,7 @@ func (r *Route) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		},
 		FlushInterval: time.Millisecond * 100,
 		Filters:       nil,
-		FilterCxt:     r.Context.Clone(),
+		Context:       r.Context,
 	}
 	for _, filterConfig := range r.Filters {
 		filter, err := reverseproxy.MustGetFilterCreator(filterConfig.Name)(filterConfig.Config)
@@ -164,13 +165,13 @@ func (r *Route) Match(path, method string, header http.Header) bool {
 
 func (r *Route) With(kvs ...any) *Route {
 	if r.Context == nil {
-		r.Context = reverseproxy.NewContext(make(map[any]any))
+		r.Context = context.Background()
 	}
 	if len(kvs)%2 != 0 {
 		panic("kvs must be even")
 	}
 	for i := 0; i+1 < len(kvs); i++ {
-		reverseproxy.WithValue(r.Context, kvs[i], kvs[i+1])
+		r.Context = context.WithValue(r.Context, kvs[i], kvs[i+1])
 	}
 	return r
 }

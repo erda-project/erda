@@ -100,12 +100,6 @@ func (p *provider) Init(_ servicehub.Context) error {
 			}
 			rout.With(reverseproxy.ProviderCtxKey{}, prov)
 		}
-
-		// prepare reverse proxy handler with contexts
-		rout.With(
-			reverseproxy.DBCtxKey{}, p.D,
-			reverseproxy.LoggerCtxKey{}, p.L,
-		)
 	}
 
 	if err := prometheus.Register(p.Collector); err != nil {
@@ -123,6 +117,8 @@ func (p *provider) Init(_ servicehub.Context) error {
 func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
 		With(
+			reverseproxy.DBCtxKey{}, p.D,
+			reverseproxy.LoggerCtxKey{}, p.L,
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 		).
