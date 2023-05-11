@@ -291,9 +291,10 @@ func (f *IssueFilter) setDefaultState() error {
 		"TASK":        {pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String()},
 		"REQUIREMENT": {pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String()},
 		"BUG":         common.UnfinishedStateBelongs,
+		"TICKET":      common.UnfinishedStateBelongs,
 		"ALL":         common.UnfinishedStateBelongs,
 	}[f.InParams.FrontendFixedIssueType]
-	types := []string{pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()}
+	types := []string{pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String(), pb.IssueTypeEnum_TICKET.String()}
 	res := make(map[string][]int64)
 	res["ALL"] = make([]int64, 0)
 	for _, v := range types {
