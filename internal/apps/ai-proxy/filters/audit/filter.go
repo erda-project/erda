@@ -73,7 +73,7 @@ func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 }
 
 func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnHttpRequestInfor")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	for _, set := range []any{
 		f.SetSessionId,
 		f.SetChats,
@@ -118,7 +118,7 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 }
 
 func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("Audit").Sub("OnResponseEOF")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
 		l.Errorf("failed to f.DefaultResponseFilter.OnResponseEOF, err: %v", err)
 		return err
@@ -230,7 +230,7 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 }
 
 func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub("setFieldFromRequestBody")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if !httputil.HeaderContains(header[httputil.ContentTypeKey], httputil.ApplicationJson) {
 		return nil // todo: Only Content-Type: application/json auditing is supported for now.
 	}
@@ -529,7 +529,7 @@ func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http
 		return nil
 	}
 
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId).Sub("setCompletionForApplicationJson")
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("setCompletionForApplicationJson")
 	var m = make(map[string]json.RawMessage)
 	if err := json.NewDecoder(buf).Decode(&m); err != nil {
 		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", buf, m)
@@ -584,7 +584,7 @@ func (f *Audit) setCompletionForEventStream(ctx context.Context, header http.Hea
 		return nil
 	}
 
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AiAudit").Sub(f.Audit.OperationId).Sub("setCompletionForEventStream")
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("setCompletionForEventStream")
 	var completion string
 	strutil.HandleQuotes(buf.Bytes(), [2]byte{'{', '\n'}, func(data []byte) {
 		var m = make(map[string]json.RawMessage)

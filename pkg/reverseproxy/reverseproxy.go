@@ -27,12 +27,15 @@ import (
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/net/http/httpguts"
 
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -295,9 +298,15 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		outreq.Header = make(http.Header) // Issue 33142: historical behavior was to always allocate
 	}
 
+	var logger = logrusx.New(logrusx.WithName(reflect.TypeOf(p).String()))
+	if logger_, ok := p.FilterCxt.Value(LoggerCtxKey{}).(logs.Logger); ok {
+		logger = logger_
+	}
+
 	infor := NewInfor(p.FilterCxt, outreq)
 	for i, item := range p.Filters {
 		if filter, ok := item.Filter.(RequestFilter); ok {
+			WithValue(p.FilterCxt, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnRequest"))
 			signal, err := filter.OnRequest(p.FilterCxt, rw, infor)
 			if err == nil && signal == Continue {
 				continue
@@ -505,11 +514,6 @@ func (p *ReverseProxy) copyResponse(response *http.Response, dst io.Writer, src 
 
 			// set up initial timer so headers get flushed even if body writes are delayed
 			mlw.flushPending = true
-			//if flushInterval < 0 {
-			//	mlw.delayedFlush()
-			//} else {
-			//	mlw.t = time.AfterFunc(flushInterval, mlw.delayedFlush)
-			//}
 			mlw.t = time.AfterFunc(flushInterval, mlw.delayedFlush)
 
 			dst = mlw
@@ -539,6 +543,11 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 	}
 	p.Filters = append(p.Filters, rw)
 
+	var logger = logrusx.New(logrusx.WithName(reflect.TypeOf(p).String()))
+	if logger_, ok := p.FilterCxt.Value(LoggerCtxKey{}).(logs.Logger); ok {
+		logger = logger_
+	}
+
 	var buffer bytes.Buffer
 	for {
 		if len(buf) == 0 {
@@ -556,6 +565,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 				if !ok {
 					continue
 				}
+				WithValue(p.FilterCxt, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseChunk"))
 				switch signal, err := filter.OnResponseChunk(p.FilterCxt, NewInfor(p.FilterCxt, response), &buffer, buf); {
 				case err != nil:
 					p.logf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
@@ -577,6 +587,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					if !ok {
 						continue
 					}
+					WithValue(p.FilterCxt, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
 					if err := filter.OnResponseEOF(p.FilterCxt, NewInfor(p.FilterCxt, response), &buffer, buf); err != nil {
 						return rw.Filter.(*responseBodyWriter).written, err
 					}
