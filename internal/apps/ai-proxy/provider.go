@@ -20,23 +20,40 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"path"
 	"reflect"
 	"strings"
 	"sync"
 
+	"github.com/dspo/roundtrip"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gorm.io/gorm"
+	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/providers/grpcserver"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
+	common "github.com/erda-project/erda-proto-go/common/pb"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
-	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/internal/pkg/openapi/dynamic"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+// issue: 创建 session 时没有校验 org
+
+var (
+	_ transport.Register = (*provider)(nil)
 )
 
 var (
@@ -61,11 +78,13 @@ func init() {
 }
 
 type provider struct {
-	L         logs.Logger
-	Config    *config
-	AiServer  httpserver.Router    `autowired:"http-server@ai"`
-	D         *gorm.DB             `autowired:"mysql-gorm.v2-client"`
-	Collector prometheus.Collector `autowired:"erda.app.ai-proxy.metrics.Collectors"`
+	Config  *config
+	L       logs.Logger
+	HTTP    httpserver.Router      `autowired:"http-server@ai"`
+	GRPC    grpcserver.Interface   `autowired:"grpc-server@ai"`
+	Dao     dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
+	OrgSvc  orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
+	Openapi dynamic.Register       `autowired:"openapi-dynamic-register.client"`
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -83,9 +102,14 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 
-	if err := prometheus.Register(p.Collector); err != nil {
-		p.L.Infof("failed to prometheus.Register(%T), err: %v", p.Collector, err)
-		return err
+	if onErda, ok := os.LookupEnv("ON_ERDA"); ok {
+		p.Config.OnErda = strings.EqualFold(onErda, "true")
+	}
+	if p.Config.SelfURL == "" {
+		p.Config.SelfURL = "http://ai-proxy:8081"
+	}
+	if selfURL, ok := os.LookupEnv("SELF_URL"); ok && len(selfURL) > 0 {
+		p.Config.SelfURL = selfURL
 	}
 
 	// prepare handlers
@@ -106,12 +130,33 @@ func (p *provider) Init(_ servicehub.Context) error {
 			}
 			rout.Provider = prov
 		}
+
+		// register to erda openapi
+		if p.Config.OnErda {
+			if err := p.Openapi.Register(&dynamic.Route{
+				Method:      rout.Method,
+				Path:        path.Join("/api/ai-proxy", rout.Path),
+				ServiceURL:  p.Config.SelfURL,
+				BackendPath: rout.Path,
+				Auth: &common.APIAuth{
+					CheckLogin: true,
+					CheckToken: true,
+				},
+			}); err != nil {
+				return err
+			}
+		}
 	}
 
+	// register gRPC and http handler
+	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
+	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options())
+	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options())
+
 	// ai-proxy prometheus metrics
-	p.AiServer.Any("/metrics", promhttp.Handler())
+	p.HTTP.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
-	p.AiServer.Any("/**", p)
+	p.HTTP.Any("/**", p)
 	return nil
 }
 
@@ -119,11 +164,26 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
 		HandlerWith(
 			context.Background(),
-			reverseproxy.DBCtxKey{}, p.D,
-			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
-			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
+			roundtrip.CtxKeyLogger{}, p.L.Sub(r.Header.Get("X-Request-Id")),
+			roundtrip.CtxKeyMutex{}, new(sync.Mutex),
+			vars.CtxKeyOrgSvc{}, p.OrgSvc,
+			vars.CtxKeyDAO{}, p.Dao,
 		).
 		ServeHTTP(w, r)
+}
+
+func (p *provider) Add(method, path string, handler transhttp.HandlerFunc) {
+	if p.HTTP != nil {
+		if err := p.HTTP.Add(method, path, handler, httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs)); err != nil {
+			p.L.Fatalf("failed to %T.Add(%s, %s, %T), err: %v", p, method, path, handler, err)
+		}
+	}
+}
+
+func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
+	if p.GRPC != nil {
+		p.GRPC.RegisterService(desc, impl)
+	}
 }
 
 func (p *provider) parseRoutesConfig() error {
@@ -151,7 +211,7 @@ func (p *provider) parseConfig(ref, key string, i interface{}) error {
 }
 
 func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path, method string) {
-	w.Header().Set("server", "ai-proxy/erda")
+	w.Header().Set("Server", "AI Service on Erda")
 	w.WriteHeader(http.StatusNotFound)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"error":  "no such route",
@@ -161,7 +221,7 @@ func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path, method strin
 }
 
 func (p *provider) responseNoSuchFilter(w http.ResponseWriter, filterName string) {
-	w.Header().Set("server", "ai-proxy/erda")
+	w.Header().Set("Server", "AI Service on Erda")
 	w.WriteHeader(http.StatusNotImplemented)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"error":  "no such filter",
@@ -170,7 +230,7 @@ func (p *provider) responseNoSuchFilter(w http.ResponseWriter, filterName string
 }
 
 func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterName string) {
-	w.Header().Set("server", "ai-proxy/erda")
+	w.Header().Set("Server", "AI Service on Erda")
 	w.WriteHeader(http.StatusInternalServerError)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"error":  "failed to instantiate filter",
@@ -183,6 +243,8 @@ type config struct {
 	ProvidersRef string             `json:"providersRef" yaml:"providersRef"`
 	LogLevel     string             `json:"logLevel" yaml:"logLevel"`
 	Exporter     configPromExporter `json:"exporter" yaml:"exporter"`
+	OnErda       bool               `json:"onErda" yaml:"onErda"`
+	SelfURL      string             `json:"selfURL" yaml:"selfURL"`
 	providers    provider2.Providers
 	Routes       route2.Routes
 }

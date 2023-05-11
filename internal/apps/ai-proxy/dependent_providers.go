@@ -15,8 +15,13 @@
 package ai_proxy
 
 import (
+	_ "github.com/erda-project/erda-infra/providers/etcd"
+	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-infra/providers/grpcserver"
 	_ "github.com/erda-project/erda-infra/providers/health"
 	_ "github.com/erda-project/erda-infra/providers/httpserver"
 	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/metrics"
+	_ "github.com/erda-project/erda-proto-go/core/org/client"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	_ "github.com/erda-project/erda/internal/pkg/openapi/dynamic"
 )

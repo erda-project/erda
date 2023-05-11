@@ -159,6 +159,7 @@ func (client *DBClient) GetOrg(orgID int64) (Org, error) {
 		}
 		return org, err
 	}
+	fmt.Printf("----------------------------------org: %+v-----------------------", org)
 	return org, nil
 }
 

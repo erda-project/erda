@@ -1,0 +1,67 @@
+### GET models
+GET https://ai-proxy.daily.terminus.io/api/ai-proxy/models
+
+### Create session
+POST https://ai-proxy.daily.terminus.io/api/ai-proxy/sessions
+Content-Type: application/json
+User-ID: 1000001
+
+
+{
+  "name": "test-session-1",
+  "topic": "i am a Go developer, you are my pair programming partner",
+  "contextLength": 5,
+  "source": "erda",
+  "model": "gpt-35-turbo-0301",
+  "temperature": 0.7
+}
+
+### update session
+PUT https://ai-proxy.daily.terminus.io/api/ai-proxy/sessions/ddf6c109-d946-4a98-ada4-17daef123c9e
+Content-Type: application/json
+User-ID: 1000001
+
+{
+  "name": "test-session-1",
+  "topic": "i am a Go developer, you are my pair programming partner",
+  "contextLength": 5,
+  "source": "erda",
+  "model": "gpt-35-turbo-0301",
+  "temperature": 0.7,
+  "resetAt": "2020-05-31T15:31:44Z"
+}
+
+
+
+### Get sessions
+GET https://ai-proxy.daily.terminus.io/api/ai-proxy/sessions
+Content-Type: application/json
+User-ID: 1000001
+X-Erda-AI-Proxy-Source: erda
+
+### Get chat logs
+GET https://ai-proxy.daily.terminus.io/api/ai-proxy/chat-logs
+Content-Type: application/json
+User-ID: 1000001
+X-Erda-AI-Proxy-SessionId: ddf6c109-d946-4a98-ada4-17daef123c9e
+
+### chat
+POST https://ai-proxy.daily.terminus.io/v1/chat/completions
+Org-ID: 633
+User-ID: 1000001
+X-Erda-AI-Proxy-SessionId: ddf6c109-d946-4a98-ada4-17daef123c9e
+X-Erda-AI-Proxy-Source: erda
+Authorization: Bearer c18a8bc3a3224cbe99d64d0d0158fbbc
+Content-Type: application/json
+
+{
+    "model": "gpt-35-turbo-0301",
+    "messages": [
+        {
+            "role": "user",
+            "content": "柠檬精是什么 ?"
+        }
+    ],
+    "max_tokens": 2048,
+    "stream": true
+}

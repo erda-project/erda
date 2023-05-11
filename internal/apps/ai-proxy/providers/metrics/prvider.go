@@ -17,10 +17,9 @@ package metrics
 import (
 	"reflect"
 
-	"gorm.io/gorm"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
 var (
@@ -42,10 +41,10 @@ func init() {
 }
 
 type provider struct {
-	L logs.Logger
-	D *gorm.DB `autowired:"mysql-gorm.v2-client"`
+	L   logs.Logger
+	Dao dao.DAO `autowired:"erda.apps.ai-proxy.dao"`
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, options ...interface{}) interface{} {
-	return SingletonCollector(p.D, p.L)
+	return SingletonCollector(p.Dao, p.L)
 }

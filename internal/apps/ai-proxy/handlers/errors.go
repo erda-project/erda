@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package handlers
 
-type (
-	ProviderCtxKey struct{ ProviderCtxKey any }
-	DBCtxKey       struct{ DBCtxKey any }
-	LoggerCtxKey   struct{ LoggerCtxKey any }
-	MutexCtxKey    struct{ MutexCtxKey any }
+import "github.com/pkg/errors"
+
+var (
+	UserPermissionDenied  = errors.New("user permission denied")
+	InvalidSessionId      = errors.New("invalid session id")
+	InvalidSessionName    = errors.New("invalid session name")
+	InvalidSessionTopic   = errors.New("invalid session topic")
+	InvalidSessionSource  = errors.New("invalid session source")
+	InvalidSessionModel   = errors.New("invalid session model")
+	InvalidSessionResetAt = errors.New("invalid session resetAt")
 )

@@ -15,8 +15,11 @@
 package ai_proxy
 
 import (
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/acl"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/body-size-limit"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/protocol-translator"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/session-context"
 )

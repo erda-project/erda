@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
+import "common/http.proto";
+
+service Sessions {
+  option(erda.common.openapi_service) = {
+    service: "ai-proxy",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc CreateSession(Session) returns (CreateSessionRespData) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/sessions"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/sessions"
+    };
+  }
+
+  rpc UpdateSession(Session) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      put: "/api/ai-proxy/sessions/{id}"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/sessions/{id}"
+    };
+  }
+
+  rpc ResetSession(ResetSessionReq) returns (common.VoidResponse) {}
+
+  rpc ArchiveSession(ArchiveSessionReq) returns (common.VoidResponse) {}
+
+  rpc DeleteSession(LocateSessionCondition) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      delete: "/api/ai-proxy/sessions/{id}"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/sessions/{id}"
+    };
+  }
+
+  rpc ListSessions(ListSessionsReq) returns (ListSessionsRespData) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/sessions"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/sessions"
+    };
+  }
+
+  rpc GetSession(LocateSessionCondition) returns (Session) {
+    option (google.api.http) = {
+      get: "/api/ai-proxy/sessions/{id}"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/ai-proxy/sessions/{id}"
+    };
+  }
+}
+
+message CreateSessionRespData {
+  string id = 1;
+}
+
+message ResetSessionReq {
+  string id = 1;
+  string userId = 2;
+  google.protobuf.Timestamp resetAt = 3;
+}
+
+message ArchiveSessionReq {
+  string id = 1;
+  string userId = 2;
+  bool isArchived = 3;
+}
+
+message ListSessionsReq {
+  string userId = 1;
+  string source = 2;
+}
+
+message ListSessionsRespData {
+  uint64 total = 1;
+  repeated Session list = 2;
+}
+
+message LocateSessionCondition {
+  string userId = 1;
+  string id = 2;
+}
+
+message Session {
+  string userId = 1;
+  string id = 2;
+  string name = 3;
+  string topic = 4;
+  uint32 contextLength = 5;
+  bool isArchived = 6;
+  string source = 7;
+  google.protobuf.Timestamp resetAt = 8;
+  string model = 9;
+  double temperature = 10;
+}
+

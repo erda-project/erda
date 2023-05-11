@@ -12,31 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package handlers
 
 import (
-	"sync"
+	"context"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
+	common "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
-type bufferPool struct {
-	pool *sync.Pool
+type ModelsHandler struct {
+	Log logs.Logger
+	Dao dao.DAO
 }
 
-func NewBufferPool[IntegerType ~int | ~int8 | ~int16 | ~int32 | ~int64 |
-	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](size IntegerType) BufferPool {
-	return &bufferPool{
-		pool: &sync.Pool{
-			New: func() any {
-				return make([]byte, size)
+func (m *ModelsHandler) ListModels(ctx context.Context, request *common.VoidRequest) (*pb.ListModelsRespData, error) {
+	return &pb.ListModelsRespData{
+		Total: 1,
+		List: []*pb.Model{
+			{
+				Model: "gpt-35-turbo-0301", // only one model support yet
 			},
 		},
-	}
-}
-
-func (bp *bufferPool) Get() []byte {
-	return bp.pool.Get().([]byte)
-}
-
-func (bp *bufferPool) Put(buf []byte) {
-	bp.pool.Put(buf)
+	}, nil
 }

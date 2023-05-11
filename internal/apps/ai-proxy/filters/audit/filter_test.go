@@ -21,15 +21,17 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/dspo/roundtrip"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func TestAudit_SetSessionId(t *testing.T) {
 	var header = http.Header{
-		"X-Erda-AI-Proxy-SessionId": []string{"mocked-session-id"},
+		vars.XErdaAIProxySessionId: []string{"mocked-session-id"},
 	}
 	f, err := audit.New(nil)
 	if err != nil {
@@ -38,32 +40,32 @@ func TestAudit_SetSessionId(t *testing.T) {
 	if err = f.(*audit.Audit).SetSessionId(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if f.(*audit.Audit).Audit.SessionId != header.Get("X-Erda-AI-Proxy-SessionId") {
-		t.Error("X-Erda-AI-Proxy-SessionId")
+	if f.(*audit.Audit).Audit.SessionId != header.Get(vars.XErdaAIProxySessionId) {
+		t.Error(vars.XErdaAIProxySessionId)
 	}
 }
 
 func TestAudit_SetSource(t *testing.T) {
 	var header = http.Header{
-		"X-Erda-AI-Proxy-Source": []string{"mocked-session-id"},
+		vars.XErdaAIProxySource: []string{"mocked-session-id"},
 	}
 	f, _ := audit.New(nil)
 	a := f.(*audit.Audit)
 	if err := a.SetSource(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if a.Audit.Source != header.Get("X-Erda-AI-Proxy-Source") {
-		t.Error("X-Erda-AI-Proxy-Source")
+	if a.Audit.Source != header.Get(vars.XErdaAIProxySource) {
+		t.Error(vars.XErdaAIProxySource)
 	}
 }
 
 func TestAudit_SetUserInfo(t *testing.T) {
 	var m = map[string]string{
-		"X-Erda-AI-Proxy-Name":            "mocked-name",
-		"X-Erda-AI-Proxy-Phone":           "mocked-phone",
-		"X-Erda-AI-Proxy-JobNumber":       "mocked-job-number",
-		"X-Erda-AI-Proxy-Email":           "mocked-email",
-		"X-Erda-AI-Proxy-DingTalkStaffID": "mocked-ding-id",
+		vars.XErdaAIProxyName:            "mocked-name",
+		vars.XErdaAIProxyPhone:           "mocked-phone",
+		vars.XErdaAIProxyJobNumber:       "mocked-job-number",
+		vars.XErdaAIProxyEmail:           "mocked-email",
+		vars.XErdaAIProxyDingTalkStaffID: "mocked-ding-id",
 	}
 	var header = make(http.Header)
 	for k, v := range m {
@@ -75,20 +77,20 @@ func TestAudit_SetUserInfo(t *testing.T) {
 	if err := a.SetUserInfo(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if a.Audit.Username != m["X-Erda-AI-Proxy-Name"] {
-		t.Error("X-Erda-AI-Proxy-Name")
+	if a.Audit.Username != m[vars.XErdaAIProxyName] {
+		t.Error(vars.XErdaAIProxyName)
 	}
-	if a.Audit.PhoneNumber != m["X-Erda-AI-Proxy-Phone"] {
-		t.Error("X-Erda-AI-Proxy-Phone")
+	if a.Audit.PhoneNumber != m[vars.XErdaAIProxyPhone] {
+		t.Error(vars.XErdaAIProxyPhone)
 	}
-	if a.Audit.JobNumber != m["X-Erda-AI-Proxy-JobNumber"] {
-		t.Error("X-Erda-AI-Proxy-JobNumber")
+	if a.Audit.JobNumber != m[vars.XErdaAIProxyJobNumber] {
+		t.Error(vars.XErdaAIProxyJobNumber)
 	}
-	if a.Audit.Email != m["X-Erda-AI-Proxy-Email"] {
-		t.Error("X-Erda-AI-Proxy-Email")
+	if a.Audit.Email != m[vars.XErdaAIProxyEmail] {
+		t.Error(vars.XErdaAIProxyEmail)
 	}
-	if a.Audit.DingtalkStaffId != m["X-Erda-AI-Proxy-DingTalkStaffID"] {
-		t.Error("X-Erda-AI-Proxy-DingTalkStaffID")
+	if a.Audit.DingtalkStaffId != m[vars.XErdaAIProxyDingTalkStaffID] {
+		t.Error(vars.XErdaAIProxyDingTalkStaffID)
 	}
 }
 
@@ -98,9 +100,9 @@ func TestAudit_SetChats(t *testing.T) {
 		Audit:                 new(models.AIProxyFilterAudit),
 	}
 	var cases = map[string]string{
-		"X-Erda-AI-Proxy-ChatType":  "group",
-		"X-Erda-AI-Proxy-ChatTitle": "erda-family",
-		"X-Erda-AI-Proxy-ChatId":    "mocked-id",
+		vars.XErdaAIProxyChatType:  "group",
+		vars.XErdaAIProxyChatTitle: "erda-family",
+		vars.XErdaAIProxyChatId:    "mocked-id",
 	}
 	var header = make(http.Header)
 	for k, v := range cases {
@@ -109,14 +111,14 @@ func TestAudit_SetChats(t *testing.T) {
 	if err := a.SetChats(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if a.Audit.ChatType != cases["X-Erda-AI-Proxy-ChatType"] {
-		t.Error("X-Erda-AI-Proxy-ChatType")
+	if a.Audit.ChatType != cases[vars.XErdaAIProxyChatType] {
+		t.Error(vars.XErdaAIProxyChatType)
 	}
-	if a.Audit.ChatTitle != cases["X-Erda-AI-Proxy-ChatTitle"] {
-		t.Error("X-Erda-AI-Proxy-ChatTitle")
+	if a.Audit.ChatTitle != cases[vars.XErdaAIProxyChatTitle] {
+		t.Error(vars.XErdaAIProxyChatTitle)
 	}
-	if a.Audit.ChatId != cases["X-Erda-AI-Proxy-ChatId"] {
-		t.Error("X-Erda-AI-Proxy-ChatTitle")
+	if a.Audit.ChatId != cases[vars.XErdaAIProxyChatId] {
+		t.Error(vars.XErdaAIProxyChatTitle)
 	}
 }
 
@@ -138,7 +140,7 @@ func TestAudit_SetPrompt(t *testing.T) {
 		request.URL.Host = "ai.localhost"
 		request.Method = http.MethodPost
 		request.Header.Set("Content-Type", string(httputil.ApplicationJson))
-		infor := reverseproxy.NewInfor(context.Background(), request)
+		infor := roundtrip.NewInfor(context.Background(), request)
 		if err := aud.SetPrompt(context.Background(), infor); err != nil {
 			t.Fatal(err)
 		}

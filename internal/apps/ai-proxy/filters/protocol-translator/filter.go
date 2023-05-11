@@ -23,12 +23,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dspo/roundtrip"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -36,11 +38,11 @@ const (
 )
 
 var (
-	_ reverseproxy.RequestFilter = (*ProtocolTranslator)(nil)
+	_ roundtrip.RequestFilter = (*ProtocolTranslator)(nil)
 )
 
 func init() {
-	reverseproxy.RegisterFilterCreator(Name, New)
+	filters.RegisterFilterCreator(Name, New)
 }
 
 type ProtocolTranslator struct {
@@ -49,7 +51,7 @@ type ProtocolTranslator struct {
 	processorArgs map[string]string
 }
 
-func New(config json.RawMessage) (reverseproxy.Filter, error) {
+func New(config json.RawMessage) (roundtrip.Filter, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
@@ -57,15 +59,15 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	return &ProtocolTranslator{Config: &cfg}, nil
 }
 
-func (f *ProtocolTranslator) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (f *ProtocolTranslator) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundtrip.HttpInfor) (signal roundtrip.Signal, err error) {
 	if err := f.ProcessAll(ctx, infor); err != nil {
-		return reverseproxy.Intercept, err
+		return roundtrip.Intercept, err
 	}
-	return reverseproxy.Continue, nil
+	return roundtrip.Continue, nil
 }
 
-func (f *ProtocolTranslator) ProcessAll(ctx context.Context, infor reverseproxy.HttpInfor) error {
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProcessAll")
+func (f *ProtocolTranslator) ProcessAll(ctx context.Context, infor roundtrip.HttpInfor) error {
+	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger).Sub("ProcessAll")
 	var (
 		names      []string
 		processors []any
@@ -108,14 +110,14 @@ func (f *ProtocolTranslator) FindProcessor(ctx context.Context, processor string
 }
 
 func (f *ProtocolTranslator) SetAuthorizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
 	if appKey := prov.GetAppKey(); appKey != "" && header.Get("Authorization") == "" {
 		header.Set("Authorization", "Bearer "+appKey)
 	}
 }
 
 func (f *ProtocolTranslator) SetOpenAIOrganizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
 	if org := prov.GetOrganization(); org != "" && header.Get("OpenAI-Organization") == "" {
 		header.Set("OpenAI-Organization", org)
 	}
@@ -129,14 +131,14 @@ func (f *ProtocolTranslator) ReplaceAuthorizationWithAPIKey(ctx context.Context,
 }
 
 func (f *ProtocolTranslator) SetAPIKeyIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
 	if appKey := prov.GetAppKey(); appKey != "" && header.Get("Api-Key") == "" {
 		header.Set("Api-Key", appKey)
 	}
 }
 
 func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AddQueries")
+	l := ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger).Sub("AddQueries")
 	s, err := strconv.Unquote(f.processorArgs["AddQueries"])
 	values, err := url.ParseQuery(s)
 	if err != nil {
@@ -163,7 +165,7 @@ func (f *ProtocolTranslator) Processors() map[string]any {
 }
 
 func (f *ProtocolTranslator) responseNotImplementTranslator(w http.ResponseWriter, from, to any) {
-	w.Header().Set("server", "ai-proxy/erda")
+	w.Header().Set("Server", "AI Service on Erda")
 	w.WriteHeader(http.StatusNotImplemented)
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"error": "not implement translator",

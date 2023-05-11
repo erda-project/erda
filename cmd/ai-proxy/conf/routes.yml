@@ -5,13 +5,12 @@ routes:
     methodMatcher: "" # 不填写时为 contains, 对应 Go 实现是 strings.Contains(route.Method, request.Method)
     headerMatcher: "" # 不填写时不将 http header 作为匹配条件
     router:
-      to: openai      # 值为 provider 名称, 或 __upstream__
+      to: __not_found__      # 值为 provider 名称, 或 __not_found__
       instanceId: ""  # 不填写时值为 default
       scheme: ""      # 默认为 http, 缺省时使用 provider 指定的 scheme
       host: ""        # 仅当值为 __upstream__ 时, 指定该值为 upstream 的 host
       rewrite: ""     # 不填写时不进行 rewrite
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -24,10 +23,9 @@ routes:
     pathMatcher: ""   # 不填写时, 默认为 `^/v1/models/([^/.]+)$`
     method: GET
     router:
-      to: openai
+      to: __not_found__
       instanceId: default
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -43,9 +41,18 @@ routes:
       instanceId: terminus3
       rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions
     filters:
-      - name: prometheus-collector
       - name: log-http
+      - name: body-size-limit
+        maxSize: 10240
+      - name: acl
+        config:
+          sources:
+            - erda
       - name: audit
+      - name: session-context
+        config:
+          sources:
+            - erda
       - name: protocol-translator
         config:
           processes:
@@ -61,9 +68,18 @@ routes:
       instanceId: terminus3
       rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions
     filters:
-      - name: prometheus-collector
       - name: log-http
+      - name: body-size-limit
+        maxSize: 10240
+      - name: acl
+        config:
+          sources:
+            - erda
       - name: audit
+      - name: session-context
+        config:
+          sources:
+            - erda
       - name: protocol-translator
         config:
           processes:
@@ -77,7 +93,6 @@ routes:
     router:
       to: __not_found__
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
 
@@ -86,7 +101,6 @@ routes:
     router:
       to: __not_found__
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
 
@@ -95,7 +109,6 @@ routes:
     router:
       to: __not_found__
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
 
@@ -104,7 +117,6 @@ routes:
     router:
       to: __not_found__
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
 
@@ -113,7 +125,6 @@ routes:
     router:
       to: __not_found__
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -128,7 +139,6 @@ routes:
       to: __not_found__
     method: POST
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
@@ -143,7 +153,6 @@ routes:
     router:
       to: __not_found__
     filters:
-      - name: prometheus-collector
       - name: log-http
       - name: audit
       - name: protocol-translator
