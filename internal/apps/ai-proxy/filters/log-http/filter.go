@@ -17,11 +17,12 @@ package log_http
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -30,63 +31,80 @@ const (
 )
 
 var (
-	_ filter.RequestInforFilter  = (*LogHttp)(nil)
-	_ filter.ResponseInforFilter = (*LogHttp)(nil)
+	_ reverseproxy.RequestFilter  = (*LogHttp)(nil)
+	_ reverseproxy.ResponseFilter = (*LogHttp)(nil)
 )
 
 func init() {
-	filter.Register(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type LogHttp struct{}
+type LogHttp struct {
+	*reverseproxy.DefaultResponseFilter
 
-func New(_ json.RawMessage) (filter.Filter, error) {
-	return &LogHttp{}, nil
+	headerPrinted bool
+	lineCount     int
 }
 
-func (f *LogHttp) OnHttpRequestInfor(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
+func New(_ json.RawMessage) (reverseproxy.Filter, error) {
+	return &LogHttp{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
+}
+
+func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
-		return filter.Continue, nil
+		return reverseproxy.Continue, nil
 	}
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnRequest")
 	var url = infor.URL()
 	var m = map[string]any{
-		"scheme":     url.Scheme,
-		"host":       infor.Host(),
-		"url.host":   url.Host,
-		"uri":        url.RequestURI(),
-		"headers":    infor.Header(),
-		"remoteAddr": infor.RemoteAddr(),
+		"scheme":        url.Scheme,
+		"host":          infor.Host(),
+		"url.host":      url.Host,
+		"uri":           url.RequestURI(),
+		"headers":       infor.Header(),
+		"remoteAddr":    infor.RemoteAddr(),
+		"contentType":   infor.Header().Get("Content-Type"),
+		"contentLength": infor.ContentLength(),
 	}
-	defer func() { l.Debugf("request info: %s", strutil.TryGetJsonStr(m)) }()
-	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) ||
-		infor.ContentLength() == 0 {
-		return filter.Continue, nil
+	if body := infor.BodyBuffer(); body == nil {
+		l.Debug("request body is nil")
+		m["body"] = json.RawMessage("null")
+	} else {
+		l.Debugf("request body: %s", body.String())
+		if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) {
+			m["body"] = json.RawMessage(body.Bytes())
+		} else {
+			m["body"] = body.String()
+		}
 	}
-	body, err := infor.Body()
-	if err != nil {
-		return filter.Intercept, err
-	}
-	m["body"] = json.RawMessage(body.Bytes())
-	return filter.Continue, nil
+	l.Debugf("request info: %s", strutil.TryGetJsonStr(m))
+	return reverseproxy.Continue, nil
 }
 
-func (f *LogHttp) OnHttpResponseInfor(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnHttpResponseInfor")
-	var m = map[string]any{
-		"headers":     infor.Header(),
-		"status":      infor.Status(),
-		"status code": infor.StatusCode(),
+func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
+	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") && !f.headerPrinted {
+		var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnResponseChunk")
+		var m = map[string]any{
+			"headers":     infor.Header(),
+			"status":      infor.Status(),
+			"status code": infor.StatusCode(),
+		}
+		l.Debugf("response info: %s", strutil.TryGetJsonStr(m))
+		f.headerPrinted = true
 	}
-	defer func() { l.Debugf("response info: %s", strutil.TryGetJsonStr(m)) }()
-	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) {
-		return filter.Continue, nil
+	return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk)
+}
+
+func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
+	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
+		return err
 	}
-	body, err := infor.Body()
-	if err != nil {
-		l.Errorf("failed to infor.Body(), err: %v", err)
-		return filter.Intercept, err
+	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
+		return nil
 	}
-	m["body"] = json.RawMessage(body.Bytes())
-	return filter.Continue, nil
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnResponseEOF")
+	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
+		l.Debugf("response body: %s", f.String())
+	}
+	return nil
 }

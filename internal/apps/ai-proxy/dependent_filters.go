@@ -19,5 +19,4 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/protocol-translator"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/reverse-proxy"
 )

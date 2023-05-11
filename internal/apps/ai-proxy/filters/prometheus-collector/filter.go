@@ -18,13 +18,14 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"net/http"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/metrics"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/metrics"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -32,68 +33,72 @@ const (
 )
 
 var (
-	_ filter.RequestInforFilter  = (*PrometheusCollector)(nil)
-	_ filter.ResponseInforFilter = (*PrometheusCollector)(nil)
+	_ reverseproxy.RequestFilter  = (*PrometheusCollector)(nil)
+	_ reverseproxy.ResponseFilter = (*PrometheusCollector)(nil)
 )
 
 func init() {
-	filter.Register(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
+}
+
+func New(_ json.RawMessage) (reverseproxy.Filter, error) {
+	return &PrometheusCollector{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
 type PrometheusCollector struct {
-	labels metrics.LabelValues
+	*reverseproxy.DefaultResponseFilter
+
+	lvs metrics.LabelValues
 }
 
-func New(_ json.RawMessage) (filter.Filter, error) {
-	return &PrometheusCollector{}, nil
-}
-
-func (f *PrometheusCollector) OnHttpRequestInfor(ctx context.Context, infor filter.HttpInfor) (filter.Signal, error) {
-	f.labels.ChatType = infor.Header().Get("X-Erda-AI-Proxy-ChatType")
-	f.labels.ChatTitle = infor.Header().Get("X-Erda-AI-Proxy-ChatTitle")
-	f.labels.Source = infor.Header().Get("X-Erda-AI-Proxy-Source")
-	f.labels.UserId = infor.Header().Get("X-Erda-AI-Proxy-JobNumber")
-	f.labels.UserName = infor.Header().Get("X-Erda-AI-Proxy-Name")
-	f.labels.Provider = ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider).Name
-	f.labels.Model = f.getModel(ctx, infor)
-	f.labels.OperationId = infor.Method()
+func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	f.lvs.ChatType = infor.Header().Get("X-Erda-AI-Proxy-ChatType")
+	f.lvs.ChatTitle = infor.Header().Get("X-Erda-AI-Proxy-ChatTitle")
+	f.lvs.Source = infor.Header().Get("X-Erda-AI-Proxy-Source")
+	f.lvs.UserId = infor.Header().Get("X-Erda-AI-Proxy-JobNumber")
+	f.lvs.UserName = infor.Header().Get("X-Erda-AI-Proxy-Name")
+	f.lvs.Provider = ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider).Name
+	f.lvs.Model = f.getModel(ctx, infor)
+	f.lvs.OperationId = infor.Method()
 	if infor.URL() != nil {
-		f.labels.OperationId += " " + infor.URL().Path
+		f.lvs.OperationId += " " + infor.URL().Path
 	}
-	return filter.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
-func (f *PrometheusCollector) OnHttpResponseInfor(_ context.Context, infor filter.HttpInfor) (filter.Signal, error) {
-	f.labels.Status = infor.Status()
-	f.labels.StatusCode = strconv.FormatInt(int64(infor.StatusCode()), 10)
+func (f *PrometheusCollector) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
+	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
+		return err
+	}
+
+	f.lvs.Status = infor.Status()
+	f.lvs.StatusCode = strconv.FormatInt(int64(infor.StatusCode()), 10)
 	for _, v := range []*string{
-		&f.labels.ChatTitle,
-		&f.labels.ChatType,
-		&f.labels.UserId,
-		&f.labels.UserName,
+		&f.lvs.ChatTitle,
+		&f.lvs.ChatType,
+		&f.lvs.UserId,
+		&f.lvs.UserName,
 	} {
 		if data, err := base64.StdEncoding.DecodeString(*v); err == nil {
 			*v = string(data)
 		}
 	}
-	metrics.Get().WithLabelValues(f.labels.Values()...).Inc()
-	return filter.Continue, nil
+	metrics.CounterVec().WithLabelValues(f.lvs.Values()...).Inc()
+
+	return nil
 }
 
-func (f *PrometheusCollector) getModel(ctx context.Context, infor filter.HttpInfor) string {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("PrometheusCollector").Sub("getModel")
+func (f *PrometheusCollector) getModel(ctx context.Context, infor reverseproxy.HttpInfor) string {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("PrometheusCollector").Sub("getModel")
 	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) {
 		return "-" // todo: Only Content-Type: application/json auditing is supported for now.
 	}
-	body, err := infor.Body()
-	if err != nil {
-		l.Errorf("failed to infor.Body, err: %v")
-		return "-"
-	}
 	var m = make(map[string]json.RawMessage)
-	if err := json.NewDecoder(body).Decode(&m); err != nil {
-		l.Errorf("failed to Decode r.Body to m (%T), err: %v", m, err)
-		return "-"
+	if body := infor.BodyBuffer(); body != nil {
+		if err := json.NewDecoder(body).Decode(&m); err != nil {
+			l.Errorf("failed to Decode r.Body to m (%T), err: %v", m, err)
+			return "-"
+		}
 	}
 	data, ok := m["model"]
 	if !ok {
