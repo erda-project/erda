@@ -172,6 +172,10 @@ func (m *mockBatch) Column(i int) driver.BatchColumn { return nil }
 
 func (m *mockBatch) Send() error { return nil }
 
+func (m *mockBatch) Flush() error { return nil }
+
+func (m *mockBatch) IsSent() bool { return true }
+
 type mockLoader struct {
 }
 

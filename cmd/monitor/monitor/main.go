@@ -57,6 +57,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/clickhouse"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/metric/storage/elasticsearch"
+	_ "github.com/erda-project/erda/internal/tools/monitor/core/profile/query"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/settings"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
@@ -76,6 +77,7 @@ import (
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 )
 
 //go:embed bootstrap.yaml

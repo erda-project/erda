@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
@@ -54,8 +55,9 @@ func (p *provider) ComponentClose() error {
 	return p.storage.Close()
 }
 
-func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }
-func (p *provider) ExportLog(items ...*log.Log) error   { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error                 { return nil }
+func (p *provider) ExportLog(items ...*log.Log) error                   { return nil }
+func (p *provider) ExportProfile(items ...*profile.ProfileIngest) error { return nil }
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {
 	p.storage.WriteBatchAsync(items)

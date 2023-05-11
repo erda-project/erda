@@ -151,6 +151,7 @@ func (p *Pipeline) prsFromComponent(coms []model.ComponentUnit) ([]*model.Runtim
 	}
 	return res, nil
 }
+
 func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]*model.RuntimeExporter, error) {
 	res := make([]*model.RuntimeExporter, 0, len(coms))
 	for _, com := range coms {

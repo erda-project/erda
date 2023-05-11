@@ -58,6 +58,7 @@ import (
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 )
 

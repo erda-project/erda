@@ -37,6 +37,7 @@ var (
 		"metaserver_host":      topicPrefix + "metaserver_host",
 		"metrics-temp":         topicPrefix + "metrics-temp",
 		"monitor-log":          topicPrefix + "monitor-log",
+		"profile":              topicPrefix + "profiles",
 	}
 )
 

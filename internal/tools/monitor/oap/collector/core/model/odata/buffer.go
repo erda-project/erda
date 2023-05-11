@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 )
 
 // Buffer. Store ObservableData
@@ -104,6 +105,18 @@ func (b *Buffer) FlushAllRaws() []*Raw {
 	out := make([]*Raw, len(b.buf))
 	for i := range b.buf {
 		out[i] = b.buf[i].(*Raw)
+	}
+
+	b.buf = b.buf[:0]
+	return out
+}
+
+func (b *Buffer) FlushAllProfiles() []*profile.ProfileIngest {
+	b.Lock()
+	defer b.Unlock()
+	out := make([]*profile.ProfileIngest, len(b.buf))
+	for i := range b.buf {
+		out[i] = b.buf[i].(*profile.ProfileIngest)
 	}
 
 	b.buf = b.buf[:0]
