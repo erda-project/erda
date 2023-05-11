@@ -12,4 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverse_proxy_test
+package reverseproxy
+
+import "net/http"
+
+func DoNothingDirector(_ *http.Request) {}

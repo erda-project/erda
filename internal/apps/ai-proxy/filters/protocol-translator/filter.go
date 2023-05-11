@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 
@@ -28,9 +27,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
-	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -38,18 +36,20 @@ const (
 )
 
 var (
-	_ filter.RequestFilter = (*ProtocolTranslator)(nil)
+	_ reverseproxy.RequestFilter = (*ProtocolTranslator)(nil)
 )
 
 func init() {
-	filter.Register(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
 type ProtocolTranslator struct {
 	Config *Config
+
+	processorArgs map[string]string
 }
 
-func New(config json.RawMessage) (filter.Filter, error) {
+func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
@@ -57,35 +57,15 @@ func New(config json.RawMessage) (filter.Filter, error) {
 	return &ProtocolTranslator{Config: &cfg}, nil
 }
 
-func (f *ProtocolTranslator) OnHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (filter.Signal, error) {
-	if err := f.ProcessAll(ctx, r); err != nil {
-		return filter.Intercept, err
+func (f *ProtocolTranslator) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	if err := f.ProcessAll(ctx, infor); err != nil {
+		return reverseproxy.Intercept, err
 	}
-	return filter.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
-func (f *ProtocolTranslator) Processors() map[string]any {
-	return map[string]any{
-		"SetAuthorizationIfNotSpecified":      f.SetAuthorizationIfNotSpecified,
-		"SetOpenAIOrganizationIfNotSpecified": f.SetOpenAIOrganizationIfNotSpecified,
-		"ReplaceAuthorizationWithAPIKey":      f.ReplaceAuthorizationWithAPIKey,
-		"SetAPIKeyIfNotSpecified":             f.SetAPIKeyIfNotSpecified,
-		"ReplaceURIPath":                      f.ReplaceURIPath,
-		"AddQueries":                          f.AddQueries,
-	}
-}
-
-func (f *ProtocolTranslator) FindProcessor(ctx context.Context, processor string) (any, error) {
-	name, args, err := ParseProcessorNameArgs(processor)
-	if err != nil {
-		return nil, err
-	}
-	filter.WithValue(ctx, name, args)
-	return f.Processors()[name], nil
-}
-
-func (f *ProtocolTranslator) ProcessAll(ctx context.Context, r *http.Request) error {
-	var l = ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
+func (f *ProtocolTranslator) ProcessAll(ctx context.Context, infor reverseproxy.HttpInfor) error {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
 	var (
 		names      []string
 		processors []any
@@ -103,26 +83,39 @@ func (f *ProtocolTranslator) ProcessAll(ctx context.Context, r *http.Request) er
 		if processors[i] == nil {
 			panic("processor is nil")
 		}
-		if p, ok := processors[i].(func(ctx context.Context, header http.Header)); ok {
-			p(ctx, r.Header)
-		} else if p, ok := processors[i].(func(ctx context.Context, url *url.URL)); ok {
-			p(ctx, r.URL)
-		} else {
+		switch p := processors[i].(type) {
+		case func(ctx context.Context, header http.Header):
+			p(ctx, infor.Header())
+		case func(ctx context.Context, url *url.URL):
+			p(ctx, infor.URL())
+		default:
 			panic(fmt.Sprintf("process is invalid type: %T", p))
 		}
 	}
 	return nil
 }
 
+func (f *ProtocolTranslator) FindProcessor(ctx context.Context, processor string) (any, error) {
+	name, args, err := ParseProcessorNameArgs(processor)
+	if err != nil {
+		return nil, err
+	}
+	if f.processorArgs == nil {
+		f.processorArgs = make(map[string]string)
+	}
+	f.processorArgs[name] = args
+	return f.Processors()[name], nil
+}
+
 func (f *ProtocolTranslator) SetAuthorizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
 	if appKey := prov.GetAppKey(); appKey != "" && header.Get("Authorization") == "" {
 		header.Set("Authorization", "Bearer "+appKey)
 	}
 }
 
 func (f *ProtocolTranslator) SetOpenAIOrganizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(filter.ProvidersCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(reverseproxy.ProvidersCtxKey{}).(*provider.Provider)
 	if org := prov.GetOrganization(); org != "" && header.Get("OpenAI-Organization") == "" {
 		header.Set("OpenAI-Organization", org)
 	}
@@ -136,45 +129,18 @@ func (f *ProtocolTranslator) ReplaceAuthorizationWithAPIKey(ctx context.Context,
 }
 
 func (f *ProtocolTranslator) SetAPIKeyIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
 	if appKey := prov.GetAppKey(); appKey != "" && header.Get("Api-Key") == "" {
 		header.Set("Api-Key", appKey)
 	}
 }
 
-func (f *ProtocolTranslator) ReplaceURIPath(ctx context.Context, u *url.URL) {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
-	s := ctx.Value("ReplaceURIPath").(string)
-	s, err := strconv.Unquote(s)
-	if err != nil {
-		l.Errorf(`ReplaceURIPath failed to strconv.Unquote(%s)`, ctx.Value(filter.ReplacedPathCtxKey{}).(string))
-		return
-	}
-	p := ctx.Value(filter.ProviderCtxKey{}).(*provider.Provider)
-	for {
-		expr, start, end, err := strutil.FirstCustomExpression(s, "${", "}", func(s string) bool {
-			s = strings.TrimSpace(s)
-			return strings.HasPrefix(s, "env.") || strings.HasPrefix(s, "provider.metadata.")
-		})
-		if err != nil || start == end {
-			break
-		}
-		if strings.HasPrefix(expr, "env.") {
-			s = strutil.Replace(s, os.Getenv(strings.TrimPrefix(expr, ".env")), start, end)
-		} else {
-			s = strutil.Replace(s, p.Metadata[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
-		}
-	}
-	u.Path = s
-}
-
 func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
-	l := ctx.Value(filter.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
-	s := ctx.Value("AddQueries").(string)
-	s, err := strconv.Unquote(s)
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
+	s, err := strconv.Unquote(f.processorArgs["AddQueries"])
 	values, err := url.ParseQuery(s)
 	if err != nil {
-		l.Errorf(`AddQueries failed to url.ParseQuery(%s)`, ctx.Value(filter.AddQueriesCtxKey{}).(string))
+		l.Errorf(`AddQueries failed to url.ParseQuery(%s)`, ctx.Value(reverseproxy.AddQueriesCtxKey{}).(string))
 		return
 	}
 	queries := u.Query()
@@ -184,6 +150,16 @@ func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
 		}
 	}
 	u.RawQuery = queries.Encode()
+}
+
+func (f *ProtocolTranslator) Processors() map[string]any {
+	return map[string]any{
+		"SetAuthorizationIfNotSpecified":      f.SetAuthorizationIfNotSpecified,
+		"SetOpenAIOrganizationIfNotSpecified": f.SetOpenAIOrganizationIfNotSpecified,
+		"ReplaceAuthorizationWithAPIKey":      f.ReplaceAuthorizationWithAPIKey,
+		"SetAPIKeyIfNotSpecified":             f.SetAPIKeyIfNotSpecified,
+		"AddQueries":                          f.AddQueries,
+	}
 }
 
 func (f *ProtocolTranslator) responseNotImplementTranslator(w http.ResponseWriter, from, to any) {

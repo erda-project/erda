@@ -17,14 +17,108 @@ package audit_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/filter"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
+
+func TestAudit_SetSessionId(t *testing.T) {
+	var header = http.Header{
+		"X-Erda-AI-Proxy-SessionId": []string{"mocked-session-id"},
+	}
+	f, err := audit.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = f.(*audit.Audit).SetSessionId(context.Background(), header); err != nil {
+		t.Fatal(err)
+	}
+	if f.(*audit.Audit).Audit.SessionId != header.Get("X-Erda-AI-Proxy-SessionId") {
+		t.Error("X-Erda-AI-Proxy-SessionId")
+	}
+}
+
+func TestAudit_SetSource(t *testing.T) {
+	var header = http.Header{
+		"X-Erda-AI-Proxy-Source": []string{"mocked-session-id"},
+	}
+	f, _ := audit.New(nil)
+	a := f.(*audit.Audit)
+	if err := a.SetSource(context.Background(), header); err != nil {
+		t.Fatal(err)
+	}
+	if a.Audit.Source != header.Get("X-Erda-AI-Proxy-Source") {
+		t.Error("X-Erda-AI-Proxy-Source")
+	}
+}
+
+func TestAudit_SetUserInfo(t *testing.T) {
+	var m = map[string]string{
+		"X-Erda-AI-Proxy-Name":            "mocked-name",
+		"X-Erda-AI-Proxy-Phone":           "mocked-phone",
+		"X-Erda-AI-Proxy-JobNumber":       "mocked-job-number",
+		"X-Erda-AI-Proxy-Email":           "mocked-email",
+		"X-Erda-AI-Proxy-DingTalkStaffID": "mocked-ding-id",
+	}
+	var header = make(http.Header)
+	for k, v := range m {
+		header.Set(k, base64.StdEncoding.EncodeToString([]byte(v)))
+	}
+
+	f, _ := audit.New(nil)
+	a := f.(*audit.Audit)
+	if err := a.SetUserInfo(context.Background(), header); err != nil {
+		t.Fatal(err)
+	}
+	if a.Audit.Username != m["X-Erda-AI-Proxy-Name"] {
+		t.Error("X-Erda-AI-Proxy-Name")
+	}
+	if a.Audit.PhoneNumber != m["X-Erda-AI-Proxy-Phone"] {
+		t.Error("X-Erda-AI-Proxy-Phone")
+	}
+	if a.Audit.JobNumber != m["X-Erda-AI-Proxy-JobNumber"] {
+		t.Error("X-Erda-AI-Proxy-JobNumber")
+	}
+	if a.Audit.Email != m["X-Erda-AI-Proxy-Email"] {
+		t.Error("X-Erda-AI-Proxy-Email")
+	}
+	if a.Audit.DingtalkStaffId != m["X-Erda-AI-Proxy-DingTalkStaffID"] {
+		t.Error("X-Erda-AI-Proxy-DingTalkStaffID")
+	}
+}
+
+func TestAudit_SetChats(t *testing.T) {
+	var a = &audit.Audit{
+		DefaultResponseFilter: nil,
+		Audit:                 new(models.AIProxyFilterAudit),
+	}
+	var cases = map[string]string{
+		"X-Erda-AI-Proxy-ChatType":  "group",
+		"X-Erda-AI-Proxy-ChatTitle": "erda-family",
+		"X-Erda-AI-Proxy-ChatId":    "mocked-id",
+	}
+	var header = make(http.Header)
+	for k, v := range cases {
+		header.Set(k, base64.StdEncoding.EncodeToString([]byte(v)))
+	}
+	if err := a.SetChats(context.Background(), header); err != nil {
+		t.Fatal(err)
+	}
+	if a.Audit.ChatType != cases["X-Erda-AI-Proxy-ChatType"] {
+		t.Error("X-Erda-AI-Proxy-ChatType")
+	}
+	if a.Audit.ChatTitle != cases["X-Erda-AI-Proxy-ChatTitle"] {
+		t.Error("X-Erda-AI-Proxy-ChatTitle")
+	}
+	if a.Audit.ChatId != cases["X-Erda-AI-Proxy-ChatId"] {
+		t.Error("X-Erda-AI-Proxy-ChatTitle")
+	}
+}
 
 func TestAudit_SetPrompt(t *testing.T) {
 	f, err := audit.New(nil)
@@ -36,20 +130,16 @@ func TestAudit_SetPrompt(t *testing.T) {
 		t.Fatal("it should be ok")
 	}
 	t.Run("POST /v1/chat/completions", func(t *testing.T) {
-		if err := aud.SetPrompt(context.Background(), &mockedInfor{
-			u: &url.URL{
-				Scheme: "https",
-				Host:   "ai.localhost",
-				Path:   "/v1/chat/completions",
-			},
-			method: http.MethodPost,
-			header: http.Header{
-				"Content-Type": []string{string(httputil.ApplicationJson)},
-			},
-			body:       bytes.NewBufferString(`{"model":"gpt-3.5-turbo","messages":[{"role":"system","content":"Your Name is CodeAI, trained by Terminus."},{"role":"user","content":"钉钉群名称最长能有多少个字符 ?"}],"max_tokens":2048,"temperature":1}`),
-			statusCode: http.StatusOK,
-			remoteAddr: "127.0.0.1",
-		}); err != nil {
+		request, err := http.NewRequest(http.MethodPost, "http://ai.localhost/v1/chat/completions", bytes.NewBufferString(`{"model":"gpt-3.5-turbo","messages":[{"role":"system","content":"Your Name is CodeAI, trained by Terminus."},{"role":"user","content":"钉钉群名称最长能有多少个字符 ?"}],"max_tokens":2048,"temperature":1}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.URL.Scheme = "http"
+		request.URL.Host = "ai.localhost"
+		request.Method = http.MethodPost
+		request.Header.Set("Content-Type", string(httputil.ApplicationJson))
+		infor := reverseproxy.NewInfor(reverseproxy.NewContext(make(map[any]any)), request)
+		if err := aud.SetPrompt(context.Background(), infor); err != nil {
 			t.Fatal(err)
 		}
 		t.Logf("aud.Audit.Prompt: %s", aud.Audit.Prompt)
@@ -57,51 +147,4 @@ func TestAudit_SetPrompt(t *testing.T) {
 			t.Fatalf("aud.Audit.Prompt error, expected: %s, got: %s", "钉钉群名称最长能有多少个字符 ?", aud.Audit.Prompt)
 		}
 	})
-}
-
-var _ filter.HttpInfor = (*mockedInfor)(nil)
-
-type mockedInfor struct {
-	u          *url.URL
-	method     string
-	header     http.Header
-	body       *bytes.Buffer
-	statusCode int
-	remoteAddr string
-}
-
-func (m *mockedInfor) Method() string {
-	return m.method
-}
-
-func (m *mockedInfor) URL() *url.URL {
-	return m.u
-}
-
-func (m *mockedInfor) Status() string {
-	return http.StatusText(m.statusCode)
-}
-
-func (m *mockedInfor) StatusCode() int {
-	return m.statusCode
-}
-
-func (m *mockedInfor) Header() http.Header {
-	return m.header
-}
-
-func (m *mockedInfor) Body() (*bytes.Buffer, error) {
-	return m.body, nil
-}
-
-func (m *mockedInfor) ContentLength() int64 {
-	return int64(len(m.body.Bytes()))
-}
-
-func (m *mockedInfor) Host() string {
-	return m.u.Host
-}
-
-func (m *mockedInfor) RemoteAddr() string {
-	return m.remoteAddr
 }

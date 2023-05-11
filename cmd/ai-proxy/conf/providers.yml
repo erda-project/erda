@@ -18,3 +18,12 @@ providers:
     metadata:
       RESOURCE_NAME: "codeai"
       DEVELOPMENT_NAME: "gpt-35-turbo-0301"
+
+  - name: test-server
+    instanceId: default
+    host: localhost:8080
+    scheme: http
+    description: 用于测试反向代理框架
+    docSite: https://github.com/erda-project/erda
+    metadata:
+      CUSTOM: custom-path

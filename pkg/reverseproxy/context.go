@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+package reverseproxy
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -40,7 +39,7 @@ type Context struct {
 	inner context.Context
 }
 
-func NewContext(values map[any]any) context.Context {
+func NewContext(values map[any]any) *Context {
 	var ctx = &Context{inner: context.Background()}
 	for k, v := range values {
 		WithValue(ctx, k, v)
@@ -64,10 +63,10 @@ func (c *Context) Value(key any) any {
 	return c.inner.Value(key)
 }
 
-func WithValue(ctx context.Context, key any, value any) {
-	if c, ok := ctx.(*Context); ok {
-		c.inner = context.WithValue(c.inner, key, value)
-		return
-	}
-	panic(fmt.Sprintf("the ctx context.Context must be type %T, got %T", new(Context), ctx))
+func (c *Context) Clone() *Context {
+	return &Context{inner: c.inner}
+}
+
+func WithValue(ctx *Context, key any, value any) {
+	ctx.inner = context.WithValue(ctx.inner, key, value)
 }

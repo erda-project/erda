@@ -20,6 +20,7 @@ type ContentType string
 
 const (
 	ApplicationJson    ContentType = "application/json"
+	TextEventStream    ContentType = "text/event-stream"
 	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
 )
 
