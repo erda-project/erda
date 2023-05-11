@@ -22,15 +22,17 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 )
 
 type DataType string
 
 const (
-	MetricType DataType = "METRIC"
-	SpanType   DataType = "SPAN"
-	LogType    DataType = "LOG"
-	RawType    DataType = "RAW"
+	MetricType  DataType = "METRIC"
+	SpanType    DataType = "SPAN"
+	LogType     DataType = "LOG"
+	RawType     DataType = "RAW"
+	ProfileType DataType = "PROFILE"
 )
 
 const (
@@ -109,6 +111,7 @@ var (
 	_ ObservableData = &log.Log{}
 	_ ObservableData = &trace.Span{}
 	_ ObservableData = &Raw{}
+	_ ObservableData = &profile.ProfileIngest{}
 )
 
 type ObservableData interface {
