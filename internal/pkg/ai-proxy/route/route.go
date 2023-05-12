@@ -82,7 +82,7 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	}
 
 	// return "not found" early
-	if r.Router.To == ToNotFound {
+	if r.IsNotFoundRoute() {
 		return func(rw http.ResponseWriter, req *http.Request) {
 			rw.Header().Set("Server", "erda/ai-proxy")
 			http.Error(rw, string(ToNotFound), http.StatusNotFound)
@@ -149,28 +149,32 @@ func (r *Route) Match(path, method string, header http.Header) bool {
 }
 
 func (r *Route) Director(ctx context.Context) func(req *http.Request) {
+	var prov = r.Provider
+	if prov_, ok := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider); ok {
+		prov = prov_
+	}
 	return func(req *http.Request) {
 		switch {
 		case r.Router.Scheme != "":
 			req.URL.Scheme = r.Router.Scheme
-		case r.Provider == nil, r.Provider.Scheme == "":
+		case prov == nil, prov.Scheme == "":
 			req.URL.Scheme = "https"
-		case r.Provider.Scheme == "https", r.Provider.Scheme == "http":
-			req.URL.Scheme = r.Provider.Scheme
+		case prov.Scheme == "https", prov.Scheme == "http":
+			req.URL.Scheme = prov.Scheme
 		default:
 			req.URL.Scheme = "https"
 		}
 		switch {
 		case r.Router.Host != "":
 			req.Host = r.Router.Host
-		case r.Provider == nil || r.Provider.Host == "":
+		case prov == nil || prov.Host == "":
 		default:
-			req.Host = r.Provider.GetHost()
+			req.Host = prov.GetHost()
 		}
 		req.URL.Host = req.Host
 		req.Header.Set("Host", req.Host)
 		req.Header.Set("X-Forwarded-Host", req.Host)
-		req.URL.Path = r.rewrite(r.Provider.Metadata)
+		req.URL.Path = r.rewrite(prov.Metadata)
 
 		if l, ok := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger); ok {
 			l.Sub("Director").Debug("[curl command]:\n\t" + GenCurl(req) + "\n")
@@ -218,7 +222,7 @@ func (r *Route) Validate() error {
 	}
 	for _, filter := range r.Filters {
 		if _, ok := reverseproxy.GetFilterCreator(filter.Name); !ok {
-			return errors.Errorf("no such filter creator named %s, do you import it ?", filter.Name)
+			return errors.Errorf("no such filter creator named %s, did you import it ?", filter.Name)
 		}
 	}
 

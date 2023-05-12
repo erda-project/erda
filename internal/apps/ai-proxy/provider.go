@@ -116,8 +116,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 }
 
 func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.Config.Routes.
-		FindRoute(r.URL.Path, r.Method, r.Header).
+	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
 		HandlerWith(
 			context.Background(),
 			reverseproxy.DBCtxKey{}, p.D,
