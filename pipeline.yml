@@ -133,6 +133,7 @@ stages:
           resources:
             cpu: 1
             mem: 1024
+          disable: true
       - custom-script:
           alias: build-diagnotor-agent
           image: registry.erda.cloud/erda-actions/custom-script:2.0
@@ -143,6 +144,7 @@ stages:
           resources:
             cpu: 1
             mem: 1024
+          disable: true
       - custom-script:
           alias: build-erda-cli-linux
           image: registry.erda.cloud/erda/erda-base:20230130
