@@ -67,10 +67,8 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		"contentLength": infor.ContentLength(),
 	}
 	if body := infor.BodyBuffer(); body == nil {
-		l.Debug("request body is nil")
 		m["body"] = json.RawMessage("null")
 	} else {
-		l.Debugf("request body: %s", body.String())
 		if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) {
 			m["body"] = json.RawMessage(body.Bytes())
 		} else {
