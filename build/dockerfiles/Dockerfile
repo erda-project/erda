@@ -42,7 +42,7 @@ RUN curl -o /usr/bin/orgalorg https://erda-project.oss-cn-hangzhou.aliyuncs.com/
     chmod 755 /usr/bin/orgalorg
 
 RUN \
-    npm i -g jackson-converter@1.0.10 && \
+    npm i -g jackson-converter@1.0.10 --registry=https://registry.npm.taobao.org && \
     pip3 install dicttoxml xmindparser
 
 RUN arch="$(dpkg --print-architecture)"; arch="${arch##*-}"; \
