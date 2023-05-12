@@ -76,12 +76,20 @@ type Route struct {
 }
 
 func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
+	// panic early
 	if len(kvs)%2 != 0 {
 		panic("kvs must be even")
 	}
-	if ctx == nil {
-		ctx = context.Background()
+
+	// return "not found" early
+	if r.Router.To == ToNotFound {
+		return func(rw http.ResponseWriter, req *http.Request) {
+			rw.Header().Set("Server", "erda/ai-proxy")
+			http.Error(rw, string(ToNotFound), http.StatusNotFound)
+		}
 	}
+
+	// to set logs.Logger and *provider.Provider into context.Context if not set
 	var (
 		l    logs.Logger
 		prov *provider.Provider
@@ -104,54 +112,9 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 		ctx = context.WithValue(ctx, reverseproxy.ProviderCtxKey{}, prov)
 	}
 
-	switch r.Router.To {
-	case ToNotFound:
-		return func(rw http.ResponseWriter, req *http.Request) {
-			rw.Header().Set("Server", "erda/ai-proxy")
-			http.Error(rw, string(ToNotFound), http.StatusNotFound)
-		}
-	}
-
+	// make reverseproxy.ReverseProxy and set filters
 	var rp = &reverseproxy.ReverseProxy{
-		Director: func(req *http.Request) {
-			switch {
-			case r.Router.Scheme != "":
-				req.URL.Scheme = r.Router.Scheme
-			case prov == nil, prov.Scheme == "":
-				req.URL.Scheme = "https"
-			case prov.Scheme == "https", prov.Scheme == "http":
-				req.URL.Scheme = prov.Scheme
-			default:
-				req.URL.Scheme = "https"
-			}
-			switch {
-			case r.Router.Host != "":
-				req.Host = r.Router.Host
-			case prov == nil || prov.Host == "":
-			default:
-				req.Host = prov.GetHost()
-			}
-			req.URL.Host = req.Host
-			req.Header.Set("Host", req.Host)
-			req.Header.Set("X-Forwarded-Host", req.Host)
-			req.URL.Path = r.rewrite(prov.Metadata)
-
-			var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
-			for k, vv := range req.Header {
-				for _, v := range vv {
-					curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
-				}
-			}
-			if req.Body != nil {
-				var buf = bytes.NewBuffer(nil)
-				if _, err := buf.ReadFrom(req.Body); err == nil {
-					_ = req.Body.Close()
-					curl += ` --data '` + buf.String() + `'`
-					req.Body = io.NopCloser(buf)
-				}
-			}
-			l.Sub("Director").Debug("[reverse proxy] curl command: " + curl + "\n")
-		},
+		Director: r.Director(ctx),
 		Transport: &timeCountTransport{
 			start: time.Now(),
 			l:     l,
@@ -183,6 +146,36 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 
 func (r *Route) Match(path, method string, header http.Header) bool {
 	return r.pathMatcher(path) && r.methodMatcher(method) && r.headerMatcher(header)
+}
+
+func (r *Route) Director(ctx context.Context) func(req *http.Request) {
+	return func(req *http.Request) {
+		switch {
+		case r.Router.Scheme != "":
+			req.URL.Scheme = r.Router.Scheme
+		case r.Provider == nil, r.Provider.Scheme == "":
+			req.URL.Scheme = "https"
+		case r.Provider.Scheme == "https", r.Provider.Scheme == "http":
+			req.URL.Scheme = r.Provider.Scheme
+		default:
+			req.URL.Scheme = "https"
+		}
+		switch {
+		case r.Router.Host != "":
+			req.Host = r.Router.Host
+		case r.Provider == nil || r.Provider.Host == "":
+		default:
+			req.Host = r.Provider.GetHost()
+		}
+		req.URL.Host = req.Host
+		req.Header.Set("Host", req.Host)
+		req.Header.Set("X-Forwarded-Host", req.Host)
+		req.URL.Path = r.rewrite(r.Provider.Metadata)
+
+		if l, ok := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger); ok {
+			l.Sub("Director").Debug("[curl command]:\n\t" + GenCurl(req) + "\n")
+		}
+	}
 }
 
 func (r *Route) Validate() error {
@@ -344,4 +337,22 @@ func (t *timeCountTransport) RoundTrip(req *http.Request) (*http.Response, error
 	response, err := t.inner.RoundTrip(req)
 	t.l.Debugf("RandTrip costs             %s", time.Now().Sub(t.start).String())
 	return response, err
+}
+
+func GenCurl(req *http.Request) string {
+	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
+	for k, vv := range req.Header {
+		for _, v := range vv {
+			curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
+		}
+	}
+	if req.Body != nil {
+		var buf = bytes.NewBuffer(nil)
+		if _, err := buf.ReadFrom(req.Body); err == nil {
+			_ = req.Body.Close()
+			curl += ` --data '` + buf.String() + `'`
+			req.Body = io.NopCloser(buf)
+		}
+	}
+	return curl
 }
