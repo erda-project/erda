@@ -190,7 +190,7 @@
     committedAt:
       - "<=20220215"
     filenames:
-      - "20230506-sp-profile-apps.sql"
+      - "20230515-sp-profile-apps.sql"
   meta:
     columnName: id
     types:

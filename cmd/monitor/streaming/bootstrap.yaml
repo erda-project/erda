@@ -96,6 +96,9 @@ clickhouse.table.initializer@log:
     - path: "conf/clickhouse/logs_ddl_create_tenant_tables.sql"
       ignore_err: "true"
 
+storage-retention-strategy@profile:
+  default_ttl: "${PROFILE_TTL:24h}"
+
 clickhouse.table.initializer@profile:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   ttl_sync_interval: "${CLICKHOUSE_TABLE_LOG_TTL_SYNC_INTERVAL:1h}"
