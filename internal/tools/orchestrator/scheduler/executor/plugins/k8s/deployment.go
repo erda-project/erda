@@ -32,9 +32,11 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
@@ -436,6 +438,16 @@ func (k *Kubernetes) AddContainersEnv(containers []corev1.Container, service *ap
 			Value: portStr,
 		})
 	}
+
+	// add collector url
+	collectorUrl := conf.CollectorPublicURL()
+	if sg.ClusterName == conf.MainClusterName() {
+		collectorUrl = fmt.Sprintf("http://%s", discover.Collector())
+	}
+	envs = append(envs, corev1.EnvVar{
+		Name:  "DICE_COLLECTOR_URL",
+		Value: collectorUrl,
+	})
 
 	for i, container := range containers {
 		requestmem, _ := container.Resources.Requests.Memory().AsInt64()
