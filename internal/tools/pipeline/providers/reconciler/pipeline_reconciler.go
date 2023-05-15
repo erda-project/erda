@@ -130,6 +130,7 @@ func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context,
 
 	// update pipeline status to running
 	pr.UpdatePipelineToRunning(ctx, p)
+	go metrics.PipelineGaugeProcessingAdd(*p, 1)
 }
 
 func (pr *defaultPipelineReconciler) UpdatePipelineToRunning(ctx context.Context, p *spec.Pipeline) {
@@ -210,8 +211,10 @@ func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Con
 		edgeReporter:         pr.r.EdgeReporter,
 		actionMgr:            pr.r.ActionMgr,
 	}
+	go metrics.TaskGaugeProcessingAdd(*task, 1)
 	tr.ReconcileOneTaskUntilDone(ctx, p, task)
 	pr.releaseTaskAfterReconciled(ctx, p, task)
+	go metrics.TaskGaugeProcessingAdd(*task, -1)
 	pr.chanToTriggerNextLoop <- struct{}{}
 }
 
