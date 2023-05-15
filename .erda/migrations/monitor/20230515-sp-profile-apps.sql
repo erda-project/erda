@@ -1,4 +1,4 @@
-CREATE TABLE `erda_profile_app`
+CREATE TABLE IF NOT EXISTS `erda_profile_app`
 (
     `id`              bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `units`           varchar(50)  NOT NULL COMMENT '单位',
