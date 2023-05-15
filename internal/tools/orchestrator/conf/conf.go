@@ -48,6 +48,7 @@ type Conf struct {
 	TokenClientID              string `env:"TOKEN_CLIENT_ID" default:"orchestrator"`
 	TokenClientSecret          string `env:"TOKEN_CLIENT_SECRET" default:"devops/orchestrator"`
 	InspectServiceGroupTimeout int    `env:"INSPECT_SERVICEGROUP_TIMEOUT" default:"60"`
+	CollectorPublicURL         string `env:"COLLECTOR_PUBLIC_URL"`
 
 	// Conf for scheduler
 	DefaultRuntimeExecutor string `env:"DEFAULT_RUNTIME_EXECUTOR" default:"MARATHON"`
@@ -206,4 +207,8 @@ func CustomRegCredSecret() string {
 
 func ErdaNamespace() string {
 	return cfg.ErdaNamespace
+}
+
+func CollectorPublicURL() string {
+	return cfg.CollectorPublicURL
 }
