@@ -89,7 +89,7 @@ func (f *PrometheusCollector) OnResponseEOF(ctx context.Context, infor reversepr
 }
 
 func (f *PrometheusCollector) getModel(ctx context.Context, infor reverseproxy.HttpInfor) string {
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("PrometheusCollector").Sub("getModel")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("getModel")
 	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) {
 		return "-" // todo: Only Content-Type: application/json auditing is supported for now.
 	}

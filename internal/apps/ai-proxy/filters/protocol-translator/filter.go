@@ -65,7 +65,7 @@ func (f *ProtocolTranslator) OnRequest(ctx context.Context, w http.ResponseWrite
 }
 
 func (f *ProtocolTranslator) ProcessAll(ctx context.Context, infor reverseproxy.HttpInfor) error {
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProcessAll")
 	var (
 		names      []string
 		processors []any
@@ -115,7 +115,7 @@ func (f *ProtocolTranslator) SetAuthorizationIfNotSpecified(ctx context.Context,
 }
 
 func (f *ProtocolTranslator) SetOpenAIOrganizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProvidersCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
 	if org := prov.GetOrganization(); org != "" && header.Get("OpenAI-Organization") == "" {
 		header.Set("OpenAI-Organization", org)
 	}
@@ -136,11 +136,11 @@ func (f *ProtocolTranslator) SetAPIKeyIfNotSpecified(ctx context.Context, header
 }
 
 func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProtocolTranslator")
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AddQueries")
 	s, err := strconv.Unquote(f.processorArgs["AddQueries"])
 	values, err := url.ParseQuery(s)
 	if err != nil {
-		l.Errorf(`AddQueries failed to url.ParseQuery(%s)`, ctx.Value(reverseproxy.AddQueriesCtxKey{}).(string))
+		l.Errorf(`AddQueries failed to url.ParseQuery(%s)`, s)
 		return
 	}
 	queries := u.Query()

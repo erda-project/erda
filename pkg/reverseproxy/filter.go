@@ -66,7 +66,7 @@ type HttpInfor interface {
 	Mutex() *sync.Mutex
 }
 
-func NewInfor[R httputil.RequestResponse](ctx *Context, r R) HttpInfor {
+func NewInfor[R httputil.RequestResponse](ctx context.Context, r R) HttpInfor {
 	l, ok := ctx.Value(MutexCtxKey{}).(*sync.Mutex)
 	if ok {
 		return (&infor[R]{r: r}).WithMutex(l)

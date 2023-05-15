@@ -54,7 +54,7 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
 		return reverseproxy.Continue, nil
 	}
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnRequest")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	var url = infor.URL()
 	var m = map[string]any{
 		"scheme":        url.Scheme,
@@ -83,7 +83,7 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 
 func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
 	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") && !f.headerPrinted {
-		var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnResponseChunk")
+		var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 		var m = map[string]any{
 			"headers":     infor.Header(),
 			"status":      infor.Status(),
@@ -102,7 +102,7 @@ func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfo
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
 		return nil
 	}
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("LogHttp").Sub("OnResponseEOF")
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
 		l.Debugf("response body: %s", f.String())
 	}
