@@ -43,7 +43,7 @@ RUN curl -o /usr/bin/orgalorg https://erda-project.oss-cn-hangzhou.aliyuncs.com/
 
 RUN \
     npm i -g jackson-converter@1.0.10 --registry=https://registry.npm.taobao.org && \
-    pip3 install dicttoxml xmindparser -i http://mirrors.aliyun.com/pypi/simple/
+    pip3 install dicttoxml xmindparser -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN arch="$(dpkg --print-architecture)"; arch="${arch##*-}"; \
     wget -O nginx.deb  https://terminus-dice.oss-cn-hangzhou.aliyuncs.com/installer/nginx_1.20.2-1~bullseye_${arch}.deb; \
