@@ -16,11 +16,13 @@ package route
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -28,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -58,121 +61,121 @@ func (routes Routes) FindRoute(path, method string, header http.Header) *Route {
 }
 
 type Route struct {
-	Context *reverseproxy.Context
-
-	Path          string          `json:"path" yaml:"path"`
-	PathMatcher   string          `json:"pathMatcher" yaml:"pathMatcher"`
-	Method        string          `json:"method" yaml:"method"`
-	MethodMatcher string          `json:"methodMatcher" yaml:"methodMatcher"`
-	HeaderMatcher json.RawMessage `json:"headerMatcher" yaml:"headerMatcher"`
-	Router        *Router         `json:"router" yaml:"router"`
-
-	Filters []*reverseproxy.FilterConfig `json:"filters" yaml:"filters"`
+	Path          string                       `json:"path" yaml:"path"`
+	PathMatcher   string                       `json:"pathMatcher" yaml:"pathMatcher"`
+	Method        string                       `json:"method" yaml:"method"`
+	MethodMatcher string                       `json:"methodMatcher" yaml:"methodMatcher"`
+	HeaderMatcher json.RawMessage              `json:"headerMatcher" yaml:"headerMatcher"`
+	Router        *Router                      `json:"router" yaml:"router"`
+	Provider      *provider.Provider           `json:"provider" yaml:"provider"`
+	Filters       []*reverseproxy.FilterConfig `json:"filters" yaml:"filters"`
 
 	pathMatcher   func(path string) bool
 	methodMatcher func(method string) bool
 	headerMatcher func(header http.Header) bool
 }
 
-func (r *Route) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	var (
-		now  = time.Now()
-		l    = r.Context.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ServeHTTP")
-		prov = r.Context.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
-	)
-	defer func() {
-		l.Debugf("route.ServeHTTP costs: %s", time.Now().Sub(now).String())
-	}()
-
-	switch r.Router.To {
-	case ToNotFound:
-		w.Header().Set("Server", "erda/ai-proxy")
-		http.Error(w, string(ToNotFound), http.StatusNotFound)
-		return
+func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
+	// panic early
+	if len(kvs)%2 != 0 {
+		panic("kvs must be even")
 	}
 
-	var rp = &reverseproxy.ReverseProxy{
-		Director: func(req *http.Request) {
-			switch {
-			case r.Router.Scheme != "":
-				req.URL.Scheme = r.Router.Scheme
-			case prov == nil, prov.Scheme == "":
-				req.URL.Scheme = "https"
-			case prov.Scheme == "https", prov.Scheme == "http":
-				req.URL.Scheme = prov.Scheme
-			default:
-				req.URL.Scheme = "https"
-			}
-			switch {
-			case r.Router.Host != "":
-				req.Host = r.Router.Host
-			case prov == nil || prov.Host == "":
-			default:
-				req.Host = prov.GetHost()
-			}
-			req.URL.Host = req.Host
-			req.Header.Set("Host", req.Host)
-			req.Header.Set("X-Forwarded-Host", req.Host)
-			req.URL.Path = r.rewrite(prov.Metadata)
+	// return "not found" early
+	if r.Router.To == ToNotFound {
+		return func(rw http.ResponseWriter, req *http.Request) {
+			rw.Header().Set("Server", "erda/ai-proxy")
+			http.Error(rw, string(ToNotFound), http.StatusNotFound)
+		}
+	}
 
-			var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
-			for k, vv := range req.Header {
-				for _, v := range vv {
-					curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
-				}
-			}
-			if req.Body != nil {
-				var buf = bytes.NewBuffer(nil)
-				if _, err := buf.ReadFrom(req.Body); err == nil {
-					_ = req.Body.Close()
-					curl += ` --data '` + buf.String() + `'`
-					req.Body = io.NopCloser(buf)
-				}
-			}
-			l.Sub("Director").Debug("[reverse proxy] curl command: " + curl + "\n")
-		},
+	// to set logs.Logger and *provider.Provider into context.Context if not set
+	var (
+		l    logs.Logger
+		prov *provider.Provider
+	)
+	for i := 0; i+1 < len(kvs); i++ {
+		switch t := kvs[i+1].(type) {
+		case logs.Logger:
+			l = t.Sub(reflect.TypeOf(r).String())
+		case *provider.Provider:
+			prov = t
+		}
+		ctx = context.WithValue(ctx, kvs[i], kvs[i+1])
+	}
+	if l == nil {
+		l = logrusx.New(logrusx.WithName(reflect.TypeOf(r).String()))
+		ctx = context.WithValue(ctx, reverseproxy.LoggerCtxKey{}, l)
+	}
+	if prov == nil {
+		prov = r.Provider
+		ctx = context.WithValue(ctx, reverseproxy.ProviderCtxKey{}, prov)
+	}
+
+	// make reverseproxy.ReverseProxy and set filters
+	var rp = &reverseproxy.ReverseProxy{
+		Director: r.Director(ctx),
 		Transport: &timeCountTransport{
-			start: now,
+			start: time.Now(),
 			l:     l,
 			inner: http.DefaultTransport,
 		},
 		FlushInterval: time.Millisecond * 100,
 		Filters:       nil,
-		FilterCxt:     r.Context.Clone(),
+		Context:       ctx,
 	}
 	for _, filterConfig := range r.Filters {
 		filter, err := reverseproxy.MustGetFilterCreator(filterConfig.Name)(filterConfig.Config)
 		if err != nil {
-			http.Error(w, "filter %s not found: "+err.Error(), http.StatusNotImplemented)
-			return
+			return func(rw http.ResponseWriter, req *http.Request) {
+				http.Error(rw, "filter %s not found: "+err.Error(), http.StatusNotImplemented)
+			}
 		}
 		switch filter.(type) {
 		case reverseproxy.RequestFilter, reverseproxy.ResponseFilter:
 		default:
-			http.Error(w, "filter %s not found", http.StatusInternalServerError)
-			return
+			return func(rw http.ResponseWriter, req *http.Request) {
+				http.Error(rw, "filter %s not found", http.StatusInternalServerError)
+			}
 		}
 		rp.Filters = append(rp.Filters, reverseproxy.NamingFilter{Name: filterConfig.Name, Filter: filter})
 	}
 
-	rp.ServeHTTP(w, req)
+	return rp.ServeHTTP
 }
 
 func (r *Route) Match(path, method string, header http.Header) bool {
 	return r.pathMatcher(path) && r.methodMatcher(method) && r.headerMatcher(header)
 }
 
-func (r *Route) With(kvs ...any) *Route {
-	if r.Context == nil {
-		r.Context = reverseproxy.NewContext(make(map[any]any))
+func (r *Route) Director(ctx context.Context) func(req *http.Request) {
+	return func(req *http.Request) {
+		switch {
+		case r.Router.Scheme != "":
+			req.URL.Scheme = r.Router.Scheme
+		case r.Provider == nil, r.Provider.Scheme == "":
+			req.URL.Scheme = "https"
+		case r.Provider.Scheme == "https", r.Provider.Scheme == "http":
+			req.URL.Scheme = r.Provider.Scheme
+		default:
+			req.URL.Scheme = "https"
+		}
+		switch {
+		case r.Router.Host != "":
+			req.Host = r.Router.Host
+		case r.Provider == nil || r.Provider.Host == "":
+		default:
+			req.Host = r.Provider.GetHost()
+		}
+		req.URL.Host = req.Host
+		req.Header.Set("Host", req.Host)
+		req.Header.Set("X-Forwarded-Host", req.Host)
+		req.URL.Path = r.rewrite(r.Provider.Metadata)
+
+		if l, ok := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger); ok {
+			l.Sub("Director").Debug("[curl command]:\n\t" + GenCurl(req) + "\n")
+		}
 	}
-	if len(kvs)%2 != 0 {
-		panic("kvs must be even")
-	}
-	for i := 0; i+1 < len(kvs); i++ {
-		reverseproxy.WithValue(r.Context, kvs[i], kvs[i+1])
-	}
-	return r
 }
 
 func (r *Route) Validate() error {
@@ -334,4 +337,22 @@ func (t *timeCountTransport) RoundTrip(req *http.Request) (*http.Response, error
 	response, err := t.inner.RoundTrip(req)
 	t.l.Debugf("RandTrip costs             %s", time.Now().Sub(t.start).String())
 	return response, err
+}
+
+func GenCurl(req *http.Request) string {
+	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
+	for k, vv := range req.Header {
+		for _, v := range vv {
+			curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
+		}
+	}
+	if req.Body != nil {
+		var buf = bytes.NewBuffer(nil)
+		if _, err := buf.ReadFrom(req.Body); err == nil {
+			_ = req.Body.Close()
+			curl += ` --data '` + buf.String() + `'`
+			req.Body = io.NopCloser(buf)
+		}
+	}
+	return curl
 }

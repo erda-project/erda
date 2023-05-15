@@ -15,6 +15,7 @@
 package ai_proxy
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"net/http"
@@ -82,6 +83,11 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 
+	if err := prometheus.Register(p.Collector); err != nil {
+		p.L.Infof("failed to prometheus.Register(%T), err: %v", p.Collector, err)
+		return err
+	}
+
 	// prepare handlers
 	for i := 0; i < len(p.Config.Routes); i++ {
 		rout := p.Config.Routes[i]
@@ -98,19 +104,8 @@ func (p *provider) Init(_ servicehub.Context) error {
 			if !ok {
 				return errors.Errorf("no such provider routes[%d].Route.To: %s", i, p.Config.Routes[i].Router.To)
 			}
-			rout.With(reverseproxy.ProviderCtxKey{}, prov)
+			rout.Provider = prov
 		}
-
-		// prepare reverse proxy handler with contexts
-		rout.With(
-			reverseproxy.DBCtxKey{}, p.D,
-			reverseproxy.LoggerCtxKey{}, p.L,
-		)
-	}
-
-	if err := prometheus.Register(p.Collector); err != nil {
-		p.L.Infof("failed to prometheus.Register(%T), err: %v", p.Collector, err)
-		return err
 	}
 
 	// ai-proxy prometheus metrics
@@ -121,8 +116,11 @@ func (p *provider) Init(_ servicehub.Context) error {
 }
 
 func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
-		With(
+	p.Config.Routes.
+		FindRoute(r.URL.Path, r.Method, r.Header).
+		HandlerWith(
+			context.Background(),
+			reverseproxy.DBCtxKey{}, p.D,
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 		).
