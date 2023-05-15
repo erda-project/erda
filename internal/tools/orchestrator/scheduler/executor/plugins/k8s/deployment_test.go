@@ -21,7 +21,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,14 +90,14 @@ func TestNewDeployment(t *testing.T) {
 		secret: &secret.Secret{},
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(k.secret), "Get", func(sec *secret.Secret, namespace, name string) (*apiv1.Secret, error) {
-		return &apiv1.Secret{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.secret), "Get", func(sec *secret.Secret, namespace, name string) (*corev1.Secret, error) {
+		return &corev1.Secret{}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(k), "CopyErdaSecrets", func(kube *Kubernetes, originns, dstns string) ([]apiv1.Secret, error) {
-		return []apiv1.Secret{}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(k), "CopyErdaSecrets", func(kube *Kubernetes, originns, dstns string) ([]corev1.Secret, error) {
+		return []corev1.Secret{}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(k), "AddPodMountVolume", func(kube *Kubernetes, service *apistructs.Service, podSpec *apiv1.PodSpec,
-		secretvolmounts []apiv1.VolumeMount, secretvolumes []apiv1.Volume) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(k), "AddPodMountVolume", func(kube *Kubernetes, service *apistructs.Service, podSpec *corev1.PodSpec,
+		secretvolmounts []corev1.VolumeMount, secretvolumes []corev1.Volume) error {
 		return nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(k.ClusterInfo), "Get", func(clusterInfo *clusterinfo.ClusterInfo) (map[string]string, error) {
@@ -112,7 +112,7 @@ func TestNewDeployment(t *testing.T) {
 func TestUpdateContainerResourceEnv(t *testing.T) {
 	k := Kubernetes{}
 
-	container := apiv1.Container{
+	container := corev1.Container{
 		Name:       "",
 		Image:      "",
 		Command:    nil,
@@ -120,7 +120,7 @@ func TestUpdateContainerResourceEnv(t *testing.T) {
 		WorkingDir: "",
 		Ports:      nil,
 		EnvFrom:    nil,
-		Env: []apiv1.EnvVar{
+		Env: []corev1.EnvVar{
 			{
 				Name:  "DICE_CPU_ORIGIN",
 				Value: "0.100000",
@@ -146,12 +146,12 @@ func TestUpdateContainerResourceEnv(t *testing.T) {
 				Value: "1024",
 			},
 		},
-		Resources: apiv1.ResourceRequirements{
-			Limits: apiv1.ResourceList{
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
 				"cpu":    resource.MustParse("100m"),
 				"memory": resource.MustParse("1024Mi"),
 			},
-			Requests: apiv1.ResourceList{
+			Requests: corev1.ResourceList{
 				"cpu":    resource.MustParse("10m"),
 				"memory": resource.MustParse("1024Mi"),
 			},
@@ -165,7 +165,7 @@ func TestUpdateContainerResourceEnv(t *testing.T) {
 
 func TestSetPodAnnotationsBaseContainerEnvs(t *testing.T) {
 	type args struct {
-		container      apiv1.Container
+		container      corev1.Container
 		podAnnotations map[string]string
 	}
 	tests := []struct {
@@ -176,8 +176,8 @@ func TestSetPodAnnotationsBaseContainerEnvs(t *testing.T) {
 		{
 			name: "test_01",
 			args: args{
-				container: apiv1.Container{
-					Env: []apiv1.EnvVar{
+				container: corev1.Container{
+					Env: []corev1.EnvVar{
 						{
 							Name:  "DICE_ORG_NAME",
 							Value: "xxx",
@@ -264,8 +264,8 @@ func TestSetPodAnnotationsBaseContainerEnvs(t *testing.T) {
 
 func TestDereferenceEnvs(t *testing.T) {
 	var d = new(appsv1.Deployment)
-	d.Spec.Template.Spec.Containers = []apiv1.Container{{
-		Env: []apiv1.EnvVar{
+	d.Spec.Template.Spec.Containers = []corev1.Container{{
+		Env: []corev1.EnvVar{
 			{Name: "ENV_A", Value: "homework"},
 			{Name: "ENV_B", Value: "do ${env.ENV_A}"},
 			{Name: "COOKIE_DOMAIN", Value: "${domain-prefix}${env.DICE_ROOT_DOMAIN}"},
@@ -289,8 +289,8 @@ func TestDereferenceEnvs(t *testing.T) {
 func BenchmarkName(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var d = new(appsv1.Deployment)
-		d.Spec.Template.Spec.Containers = []apiv1.Container{{
-			Env: []apiv1.EnvVar{
+		d.Spec.Template.Spec.Containers = []corev1.Container{{
+			Env: []corev1.EnvVar{
 				{Name: "ENV_A", Value: "homework"},
 				{Name: "ENV_B", Value: "do ${env.ENV_A}"},
 				{Name: "COOKIE_DOMAIN", Value: "${env.DICE_ROOT_DOMAIN}"},
@@ -385,7 +385,7 @@ func Test_inheritDeploymentLabels1(t *testing.T) {
 		Spec: appsv1.DeploymentSpec{
 			RevisionHistoryLimit: func(i int32) *int32 { return &i }(int32(3)),
 			Replicas:             func(i int32) *int32 { return &i }(int32(2)),
-			Template: apiv1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "test",
 					Labels: make(map[string]string),
@@ -536,44 +536,44 @@ func TestKubernetes_setStatelessServiceVolumes(t *testing.T) {
 		},
 	})
 
-	podSpec := &apiv1.PodSpec{}
-	podSpec.Volumes = make([]apiv1.Volume, 0)
+	podSpec := &corev1.PodSpec{}
+	podSpec.Volumes = make([]corev1.Volume, 0)
 	podSpec.Volumes = append(podSpec.Volumes,
-		apiv1.Volume{
+		corev1.Volume{
 			Name: "vol1",
-			VolumeSource: apiv1.VolumeSource{
-				HostPath: &apiv1.HostPathVolumeSource{
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
 					Path: "/data/xxx",
 				},
 			},
 		})
 
-	podSpec.Containers = make([]apiv1.Container, 0)
-	vol01 := apiv1.VolumeMount{
+	podSpec.Containers = make([]corev1.Container, 0)
+	vol01 := corev1.VolumeMount{
 		Name:      "vol1",
 		MountPath: "/opt/xxx",
 		ReadOnly:  false,
 	}
 
-	envs := make([]apiv1.EnvVar, 0)
-	envs = append(envs, apiv1.EnvVar{
+	envs := make([]corev1.EnvVar, 0)
+	envs = append(envs, corev1.EnvVar{
 		Name:  "DICE_RUNTIME_NAME",
 		Value: "feature/develop",
 	})
 
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name:  "DICE_WORKSPACE",
 		Value: "dev",
 	})
 
-	envs = append(envs, apiv1.EnvVar{
+	envs = append(envs, corev1.EnvVar{
 		Name:  "DICE_APPLICATION_ID",
 		Value: "1",
 	})
 
-	podSpec.Containers = append(podSpec.Containers, apiv1.Container{
+	podSpec.Containers = append(podSpec.Containers, corev1.Container{
 		Name:         "vol1",
-		VolumeMounts: make([]apiv1.VolumeMount, 0),
+		VolumeMounts: make([]corev1.VolumeMount, 0),
 		Env:          envs,
 	})
 
@@ -585,7 +585,7 @@ func TestKubernetes_setStatelessServiceVolumes(t *testing.T) {
 		storageClass: &storageclass.StorageClass{},
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(k.pvc), "CreateIfNotExists", func(pvcl *persistentvolumeclaim.PersistentVolumeClaim, pvc *apiv1.PersistentVolumeClaim) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.pvc), "CreateIfNotExists", func(pvcl *persistentvolumeclaim.PersistentVolumeClaim, pvc *corev1.PersistentVolumeClaim) error {
 		return nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(k.storageClass), "Get", func(sc *storageclass.StorageClass, name string) (*storagev1.StorageClass, error) {
@@ -598,26 +598,26 @@ func TestKubernetes_setStatelessServiceVolumes(t *testing.T) {
 
 /*
 func TestGenerateECIPodSidecarContainers(t *testing.T) {
-	wantContainer := apiv1.Container{
+	wantContainer := corev1.Container{
 		Name: "fluent-bit",
 		//Image: sidecar.Image,
-		Resources: apiv1.ResourceRequirements{
-			Requests: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse("0.1"),
-				apiv1.ResourceMemory: resource.MustParse("256Mi"),
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("0.1"),
+				corev1.ResourceMemory: resource.MustParse("256Mi"),
 			},
-			Limits: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse("1"),
-				apiv1.ResourceMemory: resource.MustParse("1Gi"),
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("1"),
+				corev1.ResourceMemory: resource.MustParse("1Gi"),
 			},
 		},
 		Command:      []string{"./fluent-bit/bin/fluent-bit"},
 		Args:         []string{"-c", "/fluent-bit/etc/sidecar/fluent-bit.conf"},
-		VolumeMounts: []apiv1.VolumeMount{},
+		VolumeMounts: []corev1.VolumeMount{},
 	}
 	tests := []struct {
 		name    string
-		want    apiv1.Container
+		want    corev1.Container
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -643,28 +643,28 @@ func TestGenerateECIPodSidecarContainers(t *testing.T) {
 		inEdge bool
 	}
 
-	wantContainer := apiv1.Container{
+	wantContainer := corev1.Container{
 		Name: "fluent-bit",
 		//Image: sidecar.Image,
-		Resources: apiv1.ResourceRequirements{
-			Requests: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse("0.1"),
-				apiv1.ResourceMemory: resource.MustParse("256Mi"),
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("0.1"),
+				corev1.ResourceMemory: resource.MustParse("256Mi"),
 			},
-			Limits: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse("1"),
-				apiv1.ResourceMemory: resource.MustParse("1Gi"),
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("1"),
+				corev1.ResourceMemory: resource.MustParse("1Gi"),
 			},
 		},
 		Command:      []string{"./fluent-bit/bin/fluent-bit"},
 		Args:         []string{"-c", "/fluent-bit/etc/sidecar/fluent-bit.conf"},
-		VolumeMounts: []apiv1.VolumeMount{},
+		VolumeMounts: []corev1.VolumeMount{},
 	}
 
 	tests := []struct {
 		name    string
 		args    args
-		want    apiv1.Container
+		want    corev1.Container
 		wantErr bool
 	}{
 		{
@@ -680,6 +680,76 @@ func TestGenerateECIPodSidecarContainers(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateECIPodSidecarContainers() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func TestAddContainersEnv(t *testing.T) {
+	ci := &clusterinfo.ClusterInfo{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(ci), "Get", func(*clusterinfo.ClusterInfo) (map[string]string, error) {
+		return map[string]string{
+			"CLUSTER_NAME": "local-cluster",
+		}, nil
+	})
+
+	k := &Kubernetes{
+		ClusterInfo: ci,
+	}
+
+	svc := &apistructs.Service{
+		Name:      "test-service",
+		Namespace: "test-ns",
+		Env: map[string]string{
+			"ENV_VAR_1": "value1",
+			"ENV_VAR_2": "value2",
+		},
+	}
+	sg := &apistructs.ServiceGroup{
+		ClusterName: "local-cluster",
+	}
+	containers := []corev1.Container{
+		{
+			Name: "test-container",
+		},
+	}
+
+	err := k.AddContainersEnv(containers, svc, sg)
+	if err != nil {
+		t.Errorf("AddContainersEnv() error = %v", err)
+		return
+	}
+
+	envs := containers[0].Env
+
+	type args struct {
+		key string
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "get test env",
+			args: args{
+				key: "ENV_VAR_1",
+			},
+			want: "value1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, env := range envs {
+				if env.Name != tt.args.key {
+					continue
+				}
+
+				if env.Value != tt.want {
+					t.Errorf("AddContainersEnv() key = %v, envs = %v, expected = %v", tt.args.key, env.Value, tt.want)
+				}
 			}
 		})
 	}
