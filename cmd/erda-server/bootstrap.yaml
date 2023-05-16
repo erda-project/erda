@@ -64,6 +64,7 @@ http-server@admin:
 pprof:
 dingtalk.api: { }
 audit: { }
+profile-agent: { }
 erda.core.services.errorbox: { }
 erda.core.messenger.notify: { }
 erda.core.messenger.eventbox: { }

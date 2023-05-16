@@ -2,6 +2,8 @@ pipeline:
 
 service-register:
 
+profile-agent:
+
 # prometheus provider only recognize http-server@admin
 http-server@admin:
   addr: "${PIPELINE_LISTEN_ADDR::3081}"

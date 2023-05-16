@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 	"github.com/erda-project/erda/internal/tools/monitor/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 

@@ -484,7 +484,7 @@ replace (
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/pingcap/pd/v4 => github.com/tikv/pd v1.0.8
-	github.com/pyroscope-io/pyroscope => github.com/chengjoey/pyroscope v0.0.0-20230514124806-f6af75c47e29
+	github.com/pyroscope-io/pyroscope => github.com/chengjoey/pyroscope v0.0.0-20230516025923-7d53422f848c
 	github.com/rancher/apiserver => github.com/rancher/apiserver v0.0.0-20210519053359-f943376c4b42
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	github.com/rancher/steve => github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
