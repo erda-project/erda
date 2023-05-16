@@ -8,6 +8,8 @@ grpc-server:
 
 service-register:
 
+profile-agent:
+
 elasticsearch:
   _enable: ${ES_ENABLE:false}
   urls: "${ES_URL:http://localhost:9200}"

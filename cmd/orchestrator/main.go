@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
-	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
@@ -28,6 +27,9 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/client"
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/client"
+
+	// providers and modules
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 	_ "github.com/erda-project/erda/internal/tools/orchestrator"
 	_ "github.com/erda-project/erda/internal/tools/orchestrator/components"
 )
