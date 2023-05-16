@@ -26,6 +26,7 @@ import (
 	// pkg
 	_ "github.com/erda-project/erda/internal/pkg/audit"
 	_ "github.com/erda-project/erda/internal/pkg/dingtalktest"
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 	_ "github.com/erda-project/erda/internal/pkg/service-discover/erda-discover"
 	_ "github.com/erda-project/erda/internal/pkg/service-discover/fixed-discover"
 	"github.com/erda-project/erda/pkg/common"
