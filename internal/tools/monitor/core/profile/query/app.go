@@ -22,7 +22,7 @@ import (
 )
 
 func (p *provider) listApps(rw http.ResponseWriter, r *http.Request) {
-	ctx := context.WithValue(r.Context(), "query", r)
+	ctx := context.WithValue(r.Context(), "query", r.URL.Query())
 	apps, err := p.applicationService.List(ctx)
 	if err != nil {
 		httpserver.WriteErr(rw, "400", err.Error())
