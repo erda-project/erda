@@ -182,22 +182,6 @@ func (r *Route) Director(ctx context.Context) func(req *http.Request) {
 	}
 }
 
-func (r *Route) Clone() *Route {
-	return &Route{
-		Context:       r.Context,
-		Path:          r.Path,
-		PathMatcher:   r.PathMatcher,
-		Method:        r.Method,
-		MethodMatcher: r.MethodMatcher,
-		HeaderMatcher: r.HeaderMatcher,
-		Router:        r.Router,
-		Filters:       r.Filters,
-		pathMatcher:   r.pathMatcher,
-		methodMatcher: r.methodMatcher,
-		headerMatcher: r.headerMatcher,
-	}
-}
-
 func (r *Route) Validate() error {
 	if r.Path == "" {
 		return errors.Errorf("path can not be empty in route %s", strutil.TryGetYamlStr(r))

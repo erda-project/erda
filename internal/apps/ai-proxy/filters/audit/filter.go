@@ -600,7 +600,7 @@ func (f *Audit) setCompletionForEventStream(ctx context.Context, header http.Hea
 		f.Audit.Completion = "response body nil"
 		return nil
 	}
-	f.Audit.Completion = ExtraEventStreamCompletion(reader)
+	f.Audit.Completion = ExtractEventStreamCompletion(reader)
 	return nil
 }
 
@@ -656,7 +656,7 @@ func (n NoPromptReason) String() string {
 	}[n]
 }
 
-func ExtraEventStreamCompletion(reader io.Reader) string {
+func ExtractEventStreamCompletion(reader io.Reader) string {
 	var completion string
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {

@@ -1120,6 +1120,6 @@ data: {"id":"chatcmpl-7GMAipr65EVYVAwZrpVqy7NkNuPNn","object":"chat.completion.c
 
 data: [DONE]
 `
-	completion := audit.ExtraEventStreamCompletion(bytes.NewBufferString(raw))
+	completion := audit.ExtractEventStreamCompletion(bytes.NewBufferString(raw))
 	t.Log(completion)
 }
