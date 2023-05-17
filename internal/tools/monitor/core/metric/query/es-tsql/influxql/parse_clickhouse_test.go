@@ -773,6 +773,16 @@ func TestOrderBy(t *testing.T) {
 			sql:  "select time(),service_id::tag from table GROUP BY service_id::tag,time() ORDER BY service_id::tag desc",
 			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"service_id::tag\" DESC,\"bucket_timestamp\" ASC",
 		},
+		{
+			name: "timestamp desc",
+			sql:  "select column1 from table order by timestamp desc",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC, \"timestamp\" DESC",
+		},
+		{
+			name: "timestamp asc",
+			sql:  "select column1 from table order by timestamp asc",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC, \"timestamp\" ASC",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
