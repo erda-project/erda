@@ -1123,3 +1123,7 @@ data: [DONE]
 	completion := audit.ExtractEventStreamCompletion(bytes.NewBufferString(raw))
 	t.Log(completion)
 }
+
+func TestNoPromptReason_String(t *testing.T) {
+	t.Log(audit.NoPromptByDefault.String())
+}
