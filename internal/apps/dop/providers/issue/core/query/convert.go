@@ -414,6 +414,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 				pb.IssueTypeEnum_TASK:        "任务",
 				pb.IssueTypeEnum_BUG:         "缺陷",
 				pb.IssueTypeEnum_EPIC:        "史诗",
+				pb.IssueTypeEnum_TICKET:      "工单",
 			}[i.Type],
 			planFinishedAt,
 			i.CreatedAt.AsTime().In(time.Local).Format("2006-01-02 15:04:05"),

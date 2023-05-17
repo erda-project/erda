@@ -85,7 +85,7 @@ func Test_provider_convertIssueToExcelList(t *testing.T) {
 	defer p5.Unpatch()
 
 	finishTime := time.Now()
-	_, err := p.convertIssueToExcelList([]*pb.Issue{{Id: 1, FinishTime: timestamppb.New(finishTime)}}, []*pb.IssuePropertyIndex{}, 1, false, map[IssueStage]string{}, "cn")
+	_, err := p.convertIssueToExcelList([]*pb.Issue{{Id: 1, FinishTime: timestamppb.New(finishTime), Type: pb.IssueTypeEnum_TICKET}}, []*pb.IssuePropertyIndex{}, 1, false, map[IssueStage]string{}, "cn")
 	assert.Equal(t, err, nil)
 }
 
