@@ -563,7 +563,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 		logger = logger_
 	}
 
-	var buffer bytes.Buffer
+	var nextWriter bytes.Buffer
 	for {
 		if len(buf) == 0 {
 			buf = make([]byte, 3*1024)
@@ -574,38 +574,38 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 		}
 
 		if nr > 0 {
-			nextBuf := buf[:nr] // buf for next filter to write into
+			nextReader := buf[:nr] // buf for next filter to write into
 			for i := 0; i < len(p.Filters); i++ {
 				filter, ok := p.Filters[i].Filter.(ResponseFilter)
 				if !ok {
 					continue
 				}
 				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseChunk"))
-				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &buffer, nextBuf); {
+				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); {
 				case err != nil:
 					logger.Errorf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
 				default:
-					nextBuf = buffer.Bytes()
-					buffer.Reset()
+					nextReader = nextWriter.Bytes()
+					nextWriter.Reset()
 				}
 			}
 		}
 		if rerr != nil {
-			buf = nil
-			buffer.Reset()
+			var nextReader []byte
+			nextWriter.Reset()
 			for i := 0; i < len(p.Filters); i++ {
 				filter, ok := p.Filters[i].Filter.(ResponseFilter)
 				if !ok {
 					continue
 				}
 				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
-				if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &buffer, buf); err != nil {
+				if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); err != nil {
 					logger.Errorf("%T.OnResponseEOF, err: %v", filter, err)
 					return rw.Filter.(*responseBodyWriter).written, err
 				}
-				buf = buffer.Bytes()
-				buffer.Reset()
+				nextReader = nextWriter.Bytes()
+				nextWriter.Reset()
 			}
 			if rerr == io.EOF {
 				rerr = nil
