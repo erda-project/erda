@@ -280,6 +280,11 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 		}()
 	}
+	defer func() {
+		if ctx != nil && ctx.Err() != nil {
+			p.logf("[ERRO] context error: %v", ctx.Err())
+		}
+	}()
 
 	outreq := req.Clone(ctx)
 	if req.ContentLength == 0 {
@@ -297,6 +302,11 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	if outreq.Header == nil {
 		outreq.Header = make(http.Header) // Issue 33142: historical behavior was to always allocate
 	}
+	defer func() {
+		if outreq != nil && outreq.Context() != nil && outreq.Context().Err() != nil {
+			p.logf("outreq.Context().Err(): %v", outreq.Context().Err())
+		}
+	}()
 
 	var logger = logrusx.New(logrusx.WithName(reflect.TypeOf(p).String()))
 	if logger_, ok := p.Context.Value(LoggerCtxKey{}).(logs.Logger); ok {
@@ -379,6 +389,11 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.getErrorHandler()(rw, outreq, err)
 		return
 	}
+	defer func() {
+		if res.Request != nil && res.Request.Context() != nil && res.Request.Context().Err() != nil {
+			p.logf("res.Request.Context().Err(): %v\n", res.Request.Context().Err())
+		}
+	}()
 
 	// Deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
@@ -559,41 +574,40 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 		}
 
 		if nr > 0 {
-			buf = buf[:nr]
+			nextBuf := buf[:nr] // buf for next filter to write into
 			for i := 0; i < len(p.Filters); i++ {
 				filter, ok := p.Filters[i].Filter.(ResponseFilter)
 				if !ok {
 					continue
 				}
 				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseChunk"))
-				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &buffer, buf); {
+				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &buffer, nextBuf); {
 				case err != nil:
-					p.logf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
+					logger.Errorf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
-				case signal == Continue:
-					buf = buffer.Bytes()
-					buffer.Reset()
 				default:
-					break
+					nextBuf = buffer.Bytes()
+					buffer.Reset()
 				}
 			}
 		}
 		if rerr != nil {
-			if rerr == io.EOF {
-				buf = nil
-				buffer.Reset()
-				for i := 0; i < len(p.Filters); i++ {
-					filter, ok := p.Filters[i].Filter.(ResponseFilter)
-					if !ok {
-						continue
-					}
-					ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
-					if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &buffer, buf); err != nil {
-						return rw.Filter.(*responseBodyWriter).written, err
-					}
-					buf = buffer.Bytes()
-					buffer.Reset()
+			buf = nil
+			buffer.Reset()
+			for i := 0; i < len(p.Filters); i++ {
+				filter, ok := p.Filters[i].Filter.(ResponseFilter)
+				if !ok {
+					continue
 				}
+				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
+				if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &buffer, buf); err != nil {
+					logger.Errorf("%T.OnResponseEOF, err: %v", filter, err)
+					return rw.Filter.(*responseBodyWriter).written, err
+				}
+				buf = buffer.Bytes()
+				buffer.Reset()
+			}
+			if rerr == io.EOF {
 				rerr = nil
 			}
 			return rw.Filter.(*responseBodyWriter).written, rerr

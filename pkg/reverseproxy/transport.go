@@ -16,8 +16,12 @@ package reverseproxy
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/erda-project/erda-infra/base/logs"
 	"io"
 	"net/http"
+	"reflect"
+	"time"
 )
 
 var (
@@ -48,4 +52,52 @@ func (d *DoNothingTransport) RoundTrip(req *http.Request) (*http.Response, error
 		}
 	}
 	return d.Response, nil
+}
+
+type TimerTransport struct {
+	Logger logs.Logger
+	Inner  http.RoundTripper
+}
+
+func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	start := time.Now()
+	if t.Inner == nil {
+		t.Inner = http.DefaultTransport
+	}
+	res, err := t.Inner.RoundTrip(req)
+	t.Logger.Sub(reflect.TypeOf(t).String()).
+		Debugf("RoundTrip costs: %s", time.Now().Sub(start).String())
+	return res, err
+}
+
+type CurlPrinterTransport struct {
+	Logger logs.Logger
+	Inner  http.RoundTripper
+}
+
+func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.Inner == nil {
+		t.Inner = http.DefaultTransport
+	}
+	t.Logger.Sub(reflect.TypeOf(t).String()).
+		Debug(GenCurl(req))
+	return t.Inner.RoundTrip(req)
+}
+
+func GenCurl(req *http.Request) string {
+	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
+	for k, vv := range req.Header {
+		for _, v := range vv {
+			curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
+		}
+	}
+	if req.Body != nil {
+		var buf = bytes.NewBuffer(nil)
+		if _, err := buf.ReadFrom(req.Body); err == nil {
+			_ = req.Body.Close()
+			curl += ` --data '` + buf.String() + `'`
+			req.Body = io.NopCloser(buf)
+		}
+	}
+	return curl
 }

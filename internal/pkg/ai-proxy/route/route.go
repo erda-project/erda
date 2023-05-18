@@ -15,11 +15,8 @@
 package route
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"reflect"
@@ -115,12 +112,14 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	// make reverseproxy.ReverseProxy and set filters
 	var rp = &reverseproxy.ReverseProxy{
 		Director: r.Director(ctx),
-		Transport: &timeCountTransport{
-			start: time.Now(),
-			l:     l,
-			inner: http.DefaultTransport,
+		Transport: &reverseproxy.TimerTransport{
+			Logger: l,
+			Inner: &reverseproxy.CurlPrinterTransport{
+				Logger: l,
+			},
 		},
 		FlushInterval: time.Millisecond * 100,
+		BufferPool:    reverseproxy.NewBufferPool(3 * 1024),
 		Filters:       nil,
 		Context:       ctx,
 	}
@@ -175,10 +174,6 @@ func (r *Route) Director(ctx context.Context) func(req *http.Request) {
 		req.Header.Set("Host", req.Host)
 		req.Header.Set("X-Forwarded-Host", req.Host)
 		req.URL.Path = r.rewrite(prov.Metadata)
-
-		if l, ok := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger); ok {
-			l.Sub("Director").Debug("[curl command]:\n\t" + GenCurl(req) + "\n")
-		}
 	}
 }
 
@@ -328,35 +323,3 @@ func (r *Router) validate() error {
 }
 
 type To string
-
-type timeCountTransport struct {
-	start time.Time
-	l     logs.Logger
-	inner http.RoundTripper
-}
-
-func (t *timeCountTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	t.l.Debugf("Director and Filters costs %s", time.Now().Sub(t.start).String())
-	t.start = time.Now()
-	response, err := t.inner.RoundTrip(req)
-	t.l.Debugf("RandTrip costs             %s", time.Now().Sub(t.start).String())
-	return response, err
-}
-
-func GenCurl(req *http.Request) string {
-	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
-	for k, vv := range req.Header {
-		for _, v := range vv {
-			curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
-		}
-	}
-	if req.Body != nil {
-		var buf = bytes.NewBuffer(nil)
-		if _, err := buf.ReadFrom(req.Body); err == nil {
-			_ = req.Body.Close()
-			curl += ` --data '` + buf.String() + `'`
-			req.Body = io.NopCloser(buf)
-		}
-	}
-	return curl
-}
