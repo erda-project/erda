@@ -365,8 +365,8 @@ github.com/cheekybits/genny v0.0.0-20170328200008-9127e812e1e9/go.mod h1:+tQajlR
 github.com/cheggaaa/pb/v3 v3.0.1/go.mod h1:SqqeMF/pMOIu3xgGoxtPYhMNQP258xE4x/XRTYua+KU=
 github.com/cheggaaa/pb/v3 v3.0.4/go.mod h1:7rgWxLrAUcFMkvJuv09+DYi7mMUYi8nO9iOWcvGJPfw=
 github.com/cheggaaa/pb/v3 v3.0.5 h1:lmZOti7CraK9RSjzExsY53+WWfub9Qv13B5m4ptEoPE=
-github.com/chengjoey/pyroscope v0.0.0-20230516025923-7d53422f848c h1:hdjlJtm06mvB+Ccpy9WVd7GcSPdEqscusFUulFquoZs=
-github.com/chengjoey/pyroscope v0.0.0-20230516025923-7d53422f848c/go.mod h1:IxKEgiNM/PRuLs+BFpwePNAlGHb30iT0ffdYvhXEwjA=
+github.com/chengjoey/pyroscope v0.0.0-20230531054145-5e074a103ba2 h1:c8Z5GOG5BRTxzivNm0V5+i67baaBbOaWTCB1MVmokEY=
+github.com/chengjoey/pyroscope v0.0.0-20230531054145-5e074a103ba2/go.mod h1:IxKEgiNM/PRuLs+BFpwePNAlGHb30iT0ffdYvhXEwjA=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=

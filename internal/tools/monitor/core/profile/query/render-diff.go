@@ -112,6 +112,8 @@ func (p *provider) renderDiff(rw http.ResponseWriter, r *http.Request) {
 			FlamebearerProfile: &combined,
 			Metadata:           md,
 		}
+		renderDiffCounter.WithLabelValues(params.Left.Query.AppName).Inc()
+		renderDiffCounter.WithLabelValues(params.Right.Query.AppName).Inc()
 		httpserver.WriteData(rw, res)
 	}
 }

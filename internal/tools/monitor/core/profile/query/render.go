@@ -115,6 +115,7 @@ func (p *provider) render(rw http.ResponseWriter, r *http.Request) {
 		})
 
 		res := p.mountRenderResponse(flame, appName, req.gi, req.maxNodes, []model.Annotation{})
+		renderCounter.WithLabelValues(req.gi.Query.AppName).Inc()
 		httpserver.WriteData(rw, res)
 	}
 }
