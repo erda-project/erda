@@ -83,6 +83,10 @@ func (itr *Iteration) Create(req *apistructs.IterationCreateRequest) (*dao.Itera
 		Content:    req.Content,
 		Creator:    req.UserID,
 		State:      apistructs.IterationStateUnfiled,
+		ManHour:    "",
+	}
+	if req.ManHour != nil {
+		iteration.ManHour = req.ManHour.ToString()
 	}
 	if err := itr.db.CreateIteration(&iteration); err != nil {
 		return nil, apierrors.ErrCreateIteration.InternalError(err)
@@ -103,6 +107,9 @@ func (itr *Iteration) Update(id uint64, req apistructs.IterationUpdateRequest) e
 	iteration.StartedAt = req.StartedAt
 	iteration.FinishedAt = req.FinishedAt
 	iteration.State = req.State
+	if req.ManHour != nil {
+		iteration.ManHour = req.ManHour.ToString()
+	}
 	if err := itr.db.UpdateIteration(iteration); err != nil {
 		return err
 	}
