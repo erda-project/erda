@@ -50,7 +50,7 @@ func (i *Iteration) Convert() apistructs.Iteration {
 		Content:    i.Content,
 		Creator:    i.Creator,
 		State:      i.State,
-		ManHour:    new(apistructs.IterationManHour).FromString(i.ManHour),
+		ManHour:    new(apistructs.IssueManHour).FromString(i.ManHour),
 	}
 }
 

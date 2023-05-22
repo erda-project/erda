@@ -86,7 +86,7 @@ func (itr *Iteration) Create(req *apistructs.IterationCreateRequest) (*dao.Itera
 		ManHour:    "",
 	}
 	if req.ManHour != nil {
-		iteration.ManHour = req.ManHour.ToString()
+		iteration.ManHour = req.ManHour.Convert2String()
 	}
 	if err := itr.db.CreateIteration(&iteration); err != nil {
 		return nil, apierrors.ErrCreateIteration.InternalError(err)
@@ -108,7 +108,7 @@ func (itr *Iteration) Update(id uint64, req apistructs.IterationUpdateRequest) e
 	iteration.FinishedAt = req.FinishedAt
 	iteration.State = req.State
 	if req.ManHour != nil {
-		iteration.ManHour = req.ManHour.ToString()
+		iteration.ManHour = req.ManHour.Convert2String()
 	}
 	if err := itr.db.UpdateIteration(iteration); err != nil {
 		return err

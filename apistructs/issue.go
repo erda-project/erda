@@ -516,6 +516,11 @@ func (imh *IssueManHour) Convert2String() string {
 	return string(mh)
 }
 
+func (imh *IssueManHour) FromString(s string) *IssueManHour {
+	_ = json.Unmarshal([]byte(s), imh)
+	return imh
+}
+
 var estimateRegexp, _ = regexp.Compile("^[0-9]+[wdhm]+$")
 
 func NewManhour(manhour string) (IssueManHour, error) {
@@ -564,8 +569,8 @@ const (
 	Week   int64 = 5 * Day
 )
 
-// GetFormartTime 时间修改时生成的活动记录需要将分钟带上单位
-func (imh *IssueManHour) GetFormartTime(key string) string {
+// GetFormatTime 时间修改时生成的活动记录需要将分钟带上单位
+func (imh *IssueManHour) GetFormatTime(key string) string {
 	var result bytes.Buffer
 	var minutes int64
 	switch key {

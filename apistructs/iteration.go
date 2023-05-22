@@ -15,7 +15,6 @@
 package apistructs
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -35,7 +34,7 @@ type IterationCreateRequest struct {
 	// +optional
 	Content string `json:"content"`
 
-	ManHour *IterationManHour `json:"manHour"`
+	ManHour *IssueManHour `json:"manHour"`
 
 	// internal use, get from *http.Request
 	IdentityInfo
@@ -84,7 +83,7 @@ type IterationUpdateRequest struct {
 	// +required
 	State IterationState `json:"state"`
 
-	ManHour *IterationManHour `json:"manHour"`
+	ManHour *IssueManHour `json:"manHour"`
 
 	// internal use, get from *http.Request
 	IdentityInfo
@@ -132,18 +131,18 @@ type IterationGetResponse struct {
 }
 
 type Iteration struct {
-	ID           int64             `json:"id"`
-	CreatedAt    time.Time         `json:"createdAt"`
-	UpdatedAt    time.Time         `json:"updatedAt"`
-	StartedAt    *time.Time        `json:"startedAt"`
-	FinishedAt   *time.Time        `json:"finishedAt"`
-	ProjectID    uint64            `json:"projectID"`
-	Title        string            `json:"title"`
-	Content      string            `json:"content"`
-	Creator      string            `json:"creator"`
-	State        IterationState    `json:"state"`
-	IssueSummary ISummary          `json:"issueSummary"`
-	ManHour      *IterationManHour `json:"manHour"`
+	ID           int64          `json:"id"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	StartedAt    *time.Time     `json:"startedAt"`
+	FinishedAt   *time.Time     `json:"finishedAt"`
+	ProjectID    uint64         `json:"projectID"`
+	Title        string         `json:"title"`
+	Content      string         `json:"content"`
+	Creator      string         `json:"creator"`
+	State        IterationState `json:"state"`
+	IssueSummary ISummary       `json:"issueSummary"`
+	ManHour      *IssueManHour  `json:"manHour"`
 }
 
 // ISummary 与迭代相关的事件完成状态的统计信息
@@ -156,19 +155,4 @@ type ISummary struct {
 type ISummaryState struct {
 	Done   int `json:"done"`
 	UnDone int `json:"undone"`
-}
-
-type IterationManHour struct {
-	// Budget is work time budget (minutes)
-	Budget uint `json:"budget"`
-}
-
-func (i *IterationManHour) FromString(s string) *IterationManHour {
-	_ = json.Unmarshal([]byte(s), i)
-	return i
-}
-
-func (i *IterationManHour) ToString() string {
-	data, _ := json.Marshal(i)
-	return string(data)
 }
