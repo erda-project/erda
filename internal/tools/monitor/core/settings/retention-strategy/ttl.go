@@ -173,7 +173,7 @@ func (p *provider) loadConfig() error {
 		}
 		var ttl *TTL
 		if ttl, err = cfg.getTTL(); err != nil {
-			p.Log.Errorf("invalid %s retention ttl, key=%s: %s", p.typ, item.Key, err)
+			p.Log.Warnf("invalid %s retention ttl, key=%s: %s", p.typ, item.Key, err)
 			continue
 		}
 
