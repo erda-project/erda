@@ -209,12 +209,12 @@ func updateOneExecutor(m *Manager, config *executorconfig.ExecutorConfig) error 
 	return createOneExecutor(m, config)
 }
 
-func (m *Manager) Pool(name executortypes.Name) *goroutinepool.GoroutinePool {
+func (m *Manager) Pool(name executortypes.Name) (string, *goroutinepool.GoroutinePool) {
 	p, ok := m.pools[name]
 	if !ok {
-		return m.pools[defaultGoPool]
+		return defaultGoPool, m.pools[defaultGoPool]
 	}
-	return p
+	return name.String(), p
 }
 
 // Get returns the executor with name.

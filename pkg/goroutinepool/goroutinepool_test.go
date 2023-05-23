@@ -99,6 +99,16 @@ func TestStat(t *testing.T) {
 	p.Stop()
 }
 
+func TestIsRunning(t *testing.T) {
+	p := New(10)
+	assert.Equal(t, p.IsRunning(), false)
+	p.Start()
+	p.MustGo(func() {
+		time.Sleep(1 * time.Second)
+	})
+	assert.Equal(t, p.IsRunning(), true)
+}
+
 //func TestJobPanic(t *testing.T) {
 //	job := func() {
 //		panic("panic")
