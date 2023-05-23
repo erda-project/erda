@@ -370,7 +370,7 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 			Action:   apistructs.GetAction,
 			Resource: apistructs.ProjectResource,
 		}); err != nil || !access.Access {
-			return nil, fmt.Errorf("no oermission")
+			return nil, fmt.Errorf("no permission")
 		}
 	}
 
