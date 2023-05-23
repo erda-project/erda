@@ -151,7 +151,11 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 				tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
 				continue
 			} else if column == p.ctx.timeKey {
-				tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+				if !field.Ascending {
+					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Desc())
+				} else {
+					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+				}
 				continue
 			}
 
