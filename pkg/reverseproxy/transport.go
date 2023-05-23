@@ -17,11 +17,12 @@ package reverseproxy
 import (
 	"bytes"
 	"fmt"
-	"github.com/erda-project/erda-infra/base/logs"
 	"io"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/erda-project/erda-infra/base/logs"
 )
 
 var (
