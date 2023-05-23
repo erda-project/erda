@@ -72,7 +72,7 @@ func (i *IssueService) ExportExcelIssue(ctx context.Context, req *pb.ExportExcel
 	}
 
 	req.Locale = apis.GetLang(ctx)
-	if req.IsDownload {
+	if req.IsDownloadTemplate {
 		return nil, nil
 	}
 
@@ -241,7 +241,7 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 		return
 	}
 
-	reader, tableName, err := i.query.ExportExcel(issues, pro, req.ProjectID, req.IsDownload, req.OrgID, req.Locale)
+	reader, tableName, err := i.query.ExportExcel(issues, pro, req.ProjectID, req.IsDownloadTemplate, req.OrgID, req.Locale)
 	if err != nil {
 		logrus.Errorf("%s failed to export excel, err: %v", issueService, err)
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
@@ -339,7 +339,7 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) {
 		return
 	}
 	defer ff.Close()
-	res, err := i.ExportFalseExcel(ff, falseExcel, falseReason, allNumber)
+	res, err := i.ExportFailedExcel(ff, falseExcel, falseReason, allNumber)
 	if err != nil {
 		logrus.Errorf("%s failed to export false excel, err: %v", issueService, err)
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
@@ -563,7 +563,7 @@ func importIssueBuilder(issue pb.Issue, request *pb.ImportExcelIssueRequest, mem
 	return create
 }
 
-func (i *IssueService) ExportFalseExcel(r io.Reader, falseIndex []int, falseReason []string, allNumber int) (*apistructs.IssueImportExcelResponse, error) {
+func (i *IssueService) ExportFailedExcel(r io.Reader, falseIndex []int, falseReason []string, allNumber int) (*apistructs.IssueImportExcelResponse, error) {
 	var res apistructs.IssueImportExcelResponse
 	sheets, err := excel.Decode(r)
 	if err != nil {

@@ -16,15 +16,16 @@ package excel
 
 import (
 	"io"
-	"io/ioutil"
+	"os"
 
 	"github.com/tealeg/xlsx/v3"
 )
 
+// Decode excel file to [][]string
 // return []sheet{[]row{[]cell}}
 // cell 的值即使为空，也可通过下标访问，不会出现越界问题
 func Decode(r io.Reader) ([][][]string, error) {
-	tmpF, err := ioutil.TempFile("", "excel-")
+	tmpF, err := os.CreateTemp("", "excel-")
 	if err != nil {
 		return nil, err
 	}

@@ -973,7 +973,7 @@ message ExportExcelIssueRequest {
   int64 orgID = 40;
   repeated uint64 projectIDs = 41;
   string locale = 42;
-  bool isDownload = 43;
+  bool isDownloadTemplate = 43 [json_name = "isDownload"];
 }
 
 message ExportExcelIssueResponse {

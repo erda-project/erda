@@ -14,21 +14,24 @@
 
 package excel
 
+import (
+	"github.com/tealeg/xlsx/v3"
+)
+
 // Cell 单元格
 //
-//	A  B  C
-//
+// -  A  B  C
 // 1  A1 B1 C1
-// 1  A2 B2 C2
-// 1  A3 B3 C3
+// 2  A2 B2 C2
+// 3  A3 B3 C3
 type Cell struct {
 	// 单元格的值
 	Value string
 	// 水平合并其他几个单元格
-	// 以 A0 为例，默认为 0 表示不合并其他单元格，1 表示合并 A0,B1 两个单元格，2 表示合并 A0,B1,C2 三个单元格
+	// 以 A1 为例，默认为 0 表示不合并其他单元格，1 表示合并 A1,B1 两个单元格，2 表示合并 A1,B1,C1 三个单元格
 	HorizontalMergeNum int
 	// 垂直合并其他几个单元格
-	// 以 A0 为例，默认为 0 表示不合并其他单元格，1 表示合并 A0,A2 两个单元格，2 表示合并 A0,A1,A2 三个单元格
+	// 以 A1 为例，默认为 0 表示不合并其他单元格，1 表示合并 A1,A2 两个单元格，2 表示合并 A1,A2,A3 三个单元格
 	VerticalMergeNum int
 
 	// TODO style here
@@ -54,4 +57,43 @@ func NewHMergeCell(value string, hMergeNum int) Cell {
 }
 func NewVMergeCell(value string, vMergeNum int) Cell {
 	return Cell{Value: value, VerticalMergeNum: vMergeNum}
+}
+
+func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
+	for _, cells := range data {
+		row := sheet.AddRow()
+		for _, cell := range cells {
+			xlsxCell := row.AddCell()
+			xlsxCell.Value = cell.Value
+			xlsxCell.HMerge = cell.HorizontalMergeNum
+			xlsxCell.VMerge = cell.VerticalMergeNum
+		}
+	}
+
+	style := xlsx.NewStyle()
+	style.Alignment.Horizontal = "center"
+	style.Alignment.Vertical = "center"
+	style.Alignment.ShrinkToFit = true
+	style.Alignment.WrapText = true
+
+	_ = sheet.ForEachRow(func(r *xlsx.Row) error {
+		_ = r.ForEachCell(func(c *xlsx.Cell) error {
+			c.SetStyle(style)
+			return nil
+		}, xlsx.SkipEmptyCells)
+		r.SetHeightCM(1.5)
+		return nil
+	}, xlsx.SkipEmptyRows)
+}
+
+func convertStringDataToCellData(data [][]string) [][]Cell {
+	var cells [][]Cell
+	for _, row := range data {
+		var rowCells []Cell
+		for _, cell := range row {
+			rowCells = append(rowCells, NewCell(cell))
+		}
+		cells = append(cells, rowCells)
+	}
+	return cells
 }

@@ -117,7 +117,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						if err := queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 							return apierrors.ErrExportExcelIssue.InvalidParameter(err)
 						}
-						if !req.IsDownload {
+						if !req.IsDownloadTemplate {
 							return encoding.EncodeResponse(rw, r, data)
 						}
 						req.PageNo = 1

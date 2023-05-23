@@ -146,7 +146,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
-	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
+	github.com/tealeg/xlsx/v3 v3.2.4
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
