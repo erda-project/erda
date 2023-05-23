@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
@@ -517,7 +518,9 @@ func (imh *IssueManHour) Convert2String() string {
 }
 
 func (imh *IssueManHour) FromString(s string) *IssueManHour {
-	_ = json.Unmarshal([]byte(s), imh)
+	if err := json.Unmarshal([]byte(s), imh); err != nil {
+		logrus.WithError(err).Errorf("failed to json.Unmarshal %s to %T", s, imh)
+	}
 	return imh
 }
 

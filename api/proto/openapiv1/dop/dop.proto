@@ -603,6 +603,7 @@ message CreateSLAReq {
 }
 message DashboardSpotLogData {
     repeated google.protobuf.Value lines = 1;
+    bool isFallBack = 2 [json_name = "IsFallBack"];
 }
 message DashboardSpotLogLine {
     string ID = 1 [json_name = "id"];
@@ -744,6 +745,22 @@ message GetOperationReq {
 message GetOperationURIParameters {
     uint64 ID = 1;
 }
+message GetPublishItemLatestVersionData {
+    optional google.protobuf.Value appVersion = 1 [json_name = "appVerison"];
+    map<string,  google.protobuf.Value> h5Versions = 2;
+}
+message GetPublishItemLatestVersionRequest {
+    string aK = 1 [json_name = "ak"];
+    string aI = 2 [json_name = "ai"];
+    google.protobuf.Value currentAppInfo = 3;
+    repeated google.protobuf.Value currentH5Info = 4;
+    string mobileType = 5;
+    bool forceBetaH5 = 6;
+    bool check = 7;
+}
+message GetPublishItemLatestVersionResponse {
+    google.protobuf.Value data = 1;
+}
 message GetSLAReq {
     uint64 orgID = 1;
     optional google.protobuf.Value identity = 2;
@@ -850,6 +867,7 @@ message Iteration {
     string creator = 9;
     string state = 10;
     google.protobuf.Value issueSummary = 11;
+    optional google.protobuf.Value manHour = 12;
 }
 message IterationCreateRequest {
     optional google.protobuf.Timestamp startedAt = 1;
@@ -857,6 +875,7 @@ message IterationCreateRequest {
     uint64 projectID = 3;
     string title = 4;
     string content = 5;
+    optional google.protobuf.Value manHour = 6;
 }
 message IterationCreateResponse {
     optional google.protobuf.Value data = 1;
@@ -882,7 +901,8 @@ message IterationUpdateRequest {
     optional google.protobuf.Timestamp startedAt = 3;
     optional google.protobuf.Timestamp finishedAt = 4;
     string state = 5;
-    string id = 6; // generated from path variable: id. You should change the proto type if necessary.
+    optional google.protobuf.Value manHour = 6;
+    string id = 7; // generated from path variable: id. You should change the proto type if necessary.
 }
 message IterationUpdateResponse {
     uint64 data = 1;
@@ -1141,6 +1161,12 @@ message OrgUpdateRequestBody {
     bool isPublic = 10;
 }
 message PUBLISH_ITEM_CERTIFICATION_GET_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_CREATE_OFFLINE_VERSION_Request {
+    string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
+}
+message PUBLISH_ITEM_DISTRIBUTION_Request {
     string publishItemId = 1; // generated from path variable: publishItemId. You should change the proto type if necessary.
 }
 message PUBLISH_ITEM_ERR_EFFACTS_Request {
@@ -1451,6 +1477,20 @@ message ProjectStats {
 }
 message ProxyMetrics_Request {
 }
+message PublishItemDistributionData {
+    optional google.protobuf.Value default = 1;
+    optional google.protobuf.Value versions = 2;
+    string name = 3;
+    string displayName = 4;
+    string desc = 5;
+    string logo = 6;
+    google.protobuf.Timestamp createdAt = 7;
+    repeated string previewImages = 8;
+    string backgroundImage = 9;
+}
+message PublishItemDistributionResponse {
+    google.protobuf.Value data = 1;
+}
 message PublishItemStatisticsDetailData {
     repeated google.protobuf.Value data = 1;
 }
@@ -1610,6 +1650,17 @@ message QA_TESTENV_LIST_Request {
 message QA_TESTPLAN_PIPELINE_DETAIL_Request {
     string pipelineId = 1; // generated from path variable: pipelineId. You should change the proto type if necessary.
 }
+message QualityGateConditionResult {
+    string status = 1;
+    string metricKey = 2;
+    string comparator = 3;
+    string errorThreshold = 4;
+    string actualValue = 5;
+}
+message QualityGateResult {
+    string status = 1;
+    repeated google.protobuf.Value conditions = 2;
+}
 message QueryAppPublishItemRelationResponse {
     repeated google.protobuf.Value data = 1;
 }
@@ -1723,6 +1774,7 @@ message SonarStoreRequest {
     repeated google.protobuf.Value coverage = 15;
     repeated google.protobuf.Value duplications = 16;
     google.protobuf.Value issuesStatistics = 17 [json_name = "issues_statistics"];
+    google.protobuf.Value qualityGateResult = 18;
 }
 message SonarStoreResponse {
     google.protobuf.Value data = 1;
@@ -1984,6 +2036,11 @@ message ValidBranch {
     string artifactWorkspace = 6;
 }
 message ValidateSwagger_Request {
+}
+message VersionInfo {
+    string packageName = 1;
+    string version = 2;
+    string buildID = 3 [json_name = "buildId"];
 }
 // generate service from openapi spec: dop
 service dop {
@@ -4263,6 +4320,38 @@ service dop {
             doc: "summary: 渠道详情，明细数据",
         };
     };
+    rpc PUBLISH_ITEM_CREATE_OFFLINE_VERSION (PUBLISH_ITEM_CREATE_OFFLINE_VERSION_Request) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/publish-items/{publishItemId}/versions/create-offline-version",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/publish-items/{publishItemId}/versions/create-offline-version",
+            auth: {
+                no_check: false,
+                check_login: true,
+                try_check_login: false,
+                check_token: true,
+                check_basic_auth: false,
+            },
+            doc: "summary: 移动应用上传离线包",
+        };
+    };
+    rpc PUBLISH_ITEM_DISTRIBUTION (PUBLISH_ITEM_DISTRIBUTION_Request) returns (PublishItemDistributionResponse) {
+        option (google.api.http) = {
+            get: "/api/publish-items/{publishItemId}/distribution",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/publish-items/{publishItemId}/distribution",
+            auth: {
+                no_check: true,
+                check_login: false,
+                try_check_login: false,
+                check_token: false,
+                check_basic_auth: false,
+            },
+            doc: "summary: 发布下载信息",
+        };
+    };
     rpc PUBLISH_ITEM_ERR_EFFACTS (PUBLISH_ITEM_ERR_EFFACTS_Request) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             get: "/api/publish-items/{publishItemId}/err/effacts",
@@ -4389,6 +4478,22 @@ service dop {
                 check_basic_auth: false,
             },
             doc: "summary: 统计大盘，累计用户",
+        };
+    };
+    rpc PUBLISH_ITEM_VERSION_GET_LATEST (GetPublishItemLatestVersionRequest) returns (GetPublishItemLatestVersionResponse) {
+        option (google.api.http) = {
+            post: "/api/publish-items/actions/latest-versions",
+        };
+        option (erda.common.openapi) = {
+            path: "/api/publish-items/actions/latest-versions",
+            auth: {
+                no_check: false,
+                check_login: false,
+                try_check_login: true,
+                check_token: true,
+                check_basic_auth: false,
+            },
+            doc: "summary: 获取移动应用最新的版本",
         };
     };
     rpc PUBLISH_ITEM_VERSION_INFO_LIST (PublishItemStatisticsDetailRequest) returns (PublishItemStatisticsDetailData) {

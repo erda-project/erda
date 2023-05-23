@@ -391,6 +391,8 @@ message MemberListRequest {
     string q = 5;
     int64 pageNo = 6;
     int64 pageSize = 7;
+    bool desensitizeEmail = 8;
+    bool desensitizeMobile = 9;
 }
 message MemberListResponse {
     google.protobuf.Value data = 1;
