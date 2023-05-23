@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -45,14 +47,19 @@ const (
 )
 
 type config struct {
-	ProtoParser string                   `file:"proto_parser"`
-	Concurrency int                      `file:"concurrency" default:"9"`
-	BufferSize  int                      `file:"buffer_size" default:"512"`
-	ReadTimeout time.Duration            `file:"read_timeout" default:"10s"`
-	Consumer    *kafkaInf.ConsumerConfig `file:"consumer"`
+	ProtoParser   string                   `file:"proto_parser"`
+	Concurrency   int                      `file:"concurrency" default:"9"`
+	BufferSize    int                      `file:"buffer_size" default:"512"`
+	ReadTimeout   time.Duration            `file:"read_timeout" default:"10s"`
+	Consumer      *kafkaInf.ConsumerConfig `file:"consumer"`
+	DropTimeStamp time.Duration            `file:"drop_timestamp" default:"24h"`
 }
 
 var _ model.Receiver = (*provider)(nil)
+
+var (
+	datadrop *prometheus.CounterVec
+)
 
 // +provider
 type provider struct {
@@ -82,6 +89,12 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
+	datadrop = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "data_pipeline",
+		Name:      "receiver_droped",
+		Help:      "event count for certain receiver consumed",
+	}, []string{"pipeline", "receiver"})
+
 	if p.Cfg.ProtoParser == "" {
 		return fmt.Errorf("proto_parser required")
 	}
@@ -146,6 +159,11 @@ func (p *provider) parseSpotSpan() kafkaInf.ConsumerFuncV2 {
 func (p *provider) parseSpotMetric() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return spotmetric.ParseSpotMetric(msg.Value, func(m *metric.Metric) error {
+			// drop future data
+			if m.Timestamp > time.Now().Add(p.Cfg.DropTimeStamp).UnixNano() {
+				datadrop.WithLabelValues("erda.oap.collector.receiver.kafka", string(spotMetric)).Inc()
+				return nil
+			}
 			return p.consumeData(m)
 		})
 	}

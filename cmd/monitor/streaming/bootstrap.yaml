@@ -662,6 +662,7 @@ clickhouse.table.creator@span:
 erda.oap.collector.receiver.kafka@spotmetric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   proto_parser: spotmetric
+  drop_timestamp: "${METRIC_DROP_TIMESTAMP:24h}"
   consumer:
     topics: "${METRIC_TOPICS:spot-metrics}"
     # TODO. METRIC_CH_GROUP_ID to METRIC_GROUP_ID when all finished
