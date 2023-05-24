@@ -47,12 +47,12 @@ const (
 )
 
 type config struct {
-	ProtoParser   string                   `file:"proto_parser"`
-	Concurrency   int                      `file:"concurrency" default:"9"`
-	BufferSize    int                      `file:"buffer_size" default:"512"`
-	ReadTimeout   time.Duration            `file:"read_timeout" default:"10s"`
-	Consumer      *kafkaInf.ConsumerConfig `file:"consumer"`
-	DropTimeStamp time.Duration            `file:"drop_timestamp" default:"24h"`
+	ProtoParser       string                   `file:"proto_parser"`
+	Concurrency       int                      `file:"concurrency" default:"9"`
+	BufferSize        int                      `file:"buffer_size" default:"512"`
+	ReadTimeout       time.Duration            `file:"read_timeout" default:"10s"`
+	Consumer          *kafkaInf.ConsumerConfig `file:"consumer"`
+	FutureDiscardDate time.Duration            `file:"future_discard_date" default:"24h"`
 }
 
 var _ model.Receiver = (*provider)(nil)
@@ -160,7 +160,7 @@ func (p *provider) parseSpotMetric() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return spotmetric.ParseSpotMetric(msg.Value, func(m *metric.Metric) error {
 			// drop future data
-			if m.Timestamp > time.Now().Add(p.Cfg.DropTimeStamp).UnixNano() {
+			if m.Timestamp > time.Now().Add(p.Cfg.FutureDiscardDate).UnixNano() {
 				datadrop.WithLabelValues("erda.oap.collector.receiver.kafka", string(spotMetric)).Inc()
 				return nil
 			}
