@@ -312,10 +312,10 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 				continue
 			}
 			if err != nil {
-				log.Printf("[WARN] failed to do %s.OnRequest", item.Name)
+				p.logf("[WARN] failed to do %s.OnRequest", item.Name)
 			}
 			if signal != Continue {
-				log.Printf("[WARN] reverseproxy filters is not continued by %s", item.Name)
+				p.logf("[WARN] reverseproxy filters is not continued by %s", item.Name)
 			}
 			p.Filters = p.Filters[:i+1]
 			p.Director = DoNothingDirector
