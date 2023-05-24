@@ -14,29 +14,11 @@
 
 package reverseproxy
 
-import (
-	"sync"
-)
+import "testing"
 
-type bufferPool struct {
-	pool *sync.Pool
-}
-
-func NewBufferPool[IntegerType ~int | ~int8 | ~int16 | ~int32 | ~int64 |
-	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](size IntegerType) BufferPool {
-	return &bufferPool{
-		pool: &sync.Pool{
-			New: func() any {
-				return make([]byte, size)
-			},
-		},
-	}
-}
-
-func (bp *bufferPool) Get() []byte {
-	return bp.pool.Get().([]byte)
-}
-
-func (bp *bufferPool) Put(buf []byte) {
-	bp.pool.Put(buf)
+func TestNewBufferPool(t *testing.T) {
+	pool := NewBufferPool(1)
+	buf := pool.Get()
+	buf[0] = 0
+	pool.Put(buf)
 }
