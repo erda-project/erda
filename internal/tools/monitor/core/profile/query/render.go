@@ -101,7 +101,7 @@ func (p *provider) render(rw http.ResponseWriter, r *http.Request) {
 	default:
 		flame := flamebearer.NewProfile(flamebearer.ProfileConfig{
 			Name:      filename,
-			MaxNodes:  p.Cfg.MaxNodesRender,
+			MaxNodes:  req.maxNodes,
 			Tree:      out.Tree,
 			Timeline:  out.Timeline,
 			Groups:    out.Groups,
