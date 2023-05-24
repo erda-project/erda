@@ -16,13 +16,15 @@ package reverseproxy_test
 
 import (
 	"bytes"
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	"github.com/erda-project/erda/pkg/reverseproxy"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func TestTimerTransport_RoundTrip(t *testing.T) {
