@@ -776,12 +776,12 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "timestamp desc",
 			sql:  "select column1 from table order by timestamp desc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC, \"timestamp\" DESC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" DESC",
 		},
 		{
 			name: "timestamp asc",
 			sql:  "select column1 from table order by timestamp asc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC, \"timestamp\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC",
 		},
 	}
 	for _, test := range tests {

@@ -131,6 +131,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 
 	var tailOrderExpress []exp.OrderedExpression
+	var isOrderByTime bool
 
 	if len(s) > 0 {
 		for _, field := range s {
@@ -149,8 +150,10 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 			}
 			if column == timeBucketColumn {
 				tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
+				isOrderByTime = true
 				continue
 			} else if column == p.ctx.timeKey {
+				isOrderByTime = true
 				if !field.Ascending {
 					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Desc())
 				} else {
@@ -173,17 +176,24 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	}
 
 	for _, column := range copiedColumns {
-		if column.isWildcard {
-			continue
-		}
 		if column.asName == timeBucketColumn {
+			isOrderByTime = true
 			tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
-			continue
+			break
 		} else if column.isTimeKey {
+			isOrderByTime = true
 			tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
-			continue
+			break
 		}
-		expr = expr.OrderAppend(goqu.C(column.asName).Asc())
+	}
+
+	if !isOrderByTime {
+		for _, column := range copiedColumns {
+			if column.isWildcard || column.isTimeKey || column.asName == timeBucketColumn {
+				continue
+			}
+			expr = expr.OrderAppend(goqu.C(column.asName).Asc())
+		}
 	}
 
 	for _, express := range tailOrderExpress {
