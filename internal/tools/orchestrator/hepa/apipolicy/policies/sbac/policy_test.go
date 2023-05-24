@@ -74,7 +74,7 @@ func TestPluginConfig_ToPluginReqDto(t *testing.T) {
 	if err := json.Unmarshal([]byte(config), &pc); err != nil {
 		t.Fatal(err)
 	}
-	pc.ToPluginReqDto()
+	pc.ToPluginReqDto("", "zone_name")
 	pc.Switch = false
 	if err := pc.IsValidDto(""); err != nil {
 		t.Fatal(err)

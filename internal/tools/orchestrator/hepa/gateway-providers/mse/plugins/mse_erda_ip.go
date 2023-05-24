@@ -45,19 +45,19 @@ _rules_:
   - 10.12.13.0/24
 */
 
-func mergeErdaIPConfig(currentParaSignAuthConfig, updateParaSignAuthConfig mseDto.MsePluginConfig, updateForDisable bool) (mseDto.MsePluginConfig, error) {
-	configBytes, _ := yaml.Marshal(&currentParaSignAuthConfig)
+func mergeErdaIPConfig(currentErdaIPConfig, updateErdaIPConfig mseDto.MsePluginConfig, updateForDisable bool) (mseDto.MsePluginConfig, error) {
+	configBytes, _ := yaml.Marshal(&currentErdaIPConfig)
 	logrus.Debugf("Current ErdaIP config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
-	configBytes, _ = yaml.Marshal(&updateParaSignAuthConfig)
+	configBytes, _ = yaml.Marshal(&updateErdaIPConfig)
 	logrus.Debugf("Update ErdaIP config result Yaml file content Breore merge:\n**********************************************************\n%s\n*******************************************", string(configBytes))
 
 	// erda-ip 的 路由唯一性
 	// 当前配置项转换
-	mapCurrentErdaIPConfig := getErdaIPRouteNameToMatchRouteMap(currentParaSignAuthConfig, true, updateForDisable)
+	mapCurrentErdaIPConfig := getErdaIPRouteNameToMatchRouteMap(currentErdaIPConfig, true, updateForDisable)
 	logrus.Debugf("mapCurrentErdaIPConfig=%+v", mapCurrentErdaIPConfig)
 
 	// 更新配置项转换
-	mapUpdateErdaIPConfig := getErdaIPRouteNameToMatchRouteMap(updateParaSignAuthConfig, false, updateForDisable)
+	mapUpdateErdaIPConfig := getErdaIPRouteNameToMatchRouteMap(updateErdaIPConfig, false, updateForDisable)
 	logrus.Debugf("mapUpdateErdaIPConfig=%+v", mapUpdateErdaIPConfig)
 
 	// 更新 routes
@@ -80,7 +80,7 @@ func mergeErdaIPConfig(currentParaSignAuthConfig, updateParaSignAuthConfig mseDt
 	rules := make([]mseDto.Rules, 0)
 	if len(mapCurrentErdaIPConfig) == 0 {
 		mapCurrentErdaIPConfig[MseDefaultRouteName] = ErdaIPConfig{
-			MatchRoute: "DEFAULT_MSE_ROUTE_NAME",
+			MatchRoute: MseDefaultRouteName,
 			IPSource:   common.MseErdaIpSourceXForwardedFor,
 			IpAclType:  common.MseErdaIpAclWhite,
 			IpAclList:  MSE_ERDA_IP_DEFALUT_ACL_LIST,
@@ -161,11 +161,11 @@ func getErdaIPSourceConfig(config map[string]interface{}) (ipSource string, ipAc
 
 	routeSwitch, ok := config[common.MseErdaIpRouteSwitch]
 	if !ok {
-		return ipSource, ipAclType, ipAclList, false, errors.Errorf("not set ip_acl_type for plugin %s", common.MsePluginIP)
+		return ipSource, ipAclType, ipAclList, false, errors.Errorf("not set %s for plugin %s", common.MseErdaIpRouteSwitch, common.MsePluginIP)
 	}
 	enable, ok := routeSwitch.(bool)
 	if !ok {
-		return ipSource, ipAclType, ipAclList, false, errors.Errorf("ip_acl_type for plugin %s is invalid string", common.MsePluginIP)
+		return ipSource, ipAclType, ipAclList, false, errors.Errorf("%s for plugin %s is invalid bool", common.MseErdaIpRouteSwitch, common.MsePluginIP)
 	}
 
 	disable = !enable

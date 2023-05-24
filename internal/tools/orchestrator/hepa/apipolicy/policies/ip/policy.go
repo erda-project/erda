@@ -297,8 +297,8 @@ func (policy Policy) buildMSEPluginReq(dto *PolicyDto, zoneName string) *provide
 }
 
 // 初创路由或者关闭路由策略（PolicyDto.Switch == false）的时候,都会进入 ParseConfig 的同一段逻辑中， 但:
-// 1. 如果是关闭路由策略，则对应的逻辑里需要清除已经配置的插件策略，\
-// 2. 如果是新建路由，实际上是不需要进行处理的，但可以延时等待拿到对应的新的路由信息，然后进行类似清除路由对应的策略配置的设置即可，但这个过程不能同步等待，因此异步执行，最多重试4次
+// 1. 如果是关闭路由策略，则对应的逻辑里需要清除已经配置的插件策略，一般直接就能处理了，因此进入不了 nonSwitchUpdateMSEPluginConfig() 的逻辑
+// 2. 如果是新建路由，实际上是不需要进行处理的（但网关应用默认策略实际上还是会进入 ParseConfig），此时路由还没被 MSE 网关识别到，但可以延时等待拿到对应的新的路由信息，然后进行类似清除路由对应的策略配置的设置即可，但这个过程不能同步等待，因此异步执行，最多重试3次
 func (policy Policy) nonSwitchUpdateMSEPluginConfig(mseAdapter gateway_providers.GatewayAdapter, policyDto *PolicyDto, zoneName string) {
 	for i := 0; i < 3; i++ {
 		time.Sleep(10 * time.Second)

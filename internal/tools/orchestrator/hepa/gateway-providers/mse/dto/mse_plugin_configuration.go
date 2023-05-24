@@ -72,6 +72,13 @@ type Rules struct {
 	IpAclType string `json:"ip_acl_type,omitempty" yaml:"ip_acl_type,omitempty"`
 	// 白名单对应一定要设置，黑名单可以不设置
 	IpAclList []string `json:"ip_acl_list,omitempty" yaml:"ip_acl_list,omitempty"`
+
+	// erda-sbac
+	AccessControlAPI string   `json:"access_control_api,omitempty" yaml:"access_control_api,omitempty"`
+	HttpMethods      []string `json:"http_methods,omitempty" yaml:"http_methods,omitempty"`
+	MatchPatterns    []string `json:"match_patterns,omitempty" yaml:"match_patterns,omitempty"`
+	WithHeaders      []string `json:"with_headers,omitempty" yaml:"with_headers,omitempty"`
+	WithCookie       bool     `json:"with_cookie,omitempty" yaml:"with_cookie,omitempty"`
 }
 
 type SortConsumers struct {
