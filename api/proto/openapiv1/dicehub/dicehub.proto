@@ -29,6 +29,10 @@ message CreateUpdateDeleteReleaseRuleRequest {
 message DICEHUB_RELEASES_DOWNLOAD_Request {
     string releaseId = 1; // generated from path variable: releaseId. You should change the proto type if necessary.
 }
+message H5VersionInfo {
+    google.protobuf.Value versionInfo = 1;
+    map<string, google.protobuf.Value> targetMobiles = 2;
+}
 message RELEASE_RULE_LIST_Request {
 }
 message RELEASE_RULE_UPDATE_Request {
@@ -118,6 +122,11 @@ message ReleaseTag {
     string name = 6;
     string type = 7;
     int64 projectID = 8;
+}
+message VersionInfo {
+    string packageName = 1;
+    string version = 2;
+    string buildID = 3 [json_name = "buildId"];
 }
 // generate service from openapi spec: dicehub
 service dicehub {

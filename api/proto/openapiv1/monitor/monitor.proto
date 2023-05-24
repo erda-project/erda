@@ -254,16 +254,6 @@ message MONITOR_ORG_REPORT_TASK_CREATE_Request {
 message MONITOR_ORG_REPORT_TASK_Request {
     string id = 1; // generated from path variable: id. You should change the proto type if necessary.
 }
-message MONITOR_PROFILE_APP_LIST_Request {
-}
-message MONITOR_PROFILE_LABEL_LIST_Request {
-}
-message MONITOR_PROFILE_LABEL_VALUE_LIST_Request {
-}
-message MONITOR_PROFILE_RENDER_DIFF_Request {
-}
-message MONITOR_PROFILE_RENDER_Request {
-}
 message MSP_ADDON_LOGS_RULES_CREATE_Request {
 }
 message MSP_ADDON_LOGS_RULES_DELETE_Request {
@@ -1953,86 +1943,6 @@ service monitor {
                 check_basic_auth: false,
             },
             doc: "summary: 创建企业报表任务详情",
-        };
-    };
-    rpc MONITOR_PROFILE_APP_LIST (MONITOR_PROFILE_APP_LIST_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/profile/apps",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/profile/apps",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 可持续性应用查询接口",
-        };
-    };
-    rpc MONITOR_PROFILE_LABEL_LIST (MONITOR_PROFILE_LABEL_LIST_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/profile/labels",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/profile/labels",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 可持续性标签查询接口",
-        };
-    };
-    rpc MONITOR_PROFILE_LABEL_VALUE_LIST (MONITOR_PROFILE_LABEL_VALUE_LIST_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/profile/label-values",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/profile/label-values",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 可持续性标签值查询接口",
-        };
-    };
-    rpc MONITOR_PROFILE_RENDER (MONITOR_PROFILE_RENDER_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/profile/render",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/profile/render",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 可持续性查询接口",
-        };
-    };
-    rpc MONITOR_PROFILE_RENDER_DIFF (MONITOR_PROFILE_RENDER_DIFF_Request) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            get: "/api/profile/render-diff",
-        };
-        option (erda.common.openapi) = {
-            path: "/api/profile/render-diff",
-            auth: {
-                no_check: false,
-                check_login: true,
-                try_check_login: false,
-                check_token: true,
-                check_basic_auth: false,
-            },
-            doc: "summary: 可持续性查询比对接口",
         };
     };
     rpc MSP_ADDON_LOGS_RULE (MSP_ADDON_LOGS_RULE_Request) returns (google.protobuf.Empty) {

@@ -135,12 +135,6 @@ message ContainerListRequest {
 message ContainerListResponse {
     repeated google.protobuf.Value data = 1;
 }
-message ContainerResource {
-    int64 memRequest = 1;
-    int64 memLimit = 2;
-    double cpuRequest = 3;
-    double cpuLimit = 4;
-}
 message CustomAddonCreateRequest {
     string name = 1;
     string addonName = 2;
@@ -449,20 +443,10 @@ message Pod {
     string phase = 4;
     string message = 5;
     string startedAt = 6;
-    string updatedAt = 7;
-    string service = 8;
-    string clusterName = 9;
-    string podName = 10;
-    string k8sNamespace = 11;
-    int32 restartCount = 12;
-    repeated google.protobuf.Value podContainers = 13;
-}
-message PodContainer {
-    string containerID = 1 [json_name = "containerId"];
-    string containerName = 2;
-    string image = 3;
-    google.protobuf.Value resource = 4 [json_name = "resources"];
-    string message = 5;
+    string service = 7;
+    string clusterName = 8;
+    string podName = 9;
+    string k8sNamespace = 10;
 }
 message PodListRequest {
     int64 runtimeID = 1;
