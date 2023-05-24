@@ -280,11 +280,6 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 		}()
 	}
-	defer func() {
-		if ctx != nil && ctx.Err() != nil {
-			p.logf("[ERRO] context error: %v", ctx.Err())
-		}
-	}()
 
 	outreq := req.Clone(ctx)
 	if req.ContentLength == 0 {
@@ -302,11 +297,6 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	if outreq.Header == nil {
 		outreq.Header = make(http.Header) // Issue 33142: historical behavior was to always allocate
 	}
-	defer func() {
-		if outreq != nil && outreq.Context() != nil && outreq.Context().Err() != nil {
-			p.logf("outreq.Context().Err(): %v", outreq.Context().Err())
-		}
-	}()
 
 	var logger = logrusx.New(logrusx.WithName(reflect.TypeOf(p).String()))
 	if logger_, ok := p.Context.Value(LoggerCtxKey{}).(logs.Logger); ok {
@@ -389,11 +379,6 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.getErrorHandler()(rw, outreq, err)
 		return
 	}
-	defer func() {
-		if res.Request != nil && res.Request.Context() != nil && res.Request.Context().Err() != nil {
-			p.logf("res.Request.Context().Err(): %v\n", res.Request.Context().Err())
-		}
-	}()
 
 	// Deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
