@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 )
 
 type PolicyDto struct {
@@ -42,7 +43,7 @@ func (pc PolicyDto) IsValidDto(gatewayProvider string) error {
 	return err
 }
 
-func (pc PolicyDto) ToPluginReqDto() *providerDto.PluginReqDto {
+func (pc PolicyDto) ToPluginReqDto(gatewayProvider, zoneName string) *providerDto.PluginReqDto {
 	var req = &providerDto.PluginReqDto{
 		Name:    apipolicy.Policy_Engine_SBAC,
 		Enabled: &pc.Switch,
@@ -51,6 +52,12 @@ func (pc PolicyDto) ToPluginReqDto() *providerDto.PluginReqDto {
 			"with_body":          pc.WithBody,
 		},
 	}
+
+	if gatewayProvider == mseCommon.MseProviderName {
+		req.Name = mseCommon.MsePluginSbac
+		req.ZoneName = zoneName
+	}
+
 	// adjust "patterns"
 	var patterns []string
 	for _, pat := range pc.Patterns {
@@ -74,9 +81,14 @@ func (pc PolicyDto) ToPluginReqDto() *providerDto.PluginReqDto {
 	var headersKeys = make(map[string]struct{})
 	if pc.WithCookie {
 		headersKeys[textproto.CanonicalMIMEHeaderKey("cookie")] = struct{}{}
+		req.Config["with_cookie"] = true
 	}
 	for _, header := range pc.WithHeaders {
-		headersKeys[textproto.CanonicalMIMEHeaderKey(header)] = struct{}{}
+		if gatewayProvider == mseCommon.MseProviderName {
+			headersKeys[strings.ToLower(header)] = struct{}{}
+		} else {
+			headersKeys[textproto.CanonicalMIMEHeaderKey(header)] = struct{}{}
+		}
 	}
 	var headers []string
 	for key := range headersKeys {
@@ -85,5 +97,12 @@ func (pc PolicyDto) ToPluginReqDto() *providerDto.PluginReqDto {
 	if len(headers) > 0 {
 		req.Config["with_headers"] = headers
 	}
+
+	if pc.Switch {
+		req.Config[mseCommon.MseErdaSBACRouteSwitch] = true
+	} else {
+		req.Config[mseCommon.MseErdaSBACRouteSwitch] = false
+	}
+
 	return req
 }

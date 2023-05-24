@@ -36,6 +36,7 @@ const (
 	MseDefaultHmacAuthConfig     = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
 	MseDefaultParaSignAuthConfig = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  request_body_size_limit: 10485760\n  date_offset: 600\n  consumers:\n  - name: consumer-erda-default\n    key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n    secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5"
 	MseDefaultErdaIPConfig       = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"_match_route_\"、“ip_source”、\"ip_acl_type\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  ip_source: \"x-forwarded-for\"\n  ip_acl_type: \"black\"\n  ip_acl_list:\n  - 10.10.10.10\n  - 10.12.13.0/24"
+	MseDefaultErdaSBACConfig     = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"access_control_api\" 字段\n_rules_:\n  - _match_route_:\n      - route-erda-default\n    access_control_api: \"http://abc.default.svc.cluster.local:8080/\"\n    http_methods:\n      - GET\n      - PUT\n    match_patterns:\n      - \"^/\"\n    with_headers:\n      - \"*\"\n    with_cookie: false\n    with_raw_body: false"
 
 	MsePluginRequestBodySizeLimit = 33554432
 	MsePluginRequestDateOffset    = 300
@@ -166,6 +167,29 @@ func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPl
 			},
 		}
 		pluginConfig, err = mergeErdaIPConfig(pluginConfig, updateConfig, disable)
+		if err != nil {
+			return "", -1, err
+		}
+	case common.MsePluginSbac:
+		accessControlAPI, matchPatterns, httpMethods, withHeaders, withCookie, disable, err := getErdaSBACSourceConfig(req.Config)
+		if err != nil {
+			return "", -1, err
+		}
+
+		updateConfig := mseDto.MsePluginConfig{
+			Rules: []mseDto.Rules{
+				{
+					MatchRoute:       matchRoutes,
+					AccessControlAPI: accessControlAPI,
+					HttpMethods:      httpMethods,
+					MatchPatterns:    matchPatterns,
+					WithHeaders:      withHeaders,
+					WithCookie:       withCookie,
+					//Disable:    disable,
+				},
+			},
+		}
+		pluginConfig, err = mergeErdaSBACConfig(pluginConfig, updateConfig, disable)
 		if err != nil {
 			return "", -1, err
 		}

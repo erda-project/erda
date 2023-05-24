@@ -899,7 +899,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		return "", err
 	}
 	for _, zone := range zones {
-		logrus.Infof("WWWW Set zone_id=%s  zone_name=%s for policy  %s", zone.Id, zone.Name, category)
+		logrus.Debugf("Set zone_id=%s  zone_name=%s for policy  %s", zone.Id, zone.Name, category)
 		policy, err := policyService.GetByAny(&orm.GatewayIngressPolicy{
 			Name:   category,
 			ZoneId: zone.Id,
@@ -913,7 +913,6 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 				return msg, err
 			}
 		}
-		logrus.Infof("WWWW Set zone_id=%s  zone_name=%s for policy  %s successfully.", zone.Id, zone.Name, category)
 	}
 	controllerChanges, err := policyService.GetChangesByRegions(az.Az, strings.Join(service.GLOBAL_REGIONS, "|"))
 	if err != nil {
@@ -1086,7 +1085,13 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 	switch gatewayProvider {
 	case mseCommon.MseProviderName:
 		useKong = false
-		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP && category != apipolicy.Policy_Engine_Proxy {
+		switch category {
+		case apipolicy.Policy_Engine_Service_Guard:
+		case apipolicy.Policy_Engine_CORS:
+		case apipolicy.Policy_Engine_IP:
+		case apipolicy.Policy_Engine_Proxy:
+		case apipolicy.Policy_Engine_SBAC:
+		default:
 			rerr = errors.Errorf("gateway provider %s not support set policy %s", gatewayProvider, category)
 			return
 		}

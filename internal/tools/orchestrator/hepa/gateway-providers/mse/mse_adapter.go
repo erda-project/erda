@@ -389,6 +389,8 @@ func (impl *MseAdapterImpl) CreateOrUpdatePluginById(req *PluginReqDto) (*Plugin
 					defaultConfig = mseplugins.MseDefaultParaSignAuthConfig
 				case common.MsePluginIP:
 					defaultConfig = mseplugins.MseDefaultErdaIPConfig
+				case common.MsePluginSbac:
+					defaultConfig = mseplugins.MseDefaultErdaSBACConfig
 				}
 				resp, err := impl.UpdateMSEPluginConfigByIDByAPI(pluginId, nil, &defaultConfig, &configLevel, &enabled)
 				if err != nil {

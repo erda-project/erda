@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"sort"
 	"strconv"
@@ -2685,7 +2686,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 			if err != nil {
 				return
 			}
-			policyPlugins := []string{mseCommon.MsePluginIP, mseCommon.MsePluginSbac, mseCommon.MsePluginCsrf}
+			policyPlugins := []string{mseCommon.MsePluginIP, mseCommon.MsePluginSbac}
 			for _, pluginName := range policyPlugins {
 				var pluginReq *providerDto.PluginReqDto
 				switch pluginName {
@@ -2700,12 +2701,37 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 						},
 						ZoneName: strings.ToLower(zone.Name),
 					}
-					_, errr := gatewayAdapter.CreateOrUpdatePluginById(pluginReq)
-					if errr != nil {
-						err = errr
-						return
+				case mseCommon.MsePluginSbac:
+					pluginReq = &providerDto.PluginReqDto{
+						Name: mseCommon.MsePluginSbac,
+						Config: map[string]interface{}{
+							//TODO: 补充相关配置信息
+							mseCommon.MseErdaSBACRouteSwitch:            false,
+							mseCommon.MseErdaSBACConfigAccessControlAPI: mseCommon.MseErdaSBACAccessControlAPI,
+							mseCommon.MseErdaSBACConfigMatchPatterns:    mseCommon.MseErdaSBACConfigDefaultMatchPattern,
+							mseCommon.MseErdaSBACConfigHttpMethods: []string{
+								http.MethodGet,
+								http.MethodHead,
+								http.MethodPost,
+								http.MethodPut,
+								http.MethodPatch,
+								http.MethodDelete,
+								http.MethodConnect,
+								http.MethodOptions,
+								http.MethodTrace,
+							},
+							mseCommon.MseErdaSBACConfigWithHeaders: []string{mseCommon.MseErdaSBACConfigDefaultWithHeader},
+							mseCommon.MseErdaSBACConfigWithCookie:  false,
+						},
+						ZoneName: strings.ToLower(zone.Name),
 					}
 				default:
+					// mseCommon.MsePluginCsrf
+				}
+				_, errr := gatewayAdapter.CreateOrUpdatePluginById(pluginReq)
+				if errr != nil {
+					err = errr
+					return
 				}
 			}
 		}

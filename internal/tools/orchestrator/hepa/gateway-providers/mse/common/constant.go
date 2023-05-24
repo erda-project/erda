@@ -59,6 +59,18 @@ const (
 	MseErdaIpSourceRemoteIP      = "remote-ip"
 	MseErdaIpSourceXRealIP       = "x-real-ip"
 	MseErdaIpSourceXForwardedFor = "x-forwarded-for"
+
+	MseErdaSBACRouteSwitch               = "MSE_ERDA_SBAC_ROUTE_SWITCH"
+	MseErdaSBACAccessControlAPI          = "http://test-sbac.default.svc.cluster.local:8080/"
+	MseErdaSBACConfigAccessControlAPI    = "access_control_api"
+	MseErdaSBACConfigMatchPatterns       = "patterns"
+	MseErdaSBACConfigHttpMethods         = "methods"
+	MseErdaSBACConfigWithHeaders         = "with_headers"
+	MseErdaSBACConfigWithCookie          = "with_cookie"
+	MseErdaSBACConfigDefaultMatchPattern = "^/"
+	MseErdaSBACConfigDefaultWithHeader   = "*"
+
+	MseErdaCSRFRouteSwitch = "MSE_ERDA_CSRF_ROUTE_SWITCH"
 )
 
 var MapClusterNameToMSEPluginNameToPluginID map[string]map[string]*int64
