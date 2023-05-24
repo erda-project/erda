@@ -93,7 +93,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		Namespace: "data_pipeline",
 		Name:      "receiver_droped",
 		Help:      "event count for certain receiver consumed",
-	}, []string{"pipeline", "receiver"})
+		ConstLabels: map[string]string{
+			"pipeline": ctx.Key(),
+		},
+	}, []string{"receiver"})
 
 	if p.Cfg.ProtoParser == "" {
 		return fmt.Errorf("proto_parser required")
@@ -161,7 +164,7 @@ func (p *provider) parseSpotMetric() kafkaInf.ConsumerFuncV2 {
 		return spotmetric.ParseSpotMetric(msg.Value, func(m *metric.Metric) error {
 			// drop future data
 			if m.Timestamp > time.Now().Add(p.Cfg.FutureDiscardDate).UnixNano() {
-				datadrop.WithLabelValues("erda.oap.collector.receiver.kafka", string(spotMetric)).Inc()
+				datadrop.WithLabelValues(string(spotMetric), "").Inc()
 				return nil
 			}
 			return p.consumeData(m)
