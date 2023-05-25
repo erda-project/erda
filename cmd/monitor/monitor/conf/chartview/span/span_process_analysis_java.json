@@ -44,7 +44,7 @@
           }
         },
         "api": {
-          "url": "/api/tmc/metrics-query",
+          "url": "/api/orgCenter/metrics-query",
           "query": {
             "epoch": "ms",
             "filter_terminus_key": "{{terminusKey}}",
@@ -138,7 +138,7 @@
           }
         },
         "api": {
-          "url": "/api/tmc/metrics-query",
+          "url": "/api/orgCenter/metrics-query",
           "query": {
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
@@ -542,7 +542,7 @@
           }
         },
         "api": {
-          "url": "/api/tmc/metrics-query",
+          "url": "/api/orgCenter/metrics-query",
           "query": {
             "epoch": "ms",
             "filter_terminus_key": "{{terminusKey}}",
@@ -635,7 +635,7 @@
           }
         },
         "api": {
-          "url": "/api/tmc/metrics-query",
+          "url": "/api/orgCenter/metrics-query",
           "query": {
             "epoch": "ms",
             "format": "chartv2",
