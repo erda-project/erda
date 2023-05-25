@@ -128,6 +128,13 @@ func (p *GoroutinePool) Stop() {
 	p.running = false
 }
 
+func (p *GoroutinePool) IsRunning() bool {
+	p.Lock()
+	defer p.Unlock()
+
+	return p.running
+}
+
 func (p *GoroutinePool) Go(f func()) error {
 	p.RLock()
 	defer p.RUnlock()
