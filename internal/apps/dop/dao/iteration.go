@@ -31,6 +31,7 @@ type Iteration struct {
 	Content    string                    // 内容
 	Creator    string                    // 创建者 ID
 	State      apistructs.IterationState // 归档状态
+	ManHour    string                    // 迭代工时信息
 }
 
 func (Iteration) TableName() string {
@@ -49,6 +50,7 @@ func (i *Iteration) Convert() apistructs.Iteration {
 		Content:    i.Content,
 		Creator:    i.Creator,
 		State:      i.State,
+		ManHour:    new(apistructs.IssueManHour).FromString(i.ManHour),
 	}
 }
 
