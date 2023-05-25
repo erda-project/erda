@@ -109,7 +109,13 @@ func (s *Sched) Send(ctx context.Context, req TaskRequest) (Result, error) {
 		volumeDrivers: s.volumeDrivers,
 	}
 
-	err := s.mgr.Pool(executortypes.Name(task.ExecutorName)).GoWithTimeout(func() {
+	poolName, pool := s.mgr.Pool(executortypes.Name(task.ExecutorName))
+	if !pool.IsRunning() {
+		logrus.Errorf("failed to execute task, pool %s is not running", poolName)
+		return nil, errors.Errorf("pool %s is not running", poolName)
+	}
+
+	err := pool.GoWithTimeout(func() {
 		if err := s.runTask(ctx, task); err != nil {
 			logrus.Errorf("failed to execute task: %s (%v)", task, err)
 		}
