@@ -34,6 +34,8 @@ type IterationCreateRequest struct {
 	// +optional
 	Content string `json:"content"`
 
+	ManHour *IssueManHour `json:"manHour"`
+
 	// internal use, get from *http.Request
 	IdentityInfo
 }
@@ -80,6 +82,9 @@ type IterationUpdateRequest struct {
 	FinishedAt *time.Time `json:"finishedAt"`
 	// +required
 	State IterationState `json:"state"`
+
+	ManHour *IssueManHour `json:"manHour"`
+
 	// internal use, get from *http.Request
 	IdentityInfo
 }
@@ -137,6 +142,7 @@ type Iteration struct {
 	Creator      string         `json:"creator"`
 	State        IterationState `json:"state"`
 	IssueSummary ISummary       `json:"issueSummary"`
+	ManHour      *IssueManHour  `json:"manHour"`
 }
 
 // ISummary 与迭代相关的事件完成状态的统计信息

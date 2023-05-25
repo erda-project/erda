@@ -64,3 +64,25 @@ func TestIssueTime_IsEmpty(t *testing.T) {
 		})
 	}
 }
+
+func TestIssueManHour_FromString(t *testing.T) {
+	var s = `
+{
+  "estimateTime": 300,
+  "thisElapsedTime": 400,
+  "elapsedTime": 500,
+  "remainingTime": 600,
+  "startTime": "2023-05-22",
+  "workContent": "this is mocked work content",
+  "isModifiedRemainingTime": true
+}
+`
+	var ihm = new(IssueManHour).FromString(s)
+	assert.Equal(t, int64(300), ihm.EstimateTime)
+	assert.Equal(t, int64(400), ihm.ThisElapsedTime)
+	assert.Equal(t, int64(500), ihm.ElapsedTime)
+	assert.Equal(t, int64(600), ihm.RemainingTime)
+	assert.Equal(t, "2023-05-22", ihm.StartTime)
+	assert.Equal(t, "this is mocked work content", ihm.WorkContent)
+	assert.Equal(t, true, ihm.IsModifiedRemainingTime)
+}
