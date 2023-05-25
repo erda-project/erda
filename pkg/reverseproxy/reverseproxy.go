@@ -312,10 +312,10 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 				continue
 			}
 			if err != nil {
-				log.Printf("[WARN] failed to do %s.OnRequest", item.Name)
+				p.logf("[WARN] failed to do %s.OnRequest", item.Name)
 			}
 			if signal != Continue {
-				log.Printf("[WARN] reverseproxy filters is not continued by %s", item.Name)
+				p.logf("[WARN] reverseproxy filters is not continued by %s", item.Name)
 			}
 			p.Filters = p.Filters[:i+1]
 			p.Director = DoNothingDirector
@@ -548,7 +548,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 		logger = logger_
 	}
 
-	var buffer bytes.Buffer
+	var nextWriter bytes.Buffer
 	for {
 		if len(buf) == 0 {
 			buf = make([]byte, 3*1024)
@@ -559,41 +559,40 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 		}
 
 		if nr > 0 {
-			buf = buf[:nr]
+			nextReader := buf[:nr] // buf for next filter to write into
 			for i := 0; i < len(p.Filters); i++ {
 				filter, ok := p.Filters[i].Filter.(ResponseFilter)
 				if !ok {
 					continue
 				}
 				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseChunk"))
-				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &buffer, buf); {
+				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); {
 				case err != nil:
-					p.logf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
+					logger.Errorf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
-				case signal == Continue:
-					buf = buffer.Bytes()
-					buffer.Reset()
 				default:
-					break
+					nextReader = nextWriter.Bytes()
+					nextWriter.Reset()
 				}
 			}
 		}
 		if rerr != nil {
-			if rerr == io.EOF {
-				buf = nil
-				buffer.Reset()
-				for i := 0; i < len(p.Filters); i++ {
-					filter, ok := p.Filters[i].Filter.(ResponseFilter)
-					if !ok {
-						continue
-					}
-					ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
-					if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &buffer, buf); err != nil {
-						return rw.Filter.(*responseBodyWriter).written, err
-					}
-					buf = buffer.Bytes()
-					buffer.Reset()
+			var nextReader []byte
+			nextWriter.Reset()
+			for i := 0; i < len(p.Filters); i++ {
+				filter, ok := p.Filters[i].Filter.(ResponseFilter)
+				if !ok {
+					continue
 				}
+				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
+				if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); err != nil {
+					logger.Errorf("%T.OnResponseEOF, err: %v", filter, err)
+					return rw.Filter.(*responseBodyWriter).written, err
+				}
+				nextReader = nextWriter.Bytes()
+				nextWriter.Reset()
+			}
+			if rerr == io.EOF {
 				rerr = nil
 			}
 			return rw.Filter.(*responseBodyWriter).written, rerr

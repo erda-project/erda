@@ -19,6 +19,16 @@ providers:
       RESOURCE_NAME: "codeai"
       DEVELOPMENT_NAME: "gpt-35-turbo-0301"
 
+  - name: azure
+    instanceId: terminus3
+    host: terminus3.openai.azure.com
+    scheme: https
+    description: azure 提供的 ai 能力
+    docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
+    metadata:
+      RESOURCE_NAME: "terminus3"
+      DEVELOPMENT_NAME: "gpt-35-turbo-0301"
+
   - name: test-server
     instanceId: default
     host: localhost:8080
