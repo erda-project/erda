@@ -51,12 +51,17 @@ func EmptyCells(count int) []Cell {
 	return cells
 }
 
-// NewHMergeCell 需要配合 hMergeNum 个 EmptyCell 使用
+// NewHMergeCell 需要在当前行配合 hMergeNum 个 EmptyCell 使用
 func NewHMergeCell(value string, hMergeNum int) Cell {
 	return Cell{Value: value, HorizontalMergeNum: hMergeNum}
 }
+
+// NewVMergeCell 需要在下方连续 vMergeNum 行配合 EmptyCell 使用；如果下方使用带 Value 的 Cell 也会被 VMergeCell 覆盖，无法展示
 func NewVMergeCell(value string, vMergeNum int) Cell {
 	return Cell{Value: value, VerticalMergeNum: vMergeNum}
+}
+func NewHMergeCellsAuto(value string, hMergeNum int) []Cell {
+	return append([]Cell{NewHMergeCell(value, hMergeNum)}, EmptyCells(hMergeNum)...)
 }
 
 func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
@@ -81,7 +86,7 @@ func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 			c.SetStyle(style)
 			return nil
 		}, xlsx.SkipEmptyCells)
-		r.SetHeightCM(1.5)
+		r.SetHeightCM(2)
 		return nil
 	}, xlsx.SkipEmptyRows)
 }
@@ -89,11 +94,16 @@ func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 func convertStringDataToCellData(data [][]string) [][]Cell {
 	var cells [][]Cell
 	for _, row := range data {
-		var rowCells []Cell
-		for _, cell := range row {
-			rowCells = append(rowCells, NewCell(cell))
-		}
+		rowCells := ConvertStringSliceToCellSlice(row)
 		cells = append(cells, rowCells)
+	}
+	return cells
+}
+
+func ConvertStringSliceToCellSlice(data []string) []Cell {
+	var cells []Cell
+	for _, cell := range data {
+		cells = append(cells, NewCell(cell))
 	}
 	return cells
 }

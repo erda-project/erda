@@ -26,16 +26,16 @@ import (
 )
 
 type XlsxFile struct {
-	file *xlsx.File
+	*xlsx.File
 }
 
 func NewXLSXFile() *XlsxFile {
-	return &XlsxFile{file: xlsx.NewFile()}
+	return &XlsxFile{File: xlsx.NewFile()}
 }
 
 // AddSheetByCell add sheet by cell data. You can add multiple sheets by calling this method multiple times.
 func AddSheetByCell(f *XlsxFile, data [][]Cell, sheetName string) error {
-	sheet, err := f.file.AddSheet(sheetName)
+	sheet, err := f.File.AddSheet(sheetName)
 	if err != nil {
 		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
 	}
@@ -51,7 +51,7 @@ func WriteFile(w io.Writer, f *XlsxFile, filename string) error {
 	}
 
 	var buff bytes.Buffer
-	if err := f.file.Write(&buff); err != nil {
+	if err := f.File.Write(&buff); err != nil {
 		return errors.Errorf("failed to write content, sheetName: %s, err: %v", filename, err)
 	}
 

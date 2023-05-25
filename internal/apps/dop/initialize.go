@@ -16,7 +16,9 @@ package dop
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -143,6 +145,31 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
+	server.Router().Path("/local-test-import").Handler(func() http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			record := dao.TestFileRecord{
+				BaseModel: dbengine.BaseModel{
+					ID: 2047,
+				},
+				ProjectID:     5964,
+				OrgID:         633,
+				Type:          "issueExport",
+				State:         "",
+				OperatorID:    "",
+				Extra:         dao.TestFileExtra{},
+				ErrorInfo:     "",
+				SoftDeletedAt: 0,
+			}
+			var extra dao.TestFileExtra
+			s := `{"issueFileExtraInfo":{"exportRequest":{"title":"","type":["REQUIREMENT","TASK","BUG"],"projectID":5964,"iterationID":0,"iterationIDs":[],"state":[],"stateBelongs":[],"creator":[],"assignee":[],"label":[],"startCreatedAt":0,"endCreatedAt":0,"startFinishedAt":0,"endFinishedAt":0,"isEmptyPlanFinishedAt":false,"startClosedAt":0,"endClosedAt":0,"priority":[],"complexity":[],"severity":[],"relatedIssueId":[],"source":"","orderBy":"","taskType":[],"bugStage":[],"owner":[],"withProcessSummary":false,"exceptIDs":[],"asc":false,"IDs":[],"-":{"userID":"1005834","internalClient":"","orgID":"633"},"external":true,"customPanelID":0,"onlyIdResult":false,"notIncluded":false,"pageNo":1,"pageSize":99999,"orgID":633,"projectIDs":[],"locale":"zh-CN","isDownload":false}}}`
+			if err := json.Unmarshal([]byte(s), &extra); err != nil {
+				panic(err)
+			}
+			record.Extra = extra
+			p.IssueCoreSvc.ExportExcelAsync(&record)
+			_, _ = w.Write([]byte("ok"))
+		})
+	}())
 	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {
 		return err
 	}

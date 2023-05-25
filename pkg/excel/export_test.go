@@ -64,3 +64,19 @@ func TestExportExcelByCell(t *testing.T) {
 	err = ExportExcelByCell(file, data, "测试用例")
 	assert.NoError(t, err)
 }
+
+func TestExportExcelByRowStruct(t *testing.T) {
+	file, err := os.OpenFile("/tmp/test2.xlsx", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0755)
+	assert.NoError(t, err)
+	var data [][]Cell
+	// row1
+	row1 := []Cell{
+		NewVMergeCell("RequirementOnly", 1),
+	}
+	row2 := []Cell{
+		NewCell("test"),
+	}
+	data = append(data, row1, row2)
+	err = ExportExcelByCell(file, data, "测试用例")
+	assert.NoError(t, err)
+}
