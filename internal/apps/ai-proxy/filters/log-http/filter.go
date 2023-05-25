@@ -67,10 +67,8 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		"contentLength": infor.ContentLength(),
 	}
 	if body := infor.BodyBuffer(); body == nil {
-		l.Debug("request body is nil")
 		m["body"] = json.RawMessage("null")
 	} else {
-		l.Debugf("request body: %s", body.String())
 		if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) {
 			m["body"] = json.RawMessage(body.Bytes())
 		} else {
@@ -104,7 +102,15 @@ func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfo
 	}
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
-		l.Debugf("response body: %s", f.String())
+		l.Debugf("received response content: %s", f.String())
+	} else {
+		var content = f.Buffer.String()
+		if len(content) > 300 {
+			content = content[:200] + "  ... and more ...  " + content[len(content)-100:]
+		} else if len(content) > 200 {
+			content = content[:200] + "  ... and more ...  "
+		}
+		l.Debugf("received response content length: %d, content excerpt: %s", f.Buffer.Len(), content)
 	}
 	return nil
 }

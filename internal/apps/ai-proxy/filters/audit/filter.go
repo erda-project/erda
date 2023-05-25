@@ -15,10 +15,12 @@
 package audit
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -33,7 +35,6 @@ import (
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -113,6 +114,9 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 			l.Fatalf("%T not in cases", set)
 		}
 	}
+	if err := f.create(ctx); err != nil {
+		l.Errorf("failed to create audit row, err: %v", err)
+	}
 
 	return reverseproxy.Continue, nil
 }
@@ -157,7 +161,7 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 			l.Fatalf("%T not in cases", set)
 		}
 	}
-	if err := f.create(ctx); err != nil {
+	if err := f.update(ctx); err != nil {
 		l.Errorf("failed to create audit row, err: %v", err)
 	}
 	return nil
@@ -186,6 +190,7 @@ func (f *Audit) SetChats(_ context.Context, header http.Header) error {
 
 func (f *Audit) SetRequestAt(_ context.Context) error {
 	f.Audit.RequestAt = time.Now()
+	f.Audit.ResponseAt = time.Now()
 	return nil
 }
 
@@ -266,6 +271,15 @@ func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor
 
 func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Prompt = "-"
+	if value := infor.Header().Get("X-Erda-AI-Proxy-Prompt"); value != "" {
+		prompt, err := base64.StdEncoding.DecodeString(value)
+		if err != nil {
+			return err
+		}
+		f.Audit.Prompt = string(prompt)
+		return nil
+	}
+
 	if infor.Method() == http.MethodGet || infor.Method() == http.MethodDelete {
 		f.Audit.Prompt = NoPromptByHttpMethod.String()
 		return nil
@@ -457,11 +471,12 @@ func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *byte
 		return nil
 	}
 	if httputil.HeaderContains(header, httputil.ApplicationJson) {
-		return f.setCompletionForApplicationJson(ctx, header, buf)
+		return f.setCompletionForApplicationJson(ctx, header, bytes.NewBuffer(buf.Bytes()))
 	}
 	if httputil.HeaderContains(header, httputil.TextEventStream) {
-		return f.setCompletionForEventStream(ctx, header, buf)
+		return f.setCompletionForEventStream(ctx, header, bytes.NewBuffer(buf.Bytes()))
 	}
+	f.Audit.Completion = "unexpected response Content-Type: " + header.Get("Content-Type")
 	return nil
 }
 
@@ -517,22 +532,23 @@ func (f *Audit) SetUserAgent(_ context.Context, header http.Header) error {
 }
 
 func (f *Audit) create(ctx context.Context) error {
-	db, ok := ctx.Value(reverseproxy.DBCtxKey{}).(*gorm.DB)
-	if !ok {
-		panic("no *gorm.DB set")
-	}
-	return db.Create(f.Audit).Error
+	return ctx.Value(reverseproxy.DBCtxKey{}).(*gorm.DB).Create(f.Audit).Error
 }
 
-func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
-	if buf == nil {
+func (f *Audit) update(ctx context.Context) error {
+	return ctx.Value(reverseproxy.DBCtxKey{}).(*gorm.DB).Updates(f.Audit).Error
+}
+
+func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http.Header, reader io.Reader) error {
+	if reader == nil {
+		f.Audit.Completion = "response body nil"
 		return nil
 	}
 
 	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("setCompletionForApplicationJson")
 	var m = make(map[string]json.RawMessage)
-	if err := json.NewDecoder(buf).Decode(&m); err != nil {
-		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", buf, m)
+	if err := json.NewDecoder(reader).Decode(&m); err != nil {
+		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", reader, m)
 	}
 	switch f.Audit.OperationId {
 	case "POST /v1/completions", "POST /v1/edits":
@@ -579,34 +595,12 @@ func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http
 	}
 }
 
-func (f *Audit) setCompletionForEventStream(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
-	if buf == nil {
+func (f *Audit) setCompletionForEventStream(ctx context.Context, header http.Header, reader io.Reader) error {
+	if reader == nil {
+		f.Audit.Completion = "response body nil"
 		return nil
 	}
-
-	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("setCompletionForEventStream")
-	var completion string
-	strutil.HandleQuotes(buf.Bytes(), [2]byte{'{', '\n'}, func(data []byte) {
-		var m = make(map[string]json.RawMessage)
-		if err := json.Unmarshal(data, &m); err != nil {
-			l.Errorf("failed to json.Unmarshal(%s, %T)", string(data), m)
-			return
-		}
-		choices, ok := m["choices"]
-		if !ok {
-			l.Warnf(`no field "choices" in the line %s`, string(data))
-		}
-		var items []EventStreamChunkChoice
-		if err := json.Unmarshal(choices, &items); err != nil {
-			l.Errorf("failed to json.Unmarshal(%s, %T)", string(choices), items)
-			return
-		}
-		if len(items) == 0 {
-			return
-		}
-		completion += items[len(items)-1].Delta.Content
-	})
-	f.Audit.Completion = completion
+	f.Audit.Completion = ExtractEventStreamCompletion(reader)
 	return nil
 }
 
@@ -660,4 +654,37 @@ func (n NoPromptReason) String() string {
 		NoPromptByDeprecated:   "NoPromptByDeprecated",
 		NoPromptByNoSuchRoute:  "NoPromptByNoSuchRoute",
 	}[n]
+}
+
+func ExtractEventStreamCompletion(reader io.Reader) string {
+	var completion string
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		var line = scanner.Text()
+		left := strings.Index(line, "{")
+		right := strings.LastIndex(line, "}")
+		if left < 0 || right < 1 {
+			continue
+		}
+		line = line[left : right+1]
+
+		var m = make(map[string]json.RawMessage)
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			continue
+		}
+		choices, ok := m["choices"]
+		if !ok {
+			continue
+		}
+		var items []EventStreamChunkChoice
+		if err := json.Unmarshal(choices, &items); err != nil {
+			continue
+		}
+		if len(items) == 0 {
+			continue
+		}
+		completion += items[len(items)-1].Delta.Content
+	}
+
+	return completion
 }

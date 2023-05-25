@@ -40,7 +40,7 @@ routes:
     method: POST
     router:
       to: azure
-      instanceId: default
+      instanceId: terminus3
       rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions
     filters:
       - name: prometheus-collector
@@ -58,6 +58,7 @@ routes:
     method: POST
     router:
       to: azure
+      instanceId: terminus3
       rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions
     filters:
       - name: prometheus-collector
