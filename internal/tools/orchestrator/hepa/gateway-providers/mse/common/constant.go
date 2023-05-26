@@ -70,7 +70,28 @@ const (
 	MseErdaSBACConfigDefaultMatchPattern = "^/"
 	MseErdaSBACConfigDefaultWithHeader   = "*"
 
-	MseErdaCSRFRouteSwitch = "MSE_ERDA_CSRF_ROUTE_SWITCH"
+	MseErdaCSRFRouteSwitch          = "MSE_ERDA_CSRF_ROUTE_SWITCH"
+	MseErdaCSRFConfigUserCookie     = "biz_cookie"
+	MseErdaCSRFConfigExcludedMethod = "excluded_method"
+	MseErdaCSRFConfigTokenKey       = "token_key"
+	MseErdaCSRFConfigTokenCookie    = "token_cookie"
+	MseErdaCSRFConfigTokenDomain    = "biz_domain"
+	MseErdaCSRFConfigCookieSecure   = "secure_cookie"
+	MseErdaCSRFConfigValidTTL       = "valid_ttl"
+	MseErdaCSRFConfigRefreshTTL     = "refresh_ttl"
+	MseErdaCSRFConfigErrStatus      = "err_status"
+	MseErdaCSRFConfigErrMsg         = "err_message"
+	MseErdaCSRFConfigSecret         = "jwt_secret"
+
+	MseErdaCSRFDefaultUserCookie   = "uc-token"
+	MseErdaCSRFDefaultTokenName    = "csrf-token"
+	MseErdaCSRFDefaultTokenDomain  = ""
+	MseErdaCSRFDefaultCookieSecure = false
+	MseErdaCSRFDefaultValidTTL     = int64(1800)
+	MseErdaCSRFDefaultRefreshTTL   = int64(10)
+	MseErdaCSRFDefaultErrStatus    = int64(403)
+	MseErdaCSRFDefaultErrMsg       = `{"message":"This form has expired. Please refresh and try again."}`
+	MseErdaCSRFDefaultJWTSecret    = "e796dce47e561ff926d2916144b8e4bf"
 )
 
 var MapClusterNameToMSEPluginNameToPluginID map[string]map[string]*int64

@@ -2686,7 +2686,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 			if err != nil {
 				return
 			}
-			policyPlugins := []string{mseCommon.MsePluginIP, mseCommon.MsePluginSbac}
+			policyPlugins := []string{mseCommon.MsePluginIP, mseCommon.MsePluginSbac, mseCommon.MsePluginCsrf}
 			for _, pluginName := range policyPlugins {
 				var pluginReq *providerDto.PluginReqDto
 				switch pluginName {
@@ -2708,17 +2708,17 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 							//TODO: 补充相关配置信息
 							mseCommon.MseErdaSBACRouteSwitch:            false,
 							mseCommon.MseErdaSBACConfigAccessControlAPI: mseCommon.MseErdaSBACAccessControlAPI,
-							mseCommon.MseErdaSBACConfigMatchPatterns:    mseCommon.MseErdaSBACConfigDefaultMatchPattern,
-							mseCommon.MseErdaSBACConfigHttpMethods: []string{
-								http.MethodGet,
-								http.MethodHead,
-								http.MethodPost,
-								http.MethodPut,
-								http.MethodPatch,
-								http.MethodDelete,
-								http.MethodConnect,
-								http.MethodOptions,
-								http.MethodTrace,
+							mseCommon.MseErdaSBACConfigMatchPatterns:    []string{mseCommon.MseErdaSBACConfigDefaultMatchPattern},
+							mseCommon.MseErdaSBACConfigHttpMethods: map[string]bool{
+								http.MethodGet:     true,
+								http.MethodHead:    true,
+								http.MethodPost:    true,
+								http.MethodPut:     true,
+								http.MethodPatch:   true,
+								http.MethodDelete:  true,
+								http.MethodConnect: true,
+								http.MethodOptions: true,
+								http.MethodTrace:   true,
 							},
 							mseCommon.MseErdaSBACConfigWithHeaders: []string{mseCommon.MseErdaSBACConfigDefaultWithHeader},
 							mseCommon.MseErdaSBACConfigWithCookie:  false,
@@ -2727,6 +2727,29 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 					}
 				default:
 					// mseCommon.MsePluginCsrf
+					pluginReq = &providerDto.PluginReqDto{
+						Name: mseCommon.MsePluginCsrf,
+						Config: map[string]interface{}{
+							//TODO: 补充相关配置信息
+							mseCommon.MseErdaCSRFRouteSwitch:      false,
+							mseCommon.MseErdaCSRFConfigUserCookie: []string{mseCommon.MseErdaCSRFDefaultUserCookie},
+							mseCommon.MseErdaCSRFConfigExcludedMethod: []string{
+								http.MethodGet,
+								http.MethodHead,
+								http.MethodOptions,
+								http.MethodTrace,
+							},
+							mseCommon.MseErdaCSRFConfigTokenCookie:  mseCommon.MseErdaCSRFDefaultTokenName,
+							mseCommon.MseErdaCSRFConfigTokenDomain:  mseCommon.MseErdaCSRFDefaultTokenDomain,
+							mseCommon.MseErdaCSRFConfigCookieSecure: mseCommon.MseErdaCSRFDefaultCookieSecure,
+							mseCommon.MseErdaCSRFConfigValidTTL:     mseCommon.MseErdaCSRFDefaultValidTTL,
+							mseCommon.MseErdaCSRFConfigRefreshTTL:   mseCommon.MseErdaCSRFDefaultRefreshTTL,
+							mseCommon.MseErdaCSRFConfigErrStatus:    mseCommon.MseErdaCSRFDefaultErrStatus,
+							mseCommon.MseErdaCSRFConfigErrMsg:       mseCommon.MseErdaCSRFDefaultErrMsg,
+							mseCommon.MseErdaCSRFConfigSecret:       mseCommon.MseErdaCSRFDefaultJWTSecret,
+						},
+						ZoneName: strings.ToLower(zone.Name),
+					}
 				}
 				_, errr := gatewayAdapter.CreateOrUpdatePluginById(pluginReq)
 				if errr != nil {

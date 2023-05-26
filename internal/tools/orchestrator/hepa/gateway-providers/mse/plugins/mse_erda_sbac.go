@@ -180,7 +180,7 @@ func getErdaSBACSourceConfig(config map[string]interface{}) (accessControlAPI st
 	}
 	methodsMap, ok := methods.(map[string]bool)
 	if !ok {
-		return accessControlAPI, matchPatterns, httpMethods, withHeaders, withCookie, false, errors.Errorf("methods for plugin %s is invalid []string", common.MsePluginSbac)
+		return accessControlAPI, matchPatterns, httpMethods, withHeaders, withCookie, false, errors.Errorf("methods for plugin %s is invalid map[string]bool", common.MsePluginSbac)
 	}
 	httpMethods = make([]string, 0)
 	for method := range methodsMap {
@@ -197,14 +197,13 @@ func getErdaSBACSourceConfig(config map[string]interface{}) (accessControlAPI st
 		return accessControlAPI, matchPatterns, httpMethods, withHeaders, withCookie, false, errors.Errorf("with_headers for plugin %s is invalid []string", common.MsePluginSbac)
 	}
 
+	withCookie = false
 	cookie, ok := config[common.MseErdaSBACConfigWithCookie]
-	if !ok {
-		// 不存在表示设置为 false
-		cookie = false
-	}
-	withCookie, ok = cookie.(bool)
-	if !ok {
-		return accessControlAPI, matchPatterns, httpMethods, withHeaders, withCookie, false, errors.Errorf("with_cookie for plugin %s is invalid []string", common.MsePluginSbac)
+	if ok {
+		withCookie, ok = cookie.(bool)
+		if !ok {
+			return accessControlAPI, matchPatterns, httpMethods, withHeaders, withCookie, false, errors.Errorf("with_cookie for plugin %s is invalid []string", common.MsePluginSbac)
+		}
 	}
 
 	routeSwitch, ok := config[common.MseErdaSBACRouteSwitch]
