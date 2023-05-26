@@ -130,7 +130,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	copiedColumns := cloneColumnMap(columns)
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 
-	var tailOrderExpress []exp.OrderedExpression
+	var headOrderExpress []exp.OrderedExpression
 	var isOrderByTime bool
 
 	if len(s) > 0 {
@@ -149,15 +149,15 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 				column = script
 			}
 			if column == timeBucketColumn {
-				tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
+				headOrderExpress = append(headOrderExpress, goqu.C(timeBucketColumn).Asc())
 				isOrderByTime = true
 				continue
 			} else if column == p.ctx.timeKey {
 				isOrderByTime = true
 				if !field.Ascending {
-					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Desc())
+					headOrderExpress = append(headOrderExpress, goqu.C(p.ctx.timeKey).Desc())
 				} else {
-					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+					headOrderExpress = append(headOrderExpress, goqu.C(p.ctx.timeKey).Asc())
 				}
 				continue
 			}
@@ -178,11 +178,11 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	for _, column := range copiedColumns {
 		if column.asName == timeBucketColumn {
 			isOrderByTime = true
-			tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
+			headOrderExpress = append(headOrderExpress, goqu.C(timeBucketColumn).Asc())
 			break
 		} else if column.isTimeKey {
 			isOrderByTime = true
-			tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+			headOrderExpress = append(headOrderExpress, goqu.C(p.ctx.timeKey).Asc())
 			break
 		}
 	}
@@ -196,8 +196,8 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 		}
 	}
 
-	for _, express := range tailOrderExpress {
-		expr = expr.OrderAppend(express)
+	for _, express := range headOrderExpress {
+		expr = expr.OrderPrepend(express)
 	}
 	return expr, nil
 }
