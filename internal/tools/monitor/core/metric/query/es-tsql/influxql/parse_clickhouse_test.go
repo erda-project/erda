@@ -771,7 +771,7 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "timestamp should by first order",
 			sql:  "select time(),service_id::tag from table GROUP BY service_id::tag,time() ORDER BY service_id::tag desc",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"service_id::tag\" DESC,\"bucket_timestamp\" ASC",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"bucket_timestamp\" ASC,\"service_id::tag\" DESC",
 		},
 		{
 			name: "timestamp desc",
