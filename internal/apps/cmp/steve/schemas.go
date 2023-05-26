@@ -35,6 +35,8 @@ import (
 	"k8s.io/client-go/discovery"
 	authorizationv1client "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	apiv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+
+	"github.com/erda-project/erda/pkg/loop"
 )
 
 var (
@@ -80,8 +82,12 @@ func Register(ctx context.Context,
 		ssar:    ssar,
 	}
 
-	apiService.OnChange(ctx, "schema", h.OnChangeAPIService)
-	crd.OnChange(ctx, "schema", h.OnChangeCRD)
+	go func() {
+		loop.New(loop.WithContext(ctx), loop.WithInterval(20*time.Minute)).Do(func() (bool, error) {
+			h.queueRefresh()
+			return false, nil
+		})
+	}()
 }
 
 func (h *handler) OnChangeCRD(key string, crd *apiextv1.CustomResourceDefinition) (*apiextv1.CustomResourceDefinition, error) {
