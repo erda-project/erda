@@ -48,6 +48,14 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(labelExcelRows), "label"); err != nil {
 		return fmt.Errorf("failed to add label sheet, err: %v", err)
 	}
+	// custom field sheet
+	customFieldExcelRows, err := data.genCustomFieldSheet()
+	if err != nil {
+		return fmt.Errorf("failed to gen custom field sheet, err: %v", err)
+	}
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(customFieldExcelRows), "custom_field"); err != nil {
+		return fmt.Errorf("failed to add custom field sheet, err: %v", err)
+	}
 	// export file
 	f, err := os.OpenFile("./gen2.xlsx", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	defer f.Close()
