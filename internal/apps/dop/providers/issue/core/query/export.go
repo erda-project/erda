@@ -196,7 +196,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 		propertyMap[v.IssueID] = append(propertyMap[v.IssueID], v)
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	usernames := map[string]string{}
+	userMap := map[string]*userpb.User{}
 	if len(userIDs) > 0 {
 		resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
 			IDs: userIDs,
@@ -206,7 +206,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 			return nil, err
 		}
 		for _, u := range users {
-			usernames[u.ID] = u.Nick
+			userMap[u.ID] = u
 		}
 	}
 	for index, i := range issues {
@@ -284,7 +284,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 		relations := propertyMap[i.Id]
 		// get value of each custom field
 		for _, pro := range property {
-			columnValue := GetCustomPropertyColumnValue(pro, relations, mp, usernames)
+			columnValue := GetCustomPropertyColumnValue(pro, relations, mp, userMap)
 			r[index+1] = append(r[index+1], columnValue)
 		}
 	}

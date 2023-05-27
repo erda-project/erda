@@ -288,7 +288,7 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 		}
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	usernames := map[string]string{}
+	userMaps := map[string]*userpb.User{}
 	if len(userIDs) > 0 {
 		resp, err := i.identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
 			IDs: userIDs,
@@ -298,7 +298,7 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 		}
 		users := resp.Data
 		for _, u := range users {
-			usernames[u.ID] = u.Nick
+			userMaps[u.ID] = u
 		}
 	}
 	// propertyEnum map
@@ -342,7 +342,7 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 		StageMap:            stageMap,
 		IterationMap:        iterationMap,
 		StateMap:            stateMap,
-		UsernameMap:         usernames,
+		UserMap:             userMaps,
 		InclusionMap:        inclusionMap,
 		ConnectionMap:       connectionMap,
 		PropertyRelationMap: propertyRelationMap,

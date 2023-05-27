@@ -83,10 +83,6 @@ func (info *IssueSheetModelCellInfoByColumns) Add(uuid IssueSheetColumnUUID, cel
 	info.M[uuid] = append(info.M[uuid], excel.Cell{Value: cellValue})
 }
 
-func (info *IssueSheetModelCellInfoByColumns) polishOrderedUUIDs() {
-
-}
-
 func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet() (excel.Rows, error) {
 	// create [][]excel.Cell
 	var dataRowLength int
@@ -158,7 +154,7 @@ func autoMergeTitleCellsWithSameValue(rows excel.Rows) {
 	}
 }
 
-func (data DataForFulfill) genSheetTitleAndDataByColumn() (*IssueSheetModelCellInfoByColumns, error) {
+func (data DataForFulfill) genIssueSheetTitleAndDataByColumn() (*IssueSheetModelCellInfoByColumns, error) {
 	models, err := data.getIssueSheetModels()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get issue sheet models, err: %v", err)
@@ -213,8 +209,8 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 			Priority:           issue.Priority,
 			Complexity:         issue.Complexity,
 			Severity:           issue.Severity,
-			CreatorName:        data.UsernameMap[issue.Creator],
-			AssigneeName:       data.UsernameMap[issue.Assignee],
+			CreatorName:        data.getUserNick(issue.Creator),
+			AssigneeName:       data.getUserNick(issue.Assignee),
 			CreatedAt:          formatTimeFromTimestamp(issue.CreatedAt),
 			PlanStartedAt:      formatTimeFromTimestamp(issue.PlanStartedAt),
 			PlanFinishedAt:     formatTimeFromTimestamp(issue.PlanFinishedAt),
@@ -233,7 +229,7 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 			CustomFields: formatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_TASK, data),
 		}
 		model.BugOnly = IssueSheetModelBugOnly{
-			OwnerName:    data.UsernameMap[issue.Owner],
+			OwnerName:    data.getUserNick(issue.Owner),
 			Source:       issue.Source,
 			ReopenCount:  issue.ReopenCount,
 			CustomFields: formatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
@@ -249,4 +245,14 @@ func getStructFieldExcelTag(structField reflect.StructField) string {
 		tag = structField.Name
 	}
 	return tag
+}
+
+func (data DataForFulfill) getUserNick(userid string) string {
+	if userid == "" {
+		return ""
+	}
+	if u, ok := data.UserMap[userid]; ok {
+		return u.Nick
+	}
+	return ""
 }

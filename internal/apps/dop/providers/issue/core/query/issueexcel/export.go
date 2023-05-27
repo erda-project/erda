@@ -32,6 +32,14 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(issueExcelRows), "issue"); err != nil {
 		return fmt.Errorf("failed to add issue sheet, err: %v", err)
 	}
+	// user sheet
+	userExcelRows, err := data.genUserSheet()
+	if err != nil {
+		return fmt.Errorf("failed to gen user sheet, err: %v", err)
+	}
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(userExcelRows), "user"); err != nil {
+		return fmt.Errorf("failed to add user sheet, err: %v", err)
+	}
 	// export file
 	f, err := os.OpenFile("./gen2.xlsx", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	defer f.Close()
@@ -40,7 +48,7 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 }
 
 func ExportIssueSheetLines(data DataForFulfill) (excel.Rows, error) {
-	mapByColumns, err := data.genSheetTitleAndDataByColumn()
+	mapByColumns, err := data.genIssueSheetTitleAndDataByColumn()
 	if err != nil {
 		return nil, fmt.Errorf("failed to gen sheet title and data by column, err: %v", err)
 	}

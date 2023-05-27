@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
@@ -274,7 +275,7 @@ type PropertyEnumPair struct {
 	ValueID    int64
 }
 
-func GetCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.IssuePropertyRelation, mp map[PropertyEnumPair]string, users map[string]string) string {
+func GetCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.IssuePropertyRelation, mp map[PropertyEnumPair]string, users map[string]*userpb.User) string {
 	if pro == nil || len(relations) == 0 {
 		return ""
 	}
@@ -297,7 +298,7 @@ func GetCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.Is
 				return date.Format("2006-01-02 15:04:05")
 			case pb.PropertyTypeEnum_Person:
 				if username, ok := users[rel.ArbitraryValue]; ok {
-					return username
+					return username.Nick
 				}
 			default:
 			}

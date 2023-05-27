@@ -83,6 +83,10 @@ func NewHMergeCellsAuto(value string, hMergeNum int) []Cell {
 	return append([]Cell{NewHMergeCell(value, hMergeNum)}, EmptyCells(hMergeNum)...)
 }
 
+func NewTitleCell(value string) Cell {
+	return Cell{Value: value, Style: &CellStyle{IsTitle: true}}
+}
+
 func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 	defaultStyle := xlsx.NewStyle()
 	defaultStyle.Alignment.Horizontal = "center"
