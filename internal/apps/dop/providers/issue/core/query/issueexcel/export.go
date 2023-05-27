@@ -40,6 +40,14 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(userExcelRows), "user"); err != nil {
 		return fmt.Errorf("failed to add user sheet, err: %v", err)
 	}
+	// label sheet
+	labelExcelRows, err := data.genLabelSheet()
+	if err != nil {
+		return fmt.Errorf("failed to gen label sheet, err: %v", err)
+	}
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(labelExcelRows), "label"); err != nil {
+		return fmt.Errorf("failed to add label sheet, err: %v", err)
+	}
 	// export file
 	f, err := os.OpenFile("./gen2.xlsx", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	defer f.Close()

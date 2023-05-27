@@ -17,29 +17,40 @@ package issueexcel
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
+func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
 	var lines excel.Rows
-	// title: user id, user name, user info (JSON)
+	// title: label id, label name, label detail (JSON)
 	title := excel.Row{
-		excel.NewTitleCell("user id"),
-		excel.NewTitleCell("user name"),
-		excel.NewTitleCell("user detail (json)"),
+		excel.NewTitleCell("label id"),
+		excel.NewTitleCell("label name"),
+		excel.NewTitleCell("label detail (json)"),
 	}
 	lines = append(lines, title)
 	// data
-	for _, user := range data.UserMap {
-		userInfo, err := json.Marshal(user)
+	// collect labels from issues
+	labelMap := make(map[int64]*pb.ProjectLabel)
+	for _, issue := range data.Issues {
+		for _, label := range issue.LabelDetails {
+			if _, ok := labelMap[label.Id]; !ok {
+				labelMap[label.Id] = label
+			}
+		}
+	}
+	for _, label := range labelMap {
+		labelInfo, err := json.Marshal(label)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal user info, user id: %s, err: %v", user.ID, err)
+			return nil, fmt.Errorf("failed to marshal label info, label id: %s, err: %v", label.Id, err)
 		}
 		lines = append(lines, excel.Row{
-			excel.NewCell(user.ID),
-			excel.NewCell(user.Nick),
-			excel.NewCell(string(userInfo)),
+			excel.NewCell(strconv.FormatInt(label.Id, 10)),
+			excel.NewCell(label.Name),
+			excel.NewCell(string(labelInfo)),
 		})
 	}
 
