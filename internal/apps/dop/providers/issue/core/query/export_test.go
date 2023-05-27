@@ -42,8 +42,8 @@ func Test_getStageMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getStageMap(tt.args.stages); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getStageMap() = %v, want %v", got, tt.want)
+			if got := GetStageMap(tt.args.stages); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetStageMap() = %v, want %v", got, tt.want)
 			}
 		})
 	}

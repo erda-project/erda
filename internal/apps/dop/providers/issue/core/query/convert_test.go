@@ -257,7 +257,7 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 	type args struct {
 		pro       *pb.IssuePropertyIndex
 		relations []dao.IssuePropertyRelation
-		mp        map[pair]string
+		mp        map[PropertyEnumPair]string
 		users     map[string]string
 	}
 	tests := []struct {
@@ -316,10 +316,10 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					PropertyType: pb.PropertyTypeEnum_Select,
 				},
 				relations: []dao.IssuePropertyRelation{{PropertyID: 1, PropertyValueID: 1}},
-				mp: map[pair]string{
+				mp: map[PropertyEnumPair]string{
 					{
 						PropertyID: 1,
-						valueID:    1,
+						ValueID:    1,
 					}: "select value",
 				},
 			},
@@ -333,8 +333,8 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					PropertyType: pb.PropertyTypeEnum_Select,
 				},
 				relations: []dao.IssuePropertyRelation{{PropertyID: 1, PropertyValueID: 1}},
-				mp: map[pair]string{
-					{PropertyID: 1, valueID: 2}: "select value",
+				mp: map[PropertyEnumPair]string{
+					{PropertyID: 1, ValueID: 2}: "select value",
 				},
 			},
 			want: "",
@@ -350,9 +350,9 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 1, PropertyValueID: 1},
 					{PropertyID: 1, PropertyValueID: 2},
 				},
-				mp: map[pair]string{
-					{PropertyID: 1, valueID: 1}: "m11",
-					{PropertyID: 1, valueID: 2}: "m12",
+				mp: map[PropertyEnumPair]string{
+					{PropertyID: 1, ValueID: 1}: "m11",
+					{PropertyID: 1, ValueID: 2}: "m12",
 				},
 			},
 			want: "m11,m12",
@@ -368,9 +368,9 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 2, PropertyValueID: 1},
 					{PropertyID: 2, PropertyValueID: 2},
 				},
-				mp: map[pair]string{
-					{PropertyID: 1, valueID: 1}: "m11",
-					{PropertyID: 1, valueID: 2}: "m12",
+				mp: map[PropertyEnumPair]string{
+					{PropertyID: 1, ValueID: 1}: "m11",
+					{PropertyID: 1, ValueID: 2}: "m12",
 				},
 			},
 			want: "",
@@ -386,9 +386,9 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 1, PropertyValueID: 1},
 					{PropertyID: 1, PropertyValueID: 2},
 				},
-				mp: map[pair]string{
-					{PropertyID: 1, valueID: 1}: "m11",
-					{PropertyID: 1, valueID: 2}: "m12",
+				mp: map[PropertyEnumPair]string{
+					{PropertyID: 1, ValueID: 1}: "m11",
+					{PropertyID: 1, ValueID: 2}: "m12",
 				},
 			},
 			want: "m11,m12",
@@ -404,9 +404,9 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 					{PropertyID: 2, PropertyValueID: 1},
 					{PropertyID: 2, PropertyValueID: 2},
 				},
-				mp: map[pair]string{
-					{PropertyID: 1, valueID: 1}: "m11",
-					{PropertyID: 1, valueID: 2}: "m12",
+				mp: map[PropertyEnumPair]string{
+					{PropertyID: 1, ValueID: 1}: "m11",
+					{PropertyID: 1, ValueID: 2}: "m12",
 				},
 			},
 			want: "",
@@ -421,7 +421,7 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 				relations: []dao.IssuePropertyRelation{
 					{PropertyID: 1, ArbitraryValue: "2023-01-17T00:00:00+08:00"},
 				},
-				mp:    map[pair]string{},
+				mp:    map[PropertyEnumPair]string{},
 				users: map[string]string{},
 			},
 			want: "2023-01-17 00:00:00",
@@ -436,7 +436,7 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 				relations: []dao.IssuePropertyRelation{
 					{PropertyID: 1, ArbitraryValue: "1001"},
 				},
-				mp: map[pair]string{},
+				mp: map[PropertyEnumPair]string{},
 				users: map[string]string{
 					"1001": "nickname",
 				},
@@ -446,8 +446,8 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getCustomPropertyColumnValue(tt.args.pro, tt.args.relations, tt.args.mp, tt.args.users); got != tt.want {
-				t.Errorf("getCustomPropertyColumnValue() = %v, want %v", got, tt.want)
+			if got := GetCustomPropertyColumnValue(tt.args.pro, tt.args.relations, tt.args.mp, tt.args.users); got != tt.want {
+				t.Errorf("GetCustomPropertyColumnValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}

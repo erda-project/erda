@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,11 +32,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	legacydao "github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/core/file/filetypes"
@@ -73,6 +75,7 @@ func (i *IssueService) ExportExcelIssue(ctx context.Context, req *pb.ExportExcel
 
 	req.Locale = apis.GetLang(ctx)
 	if req.IsDownloadTemplate {
+		// see `transport.WithEncoder` when `pb.RegisterIssueCoreServiceIm`
 		return nil, nil
 	}
 
@@ -218,6 +221,136 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 	return nil
 }
 
+func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
+	// issues
+	issues, _, err := i.query.Paging(getIssuePagingRequest(req))
+	if err != nil {
+		return nil, fmt.Errorf("failed to page issues, err: %v", err)
+	}
+	// custom fields
+	properties, err := i.query.BatchGetProperties(req.OrgID, req.Type)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
+	}
+	customFieldsMap := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex)
+	for _, v := range properties {
+		customFieldsMap[v.PropertyIssueType] = append(customFieldsMap[v.PropertyIssueType], v)
+	}
+	// stage map
+	stages, err := i.db.GetIssuesStageByOrgID(req.OrgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stages, err: %v", err)
+	}
+	stageMap := query.GetStageMap(stages)
+	// iteration map
+	iterationMap := make(map[int64]string)
+	iterations, _, err := i.db.PagingIterations(apistructs.IterationPagingRequest{
+		PageNo:    1,
+		PageSize:  10000,
+		ProjectID: req.ProjectID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get iterations, err: %v", err)
+	}
+	for _, v := range iterations {
+		iterationMap[int64(v.ID)] = v.Title
+	}
+	iterationMap[-1] = "待办事项"
+	// state map
+	stateMap := make(map[int64]string)
+	states, err := i.db.GetIssuesStatesByProjectID(req.ProjectID, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get states, err: %v", err)
+	}
+	for _, v := range states {
+		stateMap[int64(v.ID)] = v.Name
+	}
+	// propertyRelation map
+	var issueIDs []int64
+	for _, v := range issues {
+		issueIDs = append(issueIDs, v.Id)
+	}
+	propertyRelationMap := make(map[int64][]dao.IssuePropertyRelation)
+	propertyRelations, err := i.db.PagingPropertyRelationByIDs(issueIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, relation := range propertyRelations {
+		propertyRelationMap[relation.IssueID] = append(propertyRelationMap[relation.IssueID], relation)
+	}
+	// username map
+	userIDs := make([]string, 0)
+	for _, relation := range propertyRelations {
+		for _, pro := range properties {
+			if pro.PropertyID == relation.PropertyID && pro.PropertyType == pb.PropertyTypeEnum_Person {
+				userIDs = append(userIDs, relation.ArbitraryValue)
+			}
+		}
+	}
+	userIDs = strutil.DedupSlice(userIDs, true)
+	usernames := map[string]string{}
+	if len(userIDs) > 0 {
+		resp, err := i.identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
+			IDs: userIDs,
+		})
+		if err != nil {
+			return nil, err
+		}
+		users := resp.Data
+		for _, u := range users {
+			usernames[u.ID] = u.Nick
+		}
+	}
+	// propertyEnum map
+	propertyEnumMap := make(map[query.PropertyEnumPair]string)
+	for _, v := range properties {
+		if common.IsOptions(v.PropertyType.String()) == true {
+			for _, val := range v.EnumeratedValues {
+				propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
+			}
+		}
+	}
+	// inclusion map, connection map
+	uint64IssueIDs := make([]uint64, 0)
+	for _, v := range issueIDs {
+		uint64IssueIDs = append(uint64IssueIDs, uint64(v))
+	}
+	relations, err := i.db.GetIssueRelationsByIDs(uint64IssueIDs, []string{apistructs.IssueRelationInclusion, apistructs.IssueRelationConnection})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get issue relations, err: %v", err)
+	}
+	inclusionMap := make(map[int64][]int64)
+	connectionMap := make(map[int64][]int64)
+	for _, relation := range relations {
+		switch relation.Type {
+		case apistructs.IssueRelationInclusion:
+			inclusionMap[int64(relation.IssueID)] = append(inclusionMap[int64(relation.IssueID)], int64(relation.RelatedIssue))
+		case apistructs.IssueRelationConnection:
+			connectionMap[int64(relation.IssueID)] = append(connectionMap[int64(relation.IssueID)], int64(relation.RelatedIssue))
+		}
+	}
+
+	// result
+	dataForFulfill := issueexcel.DataForFulfill{
+		FileNameWithExt:     "issue-export.xlsx",
+		Locale:              i.bdl.GetLocale(req.Locale),
+		CustomFieldMap:      customFieldsMap,
+		Issues:              issues,
+		ProjectID:           req.ProjectID,
+		OrgID:               req.OrgID,
+		IsDownloadTemplate:  req.IsDownloadTemplate,
+		StageMap:            stageMap,
+		IterationMap:        iterationMap,
+		StateMap:            stateMap,
+		UsernameMap:         usernames,
+		InclusionMap:        inclusionMap,
+		ConnectionMap:       connectionMap,
+		PropertyRelationMap: propertyRelationMap,
+		PropertyEnumMap:     propertyEnumMap,
+	}
+	return &dataForFulfill, nil
+}
+
 func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	extra := record.Extra.IssueFileExtraInfo
 	if extra == nil || extra.ExportRequest == nil {
@@ -228,47 +361,49 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	if err := i.updateIssueFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
 		return
 	}
-	issues, _, err := i.query.Paging(getIssuePagingRequest(req))
-	if err != nil {
-		logrus.Errorf("%s failed to page issues, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	pro, err := i.query.BatchGetProperties(req.OrgID, req.Type)
-	if err != nil {
-		logrus.Errorf("%s failed to batch get properties, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
 
-	reader, tableName, err := i.query.ExportExcel(issues, pro, req.ProjectID, req.IsDownloadTemplate, req.OrgID, req.Locale)
+	// use new excel export
+	var buffer bytes.Buffer
+	dataForFulfill, err := i.createDataForFulfill(req)
 	if err != nil {
+		logrus.Errorf("%s failed to create data for fulfill, err: %v", issueService, err)
+		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	if err := issueexcel.ExportFile(&buffer, *dataForFulfill); err != nil {
 		logrus.Errorf("%s failed to export excel, err: %v", issueService, err)
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
 		return
 	}
-	f, err := ioutil.TempFile("", "export.*")
-	if err != nil {
-		logrus.Errorf("%s failed to create temp file, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	defer f.Close()
-	defer func() {
-		if err := os.Remove(f.Name()); err != nil {
-			logrus.Errorf("%s failed to remove temp file, err: %v", issueService, err)
-		}
-	}()
-	if _, err := io.Copy(f, reader); err != nil {
-		logrus.Errorf("%s failed to copy export file, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	f.Seek(0, 0)
+
+	//reader, tableName, err := i.query.ExportExcel(issues, pro, req.ProjectID, req.IsDownloadTemplate, req.OrgID, req.Locale)
+	//if err != nil {
+	//	logrus.Errorf("%s failed to export excel, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//f, err := ioutil.TempFile("", "export.*")
+	//if err != nil {
+	//	logrus.Errorf("%s failed to create temp file, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//defer f.Close()
+	//defer func() {
+	//	if err := os.Remove(f.Name()); err != nil {
+	//		logrus.Errorf("%s failed to remove temp file, err: %v", issueService, err)
+	//	}
+	//}()
+	//if _, err := io.Copy(f, reader); err != nil {
+	//	logrus.Errorf("%s failed to copy export file, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//f.Seek(0, 0)
 	expiredAt := time.Now().Add(time.Duration(conf.ExportIssueFileStoreDay()) * 24 * time.Hour)
 	uploadReq := filetypes.FileUploadRequest{
-		FileNameWithExt: fmt.Sprintf("%s.xlsx", tableName),
-		FileReader:      f,
+		FileNameWithExt: dataForFulfill.FileNameWithExt,
+		FileReader:      io.NopCloser(&buffer),
 		From:            issueService,
 		IsPublic:        true,
 		ExpiredAt:       &expiredAt,

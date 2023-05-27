@@ -34,7 +34,26 @@ type Cell struct {
 	// 以 A1 为例，默认为 0 表示不合并其他单元格，1 表示合并 A1,A2 两个单元格，2 表示合并 A1,A2,A3 三个单元格
 	VerticalMergeNum int
 
-	// TODO style here
+	// 单元格的样式
+	Style *CellStyle
+}
+
+type CellStyle struct {
+	IsTitle        bool
+	OverwriteStyle *xlsx.Style
+}
+
+func (style *CellStyle) ToXlsxStyle(defaultStyle xlsx.Style) *xlsx.Style {
+	if style.OverwriteStyle != nil {
+		return style.OverwriteStyle
+	}
+	if style.IsTitle {
+		defaultStyle.Font.Bold = true
+		defaultStyle.Border = *xlsx.NewBorder("none", "none", "thin", "thin")
+		defaultStyle.Alignment.ShrinkToFit = false
+		defaultStyle.Alignment.WrapText = true
+	}
+	return &defaultStyle
 }
 
 func NewCell(value string) Cell {
@@ -65,6 +84,12 @@ func NewHMergeCellsAuto(value string, hMergeNum int) []Cell {
 }
 
 func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
+	defaultStyle := xlsx.NewStyle()
+	defaultStyle.Alignment.Horizontal = "center"
+	defaultStyle.Alignment.Vertical = "center"
+	defaultStyle.Alignment.ShrinkToFit = true
+	defaultStyle.Alignment.WrapText = true
+
 	for _, cells := range data {
 		row := sheet.AddRow()
 		for _, cell := range cells {
@@ -72,18 +97,15 @@ func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 			xlsxCell.Value = cell.Value
 			xlsxCell.HMerge = cell.HorizontalMergeNum
 			xlsxCell.VMerge = cell.VerticalMergeNum
+			xlsxCell.SetStyle(defaultStyle)
+			if cell.Style != nil {
+				xlsxCell.SetStyle(cell.Style.ToXlsxStyle(*defaultStyle))
+			}
 		}
 	}
 
-	style := xlsx.NewStyle()
-	style.Alignment.Horizontal = "center"
-	style.Alignment.Vertical = "center"
-	style.Alignment.ShrinkToFit = true
-	style.Alignment.WrapText = true
-
 	_ = sheet.ForEachRow(func(r *xlsx.Row) error {
 		_ = r.ForEachCell(func(c *xlsx.Cell) error {
-			c.SetStyle(style)
 			return nil
 		}, xlsx.SkipEmptyCells)
 		r.SetHeightCM(2)

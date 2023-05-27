@@ -61,3 +61,12 @@ func WriteFile(w io.Writer, f *XlsxFile, filename string) error {
 
 	return nil
 }
+
+//func AddSheetByColumn(f *XlsxFile, columns map[]string, sheetName string) error {
+//	sheet, err := f.File.AddSheet(sheetName)
+//	if err != nil {
+//		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
+//	}
+//	fulfillColumnDataIntoSheet(sheet, columns)
+//	return nil
+//}

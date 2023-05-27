@@ -41,7 +41,7 @@ func (p *provider) ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropert
 		return nil, "", err
 	}
 	// get the stageMap
-	stageMap := getStageMap(stages)
+	stageMap := GetStageMap(stages)
 
 	table, err := p.convertIssueToExcelList(issues, properties, projectID, isDownloadTemplate, stageMap, locale)
 	if err != nil {
@@ -109,9 +109,9 @@ func (p *provider) ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropert
 	return buf, tablename, nil
 }
 
-// getStageMap return a map,the key is the struct of dice_issue_stage.Value and dice_issue_stage.IssueType,
+// GetStageMap return a map,the key is the struct of dice_issue_stage.Value and dice_issue_stage.IssueType,
 // the value is dice_issue_stage.Name
-func getStageMap(stages []dao.IssueStage) map[IssueStage]string {
+func GetStageMap(stages []dao.IssueStage) map[IssueStage]string {
 	stageMap := make(map[IssueStage]string, len(stages))
 	for _, v := range stages {
 		if v.Value != "" && v.IssueType != "" {
@@ -145,11 +145,11 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 		return r, nil
 	}
 	// 构建自定义字段枚举值map
-	mp := make(map[pair]string)
+	mp := make(map[PropertyEnumPair]string)
 	for _, v := range property {
 		if common.IsOptions(v.PropertyType.String()) == true {
 			for _, val := range v.EnumeratedValues {
-				mp[pair{PropertyID: v.PropertyID, valueID: val.Id}] = val.Name
+				mp[PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
 			}
 		}
 	}
@@ -284,7 +284,7 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 		relations := propertyMap[i.Id]
 		// get value of each custom field
 		for _, pro := range property {
-			columnValue := getCustomPropertyColumnValue(pro, relations, mp, usernames)
+			columnValue := GetCustomPropertyColumnValue(pro, relations, mp, usernames)
 			r[index+1] = append(r[index+1], columnValue)
 		}
 	}

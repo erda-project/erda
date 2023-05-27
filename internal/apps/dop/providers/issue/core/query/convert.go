@@ -269,17 +269,17 @@ func (p *provider) getIssueExportDataI18n(locale, i18nKey string) []string {
 	return strutil.Split(t, ",")
 }
 
-type pair struct {
+type PropertyEnumPair struct {
 	PropertyID int64
-	valueID    int64
+	ValueID    int64
 }
 
-func getCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.IssuePropertyRelation, mp map[pair]string, users map[string]string) string {
+func GetCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.IssuePropertyRelation, mp map[PropertyEnumPair]string, users map[string]string) string {
 	if pro == nil || len(relations) == 0 {
 		return ""
 	}
 	if mp == nil {
-		mp = make(map[pair]string)
+		mp = make(map[PropertyEnumPair]string)
 	}
 	// according to the field type, put the data into the table
 	if common.IsOptions(pro.PropertyType.String()) == false {
@@ -306,7 +306,7 @@ func getCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.Is
 	} else if pro.PropertyType == pb.PropertyTypeEnum_Select {
 		for _, rel := range relations {
 			if rel.PropertyID == pro.PropertyID {
-				return mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}]
+				return mp[PropertyEnumPair{PropertyID: pro.PropertyID, ValueID: rel.PropertyValueID}]
 			}
 		}
 	} else if pro.PropertyType == pb.PropertyTypeEnum_MultiSelect || pro.PropertyType == pb.PropertyTypeEnum_CheckBox {
@@ -314,7 +314,7 @@ func getCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.Is
 		var str []string
 		for _, rel := range relations {
 			if rel.PropertyID == pro.PropertyID {
-				str = append(str, mp[pair{PropertyID: pro.PropertyID, valueID: rel.PropertyValueID}])
+				str = append(str, mp[PropertyEnumPair{PropertyID: pro.PropertyID, ValueID: rel.PropertyValueID}])
 			}
 		}
 		return strutil.Join(str, ",")
