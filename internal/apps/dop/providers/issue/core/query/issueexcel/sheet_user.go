@@ -34,10 +34,10 @@ func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
 	for _, user := range data.UserMap {
 		userInfo, err := json.Marshal(user)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal user info, user id: %s, err: %v", user.ID, err)
+			return nil, fmt.Errorf("failed to marshal user info, user id: %s, err: %v", user.UserID, err)
 		}
 		lines = append(lines, excel.Row{
-			excel.NewCell(user.ID),
+			excel.NewCell(user.UserID),
 			excel.NewCell(user.Nick),
 			excel.NewCell(string(userInfo)),
 		})

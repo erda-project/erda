@@ -35,7 +35,7 @@ func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
 	// data
 	// collect labels from issues
 	labelMap := make(map[int64]*pb.ProjectLabel)
-	for _, issue := range data.Issues {
+	for _, issue := range data.ExportOnly.Issues {
 		for _, label := range issue.LabelDetails {
 			if _, ok := labelMap[label.Id]; !ok {
 				labelMap[label.Id] = label
@@ -45,7 +45,7 @@ func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
 	for _, label := range labelMap {
 		labelInfo, err := json.Marshal(label)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal label info, label id: %s, err: %v", label.Id, err)
+			return nil, fmt.Errorf("failed to marshal label info, label id: %d, err: %v", label.Id, err)
 		}
 		lines = append(lines, excel.Row{
 			excel.NewCell(strconv.FormatInt(label.Id, 10)),

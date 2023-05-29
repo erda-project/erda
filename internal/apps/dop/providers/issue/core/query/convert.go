@@ -25,7 +25,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
@@ -275,7 +274,7 @@ type PropertyEnumPair struct {
 	ValueID    int64
 }
 
-func GetCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.IssuePropertyRelation, mp map[PropertyEnumPair]string, users map[string]*userpb.User) string {
+func GetCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.IssuePropertyRelation, mp map[PropertyEnumPair]string, users map[string]apistructs.Member) string {
 	if pro == nil || len(relations) == 0 {
 		return ""
 	}
@@ -283,7 +282,7 @@ func GetCustomPropertyColumnValue(pro *pb.IssuePropertyIndex, relations []dao.Is
 		mp = make(map[PropertyEnumPair]string)
 	}
 	// according to the field type, put the data into the table
-	if common.IsOptions(pro.PropertyType.String()) == false {
+	if !common.IsOptions(pro.PropertyType.String()) {
 		for _, rel := range relations {
 			if rel.PropertyID != pro.PropertyID {
 				continue

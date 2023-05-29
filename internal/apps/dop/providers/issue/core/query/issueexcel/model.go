@@ -15,6 +15,8 @@
 package issueexcel
 
 import (
+	"time"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 )
 
@@ -43,7 +45,7 @@ type (
 
 	IssueSheetModelCommon struct {
 		ID                 int64  `excel:"ID"`
-		IterationName      string `excel:"Iteration"`
+		IterationName      string `excel:"IterationName"`
 		IssueType          pb.IssueTypeEnum_Type
 		IssueTitle         string
 		Content            string
@@ -53,11 +55,11 @@ type (
 		Severity           pb.IssueSeverityEnum_Severity
 		CreatorName        string
 		AssigneeName       string
-		CreatedAt          string
-		PlanStartedAt      string
-		PlanFinishedAt     string
-		StartAt            string
-		FinishAt           string
+		CreatedAt          *time.Time
+		PlanStartedAt      *time.Time
+		PlanFinishedAt     *time.Time
+		StartAt            *time.Time
+		FinishAt           *time.Time
 		EstimateTime       string
 		Labels             []string
 		ConnectionIssueIDs []int64

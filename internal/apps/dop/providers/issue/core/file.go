@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -32,7 +33,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
@@ -102,6 +102,7 @@ func (i *IssueService) ImportExcelIssue(ctx context.Context, req *pb.ImportExcel
 	if req.FileID == "" {
 		return nil, apierrors.ErrImportExcelIssue.InvalidParameter("apiFileUUID")
 	}
+	req.Locale = apis.GetLang(ctx)
 
 	recordID, err := i.Import(req)
 	if err != nil {
@@ -221,14 +222,9 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 	return nil
 }
 
-func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
-	// issues
-	issues, _, err := i.query.Paging(getIssuePagingRequest(req))
-	if err != nil {
-		return nil, fmt.Errorf("failed to page issues, err: %v", err)
-	}
+func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
 	// custom fields
-	properties, err := i.query.BatchGetProperties(req.OrgID, req.Type)
+	properties, err := i.query.BatchGetProperties(int64(orgID), issueTypes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
 	}
@@ -237,7 +233,7 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 		customFieldsMap[v.PropertyIssueType] = append(customFieldsMap[v.PropertyIssueType], v)
 	}
 	// stage map
-	stages, err := i.db.GetIssuesStageByOrgID(req.OrgID)
+	stages, err := i.db.GetIssuesStageByOrgID(int64(orgID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stages, err: %v", err)
 	}
@@ -247,7 +243,7 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 	iterations, _, err := i.db.PagingIterations(apistructs.IterationPagingRequest{
 		PageNo:    1,
 		PageSize:  10000,
-		ProjectID: req.ProjectID,
+		ProjectID: projectID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get iterations, err: %v", err)
@@ -258,13 +254,77 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 	iterationMap[-1] = "待办事项"
 	// state map
 	stateMap := make(map[int64]string)
-	states, err := i.db.GetIssuesStatesByProjectID(req.ProjectID, "")
+	states, err := i.db.GetIssuesStatesByProjectID(projectID, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get states, err: %v", err)
 	}
 	for _, v := range states {
 		stateMap[int64(v.ID)] = v.Name
 	}
+	// username map
+	// get all project members, and get all userIDs
+	memberQuery := apistructs.MemberListRequest{
+		ScopeType: apistructs.ProjectScope,
+		ScopeID:   int64(projectID),
+		PageNo:    1,
+		PageSize:  99999,
+	}
+	members, err := i.bdl.ListMembers(memberQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list members, err: %v", err)
+	}
+	userMaps := map[string]apistructs.Member{}
+	for _, member := range members {
+		userMaps[member.UserID] = member
+	}
+	// propertyEnum map
+	propertyEnumMap := make(map[query.PropertyEnumPair]string)
+	for _, v := range properties {
+		if common.IsOptions(v.PropertyType.String()) == true {
+			for _, val := range v.EnumeratedValues {
+				propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
+			}
+		}
+	}
+
+	// result
+	dataForFulfill := issueexcel.DataForFulfill{
+		Locale:          i.bdl.GetLocale(locale),
+		CustomFieldMap:  customFieldsMap,
+		ProjectID:       projectID,
+		OrgID:           orgID,
+		StageMap:        stageMap,
+		IterationMap:    iterationMap,
+		StateMap:        stateMap,
+		UserMap:         userMaps,
+		PropertyEnumMap: propertyEnumMap,
+	}
+	return &dataForFulfill, nil
+}
+
+func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
+	data, err := i.createDataForFulfillCommon(req.Locale, req.OrgID, req.ProjectID, nil) // ignore issueTypes, use all types
+	if err != nil {
+		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
+	}
+	// import only
+	return data, nil
+}
+
+func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
+	data, err := i.createDataForFulfillCommon(req.Locale, req.OrgID, req.ProjectID, req.Type)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
+	}
+	// export only
+	// issues
+	issues, _, err := i.query.Paging(getIssuePagingRequest(req))
+	if err != nil {
+		return nil, fmt.Errorf("failed to page issues, err: %v", err)
+	}
+	data.ExportOnly.Issues = issues
+	data.ExportOnly.IsDownloadTemplate = req.IsDownloadTemplate
+	data.ExportOnly.FileNameWithExt = "issue-export.xlsx"
 	// propertyRelation map
 	var issueIDs []int64
 	for _, v := range issues {
@@ -278,38 +338,7 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 	for _, relation := range propertyRelations {
 		propertyRelationMap[relation.IssueID] = append(propertyRelationMap[relation.IssueID], relation)
 	}
-	// username map
-	userIDs := make([]string, 0)
-	for _, relation := range propertyRelations {
-		for _, pro := range properties {
-			if pro.PropertyID == relation.PropertyID && pro.PropertyType == pb.PropertyTypeEnum_Person {
-				userIDs = append(userIDs, relation.ArbitraryValue)
-			}
-		}
-	}
-	userIDs = strutil.DedupSlice(userIDs, true)
-	userMaps := map[string]*userpb.User{}
-	if len(userIDs) > 0 {
-		resp, err := i.identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
-			IDs: userIDs,
-		})
-		if err != nil {
-			return nil, err
-		}
-		users := resp.Data
-		for _, u := range users {
-			userMaps[u.ID] = u
-		}
-	}
-	// propertyEnum map
-	propertyEnumMap := make(map[query.PropertyEnumPair]string)
-	for _, v := range properties {
-		if common.IsOptions(v.PropertyType.String()) == true {
-			for _, val := range v.EnumeratedValues {
-				propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
-			}
-		}
-	}
+	data.ExportOnly.IssuePropertyRelationMap = propertyRelationMap
 	// inclusion map, connection map
 	uint64IssueIDs := make([]uint64, 0)
 	for _, v := range issueIDs {
@@ -329,26 +358,9 @@ func (i *IssueService) createDataForFulfill(req *pb.ExportExcelIssueRequest) (*i
 			connectionMap[int64(relation.IssueID)] = append(connectionMap[int64(relation.IssueID)], int64(relation.RelatedIssue))
 		}
 	}
-
-	// result
-	dataForFulfill := issueexcel.DataForFulfill{
-		FileNameWithExt:     "issue-export.xlsx",
-		Locale:              i.bdl.GetLocale(req.Locale),
-		CustomFieldMap:      customFieldsMap,
-		Issues:              issues,
-		ProjectID:           req.ProjectID,
-		OrgID:               req.OrgID,
-		IsDownloadTemplate:  req.IsDownloadTemplate,
-		StageMap:            stageMap,
-		IterationMap:        iterationMap,
-		StateMap:            stateMap,
-		UserMap:             userMaps,
-		InclusionMap:        inclusionMap,
-		ConnectionMap:       connectionMap,
-		PropertyRelationMap: propertyRelationMap,
-		PropertyEnumMap:     propertyEnumMap,
-	}
-	return &dataForFulfill, nil
+	data.ExportOnly.InclusionMap = inclusionMap
+	data.ExportOnly.ConnectionMap = connectionMap
+	return data, nil
 }
 
 func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
@@ -364,7 +376,7 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 
 	// use new excel export
 	var buffer bytes.Buffer
-	dataForFulfill, err := i.createDataForFulfill(req)
+	dataForFulfill, err := i.createDataForFulfillForExport(req)
 	if err != nil {
 		logrus.Errorf("%s failed to create data for fulfill, err: %v", issueService, err)
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
@@ -402,7 +414,7 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	//f.Seek(0, 0)
 	expiredAt := time.Now().Add(time.Duration(conf.ExportIssueFileStoreDay()) * 24 * time.Hour)
 	uploadReq := filetypes.FileUploadRequest{
-		FileNameWithExt: dataForFulfill.FileNameWithExt,
+		FileNameWithExt: dataForFulfill.ExportOnly.FileNameWithExt,
 		FileReader:      io.NopCloser(&buffer),
 		From:            issueService,
 		IsPublic:        true,
@@ -429,59 +441,77 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) {
 		return
 	}
 
-	f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
+	//f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
+	//if err != nil {
+	//	logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	f, err := os.Open("./gen2.xlsx")
 	if err != nil {
-		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+		panic(err)
 	}
 	defer f.Close()
 
-	properties, err := i.query.GetProperties(&pb.GetIssuePropertyRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
+	data, err := i.createDataForFulfillForImport(req)
 	if err != nil {
-		logrus.Errorf("%s failed to get issue properties, err: %v", issueService, err)
+		logrus.Errorf("%s failed to create data for fulfill, err: %v", issueService, err)
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
 		return
 	}
-	memberQuery := apistructs.MemberListRequest{
-		ScopeType: apistructs.ProjectScope,
-		ScopeID:   int64(req.ProjectID),
-		PageNo:    1,
-		PageSize:  99999,
-	}
-	members, err := i.bdl.ListMembers(memberQuery)
-	if err != nil {
-		logrus.Errorf("%s failed to get members, err: %v", issueService, err)
+	if err := issueexcel.ImportFile(f, *data); err != nil {
+		logrus.Errorf("%s failed to import excel, err: %v", issueService, err)
 		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
 		return
 	}
-
-	issues, instances, falseExcel, excelIndex, falseReason, allNumber, err := i.decodeFromExcelFile(req, f, properties)
-	if err != nil {
-		logrus.Errorf("%s failed to decode excel file, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	falseExcel, falseReason = i.storeExcel2DB(req, issues, instances, excelIndex, falseExcel, falseReason, members)
-	if len(falseExcel) <= 1 {
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
-		return
-	}
-	ff, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
-	if err != nil {
-		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	defer ff.Close()
-	res, err := i.ExportFailedExcel(ff, falseExcel, falseReason, allNumber)
-	if err != nil {
-		logrus.Errorf("%s failed to export false excel, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	desc := fmt.Sprintf("事项总数: %d, 成功: %d, 失败: %d", res.SuccessNumber+res.FalseNumber, res.SuccessNumber, res.FalseNumber)
-	i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, Description: desc, ApiFileUUID: res.UUID, State: apistructs.FileRecordStateFail})
+	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
+	//
+	//
+	//properties, err := i.query.GetProperties(&pb.GetIssuePropertyRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
+	//if err != nil {
+	//	logrus.Errorf("%s failed to get issue properties, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//memberQuery := apistructs.MemberListRequest{
+	//	ScopeType: apistructs.ProjectScope,
+	//	ScopeID:   int64(req.ProjectID),
+	//	PageNo:    1,
+	//	PageSize:  99999,
+	//}
+	//members, err := i.bdl.ListMembers(memberQuery)
+	//if err != nil {
+	//	logrus.Errorf("%s failed to get members, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//
+	//issues, instances, falseExcel, excelIndex, falseReason, allNumber, err := i.decodeFromExcelFile(req, f, properties)
+	//if err != nil {
+	//	logrus.Errorf("%s failed to decode excel file, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//falseExcel, falseReason = i.storeExcel2DB(req, issues, instances, excelIndex, falseExcel, falseReason, members)
+	//if len(falseExcel) <= 1 {
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
+	//	return
+	//}
+	//ff, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
+	//if err != nil {
+	//	logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//defer ff.Close()
+	//res, err := i.ExportFailedExcel(ff, falseExcel, falseReason, allNumber)
+	//if err != nil {
+	//	logrus.Errorf("%s failed to export false excel, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
+	//}
+	//desc := fmt.Sprintf("事项总数: %d, 成功: %d, 失败: %d", res.SuccessNumber+res.FalseNumber, res.SuccessNumber, res.FalseNumber)
+	//i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, Description: desc, ApiFileUUID: res.UUID, State: apistructs.FileRecordStateFail})
 }
 
 func getStageValue(issue pb.Issue, stages []dao.IssueStage) string {

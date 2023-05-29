@@ -19,30 +19,39 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type DataForFulfill struct {
-	FileNameWithExt    string
-	Locale             *i18n.LocaleResource
-	CustomFieldMap     map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
-	Issues             []*pb.Issue
-	ProjectID          uint64
-	OrgID              int64
-	IsDownloadTemplate bool
-	StageMap           map[query.IssueStage]string
-	IterationMap       map[int64]string        // key: iteration id
-	StateMap           map[int64]string        // key: state id
-	UserMap            map[string]*userpb.User // key: user id
-	InclusionMap       map[int64][]int64       // key: issue id
-	ConnectionMap      map[int64][]int64       // key: issue id
+	ExportOnly DataForFulfillExportOnly
+	ImportOnly DataForFulfillImportOnly
 
-	PropertyRelationMap map[int64][]dao.IssuePropertyRelation
-	PropertyEnumMap     map[query.PropertyEnumPair]string
+	// common
+	OrgID          int64
+	ProjectID      uint64
+	Locale         *i18n.LocaleResource
+	CustomFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
+	StageMap       map[query.IssueStage]string
+	IterationMap   map[int64]string             // key: iteration id
+	StateMap       map[int64]string             // key: state id
+	UserMap        map[string]apistructs.Member // key: user id
+
+	PropertyEnumMap map[query.PropertyEnumPair]string
+}
+
+type DataForFulfillExportOnly struct {
+	FileNameWithExt          string
+	Issues                   []*pb.Issue
+	IsDownloadTemplate       bool
+	IssuePropertyRelationMap map[int64][]dao.IssuePropertyRelation
+	InclusionMap             map[int64][]int64 // key: issue id
+	ConnectionMap            map[int64][]int64 // key: issue id
+}
+type DataForFulfillImportOnly struct {
 }
 
 func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
@@ -65,5 +74,5 @@ func formatOneCustomField(cf *pb.IssuePropertyIndex, issue *pb.Issue, data DataF
 }
 
 func getCustomFieldValue(customField *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) string {
-	return query.GetCustomPropertyColumnValue(customField, data.PropertyRelationMap[issue.Id], data.PropertyEnumMap, data.UserMap)
+	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.PropertyEnumMap, data.UserMap)
 }

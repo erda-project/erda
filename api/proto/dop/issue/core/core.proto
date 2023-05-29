@@ -986,6 +986,7 @@ message ImportExcelIssueRequest {
   int64 orgID = 2;
   string type = 3;
   string fileID = 4;
+  string locale = 5;
   common.IdentityInfo identityInfo = 33 [json_name = "-"];
 }
 

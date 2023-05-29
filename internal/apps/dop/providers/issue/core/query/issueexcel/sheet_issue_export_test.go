@@ -15,10 +15,15 @@
 package issueexcel
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 )
 
 func TestNewIssueSheetColumnUUID(t *testing.T) {
@@ -31,4 +36,37 @@ func TestNewIssueSheetColumnUUID(t *testing.T) {
 	uuid.AddPart("Common")
 	uuid.AddPart("ID")
 	assert.Equal(t, uuid.String(), strings.Join([]string{"Common", "ID", "ID"}, issueSheetColumnUUIDSplitter))
+}
+
+func Test_genIssueSheetTitleAndDataByColumn(t *testing.T) {
+	data := DataForFulfill{
+		ExportOnly: DataForFulfillExportOnly{
+			Issues: []*pb.Issue{
+				{
+					Id:              1,
+					RelatedIssueIDs: []uint64{2, 3},
+				},
+			},
+			ConnectionMap: map[int64][]int64{
+				1: {2, 3},
+			},
+		},
+		CustomFieldMap: map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex{},
+		StateMap:       map[int64]string{},
+		StageMap:       map[query.IssueStage]string{},
+	}
+	info, err := data.genIssueSheetTitleAndDataByColumn()
+	assert.NoError(t, err)
+	fmt.Printf("%+v\n", info)
+}
+
+func Test_getStringCellValue(t *testing.T) {
+	common := IssueSheetModelCommon{
+		ConnectionIssueIDs: []int64{2, 3},
+	}
+	commonValue := reflect.ValueOf(&common).Elem()
+	valueField := commonValue.FieldByName("ConnectionIssueIDs")
+	typeField, ok := commonValue.Type().FieldByName("ConnectionIssueIDs")
+	assert.True(t, ok)
+	assert.Equal(t, getStringCellValue(typeField, valueField), "2,3")
 }

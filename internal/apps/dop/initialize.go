@@ -145,7 +145,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
-	server.Router().Path("/local-test-import").Handler(func() http.Handler {
+	server.Router().Path("/local-test-export").Handler(func() http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			record := dao.TestFileRecord{
 				BaseModel: dbengine.BaseModel{
@@ -167,6 +167,32 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 			}
 			record.Extra = extra
 			p.IssueCoreSvc.ExportExcelAsync(&record)
+			_, _ = w.Write([]byte("ok"))
+		})
+	}())
+	server.Router().Path("/local-test-import").Handler(func() http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			record := dao.TestFileRecord{
+				BaseModel: dbengine.BaseModel{
+					ID: 2068,
+				},
+				ProjectID:     5964,
+				OrgID:         633,
+				Type:          "issueImport",
+				State:         "",
+				OperatorID:    "",
+				Extra:         dao.TestFileExtra{},
+				ErrorInfo:     "",
+				SoftDeletedAt: 0,
+			}
+			var extra dao.TestFileExtra
+			s := `{"issueFileExtraInfo":{"importRequest":{"projectID":5964,"orgID":0,"type":"REQUIREMENT","fileID":"65b4277965a3434ea01eac898af89874","-":{"userID":"1005834","internalClient":"","orgID":"633"}}}}`
+			if err := json.Unmarshal([]byte(s), &extra); err != nil {
+				panic(err)
+			}
+			record.Extra = extra
+			record.ApiFileUUID = record.Extra.IssueFileExtraInfo.ImportRequest.FileID
+			p.IssueCoreSvc.ImportExcel(&record)
 			_, _ = w.Write([]byte("ok"))
 		})
 	}())

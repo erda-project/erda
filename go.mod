@@ -119,6 +119,7 @@ require (
 	github.com/prometheus/prometheus v2.3.2+incompatible
 	github.com/pyroscope-io/client v0.6.1-0.20230130114945-a64d920d2fba
 	github.com/pyroscope-io/pyroscope v0.37.2
+	github.com/qri-io/starlib v0.4.2-0.20200213133954-ff2e8cd5ef8d
 	github.com/rakyll/statik v0.1.7
 	github.com/rancher/apiserver v0.0.0-20210922180056-297b6df8d714
 	github.com/rancher/dynamiclistener v0.2.1-0.20200714201033-9c1939da3af9

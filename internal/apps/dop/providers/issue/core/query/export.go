@@ -196,18 +196,18 @@ func (p *provider) convertIssueToExcelList(issues []*pb.Issue, property []*pb.Is
 		propertyMap[v.IssueID] = append(propertyMap[v.IssueID], v)
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	userMap := map[string]*userpb.User{}
-	if len(userIDs) > 0 {
-		resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
-			IDs: userIDs,
-		})
-		users := resp.Data
-		if err != nil {
-			return nil, err
-		}
-		for _, u := range users {
-			userMap[u.ID] = u
-		}
+	userMap := map[string]apistructs.Member{}
+	members, err := p.bdl.ListMembers(apistructs.MemberListRequest{
+		ScopeType: apistructs.ProjectScopeType,
+		ScopeID:   int64(projectID),
+		PageNo:    1,
+		PageSize:  99999,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, u := range members {
+		userMap[u.UserID] = u
 	}
 	for index, i := range issues {
 		planFinishedAt := ""

@@ -60,7 +60,7 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	f, err := os.OpenFile("./gen2.xlsx", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	defer f.Close()
 	multiWriter := io.MultiWriter(w, f)
-	return excel.WriteFile(multiWriter, xlsxFile, data.FileNameWithExt)
+	return excel.WriteFile(multiWriter, xlsxFile, data.ExportOnly.FileNameWithExt)
 }
 
 func ExportIssueSheetLines(data DataForFulfill) (excel.Rows, error) {
