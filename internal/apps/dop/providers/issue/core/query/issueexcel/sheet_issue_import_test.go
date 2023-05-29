@@ -50,3 +50,32 @@ func Test_decodeMapToIssueSheetModel(t *testing.T) {
 	assert.Equal(t, "code", model.TaskOnly.TaskType)
 	assert.Equal(t, "v-of-cf-1", model.TaskOnly.CustomFields[0].Value)
 }
+
+func Test_parseStringSlice(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			args: args{
+				s: "a，b, c,,",
+			},
+			want: []string{"a", "b", "c"},
+		},
+		{
+			args: args{
+				s: "",
+			},
+			want: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, parseStringSlice(tt.args.s), "parseStringSlice(%v)", tt.args.s)
+		})
+	}
+}

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (data DataForFulfill) DecodeIssueSheet(r io.Reader) ([]IssueSheetModel, error) {
@@ -165,10 +166,10 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				case "EstimateTime":
 					model.Common.EstimateTime = cell.Value
 				case "Labels":
-					model.Common.Labels = strings.Split(cell.Value, ",")
+					model.Common.Labels = parseStringSlice(cell.Value)
 				case "ConnectionIssueIDs":
 					var ids []int64
-					for _, idStr := range strings.Split(cell.Value, ",") {
+					for _, idStr := range parseStringSlice(cell.Value) {
 						id, err := strconv.ParseInt(idStr, 10, 64)
 						if err != nil {
 							return nil, fmt.Errorf("invalid connection issue id: %s", idStr)
@@ -183,7 +184,7 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				switch groupField {
 				case "InclusionIssueIDs":
 					var ids []int64
-					for _, idStr := range strings.Split(cell.Value, ",") {
+					for _, idStr := range strutil.Split(cell.Value, ",", true) {
 						id, err := strconv.ParseInt(idStr, 10, 64)
 						if err != nil {
 							return nil, fmt.Errorf("invalid inclusion issue id: %s", idStr)
@@ -249,4 +250,13 @@ func mustParseStringTime(s string, typ string) *time.Time {
 		panic(fmt.Sprintf("invalid %s time: %s, err: %v", typ, s, err))
 	}
 	return t
+}
+
+func parseStringSlice(s string) []string {
+	results := strutil.Splits(s, []string{",", "，"}, true)
+	// trim space
+	for i, v := range results {
+		results[i] = strings.TrimSpace(v)
+	}
+	return results
 }
