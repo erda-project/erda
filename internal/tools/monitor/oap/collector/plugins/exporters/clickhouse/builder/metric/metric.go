@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -169,7 +170,7 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 			OrgName:         data.OrgName,
 			TenantId:        data.Tags[bu.cfg.TenantIdKey],
 			MetricGroup:     data.Name,
-			Timestamp:       data.Timestamp,
+			Timestamp:       time.Unix(0, data.Timestamp),
 			NumberFieldKeys: numFieldKeys,
 			StringFieldKeys: strFieldKeys,
 			TagKeys:         tagKeys,
@@ -178,7 +179,7 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 			OrgName:           data.OrgName,
 			TenantId:          data.Tags[bu.cfg.TenantIdKey],
 			MetricGroup:       data.Name,
-			Timestamp:         data.Timestamp,
+			Timestamp:         time.Unix(0, data.Timestamp),
 			NumberFieldKeys:   numFieldKeys,
 			NumberFieldValues: numFieldValues,
 			StringFieldKeys:   strFieldKeys,
