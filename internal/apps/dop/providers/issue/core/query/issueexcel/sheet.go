@@ -19,4 +19,6 @@ const (
 	indexOfSheetUser
 	indexOfSheetLabel
 	indexOfSheetCustomField
+	indexOfSheetBaseInfo
+	indexOfSheetIteration
 )

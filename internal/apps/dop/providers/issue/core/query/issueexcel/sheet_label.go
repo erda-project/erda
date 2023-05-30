@@ -20,6 +20,9 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/apistructs"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
@@ -55,4 +58,104 @@ func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
 	}
 
 	return lines, nil
+}
+
+func (data DataForFulfill) decodeLabelSheet(sheet [][]string) ([]*pb.ProjectLabel, error) {
+	// check title
+	if len(sheet) < 1 {
+		return nil, fmt.Errorf("label sheet is empty")
+	}
+	var labels []*pb.ProjectLabel
+	for _, row := range sheet[1:] {
+		var label pb.ProjectLabel
+		if err := json.Unmarshal([]byte(row[2]), &label); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal label info, label id: %s, err: %v", row[0], err)
+		}
+		labels = append(labels, &label)
+	}
+	return labels, nil
+}
+
+func (data DataForFulfill) mergeLabels(labelsFromLabelSheet []*pb.ProjectLabel, issueModels []IssueSheetModel) []*pb.ProjectLabel {
+	labelsFromLabelSheetMap := make(map[string]*pb.ProjectLabel, len(labelsFromLabelSheet))
+	for _, label := range labelsFromLabelSheet {
+		labelsFromLabelSheetMap[label.Name] = label
+	}
+
+	for _, model := range issueModels {
+		for _, labelName := range model.Common.Labels {
+			if _, ok := labelsFromLabelSheetMap[labelName]; ok {
+				continue
+			}
+			if _, ok := data.LabelMapByName[labelName]; ok {
+				continue
+			}
+			labelsFromLabelSheet = append(labelsFromLabelSheet, &pb.ProjectLabel{
+				Name:      labelName,
+				Type:      pb.ProjectLabelTypeEnum_issue,
+				ProjectID: data.ProjectID,
+				Creator:   "system",
+			})
+		}
+	}
+	return labelsFromLabelSheet
+}
+
+func (data DataForFulfill) createLabelIfNotExistsForImport(labels []*pb.ProjectLabel) error {
+	// create label if not exists
+	for _, label := range labels {
+		_, ok := data.LabelMapByName[label.Name]
+		if ok {
+			continue
+		}
+		// create label
+		newLabel := dao.Label{
+			Name:      label.Name,
+			Type:      apistructs.ProjectLabelType(label.Type.String()),
+			Color:     label.Color,
+			ProjectID: data.ProjectID,
+			Creator:   label.Creator,
+		}
+		if err := data.ImportOnly.LabelDB.CreateLabel(&newLabel); err != nil {
+			return fmt.Errorf("failed to create label, label name: %s, err: %v", label.Name, err)
+		}
+		// set to label map
+		data.LabelMapByName[label.Name] = apistructs.ProjectLabel{
+			ID:        newLabel.ID,
+			Name:      newLabel.Name,
+			Type:      newLabel.Type,
+			Color:     newLabel.Color,
+			ProjectID: newLabel.ProjectID,
+			Creator:   newLabel.Creator,
+			CreatedAt: newLabel.CreatedAt,
+			UpdatedAt: newLabel.UpdatedAt,
+		}
+	}
+	return nil
+}
+
+func (data DataForFulfill) createIssueLabelRelations(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+	var relations []issuedao.LabelRelation
+	for _, issue := range issues {
+		model, ok := issueModelMapByIssueID[issue.ID]
+		if !ok {
+			return fmt.Errorf("issue model not found, issue id: %d", issue.ID)
+		}
+		for _, labelName := range model.Common.Labels {
+			label, ok := data.LabelMapByName[labelName]
+			if !ok {
+				return fmt.Errorf("label not found, label name: %s", labelName)
+			}
+			relation := issuedao.LabelRelation{
+				LabelID: uint64(label.ID),
+				RefType: apistructs.LabelTypeIssue,
+				RefID:   strconv.FormatUint(issue.ID, 10),
+			}
+			relations = append(relations, relation)
+		}
+	}
+	if err := data.ImportOnly.DB.BatchCreateLabelRelations(relations); err != nil {
+		return fmt.Errorf("failed to batch create label relations, err: %v", err)
+	}
+	return nil
 }

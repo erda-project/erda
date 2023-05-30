@@ -209,7 +209,7 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 		var model IssueSheetModel
 		model.Common = IssueSheetModelCommon{
 			ID:                 issue.Id,
-			IterationName:      data.IterationMap[issue.IterationID],
+			IterationName:      data.IterationMapByID[issue.IterationID].Title,
 			IssueType:          issue.Type,
 			IssueTitle:         issue.Title,
 			Content:            issue.Content,
@@ -220,6 +220,7 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 			CreatorName:        data.getUserNick(issue.Creator),
 			AssigneeName:       data.getUserNick(issue.Assignee),
 			CreatedAt:          pbutil.GetTimeInLocal(issue.CreatedAt),
+			UpdatedAt:          pbutil.GetTimeInLocal(issue.UpdatedAt),
 			PlanStartedAt:      pbutil.GetTimeInLocal(issue.PlanStartedAt),
 			PlanFinishedAt:     pbutil.GetTimeInLocal(issue.PlanFinishedAt),
 			StartAt:            pbutil.GetTimeInLocal(issue.StartTime),
@@ -259,7 +260,7 @@ func (data DataForFulfill) getUserNick(userid string) string {
 	if userid == "" {
 		return ""
 	}
-	if u, ok := data.UserMap[userid]; ok {
+	if u, ok := data.ProjectMemberMap[userid]; ok {
 		return u.Nick
 	}
 	return ""

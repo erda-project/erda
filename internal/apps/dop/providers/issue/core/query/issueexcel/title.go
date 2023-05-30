@@ -131,7 +131,7 @@ package issueexcel
 //				case "ID":
 //					return issue.Id
 //				case "Iteration":
-//					return data.IterationMap[issue.IterationID]
+//					return data.IterationMapByID[issue.IterationID]
 //				case "IssueType":
 //					return issue.Type
 //				case "IssueTitle":
@@ -147,9 +147,9 @@ package issueexcel
 //				case "Severity":
 //					return issue.Severity
 //				case "CreatorName":
-//					return data.UserMap[issue.Creator]
+//					return data.ProjectMemberMap[issue.Creator]
 //				case "AssigneeName":
-//					return data.UserMap[issue.Assignee]
+//					return data.ProjectMemberMap[issue.Assignee]
 //				case "CreatedAt":
 //					return formatTimeFromTimestamp(issue.CreatedAt)
 //				case "PlanStartedAt":
@@ -212,7 +212,7 @@ package issueexcel
 //			case "TaskType":
 //				return data.StageMap[query.IssueStage{Type: issue.Type.String(), Value: common.GetStage(issue)}]
 //			case "OwnerName":
-//				return data.UserMap[issue.Owner]
+//				return data.ProjectMemberMap[issue.Owner]
 //			case "Source":
 //				return issue.Source
 //			case "ReopenCount":

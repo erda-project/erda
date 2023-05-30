@@ -56,6 +56,22 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(customFieldExcelRows), "custom_field"); err != nil {
 		return fmt.Errorf("failed to add custom field sheet, err: %v", err)
 	}
+	// meta sheet
+	baseInfoExcelRows, err := data.genBaseInfoSheet()
+	if err != nil {
+		return fmt.Errorf("failed to gen meta sheet, err: %v", err)
+	}
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(baseInfoExcelRows), "base_info"); err != nil {
+		return fmt.Errorf("failed to add meta sheet, err: %v", err)
+	}
+	// iteration sheet
+	iterationExcelRows, err := data.genIterationSheet()
+	if err != nil {
+		return fmt.Errorf("failed to gen iteration sheet, err: %v", err)
+	}
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(iterationExcelRows), "iteration"); err != nil {
+		return fmt.Errorf("failed to add iteration sheet, err: %v", err)
+	}
 	// export file
 	f, err := os.OpenFile("./gen2.xlsx", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	defer f.Close()

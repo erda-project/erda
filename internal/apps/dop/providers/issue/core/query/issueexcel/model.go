@@ -56,6 +56,7 @@ type (
 		CreatorName        string
 		AssigneeName       string
 		CreatedAt          *time.Time
+		UpdatedAt          *time.Time
 		PlanStartedAt      *time.Time
 		PlanFinishedAt     *time.Time
 		StartAt            *time.Time

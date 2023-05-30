@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -43,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/core/file/filetypes"
+	labeldao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/excel"
@@ -239,7 +239,8 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 	}
 	stageMap := query.GetStageMap(stages)
 	// iteration map
-	iterationMap := make(map[int64]string)
+	iterationMapByID := make(map[int64]*dao.Iteration)
+	iterationMapByName := make(map[string]*dao.Iteration)
 	iterations, _, err := i.db.PagingIterations(apistructs.IterationPagingRequest{
 		PageNo:    1,
 		PageSize:  10000,
@@ -249,33 +250,56 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 		return nil, fmt.Errorf("failed to get iterations, err: %v", err)
 	}
 	for _, v := range iterations {
-		iterationMap[int64(v.ID)] = v.Title
+		v := v
+		iterationMapByID[int64(v.ID)] = &v
+		iterationMapByName[v.Title] = &v
 	}
-	iterationMap[-1] = "待办事项"
+	backlogIteration := &dao.Iteration{Title: "待办事项"}
+	iterationMapByID[-1] = backlogIteration
+	iterationMapByName["待办事项"] = backlogIteration
 	// state map
-	stateMap := make(map[int64]string)
+	stateMapByID := make(map[int64]string)
+	stateMapByTypeAndName := make(map[string]map[string]int64) // outerkey: issueType, innerkey: stateName
 	states, err := i.db.GetIssuesStatesByProjectID(projectID, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get states, err: %v", err)
 	}
 	for _, v := range states {
-		stateMap[int64(v.ID)] = v.Name
+		stateMapByID[int64(v.ID)] = v.Name
+		if _, ok := stateMapByTypeAndName[v.IssueType]; !ok {
+			stateMapByTypeAndName[v.IssueType] = make(map[string]int64)
+		}
+		stateMapByTypeAndName[v.IssueType][v.Name] = int64(v.ID)
 	}
 	// username map
-	// get all project members, and get all userIDs
-	memberQuery := apistructs.MemberListRequest{
+	// get all org/project projectMember
+	projectMemberQuery := apistructs.MemberListRequest{
 		ScopeType: apistructs.ProjectScope,
 		ScopeID:   int64(projectID),
 		PageNo:    1,
 		PageSize:  99999,
 	}
-	members, err := i.bdl.ListMembers(memberQuery)
+	projectMember, err := i.bdl.ListMembers(projectMemberQuery)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list members, err: %v", err)
+		return nil, fmt.Errorf("failed to list projectMember, err: %v", err)
 	}
-	userMaps := map[string]apistructs.Member{}
-	for _, member := range members {
-		userMaps[member.UserID] = member
+	orgMemberQuery := apistructs.MemberListRequest{
+		ScopeType: apistructs.OrgScope,
+		ScopeID:   orgID,
+		PageNo:    1,
+		PageSize:  99999,
+	}
+	orgMember, err := i.bdl.ListMembers(orgMemberQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list orgMember, err: %v", err)
+	}
+	projectMemberMap := map[string]apistructs.Member{}
+	for _, member := range projectMember {
+		projectMemberMap[member.UserID] = member
+	}
+	orgMemberMap := map[string]apistructs.Member{}
+	for _, member := range orgMember {
+		orgMemberMap[member.UserID] = member
 	}
 	// propertyEnum map
 	propertyEnumMap := make(map[query.PropertyEnumPair]string)
@@ -286,18 +310,37 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 			}
 		}
 	}
+	// label map
+	labelMapByName := make(map[string]apistructs.ProjectLabel)
+	resp, err := i.bdl.ListLabel(apistructs.ProjectLabelListRequest{
+		ProjectID: projectID,
+		Key:       "",
+		Type:      apistructs.LabelTypeIssue,
+		PageNo:    1,
+		PageSize:  99999,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list labels, err: %v", err)
+	}
+	for _, v := range resp.List {
+		labelMapByName[v.Name] = v
+	}
 
 	// result
 	dataForFulfill := issueexcel.DataForFulfill{
-		Locale:          i.bdl.GetLocale(locale),
-		CustomFieldMap:  customFieldsMap,
-		ProjectID:       projectID,
-		OrgID:           orgID,
-		StageMap:        stageMap,
-		IterationMap:    iterationMap,
-		StateMap:        stateMap,
-		UserMap:         userMaps,
-		PropertyEnumMap: propertyEnumMap,
+		Locale:                i.bdl.GetLocale(locale),
+		CustomFieldMap:        customFieldsMap,
+		ProjectID:             projectID,
+		OrgID:                 orgID,
+		StageMap:              stageMap,
+		IterationMapByID:      iterationMapByID,
+		IterationMapByName:    iterationMapByName,
+		StateMap:              stateMapByID,
+		StateMapByTypeAndName: stateMapByTypeAndName,
+		ProjectMemberMap:      projectMemberMap,
+		OrgMemberMap:          orgMemberMap,
+		PropertyEnumMap:       propertyEnumMap,
+		LabelMapByName:        labelMapByName,
 	}
 	return &dataForFulfill, nil
 }
@@ -308,6 +351,10 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
 	}
 	// import only
+	data.ImportOnly.DB = i.db
+	data.ImportOnly.LabelDB = &labeldao.DBClient{DB: i.db.DB}
+	data.ImportOnly.Bdl = i.bdl
+	data.ImportOnly.Identity = i.identity
 	return data, nil
 }
 
@@ -923,7 +970,7 @@ func (i *IssueService) decodeFromExcelFile(req *pb.ImportExcelIssueRequest, r io
 		}
 		// row[17] EstimateTime
 		if len(row) >= 18 && row[17] != "" {
-			manHour, err := NewManhour(row[17])
+			manHour, err := issueexcel.NewManhour(row[17])
 			if err != nil {
 				falseExcel = append(falseExcel, i+1)
 				falseReason = append(falseReason, fmt.Sprintf("failed to convert estimate time: %s, err: %v", row[17], err))
@@ -1079,38 +1126,5 @@ func GetType(s string) pb.IssueTypeEnum_Type {
 		return pb.IssueTypeEnum_EPIC
 	default:
 		return pb.IssueTypeEnum_REQUIREMENT
-	}
-}
-
-var estimateRegexp, _ = regexp.Compile("^[0-9]+[wdhm]+$")
-
-func NewManhour(manhour string) (pb.IssueManHour, error) {
-	if manhour == "" {
-		return pb.IssueManHour{}, nil
-	}
-	if !estimateRegexp.MatchString(manhour) {
-		return pb.IssueManHour{}, fmt.Errorf("invalid estimate time: %s", manhour)
-	}
-	timeType := manhour[len(manhour)-1]
-	timeSet := manhour[:len(manhour)-1]
-	timeVal, err := strconv.ParseUint(timeSet, 10, 64)
-	if err != nil {
-		return pb.IssueManHour{}, fmt.Errorf("invalid man hour: %s, err: %v", manhour, err)
-	}
-	switch timeType {
-	case 'm':
-		val := int64(timeVal)
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	case 'h':
-		val := int64(timeVal) * 60
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	case 'd':
-		val := int64(timeVal) * 60 * 8
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	case 'w':
-		val := int64(timeVal) * 60 * 8 * 5
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	default:
-		return pb.IssueManHour{}, fmt.Errorf("invalid man hour: %s", manhour)
 	}
 }

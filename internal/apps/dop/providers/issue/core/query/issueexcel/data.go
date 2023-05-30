@@ -19,10 +19,14 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 
+	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	legacydao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
@@ -31,14 +35,18 @@ type DataForFulfill struct {
 	ImportOnly DataForFulfillImportOnly
 
 	// common
-	OrgID          int64
-	ProjectID      uint64
-	Locale         *i18n.LocaleResource
-	CustomFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
-	StageMap       map[query.IssueStage]string
-	IterationMap   map[int64]string             // key: iteration id
-	StateMap       map[int64]string             // key: state id
-	UserMap        map[string]apistructs.Member // key: user id
+	OrgID                 int64
+	ProjectID             uint64
+	Locale                *i18n.LocaleResource
+	CustomFieldMap        map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
+	StageMap              map[query.IssueStage]string
+	IterationMapByID      map[int64]*dao.Iteration           // key: iteration id
+	IterationMapByName    map[string]*dao.Iteration          // key: iteration name
+	StateMap              map[int64]string                   // key: state id
+	StateMapByTypeAndName map[string]map[string]int64        // key: state name
+	ProjectMemberMap      map[string]apistructs.Member       // key: user id
+	OrgMemberMap          map[string]apistructs.Member       // key: user id
+	LabelMapByName        map[string]apistructs.ProjectLabel // key: label name
 
 	PropertyEnumMap map[query.PropertyEnumPair]string
 }
@@ -52,6 +60,30 @@ type DataForFulfillExportOnly struct {
 	ConnectionMap            map[int64][]int64 // key: issue id
 }
 type DataForFulfillImportOnly struct {
+	LabelDB  *legacydao.DBClient
+	DB       *dao.DBClient
+	Bdl      *bundle.Bundle
+	Identity userpb.UserServiceServer
+
+	BaseInfo *DataForFulfillImportOnlyBaseInfo
+}
+
+func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
+	// only can do id-same-update when erda-platform is same && project-id is same
+	if data.IsSameErdaPlatform() {
+		if data.ImportOnly.BaseInfo.OriginalErdaProjectID == data.ProjectID {
+			return true
+		}
+	}
+	// all other cases, can not do id-same-update
+	return false
+}
+
+func (data DataForFulfill) IsSameErdaPlatform() bool {
+	if data.ImportOnly.BaseInfo == nil {
+		panic("baseInfo is nil")
+	}
+	return data.ImportOnly.BaseInfo.OriginalErdaPlatform == conf.DiceClusterName()
 }
 
 func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
@@ -74,5 +106,5 @@ func formatOneCustomField(cf *pb.IssuePropertyIndex, issue *pb.Issue, data DataF
 }
 
 func getCustomFieldValue(customField *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) string {
-	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.PropertyEnumMap, data.UserMap)
+	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.PropertyEnumMap, data.ProjectMemberMap)
 }

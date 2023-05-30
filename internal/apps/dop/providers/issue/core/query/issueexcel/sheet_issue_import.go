@@ -16,23 +16,20 @@ package issueexcel
 
 import (
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) DecodeIssueSheet(r io.Reader) ([]IssueSheetModel, error) {
-	excelSheets, err := excel.Decode(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode excel, err: %v", err)
-	}
+func (data DataForFulfill) DecodeIssueSheet(sheet [][]string) ([]IssueSheetModel, error) {
 	// convert [][][]string to map[uuid]excel.Column
-	issueSheetRows := excelSheets[indexOfSheetIssue]
+	issueSheetRows := sheet
 	var columnIndex int
 	for _, row := range issueSheetRows {
 		columnIndex = len(row)
@@ -155,6 +152,8 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 					model.Common.AssigneeName = cell.Value
 				case "CreatedAt":
 					model.Common.CreatedAt = mustParseStringTime(cell.Value, groupField)
+				case "UpdatedAt":
+					model.Common.UpdatedAt = mustParseStringTime(cell.Value, groupField)
 				case "PlanStartedAt":
 					model.Common.PlanStartedAt = mustParseStringTime(cell.Value, groupField)
 				case "PlanFinishedAt":
@@ -259,4 +258,66 @@ func parseStringSlice(s string) []string {
 		results[i] = strings.TrimSpace(v)
 	}
 	return results
+}
+
+// createOrUpdateIssues 创建或更新 issues
+// 根据 project id 进行判断
+func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetModel) (_ []*dao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+	issueModelMapByIssueID = make(map[uint64]*IssueSheetModel)
+	var issues []*dao.Issue
+	for _, model := range issueSheetModels {
+		model := model
+		issue := dao.Issue{
+			BaseModel: dbengine.BaseModel{
+				ID:        uint64(model.Common.ID),
+				CreatedAt: changePointerTimeToTime(model.Common.CreatedAt),
+				UpdatedAt: changePointerTimeToTime(model.Common.UpdatedAt),
+			},
+			PlanStartedAt:  model.Common.PlanStartedAt,
+			PlanFinishedAt: model.Common.PlanFinishedAt,
+			ProjectID:      data.ProjectID,
+			IterationID:    int64(data.IterationMapByName[model.Common.IterationName].ID),
+			AppID:          nil,
+			RequirementID:  nil,
+			Type:           model.Common.IssueType.String(),
+			Title:          model.Common.IssueTitle,
+			Content:        model.Common.Content,
+			State:          data.StateMapByTypeAndName[model.Common.IssueType.String()][model.Common.State],
+			Priority:       model.Common.Priority.String(),
+			Complexity:     model.Common.Complexity.String(),
+			Severity:       model.Common.Severity.String(),
+			Creator:        data.ProjectMemberMap[model.Common.CreatorName].UserID,
+			Assignee:       data.ProjectMemberMap[model.Common.AssigneeName].UserID,
+			Source:         model.BugOnly.Source,
+			ManHour:        mustGetJsonManHour(model.Common.EstimateTime),
+			External:       true,
+			Deleted:        false,
+			Stage:          getIssueStage(model),
+			Owner:          data.ProjectMemberMap[model.BugOnly.OwnerName].UserID,
+			FinishTime:     model.Common.FinishAt,
+			ExpiryStatus:   "",
+			ReopenCount:    int(model.BugOnly.ReopenCount),
+			StartTime:      model.Common.StartAt,
+		}
+		if issue.ID > 0 && data.ShouldUpdateWhenIDSame() {
+			// update
+			if err := data.ImportOnly.DB.UpdateIssueType(&issue); err != nil {
+				return nil, nil, fmt.Errorf("failed to update issue, id: %d, err: %v", issue.ID, err)
+			}
+		} else {
+			// create
+			issue.ID = 0
+			if err := data.ImportOnly.DB.CreateIssue(&issue); err != nil {
+				return nil, nil, fmt.Errorf("failed to create issue, err: %v", err)
+			}
+		}
+		issues = append(issues, &issue)
+		issueModelMapByIssueID[issue.ID] = &model
+	}
+	return issues, issueModelMapByIssueID, nil
 }
