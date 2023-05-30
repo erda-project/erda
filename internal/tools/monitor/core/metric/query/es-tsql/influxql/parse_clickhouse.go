@@ -150,15 +150,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 			if column == timeBucketColumn {
 				tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
 				continue
-			} else if column == p.ctx.timeKey {
-				if !field.Ascending {
-					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Desc())
-				} else {
-					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
-				}
-				continue
 			}
-
 			if column == "*" {
 				continue
 			}
@@ -178,9 +170,6 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 		}
 		if column.asName == timeBucketColumn {
 			tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
-			continue
-		} else if column.isTimeKey {
-			tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
 			continue
 		}
 		expr = expr.OrderAppend(goqu.C(column.asName).Asc())

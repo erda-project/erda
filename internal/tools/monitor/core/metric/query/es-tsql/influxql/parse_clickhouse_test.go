@@ -769,19 +769,19 @@ func TestOrderBy(t *testing.T) {
 			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"1362043e612fc3f5\" DESC,\"service_id::tag\" ASC",
 		},
 		{
-			name: "timestamp should by first order",
+			name: "timestamp should by last order",
 			sql:  "select time(),service_id::tag from table GROUP BY service_id::tag,time() ORDER BY service_id::tag desc",
-			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"bucket_timestamp\" ASC,\"service_id::tag\" DESC",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"service_id::tag\" DESC,\"bucket_timestamp\" ASC",
 		},
 		{
 			name: "timestamp desc",
 			sql:  "select column1 from table order by timestamp desc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" DESC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" DESC,\"column1\" ASC",
 		},
 		{
 			name: "timestamp asc",
 			sql:  "select column1 from table order by timestamp asc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC,\"column1\" ASC",
 		},
 	}
 	for _, test := range tests {
