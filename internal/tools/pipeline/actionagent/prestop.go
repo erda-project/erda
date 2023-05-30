@@ -19,7 +19,4 @@ func (agent *Agent) PreStop() {
 
 	// 打包目录并上传
 	agent.uploadDir()
-
-	// agent cancel context to stop other running things
-	agent.Cancel()
 }
