@@ -95,6 +95,9 @@ func (st *Storage) sendBatch(ctx context.Context, b driver.Batch) {
 	st.currencyLimiter <- struct{}{}
 	go func() {
 		for i := 0; i < st.cfg.RetryNum; i++ {
+			if b.IsSent() {
+				break
+			}
 			if err := b.Send(); err != nil {
 				st.logger.Errorf("send batch to clickhouse: %s, retry after: %s", err, backoffDelay)
 				backoffSleep(false)
