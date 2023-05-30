@@ -17,6 +17,7 @@ package span
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/stretchr/testify/assert"
@@ -69,8 +70,8 @@ func TestBuilder_buildBatches(t *testing.T) {
 			want: []driver.Batch{
 				&mockBatch{arr: []trace.TableSpan{
 					{
-						StartTime:     1652421595810000000,
-						EndTime:       1652421595810843400,
+						StartTime:     time.Unix(0, 1652421595810000000),
+						EndTime:       time.Unix(0, 1652421595810843400),
 						OrgName:       "erda",
 						TenantId:      "c75de7278874f37d9f1bc818b473fc23",
 						TraceId:       "bac6e329-4be5-4ed5-b364-c0fc305b4f8e",
