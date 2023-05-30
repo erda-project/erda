@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"sort"
+	"time"
 
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -96,7 +97,7 @@ type TableMetrics struct {
 	OrgName           string    `ch:"org_name"`
 	TenantId          string    `ch:"tenant_id"`
 	MetricGroup       string    `ch:"metric_group"`
-	Timestamp         int64     `ch:"timestamp"`
+	Timestamp         time.Time `ch:"timestamp"`
 	NumberFieldKeys   []string  `ch:"number_field_keys"`
 	NumberFieldValues []float64 `ch:"number_field_values"`
 	StringFieldKeys   []string  `ch:"string_field_keys"`
@@ -106,11 +107,11 @@ type TableMetrics struct {
 }
 
 type TableMetricsMeta struct {
-	OrgName         string   `ch:"org_name"`
-	TenantId        string   `ch:"tenant_id"`
-	MetricGroup     string   `ch:"metric_group"`
-	Timestamp       int64    `ch:"timestamp"`
-	NumberFieldKeys []string `ch:"number_field_keys"`
-	StringFieldKeys []string `ch:"string_field_keys"`
-	TagKeys         []string `ch:"tag_keys"`
+	OrgName         string    `ch:"org_name"`
+	TenantId        string    `ch:"tenant_id"`
+	MetricGroup     string    `ch:"metric_group"`
+	Timestamp       time.Time `ch:"timestamp"`
+	NumberFieldKeys []string  `ch:"number_field_keys"`
+	StringFieldKeys []string  `ch:"string_field_keys"`
+	TagKeys         []string  `ch:"tag_keys"`
 }

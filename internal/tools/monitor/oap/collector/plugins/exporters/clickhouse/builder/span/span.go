@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -118,8 +119,8 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*trace.Span) ([]dri
 			SpanId:        data.SpanId,
 			ParentSpanId:  data.ParentSpanId,
 			OperationName: data.OperationName,
-			StartTime:     data.StartTime,
-			EndTime:       data.EndTime,
+			StartTime:     time.Unix(0, data.StartTime),
+			EndTime:       time.Unix(0, data.EndTime),
 			TagKeys:       tagKeys,
 			TagValues:     tagValues,
 		})
