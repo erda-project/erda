@@ -130,8 +130,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	copiedColumns := cloneColumnMap(columns)
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 
-	var headOrderExpress []exp.OrderedExpression
-	var isOrderByTime bool
+	var tailOrderExpress []exp.OrderedExpression
 
 	if len(s) > 0 {
 		for _, field := range s {
@@ -149,15 +148,13 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 				column = script
 			}
 			if column == timeBucketColumn {
-				headOrderExpress = append(headOrderExpress, goqu.C(timeBucketColumn).Asc())
-				isOrderByTime = true
+				tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
 				continue
 			} else if column == p.ctx.timeKey {
-				isOrderByTime = true
 				if !field.Ascending {
-					headOrderExpress = append(headOrderExpress, goqu.C(p.ctx.timeKey).Desc())
+					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Desc())
 				} else {
-					headOrderExpress = append(headOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+					tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
 				}
 				continue
 			}
@@ -176,28 +173,21 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 	}
 
 	for _, column := range copiedColumns {
+		if column.isWildcard {
+			continue
+		}
 		if column.asName == timeBucketColumn {
-			isOrderByTime = true
-			headOrderExpress = append(headOrderExpress, goqu.C(timeBucketColumn).Asc())
-			break
+			tailOrderExpress = append(tailOrderExpress, goqu.C(timeBucketColumn).Asc())
+			continue
 		} else if column.isTimeKey {
-			isOrderByTime = true
-			headOrderExpress = append(headOrderExpress, goqu.C(p.ctx.timeKey).Asc())
-			break
+			tailOrderExpress = append(tailOrderExpress, goqu.C(p.ctx.timeKey).Asc())
+			continue
 		}
+		expr = expr.OrderAppend(goqu.C(column.asName).Asc())
 	}
 
-	if !isOrderByTime {
-		for _, column := range copiedColumns {
-			if column.isWildcard || column.isTimeKey || column.asName == timeBucketColumn {
-				continue
-			}
-			expr = expr.OrderAppend(goqu.C(column.asName).Asc())
-		}
-	}
-
-	for _, express := range headOrderExpress {
-		expr = expr.OrderPrepend(express)
+	for _, express := range tailOrderExpress {
+		expr = expr.OrderAppend(express)
 	}
 	return expr, nil
 }
