@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda-infra/providers/clickhouse"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
@@ -29,6 +30,7 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 	return p.clickhouse.NewWriter(&clickhouse.WriterOptions{
 		Encoder: func(data interface{}) (item *clickhouse.WriteItem, err error) {
 			logData := data.(*log.LabeledLog)
+			logData.WriteTimestamp = time.Unix(0, logData.Timestamp)
 			item = &clickhouse.WriteItem{
 				Data: &logData.Log,
 			}
