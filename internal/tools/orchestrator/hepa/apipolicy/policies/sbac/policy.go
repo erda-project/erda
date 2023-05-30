@@ -17,7 +17,6 @@ package sbac
 import (
 	"encoding/json"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -70,7 +69,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	}
 	logrus.Infof("sbac policyDto=%+v, ctx=%v", *policyDto, ctx)
 
-	gatewayAdapter, gatewayProvider, err := policy.GetGatewayAdapter(ctx, apipolicy.Policy_Engine_CSRF)
+	gatewayAdapter, gatewayProvider, err := policy.GetGatewayAdapter(ctx, apipolicy.Policy_Engine_SBAC)
 	if err != nil {
 		return res, err
 	}
@@ -83,7 +82,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 
 	gatewayVersion, err := adapter.GetVersion()
 	if err != nil {
-		return res, errors.Wrap(err, "failed to retrieve Kong version")
+		return res, errors.Wrap(err, "failed to retrieve gateway version")
 	}
 	if !strings.HasPrefix(gatewayVersion, "2.") && !strings.HasPrefix(gatewayVersion, "mse-") {
 		return res, errors.Errorf("the plugin %s is not supportted on the gateway version %s", apipolicy.Policy_Engine_SBAC, gatewayVersion)
@@ -104,14 +103,13 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	}
 	if !policyDto.Switch && !forValidate {
 		if exist != nil {
-
 			switch gatewayProvider {
 			case mseCommon.MseProviderName:
 				// 创建网关路由也会走到这里，但这个时候 MSE 那边应该还没有发现到新路由，因此调用此插件会失败，但创建过程又不能一直等待，因此这里做个异步处理
 				if zone.Type == db.ZONE_TYPE_PACKAGE_API {
 					resp, err := adapter.CreateOrUpdatePluginById(policy.buildPluginReq(policyDto, gatewayProvider, strings.ToLower(zone.Name)))
 					if err != nil {
-						go policy.nonSwitchUpdateMSEPluginConfig(adapter, policyDto, zone.Name)
+						go policy.NonSwitchUpdateMSEPluginConfig(adapter, policy.buildPluginReq(policyDto, mseCommon.MseProviderName, strings.ToLower(zone.Name)), zone.Name, mseCommon.MsePluginSbac)
 					} else {
 						logrus.Infof("create or update mse erda-sbac plugin with response: %+v", *resp)
 					}
@@ -222,24 +220,4 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		}
 	}
 	return res, nil
-}
-
-// 初创路由或者关闭路由策略（PolicyDto.Switch == false）的时候,都会进入 ParseConfig 的同一段逻辑中， 但:
-// 1. 如果是关闭路由策略，则对应的逻辑里需要清除已经配置的插件策略，一般直接就能处理了，因此进入不了 nonSwitchUpdateMSEPluginConfig() 的逻辑
-// 2. 如果是新建路由，实际上是不需要进行处理的（但网关应用默认策略实际上还是会进入 ParseConfig），此时路由还没被 MSE 网关识别到，但可以延时等待拿到对应的新的路由信息，然后进行类似清除路由对应的策略配置的设置即可，但这个过程不能同步等待，因此异步执行，最多重试3次
-func (policy Policy) nonSwitchUpdateMSEPluginConfig(mseAdapter gateway_providers.GatewayAdapter, policyDto *PolicyDto, zoneName string) {
-	for i := 0; i < 3; i++ {
-		time.Sleep(10 * time.Second)
-		resp, err := mseAdapter.CreateOrUpdatePluginById(policy.buildPluginReq(policyDto, mseCommon.MseProviderName, strings.ToLower(zoneName)))
-		if err != nil {
-			if i == 2 {
-				logrus.Errorf("can not update mse erda-sbac plugin for 4 times in 30s, err: %v", err)
-				return
-			}
-			continue
-		}
-		logrus.Infof("create or update mse erda-sbac plugin for zonename=%s with response: %+v", strings.ToLower(zoneName), *resp)
-		break
-	}
-	return
 }
