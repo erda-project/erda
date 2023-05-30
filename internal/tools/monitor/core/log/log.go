@@ -20,18 +20,19 @@ import (
 
 // Log .
 type Log struct {
-	UniqId    string            `json:"-" ch:"_id"`
-	OrgName   string            `json:"-" ch:"org_name"`
-	TenantId  string            `json:"-" ch:"tenant_id"`
-	GroupId   string            `json:"-" ch:"group_id"`
-	Source    string            `json:"source" ch:"source"`
-	ID        string            `json:"id" ch:"id"`
-	Stream    string            `json:"stream" ch:"stream"`
-	Content   string            `json:"content" ch:"content"`
-	Offset    int64             `json:"offset" ch:"offset"`
-	Time      *time.Time        `json:"time,omitempty"` // the time key in fluent-bit is RFC3339Nano
-	Timestamp int64             `json:"timestamp" ch:"timestamp"`
-	Tags      map[string]string `json:"tags" ch:"tags"`
+	UniqId         string            `json:"-" ch:"_id"`
+	OrgName        string            `json:"-" ch:"org_name"`
+	TenantId       string            `json:"-" ch:"tenant_id"`
+	GroupId        string            `json:"-" ch:"group_id"`
+	Source         string            `json:"source" ch:"source"`
+	ID             string            `json:"id" ch:"id"`
+	Stream         string            `json:"stream" ch:"stream"`
+	Content        string            `json:"content" ch:"content"`
+	Offset         int64             `json:"offset" ch:"offset"`
+	Time           *time.Time        `json:"time,omitempty"` // the time key in fluent-bit is RFC3339Nano
+	Timestamp      int64             `json:"timestamp"`
+	WriteTimestamp time.Time         `ch:"timestamp"`
+	Tags           map[string]string `json:"tags" ch:"tags"`
 }
 
 func (l *Log) Hash() uint64 {

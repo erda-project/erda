@@ -58,7 +58,7 @@ func TestBuilder_buildBatches(t *testing.T) {
 					&metric.TableMetrics{
 						OrgName:           "erda",
 						MetricGroup:       "cpu",
-						Timestamp:         1652421595810000000,
+						Timestamp:         time.Unix(0, 1652421595810000000),
 						NumberFieldKeys:   []string{"usage"},
 						NumberFieldValues: []float64{0.1},
 						StringFieldKeys:   []string{},
@@ -71,7 +71,7 @@ func TestBuilder_buildBatches(t *testing.T) {
 					&metric.TableMetricsMeta{
 						OrgName:         "erda",
 						MetricGroup:     "cpu",
-						Timestamp:       1652421595810000000,
+						Timestamp:       time.Unix(0, 1652421595810000000),
 						NumberFieldKeys: []string{"usage"},
 						StringFieldKeys: []string{},
 						TagKeys:         []string{"cluster_name"},
