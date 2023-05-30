@@ -1091,6 +1091,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		case apipolicy.Policy_Engine_IP:
 		case apipolicy.Policy_Engine_Proxy:
 		case apipolicy.Policy_Engine_SBAC:
+		case apipolicy.Policy_Engine_CSRF:
 		default:
 			rerr = errors.Errorf("gateway provider %s not support set policy %s", gatewayProvider, category)
 			return

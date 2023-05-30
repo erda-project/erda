@@ -15,9 +15,14 @@
 package apipolicy
 
 import (
+	"strings"
+	"time"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
+	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -261,4 +266,25 @@ func (policy BasePolicy) GetGatewayAdapter(ctx map[string]interface{}, policyNam
 		log.Debugf("use Kong gateway ParseConfig for policy %s", policyName)
 	}
 	return gatewayAdapter, gatewayProvider, nil
+}
+
+// 初创路由或者关闭路由策略（PolicyDto.Switch == false）的时候,都会进入 ParseConfig 的同一段逻辑中， 但:
+// 1. 如果是关闭路由策略，则对应的逻辑里需要清除已经配置的插件策略，一般直接就能处理了，因此进入不了 nonSwitchUpdateMSEPluginConfig() 的逻辑
+// 2. 如果是新建路由，实际上是不需要进行处理的（但网关应用默认策略实际上还是会进入 ParseConfig），此时路由还没被 MSE 网关识别到，但可以延时等待拿到对应的新的路由信息，然后进行类似清除路由对应的策略配置的设置即可，但这个过程不能同步等待，因此异步执行，最多重试3次
+func (policy BasePolicy) NonSwitchUpdateMSEPluginConfig(mseAdapter gateway_providers.GatewayAdapter, pluginReq *providerDto.PluginReqDto, zoneName string, msePluginName string) {
+	for i := 0; i < 3; i++ {
+		time.Sleep(10 * time.Second)
+		//resp, err := mseAdapter.CreateOrUpdatePluginById(policy.buildPluginReq(policyDto, mseCommon.MseProviderName, strings.ToLower(zoneName)))
+		resp, err := mseAdapter.CreateOrUpdatePluginById(pluginReq)
+		if err != nil {
+			if i == 2 {
+				log.Errorf("can not update mse %s plugin for 4 times in 30s, err: %v", msePluginName, err)
+				return
+			}
+			continue
+		}
+		log.Infof("create or update mse %s plugin for zonename=%s with response: %+v", msePluginName, strings.ToLower(zoneName), *resp)
+		break
+	}
+	return
 }

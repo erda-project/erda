@@ -27,17 +27,17 @@ import (
 )
 
 const (
-	MseDefaultRouteName          = "route-erda-default"
-	MseDefaultConsumerName       = "consumer-erda-default"
-	MseDefaultConsumerCredential = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
-	MseDefaultConsumerKey        = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
-	MseDefaultConsumerSecret     = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
-	MseDefaultKeyAuthConfig      = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\nkeys:\n  - appKey\n  - x-app-key\nin_query: true\nin_header: true\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
-	MseDefaultHmacAuthConfig     = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
-	MseDefaultParaSignAuthConfig = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  request_body_size_limit: 10485760\n  date_offset: 600\n  consumers:\n  - name: consumer-erda-default\n    key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n    secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5"
-	MseDefaultErdaIPConfig       = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"_match_route_\"、“ip_source”、\"ip_acl_type\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  ip_source: \"x-forwarded-for\"\n  ip_acl_type: \"black\"\n  ip_acl_list:\n  - 10.10.10.10\n  - 10.12.13.0/24"
-	MseDefaultErdaSBACConfig     = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"access_control_api\" 字段\n_rules_:\n  - _match_route_:\n      - route-erda-default\n    access_control_api: \"http://abc.default.svc.cluster.local:8080/\"\n    http_methods:\n      - GET\n      - PUT\n    match_patterns:\n      - \"^/\"\n    with_headers:\n      - \"*\"\n    with_cookie: false\n    with_raw_body: false"
-
+	MseDefaultRouteName           = "route-erda-default"
+	MseDefaultConsumerName        = "consumer-erda-default"
+	MseDefaultConsumerCredential  = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultConsumerKey         = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultConsumerSecret      = "2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultKeyAuthConfig       = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\nkeys:\n  - appKey\n  - x-app-key\nin_query: true\nin_header: true\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
+	MseDefaultHmacAuthConfig      = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"consumers\"、\"_rules_\" 字段\nconsumers: \n- key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n  name: consumer-erda-default\n# 使用 _rules_ 字段进行细粒度规则配置\n_rules_:\n# 按路由名称匹配生效\n- _match_route_:\n  - route-erda-default\n  allow:\n  - consumer-erda-default"
+	MseDefaultParaSignAuthConfig  = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  request_body_size_limit: 10485760\n  date_offset: 600\n  consumers:\n  - name: consumer-erda-default\n    key: 2bda943c-ba2b-11ec-ba07-00163e1250b5\n    secret: 2bda943c-ba2b-11ec-ba07-00163e1250b5"
+	MseDefaultErdaIPConfig        = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"_match_route_\"、“ip_source”、\"ip_acl_type\" 字段\n_rules_:\n- _match_route_:\n  - route-erda-default\n  ip_source: \"x-forwarded-for\"\n  ip_acl_type: \"black\"\n  ip_acl_list:\n  - 10.10.10.10\n  - 10.12.13.0/24"
+	MseDefaultErdaSBACConfig      = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"access_control_api\" 字段\n_rules_:\n  - _match_route_:\n      - route-erda-default\n    access_control_api: \"http://abc.default.svc.cluster.local:8080/\"\n    http_methods:\n      - GET\n      - PUT\n    match_patterns:\n      - \"^/\"\n    with_headers:\n      - \"*\"\n    with_cookie: false\n    with_raw_body: false"
+	MseDefaultErdaCSRFConfig      = "# 配置必须字段的校验，如下例所示，要求插件配置必须存在 \"_rules_\"、\"_match_route_\"、“userCookie” 、\"tokenName\"、\"errMsg\"、\"validTTL\"、\"refreshTTL\"、\"errStatus\"字段\n_rules_:\n  - _match_route_:\n      - route-erda-default\n    userCookie: \"uc-token\"\n    tokenName: \"csrf-token\"\n    tokenDomain: \"\"\n    errMsg: \"{\\\"message\\\":\\\"This form has expired. Please refresh and try again.\\\"}\"\n    cookieSecure: false\n    validTTL: 1800\n    refreshTTL: 300\n    errStatus: 403\n    jwtSecret: \"e796dce47e561ff926d2916144b8e4bf\"\n    excludedMethod:\n      - GET"
 	MsePluginRequestBodySizeLimit = 33554432
 	MsePluginRequestDateOffset    = 300
 )
@@ -190,6 +190,33 @@ func CreatePluginConfig(req *PluginReqDto, confList map[string][]mseclient.GetPl
 			},
 		}
 		pluginConfig, err = mergeErdaSBACConfig(pluginConfig, updateConfig, disable)
+		if err != nil {
+			return "", -1, err
+		}
+	case common.MsePluginCsrf:
+		excludedMethod, userCookie, tokenName, tokenDomain, errMsg, jSecret, validTTL, refreshTTL, errStatus, cookieSecure, disable, err := getErdaCSRFSourceConfig(req.Config)
+		if err != nil {
+			return "", -1, err
+		}
+
+		updateConfig := mseDto.MsePluginConfig{
+			Rules: []mseDto.Rules{
+				{
+					MatchRoute:     matchRoutes,
+					UserCookie:     userCookie,
+					ExcludedMethod: excludedMethod,
+					TokenName:      tokenName,
+					TokenDomain:    tokenDomain,
+					CookieSecure:   cookieSecure,
+					ValidTTL:       validTTL,
+					RefreshTTL:     refreshTTL,
+					ErrStatus:      errStatus,
+					ErrMsg:         errMsg,
+					JWTSecret:      jSecret,
+				},
+			},
+		}
+		pluginConfig, err = mergeErdaCSRFConfig(pluginConfig, updateConfig, disable)
 		if err != nil {
 			return "", -1, err
 		}

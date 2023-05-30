@@ -18,6 +18,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -26,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
@@ -57,7 +59,7 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 	}
 	tokenName := strings.ToLower(fmt.Sprintf("x-%s-%s-csrf-token", strings.Replace(info.ProjectName, "_", "-", -1), info.Env))
 	dto := &PolicyDto{
-		ExcludedMethod: []string{"GET", "HEAD", "OPTIONS", "TRACE"},
+		ExcludedMethod: []string{http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace},
 		TokenName:      tokenName,
 		CookieSecure:   false,
 		ValidTTL:       1800,
@@ -80,12 +82,18 @@ func (policy Policy) UnmarshalConfig(config []byte, gatewayProvider string) (api
 	return &policyDto, nil, ""
 }
 
-func (policy Policy) buildPluginReq(dto *PolicyDto) *providerDto.PluginReqDto {
+func (policy Policy) buildPluginReq(dto *PolicyDto, gatewayProvider, zoneName string) *providerDto.PluginReqDto {
 	req := &providerDto.PluginReqDto{
 		Name:    PluginName,
 		Config:  map[string]interface{}{},
 		Enabled: &dto.Switch,
 	}
+
+	if gatewayProvider == mseCommon.MseProviderName {
+		req.Name = mseCommon.MsePluginCsrf
+		req.ZoneName = zoneName
+	}
+
 	req.Config["biz_cookie"] = []string{dto.UserCookie}
 	if dto.TokenDomain != "" {
 		req.Config["biz_domain"] = dto.TokenDomain
@@ -103,6 +111,12 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *providerDto.PluginReqDto {
 	tokenSecret := fmt.Sprintf("%x", sha.Sum(nil))
 	req.Config["jwt_secret"] = tokenSecret[:16] + tokenSecret[48:]
 
+	if dto.Switch {
+		req.Config[mseCommon.MseErdaCSRFRouteSwitch] = true
+	} else {
+		req.Config[mseCommon.MseErdaCSRFRouteSwitch] = false
+	}
+
 	return req
 }
 
@@ -117,23 +131,31 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("invalid config:%+v", dto)
 	}
-	adapter, ok := ctx[apipolicy.CTX_KONG_ADAPTER].(gateway_providers.GatewayAdapter)
+
+	gatewayAdapter, gatewayProvider, err := policy.GetGatewayAdapter(ctx, apipolicy.Policy_Engine_CSRF)
+	if err != nil {
+		return res, err
+	}
+
+	adapter, ok := gatewayAdapter.(gateway_providers.GatewayAdapter)
 	if !ok {
-		//TODO: MSE support csrf-token policy?
-		l.Infof("Not use Kong Adapter, no need set csrf-token policy")
+		l.Infof("get gateway adpater for set csrf policy failed")
 		return res, nil
 	}
-	kongVersion, err := adapter.GetVersion()
+
+	gatewayVersion, err := adapter.GetVersion()
 	if err != nil {
-		return res, errors.Wrap(err, "failed to retrieve Kong version")
+		return res, errors.Wrap(err, "failed to retrieve gateway version")
 	}
-	if !strings.HasPrefix(kongVersion, "2.") && !strings.HasPrefix(kongVersion, "mse-") {
-		return res, errors.Errorf("the plugin %s is not supportted on the Kong version %s", PluginName, kongVersion)
+	if !strings.HasPrefix(gatewayVersion, "2.") && !strings.HasPrefix(gatewayVersion, "mse-") {
+		return res, errors.Errorf("the plugin %s is not supportted on the gateway version %s", apipolicy.Policy_Engine_CSRF, gatewayVersion)
 	}
+
 	zone, ok := ctx[apipolicy.CTX_ZONE].(*orm.GatewayZone)
 	if !ok {
 		return res, errors.Errorf("failed to get identify with %s: %+v", apipolicy.CTX_ZONE, ctx)
 	}
+	logrus.Infof("set csrf policy for zone=%+v", *zone)
 	policyDb, _ := db.NewGatewayPolicyServiceImpl()
 	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
@@ -144,16 +166,30 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	}
 	if !policyDto.Switch {
 		if exist != nil && !forValidate {
-			err = adapter.RemovePlugin(exist.PluginId)
-			if err != nil {
-				return res, err
+			switch gatewayProvider {
+			case mseCommon.MseProviderName:
+				// 创建网关路由也会走到这里，但这个时候 MSE 那边应该还没有发现到新路由，因此调用此插件会失败，但创建过程又不能一直等待，因此这里做个异步处理
+				if zone.Type == db.ZONE_TYPE_PACKAGE_API {
+					resp, err := adapter.CreateOrUpdatePluginById(policy.buildPluginReq(policyDto, gatewayProvider, strings.ToLower(zone.Name)))
+					if err != nil {
+						go policy.NonSwitchUpdateMSEPluginConfig(adapter, policy.buildPluginReq(policyDto, mseCommon.MseProviderName, strings.ToLower(zone.Name)), zone.Name, mseCommon.MsePluginCsrf)
+					} else {
+						logrus.Infof("create or update mse erda-csrf plugin with response: %+v", *resp)
+					}
+				}
+			default:
+				// Kong
+				err = adapter.RemovePlugin(exist.PluginId)
+				if err != nil {
+					return res, err
+				}
 			}
 			_ = policyDb.DeleteById(exist.Id)
 			res.KongPolicyChange = true
 		}
 		return res, nil
 	}
-	req := policy.buildPluginReq(policyDto)
+	req := policy.buildPluginReq(policyDto, gatewayProvider, strings.ToLower(zone.Name))
 	packageAPIDB, _ := db.NewGatewayPackageApiServiceImpl()
 	packageApi, err := packageAPIDB.GetByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
 	if err != nil {
@@ -165,19 +201,20 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		return res, nil
 	}
 
-	routeDb, _ := db.NewGatewayRouteServiceImpl()
-	route, err := routeDb.GetByApiId(packageApi.Id)
-	if err != nil {
-		l.WithError(err).Warnf("csrf: routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
-		return res, nil
-	}
+	if gatewayProvider != mseCommon.MseProviderName {
+		// Kong 网关，csrf 插件需要关联 routeId，否则就成了全局策略，影响网关其他路由正常访问
+		routeDb, _ := db.NewGatewayRouteServiceImpl()
+		route, err := routeDb.GetByApiId(packageApi.Id)
+		if err != nil {
+			l.WithError(err).Warnf("csrf: routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
+			return res, nil
+		}
 
-	if route == nil {
-		l.WithError(err).Warnf("csrf: not found routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
-		return res, nil
-	}
+		if route == nil {
+			l.WithError(err).Warnf("csrf: not found routeDb.GetByApiId(packageApi.Id:%s)", packageApi.Id)
+			return res, nil
+		}
 
-	if route != nil {
 		logrus.Infof("set csrf policy route ID for packageApi id=%s route=%+v\n", packageApi.Id, *route)
 		req.RouteId = route.RouteId
 		req.Route = &providerDto.KongObj{
@@ -185,8 +222,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		}
 	}
 
-	if exist != nil {
-		if !forValidate {
+	if !forValidate {
+		if exist != nil {
 			req.Id = exist.PluginId
 			resp, err := adapter.CreateOrUpdatePluginById(req)
 			if err != nil {
@@ -201,13 +238,23 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			if err != nil {
 				return res, err
 			}
-		}
-	} else {
-		if !forValidate {
-			resp, err := adapter.AddPlugin(req)
-			if err != nil {
-				return res, err
+		} else {
+			var resp *providerDto.PluginRespDto
+			if gatewayProvider == mseCommon.MseProviderName {
+				// 如果是 MSE 网关，则仍然是 CreateOrUpdatePluginById
+				if zone.Type == db.ZONE_TYPE_PACKAGE_API {
+					resp, err = adapter.CreateOrUpdatePluginById(policy.buildPluginReq(policyDto, gatewayProvider, strings.ToLower(zone.Name)))
+					if err != nil {
+						return res, err
+					}
+				}
+			} else {
+				resp, err = adapter.AddPlugin(req)
+				if err != nil {
+					return res, err
+				}
 			}
+
 			configByte, err := json.Marshal(resp.Config)
 			if err != nil {
 				return res, err

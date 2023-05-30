@@ -79,6 +79,19 @@ type Rules struct {
 	MatchPatterns    []string `json:"match_patterns,omitempty" yaml:"match_patterns,omitempty"`
 	WithHeaders      []string `json:"with_headers,omitempty" yaml:"with_headers,omitempty"`
 	WithCookie       bool     `json:"with_cookie,omitempty" yaml:"with_cookie,omitempty"`
+
+	// erda-csrf
+	UserCookie     string   `json:"userCookie,omitempty" yaml:"userCookie,omitempty"`         // 鉴别 Cookie
+	ExcludedMethod []string `json:"excludedMethod,omitempty" yaml:"excludedMethod,omitempty"` //关闭校验的 HTTP Methods 列表
+	TokenName      string   `json:"tokenName,omitempty" yaml:"tokenName,omitempty"`           // token 名称
+	TokenDomain    string   `json:"tokenDomain,omitempty" yaml:"tokenDomain,omitempty"`       // token 域名
+	CookieSecure   bool     `json:"cookieSecure,omitempty" yaml:"cookieSecure,omitempty"`     // secure 开关
+	ValidTTL       int64    `json:"validTTL,omitempty" yaml:"validTTL,omitempty"`             // token 过期时间(单位s)
+	RefreshTTL     int64    `json:"refreshTTL,omitempty" yaml:"refreshTTL,omitempty"`         // token 更新周期(单位s)
+	ErrStatus      int64    `json:"errStatus,omitempty" yaml:"errStatus,omitempty"`           // 失败状态码
+	ErrMsg         string   `json:"errMsg,omitempty" yaml:"errMsg,omitempty"`                 // 失败应答
+	JWTSecret      string   `json:"jwtSecret,omitempty" yaml:"jwtSecret,omitempty"`           // 用于加密的 Secret
+
 }
 
 type SortConsumers struct {
