@@ -140,3 +140,32 @@ func TestCheckForBreakpointOnFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestWatchFilesAndStop(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	agent := Agent{
+		Ctx:    ctx,
+		Cancel: cancel,
+	}
+	metaFile, err := os.CreateTemp("", "meta")
+	assert.NoError(t, err)
+	defer os.Remove(metaFile.Name())
+	stdoutFile, err := os.CreateTemp("", "stdout")
+	assert.NoError(t, err)
+	defer os.Remove(stdoutFile.Name())
+	stderrFile, err := os.CreateTemp("", "stderr")
+	assert.NoError(t, err)
+	defer os.Remove(stderrFile.Name())
+	agent.EasyUse.ContainerMetaFile = metaFile.Name()
+	agent.EasyUse.RunMultiStdoutFilePath = stdoutFile.Name()
+	agent.EasyUse.RunMultiStderrFilePath = stderrFile.Name()
+	agent.EasyUse.RunMultiStdout = stdoutFile
+	agent.EasyUse.RunMultiStderr = stderrFile
+	agent.watchFiles()
+
+	stdoutFile.WriteString("stdout")
+	stderrFile.WriteString("stderr")
+	agent.writeEndFlagLine()
+	agent.stop()
+	t.Logf("no error here")
+}

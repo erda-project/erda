@@ -56,10 +56,13 @@ func (agent *Agent) watchFiles() {
 	}
 }
 
-func (agent *Agent) stopWatchFiles() {
+func (agent *Agent) stop() {
 	if agent.FileWatcher != nil {
 		agent.FileWatcher.Close()
 	}
+
+	// agent cancel context to stop other running things
+	agent.Cancel()
 }
 
 // metaFileFullHandler 全量处理 metafile
