@@ -19,6 +19,7 @@ import (
 	"regexp"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 )
 
 type PolicyDto struct {
@@ -53,7 +54,7 @@ func (dto PolicyDto) IsValidDto(gatewayProvider string) (bool, string) {
 	if dto.ValidTTL <= 0 {
 		return false, "token过期时间需要大于0"
 	}
-	if dto.RefreshTTL <= 0 {
+	if dto.RefreshTTL <= 0 && gatewayProvider != mseCommon.MseProviderName {
 		return false, "token更新周期需要大于0"
 	}
 	if dto.ErrStatus < 100 || dto.ErrStatus >= 600 {
