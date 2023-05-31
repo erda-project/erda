@@ -44,7 +44,7 @@ type (
 	}
 
 	IssueSheetModelCommon struct {
-		ID                 int64  `excel:"ID"`
+		ID                 uint64 `excel:"ID"`
 		IterationName      string `excel:"IterationName"`
 		IssueType          pb.IssueTypeEnum_Type
 		IssueTitle         string
@@ -63,7 +63,7 @@ type (
 		FinishAt           *time.Time
 		EstimateTime       string
 		Labels             []string
-		ConnectionIssueIDs []int64
+		ConnectionIssueIDs []int64 // L264 转为 -264
 	}
 	IssueSheetModelRequirementOnly struct {
 		InclusionIssueIDs []int64

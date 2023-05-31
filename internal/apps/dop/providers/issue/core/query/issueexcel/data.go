@@ -38,7 +38,6 @@ type DataForFulfill struct {
 	OrgID                 int64
 	ProjectID             uint64
 	Locale                *i18n.LocaleResource
-	CustomFieldMap        map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
 	StageMap              map[query.IssueStage]string
 	IterationMapByID      map[int64]*dao.Iteration           // key: iteration id
 	IterationMapByName    map[string]*dao.Iteration          // key: iteration name
@@ -48,6 +47,8 @@ type DataForFulfill struct {
 	OrgMemberMap          map[string]apistructs.Member       // key: user id
 	LabelMapByName        map[string]apistructs.ProjectLabel // key: label name
 
+	CustomFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
+	//CustomFieldMapByName map[string]*pb.IssuePropertyIndex
 	PropertyEnumMap map[query.PropertyEnumPair]string
 }
 
@@ -64,6 +65,7 @@ type DataForFulfillImportOnly struct {
 	DB       *dao.DBClient
 	Bdl      *bundle.Bundle
 	Identity userpb.UserServiceServer
+	Property pb.IssueCoreServiceServer
 
 	BaseInfo *DataForFulfillImportOnlyBaseInfo
 }

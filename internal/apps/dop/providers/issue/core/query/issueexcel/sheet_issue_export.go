@@ -208,7 +208,7 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 	for _, issue := range data.ExportOnly.Issues {
 		var model IssueSheetModel
 		model.Common = IssueSheetModelCommon{
-			ID:                 issue.Id,
+			ID:                 uint64(issue.Id),
 			IterationName:      data.IterationMapByID[issue.IterationID].Title,
 			IssueType:          issue.Type,
 			IssueTitle:         issue.Title,

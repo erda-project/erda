@@ -76,7 +76,7 @@ func (data DataForFulfill) decodeLabelSheet(sheet [][]string) ([]*pb.ProjectLabe
 	return labels, nil
 }
 
-func (data DataForFulfill) mergeLabels(labelsFromLabelSheet []*pb.ProjectLabel, issueModels []IssueSheetModel) []*pb.ProjectLabel {
+func (data DataForFulfill) mergeLabelsForCreate(labelsFromLabelSheet []*pb.ProjectLabel, issueModels []IssueSheetModel) []*pb.ProjectLabel {
 	labelsFromLabelSheetMap := make(map[string]*pb.ProjectLabel, len(labelsFromLabelSheet))
 	for _, label := range labelsFromLabelSheet {
 		labelsFromLabelSheetMap[label.Name] = label
@@ -101,7 +101,7 @@ func (data DataForFulfill) mergeLabels(labelsFromLabelSheet []*pb.ProjectLabel, 
 	return labelsFromLabelSheet
 }
 
-func (data DataForFulfill) createLabelIfNotExistsForImport(labels []*pb.ProjectLabel) error {
+func (data *DataForFulfill) createLabelIfNotExistsForImport(labels []*pb.ProjectLabel) error {
 	// create label if not exists
 	for _, label := range labels {
 		_, ok := data.LabelMapByName[label.Name]

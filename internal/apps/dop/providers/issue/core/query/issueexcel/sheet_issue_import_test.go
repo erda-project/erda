@@ -75,7 +75,29 @@ func Test_parseStringSlice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, parseStringSlice(tt.args.s), "parseStringSlice(%v)", tt.args.s)
+			assert.Equalf(t, tt.want, parseStringSliceByComma(tt.args.s), "parseStringSliceByComma(%v)", tt.args.s)
 		})
 	}
+}
+
+func Test_parseStringLineID(t *testing.T) {
+	i, err := parseStringIssueID("a")
+	assert.Error(t, err)
+	i, err = parseStringIssueID("1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), *i)
+	i, err = parseStringIssueID("1.1")
+	assert.Error(t, err)
+	i, err = parseStringIssueID("")
+	assert.NoError(t, err)
+	assert.Nil(t, i)
+	i, err = parseStringIssueID("L254")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-254), *i)
+	i, err = parseStringIssueID("L")
+	assert.Error(t, err)
+	i, err = parseStringIssueID("L-1")
+	assert.Error(t, err)
+	i, err = parseStringIssueID("-1")
+	assert.Error(t, err)
 }

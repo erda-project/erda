@@ -15,11 +15,17 @@
 package issueexcel
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
@@ -68,4 +74,133 @@ func (data DataForFulfill) decodeCustomFieldSheet(sheet [][]string) ([]*pb.Issue
 		customFields = append(customFields, &property)
 	}
 	return customFields, nil
+}
+
+func (data *DataForFulfill) createCustomFieldIfNotExistsForImport(originalCustomFields []*pb.IssuePropertyIndex) error {
+	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
+	for _, originalCf := range originalCustomFields {
+		currentProjectProperties := data.CustomFieldMap[originalCf.PropertyIssueType]
+		var found bool
+		for _, currentProjectProperty := range currentProjectProperties {
+			if originalCf.PropertyName == currentProjectProperty.PropertyName {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		// not exists, do create
+		// not exists
+		resp, err := data.ImportOnly.Property.CreateIssueProperty(ctx, &pb.CreateIssuePropertyRequest{
+			ScopeType:         originalCf.ScopeType,
+			ScopeID:           int64(data.ProjectID),
+			OrgID:             data.OrgID,
+			PropertyName:      originalCf.PropertyName,
+			DisplayName:       originalCf.DisplayName,
+			PropertyType:      originalCf.PropertyType,
+			Required:          originalCf.Required,
+			PropertyIssueType: originalCf.PropertyIssueType,
+			EnumeratedValues:  originalCf.EnumeratedValues,
+			Relation:          originalCf.Relation,
+			IdentityInfo:      nil,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create custom field, custom field name: %s, err: %v", originalCf.PropertyName, err)
+		}
+		// update data map
+		newCf := resp.Data
+		data.CustomFieldMap[newCf.PropertyIssueType] = append(data.CustomFieldMap[newCf.PropertyIssueType], newCf)
+		//if common.IsOptions(newCf.PropertyType.String()) {
+		//	for _, enumValue := range newCf.EnumeratedValues {
+		//		data.PropertyEnumMap[query.PropertyEnumPair{PropertyID: newCf.PropertyID, ValueID: enumValue.Id}] = enumValue.Name
+		//	}
+		//}
+	}
+	return nil
+}
+
+func (data DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
+	for _, issue := range issues {
+		model, ok := issueModelMapByIssueID[issue.ID]
+		if !ok {
+			return fmt.Errorf("failed to find issue model by issue id, issue id: %d", issue.ID)
+		}
+		relationRequest := &pb.CreateIssuePropertyInstanceRequest{
+			OrgID:        data.OrgID,
+			ProjectID:    int64(data.ProjectID),
+			IssueID:      int64(issue.ID),
+			Property:     nil,
+			IdentityInfo: nil,
+		}
+		cfTypeMaps := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]ExcelCustomField)
+		for _, cf := range model.RequirementOnly.CustomFields {
+			cfTypeMaps[pb.PropertyIssueTypeEnum_REQUIREMENT] = append(cfTypeMaps[pb.PropertyIssueTypeEnum_REQUIREMENT], cf)
+		}
+		for _, cf := range model.TaskOnly.CustomFields {
+			cfTypeMaps[pb.PropertyIssueTypeEnum_TASK] = append(cfTypeMaps[pb.PropertyIssueTypeEnum_TASK], cf)
+		}
+		for _, cf := range model.BugOnly.CustomFields {
+			cfTypeMaps[pb.PropertyIssueTypeEnum_BUG] = append(cfTypeMaps[pb.PropertyIssueTypeEnum_BUG], cf)
+		}
+		for cfType, cfs := range cfTypeMaps {
+			for _, cf := range cfs {
+				properties := data.CustomFieldMap[cfType]
+				var found bool
+				for _, property := range properties {
+					property := property
+					if property.PropertyName == cf.Title {
+						found = true
+						instance := &pb.IssuePropertyInstance{
+							PropertyID:               property.PropertyID,
+							ScopeID:                  property.ScopeID,
+							ScopeType:                property.ScopeType,
+							OrgID:                    property.OrgID,
+							PropertyName:             property.PropertyName,
+							DisplayName:              property.DisplayName,
+							PropertyType:             property.PropertyType,
+							Required:                 property.Required,
+							PropertyIssueType:        property.PropertyIssueType,
+							Relation:                 property.Relation,
+							Index:                    property.Index,
+							EnumeratedValues:         property.EnumeratedValues,
+							Values:                   property.Values,
+							RelatedIssue:             property.RelatedIssue, // TODO check
+							ArbitraryValue:           nil,
+							PropertyEnumeratedValues: nil,
+						}
+						if common.IsOptions(property.PropertyType.String()) {
+							valuesInSheet := parseStringSliceByComma(cf.Value)
+							for _, valueInSheet := range valuesInSheet {
+								var foundEnumValue bool
+								for _, enumValue := range property.EnumeratedValues {
+									if enumValue.Name == valueInSheet {
+										foundEnumValue = true
+										instance.Values = append(instance.Values, enumValue.Id)
+										break
+									}
+								}
+								if !foundEnumValue {
+									return fmt.Errorf("failed to find enum value by name, enum value name: %s", cf.Value)
+								}
+							}
+						} else {
+							instance.ArbitraryValue = structpb.NewStringValue(cf.Value)
+						}
+						relationRequest.Property = append(relationRequest.Property, instance)
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("failed to find custom field by name, custom field name: %s", cf.Title)
+				}
+			}
+		}
+		_, err := data.ImportOnly.Property.CreateIssuePropertyInstance(ctx, relationRequest)
+		if err != nil {
+			return fmt.Errorf("failed to create issue custom field relation, issue id: %d, err: %v", issue.ID, err)
+		}
+	}
+	return nil
 }

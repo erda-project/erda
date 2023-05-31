@@ -32,6 +32,12 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode excel, err: %v", err)
 	}
+	// base info sheet first
+	baseInfo, err := data.decodeBaseInfoSheet(excelSheets[indexOfSheetBaseInfo])
+	if err != nil {
+		return fmt.Errorf("failed to decode base info sheet, err: %v", err)
+	}
+	_ = baseInfo
 	// issue sheet
 	issueSheetModels, err := data.DecodeIssueSheet(excelSheets[indexOfSheetIssue])
 	if err != nil {
@@ -52,7 +58,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 		return fmt.Errorf("failed to decode label sheet, err: %v", err)
 	}
 	_ = labels
-	mergedLabels := data.mergeLabels(labels, issueSheetModels)
+	mergedLabels := data.mergeLabelsForCreate(labels, issueSheetModels)
 	if err := data.createLabelIfNotExistsForImport(mergedLabels); err != nil {
 		return fmt.Errorf("failed to create label, err: %v", err)
 	}
@@ -62,12 +68,9 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 		return fmt.Errorf("failed to decode custom field sheet, err: %v", err)
 	}
 	_ = customFields
-	// base info sheet
-	baseInfo, err := data.decodeBaseInfoSheet(excelSheets[indexOfSheetBaseInfo])
-	if err != nil {
-		return fmt.Errorf("failed to decode base info sheet, err: %v", err)
+	if err := data.createCustomFieldIfNotExistsForImport(customFields); err != nil {
+		return fmt.Errorf("failed to create custom field, err: %v", err)
 	}
-	_ = baseInfo
 	// iteration sheet
 	iterations, err := data.decodeIterationSheet(excelSheets[indexOfSheetIteration])
 	if err != nil {
@@ -101,6 +104,14 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	// create label relation
 	if err := data.createIssueLabelRelations(issues, issueModelMapByIssueID); err != nil {
 		return fmt.Errorf("failed to create issue label relations, err: %v", err)
+	}
+	// create custom field relation
+	if err := data.createIssueCustomFieldRelation(issues, issueModelMapByIssueID); err != nil {
+		return fmt.Errorf("failed to create issue custom field relations, err: %v", err)
+	}
+	// create issue relation
+	if err := data.createIssueRelations(issues, issueModelMapByIssueID); err != nil {
+		return fmt.Errorf("failed to create issue relations, err: %v", err)
 	}
 	return nil
 }

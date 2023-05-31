@@ -21,7 +21,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
-	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/apistructs"
+	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -89,7 +90,7 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 			case "Common":
 				switch groupField {
 				case "ID":
-					id, err := strconv.ParseInt(cell.Value, 10, 64)
+					id, err := strconv.ParseUint(cell.Value, 10, 64)
 					if err != nil {
 						return nil, fmt.Errorf("invalid id: %s", cell.Value)
 					}
@@ -165,15 +166,17 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				case "EstimateTime":
 					model.Common.EstimateTime = cell.Value
 				case "Labels":
-					model.Common.Labels = parseStringSlice(cell.Value)
+					model.Common.Labels = parseStringSliceByComma(cell.Value)
 				case "ConnectionIssueIDs":
 					var ids []int64
-					for _, idStr := range parseStringSlice(cell.Value) {
-						id, err := strconv.ParseInt(idStr, 10, 64)
+					for _, idStr := range parseStringSliceByComma(cell.Value) {
+						id, err := parseStringIssueID(idStr)
 						if err != nil {
 							return nil, fmt.Errorf("invalid connection issue id: %s", idStr)
 						}
-						ids = append(ids, id)
+						if id != nil {
+							ids = append(ids, *id)
+						}
 					}
 					model.Common.ConnectionIssueIDs = ids
 				default:
@@ -183,12 +186,14 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				switch groupField {
 				case "InclusionIssueIDs":
 					var ids []int64
-					for _, idStr := range strutil.Split(cell.Value, ",", true) {
-						id, err := strconv.ParseInt(idStr, 10, 64)
+					for _, idStr := range parseStringSliceByComma(cell.Value) {
+						id, err := parseStringIssueID(idStr)
 						if err != nil {
 							return nil, fmt.Errorf("invalid inclusion issue id: %s", idStr)
 						}
-						ids = append(ids, id)
+						if id != nil {
+							ids = append(ids, *id)
+						}
 					}
 					model.RequirementOnly.InclusionIssueIDs = ids
 				case "CustomFields":
@@ -251,7 +256,7 @@ func mustParseStringTime(s string, typ string) *time.Time {
 	return t
 }
 
-func parseStringSlice(s string) []string {
+func parseStringSliceByComma(s string) []string {
 	results := strutil.Splits(s, []string{",", "，"}, true)
 	// trim space
 	for i, v := range results {
@@ -262,17 +267,18 @@ func parseStringSlice(s string) []string {
 
 // createOrUpdateIssues 创建或更新 issues
 // 根据 project id 进行判断
-func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetModel) (_ []*dao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel, err error) {
+func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetModel) (_ []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
 		}
 	}()
+	idMapping := make(map[int64]uint64) // key: old id(can be negative for Excel Line Num, like L5), value: new id
 	issueModelMapByIssueID = make(map[uint64]*IssueSheetModel)
-	var issues []*dao.Issue
-	for _, model := range issueSheetModels {
+	var issues []*issuedao.Issue
+	for i, model := range issueSheetModels {
 		model := model
-		issue := dao.Issue{
+		issue := issuedao.Issue{
 			BaseModel: dbengine.BaseModel{
 				ID:        uint64(model.Common.ID),
 				CreatedAt: changePointerTimeToTime(model.Common.CreatedAt),
@@ -318,6 +324,97 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 		}
 		issues = append(issues, &issue)
 		issueModelMapByIssueID[issue.ID] = &model
+		// got new issue id here, set id mapping
+		idMapping[int64(model.Common.ID)] = issue.ID
+		idMapping[-int64(i+(uuidPartsMustLength+1))] = issue.ID // excel line num, star from 1
+	}
+	// all id mapping done here, update old ids
+	for i := range issueSheetModels {
+		model := issueSheetModels[i]
+		// id
+		model.Common.ID = idMapping[int64(model.Common.ID)]
+		// connection issue id
+		for j := range model.Common.ConnectionIssueIDs {
+			newID, ok := idMapping[model.Common.ConnectionIssueIDs[j]]
+			if !ok {
+				return nil, nil, fmt.Errorf("invalid connection issue id: %d", model.Common.ConnectionIssueIDs[j])
+			}
+			model.Common.ConnectionIssueIDs[j] = int64(newID)
+		}
+		// inclusion issue id
+		for j := range model.RequirementOnly.InclusionIssueIDs {
+			newID, ok := idMapping[model.RequirementOnly.InclusionIssueIDs[j]]
+			if !ok {
+				return nil, nil, fmt.Errorf("invalid inclusion issue id: %d", model.RequirementOnly.InclusionIssueIDs[j])
+			}
+			model.RequirementOnly.InclusionIssueIDs[j] = int64(newID)
+		}
 	}
 	return issues, issueModelMapByIssueID, nil
+}
+
+func (data DataForFulfill) createIssueRelations(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+	for _, issue := range issues {
+		model, ok := issueModelMapByIssueID[issue.ID]
+		if !ok {
+			return fmt.Errorf("cannot find issue model by issue id: %d", issue.ID)
+		}
+		// connections
+		var issueRelations []issuedao.IssueRelation
+		for _, connectionIssueID := range model.Common.ConnectionIssueIDs {
+			issueRelations = append(issueRelations, issuedao.IssueRelation{
+				IssueID:      issue.ID,
+				RelatedIssue: uint64(connectionIssueID),
+				Comment:      "",
+				Type:         apistructs.IssueRelationConnection,
+			})
+		}
+		// inclusions
+		for _, inclusionIssueID := range model.RequirementOnly.InclusionIssueIDs {
+			issueRelations = append(issueRelations, issuedao.IssueRelation{
+				IssueID:      issue.ID,
+				RelatedIssue: uint64(inclusionIssueID),
+				Comment:      "",
+				Type:         apistructs.IssueRelationInclusion,
+			})
+		}
+		// insert into db
+		if err := data.ImportOnly.DB.BatchCreateIssueRelations(issueRelations); err != nil {
+			return fmt.Errorf("failed to batch create issue relations, err: %v", err)
+		}
+	}
+	return nil
+}
+
+// parseStringIssueID
+// format:
+// - normal: 123
+// - line num: L5
+func parseStringIssueID(s string) (*int64, error) {
+	if s == "" {
+		return nil, nil
+	}
+	// line num, like: L5
+	if strings.HasPrefix(s, "L") {
+		s = s[1:]
+		i, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid string line id: %s", s)
+		}
+		minLen := uuidPartsMustLength + 1
+		if i < int64(minLen) {
+			return nil, fmt.Errorf("invalid string line id: %s, line num cannot lower than %d", s, minLen)
+		}
+		i = -i
+		return &i, nil
+	}
+	// normal
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid string line id: %s", s)
+	}
+	if i < 0 {
+		return nil, fmt.Errorf("invalid string line id: %s, cannot lower than 1", s)
+	}
+	return &i, nil
 }

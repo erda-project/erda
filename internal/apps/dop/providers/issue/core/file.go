@@ -223,15 +223,6 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 }
 
 func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
-	// custom fields
-	properties, err := i.query.BatchGetProperties(int64(orgID), issueTypes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
-	}
-	customFieldsMap := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex)
-	for _, v := range properties {
-		customFieldsMap[v.PropertyIssueType] = append(customFieldsMap[v.PropertyIssueType], v)
-	}
 	// stage map
 	stages, err := i.db.GetIssuesStageByOrgID(int64(orgID))
 	if err != nil {
@@ -301,15 +292,6 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 	for _, member := range orgMember {
 		orgMemberMap[member.UserID] = member
 	}
-	// propertyEnum map
-	propertyEnumMap := make(map[query.PropertyEnumPair]string)
-	for _, v := range properties {
-		if common.IsOptions(v.PropertyType.String()) == true {
-			for _, val := range v.EnumeratedValues {
-				propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
-			}
-		}
-	}
 	// label map
 	labelMapByName := make(map[string]apistructs.ProjectLabel)
 	resp, err := i.bdl.ListLabel(apistructs.ProjectLabelListRequest{
@@ -325,11 +307,27 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 	for _, v := range resp.List {
 		labelMapByName[v.Name] = v
 	}
+	// custom fields
+	properties, err := i.query.BatchGetProperties(int64(orgID), issueTypes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
+	}
+	customFieldsMap := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex)
+	//customFieldsMapByName := make(map[string]*pb.IssuePropertyIndex)
+	propertyEnumMap := make(map[query.PropertyEnumPair]string)
+	for _, v := range properties {
+		customFieldsMap[v.PropertyIssueType] = append(customFieldsMap[v.PropertyIssueType], v)
+		//customFieldsMapByName[v.PropertyName] = v
+		if common.IsOptions(v.PropertyType.String()) {
+			for _, val := range v.EnumeratedValues {
+				propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
+			}
+		}
+	}
 
 	// result
 	dataForFulfill := issueexcel.DataForFulfill{
 		Locale:                i.bdl.GetLocale(locale),
-		CustomFieldMap:        customFieldsMap,
 		ProjectID:             projectID,
 		OrgID:                 orgID,
 		StageMap:              stageMap,
@@ -339,8 +337,10 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 		StateMapByTypeAndName: stateMapByTypeAndName,
 		ProjectMemberMap:      projectMemberMap,
 		OrgMemberMap:          orgMemberMap,
-		PropertyEnumMap:       propertyEnumMap,
 		LabelMapByName:        labelMapByName,
+		CustomFieldMap:        customFieldsMap,
+		//CustomFieldMapByName:  customFieldsMapByName,
+		PropertyEnumMap: propertyEnumMap,
 	}
 	return &dataForFulfill, nil
 }
@@ -355,6 +355,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 	data.ImportOnly.LabelDB = &labeldao.DBClient{DB: i.db.DB}
 	data.ImportOnly.Bdl = i.bdl
 	data.ImportOnly.Identity = i.identity
+	data.ImportOnly.Property = i
 	return data, nil
 }
 
