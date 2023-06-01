@@ -81,7 +81,9 @@ func (pc PolicyDto) ToPluginReqDto(gatewayProvider, zoneName string) *providerDt
 	var headersKeys = make(map[string]struct{})
 	if pc.WithCookie {
 		headersKeys[textproto.CanonicalMIMEHeaderKey("cookie")] = struct{}{}
-		req.Config["with_cookie"] = true
+		if gatewayProvider == mseCommon.MseProviderName {
+			req.Config["with_cookie"] = true
+		}
 	}
 	for _, header := range pc.WithHeaders {
 		if gatewayProvider == mseCommon.MseProviderName {
@@ -98,10 +100,12 @@ func (pc PolicyDto) ToPluginReqDto(gatewayProvider, zoneName string) *providerDt
 		req.Config["with_headers"] = headers
 	}
 
-	if pc.Switch {
-		req.Config[mseCommon.MseErdaSBACRouteSwitch] = true
-	} else {
-		req.Config[mseCommon.MseErdaSBACRouteSwitch] = false
+	if gatewayProvider == mseCommon.MseProviderName {
+		if pc.Switch {
+			req.Config[mseCommon.MseErdaSBACRouteSwitch] = true
+		} else {
+			req.Config[mseCommon.MseErdaSBACRouteSwitch] = false
+		}
 	}
 
 	return req
