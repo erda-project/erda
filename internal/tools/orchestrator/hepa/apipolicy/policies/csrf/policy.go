@@ -111,10 +111,12 @@ func (policy Policy) buildPluginReq(dto *PolicyDto, gatewayProvider, zoneName st
 	tokenSecret := fmt.Sprintf("%x", sha.Sum(nil))
 	req.Config["jwt_secret"] = tokenSecret[:16] + tokenSecret[48:]
 
-	if dto.Switch {
-		req.Config[mseCommon.MseErdaCSRFRouteSwitch] = true
-	} else {
-		req.Config[mseCommon.MseErdaCSRFRouteSwitch] = false
+	if gatewayProvider == mseCommon.MseProviderName {
+		if dto.Switch {
+			req.Config[mseCommon.MseErdaCSRFRouteSwitch] = true
+		} else {
+			req.Config[mseCommon.MseErdaCSRFRouteSwitch] = false
+		}
 	}
 
 	return req
