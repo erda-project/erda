@@ -176,7 +176,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				BaseModel: dbengine.BaseModel{
 					ID: 2068,
 				},
-				ProjectID:     5986,
+				ProjectID:     5999,
 				OrgID:         633,
 				Type:          "issueImport",
 				State:         "",
@@ -186,14 +186,19 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				SoftDeletedAt: 0,
 			}
 			var extra dao.TestFileExtra
-			s := `{"issueFileExtraInfo":{"importRequest":{"projectID":5986,"orgID":0,"type":"REQUIREMENT","fileID":"65b4277965a3434ea01eac898af89874","-":{"userID":"1005834","internalClient":"","orgID":"633"}}}}`
+			s := `{"issueFileExtraInfo":{"importRequest":{"projectID":5999,"orgID":633,"type":"REQUIREMENT","fileID":"65b4277965a3434ea01eac898af89874","-":{"userID":"1005834","internalClient":"","orgID":"633"}}}}`
 			if err := json.Unmarshal([]byte(s), &extra); err != nil {
 				panic(err)
 			}
 			record.Extra = extra
 			record.ApiFileUUID = record.Extra.IssueFileExtraInfo.ImportRequest.FileID
-			p.IssueCoreSvc.ImportExcel(&record)
-			_, _ = w.Write([]byte("ok"))
+			err := p.IssueCoreSvc.ImportExcel(&record)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(err.Error()))
+			} else {
+				_, _ = w.Write([]byte("ok"))
+			}
 		})
 	}())
 	if err := server.RegisterToNewHttpServerRouter(p.Router); err != nil {

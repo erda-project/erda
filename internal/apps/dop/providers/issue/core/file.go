@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -214,8 +213,12 @@ func (i *IssueService) Import(req *pb.ImportExcelIssueRequest) (uint64, error) {
 
 const issueService = "issue-service"
 
-func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRecordState) error {
-	if err := i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: state}); err != nil {
+func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRecordState, descOpt ...string) error {
+	var desc string
+	if len(descOpt) > 0 {
+		desc = descOpt[0]
+	}
+	if err := i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: state, Description: desc}); err != nil {
 		logrus.Errorf("%s failed to update file record, err: %v", issueService, err)
 		return err
 	}
@@ -275,10 +278,12 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 		return nil, fmt.Errorf("failed to list projectMember, err: %v", err)
 	}
 	orgMemberQuery := apistructs.MemberListRequest{
-		ScopeType: apistructs.OrgScope,
-		ScopeID:   orgID,
-		PageNo:    1,
-		PageSize:  99999,
+		ScopeType:         apistructs.OrgScope,
+		ScopeID:           orgID,
+		PageNo:            1,
+		PageSize:          99999,
+		DesensitizeEmail:  true,
+		DesensitizeMobile: true,
 	}
 	orgMember, err := i.bdl.ListMembers(orgMemberQuery)
 	if err != nil {
@@ -477,7 +482,18 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: fileUUID.UUID})
 }
 
-func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) {
+func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error) {
+	defer func() {
+		var desc string
+		if r := recover(); r != nil {
+			desc = fmt.Sprintf("%v", r)
+			err = fmt.Errorf("%v", r)
+		}
+		if err != nil {
+			logrus.Errorf("%s failed to import excel, recordID: %d, err: %v", issueService, record.ID, err)
+			i.updateIssueFileRecord(record.ID, apistructs.FileRecordStateFail, desc)
+		}
+	}()
 	extra := record.Extra.IssueFileExtraInfo
 	if extra == nil || extra.ImportRequest == nil {
 		return
@@ -485,81 +501,31 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) {
 
 	req := extra.ImportRequest
 	id := record.ID
-	if err := i.updateIssueFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
+	if err = i.updateIssueFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
 		return
 	}
 
-	//f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
-	//if err != nil {
-	//	logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	f, err := os.Open("./gen2.xlsx")
+	f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
 	if err != nil {
-		panic(err)
+		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
+		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
 	}
+	//f, err := os.Open("./gen2.xlsx")
+	//if err != nil {
+	//	panic(err)
+	//}
 	defer f.Close()
 
 	data, err := i.createDataForFulfillForImport(req)
 	if err != nil {
-		logrus.Errorf("%s failed to create data for fulfill, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+		panic(fmt.Errorf("failed to create data for fulfill, err: %v", err))
 	}
-	if err := issueexcel.ImportFile(f, *data); err != nil {
-		logrus.Errorf("%s failed to import excel, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+	if err = issueexcel.ImportFile(f, *data); err != nil {
+		panic(fmt.Errorf("failed to import excel, err: %v", err))
 	}
 	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
-	//
-	//
-	//properties, err := i.query.GetProperties(&pb.GetIssuePropertyRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
-	//if err != nil {
-	//	logrus.Errorf("%s failed to get issue properties, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//memberQuery := apistructs.MemberListRequest{
-	//	ScopeType: apistructs.ProjectScope,
-	//	ScopeID:   int64(req.ProjectID),
-	//	PageNo:    1,
-	//	PageSize:  99999,
-	//}
-	//members, err := i.bdl.ListMembers(memberQuery)
-	//if err != nil {
-	//	logrus.Errorf("%s failed to get members, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//
-	//issues, instances, falseExcel, excelIndex, falseReason, allNumber, err := i.decodeFromExcelFile(req, f, properties)
-	//if err != nil {
-	//	logrus.Errorf("%s failed to decode excel file, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//falseExcel, falseReason = i.storeExcel2DB(req, issues, instances, excelIndex, falseExcel, falseReason, members)
-	//if len(falseExcel) <= 1 {
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
-	//	return
-	//}
-	//ff, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
-	//if err != nil {
-	//	logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//defer ff.Close()
-	//res, err := i.ExportFailedExcel(ff, falseExcel, falseReason, allNumber)
-	//if err != nil {
-	//	logrus.Errorf("%s failed to export false excel, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//desc := fmt.Sprintf("事项总数: %d, 成功: %d, 失败: %d", res.SuccessNumber+res.FalseNumber, res.SuccessNumber, res.FalseNumber)
-	//i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, Description: desc, ApiFileUUID: res.UUID, State: apistructs.FileRecordStateFail})
+	return
 }
 
 func getStageValue(issue pb.Issue, stages []dao.IssueStage) string {

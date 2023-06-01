@@ -349,6 +349,8 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			}
 			model.RequirementOnly.InclusionIssueIDs[j] = int64(newID)
 		}
+		issueSheetModels[i] = model
+		issueModelMapByIssueID[model.Common.ID] = &model
 	}
 	return issues, issueModelMapByIssueID, nil
 }

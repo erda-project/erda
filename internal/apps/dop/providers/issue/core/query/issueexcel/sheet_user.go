@@ -74,10 +74,11 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 	for _, originalMember := range originalMembers {
 		originalMember := originalMember
 		// check if already in the current project member map
-		projectMember, ok := data.tryToFindMember(originalMember)
+		projectMember, ok := data.tryToFindMemberInCurrentProject(originalMember)
 		if ok {
 			// add to member map
 			data.ProjectMemberMap[projectMember.UserID] = *projectMember
+			continue
 		}
 		// not found in project member
 		// check user exist or not, by phone/email
@@ -87,7 +88,9 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 		}
 		// if user not exist, just throw error, and the import operator should let the user register first.
 		if user == nil {
-			return fmt.Errorf("user not exist, should register by email/phone first. originalMember name: %s, nick: %s", originalMember.Name, originalMember.Nick)
+			return fmt.Errorf("user not exist, should register by email/phone first. "+
+				"originalMember name: %s, nick: %s, email: %s, phone: %s",
+				originalMember.Name, originalMember.Nick, originalMember.Email, originalMember.Mobile)
 		}
 		// if user exist, just add originalMember into project
 		// add to org first
@@ -148,7 +151,7 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 	return nil
 }
 
-func (data DataForFulfill) tryToFindMember(originalMember apistructs.Member) (*apistructs.Member, bool) {
+func (data DataForFulfill) tryToFindMemberInCurrentProject(originalMember apistructs.Member) (*apistructs.Member, bool) {
 	if data.IsSameErdaPlatform() {
 		// just find by id
 		member, ok := data.ProjectMemberMap[originalMember.UserID]

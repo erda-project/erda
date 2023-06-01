@@ -498,7 +498,7 @@ erda.msp.apm.checker.task.fetcher.scheduled:
   cache_key: "${CHECKER_CACHE_KEY:checkers}"
   load_checkers_interval: "10s" # load checkers for worker
   max_schedule_interval: "3m" # schedule all checkers to ndoes
-#erda.msp.apm.checker.task.plugins.http:
+erda.msp.apm.checker.task.plugins.http:
 erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 erda.msp.apm.trace.query:

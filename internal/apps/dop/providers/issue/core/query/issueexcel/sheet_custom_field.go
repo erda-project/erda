@@ -134,67 +134,73 @@ func (data DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Iss
 			Property:     nil,
 			IdentityInfo: nil,
 		}
-		cfTypeMaps := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]ExcelCustomField)
-		for _, cf := range model.RequirementOnly.CustomFields {
-			cfTypeMaps[pb.PropertyIssueTypeEnum_REQUIREMENT] = append(cfTypeMaps[pb.PropertyIssueTypeEnum_REQUIREMENT], cf)
+		var cfsNeedHandled []ExcelCustomField
+		var cfType pb.PropertyIssueTypeEnum_PropertyIssueType
+		switch issue.Type {
+		case pb.IssueTypeEnum_REQUIREMENT.String():
+			cfsNeedHandled = model.RequirementOnly.CustomFields
+			cfType = pb.PropertyIssueTypeEnum_REQUIREMENT
+		case pb.IssueTypeEnum_TASK.String():
+			cfsNeedHandled = model.TaskOnly.CustomFields
+			cfType = pb.PropertyIssueTypeEnum_TASK
+		case pb.IssueTypeEnum_BUG.String():
+			cfsNeedHandled = model.BugOnly.CustomFields
+			cfType = pb.PropertyIssueTypeEnum_BUG
+		default:
+			return fmt.Errorf("invalid issue type, issue type: %s", issue.Type)
 		}
-		for _, cf := range model.TaskOnly.CustomFields {
-			cfTypeMaps[pb.PropertyIssueTypeEnum_TASK] = append(cfTypeMaps[pb.PropertyIssueTypeEnum_TASK], cf)
-		}
-		for _, cf := range model.BugOnly.CustomFields {
-			cfTypeMaps[pb.PropertyIssueTypeEnum_BUG] = append(cfTypeMaps[pb.PropertyIssueTypeEnum_BUG], cf)
-		}
-		for cfType, cfs := range cfTypeMaps {
-			for _, cf := range cfs {
-				properties := data.CustomFieldMap[cfType]
-				var found bool
-				for _, property := range properties {
-					property := property
-					if property.PropertyName == cf.Title {
-						found = true
-						instance := &pb.IssuePropertyInstance{
-							PropertyID:               property.PropertyID,
-							ScopeID:                  property.ScopeID,
-							ScopeType:                property.ScopeType,
-							OrgID:                    property.OrgID,
-							PropertyName:             property.PropertyName,
-							DisplayName:              property.DisplayName,
-							PropertyType:             property.PropertyType,
-							Required:                 property.Required,
-							PropertyIssueType:        property.PropertyIssueType,
-							Relation:                 property.Relation,
-							Index:                    property.Index,
-							EnumeratedValues:         property.EnumeratedValues,
-							Values:                   property.Values,
-							RelatedIssue:             property.RelatedIssue, // TODO check
-							ArbitraryValue:           nil,
-							PropertyEnumeratedValues: nil,
-						}
-						if common.IsOptions(property.PropertyType.String()) {
-							valuesInSheet := parseStringSliceByComma(cf.Value)
-							for _, valueInSheet := range valuesInSheet {
-								var foundEnumValue bool
-								for _, enumValue := range property.EnumeratedValues {
-									if enumValue.Name == valueInSheet {
-										foundEnumValue = true
-										instance.Values = append(instance.Values, enumValue.Id)
-										break
-									}
-								}
-								if !foundEnumValue {
-									return fmt.Errorf("failed to find enum value by name, enum value name: %s", cf.Value)
+		for _, cf := range cfsNeedHandled {
+			if cf.Value == "" { // 兼容导出时就没有值的情况，比如后创建的自定义字段，之前的 issue 该字段没有值
+				continue
+			}
+			properties := data.CustomFieldMap[cfType]
+			var found bool
+			for _, property := range properties {
+				property := property
+				if property.PropertyName == cf.Title {
+					found = true
+					instance := &pb.IssuePropertyInstance{
+						PropertyID:               property.PropertyID,
+						ScopeID:                  property.ScopeID,
+						ScopeType:                property.ScopeType,
+						OrgID:                    property.OrgID,
+						PropertyName:             property.PropertyName,
+						DisplayName:              property.DisplayName,
+						PropertyType:             property.PropertyType,
+						Required:                 property.Required,
+						PropertyIssueType:        property.PropertyIssueType,
+						Relation:                 property.Relation,
+						Index:                    property.Index,
+						EnumeratedValues:         property.EnumeratedValues,
+						Values:                   property.Values,
+						RelatedIssue:             property.RelatedIssue, // related issue type
+						ArbitraryValue:           nil,
+						PropertyEnumeratedValues: nil,
+					}
+					if common.IsOptions(property.PropertyType.String()) {
+						valuesInSheet := parseStringSliceByComma(cf.Value)
+						for _, valueInSheet := range valuesInSheet {
+							var foundEnumValue bool
+							for _, enumValue := range property.EnumeratedValues {
+								if enumValue.Name == valueInSheet {
+									foundEnumValue = true
+									instance.Values = append(instance.Values, enumValue.Id)
+									break
 								}
 							}
-						} else {
-							instance.ArbitraryValue = structpb.NewStringValue(cf.Value)
+							if !foundEnumValue {
+								return fmt.Errorf("failed to find enum value by name, enum value name: %s", cf.Value)
+							}
 						}
-						relationRequest.Property = append(relationRequest.Property, instance)
-						break
+					} else {
+						instance.ArbitraryValue = structpb.NewStringValue(cf.Value)
 					}
+					relationRequest.Property = append(relationRequest.Property, instance)
+					break
 				}
-				if !found {
-					return fmt.Errorf("failed to find custom field by name, custom field name: %s", cf.Title)
-				}
+			}
+			if !found {
+				return fmt.Errorf("failed to find custom field by name, custom field name: %s", cf.Title)
 			}
 		}
 		_, err := data.ImportOnly.Property.CreateIssuePropertyInstance(ctx, relationRequest)
