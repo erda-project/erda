@@ -32,16 +32,17 @@ import (
 )
 
 type _column struct {
-	key           string
-	asName        string
-	rootColumn    string
-	isWildcard    bool
-	isNoArrayKey  bool
-	isTimeKey     bool
-	isNumberField bool
-	isStringField bool
-	expr          string
-	flag          model.ColumnFlag
+	key                string
+	asName             string
+	rootColumn         string
+	isWildcard         bool
+	isNoArrayKey       bool
+	isTimeKey          bool
+	isNumberField      bool
+	isStringField      bool
+	IsAggFunctionField bool
+	expr               string
+	flag               model.ColumnFlag
 }
 
 func (c _column) modelKey() string {
@@ -220,6 +221,9 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 	groupExpress := make(map[string]goqu.Expression)
 	if len(liters) > 0 {
 		for script, column := range columns {
+			if column.IsAggFunctionField {
+				continue
+			}
 			if column.isTimeKey {
 				groupExpress[script] = goqu.L(column.expr)
 			} else {
@@ -256,6 +260,10 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 		}
 		if len(column.asName) <= 0 {
 			expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", key)))
+			continue
+		}
+		if column.IsAggFunctionField {
+			// agg function exist expr
 			continue
 		}
 		expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", key)).As(column.asName))
@@ -465,6 +473,10 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]_column
 			return nil
 		}
 		_, ok := CkAggFunctions[expr.Name]
+		if ok {
+			id := p.ctx.GetFuncID(expr, influxql.AnyField)
+			cols[id] = _column{asName: id, expr: expr.String(), key: expr.String(), IsAggFunctionField: true}
+		}
 		if !ok {
 			for _, arg := range expr.Args {
 				if err := p.parseFiledRefByExpr(arg, cols); err != nil {

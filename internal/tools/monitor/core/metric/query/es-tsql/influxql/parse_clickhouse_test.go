@@ -769,6 +769,11 @@ func TestOrderBy(t *testing.T) {
 			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"1362043e612fc3f5\" DESC,\"service_id::tag\" ASC",
 		},
 		{
+			name: "avg column",
+			sql:  "select avg(cpu_usage_percent::field) from table GROUP BY time()",
+			want: "SELECT AVG(if(indexOf(number_field_keys,'cpu_usage_percent') == 0,null,number_field_values[indexOf(number_field_keys,'cpu_usage_percent')])) AS \"8c8e2100c8bcb2e3\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"8c8e2100c8bcb2e3\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"8c8e2100c8bcb2e3\" ASC, \"bucket_timestamp\" ASC",
+		},
+		{
 			name: "timestamp should by last order",
 			sql:  "select time(),service_id::tag from table GROUP BY service_id::tag,time() ORDER BY service_id::tag desc",
 			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"service_id::tag\" DESC,\"bucket_timestamp\" ASC",
