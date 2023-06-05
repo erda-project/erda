@@ -82,6 +82,7 @@ type OrgConfig struct {
 
 	// 开关：制品是否可以跨集群部署
 	EnableReleaseCrossCluster bool `json:"enableReleaseCrossCluster"`
+	EnableAI                  bool `json:"enableAI"`
 }
 
 func (cfg OrgConfig) Value() (driver.Value, error) {
