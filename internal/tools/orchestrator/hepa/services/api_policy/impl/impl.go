@@ -1303,9 +1303,9 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 
 	switch category {
 	case apipolicy.Policy_Engine_Custom:
-		// custom 策略需要跟其他所有策略校验冲突
+		// custom 策略需要跟其他所有策略校验冲突 (csrf 和 sbac 无需检查，因为没有配置会更新到 nginx conf)
 		categories = []string{apipolicy.Policy_Engine_Built_in, apipolicy.Policy_Engine_WAF, apipolicy.Policy_Engine_Service_Guard, apipolicy.Policy_Engine_CORS,
-			apipolicy.Policy_Engine_IP, apipolicy.Policy_Engine_Proxy, apipolicy.Policy_Engine_SBAC, apipolicy.Policy_Engine_CSRF}
+			apipolicy.Policy_Engine_IP, apipolicy.Policy_Engine_Proxy}
 	default:
 		categories = []string{apipolicy.Policy_Engine_Custom}
 	}
