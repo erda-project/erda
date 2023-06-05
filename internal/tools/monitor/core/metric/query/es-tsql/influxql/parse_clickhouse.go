@@ -49,17 +49,17 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 	}
 
 	// select
-	expr, handlers, columns, err := p.parseQueryOnExpr(s.Fields, expr)
+	expr, handlers, selectColumns, err := p.parseQueryOnExpr(s.Fields, expr)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to select is error")
 	}
 
-	expr, err = p.ParseGroupByOnExpr(s.Dimensions, expr, &handlers, columns)
+	expr, groupColumns, err := p.ParseGroupByOnExpr(s.Dimensions, expr, &handlers, selectColumns)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to group by is error")
 	}
 
-	expr, err = p.ParseOrderByOnExpr(s.SortFields, expr, columns)
+	expr, err = p.ParseOrderByOnExpr(s.SortFields, expr, selectColumns, groupColumns)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to order by is error")
 	}
@@ -101,8 +101,8 @@ func cloneColumnMap(columns *_columns) map[string]_column {
 	return m
 }
 
-func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectDataset, selectColumns *_columns) (*goqu.SelectDataset, error) {
-	copiedColumns := cloneColumnMap(selectColumns)
+func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectDataset, selectColumns *_columns, groupColumns *_columns) (*goqu.SelectDataset, error) {
+	copiedColumns := cloneColumnMap(groupColumns)
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 
 	var tailOrderExpress []exp.OrderedExpression
@@ -130,7 +130,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 				continue
 			}
 
-			if v, ok := copiedColumns[column]; ok {
+			if v, ok := selectColumns.getColumn(column); ok {
 				delete(copiedColumns, column)
 				expr = appendOrderedExpression(expr, goqu.C(v.asName), field.Ascending)
 			} else {
@@ -183,13 +183,13 @@ func (p *Parser) ParseOffsetAndLimitOnExpr(s *influxql.SelectStatement, expr *go
 	return expr, nil
 }
 
-func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.SelectDataset, handlers *[]*SQLColumnHandler, selectColumns *_columns) (*goqu.SelectDataset, error) {
+func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.SelectDataset, handlers *[]*SQLColumnHandler, selectColumns *_columns) (*goqu.SelectDataset, *_columns, error) {
 	if len(dimensions) <= 0 {
-		return expr, nil
+		return expr, nil, nil
 	}
 	expr, groupColumns, err := p.parseQueryDimensionsByExpr(expr, dimensions, handlers, selectColumns)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	groupExpress := make(map[string]goqu.Expression)
@@ -213,7 +213,7 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 	for _, express := range groupExpress {
 		expr = expr.GroupByAppend(express)
 	}
-	return expr, nil
+	return expr, groupColumns, nil
 }
 func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDataset) (*goqu.SelectDataset, []*SQLColumnHandler, *_columns, error) {
 	selectColumns := newColumns() // k:stmt, v: column

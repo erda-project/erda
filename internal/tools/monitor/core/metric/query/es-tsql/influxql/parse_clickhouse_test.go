@@ -628,7 +628,7 @@ func TestGroupBy(t *testing.T) {
 
 			expr, handler, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
 
-			expr, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handler, columns)
+			expr, _, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handler, columns)
 
 			require.NoError(t, err)
 
@@ -731,7 +731,7 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "order by c1,c2 desc,",
 			sql:  "select column1 from table order by column2 desc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"number_field_values[indexOf(number_field_keys,'column2')]\" DESC,\"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"number_field_values[indexOf(number_field_keys,'column2')]\" DESC",
 		},
 		{
 			name: "order by column desc, default",
@@ -750,7 +750,7 @@ func TestOrderBy(t *testing.T) {
 		},
 		{
 			name: "none order by",
-			sql:  "select column1 from table",
+			sql:  "select column1 from table group by column1",
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
 		},
 		{
@@ -781,7 +781,7 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "avg column",
 			sql:  "select avg(cpu_usage_percent::field) from table GROUP BY time()",
-			want: "SELECT AVG(if(indexOf(number_field_keys,'cpu_usage_percent') == 0,null,number_field_values[indexOf(number_field_keys,'cpu_usage_percent')])) AS \"8c8e2100c8bcb2e3\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"8c8e2100c8bcb2e3\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"8c8e2100c8bcb2e3\" ASC, \"bucket_timestamp\" ASC",
+			want: "SELECT AVG(if(indexOf(number_field_keys,'cpu_usage_percent') == 0,null,number_field_values[indexOf(number_field_keys,'cpu_usage_percent')])) AS \"8c8e2100c8bcb2e3\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"8c8e2100c8bcb2e3\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"bucket_timestamp\" ASC",
 		},
 		{
 			name: "timestamp should by last order",
@@ -791,12 +791,12 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "timestamp desc",
 			sql:  "select column1 from table order by timestamp desc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" DESC,\"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" DESC",
 		},
 		{
 			name: "timestamp asc",
 			sql:  "select column1 from table order by timestamp asc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC,\"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC",
 		},
 	}
 	for _, test := range tests {
@@ -821,10 +821,10 @@ func TestOrderBy(t *testing.T) {
 
 			expr, handlers, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
 
-			expr, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handlers, columns)
+			expr, groupColumns, err := p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handlers, columns)
 			require.NoError(t, err, "parse group by error")
 
-			expr, err = p.ParseOrderByOnExpr(selectStmt.SortFields, expr, columns)
+			expr, err = p.ParseOrderByOnExpr(selectStmt.SortFields, expr, columns, groupColumns)
 
 			require.NoError(t, err)
 
@@ -911,7 +911,7 @@ func TestGroupColumnShouldBeExist(t *testing.T) {
 
 			expr, handler, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
 
-			expr, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handler, columns)
+			expr, _, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handler, columns)
 
 			require.NoError(t, err)
 

@@ -47,8 +47,9 @@ func (c *_columns) addColumn(key string, column _column) {
 	c.columns[key] = column
 }
 
-func (c *_columns) getColumn(key string) _column {
-	return c.columns[key]
+func (c *_columns) getColumn(key string) (_column, bool) {
+	v, ok := c.columns[key]
+	return v, ok
 }
 
 func (c *_columns) addCallColumn(expr *influxql.Call, key string) {
@@ -59,7 +60,8 @@ func (c *_columns) addCallColumn(expr *influxql.Call, key string) {
 
 func (c *_columns) addDimensionColumn(expr influxql.Expr, key string) {
 	c.addColumn(key, _column{
-		expr: expr.String(),
+		expr:   expr.String(),
+		asName: expr.String(),
 	})
 }
 
