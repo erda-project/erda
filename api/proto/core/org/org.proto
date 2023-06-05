@@ -295,6 +295,7 @@ message OrgConfig {
     string vmsMonitorTtsCode = 14;
     string vmsMonitorCalledShowNumber = 15;
     uint64 auditInterval = 16;
+    bool enableAI = 17;
 }
 
 message DereferenceClusterRequest {

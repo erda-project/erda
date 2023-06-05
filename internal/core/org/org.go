@@ -866,6 +866,7 @@ func (p *provider) convertToOrgDTO(org *db.Org, domains ...string) *pb.Org {
 			VmsKeySecret:               org.Config.VMSKeySecret,
 			VmsMonitorTtsCode:          org.Config.VMSMonitorTtsCode, // 监控单独的语音模版
 			VmsMonitorCalledShowNumber: org.Config.VMSMonitorCalledShowNumber,
+			EnableAI:                   org.Config.EnableAI,
 		},
 		IsPublic: org.IsPublic,
 		BlockoutConfig: &pb.BlockoutConfig{
