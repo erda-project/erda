@@ -15,6 +15,9 @@
 package proto
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
@@ -47,7 +50,15 @@ func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 	var oneOpenAPIProxyHandler OneOpenAPIProxyHandler = func(method, publishPath, backendPath, serviceName string, opt *common.OpenAPIOption) error {
 		handler, err := p.proxy.Wrap(method, publishPath, backendPath, serviceName)
 		if err != nil {
-			return err
+			if strings.EqualFold(opt.Required, "optional") {
+				handler = func(rw http.ResponseWriter, _ *http.Request) {
+					rw.Header().Set("Server", "Erda Openapi")
+					rw.Header().Set("Backend", serviceName)
+					http.Error(rw, "backend not found", http.StatusNotFound)
+				}
+			} else {
+				return err
+			}
 		}
 		handler = p.Auth.Interceptor(handler, GetAuthOption(opt.Auth, func(opts map[string]interface{}) map[string]interface{} {
 			opts["path"] = publishPath

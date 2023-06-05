@@ -20,6 +20,7 @@ message OpenAPIOption {
     bool private = 5;
     APIAuth auth = 6;
     string doc = 7;
+    string required = 8;
 }
 
 message APIAuth {

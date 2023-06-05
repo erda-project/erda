@@ -174,6 +174,25 @@ openapi-auth-token:
 ### openapi-routes
 openapi-protobuf-routes:
 openapi-custom-routes:
+  routes:
+    - method: post  # ignore-case
+      path: /v1/completions # public path
+      backendServiceName: ai-proxy  # backend service name
+      backendServiceURL: http://ai-proxy:8081   # backend service url (at least one of backendServiceName and backendServiceURL)
+      backendPath: /v1/completions  # backend service path
+      required: optional    # panic if backend service not found and not optional
+      auth:
+        CheckLogin: true    # Note that the first letter of the field is capitalized
+        CheckToken: true
+    - method: post
+      path: /v1/chat/completions
+      backendServiceName: ai-proxy
+      backendServiceURL: http://ai-proxy:8081
+      backendPath: /v1/chat/completions
+      required: optional
+        auth:
+          CheckLogin: true
+          CheckToken: true
 openapi-v1-routes:
   component-protocol:
     scenario-proxy-binds:
