@@ -52,7 +52,11 @@ func (data DataForFulfill) genIterationSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data *DataForFulfill) decodeIterationSheet(sheet [][]string) ([]*dao.Iteration, error) {
+func (data *DataForFulfill) decodeIterationSheet(excelSheets [][][]string) ([]*dao.Iteration, error) {
+	if data.IsOldExcelFormat() {
+		return nil, nil
+	}
+	sheet := excelSheets[indexOfSheetIteration]
 	var iterations []*dao.Iteration
 	for i, row := range sheet {
 		if i == 0 {

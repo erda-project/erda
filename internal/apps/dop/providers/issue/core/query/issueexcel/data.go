@@ -68,6 +68,8 @@ type DataForFulfillImportOnly struct {
 	Property pb.IssueCoreServiceServer
 
 	BaseInfo *DataForFulfillImportOnlyBaseInfo
+
+	IsOldExcelFormat bool
 }
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
@@ -86,6 +88,18 @@ func (data DataForFulfill) IsSameErdaPlatform() bool {
 		panic("baseInfo is nil")
 	}
 	return data.ImportOnly.BaseInfo.OriginalErdaPlatform == conf.DiceClusterName()
+}
+
+func (data DataForFulfill) IsOldExcelFormat() bool {
+	return data.ImportOnly.IsOldExcelFormat
+}
+
+// JudgeIfIsOldExcelFormat old Excel format have only one sheet
+func (data *DataForFulfill) JudgeIfIsOldExcelFormat(excelSheets [][][]string) {
+	isOld := len(excelSheets) == 1
+	if isOld {
+		data.ImportOnly.IsOldExcelFormat = true
+	}
 }
 
 func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {

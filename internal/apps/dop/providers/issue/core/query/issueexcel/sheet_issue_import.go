@@ -28,7 +28,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) DecodeIssueSheet(sheet [][]string) ([]IssueSheetModel, error) {
+func (data DataForFulfill) DecodeIssueSheet(excelSheets [][][]string) ([]IssueSheetModel, error) {
+	sheet := excelSheets[indexOfSheetIssue]
+	if data.IsOldExcelFormat() {
+		return data.convertOldIssueSheet(sheet)
+	}
 	// convert [][][]string to map[uuid]excel.Column
 	issueSheetRows := sheet
 	var columnIndex int

@@ -43,7 +43,11 @@ func (data DataForFulfill) genBaseInfoSheet() (excel.Rows, error) {
 	return excel.Rows{row}, nil
 }
 
-func (data *DataForFulfill) decodeBaseInfoSheet(sheet [][]string) (*DataForFulfillImportOnlyBaseInfo, error) {
+func (data *DataForFulfill) decodeBaseInfoSheet(excelSheets [][][]string) (*DataForFulfillImportOnlyBaseInfo, error) {
+	if data.IsOldExcelFormat() {
+		return nil, nil
+	}
+	sheet := excelSheets[indexOfSheetBaseInfo]
 	if len(sheet) != 1 {
 		return nil, fmt.Errorf("invalid base info sheet, rows: %d", len(sheet))
 	}

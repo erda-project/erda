@@ -32,51 +32,50 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode excel, err: %v", err)
 	}
+	// compatible
+	data.JudgeIfIsOldExcelFormat(excelSheets)
+
 	// base info sheet first
-	baseInfo, err := data.decodeBaseInfoSheet(excelSheets[indexOfSheetBaseInfo])
+	baseInfo, err := data.decodeBaseInfoSheet(excelSheets)
 	if err != nil {
 		return fmt.Errorf("failed to decode base info sheet, err: %v", err)
 	}
 	_ = baseInfo
 	// issue sheet
-	issueSheetModels, err := data.DecodeIssueSheet(excelSheets[indexOfSheetIssue])
+	issueSheetModels, err := data.DecodeIssueSheet(excelSheets)
 	if err != nil {
 		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
 	}
 	// user sheet
-	members, err := data.decodeUserSheet(excelSheets[indexOfSheetUser])
+	members, err := data.decodeUserSheet(excelSheets)
 	if err != nil {
 		return fmt.Errorf("failed to decode user sheet, err: %v", err)
 	}
 	if err := data.mapMemberForImport(members); err != nil {
 		return fmt.Errorf("failed to map member, err: %v", err)
 	}
-	_ = members
 	// label sheet
-	labels, err := data.decodeLabelSheet(excelSheets[indexOfSheetLabel])
+	labels, err := data.decodeLabelSheet(excelSheets)
 	if err != nil {
 		return fmt.Errorf("failed to decode label sheet, err: %v", err)
 	}
-	_ = labels
 	mergedLabels := data.mergeLabelsForCreate(labels, issueSheetModels)
 	if err := data.createLabelIfNotExistsForImport(mergedLabels); err != nil {
 		return fmt.Errorf("failed to create label, err: %v", err)
 	}
 	// custom field sheet
-	customFields, err := data.decodeCustomFieldSheet(excelSheets[indexOfSheetCustomField])
+	customFields, err := data.decodeCustomFieldSheet(excelSheets)
 	if err != nil {
 		return fmt.Errorf("failed to decode custom field sheet, err: %v", err)
 	}
-	_ = customFields
 	if err := data.createCustomFieldIfNotExistsForImport(customFields); err != nil {
 		return fmt.Errorf("failed to create custom field, err: %v", err)
 	}
 	// iteration sheet
-	iterations, err := data.decodeIterationSheet(excelSheets[indexOfSheetIteration])
+	iterations, err := data.decodeIterationSheet(excelSheets)
 	if err != nil {
 		return fmt.Errorf("failed to decode iteration sheet, err: %v", err)
 	}
-	_ = iterations
 	// create iterations if not exists before issue create
 	if err := data.createIterationsIfNotExistForImport(iterations); err != nil {
 		return fmt.Errorf("failed to create iterations, err: %v", err)

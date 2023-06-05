@@ -51,7 +51,11 @@ func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeUserSheet(sheet [][]string) ([]apistructs.Member, error) {
+func (data DataForFulfill) decodeUserSheet(excelSheets [][][]string) ([]apistructs.Member, error) {
+	if data.IsOldExcelFormat() {
+		return nil, nil
+	}
+	sheet := excelSheets[indexOfSheetUser]
 	// check title
 	if len(sheet) < 1 {
 		return nil, fmt.Errorf("user sheet is empty")

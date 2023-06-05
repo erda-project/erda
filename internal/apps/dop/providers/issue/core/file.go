@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -505,16 +506,17 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 		return
 	}
 
-	f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
-	if err != nil {
-		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	//f, err := os.Open("./gen2.xlsx")
+	//f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
 	//if err != nil {
-	//	panic(err)
+	//	logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
+	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+	//	return
 	//}
+	f, err := os.Open("./import-old.xlsx")
+	//f, err := os.Open("./gen2.xlsx")
+	if err != nil {
+		panic(err)
+	}
 	defer f.Close()
 
 	data, err := i.createDataForFulfillForImport(req)

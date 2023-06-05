@@ -60,7 +60,11 @@ func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeLabelSheet(sheet [][]string) ([]*pb.ProjectLabel, error) {
+func (data DataForFulfill) decodeLabelSheet(excelSheets [][][]string) ([]*pb.ProjectLabel, error) {
+	if data.IsOldExcelFormat() {
+		return nil, nil
+	}
+	sheet := excelSheets[indexOfSheetLabel]
 	// check title
 	if len(sheet) < 1 {
 		return nil, fmt.Errorf("label sheet is empty")
