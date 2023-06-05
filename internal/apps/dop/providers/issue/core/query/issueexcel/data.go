@@ -99,6 +99,10 @@ func (data *DataForFulfill) JudgeIfIsOldExcelFormat(excelSheets [][][]string) {
 	isOld := len(excelSheets) == 1
 	if isOld {
 		data.ImportOnly.IsOldExcelFormat = true
+		data.ImportOnly.BaseInfo = &DataForFulfillImportOnlyBaseInfo{
+			OriginalErdaPlatform:  "",
+			OriginalErdaProjectID: 0,
+		}
 	}
 }
 

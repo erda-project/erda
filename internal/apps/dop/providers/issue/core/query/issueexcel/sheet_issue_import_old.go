@@ -28,41 +28,43 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 		uuid.AutoComplete()
 		m[uuid] = append(m[uuid], excel.NewCell(s))
 	}
+	// handle custom fields
+	if len(sheet) == 0 {
+		return nil, nil
+	}
+	customFieldNames := sheet[0][customFieldRowColumnIndexFrom:]
+	columnIndexAndPropertyTypeMap, err := tryToMatchCustomFieldNameToIssueType(customFieldNames, data.CustomFieldMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to match custom field name to issue type, err: %v", err)
+	}
 	for rowIdx, row := range sheet {
 		if rowIdx == 0 {
 			continue
 		}
-		for columnIdx, s := range row {
-			var model IssueSheetModel
-			// get issue type first
-			issueType := sheet[rowIdx][13]
-			switch issueType {
-			case pb.IssueTypeEnum_REQUIREMENT.String(), data.Locale.Get(pb.IssueTypeEnum_REQUIREMENT.String()):
-				model.Common.IssueType = pb.IssueTypeEnum_REQUIREMENT
-			case pb.IssueTypeEnum_TASK.String(), data.Locale.Get(pb.IssueTypeEnum_TASK.String()):
-				model.Common.IssueType = pb.IssueTypeEnum_TASK
-			case pb.IssueTypeEnum_BUG.String(), data.Locale.Get(pb.IssueTypeEnum_BUG.String()):
-				model.Common.IssueType = pb.IssueTypeEnum_BUG
-			default:
-				return nil, fmt.Errorf("invalid issue type: %s", issueType)
-			}
+		// get issue type first
+		issueType, err := parseStringIssueType(sheet[rowIdx][13])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse issue type, err: %v", err)
+		}
+		for columnIdx := 0; columnIdx < customFieldRowColumnIndexFrom; columnIdx++ {
+			s := row[columnIdx]
 			switch columnIdx {
 			case 0: // ID
 				addM(m, NewIssueSheetColumnUUID("Common", "ID"), s)
 			case 1: // Title
-				addM(m, NewIssueSheetColumnUUID("Common", "Title"), s)
+				addM(m, NewIssueSheetColumnUUID("Common", "IssueTitle"), s)
 			case 2: // Content
 				addM(m, NewIssueSheetColumnUUID("Common", "Content"), s)
 			case 3: // State
 				addM(m, NewIssueSheetColumnUUID("Common", "State"), s)
 			case 4: // Creator
-				addM(m, NewIssueSheetColumnUUID("Common", "Creator"), s)
+				addM(m, NewIssueSheetColumnUUID("Common", "CreatorName"), s)
 			case 5: // Assignee
-				addM(m, NewIssueSheetColumnUUID("Common", "Assignee"), s)
+				addM(m, NewIssueSheetColumnUUID("Common", "AssigneeName"), s)
 			case 6: // Owner
-				addM(m, NewIssueSheetColumnUUID("BugOnly", "Owner"), s)
+				addM(m, NewIssueSheetColumnUUID("BugOnly", "OwnerName"), s)
 			case 7: // TaskType or BugSource
-				switch model.Common.IssueType {
+				switch issueType {
 				case pb.IssueTypeEnum_TASK:
 					addM(m, NewIssueSheetColumnUUID("TaskOnly", "TaskType"), s)
 				case pb.IssueTypeEnum_BUG:
@@ -93,36 +95,20 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 			case 19: // StartAt
 				addM(m, NewIssueSheetColumnUUID("Common", "PlanStartedAt"), s)
 			case 20: // ReopenCount
-				addM(m, NewIssueSheetColumnUUID("Common", "ReopenCount"), s)
+				addM(m, NewIssueSheetColumnUUID("BugOnly", "ReopenCount"), s)
 			default:
-				// handle custom fields
-				cfName := sheet[0][columnIdx]
-			CF_LOOP:
-				for cfType, cfs := range data.CustomFieldMap {
-					switch cfType {
-					case pb.PropertyIssueTypeEnum_REQUIREMENT:
-						for _, cf := range cfs {
-							if cf.PropertyName == cfName {
-								addM(m, NewIssueSheetColumnUUID("RequirementOnly", "CustomFields", cfName), s)
-								break CF_LOOP
-							}
-						}
-					case pb.PropertyIssueTypeEnum_TASK:
-						for _, cf := range cfs {
-							if cf.PropertyName == cfName {
-								addM(m, NewIssueSheetColumnUUID("TaskOnly", "CustomFields", cfName), s)
-								break CF_LOOP
-							}
-						}
-					case pb.PropertyIssueTypeEnum_BUG:
-						for _, cf := range cfs {
-							if cf.PropertyName == cfName {
-								addM(m, NewIssueSheetColumnUUID("BugOnly", "CustomFields", cfName), s)
-								break CF_LOOP
-							}
-						}
-					}
-				}
+			}
+		}
+		// handle custom fields
+		for i, propertyType := range columnIndexAndPropertyTypeMap {
+			s := row[i+customFieldRowColumnIndexFrom]
+			switch propertyType {
+			case pb.PropertyIssueTypeEnum_REQUIREMENT:
+				addM(m, NewIssueSheetColumnUUID("RequirementOnly", "CustomFields", customFieldNames[i]), s)
+			case pb.PropertyIssueTypeEnum_TASK:
+				addM(m, NewIssueSheetColumnUUID("TaskOnly", "CustomFields", customFieldNames[i]), s)
+			case pb.PropertyIssueTypeEnum_BUG:
+				addM(m, NewIssueSheetColumnUUID("BugOnly", "CustomFields", customFieldNames[i]), s)
 			}
 		}
 	}
@@ -131,4 +117,86 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 		return nil, fmt.Errorf("failed to decode old excel format map to issue sheet model, err: %v", err)
 	}
 	return models, nil
+}
+
+const (
+	customFieldRowColumnIndexFrom = 21
+)
+
+// tryToMatchCustomFieldNameToIssueType
+// 由于之前全量导出时:
+// - 没有区分类型
+// - 而且是根据类型 WaitGroup 并发执行，没有顺序
+// - 同一类型内保证了顺序
+// 如果存在一个自定义字段被多个 issue type 使用，只能尽可能匹配
+// 如果字段按顺序都能匹配上（字段名、顺序），则匹配成功
+// 特殊情况，如果只有一个自定义字段，且这个字段被 3 个类型都引用了，则无法保证正确性。解决方案：用户可以手动调整模板字段顺序，原则就是 需求 > 任务 > 缺陷
+func tryToMatchCustomFieldNameToIssueType(cfNames []string, customFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex) (
+	map[int]pb.PropertyIssueTypeEnum_PropertyIssueType, error) {
+
+	genOrders := func(typeOrders ...pb.PropertyIssueTypeEnum_PropertyIssueType) []*pb.IssuePropertyIndex {
+		var result []*pb.IssuePropertyIndex
+		for _, t := range typeOrders {
+			for _, cf := range customFieldMap[t] {
+				result = append(result, cf)
+			}
+		}
+		return result
+	}
+
+	// 所有可能的顺序
+	possibleCfNameOrders := [][]*pb.IssuePropertyIndex{
+		// all types
+		genOrders(pb.PropertyIssueTypeEnum_REQUIREMENT, pb.PropertyIssueTypeEnum_TASK, pb.PropertyIssueTypeEnum_BUG),
+		genOrders(pb.PropertyIssueTypeEnum_REQUIREMENT, pb.PropertyIssueTypeEnum_BUG, pb.PropertyIssueTypeEnum_TASK),
+		genOrders(pb.PropertyIssueTypeEnum_TASK, pb.PropertyIssueTypeEnum_REQUIREMENT, pb.PropertyIssueTypeEnum_BUG),
+		genOrders(pb.PropertyIssueTypeEnum_TASK, pb.PropertyIssueTypeEnum_BUG, pb.PropertyIssueTypeEnum_REQUIREMENT),
+		genOrders(pb.PropertyIssueTypeEnum_BUG, pb.PropertyIssueTypeEnum_REQUIREMENT, pb.PropertyIssueTypeEnum_TASK),
+		genOrders(pb.PropertyIssueTypeEnum_BUG, pb.PropertyIssueTypeEnum_TASK, pb.PropertyIssueTypeEnum_REQUIREMENT),
+		// two types
+		genOrders(pb.PropertyIssueTypeEnum_REQUIREMENT, pb.PropertyIssueTypeEnum_TASK),
+		genOrders(pb.PropertyIssueTypeEnum_REQUIREMENT, pb.PropertyIssueTypeEnum_BUG),
+		genOrders(pb.PropertyIssueTypeEnum_TASK, pb.PropertyIssueTypeEnum_REQUIREMENT),
+		genOrders(pb.PropertyIssueTypeEnum_TASK, pb.PropertyIssueTypeEnum_BUG),
+		genOrders(pb.PropertyIssueTypeEnum_BUG, pb.PropertyIssueTypeEnum_REQUIREMENT),
+		genOrders(pb.PropertyIssueTypeEnum_BUG, pb.PropertyIssueTypeEnum_TASK),
+		// one type
+		genOrders(pb.PropertyIssueTypeEnum_REQUIREMENT),
+		genOrders(pb.PropertyIssueTypeEnum_TASK),
+		genOrders(pb.PropertyIssueTypeEnum_BUG),
+	}
+
+	// 顺序匹配
+	var found bool
+	var matchedOrders []*pb.IssuePropertyIndex
+	for _, expectOrders := range possibleCfNameOrders {
+		if len(expectOrders) != len(cfNames) {
+			continue
+		}
+		allMatched := true
+		for i := range expectOrders {
+			expect := expectOrders[i]
+			actual := cfNames[i]
+			if expect.PropertyName != actual {
+				allMatched = false
+				break
+			}
+		}
+		if allMatched {
+			found = true
+			matchedOrders = expectOrders
+			break
+		}
+		continue
+	}
+	if !found {
+		return nil, fmt.Errorf("custom field name order not matched")
+	}
+
+	// 匹配成功，返回字段索引和 issue type 的映射关系
+	result := make(map[int]pb.PropertyIssueTypeEnum_PropertyIssueType)
+	for i, cf := range matchedOrders {
+		result[i] = cf.PropertyIssueType
+	}
+	return result, nil
 }

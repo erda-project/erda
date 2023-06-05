@@ -176,7 +176,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				BaseModel: dbengine.BaseModel{
 					ID: 2068,
 				},
-				ProjectID:     5999,
+				ProjectID:     6023,
 				OrgID:         633,
 				Type:          "issueImport",
 				State:         "",
@@ -186,7 +186,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				SoftDeletedAt: 0,
 			}
 			var extra dao.TestFileExtra
-			s := `{"issueFileExtraInfo":{"importRequest":{"projectID":5999,"orgID":633,"type":"REQUIREMENT","fileID":"65b4277965a3434ea01eac898af89874","-":{"userID":"1005834","internalClient":"","orgID":"633"}}}}`
+			s := `{"issueFileExtraInfo":{"importRequest":{"projectID":6023,"orgID":633,"type":"REQUIREMENT","fileID":"65b4277965a3434ea01eac898af89874","-":{"userID":"1005834","internalClient":"","orgID":"633"}}}}`
 			if err := json.Unmarshal([]byte(s), &extra); err != nil {
 				panic(err)
 			}

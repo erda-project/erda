@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -78,8 +79,22 @@ func (data *DataForFulfill) decodeIterationSheet(excelSheets [][][]string) ([]*d
 // check by name:
 // - if not exist, create new iteration
 // - if exist, do not update, take the existing one as the standard
-func (data *DataForFulfill) createIterationsIfNotExistForImport(iterations []*dao.Iteration) error {
-	for _, iteration := range iterations {
+func (data *DataForFulfill) createIterationsIfNotExistForImport(originalIterations []*dao.Iteration, issueSheetModels []IssueSheetModel) error {
+	var mergedIterations []*dao.Iteration
+	sheetIterationMap := make(map[string]*dao.Iteration)
+	for _, issueSheetModel := range issueSheetModels {
+		_, ok := sheetIterationMap[issueSheetModel.Common.IterationName]
+		if ok {
+			continue
+		}
+		newIteration := dao.Iteration{
+			ProjectID: data.ProjectID,
+			Title:     issueSheetModel.Common.IterationName,
+			State:     apistructs.IterationStateUnfiled,
+		}
+		mergedIterations = append(mergedIterations, &newIteration)
+	}
+	for _, iteration := range originalIterations {
 		iteration := iteration
 		if iteration.ID <= 0 { // 待办事项
 			continue
@@ -88,6 +103,9 @@ func (data *DataForFulfill) createIterationsIfNotExistForImport(iterations []*da
 		if ok {
 			continue
 		}
+		mergedIterations = append(mergedIterations, iteration)
+	}
+	for _, iteration := range mergedIterations {
 		// create iteration if not exist
 		iteration.ID = 0
 		iteration.ProjectID = data.ProjectID

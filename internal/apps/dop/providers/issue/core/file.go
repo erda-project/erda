@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -489,6 +490,7 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 		if r := recover(); r != nil {
 			desc = fmt.Sprintf("%v", r)
 			err = fmt.Errorf("%v", r)
+			fmt.Println(string(debug.Stack()))
 		}
 		if err != nil {
 			logrus.Errorf("%s failed to import excel, recordID: %d, err: %v", issueService, record.ID, err)

@@ -16,6 +16,7 @@ package issueexcel
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -72,15 +73,17 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
+			// print runtime stacktrace
+			fmt.Println(string(debug.Stack()))
 		}
 	}()
 	// prepare models
-	var columnLen int
+	var dataRowsNum int
 	for _, column := range m {
-		columnLen = len(column)
+		dataRowsNum = len(column)
 		break
 	}
-	models := make([]IssueSheetModel, columnLen, columnLen)
+	models := make([]IssueSheetModel, dataRowsNum, dataRowsNum)
 	for uuid, column := range m {
 		parts := uuid.Decode()
 		if len(parts) != uuidPartsMustLength {
@@ -102,16 +105,11 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				case "IterationName":
 					model.Common.IterationName = cell.Value
 				case "IssueType":
-					switch cell.Value {
-					case pb.IssueTypeEnum_REQUIREMENT.String():
-						model.Common.IssueType = pb.IssueTypeEnum_REQUIREMENT
-					case pb.IssueTypeEnum_TASK.String():
-						model.Common.IssueType = pb.IssueTypeEnum_TASK
-					case pb.IssueTypeEnum_BUG.String():
-						model.Common.IssueType = pb.IssueTypeEnum_BUG
-					default:
-						return nil, fmt.Errorf("invalid issue type: %s", cell.Value)
+					issueType, err := parseStringIssueType(cell.Value)
+					if err != nil {
+						return nil, err
 					}
+					model.Common.IssueType = issueType
 				case "IssueTitle":
 					model.Common.IssueTitle = cell.Value
 				case "Content":
@@ -119,38 +117,23 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				case "State":
 					model.Common.State = cell.Value
 				case "Priority":
-					switch cell.Value {
-					case pb.IssuePriorityEnum_HIGH.String():
-						model.Common.Priority = pb.IssuePriorityEnum_HIGH
-					case pb.IssuePriorityEnum_NORMAL.String():
-						model.Common.Priority = pb.IssuePriorityEnum_NORMAL
-					case pb.IssuePriorityEnum_LOW.String():
-						model.Common.Priority = pb.IssuePriorityEnum_LOW
-					default:
-						return nil, fmt.Errorf("invalid priority: %s", cell.Value)
+					priority, err := parseStringPriority(cell.Value)
+					if err != nil {
+						return nil, err
 					}
+					model.Common.Priority = priority
 				case "Complexity":
-					switch cell.Value {
-					case pb.IssueComplexityEnum_HARD.String():
-						model.Common.Complexity = pb.IssueComplexityEnum_HARD
-					case pb.IssueComplexityEnum_NORMAL.String():
-						model.Common.Complexity = pb.IssueComplexityEnum_NORMAL
-					case pb.IssueComplexityEnum_EASY.String():
-						model.Common.Complexity = pb.IssueComplexityEnum_EASY
-					default:
-						return nil, fmt.Errorf("invalid complexity: %s", cell.Value)
+					complexity, err := parseStringComplexity(cell.Value)
+					if err != nil {
+						return nil, err
 					}
+					model.Common.Complexity = complexity
 				case "Severity":
-					switch cell.Value {
-					case pb.IssueSeverityEnum_FATAL.String():
-						model.Common.Severity = pb.IssueSeverityEnum_FATAL
-					case pb.IssueSeverityEnum_SERIOUS.String():
-						model.Common.Severity = pb.IssueSeverityEnum_SERIOUS
-					case pb.IssueSeverityEnum_NORMAL.String():
-						model.Common.Severity = pb.IssueSeverityEnum_NORMAL
-					default:
-						return nil, fmt.Errorf("invalid severity: %s", cell.Value)
+					severity, err := parseStringSeverity(cell.Value)
+					if err != nil {
+						return nil, err
 					}
+					model.Common.Severity = severity
 				case "CreatorName":
 					model.Common.CreatorName = cell.Value
 				case "AssigneeName":
@@ -275,6 +258,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
+			fmt.Println(string(debug.Stack()))
 		}
 	}()
 	idMapping := make(map[int64]uint64) // key: old id(can be negative for Excel Line Num, like L5), value: new id
@@ -423,4 +407,72 @@ func parseStringIssueID(s string) (*int64, error) {
 		return nil, fmt.Errorf("invalid string line id: %s, cannot lower than 1", s)
 	}
 	return &i, nil
+}
+
+func parseStringIssueType(s string) (pb.IssueTypeEnum_Type, error) {
+	var t pb.IssueTypeEnum_Type
+	switch strings.ToLower(s) {
+	case strings.ToLower(pb.IssueTypeEnum_REQUIREMENT.String()), "需求":
+		t = pb.IssueTypeEnum_REQUIREMENT
+	case strings.ToLower(pb.IssueTypeEnum_TASK.String()), "任务":
+		t = pb.IssueTypeEnum_TASK
+	case strings.ToLower(pb.IssueTypeEnum_BUG.String()), "缺陷":
+		t = pb.IssueTypeEnum_BUG
+	case strings.ToLower(pb.IssueTypeEnum_EPIC.String()), "史诗":
+		t = pb.IssueTypeEnum_EPIC
+	case strings.ToLower(pb.IssueTypeEnum_TICKET.String()), "工单":
+		t = pb.IssueTypeEnum_TICKET
+	default:
+		return t, fmt.Errorf("invalid issue type: %s", s)
+	}
+	return t, nil
+}
+
+func parseStringPriority(s string) (pb.IssuePriorityEnum_Priority, error) {
+	var p pb.IssuePriorityEnum_Priority
+	switch strings.ToLower(s) {
+	case strings.ToLower(pb.IssuePriorityEnum_LOW.String()), "低":
+		p = pb.IssuePriorityEnum_LOW
+	case strings.ToLower(pb.IssuePriorityEnum_NORMAL.String()), "中":
+		p = pb.IssuePriorityEnum_NORMAL
+	case strings.ToLower(pb.IssuePriorityEnum_HIGH.String()), "高":
+		p = pb.IssuePriorityEnum_HIGH
+	default:
+		return p, fmt.Errorf("invalid issue priority: %s", s)
+	}
+	return p, nil
+}
+
+func parseStringComplexity(s string) (pb.IssueComplexityEnum_Complextity, error) {
+	var c pb.IssueComplexityEnum_Complextity
+	switch strings.ToLower(s) {
+	case strings.ToLower(pb.IssueComplexityEnum_EASY.String()), "容易":
+		c = pb.IssueComplexityEnum_EASY
+	case strings.ToLower(pb.IssueComplexityEnum_NORMAL.String()), "中":
+		c = pb.IssueComplexityEnum_NORMAL
+	case strings.ToLower(pb.IssueComplexityEnum_HARD.String()), "复杂":
+		c = pb.IssueComplexityEnum_HARD
+	default:
+		return c, fmt.Errorf("invalid issue complexity: %s", s)
+	}
+	return c, nil
+}
+
+func parseStringSeverity(s string) (pb.IssueSeverityEnum_Severity, error) {
+	var c pb.IssueSeverityEnum_Severity
+	switch strings.ToLower(s) {
+	case strings.ToLower(pb.IssueSeverityEnum_FATAL.String()), "致命":
+		c = pb.IssueSeverityEnum_FATAL
+	case strings.ToLower(pb.IssueSeverityEnum_SERIOUS.String()), "严重":
+		c = pb.IssueSeverityEnum_SERIOUS
+	case strings.ToLower(pb.IssueSeverityEnum_NORMAL.String()), "一般":
+		c = pb.IssueSeverityEnum_NORMAL
+	case strings.ToLower(pb.IssueSeverityEnum_SLIGHT.String()), "轻微":
+		c = pb.IssueSeverityEnum_SLIGHT
+	case strings.ToLower(pb.IssueSeverityEnum_SUGGEST.String()), "建议":
+		c = pb.IssueSeverityEnum_SUGGEST
+	default:
+		return c, fmt.Errorf("invalid issue severity: %s", s)
+	}
+	return c, nil
 }

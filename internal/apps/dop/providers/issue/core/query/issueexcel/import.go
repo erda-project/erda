@@ -77,7 +77,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 		return fmt.Errorf("failed to decode iteration sheet, err: %v", err)
 	}
 	// create iterations if not exists before issue create
-	if err := data.createIterationsIfNotExistForImport(iterations); err != nil {
+	if err := data.createIterationsIfNotExistForImport(iterations, issueSheetModels); err != nil {
 		return fmt.Errorf("failed to create iterations, err: %v", err)
 	}
 
