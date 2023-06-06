@@ -2,6 +2,7 @@ zh:
     # aggregator
     sum: 总和
     avg: 平均值
+    diffps: 平均速率
     max: 最大值
     min: 最小值
     count: 次数
@@ -241,6 +242,7 @@ en:
     应用实例CPU使用率异常: App Resource Container Cpu
     应用实例OOM: App Resource Container Oom
     应用实例内存使用率异常: App Resource Container Mem
+    应用实例网络收发速率异常: App Resource Container Net
     应用错误次数: App Exception Count
     服务HTTP慢事务异常: App Transaction Http Service Rt
     服务HTTP错误率异常: App Transaction Http Service Error

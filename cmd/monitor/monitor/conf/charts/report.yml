@@ -525,6 +525,8 @@
         label: "应用实例OOM"
       app_resource_container_mem:
         label: "应用实例内存使用率异常"
+      app_resource_container_network:
+        label: "应用实例网络异常"
       app_exception_count:
         label: "应用错误次数"
       app_transaction_http_service_rt:
