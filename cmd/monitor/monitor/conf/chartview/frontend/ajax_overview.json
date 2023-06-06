@@ -92,12 +92,7 @@
               "time()",
               "req_path::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "avg(tt::field)"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "type7mLcEwOs",
@@ -223,12 +218,7 @@
               "time()",
               "req_path::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "count(tt::field)"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "typeXlqmR76N",
