@@ -141,7 +141,7 @@ func (svc *Service) ExportTestCases(req *apistructs.TestCaseExportRequest, sheet
 			return "", apierrors.ErrExportTestCases.InternalError(err)
 		}
 
-		if err := excel.Export(f, excelLines, sheetName); err != nil {
+		if err := excel.ExportExcelByCell(f, excelLines, sheetName); err != nil {
 			return "", apierrors.ErrExportTestCases.InternalError(err)
 		}
 	} else {

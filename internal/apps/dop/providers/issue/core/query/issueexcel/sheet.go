@@ -12,30 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package excel
+package issueexcel
 
-import (
-	"io"
-	"os"
-
-	"github.com/tealeg/xlsx/v3"
+const (
+	indexOfSheetIssue = iota
+	indexOfSheetUser
+	indexOfSheetLabel
+	indexOfSheetCustomField
+	indexOfSheetBaseInfo
+	indexOfSheetIteration
 )
-
-// Decode excel file to [][]string
-// return []sheet{[]row{[]cell}}
-// cell 的值即使为空，也可通过下标访问，不会出现越界问题
-func Decode(r io.Reader) ([][][]string, error) {
-	tmpF, err := os.CreateTemp("", "excel-")
-	if err != nil {
-		return nil, err
-	}
-	if _, err := io.Copy(tmpF, r); err != nil {
-		return nil, err
-	}
-	// 不适用 xlsx.FileToSliceUnmerged，因为会有重复字段
-	data, err := xlsx.FileToSlice(tmpF.Name())
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}

@@ -38,8 +38,8 @@ type Issue struct {
 	PlanFinishedAt *time.Time // 计划结束时间
 	ProjectID      uint64     // 所属项目 ID
 	IterationID    int64      // 所属迭代 ID
-	AppID          *uint64    // 所属应用 ID
-	RequirementID  *int64     // 所属需求 ID
+	AppID          *uint64    // deprecated, 所属应用 ID
+	RequirementID  *int64     // deprecated, 所属需求 ID
 	Type           string     // issue 类型
 	Title          string     // 标题
 	Content        string     // 内容
@@ -51,7 +51,7 @@ type Issue struct {
 	Assignee       string     // 分配到 issue 的人，即当前处理人
 	Source         string     // issue创建的来源，目前只有工单使用
 	ManHour        string     // 工时信息
-	External       bool       // 用来区分是通过ui还是bundle创建的
+	External       bool       // Deprecated. 用来区分是通过ui还是bundle创建的 // 2023-05-30 Deprecated. Always true now
 	Deleted        bool       // 是否已删除
 	Stage          string     // bug阶段 or 任务类型 的值
 	Owner          string     // 负责人

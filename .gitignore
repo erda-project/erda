@@ -87,3 +87,5 @@ api/proto-go
 # extensions
 /conf/extensions-init/*
 
+# test excels
+*.xlsx

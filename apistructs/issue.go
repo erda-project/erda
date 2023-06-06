@@ -706,22 +706,6 @@ func (ipr *IssuePagingRequest) GetUserIDs() []string {
 	return userIDs
 }
 
-// IssueExportExcelRequest 事件导出 excel 请求
-type IssueExportExcelRequest struct {
-	IssuePagingRequest
-	Locale     string `json:"locale"`
-	IsDownload bool   `json:"isDownload"`
-}
-
-// IssueImportExcelRequest 事件导入excel请求
-type IssueImportExcelRequest struct {
-	ProjectID uint64            `json:"projectID"`
-	OrgID     int64             `json:"orgID"`
-	Type      PropertyIssueType `json:"type"`
-	FileID    string            `json:"fileID"`
-	IdentityInfo
-}
-
 // IssueListRequest 事件列表查询请求
 type IssueListRequest struct {
 	// +optional

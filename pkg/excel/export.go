@@ -15,13 +15,11 @@
 package excel
 
 import (
-	"bytes"
+	"fmt"
 	"io"
-	"net/http"
-	"net/url"
+	"time"
 
-	"github.com/gogap/errors"
-	"github.com/tealeg/xlsx/v3"
+	"github.com/sirupsen/logrus"
 )
 
 // ExportExcel 导出 excel
@@ -34,42 +32,23 @@ import (
 //
 // 注：每一行和每一列需要完全对应，根据 row 和 col 导出 xlsx 格式的 excel
 func ExportExcel(w io.Writer, data [][]string, sheetName string) error {
-	file := xlsx.NewFile()
-	sheet, err := file.AddSheet(sheetName)
-	if err != nil {
-		return errors.Errorf("failed to add sheetName, sheetName: %s", sheetName)
-	}
-
-	for row := 0; row < len(data); row++ {
-		if len(data[row]) == 0 {
-			continue
-		}
-		rowContent := sheet.AddRow()
-		rowContent.SetHeightCM(1)
-		for col := 0; col < len(data[row]); col++ {
-			cell := rowContent.AddCell()
-			cell.Value = data[row][col]
-		}
-	}
-
-	return write(w, file, sheetName)
+	// convert data to cells
+	cells := convertStringDataToCellData(data)
+	// invoke ExportExcelByCell
+	return ExportExcelByCell(w, cells, sheetName)
 }
 
-func write(w io.Writer, file *xlsx.File, sheetName string) error {
-	// set headers to http ResponseWriter `w` before write into `w`.
-	if rw, ok := w.(http.ResponseWriter); ok {
-		rw.Header().Add("Content-Disposition", "attachment;fileName="+url.QueryEscape(sheetName+".xlsx"))
-		rw.Header().Add("Content-Type", "application/vnd.ms-excel")
-	}
+// ExportExcelByCell 支持 cell 粒度配置，可以实现单元格合并，样式调整等
+func ExportExcelByCell(w io.Writer, data [][]Cell, sheetName string) error {
+	begin := time.Now()
+	defer func() {
+		end := time.Now()
+		logrus.Debugf("export excel cost: %fs", end.Sub(begin).Seconds())
+	}()
 
-	var buff bytes.Buffer
-	if err := file.Write(&buff); err != nil {
-		return errors.Errorf("failed to write content, sheetName: %s, err: %v", sheetName, err)
+	file := NewXLSXFile()
+	if err := AddSheetByCell(file, data, sheetName); err != nil {
+		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
 	}
-
-	if _, err := io.Copy(w, &buff); err != nil {
-		return errors.Errorf("failed to copy excel content, err: %v", err)
-	}
-
-	return nil
+	return WriteFile(w, file, sheetName)
 }

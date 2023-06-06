@@ -15,7 +15,6 @@
 package query
 
 import (
-	"io"
 	"reflect"
 
 	"github.com/jinzhu/gorm"
@@ -76,7 +75,6 @@ type Interface interface {
 	GetIssueStage(req *pb.IssueStageRequest) ([]*pb.IssueStage, error)
 	GetIssueRelationsByIssueIDs(issueID uint64, relationType []string) ([]uint64, []uint64, error)
 	GetIssuesByIssueIDs(issueIDs []uint64) ([]*pb.Issue, error)
-	ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error)
 	SyncIssueChildrenIteration(issue *pb.Issue, iterationID int64) error
 	AfterIssueAppRelationCreate(issueIDs []int64) error
 	GetIssueLabelsByProjectID(projectID uint64) ([]dao.IssueLabel, error)

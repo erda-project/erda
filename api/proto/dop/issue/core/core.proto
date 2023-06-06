@@ -584,6 +584,7 @@ message Issue {
   int32 reopenCount = 32;
   IssueTypeEnum.Type type = 33;
   repeated IssuePropertyExtraProperty propertyInstances = 34;
+  google.protobuf.Timestamp startTime = 35;
 }
 
 message IssueStage {
@@ -973,7 +974,7 @@ message ExportExcelIssueRequest {
   int64 orgID = 40;
   repeated uint64 projectIDs = 41;
   string locale = 42;
-  bool isDownload = 43;
+  bool isDownloadTemplate = 43 [json_name = "isDownload"];
 }
 
 message ExportExcelIssueResponse {
@@ -985,6 +986,7 @@ message ImportExcelIssueRequest {
   int64 orgID = 2;
   string type = 3;
   string fileID = 4;
+  string locale = 5;
   common.IdentityInfo identityInfo = 33 [json_name = "-"];
 }
 

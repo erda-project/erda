@@ -134,7 +134,7 @@ func (pr *provider) CreatePropertyRelation(req *pb.CreateIssuePropertyInstanceRe
 		if common.IsOptions(p.PropertyType.String()) {
 			// 必填项
 			if p.Required == true && len(p.Values) == 0 {
-				return apierrors.ErrCreateIssue.MissingParameter(fmt.Sprintf("必填字段\"%v\"未填写", p.PropertyID))
+				return apierrors.ErrCreateIssueProperty.MissingParameter(fmt.Sprintf("必填字段\"%v\"未填写", p.PropertyName))
 			}
 			for _, v := range p.Values {
 				propertyInstances = append(propertyInstances, dao.IssuePropertyRelation{
@@ -148,7 +148,7 @@ func (pr *provider) CreatePropertyRelation(req *pb.CreateIssuePropertyInstanceRe
 		} else {
 			arbValue := GetArb(p)
 			if p.Required == true && arbValue == "" {
-				return apierrors.ErrCreateIssue.MissingParameter(fmt.Sprintf("必填字段\"%v\"未填写", p.PropertyID))
+				return apierrors.ErrCreateIssueProperty.MissingParameter(fmt.Sprintf("必填字段\"%v\"未填写", p.PropertyName))
 			}
 			if arbValue == "" {
 				continue
