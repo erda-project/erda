@@ -1,0 +1,221 @@
+- name: "应用实例网络收发速率异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
+  formats:
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务实例网络收发速率告警】
+  template: |
+    【应用实例网络收发速率异常告警】
+
+    项目: {{project_name}}
+
+    集群: {{cluster_name}}
+    
+    应用: {{application_name}}
+
+    服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+    
+    网络接收速率: {{rx_bytes}} MB/s
+    
+    网络发送速率: {{tx_bytes}} MB/s
+
+    机器: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    时间: {{timestamp}}
+
+    告警级别: {{level}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "应用实例网络收发速率异常告警"
+  trigger: "alert"
+  target: "sms"
+  language: "zh-CN"
+  formats:
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务实例网络收发速率告警】
+  template: |
+    {{application_name}}应用{{service_name}}触发服务实例网络收发速率异常告警，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}，网络告警级别: {{level}}
+- name: "应用实例网络收发速率异常告警"
+  trigger: "alert"
+  target: "vms"
+  language: "zh-CN"
+  formats:
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务实例网络收发速率告警】
+  template: |
+    {{application_name}}应用{{service_name}}触发服务实例网络收发速率异常告警，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}，网络告警级别: {{level}}
+- name: "应用实例网络收发速率恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
+  formats:
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务实例网络收发速率恢复】
+  template: |
+    【应用实例网络收发速率恢复】
+
+    项目: {{project_name}}
+
+    集群: {{cluster_name}}
+    
+    应用: {{application_name}}
+
+    服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+
+    网络接收速率: {{rx_bytes}} MB/s
+    
+    网络发送速率: {{tx_bytes}} MB/s
+
+    机器: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    容器ID: {{container_id}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "应用实例网络收发速率恢复"
+  trigger: "recover"
+  target: "sms"
+  language: "zh-CN"
+  formats:
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务实例网络收发速率恢复】
+  template: |
+    {{application_name}}应用{{service_name}}服务实例网络收发速率恢复，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}
+
+- name: "应用实例网络收发速率恢复"
+  trigger: "recover"
+  target: "vms"
+  language: "zh-CN"
+  formats:
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务实例网络收发速率恢复】
+  template: |
+    {{application_name}}应用{{service_name}}服务实例网络收发速率恢复，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}
+
+- name: "Application instance network sending and receiving rate is abnormal"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    container_id: "string:6"
+  title: |
+    [Network sending and receiving rate alarm of service {{service_name}} of application {{application_name}}]
+  template: |
+    [Network sending and receiving rate alarm of application instance]
+
+    Project: {{project_name}}
+
+    Cluster: {{cluster_name}}
+    
+    Application: {{application_name}}
+
+    Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+    
+    Network receiving rate: {{rx_bytes}} MB/s
+    
+    Network transmit rate: {{tx_bytes}} MB/s
+
+    Machine: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "Network sending and receiving rate alarm of application instance"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    container_id: "string:6"
+  title: |
+    [Network sending and receiving rate alarm of service {{service_name}} of application {{application_name}}]
+  template: |
+    Network sending and receiving rate alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}
+- name: "Network sending and receiving rate alarm of application instance"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    container_id: "string:6"
+  title: |
+    [Network sending and receiving rate alarm of service {{service_name}} of application {{application_name}}]
+  template: |
+    Network sending and receiving rate alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}
+- name: "Network sending and receiving rate recovery of application instance"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    container_id: "string:6"
+  title: |
+    [Network sending and receiving rate recovery of service {{service_name}} of application {{application_name}}]
+  template: |
+    [Network sending and receiving rate recovery of application instance]
+
+    Project: {{project_name}}
+
+    Cluster: {{cluster_name}}
+    
+    Application: {{application_name}}
+
+    Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+
+    Network receiving rate: {{rx_bytes}} MB/s
+    
+    Network transmit rate: {{tx_bytes}} MB/s
+
+    Machine: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    Container ID: {{container_id}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Network sending and receiving rate recovery of application instance"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    container_id: "string:6"
+  title: |
+    [Network sending and receiving rate recovery of service {{service_name}} of application {{application_name}}]
+  template: |
+    Network sending and receiving rate recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}, duration: {{trigger_duration}}
+
+- name: "Network sending and receiving rate recovery of application instance"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    container_id: "string:6"
+  title: |
+    [Network sending and receiving rate recovery of service {{service_name}} of application {{application_name}}]
+  template: |
+    Network sending and receiving rate recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}, duration: {{trigger_duration}}
