@@ -512,7 +512,8 @@
               "docker_container_summary"
             ],
             "groupby": [
-              "time()"
+              "time()",
+              "container_image::tag"
             ],
             "select": [
               {
@@ -709,7 +710,8 @@
               "docker_container_summary"
             ],
             "groupby": [
-              "time()"
+              "time()",
+              "container_image::tag"
             ],
             "select": [
               {

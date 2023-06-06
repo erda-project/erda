@@ -31,30 +31,6 @@ import (
 	tsql "github.com/erda-project/erda/internal/tools/monitor/core/metric/query/es-tsql"
 )
 
-type _column struct {
-	key           string
-	asName        string
-	rootColumn    string
-	isWildcard    bool
-	isNoArrayKey  bool
-	isTimeKey     bool
-	isNumberField bool
-	isStringField bool
-	expr          string
-	flag          model.ColumnFlag
-}
-
-func (c _column) modelKey() string {
-	if c.isWildcard || c.isNoArrayKey {
-		return ""
-	} else if c.isStringField {
-		return "string_field_keys"
-	} else if c.isStringField {
-		return "number_field_keys"
-	}
-	return "tag_keys"
-}
-
 func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error) {
 
 	sources, err := p.from(s.Sources)
@@ -73,31 +49,27 @@ func (p *Parser) ParseClickhouse(s *influxql.SelectStatement) (tsql.Query, error
 	}
 
 	// select
-	expr, handlers, columns, err := p.parseQueryOnExpr(s.Fields, expr)
+	expr, handlers, selectColumns, err := p.parseQueryOnExpr(s.Fields, expr)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to select is error")
 	}
 
-	expr, tailLiters, err := p.ParseGroupByOnExpr(s.Dimensions, expr, &handlers, columns)
+	expr, groupColumns, err := p.ParseGroupByOnExpr(s.Dimensions, expr, &handlers, selectColumns)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to group by is error")
 	}
 
-	expr, err = p.ParseOrderByOnExpr(s.SortFields, expr, columns)
+	expr, err = p.ParseOrderByOnExpr(s.SortFields, expr, selectColumns, groupColumns)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to order by is error")
 	}
 
-	if len(tailLiters) > 0 {
-		expr = expr.OrderAppend(goqu.I("%s").Asc()) //Placeholder!!!
-	}
 	expr, err = p.ParseOffsetAndLimitOnExpr(s, expr)
 	if err != nil {
 		return nil, errors.Wrap(err, "select stmt parse to offset and limit is error")
 	}
 	return QueryClickhouse{
 		sources:     sources,
-		subLiters:   tailLiters,
 		column:      handlers,
 		start:       p.ctx.start,
 		end:         p.ctx.end,
@@ -118,16 +90,19 @@ func appendOrderedExpression(expr *goqu.SelectDataset, express exp.IdentifierExp
 	}
 	return expr
 }
-func cloneColumnMap(columns map[string]_column) map[string]_column {
-	m := make(map[string]_column, len(columns))
-	for k, v := range columns {
+func cloneColumnMap(columns *_columns) map[string]_column {
+	if columns == nil {
+		return nil
+	}
+	m := make(map[string]_column, len(columns.columns))
+	for k, v := range columns.columns {
 		m[k] = v
 	}
 	return m
 }
 
-func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectDataset, columns map[string]_column) (*goqu.SelectDataset, error) {
-	copiedColumns := cloneColumnMap(columns)
+func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectDataset, selectColumns *_columns, groupColumns *_columns) (*goqu.SelectDataset, error) {
+	copiedColumns := cloneColumnMap(groupColumns)
 	timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 
 	var tailOrderExpress []exp.OrderedExpression
@@ -155,7 +130,7 @@ func (p *Parser) ParseOrderByOnExpr(s influxql.SortFields, expr *goqu.SelectData
 				continue
 			}
 
-			if v, ok := copiedColumns[column]; ok {
+			if v, ok := selectColumns.getColumn(column); ok {
 				delete(copiedColumns, column)
 				expr = appendOrderedExpression(expr, goqu.C(v.asName), field.Ascending)
 			} else {
@@ -208,25 +183,28 @@ func (p *Parser) ParseOffsetAndLimitOnExpr(s *influxql.SelectStatement, expr *go
 	return expr, nil
 }
 
-func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.SelectDataset, handlers *[]*SQLColumnHandler, columns map[string]_column) (*goqu.SelectDataset, map[string]string, error) {
+func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.SelectDataset, handlers *[]*SQLColumnHandler, selectColumns *_columns) (*goqu.SelectDataset, *_columns, error) {
 	if len(dimensions) <= 0 {
 		return expr, nil, nil
 	}
-	expr, liters, tailLiters, err := p.parseQueryDimensionsByExpr(expr, dimensions, handlers, columns)
+	expr, groupColumns, err := p.parseQueryDimensionsByExpr(expr, dimensions, handlers, selectColumns)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	groupExpress := make(map[string]goqu.Expression)
-	if len(liters) > 0 {
-		for script, column := range columns {
+	if groupColumns != nil {
+		for script, column := range selectColumns.columns {
+			if column.isAggFunctionField {
+				continue
+			}
 			if column.isTimeKey {
 				groupExpress[script] = goqu.L(column.expr)
 			} else {
 				groupExpress[script] = goqu.C(column.asName)
 			}
 		}
-		for _, liter := range liters {
+		for liter := range groupColumns.columns {
 			if _, ok := groupExpress[liter]; !ok {
 				groupExpress[liter] = goqu.L(liter)
 			}
@@ -235,11 +213,11 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 	for _, express := range groupExpress {
 		expr = expr.GroupByAppend(express)
 	}
-	return expr, tailLiters, nil
+	return expr, groupColumns, nil
 }
-func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDataset) (*goqu.SelectDataset, []*SQLColumnHandler, map[string]_column, error) {
-	columns := make(map[string]_column) // k:stmt, v: column
-	aggs, handlers, err := p.parseQueryFieldsByExpr(fields, columns)
+func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDataset) (*goqu.SelectDataset, []*SQLColumnHandler, *_columns, error) {
+	selectColumns := newColumns() // k:stmt, v: column
+	aggs, handlers, err := p.parseQueryFieldsByExpr(fields, selectColumns)
 	if err != nil {
 		return expr, nil, nil, err
 	}
@@ -249,7 +227,7 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 		expr = expr.SelectAppend(column)
 	}
 
-	for key, column := range columns {
+	for key, column := range selectColumns.columns {
 		if key == "*" {
 			expr = expr.Select("*")
 			continue
@@ -258,27 +236,27 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 			expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", key)))
 			continue
 		}
+		if column.isAggFunctionField {
+			// agg function exist expr
+			continue
+		}
 		expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", key)).As(column.asName))
 	}
-	return expr, handlers, columns, nil
+	return expr, handlers, selectColumns, nil
 }
-func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dimensions influxql.Dimensions, handler *[]*SQLColumnHandler, columns map[string]_column) (*goqu.SelectDataset, []string, map[string]string, error) {
-	var exprList []string
+func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dimensions influxql.Dimensions, handler *[]*SQLColumnHandler, selectColumns *_columns) (*goqu.SelectDataset, *_columns, error) {
+	groupColumn := newColumns()
 
-	tailExpr := make(map[string]string)
 	for _, dim := range dimensions {
 		switch expr := dim.Expr.(type) {
 		case *influxql.Call:
 			if expr.Name == "time" {
 				var interval int64
-				if len(tailExpr) > 0 {
-					return nil, nil, nil, fmt.Errorf("with fill statement should be one function")
-				}
 				if len(expr.Args) == 1 {
 					arg := expr.Args[0]
 					d, ok := arg.(*influxql.DurationLiteral)
 					if !ok || d.Val < time.Second {
-						return exprSelect, nil, nil, fmt.Errorf("invalid arg '%s' in function '%s'", arg.String(), expr.Name)
+						return exprSelect, nil, fmt.Errorf("invalid arg '%s' in function '%s'", arg.String(), expr.Name)
 					}
 					fmt.Println(d.Val.String())
 					interval = int64(d.Val)
@@ -301,17 +279,10 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 				timeBucketColumn := fmt.Sprintf("bucket_%s", p.ctx.TimeKey())
 				intervalSeconds := interval / int64(tsql.Second)
 
-				timeBucketExpr := fmt.Sprintf("intDiv(toRelativeSecondNum(timestamp), %v)", intervalSeconds)
+				selectColumns.addTimeBucketColumn(p.ctx.TimeKey(), intervalSeconds)
+				groupColumn.addTimeBucketColumn(p.ctx.TimeKey(), intervalSeconds)
 
-				columns[timeBucketExpr] = _column{
-					key:        p.ctx.TimeKey(),
-					expr:       timeBucketExpr,
-					asName:     timeBucketColumn,
-					rootColumn: timeBucketColumn,
-					isTimeKey:  true,
-				}
 				exprSelect = exprSelect.SelectAppend(goqu.MIN("timestamp").As(timeBucketColumn))
-				exprList = append(exprList, timeBucketExpr)
 
 				var newHandler []*SQLColumnHandler
 
@@ -333,17 +304,18 @@ func (p *Parser) parseQueryDimensionsByExpr(exprSelect *goqu.SelectDataset, dime
 
 			script, err := p.getScriptExpressionOnCk(p.ctx, dim.Expr, influxql.AnyField, nil)
 			if err != nil {
-				return exprSelect, nil, nil, nil
+				return exprSelect, nil, nil
 			}
-			exprList = append(exprList, script)
+			groupColumn.addCallColumn(expr, script)
 		}
+
 		script := p.getExprStringAndFlagByExpr(dim.Expr, influxql.AnyField)
-		exprList = append(exprList, script)
+		groupColumn.addDimensionColumn(dim.Expr, script)
 
 		key, _ := getExprStringAndFlag(dim.Expr, influxql.AnyField)
 		p.ctx.dimensions[key] = true
 	}
-	return exprSelect, exprList, tailExpr, nil
+	return exprSelect, groupColumn, nil
 }
 
 func (p *Parser) getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.DataType) (key string) {
@@ -385,7 +357,7 @@ func (p *Parser) getExprStringAndFlagByExpr(expr influxql.Expr, deftyp influxql.
 func exprString(expr influxql.Expr) string {
 	return strings.ReplaceAll(expr.String(), "\"", "")
 }
-func (p *Parser) parseQueryFieldsByExpr(fields influxql.Fields, columns map[string]_column) (map[string]exp.Expression, []*SQLColumnHandler, error) {
+func (p *Parser) parseQueryFieldsByExpr(fields influxql.Fields, columns *_columns) (map[string]exp.Expression, []*SQLColumnHandler, error) {
 	aggs := make(map[string]exp.Expression)
 	var handlers []*SQLColumnHandler
 	for _, field := range fields {
@@ -399,7 +371,7 @@ func (p *Parser) parseQueryFieldsByExpr(fields influxql.Fields, columns map[stri
 
 }
 
-func (p *Parser) parseFieldByExpr(field *influxql.Field, aggs map[string]exp.Expression, cols map[string]_column) (*SQLColumnHandler, error) {
+func (p *Parser) parseFieldByExpr(field *influxql.Field, aggs map[string]exp.Expression, cols *_columns) (*SQLColumnHandler, error) {
 	ch := &SQLColumnHandler{
 		field: field,
 		ctx:   p.ctx,
@@ -458,13 +430,17 @@ func (p *Parser) parseFiledAggByExpr(expr influxql.Expr, aggs map[string]exp.Exp
 	return nil
 }
 
-func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]_column) error {
+func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols *_columns) error {
 	switch expr := expr.(type) {
 	case *influxql.Call:
 		if expr.Name == "scope" {
 			return nil
 		}
 		_, ok := CkAggFunctions[expr.Name]
+		if ok {
+			id := p.ctx.GetFuncID(expr, influxql.AnyField)
+			cols.addColumn(id, _column{asName: id, expr: expr.String(), key: expr.String(), isAggFunctionField: true})
+		}
 		if !ok {
 			for _, arg := range expr.Args {
 				if err := p.parseFiledRefByExpr(arg, cols); err != nil {
@@ -484,9 +460,9 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols map[string]_column
 	case *influxql.VarRef:
 		c, column := p.ckGetKey(expr, influxql.AnyField)
 		column.asName = exprString(expr)
-		cols[c] = column
+		cols.addColumn(c, column)
 	case *influxql.Wildcard:
-		cols["*"] = _column{asName: "*", isWildcard: true, rootColumn: "*"}
+		cols.addWildcard()
 	}
 	return nil
 }

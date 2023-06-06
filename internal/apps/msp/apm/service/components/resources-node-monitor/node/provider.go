@@ -54,7 +54,7 @@ type provider struct {
 }
 
 func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(cpu_usage_active::field, 2) " +
+	statement := fmt.Sprintf("SELECT avg(cpu_usage_active::field) " +
 		"FROM host_summary " +
 		"WHERE host_ip::tag=$host_ip " +
 		"GROUP BY time()")
@@ -86,7 +86,7 @@ func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64
 }
 
 func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(mem_used_percent::field, 2) " +
+	statement := fmt.Sprintf("SELECT avg(mem_used_percent::field) " +
 		"FROM host_summary " +
 		"WHERE host_ip::tag=$host_ip " +
 		"GROUP BY time()")
@@ -196,7 +196,7 @@ func (p *provider) getPodCountLineGraph(ctx context.Context, startTime, endTime 
 }
 
 func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(write_rate::field, 2),round_float(read_rate::field, 2) " +
+	statement := fmt.Sprintf("SELECT avg(write_rate::field),avg(read_rate::field) " +
 		"FROM diskio " +
 		"WHERE host_ip::tag=$host_ip " +
 		"GROUP BY time()")
@@ -235,7 +235,7 @@ func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime in
 }
 
 func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(send_rate::field, 2),round_float(recv_rate::field, 2) " +
+	statement := fmt.Sprintf("SELECT avg(send_rate::field),avg(recv_rate::field) " +
 		"FROM net " +
 		"WHERE host_ip::tag=$host_ip AND interface::tag='eth0' " +
 		"GROUP BY time()")
