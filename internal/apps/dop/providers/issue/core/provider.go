@@ -15,6 +15,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	stream "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/core"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -120,24 +122,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						if !req.IsDownloadTemplate {
 							return encoding.EncodeResponse(rw, r, data)
 						}
-						req.PageNo = 1
-						req.PageSize = 1
-						issues, _, err := p.Query.Paging(getIssuePagingRequest(&req))
+						// use new excel export
+						var buffer bytes.Buffer
+						dataForFulfill, err := p.issueService.createDataForFulfillForExport(&req)
 						if err != nil {
 							return err
 						}
-						pro, err := p.Query.BatchGetProperties(req.OrgID, req.Type)
-						if err != nil {
+						if err := issueexcel.ExportFile(&buffer, *dataForFulfill); err != nil {
 							return err
 						}
-						reader, tableName, err := p.Query.ExportExcel(issues, pro, req.ProjectID, true, req.OrgID, req.Locale)
-						if err != nil {
-							return err
-						}
-						rw.Header().Add("Content-Disposition", "attachment;fileName="+tableName+".xlsx")
+						rw.Header().Add("Content-Disposition", "attachment;fileName=issue-template.xlsx")
 						rw.Header().Add("Content-Type", "application/vnd.ms-excel")
 
-						if _, err := io.Copy(rw, reader); err != nil {
+						if _, err := io.Copy(rw, &buffer); err != nil {
 							return apierrors.ErrExportExcelIssue.InternalError(err)
 						}
 					}

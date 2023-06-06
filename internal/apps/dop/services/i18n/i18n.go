@@ -113,12 +113,4 @@ const (
 
 	I18nKeyIssueExportTitles = "IssueExportTitle"
 	I18nKeyIssueExportSample = "IssueExportSample"
-
-	I18nKeyIssueExportTitleCommon             = "IssueExportTitleCommon"
-	I18nKeyIssueExportTitleRequirementOnly    = "IssueExportTitleRequirementOnly"
-	I18nKeyIssueExportSubTitleRequirementOnly = "IssueExportSubTitleRequirementOnly"
-	I18nKeyIssueExportTitleTaskOnly           = "IssueExportTitleTaskOnly"
-	I18nKeyIssueExportSubTitleTaskOnly        = "IssueExportSubTitleTaskOnly"
-	I18nKeyIssueExportTitleBugOnly            = "IssueExportTitleBugOnly"
-	I18nKeyIssueExportSubTitleBugOnly         = "IssueExportSubTitleBugOnly"
 )

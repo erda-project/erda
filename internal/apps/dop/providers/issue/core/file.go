@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -443,30 +442,6 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 		return
 	}
 
-	//reader, tableName, err := i.query.ExportExcel(issues, pro, req.ProjectID, req.IsDownloadTemplate, req.OrgID, req.Locale)
-	//if err != nil {
-	//	logrus.Errorf("%s failed to export excel, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//f, err := ioutil.TempFile("", "export.*")
-	//if err != nil {
-	//	logrus.Errorf("%s failed to create temp file, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//defer f.Close()
-	//defer func() {
-	//	if err := os.Remove(f.Name()); err != nil {
-	//		logrus.Errorf("%s failed to remove temp file, err: %v", issueService, err)
-	//	}
-	//}()
-	//if _, err := io.Copy(f, reader); err != nil {
-	//	logrus.Errorf("%s failed to copy export file, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	//f.Seek(0, 0)
 	expiredAt := time.Now().Add(time.Duration(conf.ExportIssueFileStoreDay()) * 24 * time.Hour)
 	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: dataForFulfill.ExportOnly.FileNameWithExt,
@@ -508,16 +483,11 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 		return
 	}
 
-	//f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
-	//if err != nil {
-	//	logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-	//	i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-	//	return
-	//}
-	f, err := os.Open("./import-old.xlsx")
-	//f, err := os.Open("./gen2.xlsx")
+	f, err := i.bdl.DownloadDiceFile(record.ApiFileUUID)
 	if err != nil {
-		panic(err)
+		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
+		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
 	}
 	defer f.Close()
 

@@ -5,7 +5,6 @@
 package mock
 
 import (
-	"io"
 	"reflect"
 
 	"github.com/golang/mock/gomock"
@@ -139,16 +138,6 @@ func (m *MockIssueQuery) CreatePropertyRelation(req *pb0.CreateIssuePropertyInst
 func (mr *MockIssueQueryMockRecorder) CreatePropertyRelation(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePropertyRelation", reflect.TypeOf((*MockIssueQuery)(nil).CreatePropertyRelation), req)
-}
-
-// ExportExcel mocks base method.
-func (m *MockIssueQuery) ExportExcel(issues []*pb0.Issue, properties []*pb0.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExportExcel", issues, properties, projectID, isDownload, orgID, locale)
-	ret0, _ := ret[0].(io.Reader)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
 }
 
 // ExportExcel indicates an expected call of ExportExcel.

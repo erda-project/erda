@@ -17,11 +17,9 @@ package query
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
@@ -31,63 +29,6 @@ import (
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/i18n"
 )
-
-func Test_provider_convertIssueToExcelList(t *testing.T) {
-	var db *dao.DBClient
-	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStatesByProjectID",
-		func(d *dao.DBClient, projectID uint64, issueType string) ([]dao.IssueState, error) {
-			return []dao.IssueState{
-				{
-					ProjectID: projectID,
-					Name:      "待处理",
-				},
-			}, nil
-		},
-	)
-	defer p1.Unpatch()
-
-	p2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PagingIterations",
-		func(d *dao.DBClient, req apistructs.IterationPagingRequest) ([]dao.Iteration, uint64, error) {
-			return []dao.Iteration{
-				{
-					ProjectID: req.ProjectID,
-					Title:     "1.1",
-				},
-			}, 1, nil
-		},
-	)
-	defer p2.Unpatch()
-
-	bdl := bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
-	p3 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetLocale",
-		func(bdl *bundle.Bundle, local ...string) *i18n.LocaleResource {
-			return &i18n.LocaleResource{}
-		})
-	defer p3.Unpatch()
-
-	p4 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PagingPropertyRelationByIDs",
-		func(d *dao.DBClient, issueID []int64) ([]dao.IssuePropertyRelation, error) {
-			return []dao.IssuePropertyRelation{
-				{
-					IssueID: 1,
-				},
-			}, nil
-		},
-	)
-	defer p4.Unpatch()
-
-	p := &provider{db: db, bdl: bdl}
-	p5 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "GetIssueRelationsByIssueIDs",
-		func(p *provider, issueID uint64, relationType []string) ([]uint64, []uint64, error) {
-			return []uint64{}, []uint64{}, nil
-		},
-	)
-	defer p5.Unpatch()
-
-	finishTime := time.Now()
-	_, err := p.convertIssueToExcelList([]*pb.Issue{{Id: 1, FinishTime: timestamppb.New(finishTime), Type: pb.IssueTypeEnum_TICKET}}, []*pb.IssuePropertyIndex{}, 1, false, map[IssueStage]string{}, "cn")
-	assert.Equal(t, err, nil)
-}
 
 func Test_provider_getIssueExportDataI18n(t *testing.T) {
 	bdl := bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
@@ -446,7 +387,14 @@ func Test_getCustomPropertyColumnValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetCustomPropertyColumnValue(tt.args.pro, tt.args.relations, tt.args.mp, tt.args.users); got != tt.want {
+			memberMap := make(map[string]apistructs.Member)
+			for k, v := range tt.args.users {
+				memberMap[k] = apistructs.Member{
+					UserID: k,
+					Nick:   v,
+				}
+			}
+			if got := GetCustomPropertyColumnValue(tt.args.pro, tt.args.relations, tt.args.mp, memberMap); got != tt.want {
 				t.Errorf("GetCustomPropertyColumnValue() = %v, want %v", got, tt.want)
 			}
 		})

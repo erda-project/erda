@@ -15,99 +15,19 @@
 package query
 
 import (
-	"bytes"
-	"context"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
 
-	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	streamcommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/internal/apps/dop/services/i18n"
-	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
-
-func (p *provider) ExportExcel(issues []*pb.Issue, properties []*pb.IssuePropertyIndex, projectID uint64, isDownloadTemplate bool, orgID int64, locale string) (io.Reader, string, error) {
-	// list of issue stage
-	stages, err := p.db.GetIssuesStageByOrgID(orgID)
-	if err != nil {
-		return nil, "", err
-	}
-	// get the stageMap
-	stageMap := GetStageMap(stages)
-
-	table, err := p.convertIssueToExcelList(issues, properties, projectID, isDownloadTemplate, stageMap, locale)
-	if err != nil {
-		return nil, "", err
-	}
-	// replace userids by usernames
-	userids := []string{}
-	for _, t := range table[1:] {
-		if t[4] != "" {
-			userids = append(userids, t[4])
-		}
-		if t[5] != "" {
-			userids = append(userids, t[5])
-		}
-		if t[6] != "" {
-			userids = append(userids, t[6])
-		}
-	}
-	userids = strutil.DedupSlice(userids, true)
-	resp, err := p.Identity.FindUsers(context.Background(), &userpb.FindUsersRequest{
-		IDs: userids,
-	})
-	users := resp.Data
-	if err != nil {
-		return nil, "", err
-	}
-	usernames := map[string]string{}
-	for _, u := range users {
-		usernames[u.ID] = u.Nick
-	}
-	for i := 1; i < len(table); i++ {
-		if table[i][4] != "" {
-			if name, ok := usernames[table[i][4]]; ok {
-				table[i][4] = name
-			}
-		}
-		if table[i][5] != "" {
-			if name, ok := usernames[table[i][5]]; ok {
-				table[i][5] = name
-			}
-		}
-		if table[i][6] != "" {
-			if name, ok := usernames[table[i][6]]; ok {
-				table[i][6] = name
-			}
-		}
-	}
-	tablename := "issuetable"
-	if len(issues) > 0 {
-		if issues[0].IterationID == -1 {
-			tablename = "待办事项"
-		} else {
-			tablename = issues[0].Type.String()
-		}
-	}
-
-	// insert sample issue
-	if isDownloadTemplate {
-		table = append(table, p.getIssueExportDataI18n(locale, i18n.I18nKeyIssueExportSample))
-	}
-	buf := bytes.NewBuffer([]byte{})
-	if err := excel.ExportExcel(buf, table, tablename); err != nil {
-		return nil, "", err
-	}
-	return buf, tablename, nil
-}
 
 // GetStageMap return a map,the key is the struct of dice_issue_stage.Value and dice_issue_stage.IssueType,
 // the value is dice_issue_stage.Name
