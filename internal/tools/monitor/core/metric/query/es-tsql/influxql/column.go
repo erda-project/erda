@@ -17,7 +17,7 @@ type _column struct {
 	isTimeKey          bool
 	isNumberField      bool
 	isStringField      bool
-	IsAggFunctionField bool
+	isAggFunctionField bool
 	expr               string
 	flag               model.ColumnFlag
 }

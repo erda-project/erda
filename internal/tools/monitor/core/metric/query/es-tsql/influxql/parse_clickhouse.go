@@ -195,7 +195,7 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 	groupExpress := make(map[string]goqu.Expression)
 	if groupColumns != nil {
 		for script, column := range selectColumns.columns {
-			if column.IsAggFunctionField {
+			if column.isAggFunctionField {
 				continue
 			}
 			if column.isTimeKey {
@@ -236,7 +236,7 @@ func (p *Parser) parseQueryOnExpr(fields influxql.Fields, expr *goqu.SelectDatas
 			expr = expr.SelectAppend(goqu.L(fmt.Sprintf("toNullable(%s)", key)))
 			continue
 		}
-		if column.IsAggFunctionField {
+		if column.isAggFunctionField {
 			// agg function exist expr
 			continue
 		}
@@ -439,7 +439,7 @@ func (p *Parser) parseFiledRefByExpr(expr influxql.Expr, cols *_columns) error {
 		_, ok := CkAggFunctions[expr.Name]
 		if ok {
 			id := p.ctx.GetFuncID(expr, influxql.AnyField)
-			cols.addColumn(id, _column{asName: id, expr: expr.String(), key: expr.String(), IsAggFunctionField: true})
+			cols.addColumn(id, _column{asName: id, expr: expr.String(), key: expr.String(), isAggFunctionField: true})
 		}
 		if !ok {
 			for _, arg := range expr.Args {
