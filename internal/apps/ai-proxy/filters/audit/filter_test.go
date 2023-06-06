@@ -21,12 +21,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dspo/roundtrip"
-
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func TestAudit_SetSessionId(t *testing.T) {
@@ -140,7 +139,7 @@ func TestAudit_SetPrompt(t *testing.T) {
 		request.URL.Host = "ai.localhost"
 		request.Method = http.MethodPost
 		request.Header.Set("Content-Type", string(httputil.ApplicationJson))
-		infor := roundtrip.NewInfor(context.Background(), request)
+		infor := reverseproxy.NewInfor(context.Background(), request)
 		if err := aud.SetPrompt(context.Background(), infor); err != nil {
 			t.Fatal(err)
 		}

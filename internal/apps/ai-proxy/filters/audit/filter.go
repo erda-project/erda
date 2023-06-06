@@ -27,16 +27,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dspo/roundtrip"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -57,26 +56,26 @@ const (
 )
 
 var (
-	_ roundtrip.RequestFilter        = (*Audit)(nil)
-	_ roundtrip.ResponseStreamFilter = (*Audit)(nil)
+	_ reverseproxy.RequestFilter  = (*Audit)(nil)
+	_ reverseproxy.ResponseFilter = (*Audit)(nil)
 )
 
 func init() {
-	filters.RegisterFilterCreator(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
 type Audit struct {
-	*roundtrip.DefaultResponseFilter
+	*reverseproxy.DefaultResponseFilter
 
 	Audit *models.AIProxyFilterAudit
 }
 
-func New(_ json.RawMessage) (roundtrip.Filter, error) {
-	return &Audit{Audit: new(models.AIProxyFilterAudit), DefaultResponseFilter: roundtrip.NewDefaultResponseFilter()}, nil
+func New(_ json.RawMessage) (reverseproxy.Filter, error) {
+	return &Audit{Audit: new(models.AIProxyFilterAudit), DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
-func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundtrip.HttpInfor) (signal roundtrip.Signal, err error) {
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger)
+func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	for _, set := range []any{
 		f.SetSessionId,
 		f.SetChats,
@@ -104,7 +103,7 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor roun
 			if err := f(ctx, infor.BodyBuffer()); err != nil {
 				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
-		case func(context.Context, roundtrip.HttpInfor) error:
+		case func(context.Context, reverseproxy.HttpInfor) error:
 			if err := f(ctx, infor); err != nil {
 				l.Errorf("failed to %v, err: %v", reflect.TypeOf(set), err)
 			}
@@ -120,11 +119,11 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor roun
 		l.Errorf("failed to create audit row, err: %v", err)
 	}
 
-	return roundtrip.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
-func (f *Audit) OnResponseEOF(ctx context.Context, infor roundtrip.HttpInfor, w roundtrip.Writer, chunk []byte) error {
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger)
+func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
 		l.Errorf("failed to f.DefaultResponseFilter.OnResponseEOF, err: %v", err)
 		return err
@@ -155,7 +154,7 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor roundtrip.HttpInfor, w 
 			if err := fn(ctx, infor.Header(), f.Buffer); err != nil {
 				l.Errorf("failed to do %T, err: %v", set, err)
 			}
-		case func(context.Context, roundtrip.HttpInfor) error:
+		case func(context.Context, reverseproxy.HttpInfor) error:
 			if err := fn(ctx, infor); err != nil {
 				l.Errorf("failed to do %T, err: %v", set, err)
 			}
@@ -237,7 +236,7 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 }
 
 func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger)
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if !httputil.HeaderContains(header[httputil.ContentTypeKey], httputil.ApplicationJson) {
 		return nil // todo: Only Content-Type: application/json auditing is supported for now.
 	}
@@ -263,7 +262,7 @@ func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buf
 	return nil
 }
 
-func (f *Audit) SetOperationId(ctx context.Context, infor roundtrip.HttpInfor) error {
+func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.OperationId = infor.Method()
 	if infor.URL() != nil {
 		f.Audit.OperationId += " " + infor.URL().Path
@@ -271,7 +270,7 @@ func (f *Audit) SetOperationId(ctx context.Context, infor roundtrip.HttpInfor) e
 	return nil
 }
 
-func (f *Audit) SetPrompt(ctx context.Context, infor roundtrip.HttpInfor) error {
+func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Prompt = "-"
 	if value := infor.Header().Get(vars.XErdaAIProxyPrompt); value != "" {
 		prompt, err := base64.StdEncoding.DecodeString(value)
@@ -516,7 +515,7 @@ func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
 	return nil
 }
 
-func (f *Audit) SetStatus(_ context.Context, infor roundtrip.HttpInfor) error {
+func (f *Audit) SetStatus(_ context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Status = infor.Status()
 	f.Audit.StatusCode = infor.StatusCode()
 	return nil
@@ -547,7 +546,7 @@ func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http
 		return nil
 	}
 
-	l := ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger).Sub("setCompletionForApplicationJson")
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("setCompletionForApplicationJson")
 	var m = make(map[string]json.RawMessage)
 	if err := json.NewDecoder(reader).Decode(&m); err != nil {
 		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", reader, m)

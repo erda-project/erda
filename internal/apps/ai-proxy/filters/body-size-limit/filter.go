@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dspo/roundtrip"
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -32,18 +31,18 @@ const (
 )
 
 var (
-	_ roundtrip.RequestFilter = (*BodySizeLimit)(nil)
+	_ reverseproxy.RequestFilter = (*BodySizeLimit)(nil)
 )
 
 func init() {
-	filters.RegisterFilterCreator(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
 type BodySizeLimit struct {
 	Cfg *Config
 }
 
-func New(config json.RawMessage) (roundtrip.Filter, error) {
+func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	var cfg Config
 	if err := json.Unmarshal(config, &cfg); err != nil {
 		return nil, errors.Wrapf(err, "failed to parse config %s for %s", string(config), Name)
@@ -54,15 +53,15 @@ func New(config json.RawMessage) (roundtrip.Filter, error) {
 	return &BodySizeLimit{Cfg: &cfg}, nil
 }
 
-func (f *BodySizeLimit) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundtrip.HttpInfor) (signal roundtrip.Signal, err error) {
+func (f *BodySizeLimit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	if infor.ContentLength() > f.Cfg.MaxSize || int64(infor.BodyBuffer().Len()) > f.Cfg.MaxSize {
 		if ok := json.Valid(f.Cfg.Message); ok {
 			w.Header().Set("Content-Type", string(httputil.ApplicationJson))
 		}
 		_, _ = w.Write(f.Cfg.Message)
-		return roundtrip.Intercept, nil
+		return reverseproxy.Intercept, nil
 	}
-	return roundtrip.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
 type Config struct {

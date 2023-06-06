@@ -20,11 +20,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dspo/roundtrip"
-
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -33,30 +31,30 @@ const (
 )
 
 var (
-	_ roundtrip.RequestFilter        = (*LogHttp)(nil)
-	_ roundtrip.ResponseStreamFilter = (*LogHttp)(nil)
+	_ reverseproxy.RequestFilter  = (*LogHttp)(nil)
+	_ reverseproxy.ResponseFilter = (*LogHttp)(nil)
 )
 
 func init() {
-	filters.RegisterFilterCreator(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
 type LogHttp struct {
-	*roundtrip.DefaultResponseFilter
+	*reverseproxy.DefaultResponseFilter
 
 	headerPrinted bool
 	lineCount     int
 }
 
-func New(_ json.RawMessage) (roundtrip.Filter, error) {
-	return &LogHttp{DefaultResponseFilter: roundtrip.NewDefaultResponseFilter()}, nil
+func New(_ json.RawMessage) (reverseproxy.Filter, error) {
+	return &LogHttp{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
-func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundtrip.HttpInfor) (signal roundtrip.Signal, err error) {
+func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
-		return roundtrip.Continue, nil
+		return reverseproxy.Continue, nil
 	}
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger)
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	var url = infor.URL()
 	var m = map[string]any{
 		"scheme":        url.Scheme,
@@ -78,12 +76,12 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor ro
 		}
 	}
 	l.Debugf("request info: %s", strutil.TryGetJsonStr(m))
-	return roundtrip.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
-func (f *LogHttp) OnResponseChunk(ctx context.Context, infor roundtrip.HttpInfor, w roundtrip.Writer, chunk []byte) (signal roundtrip.Signal, err error) {
+func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
 	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") && !f.headerPrinted {
-		var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger)
+		var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 		var m = map[string]any{
 			"headers":     infor.Header(),
 			"status":      infor.Status(),
@@ -95,14 +93,14 @@ func (f *LogHttp) OnResponseChunk(ctx context.Context, infor roundtrip.HttpInfor
 	return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk)
 }
 
-func (f *LogHttp) OnResponseEOF(ctx context.Context, infor roundtrip.HttpInfor, w roundtrip.Writer, chunk []byte) error {
+func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
 	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
 		return err
 	}
 	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
 		return nil
 	}
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger)
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
 		l.Debugf("received response content: %s", f.String())
 	} else {

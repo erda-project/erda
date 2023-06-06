@@ -23,14 +23,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dspo/roundtrip"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -38,11 +37,11 @@ const (
 )
 
 var (
-	_ roundtrip.RequestFilter = (*ProtocolTranslator)(nil)
+	_ reverseproxy.RequestFilter = (*ProtocolTranslator)(nil)
 )
 
 func init() {
-	filters.RegisterFilterCreator(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
 type ProtocolTranslator struct {
@@ -51,7 +50,7 @@ type ProtocolTranslator struct {
 	processorArgs map[string]string
 }
 
-func New(config json.RawMessage) (roundtrip.Filter, error) {
+func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
@@ -59,15 +58,15 @@ func New(config json.RawMessage) (roundtrip.Filter, error) {
 	return &ProtocolTranslator{Config: &cfg}, nil
 }
 
-func (f *ProtocolTranslator) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundtrip.HttpInfor) (signal roundtrip.Signal, err error) {
+func (f *ProtocolTranslator) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	if err := f.ProcessAll(ctx, infor); err != nil {
-		return roundtrip.Intercept, err
+		return reverseproxy.Intercept, err
 	}
-	return roundtrip.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
-func (f *ProtocolTranslator) ProcessAll(ctx context.Context, infor roundtrip.HttpInfor) error {
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger).Sub("ProcessAll")
+func (f *ProtocolTranslator) ProcessAll(ctx context.Context, infor reverseproxy.HttpInfor) error {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProcessAll")
 	var (
 		names      []string
 		processors []any
@@ -138,7 +137,7 @@ func (f *ProtocolTranslator) SetAPIKeyIfNotSpecified(ctx context.Context, header
 }
 
 func (f *ProtocolTranslator) AddQueries(ctx context.Context, u *url.URL) {
-	l := ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger).Sub("AddQueries")
+	l := ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("AddQueries")
 	s, err := strconv.Unquote(f.processorArgs["AddQueries"])
 	values, err := url.ParseQuery(s)
 	if err != nil {

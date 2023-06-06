@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filters
+package reverseproxy
 
 import (
 	"encoding/json"
 	"fmt"
 	"sync"
-
-	"github.com/dspo/roundtrip"
 )
 
 var (
@@ -27,7 +25,7 @@ var (
 	registerFilterCreatorMutex = new(sync.Mutex)
 )
 
-type FilterCreator func(json.RawMessage) (roundtrip.Filter, error)
+type FilterCreator func(json.RawMessage) (Filter, error)
 
 func RegisterFilterCreator(name string, creator FilterCreator) {
 	registerFilterCreatorMutex.Lock()

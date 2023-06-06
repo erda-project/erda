@@ -45,7 +45,6 @@ require (
 	github.com/docker/docker v20.10.22+incompatible
 	github.com/docker/spdystream v0.2.0
 	github.com/doug-martin/goqu/v9 v9.18.0
-	github.com/dspo/roundtrip v0.0.0-20230602161549-c877b1ea6f94
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/cloud-on-k8s/v2 v2.0.0-20221101080201-221fa719f43b
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6

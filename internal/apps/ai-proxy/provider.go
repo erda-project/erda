@@ -25,7 +25,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dspo/roundtrip"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -47,6 +46,7 @@ import (
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/internal/pkg/openapi/dynamic"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -122,8 +122,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 		}
 
 		// find provider to router to
-		to := string(rout.Router.To)
-		if !strings.HasPrefix(to, "__") || !strings.HasSuffix(to, "__") {
+		if to := string(rout.Router.To); !strings.HasPrefix(to, "__") || !strings.HasSuffix(to, "__") {
 			prov, ok := p.Config.providers.FindProvider(to, rout.Router.InstanceId)
 			if !ok {
 				return errors.Errorf("no such provider routes[%d].Route.To: %s", i, p.Config.Routes[i].Router.To)
@@ -164,8 +163,8 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
 		HandlerWith(
 			context.Background(),
-			roundtrip.CtxKeyLogger{}, p.L.Sub(r.Header.Get("X-Request-Id")),
-			roundtrip.CtxKeyMutex{}, new(sync.Mutex),
+			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
+			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
 		).

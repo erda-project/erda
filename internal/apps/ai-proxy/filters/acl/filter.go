@@ -20,15 +20,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dspo/roundtrip"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -36,18 +35,18 @@ const (
 )
 
 var (
-	_ roundtrip.RequestFilter = (*ACL)(nil)
+	_ reverseproxy.RequestFilter = (*ACL)(nil)
 )
 
 func init() {
-	filters.RegisterFilterCreator(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
 type ACL struct {
 	sources map[string]struct{}
 }
 
-func New(config json.RawMessage) (roundtrip.Filter, error) {
+func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
@@ -59,18 +58,18 @@ func New(config json.RawMessage) (roundtrip.Filter, error) {
 	return &ACL{sources: sources}, nil
 }
 
-func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundtrip.HttpInfor) (signal roundtrip.Signal, err error) {
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger)
+func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if source := infor.Header().Get(vars.XErdaAIProxySource); source != "" {
 		if _, ok := f.sources[source]; !ok {
-			return roundtrip.Continue, nil
+			return reverseproxy.Continue, nil
 		}
 	}
 	orgId := infor.Header().Get("Org-Id")
 	if orgId == "" {
 		l.Errorf("failed to get Org-Id from request header: Org-Id is missing or empty")
 		http.Error(w, "Org-Id is missing or empty", http.StatusBadRequest)
-		return roundtrip.Intercept, nil
+		return reverseproxy.Intercept, nil
 	}
 
 	var orgServer = ctx.Value(vars.CtxKeyOrgSvc{}).(orgpb.OrgServiceServer)
@@ -78,26 +77,26 @@ func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundt
 	if err != nil {
 		l.Errorf("failed to GetOrg, err: %v", err)
 		http.Error(w, "failed to get org: "+err.Error(), http.StatusInternalServerError)
-		return roundtrip.Intercept, nil
+		return reverseproxy.Intercept, nil
 	}
 	if org.GetData() == nil {
 		l.Errorf("failed to org.GetData: it is nil, err: %v", err)
 		http.Error(w, "failed to get org", http.StatusBadRequest)
-		return roundtrip.Intercept, nil
+		return reverseproxy.Intercept, nil
 	}
 	config := org.GetData().GetConfig()
 	if config == nil {
 		l.Errorf("failed to org.GetData().GetConfig: it is nil, err: %v", err)
 		http.Error(w, "failed to get org config", http.StatusInternalServerError)
-		return roundtrip.Intercept, errors.Wrap(err, "nil org config in gRPC response")
+		return reverseproxy.Intercept, errors.Wrap(err, "nil org config in gRPC response")
 	}
 	if !config.GetEnableAI() {
 		l.Debugf("The org %s (%+v) doesn't enable AI Service, config: %+v", org.GetData().GetName(), org, config)
 		w.Header().Set("Server", "AI Service on Erda")
 		http.Error(w, fmt.Sprintf("The organization %s does not enable AI service", org.GetData().GetName()), http.StatusForbidden)
-		return roundtrip.Intercept, nil
+		return reverseproxy.Intercept, nil
 	}
-	return roundtrip.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
 type Config struct {

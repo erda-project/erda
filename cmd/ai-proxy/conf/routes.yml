@@ -43,7 +43,9 @@ routes:
     filters:
       - name: log-http
       - name: body-size-limit
-        maxSize: 10240
+        config:
+          maxSize: 102400
+          message: {"messages": [{"role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI"}]}
       - name: acl
         config:
           sources:
@@ -70,7 +72,9 @@ routes:
     filters:
       - name: log-http
       - name: body-size-limit
-        maxSize: 10240
+        config:
+          maxSize: 102400
+          message: {"messages": [{"role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI"}]}
       - name: acl
         config:
           sources:

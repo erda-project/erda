@@ -21,14 +21,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dspo/roundtrip"
-
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/metrics"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -36,25 +34,25 @@ const (
 )
 
 var (
-	_ roundtrip.RequestFilter        = (*PrometheusCollector)(nil)
-	_ roundtrip.ResponseStreamFilter = (*PrometheusCollector)(nil)
+	_ reverseproxy.RequestFilter  = (*PrometheusCollector)(nil)
+	_ reverseproxy.ResponseFilter = (*PrometheusCollector)(nil)
 )
 
 func init() {
-	filters.RegisterFilterCreator(Name, New)
+	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-func New(_ json.RawMessage) (roundtrip.Filter, error) {
-	return &PrometheusCollector{DefaultResponseFilter: roundtrip.NewDefaultResponseFilter()}, nil
+func New(_ json.RawMessage) (reverseproxy.Filter, error) {
+	return &PrometheusCollector{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
 type PrometheusCollector struct {
-	*roundtrip.DefaultResponseFilter
+	*reverseproxy.DefaultResponseFilter
 
 	lvs metrics.LabelValues
 }
 
-func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWriter, infor roundtrip.HttpInfor) (signal roundtrip.Signal, err error) {
+func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	f.lvs.ChatType = infor.Header().Get(vars.XErdaAIProxyChatType)
 	f.lvs.ChatTitle = infor.Header().Get(vars.XErdaAIProxyChatTitle)
 	f.lvs.Source = infor.Header().Get(vars.XErdaAIProxySource)
@@ -66,10 +64,10 @@ func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWrit
 	if infor.URL() != nil {
 		f.lvs.OperationId += " " + infor.URL().Path
 	}
-	return roundtrip.Continue, nil
+	return reverseproxy.Continue, nil
 }
 
-func (f *PrometheusCollector) OnResponseEOF(ctx context.Context, infor roundtrip.HttpInfor, w roundtrip.Writer, chunk []byte) error {
+func (f *PrometheusCollector) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
 	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
 		return err
 	}
@@ -91,8 +89,8 @@ func (f *PrometheusCollector) OnResponseEOF(ctx context.Context, infor roundtrip
 	return nil
 }
 
-func (f *PrometheusCollector) getModel(ctx context.Context, infor roundtrip.HttpInfor) string {
-	var l = ctx.Value(roundtrip.CtxKeyLogger{}).(logs.Logger).Sub("getModel")
+func (f *PrometheusCollector) getModel(ctx context.Context, infor reverseproxy.HttpInfor) string {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("getModel")
 	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) {
 		return "-" // todo: Only Content-Type: application/json auditing is supported for now.
 	}
