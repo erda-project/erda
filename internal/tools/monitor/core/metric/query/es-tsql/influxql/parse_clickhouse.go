@@ -204,7 +204,7 @@ func (p *Parser) ParseGroupByOnExpr(dimensions influxql.Dimensions, expr *goqu.S
 				groupExpress[script] = goqu.C(column.asName)
 			}
 		}
-		for liter, _ := range groupColumns.columns {
+		for liter := range groupColumns.columns {
 			if _, ok := groupExpress[liter]; !ok {
 				groupExpress[liter] = goqu.L(liter)
 			}
