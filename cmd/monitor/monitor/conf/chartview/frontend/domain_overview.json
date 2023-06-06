@@ -267,11 +267,7 @@
               "time()",
               "host::tag"
             ],
-            "orderby": [
-              {
-                "expr": "avg(plt::field) desc"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "typeVO4x3E46",
@@ -397,12 +393,7 @@
               "time()",
               "host::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "count(plt::field)"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "typeFzDHMAsF",
