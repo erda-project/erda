@@ -815,7 +815,7 @@ func TestGetServiceInstances(t *testing.T) {
 			checkStmt: func(stmt string, params map[string]interface{}) {
 				wantStmt := make(map[string]byte)
 				wantStmt["SELECT service_instance_id::tag,service_agent_platform::tag,format_time(start_time_mean::field*1000000,'2006-01-02 15:04:05') AS start_time,format_time(timestamp,'2006-01-02 15:04:05') AS last_heartbeat_time FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
-				wantStmt["SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
+				wantStmt["SELECT service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'false','true') AS state FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
 
 				if _, ok := wantStmt[stmt]; !ok {
 					t.Errorf("stmt should be %v, but is %s", wantStmt, stmt)
