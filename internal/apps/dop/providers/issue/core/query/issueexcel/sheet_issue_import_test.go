@@ -45,7 +45,7 @@ func Test_decodeMapToIssueSheetModel(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(models))
 	model := models[0]
-	assert.Equal(t, int64(1), model.Common.ID)
+	assert.Equal(t, uint64(1), model.Common.ID)
 	assert.Equal(t, "title", model.Common.IssueTitle)
 	assert.Equal(t, "code", model.TaskOnly.TaskType)
 	assert.Equal(t, "v-of-cf-1", model.TaskOnly.CustomFields[0].Value)

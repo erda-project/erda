@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
 func TestNewIssueSheetColumnUUID(t *testing.T) {
@@ -54,6 +55,9 @@ func Test_genIssueSheetTitleAndDataByColumn(t *testing.T) {
 		CustomFieldMap: map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex{},
 		StateMap:       map[int64]string{},
 		StageMap:       map[query.IssueStage]string{},
+		IterationMapByID: map[int64]*dao.Iteration{
+			0: {},
+		},
 	}
 	info, err := data.genIssueSheetTitleAndDataByColumn()
 	assert.NoError(t, err)
