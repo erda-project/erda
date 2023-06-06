@@ -1,0 +1,66 @@
+{
+  "id":"app_resource_container_network",
+  "expression":{
+    "filters":[
+      {
+        "operator":"eq",
+        "tag":"org_name",
+        "value":"$org_name"
+      },
+      {
+        "operator":"eq",
+        "tag":"terminus_key",
+        "value":"$terminus_key"
+      },
+      {
+        "operator": "neq",
+        "tag": "container",
+        "value": "POD"
+      }
+    ],
+    "functions":[
+      {
+        "aggregator":"max",
+        "field":"rx_bytes",
+        "operator":"gte",
+        "alias": "rx_bytes",
+        "unit": "MB/s",
+        "value": 1,
+        "field_script": "function invoke(field, tag){ return field.rx_bytes/1024/1024 }"
+      },
+      {
+        "aggregator":"max",
+        "alias":"tx_bytes",
+        "field":"tx_bytes",
+        "operator":"gte",
+        "unit": "MB/s",
+        "value": 1,
+        "field_script": "function invoke(field, tag){ return field.tx_bytes/1024/1024 }"
+      }
+    ],
+    "group":[
+      "container_id"
+    ],
+    "metric":"docker_container_summary",
+    "outputs":[
+      "alert"
+    ],
+    "select":{
+      "application_id":"#application_id",
+      "application_name":"#application_name",
+      "cluster_name":"#cluster_name",
+      "container_id":"#container_id",
+      "host_ip":"#host_ip",
+      "instance_id":"#instance_id",
+      "org_name":"#org_name",
+      "pod_ip":"#pod_ip",
+      "project_id":"#project_id",
+      "project_name":"#project_name",
+      "runtime_id":"#runtime_id",
+      "runtime_name":"#runtime_name",
+      "service_name":"#service_name",
+      "terminus_key":"#terminus_key"
+    },
+    "window":1
+  }
+}
