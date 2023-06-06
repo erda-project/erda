@@ -15,36 +15,21 @@
 package query
 
 import (
-	"reflect"
-	"testing"
-
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
-func Test_getStageMap(t *testing.T) {
-	type args struct {
-		stages []dao.IssueStage
-	}
-	w := map[IssueStage]string{
-		{"TASK", "1"}: "2",
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[IssueStage]string
-	}{
-		{
-			args: args{
-				[]dao.IssueStage{{IssueType: "TASK", Value: "1", Name: "2"}},
-			},
-			want: w,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getStageMap(tt.args.stages); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getStageMap() = %v, want %v", got, tt.want)
+// GetStageMap return a map,the key is the struct of dice_issue_stage.Value and dice_issue_stage.IssueType,
+// the value is dice_issue_stage.Name
+func GetStageMap(stages []dao.IssueStage) map[IssueStage]string {
+	stageMap := make(map[IssueStage]string, len(stages))
+	for _, v := range stages {
+		if v.Value != "" && v.IssueType != "" {
+			stage := IssueStage{
+				Type:  v.IssueType,
+				Value: v.Value,
 			}
-		})
+			stageMap[stage] = v.Name
+		}
 	}
+	return stageMap
 }
