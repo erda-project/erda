@@ -73,6 +73,11 @@ func TestSplit(t *testing.T) {
 
 }
 
+func TestSplits(t *testing.T) {
+	assert.Equal(t, []string{"a", "bc", "", "12", "3"}, Splits("a,bc,,12，3", []string{"，", ","}))
+	assert.Equal(t, []string{"a", "bc", "12", "3"}, Splits("a,bc,,12，3", []string{"，", ","}, true))
+}
+
 func TestLines(t *testing.T) {
 	assert.Equal(t, []string{"abc", "def", "ghi"}, Lines("abc\ndef\nghi"))
 	assert.Equal(t, []string{"abc", "def", "ghi"}, Lines("abc\rdef\rghi"))

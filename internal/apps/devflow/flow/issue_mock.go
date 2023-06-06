@@ -15,8 +15,6 @@
 package flow
 
 import (
-	"io"
-
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	syncpb "github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
@@ -76,10 +74,6 @@ func (i IssueMock) GetIssuesByIssueIDs(issueIDs []uint64) ([]*issuepb.Issue, err
 }
 
 func (i IssueMock) GetBatchProperties(orgID int64, issuesType []string) ([]*issuepb.IssuePropertyIndex, error) {
-	panic("implement me")
-}
-
-func (i IssueMock) ExportExcel(issues []*issuepb.Issue, properties []*issuepb.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error) {
 	panic("implement me")
 }
 
