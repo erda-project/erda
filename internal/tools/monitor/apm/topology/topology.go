@@ -978,7 +978,7 @@ func (topology *provider) GetServiceInstances(ctx context.Context, language i18n
 	}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state FROM application_service_node " +
+	statement = "SELECT service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'false','true') AS state FROM application_service_node " +
 		"WHERE terminus_key::tag=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	response, err = topology.metricq.Query(ctx, "influxql", statement, queryParams, metricsParams)
 	if err != nil {
@@ -1032,7 +1032,7 @@ func (topology *provider) GetServiceOverview(ctx context.Context, language i18n.
 	instanceMetricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
 
-	statement := "SELECT service_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node " +
+	statement := "SELECT service_name::tag,service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'stopping','running') FROM application_service_node " +
 		"WHERE terminus_key::tag=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1136,7 +1136,7 @@ func (topology *provider) GetOverview(ctx context.Context, language i18n.Languag
 	instanceMetricsParams := url.Values{}
 	instanceMetricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"
+	statement = "SELECT service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
@@ -1395,7 +1395,7 @@ func (topology *provider) GetInstances(ctx context.Context, language i18n.Langua
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"
+	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.TerminusKey,
 	}

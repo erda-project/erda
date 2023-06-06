@@ -96,12 +96,7 @@
               "time()",
               "browser::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "avg(plt::field)"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "type06dR78sm",
@@ -224,12 +219,7 @@
               "time()",
               "browser::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "count(plt::field)"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "typeutZ0e94U",
