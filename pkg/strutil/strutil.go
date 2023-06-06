@@ -258,6 +258,25 @@ func Split(s string, sep string, omitEmptyOpt ...bool) []string {
 	return result
 }
 
+// Splits 根据 `seps` 中的每个元素来切分 `s`, `omitEmptyOpt`=true 时，忽略结果中的空字符串
+//
+// Splits("a,bc,,12，3", []string{"，", ","}) => []string{"a", "bc", "12", "", "3"}
+//
+// Splits("a,bc,,12，3", []string{"，", ","}, true) => []string{"a", "bc", "12", "3"}
+func Splits(s string, seps []string, omitEmptyOpt ...bool) []string {
+	if len(seps) == 0 {
+		return []string{s}
+	}
+
+	sep, seps := seps[0], seps[1:]
+	parts := Split(s, sep, omitEmptyOpt...)
+	result := []string{}
+	for _, part := range parts {
+		result = append(result, Splits(part, seps, omitEmptyOpt...)...)
+	}
+	return result
+}
+
 var (
 	linesRegex = regexp.MustCompile("\r\n|\n|\r")
 )

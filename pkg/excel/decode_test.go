@@ -14,24 +14,68 @@
 
 package excel
 
-//import (
-//	"os"
-//	"testing"
-//
-//	"github.com/davecgh/go-spew/spew"
-//	"github.com/stretchr/testify/assert"
-//)
-//
-//func TestDecode(t *testing.T) {
-//	f, err := os.Open("/tmp/测试用例.xlsx")
-//	assert.NoError(t, err)
-//	data, err := Decode(f)
-//	assert.NoError(t, err)
-//	spew.Dump(data)
-//
-//	f, err = os.Open("/tmp/测试用例2.xlsx")
-//	assert.NoError(t, err)
-//	data, err = Decode(f)
-//	assert.NoError(t, err)
-//	spew.Dump(data)
-//}
+import (
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/tealeg/xlsx"
+)
+
+type TaskSheet struct {
+	TaskOnly TaskOnly
+}
+type TaskOnly struct {
+	TaskType     string
+	CustomFields []string
+}
+
+func Test_Decode(t *testing.T) {
+	f, err := os.CreateTemp(".", "test-*.xlsx")
+	//defer os.Remove(f.Name())
+	assert.NoError(t, err)
+	// encode
+	cells := [][]Cell{
+		// title
+		{
+			{Value: "TaskOnly", VerticalMergeNum: 0},
+			{Value: "TaskOnly", VerticalMergeNum: 0},
+		},
+		{
+			{Value: "TaskType", VerticalMergeNum: 1},
+			{Value: "CustomFields", VerticalMergeNum: 0},
+		},
+		{
+			{Value: "TaskType", VerticalMergeNum: 0},
+			{Value: "cf-1", VerticalMergeNum: 0},
+		},
+		// value
+		{
+			{Value: "code", VerticalMergeNum: 0},
+			{Value: "v-of-cf-1", VerticalMergeNum: 0},
+		},
+	}
+	err = ExportExcelByCell(f, cells, "taskonly")
+	assert.NoError(t, err)
+	// decode
+	strCells, err := xlsx.FileToSlice(f.Name())
+	assert.NoError(t, err)
+	fmt.Printf("%#v\n", strCells)
+
+	// convert [][][]string to map[string][]Cell
+	m := make(map[string][]Cell)
+	for i := range []int{0, 1} { // column index
+		columnName := strings.Join([]string{strCells[0][0][i], strCells[0][1][i], strCells[0][2][i]}, "---")
+		// data rows start from 2
+		for j := range strCells[0][2:] {
+			m[columnName] = append(m[columnName], Cell{
+				Value:              strCells[0][j+2][i],
+				VerticalMergeNum:   0,
+				HorizontalMergeNum: 0,
+			})
+		}
+	}
+	fmt.Printf("%#v\n", m)
+}
