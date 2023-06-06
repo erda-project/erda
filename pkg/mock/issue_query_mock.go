@@ -140,12 +140,6 @@ func (mr *MockIssueQueryMockRecorder) CreatePropertyRelation(req interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePropertyRelation", reflect.TypeOf((*MockIssueQuery)(nil).CreatePropertyRelation), req)
 }
 
-// ExportExcel indicates an expected call of ExportExcel.
-func (mr *MockIssueQueryMockRecorder) ExportExcel(issues, properties, projectID, isDownload, orgID, locale interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportExcel", reflect.TypeOf((*MockIssueQuery)(nil).ExportExcel), issues, properties, projectID, isDownload, orgID, locale)
-}
-
 // GetAllIssuesByProject mocks base method.
 func (m *MockIssueQuery) GetAllIssuesByProject(req pb0.IssueListRequest) ([]dao.IssueItem, error) {
 	m.ctrl.T.Helper()
