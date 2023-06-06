@@ -869,7 +869,7 @@ func TestGetServiceOverview(t *testing.T) {
 			checkStmt: func(stmt string, params map[string]interface{}) {
 				wantStmt := make(map[string]byte)
 				wantStmt["sum(errors_sum) FROM application_http_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 0
-				wantStmt["SELECT service_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
+				wantStmt["SELECT service_name::tag,service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"] = 1
 				wantStmt["SELECT sum(errors_sum) FROM application_http_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 1
 				wantStmt["SELECT sum(errors_sum) FROM application_rpc_service WHERE target_terminus_key=$terminus_key AND target_service_name=$service_name AND target_service_id=$service_id"] = 1
 				wantStmt["SELECT sum(errors_sum) FROM application_cache_service WHERE source_terminus_key=$terminus_key AND source_service_name=$service_name AND source_service_id=$service_id"] = 1
@@ -923,7 +923,7 @@ func TestGetOverview(t *testing.T) {
 
 				wantStmt := make(map[string]byte)
 				wantStmt["SELECT distinct(service_name::tag) FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_id::tag"] = 0
-				wantStmt["SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"] = 1
+				wantStmt["SELECT service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag"] = 1
 				wantStmt["SELECT sum(errors_sum::field) FROM application_http_service WHERE target_terminus_key::tag=$terminus_key"] = 1
 				wantStmt["SELECT sum(errors_sum::field) FROM application_rpc_service WHERE target_terminus_key::tag=$terminus_key"] = 1
 				wantStmt["SELECT sum(errors_sum::field) FROM application_cache_service WHERE target_terminus_key::tag=$terminus_key"] = 1
@@ -1047,7 +1047,7 @@ func TestGetInstances(t *testing.T) {
 	service := provider{
 		metricq: mockMetricQuery{
 			checkStmt: func(stmt string, params map[string]interface{}) {
-				require.Equal(t, "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag", stmt)
+				require.Equal(t, "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-max(timestamp),300000000000),'stopping','running') FROM application_service_node WHERE terminus_key::tag=$terminus_key GROUP BY service_instance_id::tag", stmt)
 
 				want := make(map[string]interface{})
 				want["terminus_key"] = ""
