@@ -270,6 +270,11 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 	var issues []*issuedao.Issue
 	for i, model := range issueSheetModels {
 		model := model
+		// check state
+		stateID, ok := data.StateMapByTypeAndName[model.Common.IssueType.String()][model.Common.State]
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown state: %s, please contact project manager to add the corresponding status first", model.Common.State)
+		}
 		issue := issuedao.Issue{
 			BaseModel: dbengine.BaseModel{
 				ID:        uint64(model.Common.ID),
@@ -285,7 +290,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			Type:           model.Common.IssueType.String(),
 			Title:          model.Common.IssueTitle,
 			Content:        model.Common.Content,
-			State:          data.StateMapByTypeAndName[model.Common.IssueType.String()][model.Common.State],
+			State:          stateID,
 			Priority:       model.Common.Priority.String(),
 			Complexity:     model.Common.Complexity.String(),
 			Severity:       model.Common.Severity.String(),
