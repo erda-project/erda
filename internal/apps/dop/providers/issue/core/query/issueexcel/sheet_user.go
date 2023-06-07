@@ -112,7 +112,8 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 					Type: apistructs.OrgScope,
 					ID:   strconv.FormatInt(data.OrgID, 10),
 				},
-				Roles:   []string{"Dev"},
+				Roles:   originalMember.Roles,
+				Labels:  originalMember.Labels,
 				UserIDs: []string{userID},
 			}, apistructs.SystemUserID); err != nil {
 				return fmt.Errorf("failed to add member into org, org id: %d, user id: %s, err: %v", data.OrgID, userID, err)
