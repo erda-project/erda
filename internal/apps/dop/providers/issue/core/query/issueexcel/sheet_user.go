@@ -22,6 +22,7 @@ import (
 
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -85,42 +86,49 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 			continue
 		}
 		// not found in project member
-		// check user exist or not, by phone/email
-		user, err := data.tryToFindUser(originalMember)
-		if err != nil {
-			return fmt.Errorf("failed to find user, originalMember: %+v, err: %v", originalMember, err)
-		}
-		// if user not exist, just throw error, and the import operator should let the user register first.
-		if user == nil {
-			return fmt.Errorf("user not exist, should register by email/phone first. "+
-				"originalMember name: %s, nick: %s, email: %s, phone: %s",
-				originalMember.Name, originalMember.Nick, originalMember.Email, originalMember.Mobile)
+		userID := originalMember.UserID
+		// 如果在同一个平台，用户肯定存在，直接进行 member 添加
+		// 只有不在一个平台时，才进行用户查找
+		// 如果是内部保留用户，也不需要查找
+		if !data.IsSameErdaPlatform() && !permission.IsReservedInternalUserID(userID) {
+			// check user exist or not, by phone/email
+			userFind, err := data.tryToFindUser(originalMember)
+			if err != nil {
+				return fmt.Errorf("failed to find user, originalMember: %+v, err: %v", originalMember, err)
+			}
+			// if user not exist, just throw error, and the import operator should let the user register first.
+			if userFind == nil {
+				return fmt.Errorf("user not exist, should register by email/phone first. "+
+					"originalMember name: %s, nick: %s, email: %s, phone: %s",
+					originalMember.Name, originalMember.Nick, originalMember.Email, originalMember.Mobile)
+			}
+			userID = userFind.ID
 		}
 		// if user exist, just add originalMember into project
 		// add to org first
-		if _, ok := data.OrgMemberMap[user.ID]; !ok {
+		if _, ok := data.OrgMemberMap[userID]; !ok {
 			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.OrgScope,
 					ID:   strconv.FormatInt(data.OrgID, 10),
 				},
 				Roles:   []string{"Dev"},
-				UserIDs: []string{user.ID},
-			}, user.ID); err != nil {
-				return fmt.Errorf("failed to add member into org, org id: %d, user id: %s, err: %v", data.OrgID, user.ID, err)
+				UserIDs: []string{userID},
+			}, apistructs.SystemUserID); err != nil {
+				return fmt.Errorf("failed to add member into org, org id: %d, user id: %s, err: %v", data.OrgID, userID, err)
 			}
 		}
 		// add to project
-		if _, ok := data.ProjectMemberMap[user.ID]; !ok {
+		if _, ok := data.ProjectMemberMap[userID]; !ok {
 			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.ProjectScope,
 					ID:   strconv.FormatUint(data.ProjectID, 10),
 				},
 				Roles:   []string{"Dev"},
-				UserIDs: []string{user.ID},
+				UserIDs: []string{userID},
 			}, apistructs.SystemUserID); err != nil {
-				return fmt.Errorf("failed to add member into project, project id: %d, user id: %s, err: %v", data.ProjectID, user.ID, err)
+				return fmt.Errorf("failed to add member into project, project id: %d, user id: %s, err: %v", data.ProjectID, userID, err)
 			}
 		}
 		// refresh org/project map
