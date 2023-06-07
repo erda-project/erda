@@ -72,6 +72,11 @@ func (i *IssueService) ExportExcelIssue(ctx context.Context, req *pb.ExportExcel
 	if !apis.IsInternalClient(ctx) {
 		req.External = true
 	}
+	orgID, err := strconv.ParseInt(identityInfo.OrgID, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrExportExcelIssue.InvalidParameter("orgID")
+	}
+	req.OrgID = orgID
 
 	req.Locale = apis.GetLang(ctx)
 	if req.IsDownloadTemplate {
@@ -99,6 +104,11 @@ func (i *IssueService) ImportExcelIssue(ctx context.Context, req *pb.ImportExcel
 		return nil, apierrors.ErrCreateIssuePropertyValue.NotLogin()
 	}
 	req.IdentityInfo = identityInfo
+	orgID, err := strconv.ParseInt(identityInfo.OrgID, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrImportExcelIssue.InvalidParameter("orgID")
+	}
+	req.OrgID = orgID
 	if req.FileID == "" {
 		return nil, apierrors.ErrImportExcelIssue.InvalidParameter("apiFileUUID")
 	}
