@@ -1403,10 +1403,10 @@ func getNginxConfFromPolicyConfig(p apipolicy.PolicyConfig) (map[string]string, 
 
 			key := strings.ReplaceAll(keys[l-1], "-", "_")
 			if _, ok := ret[key]; ok {
-				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow 等允许多次设置
+				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
 				if key != "more_set_headers" && key != "proxy_set_header" &&
 					key != "set" && key != "limit_req" && key != "limit_conn" &&
-					key != "error_page" && key != "deny" && key != "allow" {
+					key != "error_page" && key != "deny" && key != "allow" && key != "return" {
 					return ret, errors.Errorf("Annotation nginx conf %s duplicated", key)
 				}
 			}
@@ -1431,10 +1431,10 @@ func getNginxConfFromPolicyConfig(p apipolicy.PolicyConfig) (map[string]string, 
 			logrus.Infof("p.IngressController.ConfigOption[%s]=%v \n", k, p.IngressController.ConfigOption[k])
 			key := strings.ReplaceAll(k, "-", "_")
 			if _, ok := ret[key]; ok {
-				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow 等允许多次设置
+				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
 				if key != "more_set_headers" && key != "proxy_set_header" &&
 					key != "set" && key != "limit_req" && key != "limit_conn" &&
-					key != "error_page" && key != "deny" && key != "allow" {
+					key != "error_page" && key != "deny" && key != "allow" && key != "return" {
 					return ret, errors.Errorf("ConfigOption nginx conf %s duplicated", key)
 				}
 			}
@@ -1485,10 +1485,10 @@ func extractConfigFromString(kind, src string, ret map[string]string) error {
 			if len(kv) >= 2 {
 				key := strings.ReplaceAll(kv[0], "-", "_")
 				if _, ok := ret[key]; ok {
-					// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow 等允许多次设置
+					// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
 					if key != "more_set_headers" && key != "proxy_set_header" &&
 						key != "set" && key != "limit_req" && key != "limit_conn" &&
-						key != "error_page" && key != "deny" && key != "allow" {
+						key != "error_page" && key != "deny" && key != "allow" && key != "return" {
 						return errors.Errorf("%s nginx conf %s duplicated", kind, key)
 					}
 				}
