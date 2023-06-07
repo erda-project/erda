@@ -437,6 +437,8 @@ func parseStringPriority(s string) (pb.IssuePriorityEnum_Priority, error) {
 		p = pb.IssuePriorityEnum_NORMAL
 	case strings.ToLower(pb.IssuePriorityEnum_HIGH.String()), "高":
 		p = pb.IssuePriorityEnum_HIGH
+	case strings.ToLower(pb.IssuePriorityEnum_URGENT.String()), "紧急":
+		p = pb.IssuePriorityEnum_URGENT
 	default:
 		return p, fmt.Errorf("invalid issue priority: %s", s)
 	}
