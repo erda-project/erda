@@ -97,6 +97,10 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 			case "Common":
 				switch groupField {
 				case "ID":
+					if cell.Value == "" { // update
+						model.Common.ID = 0
+						continue
+					}
 					id, err := strconv.ParseUint(cell.Value, 10, 64)
 					if err != nil {
 						return nil, fmt.Errorf("invalid id: %s", cell.Value)
