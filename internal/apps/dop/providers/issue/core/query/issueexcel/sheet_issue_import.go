@@ -298,7 +298,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			ReopenCount:    int(model.BugOnly.ReopenCount),
 			StartTime:      model.Common.StartAt,
 		}
-		if issue.ID > 0 && data.ShouldUpdateWhenIDSame() {
+		if issue.ID > 0 && data.ShouldUpdateWhenIDSame() && data.ImportOnly.CurrentProjectIssueMap[issue.ID] {
 			// update
 			if err := data.ImportOnly.DB.UpdateIssueType(&issue); err != nil {
 				return nil, nil, fmt.Errorf("failed to update issue, id: %d, err: %v", issue.ID, err)

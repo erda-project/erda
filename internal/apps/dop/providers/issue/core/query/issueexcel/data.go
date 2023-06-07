@@ -70,6 +70,8 @@ type DataForFulfillImportOnly struct {
 	BaseInfo *DataForFulfillImportOnlyBaseInfo
 
 	IsOldExcelFormat bool
+
+	CurrentProjectIssueMap map[uint64]bool
 }
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {

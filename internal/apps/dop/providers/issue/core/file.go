@@ -374,6 +374,21 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 	data.ImportOnly.Bdl = i.bdl
 	data.ImportOnly.Identity = i.identity
 	data.ImportOnly.Property = i
+	// current project issues
+	currentProjectIssues, _, err := data.ImportOnly.DB.PagingIssues(pb.PagingIssueRequest{
+		ProjectID:    data.ProjectID,
+		PageNo:       1,
+		PageSize:     99999,
+		OnlyIdResult: true,
+	}, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to page current project issues, err: %v", err)
+	}
+	data.ImportOnly.CurrentProjectIssueMap = make(map[uint64]bool)
+	for _, current := range currentProjectIssues {
+		current := current
+		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
+	}
 	return data, nil
 }
 
