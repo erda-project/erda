@@ -126,20 +126,24 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 		}
 		// refresh org/project map
 		projectMemberQuery := apistructs.MemberListRequest{
-			ScopeType: apistructs.ProjectScope,
-			ScopeID:   int64(data.ProjectID),
-			PageNo:    1,
-			PageSize:  99999,
+			ScopeType:         apistructs.ProjectScope,
+			ScopeID:           int64(data.ProjectID),
+			PageNo:            1,
+			PageSize:          99999,
+			DesensitizeMobile: false,
+			DesensitizeEmail:  false,
 		}
 		newProjectMember, err := data.ImportOnly.Bdl.ListMembers(projectMemberQuery)
 		if err != nil {
 			return fmt.Errorf("failed to refresh projectMember, err: %v", err)
 		}
 		orgMemberQuery := apistructs.MemberListRequest{
-			ScopeType: apistructs.OrgScope,
-			ScopeID:   data.OrgID,
-			PageNo:    1,
-			PageSize:  99999,
+			ScopeType:         apistructs.OrgScope,
+			ScopeID:           data.OrgID,
+			PageNo:            1,
+			PageSize:          99999,
+			DesensitizeEmail:  false,
+			DesensitizeMobile: false,
 		}
 		orgMember, err := data.ImportOnly.Bdl.ListMembers(orgMemberQuery)
 		if err != nil {

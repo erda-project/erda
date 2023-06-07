@@ -269,10 +269,12 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 	// username map
 	// get all org/project projectMember
 	projectMemberQuery := apistructs.MemberListRequest{
-		ScopeType: apistructs.ProjectScope,
-		ScopeID:   int64(projectID),
-		PageNo:    1,
-		PageSize:  99999,
+		ScopeType:         apistructs.ProjectScope,
+		ScopeID:           int64(projectID),
+		PageNo:            1,
+		PageSize:          99999,
+		DesensitizeEmail:  false,
+		DesensitizeMobile: false,
 	}
 	projectMember, err := i.bdl.ListMembers(projectMemberQuery)
 	if err != nil {
@@ -283,8 +285,8 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 		ScopeID:           orgID,
 		PageNo:            1,
 		PageSize:          99999,
-		DesensitizeEmail:  true,
-		DesensitizeMobile: true,
+		DesensitizeEmail:  false,
+		DesensitizeMobile: false,
 	}
 	orgMember, err := i.bdl.ListMembers(orgMemberQuery)
 	if err != nil {
