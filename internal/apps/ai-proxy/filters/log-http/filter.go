@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -103,14 +104,14 @@ func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfo
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
 		l.Debugf("received response content: %s", f.String())
-	} else {
-		var content = f.Buffer.String()
-		if len(content) > 300 {
-			content = content[:200] + "  ... and more ...  " + content[len(content)-100:]
-		} else if len(content) > 200 {
-			content = content[:200] + "  ... and more ...  "
-		}
-		l.Debugf("received response content length: %d, content excerpt: %s", f.Buffer.Len(), content)
+		return nil
 	}
+	var content = f.Buffer.String()
+	if len(content) > 300 {
+		content = content[:200] + "  ... and more ...  " + content[len(content)-100:]
+	} else if len(content) > 200 {
+		content = content[:200] + "  ... and more ...  "
+	}
+	l.Debugf("received response content length: %d, content excerpt: %s", f.Buffer.Len(), strings.ReplaceAll(content, "\n", " "))
 	return nil
 }

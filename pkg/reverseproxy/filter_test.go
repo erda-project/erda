@@ -17,6 +17,7 @@ package reverseproxy_test
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"sync"
 	"testing"
@@ -112,4 +113,65 @@ func TestInfor_Header(t *testing.T) {
 
 	t.Logf("infor.BodyBuffer(): %v", infor.BodyBuffer())
 	t.Logf("infor.Body(): %v", infor.Body())
+}
+
+func TestInfor_SetBody(t *testing.T) {
+	t.Run("mocked request body", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodPost, "http://localhost:8080", bytes.NewBufferString("mock body"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		infor := reverseproxy.NewInfor(context.Background(), request)
+		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		data, err := io.ReadAll(request.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer request.Body.Close()
+		if string(data) != "new body" {
+			t.Fatal("body data err")
+		}
+	})
+	t.Run("nil request body", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodPost, "http://localhost:8080", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		infor := reverseproxy.NewInfor(context.Background(), request)
+		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		data, err := io.ReadAll(request.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer request.Body.Close()
+		if string(data) != "new body" {
+			t.Fatal("body data err")
+		}
+	})
+	t.Run("mocked response body", func(t *testing.T) {
+		response := &http.Response{Body: io.NopCloser(bytes.NewBufferString("mocked body"))}
+		infor := reverseproxy.NewInfor(context.Background(), response)
+		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		data, err := io.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer response.Body.Close()
+		if string(data) != "new body" {
+			t.Fatal("body data err")
+		}
+	})
+	t.Run("nil response body", func(t *testing.T) {
+		response := new(http.Response)
+		infor := reverseproxy.NewInfor(context.Background(), response)
+		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		data, err := io.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer response.Body.Close()
+		if string(data) != "new body" {
+			t.Fatal("body data err")
+		}
+	})
 }

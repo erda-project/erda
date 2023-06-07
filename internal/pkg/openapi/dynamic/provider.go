@@ -27,8 +27,8 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/common/pb"
 )
@@ -47,6 +47,7 @@ type Register interface {
 
 type provider struct {
 	Cfg  *Config
+	L    logs.Logger
 	Etcd *clientv3.Client `autowired:"etcd-client"`
 }
 
@@ -66,7 +67,7 @@ func (p *provider) Register(route *Route) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("ETCDv3 put, endpoints: %v, key: %s, data: %s\n", p.Etcd.Endpoints(), key, string(data))
+	p.L.Infof("ETCDv3 put, endpoints: %v,\n\tkey: %s\n\tdata: %s\n", p.Etcd.Endpoints(), key, string(data))
 	_, err = p.Etcd.Put(ctx, key, string(data))
 	return err
 }

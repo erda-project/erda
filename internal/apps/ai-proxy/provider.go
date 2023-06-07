@@ -24,13 +24,16 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
@@ -88,11 +91,7 @@ type provider struct {
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	if err := p.L.SetLevel(p.Config.GetLogLevel()); err != nil {
-		return errors.Wrapf(err, "failed to %T.SetLevel, logLevel: %s", p.L, p.Config.GetLogLevel())
-	} else {
-		p.L.Infof("logLevel: %s", p.Config.GetLogLevel())
-	}
+	p.initLogger()
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
@@ -185,6 +184,35 @@ func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	}
 }
 
+func (p *provider) initLogger() {
+	if l, ok := p.L.(*logrusx.Logger); ok {
+		var logger = logrus.New()
+		var formatter = &logrus.TextFormatter{
+			ForceColors:      true,
+			DisableQuote:     true,
+			TimestampFormat:  time.RFC3339,
+			DisableSorting:   true,
+			QuoteEmptyFields: true,
+		}
+		p.L.Infof("logger formatter: %+v", formatter)
+		logger.SetFormatter(formatter)
+		if level, err := logrus.ParseLevel(p.Config.GetLogLevel()); err == nil {
+			p.L.Infof("logger level: %s", p.Config.GetLogLevel())
+			logger.SetLevel(level)
+		} else {
+			p.L.Infof("failed to parse logger level from config, set it as %s", logrus.InfoLevel.String())
+			logger.SetLevel(logrus.InfoLevel)
+		}
+		l.Entry = logrus.NewEntry(logger)
+		return
+	}
+	p.L.Infof("logger level: %s", p.Config.GetLogLevel())
+	if err := p.L.SetLevel(p.Config.GetLogLevel()); err != nil {
+		p.L.Infof("failed to set logger level from config, set it as %s", logrus.InfoLevel.String())
+		_ = p.L.SetLevel(logrus.InfoLevel.String())
+	}
+}
+
 func (p *provider) parseRoutesConfig() error {
 	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
 }
@@ -271,7 +299,7 @@ func (c *config) GetLogLevel() string {
 		if len(keys) > 1 {
 			return strings.Join(keys[1:], ":")
 		}
-		return "info"
+		return logrus.InfoLevel.String()
 	}
 	return env
 }
