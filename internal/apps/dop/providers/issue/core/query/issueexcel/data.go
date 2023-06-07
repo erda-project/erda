@@ -35,6 +35,7 @@ type DataForFulfill struct {
 	ImportOnly DataForFulfillImportOnly
 
 	// common
+	UserID                string
 	OrgID                 int64
 	ProjectID             uint64
 	Locale                *i18n.LocaleResource

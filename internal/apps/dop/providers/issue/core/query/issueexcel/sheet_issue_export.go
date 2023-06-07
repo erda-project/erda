@@ -191,10 +191,6 @@ func (data DataForFulfill) genIssueSheetTitleAndDataByColumn() (*IssueSheetModel
 						info.Add(uuid, strutil.String(cf.Value))
 					}
 				} else { // 其他字段，直接取值
-					//info.Add(uuid, strutil.String(valueField.Interface()))
-					if structField.Type == reflect.TypeOf([]int64{}) {
-						fmt.Println(uuid, "int64xxxxxxxx", valueField.Interface())
-					}
 					info.Add(uuid, getStringCellValue(structField, valueField))
 				}
 			}
@@ -205,6 +201,10 @@ func (data DataForFulfill) genIssueSheetTitleAndDataByColumn() (*IssueSheetModel
 
 func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 	models := make([]IssueSheetModel, 0, len(data.ExportOnly.Issues))
+	if data.ExportOnly.IsDownloadTemplate {
+		models = data.GenerateSampleIssueSheetModels()
+		return models, nil
+	}
 	for _, issue := range data.ExportOnly.Issues {
 		var model IssueSheetModel
 		model.Common = IssueSheetModelCommon{
@@ -286,14 +286,23 @@ func getStringCellValue(structField reflect.StructField, fieldValue reflect.Valu
 			return ""
 		}
 		return t.Format("2006-01-02 15:04:05")
-	case reflect.TypeOf([]int64{}):
+	case reflect.TypeOf([]int64{}): // ConnectionIssueIDs, InclusionIssueIDs
 		ss := make([]string, 0, len(fieldValue.Interface().([]int64)))
 		for _, i := range fieldValue.Interface().([]int64) {
-			ss = append(ss, strutil.String(i))
+			if i < 0 {
+				ss = append(ss, fmt.Sprintf("L%d", -i))
+			} else {
+				ss = append(ss, strutil.String(i))
+			}
 		}
 		return strings.Join(ss, ",")
 	case reflect.TypeOf([]string{}):
 		return strings.Join(fieldValue.Interface().([]string), ",")
+	case reflect.TypeOf(int32(0)), reflect.TypeOf(uint64(0)):
+		if fieldValue.IsZero() {
+			return ""
+		}
+		fallthrough
 	default:
 		return strutil.String(fieldValue.Interface())
 	}

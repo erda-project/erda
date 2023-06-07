@@ -236,7 +236,7 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 	return nil
 }
 
-func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
+func (i *IssueService) createDataForFulfillCommon(locale string, userID string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
 	// stage map
 	stages, err := i.db.GetIssuesStageByOrgID(int64(orgID))
 	if err != nil {
@@ -348,6 +348,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 		Locale:                i.bdl.GetLocale(locale),
 		ProjectID:             projectID,
 		OrgID:                 orgID,
+		UserID:                "",
 		StageMap:              stageMap,
 		IterationMapByID:      iterationMapByID,
 		IterationMapByName:    iterationMapByName,
@@ -364,7 +365,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 }
 
 func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
-	data, err := i.createDataForFulfillCommon(req.Locale, req.OrgID, req.ProjectID, nil) // ignore issueTypes, use all types
+	data, err := i.createDataForFulfillCommon(req.Locale, req.IdentityInfo.UserID, req.OrgID, req.ProjectID, nil) // ignore issueTypes, use all types
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
 	}
@@ -393,7 +394,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 }
 
 func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
-	data, err := i.createDataForFulfillCommon(req.Locale, req.OrgID, req.ProjectID, req.Type)
+	data, err := i.createDataForFulfillCommon(req.Locale, req.IdentityInfo.UserID, req.OrgID, req.ProjectID, req.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
 	}
