@@ -119,10 +119,9 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 				},
 				Roles:   []string{"Dev"},
 				UserIDs: []string{user.ID},
-			}, user.ID); err != nil {
+			}, apistructs.SystemUserID); err != nil {
 				return fmt.Errorf("failed to add member into project, project id: %d, user id: %s, err: %v", data.ProjectID, user.ID, err)
 			}
-
 		}
 		// refresh org/project map
 		projectMemberQuery := apistructs.MemberListRequest{
