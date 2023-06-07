@@ -43,8 +43,8 @@ type DataForFulfill struct {
 	IterationMapByName    map[string]*dao.Iteration          // key: iteration name
 	StateMap              map[int64]string                   // key: state id
 	StateMapByTypeAndName map[string]map[string]int64        // key: state name
-	ProjectMemberMap      map[string]apistructs.Member       // key: user id
-	OrgMemberMap          map[string]apistructs.Member       // key: user id
+	ProjectMemberByUserID map[string]apistructs.Member       // key: user id
+	OrgMemberByUserID     map[string]apistructs.Member       // key: user id
 	LabelMapByName        map[string]apistructs.ProjectLabel // key: label name
 
 	CustomFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
@@ -72,6 +72,8 @@ type DataForFulfillImportOnly struct {
 	IsOldExcelFormat bool
 
 	CurrentProjectIssueMap map[uint64]bool
+
+	UserIDsByNick map[string]string // key: nick, value: userID
 }
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
@@ -128,5 +130,5 @@ func formatOneCustomField(cf *pb.IssuePropertyIndex, issue *pb.Issue, data DataF
 }
 
 func getCustomFieldValue(customField *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) string {
-	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.PropertyEnumMap, data.ProjectMemberMap)
+	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.PropertyEnumMap, data.ProjectMemberByUserID)
 }

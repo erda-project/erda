@@ -239,7 +239,7 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 		}
 		model.BugOnly = IssueSheetModelBugOnly{
 			OwnerName:    data.getUserNick(issue.Owner),
-			Source:       issue.Source,
+			Source:       issue.BugStage,
 			ReopenCount:  issue.ReopenCount,
 			CustomFields: formatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
 		}
@@ -260,7 +260,7 @@ func (data DataForFulfill) getUserNick(userid string) string {
 	if userid == "" {
 		return ""
 	}
-	if u, ok := data.ProjectMemberMap[userid]; ok {
+	if u, ok := data.ProjectMemberByUserID[userid]; ok {
 		return u.Nick
 	}
 	return ""

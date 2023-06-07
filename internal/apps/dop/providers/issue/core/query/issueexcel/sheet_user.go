@@ -37,7 +37,7 @@ func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
 	}
 	lines = append(lines, title)
 	// data
-	for _, user := range data.ProjectMemberMap {
+	for _, user := range data.ProjectMemberByUserID {
 		userInfo, err := json.Marshal(user)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal user info, user id: %s, err: %v", user.UserID, err)
@@ -75,14 +75,14 @@ func (data DataForFulfill) decodeUserSheet(excelSheets [][][]string) ([]apistruc
 // createIterationsIfNotExistForImport do not create user, is too hack.
 // The import operator should create user first, then import.
 // We can auto add user as member into project.
-func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Member) error {
+func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Member) error {
+	data.ImportOnly.UserIDsByNick = make(map[string]string)
 	for _, originalMember := range originalMembers {
 		originalMember := originalMember
 		// check if already in the current project member map
 		projectMember, ok := data.tryToFindMemberInCurrentProject(originalMember)
 		if ok {
-			// add to member map
-			data.ProjectMemberMap[projectMember.UserID] = *projectMember
+			data.ImportOnly.UserIDsByNick[originalMember.Nick] = projectMember.UserID
 			continue
 		}
 		// not found in project member
@@ -104,9 +104,10 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 			}
 			userID = userFind.ID
 		}
+		data.ImportOnly.UserIDsByNick[originalMember.Nick] = userID
 		// if user exist, just add originalMember into project
 		// add to org first
-		if _, ok := data.OrgMemberMap[userID]; !ok {
+		if _, ok := data.OrgMemberByUserID[userID]; !ok {
 			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.OrgScope,
@@ -120,7 +121,7 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 			}
 		}
 		// add to project
-		if _, ok := data.ProjectMemberMap[userID]; !ok {
+		if _, ok := data.ProjectMemberByUserID[userID]; !ok {
 			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.ProjectScope,
@@ -132,37 +133,6 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 				return fmt.Errorf("failed to add member into project, project id: %d, user id: %s, err: %v", data.ProjectID, userID, err)
 			}
 		}
-		// refresh org/project map
-		projectMemberQuery := apistructs.MemberListRequest{
-			ScopeType:         apistructs.ProjectScope,
-			ScopeID:           int64(data.ProjectID),
-			PageNo:            1,
-			PageSize:          99999,
-			DesensitizeMobile: false,
-			DesensitizeEmail:  false,
-		}
-		newProjectMember, err := data.ImportOnly.Bdl.ListMembers(projectMemberQuery)
-		if err != nil {
-			return fmt.Errorf("failed to refresh projectMember, err: %v", err)
-		}
-		orgMemberQuery := apistructs.MemberListRequest{
-			ScopeType:         apistructs.OrgScope,
-			ScopeID:           data.OrgID,
-			PageNo:            1,
-			PageSize:          99999,
-			DesensitizeEmail:  false,
-			DesensitizeMobile: false,
-		}
-		orgMember, err := data.ImportOnly.Bdl.ListMembers(orgMemberQuery)
-		if err != nil {
-			return fmt.Errorf("failed to refresh orgMember, err: %v", err)
-		}
-		for _, member := range newProjectMember {
-			data.ProjectMemberMap[member.UserID] = member
-		}
-		for _, member := range orgMember {
-			data.OrgMemberMap[member.UserID] = member
-		}
 	}
 	return nil
 }
@@ -170,13 +140,13 @@ func (data DataForFulfill) mapMemberForImport(originalMembers []apistructs.Membe
 func (data DataForFulfill) tryToFindMemberInCurrentProject(originalMember apistructs.Member) (*apistructs.Member, bool) {
 	if data.IsSameErdaPlatform() {
 		// just find by id
-		member, ok := data.ProjectMemberMap[originalMember.UserID]
+		member, ok := data.ProjectMemberByUserID[originalMember.UserID]
 		if !ok {
 			return nil, false
 		}
 		return &member, ok
 	}
-	for _, member := range data.ProjectMemberMap {
+	for _, member := range data.ProjectMemberByUserID {
 		if member.Mobile == originalMember.Mobile || member.Email == originalMember.Email {
 			return &member, true
 		}
