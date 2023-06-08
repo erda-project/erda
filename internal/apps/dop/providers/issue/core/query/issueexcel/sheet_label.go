@@ -17,6 +17,7 @@ package issueexcel
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
@@ -24,6 +25,7 @@ import (
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
@@ -116,7 +118,7 @@ func (data *DataForFulfill) createLabelIfNotExistsForImport(labels []*pb.Project
 		newLabel := dao.Label{
 			Name:      label.Name,
 			Type:      apistructs.ProjectLabelType(label.Type.String()),
-			Color:     label.Color,
+			Color:     strutil.FirstNoneEmpty(label.Color, randomColor()),
 			ProjectID: data.ProjectID,
 			Creator:   label.Creator,
 		}
@@ -136,6 +138,37 @@ func (data *DataForFulfill) createLabelIfNotExistsForImport(labels []*pb.Project
 		}
 	}
 	return nil
+}
+
+const (
+	ColorRed         = "red"
+	ColorBlue        = "blue"
+	ColorOrange      = "orange"
+	ColorGreen       = "green"
+	ColorGray        = "gray"
+	ColorYellow      = "yellow"
+	ColorPurple      = "purple"
+	ColorWaterBlue   = "water-blue"
+	ColorMagenta     = "magenta"
+	ColorCyan        = "cyan"
+	ColorYellowGreen = "yellow-green"
+)
+
+func randomColor() string {
+	colors := []string{
+		ColorRed,
+		ColorBlue,
+		ColorOrange,
+		ColorGreen,
+		ColorGray,
+		ColorYellow,
+		ColorPurple,
+		ColorWaterBlue,
+		ColorMagenta,
+		ColorCyan,
+		ColorYellowGreen,
+	}
+	return colors[rand.Intn(len(colors))]
 }
 
 func (data DataForFulfill) createIssueLabelRelations(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
