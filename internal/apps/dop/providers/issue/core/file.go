@@ -254,14 +254,18 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get iterations, err: %v", err)
 	}
+	// add backlog iteration first, then the existing iteration with the same name can be overwritten
+	backlogIteration := &dao.Iteration{Title: "待规划"}
+	iterationMapByID[-1] = backlogIteration
+	iterationMapByName["待办事项"] = backlogIteration
+	iterationMapByName["待规划"] = backlogIteration
+	iterationMapByName["待处理"] = backlogIteration
+	// add existing iterations
 	for _, v := range iterations {
 		v := v
 		iterationMapByID[int64(v.ID)] = &v
 		iterationMapByName[v.Title] = &v
 	}
-	backlogIteration := &dao.Iteration{Title: "待办事项"}
-	iterationMapByID[-1] = backlogIteration
-	iterationMapByName["待办事项"] = backlogIteration
 	// state map
 	stateMapByID := make(map[int64]string)
 	stateMapByTypeAndName := make(map[string]map[string]int64) // outerkey: issueType, innerkey: stateName
