@@ -335,7 +335,7 @@ func (db *DBClient) FindTopDeployments(runtimeId uint64, limit int) ([]Deploymen
 func (db *DBClient) FindNotOutdatedOlderThan(runtimeId uint64, maxId uint64) ([]Deployment, error) {
 	var deployments []Deployment
 	maxID, _ := driver.DefaultParameterConverter.ConvertValue(maxId)
-	if err := db.Debug().
+	if err := db.
 		Where("runtime_id = ? AND id < ? AND outdated = false", runtimeId, maxID).
 		Find(&deployments).Error; err != nil {
 		return nil, errors.Wrapf(err, "failed to find not outdated deployments < %d, related runtime: %d",
