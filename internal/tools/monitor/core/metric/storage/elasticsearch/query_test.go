@@ -54,7 +54,7 @@ func TestSearch(t *testing.T) {
 				expect.Sources().Return([]*model.Source{{Database: "db", Name: "name"}})
 				expect.Timestamp().Return(int64(0), int64(1))
 				expect.AppendBoolFilter(gomock.Any(), gomock.Any()).Return()
-				expect.Return(false)
+				expect.Debug().Return(false)
 				expect.SearchSource().Return(elastic.NewSearchSource().Query(
 					elastic.NewBoolQuery().Filter()))
 				expect.ParseResult(context.Background(), gomock.Any()).Return(&model.Data{}, nil)
