@@ -113,8 +113,8 @@ func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Memb
 					Type: apistructs.OrgScope,
 					ID:   strconv.FormatInt(data.OrgID, 10),
 				},
-				Roles:   originalMember.Roles,
-				Labels:  originalMember.Labels,
+				Roles:   []string{"Dev"},
+				Labels:  nil,
 				UserIDs: []string{userID},
 			}, apistructs.SystemUserID); err != nil {
 				return fmt.Errorf("failed to add member into org, org id: %d, user id: %s, err: %v", data.OrgID, userID, err)
@@ -127,7 +127,8 @@ func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Memb
 					Type: apistructs.ProjectScope,
 					ID:   strconv.FormatUint(data.ProjectID, 10),
 				},
-				Roles:   []string{"Dev"},
+				Roles:   originalMember.Roles,
+				Labels:  originalMember.Labels,
 				UserIDs: []string{userID},
 			}, apistructs.SystemUserID); err != nil {
 				return fmt.Errorf("failed to add member into project, project id: %d, user id: %s, err: %v", data.ProjectID, userID, err)
