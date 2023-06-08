@@ -51,7 +51,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode user sheet, err: %v", err)
 	}
-	if err := data.mapMemberForImport(members); err != nil {
+	if err := data.mapMemberForImport(members, issueSheetModels); err != nil {
 		return fmt.Errorf("failed to map member, err: %v", err)
 	}
 	// label sheet

@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
@@ -75,8 +76,29 @@ func (data DataForFulfill) decodeUserSheet(excelSheets [][][]string) ([]apistruc
 // createIterationsIfNotExistForImport do not create user, is too hack.
 // The import operator should create user first, then import.
 // We can auto add user as member into project.
-func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Member) error {
+func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Member, issueSheetModels []IssueSheetModel) error {
 	data.ImportOnly.UserIDsByNick = make(map[string]string)
+
+	// handle nicks from issue sheet
+	var userNicksFromIssueSheet []string
+	for _, model := range issueSheetModels {
+		userNicksFromIssueSheet = append(userNicksFromIssueSheet, model.Common.CreatorName, model.Common.AssigneeName, model.BugOnly.OwnerName)
+	}
+	userNicksFromIssueSheet = strutil.DedupSlice(userNicksFromIssueSheet, true)
+	// try to find user in current project members, only can by nick
+	projectMemberByNick := make(map[string]apistructs.Member)
+	for _, member := range data.ProjectMemberByUserID {
+		projectMemberByNick[member.Nick] = member
+	}
+	for _, nick := range userNicksFromIssueSheet {
+		m, ok := projectMemberByNick[nick]
+		if !ok {
+			return fmt.Errorf("failed to find user in project member, nick: %s, please add user to project first", nick)
+		}
+		data.ImportOnly.UserIDsByNick[nick] = m.UserID
+	}
+
+	// handle original users from user sheet
 	for _, originalMember := range originalMembers {
 		originalMember := originalMember
 		// check if already in the current project member map
