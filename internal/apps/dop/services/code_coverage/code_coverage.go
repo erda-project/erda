@@ -101,7 +101,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		ReportTime:    time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local),
 	}
 	tx := svc.db.Begin()
-	if err := tx.Debug().Create(&record).Error; err != nil {
+	if err := tx.Create(&record).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

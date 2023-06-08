@@ -43,7 +43,7 @@ func (client *DBClient) UpdateProject(project *model.Project) error {
 
 // DeleteProject 删除项目
 func (client *DBClient) DeleteProject(projectID int64) error {
-	return client.Debug().Model(&model.Project{}).Scopes(NotDeleted).Where("id = ?", projectID).Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error
+	return client.Model(&model.Project{}).Scopes(NotDeleted).Where("id = ?", projectID).Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error
 }
 
 func (client *DBClient) DeleteProjectQutoa(projectID int64) error {
