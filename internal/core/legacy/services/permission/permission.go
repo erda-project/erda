@@ -196,6 +196,15 @@ func isReservedInternalServiceAccount(userID string) bool {
 	return false
 }
 
+func IsReservedInternalUserID(userID string) bool {
+	if v, err := strutil.Atoi64(userID); err == nil {
+		if v > 1000 && v < 5000 {
+			return true
+		}
+	}
+	return false
+}
+
 // CheckInternalPermission 鉴权内部服务账户
 func (p *Permission) CheckInternalPermission(identityInfo apistructs.IdentityInfo) bool {
 	if identityInfo.IsInternalClient() {

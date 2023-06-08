@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
@@ -80,32 +81,28 @@ func (data *DataForFulfill) decodeIterationSheet(excelSheets [][][]string) ([]*d
 // - if not exist, create new iteration
 // - if exist, do not update, take the existing one as the standard
 func (data *DataForFulfill) createIterationsIfNotExistForImport(originalIterations []*dao.Iteration, issueSheetModels []IssueSheetModel) error {
-	var mergedIterations []*dao.Iteration
-	sheetIterationMap := make(map[string]*dao.Iteration)
+	var iterationsNeedCreate []*dao.Iteration // only created sheet related iterations
+	now := time.Now()
+	currentDayBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	currentDayEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
 	for _, issueSheetModel := range issueSheetModels {
-		_, ok := sheetIterationMap[issueSheetModel.Common.IterationName]
+		_, ok := data.IterationMapByName[issueSheetModel.Common.IterationName]
 		if ok {
+			continue
+		}
+		if issueSheetModel.Common.IterationName == "待办事项" {
 			continue
 		}
 		newIteration := dao.Iteration{
-			ProjectID: data.ProjectID,
-			Title:     issueSheetModel.Common.IterationName,
-			State:     apistructs.IterationStateUnfiled,
+			ProjectID:  data.ProjectID,
+			Title:      issueSheetModel.Common.IterationName,
+			State:      apistructs.IterationStateUnfiled,
+			StartedAt:  &currentDayBegin,
+			FinishedAt: &currentDayEnd,
 		}
-		mergedIterations = append(mergedIterations, &newIteration)
+		iterationsNeedCreate = append(iterationsNeedCreate, &newIteration)
 	}
-	for _, iteration := range originalIterations {
-		iteration := iteration
-		if iteration.ID <= 0 { // 待办事项
-			continue
-		}
-		_, ok := data.IterationMapByName[iteration.Title]
-		if ok {
-			continue
-		}
-		mergedIterations = append(mergedIterations, iteration)
-	}
-	for _, iteration := range mergedIterations {
+	for _, iteration := range iterationsNeedCreate {
 		// create iteration if not exist
 		iteration.ID = 0
 		iteration.ProjectID = data.ProjectID

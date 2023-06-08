@@ -72,6 +72,11 @@ func (i *IssueService) ExportExcelIssue(ctx context.Context, req *pb.ExportExcel
 	if !apis.IsInternalClient(ctx) {
 		req.External = true
 	}
+	orgID, err := strconv.ParseInt(identityInfo.OrgID, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrExportExcelIssue.InvalidParameter("orgID")
+	}
+	req.OrgID = orgID
 
 	req.Locale = apis.GetLang(ctx)
 	if req.IsDownloadTemplate {
@@ -99,6 +104,11 @@ func (i *IssueService) ImportExcelIssue(ctx context.Context, req *pb.ImportExcel
 		return nil, apierrors.ErrCreateIssuePropertyValue.NotLogin()
 	}
 	req.IdentityInfo = identityInfo
+	orgID, err := strconv.ParseInt(identityInfo.OrgID, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrImportExcelIssue.InvalidParameter("orgID")
+	}
+	req.OrgID = orgID
 	if req.FileID == "" {
 		return nil, apierrors.ErrImportExcelIssue.InvalidParameter("apiFileUUID")
 	}
@@ -226,7 +236,7 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 	return nil
 }
 
-func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
+func (i *IssueService) createDataForFulfillCommon(locale string, userID string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
 	// stage map
 	stages, err := i.db.GetIssuesStageByOrgID(int64(orgID))
 	if err != nil {
@@ -269,10 +279,12 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 	// username map
 	// get all org/project projectMember
 	projectMemberQuery := apistructs.MemberListRequest{
-		ScopeType: apistructs.ProjectScope,
-		ScopeID:   int64(projectID),
-		PageNo:    1,
-		PageSize:  99999,
+		ScopeType:         apistructs.ProjectScope,
+		ScopeID:           int64(projectID),
+		PageNo:            1,
+		PageSize:          99999,
+		DesensitizeEmail:  false,
+		DesensitizeMobile: false,
 	}
 	projectMember, err := i.bdl.ListMembers(projectMemberQuery)
 	if err != nil {
@@ -283,8 +295,8 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 		ScopeID:           orgID,
 		PageNo:            1,
 		PageSize:          99999,
-		DesensitizeEmail:  true,
-		DesensitizeMobile: true,
+		DesensitizeEmail:  false,
+		DesensitizeMobile: false,
 	}
 	orgMember, err := i.bdl.ListMembers(orgMemberQuery)
 	if err != nil {
@@ -336,13 +348,14 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 		Locale:                i.bdl.GetLocale(locale),
 		ProjectID:             projectID,
 		OrgID:                 orgID,
+		UserID:                "",
 		StageMap:              stageMap,
 		IterationMapByID:      iterationMapByID,
 		IterationMapByName:    iterationMapByName,
 		StateMap:              stateMapByID,
 		StateMapByTypeAndName: stateMapByTypeAndName,
-		ProjectMemberMap:      projectMemberMap,
-		OrgMemberMap:          orgMemberMap,
+		ProjectMemberByUserID: projectMemberMap,
+		OrgMemberByUserID:     orgMemberMap,
 		LabelMapByName:        labelMapByName,
 		CustomFieldMap:        customFieldsMap,
 		//CustomFieldMapByName:  customFieldsMapByName,
@@ -352,7 +365,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, orgID int64, pr
 }
 
 func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
-	data, err := i.createDataForFulfillCommon(req.Locale, req.OrgID, req.ProjectID, nil) // ignore issueTypes, use all types
+	data, err := i.createDataForFulfillCommon(req.Locale, req.IdentityInfo.UserID, req.OrgID, req.ProjectID, nil) // ignore issueTypes, use all types
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
 	}
@@ -362,11 +375,26 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 	data.ImportOnly.Bdl = i.bdl
 	data.ImportOnly.Identity = i.identity
 	data.ImportOnly.Property = i
+	// current project issues
+	currentProjectIssues, _, err := data.ImportOnly.DB.PagingIssues(pb.PagingIssueRequest{
+		ProjectID:    data.ProjectID,
+		PageNo:       1,
+		PageSize:     99999,
+		OnlyIdResult: true,
+	}, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to page current project issues, err: %v", err)
+	}
+	data.ImportOnly.CurrentProjectIssueMap = make(map[uint64]bool)
+	for _, current := range currentProjectIssues {
+		current := current
+		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
+	}
 	return data, nil
 }
 
 func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
-	data, err := i.createDataForFulfillCommon(req.Locale, req.OrgID, req.ProjectID, req.Type)
+	data, err := i.createDataForFulfillCommon(req.Locale, req.IdentityInfo.UserID, req.OrgID, req.ProjectID, req.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
 	}
