@@ -486,6 +486,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 					Volumes:               vols,
 					EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
 					ShareProcessNamespace: func(b bool) *bool { return &b }(false),
+					HostNetwork:           job.Network.IsHostMode(),
 				},
 			},
 		},

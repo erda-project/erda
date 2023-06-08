@@ -60,9 +60,10 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 					Type:        ActionType(frontendAction.Type),
 					Namespaces:  frontendAction.Namespaces,
 					Resources: Resources{
-						CPU:  frontendAction.Resources.Cpu,
-						Mem:  int(frontendAction.Resources.Mem),
-						Disk: int(frontendAction.Resources.Disk),
+						CPU:     frontendAction.Resources.Cpu,
+						Mem:     int(frontendAction.Resources.Mem),
+						Disk:    int(frontendAction.Resources.Disk),
+						Network: frontendAction.Resources.Network,
 					},
 				}}
 
@@ -246,7 +247,12 @@ func ConvertToGraphPipelineYml(data []byte) (*pb.PipelineYml, error) {
 				resultAction.If = action.If
 				resultAction.Disable = action.Disable
 				resultAction.Loop = action.Loop
-				resultAction.Resources = apistructs.Resources{Cpu: action.Resources.CPU, Mem: float64(action.Resources.Mem), Disk: float64(action.Resources.Disk)}
+				resultAction.Resources = apistructs.Resources{
+					Cpu:     action.Resources.CPU,
+					Mem:     float64(action.Resources.Mem),
+					Disk:    float64(action.Resources.Disk),
+					Network: action.Resources.Network,
+				}
 
 				caches := action.Caches
 				if caches != nil {

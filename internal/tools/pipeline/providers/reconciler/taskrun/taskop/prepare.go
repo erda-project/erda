@@ -341,6 +341,11 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if action.Resources.Disk > 0 {
 		task.Extra.RuntimeResource.Disk = float64(action.Resources.Disk)
 	}
+	// if the user does not customize the container network
+	// use the default network defined by the dice job
+	if task.Extra.RuntimeResource.Network == nil {
+		task.Extra.RuntimeResource.Network = diceYmlJob.Resources.Network
+	}
 
 	// resource 相关环境变量
 	task.Extra.PublicEnvs[resource.EnvPipelineLimitedCPU] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxCPU)

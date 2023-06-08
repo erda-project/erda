@@ -83,6 +83,15 @@ type Job struct {
 	StatusDesc
 }
 
+type PodNetwork map[string]string
+
+func (p PodNetwork) IsHostMode() bool {
+	if p == nil {
+		return false
+	}
+	return p["mode"] == "host"
+}
+
 type JobFromUser struct {
 	Name                    string                 `json:"name"`
 	Namespace               string                 `json:"namespace"`               // the default namespace is "default"
@@ -111,6 +120,7 @@ type JobFromUser struct {
 	BackoffLimit            int                    `json:"backoffLimit,omitempty"`
 	Params                  map[string]interface{} `json:"params,omitempty"`
 	TaskContainers          []TaskContainer        `json:"taskContainers"`
+	Network                 PodNetwork             `json:"network,omitempty"`
 
 	ContainerInstanceProvider *ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"` // ContainerInstanceProvider pointer type if not hitted of specified, it will be nil
 }

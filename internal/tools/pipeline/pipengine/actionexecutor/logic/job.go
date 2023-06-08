@@ -185,6 +185,7 @@ func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 		// 重试不依赖 scheduler，由 pipeline engine 自己实现，保证所有 action executor 均适用
 		Params:                    task.Extra.Action.Params,
 		ContainerInstanceProvider: task.Extra.ContainerInstanceProvider,
+		Network:                   task.Extra.RuntimeResource.Network,
 	}, nil
 }
 

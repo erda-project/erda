@@ -43,3 +43,21 @@ stages:
 	assert.NoError(t, err)
 	fmt.Println(string(b))
 }
+
+func TestResourceNetwork(t *testing.T) {
+	s := []byte(`
+version: 1.1
+stages:
+- stage:
+    - git-checkout:
+        resources:
+          network:
+            mode: host
+`)
+	y, err := New(s)
+	assert.NoError(t, err)
+
+	y.Spec().LoopStagesActions(func(stage int, action *Action) {
+		assert.Equal(t, "host", action.Resources.Network["mode"])
+	})
+}
