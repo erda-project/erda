@@ -378,7 +378,7 @@ type Resources struct {
 	EphemeralStorageCapacity int     `json:"ephemeral_storage_size"`
 
 	// network
-	Network map[string]string `json:"network,omitempty"`
+	Network PodNetwork `json:"network,omitempty"`
 }
 
 // health check to check container healthy
