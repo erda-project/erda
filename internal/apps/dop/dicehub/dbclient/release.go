@@ -129,7 +129,7 @@ func (client *DBClient) GetReleasesByParams(
 	orgID int64, req *apistructs.ReleaseListRequest) (int64, []Release, error) {
 
 	var releases []Release
-	db := client.DB.Debug()
+	db := client.DB
 	if orgID > 0 {
 		db = db.Where("org_id = ?", orgID)
 	}

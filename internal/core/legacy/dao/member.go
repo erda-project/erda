@@ -37,7 +37,7 @@ func (client *DBClient) UpdateMember(member *model.Member) error {
 
 // UpdateMemberUserInfo 更新成员 userinfo 信息
 func (client *DBClient) UpdateMemberUserInfo(ids []int64, fields map[string]interface{}) error {
-	return client.Debug().Model(model.Member{}).Where("id in (?)", ids).Updates(fields).Error
+	return client.Model(model.Member{}).Where("id in (?)", ids).Updates(fields).Error
 }
 
 // DeleteMember 删除成员

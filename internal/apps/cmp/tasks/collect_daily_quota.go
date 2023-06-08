@@ -180,11 +180,11 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 			switch {
 			case err == nil:
 				record.ID = existsRecord.ID
-				if err = d.db.Debug().Save(&record).Error; err != nil {
+				if err = d.db.Save(&record).Error; err != nil {
 					logrus.WithError(err).Errorln("failed to save project resource daily record")
 				}
 			case gorm.IsRecordNotFoundError(err):
-				if err = d.db.Debug().Create(&record).Error; err != nil {
+				if err = d.db.Create(&record).Error; err != nil {
 					logrus.WithError(err).Errorln("failed to create project resource daily record")
 				}
 			default:
@@ -243,11 +243,11 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 		switch {
 		case err == nil:
 			record.ID = existsRecord.ID
-			if err = d.db.Debug().Save(&record).Error; err != nil {
+			if err = d.db.Save(&record).Error; err != nil {
 				logrus.WithError(err).Errorln("failed to save cluster resource daily record")
 			}
 		case gorm.IsRecordNotFoundError(err):
-			if err = d.db.Debug().Create(&record).Error; err != nil {
+			if err = d.db.Create(&record).Error; err != nil {
 				logrus.WithError(err).Errorln("failed to create cluster resource daily record")
 			}
 		default:
