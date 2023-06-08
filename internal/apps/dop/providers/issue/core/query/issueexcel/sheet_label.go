@@ -139,6 +139,15 @@ func (data *DataForFulfill) createLabelIfNotExistsForImport(labels []*pb.Project
 }
 
 func (data DataForFulfill) createIssueLabelRelations(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+	// batch delete label relations
+	var issueIDs []uint64
+	for _, issue := range issues {
+		issueIDs = append(issueIDs, issue.ID)
+	}
+	if err := data.ImportOnly.DB.BatchDeleteIssueLabelRelations(issueIDs); err != nil {
+		return fmt.Errorf("failed to batch delete issue label relations before create label relations, err: %v", err)
+	}
+
 	var relations []issuedao.LabelRelation
 	for _, issue := range issues {
 		model, ok := issueModelMapByIssueID[issue.ID]
