@@ -61,6 +61,7 @@ type HttpInfor interface {
 	RemoteAddr() string
 	// Body only for getting request body and only on request stage.
 	Body() io.ReadCloser
+	SetBody(body io.ReadCloser)
 	// BodyBuffer only for getting request body and only on request stage.
 	BodyBuffer() *bytes.Buffer
 	Mutex() *sync.Mutex
@@ -249,6 +250,19 @@ func (r *infor[R]) BodyBuffer() *bytes.Buffer {
 	_ = request.Body.Close()
 	request.Body = io.NopCloser(bytes.NewReader(data))
 	return bytes.NewBuffer(data)
+}
+
+func (r *infor[R]) SetBody(body io.ReadCloser) {
+	field := reflect.ValueOf(r.r)
+	if field.Kind() == reflect.Ptr {
+		field = field.Elem()
+	}
+	v := field.FieldByName("Body")
+	if v.IsValid() && !v.IsNil() && !v.IsZero() {
+		i := v.Interface()
+		_ = i.(io.Closer).Close()
+	}
+	v.Set(reflect.ValueOf(body))
 }
 
 func (r *infor[R]) Mutex() *sync.Mutex {

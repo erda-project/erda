@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai_proxy
+package handlers
 
-import (
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/acl"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/body-size-limit"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/protocol-translator"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/session-context"
+import "github.com/pkg/errors"
+
+var (
+	UserPermissionDenied  = errors.New("user permission denied")
+	InvalidSessionId      = errors.New("invalid session id")
+	InvalidSessionName    = errors.New("invalid session name")
+	InvalidSessionTopic   = errors.New("invalid session topic")
+	InvalidSessionSource  = errors.New("invalid session source")
+	InvalidSessionModel   = errors.New("invalid session model")
+	InvalidSessionResetAt = errors.New("invalid session resetAt")
 )

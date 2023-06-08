@@ -28,6 +28,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -304,23 +305,18 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	infor := NewInfor(p.Context, outreq)
-	for i, item := range p.Filters {
+	for _, item := range p.Filters {
 		if filter, ok := item.Filter.(RequestFilter); ok {
 			ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnRequest"))
 			signal, err := filter.OnRequest(ctx, rw, infor)
-			if err == nil && signal == Continue {
-				continue
-			}
 			if err != nil {
-				p.logf("[WARN] failed to do %s.OnRequest", item.Name)
+				http.Error(rw, fmt.Sprintf(`{"success": false, "message": %s, "error": %s}`, strconv.Quote(http.StatusText(http.StatusBadRequest)), strconv.Quote(err.Error())), http.StatusBadRequest)
+				return
 			}
 			if signal != Continue {
-				p.logf("[WARN] reverseproxy filters is not continued by %s", item.Name)
+				logger.Warnf("[WARN] reverseproxy filters is not continued by %s", item.Name)
+				return
 			}
-			p.Filters = p.Filters[:i+1]
-			p.Director = DoNothingDirector
-			p.Transport = new(DoNothingTransport)
-			break
 		}
 	}
 
@@ -593,8 +589,10 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 				nextWriter.Reset()
 			}
 			if rerr == io.EOF {
+				logger.Debug("response body EOF")
 				rerr = nil
 			}
+			logger.Errorf("read response err: %v", rerr)
 			return rw.Filter.(*responseBodyWriter).written, rerr
 		}
 	}

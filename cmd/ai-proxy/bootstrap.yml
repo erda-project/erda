@@ -1,6 +1,10 @@
+
 http-server@ai:
   addr: ":8081"
+  allow_cors: true
 health:
+grpc-server@ai:
+  addr: ":8082"
 
 erda.app.ai-proxy:
   routesRef: conf/routes.yml
@@ -14,4 +18,19 @@ gorm.v2:
   password: "${MYSQL_PASSWORD}"
   database: "${MYSQL_DATABASE}"
 
+erda.apps.ai-proxy.dao:
 erda.app.ai-proxy.metrics:
+
+grpc-client@erda.core.org:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+  block: false
+erda.core.org-client: {}
+
+openapi-dynamic-register:
+
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"

@@ -12,16 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai_proxy
+package handlers
 
 import (
-	_ "github.com/erda-project/erda-infra/providers/etcd"
-	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-infra/providers/grpcserver"
-	_ "github.com/erda-project/erda-infra/providers/health"
-	_ "github.com/erda-project/erda-infra/providers/httpserver"
-	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
-	_ "github.com/erda-project/erda-proto-go/core/org/client"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/register"
+	"context"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
+	common "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
+
+type ModelsHandler struct {
+	Log logs.Logger
+	Dao dao.DAO
+}
+
+func (m *ModelsHandler) ListModels(ctx context.Context, request *common.VoidRequest) (*pb.ListModelsRespData, error) {
+	return &pb.ListModelsRespData{
+		Total: 1,
+		List: []*pb.Model{
+			{
+				Model: "gpt-35-turbo-0301", // only one model support yet
+			},
+		},
+	}, nil
+}

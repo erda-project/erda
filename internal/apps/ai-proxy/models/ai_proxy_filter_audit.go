@@ -17,7 +17,10 @@ package models
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
 )
 
 // AIProxyFilterAudit is the table ai_audit
@@ -71,4 +74,14 @@ type AIProxyFilterAudit struct {
 
 func (*AIProxyFilterAudit) TableName() string {
 	return "ai_proxy_filter_audit"
+}
+
+func (audit *AIProxyFilterAudit) ToProtobufChatLog() *pb.ChatLog {
+	return &pb.ChatLog{
+		Id:         audit.Id.String,
+		RequestAt:  timestamppb.New(audit.RequestAt),
+		Prompt:     audit.Prompt,
+		ResponseAt: timestamppb.New(audit.ResponseAt),
+		Completion: audit.Completion,
+	}
 }
