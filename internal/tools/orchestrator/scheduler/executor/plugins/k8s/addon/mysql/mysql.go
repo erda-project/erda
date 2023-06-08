@@ -203,6 +203,10 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		obj.Spec.Labels["ADDON_ID"] = addonID
 	}
 
+	if clusterName, ok := mysql.Env[apistructs.DICE_CLUSTER_NAME.String()]; ok {
+		obj.Spec.Labels[apistructs.DICE_CLUSTER_NAME.String()] = clusterName
+	}
+
 	return obj
 }
 
