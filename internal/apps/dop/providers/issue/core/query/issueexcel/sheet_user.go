@@ -85,15 +85,33 @@ func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Memb
 		userNicksFromIssueSheet = append(userNicksFromIssueSheet, model.Common.CreatorName, model.Common.AssigneeName, model.BugOnly.OwnerName)
 	}
 	userNicksFromIssueSheet = strutil.DedupSlice(userNicksFromIssueSheet, true)
-	// try to find user in current project members, only can by nick
+	// try to find user in current project members, only can be found by nick (have the risk of same name)
 	projectMemberByNick := make(map[string]apistructs.Member)
 	for _, member := range data.ProjectMemberByUserID {
 		projectMemberByNick[member.Nick] = member
 	}
+	orgMemberByNick := make(map[string]apistructs.Member)
+	for _, member := range data.OrgMemberByUserID {
+		orgMemberByNick[member.Nick] = member
+	}
 	for _, nick := range userNicksFromIssueSheet {
 		m, ok := projectMemberByNick[nick]
 		if !ok {
-			return fmt.Errorf("failed to find user in project member, nick: %s, please add user to project first", nick)
+			m, ok = orgMemberByNick[nick] // only try to find in org member, due to the risk of same name
+			if !ok {
+				return fmt.Errorf("failed to find user in project member, nick: %s, please add user to project first", nick)
+			}
+			// auto add user to project
+			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
+				Scope: apistructs.Scope{
+					Type: apistructs.ProjectScope,
+					ID:   strconv.FormatUint(data.ProjectID, 10),
+				},
+				Roles:   []string{"Dev"},
+				UserIDs: []string{m.UserID},
+			}, apistructs.SystemUserID); err != nil {
+				return fmt.Errorf("failed to add member into project by nick, project id: %d, user nick: %s, user id: %s, err: %v", data.ProjectID, nick, m.UserID, err)
+			}
 		}
 		data.ImportOnly.UserIDsByNick[nick] = m.UserID
 	}
