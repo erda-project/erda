@@ -18,8 +18,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	mysqlv1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/mysql/v1"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/sourcecov/mock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -58,4 +60,43 @@ func TestMysqlOperator(t *testing.T) {
 	mo.Inspect(sg)
 	mo.Update(sg)
 	mo.Remove(sg)
+}
+
+func TestConvert(t *testing.T) {
+	sg := &apistructs.ServiceGroup{
+		Dice: apistructs.Dice{
+			ID: "abcdefghigklmnopq",
+			Services: []apistructs.Service{
+				{
+					Name: "mysql",
+					Volumes: []apistructs.Volume{
+						{
+							ID:         "mysql-data",
+							VolumePath: "/var/lib/mysql",
+							SCVolume: apistructs.SCVolume{
+								StorageClassName: "ssd",
+								Capacity:         1000,
+							},
+						},
+					},
+					Resources: apistructs.Resources{
+						Cpu: 1,
+						Mem: 1024,
+					},
+					Scale: 2,
+					Env: map[string]string{
+						"MYSQL_ROOT_PASSWORD": "123",
+						"ADDON_ID":            "addonxxx",
+						"DICE_CLUSTER_NAME":   "erda",
+						"DICE_ORG_NAME":       "erda",
+					},
+				},
+			},
+		},
+	}
+	op := &MysqlOperator{}
+	got := op.Convert(sg)
+	mysql, ok := got.(*mysqlv1.Mysql)
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "erda", mysql.Spec.Labels["DICE_CLUSTER_NAME"])
 }
