@@ -144,12 +144,12 @@ func (client *DBClient) UpdateIssue(id uint64, fields map[string]interface{}) er
 	issue := Issue{}
 	issue.ID = id
 
-	return client.Debug().Model(&issue).Updates(fields).Error
+	return client.Model(&issue).Updates(fields).Error
 }
 
 // UpdateIssues 批量更新 issue
 func (client *DBClient) UpdateIssues(requirementID uint64, fields map[string]interface{}) error {
-	return client.Debug().Model(Issue{}).
+	return client.Model(Issue{}).
 		Where("requirement_id = ?", requirementID).
 		Where("type = ?", apistructs.IssueTypeTask).
 		Updates(fields).Error
@@ -249,7 +249,7 @@ func (client *DBClient) PagingIssues(req pb.PagingIssueRequest, queryIDs bool) (
 	if req.RequirementID != nil && *req.RequirementID > 0 {
 		cond.RequirementID = req.RequirementID
 	}
-	sql := client.Debug()
+	sql := client.DB
 	if req.CustomPanelID != 0 {
 		joinSQL := "LEFT OUTER JOIN dice_issue_panel on dice_issues.id=dice_issue_panel.issue_id"
 		sql = sql.Joins(joinSQL).Where("relation = ?", req.CustomPanelID)
@@ -413,7 +413,7 @@ func (client *DBClient) ListIssue(req pb.IssueListRequest) ([]Issue, error) {
 	// 	cond.RequirementID = req.RequirementID
 	// }
 
-	sql := client.Debug().Where(cond)
+	sql := client.Where(cond)
 	// var ts []string
 	// for _, i := range req.Type {
 	// 	ts = append(ts, i.String())
@@ -729,7 +729,7 @@ func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchR
 }
 
 func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {
-	sql := client.Debug().Table("dice_issues").Joins(joinState)
+	sql := client.Table("dice_issues").Joins(joinState)
 	sql = sql.Where("deleted = 0").Where("assignee IN (?) AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
@@ -958,10 +958,10 @@ const (
 )
 
 func (client *DBClient) FindIssueChildren(id uint64, req pb.PagingIssueRequest) ([]IssueItem, uint64, error) {
-	sql := client.Debug().Table("dice_issue_relation b").Joins(joinIssueChildren).Joins(joinStateNew).
+	sql := client.Table("dice_issue_relation b").Joins(joinIssueChildren).Joins(joinStateNew).
 		Where("b.issue_id = ? AND b.type = ?", id, apistructs.IssueRelationInclusion)
 	// if id == 0 {
-	// 	sql = client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
+	// 	sql = client.Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
 	// 		Where("b.id IS NULL")
 	// }
 	if len(req.Type) > 0 {
@@ -986,7 +986,7 @@ func (client *DBClient) FindIssueChildren(id uint64, req pb.PagingIssueRequest) 
 
 func (client *DBClient) FindIssueRoot(req pb.PagingIssueRequest) ([]IssueItem, []IssueItem, uint64, error) {
 	// issues without children
-	sql := client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
+	sql := client.Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
 		Joins(joinRelationParent, apistructs.IssueRelationInclusion).Where("b.id IS NULL and d.id is NULL")
 	offset := (req.PageNo - 1) * req.PageSize
 	if len(req.Type) > 0 {
@@ -1007,7 +1007,7 @@ func (client *DBClient) FindIssueRoot(req pb.PagingIssueRequest) ([]IssueItem, [
 	}
 
 	// requirements with children
-	sql = client.Debug().Table("dice_issue_relation b").Joins(joinIssueParent).Joins("LEFT JOIN dice_issues d ON d.id = b.related_issue").
+	sql = client.Table("dice_issue_relation b").Joins(joinIssueParent).Joins("LEFT JOIN dice_issues d ON d.id = b.related_issue").
 		Joins("LEFT JOIN dice_issue_state e ON a.state = e.id").Joins("LEFT JOIN dice_issue_state f ON d.state = f.id")
 	sql = sql.Where("a.type = ?", apistructs.IssueTypeRequirement).Where("b.type = ?", apistructs.IssueRelationInclusion)
 	sql = sql.Where("d.deleted = 0").Where("d.project_id = ?", req.ProjectID)
@@ -1065,7 +1065,7 @@ type timeRange struct {
 }
 
 func (client *DBClient) FindIssueChildrenTimeRange(id uint64) (*time.Time, *time.Time, error) {
-	sql := client.Debug().Table("dice_issue_relation b").Joins(joinIssueChildren).
+	sql := client.Table("dice_issue_relation b").Joins(joinIssueChildren).
 		Where("b.issue_id = ? AND b.type = ?", id, apistructs.IssueRelationInclusion)
 	var res timeRange
 	if err := sql.Select("MAX(a.`plan_finished_at`) as max, MIN(a.`plan_started_at`) as min").Find(&res).Error; err != nil {

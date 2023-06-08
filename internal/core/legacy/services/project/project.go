@@ -224,7 +224,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			CreatorID:          userID,
 			UpdaterID:          userID,
 		}
-		if err := tx.Debug().Create(&quota).Error; err != nil {
+		if err := tx.Create(&quota).Error; err != nil {
 			logrus.WithError(err).WithField("model", quota.TableName()).
 				Errorln("failed to Create")
 			return nil, errors.Errorf("failed to insert project quota to database")
@@ -379,9 +379,9 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	}
 
 	if hasOldQuota {
-		err = tx.Debug().Save(project.Quota).Error
+		err = tx.Save(project.Quota).Error
 	} else {
-		err = tx.Debug().Create(project.Quota).Error
+		err = tx.Create(project.Quota).Error
 	}
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to update project quota")

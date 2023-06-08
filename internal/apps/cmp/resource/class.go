@@ -521,7 +521,7 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 	default:
 		db = db.Where(map[string]interface{}{"project_id": scopeID})
 	}
-	if err = db.Debug().Find(&projectDailies).Error; err != nil {
+	if err = db.Find(&projectDailies).Error; err != nil {
 		return td, err
 	}
 

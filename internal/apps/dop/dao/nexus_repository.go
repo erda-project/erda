@@ -126,7 +126,7 @@ func (client *DBClient) ListNexusRepositories(req apistructs.NexusRepositoryList
 	}
 
 	var repos []*NexusRepository
-	if err := query.Debug().Find(&repos).Error; err != nil {
+	if err := query.Find(&repos).Error; err != nil {
 		return nil, err
 	}
 	return repos, nil

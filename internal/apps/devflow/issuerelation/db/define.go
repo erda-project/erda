@@ -58,7 +58,7 @@ func (db *Client) CreateIssueRelation(relation *IssueRelation) error {
 func (db *Client) DeleteIssueRelation(id string) error {
 
 	var relation = IssueRelation{ID: id}
-	return db.Model(&relation).Update("soft_deleted_at", int(time.Now().UnixNano()/1e6)).Debug().Error
+	return db.Model(&relation).Update("soft_deleted_at", int(time.Now().UnixNano()/1e6)).Error
 }
 
 func (db *Client) ListIssueRelation(req *pb.ListIssueRelationRequest, orgID string) ([]IssueRelation, error) {
@@ -73,6 +73,6 @@ func (db *Client) ListIssueRelation(req *pb.ListIssueRelationRequest, orgID stri
 		client = client.Where("relation in (?)", req.Relations)
 	}
 
-	err := client.Find(&issueRelations).Debug().Error
+	err := client.Find(&issueRelations).Error
 	return issueRelations, err
 }

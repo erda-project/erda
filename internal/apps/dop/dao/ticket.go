@@ -85,8 +85,7 @@ func (client *DBClient) GetClusterOpenTicketsNum(ticketType, targetType, targetI
 func (client *DBClient) DeleteTicket(targetID, targetType, ticketType string) error {
 	var m model.Ticket
 	//err := client.Model(&model.Ticket{}).
-	client.LogMode(true)
-	err := client.Debug().Table("ps_tickets").
+	err := client.Table("ps_tickets").
 		Where("type = ?", ticketType).
 		Where("target_id = ?", targetID).
 		Where("target_type = ?", targetType).

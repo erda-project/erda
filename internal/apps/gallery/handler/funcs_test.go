@@ -97,7 +97,7 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 	defer os.Remove(dbname)
 	for i, case_ := range cases {
 		options := handler.PrepareListOpusesOptions(case_.OrgID, case_.Type, case_.Name, case_.Keyword, case_.PageSize, case_.PageNo)
-		db := db.Debug().Session(&gorm.Session{DryRun: true})
+		db := db.Session(&gorm.Session{DryRun: true})
 		for _, opt := range options {
 			db = opt.With(db)
 		}
@@ -115,7 +115,7 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 		}
 	}
 	options := handler.PrepareListOpusesOptions(1, "", "", "", 10, 2)
-	db2 := db.Debug().Session(&gorm.Session{DryRun: true})
+	db2 := db.Session(&gorm.Session{DryRun: true})
 	for _, opt := range options {
 		db2 = opt.With(db2)
 	}
@@ -142,7 +142,7 @@ func TestPrepareListOpusesKeywordFilterOption(t *testing.T) {
 	}
 	defer os.Remove(dbname)
 	db = handler.PrepareListOpusesKeywordFilterOption(keyword, versions).With(db)
-	db = db.Debug().Session(&gorm.Session{DryRun: true}).Find(new(model.Opus))
+	db = db.Session(&gorm.Session{DryRun: true}).Find(new(model.Opus))
 	if db.Statement.SQL.String() != sql {
 		t.Fatalf("sql error, expected: %s\n, actual: %s\n", sql, db.Statement.SQL.String())
 	}
@@ -173,7 +173,7 @@ func TestPrepareListVersionsInOpusesIDsOption(t *testing.T) {
 	}
 
 	db = handler.PrepareListVersionsInOpusesIDsOption(opuses).With(db)
-	db = db.Debug().Session(&gorm.Session{DryRun: true}).Find(new(model.OpusVersion))
+	db = db.Session(&gorm.Session{DryRun: true}).Find(new(model.OpusVersion))
 	if db.Statement.SQL.String() != sql {
 		t.Fatalf("sql not equal, expected: %s\n, actual: %s\n", sql, db.Statement.SQL.String())
 	}

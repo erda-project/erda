@@ -54,7 +54,7 @@ func (client *LabelRelationConfigDB) GetLabelRelationsByRef(refType apistructs.P
 // GetLabelRelationsByLabels 获取标签关联关系列表
 func (client *LabelRelationConfigDB) GetLabelRelationsByLabels(refType apistructs.ProjectLabelType, labelIDs []uint64) ([]LabelRelation, error) {
 	var lrs []LabelRelation
-	if err := client.Debug().Where("ref_type = ?", refType).Where("label_id in (?)", labelIDs).
+	if err := client.Where("ref_type = ?", refType).Where("label_id in (?)", labelIDs).
 		Find(&lrs).Error; err != nil {
 		return nil, err
 	}
