@@ -23,5 +23,5 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	_ "github.com/erda-project/erda/internal/pkg/openapi/dynamic"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/register"
 )

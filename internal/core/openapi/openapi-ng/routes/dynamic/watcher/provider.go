@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dynamic
+package watcher
 
 import (
 	"context"
@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/auth"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/proxy"
+	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/proto"
 	discover "github.com/erda-project/erda/internal/pkg/service-discover"
 )
@@ -130,7 +131,7 @@ func (p *provider) Watch(ctx context.Context) <-chan openapi.RouteSource {
 }
 
 type routeSource struct {
-	apis  []*APIProxy
+	apis  []*routes.APIProxy
 	proxy proxy.Proxy
 	auth  auth.Interface
 }

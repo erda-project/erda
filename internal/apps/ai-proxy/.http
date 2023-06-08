@@ -1,10 +1,10 @@
 ### GET models
-GET https://ai-proxy.daily.terminus.io/api/ai-proxy/models
+GET https://{{ai-proxy_host}}/api/ai-proxy/models
 
 ### Create session
-POST https://ai-proxy.daily.terminus.io/api/ai-proxy/sessions
+POST https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
-User-ID: 1000001
+User-ID: {{ai-proxy_user-id}}
 
 
 {
@@ -17,9 +17,9 @@ User-ID: 1000001
 }
 
 ### update session
-PUT https://ai-proxy.daily.terminus.io/api/ai-proxy/sessions/ddf6c109-d946-4a98-ada4-17daef123c9e
+PUT https://{{ai-proxy_host}}}}/api/ai-proxy/sessions/{{$random.uuid}}
 Content-Type: application/json
-User-ID: 1000001
+User-ID: {{ai-proxy_user-id}}
 
 {
   "name": "test-session-1",
@@ -36,22 +36,22 @@ User-ID: 1000001
 ### Get sessions
 GET https://ai-proxy.daily.terminus.io/api/ai-proxy/sessions
 Content-Type: application/json
-User-ID: 1000001
+User-ID: {{ai-proxy_user-id}}
 X-Erda-AI-Proxy-Source: erda
 
 ### Get chat logs
 GET https://ai-proxy.daily.terminus.io/api/ai-proxy/chat-logs
 Content-Type: application/json
-User-ID: 1000001
-X-Erda-AI-Proxy-SessionId: ddf6c109-d946-4a98-ada4-17daef123c9e
+User-ID: {{ai-proxy_user-id}}
+X-Erda-AI-Proxy-SessionId: {{$random.uuid}}
 
 ### chat
 POST https://ai-proxy.daily.terminus.io/v1/chat/completions
-Org-ID: 633
-User-ID: 1000001
-X-Erda-AI-Proxy-SessionId: ddf6c109-d946-4a98-ada4-17daef123c9e
+Org-ID: {{ai-proxy-org-id}}
+User-ID: {{ai-proxy_user-id}}
+X-Erda-AI-Proxy-SessionId: {{$random.uuid}}
 X-Erda-AI-Proxy-Source: erda
-Authorization: Bearer c18a8bc3a3224cbe99d64d0d0158fbbc
+Authorization: Bearer {{ai-proxy_app-key}}
 Content-Type: application/json
 
 {

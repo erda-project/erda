@@ -40,6 +40,7 @@ envs:
   CLUSTER_DIALER_ADDR: cluster-manager:80
   TRACE_HOOK_ENABLE: true
   GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
+  OPENAPI_DYNAMIC_ROUTES: true  # Whether to allow dynamic registration of routes to openapi
 services:
   erda-server:
     cmd: /erda/cmd/erda-server/bin

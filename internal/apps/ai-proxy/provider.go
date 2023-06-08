@@ -45,9 +45,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
-	"github.com/erda-project/erda/internal/pkg/openapi/dynamic"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -87,7 +87,7 @@ type provider struct {
 	GRPC    grpcserver.Interface   `autowired:"grpc-server@ai"`
 	Dao     dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
 	OrgSvc  orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
-	Openapi dynamic.Register       `autowired:"openapi-dynamic-register.client"`
+	Openapi routes.Register        `autowired:"openapi-dynamic-register.client"`
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -101,9 +101,6 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 
-	if onErda, ok := os.LookupEnv("ON_ERDA"); ok {
-		p.Config.OnErda = strings.EqualFold(onErda, "true")
-	}
 	if p.Config.SelfURL == "" {
 		p.Config.SelfURL = "http://ai-proxy:8081"
 	}
@@ -130,19 +127,17 @@ func (p *provider) Init(_ servicehub.Context) error {
 		}
 
 		// register to erda openapi
-		if p.Config.OnErda {
-			if err := p.Openapi.Register(&dynamic.Route{
-				Method:      rout.Method,
-				Path:        path.Join("/api/ai-proxy", rout.Path),
-				ServiceURL:  p.Config.SelfURL,
-				BackendPath: rout.Path,
-				Auth: &common.APIAuth{
-					CheckLogin: true,
-					CheckToken: true,
-				},
-			}); err != nil {
-				return err
-			}
+		if err := p.Openapi.Register(&routes.APIProxy{
+			Method:      rout.Method,
+			Path:        path.Join("/api/ai-proxy", rout.Path),
+			ServiceURL:  p.Config.SelfURL,
+			BackendPath: rout.Path,
+			Auth: &common.APIAuth{
+				CheckLogin: true,
+				CheckToken: true,
+			},
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -270,7 +265,6 @@ type config struct {
 	ProvidersRef string             `json:"providersRef" yaml:"providersRef"`
 	LogLevel     string             `json:"logLevel" yaml:"logLevel"`
 	Exporter     configPromExporter `json:"exporter" yaml:"exporter"`
-	OnErda       bool               `json:"onErda" yaml:"onErda"`
 	SelfURL      string             `json:"selfURL" yaml:"selfURL"`
 	providers    provider2.Providers
 	Routes       route2.Routes

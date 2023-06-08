@@ -46,7 +46,7 @@ CREATE TABLE `ai_proxy_sessions`
     `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted_at`     DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
 
-    `user_id`         VARCHAR(128) NOT NULL DEFAULT '' COMMENT '用户id',
+    `user_id`        VARCHAR(128) NOT NULL DEFAULT '' COMMENT '用户id',
     `name`           VARCHAR(128) NOT NULL DEFAULT '' COMMENT '会话名称',
     `topic`          TEXT         NOT NULL COMMENT '会话主题',
     `context_length` int          NOT NULL DEFAULT 0 COMMENT '上下文长度',
