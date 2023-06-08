@@ -446,6 +446,15 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 }
 
 func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
+	defer func() {
+		var desc string
+		if r := recover(); r != nil {
+			desc = fmt.Sprintf("%v", r)
+			logrus.Errorf("%s failed to export excel, recordID: %d, err: %v", issueService, record.ID, r)
+			fmt.Println(string(debug.Stack()))
+			i.updateIssueFileRecord(record.ID, apistructs.FileRecordStateFail, desc)
+		}
+	}()
 	extra := record.Extra.IssueFileExtraInfo
 	if extra == nil || extra.ExportRequest == nil {
 		return
@@ -453,21 +462,17 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	req := extra.ExportRequest
 	id := record.ID
 	if err := i.updateIssueFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
-		return
+		panic(fmt.Errorf("failed to update issue file record, err: %v", err))
 	}
 
 	// use new excel export
 	var buffer bytes.Buffer
 	dataForFulfill, err := i.createDataForFulfillForExport(req)
 	if err != nil {
-		logrus.Errorf("%s failed to create data for fulfill, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+		panic(fmt.Errorf("failed to create data for fulfill, err: %v", err))
 	}
 	if err := issueexcel.ExportFile(&buffer, *dataForFulfill); err != nil {
-		logrus.Errorf("%s failed to export excel, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+		panic(fmt.Errorf("failed to export excel, err: %v", err))
 	}
 
 	expiredAt := time.Now().Add(time.Duration(conf.ExportIssueFileStoreDay()) * 24 * time.Hour)
@@ -480,9 +485,7 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	}
 	fileUUID, err := i.bdl.UploadFile(uploadReq)
 	if err != nil {
-		logrus.Errorf("%s failed to upload file, err: %v", issueService, err)
-		i.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+		panic(fmt.Errorf("failed to upload file, err: %v", err))
 	}
 	i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: fileUUID.UUID})
 }
