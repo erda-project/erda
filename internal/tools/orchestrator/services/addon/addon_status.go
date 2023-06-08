@@ -1304,8 +1304,9 @@ func (a *Addon) BuildMysqlOperatorServiceItem(params *apistructs.AddonHandlerCre
 		"ADDON_ID":      addonIns.ID,
 		"ADDON_NODE_ID": addonNodeId,
 
-		"MYSQL_VERSION":       operatorSpec.Version,
-		"MYSQL_ROOT_PASSWORD": password,
+		"MYSQL_VERSION":                       operatorSpec.Version,
+		"MYSQL_ROOT_PASSWORD":                 password,
+		apistructs.DICE_CLUSTER_NAME.String(): params.ClusterName,
 	}
 
 	// 保存mysql的master节点信息
