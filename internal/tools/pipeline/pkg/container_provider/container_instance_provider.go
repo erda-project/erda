@@ -176,6 +176,7 @@ func DealTaskRuntimeResource(task *spec.PipelineTask) {
 		MaxCPU:    task.Extra.AppliedResources.Limits.CPU,
 		MaxMemory: task.Extra.AppliedResources.Limits.MemoryMB,
 		Disk:      0,
+		Network:   task.Extra.RuntimeResource.Network,
 	}
 	if task.Extra.ContainerInstanceProvider != nil && task.Extra.ContainerInstanceProvider.IsHitted &&
 		task.Extra.ContainerInstanceProvider.PipelineAppliedResource.CPU > 0 {
