@@ -31,6 +31,7 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/bundle"
@@ -116,18 +117,31 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
 					if strutil.HasPrefixes(r.URL.Path, "/api/issues/actions/export-excel") {
 						var req pb.ExportExcelIssueRequest
+						// compatible IsDownload
+						urlQuery := r.URL.Query()
+						urlQuery.Set("IsDownloadTemplate", urlQuery.Get("IsDownload"))
+						r.URL.RawQuery = urlQuery.Encode()
 						if err := queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 							return apierrors.ErrExportExcelIssue.InvalidParameter(err)
 						}
 						if !req.IsDownloadTemplate {
 							return encoding.EncodeResponse(rw, r, data)
 						}
+						// set identity info
+						req.IdentityInfo = &commonpb.IdentityInfo{
+							UserID: r.Header.Get("User-ID"),
+							OrgID:  r.Header.Get("Org-ID"),
+						}
+						orgID, _ := strconv.ParseInt(req.IdentityInfo.OrgID, 10, 64)
+						req.OrgID = orgID
+						// all type return same sample
+						req.Type = nil
 						// use new excel export
-						var buffer bytes.Buffer
 						dataForFulfill, err := p.issueService.createDataForFulfillForExport(&req)
 						if err != nil {
 							return err
 						}
+						var buffer bytes.Buffer
 						if err := issueexcel.ExportFile(&buffer, *dataForFulfill); err != nil {
 							return err
 						}
@@ -137,6 +151,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						if _, err := io.Copy(rw, &buffer); err != nil {
 							return apierrors.ErrExportExcelIssue.InternalError(err)
 						}
+						return nil
 					}
 					return encoding.EncodeResponse(rw, r, data)
 				}),

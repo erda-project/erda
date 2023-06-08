@@ -283,7 +283,7 @@ service IssueCoreService {
 
   rpc ExportExcelIssue(ExportExcelIssueRequest) returns (ExportExcelIssueResponse) {
     option (google.api.http) = {
-      get: "/api/issues/actions/export-excel",
+      get: "/api/issues/actions/export-excel?IsDownload={isDownloadTemplate}",
     };
     option (erda.common.openapi) = {
       path: "/api/issues/actions/export-excel",
@@ -870,7 +870,7 @@ message PagingIssueRequest {
   int64 customPanelID = 35;
   bool onlyIdResult = 36;
   bool notIncluded = 37;
-  
+
   uint64 pageNo = 38;
   uint64 pageSize = 39;
   int64 orgID = 40;

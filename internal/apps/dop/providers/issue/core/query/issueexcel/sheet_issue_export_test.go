@@ -66,6 +66,7 @@ func Test_genIssueSheetTitleAndDataByColumn(t *testing.T) {
 
 func Test_getStringCellValue(t *testing.T) {
 	common := IssueSheetModelCommon{
+		ID:                 1,
 		ConnectionIssueIDs: []int64{2, 3},
 	}
 	commonValue := reflect.ValueOf(&common).Elem()
@@ -73,4 +74,18 @@ func Test_getStringCellValue(t *testing.T) {
 	typeField, ok := commonValue.Type().FieldByName("ConnectionIssueIDs")
 	assert.True(t, ok)
 	assert.Equal(t, getStringCellValue(typeField, valueField), "2,3")
+
+	common = IssueSheetModelCommon{
+		ID:                 0,
+		ConnectionIssueIDs: []int64{2, -3},
+	}
+	commonValue = reflect.ValueOf(&common).Elem()
+	valueField = commonValue.FieldByName("ConnectionIssueIDs")
+	typeField, ok = commonValue.Type().FieldByName("ConnectionIssueIDs")
+	assert.True(t, ok)
+	assert.Equal(t, getStringCellValue(typeField, valueField), "2,L3")
+	valueField = commonValue.FieldByName("ID")
+	typeField, ok = commonValue.Type().FieldByName("ID")
+	assert.True(t, ok)
+	assert.Equal(t, getStringCellValue(typeField, valueField), "")
 }

@@ -97,6 +97,10 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 			case "Common":
 				switch groupField {
 				case "ID":
+					if cell.Value == "" { // update
+						model.Common.ID = 0
+						continue
+					}
 					id, err := strconv.ParseUint(cell.Value, 10, 64)
 					if err != nil {
 						return nil, fmt.Errorf("invalid id: %s", cell.Value)
@@ -266,6 +270,11 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 	var issues []*issuedao.Issue
 	for i, model := range issueSheetModels {
 		model := model
+		// check state
+		stateID, ok := data.StateMapByTypeAndName[model.Common.IssueType.String()][model.Common.State]
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown state: %s, please contact project manager to add the corresponding status first", model.Common.State)
+		}
 		issue := issuedao.Issue{
 			BaseModel: dbengine.BaseModel{
 				ID:        uint64(model.Common.ID),
@@ -281,24 +290,24 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			Type:           model.Common.IssueType.String(),
 			Title:          model.Common.IssueTitle,
 			Content:        model.Common.Content,
-			State:          data.StateMapByTypeAndName[model.Common.IssueType.String()][model.Common.State],
+			State:          stateID,
 			Priority:       model.Common.Priority.String(),
 			Complexity:     model.Common.Complexity.String(),
 			Severity:       model.Common.Severity.String(),
-			Creator:        data.ProjectMemberMap[model.Common.CreatorName].UserID,
-			Assignee:       data.ProjectMemberMap[model.Common.AssigneeName].UserID,
-			Source:         model.BugOnly.Source,
+			Creator:        data.ImportOnly.UserIDsByNick[model.Common.CreatorName],
+			Assignee:       data.ImportOnly.UserIDsByNick[model.Common.AssigneeName],
+			Source:         "",
 			ManHour:        mustGetJsonManHour(model.Common.EstimateTime),
 			External:       true,
 			Deleted:        false,
 			Stage:          getIssueStage(model),
-			Owner:          data.ProjectMemberMap[model.BugOnly.OwnerName].UserID,
+			Owner:          data.ImportOnly.UserIDsByNick[model.BugOnly.OwnerName],
 			FinishTime:     model.Common.FinishAt,
 			ExpiryStatus:   "",
 			ReopenCount:    int(model.BugOnly.ReopenCount),
 			StartTime:      model.Common.StartAt,
 		}
-		if issue.ID > 0 && data.ShouldUpdateWhenIDSame() {
+		if issue.ID > 0 && data.ShouldUpdateWhenIDSame() && data.ImportOnly.CurrentProjectIssueMap[issue.ID] {
 			// update
 			if err := data.ImportOnly.DB.UpdateIssueType(&issue); err != nil {
 				return nil, nil, fmt.Errorf("failed to update issue, id: %d, err: %v", issue.ID, err)
@@ -437,6 +446,8 @@ func parseStringPriority(s string) (pb.IssuePriorityEnum_Priority, error) {
 		p = pb.IssuePriorityEnum_NORMAL
 	case strings.ToLower(pb.IssuePriorityEnum_HIGH.String()), "高":
 		p = pb.IssuePriorityEnum_HIGH
+	case strings.ToLower(pb.IssuePriorityEnum_URGENT.String()), "紧急":
+		p = pb.IssuePriorityEnum_URGENT
 	default:
 		return p, fmt.Errorf("invalid issue priority: %s", s)
 	}
