@@ -49,6 +49,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		pb.RegisterBuildServiceImp(p.Register, p.buildService, apis.Options())
 	}
+	p.bdl = bundle.New(bundle.WithCMP())
 	return nil
 }
 
