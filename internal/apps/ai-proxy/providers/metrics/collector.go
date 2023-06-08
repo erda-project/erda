@@ -19,22 +19,22 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
 type Collector struct {
 	l    logs.Logger
-	db   *gorm.DB
+	Dao  dao.DAO
 	desc *prometheus.Desc
 }
 
-func SingletonCollector(db *gorm.DB, l logs.Logger) prometheus.Collector {
+func SingletonCollector(dao dao.DAO, l logs.Logger) prometheus.Collector {
 	return &Collector{
 		l:    l,
-		db:   db,
+		Dao:  dao,
 		desc: prometheus.NewDesc("historical_requests", "Total number of ai-proxy requested", new(LabelValues).Labels(), nil),
 	}
 }
@@ -45,7 +45,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	var audits []models.AIProxyFilterAudit
-	if err := c.db.Find(&audits).Error; err != nil {
+	if err := c.Dao.Find(&audits).Error; err != nil {
 		c.l.Errorf("failed to db.Find(%T), err: %v", audits, err)
 		audits = append(audits, mockedAudit, mockedAudit)
 	}

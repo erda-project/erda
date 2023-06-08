@@ -17,6 +17,7 @@ package route
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"reflect"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -81,7 +83,7 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	// return "not found" early
 	if r.IsNotFoundRoute() {
 		return func(rw http.ResponseWriter, req *http.Request) {
-			rw.Header().Set("Server", "erda/ai-proxy")
+			rw.Header().Set("Server", "AI Service on Erda")
 			http.Error(rw, string(ToNotFound), http.StatusNotFound)
 		}
 	}
@@ -106,7 +108,7 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	}
 	if prov == nil {
 		prov = r.Provider
-		ctx = context.WithValue(ctx, reverseproxy.ProviderCtxKey{}, prov)
+		ctx = context.WithValue(ctx, vars.CtxKeyProvider{}, prov)
 	}
 
 	// make reverseproxy.ReverseProxy and set filters
@@ -119,7 +121,7 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 			},
 		},
 		FlushInterval: time.Millisecond * 100,
-		BufferPool:    reverseproxy.NewBufferPool(3 * 1024),
+		BufferPool:    reverseproxy.DefaultBufferPool,
 		Filters:       nil,
 		Context:       ctx,
 	}
@@ -127,17 +129,18 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 		filter, err := reverseproxy.MustGetFilterCreator(filterConfig.Name)(filterConfig.Config)
 		if err != nil {
 			return func(rw http.ResponseWriter, req *http.Request) {
-				http.Error(rw, "filter %s not found: "+err.Error(), http.StatusNotImplemented)
+				l.Errorf("filter %s not found, err: %v", filterConfig.Name, err)
+				http.Error(rw, fmt.Sprintf("filter %s not found: %v", filterConfig.Name, err), http.StatusNotImplemented)
 			}
 		}
 		switch filter.(type) {
 		case reverseproxy.RequestFilter, reverseproxy.ResponseFilter:
+			rp.Filters = append(rp.Filters, reverseproxy.NamingFilter{Name: filterConfig.Name, Filter: filter})
 		default:
 			return func(rw http.ResponseWriter, req *http.Request) {
-				http.Error(rw, "filter %s not found", http.StatusInternalServerError)
+				http.Error(rw, fmt.Sprintf("filter %s not found", filterConfig.Name), http.StatusInternalServerError)
 			}
 		}
-		rp.Filters = append(rp.Filters, reverseproxy.NamingFilter{Name: filterConfig.Name, Filter: filter})
 	}
 
 	return rp.ServeHTTP
@@ -149,7 +152,7 @@ func (r *Route) Match(path, method string, header http.Header) bool {
 
 func (r *Route) Director(ctx context.Context) func(req *http.Request) {
 	var prov = r.Provider
-	if prov_, ok := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider); ok {
+	if prov_, ok := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider); ok {
 		prov = prov_
 	}
 	return func(req *http.Request) {

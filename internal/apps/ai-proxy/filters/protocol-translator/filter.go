@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -108,14 +109,14 @@ func (f *ProtocolTranslator) FindProcessor(ctx context.Context, processor string
 }
 
 func (f *ProtocolTranslator) SetAuthorizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
 	if appKey := prov.GetAppKey(); appKey != "" && header.Get("Authorization") == "" {
 		header.Set("Authorization", "Bearer "+appKey)
 	}
 }
 
 func (f *ProtocolTranslator) SetOpenAIOrganizationIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
 	if org := prov.GetOrganization(); org != "" && header.Get("OpenAI-Organization") == "" {
 		header.Set("OpenAI-Organization", org)
 	}
@@ -129,7 +130,7 @@ func (f *ProtocolTranslator) ReplaceAuthorizationWithAPIKey(ctx context.Context,
 }
 
 func (f *ProtocolTranslator) SetAPIKeyIfNotSpecified(ctx context.Context, header http.Header) {
-	prov := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
+	prov := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
 	if appKey := prov.GetAppKey(); appKey != "" && header.Get("Api-Key") == "" {
 		header.Set("Api-Key", appKey)
 	}
@@ -163,7 +164,7 @@ func (f *ProtocolTranslator) Processors() map[string]any {
 }
 
 func (f *ProtocolTranslator) responseNotImplementTranslator(w http.ResponseWriter, from, to any) {
-	w.Header().Set("server", "ai-proxy/erda")
+	w.Header().Set("Server", "AI Service on Erda")
 	w.WriteHeader(http.StatusNotImplemented)
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"error": "not implement translator",

@@ -28,10 +28,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -168,14 +169,14 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 }
 
 func (f *Audit) SetSessionId(_ context.Context, header http.Header) error {
-	f.Audit.SessionId = header.Get("X-Erda-AI-Proxy-SessionId")
+	f.Audit.SessionId = header.Get(vars.XErdaAIProxySessionId)
 	return nil
 }
 
 func (f *Audit) SetChats(_ context.Context, header http.Header) error {
-	f.Audit.ChatType = header.Get("X-Erda-AI-Proxy-ChatType")
-	f.Audit.ChatTitle = header.Get("X-Erda-AI-Proxy-ChatTitle")
-	f.Audit.ChatId = header.Get("X-Erda-AI-Proxy-ChatId")
+	f.Audit.ChatType = header.Get(vars.XErdaAIProxyChatType)
+	f.Audit.ChatTitle = header.Get(vars.XErdaAIProxyChatTitle)
+	f.Audit.ChatId = header.Get(vars.XErdaAIProxyChatId)
 	for _, v := range []*string{
 		&f.Audit.ChatType,
 		&f.Audit.ChatTitle,
@@ -200,16 +201,16 @@ func (f *Audit) SetResponseAt(_ context.Context) error {
 }
 
 func (f *Audit) SetSource(_ context.Context, header http.Header) error {
-	f.Audit.Source = header.Get("X-Erda-AI-Proxy-Source")
+	f.Audit.Source = header.Get(vars.XErdaAIProxySource)
 	return nil
 }
 
 func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
-	f.Audit.Username = header.Get("X-Erda-AI-Proxy-Name")
-	f.Audit.PhoneNumber = header.Get("X-Erda-AI-Proxy-Phone")
-	f.Audit.JobNumber = header.Get("X-Erda-AI-Proxy-JobNumber")
-	f.Audit.Email = header.Get("X-Erda-AI-Proxy-Email")
-	f.Audit.DingtalkStaffId = header.Get("X-Erda-AI-Proxy-DingTalkStaffID")
+	f.Audit.Username = header.Get(vars.XErdaAIProxyName)
+	f.Audit.PhoneNumber = header.Get(vars.XErdaAIProxyPhone)
+	f.Audit.JobNumber = header.Get(vars.XErdaAIProxyJobNumber)
+	f.Audit.Email = header.Get(vars.XErdaAIProxyEmail)
+	f.Audit.DingtalkStaffId = header.Get(vars.XErdaAIProxyDingTalkStaffID)
 	for _, v := range []*string{
 		&f.Audit.Username,
 		&f.Audit.PhoneNumber,
@@ -226,7 +227,7 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 
 func (f *Audit) SetProvider(ctx context.Context) error {
 	// a.Provider is passed in by filter reverse-proxy
-	prov, ok := ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider)
+	prov, ok := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
 	if !ok || prov == nil {
 		panic(`provider was not set into the context`)
 	}
@@ -271,7 +272,7 @@ func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor
 
 func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Prompt = "-"
-	if value := infor.Header().Get("X-Erda-AI-Proxy-Prompt"); value != "" {
+	if value := infor.Header().Get(vars.XErdaAIProxyPrompt); value != "" {
 		prompt, err := base64.StdEncoding.DecodeString(value)
 		if err != nil {
 			return err
@@ -509,7 +510,7 @@ func (f *Audit) SetResponseBody(_ context.Context, buf *bytes.Buffer) error {
 func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
 	f.Audit.Server = header.Get("Server")
 	if f.Audit.Server == "" {
-		f.Audit.Server = ctx.Value(reverseproxy.ProviderCtxKey{}).(*provider.Provider).Name
+		f.Audit.Server = ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider).Name
 	}
 	return nil
 }
@@ -532,11 +533,11 @@ func (f *Audit) SetUserAgent(_ context.Context, header http.Header) error {
 }
 
 func (f *Audit) create(ctx context.Context) error {
-	return ctx.Value(reverseproxy.DBCtxKey{}).(*gorm.DB).Create(f.Audit).Error
+	return ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Create(f.Audit).Error
 }
 
 func (f *Audit) update(ctx context.Context) error {
-	return ctx.Value(reverseproxy.DBCtxKey{}).(*gorm.DB).Updates(f.Audit).Error
+	return ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Updates(f.Audit).Error
 }
 
 func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http.Header, reader io.Reader) error {

@@ -32,6 +32,7 @@ envs:
   MSP_ADDR: erda-server:9095
   MSP_GRPC_ADDR: erda-server:8096
   ORCHESTRATOR_ADDR: orchestrator:8081
+  ERDA_AI_PROXY_ADDR: ai-proxy:8081
   OTEL_TRACES_ENABLED: false
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
   OTEL_TRACES_SAMPLER_ARG: 0.1
@@ -39,6 +40,7 @@ envs:
   CLUSTER_DIALER_ADDR: cluster-manager:80
   TRACE_HOOK_ENABLE: true
   GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
+  OPENAPI_DYNAMIC_ROUTES: true  # Whether to allow dynamic registration of routes to openapi
 services:
   erda-server:
     cmd: /erda/cmd/erda-server/bin

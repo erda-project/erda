@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
+
+service ChatLogs {
+  option(erda.common.openapi_service) = {
+    service: "ai-proxy",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc GetChatLogs(GetChatLogsReq) returns (GetChatLogsRespData) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/chat-logs"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/chat-logs"
+    };
+  }
+}
+
+message GetChatLogsReq {
+  string userId = 1;
+
+  uint32 pageSize = 11;
+  uint32 pageNum = 12;
+  string sessionId = 13;
+}
+
+message GetChatLogsRespData {
+  uint64 total = 1;
+  repeated ChatLog list = 2;
+}
+
+message ChatLog {
+  string id = 1;
+  google.protobuf.Timestamp requestAt = 2;
+  string prompt = 3;
+  google.protobuf.Timestamp responseAt = 4;
+  string completion = 5;
+}

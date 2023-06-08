@@ -81,7 +81,7 @@ func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, err
 		t.Inner = http.DefaultTransport
 	}
 	t.Logger.Sub(reflect.TypeOf(t).String()).
-		Debug(GenCurl(req))
+		Debug("generated cURL command:\n\t" + GenCurl(req))
 	return t.Inner.RoundTrip(req)
 }
 

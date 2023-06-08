@@ -15,8 +15,6 @@
 package reverseproxy
 
 type (
-	ProviderCtxKey struct{ ProviderCtxKey any }
-	DBCtxKey       struct{ DBCtxKey any }
-	LoggerCtxKey   struct{ LoggerCtxKey any }
-	MutexCtxKey    struct{ MutexCtxKey any }
+	LoggerCtxKey struct{ LoggerCtxKey any }
+	MutexCtxKey  struct{ MutexCtxKey any }
 )

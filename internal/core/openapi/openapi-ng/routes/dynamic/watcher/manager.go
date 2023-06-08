@@ -12,62 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dynamic
+package watcher
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/coreos/etcd/clientv3"
 
-	"github.com/erda-project/erda-infra/pkg/transport/http/runtime"
-	common "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
 	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/discover"
 )
-
-// APIProxy .
-type APIProxy struct {
-	Method      string          `json:"method"`
-	Path        string          `json:"path"`
-	ServiceURL  string          `json:"service_url"`
-	BackendPath string          `json:"backend_path"`
-	Auth        *common.APIAuth `json:"auth"`
-}
-
-// Validate .
-func (a *APIProxy) Validate() error {
-	if len(a.Path) <= 0 {
-		return fmt.Errorf("path is required")
-	}
-	if len(a.ServiceURL) <= 0 {
-		return fmt.Errorf("service url is required")
-	}
-	u, err := url.Parse(a.ServiceURL)
-	if err != nil {
-		return fmt.Errorf("invalid service url: %w", err)
-	}
-	if len(u.Host) <= 0 {
-		return fmt.Errorf("invalid service host is required")
-	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("service url scheme must be http or https")
-	}
-
-	_, err = runtime.Compile(a.Path)
-	if err != nil {
-		return fmt.Errorf("invalid path %q: %s", a.Path, err)
-	}
-	_, err = runtime.Compile(a.BackendPath)
-	if err != nil {
-		return fmt.Errorf("invalid backend-path %q: %s", a.BackendPath, err)
-	}
-	return nil
-}
 
 type serviceInfo struct {
 	Service string `json:"service"`
@@ -97,7 +56,7 @@ func (p *provider) listAPIProxies() interface{} {
 	return httpapi.Success(list)
 }
 
-func (p *provider) setAPIProxy(body APIProxy) interface{} {
+func (p *provider) setAPIProxy(body routes.APIProxy) interface{} {
 	body.Method = strings.TrimSpace(body.Method)
 	body.Path = formatPath(strings.TrimSpace(body.Path))
 	body.BackendPath = formatPath(strings.TrimSpace(body.BackendPath))
@@ -113,7 +72,7 @@ func (p *provider) setAPIProxy(body APIProxy) interface{} {
 }
 
 func (p *provider) setAPIProxyWithKeepAlive(req *http.Request, body struct {
-	List []*APIProxy `json:"list"`
+	List []*routes.APIProxy `json:"list"`
 }) interface{} {
 	if len(body.List) <= 0 {
 		return httpapi.Errors.InvalidParameter("proxy list is empty")
@@ -143,7 +102,7 @@ func (p *provider) setAPIProxyWithKeepAlive(req *http.Request, body struct {
 	return httpapi.Success("OK")
 }
 
-func (p *provider) saveAPIProxy(a *APIProxy, leaseID clientv3.LeaseID) error {
+func (p *provider) saveAPIProxy(a *routes.APIProxy, leaseID clientv3.LeaseID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), p.Cfg.EtcdRequestTimeout)
 	defer cancel()
 	key := fmt.Sprintf("%s/%s %s", p.Cfg.Prefix, a.Method, a.Path)
@@ -159,7 +118,7 @@ func (p *provider) saveAPIProxy(a *APIProxy, leaseID clientv3.LeaseID) error {
 	return err
 }
 
-func (p *provider) removeAPIProxy(body APIProxy) interface{} {
+func (p *provider) removeAPIProxy(body routes.APIProxy) interface{} {
 	body.Method = strings.TrimSpace(body.Method)
 	body.Path = formatPath(strings.TrimSpace(body.Path))
 	err := p.deleteAPIProxy(body.Method, body.Path)
@@ -177,7 +136,7 @@ func (p *provider) deleteAPIProxy(method, path string) error {
 	return err
 }
 
-func (p *provider) getAPIProxies() (list []*APIProxy, err error) {
+func (p *provider) getAPIProxies() (list []*routes.APIProxy, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), p.Cfg.EtcdRequestTimeout)
 	defer cancel()
 	resp, err := p.Etcd.Get(ctx, p.Cfg.Prefix, clientv3.WithPrefix())
@@ -191,7 +150,7 @@ func (p *provider) getAPIProxies() (list []*APIProxy, err error) {
 			p.Log.Errorf("invalid api key %q format in etcd", key)
 			continue
 		}
-		api := &APIProxy{
+		api := &routes.APIProxy{
 			Method: strings.TrimSpace(key[:idx]),
 			Path:   strings.TrimSpace(key[idx+1:]),
 		}

@@ -254,7 +254,7 @@ openapi-v1-routes:
           - msp-notify-list
           - msp-notify-detail
 openapi-dynamic-routes:
-  _enable: ${OPENAPI_DEV_MODE:false}
+  _enable: ${OPENAPI_DYNAMIC_ROUTES:false}
 remote-forward-server:
   _enable: ${OPENAPI_DEV_MODE:false}
   addr: ":9431"

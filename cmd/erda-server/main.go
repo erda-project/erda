@@ -116,8 +116,8 @@ import (
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/response"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/interceptors/user-info"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/custom"
-	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/temporary"
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/watcher"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/openapi-v1"
 	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/proto"
 

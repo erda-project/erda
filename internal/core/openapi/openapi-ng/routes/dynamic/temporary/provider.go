@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	fclient "github.com/erda-project/erda-infra/providers/remote-forward/client"
 	common "github.com/erda-project/erda-proto-go/common/pb"
-	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic"
+	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
 	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -55,7 +55,7 @@ type (
 		Log        logs.Logger
 		FClient    fclient.Interface `autowired:"remote-forward-client"`
 		openapiURL string
-		proxies    []*dynamic.APIProxy
+		proxies    []*routes.APIProxy
 	}
 )
 
@@ -73,9 +73,9 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get remote forward server url: %s", err)
 	}
-	p.proxies = make([]*dynamic.APIProxy, len(p.Cfg.Proxies))
+	p.proxies = make([]*routes.APIProxy, len(p.Cfg.Proxies))
 	for i, item := range p.Cfg.Proxies {
-		proxy := &dynamic.APIProxy{
+		proxy := &routes.APIProxy{
 			Method:      item.Method,
 			Path:        item.Path,
 			ServiceURL:  serviceURL,

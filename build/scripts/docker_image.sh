@@ -97,13 +97,6 @@ docker_login() {
     fi
 }
 
-# login
-podman_login() {
-    if [[ -n "${DOCKER_REGISTRY_USERNAME}" ]] && [[ -n "${DOCKER_REGISTRY}" ]] && [[ -n "${DOCKER_REGISTRY_PASSWORD}" ]]; then
-        podman login -u "${DOCKER_REGISTRY_USERNAME}" -p "${DOCKER_REGISTRY_PASSWORD}" ${DOCKER_REGISTRY}
-    fi
-}
-
 # build docker image
 build_image()  {
     DOCKER_BUILDKIT=1 docker build --pull --platform "linux/${ARCH}" --progress=plain -t "${DOCKER_IMAGE}" \
@@ -174,7 +167,7 @@ case "${ACTION}" in
         docker_login && build_push_image
         ;;
     "build-multi-arch")
-        podman_login && build_multi_arch
+        docker_login && build_multi_arch
         ;;
     "")
         docker_login && build_image
