@@ -69,7 +69,9 @@ func (b *Bundle) GetMembers(req apistructs.MemberListRequest) (*apistructs.Membe
 		Param("scopeId", strconv.FormatInt(req.ScopeID, 10)).
 		Param("q", req.Q).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
-		Param("pageSize", strconv.Itoa(req.PageSize))
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("desensitizeEmail", strconv.FormatBool(req.DesensitizeEmail)).
+		Param("desensitizeMobile", strconv.FormatBool(req.DesensitizeMobile))
 	for _, role := range req.Roles {
 		request = request.Param("roles", role)
 	}

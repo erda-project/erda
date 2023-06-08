@@ -17,7 +17,6 @@ package issueexcel
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -72,10 +71,7 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(iterationExcelRows), "iteration"); err != nil {
 		return fmt.Errorf("failed to add iteration sheet, err: %v", err)
 	}
-	// export file
-	f, err := os.OpenFile("./gen2.xlsx", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
-	defer f.Close()
-	multiWriter := io.MultiWriter(w, f)
+	multiWriter := io.MultiWriter(w)
 	return excel.WriteFile(multiWriter, xlsxFile, data.ExportOnly.FileNameWithExt)
 }
 
