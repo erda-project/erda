@@ -388,6 +388,9 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.A
 		},
 	}
 	settings.Image = svc.Image
+	settings.CustomConfig = []string{
+		"ignore-warnings ARM64-COW-BUG",
+	}
 	return settings
 }
 
@@ -414,6 +417,7 @@ func convertSentinel(svc apistructs.Service, affinity *corev1.Affinity) Sentinel
 		fmt.Sprintf("auth-pass %s", svc.Env["requirepass"]),
 		"down-after-milliseconds 12000",
 		"failover-timeout 12000",
+		"ignore-warnings ARM64-COW-BUG",
 	}
 	settings.Image = svc.Image
 	return settings
