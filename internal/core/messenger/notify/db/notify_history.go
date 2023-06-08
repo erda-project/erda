@@ -205,7 +205,6 @@ func (db *NotifyHistoryDB) QueryNotifyValue(key string, orgId int, scopeId, scop
 }
 
 func (db *NotifyHistoryDB) NotifyHistoryType(key string, orgId int, scopeId, scopeType string, startTime, endTime int64) ([]*model.NotifyValue, error) {
-	db.LogMode(true)
 	result := make([]*model.NotifyValue, 0)
 	sTime := time.Unix(0, startTime*int64(time.Millisecond))
 	eTime := time.Unix(0, endTime*int64(time.Millisecond))

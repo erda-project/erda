@@ -23,7 +23,6 @@ type Client struct {
 }
 
 func New(db *dbengine.DBEngine) *Client {
-	// db.DB = db.DB.Debug()
 	return &Client{
 		db: db,
 	}

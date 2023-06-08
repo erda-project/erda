@@ -65,7 +65,7 @@ func (client *ReleaseConfigDB) GetReleasesByParams(
 	orgID int64, req *pb.ReleaseListRequest) (int64, []Release, error) {
 
 	var releases []Release
-	db := client.DB.Debug()
+	db := client.DB
 	if orgID > 0 {
 		db = db.Where("org_id = ?", orgID)
 	}
