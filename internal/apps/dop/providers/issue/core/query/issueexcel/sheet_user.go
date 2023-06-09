@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
@@ -244,6 +245,7 @@ func (data *DataForFulfill) polishMemberProjectRoles(roles []string) []string {
 	for _, role := range roles {
 		if role == bundle.RoleProjectOwner {
 			if data.AlreadyHaveProjectOwner {
+				newRoles = append(newRoles, bundle.RoleProjectLead) // downgrade to lead
 				continue
 			}
 			data.AlreadyHaveProjectOwner = true
@@ -252,5 +254,5 @@ func (data *DataForFulfill) polishMemberProjectRoles(roles []string) []string {
 		}
 		newRoles = append(newRoles, role)
 	}
-	return newRoles
+	return strutil.DedupSlice(newRoles, true)
 }
