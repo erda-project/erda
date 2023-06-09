@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/services/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
@@ -75,8 +76,47 @@ func (data DataForFulfill) decodeUserSheet(excelSheets [][][]string) ([]apistruc
 // createIterationsIfNotExistForImport do not create user, is too hack.
 // The import operator should create user first, then import.
 // We can auto add user as member into project.
-func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Member) error {
+func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Member, issueSheetModels []IssueSheetModel) error {
 	data.ImportOnly.UserIDsByNick = make(map[string]string)
+
+	// handle nicks from issue sheet
+	var userNicksFromIssueSheet []string
+	for _, model := range issueSheetModels {
+		userNicksFromIssueSheet = append(userNicksFromIssueSheet, model.Common.CreatorName, model.Common.AssigneeName, model.BugOnly.OwnerName)
+	}
+	userNicksFromIssueSheet = strutil.DedupSlice(userNicksFromIssueSheet, true)
+	// try to find user in current project members, only can be found by nick (have the risk of same name)
+	projectMemberByNick := make(map[string]apistructs.Member)
+	for _, member := range data.ProjectMemberByUserID {
+		projectMemberByNick[member.Nick] = member
+	}
+	orgMemberByNick := make(map[string]apistructs.Member)
+	for _, member := range data.OrgMemberByUserID {
+		orgMemberByNick[member.Nick] = member
+	}
+	for _, nick := range userNicksFromIssueSheet {
+		m, ok := projectMemberByNick[nick]
+		if !ok {
+			m, ok = orgMemberByNick[nick] // only try to find in org member, due to the risk of same name
+			if !ok {
+				return fmt.Errorf("failed to find user in project member, nick: %s, please add user to project first", nick)
+			}
+			// auto add user to project
+			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
+				Scope: apistructs.Scope{
+					Type: apistructs.ProjectScope,
+					ID:   strconv.FormatUint(data.ProjectID, 10),
+				},
+				Roles:   []string{"Dev"},
+				UserIDs: []string{m.UserID},
+			}, apistructs.SystemUserID); err != nil {
+				return fmt.Errorf("failed to add member into project by nick, project id: %d, user nick: %s, user id: %s, err: %v", data.ProjectID, nick, m.UserID, err)
+			}
+		}
+		data.ImportOnly.UserIDsByNick[nick] = m.UserID
+	}
+
+	// handle original users from user sheet
 	for _, originalMember := range originalMembers {
 		originalMember := originalMember
 		// check if already in the current project member map
@@ -113,8 +153,8 @@ func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Memb
 					Type: apistructs.OrgScope,
 					ID:   strconv.FormatInt(data.OrgID, 10),
 				},
-				Roles:   originalMember.Roles,
-				Labels:  originalMember.Labels,
+				Roles:   []string{"Dev"},
+				Labels:  nil,
 				UserIDs: []string{userID},
 			}, apistructs.SystemUserID); err != nil {
 				return fmt.Errorf("failed to add member into org, org id: %d, user id: %s, err: %v", data.OrgID, userID, err)
@@ -127,7 +167,8 @@ func (data *DataForFulfill) mapMemberForImport(originalMembers []apistructs.Memb
 					Type: apistructs.ProjectScope,
 					ID:   strconv.FormatUint(data.ProjectID, 10),
 				},
-				Roles:   []string{"Dev"},
+				Roles:   originalMember.Roles,
+				Labels:  originalMember.Labels,
 				UserIDs: []string{userID},
 			}, apistructs.SystemUserID); err != nil {
 				return fmt.Errorf("failed to add member into project, project id: %d, user id: %s, err: %v", data.ProjectID, userID, err)
