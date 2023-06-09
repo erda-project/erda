@@ -21,4 +21,5 @@ const (
 	indexOfSheetCustomField
 	indexOfSheetBaseInfo
 	indexOfSheetIteration
+	indexOfSheetState
 )

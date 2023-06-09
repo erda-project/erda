@@ -388,7 +388,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 	data.ImportOnly.LabelDB = &labeldao.DBClient{DB: i.db.DB}
 	data.ImportOnly.Bdl = i.bdl
 	data.ImportOnly.Identity = i.identity
-	data.ImportOnly.Property = i
+	data.ImportOnly.IssueCore = i
 	// current project issues
 	currentProjectIssues, _, err := data.ImportOnly.DB.PagingIssues(pb.PagingIssueRequest{
 		ProjectID:    data.ProjectID,
@@ -456,6 +456,20 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 	}
 	data.ExportOnly.InclusionMap = inclusionMap
 	data.ExportOnly.ConnectionMap = connectionMap
+	states, err := i.db.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
+		ProjectID:    req.ProjectID,
+		IssueType:    nil,
+		StateBelongs: nil,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get issue states, err: %v", err)
+	}
+	stateRelations, err := i.db.GetIssuesStateRelations(req.ProjectID, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get issue state relations, err: %v", err)
+	}
+	data.ExportOnly.States = states
+	data.ExportOnly.StateRelations = stateRelations
 	return data, nil
 }
 

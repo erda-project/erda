@@ -80,6 +80,14 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	if err := data.createIterationsIfNotExistForImport(iterations, issueSheetModels); err != nil {
 		return fmt.Errorf("failed to create iterations, err: %v", err)
 	}
+	// state sheet
+	states, stateRelations, err := data.decodeStateSheet(excelSheets)
+	if err != nil {
+		return fmt.Errorf("failed to decode state sheet, err: %v", err)
+	}
+	if err := data.syncState(states, stateRelations); err != nil {
+		return fmt.Errorf("failed to sync custom issue state, err: %v", err)
+	}
 
 	// 先创建或更新所有 issues，再创建或更新所有关联关系
 

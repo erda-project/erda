@@ -102,7 +102,7 @@ func (data *DataForFulfill) createCustomFieldIfNotExistsForImport(originalCustom
 		}
 		// not exists, do create
 		// not exists
-		resp, err := data.ImportOnly.Property.CreateIssueProperty(ctx, &pb.CreateIssuePropertyRequest{
+		resp, err := data.ImportOnly.IssueCore.CreateIssueProperty(ctx, &pb.CreateIssuePropertyRequest{
 			ScopeType:         originalCf.ScopeType,
 			ScopeID:           int64(data.ProjectID),
 			OrgID:             data.OrgID,
@@ -213,7 +213,7 @@ func (data DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Iss
 				return fmt.Errorf("failed to find custom field by name, custom field name: %s", cf.Title)
 			}
 		}
-		_, err := data.ImportOnly.Property.CreateIssuePropertyInstance(ctx, relationRequest)
+		_, err := data.ImportOnly.IssueCore.CreateIssuePropertyInstance(ctx, relationRequest)
 		if err != nil {
 			return fmt.Errorf("failed to create issue custom field relation, issue id: %d, err: %v", issue.ID, err)
 		}

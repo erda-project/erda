@@ -62,13 +62,15 @@ type DataForFulfillExportOnly struct {
 	IssuePropertyRelationMap map[int64][]dao.IssuePropertyRelation
 	InclusionMap             map[int64][]int64 // key: issue id
 	ConnectionMap            map[int64][]int64 // key: issue id
+	States                   []dao.IssueState
+	StateRelations           []dao.IssueStateJoinSQL
 }
 type DataForFulfillImportOnly struct {
-	LabelDB  *legacydao.DBClient
-	DB       *dao.DBClient
-	Bdl      *bundle.Bundle
-	Identity userpb.UserServiceServer
-	Property pb.IssueCoreServiceServer
+	LabelDB   *legacydao.DBClient
+	DB        *dao.DBClient
+	Bdl       *bundle.Bundle
+	Identity  userpb.UserServiceServer
+	IssueCore pb.IssueCoreServiceServer
 
 	BaseInfo *DataForFulfillImportOnlyBaseInfo
 
