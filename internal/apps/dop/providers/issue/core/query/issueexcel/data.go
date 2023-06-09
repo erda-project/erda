@@ -51,6 +51,8 @@ type DataForFulfill struct {
 	CustomFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
 	//CustomFieldMapByName map[string]*pb.IssuePropertyIndex
 	PropertyEnumMap map[query.PropertyEnumPair]string
+
+	AlreadyHaveProjectOwner bool
 }
 
 type DataForFulfillExportOnly struct {
@@ -74,7 +76,7 @@ type DataForFulfillImportOnly struct {
 
 	CurrentProjectIssueMap map[uint64]bool
 
-	UserIDsByNick map[string]string // key: nick, value: userID
+	UserIDByNick map[string]string // key: nick, value: userID
 }
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {

@@ -34,6 +34,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	legacydao "github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
@@ -306,9 +307,17 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list orgMember, err: %v", err)
 	}
+	var alreadyHaveProjectOwner bool
 	projectMemberMap := map[string]apistructs.Member{}
+owner:
 	for _, member := range projectMember {
 		projectMemberMap[member.UserID] = member
+		for _, role := range member.Roles {
+			if role == bundle.RoleProjectOwner {
+				alreadyHaveProjectOwner = true
+				break owner
+			}
+		}
 	}
 	orgMemberMap := map[string]apistructs.Member{}
 	for _, member := range orgMember {
@@ -363,7 +372,8 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		LabelMapByName:        labelMapByName,
 		CustomFieldMap:        customFieldsMap,
 		//CustomFieldMapByName:  customFieldsMapByName,
-		PropertyEnumMap: propertyEnumMap,
+		PropertyEnumMap:         propertyEnumMap,
+		AlreadyHaveProjectOwner: alreadyHaveProjectOwner,
 	}
 	return &dataForFulfill, nil
 }
