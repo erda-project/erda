@@ -207,9 +207,14 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 	}
 	for _, issue := range data.ExportOnly.Issues {
 		var model IssueSheetModel
+		// iteration name
+		iterationName, err := data.getIterationName(issue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get iteration name, err: %v", err)
+		}
 		model.Common = IssueSheetModelCommon{
 			ID:                 uint64(issue.Id),
-			IterationName:      data.IterationMapByID[issue.IterationID].Title,
+			IterationName:      iterationName,
 			IssueType:          issue.Type,
 			IssueTitle:         issue.Title,
 			Content:            issue.Content,
@@ -264,6 +269,14 @@ func (data DataForFulfill) getUserNick(userid string) string {
 		return u.Nick
 	}
 	return ""
+}
+
+func (data DataForFulfill) getIterationName(issue *pb.Issue) (string, error) {
+	iteration, ok := data.IterationMapByID[issue.IterationID]
+	if !ok {
+		return "", fmt.Errorf("iteration not found, issue id: %d, iteration id: %d", issue.Id, issue.IterationID)
+	}
+	return iteration.Title, nil
 }
 
 func getStringCellValue(structField reflect.StructField, fieldValue reflect.Value) string {

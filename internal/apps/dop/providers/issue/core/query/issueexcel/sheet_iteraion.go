@@ -80,17 +80,30 @@ func (data *DataForFulfill) decodeIterationSheet(excelSheets [][][]string) ([]*d
 // check by name:
 // - if not exist, create new iteration
 // - if exist, do not update, take the existing one as the standard
-func (data *DataForFulfill) createIterationsIfNotExistForImport(originalIterations []*dao.Iteration, issueSheetModels []IssueSheetModel) error {
-	var iterationsNeedCreate []*dao.Iteration // only created sheet related iterations
+func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectIterations []*dao.Iteration, issueSheetModels []IssueSheetModel) error {
+	iterationsNeedCreate := make(map[string]*dao.Iteration) // only created sheet related iterations
 	now := time.Now()
 	currentDayBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	currentDayEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
+	for _, originalProjectIteration := range originalProjectIterations {
+		originalProjectIteration := originalProjectIteration
+		_, ok := data.IterationMapByName[originalProjectIteration.Title]
+		if ok {
+			continue
+		}
+		if _, ok := iterationsNeedCreate[originalProjectIteration.Title]; ok {
+			continue
+		}
+		// create
+		iterationsNeedCreate[originalProjectIteration.Title] = originalProjectIteration
+	}
 	for _, issueSheetModel := range issueSheetModels {
 		_, ok := data.IterationMapByName[issueSheetModel.Common.IterationName]
 		if ok {
 			continue
 		}
-		if issueSheetModel.Common.IterationName == "待办事项" {
+		switch issueSheetModel.Common.IterationName {
+		case "待规划", "待办事项", "待处理":
 			continue
 		}
 		newIteration := dao.Iteration{
@@ -100,7 +113,10 @@ func (data *DataForFulfill) createIterationsIfNotExistForImport(originalIteratio
 			StartedAt:  &currentDayBegin,
 			FinishedAt: &currentDayEnd,
 		}
-		iterationsNeedCreate = append(iterationsNeedCreate, &newIteration)
+		if _, ok := iterationsNeedCreate[newIteration.Title]; ok {
+			continue
+		}
+		iterationsNeedCreate[newIteration.Title] = &newIteration
 	}
 	for _, iteration := range iterationsNeedCreate {
 		// create iteration if not exist

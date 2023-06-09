@@ -51,7 +51,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode user sheet, err: %v", err)
 	}
-	if err := data.mapMemberForImport(members); err != nil {
+	if err := data.mapMemberForImport(members, issueSheetModels); err != nil {
 		return fmt.Errorf("failed to map member, err: %v", err)
 	}
 	// label sheet
@@ -141,7 +141,7 @@ func getIssueStage(model IssueSheetModel) string {
 	return ""
 }
 
-var estimateRegexp, _ = regexp.Compile("^[0-9]+[wdhm]+$")
+var estimateRegexp, _ = regexp.Compile(`(\d+)([wdhm]?)`)
 
 func NewManhour(manhour string) (pb.IssueManHour, error) {
 	if manhour == "" {
@@ -150,26 +150,26 @@ func NewManhour(manhour string) (pb.IssueManHour, error) {
 	if !estimateRegexp.MatchString(manhour) {
 		return pb.IssueManHour{}, fmt.Errorf("invalid estimate time: %s", manhour)
 	}
-	timeType := manhour[len(manhour)-1]
-	timeSet := manhour[:len(manhour)-1]
-	timeVal, err := strconv.ParseUint(timeSet, 10, 64)
-	if err != nil {
-		return pb.IssueManHour{}, fmt.Errorf("invalid man hour: %s, err: %v", manhour, err)
+	matches := estimateRegexp.FindAllStringSubmatch(manhour, -1)
+	var totalMinutes int64
+	for _, match := range matches {
+		timeVal, err := strconv.ParseUint(match[1], 10, 64)
+		if err != nil {
+			return pb.IssueManHour{}, fmt.Errorf("invalid man hour: %s, err: %v", manhour, err)
+		}
+		timeType := match[2]
+		switch timeType {
+		case "m":
+			totalMinutes += int64(timeVal)
+		case "h":
+			totalMinutes += int64(timeVal) * 60
+		case "d":
+			totalMinutes += int64(timeVal) * 60 * 8
+		case "w":
+			totalMinutes += int64(timeVal) * 60 * 8 * 5
+		default:
+			return pb.IssueManHour{}, fmt.Errorf("invalid man hour: %s", manhour)
+		}
 	}
-	switch timeType {
-	case 'm':
-		val := int64(timeVal)
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	case 'h':
-		val := int64(timeVal) * 60
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	case 'd':
-		val := int64(timeVal) * 60 * 8
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	case 'w':
-		val := int64(timeVal) * 60 * 8 * 5
-		return pb.IssueManHour{EstimateTime: val, RemainingTime: val}, nil
-	default:
-		return pb.IssueManHour{}, fmt.Errorf("invalid man hour: %s", manhour)
-	}
+	return pb.IssueManHour{EstimateTime: totalMinutes, RemainingTime: totalMinutes}, nil
 }

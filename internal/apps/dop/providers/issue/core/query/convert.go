@@ -106,9 +106,9 @@ func (p *provider) BatchConvert(models []dao.Issue, issueTypes []string) ([]*pb.
 		labelMap[uint64(label.ID)] = label
 	}
 	// 批量获取 models 的 labels
-	var issueIDs []int64
+	var issueIDs []uint64
 	for _, model := range models {
-		issueIDs = append(issueIDs, int64(model.ID))
+		issueIDs = append(issueIDs, model.ID)
 	}
 	issueLabelIDMap, err := p.db.BatchQueryIssueLabelIDMap(issueIDs)
 	if err != nil {

@@ -21,6 +21,10 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 )
 
+// convertOldIssueSheet
+// old 也有两个版本：
+// - 最老的版本，只有 18 个基础字段
+// - 其他版本，有 21 个基础字段 + 自定义字段
 func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetModel, error) {
 	// convert by column fixed index
 	m := make(map[IssueSheetColumnUUID]excel.Column)
@@ -32,21 +36,40 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 	if len(sheet) == 0 {
 		return nil, nil
 	}
-	customFieldNames := sheet[0][customFieldRowColumnIndexFrom:]
-	columnIndexAndPropertyTypeMap, err := tryToMatchCustomFieldNameToIssueType(customFieldNames, data.CustomFieldMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to match custom field name to issue type, err: %v", err)
+	// columnLen
+	columnLen := len(sheet[0])
+	switch true {
+	case columnLen >= oldExcelFormatCustomFieldRowColumnIndexFrom:
+	case columnLen == oldOldExcelFormatColumnLen:
+	default:
+		return nil, fmt.Errorf("invalid column len: %d, please check excel", columnLen)
+	}
+	// try to match custom field name to issue type, because the order of custom field is not fixed
+	var customFieldNames []string
+	var columnIndexAndPropertyTypeMap map[int]pb.PropertyIssueTypeEnum_PropertyIssueType
+	if columnLen >= oldExcelFormatCustomFieldRowColumnIndexFrom {
+		customFieldNames = sheet[0][oldExcelFormatCustomFieldRowColumnIndexFrom:]
+		_columnIndexAndPropertyTypeMap, err := tryToMatchCustomFieldNameToIssueType(customFieldNames, data.CustomFieldMap)
+		if err != nil {
+			return nil, fmt.Errorf("failed to match custom field name to issue type, err: %v", err)
+		}
+		columnIndexAndPropertyTypeMap = _columnIndexAndPropertyTypeMap
 	}
 	for rowIdx, row := range sheet {
 		if rowIdx == 0 {
 			continue
 		}
 		// get issue type first
-		issueType, err := parseStringIssueType(sheet[rowIdx][13])
+		issueType, err := parseStringIssueType(sheet[rowIdx][oldExcelFormatIndexOfIssueType])
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse issue type, err: %v", err)
 		}
-		for columnIdx := 0; columnIdx < customFieldRowColumnIndexFrom; columnIdx++ {
+		// get columnLen
+		columnLen := len(row)
+		for columnIdx := 0; columnIdx < oldExcelFormatCustomFieldRowColumnIndexFrom; columnIdx++ {
+			if columnIdx >= columnLen {
+				continue
+			}
 			s := row[columnIdx]
 			switch columnIdx {
 			case 0: // ID
@@ -101,7 +124,7 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 		}
 		// handle custom fields
 		for i, propertyType := range columnIndexAndPropertyTypeMap {
-			s := row[i+customFieldRowColumnIndexFrom]
+			s := row[i+oldExcelFormatCustomFieldRowColumnIndexFrom]
 			switch propertyType {
 			case pb.PropertyIssueTypeEnum_REQUIREMENT:
 				addM(m, NewIssueSheetColumnUUID("RequirementOnly", "CustomFields", customFieldNames[i]), s)
@@ -120,7 +143,9 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 }
 
 const (
-	customFieldRowColumnIndexFrom = 21
+	oldExcelFormatCustomFieldRowColumnIndexFrom = 21
+	oldExcelFormatIndexOfIssueType              = 13
+	oldOldExcelFormatColumnLen                  = 18
 )
 
 // tryToMatchCustomFieldNameToIssueType

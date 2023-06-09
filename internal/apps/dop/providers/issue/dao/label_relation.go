@@ -81,7 +81,7 @@ func (client *DBClient) GetLabelRelationsByLabels(refType apistructs.ProjectLabe
 }
 
 // BatchGetIssueLabelIDMap 批量查询 issue label id
-func (client *DBClient) BatchQueryIssueLabelIDMap(issueIDs []int64) (map[uint64][]uint64, error) {
+func (client *DBClient) BatchQueryIssueLabelIDMap(issueIDs []uint64) (map[uint64][]uint64, error) {
 	if len(issueIDs) == 0 {
 		return nil, nil
 	}
@@ -103,4 +103,12 @@ func (client *DBClient) BatchQueryIssueLabelIDMap(issueIDs []int64) (map[uint64]
 		m[id] = append(m[id], ref.LabelID)
 	}
 	return m, nil
+}
+
+// BatchDeleteIssueLabelRelations 批量删除 issue label 关联关系
+func (client *DBClient) BatchDeleteIssueLabelRelations(issueIDs []uint64) error {
+	if len(issueIDs) == 0 {
+		return nil
+	}
+	return client.Where("`ref_type` = ?", "issue").Where("`ref_id` IN (?)", issueIDs).Delete(LabelRelation{}).Error
 }

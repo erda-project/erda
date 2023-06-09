@@ -80,6 +80,12 @@ func (data DataForFulfill) decodeCustomFieldSheet(excelSheets [][][]string) ([]*
 	return customFields, nil
 }
 
+// createCustomFieldIfNotExistsForImport
+// 这里不考虑从 issues 里获取当前项目不存在的自定义字段并进行创建，因为:
+// - 自定义字段是企业级别的，影响太大
+// - 很难根据字段值判断值类型 (text, selection or others)
+// - 无法判断是否必填
+// - 无法判断和哪个类型关联
 func (data *DataForFulfill) createCustomFieldIfNotExistsForImport(originalCustomFields []*pb.IssuePropertyIndex) error {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
 	for _, originalCf := range originalCustomFields {

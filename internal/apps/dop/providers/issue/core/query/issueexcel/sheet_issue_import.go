@@ -210,6 +210,10 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				case "Source":
 					model.BugOnly.Source = cell.Value
 				case "ReopenCount":
+					if cell.Value == "" {
+						model.BugOnly.ReopenCount = 0
+						continue
+					}
 					reopenCount, err := strconv.ParseInt(cell.Value, 10, 32)
 					if err != nil {
 						return nil, fmt.Errorf("invalid reopen count: %s", cell.Value)

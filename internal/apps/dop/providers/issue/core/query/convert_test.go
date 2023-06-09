@@ -136,7 +136,7 @@ func Test_provider_Convert(t *testing.T) {
 func Test_provider_BatchConvert(t *testing.T) {
 	var db *dao.DBClient
 	p1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "BatchQueryIssueLabelIDMap",
-		func(d *dao.DBClient, issueIDs []int64) (map[uint64][]uint64, error) {
+		func(d *dao.DBClient, issueIDs []uint64) (map[uint64][]uint64, error) {
 			return map[uint64][]uint64{
 				1: {1, 2},
 			}, nil
