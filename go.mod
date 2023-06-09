@@ -119,7 +119,6 @@ require (
 	github.com/prometheus/prometheus v2.3.2+incompatible
 	github.com/pyroscope-io/client v0.6.1-0.20230130114945-a64d920d2fba
 	github.com/pyroscope-io/pyroscope v0.37.2
-	github.com/qri-io/starlib v0.4.2-0.20200213133954-ff2e8cd5ef8d
 	github.com/rakyll/statik v0.1.7
 	github.com/rancher/apiserver v0.0.0-20210922180056-297b6df8d714
 	github.com/rancher/dynamiclistener v0.2.1-0.20200714201033-9c1939da3af9
@@ -485,7 +484,7 @@ replace (
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/pingcap/pd/v4 => github.com/tikv/pd v1.0.8
-	github.com/pyroscope-io/pyroscope => github.com/erda-project/pyroscope v0.0.0-20230605032132-b8ff7cd367ec
+	github.com/pyroscope-io/pyroscope => github.com/erda-project/pyroscope v0.0.0-20230609074614-b81b2b13832c
 	github.com/rancher/apiserver => github.com/rancher/apiserver v0.0.0-20210519053359-f943376c4b42
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	github.com/rancher/steve => github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
