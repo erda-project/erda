@@ -150,7 +150,7 @@ func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, or
 // 将 belong 按照以下顺序排序
 func sortRelationsIntoBelongs(issueType string, relations []*pb.IssueStateRelation) {
 	belongOrders := make([]string, 0, len(pb.IssueStateBelongEnum_StateBelong_name))
-	for i := 0; i <= len(pb.IssueStateBelongEnum_StateBelong_name); i++ {
+	for i := 0; i < len(pb.IssueStateBelongEnum_StateBelong_name); i++ {
 		belongOrders = append(belongOrders, pb.IssueStateBelongEnum_StateBelong_name[int32(i)])
 	}
 	// 按照 belong 排序
