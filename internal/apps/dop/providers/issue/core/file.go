@@ -268,18 +268,9 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		iterationMapByName[v.Title] = &v
 	}
 	// state map
-	stateMapByID := make(map[int64]string)
-	stateMapByTypeAndName := make(map[string]map[string]int64) // outerkey: issueType, innerkey: stateName
-	states, err := i.db.GetIssuesStatesByProjectID(projectID, "")
+	stateMapByID, stateMapByTypeAndName, err := issueexcel.RefreshDataState(projectID, i.db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get states, err: %v", err)
-	}
-	for _, v := range states {
-		stateMapByID[int64(v.ID)] = v.Name
-		if _, ok := stateMapByTypeAndName[v.IssueType]; !ok {
-			stateMapByTypeAndName[v.IssueType] = make(map[string]int64)
-		}
-		stateMapByTypeAndName[v.IssueType][v.Name] = int64(v.ID)
 	}
 	// username map
 	// get all org/project projectMember

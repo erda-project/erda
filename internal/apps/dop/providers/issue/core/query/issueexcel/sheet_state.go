@@ -75,7 +75,7 @@ func (data DataForFulfill) decodeStateSheet(excelSheets [][][]string) ([]dao.Iss
 	return state, stateRelations, nil
 }
 
-func (data DataForFulfill) syncState(originalProjectStates []dao.IssueState, originalProjectStateRelations []dao.IssueStateJoinSQL) error {
+func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, originalProjectStateRelations []dao.IssueStateJoinSQL) error {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
 	// compare original & current project states
 	// update data.StateMapByID
@@ -135,6 +135,13 @@ func (data DataForFulfill) syncState(originalProjectStates []dao.IssueState, ori
 			return fmt.Errorf("failed to update state relation, type: %s, err: %v", issueType, err)
 		}
 	}
+	// 更新 data states 用于 issue 的状态 ID 映射
+	stateMapByID, stateMapByTYpeAndName, err := RefreshDataState(data.ProjectID, data.ImportOnly.DB)
+	if err != nil {
+		return fmt.Errorf("failed to refresh data state, err: %v", err)
+	}
+	data.StateMap = stateMapByID
+	data.StateMapByTypeAndName = stateMapByTYpeAndName
 
 	return nil
 }
@@ -152,4 +159,22 @@ func sortRelationsIntoBelongs(issueType string, relations []*pb.IssueStateRelati
 		belongJ := pb.IssueStateBelongEnum_StateBelong_value[relations[j].StateBelong]
 		return belongI < belongJ
 	})
+}
+
+func RefreshDataState(projectID uint64, db *dao.DBClient) (map[int64]string, map[string]map[string]int64, error) {
+	// state map
+	stateMapByID := make(map[int64]string)
+	stateMapByTypeAndName := make(map[string]map[string]int64) // outerkey: issueType, innerkey: stateName
+	states, err := db.GetIssuesStatesByProjectID(projectID, "")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get states, err: %v", err)
+	}
+	for _, v := range states {
+		stateMapByID[int64(v.ID)] = v.Name
+		if _, ok := stateMapByTypeAndName[v.IssueType]; !ok {
+			stateMapByTypeAndName[v.IssueType] = make(map[string]int64)
+		}
+		stateMapByTypeAndName[v.IssueType][v.Name] = int64(v.ID)
+	}
+	return stateMapByID, stateMapByTypeAndName, nil
 }
