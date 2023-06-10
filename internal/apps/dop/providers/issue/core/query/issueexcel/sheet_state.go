@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
@@ -76,7 +77,7 @@ func (data DataForFulfill) decodeStateSheet(excelSheets [][][]string) ([]dao.Iss
 }
 
 func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, originalProjectStateRelations []dao.IssueStateJoinSQL) error {
-	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
+	ctx := apis.WithUserIDContext(context.Background(), apistructs.SystemUserID)
 	// compare original & current project states
 	// update data.StateMapByID
 
@@ -136,12 +137,12 @@ func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, or
 		}
 	}
 	// 更新 data states 用于 issue 的状态 ID 映射
-	stateMapByID, stateMapByTYpeAndName, err := RefreshDataState(data.ProjectID, data.ImportOnly.DB)
+	stateMapByID, stateMapByTypeAndName, err := RefreshDataState(data.ProjectID, data.ImportOnly.DB)
 	if err != nil {
 		return fmt.Errorf("failed to refresh data state, err: %v", err)
 	}
 	data.StateMap = stateMapByID
-	data.StateMapByTypeAndName = stateMapByTYpeAndName
+	data.StateMapByTypeAndName = stateMapByTypeAndName
 
 	return nil
 }
