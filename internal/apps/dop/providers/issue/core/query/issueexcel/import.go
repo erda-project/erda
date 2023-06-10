@@ -92,14 +92,10 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	// 先创建或更新所有 issues，再创建或更新所有关联关系
 
 	// 创建或更新 issues
+	// 更新 model 里的相关关联 ID 字段，比如 L1 转换为具体的 ID
 	issues, issueModelMapByIssueID, err := data.createOrUpdateIssues(issueSheetModels)
 	if err != nil {
 		return fmt.Errorf("failed to create or update issues, err: %v", err)
-	}
-	// 更新 model 里的相关关联 ID 字段，比如 L1 转换为具体的 ID
-	for _, issue := range issues {
-		b, _ := json.Marshal(issue)
-		fmt.Println(string(b))
 	}
 
 	// 先将数据进行合并，以 label 为例:

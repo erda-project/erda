@@ -199,7 +199,7 @@ func (data DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Iss
 								}
 							}
 							if !foundEnumValue {
-								return fmt.Errorf("failed to find enum value by name, enum value name: %s", cf.Value)
+								return fmt.Errorf("failed to find enum value by name, property name: %s, enum value name: %s", property.PropertyName, cf.Value)
 							}
 						}
 					} else {

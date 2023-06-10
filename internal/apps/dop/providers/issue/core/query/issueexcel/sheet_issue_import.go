@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
@@ -323,6 +325,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 				return nil, nil, fmt.Errorf("failed to create issue, err: %v", err)
 			}
 		}
+		logrus.Infof("issue-import: issue created or updated, id: %d", issue.ID)
 		issues = append(issues, &issue)
 		issueModelMapByIssueID[issue.ID] = &model
 		// got new issue id here, set id mapping
