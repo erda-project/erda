@@ -76,8 +76,6 @@ func (data DataForFulfill) decodeUserSheet(excelSheets [][][]string) ([]apistruc
 // The import operator should create user first, then import.
 // We can auto add user as member into project.
 func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistructs.Member, issueSheetModels []IssueSheetModel) error {
-	data.ImportOnly.UserIDByNick = make(map[string]string)
-
 	var usersNeedToBeAddedAsMember []apistructs.Member
 
 	// 先把所有原有的用户都尝试添加到 project member 中

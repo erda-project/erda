@@ -47,7 +47,11 @@ type DataForFulfill struct {
 	ProjectMemberByUserID map[string]apistructs.Member       // key: user id
 	OrgMemberByUserID     map[string]apistructs.Member       // key: user id
 	LabelMapByName        map[string]apistructs.ProjectLabel // key: label name
-	CustomFieldMap        map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
+
+	// CustomFieldMapByTypeName outerKey: property type, innerKey: property name (可以直接使用 2 层 map 判断，每个类型保证不为空)
+	// 在同一类型下，property name 唯一
+	// 正常顺序是，先创建 common，然后被具体类型引用
+	CustomFieldMapByTypeName map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex
 
 	AlreadyHaveProjectOwner bool
 }
@@ -77,6 +81,8 @@ type DataForFulfillImportOnly struct {
 	CurrentProjectIssueMap map[uint64]bool
 
 	UserIDByNick map[string]string // key: nick, value: userID
+
+	Warnings []string // used to record warnings
 }
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
@@ -119,7 +125,7 @@ func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
 
 func formatIssueCustomFields(issue *pb.Issue, propertyType pb.PropertyIssueTypeEnum_PropertyIssueType, data DataForFulfill) []ExcelCustomField {
 	var results []ExcelCustomField
-	for _, customField := range data.CustomFieldMap[propertyType] {
+	for _, customField := range data.CustomFieldMapByTypeName[propertyType] {
 		results = append(results, formatOneCustomField(customField, issue, data))
 	}
 	return results

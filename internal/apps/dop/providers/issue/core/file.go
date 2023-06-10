@@ -330,31 +330,27 @@ owner:
 		labelMapByName[v.Name] = v
 	}
 	// custom fields
-	properties, err := i.query.BatchGetProperties(orgID, nil) // fetch all types, including common
+	customFieldMapByTypeName, err := issueexcel.RefreshDataCustomFields(orgID, i)
 	if err != nil {
-		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
-	}
-	customFieldsMap := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex)
-	for _, v := range properties {
-		customFieldsMap[v.PropertyIssueType] = append(customFieldsMap[v.PropertyIssueType], v)
+		return nil, fmt.Errorf("failed to get custom fields, err: %v", err)
 	}
 
 	// result
 	dataForFulfill := issueexcel.DataForFulfill{
-		Locale:                  i.bdl.GetLocale(locale),
-		ProjectID:               projectID,
-		OrgID:                   orgID,
-		UserID:                  "",
-		StageMap:                stageMap,
-		IterationMapByID:        iterationMapByID,
-		IterationMapByName:      iterationMapByName,
-		StateMap:                stateMapByID,
-		StateMapByTypeAndName:   stateMapByTypeAndName,
-		ProjectMemberByUserID:   projectMemberMap,
-		OrgMemberByUserID:       orgMemberMap,
-		LabelMapByName:          labelMapByName,
-		CustomFieldMap:          customFieldsMap,
-		AlreadyHaveProjectOwner: alreadyHaveProjectOwner,
+		Locale:                   i.bdl.GetLocale(locale),
+		ProjectID:                projectID,
+		OrgID:                    orgID,
+		UserID:                   "",
+		StageMap:                 stageMap,
+		IterationMapByID:         iterationMapByID,
+		IterationMapByName:       iterationMapByName,
+		StateMap:                 stateMapByID,
+		StateMapByTypeAndName:    stateMapByTypeAndName,
+		ProjectMemberByUserID:    projectMemberMap,
+		OrgMemberByUserID:        orgMemberMap,
+		LabelMapByName:           labelMapByName,
+		CustomFieldMapByTypeName: customFieldMapByTypeName,
+		AlreadyHaveProjectOwner:  alreadyHaveProjectOwner,
 	}
 	return &dataForFulfill, nil
 }
@@ -385,6 +381,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		current := current
 		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
 	}
+	data.ImportOnly.UserIDByNick = make(map[string]string)
 	return data, nil
 }
 
@@ -453,7 +450,7 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 	data.ExportOnly.StateRelations = stateRelations
 	// property enum map
 	propertyEnumMap := make(map[query.PropertyEnumPair]string)
-	for _, properties := range data.CustomFieldMap {
+	for _, properties := range data.CustomFieldMapByTypeName {
 		for _, v := range properties {
 			if common.IsOptions(v.PropertyType.String()) {
 				for _, val := range v.EnumeratedValues {
@@ -545,10 +542,10 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 
 	data, err := i.createDataForFulfillForImport(req)
 	if err != nil {
-		panic(fmt.Errorf("failed to create data for fulfill, err: %v", err))
+		return fmt.Errorf("failed to create data for fulfill, err: %v", err)
 	}
 	if err = issueexcel.ImportFile(f, *data); err != nil {
-		panic(fmt.Errorf("failed to import excel, err: %v", err))
+		return fmt.Errorf("failed to import excel, err: %v", err)
 	}
 	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
 	return
