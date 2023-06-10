@@ -239,7 +239,7 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 
 func (i *IssueService) createDataForFulfillCommon(locale string, userID string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
 	// stage map
-	stages, err := i.db.GetIssuesStageByOrgID(int64(orgID))
+	stages, err := i.db.GetIssuesStageByOrgID(orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stages, err: %v", err)
 	}
@@ -330,40 +330,30 @@ owner:
 		labelMapByName[v.Name] = v
 	}
 	// custom fields
-	properties, err := i.query.BatchGetProperties(int64(orgID), issueTypes)
+	properties, err := i.query.BatchGetProperties(orgID, nil) // fetch all types, including common
 	if err != nil {
 		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
 	}
 	customFieldsMap := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex)
-	//customFieldsMapByName := make(map[string]*pb.IssuePropertyIndex)
-	propertyEnumMap := make(map[query.PropertyEnumPair]string)
 	for _, v := range properties {
 		customFieldsMap[v.PropertyIssueType] = append(customFieldsMap[v.PropertyIssueType], v)
-		//customFieldsMapByName[v.PropertyName] = v
-		if common.IsOptions(v.PropertyType.String()) {
-			for _, val := range v.EnumeratedValues {
-				propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
-			}
-		}
 	}
 
 	// result
 	dataForFulfill := issueexcel.DataForFulfill{
-		Locale:                i.bdl.GetLocale(locale),
-		ProjectID:             projectID,
-		OrgID:                 orgID,
-		UserID:                "",
-		StageMap:              stageMap,
-		IterationMapByID:      iterationMapByID,
-		IterationMapByName:    iterationMapByName,
-		StateMap:              stateMapByID,
-		StateMapByTypeAndName: stateMapByTypeAndName,
-		ProjectMemberByUserID: projectMemberMap,
-		OrgMemberByUserID:     orgMemberMap,
-		LabelMapByName:        labelMapByName,
-		CustomFieldMap:        customFieldsMap,
-		//CustomFieldMapByName:  customFieldsMapByName,
-		PropertyEnumMap:         propertyEnumMap,
+		Locale:                  i.bdl.GetLocale(locale),
+		ProjectID:               projectID,
+		OrgID:                   orgID,
+		UserID:                  "",
+		StageMap:                stageMap,
+		IterationMapByID:        iterationMapByID,
+		IterationMapByName:      iterationMapByName,
+		StateMap:                stateMapByID,
+		StateMapByTypeAndName:   stateMapByTypeAndName,
+		ProjectMemberByUserID:   projectMemberMap,
+		OrgMemberByUserID:       orgMemberMap,
+		LabelMapByName:          labelMapByName,
+		CustomFieldMap:          customFieldsMap,
 		AlreadyHaveProjectOwner: alreadyHaveProjectOwner,
 	}
 	return &dataForFulfill, nil
@@ -461,6 +451,18 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 	}
 	data.ExportOnly.States = states
 	data.ExportOnly.StateRelations = stateRelations
+	// property enum map
+	propertyEnumMap := make(map[query.PropertyEnumPair]string)
+	for _, properties := range data.CustomFieldMap {
+		for _, v := range properties {
+			if common.IsOptions(v.PropertyType.String()) {
+				for _, val := range v.EnumeratedValues {
+					propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
+				}
+			}
+		}
+	}
+	data.ExportOnly.PropertyEnumMap = propertyEnumMap
 	return data, nil
 }
 

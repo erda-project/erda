@@ -47,10 +47,7 @@ type DataForFulfill struct {
 	ProjectMemberByUserID map[string]apistructs.Member       // key: user id
 	OrgMemberByUserID     map[string]apistructs.Member       // key: user id
 	LabelMapByName        map[string]apistructs.ProjectLabel // key: label name
-
-	CustomFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
-	//CustomFieldMapByName map[string]*pb.IssuePropertyIndex
-	PropertyEnumMap map[query.PropertyEnumPair]string
+	CustomFieldMap        map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
 
 	AlreadyHaveProjectOwner bool
 }
@@ -64,6 +61,7 @@ type DataForFulfillExportOnly struct {
 	ConnectionMap            map[int64][]int64 // key: issue id
 	States                   []dao.IssueState
 	StateRelations           []dao.IssueStateJoinSQL
+	PropertyEnumMap          map[query.PropertyEnumPair]string
 }
 type DataForFulfillImportOnly struct {
 	LabelDB   *legacydao.DBClient
@@ -135,5 +133,5 @@ func formatOneCustomField(cf *pb.IssuePropertyIndex, issue *pb.Issue, data DataF
 }
 
 func getCustomFieldValue(customField *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) string {
-	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.PropertyEnumMap, data.ProjectMemberByUserID)
+	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.ExportOnly.PropertyEnumMap, data.ProjectMemberByUserID)
 }
