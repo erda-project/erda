@@ -38,6 +38,8 @@ func (data DataForFulfill) DecodeIssueSheet(excelSheets [][][]string) ([]IssueSh
 	}
 	// convert [][][]string to map[uuid]excel.Column
 	issueSheetRows := sheet
+	// polish sheet rows, remove empty rows
+	removeEmptySheetRows(&issueSheetRows)
 	var columnIndex int
 	for _, row := range issueSheetRows {
 		columnIndex = len(row)
@@ -493,4 +495,22 @@ func parseStringSeverity(s string) (pb.IssueSeverityEnum_Severity, error) {
 		return c, fmt.Errorf("invalid issue severity: %s", s)
 	}
 	return c, nil
+}
+
+// removeEmptySheetRows remove if row if all cells are empty
+func removeEmptySheetRows(rows *[][]string) {
+	var newRows [][]string
+	for _, row := range *rows {
+		var empty = true
+		for _, cell := range row {
+			if cell != "" {
+				empty = false
+				break
+			}
+		}
+		if !empty {
+			newRows = append(newRows, row)
+		}
+	}
+	*rows = newRows
 }
