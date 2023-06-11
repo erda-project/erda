@@ -19,12 +19,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (data DataForFulfill) genStateSheet() (excel.Rows, error) {
@@ -76,7 +78,7 @@ func (data DataForFulfill) decodeStateSheet(excelSheets [][][]string) ([]dao.Iss
 	return state, stateRelations, nil
 }
 
-func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, originalProjectStateRelations []dao.IssueStateJoinSQL) error {
+func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, originalProjectStateRelations []dao.IssueStateJoinSQL, issueSheetModels []IssueSheetModel) error {
 	ctx := apis.WithUserIDContext(context.Background(), apistructs.SystemUserID)
 	// compare original & current project states
 	// update data.StateMapByID
@@ -90,13 +92,34 @@ func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, or
 		originalStateByTypeAndName[state.IssueType][state.Name] = state
 	}
 	var originalStateNeedCreate []dao.IssueState
+	originalStateNeedCreateMap := make(map[string]dao.IssueState) // key: issueType + stateName
 	// 遍历原项目状态，找到需要新增的状态
 	for issueType, stateMap := range originalStateByTypeAndName {
 		for stateName, state := range stateMap {
 			if _, ok := data.StateMapByTypeAndName[issueType][stateName]; !ok { // 不存在，需要新增
 				originalStateNeedCreate = append(originalStateNeedCreate, state)
+				originalStateNeedCreateMap[issueType+stateName] = state
 			}
 		}
+	}
+	// 遍历 issue 里的状态，找到只在 issue sheet 里声明的新状态，包括新老格式
+	for _, issueSheetModel := range issueSheetModels {
+		// 如果 state 已经在当前项目存在，跳过
+		if _, ok := data.StateMapByTypeAndName[issueSheetModel.Common.IssueType.String()][issueSheetModel.Common.State]; ok {
+			continue
+		}
+		// 如果 state 已经在 originalStateNeedCreateMap 中存在，跳过
+		if _, ok := originalStateNeedCreateMap[issueSheetModel.Common.IssueType.String()+issueSheetModel.Common.State]; ok {
+			continue
+		}
+		// 确认是一个新的状态，则需要新增
+		newState := dao.IssueState{
+			IssueType: issueSheetModel.Common.IssueType.String(),
+			Name:      issueSheetModel.Common.State,
+			Belong:    tryToGuessNewStateBelong(issueSheetModel.Common.State, issueSheetModel).String(),
+		}
+		originalStateNeedCreate = append(originalStateNeedCreate, newState)
+		originalStateNeedCreateMap[issueSheetModel.Common.IssueType.String()+issueSheetModel.Common.State] = newState
 	}
 	// 新增状态
 	for i, stateNeedCreate := range originalStateNeedCreate {
@@ -178,4 +201,46 @@ func RefreshDataState(projectID uint64, db *dao.DBClient) (map[int64]string, map
 		stateMapByTypeAndName[v.IssueType][v.Name] = int64(v.ID)
 	}
 	return stateMapByID, stateMapByTypeAndName, nil
+}
+
+// tryToGuessNewStateBelong
+// 规则：
+// 1. 如果 model 的完成时间不为空，则属于已完成，否则继续判断
+// 2. 如果包含这些关键字，则属于已完成：已
+// 3. 如果包含这些关键字，则属于未开始：未、待
+// 4. 如果包含这些关键字，则属于进行中：中、正在
+// 5. 其他情况，根据关键字进行匹配
+// - 已完成：完成、关闭
+// - 未开始：新建
+// - 进行中：
+// 6. 默认属于处理中
+func tryToGuessNewStateBelong(name string, model IssueSheetModel) pb.IssueStateBelongEnum_StateBelong {
+	if model.Common.FinishAt != nil && !model.Common.FinishAt.IsZero() {
+		return getDoneStateBelongByIssueType(model.Common.IssueType)
+	}
+	if strutil.HasPrefixes(name, "已") {
+		return getDoneStateBelongByIssueType(model.Common.IssueType)
+	}
+	if strutil.HasPrefixes(name, "未", "待") {
+		return pb.IssueStateBelongEnum_OPEN
+	}
+	if strutil.HasPrefixes(name, "正在") || strutil.HasSuffixes(name, "中") {
+		return pb.IssueStateBelongEnum_WORKING
+	}
+	if strutil.HasPrefixes(name, "完成", "关闭") {
+		return getDoneStateBelongByIssueType(model.Common.IssueType)
+	}
+	if strings.Contains(name, "新建") {
+		return pb.IssueStateBelongEnum_OPEN
+	}
+	return pb.IssueStateBelongEnum_WORKING
+}
+
+func getDoneStateBelongByIssueType(issueType pb.IssueTypeEnum_Type) pb.IssueStateBelongEnum_StateBelong {
+	switch issueType {
+	case pb.IssueTypeEnum_BUG:
+		return pb.IssueStateBelongEnum_CLOSED
+	default:
+		return pb.IssueStateBelongEnum_DONE
+	}
 }

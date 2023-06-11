@@ -16,6 +16,7 @@ package issueexcel
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -44,4 +45,37 @@ func Test_sortRelationsIntoBelongs(t *testing.T) {
 	relations := []*pb.IssueStateRelation{openA, openB, workingA, doneA, newWorkingB, newDoneB}
 	sortRelationsIntoBelongs("", relations)
 	assert.Equal(t, []*pb.IssueStateRelation{openA, openB, workingA, newWorkingB, doneA, newDoneB}, relations)
+}
+
+// Test_tryToGuessNewStateBelong
+// see rule at method comment: tryToGuessNewStateBelong
+func Test_tryToGuessNewStateBelong(t *testing.T) {
+	now := time.Now()
+
+	assert.Equal(t, pb.IssueStateBelongEnum_CLOSED, tryToGuessNewStateBelong("任意状态", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG, FinishAt: &now}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_DONE, tryToGuessNewStateBelong("任意状态", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK, FinishAt: &now}}))
+
+	assert.Equal(t, pb.IssueStateBelongEnum_CLOSED, tryToGuessNewStateBelong("已", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_DONE, tryToGuessNewStateBelong("已", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+
+	assert.Equal(t, pb.IssueStateBelongEnum_OPEN, tryToGuessNewStateBelong("未", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_OPEN, tryToGuessNewStateBelong("待", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_OPEN, tryToGuessNewStateBelong("未", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_OPEN, tryToGuessNewStateBelong("待", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+
+	assert.Equal(t, pb.IssueStateBelongEnum_WORKING, tryToGuessNewStateBelong("中", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_WORKING, tryToGuessNewStateBelong("正在", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_WORKING, tryToGuessNewStateBelong("中", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_WORKING, tryToGuessNewStateBelong("正在", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+
+	assert.Equal(t, pb.IssueStateBelongEnum_CLOSED, tryToGuessNewStateBelong("完成", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_CLOSED, tryToGuessNewStateBelong("关闭", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_DONE, tryToGuessNewStateBelong("完成", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_DONE, tryToGuessNewStateBelong("关闭", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+
+	assert.Equal(t, pb.IssueStateBelongEnum_OPEN, tryToGuessNewStateBelong("新建", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_OPEN, tryToGuessNewStateBelong("新建", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
+
+	assert.Equal(t, pb.IssueStateBelongEnum_WORKING, tryToGuessNewStateBelong("任意状态", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_BUG}}))
+	assert.Equal(t, pb.IssueStateBelongEnum_WORKING, tryToGuessNewStateBelong("任意状态", IssueSheetModel{Common: IssueSheetModelCommon{IssueType: pb.IssueTypeEnum_TASK}}))
 }

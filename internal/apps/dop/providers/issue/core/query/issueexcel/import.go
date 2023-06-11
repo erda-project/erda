@@ -85,7 +85,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode state sheet, err: %v", err)
 	}
-	if err := data.syncState(states, stateRelations); err != nil {
+	if err := data.syncState(states, stateRelations, issueSheetModels); err != nil {
 		return fmt.Errorf("failed to sync custom issue state, err: %v", err)
 	}
 
