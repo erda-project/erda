@@ -47,7 +47,7 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 	// try to match custom field name to issue type, because the order of custom field is not fixed
 	var customFieldNames []string
 	var columnIndexAndPropertyTypeMap map[int]pb.PropertyIssueTypeEnum_PropertyIssueType
-	if columnLen >= oldExcelFormatCustomFieldRowColumnIndexFrom {
+	if columnLen > oldExcelFormatCustomFieldRowColumnIndexFrom {
 		customFieldNames = sheet[0][oldExcelFormatCustomFieldRowColumnIndexFrom:]
 		_columnIndexAndPropertyTypeMap, err := tryToMatchCustomFieldNameToIssueType(customFieldNames, data.CustomFieldMapByTypeName)
 		if err != nil {
