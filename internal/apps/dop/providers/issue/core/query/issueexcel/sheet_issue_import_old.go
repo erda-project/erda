@@ -36,8 +36,14 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 	if len(sheet) == 0 {
 		return nil, nil
 	}
-	// columnLen
-	columnLen := len(sheet[0])
+	// columnLen, 计算到标题行的第一个非空 cell，因为有些单元格是手动删除过数据的
+	var columnLen int
+	for _, cell := range sheet[0] {
+		if cell == "" {
+			break
+		}
+		columnLen++
+	}
 	switch true {
 	case columnLen >= oldExcelFormatCustomFieldRowColumnIndexFrom:
 	case columnLen == oldOldExcelFormatColumnLen:
