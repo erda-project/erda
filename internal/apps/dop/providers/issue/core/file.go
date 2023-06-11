@@ -512,11 +512,11 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 	defer func() {
 		var desc string
 		if r := recover(); r != nil {
-			desc = fmt.Sprintf("%v", r)
 			err = fmt.Errorf("%v", r)
 			fmt.Println(string(debug.Stack()))
 		}
 		if err != nil {
+			desc = fmt.Sprintf("%v", err)
 			logrus.Errorf("%s failed to import excel, recordID: %d, err: %v", issueService, record.ID, err)
 			i.updateIssueFileRecord(record.ID, apistructs.FileRecordStateFail, desc)
 		}
