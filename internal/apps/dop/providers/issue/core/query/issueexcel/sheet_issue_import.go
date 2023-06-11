@@ -327,7 +327,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 				return nil, nil, fmt.Errorf("failed to create issue, err: %v", err)
 			}
 		}
-		logrus.Infof("issue-import: issue created or updated, id: %d", issue.ID)
+		logrus.Debugf("issue-import: issue created or updated, id: %d", issue.ID)
 		issues = append(issues, &issue)
 		issueModelMapByIssueID[issue.ID] = &model
 		// got new issue id here, set id mapping
