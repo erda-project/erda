@@ -16,6 +16,7 @@ package issueexcel
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/pkg/excel"
@@ -168,9 +169,14 @@ func tryToMatchCustomFieldNameToIssueType(cfNames []string, customFieldMap map[p
 	genOrders := func(typeOrders ...pb.PropertyIssueTypeEnum_PropertyIssueType) []*pb.IssuePropertyIndex {
 		var result []*pb.IssuePropertyIndex
 		for _, t := range typeOrders {
+			var cfs []*pb.IssuePropertyIndex
 			for _, cf := range customFieldMap[t] {
-				result = append(result, cf)
+				cfs = append(cfs, cf)
 			}
+			sort.Slice(cfs, func(i, j int) bool {
+				return cfs[i].Index < cfs[j].Index
+			})
+			result = append(result, cfs...)
 		}
 		return result
 	}

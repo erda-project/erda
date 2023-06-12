@@ -26,17 +26,17 @@ func Test_tryToMatchCustomFieldNameToIssueType(t *testing.T) {
 	cfNames := []string{"测试", "测试人员", "提测时间", "测试人员", "测试自定义字段关联", "测试", "custom2"}
 	customFieldMap := map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex{
 		pb.PropertyIssueTypeEnum_REQUIREMENT: {
-			"提测时间":      {PropertyIssueType: pb.PropertyIssueTypeEnum_REQUIREMENT},
-			"测试人员":      {PropertyIssueType: pb.PropertyIssueTypeEnum_REQUIREMENT},
-			"测试自定义字段关联": {PropertyIssueType: pb.PropertyIssueTypeEnum_REQUIREMENT},
+			"提测时间":      {PropertyIssueType: pb.PropertyIssueTypeEnum_REQUIREMENT, Index: 0},
+			"测试人员":      {PropertyIssueType: pb.PropertyIssueTypeEnum_REQUIREMENT, Index: 1},
+			"测试自定义字段关联": {PropertyIssueType: pb.PropertyIssueTypeEnum_REQUIREMENT, Index: 2},
 		},
 		pb.PropertyIssueTypeEnum_TASK: {
-			"测试":      {PropertyIssueType: pb.PropertyIssueTypeEnum_TASK},
-			"custom2": {PropertyIssueType: pb.PropertyIssueTypeEnum_TASK},
+			"测试":      {PropertyIssueType: pb.PropertyIssueTypeEnum_TASK, Index: 0},
+			"custom2": {PropertyIssueType: pb.PropertyIssueTypeEnum_TASK, Index: 1},
 		},
 		pb.PropertyIssueTypeEnum_BUG: {
-			"测试":   {PropertyIssueType: pb.PropertyIssueTypeEnum_BUG},
-			"测试人员": {PropertyIssueType: pb.PropertyIssueTypeEnum_BUG},
+			"测试":   {PropertyIssueType: pb.PropertyIssueTypeEnum_BUG, Index: 0},
+			"测试人员": {PropertyIssueType: pb.PropertyIssueTypeEnum_BUG, Index: 1},
 		},
 	}
 	for propertyType, properties := range customFieldMap {
