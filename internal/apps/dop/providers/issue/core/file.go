@@ -286,6 +286,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list projectMember, err: %v", err)
 	}
+	logrus.Infof("issue export-import, projectMember len: %d, projectMembers: %v", len(projectMember), projectMember)
 	orgMemberQuery := apistructs.MemberListRequest{
 		ScopeType:         apistructs.OrgScope,
 		ScopeID:           orgID,

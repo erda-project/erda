@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -37,6 +39,7 @@ func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
 	}
 	lines = append(lines, title)
 	// data
+	logrus.Info("genUserSheet: projectMember len: %d, projectMembers: %v", len(data.ProjectMemberByUserID), data.ProjectMemberByUserID)
 	for _, user := range data.ProjectMemberByUserID {
 		userInfo, err := json.Marshal(user)
 		if err != nil {
