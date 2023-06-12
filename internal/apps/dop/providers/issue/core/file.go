@@ -301,13 +301,12 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	}
 	var alreadyHaveProjectOwner bool
 	projectMemberMap := map[string]apistructs.Member{}
-owner:
 	for _, member := range projectMember {
 		projectMemberMap[member.UserID] = member
 		for _, role := range member.Roles {
 			if role == bundle.RoleProjectOwner {
 				alreadyHaveProjectOwner = true
-				break owner
+				break
 			}
 		}
 	}
