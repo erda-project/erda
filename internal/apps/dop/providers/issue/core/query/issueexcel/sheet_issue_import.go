@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
@@ -36,6 +38,8 @@ func (data DataForFulfill) DecodeIssueSheet(excelSheets [][][]string) ([]IssueSh
 	}
 	// convert [][][]string to map[uuid]excel.Column
 	issueSheetRows := sheet
+	// polish sheet rows, remove empty rows
+	removeEmptySheetRows(&issueSheetRows)
 	var columnIndex int
 	for _, row := range issueSheetRows {
 		columnIndex = len(row)
@@ -279,6 +283,15 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 		if !ok {
 			return nil, nil, fmt.Errorf("unknown state: %s, please contact project manager to add the corresponding status first", model.Common.State)
 		}
+		// check iteration
+		iterationID := int64(-1) // default iteration value -1 for 待规划
+		iteration, ok := data.IterationMapByName[model.Common.IterationName]
+		if ok {
+			iterationID = int64(iteration.ID)
+		}
+		if iterationID == 0 { // 0 is invalid, but iteration id is uint64, so lowest is 0
+			iterationID = -1
+		}
 		issue := issuedao.Issue{
 			BaseModel: dbengine.BaseModel{
 				ID:        uint64(model.Common.ID),
@@ -288,7 +301,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			PlanStartedAt:  model.Common.PlanStartedAt,
 			PlanFinishedAt: model.Common.PlanFinishedAt,
 			ProjectID:      data.ProjectID,
-			IterationID:    int64(data.IterationMapByName[model.Common.IterationName].ID),
+			IterationID:    iterationID,
 			AppID:          nil,
 			RequirementID:  nil,
 			Type:           model.Common.IssueType.String(),
@@ -298,14 +311,14 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			Priority:       model.Common.Priority.String(),
 			Complexity:     model.Common.Complexity.String(),
 			Severity:       model.Common.Severity.String(),
-			Creator:        data.ImportOnly.UserIDsByNick[model.Common.CreatorName],
-			Assignee:       data.ImportOnly.UserIDsByNick[model.Common.AssigneeName],
+			Creator:        data.ImportOnly.UserIDByNick[model.Common.CreatorName],
+			Assignee:       data.ImportOnly.UserIDByNick[model.Common.AssigneeName],
 			Source:         "",
 			ManHour:        mustGetJsonManHour(model.Common.EstimateTime),
 			External:       true,
 			Deleted:        false,
 			Stage:          getIssueStage(model),
-			Owner:          data.ImportOnly.UserIDsByNick[model.BugOnly.OwnerName],
+			Owner:          data.ImportOnly.UserIDByNick[model.BugOnly.OwnerName],
 			FinishTime:     model.Common.FinishAt,
 			ExpiryStatus:   "",
 			ReopenCount:    int(model.BugOnly.ReopenCount),
@@ -323,6 +336,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 				return nil, nil, fmt.Errorf("failed to create issue, err: %v", err)
 			}
 		}
+		logrus.Debugf("issue-import: issue created or updated, id: %d", issue.ID)
 		issues = append(issues, &issue)
 		issueModelMapByIssueID[issue.ID] = &model
 		// got new issue id here, set id mapping
@@ -490,4 +504,22 @@ func parseStringSeverity(s string) (pb.IssueSeverityEnum_Severity, error) {
 		return c, fmt.Errorf("invalid issue severity: %s", s)
 	}
 	return c, nil
+}
+
+// removeEmptySheetRows remove if row if all cells are empty
+func removeEmptySheetRows(rows *[][]string) {
+	var newRows [][]string
+	for _, row := range *rows {
+		var empty = true
+		for _, cell := range row {
+			if cell != "" {
+				empty = false
+				break
+			}
+		}
+		if !empty {
+			newRows = append(newRows, row)
+		}
+	}
+	*rows = newRows
 }

@@ -48,9 +48,12 @@ type DataForFulfill struct {
 	OrgMemberByUserID     map[string]apistructs.Member       // key: user id
 	LabelMapByName        map[string]apistructs.ProjectLabel // key: label name
 
-	CustomFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex
-	//CustomFieldMapByName map[string]*pb.IssuePropertyIndex
-	PropertyEnumMap map[query.PropertyEnumPair]string
+	// CustomFieldMapByTypeName outerKey: property type, innerKey: property name (可以直接使用 2 层 map 判断，每个类型保证不为空)
+	// 在同一类型下，property name 唯一
+	// 正常顺序是，先创建 common，然后被具体类型引用
+	CustomFieldMapByTypeName map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex
+
+	AlreadyHaveProjectOwner bool
 }
 
 type DataForFulfillExportOnly struct {
@@ -60,13 +63,16 @@ type DataForFulfillExportOnly struct {
 	IssuePropertyRelationMap map[int64][]dao.IssuePropertyRelation
 	InclusionMap             map[int64][]int64 // key: issue id
 	ConnectionMap            map[int64][]int64 // key: issue id
+	States                   []dao.IssueState
+	StateRelations           []dao.IssueStateJoinSQL
+	PropertyEnumMap          map[query.PropertyEnumPair]string
 }
 type DataForFulfillImportOnly struct {
-	LabelDB  *legacydao.DBClient
-	DB       *dao.DBClient
-	Bdl      *bundle.Bundle
-	Identity userpb.UserServiceServer
-	Property pb.IssueCoreServiceServer
+	LabelDB   *legacydao.DBClient
+	DB        *dao.DBClient
+	Bdl       *bundle.Bundle
+	Identity  userpb.UserServiceServer
+	IssueCore pb.IssueCoreServiceServer
 
 	BaseInfo *DataForFulfillImportOnlyBaseInfo
 
@@ -74,7 +80,9 @@ type DataForFulfillImportOnly struct {
 
 	CurrentProjectIssueMap map[uint64]bool
 
-	UserIDsByNick map[string]string // key: nick, value: userID
+	UserIDByNick map[string]string // key: nick, value: userID
+
+	Warnings []string // used to record warnings
 }
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
@@ -117,7 +125,7 @@ func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
 
 func formatIssueCustomFields(issue *pb.Issue, propertyType pb.PropertyIssueTypeEnum_PropertyIssueType, data DataForFulfill) []ExcelCustomField {
 	var results []ExcelCustomField
-	for _, customField := range data.CustomFieldMap[propertyType] {
+	for _, customField := range data.CustomFieldMapByTypeName[propertyType] {
 		results = append(results, formatOneCustomField(customField, issue, data))
 	}
 	return results
@@ -131,5 +139,5 @@ func formatOneCustomField(cf *pb.IssuePropertyIndex, issue *pb.Issue, data DataF
 }
 
 func getCustomFieldValue(customField *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) string {
-	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.PropertyEnumMap, data.ProjectMemberByUserID)
+	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.ExportOnly.PropertyEnumMap, data.ProjectMemberByUserID)
 }
