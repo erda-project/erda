@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -39,7 +37,6 @@ func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
 	}
 	lines = append(lines, title)
 	// data
-	logrus.Info("genUserSheet: projectMember len: %d, projectMembers: %v", len(data.ProjectMemberByUserID), data.ProjectMemberByUserID)
 	for _, user := range data.ProjectMemberByUserID {
 		userInfo, err := json.Marshal(user)
 		if err != nil {
@@ -180,6 +177,15 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 		}
 	}
 
+	// refresh member map, because bdl.AddMember won't return new member info
+	orgMember, projectMember, alreadyHaveProjectOwner, err := RefreshDataMembers(data.OrgID, data.ProjectID, data.ImportOnly.Bdl)
+	if err != nil {
+		return fmt.Errorf("failed to refresh data members, org id: %d, project id: %d, err: %v", data.OrgID, data.ProjectID, err)
+	}
+	data.OrgMemberByUserID = orgMember
+	data.ProjectMemberByUserID = projectMember
+	data.AlreadyHaveProjectOwner = alreadyHaveProjectOwner
+
 	return nil
 }
 
@@ -256,4 +262,56 @@ func (data *DataForFulfill) polishMemberProjectRoles(roles []string) []string {
 		newRoles = append(newRoles, role)
 	}
 	return strutil.DedupSlice(newRoles, true)
+}
+
+// RefreshDataMembers return org member, project member, alreadyHaveProjectOwner and error.
+func RefreshDataMembers(orgID int64, projectID uint64, bdl *bundle.Bundle) (map[string]apistructs.Member, map[string]apistructs.Member, bool, error) {
+	// org
+	orgMemberQuery := apistructs.MemberListRequest{
+		ScopeType:         apistructs.OrgScope,
+		ScopeID:           orgID,
+		PageNo:            1,
+		PageSize:          99999,
+		DesensitizeEmail:  false,
+		DesensitizeMobile: false,
+	}
+	orgMember, err := bdl.ListMembers(orgMemberQuery)
+	if err != nil {
+		return nil, nil, false, fmt.Errorf("failed to list orgMember, err: %v", err)
+	}
+	orgMemberMap := map[string]apistructs.Member{}
+	for _, member := range orgMember {
+		orgMemberMap[member.UserID] = member
+	}
+
+	// project
+	projectMemberQuery := apistructs.MemberListRequest{
+		ScopeType:         apistructs.ProjectScope,
+		ScopeID:           int64(projectID),
+		PageNo:            1,
+		PageSize:          99999,
+		DesensitizeEmail:  false,
+		DesensitizeMobile: false,
+	}
+	projectMember, err := bdl.ListMembers(projectMemberQuery)
+	if err != nil {
+		return nil, nil, false, fmt.Errorf("failed to list projectMember, err: %v", err)
+	}
+	var alreadyHaveProjectOwner bool
+	projectMemberMap := map[string]apistructs.Member{}
+	for _, member := range projectMember {
+		projectMemberMap[member.UserID] = member
+		// check project owner
+		if alreadyHaveProjectOwner {
+			continue
+		}
+		for _, role := range member.Roles {
+			if role == bundle.RoleProjectOwner {
+				alreadyHaveProjectOwner = true
+				break
+			}
+		}
+	}
+
+	return orgMemberMap, projectMemberMap, alreadyHaveProjectOwner, nil
 }

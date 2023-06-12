@@ -34,7 +34,6 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	legacydao "github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
@@ -272,47 +271,10 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get states, err: %v", err)
 	}
-	// username map
-	// get all org/project projectMember
-	projectMemberQuery := apistructs.MemberListRequest{
-		ScopeType:         apistructs.ProjectScope,
-		ScopeID:           int64(projectID),
-		PageNo:            1,
-		PageSize:          99999,
-		DesensitizeEmail:  false,
-		DesensitizeMobile: false,
-	}
-	projectMember, err := i.bdl.ListMembers(projectMemberQuery)
+	// member map
+	orgMemberMap, projectMemberMap, alreadyHaveProjectOwner, err := issueexcel.RefreshDataMembers(orgID, projectID, i.bdl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list projectMember, err: %v", err)
-	}
-	logrus.Infof("issue export-import, projectMember len: %d, projectMembers: %v", len(projectMember), projectMember)
-	orgMemberQuery := apistructs.MemberListRequest{
-		ScopeType:         apistructs.OrgScope,
-		ScopeID:           orgID,
-		PageNo:            1,
-		PageSize:          99999,
-		DesensitizeEmail:  false,
-		DesensitizeMobile: false,
-	}
-	orgMember, err := i.bdl.ListMembers(orgMemberQuery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list orgMember, err: %v", err)
-	}
-	var alreadyHaveProjectOwner bool
-	projectMemberMap := map[string]apistructs.Member{}
-	for _, member := range projectMember {
-		projectMemberMap[member.UserID] = member
-		for _, role := range member.Roles {
-			if role == bundle.RoleProjectOwner {
-				alreadyHaveProjectOwner = true
-				break
-			}
-		}
-	}
-	orgMemberMap := map[string]apistructs.Member{}
-	for _, member := range orgMember {
-		orgMemberMap[member.UserID] = member
+		return nil, fmt.Errorf("failed to get members, err: %v", err)
 	}
 	// label map
 	labelMapByName := make(map[string]apistructs.ProjectLabel)
