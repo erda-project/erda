@@ -191,6 +191,7 @@
       - "<=20220215"
     filenames:
       - "20230515-sp-profile-apps.sql"
+      - 20230425-filter-audit
   meta:
     columnName: id
     types:
@@ -207,6 +208,7 @@
       - ".*-base$"
     committedAt:
       - "<=20220323"
+
   meta:
     columnName: org_name
     types:
@@ -530,6 +532,8 @@
       - ".*-pipeline-action$"
     committedAt:
       - "<=20220215"
+    filenames:
+      - 20230425-filter-audit.sql
   meta:
     columnName:
       - org_name
@@ -545,6 +549,8 @@
       - ".*-pipeline-action$"
     committedAt:
       - "<=20220215"
+    filenames:
+      - 20230425-filter-audit.sql
   meta:
     columnName:
       - org_id
@@ -1220,6 +1226,8 @@
       - ".*-base$"
     committedAt:
       - "<=20220215"
+    filenames:
+      - 20230425-filter-audit.sql
   meta:
     patterns:
       - "^erda_[a-z0-9_]{1,59}"
