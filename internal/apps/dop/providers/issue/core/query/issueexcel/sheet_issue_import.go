@@ -283,6 +283,15 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 		if !ok {
 			return nil, nil, fmt.Errorf("unknown state: %s, please contact project manager to add the corresponding status first", model.Common.State)
 		}
+		// check iteration
+		iterationID := int64(-1) // default iteration value -1 for 待规划
+		iteration, ok := data.IterationMapByName[model.Common.IterationName]
+		if ok {
+			iterationID = int64(iteration.ID)
+		}
+		if iterationID == 0 { // 0 is invalid, but iteration id is uint64, so lowest is 0
+			iterationID = -1
+		}
 		issue := issuedao.Issue{
 			BaseModel: dbengine.BaseModel{
 				ID:        uint64(model.Common.ID),
@@ -292,7 +301,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			PlanStartedAt:  model.Common.PlanStartedAt,
 			PlanFinishedAt: model.Common.PlanFinishedAt,
 			ProjectID:      data.ProjectID,
-			IterationID:    int64(data.IterationMapByName[model.Common.IterationName].ID),
+			IterationID:    iterationID,
 			AppID:          nil,
 			RequirementID:  nil,
 			Type:           model.Common.IssueType.String(),
