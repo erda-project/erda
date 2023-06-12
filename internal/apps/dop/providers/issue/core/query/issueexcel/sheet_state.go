@@ -178,7 +178,7 @@ func sortRelationsIntoBelongs(issueType string, relations []*pb.IssueStateRelati
 		belongOrders = append(belongOrders, pb.IssueStateBelongEnum_StateBelong_name[int32(i)])
 	}
 	// 按照 belong 排序
-	sort.Slice(relations, func(i, j int) bool {
+	sort.SliceStable(relations, func(i, j int) bool {
 		belongI := pb.IssueStateBelongEnum_StateBelong_value[relations[i].StateBelong]
 		belongJ := pb.IssueStateBelongEnum_StateBelong_value[relations[j].StateBelong]
 		return belongI < belongJ

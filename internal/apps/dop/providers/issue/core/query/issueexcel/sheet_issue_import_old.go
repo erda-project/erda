@@ -173,7 +173,7 @@ func tryToMatchCustomFieldNameToIssueType(cfNames []string, customFieldMap map[p
 			for _, cf := range customFieldMap[t] {
 				cfs = append(cfs, cf)
 			}
-			sort.Slice(cfs, func(i, j int) bool {
+			sort.SliceStable(cfs, func(i, j int) bool {
 				return cfs[i].Index < cfs[j].Index
 			})
 			result = append(result, cfs...)

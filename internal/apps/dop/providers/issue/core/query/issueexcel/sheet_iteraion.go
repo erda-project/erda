@@ -151,11 +151,11 @@ func getOrderedIterationsTitles(m map[string]*dao.Iteration) []string {
 		}
 	}
 	// 1. 根据 iteration id 排序，id 小的在前，id 大的在后，0 在最后
-	sort.Slice(greaterThanZeroIterations, func(i, j int) bool {
+	sort.SliceStable(greaterThanZeroIterations, func(i, j int) bool {
 		return m[greaterThanZeroIterations[i]].ID < m[greaterThanZeroIterations[j]].ID
 	})
 	// 2. 当 id = 0 时，按照 title 字典序排序，字典序小的在前，大的在后
-	sort.Slice(zeroIterations, func(i, j int) bool {
+	sort.SliceStable(zeroIterations, func(i, j int) bool {
 		return zeroIterations[i] < zeroIterations[j]
 	})
 	return append(greaterThanZeroIterations, zeroIterations...)
