@@ -182,7 +182,7 @@ func polishPropertyValueEnumeratesForCreate(enumerates []*pb.Enumerate) {
 	}
 }
 
-func (data DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+func (data *DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
 	for _, issue := range issues {
 		model, ok := issueModelMapByIssueID[issue.ID]
@@ -255,6 +255,14 @@ func (data DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Iss
 							property.PropertyIssueType, property.PropertyType, property.PropertyName, cf.Value)
 					}
 				}
+			} else if property.PropertyType == pb.PropertyTypeEnum_Person { // 需要填写 userID
+				userID, ok := data.ImportOnly.UserIDByNick[cf.Value]
+				if !ok { // just log
+					warnMsg := fmt.Sprintf("failed to find user id by nick in custom field, field name: %s, new issue id: %d, type: %s, name: %s, nick: %s",
+						property.PropertyName, issue.ID, cfType.String(), cf.Title, cf.Value)
+					data.ImportOnly.Warnings = append(data.ImportOnly.Warnings, warnMsg)
+				}
+				instance.ArbitraryValue = structpb.NewStringValue(userID)
 			} else {
 				instance.ArbitraryValue = structpb.NewStringValue(cf.Value)
 			}
