@@ -238,7 +238,7 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 
 func (i *IssueService) createDataForFulfillCommon(locale string, userID string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
 	// stage map
-	stages, err := i.db.GetIssuesStageByOrgID(int64(orgID))
+	stages, err := i.db.GetIssuesStageByOrgID(orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stages, err: %v", err)
 	}
@@ -267,52 +267,14 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		iterationMapByName[v.Title] = &v
 	}
 	// state map
-	stateMapByID := make(map[int64]string)
-	stateMapByTypeAndName := make(map[string]map[string]int64) // outerkey: issueType, innerkey: stateName
-	states, err := i.db.GetIssuesStatesByProjectID(projectID, "")
+	stateMapByID, stateMapByTypeAndName, err := issueexcel.RefreshDataState(projectID, i.db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get states, err: %v", err)
 	}
-	for _, v := range states {
-		stateMapByID[int64(v.ID)] = v.Name
-		if _, ok := stateMapByTypeAndName[v.IssueType]; !ok {
-			stateMapByTypeAndName[v.IssueType] = make(map[string]int64)
-		}
-		stateMapByTypeAndName[v.IssueType][v.Name] = int64(v.ID)
-	}
-	// username map
-	// get all org/project projectMember
-	projectMemberQuery := apistructs.MemberListRequest{
-		ScopeType:         apistructs.ProjectScope,
-		ScopeID:           int64(projectID),
-		PageNo:            1,
-		PageSize:          99999,
-		DesensitizeEmail:  false,
-		DesensitizeMobile: false,
-	}
-	projectMember, err := i.bdl.ListMembers(projectMemberQuery)
+	// member map
+	orgMemberMap, projectMemberMap, alreadyHaveProjectOwner, err := issueexcel.RefreshDataMembers(orgID, projectID, i.bdl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list projectMember, err: %v", err)
-	}
-	orgMemberQuery := apistructs.MemberListRequest{
-		ScopeType:         apistructs.OrgScope,
-		ScopeID:           orgID,
-		PageNo:            1,
-		PageSize:          99999,
-		DesensitizeEmail:  false,
-		DesensitizeMobile: false,
-	}
-	orgMember, err := i.bdl.ListMembers(orgMemberQuery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list orgMember, err: %v", err)
-	}
-	projectMemberMap := map[string]apistructs.Member{}
-	for _, member := range projectMember {
-		projectMemberMap[member.UserID] = member
-	}
-	orgMemberMap := map[string]apistructs.Member{}
-	for _, member := range orgMember {
-		orgMemberMap[member.UserID] = member
+		return nil, fmt.Errorf("failed to get members, err: %v", err)
 	}
 	// label map
 	labelMapByName := make(map[string]apistructs.ProjectLabel)
@@ -330,40 +292,27 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		labelMapByName[v.Name] = v
 	}
 	// custom fields
-	properties, err := i.query.BatchGetProperties(int64(orgID), issueTypes)
+	customFieldMapByTypeName, err := issueexcel.RefreshDataCustomFields(orgID, i)
 	if err != nil {
-		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
-	}
-	customFieldsMap := make(map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex)
-	//customFieldsMapByName := make(map[string]*pb.IssuePropertyIndex)
-	propertyEnumMap := make(map[query.PropertyEnumPair]string)
-	for _, v := range properties {
-		customFieldsMap[v.PropertyIssueType] = append(customFieldsMap[v.PropertyIssueType], v)
-		//customFieldsMapByName[v.PropertyName] = v
-		if common.IsOptions(v.PropertyType.String()) {
-			for _, val := range v.EnumeratedValues {
-				propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
-			}
-		}
+		return nil, fmt.Errorf("failed to get custom fields, err: %v", err)
 	}
 
 	// result
 	dataForFulfill := issueexcel.DataForFulfill{
-		Locale:                i.bdl.GetLocale(locale),
-		ProjectID:             projectID,
-		OrgID:                 orgID,
-		UserID:                "",
-		StageMap:              stageMap,
-		IterationMapByID:      iterationMapByID,
-		IterationMapByName:    iterationMapByName,
-		StateMap:              stateMapByID,
-		StateMapByTypeAndName: stateMapByTypeAndName,
-		ProjectMemberByUserID: projectMemberMap,
-		OrgMemberByUserID:     orgMemberMap,
-		LabelMapByName:        labelMapByName,
-		CustomFieldMap:        customFieldsMap,
-		//CustomFieldMapByName:  customFieldsMapByName,
-		PropertyEnumMap: propertyEnumMap,
+		Locale:                   i.bdl.GetLocale(locale),
+		ProjectID:                projectID,
+		OrgID:                    orgID,
+		UserID:                   "",
+		StageMap:                 stageMap,
+		IterationMapByID:         iterationMapByID,
+		IterationMapByName:       iterationMapByName,
+		StateMap:                 stateMapByID,
+		StateMapByTypeAndName:    stateMapByTypeAndName,
+		ProjectMemberByUserID:    projectMemberMap,
+		OrgMemberByUserID:        orgMemberMap,
+		LabelMapByName:           labelMapByName,
+		CustomFieldMapByTypeName: customFieldMapByTypeName,
+		AlreadyHaveProjectOwner:  alreadyHaveProjectOwner,
 	}
 	return &dataForFulfill, nil
 }
@@ -378,7 +327,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 	data.ImportOnly.LabelDB = &labeldao.DBClient{DB: i.db.DB}
 	data.ImportOnly.Bdl = i.bdl
 	data.ImportOnly.Identity = i.identity
-	data.ImportOnly.Property = i
+	data.ImportOnly.IssueCore = i
 	// current project issues
 	currentProjectIssues, _, err := data.ImportOnly.DB.PagingIssues(pb.PagingIssueRequest{
 		ProjectID:    data.ProjectID,
@@ -394,6 +343,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		current := current
 		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
 	}
+	data.ImportOnly.UserIDByNick = make(map[string]string)
 	return data, nil
 }
 
@@ -446,6 +396,32 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 	}
 	data.ExportOnly.InclusionMap = inclusionMap
 	data.ExportOnly.ConnectionMap = connectionMap
+	states, err := i.db.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
+		ProjectID:    req.ProjectID,
+		IssueType:    nil,
+		StateBelongs: nil,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get issue states, err: %v", err)
+	}
+	stateRelations, err := i.db.GetIssuesStateRelations(req.ProjectID, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get issue state relations, err: %v", err)
+	}
+	data.ExportOnly.States = states
+	data.ExportOnly.StateRelations = stateRelations
+	// property enum map
+	propertyEnumMap := make(map[query.PropertyEnumPair]string)
+	for _, properties := range data.CustomFieldMapByTypeName {
+		for _, v := range properties {
+			if common.IsOptions(v.PropertyType.String()) {
+				for _, val := range v.EnumeratedValues {
+					propertyEnumMap[query.PropertyEnumPair{PropertyID: v.PropertyID, ValueID: val.Id}] = val.Name
+				}
+			}
+		}
+	}
+	data.ExportOnly.PropertyEnumMap = propertyEnumMap
 	return data, nil
 }
 
@@ -498,11 +474,11 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 	defer func() {
 		var desc string
 		if r := recover(); r != nil {
-			desc = fmt.Sprintf("%v", r)
 			err = fmt.Errorf("%v", r)
 			fmt.Println(string(debug.Stack()))
 		}
 		if err != nil {
+			desc = fmt.Sprintf("%v", err)
 			logrus.Errorf("%s failed to import excel, recordID: %d, err: %v", issueService, record.ID, err)
 			i.updateIssueFileRecord(record.ID, apistructs.FileRecordStateFail, desc)
 		}
@@ -528,10 +504,10 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 
 	data, err := i.createDataForFulfillForImport(req)
 	if err != nil {
-		panic(fmt.Errorf("failed to create data for fulfill, err: %v", err))
+		return fmt.Errorf("failed to create data for fulfill, err: %v", err)
 	}
 	if err = issueexcel.ImportFile(f, *data); err != nil {
-		panic(fmt.Errorf("failed to import excel, err: %v", err))
+		return fmt.Errorf("failed to import excel, err: %v", err)
 	}
 	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
 	return

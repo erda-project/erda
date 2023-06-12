@@ -130,7 +130,7 @@ func (client *DBClient) GetIssuesStatesByProjectID(projectID uint64, issueType s
 
 func (client *DBClient) GetIssuesStates(req *pb.GetIssueStatesRequest) ([]IssueState, error) {
 	var states []IssueState
-	db := client.Table("dice_issue_state").Select("id").Where("project_id = ?", req.ProjectID)
+	db := client.Table("dice_issue_state").Where("project_id = ?", req.ProjectID)
 	if req.IssueType != "" {
 		db = db.Where("issue_type = ?", req.IssueType)
 	}
@@ -145,7 +145,7 @@ func (client *DBClient) GetIssuesStates(req *pb.GetIssueStatesRequest) ([]IssueS
 
 func (client *DBClient) GetIssuesStatesByTypes(req *apistructs.IssueStatesRequest) ([]IssueState, error) {
 	var states []IssueState
-	db := client.Table("dice_issue_state").Select("id").Where("project_id = ?", req.ProjectID)
+	db := client.Table("dice_issue_state").Where("project_id = ?", req.ProjectID)
 	if len(req.IssueType) > 0 {
 		db = db.Where("issue_type IN (?)", req.IssueType)
 	}

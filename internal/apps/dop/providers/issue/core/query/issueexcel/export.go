@@ -71,6 +71,14 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(iterationExcelRows), "iteration"); err != nil {
 		return fmt.Errorf("failed to add iteration sheet, err: %v", err)
 	}
+	// state sheet
+	stateExcelRows, err := data.genStateSheet()
+	if err != nil {
+		return fmt.Errorf("failed to gen state sheet, err: %v", err)
+	}
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(stateExcelRows), "state"); err != nil {
+		return fmt.Errorf("failed to add state sheet, err: %v", err)
+	}
 	multiWriter := io.MultiWriter(w)
 	return excel.WriteFile(multiWriter, xlsxFile, data.ExportOnly.FileNameWithExt)
 }

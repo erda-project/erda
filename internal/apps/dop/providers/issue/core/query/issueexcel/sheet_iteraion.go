@@ -17,6 +17,7 @@ package issueexcel
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -118,8 +119,10 @@ func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectI
 		}
 		iterationsNeedCreate[newIteration.Title] = &newIteration
 	}
-	for _, iteration := range iterationsNeedCreate {
-		// create iteration if not exist
+	// create by order
+	order := getOrderedIterationsTitles(iterationsNeedCreate)
+	for _, title := range order {
+		iteration := iterationsNeedCreate[title]
 		iteration.ID = 0
 		iteration.ProjectID = data.ProjectID
 		if err := data.ImportOnly.DB.CreateIteration(iteration); err != nil {
@@ -130,4 +133,30 @@ func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectI
 		data.IterationMapByName[iteration.Title] = iteration
 	}
 	return nil
+}
+
+// 规则
+// 1. 根据 iteration id 排序，id 小的在前，id 大的在后，0 在最后
+// 2. 当 id = 0 时，按照 title 字典序排序，字典序小的在前，大的在后
+func getOrderedIterationsTitles(m map[string]*dao.Iteration) []string {
+	var (
+		zeroIterations            []string
+		greaterThanZeroIterations []string
+	)
+	for title := range m {
+		if m[title].ID == 0 {
+			zeroIterations = append(zeroIterations, title)
+		} else {
+			greaterThanZeroIterations = append(greaterThanZeroIterations, title)
+		}
+	}
+	// 1. 根据 iteration id 排序，id 小的在前，id 大的在后，0 在最后
+	sort.SliceStable(greaterThanZeroIterations, func(i, j int) bool {
+		return m[greaterThanZeroIterations[i]].ID < m[greaterThanZeroIterations[j]].ID
+	})
+	// 2. 当 id = 0 时，按照 title 字典序排序，字典序小的在前，大的在后
+	sort.SliceStable(zeroIterations, func(i, j int) bool {
+		return zeroIterations[i] < zeroIterations[j]
+	})
+	return append(greaterThanZeroIterations, zeroIterations...)
 }
