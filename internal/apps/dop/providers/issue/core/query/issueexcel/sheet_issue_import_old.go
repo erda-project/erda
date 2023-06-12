@@ -16,6 +16,7 @@ package issueexcel
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/pkg/excel"
@@ -36,8 +37,14 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 	if len(sheet) == 0 {
 		return nil, nil
 	}
-	// columnLen
-	columnLen := len(sheet[0])
+	// columnLen, 计算到标题行的第一个非空 cell，因为有些单元格是手动删除过数据的
+	var columnLen int
+	for _, cell := range sheet[0] {
+		if cell == "" {
+			break
+		}
+		columnLen++
+	}
 	switch true {
 	case columnLen >= oldExcelFormatCustomFieldRowColumnIndexFrom:
 	case columnLen == oldOldExcelFormatColumnLen:
@@ -47,9 +54,9 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 	// try to match custom field name to issue type, because the order of custom field is not fixed
 	var customFieldNames []string
 	var columnIndexAndPropertyTypeMap map[int]pb.PropertyIssueTypeEnum_PropertyIssueType
-	if columnLen >= oldExcelFormatCustomFieldRowColumnIndexFrom {
+	if columnLen > oldExcelFormatCustomFieldRowColumnIndexFrom {
 		customFieldNames = sheet[0][oldExcelFormatCustomFieldRowColumnIndexFrom:]
-		_columnIndexAndPropertyTypeMap, err := tryToMatchCustomFieldNameToIssueType(customFieldNames, data.CustomFieldMap)
+		_columnIndexAndPropertyTypeMap, err := tryToMatchCustomFieldNameToIssueType(customFieldNames, data.CustomFieldMapByTypeName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to match custom field name to issue type, err: %v", err)
 		}
@@ -156,15 +163,20 @@ const (
 // 如果存在一个自定义字段被多个 issue type 使用，只能尽可能匹配
 // 如果字段按顺序都能匹配上（字段名、顺序），则匹配成功
 // 特殊情况，如果只有一个自定义字段，且这个字段被 3 个类型都引用了，则无法保证正确性。解决方案：用户可以手动调整模板字段顺序，原则就是 需求 > 任务 > 缺陷
-func tryToMatchCustomFieldNameToIssueType(cfNames []string, customFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex) (
+func tryToMatchCustomFieldNameToIssueType(cfNames []string, customFieldMap map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex) (
 	map[int]pb.PropertyIssueTypeEnum_PropertyIssueType, error) {
 
 	genOrders := func(typeOrders ...pb.PropertyIssueTypeEnum_PropertyIssueType) []*pb.IssuePropertyIndex {
 		var result []*pb.IssuePropertyIndex
 		for _, t := range typeOrders {
+			var cfs []*pb.IssuePropertyIndex
 			for _, cf := range customFieldMap[t] {
-				result = append(result, cf)
+				cfs = append(cfs, cf)
 			}
+			sort.SliceStable(cfs, func(i, j int) bool {
+				return cfs[i].Index < cfs[j].Index
+			})
+			result = append(result, cfs...)
 		}
 		return result
 	}

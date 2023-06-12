@@ -52,9 +52,9 @@ func Test_genIssueSheetTitleAndDataByColumn(t *testing.T) {
 				1: {2, 3},
 			},
 		},
-		CustomFieldMap: map[pb.PropertyIssueTypeEnum_PropertyIssueType][]*pb.IssuePropertyIndex{},
-		StateMap:       map[int64]string{},
-		StageMap:       map[query.IssueStage]string{},
+		CustomFieldMapByTypeName: map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex{},
+		StateMap:                 map[int64]string{},
+		StageMap:                 map[query.IssueStage]string{},
 		IterationMapByID: map[int64]*dao.Iteration{
 			0: {},
 		},
