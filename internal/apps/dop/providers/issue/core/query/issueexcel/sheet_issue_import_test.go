@@ -101,3 +101,16 @@ func Test_parseStringLineID(t *testing.T) {
 	i, err = parseStringIssueID("-1")
 	assert.Error(t, err)
 }
+
+func Test_removeEmptySheetRows(t *testing.T) {
+	rows := [][]string{
+		{"", "", ""},
+		{"a", "b", ""},
+		{"", "", ""},
+		{"c", "", ""},
+	}
+	removeEmptySheetRows(&rows)
+	assert.True(t, len(rows) == 2)
+	assert.Equal(t, []string{"a", "b", ""}, rows[0])
+	assert.Equal(t, []string{"c", "", ""}, rows[1])
+}
