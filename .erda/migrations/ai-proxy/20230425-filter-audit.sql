@@ -33,11 +33,11 @@ CREATE TABLE `ai_proxy_filter_audit`
     `status`                VARCHAR(32)  NOT NULL COMMENT 'http response status',
     `status_code`           INT          NOT NULL COMMENT 'http response status code',
     PRIMARY KEY (`id`),
-    INDEX `job_number_idx` (`job_number`),
-    INDEX `dingtalk_staff_id_idx` (`dingtalk_staff_id`)
+    INDEX `idx_job_number` (`job_number`),
+    INDEX `idx_dingtalk_staff_id` (`dingtalk_staff_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+    COMMENT 'AI 插件之审计';
 
 CREATE TABLE `ai_proxy_sessions`
 (
@@ -54,11 +54,11 @@ CREATE TABLE `ai_proxy_sessions`
     `is_archived`    BOOLEAN      NOT NULL DEFAULT false COMMENT '是否归档',
     `reset_at`       DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
     `model`          VARCHAR(128) NOT NULL COMMENT '调用的模型名称: gpt-3.5-turbo, gpt-4-8k, ...',
-    `temperature`    DOUBLE       NOT NULL DEFAULT 0.7 COMMENT 'Higher values will make the output more random, while lower values will make it more focused and deterministic',
+    `temperature`    DECIMAL      NOT NULL DEFAULT 0.7 COMMENT 'Higher values will make the output more random, while lower values will make it more focused and deterministic',
 
     PRIMARY KEY (`id`),
-    INDEX `userid_idx` (`user_id`),
-    INDEX `name_idx` (`name`)
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_name` (`name`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+    COMMENT 'AI 会话管理表';
