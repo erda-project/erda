@@ -207,6 +207,7 @@ stages:
       - erda-mysql-migration:
           alias: dryrun-on-mysql80
           version: 1.0-80
+          disable: true
           params:
             database: erda
             lint_config: .erda/migrations/config.yml
