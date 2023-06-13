@@ -18,10 +18,10 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-proto-go/dop/publishitem/pb"
 	"github.com/erda-project/erda/apistructs"

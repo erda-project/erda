@@ -25,7 +25,7 @@ package main
 //	"path"
 //
 //	"github.com/bitly/go-simplejson"
-//	"github.com/ghodss/yaml"
+//	"sigs.k8s.io/yaml"
 //)
 //
 //const (

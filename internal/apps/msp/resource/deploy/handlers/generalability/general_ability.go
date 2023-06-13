@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"google.golang.org/grpc/metadata"
+	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"

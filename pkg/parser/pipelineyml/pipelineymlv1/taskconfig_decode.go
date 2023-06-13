@@ -17,9 +17,9 @@ package pipelineymlv1
 import (
 	"reflect"
 
-	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1/pipelineymlvars"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1/steptasktype"

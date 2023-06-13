@@ -19,10 +19,10 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/ghodss/yaml"
 	"github.com/jinzhu/gorm"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/pkg/expression"
