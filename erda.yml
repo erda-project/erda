@@ -549,9 +549,9 @@ services:
       labels:
         GROUP: dice
     resource:
-      cpu: ${ai_proxy_request_cpu:1}
+      cpu: ${request_cpu:1}
       max_cpu: 1
-      mem: ${ai_proxy_request_mem:2024}
+      mem: ${request_mem:1024}
       max_mem: 2048
       network:
         mode: container
