@@ -113,8 +113,8 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 
-	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(errors_sum::field)/sum(count_sum::field) " +
-		"FROM application_http_service,application_rpc_service " +
+	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) " +
+		"FROM application_http,application_rpc " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) and target_service_id::tag != '' " +
 		"GROUP BY target_service_id::tag ")
 	queryParams := map[string]*structpb.Value{
