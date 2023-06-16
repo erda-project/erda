@@ -3174,7 +3174,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, gatew
 			if err != nil {
 				goto clear_route
 			}
-			corsConfig = policyEngine.CreateDefaultConfig(nil)
+			corsConfig = policyEngine.CreateDefaultConfig(gatewayProvider, nil)
 			corsConfig.SetEnable(true)
 			configByte, err = json.Marshal(corsConfig)
 			if err != nil {
@@ -3390,7 +3390,7 @@ func (impl GatewayOpenapiServiceImpl) createOrGetTenantHubPackage(ctx context.Co
 		if err != nil {
 			goto clear_route
 		}
-		corsConfig = policyEngine.CreateDefaultConfig(nil)
+		corsConfig = policyEngine.CreateDefaultConfig(gatewayProvider, nil)
 		corsConfig.SetEnable(true)
 		configByte, err = json.Marshal(corsConfig)
 		if err != nil {
@@ -3610,7 +3610,22 @@ func (impl GatewayOpenapiServiceImpl) clearRoutePolicy(category, packageId, pack
 	if err != nil {
 		return err
 	}
-	config := engine.CreateDefaultConfig(map[string]interface{}{})
+	pack, err := impl.packageDb.Get(packageId)
+	if err != nil {
+		return err
+	}
+	if pack == nil {
+		return errors.New("endpoint not found")
+	}
+
+	gatewayProvider, err := impl.GetGatewayProvider(pack.DiceClusterName)
+	if err != nil {
+		errMsg := errors.Errorf("get gateway provider failed for cluster %s: %v\n", pack.DiceClusterName, err)
+		logrus.Error(errMsg)
+		return errMsg
+	}
+
+	config := engine.CreateDefaultConfig(gatewayProvider, map[string]interface{}{})
 	configByte, err := json.Marshal(config)
 	if err != nil {
 		return errors.Errorf("mashal failed, config:%v, err:%v",
