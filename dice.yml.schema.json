@@ -4,6 +4,9 @@
   "title": "Erda dice.yml Schema",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "version": {
       "type": "string"
     },

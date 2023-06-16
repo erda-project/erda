@@ -1,3 +1,4 @@
-$schema: dice.yml.schema.json
+$schema: https://raw.githubusercontent.com/dspo/erda/fix/check-neet-to-new-instance/dice.yml.schema.json
 version: 1.0.0
-ser
+services:
+
