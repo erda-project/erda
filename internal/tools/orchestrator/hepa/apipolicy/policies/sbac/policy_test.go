@@ -23,7 +23,7 @@ import (
 
 // need not do unit test
 func TestPolicy_CreateDefaultConfig(t *testing.T) {
-	new(sbac.Policy).CreateDefaultConfig(make(map[string]interface{}))
+	new(sbac.Policy).CreateDefaultConfig("", make(map[string]interface{}))
 }
 
 func TestPolicy_UnmarshalConfig(t *testing.T) {

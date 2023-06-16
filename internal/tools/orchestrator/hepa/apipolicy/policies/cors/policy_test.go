@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 )
 
 func TestPolicy_setIngressAnnotations(t *testing.T) {
@@ -107,6 +108,52 @@ func TestPolicy_setIngressAnnotations(t *testing.T) {
 			}
 			if got := policy.setIngressAnnotations(tt.args.gatewayProvider, tt.args.policyDto, tt.args.locationSnippet); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("setIngressAnnotations() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPolicy_CreateDefaultConfig(t *testing.T) {
+	type fields struct {
+		BasePolicy apipolicy.BasePolicy
+	}
+	type args struct {
+		gatewayProvider string
+		ctx             map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   apipolicy.PolicyDto
+	}{
+		{
+			name: "Test_01",
+			fields: fields{
+				BasePolicy: apipolicy.BasePolicy{
+					PolicyName: apipolicy.Policy_Engine_CORS,
+				},
+			},
+			args: args{
+				gatewayProvider: mseCommon.MseProviderName,
+				ctx:             nil,
+			},
+			want: &PolicyDto{
+				Methods:     "GET, PUT, POST, DELETE, PATCH, OPTIONS",
+				Headers:     "",
+				Origin:      "",
+				Credentials: true,
+				MaxAge:      86400,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			policy := Policy{
+				BasePolicy: tt.fields.BasePolicy,
+			}
+			if got := policy.CreateDefaultConfig(tt.args.gatewayProvider, tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateDefaultConfig() = %v, want %v", got, tt.want)
 			}
 		})
 	}

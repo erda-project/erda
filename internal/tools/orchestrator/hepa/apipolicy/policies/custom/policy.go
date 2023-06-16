@@ -38,7 +38,7 @@ var UNSETABLE_KEYS = map[string]string{"client_max_body_size": "100m",
 	"port_in_redirect":      "off",
 }
 
-func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
+func (policy Policy) CreateDefaultConfig(gatewayProvider string, ctx map[string]interface{}) apipolicy.PolicyDto {
 	dto := &PolicyDto{}
 	dto.Switch = false
 	return dto

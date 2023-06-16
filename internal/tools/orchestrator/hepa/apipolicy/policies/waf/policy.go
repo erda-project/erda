@@ -32,7 +32,7 @@ func (policy Policy) NeedSerialUpdate() bool {
 	return true
 }
 
-func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
+func (policy Policy) CreateDefaultConfig(gatewayProvider string, ctx map[string]interface{}) apipolicy.PolicyDto {
 	return &PolicyDto{
 		WafEnable:   WAF_SWITCH_WATCH,
 		RemoveRules: "",

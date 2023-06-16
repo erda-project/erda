@@ -81,3 +81,50 @@ func TestPolicy_buildMSEPluginReq(t *testing.T) {
 		})
 	}
 }
+
+func TestPolicy_CreateDefaultConfig(t *testing.T) {
+	type fields struct {
+		BasePolicy apipolicy.BasePolicy
+	}
+	type args struct {
+		gatewayProvider string
+		ctx             map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   apipolicy.PolicyDto
+	}{
+		{
+			name: "Test_01",
+			fields: fields{
+				BasePolicy: apipolicy.BasePolicy{
+					PolicyName: apipolicy.Policy_Engine_IP,
+				},
+			},
+			args: args{
+				gatewayProvider: "",
+				ctx:             nil,
+			},
+			want: &PolicyDto{
+				IpSource:  REMOTE_IP,
+				IpAclType: ACL_BLACK,
+				BaseDto: apipolicy.BaseDto{
+					Switch: false,
+					Global: false,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			policy := Policy{
+				BasePolicy: tt.fields.BasePolicy,
+			}
+			if got := policy.CreateDefaultConfig(tt.args.gatewayProvider, tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateDefaultConfig() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -46,7 +46,7 @@ type Policy struct {
 	apipolicy.BasePolicy
 }
 
-func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
+func (policy Policy) CreateDefaultConfig(gatewayProvider string, ctx map[string]interface{}) apipolicy.PolicyDto {
 	value, ok := ctx[apipolicy.CTX_SERVICE_INFO]
 	if !ok {
 		logrus.Errorf("get identify failed:%+v", ctx)

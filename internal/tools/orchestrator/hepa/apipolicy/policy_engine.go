@@ -78,9 +78,9 @@ const (
 )
 
 type PolicyEngine interface {
-	GetConfig(string, string, *orm.GatewayZone, map[string]interface{}) (PolicyDto, error)
+	GetConfig(string, string, string, *orm.GatewayZone, map[string]interface{}) (PolicyDto, error)
 	MergeDiceConfig(map[string]interface{}) (PolicyDto, error)
-	CreateDefaultConfig(map[string]interface{}) PolicyDto
+	CreateDefaultConfig(string, map[string]interface{}) PolicyDto
 	ParseConfig(PolicyDto, map[string]interface{}, bool) (PolicyConfig, error)
 	NeedResetAnnotation(PolicyDto) bool
 	UnmarshalConfig([]byte, string) (PolicyDto, error, string)
@@ -166,7 +166,7 @@ func (policy BasePolicy) GetGatewayProvider(clusterName string) (string, error) 
 	return "", nil
 }
 
-func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone, ctx map[string]interface{}) (PolicyDto, error) {
+func (policy BasePolicy) GetConfig(gatewayProvider, name, packageId string, zone *orm.GatewayZone, ctx map[string]interface{}) (PolicyDto, error) {
 	engine, err := GetPolicyEngine(name)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,6 @@ func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone
 		return nil, err
 	}
 	var policyConfig []byte
-	gatewayProvider := ""
 	useDefault := false
 	if zone != nil {
 		policyDao, err := policyDb.GetByAny(&orm.GatewayIngressPolicy{
@@ -189,7 +188,9 @@ func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone
 		}
 		if policyDao != nil && len(policyDao.Config) > 0 {
 			policyConfig = policyDao.Config
-			gatewayProvider, _ = policy.GetGatewayProvider(zone.DiceClusterName)
+			if gatewayProvider == "" {
+				gatewayProvider, _ = policy.GetGatewayProvider(zone.DiceClusterName)
+			}
 			goto done
 		}
 	}
@@ -207,7 +208,7 @@ func (policy BasePolicy) GetConfig(name, packageId string, zone *orm.GatewayZone
 			return nil, err
 		}
 		if defaultPolicy == nil || len(defaultPolicy.Config) == 0 {
-			dto := engine.CreateDefaultConfig(ctx)
+			dto := engine.CreateDefaultConfig(gatewayProvider, ctx)
 			dto.SetGlobal(true)
 			return dto, nil
 		}

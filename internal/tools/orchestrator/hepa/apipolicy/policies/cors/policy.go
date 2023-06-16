@@ -30,7 +30,7 @@ type Policy struct {
 	apipolicy.BasePolicy
 }
 
-func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
+func (policy Policy) CreateDefaultConfig(gatewayProvider string, ctx map[string]interface{}) apipolicy.PolicyDto {
 	dto := &PolicyDto{
 		Methods:     "GET, PUT, POST, DELETE, PATCH, OPTIONS",
 		Headers:     "$http_access_control_request_headers",
@@ -38,6 +38,12 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 		Credentials: true,
 		MaxAge:      86400,
 	}
+
+	if gatewayProvider == mseCommon.MseProviderName {
+		dto.Headers = ""
+		dto.Origin = ""
+	}
+
 	dto.Switch = false
 	return dto
 }

@@ -37,11 +37,15 @@ func (policy Policy) NeedSerialUpdate() bool {
 	return true
 }
 
-func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
+func (policy Policy) CreateDefaultConfig(gatewayProvider string, ctx map[string]interface{}) apipolicy.PolicyDto {
 	dto := &PolicyDto{
 		ExtraLatency:   500,
 		RefuseCode:     429,
 		RefuseResponse: "System is busy, please try it later.",
+	}
+	if gatewayProvider == mseCommon.MseProviderName {
+		dto.RefuseCode = 503
+		dto.RefuseResponse = "local_rate_limited"
 	}
 	dto.Switch = false
 	return dto
