@@ -240,25 +240,26 @@ func (h *DefaultDeployHandler) CheckIfHasCustomConfig(clusterConfig map[string]s
 	return nil, false
 }
 
-func NewDefaultHandler(dbClient *gorm.DB, logger logs.Logger) *DefaultDeployHandler {
+func NewDefaultHandler(client *gorm.DB, log logs.Logger) *DefaultDeployHandler {
 	return &DefaultDeployHandler{
-		TenantDb:             &db.InstanceTenantDB{DB: dbClient},
-		InstanceDb:           &db.InstanceDB{DB: dbClient},
-		TmcDb:                &db.TmcDB{DB: dbClient},
-		TmcVersionDb:         &db.TmcVersionDB{DB: dbClient},
-		TmcRequestRelationDb: &db.TmcRequestRelationDB{DB: dbClient},
-		TmcIniDb:             &db.TmcIniDB{DB: dbClient},
-		Bdl: bundle.New(bundle.WithScheduler(),
-			bundle.WithOrchestrator(),
-			bundle.WithHepa(),
+		TenantDb:             &db.InstanceTenantDB{DB: client},
+		InstanceDb:           &db.InstanceDB{DB: client},
+		TmcDb:                &db.TmcDB{DB: client},
+		TmcVersionDb:         &db.TmcVersionDB{DB: client},
+		TmcRequestRelationDb: &db.TmcRequestRelationDB{DB: client},
+		TmcIniDb:             &db.TmcIniDB{DB: client},
+		Bdl: bundle.New(
+			bundle.WithCollector(),
 			bundle.WithCMDB(),
 			bundle.WithErdaServer(),
+			bundle.WithHepa(),
+			bundle.WithOrchestrator(),
 			bundle.WithPipeline(),
 			bundle.WithMonitor(),
-			bundle.WithCollector(),
+			bundle.WithScheduler(),
 			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))),
 		),
-		Log: logger,
+		Log: log,
 	}
 }
 
