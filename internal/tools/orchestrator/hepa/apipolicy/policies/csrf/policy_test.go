@@ -12,46 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serverguard
+package csrf
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 )
-
-func Test_setMSEIngressAnnotation(t *testing.T) {
-	type args struct {
-		policyDto          *PolicyDto
-		ingressAnnotations *apipolicy.IngressAnnotation
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "Test_01",
-			args: args{
-				policyDto: &PolicyDto{
-					BaseDto:        apipolicy.BaseDto{},
-					MaxTps:         0,
-					Busrt:          2,
-					ExtraLatency:   0,
-					RefuseCode:     0,
-					RefuseResponse: "",
-				},
-				ingressAnnotations: nil,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setMSEIngressAnnotation(tt.args.policyDto, tt.args.ingressAnnotations)
-		})
-	}
-}
 
 func TestPolicy_CreateDefaultConfig(t *testing.T) {
 	type fields struct {
@@ -61,6 +30,12 @@ func TestPolicy_CreateDefaultConfig(t *testing.T) {
 		gatewayProvider string
 		ctx             map[string]interface{}
 	}
+	ctx := make(map[string]interface{})
+	ctx[apipolicy.CTX_SERVICE_INFO] = apipolicy.ServiceInfo{
+		ProjectName: "test",
+		Env:         "PROD",
+	}
+	tokenName := "x-test-prod-csrf-token"
 	tests := []struct {
 		name   string
 		fields fields
@@ -71,17 +46,22 @@ func TestPolicy_CreateDefaultConfig(t *testing.T) {
 			name: "Test_01",
 			fields: fields{
 				BasePolicy: apipolicy.BasePolicy{
-					PolicyName: apipolicy.Policy_Engine_Service_Guard,
+					PolicyName: apipolicy.Policy_Engine_CSRF,
 				},
 			},
 			args: args{
-				gatewayProvider: mseCommon.MseProviderName,
-				ctx:             nil,
+				gatewayProvider: "",
+				ctx:             ctx,
 			},
 			want: &PolicyDto{
-				ExtraLatency:   500,
-				RefuseCode:     503,
-				RefuseResponse: "local_rate_limited",
+				ExcludedMethod: []string{http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace},
+				TokenName:      tokenName,
+				CookieSecure:   false,
+				ValidTTL:       1800,
+				RefreshTTL:     10,
+				ErrStatus:      403,
+				ErrMsg:         `{"message":"This form has expired. Please refresh and try again."}`,
+				Switch:         false,
 			},
 		},
 	}

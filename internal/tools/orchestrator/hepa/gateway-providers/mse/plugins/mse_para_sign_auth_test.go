@@ -33,7 +33,6 @@ func Test_mergeParaSignAuthConfig(t *testing.T) {
 		want    dto.MsePluginConfig
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "Test_01",
 			args: args{
