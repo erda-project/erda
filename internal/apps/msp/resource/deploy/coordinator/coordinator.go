@@ -291,16 +291,12 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 	// get the lock at the "<addon engine>/<cluster>" granularity before deploying to avoid duplicate instances
 	p.Log.Infof("[%s/%s] to get the ETCD Mutex", req.Engine, req.Az)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*12)
+	defer cancel()
+
 	mu, err := p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
 	if err != nil {
 		p.Log.Errorf("[%s/%s] failed to New a global distributed lock (ETCD Mutex) before deploying: %v\n", req.Engine, req.Az, err)
 		return nil, errors.Wrapf(err, "failed to New ETCD Mutex for %s/%s", req.Engine, req.Az)
-	}
-	if err = mu.Lock(ctx); err != nil {
-		p.Log.Errorf("[%s/%s] failed to Lock: %v\n", req.Engine, req.Az, err)
-		if err == context.Canceled {
-			return nil, errors.Wrapf(err, "failed to Lock for %s/%s", req.Engine, req.Az)
-		}
 	}
 	defer func() {
 		if mu != nil {
@@ -312,8 +308,11 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 				p.Log.Errorf("[%s/%s] failed to Close the global distributed lock (ETCD Mutex) after deployed: %v\n", req.Engine, req.Az, err)
 			}
 		}
-		cancel()
 	}()
+	if err = mu.Lock(ctx); err != nil {
+		p.Log.Errorf("[%s/%s] failed to Lock: %v\n", req.Engine, req.Az, err)
+		return nil, errors.Wrapf(err, "failed to Lock for %s/%s", req.Engine, req.Az)
+	}
 	p.Log.Infof("[%s/%s] to deploy: %+v\n", req.Engine, req.Az, req)
 	return deploy(req)
 }
