@@ -263,24 +263,24 @@ func NewDefaultHandler(dbClient *gorm.DB, logger logs.Logger) *DefaultDeployHand
 }
 
 func (h *DefaultDeployHandler) CheckIfNeedTmcInstance(req *ResourceDeployRequest, resourceInfo *ResourceInfo) (*db.Instance, bool, error) {
-	instance, err := h.InstanceDb.GetByEngineAndVersionAndAz(resourceInfo.TmcVersion.Engine, "custom", req.Az)
+	var where = map[string]any{
+		"engine":     resourceInfo.TmcVersion.Engine,
+		"version":    "custom",
+		"az":         req.Az,
+		"status":     TmcInstanceStatusRunning,
+		"is_deleted": "N",
+	}
+	instance, ok, err := h.InstanceDb.First(where)
 	if err != nil {
 		return nil, false, err
 	}
-
-	// we only care about the RUNNING one
-	isValid := func(ins *db.Instance) bool {
-		return instance != nil && instance.Status == TmcInstanceStatusRunning
+	if ok {
+		return instance, false, nil
 	}
 
-	if !isValid(instance) {
-		instance, err = h.InstanceDb.GetByEngineAndVersionAndAz(resourceInfo.TmcVersion.Engine, resourceInfo.TmcVersion.Version, req.Az)
-		if err != nil {
-			return nil, false, err
-		}
-	}
-
-	return instance, !isValid(instance), nil
+	where["version"] = resourceInfo.TmcVersion.Version
+	instance, ok, err = h.InstanceDb.First(where)
+	return instance, !ok, err
 }
 
 func (h *DefaultDeployHandler) GetClusterConfig(az string) (map[string]string, error) {
