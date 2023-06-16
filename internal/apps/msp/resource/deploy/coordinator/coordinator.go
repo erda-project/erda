@@ -291,11 +291,8 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 	// get the lock at the "<addon engine>/<cluster>" granularity before deploying to avoid duplicate instances
 	p.Log.Infof("[%s/%s] to get the ETCD Mutex", req.Engine, req.Az)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*12)
-	defer func() {
-		if cancel != nil {
-			cancel()
-		}
-	}()
+	defer cancel()
+
 	mu, err := p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
 	if err != nil {
 		p.Log.Errorf("[%s/%s] failed to New a global distributed lock (ETCD Mutex) before deploying: %v\n", req.Engine, req.Az, err)
