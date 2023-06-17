@@ -243,6 +243,7 @@ openapi-v1-routes:
           - transaction-rpc-detail
           - transaction-rpc-slow
           - transaction-rpc-error
+          - transaction-http-table
           - trace-query
           - resources-container-monitor
           - resources-node-monitor

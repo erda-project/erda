@@ -1,0 +1,26 @@
+scenario: transaction-http-table
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - content
+    content:
+      slot: head
+      table: table
+    head:
+      left: tableFilter
+  parallel:
+    page:
+      - content
+components:
+  page:
+    type: Container
+  content:
+    type: ComposeTable
+  head:
+    type: LRContainer
+  table:
+    type: Table
+  tableFilter:
+    type: ContractiveFilter

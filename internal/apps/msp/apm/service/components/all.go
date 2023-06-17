@@ -33,6 +33,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-detail"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-error"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-slow"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-http-table"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-analysis"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-detail"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-mq-error"
