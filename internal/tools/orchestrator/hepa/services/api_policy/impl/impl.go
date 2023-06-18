@@ -199,7 +199,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	ctx[apipolicy.CTX_SERVICE_INFO] = serviceInfo
 	if packageApiId == "" {
 		var dto interface{}
-		dto, err = policyEngine.GetConfig(category, packageId, nil, ctx)
+		dto, err = policyEngine.GetConfig(gatewayProvider, category, packageId, nil, ctx)
 		if err != nil {
 			return
 		}
@@ -222,7 +222,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 		}
 	}
 	var dto interface{}
-	dto, err = policyEngine.GetConfig(category, packageId, zone, ctx)
+	dto, err = policyEngine.GetConfig(gatewayProvider, category, packageId, zone, ctx)
 	if err != nil {
 		return
 	}

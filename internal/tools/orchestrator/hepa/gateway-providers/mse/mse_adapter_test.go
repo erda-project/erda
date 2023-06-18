@@ -181,7 +181,6 @@ func TestMseAdapterImpl_GetVersion(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name:    "Test_01",
 			fields:  fields{ProviderName: "MSE"},
@@ -908,7 +907,6 @@ func TestMseAdapterImpl_PutPlugin(t *testing.T) {
 		want    *PluginRespDto
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name:    "Test_01",
 			fields:  fields{ProviderName: "MSE"},
@@ -950,7 +948,6 @@ func TestMseAdapterImpl_UpdatePlugin(t *testing.T) {
 		want    *PluginRespDto
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name:   "Test_01",
 			fields: fields{ProviderName: "MSE"},
