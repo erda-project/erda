@@ -1,0 +1,24 @@
+scenario: service-profile-overview
+
+hierarchy:
+  root: page
+  structure:
+    grid:
+      - service-profile-overview@peripheralInterfaceChart
+      - service-profile-overview@pathClientRpsMaxTop5
+    page:
+      - grid
+  parallel:
+    grid:
+      - service-profile-overview@peripheralInterfaceChart
+      - service-profile-overview@pathClientRpsMaxTop5
+components:
+  page:
+    type: CardContainer
+  grid:
+    type: Grid
+  service-profile-overview@peripheralInterfaceChart:
+    type: TopN
+  service-profile-overview@pathClientRpsMaxTop5:
+    type: TopN
+

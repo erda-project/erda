@@ -222,6 +222,7 @@ openapi-v1-routes:
         scenarios:
           - browser-overview
           - service-overview
+          - service-profile-overview
           - service-list
           - transaction-cache-analysis
           - transaction-cache-detail
@@ -605,3 +606,4 @@ grpc-client@erda.core.monitor.settings:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
   block: false
 erda.core.monitor.settings-client:
+service-profile-overview:

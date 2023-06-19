@@ -21,6 +21,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/resources-runtime-monitor-nodejs"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/service-list"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/service-overview"
+	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/service-profile-overview"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-cache-analysis"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-cache-detail"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/service/components/transaction-cache-error"

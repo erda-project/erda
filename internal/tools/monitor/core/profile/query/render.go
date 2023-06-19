@@ -31,6 +31,8 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/structs/flamebearer"
 	"github.com/pyroscope-io/pyroscope/pkg/util/attime"
 
+	"github.com/erda-project/erda/apistructs"
+
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -49,7 +51,7 @@ type renderParams struct {
 	rghtEndTime   time.Time
 }
 
-type renderMetadataResponse struct {
+type RenderMetadataResponse struct {
 	flamebearer.FlamebearerMetadataV1
 	AppName   string `json:"appName"`
 	StartTime int64  `json:"startTime"`
@@ -63,10 +65,15 @@ type annotationsResponse struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
-type renderResponse struct {
+type RenderResponse struct {
 	flamebearer.FlamebearerProfile
-	Metadata    renderMetadataResponse `json:"metadata"`
+	Metadata    RenderMetadataResponse `json:"metadata"`
 	Annotations []annotationsResponse  `json:"annotations"`
+}
+
+type ProfileRenderResponse struct {
+	apistructs.Header
+	Data *RenderResponse `json:"data"`
 }
 
 func (p *provider) render(rw http.ResponseWriter, r *http.Request) {
@@ -189,8 +196,8 @@ func (p *provider) renderParametersFromRequest(r *http.Request, req *renderParam
 	return expectFormats(req.format)
 }
 
-func (p *provider) mountRenderResponse(flame flamebearer.FlamebearerProfile, appName string, gi *storage.GetInput, maxNodes int, annotations []model.Annotation) renderResponse {
-	md := renderMetadataResponse{
+func (p *provider) mountRenderResponse(flame flamebearer.FlamebearerProfile, appName string, gi *storage.GetInput, maxNodes int, annotations []model.Annotation) RenderResponse {
+	md := RenderMetadataResponse{
 		FlamebearerMetadataV1: flame.Metadata,
 		AppName:               appName,
 		StartTime:             gi.StartTime.Unix(),
@@ -207,7 +214,7 @@ func (p *provider) mountRenderResponse(flame flamebearer.FlamebearerProfile, app
 		}
 	}
 
-	return renderResponse{
+	return RenderResponse{
 		FlamebearerProfile: flame,
 		Metadata:           md,
 		Annotations:        annotationsResp,
