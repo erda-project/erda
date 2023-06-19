@@ -1,0 +1,742 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "https://github.com/erda-project/erda/.erda/schemas/dice.yaml.json",
+  "title": "Erda dice.yml Schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "default": "https://github.com/erda-project/erda/raw/master/.erda/schemas/dice.yaml.json"
+    },
+    "version": {
+      "description": "dice.yml 语法规范版本",
+      "type": "string",
+      "default": "2.0"
+    },
+    "meta": {
+      "description": "dice.yml 的元数据",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "envs": {
+      "description": "全局环境变量, 优先级低于 service 或 job 自身的环境变量",
+      "$ref": "#/definitions/EnvMap"
+    },
+    "services": {
+      "description": "定义服务列表, 一个 dice.yml 不能同时定义 services 和 jobs",
+      "$ref": "#/definitions/Services"
+    },
+    "jobs": {
+      "description": "定义任务列表, 一个 dice.yml 不能同时定义 services 和 jobs",
+      "$ref": "#/definitions/Jobs"
+    },
+    "addons": {
+      "$ref": "#/definitions/AddOns",
+      "description": "定义服务所需的中间件, 中间件的相关变量以环境变量方式注入"
+    },
+    "environments": {
+      "description": "如果各环境有环境变量, Services, Addons 定义有差异, 可以在此处进行差异化定义",
+      "$ref": "#/definitions/EnvObjects"
+    },
+    "values": {
+      "description": "定义各环境的 key-values, 可以在其他字段的值中引用",
+      "$ref": "#/definitions/ValueObjects"
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "dependencies": {
+    "services": {
+      "oneOf": [
+        {
+          "required": [
+            "services"
+          ]
+        },
+        {
+          "required": [
+            "jobs"
+          ]
+        }
+      ]
+    },
+    "jobs": {
+      "oneOf": [
+        {
+          "required": [
+            "services"
+          ]
+        },
+        {
+          "required": [
+            "jobs"
+          ]
+        }
+      ]
+    }
+  },
+  "description": "services 与 jobs 不能同时存在于一个 dice.yml 中",
+  "additionalProperties": false,
+  "definitions": {
+    "Services": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Service"
+      }
+    },
+    "Service": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "description": "服务镜像",
+          "type": "string"
+        },
+        "image_username": {
+          "description": "拉取镜像的用户名",
+          "type": "string"
+        },
+        "image_password": {
+          "description": "拉取镜像的密码",
+          "type": "string"
+        },
+        "cmd": {
+          "description": "启动命令, 不填则按镜像的 Entrypoint 启动",
+          "type": "string"
+        },
+        "ports": {
+          "description": "要启用的端口",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ServicePort"
+          }
+        },
+        "envs": {
+          "description": "环境变量, 优先级高于全局环境变量",
+          "$ref": "#/definitions/EnvMap"
+        },
+        "hosts": {
+          "description": "域名列表, 可以引用 values 中定义的值",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resources": {
+          "description": "服务 (Pod) 使用的资源",
+          "$ref": "#/definitions/Resources"
+        },
+        "labels": {
+          "description": "服务标签",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "annotations": {
+          "description": "注解",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "binds": {
+          "description": "文件挂载",
+          "$ref": "#/definitions/Binds"
+        },
+        "volumes": {
+          "description": "定义卷",
+          "$ref": "#/definitions/Volumes"
+        },
+        "deployments": {
+          "description": "定义 K8s Deployment 细节",
+          "$ref": "#/definitions/Deployments"
+        },
+        "depends_on": {
+          "description": "依赖的服务",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expose": {
+          "description": "要开放的端口, Erda 会创建一个 K8s Service 并开放这些端口",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "default": 8080
+          }
+        },
+        "health_check": {
+          "description": "健康检查, 即服务可提供服务的条件",
+          "$ref": "#/definitions/HealthCheck"
+        },
+        "sidecars": {
+          "description": "定义边车容器, 如日志收集, 网络代理等",
+          "type": "object",
+          "patternProperties": {
+            "^[A-za-z].*": {
+              "$ref": "#/definitions/SideCar"
+            }
+          }
+        },
+        "init": {
+          "description": "定义初始化容器, 如数据准备, migration 等",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/InitContainer"
+          }
+        },
+        "mesh_enable": {
+          "deprecationMessage": "Erda 已不支持该功能",
+          "type": "boolean"
+        },
+        "traffic_security": {
+          "description": "定义流量安全策略 (会引用网关)",
+          "$ref": "#/definitions/TrafficSecurity"
+        },
+        "endpoints": {
+          "description": "定义域名, 可以引用 values 中定义的值",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Endpoint"
+          }
+        },
+        "k8s_snippet": {
+          "description": "定义容器细节",
+          "$ref": "#/definitions/K8SSnippet"
+        }
+      }
+    },
+    "ServicePort": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "description": "启用的端口号",
+          "type": "integer",
+          "default": 8080
+        },
+        "protocol": {
+          "description": "4/7 层网络协议",
+          "type": "string",
+          "default": "TCP"
+        },
+        "l4_protocol": {
+          "description": "4 层网络协议",
+          "type": "string",
+          "enum": [
+            "TCP",
+            "UDP"
+          ],
+          "default": "TCP"
+        },
+        "expose": {
+          "description": "是否开放该端口",
+          "type": "boolean",
+          "default": false
+        },
+        "default": {
+          "description": "是否为默认端口, 设置域名时会将对该域名的访问反向代理到默认端口",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "EnvMap": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Z][^a-z]*$": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Resources": {
+      "description": "可以用 cpu: ${request_cpu:1} 引用 values 和设置默认值",
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "CPU 核心数, 对应 K8s 中 request 值.\n可以用 ${request_cpu:1} 引用 values 和设置默认值",
+          "examples": [
+            "${request_cpu:1}"
+          ],
+          "default": 1
+        },
+        "mem": {
+          "description": "内存数, 单位 M",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "max_cpu": {
+          "description": "最大 CPU 核心数",
+          "type": "number"
+        },
+        "max_mem": {
+          "description": "最大内存数",
+          "type": "integer"
+        },
+        "disk": {
+          "description": "磁盘请求量",
+          "type": "integer"
+        },
+        "network": {
+          "description": "网络配置",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "emptydir_size": {
+          "type": "integer"
+        },
+        "ephemeral_storage_size": {
+          "type": "integer"
+        }
+      }
+    },
+    "Binds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Jobs": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Job"
+      }
+    },
+    "AddOns": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/AddOn"
+      }
+    },
+    "ValueObjects": {
+      "type": "object",
+      "patternProperties": {
+        "development|test|staging|production": {
+          "$ref": "#/definitions/ValueMap"
+        }
+      }
+    },
+    "Volume": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "storage": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "targetPath": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "snapshot": {
+          "$ref": "#/definitions/VolumeSnapshot"
+        }
+      }
+    },
+    "Deployments": {
+      "type": "object",
+      "properties": {
+        "replicas": {
+          "description": "Pod 副本数",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "policies": {
+          "description": "策略",
+          "type": "string"
+        },
+        "labels": {
+          "description": "标签",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "workload": {
+          "description": "负载",
+          "type": "string"
+        },
+        "selectors": {
+          "description": "K8s selector",
+          "$ref": "#/definitions/Selectors"
+        }
+      }
+    },
+    "HealthCheck": {
+      "type": "object",
+      "properties": {
+        "http": {
+          "description": "通过 HTTP 接口进行健康检查",
+          "$ref": "#/definitions/HTTPCheck",
+          "default": {
+            "port": 8080,
+            "path": "/api/health",
+            "duration": 120
+          }
+        },
+        "exec": {
+          "description": "通过执行容器命令进行健康检查",
+          "$ref": "#/definitions/ExecCheck"
+        }
+      }
+    },
+    "SideCar": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "description": "容器镜像",
+          "type": "string"
+        },
+        "cmd": {
+          "description": "容器启动命令",
+          "type": "string"
+        },
+        "envs": {
+          "description": "容器环境变量",
+          "$ref": "#/definitions/EnvMap"
+        },
+        "resources": {
+          "description": "容器资源",
+          "$ref": "#/definitions/Resources"
+        }
+      }
+    },
+    "InitContainer": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "description": "容器镜像",
+          "type": "string"
+        },
+        "shared_dir": {
+          "description": "共享目录",
+          "type": "array",
+          "items": {
+            "description": "共享目录列表",
+            "$ref": "#/definitions/SharedDir"
+          }
+        },
+        "cmd": {
+          "description": "容器启动命令",
+          "type": "string"
+        },
+        "resources": {
+          "description": "容器资源",
+          "$ref": "#/definitions/Resources"
+        }
+      }
+    },
+    "TrafficSecurity": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "description": "流量安全策略模式",
+          "type": "string"
+        }
+      }
+    },
+    "Endpoint": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "description": "域名, 将该服务的接口聚合到该域名下",
+          "type": "string"
+        },
+        "path": {
+          "description": "聚合路由的路由路径",
+          "type": "string"
+        },
+        "backend_path": {
+          "description": "聚合路由的后端服务路径",
+          "type": "string"
+        },
+        "policies": {
+          "description": "路由策略",
+          "$ref": "#/definitions/EndpointPolicies"
+        }
+      }
+    },
+    "K8SSnippet": {
+      "type": "object",
+      "description": "定义容器细节, 需要熟悉 Kubernetes, 参考 k8s.io/api/core/v1.Container",
+      "properties": {
+        "container": {
+          "description": "定义容器细节, 需要熟悉 Kubernetes, 参考 k8s.io/api/core/v1.Container",
+          "$ref": "#/definitions/ContainerSnippet"
+        }
+      }
+    },
+    "Job": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "description": "容器镜像",
+          "type": "string"
+        },
+        "cmd": {
+          "description": "容器启动命令, 如不填则默认为容器的 Entrypoint",
+          "type": "string"
+        },
+        "envs": {
+          "description": "容器环境变量",
+          "$ref": "#/definitions/EnvMap"
+        },
+        "resources": {
+          "description": "定义 Pod 运行所请求的资源",
+          "$ref": "#/definitions/Resources"
+        },
+        "labels": {
+          "description": "定义 Pod 标签",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "binds": {
+          "description": "定义挂载的目录",
+          "$ref": "#/definitions/Binds"
+        },
+        "volumes": {
+          "description": "定义卷",
+          "$ref": "#/definitions/Volumes"
+        },
+        "init": {
+          "description": "定义初始化容器, 如数据准备, migration 等",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/InitContainer"
+          }
+        },
+        "hosts": {
+          "description": "定义服务域名",
+          "type": "string",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Volumes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Volume"
+      }
+    },
+    "AddOn": {
+      "type": "object",
+      "properties": {
+        "plan": {
+          "description": "中间件 engine 和规格, 如 mysql:basic",
+          "type": "string"
+        },
+        "as": {
+          "type": "string"
+        },
+        "options": {
+          "type": "object",
+          "description": "中间件的元数据和配置",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "actions": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "image": {
+          "description": "中间件镜像",
+          "type": "string"
+        }
+      }
+    },
+    "ValueMap": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      }
+    },
+    "VolumeSnapshot": {
+      "type": "object",
+      "properties": {
+        "maxHistory": {
+          "type": "integer"
+        }
+      }
+    },
+    "Selectors": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Selector"
+      }
+    },
+    "HTTPCheck": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "description": "端口",
+          "type": "integer",
+          "default": 8080
+        },
+        "path": {
+          "description": "路径",
+          "type": "string",
+          "default": "/api/health"
+        },
+        "duration": {
+          "description": "执行健康检查的间隔时间",
+          "type": "integer",
+          "default": 120
+        }
+      }
+    },
+    "ExecCheck": {
+      "type": "object",
+      "properties": {
+        "cmd": {
+          "description": "执行健康检查的容器命令",
+          "type": "string"
+        },
+        "duration": {
+          "description": "执行健康检查的间隔时间",
+          "type": "integer"
+        }
+      }
+    },
+    "SharedDir": {
+      "type": "object",
+      "properties": {
+        "main": {
+          "description": "主容器的目录",
+          "type": "string"
+        },
+        "sidecar": {
+          "description": "边车容器的目录",
+          "type": "string"
+        }
+      }
+    },
+    "EndpointPolicies": {
+      "type": "object",
+      "properties": {
+        "cors": {
+          "description": "跨域策略",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "rate_limit": {
+          "description": "限流策略",
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Selector": {
+      "type": "object",
+      "properties": {
+        "not": {
+          "type": "boolean"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ContainerSnippet": {
+      "description": "参考 k8s.io/api/core/v1.Container",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "EnvObjects": {
+      "type": "object",
+      "patternProperties": {
+        "development|test|staging|production": {
+          "$ref": "#/definitions/EnvObject"
+        }
+      }
+    },
+    "EnvObject": {
+      "type": "object",
+      "properties": {
+        "envs": {
+          "description": "环境变量",
+          "$ref": "#/definitions/EnvMap"
+        },
+        "services": {
+          "description": "服务列表",
+          "$ref": "#/definitions/Services"
+        },
+        "addons": {
+          "description": "中间件列表",
+          "$ref": "#/definitions/AddOns"
+        }
+      }
+    }
+  }
+}
