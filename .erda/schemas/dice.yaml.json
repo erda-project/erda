@@ -1,12 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "id": "https://github.com/erda-project/erda/.erda/schemas/dice.json",
+  "id": "https://github.com/erda-project/erda/.erda/schemas/dice.yaml.json",
   "title": "Erda dice.yml Schema",
   "type": "object",
   "properties": {
     "$schema": {
       "type": "string",
-      "default": "https://github.com/erda-project/erda/raw/master/.erda/schemas/dice.yml"
+      "default": "https://github.com/erda-project/erda/raw/master/.erda/schemas/dice.yaml.json"
     },
     "version": {
       "description": "dice.yml 语法规范版本",

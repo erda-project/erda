@@ -1,9 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "id": "https://github.com/erda-project/erda/.erda/schemas/pipeline.json",
+  "id": "https://github.com/erda-project/erda/.erda/schemas/pipeline.yaml.json",
   "title": "Erda pipeline.yml Schema",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string",
+      "default": "https://github.com/erda-project/erda/raw/master/.erda/schemas/pipeline.yaml.json"
+    },
     "version": {
       "description": "pipeline.yml 语法规范版本",
       "type": "string",
