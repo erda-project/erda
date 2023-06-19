@@ -144,7 +144,7 @@ func (h *provider) DoDeploy(serviceGroupDeployRequest interface{}, resourceInfo 
 func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployResult interface{}, clusterConfig map[string]string) (map[string]string, error) {
 	serviceGroup := serviceGroupDeployResult.(*apistructs.ServiceGroup)
 	mysqlMap := ParseResp2MySQLDtoMap(tmcInstance, serviceGroup)
-	var deployByOperator = serviceGroup.Labels["USE_OPERATOR"] == "mysql"
+	var deployByOperator = true // note: all versions of tmc mysql deployed with operator instead of "serviceGroup.Labels["USE_OPERATOR"] equals "mysql" since this commit
 	if err := p.initMysql(mysqlMap, clusterConfig, deployByOperator); err != nil {
 		p.Log.Infof("failed to initMySQL, mysqlMqp: %s, clusterConfig: %s, tmc_instance: %s, serviceGroup: %s, err: %v",
 			strutil.TryGetJsonStr(mysqlMap), strutil.TryGetJsonStr(clusterConfig), strutil.TryGetJsonStr(tmcInstance), strutil.TryGetJsonStr(serviceGroup), err)
