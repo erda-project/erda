@@ -46,7 +46,7 @@ const (
 	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
 	EnvFDPMaster      = "FDP_MASTER_ADDR"
 	EnvErdaServer     = "ERDA_SERVER_ADDR"
-	EnvAIProxy        = "ERDA_AI_PROXY_ADDR"
+	EnvAIProxy        = "AI_PROXY_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称
