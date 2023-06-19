@@ -1,0 +1,239 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "https://github.com/erda-project/erda/.erda/schemas/pipeline.yaml.json",
+  "title": "Erda pipeline.yml Schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "default": "https://github.com/erda-project/erda/raw/master/.erda/schemas/pipeline.yaml.json"
+    },
+    "version": {
+      "description": "pipeline.yml 语法规范版本",
+      "type": "string",
+      "default": "1.1"
+    },
+    "name": {
+      "type": "string"
+    },
+    "on": {
+      "$ref": "#/definitions/TriggerConfig"
+    },
+    "triggers": {
+      "$ref": "#/definitions/PipelineTrigger"
+    },
+    "storage": {
+      "$ref": "#/definitions/StorageConfig"
+    },
+    "envs": {
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "cron": {
+      "type": "string"
+    },
+    "cron_compensator": {
+      "$ref": "#/definitions/CronCompensator"
+    },
+    "stages": {
+      "description": "步骤",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Stage"
+      }
+    },
+    "params": {
+      "description": "流水线参数",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PipelineParam"
+      }
+    },
+    "outputs": {
+      "description": "输出",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PipelineOutput"
+      }
+    },
+    "lifecycle": {
+      "description": "生命周期",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/NetworkHookInfo"
+      }
+    },
+    "breakpoint": {
+      "type": "object",
+      "$ref": "#/definitions/Breakpoint"
+    }
+  },
+  "definitions": {
+    "TriggerConfig": {
+      "type": "object",
+      "properties": {
+        "push": {
+          "$ref": "#/definitions/PushTrigger"
+        },
+        "merge": {
+          "$ref": "#/definitions/MergeTrigger"
+        }
+      }
+    },
+    "PipelineTrigger": {
+      "properties": {
+        "on": {
+          "type": "string"
+        },
+        "filter": {
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "StorageConfig": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "type": "string"
+        }
+      }
+    },
+    "CronCompensator": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean"
+        },
+        "latest_first": {
+          "type": "boolean"
+        },
+        "stop_if_latter_executed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Stage": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typedActionMap"
+          }
+        }
+      }
+    },
+    "PipelineParam": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "default": {},
+        "desc": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "PipelineOutput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "desc": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        }
+      }
+    },
+    "NetworkHookInfo": {
+      "type": "object",
+      "properties": {
+        "hook": {
+          "type": "string"
+        },
+        "client": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Breakpoint": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "$ref": "#/definitions/BreakpointOn"
+        },
+        "timeout": {}
+      }
+    },
+    "PushTrigger": {
+      "type": "object",
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "MergeTrigger": {
+      "type": "object",
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "typedActionMap": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Action"
+      }
+    },
+    "BreakpointOn": {
+      "type": "object",
+      "properties": {
+        "failure": {
+          "type": "string"
+        }
+      }
+    },
+    "Action": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
