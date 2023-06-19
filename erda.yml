@@ -98,7 +98,7 @@ services:
       - "${nfs_root:/netdata}/avatars:/avatars:rw"
       - "${nfs_root:/netdata}/dice/cmdb/files:/files:rw"
     resources:
-      cp
+      cpu: ${erda_server_request_cpu:1}
       max_cpu: 1
       mem: ${erda_server_request_mem:2048}
       max_mem: 2048
