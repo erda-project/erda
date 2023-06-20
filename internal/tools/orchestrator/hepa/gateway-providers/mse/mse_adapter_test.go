@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
@@ -46,7 +47,7 @@ func TestNewMseAdapter(t *testing.T) {
 				az: "test",
 			},
 			want: &MseAdapterImpl{
-				ProviderName:    mseCommon.MseProviderName,
+				ProviderName:    apipolicy.ProviderMSE,
 				Bdl:             &bundle.Bundle{},
 				AccessKeyID:     "aliyunaccesskeyid",
 				AccessKeySecret: "aliyunaccesskeysecret",
@@ -512,7 +513,7 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 	}{
 		{
 			name:   "Test_01",
-			fields: fields{ProviderName: mseCommon.MseProviderName},
+			fields: fields{ProviderName: apipolicy.ProviderMSE},
 			args: args{
 				req: &PluginReqDto{
 					Name:       "xxx",
@@ -546,7 +547,7 @@ func TestMseAdapterImpl_CreateOrUpdatePluginById(t *testing.T) {
 		},
 		{
 			name:   "Test_02",
-			fields: fields{ProviderName: mseCommon.MseProviderName},
+			fields: fields{ProviderName: apipolicy.ProviderMSE},
 			args: args{
 				req: &PluginReqDto{
 					Name:       mseCommon.MsePluginKeyAuth,

@@ -16,7 +16,6 @@ package common
 
 const (
 	MseVersion                            = "mse-1.2.18"
-	MseProviderName                       = "MSE"
 	MseDefaultServerEndpoint              = "mse.cn-hangzhou.aliyuncs.com"
 	MseBurstMultiplier1X                  = "1"
 	MseBurstMultiplier2X                  = "2"

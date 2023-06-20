@@ -32,13 +32,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
-	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/policies/custom"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy/nginx-kong-engine/custom"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -169,17 +168,17 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		if category != apipolicy.Policy_Engine_Service_Guard && category != apipolicy.Policy_Engine_CORS && category != apipolicy.Policy_Engine_IP {
 			//TODO: 不同的 gateway provider 的插件配置情况是否需要调整,还是旧使用以前默认的 Kong 的方式，对于 mse 的情况返回结果一样，但有些插件不生效?
 			logrus.Warnf("gateway provider %s no policy config for policy %s\n", gatewayProvider, category)
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 	default:
 		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 		return
 	}
-	policyEngine, err = apipolicy.GetPolicyEngine(category)
+	policyEngine, err = apipolicy.GetPolicyEngine(gatewayProvider, category)
 	if err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 	ctx[apipolicy.CTX_SERVICE_INFO] = serviceInfo
 	if packageApiId == "" {
 		var dto interface{}
-		dto, err = policyEngine.GetConfig(gatewayProvider, category, packageId, nil, ctx)
+		dto, err = policyEngine.GetConfig(category, packageId, nil, ctx)
 		if err != nil {
 			return
 		}
@@ -222,7 +221,7 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 		}
 	}
 	var dto interface{}
-	dto, err = policyEngine.GetConfig(gatewayProvider, category, packageId, zone, ctx)
+	dto, err = policyEngine.GetConfig(category, packageId, zone, ctx)
 	if err != nil {
 		return
 	}
@@ -648,11 +647,11 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		return nil, "", err
 	}
 
-	policyEngine, err := apipolicy.GetPolicyEngine(category)
+	policyEngine, err := apipolicy.GetPolicyEngine(gatewayProvider, category)
 	if err != nil {
 		return nil, "", err
 	}
-	dto, err, msg := policyEngine.UnmarshalConfig(config, gatewayProvider)
+	dto, err, msg := policyEngine.UnmarshalConfig(config)
 	if err != nil {
 		return nil, msg, err
 	}
@@ -675,13 +674,13 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		apipolicy.CTX_ZONE:       zone,
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err := mse.NewMseAdapter(zone.DiceClusterName)
 		if err != nil {
 			return nil, "", errors.Errorf("init mse gateway adpter failed:%v\n", err)
 		}
 		ctx[apipolicy.CTX_MSE_ADAPTER] = gatewayAdapter
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
 		ctx[apipolicy.CTX_KONG_ADAPTER] = gatewayAdapter
 	default:
@@ -694,7 +693,7 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		return nil, fmt.Sprintf("执行策略失败, 失败原因:\n%s", errors.Cause(err)), err
 	}
 	if category != apipolicy.Policy_Engine_Built_in {
-		builtinEngine, err := apipolicy.GetPolicyEngine(apipolicy.Policy_Engine_Built_in)
+		builtinEngine, err := apipolicy.GetPolicyEngine(gatewayProvider, apipolicy.Policy_Engine_Built_in)
 		if err != nil {
 			return nil, "", err
 		}
@@ -848,10 +847,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 	if err != nil {
 		return "", err
 	}
-
-	if gatewayProvider == mseCommon.MseProviderName {
-		useKongGateWay = false
-	}
+	useKongGateWay = gatewayProvider == apipolicy.ProviderNKE || gatewayProvider == ""
 
 	if pack.Scene == orm.UnityScene || pack.Scene == orm.HubScene {
 		zone, err := (*impl.zoneBiz).GetZone(pack.ZoneId, helper)
@@ -885,11 +881,11 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 			zones = append(zones, *zone)
 		}
 	}
-	policyEngine, err := apipolicy.GetPolicyEngine(category)
+	policyEngine, err := apipolicy.GetPolicyEngine(gatewayProvider, category)
 	if err != nil {
 		return "", err
 	}
-	dto, err, msg := policyEngine.UnmarshalConfig(config, gatewayProvider)
+	dto, err, msg := policyEngine.UnmarshalConfig(config)
 	if err != nil {
 		return msg, err
 	}
@@ -939,8 +935,8 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		Env:       pack.DiceEnv,
 		Az:        pack.DiceClusterName,
 	})
-	if gatewayProvider == mseCommon.MseProviderName {
-		//使用 MSE 网关，ingress 的 namespace 获取方式不一样
+	if gatewayProvider == apipolicy.ProviderMSE {
+		// 使用 MSE 网关，ingress 的 namespace 获取方式不一样
 		runtimes, err := impl.runtimeDb.SelectByAny(&orm.GatewayRuntimeService{
 			ProjectId:   pack.DiceProjectId,
 			Workspace:   pack.DiceEnv,
@@ -1031,11 +1027,11 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		if pack == nil {
 			return
 		}
-		engine, err := apipolicy.GetPolicyEngine(category)
+		engine, err := apipolicy.GetPolicyEngine(gatewayProvider, category)
 		if err != nil {
 			return
 		}
-		dto, err, _ := engine.UnmarshalConfig(config, gatewayProvider)
+		dto, err, _ := engine.UnmarshalConfig(config)
 		if err != nil {
 			return
 		}
@@ -1083,7 +1079,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		useKong = false
 		switch category {
 		case apipolicy.Policy_Engine_Service_Guard:
@@ -1096,7 +1092,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 			rerr = errors.Errorf("gateway provider %s not support set policy %s", gatewayProvider, category)
 			return
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		useKong = true
 	default:
 		logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -1180,7 +1176,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		rerr = err
 		return
 	}
-	if gatewayProvider != mseCommon.MseProviderName {
+	if gatewayProvider == "" || gatewayProvider == apipolicy.ProviderNKE {
 		err = impl.checkDuplicatedPolicyConfig(gatewayProvider, packageId, packageApiId, category, config, zone, helper)
 		if err != nil {
 			logrus.Errorf("has deplicated policy config for policy %s: %v\n", category, err)
@@ -1269,25 +1265,25 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err := mse.NewMseAdapter(zone.DiceClusterName)
 		if err != nil {
 			return errors.Errorf("init mse gateway adpter failed:%v\n", err)
 		}
 		ctx[apipolicy.CTX_MSE_ADAPTER] = gatewayAdapter
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter := kong.NewKongAdapter(kongInfo.KongAddr)
 		ctx[apipolicy.CTX_KONG_ADAPTER] = gatewayAdapter
 	default:
 		return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
 	}
 
-	policyEngine, err := apipolicy.GetPolicyEngine(category)
+	policyEngine, err := apipolicy.GetPolicyEngine(gatewayProvider, category)
 	if err != nil {
 		return errors.Errorf("apipolicy.GetPolicyEngine error:%v\n", err)
 	}
 
-	category_dto, err, _ := policyEngine.UnmarshalConfig(category_config, gatewayProvider)
+	category_dto, err, _ := policyEngine.UnmarshalConfig(category_config)
 	if err != nil {
 		logrus.Errorf("policyEngine.UnmarshalConfig for %s error:%v\n", category, err)
 		return errors.Errorf("policyEngine.UnmarshalConfig for %s error:%v\n", category, err)
@@ -1327,7 +1323,7 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 				return errors.Errorf("parse policy %s config failed: GetPolicyConfig() return invalid config %v\n", ca, dto)
 			}
 
-			pEngine, err := apipolicy.GetPolicyEngine(ca)
+			pEngine, err := apipolicy.GetPolicyEngine(gatewayProvider, ca)
 			if err != nil {
 				logrus.Errorf("GetPolicyEngine for %s error:%v\n", ca, err)
 				return err
@@ -1341,7 +1337,7 @@ func (impl GatewayApiPolicyServiceImpl) checkDuplicatedPolicyConfig(gatewayProvi
 			policyConfigs[ca] = pc
 		} else {
 			var sDto apipolicy.PolicyDto
-			pEngine, err := apipolicy.GetPolicyEngine(ca)
+			pEngine, err := apipolicy.GetPolicyEngine(gatewayProvider, ca)
 			if err != nil {
 				return errors.Errorf("GetPolicyEngine for policy %s error:%v\n", ca, err)
 			}

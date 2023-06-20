@@ -30,12 +30,12 @@ import (
 	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
 	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/pkg/cron"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	context1 "github.com/erda-project/erda/internal/tools/orchestrator/hepa/context"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -368,13 +368,13 @@ func (s *endpointApiService) ClearInvalidEndpointApi(ctx context.Context, req *p
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(req.ClusterName)
 		if err != nil {
 			return nil, err
 		}
 
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		return nil, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)

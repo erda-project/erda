@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
@@ -62,7 +63,7 @@ func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
 			bundle.WithCollector(),
 			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))),
 		),
-		ProviderName:    common.MseProviderName,
+		ProviderName:    apipolicy.ProviderMSE,
 		GatewayEndpoint: common.MseDefaultServerEndpoint,
 		ClusterName:     az,
 	}
@@ -126,7 +127,7 @@ func NewMseAdapter(az string) (gateway_providers.GatewayAdapter, error) {
 func (impl *MseAdapterImpl) GatewayProviderExist() bool {
 	//TODO:
 	// check Deployment mse-ingress-controller/ack-mse-ingress-controller in k8s cluster
-	if impl == nil || impl.ProviderName != common.MseProviderName {
+	if impl == nil || impl.ProviderName != apipolicy.ProviderMSE {
 		return false
 	}
 	_, err := impl.GetMSEGatewayByAPI()

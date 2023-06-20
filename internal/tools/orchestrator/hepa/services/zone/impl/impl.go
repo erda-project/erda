@@ -33,7 +33,6 @@ import (
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -292,12 +291,12 @@ func (impl GatewayZoneServiceImpl) UpdateKongDomainPolicy(az, projectId, env str
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(az)
 		if err != nil {
 			return err
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 		_, err = gatewayAdapter.CreateOrUpdatePlugin(&providerDto.PluginReqDto{
 			Name: "domain-policy",
@@ -491,7 +490,7 @@ func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ..
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		//TODO: get svcName
 		namespace = config.Namespace
 		svcName = config.ServiceName
@@ -499,7 +498,7 @@ func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ..
 			// 走到这里表示 mse 网关创建网关入口，无需创建对应的 ingress
 			return zone, nil
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		namespace, svcName, err = kongSession.GetK8SInfo(&orm.GatewayKongInfo{
 			ProjectId: config.ProjectId,
 			Az:        config.Az,
@@ -651,12 +650,12 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, namespace stri
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		if namespace == "" {
 			// 走到这里，应该是按地址转发，设置固定 namespace
 			namespace = "project-" + zone.DiceProjectId + "-" + strings.ToLower(zone.DiceEnv)
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		namespace, _, err = kongSession.GetK8SInfo(&orm.GatewayKongInfo{
 			ProjectId: zone.DiceProjectId,
 			Az:        zone.DiceClusterName,
@@ -694,7 +693,7 @@ func createOrUpdateZoneIngress(adapter k8s.K8SAdapter, namespace, svcName, ingNa
 	kongBackend := k8s.IngressBackend{}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		kongBackend.ServiceName = svcName
 		services, err := adapter.ListAllServices(namespace)
 		if err != nil {
@@ -710,7 +709,7 @@ func createOrUpdateZoneIngress(adapter k8s.K8SAdapter, namespace, svcName, ingNa
 				break
 			}
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		kongBackend.ServiceName = svcName
 		kongBackend.ServicePort = KONG_SERVICE_PORT
 		if config.BackendProtocol != nil && *config.BackendProtocol == k8s.HTTPS {

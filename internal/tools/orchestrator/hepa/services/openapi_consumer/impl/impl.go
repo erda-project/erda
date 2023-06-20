@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
 	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/hepa/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
@@ -365,12 +366,12 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateClientConsumer(clientName, c
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(clusterName)
 		if err != nil {
 			return
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		log.Errorf("Unknown gatewayProvider: %v", gatewayProvider)
@@ -501,12 +502,12 @@ func (impl GatewayOpenapiConsumerServiceImpl) CreateConsumer(args *gw.DiceArgsDt
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(az)
 		if err != nil {
 			return
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		log.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -755,7 +756,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return
@@ -809,7 +810,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) DeleteConsumer(id string) (res boo
 			return
 		}
 
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 		err = gatewayAdapter.DeleteConsumer(consumer.ConsumerId)
 		if err != nil {
@@ -876,12 +877,12 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumerCredentials(id string) 
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return res, err
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		return res, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -972,12 +973,12 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -1015,7 +1016,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdateConsumerCredentials(id strin
 	}
 	for authType, credentials := range dels {
 		for _, credential := range credentials {
-			if gatewayProvider == mseCommon.MseProviderName {
+			if gatewayProvider == apipolicy.ProviderMSE {
 				credentialStr, marshalErr := json.Marshal(credential)
 				if marshalErr != nil {
 					err = marshalErr
@@ -1150,8 +1151,8 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
-	case "":
+	case apipolicy.ProviderMSE:
+	case "", apipolicy.ProviderNKE:
 	default:
 		err = errors.Errorf("unknown gateway provider %s", gatewayProvider)
 		return
@@ -1161,7 +1162,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		apiAclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.AUTH_RULE)
 		if err != nil {
 			return
@@ -1412,7 +1413,19 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 	}
 
 	switch gatewayProvider {
-	case "":
+	case apipolicy.ProviderMSE:
+		wlConsumers, err := impl.mseConsumerConfig(consumers)
+		if err != nil {
+			return err
+		}
+		// 避免变成全局策略
+		if len(wlConsumers) == 0 {
+			wlConsumers = append(wlConsumers, mseDto.Consumers{
+				Name: mseplugins.MseDefaultConsumerName,
+			})
+		}
+		config["whitelist"] = wlConsumers
+	case "", apipolicy.ProviderNKE:
 		var buffer bytes.Buffer
 		for _, consumer := range consumers {
 			if buffer.Len() > 0 {
@@ -1425,24 +1438,12 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			wl = ","
 		}
 		config["whitelist"] = wl
-	case mseCommon.MseProviderName:
-		wlConsumers, err := impl.mseConsumerConfig(consumers)
-		if err != nil {
-			return err
-		}
-		// 避免变成全局策略
-		if len(wlConsumers) == 0 {
-			wlConsumers = append(wlConsumers, mseDto.Consumers{
-				Name: mseplugins.MseDefaultConsumerName,
-			})
-		}
-		config["whitelist"] = wlConsumers
 	default:
 		return errors.Errorf("unknown gateway provider %s", gatewayProvider)
 	}
 
 	aclRules := make([]gw.OpenapiRuleInfo, 0)
-	if gatewayProvider == mseCommon.MseProviderName {
+	if gatewayProvider == apipolicy.ProviderMSE {
 		aclRules, err = (*impl.ruleBiz).GetApiRules(packageApiId, gw.AUTH_RULE)
 		if err != nil {
 			return err
@@ -1471,7 +1472,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId,
 			Enabled:      true,
 			Region:       gw.API_RULE,
 		}
-		if gatewayProvider == mseCommon.MseProviderName {
+		if gatewayProvider == apipolicy.ProviderMSE {
 			newAclRule.Category = gw.AUTH_RULE
 			switch pack.AuthType {
 			case gw.AT_KEY_AUTH:
@@ -1688,7 +1689,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) updatePackageAclRules(packageId st
 
 	config := map[string]interface{}{}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		wlConsumers, err := impl.mseConsumerConfig(consumers)
 		if err != nil {
 			return err
@@ -1699,7 +1700,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) updatePackageAclRules(packageId st
 			})
 		}
 		config["whitelist"] = wlConsumers
-	case "":
+	case "", apipolicy.ProviderNKE:
 		var buffer bytes.Buffer
 		for _, consumer := range consumers {
 			if buffer.Len() > 0 {

@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
@@ -33,7 +34,6 @@ import (
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/assembler"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
@@ -150,12 +150,12 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 
 	var gatewayAdapter gateway_providers.GatewayAdapter
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(clusterName)
 		if err != nil {
 			return res
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapterForConsumer(consumer)
 	default:
 		log.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -231,7 +231,7 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 	}
 	for authType, credentials := range dels {
 		for _, credential := range credentials {
-			if gatewayProvider == mseCommon.MseProviderName {
+			if gatewayProvider == apipolicy.ProviderMSE {
 				credentialStr, marshalErr := json.Marshal(credential)
 				if marshalErr != nil {
 					err = marshalErr
@@ -316,12 +316,12 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 			goto errorHappened
 		}
 		switch gatewayProvider {
-		case mseCommon.MseProviderName:
+		case apipolicy.ProviderMSE:
 			gatewayAdapter, err = mse.NewMseAdapter(az)
 			if err != nil {
 				goto errorHappened
 			}
-		case "":
+		case "", apipolicy.ProviderNKE:
 			gatewayAdapter = kong.NewKongAdapterForProject(az, env, projectId)
 		default:
 			log.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -460,12 +460,12 @@ func (impl GatewayConsumerServiceImpl) GetConsumerInfo(consumerId string) *commo
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return res
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapterForConsumer(consumer)
 	default:
 		log.Errorf("unknown gateway provider:%v\n", gatewayProvider)

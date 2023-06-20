@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
@@ -150,7 +151,7 @@ func (impl *GatewayGlobalServiceImpl) checkGatewayHealth() (dto gw.DiceHealthDto
 		}
 		var gatewayAdapter gateway_providers.GatewayAdapter
 		switch gatewayProvider {
-		case mseCommon.MseProviderName:
+		case apipolicy.ProviderMSE:
 			gatewayAdapter, err = mse.NewMseAdapter(az.Az)
 			if err != nil {
 				return
@@ -192,7 +193,7 @@ func (impl *GatewayGlobalServiceImpl) checkGatewayHealth() (dto gw.DiceHealthDto
 				}
 			}
 
-		case "":
+		case "", apipolicy.ProviderNKE:
 			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 			_, err = gatewayAdapter.GetRoutes()
 			if err != nil {

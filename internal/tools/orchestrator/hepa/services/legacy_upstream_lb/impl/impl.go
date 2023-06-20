@@ -23,13 +23,13 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	. "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
@@ -350,13 +350,13 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOnline(dto *gw.UpstreamLb
 		HealthcheckPath:  dto.HealthcheckPath,
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		log.Debugf("mse gateway not really support UpstreamTargetOnline process logic.")
 		gatewayAdapter, err = mse.NewMseAdapter(dto.Az)
 		if err != nil {
 			return
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
 	default:
 		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -443,13 +443,13 @@ func (impl GatewayUpstreamLbServiceImpl) UpstreamTargetOffline(dto *gw.UpstreamL
 		return
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		log.Debugf("mse gateway not support UpstreamTargetOffline process logic.")
 		gatewayAdapter, err = mse.NewMseAdapter(dto.Az)
 		if err != nil {
 			return
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapterForProject(dto.Az, dto.Env, dto.ProjectId)
 	default:
 		err = errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)

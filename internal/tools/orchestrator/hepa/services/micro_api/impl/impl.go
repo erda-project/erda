@@ -37,7 +37,6 @@ import (
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/assembler"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -218,7 +217,7 @@ func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(ctx context.Contex
 		DiceApiId:    apiId,
 		RedirectType: gw.RT_URL,
 	}
-	if gatewayProvider == mseCommon.MseProviderName {
+	if gatewayProvider == apipolicy.ProviderMSE {
 		gatewayPackageApi.RedirectPath = redirectPath
 	}
 	err = impl.packageApiDb.Insert(gatewayPackageApi)
@@ -234,7 +233,7 @@ func (impl GatewayApiServiceImpl) CreateUnityPackageShadowApi(ctx context.Contex
 	}
 
 	//  必要时（SDK 注册）创建 service 和 对应的 ingress
-	if gatewayProvider == mseCommon.MseProviderName {
+	if gatewayProvider == apipolicy.ProviderMSE {
 		// 创建 service 和 对应的 ingress
 		err = impl.createServiceAndIngress(strings.Split(gatewayApi.Domains, ","), gatewayPackageApi, apiId, projectId, env, az)
 		if err != nil {
@@ -802,12 +801,12 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 	}
 
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(runtimeService.ClusterName)
 		if err != nil {
 			return "", PARAMS_IS_NULL, err
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		return "", PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -885,7 +884,7 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 			logrus.WithError(errors.New("not found")).Warnf("failed to packageAPIDb.GetByAny(&orm.GatewayPackageApi{DiceApiId: %s})", gatewayApi.Id)
 		}
 		if packageApi != nil {
-			if gatewayProvider == mseCommon.MseProviderName {
+			if gatewayProvider == apipolicy.ProviderMSE {
 				// 创建 service 和 对应的 ingress
 				err = impl.createServiceAndIngress(strings.Split(gatewayApi.Domains, ","), packageApi, gatewayApi.Id, runtimeService.ProjectId, runtimeService.Workspace, runtimeService.ClusterName)
 				if err != nil {
@@ -1051,12 +1050,12 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 	}
 	dto.KongInfoEndpoint = kongInfo.Endpoint
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return "", PARAMS_IS_NULL, err
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		return "", PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -1241,7 +1240,7 @@ func (impl GatewayApiServiceImpl) createApi(ctx context.Context, consumer *orm.G
 					"allow_host": gw.INNER_HOSTS,
 				},
 			}
-			if gatewayProvider != mseCommon.MseProviderName {
+			if gatewayProvider == "" || gatewayProvider == apipolicy.ProviderNKE {
 				_, err = gatewayAdapter.CreateOrUpdatePlugin(pluginReq)
 				if err != nil {
 					ret = CREATE_API_PLUGIN_FAIL
@@ -1746,7 +1745,7 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 			goto errorHappened
 		}
 		for _, dao := range inPackage {
-			if gatewayProvider == mseCommon.MseProviderName {
+			if gatewayProvider == apipolicy.ProviderMSE {
 				// 删除 Service 和 Ingress
 				packageApi, err = impl.packageApiDb.GetByAny(&orm.GatewayPackageApi{
 					PackageId: dao.PackageId,
@@ -1772,12 +1771,12 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 
 	if gatewayApi.ConsumerId != "" {
 		switch gatewayProvider {
-		case mseCommon.MseProviderName:
+		case apipolicy.ProviderMSE:
 			gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 			if err != nil {
 				goto errorHappened
 			}
-		case "":
+		case "", apipolicy.ProviderNKE:
 			gatewayAdapter = kong.NewKongAdapterByConsumerId(impl.consumerDb, gatewayApi.ConsumerId)
 		default:
 			logrus.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -1827,12 +1826,12 @@ func (impl GatewayApiServiceImpl) deleteApi(apiId string) (StandardErrorCode, er
 		}()
 
 		switch gatewayProvider {
-		case mseCommon.MseProviderName:
+		case apipolicy.ProviderMSE:
 			gatewayAdapter, err = mse.NewMseAdapter(runtimeService.ClusterName)
 			if err != nil {
 				goto errorHappened
 			}
-		case "":
+		case "", apipolicy.ProviderNKE:
 			kongInfo, err = impl.kongDb.GetKongInfo(&orm.GatewayKongInfo{
 				Az:        runtimeService.ClusterName,
 				ProjectId: runtimeService.ProjectId,
@@ -2326,12 +2325,12 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 		return nil, PARAMS_IS_NULL, err
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(runtimeService.ClusterName)
 		if err != nil {
 			return nil, PARAMS_IS_NULL, err
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		return nil, PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -2384,7 +2383,7 @@ func (impl GatewayApiServiceImpl) updateRuntimeApi(gatewayApi *orm.GatewayApi, d
 				goto errorHappened
 			}
 
-			if gatewayProvider == mseCommon.MseProviderName {
+			if gatewayProvider == apipolicy.ProviderMSE {
 				err = impl.createServiceAndIngress(strings.Split(newGatewayApi.Domains, ","), packageApi, newGatewayApi.Id, runtimeService.ProjectId, runtimeService.Workspace, runtimeService.ClusterName)
 				if err != nil {
 					goto errorHappened
@@ -2429,12 +2428,12 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 		return nil, PARAMS_IS_NULL, err
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(consumer.Az)
 		if err != nil {
 			return nil, PARAMS_IS_NULL, err
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		return nil, PARAMS_IS_NULL, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -2521,7 +2520,7 @@ func (impl GatewayApiServiceImpl) updateApi(gatewayApi *orm.GatewayApi, consumer
 				goto errorHappened
 			}
 
-			if gatewayProvider == mseCommon.MseProviderName {
+			if gatewayProvider == apipolicy.ProviderMSE {
 				err = impl.createServiceAndIngress(strings.Split(newGatewayApi.Domains, ","), packageApi, newGatewayApi.Id, consumer.ProjectId, consumer.Env, consumer.Az)
 				if err != nil {
 					goto errorHappened

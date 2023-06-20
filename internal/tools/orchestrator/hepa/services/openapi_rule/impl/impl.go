@@ -25,13 +25,13 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/hepa/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	gateway_providers "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse"
-	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
 	gw "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/exdto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
@@ -811,7 +811,7 @@ func (impl GatewayOpenapiRuleServiceImpl) pluginReq(gatewayProvider string, dto 
 			reqDto.RouteId = route.RouteId
 		}
 
-		if gatewayProvider == mseCommon.MseProviderName && api.ZoneId != "" {
+		if gatewayProvider == apipolicy.ProviderMSE && api.ZoneId != "" {
 			zone, err := (*impl.zoneBiz).GetZone(api.ZoneId)
 			if err != nil {
 				return nil, err
@@ -903,7 +903,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 		var gatewayAdapter gateway_providers.GatewayAdapter
 		msePluginConfig := make(map[string]interface{})
 		switch gatewayProvider {
-		case mseCommon.MseProviderName:
+		case apipolicy.ProviderMSE:
 			gatewayAdapter, err = mse.NewMseAdapter(az)
 			if err != nil {
 				return err
@@ -914,7 +914,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 				return err
 			}
 			msePluginConfig = pluginOldConf.Config
-		case "":
+		case "", apipolicy.ProviderNKE:
 			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 		default:
 			return errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -927,7 +927,7 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateRule(diceInfo gw.DiceInfo, rule 
 		dao.PluginId = pluginId
 		err = ruleDbService.Insert(dao)
 		if err != nil {
-			if gatewayProvider == mseCommon.MseProviderName {
+			if gatewayProvider == apipolicy.ProviderMSE {
 				// 还原到更新前的配置
 				rule.Config = msePluginConfig
 				if msePluginConfig != nil {
@@ -983,12 +983,12 @@ func (impl GatewayOpenapiRuleServiceImpl) UpdateRule(ruleId string, rule *gw.Ope
 		return nil, err
 	}
 	switch gatewayProvider {
-	case mseCommon.MseProviderName:
+	case apipolicy.ProviderMSE:
 		gatewayAdapter, err = mse.NewMseAdapter(dao.DiceClusterName)
 		if err != nil {
 			return nil, err
 		}
-	case "":
+	case "", apipolicy.ProviderNKE:
 		gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 	default:
 		return nil, errors.Errorf("unknown gateway provider:%v\n", gatewayProvider)
@@ -1065,12 +1065,12 @@ func (impl GatewayOpenapiRuleServiceImpl) DeleteRule(ruleId string, helper *db.S
 	}
 	if dao.PluginId != "" {
 		switch gatewayProvider {
-		case mseCommon.MseProviderName:
+		case apipolicy.ProviderMSE:
 			gatewayAdapter, err = mse.NewMseAdapter(dao.DiceClusterName)
 			if err != nil {
 				return err
 			}
-		case "":
+		case "", apipolicy.ProviderNKE:
 			gatewayAdapter = kong.NewKongAdapter(kongInfo.KongAddr)
 		default:
 			log.Errorf("unknown gateway provider:%v\n", gatewayProvider)
