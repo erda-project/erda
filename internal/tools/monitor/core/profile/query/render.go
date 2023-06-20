@@ -80,6 +80,11 @@ func (p *provider) render(rw http.ResponseWriter, r *http.Request) {
 		httpserver.WriteErr(rw, "400", err.Error())
 		return
 	}
+	if out == nil && p.isQueryWithProfileID(req.gi) {
+		p.removeProfileIDMatcher(req.gi)
+		out, err = p.st.Get(r.Context(), req.gi)
+	}
+
 	if out == nil {
 		out = &storage.GetOutput{
 			Tree:     tree.New(),
@@ -118,6 +123,27 @@ func (p *provider) render(rw http.ResponseWriter, r *http.Request) {
 		renderCounter.WithLabelValues(req.gi.Query.AppName).Inc()
 		httpserver.WriteData(rw, res)
 	}
+}
+
+func (p *provider) isQueryWithProfileID(gi *storage.GetInput) bool {
+	if gi.Query != nil {
+		for _, matcher := range gi.Query.Matchers {
+			if matcher.Key == segment.ProfileIDLabelName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (p *provider) removeProfileIDMatcher(gi *storage.GetInput) {
+	matchers := make([]*flameql.TagMatcher, 0)
+	for _, matcher := range gi.Query.Matchers {
+		if matcher.Key != segment.ProfileIDLabelName {
+			matchers = append(matchers, matcher)
+		}
+	}
+	gi.Query.Matchers = matchers
 }
 
 func (p *provider) renderParametersFromRequest(r *http.Request, req *renderParams) error {

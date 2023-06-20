@@ -614,6 +614,8 @@ erda.oap.collector.receiver.kafka@spotprofile:
   consumer:
     topics: "${METRIC_TOPICS:spot-profiles}"
     group: "${PROFILE_CH_GROUP_ID:spot-monitor-profiles-ch}"
+    offsets:
+      initial: earliest
 
 erda.oap.collector.processor.modifier@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}

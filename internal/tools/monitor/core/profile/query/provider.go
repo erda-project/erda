@@ -50,10 +50,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	logger := logrus.StandardLogger()
 	appMetadataSvc := service.NewApplicationMetadataService(p.DB.DB())
 	p.applicationService = appMetadataSvc
-	appMetadataSaver := service.NewApplicationMetadataCacheService(service.ApplicationMetadataCacheServiceConfig{}, appMetadataSvc)
 	st, err := storage.New(storage.NewConfig(&storageconfig.Server{
 		MaxNodesSerialization: 8192,
-	}).WithInMemory(), logger, prometheus.DefaultRegisterer, new(health.Controller), appMetadataSaver)
+	}).WithInMemory(), logger, prometheus.DefaultRegisterer, new(health.Controller), p.applicationService)
 	if err != nil {
 		return err
 	}

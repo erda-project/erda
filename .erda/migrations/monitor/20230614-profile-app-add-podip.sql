@@ -1,0 +1,1 @@
+ALTER TABLE erda_profile_app ADD `pod_ip` varchar(256) NOT NULL DEFAULT '' COMMENT '容器IP';
