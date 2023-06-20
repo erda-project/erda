@@ -41,9 +41,10 @@ type maxNodesKeyType int
 const currentMaxNodes maxNodesKeyType = iota
 
 type renderParams struct {
-	format   string
-	maxNodes int
-	gi       *storage.GetInput
+	format            string
+	maxNodes          int
+	gi                *storage.GetInput
+	formatFlamebearer bool
 
 	leftStartTime time.Time
 	leftEndTime   time.Time
@@ -67,8 +68,9 @@ type annotationsResponse struct {
 
 type RenderResponse struct {
 	flamebearer.FlamebearerProfile
-	Metadata    RenderMetadataResponse `json:"metadata"`
-	Annotations []annotationsResponse  `json:"annotations"`
+	Metadata     RenderMetadataResponse   `json:"metadata"`
+	Annotations  []annotationsResponse    `json:"annotations"`
+	ProfileCells flamebearer.ProfileCells `json:"profileCells"`
 }
 
 type ProfileRenderResponse struct {
@@ -127,6 +129,10 @@ func (p *provider) render(rw http.ResponseWriter, r *http.Request) {
 		})
 
 		res := p.mountRenderResponse(flame, appName, req.gi, req.maxNodes, []model.Annotation{})
+		sortedTable := flamebearer.GenerateCellTable(flame.Flamebearer, int(flame.Metadata.SampleRate), flame.Metadata.Units.String())
+		if req.formatFlamebearer {
+			res.ProfileCells = sortedTable
+		}
 		renderCounter.WithLabelValues(req.gi.Query.AppName).Inc()
 		httpserver.WriteData(rw, res)
 	}
@@ -187,6 +193,9 @@ func (p *provider) renderParametersFromRequest(r *http.Request, req *renderParam
 	}
 	if mn, err := strconv.Atoi(v.Get("maxNodes")); err == nil && mn != 0 {
 		req.maxNodes = mn
+	}
+	if formatFlamebearer, err := strconv.ParseBool(v.Get("formatFlamebearer")); err == nil {
+		req.formatFlamebearer = formatFlamebearer
 	}
 
 	req.gi.StartTime = attime.Parse(v.Get("from"))

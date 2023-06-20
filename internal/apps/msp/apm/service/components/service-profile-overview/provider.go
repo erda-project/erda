@@ -21,6 +21,7 @@ import (
 
 	"github.com/pyroscope-io/pyroscope/pkg/model/appmetadata"
 	"github.com/pyroscope-io/pyroscope/pkg/service"
+	"github.com/pyroscope-io/pyroscope/pkg/structs/flamebearer"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 
@@ -148,7 +149,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *provider) getTop5(serviceID string, projectID, workspace, spyAlias string, startTime, endTime int64) ([]topn.Item, error) {
 	segmentKey := fmt.Sprintf("%s.%s{DICE_WORKSPACE=\"%s\",DICE_PROJECT_ID=\"%s\"}", serviceID, spyAlias, workspace, projectID)
-	cpuRender, err := p.bdl.ProfileRender(&apistructs.ProfileRenderRequest{
+	topRender, err := p.bdl.ProfileRender(&apistructs.ProfileRenderRequest{
 		Query:    segmentKey,
 		From:     fmt.Sprintf("%d", startTime),
 		Until:    fmt.Sprintf("%d", endTime),
@@ -157,19 +158,18 @@ func (p *provider) getTop5(serviceID string, projectID, workspace, spyAlias stri
 	if err != nil {
 		return []topn.Item{}, err
 	}
+	formattedData := flamebearer.GenerateCellTable(topRender.Flamebearer, int(topRender.Metadata.SampleRate), topRender.Metadata.Units.String())
 	var items []topn.Item
-	if cpuRender != nil {
-		var count int
-		for i, node := range cpuRender.Flamebearer.Names {
-			if count >= 5 {
-				break
-			}
-			items = append(items, topn.Item{
-				Name:  node,
-				Value: float64(cpuRender.Flamebearer.Levels[i][0]),
-			})
-			count++
+	var count int
+	for _, node := range formattedData {
+		if count >= 5 {
+			break
 		}
+		items = append(items, topn.Item{
+			Name:  node.Name,
+			Value: float64(node.Total),
+		})
+		count++
 	}
 	return items, nil
 }
