@@ -240,47 +240,48 @@ func (h *DefaultDeployHandler) CheckIfHasCustomConfig(clusterConfig map[string]s
 	return nil, false
 }
 
-func NewDefaultHandler(dbClient *gorm.DB, logger logs.Logger) *DefaultDeployHandler {
+func NewDefaultHandler(client *gorm.DB, log logs.Logger) *DefaultDeployHandler {
 	return &DefaultDeployHandler{
-		TenantDb:             &db.InstanceTenantDB{DB: dbClient},
-		InstanceDb:           &db.InstanceDB{DB: dbClient},
-		TmcDb:                &db.TmcDB{DB: dbClient},
-		TmcVersionDb:         &db.TmcVersionDB{DB: dbClient},
-		TmcRequestRelationDb: &db.TmcRequestRelationDB{DB: dbClient},
-		TmcIniDb:             &db.TmcIniDB{DB: dbClient},
-		Bdl: bundle.New(bundle.WithScheduler(),
-			bundle.WithOrchestrator(),
-			bundle.WithHepa(),
+		TenantDb:             &db.InstanceTenantDB{DB: client},
+		InstanceDb:           &db.InstanceDB{DB: client},
+		TmcDb:                &db.TmcDB{DB: client},
+		TmcVersionDb:         &db.TmcVersionDB{DB: client},
+		TmcRequestRelationDb: &db.TmcRequestRelationDB{DB: client},
+		TmcIniDb:             &db.TmcIniDB{DB: client},
+		Bdl: bundle.New(
+			bundle.WithCollector(),
 			bundle.WithCMDB(),
 			bundle.WithErdaServer(),
+			bundle.WithHepa(),
+			bundle.WithOrchestrator(),
 			bundle.WithPipeline(),
 			bundle.WithMonitor(),
-			bundle.WithCollector(),
+			bundle.WithScheduler(),
 			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))),
 		),
-		Log: logger,
+		Log: log,
 	}
 }
 
 func (h *DefaultDeployHandler) CheckIfNeedTmcInstance(req *ResourceDeployRequest, resourceInfo *ResourceInfo) (*db.Instance, bool, error) {
-	instance, err := h.InstanceDb.GetByEngineAndVersionAndAz(resourceInfo.TmcVersion.Engine, "custom", req.Az)
+	var where = map[string]any{
+		"engine":     resourceInfo.TmcVersion.Engine,
+		"version":    "custom",
+		"az":         req.Az,
+		"status":     TmcInstanceStatusRunning,
+		"is_deleted": "N",
+	}
+	instance, ok, err := h.InstanceDb.First(where)
 	if err != nil {
 		return nil, false, err
 	}
-
-	// we only care about the RUNNING one
-	isValid := func(ins *db.Instance) bool {
-		return instance != nil && instance.Status == TmcInstanceStatusRunning
+	if ok {
+		return instance, false, nil
 	}
 
-	if !isValid(instance) {
-		instance, err = h.InstanceDb.GetByEngineAndVersionAndAz(resourceInfo.TmcVersion.Engine, resourceInfo.TmcVersion.Version, req.Az)
-		if err != nil {
-			return nil, false, err
-		}
-	}
-
-	return instance, !isValid(instance), nil
+	where["version"] = resourceInfo.TmcVersion.Version
+	instance, ok, err = h.InstanceDb.First(where)
+	return instance, !ok, err
 }
 
 func (h *DefaultDeployHandler) GetClusterConfig(az string) (map[string]string, error) {

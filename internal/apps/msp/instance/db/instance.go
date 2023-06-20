@@ -67,6 +67,18 @@ func (db *InstanceDB) GetByEngineAndVersionAndAz(engine string, version string, 
 	return list[0], nil
 }
 
+func (db *InstanceDB) First(where map[string]any) (*Instance, bool, error) {
+	var ins Instance
+	err := db.query().Where(where).First(&ins).Error
+	if err == nil {
+		return &ins, true, nil
+	}
+	if gorm.IsRecordNotFoundError(err) {
+		return nil, false, nil
+	}
+	return nil, false, err
+}
+
 func (db *InstanceDB) GetByEngineAndTenantGroup(engine string, tenantGroup string) (*Instance, error) {
 	var list []*Instance
 	if err := db.query().
