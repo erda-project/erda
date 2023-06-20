@@ -63,14 +63,6 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
 		ctx := sdk.Ctx
 		interval := (endTime - startTime) / 1e3
-		sdk.Comp.Operations = map[string]interface{}{
-			"click": map[string]interface{}{
-				"clickData": map[string]interface{}{},
-			},
-			"rangeSelect": map[string]interface{}{
-				"rangeData": map[string]interface{}{},
-			},
-		}
 
 		switch sdk.Comp.Name {
 		case PathRpsMaxTop5:
