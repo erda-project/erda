@@ -19,10 +19,11 @@ import (
 )
 
 type ProfileRenderRequest struct {
-	Query    string `json:"query"`
-	From     string `json:"from"`
-	Until    string `json:"until"`
-	MaxNodes int    `json:"maxNodes"`
+	Query             string `json:"query"`
+	From              string `json:"from"`
+	Until             string `json:"until"`
+	MaxNodes          int    `json:"maxNodes"`
+	FormatFlamebearer bool   `json:"formatFlamebearer"`
 }
 
 func (p *ProfileRenderRequest) URLQueryString() map[string][]string {
@@ -35,6 +36,9 @@ func (p *ProfileRenderRequest) URLQueryString() map[string][]string {
 	}
 	if p.Until != "" {
 		query["until"] = append(query["until"], p.Until)
+	}
+	if p.FormatFlamebearer {
+		query["formatFlamebearer"] = []string{"true"}
 	}
 	query["maxNodes"] = []string{"8192"}
 	if p.MaxNodes != 0 {
