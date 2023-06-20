@@ -22,5 +22,6 @@ components:
     type: LRContainer
   table:
     type: Table
+    version: 2
   tableFilter:
     type: ContractiveFilter
