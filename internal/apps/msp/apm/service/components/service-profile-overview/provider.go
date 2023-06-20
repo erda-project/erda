@@ -47,6 +47,11 @@ const (
 	languageGo   string = "go"
 )
 
+const (
+	cpuUsageTop5I18n = "cpuUsageTop5"
+	memUsageTop5I18n = "memUsageTop5"
+)
+
 var (
 	languageCpuAlias = map[string]string{
 		languageJava: "itimer",
@@ -95,6 +100,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		lang := sdk.Lang
 		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		serviceID := p.StdInParamsPtr.Get("serviceId").(string)
@@ -127,7 +133,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				p.Log.Error(err)
 			}
-			pathRpsMaxTop5Records := topn.Record{Title: "内存使用TOP5", Span: Span}
+			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, cpuUsageTop5I18n), Span: Span}
 			pathRpsMaxTop5Records.Items = pathRpsMaxTop5
 			records = append(records, pathRpsMaxTop5Records)
 			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
@@ -137,7 +143,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				p.Log.Error(err)
 			}
-			pathRpsMaxTop5Records := topn.Record{Title: "CPU使用TOP5", Span: Span}
+			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, memUsageTop5I18n), Span: Span}
 			pathRpsMaxTop5Records.Items = pathRpsMaxTop5
 			records = append(records, pathRpsMaxTop5Records)
 			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
