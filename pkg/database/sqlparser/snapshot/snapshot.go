@@ -23,7 +23,6 @@ import (
 	"time"
 
 	regexp "github.com/dlclark/regexp2"
-
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
