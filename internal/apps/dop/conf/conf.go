@@ -16,6 +16,7 @@ package conf
 
 import (
 	"strings"
+	"time"
 
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
@@ -66,9 +67,10 @@ type Conf struct {
 
 	AvatarStorageURL string `env:"AVATAR_STORAGE_URL"` // file:///avatars or oss://appkey:appsecret@endpoint/bucket
 
-	TestFilePollingIntervalSec  int `env:"TEST_FILE_POLLING_INTERVAL_SEC" default:"30"`
-	TestSetSyncCopyMaxNum       int `env:"TEST_SET_SYNC_COPY_MAX_NUM" default:"300"`
-	TestFileRecordPurgeCycleDay int `env:"TEST_FILE_RECORD_PURGE_CYCLE_DAY" default:"7"`
+	TestFilePollingIntervalSec  int           `env:"TEST_FILE_POLLING_INTERVAL_SEC" default:"30"`
+	TestSetSyncCopyMaxNum       int           `env:"TEST_SET_SYNC_COPY_MAX_NUM" default:"300"`
+	TestFileRecordPurgeCycleDay int           `env:"TEST_FILE_RECORD_PURGE_CYCLE_DAY" default:"7"`
+	TestFileRecordTimeout       time.Duration `env:"TEST_FILE_RECORD_TIMEOUT" default:"10m"`
 
 	ProjectStatsCacheCron       string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	UpdateIssueExpiryStatusCron string `env:"UPDATE_ISSUE_EXPIRY_STATUS_CRON" default:"0 0 * * *"`
@@ -250,6 +252,10 @@ func TestSetSyncCopyMaxNum() int {
 
 func TestFileRecordPurgeCycleDay() int {
 	return cfg.TestFileRecordPurgeCycleDay
+}
+
+func TestFileRecordTimeout() time.Duration {
+	return cfg.TestFileRecordTimeout
 }
 
 func UpdateIssueExpiryStatusCron() string {
