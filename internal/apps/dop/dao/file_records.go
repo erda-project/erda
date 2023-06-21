@@ -180,16 +180,11 @@ type FileUUIDStr struct {
 	ApiFileUUID string
 }
 
-func (client *DBClient) DeleteFileRecordByTime(t time.Time) ([]FileUUIDStr, error) {
+func (client *DBClient) ListFileRecordApiFileUUIDsByTime(t time.Time) ([]FileUUIDStr, error) {
 	var res []FileUUIDStr
-	if err := client.Scopes(NotDeleted).Table("erda_file_record").Where("`created_at` < ?", t).Select("api_file_uuid").Find(&res).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Table(TestFileRecord{}.TableName()).Where("`created_at` < ?", t).Select("api_file_uuid").Find(&res).Error; err != nil {
 		return nil, err
 	}
-
-	if err := client.Scopes(NotDeleted).Where("`created_at` < ?", t).Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error; err != nil {
-		return nil, err
-	}
-
 	return res, nil
 }
 

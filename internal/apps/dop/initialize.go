@@ -150,7 +150,6 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	loadMetricKeysFromDb(db)
 
 	interval := time.Duration(conf.TestFileIntervalSec())
-	purgeCycle := conf.TestFileRecordPurgeCycleDay()
 
 	// Scheduled polling export task
 	go func() {
@@ -204,12 +203,13 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	// Daily clear test file records
 	go func() {
-		day := time.NewTicker(time.Hour * 24 * time.Duration(purgeCycle))
+		purgeCycle := conf.TestFileRecordPurgeCycleDay()
+		interval := time.NewTicker(time.Hour)
 		for {
 			select {
-			case <-day.C:
+			case <-interval.C:
 				if err := ep.TestCaseService().DeleteRecordApiFilesByTime(time.Now().AddDate(0, 0, -purgeCycle)); err != nil {
-					logrus.Error(err)
+					logrus.Errorf("failed to delete file records's api files by time: %v", err)
 				}
 			}
 		}

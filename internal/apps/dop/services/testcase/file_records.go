@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
@@ -145,7 +147,7 @@ func (svc *Service) BatchClearProcessingRecords() error {
 }
 
 func (svc *Service) DeleteRecordApiFilesByTime(t time.Time) error {
-	UUIDs, err := svc.db.DeleteFileRecordByTime(t)
+	UUIDs, err := svc.db.ListFileRecordApiFileUUIDsByTime(t)
 	if err != nil {
 		return err
 	}
@@ -154,7 +156,8 @@ func (svc *Service) DeleteRecordApiFilesByTime(t time.Time) error {
 			continue
 		}
 		if err := svc.bdl.DeleteDiceFile(UUID.ApiFileUUID); err != nil {
-			return err
+			logrus.Errorf("failed to delete dice file, uuid: %s, err: %v", UUID.ApiFileUUID, err)
+			continue
 		}
 	}
 	return nil
