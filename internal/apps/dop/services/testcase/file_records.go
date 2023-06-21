@@ -160,6 +160,28 @@ func (svc *Service) DeleteRecordApiFilesByTime(t time.Time) error {
 	return nil
 }
 
+func (svc *Service) MarkFileRecordAsTimeout(timeout time.Duration) error {
+	processings, err := svc.db.ListFileRecordsByState(apistructs.FileRecordStateProcessing)
+	if err != nil {
+		return fmt.Errorf("failed to list processing file records, err: %v", err)
+	}
+	for _, processing := range processings {
+		// just by time
+		if time.Since(processing.UpdatedAt) > timeout {
+			processing.State = apistructs.FileRecordStateFail
+			desc := fmt.Sprintf("timeout (%s)", timeout.String())
+			if processing.Description != "" {
+				desc = fmt.Sprintf("%s; %s", desc, processing.Description)
+			}
+			processing.Description = desc
+			if err := svc.db.UpdateRecord(processing); err != nil {
+				return fmt.Errorf("failed to update file record, err: %v", err)
+			}
+		}
+	}
+	return nil
+}
+
 func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFileRecord {
 	record := &apistructs.TestFileRecord{
 		ID:          s.ID,

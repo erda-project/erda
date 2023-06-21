@@ -192,3 +192,11 @@ func (client *DBClient) DeleteFileRecordByTime(t time.Time) ([]FileUUIDStr, erro
 
 	return res, nil
 }
+
+func (client *DBClient) ListFileRecordsByState(state apistructs.FileRecordState) ([]*TestFileRecord, error) {
+	var res []*TestFileRecord
+	if err := client.Scopes(NotDeleted).Where("`state` = ?", state).Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
+}

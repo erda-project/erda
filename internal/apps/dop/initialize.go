@@ -151,10 +151,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	interval := time.Duration(conf.TestFileIntervalSec())
 	purgeCycle := conf.TestFileRecordPurgeCycleDay()
-	if err := ep.TestCaseService().BatchClearProcessingRecords(); err != nil {
-		logrus.Error(err)
-		return err
-	}
+
 	// Scheduled polling export task
 	go func() {
 		ticker := time.NewTicker(time.Second * interval)
@@ -190,6 +187,17 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				copyTestFileTask(ep)
 			case <-ep.CopyChannel:
 				copyTestFileTask(ep)
+			}
+		}
+	}()
+
+	// Scheduled mark task as timeout
+	go func() {
+		ticker := time.NewTicker(time.Second * interval)
+		for {
+			select {
+			case <-ticker.C:
+				p.markTestFileTaskAsTimeout(ep)
 			}
 		}
 	}()
@@ -765,6 +773,13 @@ func registerWebHook(bdl *bundle.Bundle) error {
 	}
 
 	return nil
+}
+
+func (p *provider) markTestFileTaskAsTimeout(ep *endpoints.Endpoints) {
+	svc := ep.TestCaseService()
+	if err := svc.MarkFileRecordAsTimeout(conf.TestFileRecordTimeout()); err != nil {
+		logrus.Errorf("failed to mark test file task as timeout, %v", err)
+	}
 }
 
 func (p *provider) exportTestFileTask(ep *endpoints.Endpoints) {
