@@ -150,11 +150,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	loadMetricKeysFromDb(db)
 
 	interval := time.Duration(conf.TestFileIntervalSec())
-	purgeCycle := conf.TestFileRecordPurgeCycleDay()
-	if err := ep.TestCaseService().BatchClearProcessingRecords(); err != nil {
-		logrus.Error(err)
-		return err
-	}
+
 	// Scheduled polling export task
 	go func() {
 		ticker := time.NewTicker(time.Second * interval)
@@ -194,14 +190,26 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		}
 	}()
 
-	// Daily clear test file records
+	// Scheduled mark task as timeout
 	go func() {
-		day := time.NewTicker(time.Hour * 24 * time.Duration(purgeCycle))
+		ticker := time.NewTicker(time.Second * interval)
 		for {
 			select {
-			case <-day.C:
+			case <-ticker.C:
+				p.markTestFileTaskAsTimeout(ep)
+			}
+		}
+	}()
+
+	// Daily clear test file records
+	go func() {
+		purgeCycle := conf.TestFileRecordPurgeCycleDay()
+		interval := time.NewTicker(time.Hour)
+		for {
+			select {
+			case <-interval.C:
 				if err := ep.TestCaseService().DeleteRecordApiFilesByTime(time.Now().AddDate(0, 0, -purgeCycle)); err != nil {
-					logrus.Error(err)
+					logrus.Errorf("failed to delete file records's api files by time: %v", err)
 				}
 			}
 		}
@@ -765,6 +773,13 @@ func registerWebHook(bdl *bundle.Bundle) error {
 	}
 
 	return nil
+}
+
+func (p *provider) markTestFileTaskAsTimeout(ep *endpoints.Endpoints) {
+	svc := ep.TestCaseService()
+	if err := svc.MarkFileRecordAsTimeout(conf.TestFileRecordTimeout()); err != nil {
+		logrus.Errorf("failed to mark test file task as timeout, %v", err)
+	}
 }
 
 func (p *provider) exportTestFileTask(ep *endpoints.Endpoints) {
