@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dlclark/regexp2"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	_ "github.com/pingcap/tidb/types/parser_driver"
@@ -30,6 +31,49 @@ import (
 )
 
 const sqlWithCollate = "CREATE TABLE `fdp_master_reco_scenario_workflows` (`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键id',`org_id` BIGINT(20) DEFAULT NULL COMMENT '企业 id',`scenario_name` VARCHAR(128) NOT NULL DEFAULT '',`scenario_code` VARCHAR(128) NOT NULL DEFAULT '',`process_type` VARCHAR(128) NOT NULL COMMENT '处理类型',`name` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '工作流名',`name_pinyin` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '工作流拼音',`description` VARCHAR(1024) NOT NULL DEFAULT '' COMMENT '工作流描述',`source` VARCHAR(32) DEFAULT '' COMMENT 'workflow 来源: dl/cdp',`run_type` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '运行类型: ATONCE、SCHEDULE',`cron` VARCHAR(128) DEFAULT '' COMMENT '任务周期',`cron_start_from` DATETIME DEFAULT NULL COMMENT '延时执行时间',`category_id` BIGINT(20) NOT NULL COMMENT '工作流目录 ID',`pipeline_name` VARCHAR(128) DEFAULT '' COMMENT 'pipeline 名称',`pipeline` MEDIUMTEXT NOT NULL COMMENT 'pipeline 内容',`pipeline_id` BIGINT(20) DEFAULT NULL COMMENT 'pipeline id',`node_params` TEXT COMMENT '工作流节点参数',`locations` VARCHAR(1024) DEFAULT NULL,`creator_id` VARCHAR(128) CHARACTER SET UTF8MB4 COLLATE utf8mb4_0900_ai_ci DEFAULT '' COMMENT '创建者 ID',`updater_id` VARCHAR(128) DEFAULT NULL COMMENT '更新者ID',`extra` MEDIUMTEXT COMMENT '扩展信息',`delete_yn` TINYINT(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除标记',`created_at` DATETIME DEFAULT NULL COMMENT '创建时间',`updated_at` DATETIME DEFAULT NULL COMMENT '更新时间',PRIMARY KEY(`id`),INDEX `idx_category_id_name`(`scenario_code`, `process_type`)) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8 COMMENT = '场景工作流表'"
+const sqlWithCollateInColumn = `CREATE TABLE uc_user (
+    id bigint NOT NULL AUTO_INCREMENT COMMENT 'id',
+	pk bigint NOT NULL COMMENT '用户标识',
+	tenant_id int NOT NULL COMMENT '租户ID',
+	username varchar(32) NOT NULL COMMENT '用户名',
+	nickname varchar(120) DEFAULT NULL COMMENT '昵称',
+	avatar varchar(255) DEFAULT NULL COMMENT '头像',
+	mobile varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '手机号',
+	mobile2 varchar(64) CHARACTER SET utf8mb3 COLLATE   utf8mb3_general_ci DEFAULT NULL COMMENT '手机号',
+	mobile3 varchar(64) CHARacter SET utf8 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '手机号',
+	mobile_prefix varchar(64) DEFAULT NULL COMMENT '手机号前缀', 
+	email varchar(128) DEFAULT NULL COMMENT '邮箱',
+	password varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '密码', 
+	pwd_expire_at
+	date DEFAULT NULL COMMENT '密码过期时间', 
+	enabled tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否启用',
+	locked tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否冻结', 
+	deleted tinyint(1) NOT NULL DEFAULT '0' COMMENT '逻辑删除delete flag (0:not,1:yes)',
+	channel varchar(255) DEFAULT NULL COMMENT '注册渠道',
+	channel_type varchar(64) DEFAULT NULL COMMENT '渠道类型', 
+	source varchar(255) DEFAULT NULL COMMENT '用户来源', 
+	source_type varchar(64) DEFAULT NULL COMMENT '来源类型', 
+	tag varchar(255) DEFAULT NULL COMMENT '标签', 
+	version int DEFAULT NULL COMMENT '版本', 
+	extra varchar(2048) DEFAULT NULL COMMENT '扩展字段', 
+	updated_by varchar(128) DEFAULT NULL COMMENT '更新人，操作日志', 
+	last_login_at datetime DEFAULT NULL COMMENT '最后登录时间',
+	created_at datetime NOT NULL COMMENT '创建时间', 
+	updated_at datetime DEFAULT NULL COMMENT '更新时间',
+	record_create_msg tinyint(1) DEFAULT '0' COMMENT '是否记录创建用户消息',
+	record_update_msg tinyint(1) DEFAULT '1' COMMENT '是否记录更新用户消息', 
+	invitation_code varchar(255) DEFAULT NULL COMMENT '邀请码', 
+	is_online tinyint(1) DEFAULT '1' COMMENT '是否在线', 
+	origin varchar(128) DEFAULT 'Trantor-PC' COMMENT '用户源', 
+	PRIMARY KEY (id),
+	UNIQUE KEY uni_username (username, tenant_id), 
+	UNIQUE KEY uni_pk (pk, tenant_id),  
+	UNIQUE KEY uni_mobile (mobile, tenant_id),  
+	UNIQUE KEY uni_email (email, tenant_id)
+) ENGINE=InnoDB AUTO_INCREMENT=1000001 
+	DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='用户表'
+`
+
 const sqlWithConstraintCheck = "CREATE TABLE `migration_records` (`version` VARCHAR(10) NOT NULL COMMENT '服务版本号-',`module` VARCHAR(50) NOT NULL COMMENT '服务名',`version_b` VARCHAR(10) NOT NULL COMMENT '服务 B 版本号',`done` VARCHAR(1) NOT NULL DEFAULT '0',`create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP() COMMENT '创建时间',PRIMARY KEY(`version`, `module`, `version_b`),CONSTRAINT `migration_records_chk_1` CHECK(((`done`='0') OR (`done`='1'))) ENFORCED) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4"
 const (
 	sqlWithUtf32_1 = "CREATE TABLE `migration_records` (`version` VARCHAR(10) NOT NULL COMMENT '服务版本号-',`module` VARCHAR(50) NOT NULL COMMENT '服务名',`version_b` VARCHAR(10) NOT NULL COMMENT '服务 B 版本号',`done` VARCHAR(1) NOT NULL DEFAULT '0',`create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP() COMMENT '创建时间',PRIMARY KEY(`version`, `module`, `version_b`),CONSTRAINT `migration_records_chk_1` CHECK(((`done`='0') OR (`done`='1'))) ENFORCED) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF32"
@@ -179,10 +223,10 @@ func TestTrimConstraintCheckFromCreateTable(t *testing.T) {
 }
 
 func TestTrimCharacterSetFromRawCreateTableSQL(t *testing.T) {
-	for _, sql := range []string{sqlWithUtf32_1, sqlWithUtf32_2, sqlWithUtf8mb3} {
+	for i, sql := range []string{sqlWithUtf32_1, sqlWithUtf32_2, sqlWithUtf8mb3} {
 		sql := snapshot.TrimCharacterSetFromRawCreateTableSQL(sql, "utf8", "utf8mb4")
 		if strings.Contains(strings.ToLower(sql), "utf32") {
-			t.Fatal("failed to trim character from sql")
+			t.Fatalf("[%d] failed to trim character from sql", i)
 		}
 		if _, err := parser.New().ParseOneStmt(sql, "", ""); err != nil {
 			t.Fatalf("err: %v, sql: %s", err, sql)
@@ -242,4 +286,40 @@ func TestCharsetWhite(t *testing.T) {
 	if len(white) != 1 || white[0] != "utf8mb4" {
 		t.Fatal("utf8mb4 is set", white)
 	}
+}
+
+func TestParse_sqlWithCollateInColumn(t *testing.T) {
+	stmt, err := snapshot.ParseCreateTableStmt(sqlWithCollateInColumn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(stmt.Text())
+}
+
+func TestTrimCharsetCollate(t *testing.T) {
+	t.Run("sqlWithCollateInColumn", func(t *testing.T) {
+		match, err := snapshot.CharsetCollateRe.FindStringMatch(sqlWithCollate)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for j, group := range match.Groups() {
+			t.Log(j, "group.Name:", group.Name, "group.Capture.Index:", group.Capture.Index, "group.Capture.Length:", group.Capture.Length, "group.Capture.String():", group.Capture.String(), "\n")
+			for i, capture := range group.Captures {
+				t.Log("\t", i, "capture.Index", capture.Index, "capture.Length:", capture.Length, "capture.String():", capture.String(), "\n")
+			}
+		}
+		s, _ := snapshot.CharsetCollateRe.ReplaceFunc(sqlWithCollateInColumn, func(match regexp2.Match) string {
+			for _, group := range match.Groups() {
+				if group.Name == "charset_expr" && group.Capture.String() != "" {
+					vGroup := match.GroupByName("charset_value")
+					if !strings.EqualFold(vGroup.Capture.String(), "utf8") && !strings.EqualFold(vGroup.Capture.String(), "utf8mb4") {
+						return ""
+					}
+				}
+			}
+			return match.Group.String()
+		}, -1, -1)
+
+		t.Log("new sql:", s)
+	})
 }

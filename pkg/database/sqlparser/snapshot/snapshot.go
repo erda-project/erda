@@ -18,10 +18,11 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	regexp "github.com/dlclark/regexp2"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -34,9 +35,36 @@ import (
 )
 
 var (
+	logger = logrus.New()
+)
+
+var (
 	charsetWhiteEnv     = "PIPELINE_MIGRATION_CHARSET_WHITE"
 	defaultCharsetWhite = []string{"utf8", "utf8mb4"}
+	CharsetCollatePat   = `(?mi)(?P<charset_expr>(?:default\s+)?(?:CHARACTER\s+SET|CHARSET)(?:\s*=?\s*|\s+)(?P<charset_value>[A-Za-z0-9_]+))|(?P<collate_expr>COLLATE(?:\s*=?\s*|\s+)(?P<collate_value>[A-Za-z0-9_]+))`
+	//CharsetCollateRe    = regexp.MustCompile(`(?mi)(?P<charset_expr>((default\s+)?(CHARACTER\s+SET|CHARSET)(\s*=?\s*|\s+)(?P<charset_value>[^(utf8mb4)]+))|(?P<collate_expr>COLLATE(\s*=?\s*|\s+)(?P<collate_value>[A-Za-z0-9_]+)))`)
+	CharsetCollateRe = regexp.MustCompile(CharsetCollatePat, regexp.IgnoreCase|regexp.Multiline|regexp.RE2)
 )
+
+func init() {
+	logger.SetFormatter(&logrus.TextFormatter{
+		ForceColors:               true,
+		DisableColors:             false,
+		ForceQuote:                false,
+		DisableQuote:              true,
+		EnvironmentOverrideColors: false,
+		DisableTimestamp:          false,
+		FullTimestamp:             false,
+		TimestampFormat:           time.RFC3339,
+		DisableSorting:            false,
+		SortingFunc:               nil,
+		DisableLevelTruncation:    false,
+		PadLevelText:              false,
+		QuoteEmptyFields:          true,
+		FieldMap:                  nil,
+		CallerPrettyfier:          nil,
+	})
+}
 
 // Snapshot maintains the structure of the database tables
 type Snapshot struct {
@@ -76,7 +104,7 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 	for rows.Next() {
 		var (
 			tableName string
-			stmt      string
+			create    string
 		)
 		if err = rows.Scan(&tableName); err != nil {
 			return nil, err
@@ -89,19 +117,16 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 		if err = tx.Error; err != nil {
 			return nil, err
 		}
-		if err = tx.Row().Scan(&tableName, &stmt); err != nil {
+		if err = tx.Row().Scan(&tableName, &create); err != nil {
 			return nil, err
 		}
-		// some character set can not be parsed, so trim them from the stmt
-		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt, CharsetWhite()...)
-		// block format syntax can not be parsed, so trim it
-		stmt = TrimBlockFormat(stmt)
-		node, err := parser.New().ParseOneStmt(stmt, "", "")
+
+		node, err := ParseCreateTableStmt(create)
 		if err != nil {
 			return nil, err
 		}
 		t := new(table.Table)
-		t.Append(node.(ast.DDLNode))
+		t.Append(node)
 		s.tables[tableName] = t
 	}
 
@@ -149,7 +174,7 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 	if err := tx.Row().Scan(&count); err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to Scan count from %s", strconv.Quote(selectCount))
 	}
-	logrus.WithField("tableName", tableName).
+	logger.WithField("tableName", tableName).
 		WithField("maxSampleLines", lines).
 		WithField("total", count).
 		Infoln("*Snapshot.Dump")
@@ -195,7 +220,7 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 // RecoverTo recover the data structure and data to goal db
 func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 	var (
-		l          = logrus.WithField("func", "*Snapshot.RecoverTo")
+		l          = logger.WithField("func", "*Snapshot.RecoverTo")
 		nodes      = s.DDLNodes()
 		installing = make(map[string]*ast.CreateTableStmt)
 		installed  = make(map[string]*ast.CreateTableStmt)
@@ -329,7 +354,7 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 }
 
 func (s *Snapshot) getBigTables() map[string]struct{} {
-	var l = logrus.WithField("func", "*Snapshot.getBigTables")
+	var l = logger.WithField("func", "*Snapshot.getBigTables")
 	var result = make(map[string]struct{})
 	const dataLength = 2_000_000_000
 	tx := s.from.Raw("SELECT table_name FROM information_schema.tables WHERE data_length > ?", dataLength)
@@ -389,18 +414,34 @@ func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
 }
 
 func TrimCharacterSetFromRawCreateTableSQL(create string, except ...string) string {
-	pat := `(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*(\w+)`
-	re := regexp.MustCompile(pat)
-	found := re.FindStringSubmatch(create)
-	if len(found) == 0 {
-		return create
-	}
-	for _, ex := range except {
-		if strings.EqualFold(ex, found[len(found)-1]) {
-			return create
+	s, _ := CharsetCollateRe.ReplaceFunc(create, func(match regexp.Match) string {
+		eGroup := match.GroupByName("charset_expr")
+		if eGroup == nil || eGroup.String() == "" {
+			return match.String()
 		}
-	}
-	return re.ReplaceAllString(create, "")
+		vGroup := match.GroupByName("charset_value")
+		if vGroup == nil || vGroup.String() == "" {
+			return ""
+		}
+		for _, item := range except {
+			if strings.EqualFold(vGroup.String(), item) {
+				return match.String()
+			}
+		}
+		return ""
+	}, -1, -1)
+	return s
+}
+
+func TrimInvalidCollate(create string) string {
+	s, _ := CharsetCollateRe.ReplaceFunc(create, func(match regexp.Match) string {
+		eGroup := match.GroupByName("collate_expr")
+		if eGroup == nil || eGroup.String() == "" {
+			return match.String()
+		}
+		return ""
+	}, -1, -1)
+	return s
 }
 
 func TrimBlockFormat(create string) string {
@@ -409,10 +450,16 @@ func TrimBlockFormat(create string) string {
 
 // ParseCreateTableStmt parses CreateTableStmt as *ast.CreateTableStmt node
 func ParseCreateTableStmt(create string) (*ast.CreateTableStmt, error) {
-	create = TrimCharacterSetFromRawCreateTableSQL(create, CharsetWhite()...)
-	create = TrimBlockFormat(create)
-	node, err := parser.New().ParseOneStmt(create, "", "")
+	trimmedCharset := TrimCharacterSetFromRawCreateTableSQL(create, CharsetWhite()...)
+	trimmedBlock := TrimBlockFormat(trimmedCharset)
+	trimmedInvalidCollate := TrimInvalidCollate(trimmedBlock)
+	node, err := parser.New().ParseOneStmt(trimmedInvalidCollate, "", "")
 	if err != nil {
+		logger.WithError(err).
+			WithField("create table stmt", create).
+			WithField("parsed stmt", trimmedBlock).
+			WithField("charset white", CharsetWhite()).
+			Errorf("failed to ParseOneStmt")
 		return nil, err
 	}
 	stmt, ok := node.(*ast.CreateTableStmt)
