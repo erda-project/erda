@@ -62,6 +62,10 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	}
 }
 
+func (p *provider) Visible(sdk *cptype.SDK) bool {
+	return !p.InParamsPtr.HideSlowReqDistribution
+}
+
 // RegisterRenderingOp .
 func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
