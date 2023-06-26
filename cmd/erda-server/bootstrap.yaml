@@ -110,7 +110,7 @@ erda.core.clustermanager.cluster-client: { }
 openapi-ng:
 http-server@openapi:
   addr: ":9529"
-  reloadable: ${OPENAPI_DEV_MODE:false}
+  reloadable: ${OPENAPI_DYNAMIC_ROUTES:true}
   allow_cors: true
   debug: ${OPENAPI_DEBUG:false}
   log:
