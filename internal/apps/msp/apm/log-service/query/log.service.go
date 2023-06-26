@@ -47,7 +47,22 @@ func (s *logService) HistogramAggregation(ctx context.Context, req *pb.Histogram
 	if err != nil {
 		return nil, err
 	}
-	return s.mergeHistogramAggregationResponse(monitorResult, loghubResult), nil
+	res := s.mergeHistogramAggregationResponse(monitorResult, loghubResult)
+
+	// If the log result of query based on trace is empty, it will be downgraded to query based on time
+	if res.Data.Total == 0 && req.TraceID != "" {
+		req.TraceID = ""
+		monitorResult, err = s.HistogramAggregationFromMonitor(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		loghubResult, err = s.HistogramAggregationFromLoghub(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		res = s.mergeHistogramAggregationResponse(monitorResult, loghubResult)
+	}
+	return res, nil
 }
 
 func (s *logService) BucketAggregation(ctx context.Context, req *pb.BucketAggregationRequest) (*pb.BucketAggregationResponse, error) {

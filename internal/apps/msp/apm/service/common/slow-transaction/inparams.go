@@ -22,11 +22,12 @@ import (
 )
 
 type Model struct {
-	StartTime int64  `json:"startTime"`
-	EndTime   int64  `json:"endTime"`
-	TenantId  string `json:"tenantId"`
-	ServiceId string `json:"serviceId"`
-	LayerPath string `json:"layerPath"`
+	StartTime               int64  `json:"startTime"`
+	EndTime                 int64  `json:"endTime"`
+	TenantId                string `json:"tenantId"`
+	ServiceId               string `json:"serviceId"`
+	LayerPath               string `json:"layerPath"`
+	HideSlowReqDistribution bool   `json:"hideSlowReqDistribution"`
 }
 
 type SlowTransactionInParams struct {

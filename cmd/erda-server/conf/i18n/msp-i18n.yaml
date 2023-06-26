@@ -33,6 +33,8 @@ en:
   sqlSlowTop5: Top 5 slow response SQL
   exceptionCountTop5: Top 5 exception types
   pathErrorRateTop5: Top 5 error APIs
+  cpuUsageTop5: CPU usage top 5
+  memUsageTop5: Memory usage top 5
   transactionName: "Transaction name"
   reqCount: "Number of calls"
   rps: "Throughput"
@@ -164,6 +166,8 @@ zh:
   sqlSlowTop5: 慢响应SQL Top5
   exceptionCountTop5: 异常类型 Top5
   pathErrorRateTop5: 错误接口 Top5
+  cpuUsageTop5: CPU 使用率 Top5
+  memUsageTop5: 内存使用率 Top5
   transactionName: "事务名称"
   reqCount: "调用次数"
   slowCount: "慢调用次数"

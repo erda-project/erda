@@ -57,6 +57,10 @@ func (s *logService) HistogramAggregationFromMonitor(ctx context.Context, req *p
 		return nil, nil
 	}
 
+	if req.TraceID != "" {
+		expr = fmt.Sprintf("%s AND trace_id:%s", expr, req.TraceID)
+	}
+
 	options := &monitorpb.HistogramAggOptions{
 		MinimumInterval: int64(time.Second),
 		PreferredPoints: 60,
@@ -138,7 +142,7 @@ func (s *logService) HistogramAggregationFromLoghub(ctx context.Context, req *pb
 	}
 
 	orgId := s.getRequestOrgIDOrDefault(ctx)
-	loghubResp, err := s.p.LoghubQuery.StatisticLogs(&query.LogStatisticRequest{
+	loghubReq := &query.LogStatisticRequest{
 		Interval: int64(time.Second / time.Millisecond),
 		Points:   60,
 		LogRequest: query.LogRequest{
@@ -152,7 +156,16 @@ func (s *logService) HistogramAggregationFromLoghub(ctx context.Context, req *pb
 			Debug:       req.Debug,
 			Lang:        apis.Language(ctx),
 		},
-	})
+	}
+	if req.TraceID != "" {
+		loghubReq.Filters = []*query.Tag{
+			{
+				Key:   "trace_id",
+				Value: req.TraceID,
+			},
+		}
+	}
+	loghubResp, err := s.p.LoghubQuery.StatisticLogs(loghubReq)
 	if err != nil {
 		return nil, err
 	}

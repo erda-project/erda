@@ -109,6 +109,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		}
 		items = mspItems
 	}
+	var logKey string
 
 	// get cluster info
 	if req.Type != tenantpb.Type_MSP.String() {
@@ -186,6 +187,9 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 					return nil, errors.NewDatabaseError(fmt.Errorf("PUBLIC_HOST format error"))
 				}
 				for k, v := range params {
+					if k == "logKey" {
+						logKey = fmt.Sprint(v)
+					}
 					item.Params[k] = fmt.Sprint(v)
 				}
 			}
@@ -210,6 +214,15 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				}
 				child.IsK8S = isK8s
 				child.IsEdas = clusterInfo.IsEDAS()
+			}
+		}
+	}
+	// setup logKey for service monitor
+	for _, item := range items {
+		for _, child := range item.Children {
+			if child.EnName == "Service" {
+				child.Params["logKey"] = logKey
+				break
 			}
 		}
 	}

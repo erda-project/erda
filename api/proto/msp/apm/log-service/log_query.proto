@@ -186,6 +186,7 @@ message HistogramAggregationRequest {
   string addon       = 4;
   string query       = 5;
   bool   debug       = 6;
+  string traceID     = 7;
 }
 
 message HistogramAggregationResponse {

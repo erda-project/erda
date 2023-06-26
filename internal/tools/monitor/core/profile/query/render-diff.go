@@ -43,7 +43,7 @@ type diffParams struct {
 // RenderDiffResponse refers to the response of the renderDiff
 type RenderDiffResponse struct {
 	*flamebearer.FlamebearerProfile
-	Metadata renderMetadataResponse `json:"metadata"`
+	Metadata RenderMetadataResponse `json:"metadata"`
 }
 
 func (p *provider) renderDiff(rw http.ResponseWriter, r *http.Request) {
@@ -105,7 +105,7 @@ func (p *provider) renderDiff(rw http.ResponseWriter, r *http.Request) {
 	case "json":
 		fallthrough
 	default:
-		md := renderMetadataResponse{FlamebearerMetadataV1: combined.Metadata}
+		md := RenderMetadataResponse{FlamebearerMetadataV1: combined.Metadata}
 		p.enhanceWithCustomFields(&md, params)
 
 		res := RenderDiffResponse{
@@ -140,9 +140,9 @@ func (p *provider) loadTree(ctx context.Context, gi *storage.GetInput, startTime
 	return out, nil
 }
 
-// add custom fields to renderMetadataResponse
+// add custom fields to RenderMetadataResponse
 // original motivation is to add custom {start,end}Time calculated dynamically
-func (p *provider) enhanceWithCustomFields(md *renderMetadataResponse, params diffParams) {
+func (p *provider) enhanceWithCustomFields(md *RenderMetadataResponse, params diffParams) {
 	var diffAppName string
 
 	if params.Left.Query.AppName == params.Right.Query.AppName {
