@@ -129,8 +129,8 @@ func (p *provider) render(rw http.ResponseWriter, r *http.Request) {
 		})
 
 		res := p.mountRenderResponse(flame, appName, req.gi, req.maxNodes, []model.Annotation{})
-		sortedTable := flamebearer.GenerateCellTable(flame.Flamebearer, int(flame.Metadata.SampleRate), flame.Metadata.Units.String())
-		if req.formatFlamebearer {
+		if req.formatFlamebearer && flame.Flamebearer.NumTicks > 0 {
+			sortedTable := flamebearer.GenerateCellTable(flame.Flamebearer, int(flame.Metadata.SampleRate), flame.Metadata.Units.String())
 			res.ProfileCells = sortedTable
 		}
 		renderCounter.WithLabelValues(req.gi.Query.AppName).Inc()
@@ -184,6 +184,7 @@ func (p *provider) renderParametersFromRequest(r *http.Request, req *renderParam
 		req.gi.Query = qry
 	}
 
+	req.gi.ProfileLimit = 60
 	req.maxNodes = p.Cfg.MaxNodesRender
 	if newMaxNodes, ok := MaxNodesFromContext(r.Context()); ok {
 		req.maxNodes = newMaxNodes
@@ -196,6 +197,9 @@ func (p *provider) renderParametersFromRequest(r *http.Request, req *renderParam
 	}
 	if formatFlamebearer, err := strconv.ParseBool(v.Get("formatFlamebearer")); err == nil {
 		req.formatFlamebearer = formatFlamebearer
+	}
+	if pl, err := strconv.Atoi(v.Get("profileLimit")); err == nil && pl != 0 {
+		req.gi.ProfileLimit = pl
 	}
 
 	req.gi.StartTime = attime.Parse(v.Get("from"))

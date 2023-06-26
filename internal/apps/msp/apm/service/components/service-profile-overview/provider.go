@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/pyroscope-io/pyroscope/pkg/model/appmetadata"
 	"github.com/pyroscope-io/pyroscope/pkg/service"
@@ -58,7 +60,7 @@ var (
 		languageGo:   "cpu",
 	}
 	languageMemAlias = map[string]string{
-		languageJava: "alloc_outside_tlab_objects",
+		languageJava: "alloc_in_new_tlab_bytes",
 		languageGo:   "alloc_space",
 	}
 )
@@ -170,13 +172,27 @@ func (p *provider) getTop5(serviceID string, projectID, workspace, spyAlias stri
 		if count >= 5 {
 			break
 		}
+		value, unit := getValue(node.FormatTotal)
 		items = append(items, topn.Item{
 			Name:  node.Name,
-			Value: float64(node.Total),
+			Value: value,
+			Unit:  unit,
 		})
 		count++
 	}
 	return items, nil
+}
+
+func getValue(formatTotal string) (float64, string) {
+	dat := strings.Split(formatTotal, " ")
+	if len(dat) != 2 {
+		return 0, ""
+	}
+	value, err := strconv.ParseFloat(dat[0], 64)
+	if err != nil {
+		return 0, ""
+	}
+	return value, dat[1]
 }
 
 func judgeAppLanguage(serviceName string, apps []appmetadata.ApplicationMetadata) string {
