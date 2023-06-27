@@ -135,7 +135,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				p.Log.Error(err)
 			}
-			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, cpuUsageTop5I18n), Span: Span}
+			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, memUsageTop5I18n), Span: Span}
 			pathRpsMaxTop5Records.Items = pathRpsMaxTop5
 			records = append(records, pathRpsMaxTop5Records)
 			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
@@ -145,7 +145,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				p.Log.Error(err)
 			}
-			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, memUsageTop5I18n), Span: Span}
+			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, cpuUsageTop5I18n), Span: Span}
 			pathRpsMaxTop5Records.Items = pathRpsMaxTop5
 			records = append(records, pathRpsMaxTop5Records)
 			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
@@ -164,6 +164,9 @@ func (p *provider) getTop5(serviceID string, projectID, workspace, spyAlias stri
 	})
 	if err != nil {
 		return []topn.Item{}, err
+	}
+	if topRender.Flamebearer.NumTicks <= 0 {
+		return []topn.Item{}, nil
 	}
 	formattedData := flamebearer.GenerateCellTable(topRender.Flamebearer, int(topRender.Metadata.SampleRate), topRender.Metadata.Units.String())
 	var items []topn.Item
