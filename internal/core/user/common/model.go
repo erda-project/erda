@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/core/user/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type User struct {
@@ -140,5 +142,21 @@ func ToPbUser(user User) *pb.User {
 		Phone:     user.Phone,
 		Email:     user.Email,
 		State:     user.State,
+	}
+}
+
+func NewUserInfoFromDTO(dto *apistructs.UserInfoDto) *UserInfo {
+	if dto == nil {
+		return nil
+	}
+	return &UserInfo{
+		ID:         USERID(strutil.String(dto.UserID)),
+		Email:      dto.Email,
+		EmailExist: dto.Email != "",
+		Phone:      dto.Phone,
+		PhoneExist: dto.Phone != "",
+		AvatarUrl:  dto.AvatarURL,
+		UserName:   dto.Username,
+		NickName:   dto.NickName,
 	}
 }
