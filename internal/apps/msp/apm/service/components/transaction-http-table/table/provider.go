@@ -54,7 +54,10 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 
 		pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
-		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
+		sorts := append(transaction.GetSortsFromGlobalState(*sdk.GlobalState), &common.Sort{
+			FieldKey:  "avgDuration",
+			Ascending: false,
+		})
 
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
 			&viewtable.TransactionTableBuilder{
@@ -76,6 +79,24 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error("failed to get table data: %s", err)
 			return nil
+		}
+		data.Columns.ColumnsMap["operation"] = table.Column{
+			Title:  p.I18n.Text(lang, "transactionOperation"),
+			Hidden: false,
+		}
+		data.Columns.Orders = append(data.Columns.Orders, "operation")
+		for i := range data.Rows {
+			data.Rows[i].CellsMap["operation"] = table.Cell{
+				Data: map[string]interface{}{
+					"ops": []map[string]interface{}{
+						{
+							"id":   "viewDetail",
+							"text": p.I18n.Text(lang, "transactionDetail"),
+						},
+					},
+				},
+				Type: "moreOperations",
+			}
 		}
 
 		p.StdDataPtr = &table.Data{
