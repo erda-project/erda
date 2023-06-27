@@ -40,7 +40,10 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
 	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/oauth2/tokenstore/mysqltokenstore"
+)
+
+const (
+	httpHeaderAuthorization = "Authorization"
 )
 
 var (
@@ -233,7 +236,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 		return
 	}
 	logrus.Infof("basic auth,url: %s", c.HttpRequest().URL.String())
-	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repo.ProjectID)
+	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repoName)
 	if err == nil {
 		_, validateError := ValidaUserRepo(c, string(userInfo.ID), repo)
 		if validateError != nil {
@@ -272,54 +275,46 @@ type ErrorData struct {
 	Msg  string `json:"msg"`
 }
 
-func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, projectID int64) (*identity.UserInfo, error) {
-	var userInfo = &identity.UserInfo{}
-	var err error
+var printErr = func(err error) error { logrus.Error(err); return err }
 
-	org := c.Param("org")
-	repo := strings.TrimSuffix(c.Param("repo"), ".git")
-	repoName := filepath.Join(org, repo)
-
+func GetUserInfoByTokenOrBasicAuth(c *webcontext.Context, repoName string) (*identity.UserInfo, error) {
 	username, password, ok := c.BasicAuth()
-	if ok && username != "" && password != "" {
-		// 触发token校验
-		if username == conf.GitTokenUserName() {
-			res, err := c.TokenService.QueryTokens(context.Background(), &tokenpb.QueryTokensRequest{
-				Access: password,
-				Type:   mysqltokenstore.PAT.String(),
-			})
-			if err == nil && res.Total > 0 {
-				userID := res.Data[0].CreatorId
-				userInfo, err := uc.FindUserById(userID)
-				if err == nil {
-					return &identity.UserInfo{
-						ID:        identity.USERID(userID),
-						Email:     userInfo.Email,
-						Phone:     userInfo.Phone,
-						AvatarUrl: userInfo.AvatarURL,
-						UserName:  userInfo.Username,
-						NickName:  userInfo.NickName,
-					}, nil
-				}
-			} else {
-				logrus.Errorf("get PAT err:%s", err)
-				return nil, errors.New("invalid token")
-			}
-		} else {
-			userInfo, err = GetUserByBasicAuth(c, username, password)
-			if err != nil {
-				logrus.Debugf("basic auth failed repo:%s login_name:%s err:%v", repoName, username, err)
-			} else {
-				logrus.Debugf("basic auth success repo:%s login_name:%s user_name:%s", repoName, username, userInfo.UserName)
-			}
-		}
-		return userInfo, err
-	} else {
-		logrus.Debugf("no auth info repo:%s", repoName)
+	if !ok || username == "" || password == "" {
+		logrus.Debugf("failed to get user info by basic auth, repo: %s, Authorization header: %s", repoName, c.GetHeader(httpHeaderAuthorization))
 		return nil, NO_AUTH_ERROR
 	}
 
+	// check by token or user, according to username
+
+	// check by token
+	if strings.EqualFold(username, conf.GitTokenUserName()) {
+		token := password
+		// 这里只校验 token 是否存在，然后查询 token 对应的用户信息。外层会判断该用户是否有对应应用的权限。
+		memberTokenReq := &tokenpb.QueryTokensRequest{Access: token}
+		memberTokenResp, err := c.TokenService.QueryTokens(context.Background(), memberTokenReq)
+		if err != nil {
+			return nil, printErr(fmt.Errorf("failed to get PAT when check auth by token, repo: %s, token: %s, err: %v", repoName, token, err))
+		}
+		if memberTokenResp.Total == 0 {
+			return nil, printErr(fmt.Errorf("PAT not found when get user info by token, repo: %s, token: %s", repoName, token))
+		}
+		userID := memberTokenResp.Data[0].CreatorId
+		userInfo, err := uc.FindUserById(userID)
+		if err != nil {
+			return nil, printErr(fmt.Errorf("failed to get user info by PAT, repo: %s, userID: %s, err: %v", repoName, userID, err))
+		}
+		return identity.NewUserInfoFromDTO(userInfo), nil
+	}
+
+	// otherwise, check by user
+	userInfo, err := GetUserByBasicAuth(c, username, password)
+	if err != nil {
+		return nil, printErr(fmt.Errorf("failed to get user info by basic auth, repo: %s, username: %s, err: %v", repoName, username, err))
+	}
+	logrus.Debugf("success to get user info by basic auth, repo: %s, username: %s", repoName, username)
+	return userInfo, err
 }
+
 func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (*identity.UserInfo, error) {
 	token, err := c.UCAuth.PwdAuth(username, passwd)
 	if err != nil {
