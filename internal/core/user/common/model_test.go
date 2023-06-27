@@ -18,7 +18,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda-proto-go/core/user/pb"
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestToPbUser(t *testing.T) {
@@ -46,6 +49,54 @@ func TestToPbUser(t *testing.T) {
 			if got := ToPbUser(tt.args.user); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToPbUser() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestNewUserInfoFromDTO(t *testing.T) {
+	type args struct {
+		dto *apistructs.UserInfoDto
+	}
+	tests := []struct {
+		name string
+		args args
+		want *UserInfo
+	}{
+		{
+			name: "nil",
+			args: args{
+				dto: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "normal",
+			args: args{
+				dto: &apistructs.UserInfoDto{
+					AvatarURL: "imageURL",
+					Email:     "a@b.com",
+					UserID:    "1234",
+					NickName:  "nickname",
+					Phone:     "123456789",
+					RealName:  "realname",
+					Username:  "username",
+				},
+			},
+			want: &UserInfo{
+				ID:         USERID("1234"),
+				Email:      "a@b.com",
+				EmailExist: true,
+				Phone:      "123456789",
+				PhoneExist: true,
+				AvatarUrl:  "imageURL",
+				UserName:   "username",
+				NickName:   "nickname",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, NewUserInfoFromDTO(tt.args.dto), "NewUserInfoFromDTO(%v)", tt.args.dto)
 		})
 	}
 }
