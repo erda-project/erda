@@ -79,7 +79,7 @@ func (c *_columns) addDimensionColumn(expr influxql.Expr, key string) {
 	})
 }
 
-func (c *_columns) addTimeBucketColumn(timeKey string, intervalSeconds int64) {
+func (c *_columns) addTimeBucketColumn(timeKey string, intervalSeconds int64) _column {
 	timeBucketColumn := fmt.Sprintf("bucket_%s", timeKey)
 	timeBucketExpr := fmt.Sprintf("intDiv(toRelativeSecondNum(timestamp), %v)", intervalSeconds)
 
@@ -90,7 +90,7 @@ func (c *_columns) addTimeBucketColumn(timeKey string, intervalSeconds int64) {
 		isTimeKey:  true,
 	}
 	c.addColumn(timeBucketColumn, _column)
-
+	return _column
 }
 
 func (c *_columns) addWildcard() {
