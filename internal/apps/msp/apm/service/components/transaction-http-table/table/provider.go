@@ -54,10 +54,14 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 
 		pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
-		sorts := append(transaction.GetSortsFromGlobalState(*sdk.GlobalState), &common.Sort{
-			FieldKey:  "avgDuration",
-			Ascending: false,
-		})
+		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
+		sortedBy, ok := p.StdInParamsPtr.Get("sortedBy").(string)
+		if ok {
+			sorts = append(transaction.GetSortsFromGlobalState(*sdk.GlobalState), &common.Sort{
+				FieldKey:  sortedBy,
+				Ascending: false,
+			})
+		}
 
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
 			&viewtable.TransactionTableBuilder{

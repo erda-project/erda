@@ -15,6 +15,7 @@
 package esinfluxql
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/influxdata/influxql"
@@ -73,6 +74,19 @@ func (c *_columns) addCallColumn(expr *influxql.Call, key string) {
 }
 
 func (c *_columns) addDimensionColumn(expr influxql.Expr, key string) {
+	switch ex := expr.(type) {
+	case *influxql.VarRef:
+		buf := bytes.NewBufferString(ex.Val)
+		if ex.Type != influxql.Unknown {
+			buf.WriteString("::")
+			buf.WriteString(ex.Type.String())
+		}
+		c.addColumn(key, _column{
+			expr:   buf.String(),
+			asName: buf.String(),
+		})
+		return
+	}
 	c.addColumn(key, _column{
 		expr:   expr.String(),
 		asName: expr.String(),

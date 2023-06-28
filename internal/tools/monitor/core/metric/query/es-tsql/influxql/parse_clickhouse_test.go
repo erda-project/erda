@@ -603,6 +603,11 @@ func TestGroupBy(t *testing.T) {
 			sql:  "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') as state from table group by time()",
 			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_instance_id')]) AS \"service_instance_id::tag\", toNullable(timestamp) AS \"timestamp\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"timestamp\", intDiv(toRelativeSecondNum(timestamp), 60), \"service_instance_id::tag\"",
 		},
+		{
+			name: "group by name tag",
+			sql:  "SELECT name::tag from table group by time(),name::tag",
+			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'name')]) AS \"name::tag\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"name::tag\", intDiv(toRelativeSecondNum(timestamp), 60)",
+		},
 	}
 
 	for _, test := range tests {
