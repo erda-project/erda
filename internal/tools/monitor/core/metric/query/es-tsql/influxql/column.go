@@ -74,8 +74,8 @@ func (c *_columns) addCallColumn(expr *influxql.Call, key string) {
 
 func (c *_columns) addDimensionColumn(expr influxql.Expr, key string) {
 	c.addColumn(key, _column{
-		expr:   expr.String(),
-		asName: expr.String(),
+		expr:   exprString(expr),
+		asName: exprString(expr),
 	})
 }
 
