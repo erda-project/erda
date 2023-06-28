@@ -88,8 +88,8 @@ func (c *_columns) addDimensionColumn(expr influxql.Expr, key string) {
 		return
 	}
 	c.addColumn(key, _column{
-		expr:   expr.String(),
-		asName: expr.String(),
+		expr:   exprString(expr),
+		asName: exprString(expr),
 	})
 }
 
