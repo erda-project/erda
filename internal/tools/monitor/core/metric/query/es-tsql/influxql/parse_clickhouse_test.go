@@ -731,7 +731,7 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "order by c1,c2 desc,",
 			sql:  "select column1 from table order by column2 desc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"number_field_values[indexOf(number_field_keys,'column2')]\" DESC,\"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"number_field_values[indexOf(number_field_keys,'column2')]\" DESC",
 		},
 		{
 			name: "order by column desc, default",
@@ -750,7 +750,7 @@ func TestOrderBy(t *testing.T) {
 		},
 		{
 			name: "none order by",
-			sql:  "select column1 from table",
+			sql:  "select column1 from table group by column1",
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"column1\" ASC",
 		},
 		{
@@ -769,6 +769,21 @@ func TestOrderBy(t *testing.T) {
 			want: "SELECT MAX(timestamp) AS \"1362043e612fc3f5\", toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"1362043e612fc3f5\" DESC,\"service_id::tag\" ASC",
 		},
 		{
+			name: "no group, no y",
+			sql:  "select avg(load1::field),avg(load5::field),avg(load15::field) from table GROUP BY time()",
+			want: `SELECT AVG(if(indexOf(number_field_keys,'load5') == 0,null,number_field_values[indexOf(number_field_keys,'load5')])) AS "2756505adaab8174", AVG(if(indexOf(number_field_keys,'load15') == 0,null,number_field_values[indexOf(number_field_keys,'load15')])) AS "f401d9b077f06a6e", AVG(if(indexOf(number_field_keys,'load1') == 0,null,number_field_values[indexOf(number_field_keys,'load1')])) AS "719d37bba7262d89", MIN("timestamp") AS "bucket_timestamp" FROM "table" GROUP BY intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY "bucket_timestamp" ASC`,
+		},
+		{
+			name: "group. axis",
+			sql:  "select avg(load1::field),avg(load5::field),avg(load15::field),service_id::tag from table GROUP BY service_id::tag,time()",
+			want: `SELECT AVG(if(indexOf(number_field_keys,'load15') == 0,null,number_field_values[indexOf(number_field_keys,'load15')])) AS "f401d9b077f06a6e", AVG(if(indexOf(number_field_keys,'load1') == 0,null,number_field_values[indexOf(number_field_keys,'load1')])) AS "719d37bba7262d89", AVG(if(indexOf(number_field_keys,'load5') == 0,null,number_field_values[indexOf(number_field_keys,'load5')])) AS "2756505adaab8174", toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS "service_id::tag", MIN("timestamp") AS "bucket_timestamp" FROM "table" GROUP BY "service_id::tag", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY "service_id::tag" ASC, "bucket_timestamp" ASC`,
+		},
+		{
+			name: "avg column",
+			sql:  "select avg(cpu_usage_percent::field) from table GROUP BY time()",
+			want: "SELECT AVG(if(indexOf(number_field_keys,'cpu_usage_percent') == 0,null,number_field_values[indexOf(number_field_keys,'cpu_usage_percent')])) AS \"8c8e2100c8bcb2e3\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"8c8e2100c8bcb2e3\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"bucket_timestamp\" ASC",
+		},
+		{
 			name: "timestamp should by last order",
 			sql:  "select time(),service_id::tag from table GROUP BY service_id::tag,time() ORDER BY service_id::tag desc",
 			want: "SELECT toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS \"service_id::tag\" FROM \"table\" ORDER BY \"service_id::tag\" DESC,\"bucket_timestamp\" ASC",
@@ -776,12 +791,12 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "timestamp desc",
 			sql:  "select column1 from table order by timestamp desc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" DESC,\"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" DESC",
 		},
 		{
 			name: "timestamp asc",
 			sql:  "select column1 from table order by timestamp asc",
-			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC,\"column1\" ASC",
+			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC",
 		},
 	}
 	for _, test := range tests {
@@ -806,10 +821,10 @@ func TestOrderBy(t *testing.T) {
 
 			expr, handlers, columns, err := p.parseQueryOnExpr(selectStmt.Fields, expr)
 
-			expr, _, err = p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handlers, columns)
+			expr, groupColumns, err := p.ParseGroupByOnExpr(selectStmt.Dimensions, expr, &handlers, columns)
 			require.NoError(t, err, "parse group by error")
 
-			expr, err = p.ParseOrderByOnExpr(selectStmt.SortFields, expr, columns)
+			expr, err = p.ParseOrderByOnExpr(selectStmt.SortFields, expr, columns, groupColumns)
 
 			require.NoError(t, err)
 

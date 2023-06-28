@@ -83,24 +83,6 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 		return nil, errors.Wrap(err, "failed to generate SQL")
 	}
 
-	// add tail liters
-	var sb strings.Builder
-	if subLiters := q.SubSearchSource(); subLiters != nil {
-		if tail, ok := subLiters.(map[string]string); ok {
-			////"\"%s\" ASC"
-			//sb.WriteString()
-			for _, v := range tail {
-				sb.WriteString(v)
-			}
-		}
-	}
-
-	sql = strings.ReplaceAll(sql, "\"%s\" ASC", sb.String())
-
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("invalid expresion to sql: %s", sql))
-	}
-
 	result := &model.ResultSet{}
 
 	span.SetAttributes(attribute.String("sql", sql))

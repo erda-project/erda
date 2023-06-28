@@ -92,12 +92,7 @@
               "time()",
               "error::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "count(count::field)"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "typepsbws9VS",
@@ -216,12 +211,7 @@
               "time()",
               "browser::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "count(count::field)"
-              }
-            ],
+            "orderby": [],
             "select": [
               {
                 "alias": "typeZEy4B2z9",
