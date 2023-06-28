@@ -260,7 +260,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 		if err == NO_AUTH_ERROR {
 			c.AbortWithStatus(401)
 		} else {
-			c.AbortWithString(401, err.Error()+" 401")
+			c.AbortWithString(401, fmt.Sprintf("[401 Unauthorized] %s", err.Error()))
 		}
 	}
 }
