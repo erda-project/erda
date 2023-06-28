@@ -798,6 +798,11 @@ func TestOrderBy(t *testing.T) {
 			sql:  "select column1 from table order by timestamp asc",
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC",
 		},
+		{
+			name: "test",
+			sql:  "SELECT key::tag,max(value) as max_value FROM jvm_gc GROUP BY time(),key::tag",
+			want: "SELECT MAX(value) AS \"max_value\", key AS \"key::tag\", addSeconds(toDateTime('1970-01-01 00:00:00'),intDiv(toRelativeSecondNum(timestamp), 60) * 60) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"key::tag\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"key::tag\" ASC, \"bucket_timestamp\" ASC",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
