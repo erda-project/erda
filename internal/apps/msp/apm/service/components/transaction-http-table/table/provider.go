@@ -48,6 +48,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
+		sortedBy := p.StdInParamsPtr.Get("sortedBy").(string)
 		layerPath := ""
 		if x, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionLayerPathFilter]; ok && x != nil {
 			layerPath = x.(string)
@@ -55,7 +56,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
 		sorts := append(transaction.GetSortsFromGlobalState(*sdk.GlobalState), &common.Sort{
-			FieldKey:  "avgDuration",
+			FieldKey:  sortedBy,
 			Ascending: false,
 		})
 
