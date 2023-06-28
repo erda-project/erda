@@ -58,6 +58,7 @@ type FlinkConf struct {
 	JobManagerResource  BigdataResource `json:"jobManagerResource"`
 	TaskManagerResource BigdataResource `json:"taskManagerResource"`
 	LogConfig           string          `json:"logConfig"`
+	EnableUI            bool            `json:"enableUI"`
 }
 
 type SparkConf struct {
