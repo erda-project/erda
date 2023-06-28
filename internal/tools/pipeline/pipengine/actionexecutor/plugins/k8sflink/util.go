@@ -147,9 +147,6 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				PullPolicy: logic.GetPullImagePolicy(),
 			},
 			JobManager: &flinkoperatorv1beta1.JobManagerSpec{
-				Ingress: &flinkoperatorv1beta1.JobManagerIngressSpec{
-					HostFormat: getStringPoints(hostURL),
-				},
 				Replicas:  getInt32Points(data.Spec.FlinkConf.JobManagerResource.Replica),
 				Resources: composeResources(data.Spec.FlinkConf.JobManagerResource),
 				PodLabels: map[string]string{
@@ -190,6 +187,11 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 			FlinkProperties: data.Spec.Properties,
 			LogConfig:       composeLogConfig(data.Spec.FlinkConf.LogConfig),
 		},
+	}
+	if data.Spec.FlinkConf.EnableUI {
+		flinkCluster.Spec.JobManager.Ingress = &flinkoperatorv1beta1.JobManagerIngressSpec{
+			HostFormat: getStringPoints(hostURL),
+		}
 	}
 
 	if data.Spec.FlinkConf.Kind == apistructs.FlinkJob {
