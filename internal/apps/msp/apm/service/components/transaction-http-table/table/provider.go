@@ -48,17 +48,20 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
-		sortedBy := p.StdInParamsPtr.Get("sortedBy").(string)
 		layerPath := ""
 		if x, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionLayerPathFilter]; ok && x != nil {
 			layerPath = x.(string)
 		}
 
 		pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
-		sorts := append(transaction.GetSortsFromGlobalState(*sdk.GlobalState), &common.Sort{
-			FieldKey:  sortedBy,
-			Ascending: false,
-		})
+		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
+		sortedBy, ok := p.StdInParamsPtr.Get("sortedBy").(string)
+		if ok {
+			sorts = append(transaction.GetSortsFromGlobalState(*sdk.GlobalState), &common.Sort{
+				FieldKey:  sortedBy,
+				Ascending: false,
+			})
+		}
 
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
 			&viewtable.TransactionTableBuilder{
