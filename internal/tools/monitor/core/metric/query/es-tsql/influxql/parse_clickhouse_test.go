@@ -798,6 +798,11 @@ func TestOrderBy(t *testing.T) {
 			sql:  "select column1 from table order by timestamp asc",
 			want: "SELECT toNullable(number_field_values[indexOf(number_field_keys,'column1')]) AS \"column1\" FROM \"table\" ORDER BY \"timestamp\" ASC",
 		},
+		{
+			name: "test",
+			sql:  "SELECT name::tag,round_float(avg(time::field), 2) FROM jvm_gc GROUP BY time(),name::tag",
+			want: "got SELECT AVG(if(indexOf(number_field_keys,'time') == 0,null,number_field_values[indexOf(number_field_keys,'time')])) AS \"d14f949127ab317e\", toNullable(tag_values[indexOf(tag_keys,'name')]) AS \"name::tag\", addSeconds(toDateTime('1970-01-01 00:00:00'),intDiv(toRelativeSecondNum(timestamp), 60) * 60) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"name::tag\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"name::tag\" ASC, \"bucket_timestamp\" ASC",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
