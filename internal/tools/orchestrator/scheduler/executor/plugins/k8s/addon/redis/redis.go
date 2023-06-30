@@ -33,6 +33,10 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+var (
+	redisExporterImage = "registry.erda.cloud/retag/redis-exporter:v1.45.0"
+)
+
 type RedisOperator struct {
 	k8s         addon.K8SUtil
 	deployment  addon.DeploymentUtil
@@ -386,6 +390,10 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.A
 			"memory": resource.MustParse(
 				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
 		},
+	}
+	settings.Exporter = RedisExporter{
+		Enabled: true,
+		Image:   redisExporterImage,
 	}
 	settings.Image = svc.Image
 	settings.CustomConfig = []string{
