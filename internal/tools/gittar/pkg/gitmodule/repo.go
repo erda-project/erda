@@ -136,6 +136,7 @@ func (repo *Repository) ParseRefAndTreePath(path string) error {
 		//尝试 treeId
 		tree, err := repo.GetTree(refName)
 		if err != nil {
+			logrus.Errorf("invalid refName: %s, err: %v", refName, err)
 			return fmt.Errorf("无效分支 : %s ", refName)
 		}
 		repo.tree = tree
@@ -159,6 +160,11 @@ func (repo *Repository) GetParsedTreeEntry() (*TreeEntry, error) {
 func (repo *Repository) GetCommitByAny(ref string) (*Commit, error) {
 	var err error
 	var commit *Commit
+	defer func() {
+		if err != nil {
+			logrus.Errorf("unknown ref: %s, error: %v", ref, err)
+		}
+	}()
 	commit, err = repo.GetBranchCommit(ref)
 	if err == nil {
 		return commit, nil
