@@ -378,7 +378,7 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 						},
 					}, {
 						Name:    "es-exporter",
-						Image:   "quay.io/prometheuscommunity/elasticsearch-exporter:v1.5.0",
+						Image:   esExporterImage,
 						Command: []string{"/bin/elasticsearch_exporter", esUri},
 						Ports: []corev1.ContainerPort{
 							{
