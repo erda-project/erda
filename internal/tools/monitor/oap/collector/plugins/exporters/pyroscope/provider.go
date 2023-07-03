@@ -17,6 +17,7 @@ package pyroscope
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	storageconfig "github.com/pyroscope-io/pyroscope/pkg/config"
@@ -61,10 +62,13 @@ var _ model.Exporter = (*provider)(nil)
 func (p *provider) Init(ctx servicehub.Context) error {
 	logger := logrus.StandardLogger()
 	appMetadataSvc := service.NewApplicationMetadataService(p.DB.DB())
-	appMetadataSaver := service.NewApplicationMetadataCacheService(service.ApplicationMetadataCacheServiceConfig{}, appMetadataSvc)
 	st, err := storage.New(storage.NewConfig(&storageconfig.Server{
 		MaxNodesSerialization: 8192,
-	}), logger, prometheus.DefaultRegisterer, new(health.Controller), appMetadataSaver)
+	}), logger, prometheus.DefaultRegisterer, new(health.Controller), service.NewApplicationMetadataCacheService(
+		service.ApplicationMetadataCacheServiceConfig{
+			Size: 8192,
+			TTL:  15 * time.Minute,
+		}, appMetadataSvc))
 	e, err := exporter.NewExporter(storageconfig.MetricsExportRules{}, prometheus.DefaultRegisterer)
 	if err != nil {
 		return err
