@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
@@ -65,6 +66,10 @@ func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) {
 func (p *provider) ProcessRaw(item *odata.Raw) (*odata.Raw, error) {
 	printJSON(item)
 	return item, nil
+}
+func (p *provider) ProcessProfile(item *profile.ProfileIngest) (*profile.Output, error) {
+	printJSON(item)
+	return &profile.Output{}, nil
 }
 
 func printJSON(data interface{}) {

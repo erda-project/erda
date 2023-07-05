@@ -111,12 +111,12 @@ func (b *Buffer) FlushAllRaws() []*Raw {
 	return out
 }
 
-func (b *Buffer) FlushAllProfiles() []*profile.ProfileIngest {
+func (b *Buffer) FlushAllProfiles() []*profile.Output {
 	b.Lock()
 	defer b.Unlock()
-	out := make([]*profile.ProfileIngest, len(b.buf))
+	out := make([]*profile.Output, len(b.buf))
 	for i := range b.buf {
-		out[i] = b.buf[i].(*profile.ProfileIngest)
+		out[i] = b.buf[i].(*profile.Output)
 	}
 
 	b.buf = b.buf[:0]

@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
 	metricstore "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/metric"
+	profilebuilder "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/span"
 )
 
@@ -55,9 +56,12 @@ func (p *provider) ComponentClose() error {
 	return p.storage.Close()
 }
 
-func (p *provider) ExportRaw(items ...*odata.Raw) error                 { return nil }
-func (p *provider) ExportLog(items ...*log.Log) error                   { return nil }
-func (p *provider) ExportProfile(items ...*profile.ProfileIngest) error { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }
+func (p *provider) ExportLog(items ...*log.Log) error   { return nil }
+func (p *provider) ExportProfile(items ...*profile.Output) error {
+	p.storage.WriteBatchAsync(items)
+	return nil
+}
 
 func (p *provider) ExportMetric(items ...*metric.Metric) error {
 	p.storage.WriteBatchAsync(items)
@@ -83,6 +87,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	switch dt {
 	case odata.SpanType:
 	case odata.MetricType:
+	case odata.ProfileType:
 	default:
 		return fmt.Errorf("invalid builder for data_type: %q", p.Cfg.BuilderCfg.DataType)
 	}
@@ -99,6 +104,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		tmp, err := metricstore.NewBuilder(ctx, p.Log.Sub("metric-builder"), p.Cfg.BuilderCfg)
 		if err != nil {
 			return fmt.Errorf("metrics build: %w", err)
+		}
+		batchBuilder = tmp
+	case odata.ProfileType:
+		tmp, err := profilebuilder.NewBuilder(ctx, p.Log.Sub("profile-builder"), p.Cfg.BuilderCfg)
+		if err != nil {
+			return fmt.Errorf("profile build: %w", err)
 		}
 		batchBuilder = tmp
 	default:

@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 )
 
 func Test_provider_ExportMetric(t *testing.T) {
@@ -52,6 +53,38 @@ func Test_provider_ExportMetric(t *testing.T) {
 			}
 			if err := p.ExportMetric(tt.args.items...); (err != nil) != tt.wantErr {
 				t.Errorf("ExportMetric() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestExportProfile(t *testing.T) {
+	type args struct {
+		items []*profile.Output
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "profiles",
+			args: args{
+				items: []*profile.Output{
+					profile.NewOutput(),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		p := &provider{
+			writer: &mockWriter{},
+			Cfg:    &config{Topic: "test"},
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			err := p.ExportProfile(tt.args.items...)
+			if err != nil {
+				t.Errorf("ExportProfile() error = %v", err)
 			}
 		})
 	}

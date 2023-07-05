@@ -585,8 +585,10 @@ erda.oap.collector.core:
     profiles:
       - receivers:
           - "erda.oap.collector.receiver.kafka@spotprofile"
+        processors:
+          - "erda.oap.collector.processor.profile"
         exporters:
-          - "erda.oap.collector.exporter.pyroscope@profile"
+          - "erda.oap.collector.exporter.clickhouse@profile"
         batch_size: ${EXPORTER_CLICKHOUSE_METRIC_BATCH_SIZE:4096}
         flush_interval: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_INTERVAL}
         flush_jitter: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_JITTER}
@@ -626,6 +628,8 @@ erda.oap.collector.processor.modifier@span:
       key: tags.http_request_content_length
     - action: drop
       key: tags.http_wrote_bytes
+
+erda.oap.collector.processor.profile: {}
 
 erda.oap.collector.exporter.clickhouse@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
@@ -685,7 +689,13 @@ erda.oap.collector.exporter.clickhouse@metric:
     data_type: metric
     tenant_id_key: _metric_scope_id
 
-erda.oap.collector.exporter.pyroscope@profile: {}
+erda.oap.collector.exporter.clickhouse@profile:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  storage:
+    currency_num: ${EXPORTER_CH_METRIC_CURRENCY_NUM:2}
+  builder:
+    data_type: profile
+    tenant_id_key: _metric_scope_id
 
 clickhouse.table.initializer@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}

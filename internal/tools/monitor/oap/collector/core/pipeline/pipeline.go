@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/config"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	odata2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
@@ -249,6 +250,16 @@ loop:
 				data = tmp
 			case odata2.RawType:
 				tmp, err := pr.Processor.ProcessRaw(data.(*odata2.Raw))
+				if err != nil {
+					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+					continue
+				}
+				if tmp == nil {
+					goto loop
+				}
+				data = tmp
+			case odata2.ProfileType:
+				tmp, err := pr.Processor.ProcessProfile(data.(*profile.ProfileIngest))
 				if err != nil {
 					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 					continue
