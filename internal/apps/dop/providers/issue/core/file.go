@@ -333,6 +333,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		ProjectID:    data.ProjectID,
 		PageNo:       1,
 		PageSize:     99999,
+		External:     true,
 		OnlyIdResult: true,
 	}, false)
 	if err != nil {

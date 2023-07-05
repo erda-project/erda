@@ -363,6 +363,9 @@ func (client *DBClient) PagingIssues(req pb.PagingIssueRequest, queryIDs bool) (
 	if len(req.Participant) > 0 {
 		sql = sql.Joins(joinParticipant).Where("erda_issue_subscriber.user_id in (?)", req.Participant).Select("distinct dice_issues.*")
 	}
+	if req.OnlyIdResult {
+		sql = sql.Select("dice_issues.id")
+	}
 
 	offset := (req.PageNo - 1) * req.PageSize
 	if err := sql.Offset(offset).Limit(req.PageSize).Find(&issues).
