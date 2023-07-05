@@ -96,6 +96,11 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 						{
 							"id":   "viewDetail",
 							"text": p.I18n.Text(lang, "transactionDetail"),
+							"operations": map[string]interface{}{
+								"click": map[string]interface{}{
+									"skipRender": true,
+								},
+							},
 						},
 					},
 				},
