@@ -17,6 +17,7 @@ package stateVerticalBarChart
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -109,9 +110,19 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			XIndexer: func(item interface{}) string {
 				switch c.Name {
 				case "iteration":
-					return iterationMap[item.(*dao.IssueItem).IterationID].Title
+					iterationID := item.(*dao.IssueItem).IterationID
+					iteration, ok := iterationMap[iterationID]
+					if !ok {
+						return fmt.Sprintf("unknown iteration id: %d", iterationID)
+					}
+					return iteration.Title
 				default:
-					return stateMap[uint64(item.(*dao.IssueItem).State)].Name
+					stateID := uint64(item.(*dao.IssueItem).State)
+					state, ok := stateMap[stateID]
+					if !ok {
+						return fmt.Sprintf("unknown state id: %d", stateID)
+					}
+					return state.Name
 				}
 			},
 			XDisplayConverter: func(opt *chartbuilders.FixedXAxisOrTop) opts.XAxis {
