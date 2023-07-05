@@ -23,6 +23,12 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/model/appmetadata"
 	"github.com/pyroscope-io/pyroscope/pkg/storage/segment"
 	"github.com/pyroscope-io/pyroscope/pkg/storage/tree"
+
+	"github.com/erda-project/erda/apistructs"
+)
+
+const (
+	orgNameKey = "org_name"
 )
 
 type ProfileIngest struct {
@@ -114,13 +120,13 @@ func (o *Output) GetTags() map[string]string {
 	for _, v := range o.profiles {
 		if v.App != nil {
 			return map[string]string{
-				"org_name":            v.App.OrgName,
-				"DICE_ORG_ID":         v.App.OrgID,
-				"DICE_ORG_NAME":       v.App.OrgName,
-				"POD_IP":              v.App.PodIP,
-				"DICE_PROJECT_ID":     v.App.ProjectID,
-				"DICE_APPLICATION_ID": v.App.AppID,
-				"DICE_SERVICE":        v.App.ServiceName,
+				orgNameKey:                      v.App.OrgName,
+				apistructs.EnvDiceOrgID:         v.App.OrgID,
+				apistructs.EnvDiceOrgName:       v.App.OrgName,
+				apistructs.EnvPodIP:             v.App.PodIP,
+				apistructs.EnvDiceProjectID:     v.App.ProjectID,
+				apistructs.EnvDiceApplicationID: v.App.AppID,
+				apistructs.EnvDiceServiceName:   v.App.ServiceName,
 			}
 		}
 	}

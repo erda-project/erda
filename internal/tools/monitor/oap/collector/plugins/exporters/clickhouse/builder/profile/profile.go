@@ -64,7 +64,7 @@ func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.Builder
 
 	ch, err := builder.GetClickHouseInf(ctx, odata.ProfileType)
 	if err != nil {
-		return nil, fmt.Errorf("get clickhouse interface: %w", err)
+		return nil, fmt.Errorf("failed to get clickhouse interface: %w", err)
 	}
 	bu.client = ch.Client()
 	db, err := GetMysqlInf(ctx)

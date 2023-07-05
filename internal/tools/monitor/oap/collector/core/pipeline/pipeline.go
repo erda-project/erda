@@ -261,7 +261,7 @@ loop:
 			case odata2.ProfileType:
 				tmp, err := pr.Processor.ProcessProfile(data.(*profile.ProfileIngest))
 				if err != nil {
-					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
+					p.Log.Errorf("Processor<%s> process profile data error: %s", pr.Name, err)
 					continue
 				}
 				if tmp == nil {

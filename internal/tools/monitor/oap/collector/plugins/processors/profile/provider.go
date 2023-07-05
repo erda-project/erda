@@ -37,6 +37,8 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/storage/tree"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
@@ -109,16 +111,16 @@ func (p *provider) Put(ctx context.Context, pi *storage.PutInput) error {
 		Units:           pi.Units,
 		AggregationType: pi.AggregationType,
 		SampleType:      appList[len(appList)-1],
-		OrgID:           pi.Key.Labels()["DICE_ORG_ID"],
-		OrgName:         pi.Key.Labels()["DICE_ORG_NAME"],
-		Workspace:       pi.Key.Labels()["DICE_WORKSPACE"],
-		ProjectID:       pi.Key.Labels()["DICE_PROJECT_ID"],
-		ProjectName:     pi.Key.Labels()["DICE_PROJECT_NAME"],
-		AppID:           pi.Key.Labels()["DICE_APPLICATION_ID"],
-		AppName:         pi.Key.Labels()["DICE_APPLICATION_NAME"],
-		ClusterName:     pi.Key.Labels()["DICE_CLUSTER_NAME"],
-		ServiceName:     pi.Key.Labels()["DICE_SERVICE"],
-		PodIP:           pi.Key.Labels()["POD_IP"],
+		OrgID:           pi.Key.Labels()[apistructs.EnvDiceOrgID],
+		OrgName:         pi.Key.Labels()[apistructs.EnvDiceOrgName],
+		Workspace:       pi.Key.Labels()[apistructs.EnvDiceWorkspace],
+		ProjectID:       pi.Key.Labels()[apistructs.EnvDiceProjectID],
+		ProjectName:     pi.Key.Labels()[apistructs.EnvDiceProjectName],
+		AppID:           pi.Key.Labels()[apistructs.EnvDiceApplicationID],
+		AppName:         pi.Key.Labels()[apistructs.EnvDiceApplicationName],
+		ClusterName:     pi.Key.Labels()[apistructs.EnvDiceClusterName],
+		ServiceName:     pi.Key.Labels()[apistructs.EnvDiceServiceName],
+		PodIP:           pi.Key.Labels()[apistructs.EnvPodIP],
 	}
 
 	sk := pi.Key.SegmentKey()
