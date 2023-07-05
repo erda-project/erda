@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins"
@@ -69,6 +70,9 @@ func (p *provider) ProcessMetric(item *metric.Metric) (*metric.Metric, error) {
 func (p *provider) ProcessLog(item *log.Log) (*log.Log, error)        { return item, nil }
 func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) { return item, nil }
 func (p *provider) ProcessRaw(item *odata.Raw) (*odata.Raw, error)    { return item, nil }
+func (p *provider) ProcessProfile(item *profile.ProfileIngest) (*profile.Output, error) {
+	return &profile.Output{}, nil
+}
 
 func (p *provider) add(item *metric.Metric) *metric.Metric {
 	id := item.Hash()

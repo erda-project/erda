@@ -93,6 +93,9 @@ func (p *provider) initComponents() error {
 		return err
 	}
 	p.profilePipelines, err = p.createPipelines(p.Cfg.Pipelines.Profiles, odata.ProfileType)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
