@@ -99,10 +99,10 @@ func (p *provider) ExportMetric(items ...*metric.Metric) error {
 	return nil
 }
 
-func (p *provider) ExportLog(items ...*log.Log) error                   { return nil }
-func (p *provider) ExportSpan(items ...*trace.Span) error               { return nil }
-func (p *provider) ExportRaw(items ...*odata.Raw) error                 { return nil }
-func (p *provider) ExportProfile(items ...*profile.ProfileIngest) error { return nil }
+func (p *provider) ExportLog(items ...*log.Log) error            { return nil }
+func (p *provider) ExportSpan(items ...*trace.Span) error        { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error          { return nil }
+func (p *provider) ExportProfile(items ...*profile.Output) error { return nil }
 
 func (p *provider) ComponentConfig() interface{} {
 	return p.Cfg

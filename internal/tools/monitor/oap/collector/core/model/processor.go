@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	odata2 "github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 )
 
@@ -37,6 +38,7 @@ type Processor interface {
 	ProcessLog(item *log.Log) (*log.Log, error)
 	ProcessSpan(item *trace.Span) (*trace.Span, error)
 	ProcessRaw(item *odata2.Raw) (*odata2.Raw, error)
+	ProcessProfile(item *profile.ProfileIngest) (*profile.Output, error)
 }
 
 type NoopProcessor struct {

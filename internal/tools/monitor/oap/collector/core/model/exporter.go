@@ -126,7 +126,7 @@ type Exporter interface {
 	ExportLog(items ...*log.Log) error
 	ExportSpan(items ...*trace.Span) error
 	ExportRaw(items ...*odata2.Raw) error
-	ExportProfile(items ...*profile.ProfileIngest) error
+	ExportProfile(items ...*profile.Output) error
 }
 
 type NoopExporter struct{}

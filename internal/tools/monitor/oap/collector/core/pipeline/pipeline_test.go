@@ -13,3 +13,61 @@
 // limitations under the License.
 
 package pipeline
+
+import (
+	"testing"
+	"time"
+
+	"github.com/pyroscope-io/pyroscope/pkg/ingestion"
+	"github.com/pyroscope-io/pyroscope/pkg/storage/segment"
+
+	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
+)
+
+func Test_startProcessors(t *testing.T) {
+	p := &Pipeline{
+		processors: []*model.RuntimeProcessor{
+			{
+				Name:      "profile-processor",
+				Processor: &mockProfileProcessor{},
+				Filter:    &model.DataFilter{},
+			},
+		},
+		dtype: odata.ProfileType,
+	}
+	dataIn := make(chan odata.ObservableData, 10)
+	dataOut := make(chan odata.ObservableData, 10)
+	dataIn <- &profile.ProfileIngest{
+		Metadata: ingestion.Metadata{
+			Key: segment.NewKey(map[string]string{
+				"DICE_WORKSPACE": "test",
+				"DICE_ORG_NAME":  "erda",
+			}),
+		},
+	}
+	go p.startProcessors(dataIn, dataOut)
+	time.Sleep(time.Second)
+	profileOutput := <-dataOut
+	if _, ok := profileOutput.(*profile.Output); !ok {
+		t.Errorf("profile processor failed")
+	}
+}
+
+type mockProfileProcessor struct{}
+
+func (m *mockProfileProcessor) ComponentConfig() interface{} { return nil }
+func (m *mockProfileProcessor) ComponentClose() error        { return nil }
+func (p *mockProfileProcessor) ProcessMetric(item *metric.Metric) (*metric.Metric, error) {
+	return item, nil
+}
+func (p *mockProfileProcessor) ProcessLog(item *log.Log) (*log.Log, error)        { return item, nil }
+func (p *mockProfileProcessor) ProcessSpan(item *trace.Span) (*trace.Span, error) { return item, nil }
+func (p *mockProfileProcessor) ProcessRaw(item *odata.Raw) (*odata.Raw, error)    { return item, nil }
+func (p *mockProfileProcessor) ProcessProfile(item *profile.ProfileIngest) (*profile.Output, error) {
+	return &profile.Output{}, nil
+}

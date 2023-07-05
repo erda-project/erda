@@ -27,12 +27,12 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/aggregator"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/modifier"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/profile"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/stdout"
 
 	// exporters
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/collector"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/kafka"
-	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/pyroscope"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/stdout"
 )

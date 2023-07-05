@@ -127,7 +127,7 @@ func (p *provider) ExportRaw(items ...*odata.Raw) error {
 	return nil
 }
 
-func (p *provider) ExportProfile(items ...*profile.ProfileIngest) error {
+func (p *provider) ExportProfile(items ...*profile.Output) error {
 	for _, item := range items {
 		if !p.Cfg.Print {
 			continue
