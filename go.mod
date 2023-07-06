@@ -6,7 +6,7 @@ require (
 	bou.ke/monkey v1.0.2
 	erda.cloud/rocketmq v0.0.0-20221216094959-4f1e33965edc
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2
-	github.com/ClickHouse/clickhouse-go/v2 v2.10.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.10.1
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
@@ -471,7 +471,6 @@ require (
 
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
-	github.com/ClickHouse/clickhouse-go/v2 => github.com/ClickHouse/clickhouse-go/v2 v2.6.5
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.4
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
