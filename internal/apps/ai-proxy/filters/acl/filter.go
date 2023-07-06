@@ -18,7 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"net/http"
+	"sync"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -60,6 +62,17 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 
 func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+
+	// only access control request rom platform erda.cloud
+	value, ok := ctx.Value(vars.CtxKeyMap{}).(*sync.Map).Load(vars.CtxKeyCredential{})
+	if !ok || value == nil {
+		return reverseproxy.Continue, nil
+	}
+	credential, ok := value.(*models.AIProxyCredentials)
+	if !ok || credential == nil || credential.Platform != "erda.cloud" {
+		return reverseproxy.Continue, nil
+	}
+
 	if source := infor.Header().Get(vars.XErdaAIProxySource); source != "" {
 		if _, ok := f.sources[source]; !ok {
 			return reverseproxy.Continue, nil

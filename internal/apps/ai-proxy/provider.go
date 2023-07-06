@@ -145,6 +145,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
 	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options())
 	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options())
+	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options())
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Any("/metrics", promhttp.Handler())
@@ -161,6 +162,7 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
+			vars.CtxKeyMap{}, new(sync.Map),
 		).
 		ServeHTTP(w, r)
 }

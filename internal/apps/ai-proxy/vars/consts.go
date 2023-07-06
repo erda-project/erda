@@ -29,7 +29,9 @@ const (
 )
 
 type (
-	CtxKeyOrgSvc   struct{ CtxKeyOrgServer any }
-	CtxKeyDAO      struct{ CtxKeyDatabaseAccess any }
-	CtxKeyProvider struct{ CtxKeyProvider any }
+	CtxKeyOrgSvc     struct{ CtxKeyOrgServer any }
+	CtxKeyDAO        struct{ CtxKeyDatabaseAccess any }
+	CtxKeyProvider   struct{ CtxKeyProvider any }
+	CtxKeyMap        struct{ CtxKeyMap any }
+	CtxKeyCredential struct{ CtxKeyCredential any }
 )

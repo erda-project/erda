@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
+import "common/http.proto";
+
+service AIProvider {
+  option(erda.common.openapi_service) = {
+    service: "ai-proxy",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc CreateProvider(Provider) returns (Provider) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/providers"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/providers"
+    };
+  }
+
+  rpc DeleteProvider(Provider) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      delete: "/api/ai-proxy/providers/{name}/{instanceId}"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/providers/{name}/{instanceId}"
+    };
+  }
+
+  rpc UpdateProvider(Provider) returns (Provider) {
+    option(google.api.http) = {
+      put: "/api/ai-proxy/providers/{name}/{instanceId}"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/providers/{name}/{instanceId}"
+    };
+  }
+
+  rpc ListProviders(Provider) returns (ListProvidersRespData) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/providers"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/providers"
+    };
+  }
+
+  rpc GetProvider(Provider) returns (Provider) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/providers/{name}/{instanceId}"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-proxy/providers/{name}/{instanceId}"
+    };
+  }
+}
+
+message Provider {
+  string name = 1;
+  string instanceId = 2;
+  string host = 3;
+  string scheme = 4;
+  string description = 5;
+  string docSite = 6;
+  string appKey = 7;
+  string metadata = 8;
+}
+
+message ListProvidersRespData {
+  uint32 total = 1;
+  repeated Provider list = 2;
+}

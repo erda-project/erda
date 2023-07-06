@@ -51,6 +51,7 @@ func init() {
 }
 
 type DAO interface {
+	Q() *gorm.DB
 	Tx() *gorm.DB
 	Model(value any) *gorm.DB
 	Create(value any) *gorm.DB
@@ -72,6 +73,10 @@ type provider struct {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, options ...any) any {
 	return p
+}
+
+func (p *provider) Q() *gorm.DB {
+	return p.DB
 }
 
 func (p *provider) Tx() *gorm.DB {
