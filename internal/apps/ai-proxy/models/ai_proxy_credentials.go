@@ -34,6 +34,23 @@ type AIProxyCredentials struct {
 	Description string    `json:"description" yaml:"description" gorm:"description"`
 	Enabled     bool      `json:"enabled" yaml:"enabled" gorm:"enabled"`
 	ExpiredAt   time.Time `json:"expiredAt" yaml:"expiredAt" gorm:"expired_at"`
+
+	ProviderName     string `json:"providerName" yaml:"providerName" gorm:"provider_name"`
+	ProviderInstance string `json:"providerInstance" yaml:"providerInstance" gorm:"provider_instance"`
+}
+
+func NewCredential(credential *pb.Credential) *AIProxyCredentials {
+	var model AIProxyCredentials
+	model.AccessKeyId = credential.GetAccessKeyId()
+	model.SecretKeyId = credential.GetSecretKeyId()
+	model.Name = credential.GetName()
+	model.Platform = credential.GetPlatform()
+	model.Description = credential.GetDescription()
+	model.Enabled = credential.GetEnabled()
+	model.ProviderName = credential.GetProviderName()
+	model.ProviderInstance = credential.GetProviderInstance()
+	model.ExpiredAt = time.Date(2099, time.January, 1, 0, 0, 0, 0, time.Local)
+	return &model
 }
 
 func (AIProxyCredentials) TableName() string {
@@ -42,11 +59,13 @@ func (AIProxyCredentials) TableName() string {
 
 func (model AIProxyCredentials) ToProtobuf() *pb.Credential {
 	return &pb.Credential{
-		AccessKeyId: model.AccessKeyId,
-		SecretKeyId: model.SecretKeyId,
-		Name:        model.Name,
-		Platform:    model.Platform,
-		Description: model.Description,
-		Enabled:     model.Enabled,
+		AccessKeyId:      model.AccessKeyId,
+		SecretKeyId:      model.SecretKeyId,
+		Name:             model.Name,
+		Platform:         model.Platform,
+		Description:      model.Description,
+		Enabled:          model.Enabled,
+		ProviderName:     model.ProviderName,
+		ProviderInstance: model.ProviderInstance,
 	}
 }

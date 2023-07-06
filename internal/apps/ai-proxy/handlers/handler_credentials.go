@@ -17,12 +17,10 @@ package handlers
 import (
 	"context"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
-	"gorm.io/gorm"
-	"regexp"
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
+	"regexp"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
@@ -48,15 +46,13 @@ func (h *CredentialsHandler) CreateCredential(ctx context.Context, credential *p
 	if err := CheckCredential(credential); err != nil {
 		return nil, err
 	}
-	var model = models.AIProxyCredentials{
-		AccessKeyId: credential.GetAccessKeyId(),
-		SecretKeyId: credential.GetSecretKeyId(),
-		Name:        credential.GetName(),
-		Platform:    credential.GetPlatform(),
-		Description: credential.GetDescription(),
-		Enabled:     credential.GetEnabled(),
-		ExpiredAt:   time.Date(2099, time.January, 1, 0, 0, 0, 0, time.Local),
+	if err := h.Q().First(new(models.AIProxyCredentials), map[string]any{
+		"platform": credential.GetPlatform(),
+		"name":     credential.GetName(),
+	}).Error; err == nil {
+		return nil, errors.Errorf("the credential % on the platform %s already exists", credential.GetName(), credential.GetPlatform())
 	}
+	var model = models.NewCredential(credential)
 	if err := h.Dao.Create(&model).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to create credential")
 	}
@@ -82,11 +78,13 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 	model.Description = credential.GetDescription()
 	model.Enabled = credential.GetEnabled()
 	var updates = map[string]any{
-		"secret_key_id": model.SecretKeyId,
-		"name":          model.Name,
-		"platform":      model.Platform,
-		"description":   model.Description,
-		"enabled":       model.Enabled,
+		"secret_key_id":     model.SecretKeyId,
+		"name":              model.Name,
+		"platform":          model.Platform,
+		"description":       model.Description,
+		"enabled":           model.Enabled,
+		"provider_name":     model.ProviderName,
+		"provider_instance": model.ProviderInstance,
 	}
 	if err := h.Dao.Model(&model).Where(where).Updates(updates).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to update credential")

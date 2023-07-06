@@ -17,7 +17,7 @@ User-ID: {{ai-proxy_user-id}}
 }
 
 ### update session
-PUT https://{{ai-proxy_host}}}}/api/ai-proxy/sessions/{{$random.uuid}}
+PUT https://{{ai-proxy_host}}/api/ai-proxy/sessions/{{$random.uuid}}
 Content-Type: application/json
 User-ID: {{ai-proxy_user-id}}
 
@@ -34,19 +34,19 @@ User-ID: {{ai-proxy_user-id}}
 
 
 ### Get sessions
-GET https://ai-proxy.daily.terminus.io/api/ai-proxy/sessions
+GET https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
 User-ID: {{ai-proxy_user-id}}
 X-Erda-AI-Proxy-Source: erda
 
 ### Get chat logs
-GET https://ai-proxy.daily.terminus.io/api/ai-proxy/chat-logs
+GET https://{{ai-proxy_host}}/api/ai-proxy/chat-logs
 Content-Type: application/json
 User-ID: {{ai-proxy_user-id}}
 X-Erda-AI-Proxy-SessionId: {{$random.uuid}}
 
-### chat
-POST https://ai-proxy.daily.terminus.io/v1/chat/completions
+### chat on erda
+POST https://{{ai-proxy_host}}/v1/chat/completions
 Org-ID: {{ai-proxy-org-id}}
 User-ID: {{ai-proxy_user-id}}
 X-Erda-AI-Proxy-SessionId: {{$random.uuid}}
@@ -55,13 +55,48 @@ Authorization: Bearer {{ai-proxy_app-key}}
 Content-Type: application/json
 
 {
-    "model": "gpt-35-turbo-0301",
-    "messages": [
-        {
-            "role": "user",
-            "content": "柠檬精是什么 ?"
-        }
-    ],
-    "max_tokens": 2048,
-    "stream": true
+  "model": "gpt-35-turbo-0301",
+  "messages": [
+    {
+      "role": "user",
+      "content": "柠檬精是什么 ?"
+    }
+  ],
+  "max_tokens": 2048,
+  "stream": true
 }
+
+### chat on other platform
+POST https://{{ai-proxy_host}}/v1/chat/completions
+Authorization: Bearer {{ai-proxy_app-key}}
+Content-Type: application/json
+
+{
+  "model": "gpt-35-turbo-0301",
+  "messages": [
+    {
+      "role": "user",
+      "content": "柠檬精是什么 ?"
+    }
+  ],
+  "max_tokens": 2048,
+  "stream": true
+}
+
+### Get credentials
+GET https://{{ai-proxy_host}}/api/ai-proxy/credentials
+
+### Create credentials
+POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
+Content-Type: application/json
+
+{
+  "name": "macos-native-erda-daily",
+  "platform": "macos-native",
+  "description": "macos 原生应用",
+  "enabled": true,
+  "providerName": "azure",
+  "providerInstance": "default"
+}
+
+###
