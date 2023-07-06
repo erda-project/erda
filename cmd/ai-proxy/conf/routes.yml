@@ -44,11 +44,13 @@ routes:
       - name: log-http
       - name: key-auth
         config:
-          message: {"messages": [{"role": "assistant", "content": "invalid appKey", "name": "CodeAI"}]}
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
       - name: body-size-limit
         config:
           maxSize: 102400
-          message: {"messages": [{"role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI"}]}
+          message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
       - name: acl
         config:
           sources:
@@ -72,11 +74,13 @@ routes:
       - name: log-http
       - name: key-auth
         config:
-          message: {"messages": [{"role": "assistant", "content": "invalid appKey", "name": "CodeAI"}]}
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
       - name: body-size-limit
         config:
           maxSize: 102400
-          message: {"messages": [{"role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI"}]}
+          message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
       - name: acl
         config:
           sources:
