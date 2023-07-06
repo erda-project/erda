@@ -98,8 +98,8 @@ github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 h1:Etfj2lhXyrY
 github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6/go.mod h1:YzuYAe2hrrwKXkM9kqjbkTLlkbA+/xw2MA46f1+ENxc=
 github.com/ClickHouse/ch-go v0.53.0 h1:gD9oP15FW+1oTTYyVzmuVfM+bk5cB5wqdscBIIw/mRA=
 github.com/ClickHouse/ch-go v0.53.0/go.mod h1:B9htMJ0hii/zrC2hljUKdnagRBuLqtRG/GrU3jqCwRk=
-github.com/ClickHouse/clickhouse-go/v2 v2.6.5 h1:j/MpuPz2cAmepaiAAT2VIJRiCIMkGBgT2ET5Wn7leyw=
-github.com/ClickHouse/clickhouse-go/v2 v2.6.5/go.mod h1:GcNAg9SniIu+BqzOxRsTmXAGvhlSaUm/Y9GFdWUCbX8=
+github.com/ClickHouse/clickhouse-go/v2 v2.10.1 h1:WCnusqEeCO/9sLFVIv57le/O1ydUb+x9+SYYhJ11fsY=
+github.com/ClickHouse/clickhouse-go/v2 v2.10.1/go.mod h1:teXfZNM90iQ99Jnuht+dxQXCuhDZ8nvvMoTJOFrcmcg=
 github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 h1:sR+/8Yb4slttB4vD+b9btVEnWgL3Q00OBTzVT8B9C0c=
 github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53/go.mod h1:+3IMCy2vIlbG1XG/0ggNQv0SvxCAIpPM5b1nCz56Xno=
 github.com/CloudyKit/jet v2.1.2+incompatible h1:ybZoYzMBdoijK6I+Ke3vg9GZsmlKo/ZhKdNMWz0P26c=
