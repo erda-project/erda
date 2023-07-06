@@ -31,8 +31,6 @@ User-ID: {{ai-proxy_user-id}}
   "resetAt": "2020-05-31T15:31:44Z"
 }
 
-
-
 ### Get sessions
 GET https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
@@ -68,7 +66,7 @@ Content-Type: application/json
 
 ### chat on other platform
 POST https://{{ai-proxy_host}}/v1/chat/completions
-Authorization: Bearer {{ai-proxy_app-key}}
+Authorization: Bearer {{access-key-id}}
 Content-Type: application/json
 
 {
@@ -80,7 +78,7 @@ Content-Type: application/json
     }
   ],
   "max_tokens": 2048,
-  "stream": true
+  "stream": false
 }
 
 ### Get credentials
@@ -92,6 +90,7 @@ Content-Type: application/json
 
 {
   "name": "macos-native-erda-daily",
+  "accessKeyId": "{{access-key-id}}",
   "platform": "macos-native",
   "description": "macos 原生应用",
   "enabled": true,
