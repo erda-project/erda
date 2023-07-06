@@ -14,8 +14,8 @@ CREATE TABLE `ai_proxy_credentials`
     `expired_at`        DATETIME     NOT NULL DEFAULT '2099-01-01 00:00:00' COMMENT '凭证过期时间',
 
     `provider_name`     VARCHAR(64)  NOT NULL DEFAULT '' COMMENT 'AI 服务 Provider 名称',
-    `provider_instance` VARCHAR(64)  NOT NULL DEFAULT '' COMMENT 'AI 服务 Provider 实例 id'
-        PRIMARY KEY (`id`),
+    `provider_instance` VARCHAR(64)  NOT NULL DEFAULT '' COMMENT 'AI 服务 Provider 实例 id',
+    PRIMARY KEY (`id`),
     INDEX `idx_access_key_id` (`access_key_id`),
     INDEX `idx_name` (`name`),
     INDEX `idx_platform` (`platform`)
