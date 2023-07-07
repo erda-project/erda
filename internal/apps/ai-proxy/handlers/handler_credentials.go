@@ -49,7 +49,7 @@ func (h *CredentialsHandler) CreateCredential(ctx context.Context, credential *p
 		"platform": credential.GetPlatform(),
 		"name":     credential.GetName(),
 	}).Error; err == nil {
-		return nil, errors.Errorf("the credential % on the platform %s already exists", credential.GetName(), credential.GetPlatform())
+		return nil, errors.Errorf("the credential %s on the platform %s already exists", credential.GetName(), credential.GetPlatform())
 	}
 	var model = models.NewCredential(credential)
 	if err := h.Dao.Create(&model).Error; err != nil {
@@ -119,10 +119,10 @@ func (h *CredentialsHandler) GetCredential(_ context.Context, req *pb.GetCredent
 
 func AdjustCredential(credential *pb.Credential) {
 	if credential.GetAccessKeyId() == "" {
-		credential.AccessKeyId = strings.TrimFunc(uuid.NewString(), func(r rune) bool { return r == '-' })
+		credential.AccessKeyId = strings.ReplaceAll(uuid.NewString(), "-", "")
 	}
 	if credential.GetSecretKeyId() == "" {
-		credential.SecretKeyId = strings.TrimFunc(uuid.NewString(), func(r rune) bool { return r == '-' })
+		credential.SecretKeyId = strings.ReplaceAll(uuid.NewString(), "-", "")
 	}
 }
 

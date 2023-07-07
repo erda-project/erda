@@ -5,6 +5,8 @@ CREATE TABLE `ai_proxy_filter_audit`
     `updated_at`            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted_at`            DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
 
+    `app_key_sha256`        CHAR(64)     NOT NULL DEFAULT '' COMMENT '请求使用的 app_key sha256 哈希值',
+
     `username`              VARCHAR(128) NOT NULL COMMENT '用户名称, source=dingtalk时, 为钉钉用户名称',
     `phone_number`          VARCHAR(32)  NOT NULL COMMENT '用户手机号码, source=dingtalk时, 为钉钉账号注册手机号',
     `job_number`            VARCHAR(32)  NOT NULL COMMENT '用户工号, source=dingtalk时, 为用户在其组织内的工号',

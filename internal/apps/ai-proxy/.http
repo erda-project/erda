@@ -88,9 +88,9 @@ POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
 Content-Type: application/json
 
 {
-  "name": "fdp-test",
-  "platform": "fdp",
-  "description": "fdp ",
+  "name": "CodeAI",
+  "platform": "ding",
+  "description": "钉钉机器人 CodeAI",
   "enabled": true,
   "providerName": "azure",
   "providerInstance": "default"
