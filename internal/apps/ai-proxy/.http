@@ -6,7 +6,6 @@ POST https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
 User-ID: {{ai-proxy_user-id}}
 
-
 {
   "name": "test-session-1",
   "topic": "i am a Go developer, you are my pair programming partner",
@@ -89,10 +88,9 @@ POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
 Content-Type: application/json
 
 {
-  "name": "macos-native-erda-daily",
-  "accessKeyId": "{{access-key-id}}",
-  "platform": "macos-native",
-  "description": "macos 原生应用",
+  "name": "fdp-test",
+  "platform": "fdp",
+  "description": "fdp ",
   "enabled": true,
   "providerName": "azure",
   "providerInstance": "default"

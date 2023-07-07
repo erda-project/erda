@@ -16,16 +16,15 @@ package handlers
 
 import (
 	"context"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
-	"regexp"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
 	common "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
+	"strings"
 )
 
 var (
@@ -120,21 +119,19 @@ func (h *CredentialsHandler) GetCredential(_ context.Context, req *pb.GetCredent
 
 func AdjustCredential(credential *pb.Credential) {
 	if credential.GetAccessKeyId() == "" {
-		credential.AccessKeyId = uuid.New().String()
+		credential.AccessKeyId = strings.TrimFunc(uuid.NewString(), func(r rune) bool { return r == '-' })
 	}
 	if credential.GetSecretKeyId() == "" {
-		credential.SecretKeyId = uuid.New().String()
+		credential.SecretKeyId = strings.TrimFunc(uuid.NewString(), func(r rune) bool { return r == '-' })
 	}
 }
 
 func CheckCredential(credential *pb.Credential) error {
-	pattern := `^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`
-	re := regexp.MustCompile(pattern)
-	if ok := re.MatchString(credential.GetAccessKeyId()); !ok {
-		return errors.New("invalid accessKeyId, it must be an UUID")
+	if len(credential.GetAccessKeyId()) != 32 {
+		return errors.New("accessKeyId is invalid")
 	}
-	if ok := re.MatchString(credential.GetSecretKeyId()); !ok {
-		return errors.New("invalid secretKeyId, it must be an UUID")
+	if len(credential.GetSecretKeyId()) != 32 {
+		return errors.New("secretKeyId is invalid")
 	}
 	if credential.GetName() == "" {
 		return errors.New("credential must have a name")

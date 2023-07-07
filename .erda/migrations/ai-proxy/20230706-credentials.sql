@@ -5,8 +5,8 @@ CREATE TABLE `ai_proxy_credentials`
     `updated_at`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted_at`        DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
 
-    `access_key_id`     CHAR(36)     NOT NULL COMMENT '平台接入 AI 服务的 AK',
-    `secret_key_id`     CHAR(36)     NOT NULL COMMENT '平台接入 AI 服务的 SK',
+    `access_key_id`     CHAR(32)     NOT NULL COMMENT '平台接入 AI 服务的 AK',
+    `secret_key_id`     CHAR(32)     NOT NULL COMMENT '平台接入 AI 服务的 SK',
     `name`              VARCHAR(64)  NOT NULL COMMENT '凭证名称',
     `platform`          VARCHAR(128) NOT NULL COMMENT '接入 AI 服务的平台',
     `description`       VARCHAR(512) NOT NULL COMMENT '凭证描述',
