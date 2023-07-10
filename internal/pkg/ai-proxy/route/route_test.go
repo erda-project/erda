@@ -58,6 +58,7 @@ func TestRoute_MatchPath(t *testing.T) {
 			if ok := c.Route.Match(p, http.MethodGet, make(http.Header)); ok != match {
 				t.Fatalf("match error, path: %s, path regex: %s, expect match: %v, got match: %v", p, c.Route.PathRegexExpr(), match, ok)
 			}
+			t.Logf("c.Route.PathRegexExpr: %s", c.Route.PathRegexExpr())
 		}
 	}
 }
@@ -103,4 +104,32 @@ func TestRoute_Validate(t *testing.T) {
 	}).Validate(); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestRoute_RewritePath(t *testing.T) {
+	var routes = route.Routes{
+		{
+			Path:   "/v1/models/{model}",
+			Method: http.MethodGet,
+			Router: &route.Router{
+				To:         "azure",
+				InstanceId: "default",
+				Scheme:     "https",
+				Host:       "default.azure.com",
+				Rewrite:    "/openai/models/${ path.model }",
+			},
+		},
+	}
+	for _, r := range routes {
+		if err := r.Validate(); err != nil {
+			t.Log(err)
+		}
+	}
+	findRoute := routes.FindRoute("/v1/models/my-model-2023", "GET", make(http.Header))
+	t.Log(findRoute, findRoute.IsNotFoundRoute())
+	if findRoute.IsNotFoundRoute() {
+		t.Fatal("the route is not NotFoundRoute")
+	}
+	newPath := findRoute.RewritePath(make(map[string]string))
+	t.Logf("newPath: %s", newPath)
 }

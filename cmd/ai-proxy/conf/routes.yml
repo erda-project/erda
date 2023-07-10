@@ -5,34 +5,49 @@ routes:
     methodMatcher: "" # 不填写时为 contains, 对应 Go 实现是 strings.Contains(route.Method, request.Method)
     headerMatcher: "" # 不填写时不将 http header 作为匹配条件
     router:
-      to: __not_found__      # 值为 provider 名称, 或 __not_found__
-      instanceId: ""  # 不填写时值为 default
-      scheme: ""      # 默认为 http, 缺省时使用 provider 指定的 scheme
+      to: azure      # 值为 provider 名称, 或 __not_found__
+      instanceId: terminus3  # 不填写时值为 default
+      scheme: https      # 默认为 http, 缺省时使用 provider 指定的 scheme
       host: ""        # 仅当值为 __upstream__ 时, 指定该值为 upstream 的 host
-      rewrite: ""     # 不填写时不进行 rewrite
+      rewrite: /openai/models"     # 不填写时不进行 rewrite
     filters:
       - name: log-http
+      - name: key-auth
+        config:
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
       - name: audit
       - name: protocol-translator
         config:
           processes:
             - SetAuthorizationIfNotSpecified
-            - SetOpenAIOrganizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - AddQueries("api-version=2023-03-15-preview")
 
   - path: /v1/models/{model}
     pathMatcher: ""   # 不填写时, 默认为 `^/v1/models/([^/.]+)$`
     method: GET
     router:
-      to: __not_found__
-      instanceId: default
+      to: azure
+      instanceId: terminus3
+      rewrite: /openai/models/${ path.model }
     filters:
       - name: log-http
+      - name: key-auth
+        config:
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
       - name: audit
       - name: protocol-translator
         config:
           processes:
             - SetAuthorizationIfNotSpecified
-            - SetOpenAIOrganizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - AddQueries("api-version=2023-03-15-preview")
 
   - path: /v1/completions
     method: POST
