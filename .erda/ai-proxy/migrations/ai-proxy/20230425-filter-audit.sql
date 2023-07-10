@@ -23,6 +23,7 @@ CREATE TABLE `ai_proxy_filter_audit`
     `operation_id`          VARCHAR(128) NOT NULL COMMENT '调用的接口名称, HTTP Method + Path',
     `prompt`                MEDIUMTEXT   NOT NULL COMMENT '提示语',
     `completion`            LONGTEXT     NOT NULL COMMENT 'AI 回复多个 choices 中的一个',
+    `metadata`              LONGTEXT     NOT NULL COMMENT '客户端要审计的其他信息',
 
     `request_at`            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '请求到达时间',
     `response_at`           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '响应到达时间',
