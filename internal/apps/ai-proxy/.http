@@ -96,4 +96,7 @@ Content-Type: application/json
   "providerInstance": "default"
 }
 
-###
+### List models
+GET https://{{ai-proxy_host}}/v1/models
+Authorization: Bearer {{access-key-id}}
+Content-Type: application/json

@@ -9,7 +9,7 @@ routes:
       instanceId: terminus3  # 不填写时值为 default
       scheme: https      # 默认为 http, 缺省时使用 provider 指定的 scheme
       host: ""        # 仅当值为 __upstream__ 时, 指定该值为 upstream 的 host
-      rewrite: /openai/models"     # 不填写时不进行 rewrite
+      rewrite: /openai/models     # 不填写时不进行 rewrite
     filters:
       - name: log-http
       - name: key-auth
