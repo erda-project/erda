@@ -96,11 +96,11 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
-	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
+	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 	if err := p.parseProvidersConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
-	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
+	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
 
 	if p.Config.SelfURL == "" {
 		p.Config.SelfURL = "http://ai-proxy:8081"
@@ -215,15 +215,7 @@ func (p *provider) parseRoutesConfig() error {
 	if err := p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes); err != nil {
 		return err
 	}
-	sort.Slice(p.Config.Routes, func(i, j int) bool {
-		if len(p.Config.Routes[i].HeaderMatcher) >= len(p.Config.Routes[j].HeaderMatcher) {
-			return true
-		}
-		if len(p.Config.Routes[i].HeaderMatcher) < len(p.Config.Routes[i].HeaderMatcher) {
-			return false
-		}
-		return true
-	})
+	sort.Sort(p.Config.Routes)
 	return nil
 }
 

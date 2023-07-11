@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -40,6 +41,10 @@ const (
 )
 
 var (
+	_ sort.Interface = (Routes)(nil)
+)
+
+var (
 	NotFoundRoute = &Route{
 		Path:   "/",
 		Router: &Router{To: ToNotFound},
@@ -47,6 +52,21 @@ var (
 )
 
 type Routes []*Route
+
+func (routes Routes) Len() int {
+	return len(routes)
+}
+
+func (routes Routes) Less(i, j int) bool {
+	if len(routes[i].HeaderMatcher) >= len(routes[j].HeaderMatcher) {
+		return true
+	}
+	return false
+}
+
+func (routes Routes) Swap(i, j int) {
+	routes[i], routes[j] = routes[j], routes[i]
+}
 
 func (routes Routes) FindRoute(req *http.Request) *Route {
 	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大

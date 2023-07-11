@@ -15,7 +15,10 @@
 package route_test
 
 import (
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/strutil"
 	"net/http"
+	"sort"
 	"testing"
 
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
@@ -70,20 +73,64 @@ func TestRoutes_FindRoute(t *testing.T) {
 			Method:  http.MethodPost,
 			Filters: nil,
 			Router: &route.Router{
-				To: "openai",
+				To:         "openai",
+				InstanceId: "default",
+			},
+		},
+		{
+			Path:   "/v1/completions",
+			Method: http.MethodPost,
+			HeaderMatcher: map[string]string{
+				vars.XAIProxyProvider:         "azure",
+				vars.XAIProxyProviderInstance: "terminus2",
+			},
+			Filters: nil,
+			Router: &route.Router{
+				To:         "azure",
+				InstanceId: "terminus2",
 			},
 		},
 	}
+	sort.Sort(routes)
+	t.Logf("routes: %s", strutil.TryGetYamlStr(routes))
 	for _, rout := range routes {
 		if err := rout.Validate(); err != nil {
 			t.Log(err)
 		}
 	}
-	findRoute := routes.FindRoute("/v1/completions", "POST", make(http.Header))
-	t.Log(findRoute, findRoute.IsNotFoundRoute())
-	if findRoute.IsNotFoundRoute() {
-		t.Error("the route is not NotFoundRoute")
-	}
+
+	t.Run("find openai default", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/v1/completions", nil)
+		if err != nil {
+			t.Fatalf("failed to http.NewReqeust, err: %v", err)
+		}
+		request.Header.Set(vars.XAIProxyProvider, "openai")
+		request.Header.Set(vars.XAIProxyProviderInstance, "default")
+		findRoute := routes.FindRoute(request)
+		t.Logf("findRoute: %s\nfindRoute.IsNotFoundRoute: %v", strutil.TryGetYamlStr(findRoute), findRoute.IsNotFoundRoute())
+		if findRoute.IsNotFoundRoute() {
+			t.Error("the route is not NotFoundRoute")
+		}
+		if findRoute.Router.To != "openai" {
+			t.Fatal("find route error")
+		}
+	})
+	t.Run("find azure terminus2", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/v1/completions", nil)
+		if err != nil {
+			t.Fatalf("failed to http.NewReqeust, err: %v", err)
+		}
+		request.Header.Set(vars.XAIProxyProvider, "azure")
+		request.Header.Set(vars.XAIProxyProviderInstance, "terminus2")
+		findRoute := routes.FindRoute(request)
+		t.Logf("findRoute: %s\nfindRoute.IsNotFoundRoute: %v", strutil.TryGetYamlStr(findRoute), findRoute.IsNotFoundRoute())
+		if findRoute.IsNotFoundRoute() {
+			t.Error("the route is not NotFoundRoute")
+		}
+		if findRoute.Router.To != "azure" {
+			t.Fatal("find route error")
+		}
+	})
 }
 
 func TestRoute_Validate(t *testing.T) {
@@ -125,7 +172,11 @@ func TestRoute_RewritePath(t *testing.T) {
 			t.Log(err)
 		}
 	}
-	findRoute := routes.FindRoute("/v1/models/my-model-2023", "GET", make(http.Header))
+	request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/v1/models/my-model-2023", nil)
+	if err != nil {
+		t.Fatalf("failed to http.NewReqeust, err: %v", err)
+	}
+	findRoute := routes.FindRoute(request)
 	t.Log(findRoute, findRoute.IsNotFoundRoute())
 	if findRoute.IsNotFoundRoute() {
 		t.Fatal("the route is not NotFoundRoute")

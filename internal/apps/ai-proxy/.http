@@ -88,12 +88,12 @@ POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
 Content-Type: application/json
 
 {
-  "name": "fdp-test",
-  "platform": "fdp",
-  "description": "fdp 测试用 ak",
+  "name": "local-test",
+  "platform": "local",
+  "description": "接口测试用的 appKey",
   "enabled": true,
   "providerName": "azure",
-  "providerInstance": "default"
+  "providerInstance": "terminus2"
 }
 
 ### List models
