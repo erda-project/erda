@@ -26,6 +26,8 @@ const (
 	XErdaAIProxyEmail           = "X-Erda-AI-Proxy-Email"
 	XErdaAIProxyDingTalkStaffID = "X-Erda-AI-Proxy-DingTalkStaffID"
 	XErdaAIProxyPrompt          = "X-Erda-AI-Proxy-Prompt"
+	XAIProxyProvider            = "X-AI-Proxy-Provider"
+	XAIProxyProviderInstance    = "X-AI-Proxy-Provider-Instance"
 )
 
 type (
@@ -33,5 +35,5 @@ type (
 	CtxKeyDAO        struct{ CtxKeyDatabaseAccess any }
 	CtxKeyProvider   struct{ CtxKeyProvider any }
 	CtxKeyMap        struct{ CtxKeyMap any }
-	CtxKeyCredential struct{ CtxKeyCredential any }
+	MapKeyCredential struct{ CtxKeyCredential any }
 )

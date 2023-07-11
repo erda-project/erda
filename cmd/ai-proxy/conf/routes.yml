@@ -3,7 +3,7 @@ routes:
     pathMatcher: ""   # 不填写时, 默认为 `^/v1/models$`
     method: GET       # * 表示匹配所有 http method
     methodMatcher: "" # 不填写时为 contains, 对应 Go 实现是 strings.Contains(route.Method, request.Method)
-    headerMatcher: "" # 不填写时不将 http header 作为匹配条件
+    headerMatcher:    # 不填写时不将 http header 作为匹配条件
     router:
       to: azure      # 值为 provider 名称, 或 __not_found__
       instanceId: terminus3  # 不填写时值为 default
@@ -183,7 +183,7 @@ routes:
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
 
-  # reverse proxy framework test here
+# reverse proxy framework test here
   - path: /test-api/not-found
     method: '*'
     router:
@@ -228,3 +228,120 @@ routes:
             - ReplaceAuthorizationWithAPIKey
             - SetAPIKeyIfNotSpecified
             - AddQueries("api-version=2023-03-15-preview")
+
+# for terminus2
+  - path: /v1/models
+    method: GET       # * 表示匹配所有 http method
+    headerMatcher:
+      x-ai-proxy-provider: azure
+      x-ai-proxy-provider-instance: terminus2
+    router:
+      to: azure
+      instanceId: terminus2
+      rewrite: /openai/models
+    filters:
+      - name: log-http
+      - name: key-auth
+        config:
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - AddQueries("api-version=2023-06-01-preview")
+
+  - path: /v1/models/{model}
+    method: GET
+    headerMatcher:
+      x-ai-proxy-provider: azure
+      x-ai-proxy-provider-instance: terminus2
+    router:
+      to: azure
+      instanceId: terminus2
+      rewrite: /openai/models/${ path.model }
+    filters:
+      - name: log-http
+      - name: key-auth
+        config:
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - AddQueries("api-version=2023-06-01-preview")
+
+  - path: /v1/completions
+    method: POST
+    headerMatcher:
+      x-ai-proxy-provider: azure
+      x-ai-proxy-provider-instance: terminus2
+    router:
+      to: azure
+      instanceId: terminus2
+      rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions
+    filters:
+      - name: log-http
+      - name: key-auth
+        config:
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
+      - name: body-size-limit
+        config:
+          maxSize: 102400
+          message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
+      - name: acl
+        config:
+          sources:
+            - erda
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - AddQueries("api-version=2023-06-01-preview")
+
+  - path: /v1/chat/completions
+    method: POST
+    headerMatcher:
+      x-ai-proxy-provider: azure
+      x-ai-proxy-provider-instance: terminus2
+    router:
+      to: azure
+      instanceId: terminus2
+      rewrite: /openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions
+    filters:
+      - name: log-http
+      - name: key-auth
+        config:
+          invalid: { "messages": [ { "role": "assistant", "content": "appKey is invalid", "name": "CodeAI" } ] }
+          disabled: { "messages": [ { "role": "assistant", "content": "appKey is disabled", "name": "CodeAI" } ] }
+          expired: { "messages": [ { "role": "assistant", "content": "invalid is expired", "name": "CodeAI" } ] }
+      - name: body-size-limit
+        config:
+          maxSize: 102400
+          message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
+      - name: acl
+        config:
+          sources:
+            - erda
+      - name: audit
+      - name: protocol-translator
+        config:
+          processes:
+            - SetAuthorizationIfNotSpecified
+            - ReplaceAuthorizationWithAPIKey
+            - SetAPIKeyIfNotSpecified
+            - AddQueries("api-version=2023-06-01-preview")

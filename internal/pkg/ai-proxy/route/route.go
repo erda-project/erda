@@ -16,7 +16,6 @@ package route
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -49,12 +48,11 @@ var (
 
 type Routes []*Route
 
-func (routes Routes) FindRoute(path, method string, header http.Header) *Route {
+func (routes Routes) FindRoute(req *http.Request) *Route {
 	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大
 	for _, route := range routes {
-		route := route.Clone()
-		if route.Match(path, method, header) {
-			return route
+		if clone := route.Clone(); clone.Match(req.URL.Path, req.Method, req.Header) {
+			return clone
 		}
 	}
 	return NotFoundRoute
@@ -65,7 +63,7 @@ type Route struct {
 	PathMatcher   string                       `json:"pathMatcher" yaml:"pathMatcher"`
 	Method        string                       `json:"method" yaml:"method"`
 	MethodMatcher string                       `json:"methodMatcher" yaml:"methodMatcher"`
-	HeaderMatcher json.RawMessage              `json:"headerMatcher" yaml:"headerMatcher"`
+	HeaderMatcher map[string]string            `json:"headerMatcher" yaml:"headerMatcher"`
 	Router        *Router                      `json:"router" yaml:"router"`
 	Provider      *provider.Provider           `json:"provider" yaml:"provider"`
 	Filters       []*reverseproxy.FilterConfig `json:"filters" yaml:"filters"`
@@ -326,9 +324,17 @@ func (r *Route) genMethodMatcher() error {
 	}
 }
 
-// genHeaderMatcher todo: not implement yet
+// genHeaderMatcher .
 func (r *Route) genHeaderMatcher() error {
 	r.matchHeader = func(header http.Header) bool {
+		if len(r.HeaderMatcher) == 0 {
+			return true
+		}
+		for key, value := range r.HeaderMatcher {
+			if header.Get(key) != value {
+				return false
+			}
+		}
 		return true
 	}
 	return nil

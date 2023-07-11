@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -155,7 +156,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 }
 
 func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
+	p.Config.Routes.FindRoute(r).
 		HandlerWith(
 			context.Background(),
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
@@ -211,7 +212,19 @@ func (p *provider) initLogger() {
 }
 
 func (p *provider) parseRoutesConfig() error {
-	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
+	if err := p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes); err != nil {
+		return err
+	}
+	sort.Slice(p.Config.Routes, func(i, j int) bool {
+		if len(p.Config.Routes[i].HeaderMatcher) >= len(p.Config.Routes[j].HeaderMatcher) {
+			return true
+		}
+		if len(p.Config.Routes[i].HeaderMatcher) < len(p.Config.Routes[i].HeaderMatcher) {
+			return false
+		}
+		return true
+	})
+	return nil
 }
 
 func (p *provider) parseProvidersConfig() error {

@@ -68,24 +68,47 @@ func (f *KeyAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	appKey := infor.Header().Get("Authorization")
 	appKey = strings.TrimPrefix(appKey, "Bearer ")
 
-	var credential models.AIProxyCredentials
+	// check the AppKey is valid
+	// to find all credential by the appKey
+	var credentials []*models.AIProxyCredentials
 	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
-	if err = q.First(&credential, map[string]any{"access_key_id": appKey}).Error; err != nil {
-		l.Errorf("failed to First credential: %v", err)
+	if err = q.Find(&credentials, map[string]any{"access_key_id": appKey}).Error; err != nil {
+		l.Errorf("failed to Find credentials, access_key_id: %s, err: %v", appKey, err)
 		http.Error(w, string(f.Cfg.Invalid), http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
-	if !credential.Enabled {
-		http.Error(w, string(f.Cfg.Disabled), http.StatusForbidden)
+	if len(credentials) == 0 {
+		l.Errorf("failed to Find credentials, access_key_id: %s, err: %s", appKey, "not found")
+		http.Error(w, string(f.Cfg.Invalid), http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
-	if credential.ExpiredAt.Before(time.Now()) {
-		http.Error(w, string(f.Cfg.Expired), http.StatusForbidden)
+	// find first valid credential
+	var credential *models.AIProxyCredentials
+	var match = func(*models.AIProxyCredentials) bool { return true }
+	// find requested provider from http request headers
+	if providerName := infor.Header().Get(vars.XAIProxyProvider); providerName != "" {
+		providerInstance := infor.Header().Get(vars.XAIProxyProviderInstance)
+		if providerInstance == "" {
+			providerInstance = "default"
+		}
+		match = func(item *models.AIProxyCredentials) bool {
+			return item.ProviderName == providerName && item.ProviderInstance == providerInstance
+		}
+	}
+	for _, item := range credentials {
+		if item.Enabled && item.ExpiredAt.After(time.Now()) && match(item) {
+			credential = item
+			break
+		}
+	}
+	if credential == nil {
+		http.Error(w, string(f.Cfg.Invalid), http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
+
 	appKey = "Bearer " + ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider).GetAppKey()
 	infor.Header().Set("Authorization", appKey)
-	ctx.Value(vars.CtxKeyMap{}).(*sync.Map).Store(vars.CtxKeyCredential{}, &credential)
+	ctx.Value(vars.CtxKeyMap{}).(*sync.Map).Store(vars.MapKeyCredential{}, &credential)
 	return reverseproxy.Continue, nil
 }
 

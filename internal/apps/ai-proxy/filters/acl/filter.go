@@ -64,7 +64,7 @@ func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor revers
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 
 	// only access control request rom platform erda.cloud
-	value, ok := ctx.Value(vars.CtxKeyMap{}).(*sync.Map).Load(vars.CtxKeyCredential{})
+	value, ok := ctx.Value(vars.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyCredential{})
 	if !ok || value == nil {
 		return reverseproxy.Continue, nil
 	}

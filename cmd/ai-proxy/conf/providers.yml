@@ -30,6 +30,17 @@ providers:
       RESOURCE_NAME: "terminus3"
       DEVELOPMENT_NAME: "gpt-35-turbo-0301"
 
+  - name: azure
+    instanceId: terminus2
+    host: terminus2.openai.azure.com
+    scheme: https
+    description: azure terminus2 实例
+    docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
+    appKey: ${ env.TERMINUS2_OPENAI_API_KEY }
+    metadata:
+      RESOURCE_NAME: terminus2
+      DEVELOPMENT_NAME: gpt-35-turbo-16k
+
   - name: test-server
     instanceId: default
     host: localhost:8080
