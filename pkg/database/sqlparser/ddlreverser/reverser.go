@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	"github.com/pkg/errors"
@@ -88,11 +87,10 @@ func ReverseDDLWithSnapshot(tx *gorm.DB, ddl ast.DDLNode) (reversing string, ok 
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to ShowCreateTable %s", tableName)
 		}
-		createStmt, err := parser.New().ParseOneStmt(createTableSQL, "", "")
+		snap, err := snapshot.ParseCreateTableStmt(createTableSQL)
 		if err != nil {
-			return "", false, err
+			return "", false, errors.Wrapf(err, "stmt: %s", createTableSQL)
 		}
-		snap := createStmt.(*ast.CreateTableStmt)
 		return ReverseDropIndexStmtWithCompares(snap, stmt)
 
 	// AlterTableStmt
@@ -106,12 +104,10 @@ func ReverseDDLWithSnapshot(tx *gorm.DB, ddl ast.DDLNode) (reversing string, ok 
 		if err != nil {
 			return "", false, errors.Wrapf(err, "failed to ShowCreateTable %s", tableName)
 		}
-		createStmt, err := parser.New().ParseOneStmt(creatTableSQL, "", "")
+		snap, err := snapshot.ParseCreateTableStmt(creatTableSQL)
 		if err != nil {
 			return "", false, err
 		}
-		snap := createStmt.(*ast.CreateTableStmt)
-
 		return ReverseAlterWithCompares(snap, alterTableStmt)
 	}
 	return "", false, nil
