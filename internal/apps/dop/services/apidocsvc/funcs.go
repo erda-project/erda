@@ -218,14 +218,14 @@ func commitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName,
 	return nil
 }
 
-func MustSuffix(filename, suffix string) string {
-	return strings.TrimSuffix(filename, filepath.Ext(filename)) + suffix
+func MustSuffix(fn, suffix string) string {
+	return strings.TrimSuffix(fn, filepath.Ext(fn)) + suffix
 }
 
-func MatchSuffix(filename string, suffix ...string) bool {
-	ext := strings.ToLower(filepath.Ext(filename))
-	for _, s := range suffix {
-		if s == ext {
+func MatchSuffix(fn string, suffixes ...string) bool {
+	ext := strings.ToLower(filepath.Ext(fn))
+	for _, suffix := range suffixes {
+		if suffix == ext {
 			return true
 		}
 	}
