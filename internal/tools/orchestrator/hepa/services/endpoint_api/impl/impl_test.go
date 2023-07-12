@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mseDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/dto"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/api_policy"
@@ -393,6 +394,77 @@ func TestGatewayOpenapiServiceImpl_mseConsumerConfig(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("mseConsumerConfig() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_copyService(t *testing.T) {
+	type args struct {
+		svc        *corev1.Service
+		k8sAdapter k8s.K8SAdapter
+	}
+
+	ports := make([]corev1.ServicePort, 0)
+	ports = append(ports, corev1.ServicePort{
+		Name:     "tcp-0",
+		Protocol: "TCP",
+		Port:     80,
+		TargetPort: intstr.IntOrString{
+			Type:   intstr.Int,
+			IntVal: 80,
+		},
+		NodePort: 0,
+	})
+
+	selectors := make(map[string]string)
+	selectors["app"] = "bbb"
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				svc: &corev1.Service{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "dice-test-2-api-d777be56b33944ff8d22db0cf136ce24-bfdc2e",
+						Namespace:   "project-2-test",
+						ClusterName: "test",
+					},
+					Spec: corev1.ServiceSpec{
+						ExternalName: "demo.project-1.svc.cluster.local",
+					},
+				},
+				k8sAdapter: &k8s.K8SAdapterImpl{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(tt.args.k8sAdapter), "GetServiceByName", func(_ *k8s.K8SAdapterImpl, _, _ string) (*corev1.Service, error) {
+				return &corev1.Service{
+					TypeMeta:   metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{},
+					Spec: corev1.ServiceSpec{
+						Ports:           ports,
+						Selector:        selectors,
+						Type:            "ClusterIP",
+						SessionAffinity: "None",
+					},
+				}, nil
+			})
+
+			defer monkey.UnpatchAll()
+			if err := copyService(tt.args.svc, tt.args.k8sAdapter); (err != nil) != tt.wantErr {
+				t.Errorf("copyService() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
