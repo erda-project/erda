@@ -108,6 +108,7 @@ func (chs *ClickhouseSource) getPod(ctx context.Context, orgName, clusterName, p
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query pod row")
 	}
+	defer row.Close()
 
 	row.Next()
 	pod := podRow{}
@@ -145,6 +146,7 @@ func (chs *ClickhouseSource) getContainers(ctx context.Context, orgName, cluster
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query container row")
 	}
+	defer rows.Close()
 
 	var containers []*containerRow
 	for rows.Next() {

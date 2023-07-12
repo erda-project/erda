@@ -261,6 +261,7 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 			}
 
 			allNodeRelations = append(allNodeRelations, topology.parseToTypologyNodeV2(lang, rows, tg)...)
+			rows.Close()
 		}
 	}
 	handleTargetOtherNodesByHttpUrl(allNodeRelations, topology.Cfg.TargetOtherNodeOptions)

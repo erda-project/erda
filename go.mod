@@ -432,7 +432,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.3.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.3.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.25.0 // indirect
+	go.opentelemetry.io/otel/internal/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
@@ -474,7 +474,7 @@ replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.4
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
-	github.com/erda-project/erda-infra => github.com/erda-project/erda-infra v0.0.0-20220928061127-9fca81f05238
+	github.com/erda-project/erda-infra => github.com/erda-project/erda-infra v0.0.0-20230711160226-c6156f3b1be1
 	github.com/erda-project/erda-proto-go v1.4.0 => ./api/proto-go
 	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.49.0
 	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
@@ -490,7 +490,7 @@ replace (
 	go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
 	go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.2.0
 	go.opentelemetry.io/otel/exporters/stdout => go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
-	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v0.25.0
+	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v0.26.0
 	go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v1.2.0
 	go.opentelemetry.io/proto/otlp v0.11.0 => github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
