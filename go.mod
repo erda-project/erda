@@ -490,7 +490,7 @@ replace (
 	go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
 	go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.2.0
 	go.opentelemetry.io/otel/exporters/stdout => go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
-	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v0.25.0
+	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v0.26.0
 	go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v1.2.0
 	go.opentelemetry.io/proto/otlp v0.11.0 => github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
