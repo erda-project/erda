@@ -66,7 +66,6 @@ type Route struct {
 
 	matchPath   func(path string) bool
 	matchMethod func(method string) bool
-	matchHeader func(header http.Header) bool
 	vars        map[string]string
 }
 
@@ -134,7 +133,7 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 }
 
 func (r *Route) Match(path, method string, header http.Header) bool {
-	return r.matchPath(path) && r.matchMethod(method) && r.matchHeader(header)
+	return r.matchPath(path) && r.matchMethod(method)
 }
 
 func (r *Route) Director(ctx context.Context) func(req *http.Request) {
@@ -199,7 +198,6 @@ func (r *Route) Clone() *Route {
 		Filters:     r.Filters,
 		matchPath:   r.matchPath,
 		matchMethod: r.matchMethod,
-		matchHeader: r.matchHeader,
 		vars:        r.vars,
 	}
 	if route.Router != nil {
