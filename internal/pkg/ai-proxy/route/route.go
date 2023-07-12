@@ -304,6 +304,9 @@ func (r *Router) RewritePath(ctx context.Context, path *string) {
 }
 
 func (r *Router) Clone() *Router {
+	if r == nil {
+		return nil
+	}
 	return &Router{
 		To:         r.To,
 		InstanceId: r.InstanceId,
