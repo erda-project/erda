@@ -16,6 +16,8 @@ kafkago:
   client_id: streaming
   debug_client: ${KAFKAGO_DEBUG_CLIENT:true}
 
+profile-agent:
+
 
 #kafka.topic.initializer:
 #  force: ${KAFKA_INIT_FORCE_SUCCESS:true}

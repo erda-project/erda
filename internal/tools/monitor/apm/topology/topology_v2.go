@@ -261,6 +261,7 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 			}
 
 			allNodeRelations = append(allNodeRelations, topology.parseToTypologyNodeV2(lang, rows, tg)...)
+			rows.Close()
 		}
 	}
 	handleTargetOtherNodesByHttpUrl(allNodeRelations, topology.Cfg.TargetOtherNodeOptions)
@@ -285,7 +286,6 @@ func (topology *provider) GetTopologyV2(orgName string, lang i18n.LanguageCodes,
 
 func (topology *provider) parseToTypologyNodeV2(lang i18n.LanguageCodes, rows driver.Rows, tg *graphTopo) []*relation {
 	allRelations := make([]*relation, 0)
-	defer rows.Close()
 	for rows.Next() {
 		cnode := chNodeEdge{}
 		err := rows.ScanStruct(&cnode)

@@ -17,6 +17,7 @@ RUN apt update && apt install -y --no-install-recommends --no-install-suggests \
     jq \
     python3-pip \
     librdkafka-dev \
+    net-tools \
  && rm -fr /var/lib/apt/lists/*
 
 # nodejs
