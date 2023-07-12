@@ -137,6 +137,7 @@ func (p *provider) reloadMetaFromClickhouse(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to query metric meta")
 	}
+	defer rows.Close()
 
 	var metas []MetricMeta
 

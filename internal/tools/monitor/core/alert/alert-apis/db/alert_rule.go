@@ -32,6 +32,7 @@ func (db *AlertRuleDB) DistinctAlertTypeByScope(scope string) ([]string, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var alertTypes []string
 	for rows.Next() {
