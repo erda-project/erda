@@ -15,8 +15,9 @@
 package azure_director_test
 
 import (
-	azure_director "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
 	"testing"
+
+	azure_director "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
 )
 
 func TestAzureDirector_Processors(t *testing.T) {

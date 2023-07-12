@@ -17,7 +17,6 @@ package route
 import (
 	"context"
 	"fmt"
-	"github.com/erda-project/erda-infra/base/logs"
 	"net/http"
 	"os"
 	"reflect"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
