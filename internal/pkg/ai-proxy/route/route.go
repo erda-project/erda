@@ -167,11 +167,10 @@ func (r *Route) Validate() error {
 	if err := r.genMethodMatcher(); err != nil {
 		return err
 	}
-	if r.Router == nil {
-		return errors.Errorf("router is not configurated in route %s", strutil.TryGetYamlStr(r))
-	}
-	if err := r.Router.validate(); err != nil {
-		return err
+	if r.Router != nil {
+		if err := r.Router.validate(); err != nil {
+			return err
+		}
 	}
 	for _, filter := range r.Filters {
 		if _, ok := reverseproxy.GetFilterCreator(filter.Name); !ok {
