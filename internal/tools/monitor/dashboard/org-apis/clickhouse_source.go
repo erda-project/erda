@@ -190,6 +190,7 @@ func (chs *ClickhouseSource) GetHostTypes(req *http.Request, params struct {
 		chs.Log.Errorf("failed to query clickhouse, %v", err)
 		return nil
 	}
+	defer rows.Close()
 
 	var hostTypes []*hostTypeRow
 	for rows.Next() {
@@ -355,6 +356,7 @@ func (chs *ClickhouseSource) GetGroupHosts(req *http.Request, params struct {
 		chs.Log.Errorf("failed to query clickhouse, %v", err)
 		return nil
 	}
+	defer rows.Close()
 
 	var hosts []*hostData
 	for rows.Next() {

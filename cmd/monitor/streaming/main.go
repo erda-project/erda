@@ -25,6 +25,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/trace/persist"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/trace/storage/cassandra_v1"
 	_ "github.com/erda-project/erda/internal/apps/msp/apm/trace/storage/elasticsearch"
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 	_ "github.com/erda-project/erda/internal/tools/monitor/notify/storage/notify-record"
 
 	// modules

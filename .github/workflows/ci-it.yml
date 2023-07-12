@@ -145,7 +145,7 @@ jobs:
   CODE-TEST:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/erda-base:20230130
+      image: registry.erda.cloud/erda/erda-base:20230712
     needs:
       - PREPARE
     strategy:
