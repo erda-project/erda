@@ -16,7 +16,6 @@ package route_test
 
 import (
 	"net/http"
-	"sort"
 	"testing"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -91,7 +90,6 @@ func TestRoutes_FindRoute(t *testing.T) {
 			},
 		},
 	}
-	sort.Sort(routes)
 	t.Logf("routes: %s", strutil.TryGetYamlStr(routes))
 	for _, rout := range routes {
 		if err := rout.Validate(); err != nil {

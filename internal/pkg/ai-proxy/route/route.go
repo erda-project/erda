@@ -191,17 +191,21 @@ func (r *Route) PathRegexExpr() string {
 }
 
 func (r *Route) Clone() *Route {
-	return &Route{
+	route := &Route{
 		Path:        r.Path,
 		PathMatcher: r.PathMatcher,
 		Method:      r.Method,
-		Router:      r.Router.Clone(),
+		Router:      r.Router,
 		Filters:     r.Filters,
 		matchPath:   r.matchPath,
 		matchMethod: r.matchMethod,
 		matchHeader: r.matchHeader,
 		vars:        r.vars,
 	}
+	if route.Router != nil {
+		route.Router = route.Router.Clone()
+	}
+	return route
 }
 
 func (r *Route) genPathMatcher() error {
