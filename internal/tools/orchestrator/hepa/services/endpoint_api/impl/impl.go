@@ -2056,32 +2056,8 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 			if err != nil {
 				return "", err
 			}
-			svc, err := impl.touchServiceForExternalService(info, *z)
-			if err != nil {
-				return "", err
-			}
 
-			// 转发地址为内部地址，相当于此做一个内部 Service 的 Spec 拷贝
-			if strings.Contains(svc.Spec.ExternalName, K8S_SVC_CLUSTER_DOMAIN) {
-				svcNameAndNamespace := strings.Split(strings.TrimSuffix(svc.Spec.ExternalName, K8S_SVC_CLUSTER_DOMAIN), ".")
-				if len(svcNameAndNamespace) <= 1 {
-					return "", errors.Errorf("get svc name and namespace from inner addr %s failed\n", svc.Spec.ExternalName)
-				}
-				svcNamespace := svcNameAndNamespace[1]
-				svcName := svcNameAndNamespace[0]
-				innerSvc, err := k8sAdapter.GetServiceByName(svcNamespace, svcName)
-				if err != nil {
-					logrus.Errorf("GetServiceByName failed:%v\n", err)
-					return "", err
-				}
-				svc.Spec.ExternalName = ""
-				svc.Spec.Ports = innerSvc.Spec.Ports
-				svc.Spec.Type = innerSvc.Spec.Type
-				svc.Spec.Selector = innerSvc.Spec.Selector
-				svc.Spec.SessionAffinity = innerSvc.Spec.SessionAffinity
-			}
-
-			externalSvc, err = k8sAdapter.CreateOrUpdateService(svc)
+			externalSvc, err = impl.createOrUpdateService(k8sAdapter, info, *z)
 			if err != nil {
 				return "", err
 			}
@@ -2129,6 +2105,22 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 		}
 		transSucc = true
 		return z.Id, nil
+	} else {
+		// 对于 MSE 需要更新单独创建的 Service
+		if !useKong && info.RedirectType == gw.RT_URL {
+			k8sAdapter, err = k8s.NewAdapter(info.Az)
+			if err != nil {
+				return "", err
+			}
+			z, err := (*impl.zoneBiz).GetZone(info.ZoneId, session...)
+			if err != nil {
+				return "", err
+			}
+			externalSvc, err = impl.createOrUpdateService(k8sAdapter, info, *z)
+			if err != nil {
+				return "", err
+			}
+		}
 	}
 
 	//update zone route
@@ -2147,6 +2139,47 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 		}
 	}
 	return info.ZoneId, nil
+}
+
+func (impl GatewayOpenapiServiceImpl) createOrUpdateService(k8sAdapter k8s.K8SAdapter, info endpoint_api.PackageApiInfo, z orm.GatewayZone) (*corev1.Service, error) {
+	svc, err := impl.touchServiceForExternalService(info, z)
+	if err != nil {
+		return nil, err
+	}
+
+	// 转发地址为内部地址，相当于此做一个内部 Service 的 Spec 拷贝
+	if strings.Contains(svc.Spec.ExternalName, K8S_SVC_CLUSTER_DOMAIN) {
+		err = copyService(svc, k8sAdapter)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	externalSvc, err := k8sAdapter.CreateOrUpdateService(svc)
+	if err != nil {
+		return nil, err
+	}
+	return externalSvc, nil
+}
+
+func copyService(svc *corev1.Service, k8sAdapter k8s.K8SAdapter) error {
+	svcNameAndNamespace := strings.Split(strings.TrimSuffix(svc.Spec.ExternalName, K8S_SVC_CLUSTER_DOMAIN), ".")
+	if len(svcNameAndNamespace) <= 1 {
+		return errors.Errorf("get svc name and namespace from inner addr %s failed\n", svc.Spec.ExternalName)
+	}
+	svcNamespace := svcNameAndNamespace[1]
+	svcName := svcNameAndNamespace[0]
+	innerSvc, err := k8sAdapter.GetServiceByName(svcNamespace, svcName)
+	if err != nil {
+		logrus.Errorf("GetServiceByName failed:%v\n", err)
+		return err
+	}
+	svc.Spec.ExternalName = ""
+	svc.Spec.Ports = innerSvc.Spec.Ports
+	svc.Spec.Type = innerSvc.Spec.Type
+	svc.Spec.Selector = innerSvc.Spec.Selector
+	svc.Spec.SessionAffinity = innerSvc.Spec.SessionAffinity
+	return nil
 }
 
 func (impl GatewayOpenapiServiceImpl) CreatePackageApi(id string, dto *gw.OpenapiDto) (apiId string, exist bool, err error) {
