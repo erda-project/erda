@@ -15,6 +15,10 @@
 package reverseproxy
 
 type (
-	LoggerCtxKey struct{ LoggerCtxKey any }
-	MutexCtxKey  struct{ MutexCtxKey any }
+	LoggerCtxKey   struct{ LoggerCtxKey any }
+	MutexCtxKey    struct{ MutexCtxKey any }
+	CtxKeyPathVars struct{ CtxKeyPathVars any }
+	CtxKeyMap      struct{ CtxKeyMap any }
+
+	MapKeyDirectors struct{ CtxKeyDirectors any }
 )

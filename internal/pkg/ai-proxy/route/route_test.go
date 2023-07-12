@@ -15,13 +15,13 @@
 package route_test
 
 import (
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/strutil"
 	"net/http"
 	"sort"
 	"testing"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func TestRoute_MatchPath(t *testing.T) {

@@ -33,7 +33,7 @@ const (
 type (
 	CtxKeyOrgSvc     struct{ CtxKeyOrgServer any }
 	CtxKeyDAO        struct{ CtxKeyDatabaseAccess any }
-	CtxKeyProvider   struct{ CtxKeyProvider any }
-	CtxKeyMap        struct{ CtxKeyMap any }
+	CtxKeyProviders  struct{ CtxKeyProviders any }
+	MapKeyProvider   struct{ CtxKeyProvider any }
 	MapKeyCredential struct{ CtxKeyCredential any }
 )

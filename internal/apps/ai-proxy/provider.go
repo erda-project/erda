@@ -22,7 +22,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -118,15 +117,6 @@ func (p *provider) Init(_ servicehub.Context) error {
 			return errors.Wrapf(err, "rout %d is invalid", i)
 		}
 
-		// find provider to router to
-		if to := string(rout.Router.To); !strings.HasPrefix(to, "__") || !strings.HasSuffix(to, "__") {
-			prov, ok := p.Config.providers.FindProvider(to, rout.Router.InstanceId)
-			if !ok {
-				return errors.Errorf("no such provider routes[%d].Route.To: %s", i, p.Config.Routes[i].Router.To)
-			}
-			rout.Provider = prov
-		}
-
 		// register to erda openapi
 		if err := p.Openapi.Register(&routes.APIProxy{
 			Method:      rout.Method,
@@ -161,9 +151,10 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			context.Background(),
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
+			reverseproxy.CtxKeyMap{}, new(sync.Map),
 			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
-			vars.CtxKeyMap{}, new(sync.Map),
+			vars.CtxKeyProviders{}, p.Config.providers,
 		).
 		ServeHTTP(w, r)
 }
@@ -212,11 +203,7 @@ func (p *provider) initLogger() {
 }
 
 func (p *provider) parseRoutesConfig() error {
-	if err := p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes); err != nil {
-		return err
-	}
-	sort.Sort(p.Config.Routes)
-	return nil
+	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
 }
 
 func (p *provider) parseProvidersConfig() error {

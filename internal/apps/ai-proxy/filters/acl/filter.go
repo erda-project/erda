@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"net/http"
 	"sync"
 
@@ -27,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -64,7 +64,7 @@ func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor revers
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 
 	// only access control request rom platform erda.cloud
-	value, ok := ctx.Value(vars.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyCredential{})
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyCredential{})
 	if !ok || value == nil {
 		return reverseproxy.Continue, nil
 	}
@@ -110,6 +110,12 @@ func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor revers
 		return reverseproxy.Intercept, nil
 	}
 	return reverseproxy.Continue, nil
+}
+
+func (f *ACL) Dependencies() map[string]json.RawMessage {
+	return map[string]json.RawMessage{
+		"context": {},
+	}
 }
 
 type Config struct {

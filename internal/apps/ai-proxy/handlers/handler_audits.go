@@ -15,10 +15,11 @@
 package handlers
 
 import (
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"net/http"
 	"net/url"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
 type AuditsHandler struct {

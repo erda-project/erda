@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -168,6 +169,10 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 	return nil
 }
 
+func (f *Audit) Dependencies() []string {
+	return []string{"context"}
+}
+
 func (f *Audit) SetSessionId(_ context.Context, header http.Header) error {
 	f.Audit.SessionId = header.Get(vars.XErdaAIProxySessionId)
 	return nil
@@ -226,12 +231,11 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 }
 
 func (f *Audit) SetProvider(ctx context.Context) error {
-	// a.Provider is passed in by filter reverse-proxy
-	prov, ok := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider)
+	prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
 	if !ok || prov == nil {
-		panic(`provider was not set into the context`)
+		return errors.New("provider not set in context map")
 	}
-	f.Audit.Provider = prov.Name
+	f.Audit.Provider = prov.(*provider.Provider).Name
 	return nil
 }
 
@@ -510,7 +514,11 @@ func (f *Audit) SetResponseBody(_ context.Context, buf *bytes.Buffer) error {
 func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
 	f.Audit.Server = header.Get("Server")
 	if f.Audit.Server == "" {
-		f.Audit.Server = ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider).Name
+		prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+		if !ok {
+			return errors.New("provider not set in context map")
+		}
+		f.Audit.Server = prov.(*provider.Provider).Name
 	}
 	return nil
 }

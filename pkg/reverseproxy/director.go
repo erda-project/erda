@@ -14,6 +14,23 @@
 
 package reverseproxy
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+	"sync"
+)
 
 func DoNothingDirector(_ *http.Request) {}
+
+func AppendDirectors(ctx context.Context, director ...func(r *http.Request)) {
+	var (
+		m         = ctx.Value(CtxKeyMap{}).(*sync.Map)
+		directors []func(*http.Request)
+	)
+	if value, ok := m.Load(MapKeyDirectors{}); ok && value != nil {
+		if dirs, ok := value.([]func(r *http.Request)); ok {
+			directors = dirs
+		}
+	}
+	m.Store(MapKeyDirectors{}, append(directors, director...))
+}

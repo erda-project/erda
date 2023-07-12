@@ -16,15 +16,17 @@ package handlers
 
 import (
 	"context"
+	"strings"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
-	"strings"
 )
 
 var (
