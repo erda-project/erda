@@ -89,13 +89,16 @@ POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
 Content-Type: application/json
 
 {
-  "name": "local-test",
-  "platform": "local",
-  "description": "接口测试用的 appKey",
+  "name": "fdp-test",
+  "platform": "fdp",
+  "description": "fdp 非生产环境用的 api-key",
   "enabled": true,
   "providerName": "azure",
   "providerInstance": "terminus2"
 }
+
+### Delete credential
+DELETE https://{{ai-proxy_host}}/api/ai-proxy/credentials/{id}
 
 ### List models
 GET https://{{ai-proxy_host}}/v1/models
