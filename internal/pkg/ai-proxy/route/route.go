@@ -138,10 +138,6 @@ func (r *Route) Match(path, method string, header http.Header) bool {
 
 func (r *Route) Director(ctx context.Context) func(req *http.Request) {
 	return func(req *http.Request) {
-		// 如果配置中定义了 Router, 那么使用 Router 来 direct request
-		if r.Router != nil {
-			r.Router.Director(ctx)(req)
-		}
 		// filters 可能会传递 directors, 如果传递了, 要依次执行
 		if value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(reverseproxy.MapKeyDirectors{}); ok && value != nil {
 			if directors, ok := value.([]func(*http.Request)); ok {
@@ -149,6 +145,10 @@ func (r *Route) Director(ctx context.Context) func(req *http.Request) {
 					director(req)
 				}
 			}
+		}
+		// 如果配置中定义了 Router, 那么使用 Router 来 direct request
+		if r.Router != nil {
+			r.Router.Director(ctx)(req)
 		}
 	}
 }
