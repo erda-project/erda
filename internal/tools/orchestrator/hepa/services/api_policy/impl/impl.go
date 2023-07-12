@@ -57,6 +57,19 @@ const (
 
 var azMutex []*sync.Mutex
 
+// Nginx 配置 llocations 部分，more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
+var skipKeys = map[string]bool{
+	"more_set_headers": true,
+	"proxy_set_header": true,
+	"set":              true,
+	"limit_req":        true,
+	"limit_conn":       true,
+	"error_page":       true,
+	"deny":             true,
+	"allow":            true,
+	"return":           true,
+}
+
 func init() {
 	for i := 0; i < mutexBucketSize; i++ {
 		azMutex = append(azMutex, &sync.Mutex{})
@@ -1385,7 +1398,10 @@ func hasDuplicatedConfig(p1, p2 apipolicy.PolicyConfig) (string, error) {
 
 	for k := range p1_Nginx {
 		if val, ok := p2_Nginx[k]; ok {
-			return k + fmt.Sprintf("=%s", val), nil
+			// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
+			if !skipKeys[k] {
+				return k + fmt.Sprintf("=%s", val), nil
+			}
 		}
 	}
 	return "", nil
@@ -1404,9 +1420,7 @@ func getNginxConfFromPolicyConfig(p apipolicy.PolicyConfig) (map[string]string, 
 			key := strings.ReplaceAll(keys[l-1], "-", "_")
 			if _, ok := ret[key]; ok {
 				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
-				if key != "more_set_headers" && key != "proxy_set_header" &&
-					key != "set" && key != "limit_req" && key != "limit_conn" &&
-					key != "error_page" && key != "deny" && key != "allow" && key != "return" {
+				if !skipKeys[key] {
 					return ret, errors.Errorf("Annotation nginx conf %s duplicated", key)
 				}
 			}
@@ -1432,9 +1446,7 @@ func getNginxConfFromPolicyConfig(p apipolicy.PolicyConfig) (map[string]string, 
 			key := strings.ReplaceAll(k, "-", "_")
 			if _, ok := ret[key]; ok {
 				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
-				if key != "more_set_headers" && key != "proxy_set_header" &&
-					key != "set" && key != "limit_req" && key != "limit_conn" &&
-					key != "error_page" && key != "deny" && key != "allow" && key != "return" {
+				if !skipKeys[key] {
 					return ret, errors.Errorf("ConfigOption nginx conf %s duplicated", key)
 				}
 			}
@@ -1486,9 +1498,7 @@ func extractConfigFromString(kind, src string, ret map[string]string) error {
 				key := strings.ReplaceAll(kv[0], "-", "_")
 				if _, ok := ret[key]; ok {
 					// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
-					if key != "more_set_headers" && key != "proxy_set_header" &&
-						key != "set" && key != "limit_req" && key != "limit_conn" &&
-						key != "error_page" && key != "deny" && key != "allow" && key != "return" {
+					if !skipKeys[key] {
 						return errors.Errorf("%s nginx conf %s duplicated", kind, key)
 					}
 				}

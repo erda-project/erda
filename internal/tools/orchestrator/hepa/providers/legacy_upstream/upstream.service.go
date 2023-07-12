@@ -43,7 +43,7 @@ func (s *upstreamService) Register(ctx context.Context, req *pb.RegisterRequest)
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
 		return
 	}
-	logrus.Infof("Call /api/gateway/register_async with Req: %+v\n", *(req.GetUpstream()))
+	logrus.Infof("Call /api/gateway/register_async enter Register with Req: %+v\n", *(req.GetUpstream()))
 	if req.GetUpstream().GetRuntimeId() == "" || req.GetUpstream().GetOnlyRuntimePath() {
 		return s.register(ctx, req)
 	}
@@ -94,6 +94,7 @@ func (s *upstreamService) AsyncRegister(ctx context.Context, req *pb.AsyncRegist
 	ctx = context1.WithLoggerIfWithout(ctx, logrus.StandardLogger())
 	l := ctx.(*context1.LogContext).Entry()
 	l.WithError(nil).Infof("Call /api/gateway/register_async with Req: %+v\n", *(req.GetUpstream()))
+	logrus.Infof("Call /api/gateway/register_async with Req: %+v\n", *(req.GetUpstream()))
 
 	if req.Upstream == nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
