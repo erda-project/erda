@@ -15,6 +15,7 @@ providers:
     scheme: https
     description: azure 提供的 ai 能力
     docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
+    appKey: ${ env.OPENAI_API_KEY }
     metadata:
       RESOURCE_NAME: "codeai"
       DEVELOPMENT_NAME: "gpt-35-turbo-0301"

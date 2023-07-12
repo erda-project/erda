@@ -65,7 +65,8 @@ Content-Type: application/json
 
 ### chat on other platform
 POST https://{{ai-proxy_host}}/v1/chat/completions
-Authorization: Bearer {{access-key-id}}
+#Authorization: Bearer {{access-key-id}}
+Authorization: Bearer 7c625aea0b2742018e9a8c13deedeb0f
 Content-Type: application/json
 
 {
