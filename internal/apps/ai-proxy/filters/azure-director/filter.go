@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
+	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -227,7 +228,7 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 		return nil
 	}
 
-	values := ctx.Value(reverseproxy.CtxKeyPathVars{}).(map[string]string)
+	values := ctx.Value(reverseproxy.CtxKeyPathMatcher{}).(*route.PathMatcher).Values
 	prov_, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
 	if !ok || prov_ == nil {
 		return errors.New("provider not set in context map")
@@ -247,7 +248,7 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 		if strings.HasPrefix(expr, "provider.metadata") && len(prov.Metadata) > 0 {
 			rewrite = strutil.Replace(rewrite, prov.Metadata[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
 		}
-		if strings.HasPrefix(expr, "path.") && len(values) > 0 {
+		if strings.HasPrefix(expr, "path.") {
 			rewrite = strutil.Replace(rewrite, values[strings.TrimPrefix(expr, "path.")], start, end)
 		}
 	}

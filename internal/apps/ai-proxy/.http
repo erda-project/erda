@@ -83,7 +83,7 @@ Content-Type: application/json
 
 ### Get credentials
 GET https://{{ai-proxy_host}}/api/ai-proxy/credentials
-Authorization: Bearer {{api-proxy_root-key}}
+Authorization: Bearer {{ai-proxy_root-key}}
 
 ### Create credentials
 POST https://{{ai-proxy_host}}/api/ai-proxy/credentials

@@ -57,7 +57,7 @@ func TestRoute_MatchPath(t *testing.T) {
 	for _, c := range cases {
 		for p, match := range c.Paths {
 			_ = c.Route.Validate()
-			if ok := c.Route.Match(p, http.MethodGet, make(http.Header)); ok != match {
+			if ok := c.Route.Match(p, http.MethodGet); ok != match {
 				t.Fatalf("match error, path: %s, path regex: %s, expect match: %v, got match: %v", p, c.Route.PathRegexExpr(), match, ok)
 			}
 			t.Logf("c.Route.PathRegexExpr: %s", c.Route.PathRegexExpr())
@@ -74,19 +74,6 @@ func TestRoutes_FindRoute(t *testing.T) {
 			Router: &route.Router{
 				To:         "openai",
 				InstanceId: "default",
-			},
-		},
-		{
-			Path:   "/v1/completions",
-			Method: http.MethodPost,
-			HeaderMatcher: map[string]string{
-				vars.XAIProxyProvider:         "azure",
-				vars.XAIProxyProviderInstance: "terminus2",
-			},
-			Filters: nil,
-			Router: &route.Router{
-				To:         "azure",
-				InstanceId: "terminus2",
 			},
 		},
 	}
@@ -109,35 +96,14 @@ func TestRoutes_FindRoute(t *testing.T) {
 		if findRoute.IsNotFoundRoute() {
 			t.Error("the route is not NotFoundRoute")
 		}
-		if findRoute.Router.To != "openai" {
-			t.Fatal("find route error")
-		}
-	})
-	t.Run("find azure terminus2", func(t *testing.T) {
-		request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/v1/completions", nil)
-		if err != nil {
-			t.Fatalf("failed to http.NewReqeust, err: %v", err)
-		}
-		request.Header.Set(vars.XAIProxyProvider, "azure")
-		request.Header.Set(vars.XAIProxyProviderInstance, "terminus2")
-		findRoute := routes.FindRoute(request)
-		t.Logf("findRoute: %s\nfindRoute.IsNotFoundRoute: %v", strutil.TryGetYamlStr(findRoute), findRoute.IsNotFoundRoute())
-		if findRoute.IsNotFoundRoute() {
-			t.Error("the route is not NotFoundRoute")
-		}
-		if findRoute.Router.To != "azure" {
-			t.Fatal("find route error")
-		}
 	})
 }
 
 func TestRoute_Validate(t *testing.T) {
 	if err := (&route.Route{
-		Path:          "/",
-		PathMatcher:   "",
-		Method:        "",
-		MethodMatcher: "",
-		HeaderMatcher: nil,
+		Path:      "/",
+		PathRegex: "",
+		Method:    "",
 		Router: &route.Router{
 			To:         route.ToNotFound,
 			InstanceId: "",
@@ -170,15 +136,15 @@ func TestRoute_RewritePath(t *testing.T) {
 			t.Log(err)
 		}
 	}
-	request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/v1/models/my-model-2023", nil)
+	request, err := http.NewRequest(http.MethodGet, "http://localhost:8080/v1/models/my-model-2023", nil)
 	if err != nil {
 		t.Fatalf("failed to http.NewReqeust, err: %v", err)
 	}
-	findRoute := routes.FindRoute(request)
-	t.Log(findRoute, findRoute.IsNotFoundRoute())
-	if findRoute.IsNotFoundRoute() {
+	rout := routes.FindRoute(request)
+	t.Logf("the found route: %+v, IsNotFoundRoute: %v\n", rout, rout.IsNotFoundRoute())
+	if rout.IsNotFoundRoute() {
 		t.Fatal("the route is not NotFoundRoute")
 	}
-	newPath := findRoute.RewritePath(make(map[string]string))
-	t.Logf("newPath: %s", newPath)
+	rout.Router.RewritePath(request.URL.Path, rout.PathMatcher.Values)
+	t.Logf("newPath: %s", request.URL.Path)
 }

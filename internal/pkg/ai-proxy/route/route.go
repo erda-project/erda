@@ -50,7 +50,7 @@ type Routes []*Route
 func (routes Routes) FindRoute(req *http.Request) *Route {
 	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大
 	for _, route := range routes {
-		if clone := route.Clone(); clone.Match(req.URL.Path, req.Method, req.Header) {
+		if clone := route.Clone(); clone.Match(req.URL.Path, req.Method) {
 			return clone
 		}
 	}
@@ -58,15 +58,14 @@ func (routes Routes) FindRoute(req *http.Request) *Route {
 }
 
 type Route struct {
-	Path        string                       `json:"path" yaml:"path"`
-	PathMatcher string                       `json:"pathMatcher" yaml:"pathMatcher"`
-	Method      string                       `json:"method" yaml:"method"`
-	Router      *Router                      `json:"router" yaml:"router"`
-	Filters     []*reverseproxy.FilterConfig `json:"filters" yaml:"filters"`
+	Path      string                       `json:"path" yaml:"path"`
+	PathRegex string                       `json:"pathRegex" yaml:"pathRegex"`
+	Method    string                       `json:"method" yaml:"method"`
+	Router    *Router                      `json:"router" yaml:"router"`
+	Filters   []*reverseproxy.FilterConfig `json:"filters" yaml:"filters"`
 
-	matchPath   func(path string) bool
-	matchMethod func(method string) bool
-	vars        map[string]string
+	PathMatcher   *PathMatcher             `json:"-" yaml:"-"`
+	MethodMatcher func(method string) bool `json:"-" yaml:"-"`
 }
 
 func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
@@ -84,7 +83,7 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	}
 
 	// set route path vars to context
-	ctx = context.WithValue(ctx, reverseproxy.CtxKeyPathVars{}, r.vars)
+	ctx = context.WithValue(ctx, reverseproxy.CtxKeyPathMatcher{}, r.PathMatcher)
 
 	// set default logger to context
 	var l = logrusx.New(logrusx.WithName(reflect.TypeOf(r).String()))
@@ -132,8 +131,8 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	return rp.ServeHTTP
 }
 
-func (r *Route) Match(path, method string, header http.Header) bool {
-	return r.matchPath(path) && r.matchMethod(method)
+func (r *Route) Match(path, method string) bool {
+	return r.PathMatcher.Match(path) && r.MethodMatcher(method)
 }
 
 func (r *Route) Director(ctx context.Context) func(req *http.Request) {
@@ -148,7 +147,7 @@ func (r *Route) Director(ctx context.Context) func(req *http.Request) {
 		}
 		// 如果配置中定义了 Router, 那么使用 Router 来 direct request
 		if r.Router != nil {
-			r.Router.Director(ctx)(req)
+			r.Router.Director(ctx, r.PathMatcher.Values)(req)
 		}
 	}
 }
@@ -186,19 +185,18 @@ func (r *Route) IsNotFoundRoute() bool {
 
 func (r *Route) PathRegexExpr() string {
 	_ = r.genPathMatcher()
-	return r.PathMatcher
+	return r.PathRegex
 }
 
 func (r *Route) Clone() *Route {
 	route := &Route{
-		Path:        r.Path,
-		PathMatcher: r.PathMatcher,
-		Method:      r.Method,
-		Router:      r.Router,
-		Filters:     r.Filters,
-		matchPath:   r.matchPath,
-		matchMethod: r.matchMethod,
-		vars:        r.vars,
+		Path:          r.Path,
+		PathRegex:     r.PathRegex,
+		Method:        r.Method,
+		Router:        r.Router,
+		Filters:       r.Filters,
+		PathMatcher:   r.PathMatcher,
+		MethodMatcher: r.MethodMatcher,
 	}
 	if route.Router != nil {
 		route.Router = route.Router.Clone()
@@ -206,33 +204,8 @@ func (r *Route) Clone() *Route {
 	return route
 }
 
-func (r *Route) genPathMatcher() error {
-	if len(r.vars) == 0 {
-		r.vars = make(map[string]string)
-	}
-	if r.PathMatcher != "" {
-		pathMatcher, err := regexp.Compile(r.PathMatcher)
-		if err != nil {
-			return errors.Wrapf(err, "Path %s is not a valid path or PathMatcher %s is not a valid regex expression",
-				r.Path, r.PathMatcher)
-		}
-		r.matchPath = func(path string) bool {
-			if !pathMatcher.MatchString(path) {
-				return false
-			}
-			matches := pathMatcher.FindAllStringSubmatch(path, -1)
-			for _, match := range matches {
-				for i, name := range pathMatcher.SubexpNames() {
-					if i > 0 && i < len(match) {
-						r.vars[name] = match[i]
-					}
-				}
-			}
-			return true
-		}
-		return nil
-	}
-
+// OverridePathRegex generates the PathRegex and overwrite it
+func (r *Route) OverridePathRegex() {
 	var p = r.Path
 	for {
 		expr, start, end, err := strutil.FirstCustomPlaceholder(p, "{", "}")
@@ -241,17 +214,24 @@ func (r *Route) genPathMatcher() error {
 		}
 		p = strutil.Replace(p, `(?P<`+(expr)+`>[^/]+)`, start, end)
 	}
+	r.PathRegex = `^` + p + `$`
+}
 
-	r.PathMatcher = `^` + p + `$`
-	return r.genPathMatcher()
+func (r *Route) genPathMatcher() (err error) {
+	// if there is no PathRegex, generate it
+	if r.PathRegex == "" {
+		r.OverridePathRegex()
+	}
+	r.PathMatcher, err = NewPathMatcher(r.PathRegex)
+	return err
 }
 
 func (r *Route) genMethodMatcher() error {
 	if r.Method == "" || r.Method == "*" || strings.EqualFold(r.Method, "any") {
-		r.matchMethod = func(string) bool { return true }
+		r.MethodMatcher = func(string) bool { return true }
 		return nil
 	}
-	r.matchMethod = func(method string) bool {
+	r.MethodMatcher = func(method string) bool {
 		return strings.EqualFold(r.Method, method)
 	}
 	return nil
@@ -265,7 +245,7 @@ type Router struct {
 	Rewrite    string `json:"rewrite" yaml:"rewrite"`
 }
 
-func (r *Router) Director(ctx context.Context) func(r *http.Request) {
+func (r *Router) Director(ctx context.Context, metadata map[string]string) func(r *http.Request) {
 	return func(req *http.Request) {
 		// todo: support to direct with r.To and r.InstanceId
 
@@ -278,15 +258,15 @@ func (r *Router) Director(ctx context.Context) func(r *http.Request) {
 		req.URL.Host = req.Host
 		req.Header.Set("Host", req.Host)
 		req.Header.Set("X-Forwarded-Host", req.Host)
+		req.URL.Path = r.RewritePath(req.URL.Path, metadata)
 	}
 }
 
-func (r *Router) RewritePath(ctx context.Context, path *string) {
+func (r *Router) RewritePath(path string, metadata map[string]string) string {
 	if r.Rewrite == "" {
-		return
+		return path
 	}
 	var rewrite = r.Rewrite
-	var values = ctx.Value(reverseproxy.CtxKeyPathVars{}).(map[string]string)
 	for {
 		expr, start, end, err := strutil.FirstCustomExpression(rewrite, "${", "}", func(s string) bool {
 			s = strings.TrimSpace(s)
@@ -298,11 +278,11 @@ func (r *Router) RewritePath(ctx context.Context, path *string) {
 		if strings.HasPrefix(expr, "env.") {
 			rewrite = strutil.Replace(rewrite, os.Getenv(strings.TrimPrefix(expr, "env.")), start, end)
 		}
-		if strings.HasPrefix(expr, "path.") && len(values) > 0 {
-			rewrite = strutil.Replace(rewrite, values[strings.TrimPrefix(expr, "path.")], start, end)
+		if strings.HasPrefix(expr, "path.") {
+			rewrite = strutil.Replace(rewrite, metadata[strings.TrimPrefix(expr, "path.")], start, end)
 		}
 	}
-	*path = rewrite
+	return rewrite
 }
 
 func (r *Router) Clone() *Router {
@@ -337,3 +317,38 @@ func (r *Router) validate() error {
 }
 
 type To string
+
+func NewPathMatcher(expr string) (*PathMatcher, error) {
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return nil, err
+	}
+	var pm = PathMatcher{
+		Values: make(map[string]string),
+	}
+	pm.match = func(path string) bool {
+		if !re.MatchString(path) {
+			return false
+		}
+		matches := re.FindAllStringSubmatch(path, -1)
+		for _, subs := range matches {
+			for i, name := range re.SubexpNames() {
+				if i > 0 && i < len(subs) {
+					pm.Values[name] = subs[i]
+				}
+			}
+		}
+		return true
+	}
+	return &pm, nil
+}
+
+type PathMatcher struct {
+	Values map[string]string
+
+	match func(path string) bool
+}
+
+func (p *PathMatcher) Match(path string) bool {
+	return p.match(path)
+}

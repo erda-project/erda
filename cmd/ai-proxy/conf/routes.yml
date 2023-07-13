@@ -16,7 +16,7 @@ routes:
       - name: audit
 
   - path: /v1/models/{model}
-    pathMatcher: ""   # 不填写时, 默认为 `^/v1/models/([^/.]+)$`
+    pathRegex: ""   # 不填写时, 默认为 `^/v1/models/([^/.]+)$`
     method: GET
     router: null
     filters:
