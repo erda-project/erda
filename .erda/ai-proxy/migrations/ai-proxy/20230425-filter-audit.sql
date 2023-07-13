@@ -5,7 +5,7 @@ CREATE TABLE `ai_proxy_filter_audit`
     `updated_at`            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted_at`            DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
 
-    `app_key_sha256`        CHAR(64)     NOT NULL DEFAULT '' COMMENT '请求使用的 app_key sha256 哈希值',
+    `api_key_sha256`        CHAR(64)     NOT NULL DEFAULT '' COMMENT '请求使用的 app_key sha256 哈希值',
 
     `username`              VARCHAR(128) NOT NULL COMMENT '用户名称, source=dingtalk时, 为钉钉用户名称',
     `phone_number`          VARCHAR(32)  NOT NULL COMMENT '用户手机号码, source=dingtalk时, 为钉钉账号注册手机号',
@@ -19,7 +19,7 @@ CREATE TABLE `ai_proxy_filter_audit`
     `chat_id`               VARCHAR(64)  NOT NULL COMMENT '钉钉聊天 id',
     `source`                VARCHAR(128) NOT NULL COMMENT '接入应用: dingtalk, vscode-plugin, jetbrains-plugin ...',
     `provider`              VARCHAR(128) NOT NULL COMMENT 'AI 能力提供商: openai, azure...',
-    `provider_instance`     VARCHAR(128) NOT NULL DEFAULT '' COMMENT 'provider 实例名称',
+    `provider_instance_id`  VARCHAR(512) NOT NULL DEFAULT '' COMMENT 'provider 实例名称',
     `model`                 VARCHAR(128) NOT NULL COMMENT '调用的模型名称: gpt-3.5-turbo, gpt-4-8k, ...',
     `operation_id`          VARCHAR(128) NOT NULL COMMENT '调用的接口名称, HTTP Method + Path',
     `prompt`                MEDIUMTEXT   NOT NULL COMMENT '提示语',

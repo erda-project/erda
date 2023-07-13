@@ -28,19 +28,19 @@ service AIProvider {
 
   rpc DeleteProvider(Provider) returns (common.VoidResponse) {
     option(google.api.http) = {
-      delete: "/api/ai-proxy/providers/{name}/{instanceId}"
+      delete: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
     option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers/{name}/{instanceId}"
+      path: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
   }
 
   rpc UpdateProvider(Provider) returns (Provider) {
     option(google.api.http) = {
-      put: "/api/ai-proxy/providers/{name}/{instanceId}"
+      put: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
     option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers/{name}/{instanceId}"
+      path: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
   }
 
@@ -55,10 +55,10 @@ service AIProvider {
 
   rpc GetProvider(Provider) returns (Provider) {
     option(google.api.http) = {
-      get: "/api/ai-proxy/providers/{name}/{instanceId}"
+      get: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
     option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers/{name}/{instanceId}"
+      path: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
   }
 }

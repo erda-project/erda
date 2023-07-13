@@ -84,7 +84,7 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 		"platform":          model.Platform,
 		"description":       model.Description,
 		"enabled":           model.Enabled,
-		"provider_name":     model.ProviderName,
+		"provider_name":     model.Provider,
 		"provider_instance": model.ProviderInstance,
 	}
 	if err := h.Dao.Model(&model).Where(where).Updates(updates).Error; err != nil {

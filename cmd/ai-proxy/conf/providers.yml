@@ -10,29 +10,19 @@ providers:
     metadata: {}
 
   - name: azure
-    instanceId: default
-    host: codeai.openai.azure.com
-    scheme: https
-    description: azure 提供的 ai 能力
-    docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
-    appKey: ${ env.OPENAI_API_KEY }
-    metadata:
-      RESOURCE_NAME: "codeai"
-      DEVELOPMENT_NAME: "gpt-35-turbo-0301"
-
-  - name: azure
-    instanceId: terminus3
+    instanceId: deployment_name=gpt-35-turbo-0301&resource_name=terminus3
     host: terminus3.openai.azure.com
     scheme: https
     description: azure 提供的 ai 能力
     docSite: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
     appKey: ${ env.OPENAI_API_KEY }
     metadata:
-      RESOURCE_NAME: "terminus3"
-      DEVELOPMENT_NAME: "gpt-35-turbo-0301"
+      RESOURCE_NAME: terminus3"
+      DEVELOPMENT_NAME: gpt-35-turbo-0301
+      API_VERSION: 2023-03-15-preview
 
   - name: azure
-    instanceId: terminus2
+    instanceId: deployment_name=gpt-35-turbo-16k&resource_name=terminus2
     host: terminus2.openai.azure.com
     scheme: https
     description: azure terminus2 实例
@@ -41,6 +31,7 @@ providers:
     metadata:
       RESOURCE_NAME: terminus2
       DEVELOPMENT_NAME: gpt-35-turbo-16k
+      API_VERSION: 2023-03-15-preview
 
   - name: test-server
     instanceId: default
