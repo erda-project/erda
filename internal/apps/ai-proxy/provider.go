@@ -18,7 +18,6 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"path"
@@ -27,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
