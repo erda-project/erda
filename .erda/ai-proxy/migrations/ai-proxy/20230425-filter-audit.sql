@@ -19,12 +19,14 @@ CREATE TABLE `ai_proxy_filter_audit`
     `chat_id`               VARCHAR(64)  NOT NULL COMMENT '钉钉聊天 id',
     `source`                VARCHAR(128) NOT NULL COMMENT '接入应用: dingtalk, vscode-plugin, jetbrains-plugin ...',
     `provider`              VARCHAR(128) NOT NULL COMMENT 'AI 能力提供商: openai, azure...',
+    `provider_instance`     VARCHAR(128) NOT NULL DEFAULT '' COMMENT 'provider 实例名称',
     `model`                 VARCHAR(128) NOT NULL COMMENT '调用的模型名称: gpt-3.5-turbo, gpt-4-8k, ...',
     `operation_id`          VARCHAR(128) NOT NULL COMMENT '调用的接口名称, HTTP Method + Path',
     `prompt`                MEDIUMTEXT   NOT NULL COMMENT '提示语',
     `completion`            LONGTEXT     NOT NULL COMMENT 'AI 回复多个 choices 中的一个',
     `metadata`              LONGTEXT     NOT NULL COMMENT '客户端要审计的其他信息',
 
+    `x_request_id`          VARCHAR(64)  NOT NULL DEFAULT '' COMMENT 'http 请求中的 X-Request-Id',
     `request_at`            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '请求到达时间',
     `response_at`           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '响应到达时间',
     `request_content_type`  VARCHAR(32)  NOT NULL COMMENT '请求使用的 Content-Type',
@@ -40,7 +42,7 @@ CREATE TABLE `ai_proxy_filter_audit`
     INDEX `idx_dingtalk_staff_id` (`dingtalk_staff_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-    COMMENT 'AI 插件之审计';
+    COMMENT 'ai-proxy 审计表';
 
 CREATE TABLE `ai_proxy_sessions`
 (

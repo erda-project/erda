@@ -18,6 +18,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"path"
@@ -147,7 +148,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 }
 
 func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.Config.Routes.FindRoute(r).
+	p.Config.Routes.FindRoute(WrapRequest(r, SetXRequestId)).
 		HandlerWith(
 			context.Background(),
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
@@ -291,6 +292,19 @@ func (c *config) GetLogLevel() string {
 		return logrus.InfoLevel.String()
 	}
 	return env
+}
+
+func WrapRequest(r *http.Request, wraps ...func(*http.Request)) *http.Request {
+	for _, wrap := range wraps {
+		wrap(r)
+	}
+	return r
+}
+
+func SetXRequestId(r *http.Request) {
+	if id := r.Header.Get("X-Request-Id"); id == "" {
+		r.Header.Set("X-Request-Id", strings.ReplaceAll(uuid.NewString(), "-", ""))
+	}
 }
 
 var rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
