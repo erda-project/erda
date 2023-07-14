@@ -17,7 +17,7 @@ package initializer
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -103,7 +103,7 @@ func (p *provider) extractTenantAndKey(table string, meta *loader.TableMeta, tab
 
 func (p *provider) executeDDLs(ddlFiles []ddlFile, replacer *strings.Replacer) error {
 	for _, file := range ddlFiles {
-		data, err := ioutil.ReadFile(file.Path)
+		data, err := os.ReadFile(file.Path)
 		if err != nil {
 			return fmt.Errorf("failed to read file: %s", file.Path)
 		}

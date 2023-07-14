@@ -19,7 +19,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 )
 
@@ -30,7 +30,7 @@ var (
 
 // NewLocator .
 func NewLocator(dataFile string) (loc *Locator, err error) {
-	data, err := ioutil.ReadFile(dataFile)
+	data, err := io.ReadFile(dataFile)
 	if err != nil {
 		return nil, err
 	}

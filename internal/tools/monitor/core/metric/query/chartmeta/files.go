@@ -17,7 +17,6 @@ package chartmeta
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -140,7 +139,7 @@ func readFile(file string, out interface{}) error {
 		if err != nil {
 			continue
 		}
-		byts, err := ioutil.ReadFile(file)
+		byts, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}

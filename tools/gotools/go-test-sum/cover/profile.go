@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"sort"
@@ -162,5 +161,5 @@ func Write(filename string, mode string, profiles []*Profile) error {
 			buf.WriteString(fmt.Sprintf("%s:%d.%d,%d.%d %d %d\n", p.FileName, b.StartLine, b.StartCol, b.EndLine, b.EndCol, b.NumStmt, b.Count))
 		}
 	}
-	return ioutil.WriteFile(filename, buf.Bytes(), os.ModePerm)
+	return os.WriteFile(filename, buf.Bytes(), os.ModePerm)
 }

@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -24,7 +23,7 @@ import (
 //go:generate go run gen_auto_register.go
 func main() {
 	var buf strings.Builder
-	fs, err := ioutil.ReadDir("../scenarios")
+	fs, err := os.ReadDir("../scenarios")
 	if err != nil {
 		panic(err)
 	}
@@ -32,7 +31,7 @@ func main() {
 	for _, f := range fs {
 		if f.IsDir() {
 			scenarioName := f.Name()
-			cs, err := ioutil.ReadDir("../scenarios/" + scenarioName + "/components")
+			cs, err := os.ReadDir("../scenarios/" + scenarioName + "/components")
 			if err != nil {
 				panic(err)
 			}
@@ -85,7 +84,7 @@ func main() {
 	buf.WriteString("\tvar protocols = map[string]string{\n")
 	for s := range comps {
 		buf.WriteString(fmt.Sprintf("\t\t\"%s\": `\n", s))
-		pData, err := ioutil.ReadFile("../scenarios/" + s + "/protocol.yml")
+		pData, err := os.ReadFile("../scenarios/" + s + "/protocol.yml")
 		if err != nil {
 			panic(err)
 		}
