@@ -254,12 +254,6 @@
               "time()",
               "doc_path::tag"
             ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "avg(plt::field)"
-              }
-            ],
             "select": [
               {
                 "alias": "typetXSHckQZ",
@@ -377,12 +371,6 @@
             "groupby": [
               "time()",
               "doc_path::tag"
-            ],
-            "orderby": [
-              {
-                "dir": "DESC",
-                "expr": "count(plt::field)"
-              }
             ],
             "select": [
               {
