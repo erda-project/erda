@@ -57,6 +57,7 @@ type DataForFulfill struct {
 }
 
 type DataForFulfillExportOnly struct {
+	AllProjectIssues         bool
 	FileNameWithExt          string
 	Issues                   []*pb.Issue
 	IsDownloadTemplate       bool
