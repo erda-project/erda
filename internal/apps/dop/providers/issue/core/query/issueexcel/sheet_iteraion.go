@@ -27,6 +27,15 @@ import (
 )
 
 func (data DataForFulfill) genIterationSheet() (excel.Rows, error) {
+	// if AllProjectIssues=true, then export all iterations
+	// otherwise, just export iterations related to issues
+	relatedIterationMapByID := make(map[int64]struct{})
+	if !data.ExportOnly.AllProjectIssues {
+		for _, issue := range data.ExportOnly.Issues {
+			relatedIterationMapByID[issue.IterationID] = struct{}{}
+		}
+	}
+
 	var lines excel.Rows
 	// title: iteration id, iteration name, iteration info (JSON)
 	title := excel.Row{
@@ -40,6 +49,12 @@ func (data DataForFulfill) genIterationSheet() (excel.Rows, error) {
 		iteration := iteration
 		if iteration.ID <= 0 {
 			continue
+		}
+		if !data.ExportOnly.AllProjectIssues {
+			// only related iteration need to be exported
+			if _, ok := relatedIterationMapByID[int64(iteration.ID)]; !ok {
+				continue
+			}
 		}
 		b, err := json.Marshal(iteration)
 		if err != nil {

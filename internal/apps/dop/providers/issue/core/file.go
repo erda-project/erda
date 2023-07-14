@@ -360,6 +360,20 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 		return nil, fmt.Errorf("failed to page issues, err: %v", err)
 	}
 	data.ExportOnly.Issues = issues
+	// get total
+	_, projectIssueTotalNum, err := i.db.PagingIssues(pb.PagingIssueRequest{
+		ProjectID:    data.ProjectID,
+		PageNo:       1,
+		PageSize:     1,
+		External:     req.External,
+		OnlyIdResult: true,
+	}, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project issues total num, err: %v", err)
+	}
+	if uint64(len(issues)) >= projectIssueTotalNum {
+		data.ExportOnly.AllProjectIssues = true
+	}
 	data.ExportOnly.IsDownloadTemplate = req.IsDownloadTemplate
 	data.ExportOnly.FileNameWithExt = "issue-export.xlsx"
 	// propertyRelation map
