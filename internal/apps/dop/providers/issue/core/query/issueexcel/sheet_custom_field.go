@@ -208,6 +208,7 @@ func (data *DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Is
 		case pb.IssueTypeEnum_BUG.String():
 			cfsNeedHandled = model.BugOnly.CustomFields
 			cfType = pb.PropertyIssueTypeEnum_BUG
+		case pb.IssueTypeEnum_TICKET.String():
 		default:
 			return fmt.Errorf("invalid issue type, issue type: %s", issue.Type)
 		}
