@@ -48,7 +48,7 @@ func NewCredential(credential *pb.Credential) *AIProxyCredentials {
 	model.Description = credential.GetDescription()
 	model.Enabled = credential.GetEnabled()
 	model.Provider = credential.GetProviderName()
-	model.ProviderInstance = credential.GetProviderInstance()
+	model.ProviderInstanceId = credential.GetProviderInstance()
 	model.ExpiredAt = time.Date(2099, time.January, 1, 0, 0, 0, 0, time.Local)
 	return &model
 }
@@ -66,6 +66,6 @@ func (model AIProxyCredentials) ToProtobuf() *pb.Credential {
 		Description:      model.Description,
 		Enabled:          model.Enabled,
 		ProviderName:     model.Provider,
-		ProviderInstance: model.ProviderInstance,
+		ProviderInstance: model.ProviderInstanceId,
 	}
 }

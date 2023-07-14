@@ -85,7 +85,7 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 		"description":       model.Description,
 		"enabled":           model.Enabled,
 		"provider_name":     model.Provider,
-		"provider_instance": model.ProviderInstance,
+		"provider_instance": model.ProviderInstanceId,
 	}
 	if err := h.Dao.Model(&model).Where(where).Updates(updates).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to update credential")
