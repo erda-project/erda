@@ -25,6 +25,7 @@ import (
 type DataForFulfillImportOnlyBaseInfo struct {
 	OriginalErdaPlatform  string // get from dop conf.DiceClusterName()
 	OriginalErdaProjectID uint64
+	AllProjectIssues      bool
 }
 
 func (data DataForFulfill) genBaseInfoSheet() (excel.Rows, error) {
@@ -32,6 +33,7 @@ func (data DataForFulfill) genBaseInfoSheet() (excel.Rows, error) {
 	meta := DataForFulfillImportOnlyBaseInfo{
 		OriginalErdaPlatform:  conf.DiceClusterName(),
 		OriginalErdaProjectID: data.ProjectID,
+		AllProjectIssues:      data.ExportOnly.AllProjectIssues,
 	}
 	b, err := json.Marshal(&meta)
 	if err != nil {
