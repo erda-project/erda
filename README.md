@@ -95,12 +95,6 @@ If you have any questions, please feel free to contact us.
 - Email: erda@terminus.io
 - Twitter: [@ErdaProject](https://twitter.com/ErdaProject)
 - Zhihu：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
-- WeChat Official Account:
-
-    ![Erda WeChat](./docs/assets/wechat-small.jpg)
-- DingTalk Group:
-  
-    ![Erda DingTalk](./docs/assets/dingtalk.png)
 
 ## License
 
