@@ -21,6 +21,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
@@ -133,7 +134,7 @@ func (client *DBClient) InitOrgAuditInterval(orgIDs []uint64) error {
 
 	for _, v := range orgs {
 		config := &v.Config
-		config.AuditInterval = -7
+		config.AuditInterval = int64(-conf.OrgAuditDefaultRetentionDays())
 		cfg, err := json.Marshal(config)
 		if err != nil {
 			return err

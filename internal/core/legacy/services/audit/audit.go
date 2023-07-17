@@ -244,8 +244,10 @@ func (a *Audit) GetAuditCleanCron(orgID int64) (*apistructs.AuditListCleanCronRe
 	}
 	var interval uint64
 	if audit.Config.AuditInterval == 0 {
-		// 当天创建的企业，还没有被定时任务初始化过的清理周期，先转化成7
-		interval = 7
+		// For companies created on the same day,
+		// the cleaning cycle that has not been initialized by
+		// the scheduled task is first converted to default retention days
+		interval = conf.OrgAuditDefaultRetentionDays()
 	} else {
 		interval = uint64(-audit.Config.AuditInterval)
 	}
@@ -275,13 +277,14 @@ func (a *Audit) getCleanAuditConfig() map[int][]uint64 {
 		intervalOrgsMap[interval] = append(intervalOrgsMap[interval], setting.ID)
 	}
 
-	// 清理周期为0天的企业，初始化为7天
+	// enterprises with a cleanup period of 0 days, initialized to default retention days
 	orgIDs := intervalOrgsMap[0]
 	if orgIDs != nil {
 		if err := a.db.InitOrgAuditInterval(orgIDs); err != nil {
 			logrus.Errorf(err.Error())
 		}
-		intervalOrgsMap[-7] = append(intervalOrgsMap[-7], orgIDs...)
+		intervalOrgsMap[int(-conf.OrgAuditDefaultRetentionDays())] = append(intervalOrgsMap[int(-conf.OrgAuditDefaultRetentionDays())],
+			orgIDs...)
 		delete(intervalOrgsMap, 0)
 	}
 

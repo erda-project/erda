@@ -15,6 +15,8 @@
 package conf
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -23,4 +25,28 @@ import (
 
 func TestGetComponentName(t *testing.T) {
 	assert.Equal(t, "addon-nexus", strings.Split("addon-nexus.default:8081", ".")[0])
+}
+
+func TestLoad(t *testing.T) {
+	baseDir, err := os.MkdirTemp(os.TempDir(), "erda-configs")
+	assert.NoErrorf(t, err, "failed to create temp dir")
+	defer os.RemoveAll(baseDir)
+	err = os.Mkdir(filepath.Join(baseDir, "permission"), 0755)
+	assert.NoErrorf(t, err, "failed to create dir")
+	os.Mkdir(filepath.Join(baseDir, "audit"), 0755)
+	f, err := os.Create(filepath.Join(baseDir, "audit/template.json"))
+	assert.NoErrorf(t, err, "failed to write file")
+	f.WriteString(`{
+  "cancelPipeline": {
+    "desc": "取消流水线",
+    "success": {
+      "zh": "在应用 [@projectName](project) / [@appName](app) 中，取消执行 [流水线](pipeline)",
+      "en": "In the application [@projectName](project) / [@appName](app), cancel the execution of [pipeline](pipeline)"
+    },
+    "fail": {}
+  }}`)
+	f.Close()
+	os.Setenv("ERDA_CONFIGS_BASE_PATH", baseDir)
+	Load()
+	assert.Equal(t, uint64(30), OrgAuditDefaultRetentionDays())
 }
