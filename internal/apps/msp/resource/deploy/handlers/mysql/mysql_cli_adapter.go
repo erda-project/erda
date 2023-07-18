@@ -34,58 +34,58 @@ type InstanceAdapter interface {
 }
 
 func NewInstanceAdapter(options ...Option) InstanceAdapter {
-	var cia = commonInstanceAdapter{
+	var ia = instanceAdapter{
 		useOperator:    false,
 		execSQLRequest: new(pb.ExecSQLRequest),
 		clusterConfig:  make(map[string]string),
 		operatorInsCli: nil,
 	}
 	for _, f := range options {
-		f(&cia)
+		f(&ia)
 	}
-	if cia.useOperator {
-		host, _, _ := net.SplitHostPort(cia.execSQLRequest.WAddress)
-		cia.execSQLRequest.WAddress = host + ":33080" // 33080 is the mylet port // todo: hard coed here
-		return &operatorClient{cia: &cia}
+	if ia.useOperator {
+		host, _, _ := net.SplitHostPort(ia.execSQLRequest.WAddress)
+		ia.execSQLRequest.WAddress = host + ":33080" // 33080 is the mylet port // todo: hard coed here
+		return &operatorClient{ia: &ia}
 	}
-	return &localClient{cia: &cia}
+	return &localClient{ia: &ia}
 }
 
 type localClient struct {
-	cia *commonInstanceAdapter
+	ia *instanceAdapter
 }
 
 func (l *localClient) ExecSQLs() error {
 	return (&mysqlhelper.Request{
-		ClusterKey: l.cia.execSQLRequest.GetClusterKey(),
-		Url:        "jdbc:mysql://" + l.cia.execSQLRequest.GetWAddress(),
-		User:       l.cia.execSQLRequest.GetUsername(),
-		Password:   l.cia.execSQLRequest.GetPassword(),
-		Sqls:       l.cia.execSQLRequest.GetQueries(),
+		ClusterKey: l.ia.execSQLRequest.GetClusterKey(),
+		Url:        "jdbc:mysql://" + l.ia.execSQLRequest.GetWAddress(),
+		User:       l.ia.execSQLRequest.GetUsername(),
+		Password:   l.ia.execSQLRequest.GetPassword(),
+		Sqls:       l.ia.execSQLRequest.GetQueries(),
 	}).Exec()
 }
 
 type operatorClient struct {
-	cia *commonInstanceAdapter
+	ia *instanceAdapter
 }
 
 func (o *operatorClient) ExecSQLs() error {
-	o.cia.execSQLRequest.QueryType = pb.QueryType_sql // only support pb.QueryType_sql yet
-	_, err := o.cia.operatorInsCli.ExecSQL(context.Background(), o.cia.execSQLRequest)
+	o.ia.execSQLRequest.QueryType = pb.QueryType_sql // only support pb.QueryType_sql yet
+	_, err := o.ia.operatorInsCli.ExecSQL(context.Background(), o.ia.execSQLRequest)
 	return err
 }
 
-type commonInstanceAdapter struct {
+type instanceAdapter struct {
 	useOperator    bool
 	execSQLRequest *pb.ExecSQLRequest
 	clusterConfig  map[string]string
 	operatorInsCli pb.MySQLOperatorInstanceServiceServer
 }
 
-type Option func(o *commonInstanceAdapter)
+type Option func(o *instanceAdapter)
 
 func WithUseOperator(useOperator bool) Option {
-	return func(o *commonInstanceAdapter) {
+	return func(o *instanceAdapter) {
 		o.useOperator = useOperator
 	}
 }
@@ -94,43 +94,43 @@ func WithOperatorCli(cli pb.MySQLOperatorInstanceServiceServer) Option {
 	if cli == nil {
 		panic("pb.MySQLOperatorInstanceServiceServer is nil, is it not autowired ?")
 	}
-	return func(o *commonInstanceAdapter) {
+	return func(o *instanceAdapter) {
 		o.operatorInsCli = cli
 	}
 }
 
 func WithUsername(username string) Option {
-	return func(cia *commonInstanceAdapter) {
-		cia.execSQLRequest.Username = username
+	return func(ia *instanceAdapter) {
+		ia.execSQLRequest.Username = username
 	}
 }
 
 func WithPassword(password string) Option {
-	return func(cia *commonInstanceAdapter) {
-		cia.execSQLRequest.Password = password
+	return func(ia *instanceAdapter) {
+		ia.execSQLRequest.Password = password
 	}
 }
 
 func WithSchema(schema string) Option {
-	return func(cia *commonInstanceAdapter) {
-		cia.execSQLRequest.Schema = schema
+	return func(ia *instanceAdapter) {
+		ia.execSQLRequest.Schema = schema
 	}
 }
 
 func WithClusterKey(clusterKey string) Option {
-	return func(cia *commonInstanceAdapter) {
-		cia.execSQLRequest.ClusterKey = clusterKey
+	return func(ia *instanceAdapter) {
+		ia.execSQLRequest.ClusterKey = clusterKey
 	}
 }
 
 func WithAddress(host string) Option {
-	return func(cia *commonInstanceAdapter) {
-		cia.execSQLRequest.WAddress = host
+	return func(ia *instanceAdapter) {
+		ia.execSQLRequest.WAddress = host
 	}
 }
 
 func WithQueries(queries []string) Option {
-	return func(cia *commonInstanceAdapter) {
-		cia.execSQLRequest.Queries = queries
+	return func(ia *instanceAdapter) {
+		ia.execSQLRequest.Queries = queries
 	}
 }
