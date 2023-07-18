@@ -15,7 +15,6 @@
 package agenttool
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -25,10 +24,10 @@ import (
 func TestMv(t *testing.T) {
 	tmpDir := "/tmp"
 	tmpPrefix := "tmp"
-	sourceDir, err := ioutil.TempDir(tmpDir, tmpPrefix)
+	sourceDir, err := os.MkdirTemp(tmpDir, tmpPrefix)
 	assert.NoError(t, err)
 	defer os.RemoveAll(sourceDir)
-	destDir, err := ioutil.TempDir(tmpDir, tmpPrefix)
+	destDir, err := os.MkdirTemp(tmpDir, tmpPrefix)
 	assert.NoError(t, err)
 	defer os.RemoveAll(destDir)
 	err = Mv(sourceDir, destDir)

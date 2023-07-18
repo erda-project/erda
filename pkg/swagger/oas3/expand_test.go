@@ -16,14 +16,14 @@ package oas3_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/swagger/oas3"
 )
 
 func TestToYaml(t *testing.T) {
-	data, err := ioutil.ReadFile("./testdata/gaia-oas3.json")
+	data, err := os.ReadFile("./testdata/gaia-oas3.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -113,7 +113,7 @@ func TestToYaml(t *testing.T) {
 
 // go test -v -run TestExpandAllOf
 func TestExpandAllOf(t *testing.T) {
-	data, err := ioutil.ReadFile("./testdata/allof-oas3.json")
+	data, err := os.ReadFile("./testdata/allof-oas3.json")
 	if err != nil {
 		t.Error(err)
 	}

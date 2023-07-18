@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sync"
 	"time"
 
@@ -127,7 +127,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) loadRolloverBody() error {
-	body, err := ioutil.ReadFile(p.Cfg.BodyFile)
+	body, err := os.ReadFile(p.Cfg.BodyFile)
 	if err != nil {
 		return fmt.Errorf("failed to load rollover body file: %s", err)
 	}

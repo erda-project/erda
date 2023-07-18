@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"sync"
@@ -89,11 +88,11 @@ func New(ctx context.Context) (*Watcher, error) {
 				// 全量处理
 				fullHandler, ok := w.fullFileHandlerMap[event.Name]
 				if ok {
-					content, err := ioutil.ReadFile(event.Name)
+					content, err := os.ReadFile(event.Name)
 					if err != nil {
 						continue
 					}
-					if err := fullHandler(ioutil.NopCloser(bytes.NewBuffer(content))); err != nil {
+					if err := fullHandler(io.NopCloser(bytes.NewBuffer(content))); err != nil {
 						logger.Printf("failed to handle file: %s, err: %v\n", event.Name, err)
 						continue
 					}

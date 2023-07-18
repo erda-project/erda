@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
@@ -52,7 +51,7 @@ func (r *ExtResponse) ReadCloser(ctx httpserver.Context) io.ReadCloser {
 		})
 		r.status = api.InternalError.Status()
 	}
-	return ioutil.NopCloser(bytes.NewBuffer(byts))
+	return io.NopCloser(bytes.NewBuffer(byts))
 }
 
 func (r *ExtResponse) Response(ctx httpserver.Context) httpserver.Response {

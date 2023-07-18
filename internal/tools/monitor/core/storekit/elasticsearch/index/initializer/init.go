@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/olivere/elastic"
@@ -41,7 +41,7 @@ func (p *provider) initTemplates(ctx context.Context, client *elastic.Client, te
 		if len(t.Path) <= 0 {
 			return fmt.Errorf("template(%d).Path is unspecified", i)
 		}
-		template, err := ioutil.ReadFile(t.Path)
+		template, err := os.ReadFile(t.Path)
 		if err != nil {
 			return fmt.Errorf("failed to load template{%d, %q, %q}: %s", i, t.Name, t.Path, err)
 		}

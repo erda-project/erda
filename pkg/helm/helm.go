@@ -17,7 +17,6 @@ package helm
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -332,7 +331,7 @@ func (c *Client) AddOrUpdateRepo(repoEntry *repo.Entry) error {
 		}()
 	}
 
-	rfContent, err := ioutil.ReadFile(rfPath)
+	rfContent, err := os.ReadFile(rfPath)
 	if err != nil {
 		return fmt.Errorf("repo file read error, path: %s, error: %v", rfPath, err)
 	}

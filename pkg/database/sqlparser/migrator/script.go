@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -59,7 +59,7 @@ type Script struct {
 
 // NewScript read the local file, parse data as SQL AST nodes, and mark script IsBase or not
 func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
-	data, err := ioutil.ReadFile(filepath.Join(workdir, pathFromRepoRoot))
+	data, err := os.ReadFile(filepath.Join(workdir, pathFromRepoRoot))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ReadFile")
 	}

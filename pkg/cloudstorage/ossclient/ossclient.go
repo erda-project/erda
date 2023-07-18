@@ -16,7 +16,6 @@ package ossclient
 
 import (
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -79,7 +78,7 @@ func (c *OssClient) DownloadFile(bucketName, objectName string) ([]byte, error) 
 	}
 
 	var data []byte
-	if data, err = ioutil.ReadAll(reader); err != nil {
+	if data, err = io.ReadAll(reader); err != nil {
 		return nil, err
 	}
 

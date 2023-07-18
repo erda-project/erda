@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -40,7 +40,7 @@ func GetVersion(masterIP string) (string, error) {
 	if res.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("malformed status code: %d", res.StatusCode)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +66,7 @@ func GetApps(masterIP string) ([]map[string]interface{}, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("malformed status code: %d", res.StatusCode)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func GetApp(masterIP, id string) (map[string]interface{}, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("malformed status code: %d", res.StatusCode)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func PutApp(masterIP string, m map[string]interface{}) (string, error) {
 	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
 		return "", fmt.Errorf("malformed status code: %d", res.StatusCode)
 	}
-	b, err = ioutil.ReadAll(res.Body)
+	b, err = io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
@@ -168,7 +168,7 @@ func RestartApp(masterIP, id string) (string, error) {
 	if res.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("malformed status code: %d", res.StatusCode)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
@@ -203,7 +203,7 @@ func DeleteApp(masterIP, id string) (string, error) {
 	if res.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("malformed status code: %d", res.StatusCode)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}

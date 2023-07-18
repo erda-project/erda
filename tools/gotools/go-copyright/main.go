@@ -20,7 +20,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -93,7 +92,7 @@ func checkCopyright() ([]string, error) {
 }
 
 func checkFile(filename string) (bool, error) {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return false, err
 	}
@@ -140,7 +139,7 @@ func isGenerated(fset *token.FileSet, file *ast.File) bool {
 
 func loadIgnoreFiles() []string {
 	const cfgfile = ".licenserc.json"
-	byts, err := ioutil.ReadFile(cfgfile)
+	byts, err := os.ReadFile(cfgfile)
 	if err != nil {
 		return nil
 	}

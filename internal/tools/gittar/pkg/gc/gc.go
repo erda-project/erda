@@ -16,7 +16,7 @@ package gc
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -59,7 +59,7 @@ func ScheduledExecuteClean() {
 func repositoryClean() {
 	logrus.Infof("gc: start gc")
 	defer logrus.Infof("gc: end gc")
-	projectFileInfos, err := ioutil.ReadDir(repositoryRootAddr)
+	projectFileInfos, err := os.ReadDir(repositoryRootAddr)
 	if err != nil {
 		logrus.Errorf("gc: read dir %s error: %v", repositoryRootAddr, err)
 		return
@@ -71,7 +71,7 @@ func repositoryClean() {
 			continue
 		}
 		var projectPath = repositoryRootAddr + "/" + projectFileInfo.Name()
-		applicationFileInfos, err := ioutil.ReadDir(projectPath)
+		applicationFileInfos, err := os.ReadDir(projectPath)
 		if err != nil {
 			logrus.Errorf("gc: read dir %s error: %v", projectPath, err)
 			continue

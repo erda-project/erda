@@ -17,7 +17,7 @@ package manager
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	cfgpkg "github.com/recallsong/go-utils/config"
 )
@@ -26,7 +26,7 @@ func (p *provider) loadRolloverBody() error {
 	if len(p.C.RolloverBodyFile) <= 0 {
 		return nil
 	}
-	body, err := ioutil.ReadFile(p.C.RolloverBodyFile)
+	body, err := os.ReadFile(p.C.RolloverBodyFile)
 	if err != nil {
 		return fmt.Errorf("fail to load index rollover file: %s", err)
 	}

@@ -17,7 +17,7 @@ package creator
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -111,7 +111,7 @@ func (p *provider) createTable(ctx context.Context, tableName, aliasTableName st
 		table.DatabaseNameKey, p.Cfg.Database,
 		table.TtlDaysNameKey, strconv.FormatInt(ttlDays, 10))
 
-	data, err := ioutil.ReadFile(p.Cfg.DDLTemplate)
+	data, err := os.ReadFile(p.Cfg.DDLTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %s", p.Cfg.DDLTemplate)
 	}

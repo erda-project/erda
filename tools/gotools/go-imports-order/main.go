@@ -19,7 +19,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -73,7 +72,7 @@ func checkAllFiles() ([]string, error) {
 }
 
 func checkFile(filename string) (bool, error) {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return false, err
 	}

@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -135,7 +134,7 @@ func dupRequest(req *http.Request) (*http.Request, *http.Request, error) {
 	var bodybuf []byte
 	if req.Body != nil {
 		var err error
-		bodybuf, err = ioutil.ReadAll(req.Body)
+		bodybuf, err = io.ReadAll(req.Body)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -212,7 +211,7 @@ func (r AfterDo) JSON(o interface{}) (*Response, error) {
 
 	// check content-type before decode body
 	contentType := resp.Header.Get("Content-Type")
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +274,7 @@ func (r AfterDo) DiscardBody() (*Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	io.Copy(ioutil.Discard, resp.Body)
+	io.Copy(io.Discard, resp.Body)
 	return &Response{
 		internal: resp,
 	}, nil

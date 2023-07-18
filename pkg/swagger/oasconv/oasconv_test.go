@@ -15,7 +15,7 @@
 package oasconv_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,7 +34,7 @@ func TestOAS2ConvTo3(t *testing.T) {
 }
 
 func testOas2ConvertTo3WithBasePath(t *testing.T) {
-	data, err := ioutil.ReadFile(oas2WithBasePath)
+	data, err := os.ReadFile(oas2WithBasePath)
 	if err != nil {
 		t.Fatalf("failed to ReadFile, filename: %s, err: %v", oas2WithBasePath, err)
 	}

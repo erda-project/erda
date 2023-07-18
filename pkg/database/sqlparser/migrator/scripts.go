@@ -17,7 +17,6 @@ package migrator
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,7 +71,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 		services     = make(map[string]*Module, 0)
 	)
 	dirname := filepath.Join(parameters.Workdir(), parameters.MigrationDir())
-	modulesInfos, err := ioutil.ReadDir(dirname)
+	modulesInfos, err := os.ReadDir(dirname)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to ReadDir %s", dirname)
 	}
@@ -99,7 +98,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 		modulesNames = append(modulesNames, moduleInfo.Name())
 
 		dirname := filepath.Join(parameters.Workdir(), parameters.MigrationDir(), moduleInfo.Name())
-		serviceDirInfos, err := ioutil.ReadDir(dirname)
+		serviceDirInfos, err := os.ReadDir(dirname)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to ReadDir %s", dirname)
 		}
@@ -111,7 +110,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 
 			// read requirements.txt
 			if strings.EqualFold(fileInfo.Name(), pygrator.RequirementsFilename) {
-				module.PythonRequirementsText, err = ioutil.ReadFile(filepath.Join(parameters.Workdir(), parameters.MigrationDir(), moduleInfo.Name(), fileInfo.Name()))
+				module.PythonRequirementsText, err = os.ReadFile(filepath.Join(parameters.Workdir(), parameters.MigrationDir(), moduleInfo.Name(), fileInfo.Name()))
 				if err != nil {
 					return nil, err
 				}

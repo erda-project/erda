@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 
@@ -434,7 +433,7 @@ func (s *Store) Update(apiOp *types.APIRequest, schema *types.APISchema, params 
 	}
 
 	if apiOp.Method == http.MethodPatch {
-		bytes, err := ioutil.ReadAll(io.LimitReader(apiOp.Request.Body, 2<<20))
+		bytes, err := io.ReadAll(io.LimitReader(apiOp.Request.Body, 2<<20))
 		if err != nil {
 			return types.APIObject{}, err
 		}

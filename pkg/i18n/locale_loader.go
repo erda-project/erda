@@ -16,7 +16,7 @@ package i18n
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -50,7 +50,7 @@ func (loader *LocaleResourceLoader) addResource(locale string, keys map[string]s
 
 func (loader *LocaleResourceLoader) LoadFile(fileList ...string) error {
 	for _, filePath := range fileList {
-		resourceBytes, err := ioutil.ReadFile(filePath)
+		resourceBytes, err := os.ReadFile(filePath)
 		if err != nil {
 			return err
 		}
@@ -77,7 +77,7 @@ func (loader *LocaleResourceLoader) LoadFile(fileList ...string) error {
 }
 
 func (loader *LocaleResourceLoader) LoadDir(dir string) error {
-	fileInfos, err := ioutil.ReadDir(dir)
+	fileInfos, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}

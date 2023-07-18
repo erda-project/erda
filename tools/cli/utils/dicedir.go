@@ -16,7 +16,6 @@ package utils
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
@@ -215,7 +214,7 @@ func mkProjErdaDirPath(path string) string {
 
 func ListDir(dir string) ([]string, error) {
 	var files []string
-	fileInfos, err := ioutil.ReadDir(dir)
+	fileInfos, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}

@@ -15,7 +15,7 @@
 package oas3_test
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/swagger/oas3"
@@ -23,7 +23,7 @@ import (
 
 func TestExpandSchemaRef2(t *testing.T) {
 	filename := "./testdata/dop-all.yaml"
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatalf("failed to ReadFile: %v", err)
 	}

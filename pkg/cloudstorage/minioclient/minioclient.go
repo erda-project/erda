@@ -16,7 +16,7 @@ package minioclient
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -80,7 +80,7 @@ func (c *MinioClient) DownloadFile(bucketName, objectName string) ([]byte, error
 		}
 	}()
 
-	data, err := ioutil.ReadAll(obj)
+	data, err := io.ReadAll(obj)
 	if err != nil {
 		return nil, err
 	}

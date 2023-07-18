@@ -16,7 +16,7 @@ package httpclient
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -177,7 +177,7 @@ func TestWriteBody(t *testing.T) {
 	if err := writeBody(w, &resp); err != nil {
 		t.Fatal(err)
 	}
-	data, err := ioutil.ReadAll(w)
+	data, err := io.ReadAll(w)
 	if err != nil {
 		t.Fatal(err)
 	}

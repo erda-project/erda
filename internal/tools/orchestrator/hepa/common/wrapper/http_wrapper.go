@@ -17,7 +17,7 @@ package wrapper
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -71,7 +71,7 @@ func DoRequest(client *http.Client, method, url string, body []byte, timeout int
 		return respBody, nil, errors.Wrap(err, "http client send request failed")
 	}
 	succ = true
-	respBody, err = ioutil.ReadAll(resp.Body)
+	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "read form response body failed")
 	}

@@ -16,7 +16,7 @@ package sqllint
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -129,7 +129,7 @@ func LoadConfig(data []byte) (map[string]Config, error) {
 }
 
 func LoadConfigFromLocal(filename string) (map[string]Config, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to ReadFile: %s", filename)
 	}

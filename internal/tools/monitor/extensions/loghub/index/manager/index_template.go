@@ -17,7 +17,7 @@ package manager
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -28,7 +28,7 @@ func (p *provider) setupIndexTemplate(client *elastic.Client) error {
 	if len(p.C.IndexTemplateName) <= 0 || len(p.C.IndexTemplateFile) <= 0 {
 		return nil
 	}
-	template, err := ioutil.ReadFile(p.C.IndexTemplateFile)
+	template, err := os.ReadFile(p.C.IndexTemplateFile)
 	if err != nil {
 		return fmt.Errorf("fail to load index template: %s", err)
 	}

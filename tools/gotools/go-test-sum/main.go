@@ -23,7 +23,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -162,7 +161,7 @@ func testAllPackages(base string) error {
 		buf := make([]byte, 8)
 		hash := md5.New()
 		for _, file := range info.files {
-			byts, err := ioutil.ReadFile(file.path)
+			byts, err := os.ReadFile(file.path)
 			if err != nil {
 				return err
 			}
@@ -299,7 +298,7 @@ type testSumItem struct {
 }
 
 func readTestSum() map[string]*testSumItem {
-	byts, err := ioutil.ReadFile(testSumFilename)
+	byts, err := os.ReadFile(testSumFilename)
 	if err != nil {
 		return nil
 	}
@@ -342,7 +341,7 @@ func writeTestSum(testSum map[string]*testSumItem) error {
 		sum := testSum[key]
 		buf.WriteString(fmt.Sprintf("%s %s %s\n", sum.pkg, sum.hash, sum.testTime.Format(time.RFC3339Nano)))
 	}
-	return ioutil.WriteFile(testSumFilename, buf.Bytes(), os.ModePerm)
+	return os.WriteFile(testSumFilename, buf.Bytes(), os.ModePerm)
 }
 
 func readBasePath() (string, error) {
@@ -350,7 +349,7 @@ func readBasePath() (string, error) {
 }
 
 func readBasePathFromDir(dir string) (string, error) {
-	mod, err := ioutil.ReadFile(filepath.Join(dir, "go.mod"))
+	mod, err := os.ReadFile(filepath.Join(dir, "go.mod"))
 	if err != nil {
 		return "", err
 	}
