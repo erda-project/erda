@@ -101,7 +101,7 @@ type urlEncodedSigner struct {
 }
 
 func (a *urlEncodedSigner) Sign() (string, error) {
-	bodyData, err := iol.ReadAll(a.r.Body)
+	bodyData, err := io.ReadAll(a.r.Body)
 	if err != nil {
 		return "", err
 	}
