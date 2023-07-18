@@ -24,7 +24,7 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -101,7 +101,7 @@ type urlEncodedSigner struct {
 }
 
 func (a *urlEncodedSigner) Sign() (string, error) {
-	bodyData, err := ioutil.ReadAll(a.r.Body)
+	bodyData, err := io.ReadAll(a.r.Body)
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +116,7 @@ func (a *urlEncodedSigner) Sign() (string, error) {
 	// 更新请求
 	values.Set("sign", sign)
 	bodyS := values.Encode()
-	a.r.Body = ioutil.NopCloser(bytes.NewBufferString(bodyS))
+	a.r.Body = io.NopCloser(bytes.NewBufferString(bodyS))
 	a.r.ContentLength = int64(len(bodyS))
 
 	return sign, nil
@@ -134,7 +134,7 @@ func (a *jsonSigner) Sign() (string, error) {
 
 	var dataS = "{}"
 	if a.r.Body != nil {
-		data, err := ioutil.ReadAll(a.r.Body)
+		data, err := io.ReadAll(a.r.Body)
 		if err != nil {
 			return "", err
 		}
@@ -152,7 +152,7 @@ func (a *jsonSigner) Sign() (string, error) {
 		"sign":   sign,
 	}
 	marshal, _ := json.Marshal(m)
-	a.r.Body = ioutil.NopCloser(bytes.NewBuffer(marshal))
+	a.r.Body = io.NopCloser(bytes.NewBuffer(marshal))
 	a.r.ContentLength = int64(len(marshal))
 
 	return sign, nil

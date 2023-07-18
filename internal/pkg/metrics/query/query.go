@@ -16,7 +16,7 @@ package query
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -81,7 +81,7 @@ func (client *queryClient) doAction(req *MetricQueryRequest, resp *MetricQueryRe
 }
 
 func marshalResponse(response *http.Response, resp *MetricQueryResponse) error {
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}

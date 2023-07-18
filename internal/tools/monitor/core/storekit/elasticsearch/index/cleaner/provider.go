@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -137,7 +137,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	// rollover body for disk clean
 	if len(p.Cfg.DiskClean.RolloverBodyFile) > 0 {
-		body, err := ioutil.ReadFile(p.Cfg.DiskClean.RolloverBodyFile)
+		body, err := os.ReadFile(p.Cfg.DiskClean.RolloverBodyFile)
 		if err != nil {
 			return fmt.Errorf("failed to load rollover body file for disk clean: %s", err)
 		}

@@ -16,13 +16,12 @@ package license
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func TestParseLicense(t *testing.T) {
-	bytes, err := ioutil.ReadFile("license.json")
+	bytes, err := os.ReadFile("license.json")
 	if err != nil {
 		panic(err)
 	}
@@ -30,7 +29,7 @@ func TestParseLicense(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	ioutil.WriteFile("license_key.txt", []byte(licenseKey), os.ModePerm)
+	os.WriteFile("license_key.txt", []byte(licenseKey), os.ModePerm)
 	println(licenseKey)
 	license, err := ParseLicense(licenseKey)
 	if err != nil {

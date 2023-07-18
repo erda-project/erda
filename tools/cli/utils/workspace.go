@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -70,7 +69,7 @@ func IsWorkspaceDirty(dir string) (bool, error) {
 
 func GetWorkspacePipelines(dir string) ([]string, error) {
 	var ymls []string
-	fs, err := ioutil.ReadDir(dir)
+	fs, err := os.ReadDir(dir)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}

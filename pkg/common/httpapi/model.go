@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -49,7 +48,7 @@ func (r *baseResponse) ReadCloser(httpserver.Context) io.ReadCloser {
 		})
 		r.status = InternalError.status
 	}
-	return ioutil.NopCloser(bytes.NewBuffer(byts))
+	return io.NopCloser(bytes.NewBuffer(byts))
 }
 
 func setContentType(ctx httpserver.Context) {

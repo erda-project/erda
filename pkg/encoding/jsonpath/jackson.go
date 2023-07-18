@@ -16,7 +16,6 @@ package jsonpath
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,7 +27,7 @@ const JacksonExpressPrefix = "$."
 
 // use jackson-path command to parse json
 func Jackson(jsonInput, filter string) (interface{}, error) {
-	f, err := ioutil.TempFile("", "input")
+	f, err := os.CreateTemp("", "input")
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,7 @@ package utils
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -81,7 +81,7 @@ func ReadYml(path string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s", path)
 	}
-	content, err := ioutil.ReadAll(f)
+	content, err := io.ReadAll(f)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s", path)
 	}

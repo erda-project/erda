@@ -17,7 +17,6 @@ package util
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -31,6 +30,6 @@ func TestHandleRequest(t *testing.T) {
 	}
 	req.Header.Set("base64-encoded-request-body", "true")
 	HandleRequest(req)
-	b, _ := ioutil.ReadAll(req.Body)
+	b, _ := io.ReadAll(req.Body)
 	assert.Equal(t, "hello erda", string(b))
 }

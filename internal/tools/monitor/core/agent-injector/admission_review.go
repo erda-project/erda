@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"net/http"
 	"strings"
@@ -120,7 +119,7 @@ func (p *provider) readAdmissionReview(rw http.ResponseWriter, r *http.Request) 
 	// read body
 	var body []byte
 	if r.Body != nil {
-		data, err := ioutil.ReadAll(r.Body)
+		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			p.writeError(rw, http.StatusBadRequest, fmt.Sprintf("failed to read body: %s", err))
 			return nil

@@ -17,14 +17,13 @@ package jsonpath
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 )
 
 func JQ(jsonInput, filter string) (interface{}, error) {
-	f, err := ioutil.TempFile("", "input")
+	f, err := os.CreateTemp("", "input")
 	if err != nil {
 		return nil, err
 	}
