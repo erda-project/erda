@@ -19,12 +19,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -60,6 +62,17 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 
 func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+
+	// only access control request rom platform erda.cloud
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyCredential{})
+	if !ok || value == nil {
+		return reverseproxy.Continue, nil
+	}
+	credential, ok := value.(*models.AIProxyCredentials)
+	if !ok || credential == nil || credential.Platform != "erda.cloud" {
+		return reverseproxy.Continue, nil
+	}
+
 	if source := infor.Header().Get(vars.XErdaAIProxySource); source != "" {
 		if _, ok := f.sources[source]; !ok {
 			return reverseproxy.Continue, nil
@@ -97,6 +110,12 @@ func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor revers
 		return reverseproxy.Intercept, nil
 	}
 	return reverseproxy.Continue, nil
+}
+
+func (f *ACL) Dependencies() map[string]json.RawMessage {
+	return map[string]json.RawMessage{
+		"context": {},
+	}
 }
 
 type Config struct {

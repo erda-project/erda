@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package handlers_test
 
-type (
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
-	CtxKeyMap         struct{ CtxKeyMap any }
+import (
+	"strings"
+	"testing"
 
-	MapKeyDirectors struct{ CtxKeyDirectors any }
+	"github.com/google/uuid"
 )
+
+func TestCheckCredential(t *testing.T) {
+	key := strings.ReplaceAll(uuid.NewString(), "-", "")
+	t.Logf("key: %s, length: %v", key, len(key))
+}

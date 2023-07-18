@@ -16,21 +16,19 @@ package route
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -49,29 +47,25 @@ var (
 
 type Routes []*Route
 
-func (routes Routes) FindRoute(path, method string, header http.Header) *Route {
+func (routes Routes) FindRoute(req *http.Request) *Route {
 	// todo: 应当改成树形数据结构来存储和查找 route, 不过在 route 数量有限的情形下影响不大
 	for _, route := range routes {
-		if route.Match(path, method, header) {
-			return route
+		if clone := route.Clone(); clone.Match(req.URL.Path, req.Method) {
+			return clone
 		}
 	}
 	return NotFoundRoute
 }
 
 type Route struct {
-	Path          string                       `json:"path" yaml:"path"`
-	PathMatcher   string                       `json:"pathMatcher" yaml:"pathMatcher"`
-	Method        string                       `json:"method" yaml:"method"`
-	MethodMatcher string                       `json:"methodMatcher" yaml:"methodMatcher"`
-	HeaderMatcher json.RawMessage              `json:"headerMatcher" yaml:"headerMatcher"`
-	Router        *Router                      `json:"router" yaml:"router"`
-	Provider      *provider.Provider           `json:"provider" yaml:"provider"`
-	Filters       []*reverseproxy.FilterConfig `json:"filters" yaml:"filters"`
+	Path      string                       `json:"path" yaml:"path"`
+	PathRegex string                       `json:"pathRegex" yaml:"pathRegex"`
+	Method    string                       `json:"method" yaml:"method"`
+	Router    *Router                      `json:"router" yaml:"router"`
+	Filters   []*reverseproxy.FilterConfig `json:"filters" yaml:"filters"`
 
-	pathMatcher   func(path string) bool
-	methodMatcher func(method string) bool
-	headerMatcher func(header http.Header) bool
+	PathMatcher   *PathMatcher             `json:"-" yaml:"-"`
+	MethodMatcher func(method string) bool `json:"-" yaml:"-"`
 }
 
 func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
@@ -83,33 +77,24 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	// return "not found" early
 	if r.IsNotFoundRoute() {
 		return func(rw http.ResponseWriter, req *http.Request) {
-			rw.Header().Set("Server", "AI Service on Erda")
+			rw.Header().Set("Server", "ai-proxy")
 			http.Error(rw, string(ToNotFound), http.StatusNotFound)
 		}
 	}
 
-	// to set logs.Logger and *provider.Provider into context.Context if not set
-	var (
-		l    logs.Logger
-		prov *provider.Provider
-	)
+	// set route path vars to context
+	ctx = context.WithValue(ctx, reverseproxy.CtxKeyPathMatcher{}, r.PathMatcher)
+
+	// set default logger to context
+	var l = logrusx.New(logrusx.WithName(reflect.TypeOf(r).String()))
+	ctx = context.WithValue(ctx, reverseproxy.LoggerCtxKey{}, l)
+
+	// set key-values to context
 	for i := 0; i+1 < len(kvs); i++ {
-		switch t := kvs[i+1].(type) {
-		case logs.Logger:
-			l = t.Sub(reflect.TypeOf(r).String())
-		case *provider.Provider:
-			prov = t
-		}
 		ctx = context.WithValue(ctx, kvs[i], kvs[i+1])
 	}
-	if l == nil {
-		l = logrusx.New(logrusx.WithName(reflect.TypeOf(r).String()))
-		ctx = context.WithValue(ctx, reverseproxy.LoggerCtxKey{}, l)
-	}
-	if prov == nil {
-		prov = r.Provider
-		ctx = context.WithValue(ctx, vars.CtxKeyProvider{}, prov)
-	}
+	// reload the logger
+	l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 
 	// make reverseproxy.ReverseProxy and set filters
 	var rp = &reverseproxy.ReverseProxy{
@@ -146,37 +131,24 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	return rp.ServeHTTP
 }
 
-func (r *Route) Match(path, method string, header http.Header) bool {
-	return r.pathMatcher(path) && r.methodMatcher(method) && r.headerMatcher(header)
+func (r *Route) Match(path, method string) bool {
+	return r.PathMatcher.Match(path) && r.MethodMatcher(method)
 }
 
 func (r *Route) Director(ctx context.Context) func(req *http.Request) {
-	var prov = r.Provider
-	if prov_, ok := ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider); ok {
-		prov = prov_
-	}
 	return func(req *http.Request) {
-		switch {
-		case r.Router.Scheme != "":
-			req.URL.Scheme = r.Router.Scheme
-		case prov == nil, prov.Scheme == "":
-			req.URL.Scheme = "https"
-		case prov.Scheme == "https", prov.Scheme == "http":
-			req.URL.Scheme = prov.Scheme
-		default:
-			req.URL.Scheme = "https"
+		// filters 可能会传递 directors, 如果传递了, 要依次执行
+		if value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(reverseproxy.MapKeyDirectors{}); ok && value != nil {
+			if directors, ok := value.([]func(*http.Request)); ok {
+				for _, director := range directors {
+					director(req)
+				}
+			}
 		}
-		switch {
-		case r.Router.Host != "":
-			req.Host = r.Router.Host
-		case prov == nil || prov.Host == "":
-		default:
-			req.Host = prov.GetHost()
+		// 如果配置中定义了 Router, 那么使用 Router 来 direct request
+		if r.Router != nil {
+			r.Router.Director(ctx, r.PathMatcher.Values)(req)
 		}
-		req.URL.Host = req.Host
-		req.Header.Set("Host", req.Host)
-		req.Header.Set("X-Forwarded-Host", req.Host)
-		req.URL.Path = r.rewrite(prov.Metadata)
 	}
 }
 
@@ -193,14 +165,10 @@ func (r *Route) Validate() error {
 	if err := r.genMethodMatcher(); err != nil {
 		return err
 	}
-	if err := r.genHeaderMatcher(); err != nil {
-		return err
-	}
-	if r.Router == nil {
-		return errors.Errorf("router is not configurated in route %s", strutil.TryGetYamlStr(r))
-	}
-	if err := r.Router.validate(); err != nil {
-		return err
+	if r.Router != nil {
+		if err := r.Router.validate(); err != nil {
+			return err
+		}
 	}
 	for _, filter := range r.Filters {
 		if _, ok := reverseproxy.GetFilterCreator(filter.Name); !ok {
@@ -217,22 +185,27 @@ func (r *Route) IsNotFoundRoute() bool {
 
 func (r *Route) PathRegexExpr() string {
 	_ = r.genPathMatcher()
-	return r.PathMatcher
+	return r.PathRegex
 }
 
-func (r *Route) genPathMatcher() error {
-	if r.PathMatcher != "" {
-		pathMatcher, err := regexp.Compile(r.PathMatcher)
-		if err != nil {
-			return errors.Wrapf(err, "Path %s is not a valid path or PathMatcher %s is not a valid regex expression",
-				r.Path, r.PathMatcher)
-		}
-		r.pathMatcher = func(path string) bool {
-			return pathMatcher.MatchString(path)
-		}
-		return nil
+func (r *Route) Clone() *Route {
+	route := &Route{
+		Path:          r.Path,
+		PathRegex:     r.PathRegex,
+		Method:        r.Method,
+		Router:        r.Router,
+		Filters:       r.Filters,
+		PathMatcher:   r.PathMatcher,
+		MethodMatcher: r.MethodMatcher,
 	}
+	if route.Router != nil {
+		route.Router = route.Router.Clone()
+	}
+	return route
+}
 
+// OverridePathRegex generates the PathRegex and overwrite it
+func (r *Route) OverridePathRegex() {
 	var p = r.Path
 	for {
 		expr, start, end, err := strutil.FirstCustomPlaceholder(p, "{", "}")
@@ -241,62 +214,27 @@ func (r *Route) genPathMatcher() error {
 		}
 		p = strutil.Replace(p, `(?P<`+(expr)+`>[^/]+)`, start, end)
 	}
+	r.PathRegex = `^` + p + `$`
+}
 
-	r.PathMatcher = `^` + p + `$`
-	return r.genPathMatcher()
+func (r *Route) genPathMatcher() (err error) {
+	// if there is no PathRegex, generate it
+	if r.PathRegex == "" {
+		r.OverridePathRegex()
+	}
+	r.PathMatcher, err = NewPathMatcher(r.PathRegex)
+	return err
 }
 
 func (r *Route) genMethodMatcher() error {
 	if r.Method == "" || r.Method == "*" || strings.EqualFold(r.Method, "any") {
-		r.methodMatcher = func(string) bool { return true }
+		r.MethodMatcher = func(string) bool { return true }
 		return nil
 	}
-	switch r.MethodMatcher {
-	case "contains", "in", "has":
-		r.methodMatcher = func(method string) bool {
-			return strings.Contains(strings.ToUpper(r.Method), strings.ToUpper(method))
-		}
-		return nil
-	case "", "exact", "=", "==":
-		r.methodMatcher = func(method string) bool {
-			return strings.EqualFold(r.Method, method)
-		}
-		return nil
-	default:
-		return errors.Errorf("invalid method matcher exprestion %s", r.MethodMatcher)
-	}
-}
-
-// genHeaderMatcher todo: not implement yet
-func (r *Route) genHeaderMatcher() error {
-	r.headerMatcher = func(header http.Header) bool {
-		return true
+	r.MethodMatcher = func(method string) bool {
+		return strings.EqualFold(r.Method, method)
 	}
 	return nil
-}
-
-func (r *Route) rewrite(metadata map[string]string) string {
-	if r.Router.Rewrite == "" {
-		return r.Path
-	}
-	var rewrite = r.Router.Rewrite
-	for {
-		expr, start, end, err := strutil.FirstCustomExpression(rewrite, "${", "}", func(s string) bool {
-			s = strings.TrimSpace(s)
-			return strings.HasPrefix(s, "env.") || strings.HasPrefix(s, "provider.metadata.")
-		})
-		if err != nil || start == end {
-			break
-		}
-		if strings.HasPrefix(expr, "env.") {
-			rewrite = strutil.Replace(rewrite, os.Getenv(strings.TrimPrefix(expr, ".env")), start, end)
-		} else if len(metadata) == 0 {
-			continue
-		} else {
-			rewrite = strutil.Replace(rewrite, metadata[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
-		}
-	}
-	return rewrite
 }
 
 type Router struct {
@@ -305,6 +243,59 @@ type Router struct {
 	Scheme     string `json:"scheme" yaml:"scheme"`
 	Host       string `json:"host" yaml:"host"`
 	Rewrite    string `json:"rewrite" yaml:"rewrite"`
+}
+
+func (r *Router) Director(ctx context.Context, metadata map[string]string) func(r *http.Request) {
+	return func(req *http.Request) {
+		// todo: support to direct with r.To and r.InstanceId
+
+		if r.Scheme == "http" || r.Scheme == "https" {
+			req.URL.Scheme = r.Scheme
+		}
+		if r.Host != "" {
+			req.Host = r.Host
+		}
+		req.URL.Host = req.Host
+		req.Header.Set("Host", req.Host)
+		req.Header.Set("X-Forwarded-Host", req.Host)
+		req.URL.Path = r.RewritePath(req.URL.Path, metadata)
+	}
+}
+
+func (r *Router) RewritePath(path string, metadata map[string]string) string {
+	if r.Rewrite == "" {
+		return path
+	}
+	var rewrite = r.Rewrite
+	for {
+		expr, start, end, err := strutil.FirstCustomExpression(rewrite, "${", "}", func(s string) bool {
+			s = strings.TrimSpace(s)
+			return strings.HasPrefix(s, "env.") || strings.HasPrefix(s, "path.")
+		})
+		if err != nil || start == end {
+			break
+		}
+		if strings.HasPrefix(expr, "env.") {
+			rewrite = strutil.Replace(rewrite, os.Getenv(strings.TrimPrefix(expr, "env.")), start, end)
+		}
+		if strings.HasPrefix(expr, "path.") {
+			rewrite = strutil.Replace(rewrite, metadata[strings.TrimPrefix(expr, "path.")], start, end)
+		}
+	}
+	return rewrite
+}
+
+func (r *Router) Clone() *Router {
+	if r == nil {
+		return nil
+	}
+	return &Router{
+		To:         r.To,
+		InstanceId: r.InstanceId,
+		Scheme:     r.Scheme,
+		Host:       r.Host,
+		Rewrite:    r.Rewrite,
+	}
 }
 
 func (r *Router) validate() error {
@@ -326,3 +317,38 @@ func (r *Router) validate() error {
 }
 
 type To string
+
+func NewPathMatcher(expr string) (*PathMatcher, error) {
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return nil, err
+	}
+	var pm = PathMatcher{
+		Values: make(map[string]string),
+	}
+	pm.match = func(path string) bool {
+		if !re.MatchString(path) {
+			return false
+		}
+		matches := re.FindAllStringSubmatch(path, -1)
+		for _, subs := range matches {
+			for i, name := range re.SubexpNames() {
+				if i > 0 && i < len(subs) {
+					pm.Values[name] = subs[i]
+				}
+			}
+		}
+		return true
+	}
+	return &pm, nil
+}
+
+type PathMatcher struct {
+	Values map[string]string
+
+	match func(path string) bool
+}
+
+func (p *PathMatcher) Match(path string) bool {
+	return p.match(path)
+}

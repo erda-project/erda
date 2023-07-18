@@ -20,6 +20,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"sync"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/metrics"
@@ -53,12 +56,16 @@ type PrometheusCollector struct {
 }
 
 func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	if !ok || prov == nil {
+		return reverseproxy.Intercept, errors.New("provider not set in context map")
+	}
 	f.lvs.ChatType = infor.Header().Get(vars.XErdaAIProxyChatType)
 	f.lvs.ChatTitle = infor.Header().Get(vars.XErdaAIProxyChatTitle)
 	f.lvs.Source = infor.Header().Get(vars.XErdaAIProxySource)
 	f.lvs.UserId = infor.Header().Get(vars.XErdaAIProxyJobNumber)
 	f.lvs.UserName = infor.Header().Get(vars.XErdaAIProxyName)
-	f.lvs.Provider = ctx.Value(vars.CtxKeyProvider{}).(*provider.Provider).Name
+	f.lvs.Provider = prov.(*provider.Provider).Name
 	f.lvs.Model = f.getModel(ctx, infor)
 	f.lvs.OperationId = infor.Method()
 	if infor.URL() != nil {
@@ -87,6 +94,12 @@ func (f *PrometheusCollector) OnResponseEOF(ctx context.Context, infor reversepr
 	metrics.CounterVec().WithLabelValues(f.lvs.Values()...).Inc()
 
 	return nil
+}
+
+func (f *PrometheusCollector) Dependencies() map[string]json.RawMessage {
+	return map[string]json.RawMessage{
+		"context": {},
+	}
 }
 
 func (f *PrometheusCollector) getModel(ctx context.Context, infor reverseproxy.HttpInfor) string {

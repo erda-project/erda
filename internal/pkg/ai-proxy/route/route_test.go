@@ -18,7 +18,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func TestRoute_MatchPath(t *testing.T) {
@@ -55,9 +57,10 @@ func TestRoute_MatchPath(t *testing.T) {
 	for _, c := range cases {
 		for p, match := range c.Paths {
 			_ = c.Route.Validate()
-			if ok := c.Route.Match(p, http.MethodGet, make(http.Header)); ok != match {
+			if ok := c.Route.Match(p, http.MethodGet); ok != match {
 				t.Fatalf("match error, path: %s, path regex: %s, expect match: %v, got match: %v", p, c.Route.PathRegexExpr(), match, ok)
 			}
+			t.Logf("c.Route.PathRegexExpr: %s", c.Route.PathRegexExpr())
 		}
 	}
 }
@@ -69,29 +72,38 @@ func TestRoutes_FindRoute(t *testing.T) {
 			Method:  http.MethodPost,
 			Filters: nil,
 			Router: &route.Router{
-				To: "openai",
+				To:         "openai",
+				InstanceId: "default",
 			},
 		},
 	}
+	t.Logf("routes: %s", strutil.TryGetYamlStr(routes))
 	for _, rout := range routes {
 		if err := rout.Validate(); err != nil {
 			t.Log(err)
 		}
 	}
-	findRoute := routes.FindRoute("/v1/completions", "POST", make(http.Header))
-	t.Log(findRoute, findRoute.IsNotFoundRoute())
-	if findRoute.IsNotFoundRoute() {
-		t.Error("the route is not NotFoundRoute")
-	}
+
+	t.Run("find openai default", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/v1/completions", nil)
+		if err != nil {
+			t.Fatalf("failed to http.NewReqeust, err: %v", err)
+		}
+		request.Header.Set(vars.XAIProxyProvider, "openai")
+		request.Header.Set(vars.XAIProxyProviderInstance, "default")
+		findRoute := routes.FindRoute(request)
+		t.Logf("findRoute: %s\nfindRoute.IsNotFoundRoute: %v", strutil.TryGetYamlStr(findRoute), findRoute.IsNotFoundRoute())
+		if findRoute.IsNotFoundRoute() {
+			t.Error("the route is not NotFoundRoute")
+		}
+	})
 }
 
 func TestRoute_Validate(t *testing.T) {
 	if err := (&route.Route{
-		Path:          "/",
-		PathMatcher:   "",
-		Method:        "",
-		MethodMatcher: "",
-		HeaderMatcher: nil,
+		Path:      "/",
+		PathRegex: "",
+		Method:    "",
 		Router: &route.Router{
 			To:         route.ToNotFound,
 			InstanceId: "",
@@ -103,4 +115,36 @@ func TestRoute_Validate(t *testing.T) {
 	}).Validate(); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestRoute_RewritePath(t *testing.T) {
+	var routes = route.Routes{
+		{
+			Path:   "/v1/models/{model}",
+			Method: http.MethodGet,
+			Router: &route.Router{
+				To:         "azure",
+				InstanceId: "default",
+				Scheme:     "https",
+				Host:       "default.azure.com",
+				Rewrite:    "/openai/models/${ path.model }",
+			},
+		},
+	}
+	for _, r := range routes {
+		if err := r.Validate(); err != nil {
+			t.Log(err)
+		}
+	}
+	request, err := http.NewRequest(http.MethodGet, "http://localhost:8080/v1/models/my-model-2023", nil)
+	if err != nil {
+		t.Fatalf("failed to http.NewReqeust, err: %v", err)
+	}
+	rout := routes.FindRoute(request)
+	t.Logf("the found route: %+v, IsNotFoundRoute: %v\n", rout, rout.IsNotFoundRoute())
+	if rout.IsNotFoundRoute() {
+		t.Fatal("the route is not NotFoundRoute")
+	}
+	rout.Router.RewritePath(request.URL.Path, rout.PathMatcher.Values)
+	t.Logf("newPath: %s", request.URL.Path)
 }

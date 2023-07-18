@@ -529,37 +529,6 @@ services:
         path: "/api/health"
         duration: 120
       exec: { }
-  ai-proxy:
-    cmd: /erda/cmd/ai-proxy/bin
-    envs:
-      DEBUG: "false"
-    ports:
-      - port: 8081
-        protocol: TCP
-        l4_protocol: TCP
-      - port: 8082
-        protocol: TCP
-        l4_protocol: TCP
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    deployments:
-      replicas: 0
-      labels:
-        GROUP: dice
-    resources:
-      cpu: ${request_cpu:1}
-      mem: ${request_mem:1024}
-      max_cpu: 1
-      max_mem: 2048
-      network:
-        mode: container
-    health_check:
-      http:
-        duration: 120
-        path: /health
-        port: 8081
 addons:
   infos:
     plan: "custom:basic"
