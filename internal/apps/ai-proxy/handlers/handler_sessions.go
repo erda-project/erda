@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
@@ -32,11 +33,8 @@ type SessionsHandler struct {
 }
 
 func (s *SessionsHandler) CreateSession(ctx context.Context, req *pb.Session) (*pb.CreateSessionRespData, error) {
-	var userId = req.GetUserId()
-	if userId == "" {
-		userId = apis.GetUserID(ctx)
-	}
-	if userId == "" {
+	userId, ok := s.getUserId(ctx, req)
+	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate user
@@ -50,7 +48,8 @@ func (s *SessionsHandler) CreateSession(ctx context.Context, req *pb.Session) (*
 	if req.GetContextLength() > 20 {
 		req.ContextLength = 20
 	}
-	if req.GetSource() == "" {
+	// todo: hard code yet
+	if req.GetSource() != "erda.cloud" {
 		return nil, InvalidSessionSource
 	}
 	if req.GetModel() == "" {
@@ -67,9 +66,7 @@ func (s *SessionsHandler) CreateSession(ctx context.Context, req *pb.Session) (*
 	if err != nil {
 		return nil, err
 	}
-	return &pb.CreateSessionRespData{
-		Id: id,
-	}, nil
+	return &pb.CreateSessionRespData{Id: id}, nil
 }
 
 func (s *SessionsHandler) UpdateSession(ctx context.Context, req *pb.Session) (*common.VoidResponse, error) {
@@ -118,57 +115,43 @@ func (s *SessionsHandler) UpdateSession(ctx context.Context, req *pb.Session) (*
 	return &common.VoidResponse{}, nil
 }
 
-func (s *SessionsHandler) ResetSession(ctx context.Context, req *pb.ResetSessionReq) (*common.VoidResponse, error) {
-	var userId = req.GetUserId()
-	if userId == "" {
-		userId = apis.GetUserID(ctx)
-	}
-	if userId == "" {
+func (s *SessionsHandler) ResetSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
+	_, ok := s.getUserId(ctx, req)
+	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate user
+
 	if req.GetId() == "" {
 		return nil, InvalidSessionId
 	}
-	if req.GetResetAt() == nil {
-		return nil, InvalidSessionResetAt
-	}
-	var updates = map[string]interface{}{
-		"reset_at": req.GetResetAt(),
-	}
-	if err := s.Dao.UpdateSession(req.GetId(), updates); err != nil {
+
+	if err := s.Dao.UpdateSession(req.GetId(), map[string]any{"reset_at": time.Now()}); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
 }
 
-func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.ArchiveSessionReq) (*common.VoidResponse, error) {
-	var userId = req.GetUserId()
-	if userId == "" {
-		userId = apis.GetUserID(ctx)
-	}
-	if userId == "" {
+func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
+	_, ok := s.getUserId(ctx, req)
+	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate user
+
 	if req.GetId() == "" {
 		return nil, InvalidSessionId
 	}
-	var updates = map[string]interface{}{
-		"is_archived": req.GetIsArchived(),
-	}
-	if err := s.Dao.UpdateSession(req.GetId(), updates); err != nil {
+
+	if err := s.Dao.UpdateSession(req.GetId(), map[string]any{"is_archived": true}); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
 }
 
 func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	var userId = req.GetUserId()
-	if userId == "" {
-		userId = apis.GetUserID(ctx)
-	}
-	if userId == "" {
+	_, ok := s.getUserId(ctx, req)
+	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate user
@@ -182,23 +165,24 @@ func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessi
 }
 
 func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessionsReq) (*pb.ListSessionsRespData, error) {
-	var userId = req.GetUserId()
-	if userId == "" {
-		userId = apis.GetUserID(ctx)
-	}
-	if userId == "" {
+	// try to get userId
+	userId, ok := s.getUserId(ctx, req)
+	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate user
-	var where = map[string]any{"user_id": userId}
-	var source = req.GetSource()
-	if source == "" {
-		source = apis.GetHeader(ctx, vars.XErdaAIProxySource)
+
+	// try to get request source
+	source, ok := s.getSource(ctx, req)
+	if !ok {
+		return nil, InvalidSessionSource
 	}
-	if source != "" {
-		where["source"] = source
+
+	var where = map[string]any{
+		"source":  source,
+		"user_id": userId,
 	}
-	total, sessions, err := s.Dao.ListSessions(where)
+	total, sessions, err := s.Dao.ListSessions(where, 1, 20)
 	if err != nil {
 		return nil, err
 	}
@@ -209,11 +193,8 @@ func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessions
 }
 
 func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionCondition) (*pb.Session, error) {
-	var userId = req.GetUserId()
-	if userId == "" {
-		userId = apis.GetUserID(ctx)
-	}
-	if userId == "" {
+	_, ok := s.getUserId(ctx, req)
+	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate user
@@ -221,4 +202,27 @@ func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionC
 		return nil, InvalidSessionId
 	}
 	return s.Dao.GetSession(req.GetId())
+}
+
+func (s *SessionsHandler) getUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {
+	if userId := req.GetUserId(); userId != "" {
+		return userId, true
+	}
+	if userId := apis.GetUserID(ctx); userId != "" {
+		return userId, true
+	}
+	if userId := apis.GetHeader(ctx, vars.XAIProxyUserId); userId != "" {
+		return userId, true
+	}
+	return "", false
+}
+
+func (s *SessionsHandler) getSource(ctx context.Context, req interface{ GetSource() string }) (string, bool) {
+	if source := req.GetSource(); source != "" {
+		return source, true
+	}
+	if source := apis.GetHeader(ctx, vars.XErdaAIProxySource); source != "" {
+		return source, true
+	}
+	return "", false
 }

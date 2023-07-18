@@ -48,8 +48,8 @@ func (*AIProxySessions) TableName() string {
 
 func (session *AIProxySessions) ToProtobuf() *pb.Session {
 	return &pb.Session{
-		UserId:        session.UserId,
 		Id:            session.Id.String,
+		UserId:        session.UserId,
 		Name:          session.Name,
 		Topic:         session.Topic,
 		ContextLength: session.ContextLength,
@@ -58,5 +58,7 @@ func (session *AIProxySessions) ToProtobuf() *pb.Session {
 		ResetAt:       timestamppb.New(session.ResetAt.Time),
 		Model:         session.Model,
 		Temperature:   session.Temperature,
+		CreatedAt:     timestamppb.New(session.CreatedAt),
+		UpdatedAt:     timestamppb.New(session.UpdatedAt),
 	}
 }

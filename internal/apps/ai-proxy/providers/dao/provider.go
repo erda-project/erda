@@ -63,7 +63,7 @@ type DAO interface {
 	CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error)
 	UpdateSession(id string, updates map[string]any) error
 	DeleteSession(id string) error
-	ListSessions(where map[string]any) (int64, []*pb.Session, error)
+	ListSessions(where map[string]any, pageNum, pageSise int) (int64, []*pb.Session, error)
 	GetSession(id string) (*pb.Session, error)
 }
 
@@ -155,12 +155,14 @@ func (p *provider) DeleteSession(id string) error {
 	return p.DB.Delete(new(models.AIProxySessions), map[string]any{"id": id}).Error
 }
 
-func (p *provider) ListSessions(where map[string]any) (int64, []*pb.Session, error) {
+func (p *provider) ListSessions(where map[string]any, pageNum, pageSize int) (int64, []*pb.Session, error) {
 	var (
 		items []models.AIProxySessions
 		count int64
 	)
-	if err := p.DB.Model(new(models.AIProxySessions)).Where(where).Count(&count).Find(&items).Error; err != nil {
+	if err := p.DB.Model(new(models.AIProxySessions)).Where(where).Count(&count).
+		Limit(pageSize).Offset((pageNum - 1) * pageSize).
+		Find(&items).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, nil, nil
 		}
