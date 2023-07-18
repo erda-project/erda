@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -179,12 +180,14 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
 			splits := strings.Split(name, "-")
 			if len(splits) != 3 {
-				return errors.New("invalid name")
+				continue
 			}
+
 			id := splits[1]
 			num, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
-				return errors.Errorf("failed to parse project id %s, %v", id, err)
+				logrus.Warnf("failed to parse project id %s from namespace %s, %v", id, name, err)
+				continue
 			}
 
 			displayName, ok := projectID2displayName[uint64(num)]

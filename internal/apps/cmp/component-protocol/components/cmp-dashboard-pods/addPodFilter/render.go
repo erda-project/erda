@@ -161,7 +161,7 @@ func (f *ComponentAddPodFilter) SetComponentValue(ctx context.Context) error {
 			id := splits[1]
 			num, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
-				logrus.Errorf("failed to parse project id %s from namespace %s, %v", id, name, err)
+				logrus.Warnf("failed to parse project id %s from namespace %s, %v", id, name, err)
 				continue
 			}
 
