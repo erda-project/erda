@@ -142,6 +142,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/pipelinetemplate"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/project/home"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/project_report"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/publishitem"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/queue"

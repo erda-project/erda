@@ -279,6 +279,7 @@ uc-adaptor:
 dop: { }
 erda.core.dop.taskerror: { }
 erda.dop.qa.unittest: { }
+project-report: { }
 erda.dop.search: { }
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
@@ -393,6 +394,8 @@ logs-index-query:
     file: conf/msp/logs/default_field_settings.yml
 etcd-election@msp:
   root_path: "/msp-election"
+etcd-election@project-management-report:
+  root_path: "/project-management-report-election"
 cassandra:
   _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"
