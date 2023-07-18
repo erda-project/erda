@@ -19,8 +19,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"os"
 	"net"
+	"os"
 )
 
 var (
