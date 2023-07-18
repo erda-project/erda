@@ -28,12 +28,15 @@ const (
 	XErdaAIProxyPrompt          = "X-Erda-AI-Proxy-Prompt"
 	XAIProxyProvider            = "X-AI-Proxy-Provider"
 	XAIProxyProviderInstance    = "X-AI-Proxy-Provider-Instance"
+	XAIProxyOrgId               = "X-Ai-Proxy-Org-Id"
+	XAIProxyUserId              = "X-Ai-Proxy-UserId"
 )
 
 type (
-	CtxKeyOrgSvc     struct{ CtxKeyOrgServer any }
-	CtxKeyDAO        struct{ CtxKeyDatabaseAccess any }
-	CtxKeyProviders  struct{ CtxKeyProviders any }
-	MapKeyProvider   struct{ CtxKeyProvider any }
-	MapKeyCredential struct{ CtxKeyCredential any }
+	CtxKeyOrgSvc      struct{ CtxKeyOrgServer any }
+	CtxKeyDAO         struct{ CtxKeyDatabaseAccess any }
+	CtxKeyProviders   struct{ CtxKeyProviders any }
+	MapKeyProvider    struct{ CtxKeyProvider any }
+	MapKeyCredential  struct{ CtxKeyCredential any }
+	CtxKeyErdaOpenapi struct{ ErdaOpenapi any }
 )

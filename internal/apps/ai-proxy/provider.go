@@ -19,6 +19,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"reflect"
@@ -83,13 +84,14 @@ func init() {
 }
 
 type provider struct {
-	Config  *config
-	L       logs.Logger
-	HTTP    httpserver.Router      `autowired:"http-server@ai"`
-	GRPC    grpcserver.Interface   `autowired:"grpc-server@ai"`
-	Dao     dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
-	OrgSvc  orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
-	Openapi routes.Register        `autowired:"openapi-dynamic-register.client"`
+	Config      *config
+	L           logs.Logger
+	HTTP        httpserver.Router      `autowired:"http-server@ai"`
+	GRPC        grpcserver.Interface   `autowired:"grpc-server@ai"`
+	Dao         dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
+	OrgSvc      orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
+	Openapi     routes.Register        `autowired:"openapi-dynamic-register.client"`
+	ErdaOpenapi url.URL
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -109,6 +111,14 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if selfURL, ok := os.LookupEnv("SELF_URL"); ok && len(selfURL) > 0 {
 		p.Config.SelfURL = selfURL
 	}
+	if p.Config.ErdaOpenapi == "" {
+		return errors.New("invalid erda openapi config")
+	}
+	u, err := url.Parse(p.Config.ErdaOpenapi)
+	if err != nil {
+		return errors.Wrap(err, "invalid erda openapi")
+	}
+	p.ErdaOpenapi = *u
 
 	// prepare handlers
 	for i := 0; i < len(p.Config.Routes); i++ {
@@ -157,6 +167,7 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
 			vars.CtxKeyProviders{}, p.Config.providers,
+			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapi,
 		).
 		ServeHTTP(w, r)
 }
@@ -262,6 +273,7 @@ type config struct {
 	LogLevel     string             `json:"logLevel" yaml:"logLevel"`
 	Exporter     configPromExporter `json:"exporter" yaml:"exporter"`
 	SelfURL      string             `json:"selfURL" yaml:"selfURL"`
+	ErdaOpenapi  string             `json:"erdaOpenapi" yaml:"erdaOpenapi"`
 	providers    provider2.Providers
 	Routes       route2.Routes
 }

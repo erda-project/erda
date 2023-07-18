@@ -71,12 +71,12 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	)
 	// if a provider is specified in the request header, refactor the function match
 	if providerName := infor.Header().Get(vars.XAIProxyProvider); providerName != "" {
-		providerInstance := infor.Header().Get(vars.XAIProxyProviderInstance)
-		if providerInstance == "" {
-			providerInstance = "default"
+		providerInstanceId := infor.Header().Get(vars.XAIProxyProviderInstance)
+		if providerInstanceId == "" {
+			providerInstanceId = "default"
 		}
 		match = func(item *models.AIProxyCredentials) bool {
-			return item.Provider == providerName && item.ProviderInstanceId == providerInstance
+			return item.Provider == providerName && item.ProviderInstanceId == providerInstanceId
 		}
 	}
 	for _, item := range credentials {

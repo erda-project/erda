@@ -41,6 +41,12 @@ routes:
         config:
           maxSize: 102400
           message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
+      - name: erda-auth
+        config:
+          on:
+            - key: X-Ai-Proxy-Source
+              operator: =
+              value: erda.cloud
       - name: context
       - name: azure-director
         config:
@@ -51,10 +57,6 @@ routes:
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/completions")
       - name: audit
-      - name: acl
-        config:
-          sources:
-            - erda
 
   - path: /v1/chat/completions
     method: POST
@@ -65,6 +67,13 @@ routes:
         config:
           maxSize: 102400
           message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
+      - name: erda-auth
+        config:
+          on:
+            - key: X-Ai-Proxy-Source
+              operator: =
+              value: erda.cloud
+
       - name: context
       - name: azure-director
         config:
@@ -75,10 +84,6 @@ routes:
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions")
       - name: audit
-      - name: acl
-        config:
-          sources:
-            - erda
 
   - path: /v1/edits
     method: POST
