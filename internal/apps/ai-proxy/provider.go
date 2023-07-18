@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -37,6 +38,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
@@ -95,11 +97,11 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
-	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
+	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
 	if err := p.parseProvidersConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
-	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
+	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
 
 	if p.Config.SelfURL == "" {
 		p.Config.SelfURL = "http://ai-proxy:8081"
@@ -115,15 +117,6 @@ func (p *provider) Init(_ servicehub.Context) error {
 		// validate every route config
 		if err := rout.Validate(); err != nil {
 			return errors.Wrapf(err, "rout %d is invalid", i)
-		}
-
-		// find provider to router to
-		if to := string(rout.Router.To); !strings.HasPrefix(to, "__") || !strings.HasSuffix(to, "__") {
-			prov, ok := p.Config.providers.FindProvider(to, rout.Router.InstanceId)
-			if !ok {
-				return errors.Errorf("no such provider routes[%d].Route.To: %s", i, p.Config.Routes[i].Router.To)
-			}
-			rout.Provider = prov
 		}
 
 		// register to erda openapi
@@ -142,9 +135,10 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 
 	// register gRPC and http handler
-	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
-	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options())
-	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options())
+	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options(), rootKeyAuth)
+	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options(), rootKeyAuth)
+	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options(), rootKeyAuth)
+	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Any("/metrics", promhttp.Handler())
@@ -154,13 +148,15 @@ func (p *provider) Init(_ servicehub.Context) error {
 }
 
 func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.Config.Routes.FindRoute(r.URL.Path, r.Method, r.Header).
+	p.Config.Routes.FindRoute(WrapRequest(r, SetXRequestId)).
 		HandlerWith(
 			context.Background(),
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
+			reverseproxy.CtxKeyMap{}, new(sync.Map),
 			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
+			vars.CtxKeyProviders{}, p.Config.providers,
 		).
 		ServeHTTP(w, r)
 }
@@ -297,3 +293,25 @@ func (c *config) GetLogLevel() string {
 	}
 	return env
 }
+
+func WrapRequest(r *http.Request, wraps ...func(*http.Request)) *http.Request {
+	for _, wrap := range wraps {
+		wrap(r)
+	}
+	return r
+}
+
+func SetXRequestId(r *http.Request) {
+	if id := r.Header.Get("X-Request-Id"); id == "" {
+		r.Header.Set("X-Request-Id", strings.ReplaceAll(uuid.NewString(), "-", ""))
+	}
+}
+
+var rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != "Bearer "+os.Getenv("AI_PROXY_ROOT_KEY") {
+			return nil, errors.New("Access denied to the admin API")
+		}
+		return h(ctx, req)
+	}
+})

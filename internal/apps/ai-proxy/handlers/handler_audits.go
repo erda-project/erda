@@ -12,13 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package handlers
 
-type (
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
-	CtxKeyMap         struct{ CtxKeyMap any }
+import (
+	"net/http"
+	"net/url"
 
-	MapKeyDirectors struct{ CtxKeyDirectors any }
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
+
+type AuditsHandler struct {
+	Log logs.Logger
+	Dao dao.DAO
+}
+
+func (a *AuditsHandler) CreateAuditFromRequest(req *http.Request) error {
+	panic("not implement")
+}
+
+func (a *AuditsHandler) UpdateFromResponse(id string, resp *http.Response) error {
+	panic("not implement")
+}
+
+func (a *AuditsHandler) List(values url.Values) ([]map[string]any, error) {
+	panic("not implement")
+}
