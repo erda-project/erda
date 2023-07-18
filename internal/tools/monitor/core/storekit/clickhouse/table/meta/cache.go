@@ -29,9 +29,7 @@ func (p *provider) setCache() error {
 	expire := 3 * p.Cfg.ReloadInterval
 
 	var caches []MetricMeta
-	for _, v := range meta {
-		caches = append(caches, v)
-	}
+	caches = append(caches, meta...)
 
 	text, err := json.MarshalToString(caches)
 

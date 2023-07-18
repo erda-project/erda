@@ -393,9 +393,7 @@ func Atoi64(s string) (int64, error) {
 // Map([]string{"Aa", "bB", "cc"}, ToLower, Title) => []string{"Aa", "Bb", "Cc"}
 func Map(ss []string, fs ...func(s string) string) []string {
 	r := []string{}
-	for i := range ss {
-		r = append(r, ss[i])
-	}
+	r = append(r, ss...)
 	r2 := []string{}
 	for _, f := range fs {
 		for i := range r {

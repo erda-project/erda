@@ -360,9 +360,7 @@ func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
 func (m *MockLogger) Debug(arg0 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
-	for _, a := range arg0 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg0...)
 	m.ctrl.Call(m, "Debug", varargs...)
 }
 
@@ -376,9 +374,7 @@ func (mr *MockLoggerMockRecorder) Debug(arg0 ...interface{}) *gomock.Call {
 func (m *MockLogger) Debugf(arg0 string, arg1 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg1...)
 	m.ctrl.Call(m, "Debugf", varargs...)
 }
 
@@ -393,9 +389,7 @@ func (mr *MockLoggerMockRecorder) Debugf(arg0 interface{}, arg1 ...interface{}) 
 func (m *MockLogger) Error(arg0 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
-	for _, a := range arg0 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg0...)
 	m.ctrl.Call(m, "Error", varargs...)
 }
 
@@ -409,9 +403,7 @@ func (mr *MockLoggerMockRecorder) Error(arg0 ...interface{}) *gomock.Call {
 func (m *MockLogger) Errorf(arg0 string, arg1 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg1...)
 	m.ctrl.Call(m, "Errorf", varargs...)
 }
 
@@ -426,9 +418,7 @@ func (mr *MockLoggerMockRecorder) Errorf(arg0 interface{}, arg1 ...interface{}) 
 func (m *MockLogger) Fatal(arg0 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
-	for _, a := range arg0 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg0...)
 	m.ctrl.Call(m, "Fatal", varargs...)
 }
 
@@ -442,9 +432,7 @@ func (mr *MockLoggerMockRecorder) Fatal(arg0 ...interface{}) *gomock.Call {
 func (m *MockLogger) Fatalf(arg0 string, arg1 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg1...)
 	m.ctrl.Call(m, "Fatalf", varargs...)
 }
 
@@ -459,9 +447,7 @@ func (mr *MockLoggerMockRecorder) Fatalf(arg0 interface{}, arg1 ...interface{}) 
 func (m *MockLogger) Info(arg0 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
-	for _, a := range arg0 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg0...)
 	m.ctrl.Call(m, "Info", varargs...)
 }
 
@@ -475,9 +461,7 @@ func (mr *MockLoggerMockRecorder) Info(arg0 ...interface{}) *gomock.Call {
 func (m *MockLogger) Infof(arg0 string, arg1 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg1...)
 	m.ctrl.Call(m, "Infof", varargs...)
 }
 
@@ -492,9 +476,7 @@ func (mr *MockLoggerMockRecorder) Infof(arg0 interface{}, arg1 ...interface{}) *
 func (m *MockLogger) Panic(arg0 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
-	for _, a := range arg0 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg0...)
 	m.ctrl.Call(m, "Panic", varargs...)
 }
 
@@ -508,9 +490,7 @@ func (mr *MockLoggerMockRecorder) Panic(arg0 ...interface{}) *gomock.Call {
 func (m *MockLogger) Panicf(arg0 string, arg1 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg1...)
 	m.ctrl.Call(m, "Panicf", varargs...)
 }
 
@@ -553,9 +533,7 @@ func (mr *MockLoggerMockRecorder) Sub(arg0 interface{}) *gomock.Call {
 func (m *MockLogger) Warn(arg0 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
-	for _, a := range arg0 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg0...)
 	m.ctrl.Call(m, "Warn", varargs...)
 }
 
@@ -569,9 +547,7 @@ func (mr *MockLoggerMockRecorder) Warn(arg0 ...interface{}) *gomock.Call {
 func (m *MockLogger) Warnf(arg0 string, arg1 ...interface{}) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
+	varargs = append(varargs, arg1...)
 	m.ctrl.Call(m, "Warnf", varargs...)
 }
 
