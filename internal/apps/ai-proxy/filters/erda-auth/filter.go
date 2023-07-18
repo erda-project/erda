@@ -18,17 +18,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/url"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
