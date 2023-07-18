@@ -42,9 +42,7 @@ func (o OrderedErrors) AppendError(errs ...*Error) OrderedErrors {
 		return o
 	}
 	var ordered OrderedErrors
-	for _, g := range o {
-		ordered = append(ordered, g)
-	}
+	ordered = append(ordered, o...)
 
 	var newOrderedErrs OrderedErrors
 	now := time.Now()
