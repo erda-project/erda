@@ -78,8 +78,10 @@ func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	for _, set := range []any{
+		f.SetAPIKey,
 		f.SetSessionId,
 		f.SetChats,
+		f.SetXRequestId,
 		f.SetRequestAt,
 		f.SetSource,
 		f.SetUserInfo,
@@ -169,8 +171,13 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 	return nil
 }
 
-func (f *Audit) Dependencies() []string {
-	return []string{"context"}
+func (f *Audit) SetAPIKey(_ context.Context, header http.Header) error {
+	apiKey := strings.TrimPrefix(header.Get("Authorization"), "Bearer ")
+	if apiKey == "" {
+		apiKey = header.Get("Api-Key")
+	}
+	f.Audit.SetAPIKeySha256(apiKey)
+	return nil
 }
 
 func (f *Audit) SetSessionId(_ context.Context, header http.Header) error {
@@ -191,6 +198,11 @@ func (f *Audit) SetChats(_ context.Context, header http.Header) error {
 			*v = string(decoded)
 		}
 	}
+	return nil
+}
+
+func (f *Audit) SetXRequestId(_ context.Context, header http.Header) error {
+	f.Audit.XRequestId = header.Get("X-Request-ID")
 	return nil
 }
 

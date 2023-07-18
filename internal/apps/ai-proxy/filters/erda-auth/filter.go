@@ -18,10 +18,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/url"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"

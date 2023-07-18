@@ -15,6 +15,8 @@
 package models
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -29,6 +31,9 @@ type AIProxyFilterAudit struct {
 	CreatedAt time.Time        `json:"createdAt" yaml:"createdAt" gorm:"created_at"`
 	UpdatedAt time.Time        `json:"updatedAt" yaml:"updatedAt" gorm:"updated_at"`
 	DeletedAt fields.DeletedAt `json:"deletedAt" yaml:"deletedAt" gorm:"deleted_at"`
+
+	// APIKeySha256 is the checksum of api-key with algorithm SHA256
+	APIKeySha256 string `json:"apiKeySha256" yaml:"apiKeySha256" gorm:"api_key_sha256"`
 
 	Username        string `json:"username" yaml:"username" gorm:"username"`
 	PhoneNumber     string `json:"phoneNumber" yaml:"phoneNumber" gorm:"phone_number"`
@@ -57,6 +62,8 @@ type AIProxyFilterAudit struct {
 	// Completion returns the response to the client
 	Completion string `json:"completion" yaml:"completion" gorm:"completion"`
 
+	// XRequestId is the value of request header X-Request-Id
+	XRequestId string `json:"XRequestId" yaml:"XRequestId" gorm:"x_request_id"`
 	// RequestAt is the request arrival time
 	RequestAt time.Time `json:"requestAt" yaml:"requestAt" gorm:"request_at"`
 	// ResponseAt is the response arrival time
@@ -84,4 +91,14 @@ func (audit *AIProxyFilterAudit) ToProtobufChatLog() *pb.ChatLog {
 		ResponseAt: timestamppb.New(audit.ResponseAt),
 		Completion: audit.Completion,
 	}
+}
+
+func (audit *AIProxyFilterAudit) SetAPIKeySha256(apiKey string) {
+	audit.APIKeySha256 = Sha256(apiKey)
+}
+
+func Sha256(s string) string {
+	hash := sha256.New()
+	hash.Write([]byte(s))
+	return hex.EncodeToString(hash.Sum(nil))
 }
