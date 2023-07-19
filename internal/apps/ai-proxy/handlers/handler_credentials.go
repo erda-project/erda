@@ -73,19 +73,19 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 	if err := h.Q().First(&model, where).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to find the credential")
 	}
-	model.SecretKeyId = credential.GetSecretKeyId()
+	model.SecretKeyID = credential.GetSecretKeyId()
 	model.Name = credential.GetName()
 	model.Platform = credential.GetPlatform()
 	model.Description = credential.GetDescription()
 	model.Enabled = credential.GetEnabled()
 	var updates = map[string]any{
-		"secret_key_id":     model.SecretKeyId,
-		"name":              model.Name,
-		"platform":          model.Platform,
-		"description":       model.Description,
-		"enabled":           model.Enabled,
-		"provider_name":     model.Provider,
-		"provider_instance": model.ProviderInstanceId,
+		"secret_key_id":        credential.GetSecretKeyId(),
+		"name":                 credential.GetName(),
+		"platform":             credential.GetPlatform(),
+		"description":          credential.GetDescription(),
+		"enabled":              credential.GetEnabled(),
+		"provider_name":        credential.GetProviderName(),
+		"provider_instance_id": credential.GetProviderInstanceId(),
 	}
 	if err := h.Dao.Model(&model).Where(where).Updates(updates).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to update credential")

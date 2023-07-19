@@ -1,5 +1,24 @@
-### GET models
+### List models
 GET https://{{ai-proxy_host}}/api/ai-proxy/models
+Authorization: Bearer {{ai-proxy_root-key}}
+
+### List credentials
+GET https://{{ai-proxy_host}}/api/ai-proxy/credentials
+Authorization: Bearer {{ai-proxy_root-key}}
+
+### Create credential
+POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
+Content-Type: application/json
+Authorization: Bearer {{ai-proxy_root-key}}
+
+{
+  "name": "erda.cloud",
+  "platform": "erda",
+  "description": "credential for erda.cloud AI Assistant",
+  "enabled": true,
+  "providerName": "azure",
+  "providerInstance": "terminus2"
+}
 
 ### Create session
 POST https://{{ai-proxy_host}}/api/ai-proxy/sessions
@@ -79,23 +98,6 @@ Content-Type: application/json
   ],
   "max_tokens": 2048,
   "stream": false
-}
-
-### Get credentials
-GET https://{{ai-proxy_host}}/api/ai-proxy/credentials
-Authorization: Bearer {{ai-proxy_root-key}}
-
-### Create credentials
-POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
-Content-Type: application/json
-
-{
-  "name": "fdp-test",
-  "platform": "fdp",
-  "description": "fdp 非生产环境用的 api-key",
-  "enabled": true,
-  "providerName": "azure",
-  "providerInstance": "terminus2"
 }
 
 ### Delete credential

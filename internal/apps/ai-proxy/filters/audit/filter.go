@@ -181,18 +181,18 @@ func (f *Audit) SetAPIKey(_ context.Context, header http.Header) error {
 }
 
 func (f *Audit) SetSessionId(_ context.Context, header http.Header) error {
-	f.Audit.SessionId = header.Get(vars.XAIProxySessionId)
+	f.Audit.SessionID = header.Get(vars.XAIProxySessionId)
 	return nil
 }
 
 func (f *Audit) SetChats(_ context.Context, header http.Header) error {
 	f.Audit.ChatType = header.Get(vars.XAIProxyChatType)
 	f.Audit.ChatTitle = header.Get(vars.XAIProxyChatTitle)
-	f.Audit.ChatId = header.Get(vars.XAIProxyChatId)
+	f.Audit.ChatID = header.Get(vars.XAIProxyChatId)
 	for _, v := range []*string{
 		&f.Audit.ChatType,
 		&f.Audit.ChatTitle,
-		&f.Audit.ChatId,
+		&f.Audit.ChatID,
 	} {
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
 			*v = string(decoded)
@@ -202,7 +202,7 @@ func (f *Audit) SetChats(_ context.Context, header http.Header) error {
 }
 
 func (f *Audit) SetXRequestId(_ context.Context, header http.Header) error {
-	f.Audit.XRequestId = header.Get("X-Request-ID")
+	f.Audit.XRequestID = header.Get("X-Request-ID")
 	return nil
 }
 
@@ -230,13 +230,13 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 		f.Audit.JobNumber = header.Get(vars.XAIProxyUserId)
 	}
 	f.Audit.Email = header.Get(vars.XAIProxyEmail)
-	f.Audit.DingtalkStaffId = header.Get(vars.XAIProxyDingTalkStaffID)
+	f.Audit.DingTalkStaffID = header.Get(vars.XAIProxyDingTalkStaffID)
 	for _, v := range []*string{
 		&f.Audit.Username,
 		&f.Audit.PhoneNumber,
 		&f.Audit.JobNumber,
 		&f.Audit.Email,
-		&f.Audit.DingtalkStaffId,
+		&f.Audit.DingTalkStaffID,
 	} {
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
 			*v = string(decoded)
@@ -250,7 +250,7 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 	if !ok || prov == nil {
 		return errors.New("provider not set in context map")
 	}
-	f.Audit.Provider = prov.(*provider.Provider).Name
+	f.Audit.ProviderName = prov.(*provider.Provider).Name
 	return nil
 }
 
@@ -282,9 +282,9 @@ func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buf
 }
 
 func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor) error {
-	f.Audit.OperationId = infor.Method()
+	f.Audit.OperationID = infor.Method()
 	if infor.URL() != nil {
-		f.Audit.OperationId += " " + infor.URL().Path
+		f.Audit.OperationID += " " + infor.URL().Path
 	}
 	return nil
 }
@@ -574,7 +574,7 @@ func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http
 	if err := json.NewDecoder(reader).Decode(&m); err != nil {
 		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", reader, m)
 	}
-	switch f.Audit.OperationId {
+	switch f.Audit.OperationID {
 	case "POST /v1/completions", "POST /v1/edits":
 		data, ok := m["choices"]
 		if !ok {

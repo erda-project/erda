@@ -13,7 +13,7 @@ CREATE TABLE `ai_proxy_credentials`
     `enabled`              BOOLEAN      NOT NULL DEFAULT true COMMENT '是否启用该凭证',
     `expired_at`           DATETIME     NOT NULL DEFAULT '2099-01-01 00:00:00' COMMENT '凭证过期时间',
 
-    `provider`             VARCHAR(128) NOT NULL DEFAULT '' COMMENT 'AI 服务 Provider 名称',
+    `provider_name`        VARCHAR(128) NOT NULL DEFAULT '' COMMENT 'AI 服务 Provider 名称',
     `provider_instance_id` VARCHAR(512) NOT NULL DEFAULT '' COMMENT 'AI 服务 Provider 实例 id',
     PRIMARY KEY (`id`),
     INDEX `idx_access_key_id` (`access_key_id`),

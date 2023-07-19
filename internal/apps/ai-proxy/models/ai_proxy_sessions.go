@@ -31,15 +31,15 @@ type AIProxySessions struct {
 	UpdatedAt time.Time        `json:"updatedAt" yaml:"updatedAt" gorm:"updated_at"`
 	DeletedAt fields.DeletedAt `json:"deletedAt" yaml:"deletedAt" gorm:"deleted_at"`
 
-	UserId        string `json:"userId" yaml:"userId" gorm:"user_id"`
-	Name          string
-	Topic         string
-	ContextLength uint32 `json:"contextLength" yaml:"contextLength" gorm:"context_length"`
-	Source        string
-	IsArchived    bool         `json:"isArchived" yaml:"isArchived" gorm:"is_archived"`
-	ResetAt       sql.NullTime `json:"resetAt" yaml:"resetAt" gorm:"reset_at"`
-	Model         string
-	Temperature   float64
+	UserID        string       `gorm:"type:varchar(128);not null;default:'';comment:用户id"`
+	Name          string       `gorm:"type:varchar(128);not null;default:'';comment:会话名称"`
+	Topic         string       `gorm:"type:text;not null;comment:会话主题"`
+	ContextLength uint32       `gorm:"not null;default:0;comment:上下文长度"`
+	Source        string       `gorm:"type:varchar(128);not null;comment:接入应用: dingtalk, vscode-plugin, jetbrains-plugin ..."`
+	IsArchived    bool         `gorm:"not null;default:false;comment:是否归档"`
+	ResetAt       sql.NullTime `gorm:"not null;default:'1970-01-01 00:00:00';comment:删除时间, 1970-01-01 00:00:00 表示未删除"`
+	Model         string       `gorm:"type:varchar(128);not null;comment:调用的模型名称: gpt-3.5-turbo, gpt-4-8k, ..."`
+	Temperature   float64      `gorm:"not null;default:0.7;comment:Higher values will make the output more random, while lower values will make it more focused and deterministic"`
 }
 
 func (*AIProxySessions) TableName() string {
@@ -49,7 +49,7 @@ func (*AIProxySessions) TableName() string {
 func (session *AIProxySessions) ToProtobuf() *pb.Session {
 	return &pb.Session{
 		Id:            session.Id.String,
-		UserId:        session.UserId,
+		UserId:        session.UserID,
 		Name:          session.Name,
 		Topic:         session.Topic,
 		ContextLength: session.ContextLength,

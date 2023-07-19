@@ -70,13 +70,13 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		match      = func(*models.AIProxyCredentials) bool { return true }
 	)
 	// if a provider is specified in the request header, refactor the function match
-	if providerName := infor.Header().Get(vars.XAIProxyProvider); providerName != "" {
-		providerInstanceId := infor.Header().Get(vars.XAIProxyProviderInstance)
+	if providerName := infor.Header().Get(vars.XAIProxyProviderId); providerName != "" {
+		providerInstanceId := infor.Header().Get(vars.XAIProxyProviderInstanceId)
 		if providerInstanceId == "" {
 			providerInstanceId = "default"
 		}
 		match = func(item *models.AIProxyCredentials) bool {
-			return item.Provider == providerName && item.ProviderInstanceId == providerInstanceId
+			return item.ProviderName == providerName && item.ProviderInstanceID == providerInstanceId
 		}
 	}
 	for _, item := range credentials {
@@ -91,9 +91,9 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	}
 
 	// find provider
-	prov, ok := providers.FindProvider(credential.Provider, credential.ProviderInstanceId)
+	prov, ok := providers.FindProvider(credential.ProviderName, credential.ProviderInstanceID)
 	if !ok {
-		http.Error(w, "Provider Not Found", http.StatusNotFound)
+		http.Error(w, "ProviderName Not Found", http.StatusNotFound)
 		return reverseproxy.Intercept, nil
 	}
 

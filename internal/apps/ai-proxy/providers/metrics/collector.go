@@ -15,8 +15,10 @@
 package metrics
 
 import (
+	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -58,9 +60,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			Source:      item.Source,
 			UserId:      item.JobNumber,
 			UserName:    item.Username,
-			Provider:    item.Provider,
+			Provider:    item.ProviderName,
 			Model:       item.Model,
-			OperationId: item.OperationId,
+			OperationId: item.OperationID,
 			Status:      item.Status,
 			StatusCode:  strconv.FormatInt(int64(item.StatusCode), 10),
 		}
@@ -82,14 +84,37 @@ type lvsDistincter struct {
 }
 
 var mockedAudit = models.AIProxyFilterAudit{
-	ChatType:    "mocked",
-	ChatTitle:   "mocked",
-	Source:      "mocked",
-	JobNumber:   "mocked",
-	Username:    "mocked",
-	Provider:    "mocked",
-	Model:       "mocked",
-	OperationId: "mocked",
-	Status:      "mocked",
-	StatusCode:  200,
+	ID:                  fields.UUID{},
+	CreatedAt:           time.Time{},
+	UpdatedAt:           time.Time{},
+	DeletedAt:           fields.DeletedAt{},
+	APIKeySHA256:        "",
+	Username:            "mocked",
+	PhoneNumber:         "",
+	JobNumber:           "mocked",
+	Email:               "",
+	DingTalkStaffID:     "",
+	SessionID:           "",
+	ChatType:            "mocked",
+	ChatTitle:           "mocked",
+	ChatID:              "",
+	Source:              "mocked",
+	ProviderName:        "mocked",
+	ProviderInstanceID:  "",
+	Model:               "mocked",
+	OperationID:         "",
+	Prompt:              "",
+	Completion:          "",
+	Metadata:            "",
+	XRequestID:          "",
+	RequestAt:           time.Time{},
+	ResponseAt:          time.Time{},
+	RequestContentType:  "",
+	RequestBody:         "",
+	ResponseContentType: "",
+	ResponseBody:        "",
+	UserAgent:           "",
+	Server:              "",
+	Status:              "mocked",
+	StatusCode:          200,
 }
