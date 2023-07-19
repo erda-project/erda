@@ -60,11 +60,11 @@ func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWrit
 	if !ok || prov == nil {
 		return reverseproxy.Intercept, errors.New("provider not set in context map")
 	}
-	f.lvs.ChatType = infor.Header().Get(vars.XErdaAIProxyChatType)
-	f.lvs.ChatTitle = infor.Header().Get(vars.XErdaAIProxyChatTitle)
-	f.lvs.Source = infor.Header().Get(vars.XErdaAIProxySource)
-	f.lvs.UserId = infor.Header().Get(vars.XErdaAIProxyJobNumber)
-	f.lvs.UserName = infor.Header().Get(vars.XErdaAIProxyName)
+	f.lvs.ChatType = infor.Header().Get(vars.XAIProxyChatType)
+	f.lvs.ChatTitle = infor.Header().Get(vars.XAIProxyChatTitle)
+	f.lvs.Source = infor.Header().Get(vars.XAIProxySource)
+	f.lvs.UserId = infor.Header().Get(vars.XAIProxyJobNumber)
+	f.lvs.UserName = infor.Header().Get(vars.XAIProxyName)
 	f.lvs.Provider = prov.(*provider.Provider).Name
 	f.lvs.Model = f.getModel(ctx, infor)
 	f.lvs.OperationId = infor.Method()

@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -60,12 +61,12 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 
-	// Check if this plugin is enabled on this request
-	on, err := f.checkIfIsEnabledOnTheRequest(infor)
+	// Check if this filter is enabled on this request
+	ok, err := f.checkIfIsEnabledOnTheRequest(infor)
 	if err != nil {
 		return reverseproxy.Intercept, err
 	}
-	if !on {
+	if !ok {
 		return reverseproxy.Continue, nil
 	}
 
@@ -85,7 +86,7 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 	// add authorization
 	accessKeyId, err := f.getCredential(ctx, infor)
 	if err != nil {
-		l.Errorf("failed to First credential, name: %s, platform: %s, err: %v", infor.Header().Get(vars.XErdaAIProxySource), "erda", err)
+		l.Errorf("failed to First credential, name: %s, platform: %s, err: %v", infor.Header().Get(vars.XAIProxySource), "erda", err)
 		http.Error(w, "the erda platform cannot access the AI Service", http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
@@ -96,20 +97,15 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 
 func (f *ErdaAuth) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (bool, error) {
 	for i, item := range f.Config.On {
-		if item == nil || item.Key == "" || item.Operator == "" {
+		if item == nil {
 			continue
 		}
-		switch item.Operator {
-		case "exist":
-			if infor.Header().Get(item.Key) != "" {
-				return true, nil
-			}
-		case "=":
-			if infor.Header().Get(item.Key) == string(item.Value) {
-				return true, nil
-			}
-		default:
-			return false, errors.Errorf("invalid config: invalid config.on[%d].operator: %s", i, item.Operator)
+		ok, err := item.On(infor.Header())
+		if err != nil {
+			return false, errors.Wrapf(err, "invalid config: config.on[%d]", i)
+		}
+		if ok {
+			return true, nil
 		}
 	}
 	return false, nil
@@ -149,31 +145,42 @@ func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInf
 	var (
 		q          = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
 		credential models.AIProxyCredentials
-		where      = map[string]any{
-			"name":     infor.Header().Get(vars.XErdaAIProxySource),
-			"platform": "erda",
-		}
 	)
-	if providerName := infor.Header().Get(vars.XAIProxyProvider); providerName != "" {
-		providerInstanceId := infor.Header().Get(vars.XAIProxyProviderInstance)
-		if providerInstanceId == "" {
-			providerInstanceId = "default"
-		}
-		where["provider"] = providerName
-		where["provider_instance_id"] = providerInstanceId
-	}
-	if err := q.First(&credential, where).Error; err != nil {
+	if err := q.First(&credential, (&f.Config.Credential).Where()).Error; err != nil {
 		return "", err
 	}
 	return credential.AccessKeyId, nil
 }
 
 type Config struct {
-	On []*On
+	On         []*common.On `json:"on" yaml:"on"`
+	Credential Credential   `json:"credential" yaml:"credential"`
 }
 
-type On struct {
-	Key      string          `json:"key" yaml:"key"`
-	Operator string          `json:"operator" yaml:"operator"`
-	Value    json.RawMessage `json:"value" yaml:"value"`
+type Credential struct {
+	Name               string `json:"name" yaml:"name"`
+	Platform           string `json:"platform" yaml:"platform"`
+	Provider           string `json:"provider" yaml:"provider"`
+	ProviderInstanceId string `json:"providerInstanceId" yaml:"providerInstanceId"`
+}
+
+func (c *Credential) Where() map[string]any {
+	if c.Name == "" {
+		c.Name = "erda.cloud"
+	}
+	if c.Platform == "" {
+		c.Platform = "erda"
+	}
+	where := map[string]any{
+		"name":     c.Name,
+		"platform": c.Platform,
+	}
+	if c.Provider != "" {
+		if c.ProviderInstanceId == "" {
+			c.ProviderInstanceId = "default"
+		}
+		where["provider"] = c.Provider
+		where["provider_instance_id"] = c.Provider
+	}
+	return where
 }

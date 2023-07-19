@@ -15,21 +15,21 @@
 package vars
 
 const (
-	XErdaAIProxySessionId       = "X-AI-Proxy-SessionId"
-	XErdaAIProxyChatType        = "X-AI-Proxy-ChatType"
-	XErdaAIProxyChatTitle       = "X-AI-Proxy-ChatTitle"
-	XErdaAIProxyChatId          = "X-AI-Proxy-ChatId"
-	XErdaAIProxySource          = "X-AI-Proxy-Source"
-	XErdaAIProxyName            = "X-AI-Proxy-Name"
-	XErdaAIProxyPhone           = "X-AI-Proxy-Phone"
-	XErdaAIProxyJobNumber       = "X-AI-Proxy-JobNumber"
-	XErdaAIProxyEmail           = "X-AI-Proxy-Email"
-	XErdaAIProxyDingTalkStaffID = "X-AI-Proxy-DingTalkStaffID"
-	XErdaAIProxyPrompt          = "X-AI-Proxy-Prompt"
-	XAIProxyProvider            = "X-AI-Proxy-Provider"
-	XAIProxyProviderInstance    = "X-AI-Proxy-Provider-Instance"
-	XAIProxyOrgId               = "X-Ai-Proxy-Org-Id"
-	XAIProxyUserId              = "X-Ai-Proxy-UserId"
+	XAIProxySessionId        = "X-AI-Proxy-SessionId"
+	XAIProxyChatType         = "X-AI-Proxy-ChatType"
+	XAIProxyChatTitle        = "X-AI-Proxy-ChatTitle"
+	XAIProxyChatId           = "X-AI-Proxy-ChatId"
+	XAIProxySource           = "X-AI-Proxy-Source"
+	XAIProxyName             = "X-AI-Proxy-Name"
+	XAIProxyPhone            = "X-AI-Proxy-Phone"
+	XAIProxyJobNumber        = "X-AI-Proxy-JobNumber"
+	XAIProxyEmail            = "X-AI-Proxy-Email"
+	XAIProxyDingTalkStaffID  = "X-AI-Proxy-DingTalkStaffID"
+	XAIProxyPrompt           = "X-AI-Proxy-Prompt"
+	XAIProxyProvider         = "X-AI-Proxy-Provider"
+	XAIProxyProviderInstance = "X-AI-Proxy-Provider-Instance"
+	XAIProxyOrgId            = "X-Ai-Proxy-Org-Id"
+	XAIProxyUserId           = "X-Ai-Proxy-UserId"
 )
 
 type (

@@ -33,7 +33,7 @@ type SessionsHandler struct {
 }
 
 func (s *SessionsHandler) CreateSession(ctx context.Context, req *pb.Session) (*pb.CreateSessionRespData, error) {
-	userId, ok := s.getUserId(ctx, req)
+	userId, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, UserPermissionDenied
 	}
@@ -116,7 +116,7 @@ func (s *SessionsHandler) UpdateSession(ctx context.Context, req *pb.Session) (*
 }
 
 func (s *SessionsHandler) ResetSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := s.getUserId(ctx, req)
+	_, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, UserPermissionDenied
 	}
@@ -133,7 +133,7 @@ func (s *SessionsHandler) ResetSession(ctx context.Context, req *pb.LocateSessio
 }
 
 func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := s.getUserId(ctx, req)
+	_, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, UserPermissionDenied
 	}
@@ -150,7 +150,7 @@ func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.LocateSess
 }
 
 func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := s.getUserId(ctx, req)
+	_, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, UserPermissionDenied
 	}
@@ -166,14 +166,14 @@ func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessi
 
 func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessionsReq) (*pb.ListSessionsRespData, error) {
 	// try to get userId
-	userId, ok := s.getUserId(ctx, req)
+	userId, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate user
 
 	// try to get request source
-	source, ok := s.getSource(ctx, req)
+	source, ok := getSource(ctx, req)
 	if !ok {
 		return nil, InvalidSessionSource
 	}
@@ -193,7 +193,7 @@ func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessions
 }
 
 func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionCondition) (*pb.Session, error) {
-	_, ok := s.getUserId(ctx, req)
+	_, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, UserPermissionDenied
 	}
@@ -204,7 +204,7 @@ func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionC
 	return s.Dao.GetSession(req.GetId())
 }
 
-func (s *SessionsHandler) getUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {
+func getUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {
 	if userId := req.GetUserId(); userId != "" {
 		return userId, true
 	}
@@ -217,12 +217,20 @@ func (s *SessionsHandler) getUserId(ctx context.Context, req interface{ GetUserI
 	return "", false
 }
 
-func (s *SessionsHandler) getSource(ctx context.Context, req interface{ GetSource() string }) (string, bool) {
+func getSource(ctx context.Context, req interface{ GetSource() string }) (string, bool) {
 	if source := req.GetSource(); source != "" {
 		return source, true
 	}
-	if source := apis.GetHeader(ctx, vars.XErdaAIProxySource); source != "" {
+	if source := apis.GetHeader(ctx, vars.XAIProxySource); source != "" {
 		return source, true
 	}
 	return "", false
+}
+
+func getSessionId(ctx context.Context, req interface{ GetSessionId() string }) (string, bool) {
+	if sessionId := req.GetSessionId(); sessionId != "" {
+		return sessionId, true
+	}
+	sessionId := apis.GetHeader(ctx, vars.XAIProxySessionId)
+	return sessionId, sessionId != ""
 }

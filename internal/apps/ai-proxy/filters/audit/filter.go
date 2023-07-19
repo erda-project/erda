@@ -181,14 +181,14 @@ func (f *Audit) SetAPIKey(_ context.Context, header http.Header) error {
 }
 
 func (f *Audit) SetSessionId(_ context.Context, header http.Header) error {
-	f.Audit.SessionId = header.Get(vars.XErdaAIProxySessionId)
+	f.Audit.SessionId = header.Get(vars.XAIProxySessionId)
 	return nil
 }
 
 func (f *Audit) SetChats(_ context.Context, header http.Header) error {
-	f.Audit.ChatType = header.Get(vars.XErdaAIProxyChatType)
-	f.Audit.ChatTitle = header.Get(vars.XErdaAIProxyChatTitle)
-	f.Audit.ChatId = header.Get(vars.XErdaAIProxyChatId)
+	f.Audit.ChatType = header.Get(vars.XAIProxyChatType)
+	f.Audit.ChatTitle = header.Get(vars.XAIProxyChatTitle)
+	f.Audit.ChatId = header.Get(vars.XAIProxyChatId)
 	for _, v := range []*string{
 		&f.Audit.ChatType,
 		&f.Audit.ChatTitle,
@@ -218,16 +218,19 @@ func (f *Audit) SetResponseAt(_ context.Context) error {
 }
 
 func (f *Audit) SetSource(_ context.Context, header http.Header) error {
-	f.Audit.Source = header.Get(vars.XErdaAIProxySource)
+	f.Audit.Source = header.Get(vars.XAIProxySource)
 	return nil
 }
 
 func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
-	f.Audit.Username = header.Get(vars.XErdaAIProxyName)
-	f.Audit.PhoneNumber = header.Get(vars.XErdaAIProxyPhone)
-	f.Audit.JobNumber = header.Get(vars.XErdaAIProxyJobNumber)
-	f.Audit.Email = header.Get(vars.XErdaAIProxyEmail)
-	f.Audit.DingtalkStaffId = header.Get(vars.XErdaAIProxyDingTalkStaffID)
+	f.Audit.Username = header.Get(vars.XAIProxyName)
+	f.Audit.PhoneNumber = header.Get(vars.XAIProxyPhone)
+	f.Audit.JobNumber = header.Get(vars.XAIProxyJobNumber)
+	if f.Audit.JobNumber == "" {
+		f.Audit.JobNumber = header.Get(vars.XAIProxyUserId)
+	}
+	f.Audit.Email = header.Get(vars.XAIProxyEmail)
+	f.Audit.DingtalkStaffId = header.Get(vars.XAIProxyDingTalkStaffID)
 	for _, v := range []*string{
 		&f.Audit.Username,
 		&f.Audit.PhoneNumber,
@@ -288,7 +291,7 @@ func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor
 
 func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Prompt = "-"
-	if value := infor.Header().Get(vars.XErdaAIProxyPrompt); value != "" {
+	if value := infor.Header().Get(vars.XAIProxyPrompt); value != "" {
 		prompt, err := base64.StdEncoding.DecodeString(value)
 		if err != nil {
 			return err

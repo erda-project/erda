@@ -73,7 +73,11 @@ routes:
             - key: X-Ai-Proxy-Source
               operator: =
               value: erda.cloud
-
+          credential:
+            name: erda.cloud
+            platform: erda
+            provider: ""
+            providerInstanceId: ""
       - name: context
       - name: azure-director
         config:
@@ -84,6 +88,12 @@ routes:
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.DEVELOPMENT_NAME }/chat/completions")
       - name: audit
+      - name: session-context
+        config:
+          on:
+            - key: X-Ai-Proxy-Source
+              operator: =
+              value: erda.cloud
 
   - path: /v1/edits
     method: POST

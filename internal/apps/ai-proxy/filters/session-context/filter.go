@@ -18,12 +18,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -35,15 +37,15 @@ const (
 )
 
 var (
-	_ reverseproxy.RequestFilter = (*Context)(nil)
+	_ reverseproxy.RequestFilter = (*SessionContext)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type Context struct {
-	sources map[string]struct{}
+type SessionContext struct {
+	Config *Config
 }
 
 func New(config json.RawMessage) (reverseproxy.Filter, error) {
@@ -51,26 +53,25 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
 	}
-	var sources = make(map[string]struct{})
-	for _, source := range cfg.Sources {
-		sources[source] = struct{}{}
-	}
-	return &Context{sources: sources}, nil
+	return &SessionContext{Config: &cfg}, nil
 }
 
-func (c *Context) OnRequest(ctx context.Context, _ http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var (
 		l  = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 		db = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
 	)
 
-	if source := infor.Header().Get(vars.XErdaAIProxySource); source != "" {
-		if _, ok := c.sources[source]; !ok {
-			l.Debugf("source %s is not in config, continue", source)
-			return reverseproxy.Continue, nil
-		}
+	// check if this filter is enabled on this request
+	ok, err := c.checkIfIsEnabledOnTheRequest(infor)
+	if err != nil {
+		return reverseproxy.Intercept, err
 	}
-	sessionId := infor.Header().Get(vars.XErdaAIProxySessionId)
+	if !ok {
+		return reverseproxy.Continue, nil
+	}
+	
+	sessionId := infor.Header().Get(vars.XAIProxySessionId)
 	if sessionId == "" {
 		l.Debugf("sessionId is not specified, continue")
 		return reverseproxy.Continue, nil
@@ -149,8 +150,24 @@ func (c *Context) OnRequest(ctx context.Context, _ http.ResponseWriter, infor re
 	return reverseproxy.Continue, nil
 }
 
+func (c *SessionContext) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (bool, error) {
+	for i, item := range c.Config.On {
+		if item == nil {
+			continue
+		}
+		ok, err := item.On(infor.Header())
+		if err != nil {
+			return false, errors.Wrapf(err, "invalid config: config.on[%d]", i)
+		}
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 type Config struct {
-	Sources []string `json:"sources" yaml:"sources"`
+	On []*common.On
 }
 
 type Message struct {
