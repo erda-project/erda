@@ -89,7 +89,7 @@ func TestRoutes_FindRoute(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to http.NewReqeust, err: %v", err)
 		}
-		request.Header.Set(vars.XAIProxyProviderId, "openai")
+		request.Header.Set(vars.XAIProxyProviderName, "openai")
 		request.Header.Set(vars.XAIProxyProviderInstanceId, "default")
 		findRoute := routes.FindRoute(request)
 		t.Logf("findRoute: %s\nfindRoute.IsNotFoundRoute: %v", strutil.TryGetYamlStr(findRoute), findRoute.IsNotFoundRoute())

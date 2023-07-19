@@ -12,27 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package common_test
 
 import (
 	"net/http"
+	"testing"
 
-	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 )
 
-type On struct {
-	Key      string `json:"key" yaml:"key"`
-	Operator string `json:"operator" yaml:"operator"`
-	Value    string `json:"value" yaml:"value"`
-}
-
-func (on *On) On(header http.Header) (bool, error) {
-	switch on.Operator {
-	case "exist":
-		return header.Get(on.Key) != "", nil
-	case "=":
-		return header.Get(on.Key) == on.Value, nil
-	default:
-		return false, errors.Errorf("invalid operator: %s", on.Operator)
+func TestOn_On(t *testing.T) {
+	var s = `
+key: X-Ai-Proxy-Source
+operator: =
+value: erda.cloud
+`
+	var on common.On
+	if err := yaml.Unmarshal([]byte(s), &on); err != nil {
+		t.Fatal(err)
 	}
+	var h = http.Header{
+		"X-Ai-Proxy-Source": {"erda.cloud"},
+	}
+	ok, err := on.On(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(ok)
 }

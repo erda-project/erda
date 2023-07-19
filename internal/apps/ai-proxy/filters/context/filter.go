@@ -70,7 +70,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		match      = func(*models.AIProxyCredentials) bool { return true }
 	)
 	// if a provider is specified in the request header, refactor the function match
-	if providerName := infor.Header().Get(vars.XAIProxyProviderId); providerName != "" {
+	if providerName := infor.Header().Get(vars.XAIProxyProviderName); providerName != "" {
 		providerInstanceId := infor.Header().Get(vars.XAIProxyProviderInstanceId)
 		if providerInstanceId == "" {
 			providerInstanceId = "default"

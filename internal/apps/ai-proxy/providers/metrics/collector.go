@@ -15,7 +15,6 @@
 package metrics
 
 import (
-	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )

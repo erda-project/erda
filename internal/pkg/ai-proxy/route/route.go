@@ -90,7 +90,10 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	ctx = context.WithValue(ctx, reverseproxy.LoggerCtxKey{}, l)
 
 	// set key-values to context
-	for i := 0; i+1 < len(kvs); i++ {
+	for i := 0; i+1 < len(kvs); i += 2 {
+		if !isComparable(kvs[i]) {
+			l.Fatalf("the key [%d] is not comparable: %T", i, kvs[i])
+		}
 		ctx = context.WithValue(ctx, kvs[i], kvs[i+1])
 	}
 	// reload the logger
@@ -351,4 +354,15 @@ type PathMatcher struct {
 
 func (p *PathMatcher) Match(path string) bool {
 	return p.match(path)
+}
+
+func isComparable(v any) bool {
+	rv := reflect.ValueOf(v)
+	t := rv.Type()
+	switch t.Kind() {
+	case reflect.Array:
+		return isComparable(reflect.Zero(t.Elem()).Interface())
+	default:
+		return t.Comparable()
+	}
 }

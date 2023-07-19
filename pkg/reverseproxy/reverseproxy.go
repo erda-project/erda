@@ -317,6 +317,10 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 				logger.Warnf("[WARN] reverseproxy filters is not continued by %s", item.Name)
 				return
 			}
+			// reset content-length
+			contentLength := infor.BodyBuffer().Len()
+			outreq.ContentLength = int64(contentLength)
+			outreq.Header.Set("Content-Length", strconv.Itoa(contentLength))
 		}
 	}
 
@@ -591,8 +595,9 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 			if rerr == io.EOF {
 				logger.Debug("response body EOF")
 				rerr = nil
+			} else {
+				logger.Errorf("read response err: %v", rerr)
 			}
-			logger.Errorf("read response err: %v", rerr)
 			return rw.Filter.(*responseBodyWriter).written, rerr
 		}
 	}

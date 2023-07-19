@@ -202,7 +202,7 @@ func (f *Audit) SetChats(_ context.Context, header http.Header) error {
 }
 
 func (f *Audit) SetXRequestId(_ context.Context, header http.Header) error {
-	f.Audit.XRequestID = header.Get("X-Request-ID")
+	f.Audit.XRequestID = header.Get(vars.XRequestId)
 	return nil
 }
 
@@ -231,12 +231,14 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 	}
 	f.Audit.Email = header.Get(vars.XAIProxyEmail)
 	f.Audit.DingTalkStaffID = header.Get(vars.XAIProxyDingTalkStaffID)
+	f.Audit.Metadata = header.Get(vars.XAIProxyMetadata)
 	for _, v := range []*string{
 		&f.Audit.Username,
 		&f.Audit.PhoneNumber,
 		&f.Audit.JobNumber,
 		&f.Audit.Email,
 		&f.Audit.DingTalkStaffID,
+		&f.Audit.Metadata,
 	} {
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
 			*v = string(decoded)
@@ -250,7 +252,9 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 	if !ok || prov == nil {
 		return errors.New("provider not set in context map")
 	}
-	f.Audit.ProviderName = prov.(*provider.Provider).Name
+	prov_ := prov.(*provider.Provider)
+	f.Audit.ProviderName = prov_.Name
+	f.Audit.ProviderInstanceID = prov_.InstanceId
 	return nil
 }
 

@@ -86,10 +86,6 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		l.Debugf("session(id=%s) is archived, continue", sessionId)
 		return reverseproxy.Continue, nil
 	}
-	if session.GetContextLength() <= 1 {
-		l.Debugf("session(id=%s)'s context length is less then 1, continue", sessionId)
-		return reverseproxy.Continue, nil
-	}
 
 	var m = make(map[string]json.RawMessage)
 	if err = json.NewDecoder(infor.BodyBuffer()).Decode(&m); err != nil {
@@ -111,23 +107,25 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		return reverseproxy.Continue, nil
 	}
 	messages = []Message{messages[len(messages)-1]}
-	_, chatLogs, err := db.PagingChatLogs(sessionId, int(session.GetContextLength()), 1)
-	if err != nil {
-		l.Debugf("failed to db.PagingChatLogs(id=%s), err: %v", sessionId)
-		return reverseproxy.Continue, nil
-	}
-	for _, chatLog := range chatLogs {
-		messages = append(messages,
-			Message{
-				Role:    "assistant",
-				Content: chatLog.GetCompletion(),
-				Name:    "CodeAI", // todo: hard code here
-			},
-			Message{
-				Role:    "user",
-				Content: chatLog.GetPrompt(),
-				Name:    "",
-			})
+	if session.GetContextLength() > 1 {
+		_, chatLogs, err := db.PagingChatLogs(sessionId, 1, int(session.GetContextLength())-1)
+		if err != nil {
+			l.Debugf("failed to db.PagingChatLogs(id=%s), err: %v", sessionId)
+			return reverseproxy.Continue, nil
+		}
+		for _, chatLog := range chatLogs {
+			messages = append(messages,
+				Message{
+					Role:    "assistant",
+					Content: chatLog.GetCompletion(),
+					Name:    "CodeAI", // todo: hard code here
+				},
+				Message{
+					Role:    "user",
+					Content: chatLog.GetPrompt(),
+					Name:    "",
+				})
+		}
 	}
 	messages = append(messages, Message{
 		Role:    "system",

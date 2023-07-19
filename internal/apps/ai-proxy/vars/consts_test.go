@@ -12,27 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package vars_test
 
 import (
-	"net/http"
+	"context"
+	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
-type On struct {
-	Key      string `json:"key" yaml:"key"`
-	Operator string `json:"operator" yaml:"operator"`
-	Value    string `json:"value" yaml:"value"`
-}
-
-func (on *On) On(header http.Header) (bool, error) {
-	switch on.Operator {
-	case "exist":
-		return header.Get(on.Key) != "", nil
-	case "=":
-		return header.Get(on.Key) == on.Value, nil
-	default:
-		return false, errors.Errorf("invalid operator: %s", on.Operator)
+func TestContext(t *testing.T) {
+	var ctx = context.Background()
+	for _, key := range []any{
+		reverseproxy.LoggerCtxKey{},
+		reverseproxy.MutexCtxKey{},
+		reverseproxy.CtxKeyMap{},
+		vars.CtxKeyOrgSvc{},
+		vars.CtxKeyDAO{},
+		vars.CtxKeyProviders{},
+		vars.CtxKeyErdaOpenapi{},
+	} {
+		ctx = context.WithValue(ctx, key, 0)
 	}
 }

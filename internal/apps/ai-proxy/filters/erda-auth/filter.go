@@ -17,6 +17,7 @@ package erda_auth
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -67,12 +68,22 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 		return reverseproxy.Intercept, err
 	}
 	if !ok {
+		l.Debugf("erda-auth is not enabled on the request, on: %+v", f.Config.On)
 		return reverseproxy.Continue, nil
 	}
 
 	// request erda to check the access permission
 	orgId := infor.Header().Get(vars.XAIProxyOrgId)
 	userId := infor.Header().Get(vars.XAIProxyUserId)
+	for _, v := range []*string{
+		&orgId,
+		&userId,
+	} {
+		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
+			*v = string(decoded)
+		}
+	}
+
 	access, err := f.request(ctx, orgId, userId)
 	if err != nil {
 		return reverseproxy.Intercept, err
@@ -91,6 +102,12 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 		return reverseproxy.Intercept, nil
 	}
 	infor.Header().Set("Authorization", "Bearer "+accessKeyId)
+
+	// set orgId into metadata
+	metadata := map[string]any{"orgId": orgId}
+	if data, err := json.Marshal(metadata); err == nil {
+		infor.Header().Set(vars.XAIProxyMetadata, base64.StdEncoding.EncodeToString(data))
+	}
 
 	return reverseproxy.Continue, nil
 }

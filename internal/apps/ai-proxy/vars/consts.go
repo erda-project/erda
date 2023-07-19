@@ -26,17 +26,19 @@ const (
 	XAIProxyEmail              = "X-AI-Proxy-Email"
 	XAIProxyDingTalkStaffID    = "X-AI-Proxy-DingTalkStaffID"
 	XAIProxyPrompt             = "X-AI-Proxy-Prompt"
-	XAIProxyProviderId         = "X-AI-Proxy-Provider-Name"
+	XAIProxyProviderName       = "X-AI-Proxy-Provider-Name"
 	XAIProxyProviderInstanceId = "X-AI-Proxy-Provider-Instance-Id"
 	XAIProxyOrgId              = "X-Ai-Proxy-Org-Id"
-	XAIProxyUserId             = "X-Ai-Proxy-UserId"
+	XAIProxyUserId             = "X-Ai-Proxy-User-Id"
+	XAIProxyMetadata           = "X-Ai-Proxy-Metadata"
+	XRequestId                 = "X-Request-Id"
 )
 
 type (
-	CtxKeyOrgSvc      struct{ CtxKeyOrgServer any }
-	CtxKeyDAO         struct{ CtxKeyDatabaseAccess any }
+	CtxKeyOrgSvc      struct{ CtxKeyOrgSvc any }
+	CtxKeyDAO         struct{ CtxKeyDAO any }
 	CtxKeyProviders   struct{ CtxKeyProviders any }
-	MapKeyProvider    struct{ CtxKeyProvider any }
-	MapKeyCredential  struct{ CtxKeyCredential any }
-	CtxKeyErdaOpenapi struct{ ErdaOpenapi any }
+	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
+	MapKeyProvider    struct{ MapKeyProvider any }
+	MapKeyCredential  struct{ MapKeyCredential any }
 )

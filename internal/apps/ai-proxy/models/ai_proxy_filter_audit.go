@@ -36,7 +36,7 @@ type AIProxyFilterAudit struct {
 	PhoneNumber         string    `gorm:"type:varchar(32);not null;comment:用户手机号码, source=dingtalk时, 为钉钉账号注册手机号"`
 	JobNumber           string    `gorm:"type:varchar(32);not null;comment:用户工号, source=dingtalk时, 为用户在其组织内的工号"`
 	Email               string    `gorm:"type:varchar(64);not null;comment:用户邮箱"`
-	DingTalkStaffID     string    `gorm:"type:varchar(64);not null;comment:用户钉钉号"`
+	DingTalkStaffID     string    `gorm:"column:dingtalk_staff_id;type:varchar(64);not null;comment:用户钉钉号"`
 	SessionID           string    `gorm:"type:varchar(64);not null;comment:对话标识"`
 	ChatType            string    `gorm:"type:varchar(32);not null;comment:对话类型"`
 	ChatTitle           string    `gorm:"type:varchar(128);not null;comment:source=dingtalk时, 私聊时为 private, 群聊时为群名称"`

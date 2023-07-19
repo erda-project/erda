@@ -43,7 +43,7 @@ routes:
           message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
       - name: erda-auth
         config:
-          on:
+          "on":
             - key: X-Ai-Proxy-Source
               operator: =
               value: erda.cloud
@@ -69,7 +69,7 @@ routes:
           message: { "messages": [ { "role": "assistant", "content": "问题超长啦, 请重置会话", "name": "CodeAI" } ] }
       - name: erda-auth
         config:
-          on:
+          "on":
             - key: X-Ai-Proxy-Source
               operator: =
               value: erda.cloud
@@ -90,7 +90,7 @@ routes:
       - name: audit
       - name: session-context
         config:
-          on:
+          "on":
             - key: X-Ai-Proxy-Source
               operator: =
               value: erda.cloud
