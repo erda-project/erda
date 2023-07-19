@@ -6,7 +6,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 EXTERNAL_REPO_DIR="externalrepo"
 
 # otel remote proto conf
-OTEL_PROTO_REPO="https://github.com/open-telemetry/opentelemetry-proto.git"
+OTEL_PROTO_REPO="https://ghproxy.com/https://github.com/open-telemetry/opentelemetry-proto.git"
 OTEL_PROTO_COMMIT_ID="395c8422fe90080314c7d9b4114d701a0c049e1f"
 
 # usage
