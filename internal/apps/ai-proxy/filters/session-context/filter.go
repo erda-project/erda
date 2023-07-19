@@ -18,10 +18,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -70,7 +70,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	if !ok {
 		return reverseproxy.Continue, nil
 	}
-	
+
 	sessionId := infor.Header().Get(vars.XAIProxySessionId)
 	if sessionId == "" {
 		l.Debugf("sessionId is not specified, continue")

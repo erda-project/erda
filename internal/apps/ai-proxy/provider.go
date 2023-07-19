@@ -77,6 +77,14 @@ var (
 			return new(provider)
 		},
 	}
+	rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != "Bearer "+os.Getenv("AI_PROXY_ROOT_KEY") {
+				return nil, errors.New("Access denied to the admin API")
+			}
+			return h(ctx, req)
+		}
+	})
 )
 
 func init() {
@@ -95,6 +103,7 @@ type provider struct {
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
+	p.initConfig()
 	p.initLogger()
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
@@ -186,6 +195,15 @@ func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	}
 }
 
+func (p *provider) initConfig() {
+	for _, s := range []*string{
+		&p.Config.LogLevel,
+		&p.Config.ErdaOpenapi,
+	} {
+		parseEnvExpr(s)
+	}
+}
+
 func (p *provider) initLogger() {
 	if l, ok := p.L.(*logrusx.Logger); ok {
 		var logger = logrus.New()
@@ -198,8 +216,8 @@ func (p *provider) initLogger() {
 		}
 		p.L.Infof("logger formatter: %+v", formatter)
 		logger.SetFormatter(formatter)
-		if level, err := logrus.ParseLevel(p.Config.GetLogLevel()); err == nil {
-			p.L.Infof("logger level: %s", p.Config.GetLogLevel())
+		if level, err := logrus.ParseLevel(p.Config.LogLevel); err == nil {
+			p.L.Infof("logger level: %s", p.Config.LogLevel)
 			logger.SetLevel(level)
 		} else {
 			p.L.Infof("failed to parse logger level from config, set it as %s", logrus.InfoLevel.String())
@@ -208,8 +226,8 @@ func (p *provider) initLogger() {
 		l.Entry = logrus.NewEntry(logger)
 		return
 	}
-	p.L.Infof("logger level: %s", p.Config.GetLogLevel())
-	if err := p.L.SetLevel(p.Config.GetLogLevel()); err != nil {
+	p.L.Infof("logger level: %s", p.Config.LogLevel)
+	if err := p.L.SetLevel(p.Config.LogLevel); err != nil {
 		p.L.Infof("failed to set logger level from config, set it as %s", logrus.InfoLevel.String())
 		_ = p.L.SetLevel(logrus.InfoLevel.String())
 	}
@@ -284,28 +302,6 @@ type configPromExporter struct {
 	Name      string `json:"name" yaml:"name"`
 }
 
-func (c *config) GetLogLevel() string {
-	expr, start, end, err := strutil.FirstCustomExpression(c.LogLevel, "${", "}", func(s string) bool {
-		return strings.HasPrefix(strings.TrimSpace(s), "env.")
-	})
-	if err != nil || start == end {
-		return c.LogLevel
-	}
-	key := strings.TrimPrefix(expr, "env.")
-	keys := strings.Split(key, ":")
-	if len(keys) > 0 {
-		key = keys[0]
-	}
-	env, ok := os.LookupEnv(key)
-	if !ok {
-		if len(keys) > 1 {
-			return strings.Join(keys[1:], ":")
-		}
-		return logrus.InfoLevel.String()
-	}
-	return env
-}
-
 func WrapRequest(r *http.Request, wraps ...func(*http.Request)) *http.Request {
 	for _, wrap := range wraps {
 		wrap(r)
@@ -319,11 +315,24 @@ func SetXRequestId(r *http.Request) {
 	}
 }
 
-var rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != "Bearer "+os.Getenv("AI_PROXY_ROOT_KEY") {
-			return nil, errors.New("Access denied to the admin API")
-		}
-		return h(ctx, req)
+func parseEnvExpr(s *string) {
+	expr, start, end, err := strutil.FirstCustomExpression(*s, "${", "}", func(s string) bool {
+		return strings.HasPrefix(strings.TrimSpace(s), "env.")
+	})
+	if err != nil || start == end {
+		return
 	}
-})
+	key := strings.TrimPrefix(expr, "env.")
+	keyAndDefault := strings.SplitN(key, ":", 2)
+	if len(keyAndDefault) > 0 {
+		key = keyAndDefault[0]
+	}
+	if v, ok := os.LookupEnv(key); ok {
+		*s = v
+		return
+	}
+	if len(keyAndDefault) > 1 {
+		*s = keyAndDefault[1]
+		return
+	}
+}
