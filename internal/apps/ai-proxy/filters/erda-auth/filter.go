@@ -149,7 +149,7 @@ func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInf
 	if err := q.First(&credential, (&f.Config.Credential).Where()).Error; err != nil {
 		return "", err
 	}
-	return credential.AccessKeyId, nil
+	return credential.AccessKeyID, nil
 }
 
 type Config struct {

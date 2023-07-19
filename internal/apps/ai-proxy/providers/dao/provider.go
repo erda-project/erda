@@ -127,7 +127,7 @@ func (p *provider) PagingChatLogs(sessionId string, pageNum, pageSize int) (int6
 
 func (p *provider) CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error) {
 	var session = models.AIProxySessions{
-		UserId:        userId,
+		UserID:        userId,
 		Name:          name,
 		Topic:         topic,
 		ContextLength: contextLength,
