@@ -44,16 +44,11 @@ func (s *logService) PagedSearchFromMonitor(ctx context.Context, req *pb.PagedSe
 	if len(expr) > 0 {
 		expr = fmt.Sprintf("(%s) AND", expr)
 	}
-	if start > s.startTime {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			ToESQueryString())
-	} else if logKeys.Contains(logServiceKey) {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			Where(func(k LogKeyType, v StringList) bool { return k == logServiceKey }).
-			ToESQueryString())
-	} else {
+
+	if logKeys.IsEmpty() {
 		return nil, nil
 	}
+	expr = fmt.Sprintf("%s (%s)", expr, logKeys.ToESQueryString())
 
 	// max allowed size limit to 10000
 	pageSize := req.PageSize
@@ -113,7 +108,7 @@ func (s *logService) PagedSearchFromMonitor(ctx context.Context, req *pb.PagedSe
 }
 
 func (s *logService) PagedSearchFromLoghub(ctx context.Context, req *pb.PagedSearchRequest) (*pb.PagedSearchResponse, error) {
-	if s.p.Cfg.QueryLogESEnabled && req.Start*int64(time.Millisecond) > s.startTime {
+	if s.p.Cfg.QueryLogESEnabled {
 		return nil, nil
 	}
 
@@ -197,16 +192,10 @@ func (s *logService) SequentialSearchFromMonitor(ctx context.Context, req *pb.Se
 	if len(expr) > 0 {
 		expr = fmt.Sprintf("(%s) AND", expr)
 	}
-	if start > s.startTime {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			ToESQueryString())
-	} else if logKeys.Contains(logServiceKey) {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			Where(func(k LogKeyType, v StringList) bool { return k == logServiceKey }).
-			ToESQueryString())
-	} else {
+	if logKeys.IsEmpty() {
 		return nil, nil
 	}
+	expr = fmt.Sprintf("%s (%s)", expr, logKeys.ToESQueryString())
 
 	monitorResp, err := s.p.MonitorLogService.GetLogByExpression(ctx, &monitorpb.GetLogByExpressionRequest{
 		Start:           start,
@@ -269,7 +258,7 @@ func (s *logService) SequentialSearchFromLoghub(ctx context.Context, req *pb.Seq
 		end = req.End * int64(time.Millisecond)
 	}
 
-	if s.p.Cfg.QueryLogESEnabled && start > s.startTime {
+	if s.p.Cfg.QueryLogESEnabled {
 		return nil, nil
 	}
 
