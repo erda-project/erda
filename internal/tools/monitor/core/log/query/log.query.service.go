@@ -348,7 +348,11 @@ func (s *logQueryService) queryRealLogItems(ctx context.Context, req Request, fn
 	if err != nil {
 		return nil, true, errors.NewInternalServerError(err)
 	}
-	defer it.Close()
+	defer func() {
+		if err := it.Close(); err != nil {
+			fmt.Printf("close iterator error: %v\n", err)
+		}
+	}()
 
 	if _, ok := it.(storekit.EmptyIterator); ok {
 		return nil, false, nil

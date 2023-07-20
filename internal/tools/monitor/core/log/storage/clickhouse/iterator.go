@@ -338,6 +338,9 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 			if fetchingRemote {
 				it.err = io.EOF
 			}
+			if err := it.lastResp.Close(); err != nil {
+				fmt.Printf("clickhouse iterator close lastResp error: %s\n", err.Error())
+			}
 			it.lastResp = nil
 			return
 		}
