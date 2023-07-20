@@ -23,9 +23,11 @@ import (
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -108,21 +110,26 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	}
 	messages = []Message{messages[len(messages)-1]}
 	if session.GetContextLength() > 1 {
-		_, chatLogs, err := db.PagingChatLogs(sessionId, 1, int(session.GetContextLength())-1)
-		if err != nil {
-			l.Debugf("failed to db.PagingChatLogs(id=%s), err: %v", sessionId)
-			return reverseproxy.Continue, nil
+		var audits []*models.AIProxyFilterAudit
+		if err := db.Q().
+			Where(map[string]any{"session_id": sessionId}).
+			Where("updated_at > ?", session.ResetAt.AsTime()).
+			Order("created_at DESC").
+			Limit(int(session.GetContextLength()) - 1).
+			Find(&audits).
+			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			l.Errorf("failed to Find audits for session %s", sessionId)
 		}
-		for _, chatLog := range chatLogs {
+		for _, item := range audits {
 			messages = append(messages,
 				Message{
 					Role:    "assistant",
-					Content: chatLog.GetCompletion(),
+					Content: item.Completion,
 					Name:    "CodeAI", // todo: hard code here
 				},
 				Message{
 					Role:    "user",
-					Content: chatLog.GetPrompt(),
+					Content: item.Prompt,
 					Name:    "",
 				})
 		}

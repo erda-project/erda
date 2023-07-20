@@ -21,7 +21,6 @@ Authorization: Bearer {{ai-proxy_root-key}}
 }
 
 ### Create session
-### issue: do not auth on root-key
 POST https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
 X-Ai-Proxy-User-Id: 1000645

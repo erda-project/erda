@@ -41,4 +41,7 @@ value: erda.cloud
 		t.Fatal(err)
 	}
 	t.Log(ok)
+	if !ok {
+		t.Fatal("it should be ok")
+	}
 }

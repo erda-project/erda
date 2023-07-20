@@ -148,3 +148,26 @@ func TestRoute_RewritePath(t *testing.T) {
 	rout.Router.RewritePath(request.URL.Path, rout.PathMatcher.Values)
 	t.Logf("newPath: %s", request.URL.Path)
 }
+
+type noncomparable [1]func()
+
+func TestIsComparable(t *testing.T) {
+	tests := []struct {
+		input    interface{}
+		expected bool
+	}{
+		{input: 10, expected: true},
+		{input: "string", expected: true},
+		{input: struct{}{}, expected: true},
+		{input: noncomparable{}, expected: false},
+		{input: [1]int{}, expected: true},
+		{input: [1]noncomparable{}, expected: false},
+	}
+
+	for _, test := range tests {
+		actual := route.IsComparable(test.input)
+		if actual != test.expected {
+			t.Errorf("Expected %v for input %v, got %v", test.expected, test.input, actual)
+		}
+	}
+}
