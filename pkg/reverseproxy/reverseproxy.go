@@ -317,12 +317,12 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 				logger.Warnf("[WARN] reverseproxy filters is not continued by %s", item.Name)
 				return
 			}
-			// reset content-length
-			contentLength := infor.BodyBuffer().Len()
-			outreq.ContentLength = int64(contentLength)
-			outreq.Header.Set("Content-Length", strconv.Itoa(contentLength))
 		}
 	}
+	// reset content-length
+	contentLength := infor.BodyBuffer().Len()
+	outreq.ContentLength = int64(contentLength)
+	outreq.Header.Set("Content-Length", strconv.Itoa(contentLength))
 
 	p.Director(outreq)
 	if outreq.Form != nil {
