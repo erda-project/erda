@@ -46,16 +46,10 @@ func (s *logService) HistogramAggregationFromMonitor(ctx context.Context, req *p
 	if len(expr) > 0 {
 		expr = fmt.Sprintf("(%s) AND", expr)
 	}
-	if start > s.startTime {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			ToESQueryString())
-	} else if logKeys.Contains(logServiceKey) {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			Where(func(k LogKeyType, v StringList) bool { return k == logServiceKey }).
-			ToESQueryString())
-	} else {
+	if logKeys.IsEmpty() {
 		return nil, nil
 	}
+	expr = fmt.Sprintf("%s (%s)", expr, logKeys.ToESQueryString())
 
 	if req.TraceID != "" {
 		expr = fmt.Sprintf("%s AND trace_id:%s", expr, req.TraceID)
@@ -137,7 +131,7 @@ func (s *logService) HistogramAggregationFromMonitor(ctx context.Context, req *p
 }
 
 func (s *logService) HistogramAggregationFromLoghub(ctx context.Context, req *pb.HistogramAggregationRequest) (*pb.HistogramAggregationResponse, error) {
-	if s.p.Cfg.QueryLogESEnabled && req.Start*int64(time.Millisecond) > s.startTime {
+	if s.p.Cfg.QueryLogESEnabled {
 		return nil, nil
 	}
 

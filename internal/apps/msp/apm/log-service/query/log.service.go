@@ -35,7 +35,6 @@ type logService struct {
 	p               *provider
 	logDeploymentDB *db.LogDeploymentDB
 	logInstanceDB   *db.LogInstanceDB
-	startTime       int64
 }
 
 func (s *logService) HistogramAggregation(ctx context.Context, req *pb.HistogramAggregationRequest) (*pb.HistogramAggregationResponse, error) {

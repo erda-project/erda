@@ -16,7 +16,6 @@ package log_service
 
 import (
 	"io/ioutil"
-	"time"
 
 	"github.com/jinzhu/gorm"
 	"gopkg.in/yaml.v3"
@@ -81,7 +80,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.Cfg.IndexFieldSettings.DefaultSettings = defaultSettings
 	}
 
-	p.logService = &logService{p, &db.LogDeploymentDB{DB: p.DB}, &db.LogInstanceDB{DB: p.DB}, time.Now().UnixNano()}
+	p.logService = &logService{p, &db.LogDeploymentDB{DB: p.DB}, &db.LogInstanceDB{DB: p.DB}}
 	if p.Register != nil {
 		pb.RegisterLogServiceImp(p.Register, p.logService, apis.Options())
 	}
