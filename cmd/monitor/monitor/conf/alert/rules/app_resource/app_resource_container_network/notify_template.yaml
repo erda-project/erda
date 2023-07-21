@@ -17,9 +17,9 @@
 
     服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
     
-    网络接收速率: {{rx_bytes}} MB/s
+    网络接收速率: {{rx_bytes_usage}} MB/s
     
-    网络发送速率: {{tx_bytes}} MB/s
+    网络发送速率: {{tx_bytes_usage}} MB/s
 
     机器: {{host_ip}}
 
@@ -42,7 +42,7 @@
   title: |
     【{{application_name}}应用{{service_name}}服务实例网络收发速率告警】
   template: |
-    {{application_name}}应用{{service_name}}触发服务实例网络收发速率异常告警，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}，网络告警级别: {{level}}
+    {{application_name}}应用{{service_name}}触发服务实例网络收发速率异常告警，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes_usage}}，网络发送速率: {{tx_bytes_usage}}，网络告警级别: {{level}}
 - name: "应用实例网络收发速率异常告警"
   trigger: "alert"
   target: "vms"
@@ -52,7 +52,7 @@
   title: |
     【{{application_name}}应用{{service_name}}服务实例网络收发速率告警】
   template: |
-    {{application_name}}应用{{service_name}}触发服务实例网络收发速率异常告警，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}，网络告警级别: {{level}}
+    {{application_name}}应用{{service_name}}触发服务实例网络收发速率异常告警，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes_usage}}，网络发送速率: {{tx_bytes_usage}}，网络告警级别: {{level}}
 - name: "应用实例网络收发速率恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
@@ -72,9 +72,9 @@
 
     服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
 
-    网络接收速率: {{rx_bytes}} MB/s
+    网络接收速率: {{rx_bytes_usage}} MB/s
     
-    网络发送速率: {{tx_bytes}} MB/s
+    网络发送速率: {{tx_bytes_usage}} MB/s
 
     机器: {{host_ip}}
 
@@ -97,7 +97,7 @@
   title: |
     【{{application_name}}应用{{service_name}}服务实例网络收发速率恢复】
   template: |
-    {{application_name}}应用{{service_name}}服务实例网络收发速率恢复，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}
+    {{application_name}}应用{{service_name}}服务实例网络收发速率恢复，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes_usage}}，网络发送速率: {{tx_bytes_usage}}
 
 - name: "应用实例网络收发速率恢复"
   trigger: "recover"
@@ -108,7 +108,7 @@
   title: |
     【{{application_name}}应用{{service_name}}服务实例网络收发速率恢复】
   template: |
-    {{application_name}}应用{{service_name}}服务实例网络收发速率恢复，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes}}，网络发送速率: {{tx_bytes}}
+    {{application_name}}应用{{service_name}}服务实例网络收发速率恢复，terminus_key: {{terminus_key}}，网络接收速率: {{rx_bytes_usage}}，网络发送速率: {{tx_bytes_usage}}
 
 - name: "Application instance network sending and receiving rate is abnormal"
   trigger: "alert"
@@ -129,9 +129,9 @@
 
     Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
     
-    Network receiving rate: {{rx_bytes}} MB/s
+    Network receiving rate: {{rx_bytes_usage}} MB/s
     
-    Network transmit rate: {{tx_bytes}} MB/s
+    Network transmit rate: {{tx_bytes_usage}} MB/s
 
     Machine: {{host_ip}}
 
@@ -152,7 +152,7 @@
   title: |
     [Network sending and receiving rate alarm of service {{service_name}} of application {{application_name}}]
   template: |
-    Network sending and receiving rate alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}
+    Network sending and receiving rate alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes_usage}}, network transmit rate: {{tx_bytes_usage}}
 - name: "Network sending and receiving rate alarm of application instance"
   trigger: "alert"
   target: "vms"
@@ -162,7 +162,7 @@
   title: |
     [Network sending and receiving rate alarm of service {{service_name}} of application {{application_name}}]
   template: |
-    Network sending and receiving rate alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}
+    Network sending and receiving rate alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes_usage}}, network transmit rate: {{tx_bytes_usage}}
 - name: "Network sending and receiving rate recovery of application instance"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook"
@@ -182,9 +182,9 @@
 
     Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
 
-    Network receiving rate: {{rx_bytes}} MB/s
+    Network receiving rate: {{rx_bytes_usage}} MB/s
     
-    Network transmit rate: {{tx_bytes}} MB/s
+    Network transmit rate: {{tx_bytes_usage}} MB/s
 
     Machine: {{host_ip}}
 
@@ -207,7 +207,7 @@
   title: |
     [Network sending and receiving rate recovery of service {{service_name}} of application {{application_name}}]
   template: |
-    Network sending and receiving rate recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}, duration: {{trigger_duration}}
+    Network sending and receiving rate recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes_usage}}, network transmit rate: {{tx_bytes_usage}}, duration: {{trigger_duration}}
 
 - name: "Network sending and receiving rate recovery of application instance"
   trigger: "recover"
@@ -218,4 +218,4 @@
   title: |
     [Network sending and receiving rate recovery of service {{service_name}} of application {{application_name}}]
   template: |
-    Network sending and receiving rate recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes}}, network transmit rate: {{tx_bytes}}, duration: {{trigger_duration}}
+    Network sending and receiving rate recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, network receiving rate: {{rx_bytes_usage}}, network transmit rate: {{tx_bytes_usage}}, duration: {{trigger_duration}}

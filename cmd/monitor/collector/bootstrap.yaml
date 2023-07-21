@@ -39,6 +39,8 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@mysql"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
+          - "erda.oap.collector.processor.aggregator@rx_bytes_usage"
+          - "erda.oap.collector.processor.aggregator@tx_bytes_usage"
         exporters:
           #- "erda.oap.collector.exporter.stdout"
           - "erda.oap.collector.exporter.kafka@spot-metrics"
@@ -354,6 +356,38 @@ erda.oap.collector.processor.aggregator@oomkilled:
     - func: ">"
       args: [ "oomkilled", 0 ]
       target_key: "oomkilled"
+
+erda.oap.collector.processor.aggregator@rx_bytes_usage:
+  keypass:
+    name: [ "docker_container_summary" ]
+  keydrop:
+    container: [ "POD" ]
+  keyinclude:
+    - "name"
+    - "fields.rx_bytes"
+    - "tags.cluster_name"
+    - "tags.id"
+
+  rules:
+    - func: "rate"
+      args: [ "rx_bytes" ]
+      target_key: "rx_bytes_usage"
+
+erda.oap.collector.processor.aggregator@tx_bytes_usage:
+  keypass:
+    name: [ "docker_container_summary" ]
+  keydrop:
+    container: [ "POD" ]
+  keyinclude:
+    - "name"
+    - "fields.tx_bytes"
+    - "tags.cluster_name"
+    - "tags.id"
+
+  rules:
+    - func: "rate"
+      args: [ "tx_bytes" ]
+      target_key: "tx_bytes_usage"
 
 erda.oap.collector.processor.aggregator@mem-percent:
   keypass:
