@@ -94,16 +94,10 @@ func (p *provider) DownloadLogsFromMonitor(r *http.Request, w http.ResponseWrite
 	if len(expr) > 0 {
 		expr = fmt.Sprintf("(%s) AND", expr)
 	}
-	if start > p.logService.startTime {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			ToESQueryString())
-	} else if logKeys.Contains(logServiceKey) {
-		expr = fmt.Sprintf("%s (%s)", expr, logKeys.
-			Where(func(k LogKeyType, v StringList) bool { return k == logServiceKey }).
-			ToESQueryString())
-	} else {
+	if logKeys.IsEmpty() {
 		return nil
 	}
+	expr = fmt.Sprintf("%s (%s)", expr, logKeys.ToESQueryString())
 
 	maxReturn := params.MaxReturn
 	isDescendingOrder := !StringList(params.Sort).All(func(item string) bool { return strings.HasSuffix(item, " asc") })
@@ -158,7 +152,7 @@ func (p *provider) DownloadLogsFromMonitor(r *http.Request, w http.ResponseWrite
 }
 
 func (p *provider) DownloadLogsFromLoghub(r *http.Request, w http.ResponseWriter, params *LogDownloadRequest) error {
-	if p.Cfg.QueryLogESEnabled && params.Start*int64(time.Millisecond) > p.logService.startTime {
+	if p.Cfg.QueryLogESEnabled {
 		return nil
 	}
 

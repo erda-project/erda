@@ -77,6 +77,10 @@ func (g LogKeyGroup) Contains(keyType LogKeyType) bool {
 	return ok
 }
 
+func (g LogKeyGroup) IsEmpty() bool {
+	return g == nil || len(g) == 0
+}
+
 func (g LogKeyGroup) Where(filter func(k LogKeyType, v StringList) bool) LogKeyGroup {
 	result := LogKeyGroup{}
 	for keyType, list := range g {
