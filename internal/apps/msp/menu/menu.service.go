@@ -220,7 +220,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	// setup logKey for service monitor
 	for _, item := range items {
 		for _, child := range item.Children {
-			if child.EnName == "Service" {
+			if child.EnName == "Service" && len(logKey) > 0 {
 				child.Params["logKey"] = logKey
 				break
 			}
