@@ -36,6 +36,8 @@ type IterationCreateRequest struct {
 
 	ManHour *IssueManHour `json:"manHour"`
 
+	Labels []string `json:"labels"`
+
 	// internal use, get from *http.Request
 	IdentityInfo
 }
@@ -85,6 +87,8 @@ type IterationUpdateRequest struct {
 
 	ManHour *IssueManHour `json:"manHour"`
 
+	Labels []string `json:"labels"`
+
 	// internal use, get from *http.Request
 	IdentityInfo
 }
@@ -110,6 +114,8 @@ type IterationPagingRequest struct {
 	WithoutIssueSummary bool `schema:"withoutIssueSummary"`
 	// +optional
 	IDs []uint64 `json:"ids" schema:"id"`
+	// +optional
+	LabelIDs []uint64 `json:"labelIDs" schema:"labelIDs"`
 }
 
 type IterationPagingResponse struct {
@@ -143,6 +149,8 @@ type Iteration struct {
 	State        IterationState `json:"state"`
 	IssueSummary ISummary       `json:"issueSummary"`
 	ManHour      *IssueManHour  `json:"manHour"`
+	Labels       []string       `json:"labels"`
+	LabelDetails []ProjectLabel `json:"labelDetails"`
 }
 
 // ISummary 与迭代相关的事件完成状态的统计信息

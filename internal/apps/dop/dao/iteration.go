@@ -38,19 +38,21 @@ func (Iteration) TableName() string {
 	return "dice_iterations"
 }
 
-func (i *Iteration) Convert() apistructs.Iteration {
+func (i *Iteration) Convert(labels []string, labelDetails []apistructs.ProjectLabel) apistructs.Iteration {
 	return apistructs.Iteration{
-		ID:         int64(i.ID),
-		CreatedAt:  i.CreatedAt,
-		UpdatedAt:  i.UpdatedAt,
-		StartedAt:  i.StartedAt,
-		FinishedAt: i.FinishedAt,
-		ProjectID:  i.ProjectID,
-		Title:      i.Title,
-		Content:    i.Content,
-		Creator:    i.Creator,
-		State:      i.State,
-		ManHour:    new(apistructs.IssueManHour).FromString(i.ManHour),
+		ID:           int64(i.ID),
+		CreatedAt:    i.CreatedAt,
+		UpdatedAt:    i.UpdatedAt,
+		StartedAt:    i.StartedAt,
+		FinishedAt:   i.FinishedAt,
+		ProjectID:    i.ProjectID,
+		Title:        i.Title,
+		Content:      i.Content,
+		Creator:      i.Creator,
+		State:        i.State,
+		ManHour:      new(apistructs.IssueManHour).FromString(i.ManHour),
+		Labels:       labels,
+		LabelDetails: labelDetails,
 	}
 }
 
