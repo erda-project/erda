@@ -21,21 +21,21 @@
     "functions":[
       {
         "aggregator":"max",
-        "field":"rx_bytes",
+        "field":"rx_bytes_usage",
         "operator":"gte",
-        "alias": "rx_bytes",
+        "alias": "rx_bytes_usage",
         "unit": "MB/s",
         "value": 1,
-        "field_script": "function invoke(field, tag){ return field.rx_bytes/1024/1024 }"
+        "field_script": "function invoke(field, tag){ return field.rx_bytes_usage/1024/1024 }"
       },
       {
         "aggregator":"max",
-        "alias":"tx_bytes",
-        "field":"tx_bytes",
+        "alias":"tx_bytes_usage",
+        "field":"tx_bytes_usage",
         "operator":"gte",
         "unit": "MB/s",
         "value": 1,
-        "field_script": "function invoke(field, tag){ return field.tx_bytes/1024/1024 }"
+        "field_script": "function invoke(field, tag){ return field.tx_bytes_usage/1024/1024 }"
       }
     ],
     "group":[
