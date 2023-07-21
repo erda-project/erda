@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -83,6 +85,21 @@ func (e *Endpoints) CreateIteration(ctx context.Context, r *http.Request, vars m
 		return errorresp.ErrResp(err)
 	}
 
+	labels, err := e.bdl.ListLabelByNameAndProjectID(createReq.ProjectID, createReq.Labels)
+	if err != nil {
+		return nil, apierrors.ErrCreateIteration.InternalError(err)
+	}
+	for _, v := range labels {
+		lr := &dao.LabelRelation{
+			LabelID: uint64(v.ID),
+			RefType: apistructs.LabelTypeIteration,
+			RefID:   strconv.FormatUint(id.ID, 10),
+		}
+		if err := e.db.CreateLabelRelation(lr); err != nil {
+			return nil, apierrors.ErrCreateIssue.InternalError(err)
+		}
+	}
+
 	// 更新项目活跃时间
 	if err := e.bdl.UpdateProjectActiveTime(apistructs.ProjectActiveTimeUpdateRequest{
 		ProjectID:  createReq.ProjectID,
@@ -137,6 +154,37 @@ func (e *Endpoints) UpdateIteration(ctx context.Context, r *http.Request, vars m
 		return errorresp.ErrResp(err)
 	}
 
+	// update labels
+	currentLabelMap := make(map[string]bool)
+	newLabelMap := make(map[string]bool)
+	currentLabels, _ := e.getIterationLabelDetails(iterationID)
+	for _, v := range currentLabels {
+		currentLabelMap[v] = true
+	}
+	for _, v := range updateReq.Labels {
+		newLabelMap[v] = true
+	}
+	if len(updateReq.Labels) > 0 && !reflect.DeepEqual(currentLabelMap, newLabelMap) {
+		if err = e.db.DeleteLabelRelations(apistructs.LabelTypeIteration, strconv.FormatUint(iterationID, 10), nil); err != nil {
+			return apierrors.ErrUpdateIteration.InternalError(err).ToResp(), nil
+		}
+		labels, err := e.bdl.ListLabelByNameAndProjectID(iteration.ProjectID, updateReq.Labels)
+		if err != nil {
+			return apierrors.ErrUpdateIteration.InternalError(err).ToResp(), nil
+		}
+		labelRelations := make([]dao.LabelRelation, 0, len(labels))
+		for _, v := range labels {
+			labelRelations = append(labelRelations, dao.LabelRelation{
+				LabelID: uint64(v.ID),
+				RefType: apistructs.LabelTypeIteration,
+				RefID:   strconv.FormatUint(iterationID, 10),
+			})
+		}
+		if err := e.db.BatchCreateLabelRelations(labelRelations); err != nil {
+			return apierrors.ErrUpdateIteration.InternalError(err).ToResp(), nil
+		}
+	}
+
 	// 更新项目活跃时间
 	if err := e.bdl.UpdateProjectActiveTime(apistructs.ProjectActiveTimeUpdateRequest{
 		ProjectID:  iteration.ProjectID,
@@ -185,6 +233,11 @@ func (e *Endpoints) DeleteIteration(ctx context.Context, r *http.Request, vars m
 	// 删除 iteration
 	if err := e.iteration.Delete(iterationID); err != nil {
 		return errorresp.ErrResp(err)
+	}
+
+	// delete relation labels
+	if err = e.db.DeleteLabelRelations(apistructs.LabelTypeIteration, strconv.FormatUint(iterationID, 10), nil); err != nil {
+		return apierrors.ErrDeleteIteration.InternalError(err).ToResp(), nil
 	}
 
 	// 更新项目活跃时间
@@ -238,7 +291,7 @@ func (e *Endpoints) GetIteration(ctx context.Context, r *http.Request, vars map[
 	}
 
 	userIDs := []string{iteration.Creator}
-	return httpserver.OkResp(iteration.Convert(), userIDs)
+	return httpserver.OkResp(iteration.Convert(e.getIterationLabelDetails(iterationID)), userIDs)
 }
 
 // PagingIterations 分页查询迭代
@@ -291,6 +344,23 @@ func (e *Endpoints) PagingIterations(ctx context.Context, r *http.Request, vars 
 			}
 		}
 	}
+	if len(pageReq.LabelIDs) > 0 {
+		lrs, err := e.db.GetLabelRelationsByLabels(apistructs.LabelTypeIteration, pageReq.LabelIDs)
+		if err != nil {
+			return apierrors.ErrPagingIterations.InternalError(err).ToResp(), nil
+		}
+		if pageReq.IDs == nil {
+			pageReq.IDs = make([]uint64, 0)
+		}
+		for _, v := range lrs {
+			id, err := strconv.ParseUint(v.RefID, 10, 64)
+			if err != nil {
+				logrus.Errorf("failed to parse refID for label relation %d, %v", v.ID, err)
+				continue
+			}
+			pageReq.IDs = append(pageReq.IDs, id)
+		}
+	}
 	// 分页查询
 	iterationModels, total, err := e.iteration.Paging(pageReq)
 	if err != nil {
@@ -298,7 +368,7 @@ func (e *Endpoints) PagingIterations(ctx context.Context, r *http.Request, vars 
 	}
 	iterationMap := make(map[int64]*apistructs.Iteration, len(iterationModels))
 	for _, itr := range iterationModels {
-		iteration := itr.Convert()
+		iteration := itr.Convert(e.getIterationLabelDetails(itr.ID))
 		iterationMap[iteration.ID] = &iteration
 	}
 	if !pageReq.WithoutIssueSummary {
@@ -323,4 +393,20 @@ func (e *Endpoints) PagingIterations(ctx context.Context, r *http.Request, vars 
 		Total: total,
 		List:  iterations,
 	}, userIDs)
+}
+
+func (e *Endpoints) getIterationLabelDetails(iterationID uint64) ([]string, []apistructs.ProjectLabel) {
+	lrs, _ := e.db.GetLabelRelationsByRef(apistructs.LabelTypeIteration, strconv.FormatUint(iterationID, 10))
+	labelIDs := make([]uint64, 0, len(lrs))
+	for _, v := range lrs {
+		labelIDs = append(labelIDs, v.LabelID)
+	}
+	var labelNames []string
+	var labels []apistructs.ProjectLabel
+	labels, _ = e.bdl.ListLabelByIDs(labelIDs)
+	labelNames = make([]string, 0, len(labels))
+	for _, v := range labels {
+		labelNames = append(labelNames, v.Name)
+	}
+	return labelNames, labels
 }

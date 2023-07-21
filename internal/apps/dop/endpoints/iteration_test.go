@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/iteration"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -54,7 +55,36 @@ func TestPagingIterations(t *testing.T) {
 	r.Header.Set("Org-ID", "1")
 	q := r.URL.Query()
 	q.Add("projectID", "1")
+	q.Add("labels", "area")
 	r.URL.RawQuery = q.Encode()
 	_, err := ep.PagingIterations(context.Background(), r, map[string]string{"projectID": "1"})
 	assert.NoError(t, err)
+}
+
+func Test_getIterationLabelDetails(t *testing.T) {
+	bdl := bundle.New()
+	db := &dao.DBClient{}
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetLabelRelationsByRef", func(db *dao.DBClient, refType apistructs.ProjectLabelType, refID string) ([]dao.LabelRelation, error) {
+		return []dao.LabelRelation{
+			{
+				LabelID: 1,
+			},
+		}, nil
+	})
+	defer pm1.Unpatch()
+
+	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListLabelByIDs", func(bdl *bundle.Bundle, ids []uint64) ([]apistructs.ProjectLabel, error) {
+		return []apistructs.ProjectLabel{
+			{
+				ID:   1,
+				Name: "area",
+			},
+		}, nil
+	})
+	defer pm2.Unpatch()
+
+	e := &Endpoints{bdl: bdl, db: db}
+	labels, labelDetails := e.getIterationLabelDetails(1)
+	assert.Equal(t, []string{"area"}, labels)
+	assert.Equal(t, int64(1), labelDetails[0].ID)
 }
