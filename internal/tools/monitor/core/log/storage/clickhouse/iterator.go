@@ -274,12 +274,6 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 		reverse = true
 	}
 	it.buffer = nil
-	defer func() {
-		if it.lastResp != nil {
-			it.lastResp.Close()
-			it.lastResp = nil
-		}
-	}()
 	for it.err == nil && len(it.buffer) == 0 {
 		fetchingRemote := false
 		if it.lastResp == nil {
@@ -344,6 +338,10 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 			if fetchingRemote {
 				it.err = io.EOF
 			}
+			if err := it.lastResp.Close(); err != nil {
+				fmt.Printf("clickhouse iterator close lastResp error: %s\n", err.Error())
+			}
+			it.lastResp = nil
 			return
 		}
 	}
