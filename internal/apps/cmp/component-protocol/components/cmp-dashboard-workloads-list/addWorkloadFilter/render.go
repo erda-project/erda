@@ -153,7 +153,7 @@ func (f *ComponentAddWorkloadFilter) SetComponentValue(ctx context.Context) erro
 			Label: name,
 			Value: name,
 		}
-		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
+		if suf, ok := hasSuffix(name); ok && cputil2.IsProjectNamespace(name) {
 			splits := strings.Split(name, "-")
 			if len(splits) != 3 {
 				continue

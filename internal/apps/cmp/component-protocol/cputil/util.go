@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -44,6 +45,10 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
+)
+
+var (
+	projectNamespacePattern = regexp.MustCompile(`^project-\d+-(dev|test|staging|prod)$`)
 )
 
 // ParseWorkloadStatus get status for workloads from .metadata.fields
@@ -500,4 +505,8 @@ func CheckPermission(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func IsProjectNamespace(namespace string) bool {
+	return projectNamespacePattern.MatchString(namespace)
 }
