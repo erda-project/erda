@@ -9,8 +9,8 @@ grpc-server@ai:
 erda.app.ai-proxy:
   routesRef: conf/routes.yml
   providersRef: conf/providers.yml
-  logLevel: ${ env.LOG_LEVEL:debug }
-  erdaOpenapi: ${ env.ERDA_OPENAPI:https://openapi.erda.cloud }
+  logLevel: ${LOG_LEVEL:debug}
+  erdaOpenapi: ${ERDA_OPENAPI:https://openapi.erda.cloud}
 
 gorm.v2:
   host: "${MYSQL_HOST}"

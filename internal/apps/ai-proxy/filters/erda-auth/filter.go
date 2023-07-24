@@ -101,7 +101,7 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 		http.Error(w, "the erda platform cannot access the AI Service", http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
-	infor.Header().Set("Authorization", "Bearer "+accessKeyId)
+	infor.Header().Set("Authorization", vars.ConcatBearer(accessKeyId))
 
 	// set orgId into metadata
 	metadata := map[string]any{"orgId": orgId}

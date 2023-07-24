@@ -13,26 +13,3 @@
 // limitations under the License.
 
 package vars_test
-
-import (
-	"context"
-	"testing"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
-)
-
-func TestContext(t *testing.T) {
-	var ctx = context.Background()
-	for _, key := range []any{
-		reverseproxy.LoggerCtxKey{},
-		reverseproxy.MutexCtxKey{},
-		reverseproxy.CtxKeyMap{},
-		vars.CtxKeyOrgSvc{},
-		vars.CtxKeyDAO{},
-		vars.CtxKeyProviders{},
-		vars.CtxKeyErdaOpenapi{},
-	} {
-		ctx = context.WithValue(ctx, key, 0)
-	}
-}

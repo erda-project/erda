@@ -39,7 +39,7 @@ func TestAudit_SetSessionId(t *testing.T) {
 	if err = f.(*audit.Audit).SetSessionId(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if f.(*audit.Audit).Audit.SessionId != header.Get(vars.XAIProxySessionId) {
+	if f.(*audit.Audit).Audit.SessionID != header.Get(vars.XAIProxySessionId) {
 		t.Error(vars.XAIProxySessionId)
 	}
 }
@@ -88,7 +88,7 @@ func TestAudit_SetUserInfo(t *testing.T) {
 	if a.Audit.Email != m[vars.XAIProxyEmail] {
 		t.Error(vars.XAIProxyEmail)
 	}
-	if a.Audit.DingtalkStaffId != m[vars.XAIProxyDingTalkStaffID] {
+	if a.Audit.DingTalkStaffID != m[vars.XAIProxyDingTalkStaffID] {
 		t.Error(vars.XAIProxyDingTalkStaffID)
 	}
 }
@@ -116,7 +116,7 @@ func TestAudit_SetChats(t *testing.T) {
 	if a.Audit.ChatTitle != cases[vars.XAIProxyChatTitle] {
 		t.Error(vars.XAIProxyChatTitle)
 	}
-	if a.Audit.ChatId != cases[vars.XAIProxyChatId] {
+	if a.Audit.ChatID != cases[vars.XAIProxyChatId] {
 		t.Error(vars.XAIProxyChatTitle)
 	}
 }

@@ -34,6 +34,10 @@ const (
 	XRequestId                 = "X-Request-Id"
 )
 
+const (
+	EnvAIProxyRootKey = "AI_PROXY_ROOT_KEY"
+)
+
 type (
 	CtxKeyOrgSvc      struct{ CtxKeyOrgSvc any }
 	CtxKeyDAO         struct{ CtxKeyDAO any }

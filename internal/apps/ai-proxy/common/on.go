@@ -16,6 +16,7 @@ package common
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -27,10 +28,10 @@ type On struct {
 }
 
 func (on *On) On(header http.Header) (bool, error) {
-	switch on.Operator {
-	case "exist":
+	switch {
+	case strings.EqualFold(on.Operator, "exist"):
 		return header.Get(on.Key) != "", nil
-	case "=":
+	case strings.EqualFold(on.Operator, "="):
 		return header.Get(on.Key) == on.Value, nil
 	default:
 		return false, errors.Errorf("invalid operator: %s", on.Operator)

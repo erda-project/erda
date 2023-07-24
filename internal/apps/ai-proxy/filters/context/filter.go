@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -56,7 +55,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		m           = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
 		providers   = ctx.Value(vars.CtxKeyProviders{}).(provider.Providers)
 		credentials []*models.AIProxyCredentials
-		appKey      = strings.TrimPrefix(infor.Header().Get("Authorization"), "Bearer ")
+		appKey      = vars.TrimBearer(infor.Header().Get("Authorization"))
 	)
 	if err = q.Find(&credentials, map[string]any{"access_key_id": appKey}).Error; err != nil || len(credentials) == 0 {
 		l.Errorf("failed to Find credentials, access_key_id: %s, err: %v", appKey, err)

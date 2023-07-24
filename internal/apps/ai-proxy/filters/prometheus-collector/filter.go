@@ -104,7 +104,7 @@ func (f *PrometheusCollector) Dependencies() map[string]json.RawMessage {
 
 func (f *PrometheusCollector) getModel(ctx context.Context, infor reverseproxy.HttpInfor) string {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("getModel")
-	if !httputil.HeaderContains(infor.Header()[httputil.ContentTypeKey], httputil.ApplicationJson) {
+	if !httputil.HeaderContains(infor.Header()[httputil.HeaderKeyContentType], httputil.ApplicationJson) {
 		return "-" // todo: Only Content-Type: application/json auditing is supported for now.
 	}
 	var m = make(map[string]json.RawMessage)

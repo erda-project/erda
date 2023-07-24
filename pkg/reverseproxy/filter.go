@@ -170,7 +170,7 @@ func (r *infor[R]) ContentLength() int64 {
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
 	}
-	return field.FieldByName("ContentLength").Int()
+	return field.FieldByName("HeaderKeyContentLength").Int()
 }
 
 func (r *infor[R]) Status() string {

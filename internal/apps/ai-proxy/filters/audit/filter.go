@@ -172,7 +172,7 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 }
 
 func (f *Audit) SetAPIKey(_ context.Context, header http.Header) error {
-	apiKey := strings.TrimPrefix(header.Get("Authorization"), "Bearer ")
+	apiKey := vars.TrimBearer(header.Get("Authorization"))
 	if apiKey == "" {
 		apiKey = header.Get("Api-Key")
 	}
@@ -260,7 +260,7 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 
 func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
-	if !httputil.HeaderContains(header[httputil.ContentTypeKey], httputil.ApplicationJson) {
+	if !httputil.HeaderContains(header[httputil.HeaderKeyContentType], httputil.ApplicationJson) {
 		return nil // todo: Only Content-Type: application/json auditing is supported for now.
 	}
 	if buf == nil {
@@ -505,12 +505,12 @@ func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *byte
 }
 
 func (f *Audit) SetRequestContentType(_ context.Context, header http.Header) error {
-	f.Audit.RequestContentType = header.Get(httputil.ContentTypeKey)
+	f.Audit.RequestContentType = header.Get(httputil.HeaderKeyContentType)
 	return nil
 }
 
 func (f *Audit) SetResponseContentType(_ context.Context, header http.Header) error {
-	f.Audit.ResponseContentType = header.Get(httputil.ContentTypeKey)
+	f.Audit.ResponseContentType = header.Get(httputil.HeaderKeyContentType)
 	return nil
 }
 

@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
 	common "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -178,11 +179,11 @@ func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessions
 		return nil, InvalidSessionSource
 	}
 
-	var where = map[string]any{
-		"source":  source,
-		"user_id": userId,
-	}
-	total, sessions, err := s.Dao.ListSessions(where, 1, 20)
+	var session models.AIProxySessions
+	total, sessions, err := s.Dao.ListSessions(1, 20,
+		session.WhereUserID().Equal(userId),
+		session.WhereSource().Equal(source),
+	)
 	if err != nil {
 		return nil, err
 	}

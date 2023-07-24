@@ -18,30 +18,63 @@ import (
 	"net/http"
 	"testing"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 )
 
 func TestOn_On(t *testing.T) {
-	var s = `
-key: X-Ai-Proxy-Source
-operator: =
-value: erda.cloud
-`
-	var on common.On
-	if err := yaml.Unmarshal([]byte(s), &on); err != nil {
-		t.Fatal(err)
+	// creating sample headers
+	header := make(http.Header)
+	header.Set("TestKey", "TestValue")
+
+	// defining the test cases
+	tests := []struct {
+		name    string
+		on      common.On
+		header  http.Header
+		want    bool
+		wantErr bool
+	}{
+		{
+			name:    "Test Case 1: Key Exists",
+			on:      common.On{Key: "TestKey", Operator: "exist", Value: ""},
+			header:  header,
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:    "Test Case 2: Key Value Match",
+			on:      common.On{Key: "TestKey", Operator: "=", Value: "TestValue"},
+			header:  header,
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:    "Test Case 3: Key Value Mismatch",
+			on:      common.On{Key: "TestKey", Operator: "=", Value: "WrongValue"},
+			header:  header,
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:    "Test Case 4: Operator Error",
+			on:      common.On{Key: "TestKey", Operator: "+", Value: "TestValue"},
+			header:  header,
+			want:    false,
+			wantErr: true,
+		},
 	}
-	var h = http.Header{
-		"X-Ai-Proxy-Source": {"erda.cloud"},
-	}
-	ok, err := on.On(h)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(ok)
-	if !ok {
-		t.Fatal("it should be ok")
+
+	// running the tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.on.On(tt.header)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("On() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("On() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

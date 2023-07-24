@@ -119,7 +119,7 @@ func (f *AzureDirector) SetAuthorizationIfNotSpecified(ctx context.Context) erro
 	prov := value.(*provider.Provider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		if appKey := prov.GetAppKey(); appKey != "" && req.Header.Get("Authorization") == "" {
-			req.Header.Set("Authorization", "Bearer "+appKey)
+			req.Header.Set("Authorization", vars.ConcatBearer(appKey))
 		}
 	})
 	return nil

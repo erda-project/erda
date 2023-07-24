@@ -12,43 +12,43 @@ Content-Type: application/json
 Authorization: Bearer {{ai-proxy_root-key}}
 
 {
-  "name": "erda.cloud",
-  "platform": "erda",
-  "description": "credential for erda.cloud AI Assistant",
+  "name": "<the-name>",
+  "platform": "<the-platform>",
+  "description": "<description>",
   "enabled": true,
-  "providerName": "azure",
-  "providerInstanceId": "terminus2"
+  "providerName": "<provider-name>",
+  "providerInstanceId": "<provider-instance-id>"
 }
 
 ### Create session
 POST https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
-X-Ai-Proxy-User-Id: 1000645
+X-Ai-Proxy-User-Id: <user-id>
 
 {
   "name": "test-session-1",
   "topic": "i am a Go developer, you are my pair programming partner",
   "contextLength": 5,
-  "source": "erda.cloud",
-  "model": "gpt-35-turbo-16k",
+  "source": "<source>",
+  "model": "<model>",
   "temperature": 0.7
 }
 
 ### List sessions
 GET https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
-X-Ai-Proxy-User-Id: 1000645
-X-AI-Proxy-Source: erda.cloud
+X-Ai-Proxy-User-Id: <user-id>
+X-AI-Proxy-Source: <source>
 
 ### Chat on erda in a session
 POST https://{{ai-proxy_host}}/v1/chat/completions
 Content-Type: application/json
 X-AI-Proxy-SessionId: {{ai-proxy_my-session-id}}
-X-AI-Proxy-Source: erda.cloud
-X-Ai-Proxy-User-Id: 1000645
+X-AI-Proxy-Source: <source>
+X-Ai-Proxy-User-Id: <user-id>
 
 {
-  "model": "gpt-35-turbo-16k",
+  "model": "<model>",
   "messages": [
     {
       "role": "user",
@@ -62,14 +62,14 @@ X-Ai-Proxy-User-Id: 1000645
 ### update session
 PUT https://{{ai-proxy_host}}/api/ai-proxy/sessions/{{$random.uuid}}
 Content-Type: application/json
-X-Ai-Proxy-User-Id: 1000645
+X-Ai-Proxy-User-Id: <user-id>
 
 {
   "name": "test-session-1",
   "topic": "i am a Go developer, you are my pair programming partner",
   "contextLength": 5,
-  "source": "erda",
-  "model": "gpt-35-turbo-0301",
+  "source": "<source>",
+  "model": "<model>",
   "temperature": 0.7,
   "resetAt": "2020-05-31T15:31:44Z"
 }
@@ -77,7 +77,7 @@ X-Ai-Proxy-User-Id: 1000645
 ### Get chat logs
 GET https://{{ai-proxy_host}}/api/ai-proxy/chat-logs
 Content-Type: application/json
-X-Ai-Proxy-User-Id: 1000645
+X-Ai-Proxy-User-Id: <user-id>
 X-AI-Proxy-SessionId: {{ai-proxy_my-session-id}}
 
 ### chat on other platform
@@ -87,7 +87,7 @@ Authorization: Bearer {{ai-proxy_app-key}}
 Content-Type: application/json
 
 {
-  "model": "gpt-35-turbo-0301",
+  "model": "<model>",
   "messages": [
     {
       "role": "user",

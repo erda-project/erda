@@ -25,5 +25,6 @@ const (
 )
 
 var (
-	ContentTypeKey = textproto.CanonicalMIMEHeaderKey("content-type")
+	HeaderKeyContentType   = textproto.CanonicalMIMEHeaderKey("content-type")
+	HeaderKeyContentLength = textproto.CanonicalMIMEHeaderKey("content-length")
 )

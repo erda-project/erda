@@ -62,3 +62,11 @@ func (session *AIProxySessions) ToProtobuf() *pb.Session {
 		UpdatedAt:     timestamppb.New(session.UpdatedAt),
 	}
 }
+
+func (session *AIProxySessions) WhereUserID() WhereField {
+	return whereField{fieldName: "user_id"}
+}
+
+func (session *AIProxySessions) WhereSource() WhereField {
+	return whereField{fieldName: "source"}
+}

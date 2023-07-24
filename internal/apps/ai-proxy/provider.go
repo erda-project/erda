@@ -79,7 +79,7 @@ var (
 	}
 	rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != "Bearer "+os.Getenv("AI_PROXY_ROOT_KEY") {
+			if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != vars.ConcatBearer(os.Getenv(vars.EnvAIProxyRootKey)) {
 				return nil, errors.New("Access denied to the admin API")
 			}
 			return h(ctx, req)
@@ -103,7 +103,6 @@ type provider struct {
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	p.initConfig()
 	p.initLogger()
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
@@ -192,15 +191,6 @@ func (p *provider) Add(method, path string, handler transhttp.HandlerFunc) {
 func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	if p.GRPC != nil {
 		p.GRPC.RegisterService(desc, impl)
-	}
-}
-
-func (p *provider) initConfig() {
-	for _, s := range []*string{
-		&p.Config.LogLevel,
-		&p.Config.ErdaOpenapi,
-	} {
-		parseEnvExpr(s)
 	}
 }
 
@@ -312,27 +302,5 @@ func WrapRequest(r *http.Request, wraps ...func(*http.Request)) *http.Request {
 func SetXRequestId(r *http.Request) {
 	if id := r.Header.Get("X-Request-Id"); id == "" {
 		r.Header.Set("X-Request-Id", strings.ReplaceAll(uuid.NewString(), "-", ""))
-	}
-}
-
-func parseEnvExpr(s *string) {
-	expr, start, end, err := strutil.FirstCustomExpression(*s, "${", "}", func(s string) bool {
-		return strings.HasPrefix(strings.TrimSpace(s), "env.")
-	})
-	if err != nil || start == end {
-		return
-	}
-	key := strings.TrimPrefix(expr, "env.")
-	keyAndDefault := strings.SplitN(key, ":", 2)
-	if len(keyAndDefault) > 0 {
-		key = keyAndDefault[0]
-	}
-	if v, ok := os.LookupEnv(key); ok {
-		*s = v
-		return
-	}
-	if len(keyAndDefault) > 1 {
-		*s = keyAndDefault[1]
-		return
 	}
 }

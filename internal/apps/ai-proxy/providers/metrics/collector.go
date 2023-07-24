@@ -17,12 +17,10 @@ package metrics
 import (
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
@@ -49,7 +47,6 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	var audits []models.AIProxyFilterAudit
 	if err := c.Dao.Find(&audits).Error; err != nil {
 		c.l.Errorf("failed to db.Find(%T), err: %v", audits, err)
-		audits = append(audits, mockedAudit, mockedAudit)
 	}
 
 	var m = make(map[string]*lvsDistincter)
@@ -81,40 +78,4 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 type lvsDistincter struct {
 	LVs   LabelValues
 	Count float64
-}
-
-var mockedAudit = models.AIProxyFilterAudit{
-	ID:                  fields.UUID{},
-	CreatedAt:           time.Time{},
-	UpdatedAt:           time.Time{},
-	DeletedAt:           fields.DeletedAt{},
-	APIKeySHA256:        "",
-	Username:            "mocked",
-	PhoneNumber:         "",
-	JobNumber:           "mocked",
-	Email:               "",
-	DingTalkStaffID:     "",
-	SessionID:           "",
-	ChatType:            "mocked",
-	ChatTitle:           "mocked",
-	ChatID:              "",
-	Source:              "mocked",
-	ProviderName:        "mocked",
-	ProviderInstanceID:  "",
-	Model:               "mocked",
-	OperationID:         "",
-	Prompt:              "",
-	Completion:          "",
-	Metadata:            "",
-	XRequestID:          "",
-	RequestAt:           time.Time{},
-	ResponseAt:          time.Time{},
-	RequestContentType:  "",
-	RequestBody:         "",
-	ResponseContentType: "",
-	ResponseBody:        "",
-	UserAgent:           "",
-	Server:              "",
-	Status:              "mocked",
-	StatusCode:          200,
 }
