@@ -268,6 +268,16 @@ loop:
 					goto loop
 				}
 				data = tmp
+			case odata2.ExternalMetricType:
+				tmp, err := pr.Processor.ProcessMetric(data.(*metric.Metric))
+				if err != nil {
+					p.Log.Errorf("Processor<%s> process external metric error: %s", pr.Name, err)
+					continue
+				}
+				if tmp == nil {
+					goto loop
+				}
+				data = tmp
 			default:
 				continue
 			}

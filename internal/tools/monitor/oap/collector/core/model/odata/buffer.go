@@ -122,3 +122,15 @@ func (b *Buffer) FlushAllProfiles() []*profile.Output {
 	b.buf = b.buf[:0]
 	return out
 }
+
+func (b *Buffer) FlushAllExternalMetrics() []*metric.Metric {
+	b.Lock()
+	defer b.Unlock()
+	out := make([]*metric.Metric, len(b.buf))
+	for i := range b.buf {
+		out[i] = b.buf[i].(*metric.Metric)
+	}
+
+	b.buf = b.buf[:0]
+	return out
+}
