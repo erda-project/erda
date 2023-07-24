@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
-	i18n2 "github.com/erda-project/erda-infra/providers/i18n"
+	cppb "github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
+	infrai18n "github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp"
@@ -216,25 +216,6 @@ func TestHasSuffix(t *testing.T) {
 	}
 }
 
-// Mocking the GetAllNamespacesFromCache function
-func mockGetAllNamespacesFromCache(context.Context, cmp.SteveServer, string, string, string) ([]string, error) {
-	return []string{
-		"project-test", "project-dev", "project-x-prod",
-		"project-1-dev", "project-1-test", "project-1-staging", "project-2-prod",
-		"group-addon-kafka--va2f089955c034f91831fad04a87db39c",
-		"pipeline-1044864799342689",
-		"erda-system", "kube-system", "default",
-	}, nil
-}
-
-// Mocking the GetAllProjectsDisplayNameFromCache function
-func mockGetAllProjectsDisplayNameFromCache(bdl *bundle.Bundle, orgID string) (map[uint64]string, error) {
-	return map[uint64]string{
-		1: "Project 1",
-		2: "Project 2",
-	}, nil
-}
-
 type mockSteveServer struct {
 	cmp.SteveServer
 }
@@ -246,9 +227,9 @@ func (s *mockSteveServer) ListSteveResource(context.Context, *apistructs.SteveRe
 func TestSetComponentValue(t *testing.T) {
 	filter := &ComponentFilter{
 		sdk: &cptype.SDK{
-			Lang: make([]*i18n2.LanguageCode, 0),
-			Tran: &i18n2.NopTranslator{},
-			Identity: &pb.IdentityInfo{
+			Lang: make([]*infrai18n.LanguageCode, 0),
+			Tran: &infrai18n.NopTranslator{},
+			Identity: &cppb.IdentityInfo{
 				UserID: "fake-user-id",
 				OrgID:  "fake-org-id",
 			},
@@ -262,8 +243,24 @@ func TestSetComponentValue(t *testing.T) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, cptype.GlobalInnerKeyCtxSDK, filter.sdk)
 
-	monkey.Patch(cputil.GetAllNamespacesFromCache, mockGetAllNamespacesFromCache)
-	monkey.Patch(cputil.GetAllProjectsDisplayNameFromCache, mockGetAllProjectsDisplayNameFromCache)
+	// Mocking the GetAllNamespacesFromCache function
+	monkey.Patch(cputil.GetAllNamespacesFromCache, func(context.Context, cmp.SteveServer, string, string, string) ([]string, error) {
+		return []string{
+			"project-test", "project-dev", "project-x-prod",
+			"project-1-dev", "project-1-test", "project-1-staging", "project-2-prod",
+			"group-addon-kafka--va2f089955c034f91831fad04a87db39c",
+			"pipeline-1044864799342689",
+			"erda-system", "kube-system", "default",
+		}, nil
+	})
+
+	// Mocking the GetAllProjectsDisplayNameFromCache function
+	monkey.Patch(cputil.GetAllProjectsDisplayNameFromCache, func(bdl *bundle.Bundle, orgID string) (map[uint64]string, error) {
+		return map[uint64]string{
+			1: "Project 1",
+			2: "Project 2",
+		}, nil
+	})
 	defer monkey.UnpatchAll()
 
 	// Call the function to test

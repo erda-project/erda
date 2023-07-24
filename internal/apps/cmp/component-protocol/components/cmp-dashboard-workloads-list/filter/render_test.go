@@ -15,11 +15,21 @@
 package filter
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/rancher/apiserver/pkg/types"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	cppb "github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
+	infrai18n "github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/cmp"
 	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 )
 
@@ -203,4 +213,58 @@ func TestHasSuffix(t *testing.T) {
 	if ok {
 		t.Error("test failed, expected to not have suffix, actual do")
 	}
+}
+
+type mockSteveServer struct {
+	cmp.SteveServer
+}
+
+func (s *mockSteveServer) ListSteveResource(context.Context, *apistructs.SteveRequest) ([]types.APIObject, error) {
+	return []types.APIObject{}, nil
+}
+
+func TestSetComponentValue(t *testing.T) {
+	filter := &ComponentFilter{
+		sdk: &cptype.SDK{
+			Lang: make([]*infrai18n.LanguageCode, 0),
+			Tran: &infrai18n.NopTranslator{},
+			Identity: &cppb.IdentityInfo{
+				UserID: "fake-user-id",
+				OrgID:  "fake-org-id",
+			},
+			InParams: map[string]interface{}{
+				"clusterName": "local-cluster",
+			},
+		},
+		server: &mockSteveServer{},
+	}
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, cptype.GlobalInnerKeyCtxSDK, filter.sdk)
+
+	// Mocking the GetAllNamespacesFromCache function
+	monkey.Patch(cputil.GetAllNamespacesFromCache, func(context.Context, cmp.SteveServer, string, string, string) ([]string, error) {
+		return []string{
+			"project-test", "project-dev", "project-x-prod",
+			"project-1-dev", "project-1-test", "project-1-staging", "project-2-prod",
+			"group-addon-kafka--va2f089955c034f91831fad04a87db39c",
+			"pipeline-1044864799342689",
+			"erda-system", "kube-system", "default",
+		}, nil
+	})
+
+	// Mocking the GetAllProjectsDisplayNameFromCache function
+	monkey.Patch(cputil.GetAllProjectsDisplayNameFromCache, func(bdl *bundle.Bundle, orgID string) (map[uint64]string, error) {
+		return map[uint64]string{
+			1: "Project 1",
+			2: "Project 2",
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	// Call the function to test
+	err := filter.SetComponentValue(ctx)
+
+	// Assertions
+	assert.NoError(t, err)
 }
