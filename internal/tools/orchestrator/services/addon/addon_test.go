@@ -1271,3 +1271,51 @@ func TestGetAddonExtention(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, addon.Name, "custom")
 }
+
+func mockGetUnDeletableAttachMentsByRuntimeID(db *dbclient.DBClient, orgId uint64, runtimeId uint64) (*[]dbclient.AddonAttachment, error) {
+	// Add mock data
+	ret := make([]dbclient.AddonAttachment, 0)
+	return &ret, nil
+}
+
+func TestListByRuntime(t *testing.T) {
+	// Create a new instance of your Addon struct and any required dependencies.
+	addon := &Addon{}
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon.db), "GetUnDeletableAttachMentsByRuntimeID", mockGetUnDeletableAttachMentsByRuntimeID)
+	defer monkey.UnpatchAll()
+
+	// Define your test cases using args for-loop.
+	testCases := []struct {
+		name      string
+		orgID     uint64
+		runtimeID uint64
+		projectID string
+		workspace string
+		// Add any other fields relevant for the test case.
+		expected    *[]apistructs.AddonFetchResponseData
+		expectedErr error
+	}{
+		// Test case 1
+		{
+			name:        "Empty Addons",
+			orgID:       1,
+			runtimeID:   1001,
+			projectID:   "10",
+			workspace:   "dev",
+			expected:    &[]apistructs.AddonFetchResponseData{},
+			expectedErr: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Call the ListByRuntime function with the test case inputs.
+			actual, err := addon.ListByRuntime(tc.orgID, tc.runtimeID, tc.projectID, tc.workspace)
+
+			// Assert the results.
+			assert.Equal(t, tc.expectedErr, err)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
