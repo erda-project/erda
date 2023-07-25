@@ -30,7 +30,7 @@ import (
 
 func TestAudit_SetSessionId(t *testing.T) {
 	var header = http.Header{
-		vars.XErdaAIProxySessionId: []string{"mocked-session-id"},
+		vars.XAIProxySessionId: []string{"mocked-session-id"},
 	}
 	f, err := audit.New(nil)
 	if err != nil {
@@ -39,32 +39,32 @@ func TestAudit_SetSessionId(t *testing.T) {
 	if err = f.(*audit.Audit).SetSessionId(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if f.(*audit.Audit).Audit.SessionId != header.Get(vars.XErdaAIProxySessionId) {
-		t.Error(vars.XErdaAIProxySessionId)
+	if f.(*audit.Audit).Audit.SessionID != header.Get(vars.XAIProxySessionId) {
+		t.Error(vars.XAIProxySessionId)
 	}
 }
 
 func TestAudit_SetSource(t *testing.T) {
 	var header = http.Header{
-		vars.XErdaAIProxySource: []string{"mocked-session-id"},
+		vars.XAIProxySource: []string{"mocked-session-id"},
 	}
 	f, _ := audit.New(nil)
 	a := f.(*audit.Audit)
 	if err := a.SetSource(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if a.Audit.Source != header.Get(vars.XErdaAIProxySource) {
-		t.Error(vars.XErdaAIProxySource)
+	if a.Audit.Source != header.Get(vars.XAIProxySource) {
+		t.Error(vars.XAIProxySource)
 	}
 }
 
 func TestAudit_SetUserInfo(t *testing.T) {
 	var m = map[string]string{
-		vars.XErdaAIProxyName:            "mocked-name",
-		vars.XErdaAIProxyPhone:           "mocked-phone",
-		vars.XErdaAIProxyJobNumber:       "mocked-job-number",
-		vars.XErdaAIProxyEmail:           "mocked-email",
-		vars.XErdaAIProxyDingTalkStaffID: "mocked-ding-id",
+		vars.XAIProxyName:            "mocked-name",
+		vars.XAIProxyPhone:           "mocked-phone",
+		vars.XAIProxyJobNumber:       "mocked-job-number",
+		vars.XAIProxyEmail:           "mocked-email",
+		vars.XAIProxyDingTalkStaffID: "mocked-ding-id",
 	}
 	var header = make(http.Header)
 	for k, v := range m {
@@ -76,20 +76,20 @@ func TestAudit_SetUserInfo(t *testing.T) {
 	if err := a.SetUserInfo(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if a.Audit.Username != m[vars.XErdaAIProxyName] {
-		t.Error(vars.XErdaAIProxyName)
+	if a.Audit.Username != m[vars.XAIProxyName] {
+		t.Error(vars.XAIProxyName)
 	}
-	if a.Audit.PhoneNumber != m[vars.XErdaAIProxyPhone] {
-		t.Error(vars.XErdaAIProxyPhone)
+	if a.Audit.PhoneNumber != m[vars.XAIProxyPhone] {
+		t.Error(vars.XAIProxyPhone)
 	}
-	if a.Audit.JobNumber != m[vars.XErdaAIProxyJobNumber] {
-		t.Error(vars.XErdaAIProxyJobNumber)
+	if a.Audit.JobNumber != m[vars.XAIProxyJobNumber] {
+		t.Error(vars.XAIProxyJobNumber)
 	}
-	if a.Audit.Email != m[vars.XErdaAIProxyEmail] {
-		t.Error(vars.XErdaAIProxyEmail)
+	if a.Audit.Email != m[vars.XAIProxyEmail] {
+		t.Error(vars.XAIProxyEmail)
 	}
-	if a.Audit.DingtalkStaffId != m[vars.XErdaAIProxyDingTalkStaffID] {
-		t.Error(vars.XErdaAIProxyDingTalkStaffID)
+	if a.Audit.DingTalkStaffID != m[vars.XAIProxyDingTalkStaffID] {
+		t.Error(vars.XAIProxyDingTalkStaffID)
 	}
 }
 
@@ -99,9 +99,9 @@ func TestAudit_SetChats(t *testing.T) {
 		Audit:                 new(models.AIProxyFilterAudit),
 	}
 	var cases = map[string]string{
-		vars.XErdaAIProxyChatType:  "group",
-		vars.XErdaAIProxyChatTitle: "erda-family",
-		vars.XErdaAIProxyChatId:    "mocked-id",
+		vars.XAIProxyChatType:  "group",
+		vars.XAIProxyChatTitle: "erda-family",
+		vars.XAIProxyChatId:    "mocked-id",
 	}
 	var header = make(http.Header)
 	for k, v := range cases {
@@ -110,14 +110,14 @@ func TestAudit_SetChats(t *testing.T) {
 	if err := a.SetChats(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
-	if a.Audit.ChatType != cases[vars.XErdaAIProxyChatType] {
-		t.Error(vars.XErdaAIProxyChatType)
+	if a.Audit.ChatType != cases[vars.XAIProxyChatType] {
+		t.Error(vars.XAIProxyChatType)
 	}
-	if a.Audit.ChatTitle != cases[vars.XErdaAIProxyChatTitle] {
-		t.Error(vars.XErdaAIProxyChatTitle)
+	if a.Audit.ChatTitle != cases[vars.XAIProxyChatTitle] {
+		t.Error(vars.XAIProxyChatTitle)
 	}
-	if a.Audit.ChatId != cases[vars.XErdaAIProxyChatId] {
-		t.Error(vars.XErdaAIProxyChatTitle)
+	if a.Audit.ChatID != cases[vars.XAIProxyChatId] {
+		t.Error(vars.XAIProxyChatTitle)
 	}
 }
 

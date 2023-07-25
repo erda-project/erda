@@ -47,7 +47,6 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	var audits []models.AIProxyFilterAudit
 	if err := c.Dao.Find(&audits).Error; err != nil {
 		c.l.Errorf("failed to db.Find(%T), err: %v", audits, err)
-		audits = append(audits, mockedAudit, mockedAudit)
 	}
 
 	var m = make(map[string]*lvsDistincter)
@@ -58,9 +57,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			Source:      item.Source,
 			UserId:      item.JobNumber,
 			UserName:    item.Username,
-			Provider:    item.Provider,
+			Provider:    item.ProviderName,
 			Model:       item.Model,
-			OperationId: item.OperationId,
+			OperationId: item.OperationID,
 			Status:      item.Status,
 			StatusCode:  strconv.FormatInt(int64(item.StatusCode), 10),
 		}
@@ -79,17 +78,4 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 type lvsDistincter struct {
 	LVs   LabelValues
 	Count float64
-}
-
-var mockedAudit = models.AIProxyFilterAudit{
-	ChatType:    "mocked",
-	ChatTitle:   "mocked",
-	Source:      "mocked",
-	JobNumber:   "mocked",
-	Username:    "mocked",
-	Provider:    "mocked",
-	Model:       "mocked",
-	OperationId: "mocked",
-	Status:      "mocked",
-	StatusCode:  200,
 }

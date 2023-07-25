@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
+package vars
 
-import "net/textproto"
-
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	TextEventStream    ContentType = "text/event-stream"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
+import (
+	"strings"
 )
 
-var (
-	HeaderKeyContentType   = textproto.CanonicalMIMEHeaderKey("content-type")
-	HeaderKeyContentLength = textproto.CanonicalMIMEHeaderKey("content-length")
-)
+func ConcatBearer(v string) string {
+	return "Bearer " + v
+}
+
+func TrimBearer(v string) string {
+	return strings.TrimPrefix(v, "Bearer ")
+}

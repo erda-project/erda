@@ -17,7 +17,6 @@ package azure_director
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -120,7 +119,7 @@ func (f *AzureDirector) SetAuthorizationIfNotSpecified(ctx context.Context) erro
 	prov := value.(*provider.Provider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		if appKey := prov.GetAppKey(); appKey != "" && req.Header.Get("Authorization") == "" {
-			req.Header.Set("Authorization", "Bearer "+appKey)
+			req.Header.Set("Authorization", vars.ConcatBearer(appKey))
 		}
 	})
 	return nil
@@ -268,7 +267,6 @@ func (f *AzureDirector) AllDirectors() map[string]func(ctx context.Context) erro
 	valueOf := reflect.ValueOf(f)
 	doNothing, _ := typeOf.MethodByName("DoNothing")
 	for i := 0; i < typeOf.NumMethod(); i++ {
-		fmt.Printf("type: %v, typeOfProcessor: %v\n", typeOf.Method(i).Type, doNothing.Type)
 		if method := typeOf.Method(i); method.Type == doNothing.Type {
 			f.funcs[method.Name] = valueOf.Method(i).Interface().(func(ctx context.Context) error)
 		}

@@ -90,7 +90,10 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 	ctx = context.WithValue(ctx, reverseproxy.LoggerCtxKey{}, l)
 
 	// set key-values to context
-	for i := 0; i+1 < len(kvs); i++ {
+	for i := 0; i+1 < len(kvs); i += 2 {
+		if !IsComparable(kvs[i]) {
+			l.Fatalf("the key [%d] is not comparable: %T", i, kvs[i])
+		}
 		ctx = context.WithValue(ctx, kvs[i], kvs[i+1])
 	}
 	// reload the logger
@@ -138,15 +141,17 @@ func (r *Route) Match(path, method string) bool {
 func (r *Route) Director(ctx context.Context) func(req *http.Request) {
 	return func(req *http.Request) {
 		// filters 可能会传递 directors, 如果传递了, 要依次执行
-		if value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(reverseproxy.MapKeyDirectors{}); ok && value != nil {
-			if directors, ok := value.([]func(*http.Request)); ok {
-				for _, director := range directors {
-					director(req)
+		if m, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map); ok && m != nil {
+			if value, ok := m.Load(reverseproxy.MapKeyDirectors{}); ok && value != nil {
+				if directors, ok := value.([]func(*http.Request)); ok {
+					for _, director := range directors {
+						director(req)
+					}
 				}
 			}
 		}
 		// 如果配置中定义了 Router, 那么使用 Router 来 direct request
-		if r.Router != nil {
+		if r.Router != nil && r.PathMatcher != nil {
 			r.Router.Director(ctx, r.PathMatcher.Values)(req)
 		}
 	}
@@ -351,4 +356,15 @@ type PathMatcher struct {
 
 func (p *PathMatcher) Match(path string) bool {
 	return p.match(path)
+}
+
+func IsComparable(v any) bool {
+	rv := reflect.ValueOf(v)
+	t := rv.Type()
+	switch t.Kind() {
+	case reflect.Array:
+		return IsComparable(reflect.Zero(t.Elem()).Interface())
+	default:
+		return t.Comparable()
+	}
 }

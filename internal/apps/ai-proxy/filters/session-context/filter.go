@@ -21,9 +21,13 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -35,15 +39,15 @@ const (
 )
 
 var (
-	_ reverseproxy.RequestFilter = (*Context)(nil)
+	_ reverseproxy.RequestFilter = (*SessionContext)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type Context struct {
-	sources map[string]struct{}
+type SessionContext struct {
+	Config *Config
 }
 
 func New(config json.RawMessage) (reverseproxy.Filter, error) {
@@ -51,26 +55,25 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
 	}
-	var sources = make(map[string]struct{})
-	for _, source := range cfg.Sources {
-		sources[source] = struct{}{}
-	}
-	return &Context{sources: sources}, nil
+	return &SessionContext{Config: &cfg}, nil
 }
 
-func (c *Context) OnRequest(ctx context.Context, _ http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var (
 		l  = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 		db = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
 	)
 
-	if source := infor.Header().Get(vars.XErdaAIProxySource); source != "" {
-		if _, ok := c.sources[source]; !ok {
-			l.Debugf("source %s is not in config, continue", source)
-			return reverseproxy.Continue, nil
-		}
+	// check if this filter is enabled on this request
+	ok, err := c.checkIfIsEnabledOnTheRequest(infor)
+	if err != nil {
+		return reverseproxy.Intercept, err
 	}
-	sessionId := infor.Header().Get(vars.XErdaAIProxySessionId)
+	if !ok {
+		return reverseproxy.Continue, nil
+	}
+
+	sessionId := infor.Header().Get(vars.XAIProxySessionId)
 	if sessionId == "" {
 		l.Debugf("sessionId is not specified, continue")
 		return reverseproxy.Continue, nil
@@ -83,10 +86,6 @@ func (c *Context) OnRequest(ctx context.Context, _ http.ResponseWriter, infor re
 	}
 	if session.IsArchived {
 		l.Debugf("session(id=%s) is archived, continue", sessionId)
-		return reverseproxy.Continue, nil
-	}
-	if session.GetContextLength() <= 1 {
-		l.Debugf("session(id=%s)'s context length is less then 1, continue", sessionId)
 		return reverseproxy.Continue, nil
 	}
 
@@ -110,23 +109,30 @@ func (c *Context) OnRequest(ctx context.Context, _ http.ResponseWriter, infor re
 		return reverseproxy.Continue, nil
 	}
 	messages = []Message{messages[len(messages)-1]}
-	_, chatLogs, err := db.PagingChatLogs(sessionId, int(session.GetContextLength()), 1)
-	if err != nil {
-		l.Debugf("failed to db.PagingChatLogs(id=%s), err: %v", sessionId)
-		return reverseproxy.Continue, nil
-	}
-	for _, chatLog := range chatLogs {
-		messages = append(messages,
-			Message{
-				Role:    "assistant",
-				Content: chatLog.GetCompletion(),
-				Name:    "CodeAI", // todo: hard code here
-			},
-			Message{
-				Role:    "user",
-				Content: chatLog.GetPrompt(),
-				Name:    "",
-			})
+	if session.GetContextLength() > 1 {
+		var audits []*models.AIProxyFilterAudit
+		if err := db.Q().
+			Where(map[string]any{"session_id": sessionId}).
+			Where("updated_at > ?", session.ResetAt.AsTime()).
+			Order("created_at DESC").
+			Limit(int(session.GetContextLength()) - 1).
+			Find(&audits).
+			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			l.Errorf("failed to Find audits for session %s", sessionId)
+		}
+		for _, item := range audits {
+			messages = append(messages,
+				Message{
+					Role:    "assistant",
+					Content: item.Completion,
+					Name:    "CodeAI", // todo: hard code here
+				},
+				Message{
+					Role:    "user",
+					Content: item.Prompt,
+					Name:    "",
+				})
+		}
 	}
 	messages = append(messages, Message{
 		Role:    "system",
@@ -149,8 +155,24 @@ func (c *Context) OnRequest(ctx context.Context, _ http.ResponseWriter, infor re
 	return reverseproxy.Continue, nil
 }
 
+func (c *SessionContext) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (bool, error) {
+	for i, item := range c.Config.On {
+		if item == nil {
+			continue
+		}
+		ok, err := item.On(infor.Header())
+		if err != nil {
+			return false, errors.Wrapf(err, "invalid config: config.on[%d]", i)
+		}
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 type Config struct {
-	Sources []string `json:"sources" yaml:"sources"`
+	On []*common.On
 }
 
 type Message struct {

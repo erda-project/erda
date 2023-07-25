@@ -20,8 +20,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type ChatLogsHandler struct {
@@ -30,18 +28,14 @@ type ChatLogsHandler struct {
 }
 
 func (c *ChatLogsHandler) GetChatLogs(ctx context.Context, req *pb.GetChatLogsReq) (*pb.GetChatLogsRespData, error) {
-	if req.GetUserId() == "" {
-		req.UserId = apis.GetUserID(ctx)
-	}
-	if req.GetUserId() == "" {
+	_, ok := getUserId(ctx, req)
+	if !ok {
 		return nil, UserPermissionDenied
 	}
 	// todo: validate userId
 
-	if req.GetSessionId() == "" {
-		req.SessionId = apis.GetHeader(ctx, vars.XErdaAIProxySessionId)
-	}
-	if req.GetSessionId() == "" {
+	sessionId, ok := getSessionId(ctx, req)
+	if !ok {
 		return nil, InvalidSessionId
 	}
 	if req.GetPageSize() == 0 {
@@ -50,7 +44,7 @@ func (c *ChatLogsHandler) GetChatLogs(ctx context.Context, req *pb.GetChatLogsRe
 	if req.GetPageNum() == 0 {
 		req.PageNum = 1
 	}
-	total, chatLogs, err := c.Dao.PagingChatLogs(req.GetSessionId(), int(req.GetPageNum()), int(req.GetPageSize()))
+	total, chatLogs, err := c.Dao.PagingChatLogs(sessionId, int(req.GetPageNum()), int(req.GetPageSize()))
 	if err != nil {
 		return nil, err
 	}

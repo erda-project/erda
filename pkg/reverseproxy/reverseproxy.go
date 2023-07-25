@@ -37,6 +37,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -319,6 +320,10 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
+	// reset content-length
+	contentLength := infor.BodyBuffer().Len()
+	outreq.ContentLength = int64(contentLength)
+	outreq.Header.Set(httputil.HeaderKeyContentLength, strconv.Itoa(contentLength))
 
 	p.Director(outreq)
 	if outreq.Form != nil {
@@ -591,8 +596,9 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 			if rerr == io.EOF {
 				logger.Debug("response body EOF")
 				rerr = nil
+			} else {
+				logger.Errorf("read response err: %v", rerr)
 			}
-			logger.Errorf("read response err: %v", rerr)
 			return rw.Filter.(*responseBodyWriter).written, rerr
 		}
 	}

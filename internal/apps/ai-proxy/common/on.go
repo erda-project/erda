@@ -12,19 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
+package common
 
-import "net/textproto"
+import (
+	"net/http"
+	"strings"
 
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	TextEventStream    ContentType = "text/event-stream"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
+	"github.com/pkg/errors"
 )
 
-var (
-	HeaderKeyContentType   = textproto.CanonicalMIMEHeaderKey("content-type")
-	HeaderKeyContentLength = textproto.CanonicalMIMEHeaderKey("content-length")
-)
+type On struct {
+	Key      string `json:"key" yaml:"key"`
+	Operator string `json:"operator" yaml:"operator"`
+	Value    string `json:"value" yaml:"value"`
+}
+
+func (on *On) On(header http.Header) (bool, error) {
+	switch {
+	case strings.EqualFold(on.Operator, "exist"):
+		return header.Get(on.Key) != "", nil
+	case strings.EqualFold(on.Operator, "="):
+		return header.Get(on.Key) == on.Value, nil
+	default:
+		return false, errors.Errorf("invalid operator: %s", on.Operator)
+	}
+}

@@ -15,25 +15,34 @@
 package vars
 
 const (
-	XErdaAIProxySessionId       = "X-Erda-AI-Proxy-SessionId"
-	XErdaAIProxyChatType        = "X-Erda-AI-Proxy-ChatType"
-	XErdaAIProxyChatTitle       = "X-Erda-AI-Proxy-ChatTitle"
-	XErdaAIProxyChatId          = "X-Erda-AI-Proxy-ChatId"
-	XErdaAIProxySource          = "X-Erda-AI-Proxy-Source"
-	XErdaAIProxyName            = "X-Erda-AI-Proxy-Name"
-	XErdaAIProxyPhone           = "X-Erda-AI-Proxy-Phone"
-	XErdaAIProxyJobNumber       = "X-Erda-AI-Proxy-JobNumber"
-	XErdaAIProxyEmail           = "X-Erda-AI-Proxy-Email"
-	XErdaAIProxyDingTalkStaffID = "X-Erda-AI-Proxy-DingTalkStaffID"
-	XErdaAIProxyPrompt          = "X-Erda-AI-Proxy-Prompt"
-	XAIProxyProvider            = "X-AI-Proxy-Provider"
-	XAIProxyProviderInstance    = "X-AI-Proxy-Provider-Instance"
+	XAIProxySessionId          = "X-AI-Proxy-SessionId"
+	XAIProxyChatType           = "X-AI-Proxy-ChatType"
+	XAIProxyChatTitle          = "X-AI-Proxy-ChatTitle"
+	XAIProxyChatId             = "X-AI-Proxy-ChatId"
+	XAIProxySource             = "X-AI-Proxy-Source"
+	XAIProxyName               = "X-AI-Proxy-Name"
+	XAIProxyPhone              = "X-AI-Proxy-Phone"
+	XAIProxyJobNumber          = "X-AI-Proxy-JobNumber"
+	XAIProxyEmail              = "X-AI-Proxy-Email"
+	XAIProxyDingTalkStaffID    = "X-AI-Proxy-DingTalkStaffID"
+	XAIProxyPrompt             = "X-AI-Proxy-Prompt"
+	XAIProxyProviderName       = "X-AI-Proxy-Provider-Name"
+	XAIProxyProviderInstanceId = "X-AI-Proxy-Provider-Instance-Id"
+	XAIProxyOrgId              = "X-Ai-Proxy-Org-Id"
+	XAIProxyUserId             = "X-Ai-Proxy-User-Id"
+	XAIProxyMetadata           = "X-Ai-Proxy-Metadata"
+	XRequestId                 = "X-Request-Id"
+)
+
+const (
+	EnvAIProxyRootKey = "AI_PROXY_ROOT_KEY"
 )
 
 type (
-	CtxKeyOrgSvc     struct{ CtxKeyOrgServer any }
-	CtxKeyDAO        struct{ CtxKeyDatabaseAccess any }
-	CtxKeyProviders  struct{ CtxKeyProviders any }
-	MapKeyProvider   struct{ CtxKeyProvider any }
-	MapKeyCredential struct{ CtxKeyCredential any }
+	CtxKeyOrgSvc      struct{ CtxKeyOrgSvc any }
+	CtxKeyDAO         struct{ CtxKeyDAO any }
+	CtxKeyProviders   struct{ CtxKeyProviders any }
+	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
+	MapKeyProvider    struct{ MapKeyProvider any }
+	MapKeyCredential  struct{ MapKeyCredential any }
 )

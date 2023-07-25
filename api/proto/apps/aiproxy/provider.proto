@@ -5,24 +5,12 @@ option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/pb";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "common/openapi.proto";
 import "common/http.proto";
 
 service AIProvider {
-  option(erda.common.openapi_service) = {
-    service: "ai-proxy",
-    auth: {
-      check_login: true,
-      check_token: true,
-    }
-  };
-
   rpc CreateProvider(Provider) returns (Provider) {
     option(google.api.http) = {
       post: "/api/ai-proxy/providers"
-    };
-    option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers"
     };
   }
 
@@ -30,17 +18,11 @@ service AIProvider {
     option(google.api.http) = {
       delete: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
-    option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
-    };
   }
 
   rpc UpdateProvider(Provider) returns (Provider) {
     option(google.api.http) = {
       put: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
-    };
-    option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
   }
 
@@ -48,17 +30,11 @@ service AIProvider {
     option(google.api.http) = {
       get: "/api/ai-proxy/providers"
     };
-    option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers"
-    };
   }
 
   rpc GetProvider(Provider) returns (Provider) {
     option(google.api.http) = {
       get: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
-    };
-    option(erda.common.openapi) = {
-      path: "/api/ai-proxy/providers/{name}/instances/{instanceId}"
     };
   }
 }

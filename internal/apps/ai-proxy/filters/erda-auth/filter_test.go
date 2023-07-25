@@ -12,19 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
+package erda_auth_test
 
-import "net/textproto"
+import (
+	"testing"
 
-type ContentType string
+	"gopkg.in/yaml.v3"
 
-const (
-	ApplicationJson    ContentType = "application/json"
-	TextEventStream    ContentType = "text/event-stream"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
+	erda_auth "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"
 )
 
-var (
-	HeaderKeyContentType   = textproto.CanonicalMIMEHeaderKey("content-type")
-	HeaderKeyContentLength = textproto.CanonicalMIMEHeaderKey("content-length")
-)
+func TestConfig(t *testing.T) {
+	var y = `
+on:
+  - key: X-Ai-Proxy-Source
+    operator: =
+    value: erda.cloud
+credential:
+  name: erda.cloud
+  platform: erda
+  provider: ""
+  providerInstanceId: ""
+`
+	var cfg erda_auth.Config
+	if err := yaml.Unmarshal([]byte(y), &cfg); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%+v", cfg)
+}
