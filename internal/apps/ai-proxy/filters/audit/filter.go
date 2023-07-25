@@ -78,8 +78,10 @@ func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 	for _, set := range []any{
+		f.SetAPIKey,
 		f.SetSessionId,
 		f.SetChats,
+		f.SetXRequestId,
 		f.SetRequestAt,
 		f.SetSource,
 		f.SetUserInfo,
@@ -169,28 +171,38 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 	return nil
 }
 
-func (f *Audit) Dependencies() []string {
-	return []string{"context"}
+func (f *Audit) SetAPIKey(_ context.Context, header http.Header) error {
+	apiKey := vars.TrimBearer(header.Get("Authorization"))
+	if apiKey == "" {
+		apiKey = header.Get("Api-Key")
+	}
+	f.Audit.SetAPIKeySha256(apiKey)
+	return nil
 }
 
 func (f *Audit) SetSessionId(_ context.Context, header http.Header) error {
-	f.Audit.SessionId = header.Get(vars.XErdaAIProxySessionId)
+	f.Audit.SessionID = header.Get(vars.XAIProxySessionId)
 	return nil
 }
 
 func (f *Audit) SetChats(_ context.Context, header http.Header) error {
-	f.Audit.ChatType = header.Get(vars.XErdaAIProxyChatType)
-	f.Audit.ChatTitle = header.Get(vars.XErdaAIProxyChatTitle)
-	f.Audit.ChatId = header.Get(vars.XErdaAIProxyChatId)
+	f.Audit.ChatType = header.Get(vars.XAIProxyChatType)
+	f.Audit.ChatTitle = header.Get(vars.XAIProxyChatTitle)
+	f.Audit.ChatID = header.Get(vars.XAIProxyChatId)
 	for _, v := range []*string{
 		&f.Audit.ChatType,
 		&f.Audit.ChatTitle,
-		&f.Audit.ChatId,
+		&f.Audit.ChatID,
 	} {
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
 			*v = string(decoded)
 		}
 	}
+	return nil
+}
+
+func (f *Audit) SetXRequestId(_ context.Context, header http.Header) error {
+	f.Audit.XRequestID = header.Get(vars.XRequestId)
 	return nil
 }
 
@@ -206,22 +218,27 @@ func (f *Audit) SetResponseAt(_ context.Context) error {
 }
 
 func (f *Audit) SetSource(_ context.Context, header http.Header) error {
-	f.Audit.Source = header.Get(vars.XErdaAIProxySource)
+	f.Audit.Source = header.Get(vars.XAIProxySource)
 	return nil
 }
 
 func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
-	f.Audit.Username = header.Get(vars.XErdaAIProxyName)
-	f.Audit.PhoneNumber = header.Get(vars.XErdaAIProxyPhone)
-	f.Audit.JobNumber = header.Get(vars.XErdaAIProxyJobNumber)
-	f.Audit.Email = header.Get(vars.XErdaAIProxyEmail)
-	f.Audit.DingtalkStaffId = header.Get(vars.XErdaAIProxyDingTalkStaffID)
+	f.Audit.Username = header.Get(vars.XAIProxyName)
+	f.Audit.PhoneNumber = header.Get(vars.XAIProxyPhone)
+	f.Audit.JobNumber = header.Get(vars.XAIProxyJobNumber)
+	if f.Audit.JobNumber == "" {
+		f.Audit.JobNumber = header.Get(vars.XAIProxyUserId)
+	}
+	f.Audit.Email = header.Get(vars.XAIProxyEmail)
+	f.Audit.DingTalkStaffID = header.Get(vars.XAIProxyDingTalkStaffID)
+	f.Audit.Metadata = header.Get(vars.XAIProxyMetadata)
 	for _, v := range []*string{
 		&f.Audit.Username,
 		&f.Audit.PhoneNumber,
 		&f.Audit.JobNumber,
 		&f.Audit.Email,
-		&f.Audit.DingtalkStaffId,
+		&f.Audit.DingTalkStaffID,
+		&f.Audit.Metadata,
 	} {
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
 			*v = string(decoded)
@@ -235,13 +252,15 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 	if !ok || prov == nil {
 		return errors.New("provider not set in context map")
 	}
-	f.Audit.Provider = prov.(*provider.Provider).Name
+	prov_ := prov.(*provider.Provider)
+	f.Audit.ProviderName = prov_.Name
+	f.Audit.ProviderInstanceID = prov_.InstanceId
 	return nil
 }
 
 func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buffer) error {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
-	if !httputil.HeaderContains(header[httputil.ContentTypeKey], httputil.ApplicationJson) {
+	if !httputil.HeaderContains(header[httputil.HeaderKeyContentType], httputil.ApplicationJson) {
 		return nil // todo: Only Content-Type: application/json auditing is supported for now.
 	}
 	if buf == nil {
@@ -267,16 +286,16 @@ func (f *Audit) SetModel(ctx context.Context, header http.Header, buf *bytes.Buf
 }
 
 func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor) error {
-	f.Audit.OperationId = infor.Method()
+	f.Audit.OperationID = infor.Method()
 	if infor.URL() != nil {
-		f.Audit.OperationId += " " + infor.URL().Path
+		f.Audit.OperationID += " " + infor.URL().Path
 	}
 	return nil
 }
 
 func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Prompt = "-"
-	if value := infor.Header().Get(vars.XErdaAIProxyPrompt); value != "" {
+	if value := infor.Header().Get(vars.XAIProxyPrompt); value != "" {
 		prompt, err := base64.StdEncoding.DecodeString(value)
 		if err != nil {
 			return err
@@ -486,12 +505,12 @@ func (f *Audit) SetCompletion(ctx context.Context, header http.Header, buf *byte
 }
 
 func (f *Audit) SetRequestContentType(_ context.Context, header http.Header) error {
-	f.Audit.RequestContentType = header.Get(httputil.ContentTypeKey)
+	f.Audit.RequestContentType = header.Get(httputil.HeaderKeyContentType)
 	return nil
 }
 
 func (f *Audit) SetResponseContentType(_ context.Context, header http.Header) error {
-	f.Audit.ResponseContentType = header.Get(httputil.ContentTypeKey)
+	f.Audit.ResponseContentType = header.Get(httputil.HeaderKeyContentType)
 	return nil
 }
 
@@ -559,7 +578,7 @@ func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http
 	if err := json.NewDecoder(reader).Decode(&m); err != nil {
 		return errors.Wrapf(err, "failed to json.NewDecoder(%T).Decode(&%T)", reader, m)
 	}
-	switch f.Audit.OperationId {
+	switch f.Audit.OperationID {
 	case "POST /v1/completions", "POST /v1/edits":
 		data, ok := m["choices"]
 		if !ok {

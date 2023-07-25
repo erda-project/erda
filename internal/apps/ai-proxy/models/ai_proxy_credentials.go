@@ -27,29 +27,28 @@ type AIProxyCredentials struct {
 	UpdatedAt time.Time        `json:"updatedAt" yaml:"updatedAt" gorm:"updated_at"`
 	DeletedAt fields.DeletedAt `json:"deletedAt" yaml:"deletedAt" gorm:"deleted_at"`
 
-	AccessKeyId string    `json:"accessKeyId" yaml:"accessKeyId" gorm:"access_key_id"`
-	SecretKeyId string    `json:"secretKeyId" yaml:"secretKeyId" gorm:"secret_key_id"`
-	Name        string    `json:"name" yaml:"name" gorm:"name"`
-	Platform    string    `json:"platform" yaml:"platform" gorm:"platform"`
-	Description string    `json:"description" yaml:"description" gorm:"description"`
-	Enabled     bool      `json:"enabled" yaml:"enabled" gorm:"enabled"`
-	ExpiredAt   time.Time `json:"expiredAt" yaml:"expiredAt" gorm:"expired_at"`
-
-	Provider           string `json:"providerName" yaml:"providerName" gorm:"provider"`
-	ProviderInstanceId string `json:"providerInstanceId" yaml:"providerInstanceId" gorm:"provider_instance_id"`
+	AccessKeyID        string    `gorm:"type:char(32);not null;comment:平台接入 AI 服务的 AK"`
+	SecretKeyID        string    `gorm:"type:char(32);not null;comment:平台接入 AI 服务的 SK"`
+	Name               string    `gorm:"type:varchar(64);not null;comment:凭证名称"`
+	Platform           string    `gorm:"type:varchar(128);not null;comment:接入 AI 服务的平台"`
+	Description        string    `gorm:"type:varchar(512);not null;comment:凭证描述"`
+	Enabled            bool      `gorm:"not null;default:true;comment:是否启用该凭证"`
+	ExpiredAt          time.Time `gorm:"not null;default:'2099-01-01 00:00:00';comment:凭证过期时间"`
+	ProviderName       string    `gorm:"type:varchar(128);not null;default:'';comment:AI 服务 Provider 名称"`
+	ProviderInstanceID string    `gorm:"type:varchar(512);not null;default:'';comment:AI 服务 Provider 实例 id"`
 }
 
 func NewCredential(credential *pb.Credential) *AIProxyCredentials {
 	var model AIProxyCredentials
-	model.AccessKeyId = credential.GetAccessKeyId()
-	model.SecretKeyId = credential.GetSecretKeyId()
+	model.AccessKeyID = credential.GetAccessKeyId()
+	model.SecretKeyID = credential.GetSecretKeyId()
 	model.Name = credential.GetName()
 	model.Platform = credential.GetPlatform()
 	model.Description = credential.GetDescription()
 	model.Enabled = credential.GetEnabled()
-	model.Provider = credential.GetProviderName()
-	model.ProviderInstanceId = credential.GetProviderInstance()
 	model.ExpiredAt = time.Date(2099, time.January, 1, 0, 0, 0, 0, time.Local)
+	model.ProviderName = credential.GetProviderName()
+	model.ProviderInstanceID = credential.GetProviderInstanceId()
 	return &model
 }
 
@@ -59,13 +58,13 @@ func (AIProxyCredentials) TableName() string {
 
 func (model AIProxyCredentials) ToProtobuf() *pb.Credential {
 	return &pb.Credential{
-		AccessKeyId:      model.AccessKeyId,
-		SecretKeyId:      model.SecretKeyId,
-		Name:             model.Name,
-		Platform:         model.Platform,
-		Description:      model.Description,
-		Enabled:          model.Enabled,
-		ProviderName:     model.Provider,
-		ProviderInstance: model.ProviderInstanceId,
+		AccessKeyId:        model.AccessKeyID,
+		SecretKeyId:        model.SecretKeyID,
+		Name:               model.Name,
+		Platform:           model.Platform,
+		Description:        model.Description,
+		Enabled:            model.Enabled,
+		ProviderName:       model.ProviderName,
+		ProviderInstanceId: model.ProviderInstanceID,
 	}
 }

@@ -22,7 +22,10 @@ import (
 	"sync"
 	"testing"
 
+	"sigs.k8s.io/yaml"
+
 	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func TestInfor_Method(t *testing.T) {
@@ -174,4 +177,20 @@ func TestInfor_SetBody(t *testing.T) {
 			t.Fatal("body data err")
 		}
 	})
+}
+
+func TestFilterConfig(t *testing.T) {
+	var y = `
+name: session-context
+config:
+  "on":
+    - key: X-Ai-Proxy-Source
+      operator: =
+      value: erda.cloud
+`
+	var fc reverseproxy.FilterConfig
+	if err := yaml.Unmarshal([]byte(y), &fc); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%s", strutil.TryGetYamlStr(fc))
 }

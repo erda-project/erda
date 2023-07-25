@@ -4,24 +4,12 @@ package erda.apps.aiproxy;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/pb";
 
 import "google/api/annotations.proto";
-import "common/openapi.proto";
 import "common/http.proto";
 
 service Models {
-  option(erda.common.openapi_service) = {
-    service: "ai-proxy",
-    auth: {
-      check_login: true,
-      check_token: true,
-    }
-  };
-
   rpc ListModels(common.VoidRequest) returns (ListModelsRespData) {
     option(google.api.http) = {
       get: "/api/ai-proxy/models"
-    };
-    option(erda.common.openapi) = {
-      path: "/api/ai-proxy/models"
     };
   }
 }

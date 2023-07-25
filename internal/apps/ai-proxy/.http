@@ -1,67 +1,84 @@
-### GET models
+### List models
 GET https://{{ai-proxy_host}}/api/ai-proxy/models
+Authorization: Bearer {{ai-proxy_root-key}}
+
+### List credentials
+GET https://{{ai-proxy_host}}/api/ai-proxy/credentials
+Authorization: Bearer {{ai-proxy_root-key}}
+
+### Create credential
+POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
+Content-Type: application/json
+Authorization: Bearer {{ai-proxy_root-key}}
+
+{
+  "name": "<the-name>",
+  "platform": "<the-platform>",
+  "description": "<description>",
+  "enabled": true,
+  "providerName": "<provider-name>",
+  "providerInstanceId": "<provider-instance-id>"
+}
 
 ### Create session
 POST https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
-User-ID: {{ai-proxy_user-id}}
+X-Ai-Proxy-User-Id: <user-id>
 
 {
   "name": "test-session-1",
   "topic": "i am a Go developer, you are my pair programming partner",
   "contextLength": 5,
-  "source": "erda",
-  "model": "gpt-35-turbo-0301",
+  "source": "<source>",
+  "model": "<model>",
   "temperature": 0.7
 }
 
-### update session
-PUT https://{{ai-proxy_host}}/api/ai-proxy/sessions/{{$random.uuid}}
-Content-Type: application/json
-User-ID: {{ai-proxy_user-id}}
-
-{
-  "name": "test-session-1",
-  "topic": "i am a Go developer, you are my pair programming partner",
-  "contextLength": 5,
-  "source": "erda",
-  "model": "gpt-35-turbo-0301",
-  "temperature": 0.7,
-  "resetAt": "2020-05-31T15:31:44Z"
-}
-
-### Get sessions
+### List sessions
 GET https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
-User-ID: {{ai-proxy_user-id}}
-X-Erda-AI-Proxy-Source: erda
+X-Ai-Proxy-User-Id: <user-id>
+X-AI-Proxy-Source: <source>
 
-### Get chat logs
-GET https://{{ai-proxy_host}}/api/ai-proxy/chat-logs
-Content-Type: application/json
-User-ID: {{ai-proxy_user-id}}
-X-Erda-AI-Proxy-SessionId: {{$random.uuid}}
-
-### chat on erda
+### Chat on erda in a session
 POST https://{{ai-proxy_host}}/v1/chat/completions
-Org-ID: {{ai-proxy-org-id}}
-User-ID: {{ai-proxy_user-id}}
-X-Erda-AI-Proxy-SessionId: {{$random.uuid}}
-X-Erda-AI-Proxy-Source: erda
-Authorization: Bearer {{ai-proxy_app-key}}
 Content-Type: application/json
+X-AI-Proxy-SessionId: {{ai-proxy_my-session-id}}
+X-AI-Proxy-Source: <source>
+X-Ai-Proxy-User-Id: <user-id>
 
 {
-  "model": "gpt-35-turbo-0301",
+  "model": "<model>",
   "messages": [
     {
       "role": "user",
-      "content": "柠檬精是什么 ?"
+      "content": "介绍 Go"
     }
   ],
   "max_tokens": 2048,
   "stream": true
 }
+
+### update session
+PUT https://{{ai-proxy_host}}/api/ai-proxy/sessions/{{$random.uuid}}
+Content-Type: application/json
+X-Ai-Proxy-User-Id: <user-id>
+
+{
+  "name": "test-session-1",
+  "topic": "i am a Go developer, you are my pair programming partner",
+  "contextLength": 5,
+  "source": "<source>",
+  "model": "<model>",
+  "temperature": 0.7,
+  "resetAt": "2020-05-31T15:31:44Z"
+}
+
+### Get chat logs
+GET https://{{ai-proxy_host}}/api/ai-proxy/chat-logs
+Content-Type: application/json
+X-Ai-Proxy-User-Id: <user-id>
+X-AI-Proxy-SessionId: {{ai-proxy_my-session-id}}
 
 ### chat on other platform
 POST https://{{ai-proxy_host}}/v1/chat/completions
@@ -70,7 +87,7 @@ Authorization: Bearer {{ai-proxy_app-key}}
 Content-Type: application/json
 
 {
-  "model": "gpt-35-turbo-0301",
+  "model": "<model>",
   "messages": [
     {
       "role": "user",
@@ -79,23 +96,6 @@ Content-Type: application/json
   ],
   "max_tokens": 2048,
   "stream": false
-}
-
-### Get credentials
-GET https://{{ai-proxy_host}}/api/ai-proxy/credentials
-Authorization: Bearer {{ai-proxy_root-key}}
-
-### Create credentials
-POST https://{{ai-proxy_host}}/api/ai-proxy/credentials
-Content-Type: application/json
-
-{
-  "name": "fdp-test",
-  "platform": "fdp",
-  "description": "fdp 非生产环境用的 api-key",
-  "enabled": true,
-  "providerName": "azure",
-  "providerInstance": "terminus2"
 }
 
 ### Delete credential

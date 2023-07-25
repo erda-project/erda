@@ -73,7 +73,7 @@ func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor revers
 		return reverseproxy.Continue, nil
 	}
 
-	if source := infor.Header().Get(vars.XErdaAIProxySource); source != "" {
+	if source := infor.Header().Get(vars.XAIProxySource); source != "" {
 		if _, ok := f.sources[source]; !ok {
 			return reverseproxy.Continue, nil
 		}

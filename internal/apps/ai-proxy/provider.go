@@ -19,6 +19,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"reflect"
@@ -76,6 +77,14 @@ var (
 			return new(provider)
 		},
 	}
+	rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != vars.ConcatBearer(os.Getenv(vars.EnvAIProxyRootKey)) {
+				return nil, errors.New("Access denied to the admin API")
+			}
+			return h(ctx, req)
+		}
+	})
 )
 
 func init() {
@@ -83,13 +92,14 @@ func init() {
 }
 
 type provider struct {
-	Config  *config
-	L       logs.Logger
-	HTTP    httpserver.Router      `autowired:"http-server@ai"`
-	GRPC    grpcserver.Interface   `autowired:"grpc-server@ai"`
-	Dao     dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
-	OrgSvc  orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
-	Openapi routes.Register        `autowired:"openapi-dynamic-register.client"`
+	Config      *config
+	L           logs.Logger
+	HTTP        httpserver.Router      `autowired:"http-server@ai"`
+	GRPC        grpcserver.Interface   `autowired:"grpc-server@ai"`
+	Dao         dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
+	OrgSvc      orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
+	Openapi     routes.Register        `autowired:"openapi-dynamic-register.client"`
+	ErdaOpenapi url.URL
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -109,6 +119,14 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if selfURL, ok := os.LookupEnv("SELF_URL"); ok && len(selfURL) > 0 {
 		p.Config.SelfURL = selfURL
 	}
+	if p.Config.ErdaOpenapi == "" {
+		return errors.New("invalid erda openapi config")
+	}
+	u, err := url.Parse(p.Config.ErdaOpenapi)
+	if err != nil {
+		return errors.Wrap(err, "invalid erda openapi")
+	}
+	p.ErdaOpenapi = *u
 
 	// prepare handlers
 	for i := 0; i < len(p.Config.Routes); i++ {
@@ -135,9 +153,9 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 
 	// register gRPC and http handler
-	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options(), rootKeyAuth)
-	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options(), rootKeyAuth)
-	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options(), rootKeyAuth)
+	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
+	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options())
+	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options())
 	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth)
 
 	// ai-proxy prometheus metrics
@@ -157,6 +175,7 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
 			vars.CtxKeyProviders{}, p.Config.providers,
+			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapi,
 		).
 		ServeHTTP(w, r)
 }
@@ -187,8 +206,8 @@ func (p *provider) initLogger() {
 		}
 		p.L.Infof("logger formatter: %+v", formatter)
 		logger.SetFormatter(formatter)
-		if level, err := logrus.ParseLevel(p.Config.GetLogLevel()); err == nil {
-			p.L.Infof("logger level: %s", p.Config.GetLogLevel())
+		if level, err := logrus.ParseLevel(p.Config.LogLevel); err == nil {
+			p.L.Infof("logger level: %s", p.Config.LogLevel)
 			logger.SetLevel(level)
 		} else {
 			p.L.Infof("failed to parse logger level from config, set it as %s", logrus.InfoLevel.String())
@@ -197,8 +216,8 @@ func (p *provider) initLogger() {
 		l.Entry = logrus.NewEntry(logger)
 		return
 	}
-	p.L.Infof("logger level: %s", p.Config.GetLogLevel())
-	if err := p.L.SetLevel(p.Config.GetLogLevel()); err != nil {
+	p.L.Infof("logger level: %s", p.Config.LogLevel)
+	if err := p.L.SetLevel(p.Config.LogLevel); err != nil {
 		p.L.Infof("failed to set logger level from config, set it as %s", logrus.InfoLevel.String())
 		_ = p.L.SetLevel(logrus.InfoLevel.String())
 	}
@@ -262,6 +281,7 @@ type config struct {
 	LogLevel     string             `json:"logLevel" yaml:"logLevel"`
 	Exporter     configPromExporter `json:"exporter" yaml:"exporter"`
 	SelfURL      string             `json:"selfURL" yaml:"selfURL"`
+	ErdaOpenapi  string             `json:"erdaOpenapi" yaml:"erdaOpenapi"`
 	providers    provider2.Providers
 	Routes       route2.Routes
 }
@@ -270,28 +290,6 @@ type configPromExporter struct {
 	Namespace string `json:"namespace" yaml:"namespace"`
 	Subsystem string `json:"subsystem" yaml:"subsystem"`
 	Name      string `json:"name" yaml:"name"`
-}
-
-func (c *config) GetLogLevel() string {
-	expr, start, end, err := strutil.FirstCustomExpression(c.LogLevel, "${", "}", func(s string) bool {
-		return strings.HasPrefix(strings.TrimSpace(s), "env.")
-	})
-	if err != nil || start == end {
-		return c.LogLevel
-	}
-	key := strings.TrimPrefix(expr, "env.")
-	keys := strings.Split(key, ":")
-	if len(keys) > 0 {
-		key = keys[0]
-	}
-	env, ok := os.LookupEnv(key)
-	if !ok {
-		if len(keys) > 1 {
-			return strings.Join(keys[1:], ":")
-		}
-		return logrus.InfoLevel.String()
-	}
-	return env
 }
 
 func WrapRequest(r *http.Request, wraps ...func(*http.Request)) *http.Request {
@@ -306,12 +304,3 @@ func SetXRequestId(r *http.Request) {
 		r.Header.Set("X-Request-Id", strings.ReplaceAll(uuid.NewString(), "-", ""))
 	}
 }
-
-var rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != "Bearer "+os.Getenv("AI_PROXY_ROOT_KEY") {
-			return nil, errors.New("Access denied to the admin API")
-		}
-		return h(ctx, req)
-	}
-})

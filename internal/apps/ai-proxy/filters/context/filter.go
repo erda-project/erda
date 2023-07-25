@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -56,7 +55,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		m           = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
 		providers   = ctx.Value(vars.CtxKeyProviders{}).(provider.Providers)
 		credentials []*models.AIProxyCredentials
-		appKey      = strings.TrimPrefix(infor.Header().Get("Authorization"), "Bearer ")
+		appKey      = vars.TrimBearer(infor.Header().Get("Authorization"))
 	)
 	if err = q.Find(&credentials, map[string]any{"access_key_id": appKey}).Error; err != nil || len(credentials) == 0 {
 		l.Errorf("failed to Find credentials, access_key_id: %s, err: %v", appKey, err)
@@ -70,13 +69,13 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		match      = func(*models.AIProxyCredentials) bool { return true }
 	)
 	// if a provider is specified in the request header, refactor the function match
-	if providerName := infor.Header().Get(vars.XAIProxyProvider); providerName != "" {
-		providerInstance := infor.Header().Get(vars.XAIProxyProviderInstance)
-		if providerInstance == "" {
-			providerInstance = "default"
+	if providerName := infor.Header().Get(vars.XAIProxyProviderName); providerName != "" {
+		providerInstanceId := infor.Header().Get(vars.XAIProxyProviderInstanceId)
+		if providerInstanceId == "" {
+			providerInstanceId = "default"
 		}
 		match = func(item *models.AIProxyCredentials) bool {
-			return item.Provider == providerName && item.ProviderInstanceId == providerInstance
+			return item.ProviderName == providerName && item.ProviderInstanceID == providerInstanceId
 		}
 	}
 	for _, item := range credentials {
@@ -91,9 +90,9 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	}
 
 	// find provider
-	prov, ok := providers.FindProvider(credential.Provider, credential.ProviderInstanceId)
+	prov, ok := providers.FindProvider(credential.ProviderName, credential.ProviderInstanceID)
 	if !ok {
-		http.Error(w, "Provider Not Found", http.StatusNotFound)
+		http.Error(w, "ProviderName Not Found", http.StatusNotFound)
 		return reverseproxy.Intercept, nil
 	}
 

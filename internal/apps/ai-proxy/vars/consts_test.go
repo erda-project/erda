@@ -12,19 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
-
-import "net/textproto"
-
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	TextEventStream    ContentType = "text/event-stream"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
-)
-
-var (
-	HeaderKeyContentType   = textproto.CanonicalMIMEHeaderKey("content-type")
-	HeaderKeyContentLength = textproto.CanonicalMIMEHeaderKey("content-length")
-)
+package vars_test
