@@ -19,12 +19,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/cmp"
 	cputil2 "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func init() {
@@ -175,15 +174,16 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 			Label: name,
 			Value: name,
 		}
-		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
+		if suf, ok := hasSuffix(name); ok && cputil2.IsProjectNamespace(name) {
 			splits := strings.Split(name, "-")
 			if len(splits) != 3 {
-				return errors.New("invalid name")
+				continue
 			}
 			id := splits[1]
 			num, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
-				return errors.Errorf("failed to parse project id %s, %v", id, err)
+				logrus.Warnf("failed to parse project id %s from namespace %s, %v", id, name, err)
+				continue
 			}
 
 			displayName, ok := projectID2displayName[uint64(num)]
@@ -349,21 +349,4 @@ func hasSuffix(name string) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-func (f *ComponentFilter) getDisplayName(name string) (string, error) {
-	splits := strings.Split(name, "-")
-	if len(splits) != 3 {
-		return "", errors.New("invalid name")
-	}
-	id := splits[1]
-	num, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	project, err := f.bdl.GetProjectWithSetter(uint64(num), httpclient.SetParams(url.Values{"withQuota": {"true"}}))
-	if err != nil {
-		return "", err
-	}
-	return project.DisplayName, nil
 }
