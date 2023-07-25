@@ -246,7 +246,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 		}
 
 		if (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && !serviceManualScale {
-			addons, err := s.db.GetUnDeletableAttachMentsByRuntimeID(runtime.ID)
+			addons, err := s.db.GetUnDeletableAttachMentsByRuntimeID(runtime.OrgID, runtime.ID)
 			if err != nil {
 				logrus.Warnf("process runtime scale successed, but update runtime referenced addon attact_count for runtime %#v failed, err: %v", uniqueId, err)
 			}

@@ -104,8 +104,8 @@ func (d *dbServiceImpl) DeleteRuntimeHPAEventsByRuleId(ruleId string) error {
 	return nil
 }
 
-func (d *dbServiceImpl) GetUnDeletableAttachMentsByRuntimeID(runtimeID uint64) (*[]dbclient.AddonAttachment, error) {
-	return d.db.GetUnDeletableAttachMentsByRuntimeID(runtimeID)
+func (d *dbServiceImpl) GetUnDeletableAttachMentsByRuntimeID(orgID, runtimeID uint64) (*[]dbclient.AddonAttachment, error) {
+	return d.db.GetUnDeletableAttachMentsByRuntimeID(orgID, runtimeID)
 }
 
 func (d *dbServiceImpl) CreateVPARule(runtimeVPA *dbclient.RuntimeVPA) error {
