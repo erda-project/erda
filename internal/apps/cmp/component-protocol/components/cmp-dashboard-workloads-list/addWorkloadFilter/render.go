@@ -153,7 +153,7 @@ func (f *ComponentAddWorkloadFilter) SetComponentValue(ctx context.Context) erro
 			Label: name,
 			Value: name,
 		}
-		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
+		if suf, ok := hasSuffix(name); ok && cputil2.IsProjectNamespace(name) {
 			splits := strings.Split(name, "-")
 			if len(splits) != 3 {
 				continue
@@ -161,7 +161,7 @@ func (f *ComponentAddWorkloadFilter) SetComponentValue(ctx context.Context) erro
 			id := splits[1]
 			num, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
-				logrus.Errorf("failed to parse project id %s from namespace %s, %v", id, name, err)
+				logrus.Warnf("failed to parse project id %s from namespace %s, %v", id, name, err)
 				continue
 			}
 

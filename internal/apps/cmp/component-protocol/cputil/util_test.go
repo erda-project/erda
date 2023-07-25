@@ -21,6 +21,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/rancher/wrangler/pkg/data"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	cppb "github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
@@ -428,5 +429,30 @@ func TestCheckPermission(t *testing.T) {
 				t.Log(err)
 			}
 		})
+	}
+}
+
+func TestIsProjectNamespace(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected bool
+	}{
+		// Test cases with valid project namespaces
+		{input: "project-123-dev", expected: true},
+		{input: "project-456-test", expected: true},
+		{input: "project-789-staging", expected: true},
+		{input: "project-1000-prod", expected: true},
+
+		// Test cases with invalid project namespaces
+		{input: "project-xyz-dev", expected: false},
+		{input: "project-123-production", expected: false},
+		{input: "invalid-format", expected: false},
+		{input: "project-123-unknown", expected: false},
+		{input: "", expected: false},
+	}
+
+	for _, tc := range testCases {
+		actual := IsProjectNamespace(tc.input)
+		assert.Equal(t, tc.expected, actual, "Input: %s", tc.input)
 	}
 }

@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,15 +27,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/cmp"
 	cputil2 "github.com/erda-project/erda/internal/apps/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/internal/apps/cmp/component-protocol/types"
-	"github.com/erda-project/erda/pkg/http/httpclient"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 )
 
 func init() {
@@ -188,7 +185,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 			Label: name,
 			Value: name,
 		}
-		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
+		if suf, ok := hasSuffix(name); ok && cputil2.IsProjectNamespace(name) {
 			splits := strings.Split(name, "-")
 			if len(splits) != 3 {
 				continue
@@ -196,7 +193,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 			id := splits[1]
 			num, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
-				logrus.Errorf("failed to parse project id %s from namespace %s, %v", id, name, err)
+				logrus.Warnf("failed to parse project id %s from namespace %s, %v", id, name, err)
 				continue
 			}
 
@@ -297,23 +294,6 @@ func (f *ComponentFilter) Transfer(component *cptype.Component) {
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
 	component.Operations = f.Operations
-}
-
-func (f *ComponentFilter) getDisplayName(name string) (string, error) {
-	splits := strings.Split(name, "-")
-	if len(splits) != 3 {
-		return "", errors.New("invalid name")
-	}
-	id := splits[1]
-	num, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	project, err := f.bdl.GetProjectWithSetter(uint64(num), httpclient.SetParams(url.Values{"withQuota": {"true"}}))
-	if err != nil {
-		return "", err
-	}
-	return project.DisplayName, nil
 }
 
 func hasSuffix(name string) (string, bool) {
