@@ -16,7 +16,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -26,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 type SessionsHandler struct {
@@ -99,18 +99,19 @@ func (s *SessionsHandler) UpdateSession(ctx context.Context, req *pb.Session) (*
 		req.Temperature = 2
 	}
 
-	var updates = map[string]interface{}{
-		"name":           req.GetName(),
-		"topic":          req.GetTopic(),
-		"context_length": req.GetContextLength(),
-		"is_archived":    req.GetIsArchived(),
-		"model":          req.GetModel(),
-		"temperature":    req.GetTemperature(),
+	var session models.AIProxySessions
+	var setters = []models.Setter{
+		session.FieldName().Set(req.GetName()),
+		session.FieldTopic().Set(req.GetTopic()),
+		session.FieldContextLength().Set(req.GetContextLength()),
+		session.FieldIsArchived().Set(req.GetIsArchived()),
+		session.FieldModel().Set(req.GetModel()),
+		session.FieldTemperature().Set(req.GetTemperature()),
 	}
 	if req.GetResetAt() != nil {
-		updates["reset_at"] = sql.NullTime{Time: req.GetResetAt().AsTime(), Valid: true}
+		setters = append(setters, session.FieldResetAt().Set(req.GetResetAt().AsTime()))
 	}
-	if err := s.Dao.UpdateSession(req.GetId(), updates); err != nil {
+	if err := s.Dao.UpdateSession(req.GetId(), setters...); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
@@ -127,7 +128,7 @@ func (s *SessionsHandler) ResetSession(ctx context.Context, req *pb.LocateSessio
 		return nil, InvalidSessionId
 	}
 
-	if err := s.Dao.UpdateSession(req.GetId(), map[string]any{"reset_at": time.Now()}); err != nil {
+	if err := s.Dao.UpdateSession(req.GetId(), new(models.AIProxySessions).FieldResetAt().Set(time.Now())); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
@@ -144,7 +145,7 @@ func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.LocateSess
 		return nil, InvalidSessionId
 	}
 
-	if err := s.Dao.UpdateSession(req.GetId(), map[string]any{"is_archived": true}); err != nil {
+	if err := s.Dao.UpdateSession(req.GetId(), new(models.AIProxySessions).FieldIsArchived().Set(true)); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
@@ -159,7 +160,8 @@ func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessi
 	if req.GetId() == "" {
 		return nil, InvalidSessionId
 	}
-	if err := s.Dao.DeleteSession(req.GetId()); err != nil {
+	_, err := new(models.AIProxySessions).Deleter(s.Dao.Q()).Delete()
+	if err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
@@ -179,17 +181,19 @@ func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessions
 		return nil, InvalidSessionSource
 	}
 
-	var session models.AIProxySessions
-	total, sessions, err := s.Dao.ListSessions(1, 20,
-		session.WhereUserID().Equal(userId),
-		session.WhereSource().Equal(source),
-	)
+	var sessions models.AIProxySessionsList
+	total, err := (&sessions).Pager(s.Dao.Q()).
+		Where(
+			sessions.FieldUserID().Equal(userId),
+			sessions.FieldSource().Equal(source),
+		).
+		Paging(20, 1, sessions.FieldUpdatedAt().DESC())
 	if err != nil {
 		return nil, err
 	}
 	return &pb.ListSessionsRespData{
 		Total: uint64(total),
-		List:  sessions,
+		List:  sessions.ToProtobuf(),
 	}, nil
 }
 
@@ -202,7 +206,14 @@ func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionC
 	if req.GetId() == "" {
 		return nil, InvalidSessionId
 	}
-	return s.Dao.GetSession(req.GetId())
+	session, ok, err := s.Dao.GetSession(req.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, new(errorresp.APIError).NotFound()
+	}
+	return session, nil
 }
 
 func getUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {

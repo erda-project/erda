@@ -79,9 +79,13 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		return reverseproxy.Continue, nil
 	}
 
-	session, err := db.GetSession(sessionId)
+	session, ok, err := db.GetSession(sessionId)
 	if err != nil {
 		l.Errorf("failed to db.GetSession(%s), err: %v", sessionId, err)
+		return reverseproxy.Continue, nil
+	}
+	if !ok {
+		l.Errorf("session not found, sessionId: %s", sessionId)
 		return reverseproxy.Continue, nil
 	}
 	if session.IsArchived {

@@ -27,6 +27,7 @@ import (
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 var (
@@ -54,7 +55,7 @@ func (h *CredentialsHandler) CreateCredential(ctx context.Context, credential *p
 		return nil, errors.Errorf("the credential %s on the platform %s already exists", credential.GetName(), credential.GetPlatform())
 	}
 	var model = models.NewCredential(credential)
-	if err := h.Dao.Create(&model).Error; err != nil {
+	if err := model.Creator(h.Dao.Q()).Create(); err != nil {
 		return nil, errors.Wrap(err, "failed to create credential")
 	}
 	return model.ToProtobuf(), nil
@@ -69,20 +70,28 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 		return nil, err
 	}
 	var model models.AIProxyCredentials
-	where := map[string]any{"access_key_id": credential.GetAccessKeyId()}
-	if err := h.Q().First(&model, where).Error; err != nil {
+	ok, err := (&model).Getter(h.Dao.Q()).Where(model.FieldAccessKeyID().Equal(credential.GetAccessKeyId())).Get()
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to find the credential")
 	}
-	var updates = map[string]any{
-		"secret_key_id":        credential.GetSecretKeyId(),
-		"name":                 credential.GetName(),
-		"platform":             credential.GetPlatform(),
-		"description":          credential.GetDescription(),
-		"enabled":              credential.GetEnabled(),
-		"provider_name":        credential.GetProviderName(),
-		"provider_instance_id": credential.GetProviderInstanceId(),
+	if !ok {
+		return nil, new(errorresp.APIError).NotFound()
 	}
-	if err := h.Dao.Model(&model).Where(where).Updates(updates).Error; err != nil {
+
+	_, err = (&model).Updater(h.Dao.Q()).
+		Where(
+			model.FieldAccessKeyID().Equal(credential.GetAccessKeyId()),
+		).
+		Updates(
+			model.FieldSecretKeyID().Set(credential.GetSecretKeyId()),
+			model.FieldName().Set(credential.GetName()),
+			model.FieldPlatform().Set(credential.GetPlatform()),
+			model.FieldDescription().Set(credential.GetDescription()),
+			model.FieldEnabled().Set(credential.GetEnabled()),
+			model.FieldProviderName().Set(credential.GetProviderName()),
+			model.FieldProviderInstanceID().Set(credential.GetProviderInstanceId()),
+		)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to update credential")
 	}
 	return model.ToProtobuf(), nil
@@ -91,8 +100,8 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 func (h *CredentialsHandler) ListCredentials(_ context.Context, credential *pb.Credential) (*pb.ListCredentialsRespData, error) {
 	// todo: condition and count
 
-	var credentials []*models.AIProxyCredentials
-	if err := h.Dao.Find(&credentials).Error; err != nil {
+	var credentials models.AIProxyCredentialsList
+	if _, err := (&credentials).Pager(h.Dao.Q()).Paging(-1, 0); err != nil {
 		return nil, errors.Wrap(err, "failed to find credentials")
 	}
 	var total = len(credentials)
