@@ -17,6 +17,7 @@ package deployment
 import (
 	"io/ioutil"
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -28,6 +29,7 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
@@ -446,4 +448,24 @@ func Test_genProjectNamespace(t *testing.T) {
 	nsInfo := fsm.genProjectNamespace("111")
 	assert.Equal(t, "project-111-prod", nsInfo["PROD"])
 
+}
+
+func Test_convertJob(t *testing.T) {
+	fsm := DeployFSMContext{
+		App:        &apistructs.ApplicationDTO{},
+		Deployment: &dbclient.Deployment{},
+		Runtime: &dbclient.Runtime{
+			FileToken: "token",
+		},
+		Spec: &diceyml.Object{AddOns: map[string]*diceyml.AddOn{"empty-addon": nil}},
+	}
+	os.Setenv("OPENAPI_PUBLIC_URL", "https://erda.cloud")
+	conf.Load()
+	job := &diceyml.Job{}
+	_, _, err := fsm.convertJob("job", job, map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{
+		"aaa": "bbb",
+	},
+		&dbclient.Runtime{}, []dbclient.AddonInstanceRouting{}, []dbclient.AddonInstanceTenant{}, false)
+	assert.NoError(t, err)
+	assert.Equal(t, "curl -L 'https://erda.cloud/api/files?file=bbb' -H 'Authorization: Bearer token' > /data/aaa", job.Init["internal-init-data"].Cmd)
 }
