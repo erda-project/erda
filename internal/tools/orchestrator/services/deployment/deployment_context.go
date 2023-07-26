@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -1716,14 +1715,13 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 			return nil, nil, err
 		}
 		// TODO: diceyml add dependon: openapi
-		openapiPublicAddr := os.Getenv("OPENAPI_PUBLIC_ADDR")
 		if service.Init == nil {
 			service.Init = map[string]diceyml.InitContainer{}
 		}
 		service.Init["internal-init-data"] = diceyml.InitContainer{
 			Image:      conf.InitContainerImage(),
 			SharedDirs: []diceyml.SharedDir{{Main: "/init-data", SideCar: "/data"}},
-			Cmd:        buildCurlDownloadFileCmd(groupFileconfigs, openapiPublicAddr, fsm.Runtime.FileToken, "/data"),
+			Cmd:        buildCurlDownloadFileCmd(groupFileconfigs, conf.OpenAPIPublicURL(), fsm.Runtime.FileToken, "/data"),
 		}
 	}
 	return usedAddonInsMap, usedAddonTenantMap, nil
@@ -1850,14 +1848,13 @@ func (fsm *DeployFSMContext) convertJob(jobName string, job *diceyml.Job,
 			}
 		}
 		// TODO: diceyml add dependon: openapi
-		openapiPublicAddr := os.Getenv("OPENAPI_PUBLIC_ADDR")
 		if job.Init == nil {
 			job.Init = map[string]diceyml.InitContainer{}
 		}
 		job.Init["internal-init-data"] = diceyml.InitContainer{
 			Image:      conf.InitContainerImage(),
 			SharedDirs: []diceyml.SharedDir{{Main: "/init-data", SideCar: "/data"}},
-			Cmd:        buildCurlDownloadFileCmd(groupFileconfigs, openapiPublicAddr, fsm.Runtime.FileToken, "/data"),
+			Cmd:        buildCurlDownloadFileCmd(groupFileconfigs, conf.OpenAPIPublicURL(), fsm.Runtime.FileToken, "/data"),
 		}
 	}
 	return usedAddonInsMap, usedAddonTenantMap, nil
