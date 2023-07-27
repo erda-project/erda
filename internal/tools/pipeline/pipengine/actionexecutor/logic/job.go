@@ -260,6 +260,13 @@ func GetPullImagePolicy() corev1.PullPolicy {
 	return imagePullPolicy
 }
 
+func GetDNSPolicy(podNetwork apistructs.PodNetwork) corev1.DNSPolicy {
+	if podNetwork.IsHostMode() {
+		return corev1.DNSClusterFirstWithHostNet
+	}
+	return ""
+}
+
 // MakeJobLabelSelector return LabelSelector like job-name=pipeline-1.pipeline-task-1
 func MakeJobLabelSelector(task *spec.PipelineTask) string {
 	return fmt.Sprintf("job-name=%s", MakeJobName(task))

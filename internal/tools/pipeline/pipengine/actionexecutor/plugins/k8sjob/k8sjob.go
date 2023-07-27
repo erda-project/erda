@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubectl/pkg/describe"
 	"k8s.io/kubernetes/pkg/kubelet/events"
+	"k8s.io/utils/pointer"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
@@ -484,9 +485,10 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.Clu
 					},
 					RestartPolicy:         corev1.RestartPolicyNever,
 					Volumes:               vols,
-					EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
-					ShareProcessNamespace: func(b bool) *bool { return &b }(false),
+					EnableServiceLinks:    pointer.Bool(false),
+					ShareProcessNamespace: pointer.Bool(false),
 					HostNetwork:           job.Network.IsHostMode(),
+					DNSPolicy:             logic.GetDNSPolicy(job.Network),
 				},
 			},
 		},
