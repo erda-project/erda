@@ -127,7 +127,7 @@ func (this *AIProxyFilterAudit) FieldStatus() Field { return field{name: "status
 func (this *AIProxyFilterAudit) FieldStatusCode() Field { return field{name: "status_code"} }
 
 func (this *AIProxyFilterAudit) Creator(db *gorm.DB) Creator {
-	return &creator{db: db}
+	return &creator{db: db, model: this}
 }
 
 func (this *AIProxyFilterAudit) Deleter(db *gorm.DB) Deleter {

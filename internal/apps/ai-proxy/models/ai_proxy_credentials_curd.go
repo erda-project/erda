@@ -63,7 +63,7 @@ func (this *AIProxyCredentials) FieldProviderInstanceID() Field {
 }
 
 func (this *AIProxyCredentials) Creator(db *gorm.DB) Creator {
-	return &creator{db: db}
+	return &creator{db: db, model: this}
 }
 
 func (this *AIProxyCredentials) Deleter(db *gorm.DB) Deleter {

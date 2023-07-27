@@ -61,7 +61,7 @@ func (this *AIProxySessions) FieldModel() Field { return field{name: "model"} }
 func (this *AIProxySessions) FieldTemperature() Field { return field{name: "temperature"} }
 
 func (this *AIProxySessions) Creator(db *gorm.DB) Creator {
-	return &creator{db: db}
+	return &creator{db: db, model: this}
 }
 
 func (this *AIProxySessions) Deleter(db *gorm.DB) Deleter {

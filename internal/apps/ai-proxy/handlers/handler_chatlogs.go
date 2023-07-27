@@ -53,3 +53,7 @@ func (c *ChatLogsHandler) GetChatLogs(ctx context.Context, req *pb.GetChatLogsRe
 		List:  chatLogs,
 	}, nil
 }
+
+func (c *ChatLogsHandler) GetSessionChatLogs(ctx context.Context, req *pb.GetChatLogsReq) (*pb.GetChatLogsRespData, error) {
+	return c.GetChatLogs(ctx, req)
+}

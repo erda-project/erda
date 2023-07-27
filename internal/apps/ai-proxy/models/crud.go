@@ -19,6 +19,7 @@ package models
 
 import (
 	"errors"
+	"reflect"
 
 	"gorm.io/gorm"
 )
@@ -97,7 +98,7 @@ func (w field) IsNotNull() Where {
 }
 
 func (w field) Equal(v any) Where {
-	return where{query: w.name + " == ?", args: []any{v}}
+	return where{query: w.name + " = ?", args: []any{v}}
 }
 
 func (w field) NotEqual(v any) Where {
@@ -274,7 +275,7 @@ func (p *pager) Where(wheres ...Where) Pager {
 }
 
 func (p *pager) Paging(size, num int, orders ...string) (int64, error) {
-	var db = p.db
+	var db = p.db.Model(reflect.New(reflect.TypeOf(p.list).Elem().Elem()).Interface())
 	for _, w := range p.where {
 		db = db.Where(w.Query(), w.Args()...)
 	}
@@ -292,5 +293,5 @@ func (p *pager) Paging(size, num int, orders ...string) (int64, error) {
 	for _, order := range orders {
 		db = db.Order(order)
 	}
-	return count, db.Find(&p.list).Error
+	return count, db.Find(p.list).Error
 }
