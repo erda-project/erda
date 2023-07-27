@@ -33,7 +33,8 @@ var (
 )
 
 type config struct {
-	Kafka struct {
+	MetadataKeyOfTopic string `file:"metadata_key_of_topic"`
+	Kafka              struct {
 		Producer kafka.ProducerConfig `file:"producer"  desc:"kafka Producer Config"`
 	} `file:"kafka"`
 }
@@ -69,10 +70,8 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		p.otlpService = &otlpService{Log: p.Log, p: p}
-		p.otleMetricService = &otlpService{
-			Log: p.Log,
-			p:   p,
-		}
+		p.otleMetricService = &otlpService{Log: p.Log, p: p}
+
 		pb.RegisterOpenTelemetryServiceImp(
 			p.Register,
 			p.otlpService,

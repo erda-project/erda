@@ -17,6 +17,7 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	common "github.com/erda-project/erda-proto-go/common/pb"
@@ -46,6 +47,20 @@ func (s *otlpService) ReceiveTrace(ctx context.Context, req *otppb.PostSpansRequ
 }
 
 func (s *otlpService) ReceiveMetric(ctx context.Context, req *otppb.PostMetricsServiceRequest) (*common.VoidResponse, error) {
-	//TODO: convert otlp metric to erda metric
+	mc := &MetricOtlpToErda{
+		logger: s.Log,
+		p:      s.p,
+	}
+	for _, i := range req.ResourceMetrics {
+		for _, j := range i.ScopeMetrics {
+			if strings.HasPrefix(j.Scope.Name, "io.opentelemetry.runtime-telemetry") {
+				err := mc.writeMetric(ctx, i.Resource, j.Scope, j.Metrics)
+				if err != nil {
+					s.Log.Errorf("write otlp metric error: %+v\n", err)
+
+				}
+			}
+		}
+	}
 	return &common.VoidResponse{}, nil
 }
