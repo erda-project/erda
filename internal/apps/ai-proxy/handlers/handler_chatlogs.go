@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
@@ -30,13 +31,13 @@ type ChatLogsHandler struct {
 func (c *ChatLogsHandler) GetChatLogs(ctx context.Context, req *pb.GetChatLogsReq) (*pb.GetChatLogsRespData, error) {
 	_, ok := getUserId(ctx, req)
 	if !ok {
-		return nil, UserPermissionDenied
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
 	// todo: validate userId
 
 	sessionId, ok := getSessionId(ctx, req)
 	if !ok {
-		return nil, InvalidSessionId
+		return nil, HTTPError(InvalidSessionId, http.StatusNotFound)
 	}
 	if req.GetPageSize() == 0 {
 		req.PageSize = 10

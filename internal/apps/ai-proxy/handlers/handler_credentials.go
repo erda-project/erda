@@ -16,6 +16,7 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
@@ -27,7 +28,6 @@ import (
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 var (
@@ -46,7 +46,7 @@ func (h *CredentialsHandler) Q() *gorm.DB {
 func (h *CredentialsHandler) CreateCredential(ctx context.Context, credential *pb.Credential) (*pb.Credential, error) {
 	AdjustCredential(credential)
 	if err := CheckCredential(credential); err != nil {
-		return nil, err
+		return nil, HTTPError(err, http.StatusBadRequest)
 	}
 	if err := h.Q().First(new(models.AIProxyCredentials), map[string]any{
 		"platform": credential.GetPlatform(),
@@ -67,7 +67,7 @@ func (h *CredentialsHandler) DeleteCredential(_ context.Context, req *pb.DeleteC
 
 func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.Credential) (*pb.Credential, error) {
 	if err := CheckCredential(credential); err != nil {
-		return nil, err
+		return nil, HTTPError(err, http.StatusBadRequest)
 	}
 	var model models.AIProxyCredentials
 	ok, err := (&model).Getter(h.Dao.Q()).Where(model.FieldAccessKeyID().Equal(credential.GetAccessKeyId())).Get()
@@ -75,7 +75,7 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 		return nil, errors.Wrap(err, "failed to find the credential")
 	}
 	if !ok {
-		return nil, new(errorresp.APIError).NotFound()
+		return nil, HTTPError(nil, http.StatusNotFound)
 	}
 
 	_, err = (&model).Updater(h.Dao.Q()).
@@ -116,11 +116,15 @@ func (h *CredentialsHandler) ListCredentials(_ context.Context, credential *pb.C
 }
 
 func (h *CredentialsHandler) GetCredential(_ context.Context, req *pb.GetCredentialReq) (*pb.Credential, error) {
-	var model models.AIProxyCredentials
-	if err := h.Q().First(&model, map[string]any{"access_key_id": req.GetAccessKeyId()}).Error; err != nil {
+	var credential models.AIProxyCredentials
+	ok, err := (&credential).Getter(h.Q()).Where(credential.FieldAccessKeyID().Equal(req.GetAccessKeyId())).Get()
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to get credential")
 	}
-	return model.ToProtobuf(), nil
+	if !ok {
+		return nil, HTTPError(nil, http.StatusNotFound)
+	}
+	return credential.ToProtobuf(), nil
 }
 
 func AdjustCredential(credential *pb.Credential) {

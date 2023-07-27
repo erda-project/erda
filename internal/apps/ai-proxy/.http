@@ -107,6 +107,9 @@ Content-Type: application/json
 ### Delete credential
 DELETE https://{{ai-proxy_host}}/api/ai-proxy/credentials/{id}
 
+### Get credential
+GET https://{{ai-proxy_host}}/api/ai-proxy/credentials/{id}
+
 ### List models
 GET https://{{ai-proxy_host}}/v1/models
 Authorization: Bearer {{access-key-id}}
