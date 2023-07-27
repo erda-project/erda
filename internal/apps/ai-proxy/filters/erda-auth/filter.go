@@ -173,9 +173,9 @@ func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInf
 		credential models.AIProxyCredentials
 	)
 	ok, err := (&credential).Getter(q).Where(
-		credential.FieldName().Equal("erda"),
-		credential.FieldPlatform().Equal(infor.Header().Get(vars.XAIProxySource)),
-		credential.FieldPlatform().NotEqual(""),
+		credential.FieldName().Equal(infor.Header().Get(vars.XAIProxySource)),
+		credential.FieldName().NotEqual(""),
+		credential.FieldPlatform().Equal("erda"),
 		credential.FieldEnabled().Equal(true),
 		credential.FieldExpiredAt().MoreThan(time.Now()),
 	).Get()
