@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -62,7 +63,7 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 
-	// Check if this filter is enabled on this request
+	// check if this filter is enabled on this request
 	ok, err := f.checkIfIsEnabledOnTheRequest(infor)
 	if err != nil {
 		return reverseproxy.Intercept, err
@@ -72,7 +73,26 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 		return reverseproxy.Continue, nil
 	}
 
-	// request erda to check the access permission
+	// check if the platform is supported by the ai-proxy
+	platformName := infor.Header().Get(vars.XAIProxySource)
+	urls := ctx.Value(vars.CtxKeyErdaOpenapi{}).(map[string]*url.URL)
+	openapi, ok := urls[platformName]
+	if !ok || openapi == nil {
+		l.Debugf("erda-auth: ai-proxy dose not support the platform %s", platformName)
+		return reverseproxy.Intercept, errors.Errorf("erda-auth: ai-proxy dose not support the platform %s", platformName)
+	}
+
+	// check permission for the platform,
+	// and add authorization to the request header
+	accessKeyId, err := f.getCredential(ctx, infor)
+	if err != nil {
+		l.Errorf("failed to First credential, name: %s, platform: %s, err: %v", infor.Header().Get(vars.XAIProxySource), "erda", err)
+		http.Error(w, "the erda platform cannot access the AI Service", http.StatusForbidden)
+		return reverseproxy.Intercept, nil
+	}
+	infor.Header().Set("Authorization", vars.ConcatBearer(accessKeyId))
+
+	// request erda to check the access permission of the user in the org
 	orgId := infor.Header().Get(vars.XAIProxyOrgId)
 	userId := infor.Header().Get(vars.XAIProxyUserId)
 	for _, v := range []*string{
@@ -83,8 +103,7 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 			*v = string(decoded)
 		}
 	}
-
-	access, err := f.request(ctx, orgId, userId)
+	access, err := f.request(ctx, openapi, orgId, userId)
 	if err != nil {
 		return reverseproxy.Intercept, err
 	}
@@ -93,15 +112,6 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 		http.Error(w, "the user cannot access the organization", http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
-
-	// add authorization
-	accessKeyId, err := f.getCredential(ctx, infor)
-	if err != nil {
-		l.Errorf("failed to First credential, name: %s, platform: %s, err: %v", infor.Header().Get(vars.XAIProxySource), "erda", err)
-		http.Error(w, "the erda platform cannot access the AI Service", http.StatusForbidden)
-		return reverseproxy.Intercept, nil
-	}
-	infor.Header().Set("Authorization", vars.ConcatBearer(accessKeyId))
 
 	// set orgId into metadata
 	metadata := map[string]any{"orgId": orgId}
@@ -128,9 +138,8 @@ func (f *ErdaAuth) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (b
 	return false, nil
 }
 
-func (f *ErdaAuth) request(ctx context.Context, orgId, userId string) (bool, error) {
-	u := ctx.Value(vars.CtxKeyErdaOpenapi{}).(url.URL)
-	u.Path = "/api/permissions/actions/access"
+func (f *ErdaAuth) request(ctx context.Context, openapi *url.URL, orgId, userId string) (bool, error) {
+	openapi.Path = "/api/permissions/actions/access"
 	req := &apistructs.ScopeRoleAccessRequest{
 		Scope: apistructs.Scope{
 			Type: "org",
@@ -141,7 +150,7 @@ func (f *ErdaAuth) request(ctx context.Context, orgId, userId string) (bool, err
 	if err := json.NewEncoder(&buf).Encode(req); err != nil {
 		return false, err
 	}
-	request, err := http.NewRequest(http.MethodPost, u.String(), &buf)
+	request, err := http.NewRequest(http.MethodPost, openapi.String(), &buf)
 	if err != nil {
 		return false, err
 	}
@@ -163,41 +172,22 @@ func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInf
 		q          = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
 		credential models.AIProxyCredentials
 	)
-	if err := q.First(&credential, (&f.Config.Credential).Where()).Error; err != nil {
+	ok, err := (&credential).Getter(q).Where(
+		credential.FieldName().Equal("erda"),
+		credential.FieldPlatform().Equal(infor.Header().Get(vars.XAIProxySource)),
+		credential.FieldPlatform().NotEqual(""),
+		credential.FieldEnabled().Equal(true),
+		credential.FieldExpiredAt().MoreThan(time.Now()),
+	).Get()
+	if err != nil {
 		return "", err
+	}
+	if !ok {
+		return "", errors.New("platform permission denied")
 	}
 	return credential.AccessKeyID, nil
 }
 
 type Config struct {
-	On         []*common.On `json:"on" yaml:"on"`
-	Credential Credential   `json:"credential" yaml:"credential"`
-}
-
-type Credential struct {
-	Name               string `json:"name" yaml:"name"`
-	Platform           string `json:"platform" yaml:"platform"`
-	Provider           string `json:"provider" yaml:"provider"`
-	ProviderInstanceId string `json:"providerInstanceId" yaml:"providerInstanceId"`
-}
-
-func (c *Credential) Where() map[string]any {
-	if c.Name == "" {
-		c.Name = "erda.cloud"
-	}
-	if c.Platform == "" {
-		c.Platform = "erda"
-	}
-	where := map[string]any{
-		"name":     c.Name,
-		"platform": c.Platform,
-	}
-	if c.Provider != "" {
-		if c.ProviderInstanceId == "" {
-			c.ProviderInstanceId = "default"
-		}
-		where["provider"] = c.Provider
-		where["provider_instance_id"] = c.Provider
-	}
-	return where
+	On []*common.On `json:"on" yaml:"on"`
 }

@@ -73,11 +73,9 @@ routes:
             - key: X-Ai-Proxy-Source
               operator: =
               value: erda.cloud
-          credential:
-            name: erda.cloud
-            platform: erda
-            provider: ""
-            providerInstanceId: ""
+            - key: X-Ai-Proxy-Source
+              operator: =
+              value: erda.daily.terminus.io
       - name: context
       - name: azure-director
         config:
@@ -94,6 +92,9 @@ routes:
             - key: X-Ai-Proxy-Source
               operator: =
               value: erda.cloud
+            - key: X-Ai-Proxy-Source
+              operator: =
+              value: erda.daily.terminus.io
 
   - path: /v1/edits
     method: POST

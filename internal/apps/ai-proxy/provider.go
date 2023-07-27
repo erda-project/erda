@@ -92,14 +92,14 @@ func init() {
 }
 
 type provider struct {
-	Config      *config
-	L           logs.Logger
-	HTTP        httpserver.Router      `autowired:"http-server@ai"`
-	GRPC        grpcserver.Interface   `autowired:"grpc-server@ai"`
-	Dao         dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
-	OrgSvc      orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
-	Openapi     routes.Register        `autowired:"openapi-dynamic-register.client"`
-	ErdaOpenapi url.URL
+	Config       *config
+	L            logs.Logger
+	HTTP         httpserver.Router      `autowired:"http-server@ai"`
+	GRPC         grpcserver.Interface   `autowired:"grpc-server@ai"`
+	Dao          dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
+	OrgSvc       orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
+	Openapi      routes.Register        `autowired:"openapi-dynamic-register.client"`
+	ErdaOpenapis map[string]*url.URL
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -111,7 +111,11 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if err := p.parseProvidersConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseProvidersConfig")
 	}
-	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.providers))
+	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.Providers))
+	if err := p.parsePlatformsConfig(); err != nil {
+		return errors.Wrap(err, "failed to parsePlatformsConfig")
+	}
+	p.L.Infof("platforms config:\n%s", strutil.TryGetYamlStr(p.Config.Platforms))
 
 	if p.Config.SelfURL == "" {
 		p.Config.SelfURL = "http://ai-proxy:8081"
@@ -119,14 +123,22 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if selfURL, ok := os.LookupEnv("SELF_URL"); ok && len(selfURL) > 0 {
 		p.Config.SelfURL = selfURL
 	}
-	if p.Config.ErdaOpenapi == "" {
-		return errors.New("invalid erda openapi config")
+	if len(p.ErdaOpenapis) == 0 {
+		p.ErdaOpenapis = make(map[string]*url.URL)
 	}
-	u, err := url.Parse(p.Config.ErdaOpenapi)
-	if err != nil {
-		return errors.Wrap(err, "invalid erda openapi")
+	for i, plat := range p.Config.Platforms {
+		if plat.Name == "" {
+			return errors.Errorf("invalid platforms[%d] config, name is empty", i)
+		}
+		if plat.Openapi == "" {
+			return errors.Errorf("the platform %s's openapi is invalid", plat.Name)
+		}
+		openapi, err := url.Parse(plat.Openapi)
+		if err != nil {
+			return errors.Wrapf(err, "faield to parse openapi, name: %s, openapi: %s", plat.Name, plat.Openapi)
+		}
+		p.ErdaOpenapis[plat.Name] = openapi
 	}
-	p.ErdaOpenapi = *u
 
 	// prepare handlers
 	for i := 0; i < len(p.Config.Routes); i++ {
@@ -174,8 +186,8 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
 			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
-			vars.CtxKeyProviders{}, p.Config.providers,
-			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapi,
+			vars.CtxKeyProviders{}, p.Config.Providers,
+			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,
 		).
 		ServeHTTP(w, r)
 }
@@ -228,7 +240,11 @@ func (p *provider) parseRoutesConfig() error {
 }
 
 func (p *provider) parseProvidersConfig() error {
-	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.providers)
+	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.Providers)
+}
+
+func (p *provider) parsePlatformsConfig() error {
+	return p.parseConfig(p.Config.PlatformsRef, "platforms", &p.Config.Platforms)
 }
 
 func (p *provider) parseConfig(ref, key string, i interface{}) error {
@@ -276,14 +292,15 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 }
 
 type config struct {
-	RoutesRef    string             `json:"routesRef" yaml:"routesRef"`
-	ProvidersRef string             `json:"providersRef" yaml:"providersRef"`
-	LogLevel     string             `json:"logLevel" yaml:"logLevel"`
-	Exporter     configPromExporter `json:"exporter" yaml:"exporter"`
-	SelfURL      string             `json:"selfURL" yaml:"selfURL"`
-	ErdaOpenapi  string             `json:"erdaOpenapi" yaml:"erdaOpenapi"`
-	providers    provider2.Providers
-	Routes       route2.Routes
+	RoutesRef    string              `json:"routesRef" yaml:"routesRef"`
+	ProvidersRef string              `json:"providersRef" yaml:"providersRef"`
+	PlatformsRef string              `json:"platformsRef" yaml:"platformsRef"`
+	LogLevel     string              `json:"logLevel" yaml:"logLevel"`
+	Exporter     configPromExporter  `json:"exporter" yaml:"exporter"`
+	SelfURL      string              `json:"selfURL" yaml:"selfURL"`
+	Routes       route2.Routes       `json:"-" yaml:"-"`
+	Providers    provider2.Providers `json:"-" yaml:"-"`
+	Platforms    []*Platform         `json:"-" yaml:"-"`
 }
 
 type configPromExporter struct {
@@ -303,4 +320,10 @@ func SetXRequestId(r *http.Request) {
 	if id := r.Header.Get("X-Request-Id"); id == "" {
 		r.Header.Set("X-Request-Id", strings.ReplaceAll(uuid.NewString(), "-", ""))
 	}
+}
+
+type Platform struct {
+	Name        string `json:"name" yaml:"name"`
+	Openapi     string `json:"openapi" yaml:"openapi"`
+	Description string `json:"description" yaml:"description"`
 }

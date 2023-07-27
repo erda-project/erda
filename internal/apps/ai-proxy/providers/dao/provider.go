@@ -91,7 +91,7 @@ func (p *provider) PagingChatLogs(sessionId string, pageNum, pageSize int) (int6
 	for _, item := range audits {
 		chatLogs = append(chatLogs, item.ToProtobufChatLog())
 	}
-	return 0, chatLogs, nil
+	return total, chatLogs, nil
 }
 
 func (p *provider) CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error) {

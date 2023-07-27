@@ -1,0 +1,12 @@
+platforms:
+  - name: erda.cloud
+    openapi: https://openapi.erda.cloud
+    description: "erda.cloud 中心"
+
+  - name: erda.daily.terminus.io
+    openapi: https://openapi.daily.terminus.io
+    description: "集成环境"
+
+  - name: one.seagts.terminus.io
+    openapi: https://openapi.seagts.terminus.io
+    description: "sea GTS 环境"
