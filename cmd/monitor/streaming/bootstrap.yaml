@@ -584,6 +584,16 @@ erda.oap.collector.core:
         flush_jitter: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_JITTER}
         _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
 
+    external_metrics:
+      - receivers:
+          - "erda.oap.collector.receiver.kafka@spot_external_metric"
+        exporters:
+          - "erda.oap.collector.exporter.clickhouse@external_metric"
+        batch_size: ${EXPORTER_CLICKHOUSE_EXTERNAL_METRIC_BATCH_SIZE:81920}
+        flush_interval: ${EXPORTER_CLICKHOUSE_EXTERNAL_METRIC_FLUSH_INTERVAL}
+        flush_jitter: ${EXPORTER_CLICKHOUSE_EXTERNAL_METRIC_FLUSH_JITTER}
+        _enable: ${WRITE_EXTERNAL_METRIC_TO_CLICKHOUSE_ENABLE:true}
+
     profiles:
       - receivers:
           - "erda.oap.collector.receiver.kafka@spotprofile"
@@ -676,6 +686,14 @@ erda.oap.collector.receiver.kafka@spotmetric:
     # TODO. METRIC_CH_GROUP_ID to METRIC_GROUP_ID when all finished
     group: "${METRIC_CH_GROUP_ID:spot-monitor-metrics-ch}"
 
+erda.oap.collector.receiver.kafka@spot_external_metric:
+  _enable: ${WRITE_EXTERNAL_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  proto_parser: spotmetric
+  future_discard_date: "${EXTERNAL_METRIC_FUTURE_DISCARD_DATE:24h}"
+  consumer:
+    topics: "${EXTERNAL_METRIC_TOPICS:spot-external-metrics}"
+    group: "${EXTERNAL_METRIC_CH_GROUP_ID:spot-monitor-external-metrics-ch}"
+
 erda.oap.collector.receiver.kafka@oapspanevent:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   proto_parser: oapspanevent
@@ -690,6 +708,25 @@ erda.oap.collector.exporter.clickhouse@metric:
   builder:
     data_type: metric
     tenant_id_key: _metric_scope_id
+
+erda.oap.collector.exporter.clickhouse@external_metric:
+  _enable: ${WRITE_EXTERNAL_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  storage:
+    currency_num: ${EXPORTER_CH_EXTERNAL_METRIC_CURRENCY_NUM:2}
+  builder:
+    data_type: external_metric
+    tenant_id_key: _metric_scope_id
+
+clickhouse.table.initializer@external_metric:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  table_prefix: "external_metrics"
+  ttl_sync_interval: "${CLICKHOUSE_TABLE_METRIC_TTL_SYNC_INTERVAL:12h}"
+  cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
+  default_ddl_files:
+    - path: "conf/clickhouse/external_metrics/ddl_create_db.sql.tpl"
+      ignore_err: "false"
+    - path: "conf/clickhouse/external_metrics/ddl_create_default_tables.sql.tpl"
+      ignore_err: "false"
 
 erda.oap.collector.exporter.clickhouse@profile:
   _enable: ${WRITE_PROFILE_TO_CLICKHOUSE_ENABLE:true}
@@ -718,12 +755,25 @@ clickhouse.table.creator@metric:
   default_write_table: "metrics"
   table_prefix: "metrics"
 
+clickhouse.table.creator@external_metric:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  ddl_template: "conf/clickhouse/external_metrics/ddl_create_tenant_tables.sql.tpl"
+  default_write_table: "external_metrics"
+  table_prefix: "external_metrics"
+
 clickhouse.table.loader@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "metrics"
   default_search_table: "metrics_all"
   cache_key_prefix: "clickhouse-table-metric"
+
+clickhouse.table.loader@external_metric:
+  _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  load_mode: "${QUERY_EXTERNAL_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
+  table_prefix: "external_metrics"
+  default_search_table: "external_metrics_all"
+  cache_key_prefix: "clickhouse-table-external-metric"
 # --- metric to clickhouse block ---
 
 # --- event to clickhouse block ---

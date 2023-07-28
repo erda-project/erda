@@ -40,6 +40,16 @@ func Test_startProcessors(t *testing.T) {
 		},
 		dtype: odata.ProfileType,
 	}
+	metricProvider := &Pipeline{
+		processors: []*model.RuntimeProcessor{
+			{
+				Name:      "metric-processor",
+				Processor: &mockProfileProcessor{},
+				Filter:    &model.DataFilter{},
+			},
+		},
+		dtype: odata.ExternalMetricType,
+	}
 	dataIn := make(chan odata.ObservableData, 10)
 	dataOut := make(chan odata.ObservableData, 10)
 	dataIn <- &profile.ProfileIngest{
@@ -50,11 +60,22 @@ func Test_startProcessors(t *testing.T) {
 			}),
 		},
 	}
+	metricDataIn := make(chan odata.ObservableData, 10)
+	metricDataOut := make(chan odata.ObservableData, 10)
+	metricDataIn <- &metric.Metric{
+		Name: "metric1",
+	}
 	go p.startProcessors(dataIn, dataOut)
 	time.Sleep(time.Second)
+	go metricProvider.startProcessors(metricDataIn, metricDataOut)
+	time.Sleep(time.Second)
 	profileOutput := <-dataOut
+	metric1 := <-metricDataOut
 	if _, ok := profileOutput.(*profile.Output); !ok {
 		t.Errorf("profile processor failed")
+	}
+	if _, ok := metric1.(*metric.Metric); !ok {
+		t.Errorf("metric processor failed")
 	}
 }
 
