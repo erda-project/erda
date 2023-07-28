@@ -118,44 +118,28 @@ func (s *SessionsHandler) UpdateSession(ctx context.Context, req *pb.Session) (*
 }
 
 func (s *SessionsHandler) ResetSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := getUserId(ctx, req)
+	return s.patchSession(ctx, req, new(models.AIProxySessions).FieldResetAt().Set(time.Now()))
+}
+
+func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
+	return s.patchSession(ctx, req, new(models.AIProxySessions).FieldIsArchived().Set(true))
+}
+
+func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
+	userId, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
 	// todo: validate user
-
 	if req.GetId() == "" {
 		return nil, HTTPError(InvalidSessionId, http.StatusBadRequest)
 	}
 
-	if err := s.Dao.UpdateSession(req.GetId(), new(models.AIProxySessions).FieldResetAt().Set(time.Now())); err != nil {
-		return nil, err
-	}
-	return &common.VoidResponse{}, nil
-}
-
-func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := getUserId(ctx, req)
-	if !ok {
-		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
-	}
-	// todo: validate user
-
-	if err := s.Dao.UpdateSession(req.GetId(), new(models.AIProxySessions).FieldIsArchived().Set(true)); err != nil {
-		return nil, err
-	}
-	return &common.VoidResponse{}, nil
-}
-
-func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := getUserId(ctx, req)
-	if !ok {
-		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
-	}
-	// todo: validate user
-
-	_, err := new(models.AIProxySessions).Deleter(s.Dao.Q()).Delete()
-	if err != nil {
+	var sessions models.AIProxySessions
+	if _, err := (&sessions).Deleter(s.Dao.Q()).Where(
+		sessions.FieldID().Equal(req.GetId()),
+		sessions.FieldUserID().Equal(userId),
+	).Delete(); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
@@ -192,7 +176,7 @@ func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessions
 }
 
 func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionCondition) (*pb.Session, error) {
-	_, ok := getUserId(ctx, req)
+	userId, ok := getUserId(ctx, req)
 	if !ok {
 		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
@@ -200,14 +184,44 @@ func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionC
 	if req.GetId() == "" {
 		return nil, HTTPError(InvalidSessionId, http.StatusBadRequest)
 	}
-	session, ok, err := s.Dao.GetSession(req.GetId())
+
+	var session models.AIProxySessions
+	ok, err := (&session).Getter(s.Dao.Q()).
+		Where(
+			session.FieldID().Equal(req.GetId()),
+			session.FieldUserID().Equal(userId),
+		).Get()
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		return nil, HTTPError(nil, http.StatusNotFound)
 	}
-	return session, nil
+	return session.ToProtobuf(), nil
+}
+
+func (s *SessionsHandler) patchSession(ctx context.Context, req *pb.LocateSessionCondition, setter ...models.Setter) (*common.VoidResponse, error) {
+	userId, ok := getUserId(ctx, req)
+	if !ok {
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
+	}
+	// todo: validate user
+
+	if req.GetId() == "" {
+		return nil, HTTPError(InvalidSessionId, http.StatusBadRequest)
+	}
+
+	var session models.AIProxySessions
+	if _, err := (&session).Updater(s.Dao.Q()).
+		Where(
+			session.FieldID().Equal(req.GetId()),
+			session.FieldUserID().Equal(userId),
+		).
+		Set(setter...).
+		Updates(); err != nil {
+		return nil, err
+	}
+	return &common.VoidResponse{}, nil
 }
 
 func getUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {
