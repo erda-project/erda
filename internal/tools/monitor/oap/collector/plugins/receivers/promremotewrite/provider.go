@@ -36,6 +36,7 @@ import (
 var providerName = plugins.WithPrefixReceiver("prometheus-remote-write")
 
 type config struct {
+	RemoteWriteUrl string `file:"remote_write_url" default:"/api/v1/prometheus-remote-write" desc:"remote write url"`
 }
 
 var _ model.Receiver = (*provider)(nil)
@@ -55,7 +56,7 @@ func (p *provider) ComponentClose() error {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Router.POST("/api/v1/prometheus-remote-write", p.prwHandler)
+	p.Router.POST(p.Cfg.RemoteWriteUrl, p.prwHandler)
 	return nil
 }
 

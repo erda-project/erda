@@ -115,6 +115,12 @@ func (re *RuntimeExporter) flushOnce() error {
 		if err != nil {
 			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
 		}
+	case odata2.ExternalMetricType:
+		items := re.Buffer.FlushAllExternalMetrics()
+		err := re.Exporter.ExportMetric(items...)
+		if err != nil {
+			re.Logger.Errorf("Exporter<%s> process data error: %s", re.Name, err)
+		}
 	}
 	return nil
 }

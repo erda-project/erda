@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
+	externalmetric "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/external_metric"
 	metricstore "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/metric"
 	profilebuilder "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/span"
@@ -88,6 +89,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	case odata.SpanType:
 	case odata.MetricType:
 	case odata.ProfileType:
+	case odata.ExternalMetricType:
 	default:
 		return fmt.Errorf("invalid builder for data_type: %q", p.Cfg.BuilderCfg.DataType)
 	}
@@ -110,6 +112,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		tmp, err := profilebuilder.NewBuilder(ctx, p.Log.Sub("profile-builder"), p.Cfg.BuilderCfg)
 		if err != nil {
 			return fmt.Errorf("profile build: %w", err)
+		}
+		batchBuilder = tmp
+	case odata.ExternalMetricType:
+		tmp, err := externalmetric.NewBuilder(ctx, p.Log.Sub("external-metric-builder"), p.Cfg.BuilderCfg)
+		if err != nil {
+			return fmt.Errorf("external metrics build: %w", err)
 		}
 		batchBuilder = tmp
 	default:

@@ -38,6 +38,7 @@ var (
 		"metrics-temp":         topicPrefix + "metrics-temp",
 		"monitor-log":          topicPrefix + "monitor-log",
 		"profile":              topicPrefix + "profiles",
+		"external-metrics":     topicPrefix + "external-metrics",
 	}
 )
 

@@ -42,7 +42,7 @@ type provider struct {
 	servicectx servicehub.Context
 	shutdown   chan struct{}
 
-	metricPipelines, spanPipelines, logPipeline, rawPipeline, profilePipelines []*pipeline.Pipeline
+	metricPipelines, spanPipelines, logPipeline, rawPipeline, profilePipelines, externalMetricPipelines []*pipeline.Pipeline
 }
 
 // Run this is optional
@@ -96,6 +96,11 @@ func (p *provider) initComponents() error {
 	if err != nil {
 		return err
 	}
+	p.externalMetricPipelines, err = p.createPipelines(p.Cfg.Pipelines.ExternalMetrics, odata.ExternalMetricType)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -168,6 +173,7 @@ func (p *provider) startPipelines() {
 	startPipeline(p.spanPipelines)
 	startPipeline(p.rawPipeline)
 	startPipeline(p.profilePipelines)
+	startPipeline(p.externalMetricPipelines)
 }
 
 func (p *provider) closePipelines() {
@@ -176,6 +182,7 @@ func (p *provider) closePipelines() {
 	p.closePipeline(p.spanPipelines)
 	p.closePipeline(p.rawPipeline)
 	p.closePipeline(p.profilePipelines)
+	p.closePipeline(p.externalMetricPipelines)
 }
 
 func startPipeline(pipes []*pipeline.Pipeline) {

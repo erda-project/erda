@@ -28,11 +28,12 @@ import (
 type DataType string
 
 const (
-	MetricType  DataType = "METRIC"
-	SpanType    DataType = "SPAN"
-	LogType     DataType = "LOG"
-	RawType     DataType = "RAW"
-	ProfileType DataType = "PROFILE"
+	MetricType         DataType = "METRIC"
+	SpanType           DataType = "SPAN"
+	LogType            DataType = "LOG"
+	RawType            DataType = "RAW"
+	ProfileType        DataType = "PROFILE"
+	ExternalMetricType DataType = "EXTERNAL_METRIC"
 )
 
 const (
