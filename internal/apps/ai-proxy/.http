@@ -23,7 +23,7 @@ Authorization: Bearer {{ai-proxy_root-key}}
 ### Create session
 POST https://{{ai-proxy_host}}/api/ai-proxy/sessions
 Content-Type: application/json
-X-Ai-Proxy-User-Id: 1000645
+X-Ai-Proxy-User-Id: {{ai-proxy_user-id}}
 
 {
   "name": "test-session-1",
@@ -45,7 +45,7 @@ POST https://{{ai-proxy_host}}/v1/chat/completions
 Content-Type: application/json
 X-AI-Proxy-SessionId: {{ai-proxy_my-session-id}}
 X-AI-Proxy-Source: erda.cloud
-X-Ai-Proxy-User-Id: 1000645
+X-Ai-Proxy-User-Id: {{ai-proxy_user-id}}
 
 {
   "model": "gpt-35-turbo-16k",
@@ -62,7 +62,7 @@ X-Ai-Proxy-User-Id: 1000645
 ### update session
 PUT https://{{ai-proxy_host}}/api/ai-proxy/sessions/{{$random.uuid}}
 Content-Type: application/json
-X-Ai-Proxy-User-Id: 1000645
+X-Ai-Proxy-User-Id: {{ai-proxy_user-id}}
 
 {
   "name": "test-session-1",
@@ -77,7 +77,7 @@ X-Ai-Proxy-User-Id: 1000645
 ### Get chat logs
 GET https://{{ai-proxy_host}}/api/ai-proxy/chat-logs
 Content-Type: application/json
-X-Ai-Proxy-User-Id: 1000645
+X-Ai-Proxy-User-Id: {{ai-proxy_user-id}}
 X-AI-Proxy-SessionId: {{ai-proxy_my-session-id}}
 
 ### Get session chat logs
