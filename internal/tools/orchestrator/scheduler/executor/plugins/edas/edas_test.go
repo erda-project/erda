@@ -22,8 +22,10 @@ import (
 
 	"bou.ke/monkey"
 	api "github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
+	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 	fakeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/erda-project/erda/apistructs"
@@ -182,4 +184,50 @@ func TestStatus(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEDAS_GetDeploymentInfo(t *testing.T) {
+	// Create a FakeClient
+	client := fake.NewSimpleClientset()
+
+	// Define your test data
+	group := "test-group"
+	service := &apistructs.Service{
+		Name: "test-service",
+	}
+
+	// Create a test deployment
+	testDeployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-deployment",
+			Namespace: defaultNamespace,
+			Labels: map[string]string{
+				"edas-domain":     "edas-admin",
+				"edas.oam.acname": composeEDASAppNameWithGroup(group, service.Name),
+			},
+		},
+	}
+
+	// Add the test deployment to the FakeClient
+	_, _ = client.AppsV1().Deployments(defaultNamespace).Create(context.Background(), testDeployment, metav1.CreateOptions{})
+
+	// Create an instance of your EDAS struct
+	edas := &EDAS{
+		cs: client,
+	}
+
+	// Test the function
+	deployment, err := edas.getDeploymentInfo(group, service)
+	assert.NoError(t, err)
+	assert.NotNil(t, deployment)
+	assert.Equal(t, testDeployment.Name, deployment.Name)
+
+	// Test case when deployment is not found
+	nonExistentService := &apistructs.Service{
+		Name: "non-existent-service",
+	}
+	deployment, err = edas.getDeploymentInfo(group, nonExistentService)
+	assert.Error(t, err)
+	assert.Nil(t, deployment)
+	assert.Contains(t, err.Error(), "failed to find deployment")
 }

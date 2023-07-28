@@ -1545,13 +1545,10 @@ func (e *EDAS) getDeploymentInfo(group string, srv *apistructs.Service) (*appsv1
 			return nil, errors.Errorf("failed to find deployment, app: %v, err: %v", fullName, err)
 		}
 
-		switch len(deploy.Items) {
-		case 0:
+		if len(deploy.Items) == 0 {
 			continue
-		case 1:
-			return &deploy.Items[0], nil
-		default:
-			return nil, errors.Errorf("get multi deployment, app: %v, count: %d", fullName, len(deploy.Items))
+		} else {
+			return &deploy.Items[len(deploy.Items)-1], nil
 		}
 	}
 
