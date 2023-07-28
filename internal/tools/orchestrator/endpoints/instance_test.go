@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -324,6 +326,128 @@ func Test_convertReasonMessageToHumanReadableMessage(t *testing.T) {
 			if got := convertReasonMessageToHumanReadableMessage(tt.args.containerReason, tt.args.containerMessage); got != tt.want {
 				t.Errorf("convertReasonMessageToHumanReadableMessage() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestGetMainContainerNameByServiceName(t *testing.T) {
+	// Prepare test cases
+	testCases := []struct {
+		description    string
+		containers     []corev1.Container
+		serviceName    string
+		expectedResult string
+	}{
+		{
+			description: "Empty serviceName should return the name of the first container",
+			containers: []corev1.Container{
+				{Name: "container1"},
+				{Name: "container2"},
+			},
+			serviceName:    "",
+			expectedResult: "container1",
+		},
+		{
+			description: "serviceName found in container's environment variables",
+			containers: []corev1.Container{
+				{Name: "container1", Env: []corev1.EnvVar{{Name: apistructs.EnvDiceServiceName, Value: "service1"}}},
+				{Name: "container2", Env: []corev1.EnvVar{{Name: apistructs.EnvDiceServiceName, Value: "service2"}}},
+			},
+			serviceName:    "service2",
+			expectedResult: "container2",
+		},
+		{
+			description: "serviceName not found in container's environment variables, should return the name of the first container",
+			containers: []corev1.Container{
+				{Name: "container1", Env: []corev1.EnvVar{{Name: apistructs.EnvDiceServiceName, Value: "service1"}}},
+				{Name: "container2", Env: []corev1.EnvVar{{Name: apistructs.EnvDiceServiceName, Value: "service2"}}},
+			},
+			serviceName:    "nonexistent-service",
+			expectedResult: "container1",
+		},
+		{
+			description: "Only one container, serviceName is empty, should return its name",
+			containers: []corev1.Container{
+				{Name: "single-container"},
+			},
+			serviceName:    "",
+			expectedResult: "single-container",
+		},
+		{
+			description: "Only one container, serviceName is not empty, should return its name",
+			containers: []corev1.Container{
+				{Name: "single-container"},
+			},
+			serviceName:    "my-service",
+			expectedResult: "single-container",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			result := getMainContainerNameByServiceName(tc.containers, tc.serviceName)
+			assert.Equal(t, tc.expectedResult, result)
+		})
+	}
+}
+
+func TestSortContainers(t *testing.T) {
+	testCases := []struct {
+		description     string
+		containers      []apistructs.PodContainer
+		mainServiceName string
+		expectedResult  []apistructs.PodContainer
+	}{
+		{
+			description:     "Empty containers list, should return empty list",
+			containers:      []apistructs.PodContainer{},
+			mainServiceName: "",
+			expectedResult:  []apistructs.PodContainer{},
+		},
+		{
+			description: "Only one container, should return the same list",
+			containers: []apistructs.PodContainer{
+				{ContainerName: "container1"},
+			},
+			mainServiceName: "container1",
+			expectedResult: []apistructs.PodContainer{
+				{ContainerName: "container1"},
+			},
+		},
+		{
+			description: "Main service found, should place it at the beginning of the list",
+			containers: []apistructs.PodContainer{
+				{ContainerName: "container1"},
+				{ContainerName: "container2"},
+				{ContainerName: "container3"},
+			},
+			mainServiceName: "container2",
+			expectedResult: []apistructs.PodContainer{
+				{ContainerName: "container2"},
+				{ContainerName: "container1"},
+				{ContainerName: "container3"},
+			},
+		},
+		{
+			description: "Main service not found, should return the same list",
+			containers: []apistructs.PodContainer{
+				{ContainerName: "container1"},
+				{ContainerName: "container2"},
+				{ContainerName: "container3"},
+			},
+			mainServiceName: "nonexistent-container",
+			expectedResult: []apistructs.PodContainer{
+				{ContainerName: "container1"},
+				{ContainerName: "container2"},
+				{ContainerName: "container3"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			result := sortContainers(tc.containers, tc.mainServiceName)
+			assert.Equal(t, tc.expectedResult, result)
 		})
 	}
 }

@@ -287,6 +287,7 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(pods)
 }
 
+// getPodStatusFromK8s TODO: move all logic to the implementation.
 func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistructs.Pod, error) {
 	currPods := make([]apistructs.Pod, 0)
 	runtimeId, _ := strconv.ParseUint(runtimeID, 10, 64)
@@ -413,6 +414,10 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 					Message:       message,
 				})
 			}
+
+			containersResource = sortContainers(containersResource,
+				getMainContainerNameByServiceName(pod.Spec.Containers, serviceName),
+			)
 
 			if pod.UID == "" || pod.Status.PodIP == "" || pod.Status.HostIP == "" ||
 				pod.Status.Phase == "" || pod.Status.StartTime == nil || len(containersResource) == 0 {
@@ -688,4 +693,42 @@ func parseInstanceMeta(meta string) apistructs.K8sInstanceMetaInfo {
 	}
 
 	return info
+}
+
+// sortContainers
+// TODO: move all logic to the implementation.
+func sortContainers(containers []apistructs.PodContainer, mainServiceName string) []apistructs.PodContainer {
+	var sortedContainers []apistructs.PodContainer
+
+	if len(containers) < 2 {
+		return containers
+	}
+
+	for _, container := range containers {
+		if container.ContainerName == mainServiceName {
+			sortedContainers = append([]apistructs.PodContainer{container}, sortedContainers...)
+		} else {
+			sortedContainers = append(sortedContainers, container)
+		}
+	}
+
+	return sortedContainers
+}
+
+// getMainContainerNameByServiceName
+// TODO: move all logic to the implementation.
+func getMainContainerNameByServiceName(containers []corev1.Container, serviceName string) string {
+	if serviceName == "" || len(containers) == 1 {
+		return containers[0].Name
+	}
+
+	for _, c := range containers {
+		for _, e := range c.Env {
+			if e.Name == apistructs.EnvDiceServiceName && e.Value == serviceName {
+				return c.Name
+			}
+		}
+	}
+
+	return containers[0].Name
 }
