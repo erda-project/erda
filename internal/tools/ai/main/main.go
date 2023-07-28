@@ -16,65 +16,17 @@ package main
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/sashabaranov/go-openai/jsonschema"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
-
-//go:embed prompt.yaml
-var PromptYaml embed.FS
-
-var createTestCase = openai.FunctionDefinition{
-	Name:        "create-test-case",
-	Description: "create test case",
-	Parameters: &jsonschema.Definition{
-		Type: jsonschema.Object,
-		Properties: map[string]jsonschema.Definition{
-			"name": {
-				Type:        jsonschema.String,
-				Description: "the name of test case",
-			},
-			"preset": {
-				Type:        jsonschema.String,
-				Description: "前置条件",
-				Items: &jsonschema.Definition{
-					Type: jsonschema.String,
-				},
-			},
-			"steps": {
-				Type:        jsonschema.Array,
-				Description: "步骤及结果",
-				Items: &jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"step_name": {
-							Type:        jsonschema.String,
-							Description: "步骤名称",
-						},
-						"step_result": {
-							Type:        jsonschema.String,
-							Description: "期望结果",
-						},
-					},
-				},
-			},
-		},
-		Required: []string{"name", "preset", "steps"},
-	},
-}
-
-type Prompt struct {
-	SystemMessage string `yaml:"system,omitempty"`
-	UserMessage   string `yaml:"user,omitempty"`
-}
 
 func main() {
 	f, err := PromptYaml.Open("prompt.yaml")
@@ -88,9 +40,9 @@ func main() {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	baseURL := os.Getenv("AZURE_OPENAI_BASE_URL")
 	cfg := openai.DefaultAzureConfig(apiKey, baseURL)
-	//cfg.APIVersion = "2023-07-01-preview"
+	cfg.APIVersion = "2023-07-01-preview"
 	client := openai.NewClientWithConfig(cfg)
-	stream, err := client.CreateChatCompletionStream(
+	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model: openai.GPT3Dot5Turbo16K,
@@ -104,30 +56,46 @@ func main() {
 					Content: prompt.UserMessage,
 				},
 			},
-			Temperature: 0.8,
-			Stream:      true,
-			Functions:   []openai.FunctionDefinition{createTestCase},
-			//FunctionCall: openai.FunctionCall{Name: createTestCase.Name},
-			FunctionCall: "auto",
+			Temperature:  1,
+			Stream:       false,
+			Functions:    []openai.FunctionDefinition{createTestCase},
+			FunctionCall: openai.FunctionCall{Name: createTestCase.Name},
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("xxx", err)
 	}
-	defer stream.Close()
-	for {
-		resp, err := stream.Recv()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				log.Println("EOF")
-				break
-			}
-			log.Fatal(err)
-		}
-		if len(resp.Choices) == 0 {
-			b, _ := json.MarshalIndent(resp, "", "  ")
-			log.Fatal("no choices in response: ", string(b))
-		}
-		fmt.Print(resp.Choices[0].Delta.Content)
+	if len(resp.Choices) == 0 {
+		log.Fatal("no choices in response")
 	}
+	fc := resp.Choices[0].Message.FunctionCall
+	if fc == nil {
+		log.Fatal("no function call in response")
+	}
+	fmt.Println(fc.Name)
+	fmt.Println(fc.Arguments)
+	var testCaseCreateInfo apistructs.TestCaseCreateRequest
+	if err := json.Unmarshal([]byte(fc.Arguments), &testCaseCreateInfo); err != nil {
+		log.Fatal("failed to unmarshal arguments", err)
+	}
+
+	// fulfill other infos
+	testCaseCreateInfo.Name = prompt.UserMessage
+	testCaseCreateInfo.ProjectID = 1904
+	testCaseCreateInfo.Desc = fmt.Sprintf("Powered by AI.\n\n对应需求:\n%s", prompt.UserMessage)
+	testCaseCreateInfo.TestSetID = 24186
+	testCaseCreateInfo.Priority = apistructs.TestCasePriorityP3
+	testCaseCreateInfo.UserID = "1005834"
+
+	// create in daily
+	bdl := bundle.New(bundle.WithErdaServer())
+	createResp, err := bdl.CreateTestCase(testCaseCreateInfo)
+	if err != nil {
+		log.Fatal("failed to create test case", err)
+	}
+	fmt.Println(createResp)
+}
+
+func init() {
+	handleEnvFile()
 }
