@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -92,6 +93,9 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		l.Debugf("session(id=%s) is archived, continue", sessionId)
 		return reverseproxy.Continue, nil
 	}
+
+	// make the session is the latest updated
+	defer func() { go c.updateSession(ctx, sessionId) }()
 
 	var m = make(map[string]json.RawMessage)
 	if err = json.NewDecoder(infor.BodyBuffer()).Decode(&m); err != nil {
@@ -173,6 +177,20 @@ func (c *SessionContext) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInf
 		}
 	}
 	return false, nil
+}
+
+func (c *SessionContext) updateSession(ctx context.Context, id string) {
+	var (
+		l       = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+		db      = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+		session models.AIProxySessions
+	)
+	if _, err := (&session).Updater(db.Q().Debug()).
+		Where(session.FieldID().Equal(id)).
+		Set(session.FieldUpdatedAt().Set(time.Now())).
+		Updates(); err != nil {
+		l.Errorf("failed to update session, err: %v", err)
+	}
 }
 
 type Config struct {
