@@ -50,7 +50,7 @@ func (s *SessionsHandler) CreateSession(ctx context.Context, req *pb.Session) (*
 		req.ContextLength = 20
 	}
 	// todo: hard code yet
-	if req.GetSource() != "erda.cloud" {
+	if req.GetSource() == "" {
 		return nil, HTTPError(InvalidSessionSource, http.StatusBadRequest)
 	}
 	if req.GetModel() == "" {
