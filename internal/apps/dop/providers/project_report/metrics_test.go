@@ -16,27 +16,19 @@ package project_report
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/erda-project/erda-proto-go/core/org/pb"
-	"github.com/erda-project/erda/apistructs"
 )
 
-func Test_generateProjectMetricLabels(t *testing.T) {
-	projectDto := &apistructs.ProjectDTO{
-		ID:          1,
-		Name:        "project1",
-		OrgID:       1,
-		DisplayName: "project1",
+func TestIsValid(t *testing.T) {
+	validFields := &IterationMetricFields{
+		CalculatedAt: time.Now(),
 	}
-	orgDto := &pb.Org{
-		ID:          1,
-		Name:        "org1",
-		DisplayName: "org1",
+	assert.Equal(t, true, validFields.IsValid())
+
+	invalidFields := &IterationMetricFields{
+		CalculatedAt: time.Now().Add(-25 * time.Hour),
 	}
-	keys, values, labels := generateProjectMetricLabels(projectDto, orgDto)
-	assert.Equal(t, 8, len(keys))
-	assert.Equal(t, 8, len(values))
-	assert.Equal(t, "org1", labels[labelOrgName])
+	assert.Equal(t, false, invalidFields.IsValid())
 }

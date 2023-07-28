@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/gallery"
 
 	// pkg
+	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda/internal/pkg/audit"
 	_ "github.com/erda-project/erda/internal/pkg/dingtalktest"
 	_ "github.com/erda-project/erda/internal/pkg/profileagent"

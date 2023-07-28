@@ -23,6 +23,9 @@ health:
 component-protocol:
 openapi-component-protocol:
 
+prometheus:
+  router_label_enable: false
+
 i18n:
   common: # core-services
     - conf/i18n/cs-i18n.yml # core-services
@@ -279,7 +282,7 @@ uc-adaptor:
 dop: { }
 erda.core.dop.taskerror: { }
 erda.dop.qa.unittest: { }
-project-report: { }
+project-management-report: { }
 erda.dop.search: { }
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:

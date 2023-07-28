@@ -1,0 +1,116 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package project_report
+
+import (
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+)
+
+type metricValue struct {
+	value     float64
+	labels    []string
+	timestamp time.Time
+}
+
+type metricValues []metricValue
+
+type iterationMetric struct {
+	name        string
+	help        string
+	valueType   prometheus.ValueType
+	extraLabels []string
+	condition   func(i *apistructs.Iteration) bool
+	getValues   func(i *IterationInfo) metricValues
+}
+
+func (im *iterationMetric) desc(baseLabels []string) *prometheus.Desc {
+	return prometheus.NewDesc(im.name, im.help, append(baseLabels, im.extraLabels...), nil)
+}
+
+type IterationLabelsFunc func(info *IterationInfo) map[string]string
+
+type infoProvider interface {
+	// GetRequestedIterationsInfo gets info for all requested iterations based on the request options.
+	GetRequestedIterationsInfo() (map[uint64]*IterationInfo, error)
+}
+
+type PrometheusCollector struct {
+	infoProvider        infoProvider
+	errors              prometheus.Gauge
+	iterationMetrics    []iterationMetric
+	iterationLabelsFunc IterationLabelsFunc
+}
+
+func (c *PrometheusCollector) Collect(ch chan<- prometheus.Metric) {
+	c.errors.Set(0)
+	c.collectIterationInfo(ch)
+	c.errors.Collect(ch)
+}
+
+func (c *PrometheusCollector) Describe(ch chan<- *prometheus.Desc) {
+	c.errors.Describe(ch)
+	for _, im := range c.iterationMetrics {
+		ch <- im.desc([]string{})
+	}
+}
+
+func (c *PrometheusCollector) collectIterationInfo(ch chan<- prometheus.Metric) {
+	iterations, err := c.infoProvider.GetRequestedIterationsInfo()
+	if err != nil {
+		c.errors.Set(1)
+		logrus.Errorf("failed to get iteration info: %v", err)
+	}
+	rawLabels := map[string]struct{}{}
+	for _, iteration := range iterations {
+		for l := range c.iterationLabelsFunc(iteration) {
+			rawLabels[l] = struct{}{}
+		}
+	}
+
+	for _, iter := range iterations {
+		values := make([]string, 0, len(rawLabels))
+		labels := make([]string, 0, len(rawLabels))
+		iterationLabels := c.iterationLabelsFunc(iter)
+		for l := range rawLabels {
+			duplicate := false
+			sl := sanitizeLabelName(l)
+			for _, x := range labels {
+				if sl == x {
+					duplicate = true
+					break
+				}
+			}
+			if !duplicate {
+				labels = append(labels, sl)
+				values = append(values, iterationLabels[sl])
+			}
+		}
+
+		for _, im := range c.iterationMetrics {
+			desc := im.desc(labels)
+			for _, metricValue := range im.getValues(iter) {
+				ch <- prometheus.NewMetricWithTimestamp(
+					metricValue.timestamp,
+					prometheus.MustNewConstMetric(desc, im.valueType, float64(metricValue.value), append(values, metricValue.labels...)...),
+				)
+			}
+		}
+	}
+}

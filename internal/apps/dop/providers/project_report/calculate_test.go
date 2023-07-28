@@ -17,35 +17,41 @@ package project_report
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
-	"github.com/erda-project/erda/pkg/mock"
+	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	iterationdb "github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-func Test_getRequirementTotalNum(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	issueService := mock.NewMockIssueQuery(ctrl)
-	issueService.EXPECT().Paging(gomock.Any()).AnyTimes().Return([]*pb.Issue{{Id: 1}}, uint64(1), nil)
+func Test_metricFieldsEtcdKey(t *testing.T) {
 	p := &provider{
-		IssueSvc: issueService,
+		Cfg: &config{
+			IterationMetricEtcdPrefixKey: "/devops/metrics/iteration/",
+		},
 	}
-	total, err := p.getRequirementTotalNum(1)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(1), total)
+	iterKey := p.metricFieldsEtcdKey(2)
+	assert.Equal(t, "/devops/metrics/iteration/2", iterKey)
 }
 
-func Test_getTaskTotalNum(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	issueService := mock.NewMockIssueQuery(ctrl)
-	issueService.EXPECT().Paging(gomock.Any()).AnyTimes().Return([]*pb.Issue{{Id: 1}}, uint64(1), nil)
+func Test_iterationLabelsFunc(t *testing.T) {
 	p := &provider{
-		IssueSvc: issueService,
+		orgSet:       &orgCache{cache.New(cache.NoExpiration, cache.NoExpiration)},
+		projectSet:   &projectCache{cache.New(cache.NoExpiration, cache.NoExpiration)},
+		iterationSet: &iterationCache{cache.New(cache.NoExpiration, cache.NoExpiration)},
 	}
-	total, err := p.getTaskTotalNum(1)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(1), total)
+	p.orgSet.Set(1, &orgpb.Org{Name: "org1", ID: 1})
+	p.projectSet.Set(1, &model.Project{Name: "project1", OrgID: 1, BaseModel: model.BaseModel{ID: 1}})
+	labels := p.iterationLabelsFunc(&IterationInfo{
+		Iteration: &iterationdb.Iteration{
+			BaseModel: dbengine.BaseModel{ID: 1},
+			Title:     "iteration1",
+			ProjectID: 1,
+		},
+	})
+	assert.Equal(t, "org1", labels["org_name"])
+	assert.Equal(t, "project1", labels["project_name"])
+	assert.Equal(t, "iteration1", labels["iteration_title"])
 }
