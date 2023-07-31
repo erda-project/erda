@@ -321,11 +321,7 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 	// reset content-length
-	if infor.BodyBuffer() != nil {
-		contentLength := infor.BodyBuffer().Len()
-		outreq.ContentLength = int64(contentLength)
-		outreq.Header.Set(httputil.HeaderKeyContentLength, strconv.Itoa(contentLength))
-	}
+	resetContentLength(infor, outreq)
 
 	p.Director(outreq)
 	if outreq.Form != nil {
@@ -820,4 +816,12 @@ func lower(b byte) byte {
 type NamingFilter struct {
 	Name   string
 	Filter Filter
+}
+
+func resetContentLength(infor HttpInfor, req *http.Request) {
+	if infor.BodyBuffer() != nil {
+		contentLength := infor.BodyBuffer().Len()
+		req.ContentLength = int64(contentLength)
+		req.Header.Set(httputil.HeaderKeyContentLength, strconv.Itoa(contentLength))
+	}
 }
