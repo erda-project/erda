@@ -61,7 +61,7 @@ type HttpInfor interface {
 	RemoteAddr() string
 	// Body only for getting request body and only on request stage.
 	Body() io.ReadCloser
-	SetBody(body io.ReadCloser)
+	SetBody(body io.ReadCloser, size int64)
 	// BodyBuffer only for getting request body and only on request stage.
 	BodyBuffer() *bytes.Buffer
 	Mutex() *sync.Mutex
@@ -252,7 +252,8 @@ func (r *infor[R]) BodyBuffer() *bytes.Buffer {
 	return bytes.NewBuffer(data)
 }
 
-func (r *infor[R]) SetBody(body io.ReadCloser) {
+// SetBody only use on RequestFilter.OnRequest
+func (r *infor[R]) SetBody(body io.ReadCloser, size int64) {
 	field := reflect.ValueOf(r.r)
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
@@ -263,6 +264,10 @@ func (r *infor[R]) SetBody(body io.ReadCloser) {
 		_ = i.(io.Closer).Close()
 	}
 	v.Set(reflect.ValueOf(body))
+	if req, ok := (any)(r.r).(*http.Request); ok {
+		req.ContentLength = size
+		req.Header.Set(httputil.HeaderKeyContentLength, strconv.FormatUint(uint64(size), 10))
+	}
 }
 
 func (r *infor[R]) Mutex() *sync.Mutex {

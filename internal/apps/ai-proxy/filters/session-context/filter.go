@@ -158,7 +158,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		l.Errorf("failed to json.Marshal(m), err: %v", err)
 		return reverseproxy.Intercept, nil
 	}
-	infor.SetBody(io.NopCloser(bytes.NewBuffer(data)))
+	infor.SetBody(io.NopCloser(bytes.NewBuffer(data)), int64(len(data)))
 	l.Debugf("infor new body buffer: %s", infor.BodyBuffer().String())
 	return reverseproxy.Continue, nil
 }
