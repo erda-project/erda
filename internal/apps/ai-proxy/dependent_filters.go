@@ -20,6 +20,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/body-size-limit"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/cors"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
