@@ -251,8 +251,7 @@
               "ta_timing"
             ],
             "groupby": [
-              "time()",
-              "doc_path::tag"
+              "time()"
             ],
             "select": [
               {
@@ -369,8 +368,7 @@
               "ta_timing"
             ],
             "groupby": [
-              "time()",
-              "doc_path::tag"
+              "time()"
             ],
             "select": [
               {
