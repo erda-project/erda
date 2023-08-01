@@ -27,8 +27,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
-	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
-	tablepkg "github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/creator"
 	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
@@ -38,19 +36,17 @@ import (
 )
 
 const (
-	chTableCreator   = "clickhouse.table.creator@external_metric"
-	chTableLoader    = "clickhouse.table.loader@external_metric"
-	chTableRetention = "storage-retention-strategy@external_metric"
+	chTableCreator = "clickhouse.table.creator@external_metric"
+	chTableLoader  = "clickhouse.table.loader@external_metric"
 )
 
 type Builder struct {
-	logger    logs.Logger
-	client    clickhouse.Conn
-	Creator   creator.Interface
-	Loader    loader.Interface
-	Retention retention.Interface
-	cfg       *builder.BuilderConfig
-	batchC    chan []*metric.Metric
+	logger  logs.Logger
+	client  clickhouse.Conn
+	Creator creator.Interface
+	Loader  loader.Interface
+	cfg     *builder.BuilderConfig
+	batchC  chan []*metric.Metric
 }
 
 func (bu *Builder) BuildBatch(ctx context.Context, sourceBatch interface{}) ([]driver.Batch, error) {
@@ -82,12 +78,6 @@ func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.Builder
 		return nil, fmt.Errorf("service %q must existed", chTableCreator)
 	} else {
 		bu.Creator = svc
-	}
-
-	if svc, ok := ctx.Service(chTableRetention).(retention.Interface); !ok {
-		return nil, fmt.Errorf("service %q must existed", chTableRetention)
-	} else {
-		bu.Retention = svc
 	}
 
 	if svc, ok := ctx.Service(chTableLoader).(loader.Interface); !ok {
@@ -195,17 +185,11 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 }
 
 func (bu *Builder) getOrCreateTenantTable(ctx context.Context, data *metric.Metric) (string, error) {
-	key := bu.Retention.GetConfigKey(data.Name, data.Tags)
-	ttl := bu.Retention.GetTTL(key)
 	var (
 		wait  <-chan error
 		table string
 	)
-	if len(key) > 0 {
-		wait, table = bu.Creator.Ensure(ctx, data.Tags[lib.OrgNameKey], key, tablepkg.FormatTTLToDays(ttl))
-	} else {
-		wait, table = bu.Creator.Ensure(ctx, data.Tags[lib.OrgNameKey], "", tablepkg.FormatTTLToDays(ttl))
-	}
+	wait, table = bu.Creator.Ensure(ctx, data.Tags[lib.OrgNameKey], "", int64(time.Hour))
 	if wait != nil {
 		select {
 		case <-wait: // ignore
