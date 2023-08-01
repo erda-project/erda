@@ -89,8 +89,7 @@
               "ta_req"
             ],
             "groupby": [
-              "time()",
-              "req_path::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
@@ -215,8 +214,7 @@
               "ta_req"
             ],
             "groupby": [
-              "time()",
-              "req_path::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
