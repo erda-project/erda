@@ -17,10 +17,11 @@ package erda_auth
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 	"gopkg.in/yaml.v3"
 	"net/http"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
@@ -67,6 +68,8 @@ func (f *Cors) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, 
 	// todo: check refer in r.Config.AccessControlAllowOrigin
 
 	infor.Header().Set("Access-Control-Allow-Origin", "*")
+	infor.Header().Set("Access-Control-Allow-Headers", "*")
+	infor.Header().Set("Access-Control-Allow-Methods", "*")
 	return nil
 }
 
