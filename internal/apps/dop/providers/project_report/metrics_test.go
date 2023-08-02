@@ -32,3 +32,8 @@ func TestIsValid(t *testing.T) {
 	}
 	assert.Equal(t, false, invalidFields.IsValid())
 }
+
+func Test_sanitizeLabelName(t *testing.T) {
+	label := "erda-project-id"
+	assert.Equal(t, "erda_project_id", sanitizeLabelName(label))
+}

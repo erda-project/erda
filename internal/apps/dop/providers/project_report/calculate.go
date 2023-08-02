@@ -21,7 +21,6 @@ import (
 	"time"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
-	issuepb "github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -197,10 +196,12 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 
 	fields.TaskTotal = uint64(iterationSummary.Task.UnDone + iterationSummary.Task.Done)
 	fields.RequirementTotal = uint64(iterationSummary.Requirement.UnDone + iterationSummary.Requirement.Done)
+	fields.RequirementDoneTotal = uint64(iterationSummary.Requirement.Done)
 	requirementInclusionTaskNum, err := p.issueDB.GetRequirementInclusionTaskNum(iter.Iteration.ID)
 	if err != nil {
 		return nil, err
 	}
+	fields.RequirementAssociatedTaskTotal = requirementInclusionTaskNum
 
 	totalTaskEstimateTime, err := p.issueDB.GetTaskIssueManHourSum(
 		apistructs.IssuesStageRequest{
@@ -225,6 +226,8 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		return nil, err
 	}
 	fields.IterationAssigneeNum = haveUndoneTaskAssigneeNum
+	fields.TaskDoneTotal = uint64(iterationSummary.Task.Done)
+	fields.TaskBeInclusionRequirementTotal = taskBeInclusionReqNum
 	if fields.TaskTotal > 0 {
 		fields.TaskCompleteSchedule = float64(iterationSummary.Task.Done) / float64(fields.TaskTotal)
 		fields.TaskAssociatedPercent = float64(taskBeInclusionReqNum) / float64(fields.TaskTotal)
@@ -239,17 +242,16 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 	if err != nil {
 		return nil, err
 	}
-	_, reopenBugNum, err := p.issueDB.PagingIssues(issuepb.PagingIssueRequest{
-		ProjectID:    iter.Iteration.ProjectID,
-		IterationID:  int64(iter.Iteration.ID),
-		Type:         []string{apistructs.IssueTypeBug.String()},
-		StateBelongs: []string{string(apistructs.IssueStateBelongReopen)},
-	}, true)
+	reopenBugNum, _, err := p.issueDB.BugReopenCount(iter.Iteration.ProjectID, []uint64{iter.Iteration.ID})
+	fields.SeriousBugTotal = seriousBugNum
+	fields.DemandDesignBugTotal = demandDesignBugNum
+	fields.ReopenBugTotal = reopenBugNum
+	fields.BugDoneTotal = uint64(iterationSummary.Bug.Done)
 	if fields.BugTotal > 0 {
 		fields.BugCompleteSchedule = float64(iterationSummary.Bug.Done) / float64(fields.BugTotal)
 		fields.SeriousBugPercent = float64(seriousBugNum) / float64(fields.BugTotal)
 		fields.DemandDesignBugPercent = float64(demandDesignBugNum) / float64(fields.BugTotal)
-		fields.ReopenBugPercent = float64(reopenBugNum) / float64(fields.BugTotal)
+		fields.ReopenBugPercent = float64(reopenBugNum) / float64(fields.BugTotal+reopenBugNum)
 	}
 
 	doneTaskElapsedMinute, err := p.issueDB.GetTaskIssueManHourSum(

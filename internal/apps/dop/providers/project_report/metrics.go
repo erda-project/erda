@@ -16,13 +16,11 @@ package project_report
 
 import (
 	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
-	"github.com/erda-project/erda/apistructs"
 	iterationdb "github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 )
@@ -58,22 +56,30 @@ type IterationMetricFields struct {
 	CalculatedAt time.Time
 
 	// task-related metrics
-	TaskTotal             uint64
-	TaskEstimatedMinute   uint64
-	TaskElapsedMinute     uint64
-	TaskCompleteSchedule  float64
-	TaskAssociatedPercent float64
+	TaskTotal                       uint64
+	TaskEstimatedMinute             uint64
+	TaskElapsedMinute               uint64
+	TaskDoneTotal                   uint64
+	TaskCompleteSchedule            float64
+	TaskBeInclusionRequirementTotal uint64
+	TaskAssociatedPercent           float64
 
 	// requirement-related metrics
-	RequirementTotal             uint64
-	RequirementCompleteSchedule  float64
-	RequirementAssociatedPercent float64
+	RequirementTotal               uint64
+	RequirementDoneTotal           uint64
+	RequirementCompleteSchedule    float64
+	RequirementAssociatedTaskTotal uint64
+	RequirementAssociatedPercent   float64
 
 	// bug-related metrics
 	BugTotal               uint64
+	SeriousBugTotal        uint64
 	SeriousBugPercent      float64
+	DemandDesignBugTotal   uint64
 	DemandDesignBugPercent float64
+	ReopenBugTotal         uint64
 	ReopenBugPercent       float64
+	BugDoneTotal           uint64
 	BugCompleteSchedule    float64
 
 	// iteration-related metrics
@@ -326,6 +332,142 @@ var (
 				}
 			},
 		},
+		{
+			name:      "iteration_task_done_total",
+			help:      "The number of tasks that have been completed in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.TaskDoneTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_task_inclusion_requirement_total",
+			help:      "The number of tasks that are associated by the requirement in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.TaskBeInclusionRequirementTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_requirement_done_total",
+			help:      "The number of requirements that have been completed in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.RequirementDoneTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_requirement_associated_task_total",
+			help:      "The number of requirement have associated tasks in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.RequirementAssociatedTaskTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_serious_bug_total",
+			help:      "The number of fatal/serious bug in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.SeriousBugTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_demand_design_bug_total",
+			help:      "The number of demand design bug in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.DemandDesignBugTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_reopen_bug_total",
+			help:      "The number of reopen bug in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.ReopenBugTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_bug_done_total",
+			help:      "The number of bug that have been completed in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.BugDoneTotal
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
 	}
 )
 
@@ -335,13 +477,4 @@ var invalidNameCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 // client_label.LabelNameRE with an underscore.
 func sanitizeLabelName(name string) string {
 	return invalidNameCharRE.ReplaceAllString(name, "_")
-}
-
-func DefaultIterationLabels(iteration *apistructs.Iteration) map[string]string {
-	set := map[string]string{
-		labelIterationID:    strconv.FormatInt(iteration.ID, 10),
-		labelProjectID:      strconv.FormatUint(iteration.ProjectID, 10),
-		labelIterationTitle: iteration.Title,
-	}
-	return set
 }

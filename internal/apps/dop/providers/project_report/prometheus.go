@@ -105,10 +105,10 @@ func (c *PrometheusCollector) collectIterationInfo(ch chan<- prometheus.Metric) 
 
 		for _, im := range c.iterationMetrics {
 			desc := im.desc(labels)
-			for _, metricValue := range im.getValues(iter) {
+			for _, metricVal := range im.getValues(iter) {
 				ch <- prometheus.NewMetricWithTimestamp(
-					metricValue.timestamp,
-					prometheus.MustNewConstMetric(desc, im.valueType, float64(metricValue.value), append(values, metricValue.labels...)...),
+					metricVal.timestamp,
+					prometheus.MustNewConstMetric(desc, im.valueType, metricVal.value, append(values, metricVal.labels...)...),
 				)
 			}
 		}
