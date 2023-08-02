@@ -95,9 +95,6 @@ routes:
             - key: X-Ai-Proxy-Source
               operator: =
               value: erda.daily.terminus.io
-      - name: cors
-        config:
-          accessControlAllowOrigin: []
 
   - path: /v1/edits
     method: POST

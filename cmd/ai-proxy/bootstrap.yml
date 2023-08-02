@@ -1,7 +1,7 @@
 
 http-server@ai:
   addr: ":8081"
-  allow_cors: true
+  allow_cors: false
 health:
 grpc-server@ai:
   addr: ":8082"

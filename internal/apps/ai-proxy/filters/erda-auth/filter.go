@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -75,6 +76,10 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 
 	// check if the platform is supported by the ai-proxy
 	platformName := infor.Header().Get(vars.XAIProxySource)
+	if platformName == "" {
+		http.Error(w, vars.XAIProxySource+" must be set", http.StatusBadRequest)
+		return reverseproxy.Intercept, nil
+	}
 	urls := ctx.Value(vars.CtxKeyErdaOpenapi{}).(map[string]*url.URL)
 	openapi, ok := urls[platformName]
 	if !ok || openapi == nil {
@@ -93,28 +98,37 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 	infor.Header().Set("Authorization", vars.ConcatBearer(accessKeyId))
 
 	// request erda to check the access permission of the user in the org
-	orgId := infor.Header().Get(vars.XAIProxyOrgId)
-	userId := infor.Header().Get(vars.XAIProxyUserId)
+	var (
+		orgId  = infor.Header().Get(vars.XAIProxyOrgId)
+		userId = infor.Header().Get(vars.XAIProxyUserId)
+	)
+	if orgId == "" {
+		http.Error(w, vars.XAIProxyOrgId+" must be set", http.StatusBadRequest)
+		return reverseproxy.Intercept, nil
+	}
 	for _, v := range []*string{
 		&orgId,
 		&userId,
 	} {
+		// try to decode base64
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
 			*v = string(decoded)
 		}
 	}
-	access, err := f.request(ctx, openapi, orgId, userId)
+	access, err := f.access(ctx, infor, openapi, orgId)
 	if err != nil {
-		return reverseproxy.Intercept, err
+		http.Error(w, "session is invalid or expired: "+err.Error(), http.StatusUnauthorized)
+		return reverseproxy.Intercept, nil
 	}
-	if access {
-		l.Debugf("the user can not access the org, userId: %s, orgId: %s", userId, orgId)
-		http.Error(w, "the user cannot access the organization", http.StatusForbidden)
+	if !access {
+		l.Debugf("the user can not access the org, openapi: %s, userId: %s, orgId: %s",
+			openapi, userId, orgId)
+		http.Error(w, "the user cannot access the Erda AI Service", http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
 
 	// set orgId into metadata
-	metadata := map[string]any{"orgId": orgId}
+	metadata := map[string]any{"orgId": orgId, "userId": userId}
 	if data, err := json.Marshal(metadata); err == nil {
 		infor.Header().Set(vars.XAIProxyMetadata, base64.StdEncoding.EncodeToString(data))
 	}
@@ -138,7 +152,8 @@ func (f *ErdaAuth) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (b
 	return false, nil
 }
 
-func (f *ErdaAuth) request(ctx context.Context, openapi *url.URL, orgId, userId string) (bool, error) {
+func (f *ErdaAuth) access(ctx context.Context, infor reverseproxy.HttpInfor, openapi *url.URL, orgId string) (bool, error) {
+	// prepare request
 	openapi.Path = "/api/permissions/actions/access"
 	req := &apistructs.ScopeRoleAccessRequest{
 		Scope: apistructs.Scope{
@@ -154,7 +169,14 @@ func (f *ErdaAuth) request(ctx context.Context, openapi *url.URL, orgId, userId 
 	if err != nil {
 		return false, err
 	}
-	request.Header.Set(httputil.UserHeader, userId)
+
+	// get cookie from raw request and set it to request
+	cookie, err := f.getOpenapiSessionCookie(infor)
+	if err != nil {
+		return false, err
+	}
+	request.Header.Set(httputil.UseTokenHeader, strconv.FormatBool(true))
+	request.AddCookie(cookie)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return false, err
@@ -165,6 +187,21 @@ func (f *ErdaAuth) request(ctx context.Context, openapi *url.URL, orgId, userId 
 		return false, err
 	}
 	return resp.Header.Success && resp.Data.Access, nil
+}
+
+func (f *ErdaAuth) getOpenapiSessionCookie(infor reverseproxy.HttpInfor) (*http.Cookie, error) {
+	cookie, err := infor.Cookie(httputil.CookieNameOpenapiSession)
+	if err == nil {
+		return cookie, nil
+	}
+	if !errors.Is(err, http.ErrNoCookie) {
+		return nil, err
+	}
+	openapiSession := infor.Header().Get(vars.XAiProxyErdaOpenapiSession)
+	if openapiSession == "" {
+		return nil, http.ErrNoCookie
+	}
+	return &http.Cookie{Name: httputil.CookieNameOpenapiSession, Value: openapiSession}, nil
 }
 
 func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInfor) (string, error) {

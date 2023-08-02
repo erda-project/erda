@@ -31,6 +31,7 @@ const (
 	XAIProxyOrgId              = "X-Ai-Proxy-Org-Id"
 	XAIProxyUserId             = "X-Ai-Proxy-User-Id"
 	XAIProxyMetadata           = "X-Ai-Proxy-Metadata"
+	XAiProxyErdaOpenapiSession = "X-Ai-Proxy-Erda-Openapi-Session"
 	XRequestId                 = "X-Request-Id"
 )
 

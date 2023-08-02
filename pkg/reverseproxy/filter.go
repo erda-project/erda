@@ -56,6 +56,7 @@ type HttpInfor interface {
 	Status() string
 	StatusCode() int
 	Header() http.Header
+	Cookie(string) (*http.Cookie, error)
 	ContentLength() int64
 	Host() string
 	RemoteAddr() string
@@ -86,7 +87,7 @@ type infor[R httputil.RequestResponse] struct {
 }
 
 func (r *infor[R]) Method() string {
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request:
 		return i.Method
 	case *http.Request:
@@ -106,7 +107,7 @@ func (r *infor[R]) Method() string {
 }
 
 func (r *infor[R]) RemoteAddr() string {
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request:
 		return i.RemoteAddr
 	case *http.Request:
@@ -126,7 +127,7 @@ func (r *infor[R]) RemoteAddr() string {
 }
 
 func (r *infor[R]) Host() string {
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request:
 		return i.Host
 	case *http.Request:
@@ -146,7 +147,7 @@ func (r *infor[R]) Host() string {
 }
 
 func (r *infor[R]) URL() *url.URL {
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request:
 		return i.URL
 	case *http.Request:
@@ -174,7 +175,7 @@ func (r *infor[R]) ContentLength() int64 {
 }
 
 func (r *infor[R]) Status() string {
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request, *http.Request:
 	case http.Response:
 		return i.Status
@@ -187,7 +188,7 @@ func (r *infor[R]) Status() string {
 }
 
 func (r *infor[R]) StatusCode() int {
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request, *http.Request:
 	case http.Response:
 		return i.StatusCode
@@ -211,9 +212,33 @@ func (r *infor[R]) Header() http.Header {
 	return v.Interface().(http.Header)
 }
 
+func (r *infor[R]) Cookie(name string) (*http.Cookie, error) {
+	switch i := (any)(r.r).(type) {
+	case http.Request:
+		return i.Cookie(name)
+	case *http.Request:
+		return i.Cookie(name)
+	case http.Response:
+		for _, item := range i.Cookies() {
+			if item.Name == name {
+				return item, nil
+			}
+		}
+	case *http.Response:
+		for _, item := range i.Cookies() {
+			if item.Name == name {
+				return item, nil
+			}
+		}
+	default:
+		panic("not expected type")
+	}
+	return nil, http.ErrNoCookie
+}
+
 // Body only for request body
 func (r *infor[R]) Body() io.ReadCloser {
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request:
 		return i.Body
 	case *http.Request:
@@ -228,7 +253,7 @@ func (r *infor[R]) Body() io.ReadCloser {
 // BodyBuffer only for request body
 func (r *infor[R]) BodyBuffer() *bytes.Buffer {
 	var request *http.Request
-	switch i := (interface{})(r.r).(type) {
+	switch i := (any)(r.r).(type) {
 	case http.Request:
 		request = &i
 	case *http.Request:

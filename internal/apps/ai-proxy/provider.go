@@ -18,6 +18,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"net/http"
 	"net/url"
 	"os"
@@ -173,7 +174,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 	// ai-proxy prometheus metrics
 	p.HTTP.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
-	p.HTTP.Any("/**", p)
+	p.HTTP.Any("/**", p, interceptors.CORS(false))
 	return nil
 }
 
@@ -194,7 +195,10 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (p *provider) Add(method, path string, handler transhttp.HandlerFunc) {
 	if p.HTTP != nil {
-		if err := p.HTTP.Add(method, path, handler, httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs)); err != nil {
+		if err := p.HTTP.Add(method, path, handler,
+			httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs),
+			interceptors.CORS(true),
+		); err != nil {
 			p.L.Fatalf("failed to %T.Add(%s, %s, %T), err: %v", p, method, path, handler, err)
 		}
 	}
