@@ -196,7 +196,8 @@ func (l *esqsListener) formatExpression(field, value string) string {
 
 	switch field {
 	case l.defaultField:
-		return fmt.Sprintf("%s LIKE '%%%s%%'", field, l.escapeStringValue(value))
+		return fmt.Sprintf(`hasToken(%s, '%s')`, field, l.escapeStringValue(value))
+		//return fmt.Sprintf("%s LIKE '%%%s%%'", field, l.escapeStringValue(value))
 	default:
 		return fmt.Sprintf("%s='%s'", field, l.escapeStringValue(value))
 	}
