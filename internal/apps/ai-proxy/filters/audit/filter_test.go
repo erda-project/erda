@@ -88,7 +88,7 @@ func TestAudit_SetUserInfo(t *testing.T) {
 	if a.Audit.Email != m[vars.XAIProxyEmail] {
 		t.Error(vars.XAIProxyEmail)
 	}
-	if a.Audit.DingTalkStaffID != m[vars.XAIProxyDingTalkStaffID] {
+	if a.Audit.DingtalkStaffID != m[vars.XAIProxyDingTalkStaffID] {
 		t.Error(vars.XAIProxyDingTalkStaffID)
 	}
 }

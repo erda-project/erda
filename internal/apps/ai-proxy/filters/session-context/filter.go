@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -79,15 +80,22 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		return reverseproxy.Continue, nil
 	}
 
-	session, err := db.GetSession(sessionId)
+	session, ok, err := db.GetSession(sessionId)
 	if err != nil {
 		l.Errorf("failed to db.GetSession(%s), err: %v", sessionId, err)
+		return reverseproxy.Continue, nil
+	}
+	if !ok {
+		l.Errorf("session not found, sessionId: %s", sessionId)
 		return reverseproxy.Continue, nil
 	}
 	if session.IsArchived {
 		l.Debugf("session(id=%s) is archived, continue", sessionId)
 		return reverseproxy.Continue, nil
 	}
+
+	// make the session is the latest updated
+	defer func() { go c.updateSession(ctx, sessionId) }()
 
 	var m = make(map[string]json.RawMessage)
 	if err = json.NewDecoder(infor.BodyBuffer()).Decode(&m); err != nil {
@@ -150,7 +158,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		l.Errorf("failed to json.Marshal(m), err: %v", err)
 		return reverseproxy.Intercept, nil
 	}
-	infor.SetBody(io.NopCloser(bytes.NewBuffer(data)))
+	infor.SetBody(io.NopCloser(bytes.NewBuffer(data)), int64(len(data)))
 	l.Debugf("infor new body buffer: %s", infor.BodyBuffer().String())
 	return reverseproxy.Continue, nil
 }
@@ -169,6 +177,20 @@ func (c *SessionContext) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInf
 		}
 	}
 	return false, nil
+}
+
+func (c *SessionContext) updateSession(ctx context.Context, id string) {
+	var (
+		l       = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+		db      = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+		session models.AIProxySessions
+	)
+	if _, err := (&session).Updater(db.Q().Debug()).
+		Where(session.FieldID().Equal(id)).
+		Set(session.FieldUpdatedAt().Set(time.Now())).
+		Updates(); err != nil {
+		l.Errorf("failed to update session, err: %v", err)
+	}
 }
 
 type Config struct {

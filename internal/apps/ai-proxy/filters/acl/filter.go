@@ -61,6 +61,7 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 }
 
 func (f *ACL) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	panic("not implement yet")
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 
 	// only access control request rom platform erda.cloud

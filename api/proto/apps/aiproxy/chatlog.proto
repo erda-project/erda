@@ -12,6 +12,11 @@ service ChatLogs {
       get: "/api/ai-proxy/chat-logs"
     };
   }
+  rpc GetSessionChatLogs(GetChatLogsReq) returns (GetChatLogsRespData) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/sessions/{sessionId}/chat-logs"
+    };
+  }
 }
 
 message GetChatLogsReq {

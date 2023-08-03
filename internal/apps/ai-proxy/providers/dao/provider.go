@@ -15,10 +15,9 @@
 package dao
 
 import (
-	"database/sql"
+	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -53,18 +52,12 @@ func init() {
 type DAO interface {
 	Q() *gorm.DB
 	Tx() *gorm.DB
-	Model(value any) *gorm.DB
-	Create(value any) *gorm.DB
-	Update(column string, value any) *gorm.DB
-	Updates(values any) *gorm.DB
-	Find(dest interface{}, conds ...interface{}) *gorm.DB
 
 	PagingChatLogs(sessionId string, pageNum, pageSize int) (int64, []*pb.ChatLog, error)
 	CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error)
-	UpdateSession(id string, updates map[string]any) error
+	UpdateSession(id string, setters ...models.Setter) error
 	DeleteSession(id string) error
-	ListSessions(pageNum, pageSize int, where ...models.Where) (int64, []*pb.Session, error)
-	GetSession(id string) (*pb.Session, error)
+	GetSession(id string) (*pb.Session, bool, error)
 }
 
 type provider struct {
@@ -83,46 +76,22 @@ func (p *provider) Tx() *gorm.DB {
 	return p.DB.Session(&gorm.Session{})
 }
 
-func (p *provider) Model(value any) *gorm.DB {
-	return p.DB.Model(value)
-}
-
-func (p *provider) Create(value any) *gorm.DB {
-	return p.DB.Create(value)
-}
-
-func (p *provider) Update(column string, value any) *gorm.DB {
-	return p.DB.Update(column, value)
-}
-
-func (p *provider) Updates(values any) *gorm.DB {
-	return p.DB.Updates(values)
-}
-
-func (p *provider) Find(dest interface{}, conds ...interface{}) *gorm.DB {
-	return p.DB.Find(dest, conds)
-}
-
 func (p *provider) PagingChatLogs(sessionId string, pageNum, pageSize int) (int64, []*pb.ChatLog, error) {
-	var (
-		audits []*models.AIProxyFilterAudit
-		count  int64
-	)
-	if err := p.DB.Model(new(models.AIProxyFilterAudit)).
-		Where(map[string]any{"session_id": sessionId}).
-		Count(&count).
-		Limit(pageSize).Offset((pageNum - 1) * pageSize).Order("created_at DESC").Find(&audits).
-		Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, nil, nil
-		}
+	var audits models.AIProxyFilterAuditList
+	total, err := (&audits).Pager(p.DB).
+		Where(audits.FieldSessionID().Equal(sessionId)).
+		Paging(pageSize, pageNum, audits.FieldCreatedAt().DESC())
+	if err != nil {
 		return 0, nil, err
+	}
+	if total == 0 {
+		return 0, nil, nil
 	}
 	var chatLogs []*pb.ChatLog
 	for _, item := range audits {
 		chatLogs = append(chatLogs, item.ToProtobufChatLog())
 	}
-	return 0, chatLogs, nil
+	return total, chatLogs, nil
 }
 
 func (p *provider) CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error) {
@@ -130,59 +99,41 @@ func (p *provider) CreateSession(userId, name, topic string, contextLength uint3
 		UserID:        userId,
 		Name:          name,
 		Topic:         topic,
-		ContextLength: contextLength,
+		ContextLength: int64(contextLength),
 		Source:        source,
 		IsArchived:    false,
-		ResetAt:       sql.NullTime{Time: time.Unix(0, 0), Valid: true},
+		ResetAt:       time.Unix(0, 0),
 		Model:         model,
-		Temperature:   temperature,
+		Temperature:   strconv.FormatFloat(temperature, 'f', 1, 64),
 	}
-	if err := p.DB.Create(&session).Error; err != nil {
+	if err := (&session).Creator(p.DB).Create(); err != nil {
 		return "", err
 	}
-	return session.Id.String, nil
+	return session.ID.String, nil
 }
 
-func (p *provider) UpdateSession(id string, updates map[string]any) error {
-	var where = map[string]any{"id": id}
-	if err := p.DB.Where(where).First(new(models.AIProxySessions)).Error; err != nil {
+func (p *provider) UpdateSession(id string, setters ...models.Setter) error {
+	var session models.AIProxySessions
+	var where = session.FieldID().Equal(id)
+	ok, err := (&session).Getter(p.DB).Where(where).Get()
+	if err != nil {
 		return err
 	}
-	return p.DB.Model(new(models.AIProxySessions)).Where(where).Updates(updates).Error
+	if !ok {
+		return nil
+	}
+	_, err = (&session).Updater(p.DB).Where(where).Updates(setters...)
+	return err
 }
 
 func (p *provider) DeleteSession(id string) error {
-	return p.DB.Delete(new(models.AIProxySessions), map[string]any{"id": id}).Error
+	var session = new(models.AIProxySessions)
+	_, err := session.Deleter(p.DB).Where(session.FieldID().Equal(id)).Delete()
+	return err
 }
 
-func (p *provider) ListSessions(pageNum, pageSize int, where ...models.Where) (int64, []*pb.Session, error) {
-	var (
-		items []models.AIProxySessions
-		count int64
-	)
-	db := p.DB.Model(new(models.AIProxySessions))
-	for _, w := range where {
-		db = db.Where(w.Query(), w.Args()...)
-	}
-	if err := db.Count(&count).
-		Limit(pageSize).Offset((pageNum - 1) * pageSize).
-		Find(&items).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, nil, nil
-		}
-		return 0, nil, err
-	}
-	var sessions []*pb.Session
-	for _, item := range items {
-		sessions = append(sessions, item.ToProtobuf())
-	}
-	return count, sessions, nil
-}
-
-func (p *provider) GetSession(id string) (*pb.Session, error) {
+func (p *provider) GetSession(id string) (*pb.Session, bool, error) {
 	var session models.AIProxySessions
-	if err := p.DB.First(&session, map[string]any{"id": id}).Error; err != nil {
-		return nil, err
-	}
-	return session.ToProtobuf(), nil
+	ok, err := (&session).Getter(p.DB).Where(session.FieldID().Equal(id)).Get()
+	return session.ToProtobuf(), ok, err
 }

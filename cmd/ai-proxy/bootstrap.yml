@@ -1,7 +1,7 @@
 
 http-server@ai:
   addr: ":8081"
-  allow_cors: true
+  allow_cors: false
 health:
 grpc-server@ai:
   addr: ":8082"
@@ -9,8 +9,8 @@ grpc-server@ai:
 erda.app.ai-proxy:
   routesRef: conf/routes.yml
   providersRef: conf/providers.yml
+  platformsRef: conf/erda-platforms.yml
   logLevel: ${LOG_LEVEL:debug}
-  erdaOpenapi: ${ERDA_OPENAPI:https://openapi.erda.cloud}
 
 gorm.v2:
   host: "${MYSQL_HOST}"

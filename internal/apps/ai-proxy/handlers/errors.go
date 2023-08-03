@@ -14,7 +14,11 @@
 
 package handlers
 
-import "github.com/pkg/errors"
+import (
+	"net/http"
+
+	"github.com/pkg/errors"
+)
 
 var (
 	UserPermissionDenied  = errors.New("user permission denied")
@@ -25,3 +29,19 @@ var (
 	InvalidSessionModel   = errors.New("invalid session model")
 	InvalidSessionResetAt = errors.New("invalid session resetAt")
 )
+
+func HTTPError(err error, code int) error {
+	if err == nil {
+		err = errors.New(http.StatusText(code))
+	}
+	return httpError{error: err, code: code}
+}
+
+type httpError struct {
+	error
+	code int
+}
+
+func (e httpError) HTTPStatus() int {
+	return e.code
+}

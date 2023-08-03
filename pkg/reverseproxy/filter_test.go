@@ -125,7 +125,8 @@ func TestInfor_SetBody(t *testing.T) {
 			t.Fatal(err)
 		}
 		infor := reverseproxy.NewInfor(context.Background(), request)
-		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		newBody := bytes.NewBufferString("new body")
+		infor.SetBody(io.NopCloser(newBody), int64(newBody.Len()))
 		data, err := io.ReadAll(request.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -141,7 +142,8 @@ func TestInfor_SetBody(t *testing.T) {
 			t.Fatal(err)
 		}
 		infor := reverseproxy.NewInfor(context.Background(), request)
-		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		newBody := bytes.NewBufferString("new body")
+		infor.SetBody(io.NopCloser(newBody), int64(newBody.Len()))
 		data, err := io.ReadAll(request.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -154,7 +156,8 @@ func TestInfor_SetBody(t *testing.T) {
 	t.Run("mocked response body", func(t *testing.T) {
 		response := &http.Response{Body: io.NopCloser(bytes.NewBufferString("mocked body"))}
 		infor := reverseproxy.NewInfor(context.Background(), response)
-		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		newBody := bytes.NewBufferString("new body")
+		infor.SetBody(io.NopCloser(newBody), int64(newBody.Len()))
 		data, err := io.ReadAll(response.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -167,7 +170,8 @@ func TestInfor_SetBody(t *testing.T) {
 	t.Run("nil response body", func(t *testing.T) {
 		response := new(http.Response)
 		infor := reverseproxy.NewInfor(context.Background(), response)
-		infor.SetBody(io.NopCloser(bytes.NewBufferString("new body")))
+		newBody := bytes.NewBufferString("new body")
+		infor.SetBody(io.NopCloser(newBody), int64(newBody.Len()))
 		data, err := io.ReadAll(response.Body)
 		if err != nil {
 			t.Fatal(err)

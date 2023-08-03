@@ -52,6 +52,7 @@ var (
 	loginWhiteList = []string{
 		"completion",
 		"ext retag",
+		"gorm gen",
 		"migrate",
 		"migrate lint",
 		"migrate mkpy",
