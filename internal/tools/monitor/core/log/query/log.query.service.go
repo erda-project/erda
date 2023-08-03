@@ -389,22 +389,77 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	}
 	defer it.Close()
 
-	items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()), ascendingResult)
-	if err != nil {
-		return nil, 0, errors.NewInternalServerError(err)
-	}
+	var (
+		errChan   = make(chan error, 2)
+		itemsChan = make(chan []*pb.LogItem, 1)
+		totalChan chan int64
+	)
+	// calculate total
+	go func() {
+		if !withTotal {
+			return
+		}
+		counter, ok := it.(storekit.Counter)
+		if !ok {
+			errChan <- fmt.Errorf("failed to get total: %T not implement %T", it, counter)
+			return
+		}
+		totalChan = make(chan int64, 1)
+		total, err := counter.Total()
+		if err != nil {
+			errChan <- errors.NewInternalServerError(err)
+			return
+		}
+		totalChan <- total
+		close(totalChan)
+	}()
+	// calculate items
+	go func() {
+		items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()), ascendingResult)
+		if err != nil {
+			errChan <- errors.NewInternalServerError(err)
+			return
+		}
+		itemsChan <- items
+		close(itemsChan)
+	}()
+
+	var (
+		items    []*pb.LogItem
+		total    int64
+		itemsSet bool
+		totalSet bool
+	)
 	if !withTotal {
-		return items, 0, nil
+		totalSet = true
 	}
-	counter, ok := it.(storekit.Counter)
-	if !ok {
-		return items, 0, fmt.Errorf("failed to get total: %T not implement %T", it, counter)
+	for {
+		select {
+		case err := <-errChan:
+			return nil, 0, err
+		case v, ok := <-itemsChan:
+			if !ok {
+				continue
+			}
+			if len(v) <= 0 {
+				return nil, 0, nil
+			}
+			items = v
+			itemsSet = true
+		case v, ok := <-totalChan:
+			if !ok {
+				continue
+			}
+			if v <= 0 {
+				return nil, 0, nil
+			}
+			total = v
+			totalSet = true
+		}
+		if itemsSet && totalSet {
+			return items, total, nil
+		}
 	}
-	total, err := counter.Total()
-	if err != nil {
-		return items, 0, errors.NewInternalServerError(err)
-	}
-	return items, total, nil
 }
 
 func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) (*storage.Selector, error), walk func(item *pb.LogItem) error) error {
