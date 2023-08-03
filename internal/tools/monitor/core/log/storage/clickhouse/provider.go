@@ -30,7 +30,7 @@ import (
 type config struct {
 	ReadPageSize    int               `file:"read_page_size" default:"200"`
 	FieldNameMapper map[string]string `file:"field_name_mapper"`
-	QueryTimeout    time.Duration     `file:"query_timeout" default:"1m"`
+	QueryTimeout    time.Duration     `file:"query_timeout" default:"1800s"`
 	QueryMaxThreads int               `file:"query_max_threads" default:"0"`
 	QueryMaxMemory  int64             `file:"query_max_memory" default:"0"`
 }

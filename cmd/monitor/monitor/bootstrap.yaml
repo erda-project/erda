@@ -86,7 +86,7 @@ clickhouse.table.loader@log:
 
 log-storage-clickhouse:
   _enable: ${QUERY_LOG_FROM_CLICKHOUSE_ENABLE:true}
-  query_timeout: "${QUERY_LOG_FROM_CLICKHOUSE_TIMEOUT:1m}"
+  query_timeout: "${QUERY_LOG_FROM_CLICKHOUSE_TIMEOUT:30m}"
   query_max_threads: "${QUERY_LOG_FROM_CLICKHOUSE_MAX_THREADS:0}"
   query_max_memory: "${QUERY_LOG_FROM_CLICKHOUSE_MAX_MEMORY:0}"
   field_name_mapper:
