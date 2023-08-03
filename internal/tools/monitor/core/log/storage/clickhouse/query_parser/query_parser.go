@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage/clickhouse/converter"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage/clickhouse/query_parser/parser"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type EsqsParser interface {
@@ -258,13 +259,5 @@ func splitInputToSliceByTokenSeparator(s string) []string {
 }
 
 func isTokenSeparator(c uint8) bool {
-	return isASCII(c) && !isAlphaNumericASCII(c)
-}
-
-func isASCII(c uint8) bool {
-	return c <= 127
-}
-
-func isAlphaNumericASCII(c uint8) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+	return strutil.IsASCII(c) && !strutil.IsAlphaNumericASCII(c)
 }
