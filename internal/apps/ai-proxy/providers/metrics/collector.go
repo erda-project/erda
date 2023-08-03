@@ -44,8 +44,8 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
-	var audits []models.AIProxyFilterAudit
-	if err := c.Dao.Find(&audits).Error; err != nil {
+	var audits models.AIProxyFilterAuditList
+	if _, err := (&audits).Pager(c.Dao.Q()).Paging(-1, 0, audits.FieldCreatedAt().DESC()); err != nil {
 		c.l.Errorf("failed to db.Find(%T), err: %v", audits, err)
 	}
 

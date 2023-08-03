@@ -16,7 +16,7 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
+	"net/http"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -36,25 +36,25 @@ type SessionsHandler struct {
 func (s *SessionsHandler) CreateSession(ctx context.Context, req *pb.Session) (*pb.CreateSessionRespData, error) {
 	userId, ok := getUserId(ctx, req)
 	if !ok {
-		return nil, UserPermissionDenied
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
 	// todo: validate user
 
 	if req.GetName() == "" {
-		return nil, InvalidSessionName
+		return nil, HTTPError(InvalidSessionName, http.StatusBadRequest)
 	}
 	if req.GetTopic() == "" {
-		return nil, InvalidSessionTopic
+		return nil, HTTPError(InvalidSessionTopic, http.StatusBadRequest)
 	}
 	if req.GetContextLength() > 20 {
 		req.ContextLength = 20
 	}
 	// todo: hard code yet
-	if req.GetSource() != "erda.cloud" {
-		return nil, InvalidSessionSource
+	if req.GetSource() == "" {
+		return nil, HTTPError(InvalidSessionSource, http.StatusBadRequest)
 	}
 	if req.GetModel() == "" {
-		return nil, InvalidSessionModel
+		return nil, HTTPError(InvalidSessionModel, http.StatusBadRequest)
 	}
 	if req.GetTemperature() < 0 {
 		req.Temperature = 0
@@ -76,21 +76,21 @@ func (s *SessionsHandler) UpdateSession(ctx context.Context, req *pb.Session) (*
 		userId = apis.GetUserID(ctx)
 	}
 	if userId == "" {
-		return nil, UserPermissionDenied
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
 	// todo: validate user
 
 	if req.GetName() == "" {
-		return nil, InvalidSessionName
+		return nil, HTTPError(InvalidSessionName, http.StatusBadRequest)
 	}
 	if req.GetTopic() == "" {
-		return nil, InvalidSessionTopic
+		return nil, HTTPError(InvalidSessionTopic, http.StatusBadRequest)
 	}
 	if req.GetContextLength() > 20 {
 		req.ContextLength = 20
 	}
 	if req.GetModel() == "" {
-		return nil, InvalidSessionModel
+		return nil, HTTPError(InvalidSessionModel, http.StatusBadRequest)
 	}
 	if req.GetTemperature() < 0 {
 		req.Temperature = 0
@@ -99,67 +99,47 @@ func (s *SessionsHandler) UpdateSession(ctx context.Context, req *pb.Session) (*
 		req.Temperature = 2
 	}
 
-	var updates = map[string]interface{}{
-		"name":           req.GetName(),
-		"topic":          req.GetTopic(),
-		"context_length": req.GetContextLength(),
-		"is_archived":    req.GetIsArchived(),
-		"model":          req.GetModel(),
-		"temperature":    req.GetTemperature(),
+	var session models.AIProxySessions
+	var setters = []models.Setter{
+		session.FieldName().Set(req.GetName()),
+		session.FieldTopic().Set(req.GetTopic()),
+		session.FieldContextLength().Set(req.GetContextLength()),
+		session.FieldIsArchived().Set(req.GetIsArchived()),
+		session.FieldModel().Set(req.GetModel()),
+		session.FieldTemperature().Set(req.GetTemperature()),
 	}
 	if req.GetResetAt() != nil {
-		updates["reset_at"] = sql.NullTime{Time: req.GetResetAt().AsTime(), Valid: true}
+		setters = append(setters, session.FieldResetAt().Set(req.GetResetAt().AsTime()))
 	}
-	if err := s.Dao.UpdateSession(req.GetId(), updates); err != nil {
+	if err := s.Dao.UpdateSession(req.GetId(), setters...); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
 }
 
 func (s *SessionsHandler) ResetSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := getUserId(ctx, req)
-	if !ok {
-		return nil, UserPermissionDenied
-	}
-	// todo: validate user
-
-	if req.GetId() == "" {
-		return nil, InvalidSessionId
-	}
-
-	if err := s.Dao.UpdateSession(req.GetId(), map[string]any{"reset_at": time.Now()}); err != nil {
-		return nil, err
-	}
-	return &common.VoidResponse{}, nil
+	return s.patchSession(ctx, req, new(models.AIProxySessions).FieldResetAt().Set(time.Now()))
 }
 
 func (s *SessionsHandler) ArchiveSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := getUserId(ctx, req)
-	if !ok {
-		return nil, UserPermissionDenied
-	}
-	// todo: validate user
-
-	if req.GetId() == "" {
-		return nil, InvalidSessionId
-	}
-
-	if err := s.Dao.UpdateSession(req.GetId(), map[string]any{"is_archived": true}); err != nil {
-		return nil, err
-	}
-	return &common.VoidResponse{}, nil
+	return s.patchSession(ctx, req, new(models.AIProxySessions).FieldIsArchived().Set(true))
 }
 
 func (s *SessionsHandler) DeleteSession(ctx context.Context, req *pb.LocateSessionCondition) (*common.VoidResponse, error) {
-	_, ok := getUserId(ctx, req)
+	userId, ok := getUserId(ctx, req)
 	if !ok {
-		return nil, UserPermissionDenied
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
 	// todo: validate user
 	if req.GetId() == "" {
-		return nil, InvalidSessionId
+		return nil, HTTPError(InvalidSessionId, http.StatusBadRequest)
 	}
-	if err := s.Dao.DeleteSession(req.GetId()); err != nil {
+
+	var sessions models.AIProxySessions
+	if _, err := (&sessions).Deleter(s.Dao.Q()).Where(
+		sessions.FieldID().Equal(req.GetId()),
+		sessions.FieldUserID().Equal(userId),
+	).Delete(); err != nil {
 		return nil, err
 	}
 	return &common.VoidResponse{}, nil
@@ -169,40 +149,79 @@ func (s *SessionsHandler) ListSessions(ctx context.Context, req *pb.ListSessions
 	// try to get userId
 	userId, ok := getUserId(ctx, req)
 	if !ok {
-		return nil, UserPermissionDenied
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
 	// todo: validate user
 
 	// try to get request source
 	source, ok := getSource(ctx, req)
 	if !ok {
-		return nil, InvalidSessionSource
+		return nil, HTTPError(InvalidSessionSource, http.StatusBadRequest)
 	}
 
-	var session models.AIProxySessions
-	total, sessions, err := s.Dao.ListSessions(1, 20,
-		session.WhereUserID().Equal(userId),
-		session.WhereSource().Equal(source),
-	)
+	var sessions models.AIProxySessionsList
+	total, err := (&sessions).Pager(s.Dao.Q()).
+		Where(
+			sessions.FieldUserID().Equal(userId),
+			sessions.FieldSource().Equal(source),
+		).
+		Paging(20, 1, sessions.FieldUpdatedAt().DESC())
 	if err != nil {
 		return nil, err
 	}
 	return &pb.ListSessionsRespData{
 		Total: uint64(total),
-		List:  sessions,
+		List:  sessions.ToProtobuf(),
 	}, nil
 }
 
 func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionCondition) (*pb.Session, error) {
-	_, ok := getUserId(ctx, req)
+	userId, ok := getUserId(ctx, req)
 	if !ok {
-		return nil, UserPermissionDenied
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
 	}
 	// todo: validate user
 	if req.GetId() == "" {
-		return nil, InvalidSessionId
+		return nil, HTTPError(InvalidSessionId, http.StatusBadRequest)
 	}
-	return s.Dao.GetSession(req.GetId())
+
+	var session models.AIProxySessions
+	ok, err := (&session).Getter(s.Dao.Q()).
+		Where(
+			session.FieldID().Equal(req.GetId()),
+			session.FieldUserID().Equal(userId),
+		).Get()
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, HTTPError(nil, http.StatusNotFound)
+	}
+	return session.ToProtobuf(), nil
+}
+
+func (s *SessionsHandler) patchSession(ctx context.Context, req *pb.LocateSessionCondition, setter ...models.Setter) (*common.VoidResponse, error) {
+	userId, ok := getUserId(ctx, req)
+	if !ok {
+		return nil, HTTPError(UserPermissionDenied, http.StatusUnauthorized)
+	}
+	// todo: validate user
+
+	if req.GetId() == "" {
+		return nil, HTTPError(InvalidSessionId, http.StatusBadRequest)
+	}
+
+	var session models.AIProxySessions
+	if _, err := (&session).Updater(s.Dao.Q()).
+		Where(
+			session.FieldID().Equal(req.GetId()),
+			session.FieldUserID().Equal(userId),
+		).
+		Set(setter...).
+		Updates(); err != nil {
+		return nil, err
+	}
+	return &common.VoidResponse{}, nil
 }
 
 func getUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {

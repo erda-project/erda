@@ -37,7 +37,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -320,10 +319,6 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	// reset content-length
-	contentLength := infor.BodyBuffer().Len()
-	outreq.ContentLength = int64(contentLength)
-	outreq.Header.Set(httputil.HeaderKeyContentLength, strconv.Itoa(contentLength))
 
 	p.Director(outreq)
 	if outreq.Form != nil {

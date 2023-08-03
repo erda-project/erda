@@ -118,7 +118,7 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 			l.Fatalf("%T not in cases", set)
 		}
 	}
-	if err := f.create(ctx); err != nil {
+	if err := f.Audit.Creator(ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()).Create(); err != nil {
 		l.Errorf("failed to create audit row, err: %v", err)
 	}
 
@@ -165,7 +165,8 @@ func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor,
 			l.Fatalf("%T not in cases", set)
 		}
 	}
-	if err := f.update(ctx); err != nil {
+
+	if _, err := f.Audit.Updater(ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()).Update(); err != nil {
 		l.Errorf("failed to create audit row, err: %v", err)
 	}
 	return nil
@@ -230,14 +231,14 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 		f.Audit.JobNumber = header.Get(vars.XAIProxyUserId)
 	}
 	f.Audit.Email = header.Get(vars.XAIProxyEmail)
-	f.Audit.DingTalkStaffID = header.Get(vars.XAIProxyDingTalkStaffID)
+	f.Audit.DingtalkStaffID = header.Get(vars.XAIProxyDingTalkStaffID)
 	f.Audit.Metadata = header.Get(vars.XAIProxyMetadata)
 	for _, v := range []*string{
 		&f.Audit.Username,
 		&f.Audit.PhoneNumber,
 		&f.Audit.JobNumber,
 		&f.Audit.Email,
-		&f.Audit.DingTalkStaffID,
+		&f.Audit.DingtalkStaffID,
 		&f.Audit.Metadata,
 	} {
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
@@ -544,7 +545,7 @@ func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
 
 func (f *Audit) SetStatus(_ context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Status = infor.Status()
-	f.Audit.StatusCode = infor.StatusCode()
+	f.Audit.StatusCode = int64(infor.StatusCode())
 	return nil
 }
 
@@ -557,14 +558,6 @@ func (f *Audit) SetUserAgent(_ context.Context, header http.Header) error {
 		f.Audit.UserAgent = header.Get("X-Device-User-Agent")
 	}
 	return nil
-}
-
-func (f *Audit) create(ctx context.Context) error {
-	return ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Create(f.Audit).Error
-}
-
-func (f *Audit) update(ctx context.Context) error {
-	return ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Updates(f.Audit).Error
 }
 
 func (f *Audit) setCompletionForApplicationJson(ctx context.Context, header http.Header, reader io.Reader) error {

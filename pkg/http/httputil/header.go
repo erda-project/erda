@@ -29,9 +29,11 @@ const (
 	RequestIDHeader            = "RequestID"
 	UserInfoDesensitizedHeader = "Openapi-Userinfo-Desensitized"
 	LangHeader                 = "lang"
+	UseTokenHeader             = "Use-Token"
 
-	ClientIDHeader   = "Client-ID"
-	ClientNameHeader = "Client-Name"
+	ClientIDHeader           = "Client-ID"
+	ClientNameHeader         = "Client-Name"
+	CookieNameOpenapiSession = "OPENAPISESSION"
 )
 
 func HeaderContains[Header http.Header | []String | []string | ~string, String ~string](header Header, s String) bool {
