@@ -15,6 +15,7 @@
 package query_parser
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -196,7 +197,13 @@ func (l *esqsListener) formatExpression(field, value string) string {
 
 	switch field {
 	case l.defaultField:
-		return fmt.Sprintf(`hasToken(%s, '%s')`, field, l.escapeStringValue(value))
+		tokens := splitInputToSliceByTokenSeparator(value)
+		hasTokenExprList := make([]string, 0, len(tokens))
+		for _, token := range tokens {
+			hasTokenExpr := fmt.Sprintf(`hasToken(%s, '%s')`, field, l.escapeStringValue(token))
+			hasTokenExprList = append(hasTokenExprList, hasTokenExpr)
+		}
+		return fmt.Sprintf("(%s)", strings.Join(hasTokenExprList, " AND "))
 		//return fmt.Sprintf("%s LIKE '%%%s%%'", field, l.escapeStringValue(value))
 	default:
 		return fmt.Sprintf("%s='%s'", field, l.escapeStringValue(value))
@@ -220,4 +227,44 @@ func (l *esqsListener) buildHighlightItems(field, value string) {
 		return
 	}
 	l.highlightItems[field] = append(l.highlightItems[field], items...)
+}
+
+// splitInputToSliceByTokenSeparator splits input string to token slice by token separator.
+// see: https://github.com/ClickHouse/ClickHouse/blob/c1ca0f35e7688d1a5e479768cd43d81f930243d3/src/Functions/HasTokenImpl.h#L61
+// see: clickhouse tokenbf_v1 index
+func splitInputToSliceByTokenSeparator(s string) []string {
+	var tokens []string
+	buffer := new(bytes.Buffer)
+
+	for i := 0; i < len(s); i++ {
+		if !isTokenSeparator(s[i]) {
+			buffer.WriteByte(s[i])
+			continue
+		}
+
+		token := buffer.String()
+		if len(token) > 0 {
+			tokens = append(tokens, token)
+		}
+		buffer.Reset()
+	}
+
+	token := buffer.String()
+	if len(token) > 0 {
+		tokens = append(tokens, token)
+	}
+
+	return tokens
+}
+
+func isTokenSeparator(c uint8) bool {
+	return isASCII(c) && !isAlphaNumericASCII(c)
+}
+
+func isASCII(c uint8) bool {
+	return c <= 127
+}
+
+func isAlphaNumericASCII(c uint8) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 }
