@@ -4,17 +4,30 @@ package erda.apps.aiproxy;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/pb";
 
 import "google/api/annotations.proto";
-import "common/http.proto";
 
 service Access {
-  rpc OrgAccess(OrgAccessReq) returns (common.VoidResponse) {
+  rpc Access(AccessReq) returns (AccessResponse) {
     option(google.api.http) = {
       post: "/api/ai-proxy/access"
     };
   }
+  rpc AccessInOrg(OrgAccessReq) returns (AccessResponse) {}
+}
+
+message AccessReq {
+  string platform = 1;
+  string scope = 2;
+  string userId = 3;
+  string orgId = 4;
+  string orgName = 5;
 }
 
 message OrgAccessReq {
   string userId = 1;
-  string OrgId = 2;
+  string orgId = 2;
+  string orgName = 3;
+}
+
+message AccessResponse {
+  bool access = 1;
 }
