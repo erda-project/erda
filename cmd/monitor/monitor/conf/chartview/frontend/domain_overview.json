@@ -264,8 +264,7 @@
               "ta_timing"
             ],
             "groupby": [
-              "time()",
-              "host::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
@@ -390,8 +389,7 @@
               "ta_timing"
             ],
             "groupby": [
-              "time()",
-              "host::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
