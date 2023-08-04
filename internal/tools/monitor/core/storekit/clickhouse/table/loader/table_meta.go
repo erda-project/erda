@@ -24,10 +24,44 @@ type TableMeta struct {
 	CreateTableSQL string
 	Engine         string
 	Columns        map[string]*TableColumn
+	SkipIndices    map[string]*TableSkipIndex
 	TTLDays        int64
 	HotTTLDays     int64
 	TTLBaseField   string
 	TimeKey        string
+}
+
+func (meta *TableMeta) GetColumnSkipIndex(column string) *TableSkipIndex {
+	if meta.SkipIndices == nil {
+		return nil
+	}
+	for _, index := range meta.SkipIndices {
+		if index.Expr == column {
+			return index
+		}
+	}
+	return nil
+}
+
+type TableSkipIndexType string
+
+var (
+	TableSkipIndexTypeMinMax      TableSkipIndexType = "minmax"
+	TableSkipIndexTypeSet         TableSkipIndexType = "set"
+	TableSkipIndexTypeBloomFilter TableSkipIndexType = "bloom_filter"
+	TableSkipIndexTypeTokenbfV1   TableSkipIndexType = "tokenbf_v1"
+	TableSkipIndexTypeNgrambfV1   TableSkipIndexType = "ngrambf_v1"
+)
+
+type TableSkipIndex struct {
+	Name        string
+	Type        TableSkipIndexType
+	Expr        string
+	Granularity uint64
+}
+
+func (si *TableSkipIndex) SupportHasTokenFunction() bool {
+	return si.Type == TableSkipIndexTypeTokenbfV1
 }
 
 func (meta *TableMeta) HasColdHotTTL() bool {

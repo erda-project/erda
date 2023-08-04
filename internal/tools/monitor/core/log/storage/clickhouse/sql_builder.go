@@ -90,7 +90,7 @@ func (p *provider) appendSqlWherePart(expr *goqu.SelectDataset, tableMeta *loade
 		case storage.CONTAINS:
 			expr = expr.Where(goqu.L(field).Like(fmt.Sprintf("%%%s%%", val)))
 		case storage.EXPRESSION:
-			parser := query_parser.NewEsqsParser(nameConverter, "content", "AND", req.Meta.Highlight)
+			parser := query_parser.NewEsqsParser(nameConverter, "content", "AND", req.Meta.Highlight, tableMeta)
 			result := parser.Parse(val)
 			if result.Error() != nil {
 				return expr, highlightItems, fmt.Errorf("wrong search expression: %s", result.Error())

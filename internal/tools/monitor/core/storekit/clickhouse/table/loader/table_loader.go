@@ -106,6 +106,7 @@ func (p *provider) reloadTablesFromClickhouse(ctx context.Context) error {
 		meta := &TableMeta{
 			Engine:         table.Engine,
 			Columns:        map[string]*TableColumn{},
+			SkipIndices:    map[string]*TableSkipIndex{},
 			CreateTableSQL: table.CreateTableSql,
 		}
 		meta.extractTTLDays()
@@ -131,6 +132,34 @@ func (p *provider) reloadTablesFromClickhouse(ctx context.Context) error {
 			continue
 		}
 		meta.Columns[column.Name] = &TableColumn{Type: ColumnType(column.Type)}
+	}
+
+	var skipIndices []struct {
+		Database    string `ch:"database"`    // monitor
+		Table       string `ch:"table"`       // logs
+		Name        string `ch:"name"`        // content_index
+		Type        string `ch:"type"`        // tokenbf_v1
+		Expr        string `ch:"expr"`        // content
+		Granularity uint64 `ch:"granularity"` // 1
+	}
+	err = p.Clickhouse.Client().
+		Select(ctx, &skipIndices, "select database, table, name, type, expr, granularity from system.data_skipping_indices where database= @db and table like @table",
+			ck.Named("db", p.Cfg.Database), ck.Named("table", fmt.Sprintf("%s%%", p.Cfg.TablePrefix)))
+	if err != nil {
+		return err
+	}
+	for _, index := range skipIndices {
+		table := fmt.Sprintf("%s.%s", index.Database, index.Table)
+		meta, ok := tablesMeta[table]
+		if !ok {
+			continue
+		}
+		meta.SkipIndices[index.Name] = &TableSkipIndex{
+			Name:        index.Name,
+			Type:        TableSkipIndexType(index.Type),
+			Expr:        index.Expr,
+			Granularity: index.Granularity,
+		}
 	}
 
 	ch := p.updateTables(tablesMeta)

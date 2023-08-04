@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage/clickhouse/converter"
 	"github.com/erda-project/erda/internal/tools/monitor/core/log/storage/clickhouse/query_parser/parser"
+	"github.com/erda-project/erda/internal/tools/monitor/core/storekit/clickhouse/table/loader"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -38,12 +39,13 @@ type EsqsParseResult interface {
 	HighlightItems() map[string][]string
 }
 
-func NewEsqsParser(fieldNameConverter converter.FieldNameConverter, defaultField string, defaultOp string, highlight bool) EsqsParser {
+func NewEsqsParser(fieldNameConverter converter.FieldNameConverter, defaultField string, defaultOp string, highlight bool, tableMeta *loader.TableMeta) EsqsParser {
 	return &esqsParser{
 		defaultOp:          defaultOp,
 		defaultField:       defaultField,
 		highlight:          highlight,
 		fieldNameConverter: fieldNameConverter,
+		tableMeta:          tableMeta,
 	}
 }
 
@@ -52,6 +54,7 @@ type esqsParser struct {
 	defaultField       string
 	highlight          bool
 	fieldNameConverter converter.FieldNameConverter
+	tableMeta          *loader.TableMeta
 }
 
 func (ep *esqsParser) Parse(esqsExpr string) EsqsParseResult {
@@ -63,6 +66,7 @@ func (ep *esqsParser) Parse(esqsExpr string) EsqsParseResult {
 	listener := &esqsListener{
 		defaultOp:          ep.defaultOp,
 		defaultField:       ep.defaultField,
+		useHasToken:        true,
 		highlight:          ep.highlight,
 		fieldNameConverter: ep.fieldNameConverter,
 	}
@@ -78,6 +82,7 @@ type esqsListener struct {
 
 	defaultOp          string
 	defaultField       string
+	useHasToken        bool
 	highlight          bool
 	fieldNameConverter converter.FieldNameConverter
 
@@ -198,6 +203,11 @@ func (l *esqsListener) formatExpression(field, value string) string {
 
 	switch field {
 	case l.defaultField:
+		// use default like
+		if !l.useHasToken {
+			return fmt.Sprintf("%s LIKE '%%%s%%'", field, l.escapeStringValue(value))
+		}
+		// use hasToken
 		tokens := splitInputToSliceByTokenSeparator(value)
 		hasTokenExprList := make([]string, 0, len(tokens))
 		for _, token := range tokens {
@@ -205,7 +215,6 @@ func (l *esqsListener) formatExpression(field, value string) string {
 			hasTokenExprList = append(hasTokenExprList, hasTokenExpr)
 		}
 		return fmt.Sprintf("(%s)", strings.Join(hasTokenExprList, " AND "))
-		//return fmt.Sprintf("%s LIKE '%%%s%%'", field, l.escapeStringValue(value))
 	default:
 		return fmt.Sprintf("%s='%s'", field, l.escapeStringValue(value))
 	}
