@@ -109,9 +109,15 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 			},
 		},
 		FlushInterval: time.Millisecond * 100,
+		ErrorLog:      nil,
 		BufferPool:    reverseproxy.DefaultBufferPool,
-		Filters:       nil,
-		Context:       ctx,
+		ModifyResponse: func(response *http.Response) error {
+			response.Header.Del("Access-Control-Allow-Origin")
+			return nil
+		},
+		ErrorHandler: nil,
+		Filters:      nil,
+		Context:      ctx,
 	}
 	for _, filterConfig := range r.Filters {
 		filter, err := reverseproxy.MustGetFilterCreator(filterConfig.Name)(filterConfig.Config)
@@ -131,7 +137,10 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 		}
 	}
 
-	return rp.ServeHTTP
+	return func(w http.ResponseWriter, r *http.Request) {
+		rp.ServeHTTP(w, r)
+		w.Header().Del("Access-Control-Allow-Origin")
+	}
 }
 
 func (r *Route) Match(path, method string) bool {

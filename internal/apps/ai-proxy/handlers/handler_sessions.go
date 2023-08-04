@@ -16,8 +16,10 @@ package handlers
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"time"
+	"unicode/utf8"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
@@ -225,6 +227,18 @@ func (s *SessionsHandler) patchSession(ctx context.Context, req *pb.LocateSessio
 }
 
 func getUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {
+	userId, ok := extractUserId(ctx, req)
+	if !ok {
+		return "", false
+	}
+	data, err := base64.StdEncoding.DecodeString(userId)
+	if err != nil || !utf8.Valid(data) {
+		return userId, true
+	}
+	return string(data), true
+}
+
+func extractUserId(ctx context.Context, req interface{ GetUserId() string }) (string, bool) {
 	if userId := req.GetUserId(); userId != "" {
 		return userId, true
 	}

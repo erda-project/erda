@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"reflect"
 	"strings"
 	"sync"
@@ -44,12 +43,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
-	common "github.com/erda-project/erda-proto-go/common/pb"
-	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -95,11 +91,9 @@ func init() {
 type provider struct {
 	Config       *config
 	L            logs.Logger
-	HTTP         httpserver.Router      `autowired:"http-server@ai"`
-	GRPC         grpcserver.Interface   `autowired:"grpc-server@ai"`
-	Dao          dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
-	OrgSvc       orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
-	Openapi      routes.Register        `autowired:"openapi-dynamic-register.client"`
+	HTTP         httpserver.Router    `autowired:"http-server@ai"`
+	GRPC         grpcserver.Interface `autowired:"grpc-server@ai"`
+	Dao          dao.DAO              `autowired:"erda.apps.ai-proxy.dao"`
 	ErdaOpenapis map[string]*url.URL
 }
 
@@ -149,20 +143,6 @@ func (p *provider) Init(_ servicehub.Context) error {
 		if err := rout.Validate(); err != nil {
 			return errors.Wrapf(err, "rout %d is invalid", i)
 		}
-
-		// register to erda openapi
-		if err := p.Openapi.Register(&routes.APIProxy{
-			Method:      rout.Method,
-			Path:        path.Join("/api/ai-proxy", rout.Path),
-			ServiceURL:  p.Config.SelfURL,
-			BackendPath: rout.Path,
-			Auth: &common.APIAuth{
-				CheckLogin: true,
-				CheckToken: true,
-			},
-		}); err != nil {
-			return err
-		}
 	}
 
 	// register gRPC and http handler
@@ -174,7 +154,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 	// ai-proxy prometheus metrics
 	p.HTTP.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
-	p.HTTP.Any("/**", p, interceptors.CORS(false))
+	p.HTTP.Any("/**", p)
 	return nil
 }
 
@@ -185,7 +165,6 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
-			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
 			vars.CtxKeyProviders{}, p.Config.Providers,
 			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,

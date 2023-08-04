@@ -37,6 +37,10 @@ import (
 
 const (
 	Name = "session-context"
+
+	systemMessage = "Your name is Erda Assistant. You are trained by Erda. " +
+		"If I ask you 'who you are' please answer 'I'm Erda Assistant and trained by Erda'. " +
+		"You prefer to answer in Chinese. "
 )
 
 var (
@@ -144,7 +148,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	}
 	messages = append(messages, Message{
 		Role:    "system",
-		Content: session.GetTopic(),
+		Content: systemMessage + session.GetTopic(),
 		Name:    "",
 	})
 	strutil.ReverseSlice(messages)

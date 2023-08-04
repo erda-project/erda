@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/pb";
+
+import "google/api/annotations.proto";
+import "common/http.proto";
+
+service Access {
+  rpc OrgAccess(OrgAccessReq) returns (common.VoidResponse) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/access"
+    };
+  }
+}
+
+message OrgAccessReq {
+  string userId = 1;
+  string OrgId = 2;
+}
