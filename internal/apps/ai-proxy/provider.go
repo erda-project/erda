@@ -177,18 +177,12 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *provider) Add(method, path string, handler transhttp.HandlerFunc) {
-	f := func(w http.ResponseWriter, r *http.Request) {}
 	if p.HTTP != nil {
 		if err := p.HTTP.Add(method, path, handler,
 			httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs),
 			interceptors.CORS(true),
 		); err != nil {
 			p.L.Fatalf("failed to %T.Add(%s, %s, %T), err: %v", p, method, path, handler, err)
-		}
-		if !strings.EqualFold(method, http.MethodOptions) {
-			if err := p.HTTP.Add(http.MethodOptions, path, f, interceptors.CORS(true)); err != nil {
-				p.L.Fatalf("failed to %T.Add(%s, %s, %T), err: %v", p, method, path, f, err)
-			}
 		}
 	}
 }
