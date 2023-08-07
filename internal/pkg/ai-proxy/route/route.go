@@ -57,6 +57,15 @@ func (routes Routes) FindRoute(req *http.Request) *Route {
 	return NotFoundRoute
 }
 
+func (routes Routes) Validate() error {
+	for _, item := range routes {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type Route struct {
 	Path      string                       `json:"path" yaml:"path"`
 	PathRegex string                       `json:"pathRegex" yaml:"pathRegex"`

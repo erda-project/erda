@@ -121,7 +121,7 @@ http-server@openapi:
 http-server@openapi-admin:
   addr: ":9432"
 
-# 注册外部服务的接口到 erda openapi
+# 启用以下 providers 以允许外部服务调用本服务 gRPC 接口动态注册 API 到 erda openapi
 openapi-dynamic-register:
 erda.openapi-ng.external-openapi:
 

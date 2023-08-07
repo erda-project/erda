@@ -18,7 +18,6 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	common "github.com/erda-project/erda-proto-go/common/pb"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,6 +43,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
+	common "github.com/erda-project/erda-proto-go/common/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -196,6 +196,7 @@ func (p *provider) openAPIsOnErdaInLoop() {
 	for {
 		select {
 		case <-t.C:
+			p.L.Infof("register APIs to Erda Openapi")
 			if err := p.openAPIsOnErda(); err != nil {
 				p.L.Errorf("failed to register APIs to Erda Openapi, it is going to try again in 1 minute, err: %v", err)
 				t.Reset(time.Minute)
@@ -213,14 +214,7 @@ func (p *provider) openAPIsOnErda() error {
 	}
 
 	// register openai APis
-	for i := 0; i < len(p.Config.Routes); i++ {
-		rout := p.Config.Routes[i]
-
-		// validate every route config
-		if err := rout.Validate(); err != nil {
-			return errors.Wrapf(err, "rout %d is invalid", i)
-		}
-
+	for _, rout := range p.Config.Routes {
 		if _, err := p.DynamicOpenapi.Register(context.Background(), &dynamic.API{
 			Upstream:    p.Config.SelfURL,
 			Module:      "openai",
@@ -277,7 +271,10 @@ func (p *provider) initLogger() {
 }
 
 func (p *provider) parseRoutesConfig() error {
-	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
+	if err := p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes); err != nil {
+		return err
+	}
+	return p.Config.Routes.Validate()
 }
 
 func (p *provider) parseProvidersConfig() error {
