@@ -21,30 +21,30 @@ import (
 )
 
 var APIs = []*dynamic.API{
-	{BackendPath: "/api/ai-proxy/access", Method: http.MethodPost},
+	{Path: "/api/ai-proxy/access", BackendPath: "/access", Method: http.MethodPost},
 
-	{BackendPath: "/api/ai-proxy/chat-logs", Method: http.MethodGet},
-	{BackendPath: "/api/ai-proxy/sessions/{sessionId}/chat-logs", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/chat-logs", BackendPath: "chat-logs", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/sessions/{sessionId}/chat-logs", BackendPath: "/sessions/{sessionId}/chat-logs", Method: http.MethodGet},
 
-	{BackendPath: "/api/ai-proxy/credentials", Method: http.MethodPost},
-	{BackendPath: "/api/ai-proxy/credentials", Method: http.MethodGet},
-	{BackendPath: "/api/ai-proxy/credentials/{accessKeyId}", Method: http.MethodDelete},
-	{BackendPath: "/api/ai-proxy/credentials/{accessKeyId}", Method: http.MethodPut},
-	{BackendPath: "/api/ai-proxy/credentials/{accessKeyId}", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/credentials", BackendPath: "/credentials", Method: http.MethodPost},
+	{Path: "/api/ai-proxy/credentials", BackendPath: "/credentials", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/credentials/{accessKeyId}", BackendPath: "/credentials/{accessKeyId}", Method: http.MethodDelete},
+	{Path: "/api/ai-proxy/credentials/{accessKeyId}", BackendPath: "/credentials/{accessKeyId}", Method: http.MethodPut},
+	{Path: "/api/ai-proxy/credentials/{accessKeyId}", BackendPath: "/credentials/{accessKeyId}", Method: http.MethodGet},
 
-	{BackendPath: "/api/ai-proxy/models", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/models", BackendPath: "/models", Method: http.MethodGet},
 
-	{BackendPath: "/api/ai-proxy/providers", Method: http.MethodPost},
-	{BackendPath: "/api/ai-proxy/providers", Method: http.MethodGet},
-	{BackendPath: "/api/ai-proxy/providers/{name}/instances/{instanceId}", Method: http.MethodDelete},
-	{BackendPath: "/api/ai-proxy/providers/{name}/instances/{instanceId}", Method: http.MethodPut},
-	{BackendPath: "/api/ai-proxy/providers/{name}/instances/{instanceId}", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/providers", BackendPath: "/providers", Method: http.MethodPost},
+	{Path: "/api/ai-proxy/providers", BackendPath: "/providers", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/providers/{name}/instances/{instanceId}", BackendPath: "/providers/{name}/instances/{instanceId}", Method: http.MethodDelete},
+	{Path: "/api/ai-proxy/providers/{name}/instances/{instanceId}", BackendPath: "/providers/{name}/instances/{instanceId}", Method: http.MethodPut},
+	{Path: "/api/ai-proxy/providers/{name}/instances/{instanceId}", BackendPath: "/providers/{name}/instances/{instanceId}", Method: http.MethodGet},
 
-	{BackendPath: "/api/ai-proxy/sessions", Method: http.MethodPost},
-	{BackendPath: "/api/ai-proxy/sessions", Method: http.MethodGet},
-	{BackendPath: "/api/ai-proxy/sessions/{id}", Method: http.MethodDelete},
-	{BackendPath: "/api/ai-proxy/sessions/{id}", Method: http.MethodPut},
-	{BackendPath: "/api/ai-proxy/sessions/{id}", Method: http.MethodGet},
-	{BackendPath: "/api/ai-proxy/sessions/{id}/actions/reset", Method: http.MethodPatch},
-	{BackendPath: "/api/ai-proxy/sessions/{id}/actions/archive", Method: http.MethodPatch},
+	{Path: "/api/ai-proxy/sessions", BackendPath: "/sessions", Method: http.MethodPost},
+	{Path: "/api/ai-proxy/sessions", BackendPath: "/sessions", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/sessions/{id}", BackendPath: "/sessions/{id}", Method: http.MethodDelete},
+	{Path: "/api/ai-proxy/sessions/{id}", BackendPath: "/sessions/{id}", Method: http.MethodPut},
+	{Path: "/api/ai-proxy/sessions/{id}", BackendPath: "/sessions/{id}", Method: http.MethodGet},
+	{Path: "/api/ai-proxy/sessions/{id}/actions/reset", BackendPath: "/sessions/{id}/actions/reset", Method: http.MethodPatch},
+	{Path: "/api/ai-proxy/sessions/{id}/actions/archive", BackendPath: "/sessions/{id}/actions/archive", Method: http.MethodPatch},
 }

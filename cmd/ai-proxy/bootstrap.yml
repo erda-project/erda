@@ -20,3 +20,8 @@ gorm.v2:
 
 erda.apps.ai-proxy.dao:
 erda.app.ai-proxy.metrics:
+
+# gRPC clients
+grpc-client@erda.core.openapi.dynamic_register:
+  addr: ${ERDA_SERVER_GRPC_ADDR:erda-server:8096}
+erda.core.openapi.dynamic_register-client: {}

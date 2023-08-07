@@ -212,8 +212,6 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/zookeeper"
 	_ "github.com/erda-project/erda/internal/apps/msp/tenant"
 	_ "github.com/erda-project/erda/internal/apps/msp/tenant/project"
-	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/external-openapi"
-	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/register"
 	_ "github.com/erda-project/erda/internal/pkg/extension"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/cleaner"

@@ -18,6 +18,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	common "github.com/erda-project/erda-proto-go/common/pb"
 	"net/http"
 	"net/url"
 	"os"
@@ -43,6 +44,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
+	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -89,12 +91,13 @@ func init() {
 }
 
 type provider struct {
-	Config       *config
-	L            logs.Logger
-	HTTP         httpserver.Router    `autowired:"http-server@ai"`
-	GRPC         grpcserver.Interface `autowired:"grpc-server@ai"`
-	Dao          dao.DAO              `autowired:"erda.apps.ai-proxy.dao"`
-	ErdaOpenapis map[string]*url.URL
+	Config         *config
+	L              logs.Logger
+	HTTP           httpserver.Router                    `autowired:"http-server@ai"`
+	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
+	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
+	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
+	ErdaOpenapis   map[string]*url.URL
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -135,16 +138,6 @@ func (p *provider) Init(_ servicehub.Context) error {
 		p.ErdaOpenapis[plat.Name] = openapi
 	}
 
-	// prepare handlers
-	for i := 0; i < len(p.Config.Routes); i++ {
-		rout := p.Config.Routes[i]
-
-		// validate every route config
-		if err := rout.Validate(); err != nil {
-			return errors.Wrapf(err, "rout %d is invalid", i)
-		}
-	}
-
 	// register gRPC and http handler
 	pb.RegisterAccessImp(p, &handlers.AccessHandler{Dao: p.Dao, Log: p.L.Sub("AccessHandler")}, apis.Options())
 	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
@@ -156,6 +149,12 @@ func (p *provider) Init(_ servicehub.Context) error {
 	p.HTTP.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
 	p.HTTP.Any("/**", p)
+
+	// open APIs on Erda
+	if err := p.openAPIsOnErda(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -188,6 +187,46 @@ func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	if p.GRPC != nil {
 		p.GRPC.RegisterService(desc, impl)
 	}
+}
+
+func (p *provider) openAPIsOnErda() error {
+	auth := &common.APIAuth{
+		CheckLogin: true,
+		CheckToken: true,
+	}
+
+	// register openai APis
+	for i := 0; i < len(p.Config.Routes); i++ {
+		rout := p.Config.Routes[i]
+
+		// validate every route config
+		if err := rout.Validate(); err != nil {
+			return errors.Wrapf(err, "rout %d is invalid", i)
+		}
+
+		if _, err := p.DynamicOpenapi.Register(context.Background(), &dynamic.API{
+			Upstream:    p.Config.SelfURL,
+			Module:      "openai",
+			Method:      rout.Method,
+			Path:        rout.Path,
+			BackendPath: rout.Path,
+			Auth:        auth,
+		}); err != nil {
+			return err
+		}
+	}
+
+	// register admin APIs
+	for _, api := range handlers.APIs {
+		api.Upstream = p.Config.SelfURL
+		api.Module = "ai-proxy"
+		api.Auth = auth
+		if _, err := p.DynamicOpenapi.Register(context.Background(), api); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (p *provider) initLogger() {
