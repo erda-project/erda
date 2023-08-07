@@ -15,14 +15,23 @@
 package external_openapi
 
 import (
+	"context"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/grpcserver"
 	common "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
+)
+
+var (
+	_ pb.DynamicOpenapiRegisterServer = (*provider)(nil)
 )
 
 var (
@@ -30,7 +39,7 @@ var (
 	spec = servicehub.Spec{
 		Summary:     "external apis expose in erda openapi",
 		Description: "external apis expose in erda openapi",
-		ConfigFunc:  func() any { return new(Config) },
+		ConfigFunc:  func() any { return new(struct{}) },
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
 )
@@ -41,51 +50,55 @@ func init() {
 
 type provider struct {
 	Log     logs.Logger
-	Config  *Config
-	Openapi routes.Register `autowired:"openapi-dynamic-register.client"`
+	Openapi routes.Register      `autowired:"openapi-dynamic-register.client"`
+	GRPC    grpcserver.Interface `autowired:"grpc-server"`
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
-	if p.Config == nil {
-		return errors.New("config is invalid")
-	}
-	for _, api := range p.Config.APIs {
-		proxy := &routes.APIProxy{
-			Method:      strings.ToUpper(api.Method),
-			Path:        api.Path,
-			ServiceURL:  p.Config.Service.URL,
-			BackendPath: api.BackendPath,
-			Auth:        api.Auth,
-		}
-		if proxy.BackendPath == "" {
-			proxy.BackendPath = proxy.Path
-		}
-		if proxy.Auth == nil {
-			proxy.Auth = p.Config.Service.Auth
-		}
-		p.Log.Infof("register external API to openapi, %s %s -> %s%s\n", proxy.Method, proxy.Path, proxy.ServiceURL, proxy.BackendPath)
-		if err := p.Openapi.Register(proxy); err != nil {
-			return err
-		}
-	}
+	pb.RegisterDynamicOpenapiRegisterServer(p.GRPC, p)
 	return nil
 }
 
-type Config struct {
-	Service Service `json:"service" yaml:"service"`
-	APIs    []API   `json:"apis" yaml:"apis"`
+func (p *provider) Register(ctx context.Context, api *pb.API) (*common.VoidResponse, error) {
+	if err := adjust(api); err != nil {
+		return nil, err
+	}
+	proxy := &routes.APIProxy{
+		Method:      api.GetMethod(),
+		Path:        api.GetPath(),
+		ServiceURL:  api.GetUpstream(),
+		BackendPath: path.Join(path.Clean("/"+api.GetModule()), path.Clean("/"+api.GetBackendPath())),
+		Auth:        api.GetAuth(),
+	}
+	p.Log.Infof("register external API to openapi, %s %s -> %s%s\n", proxy.Method, proxy.Path, proxy.ServiceURL, proxy.BackendPath)
+	if err := p.Openapi.Register(proxy); err != nil {
+		return nil, errors.Wrapf(err, "failed to register the api %+v to openapi", api)
+	}
+	return new(common.VoidResponse), nil
 }
 
-type Service struct {
-	Name string          `json:"name" yaml:"name"`
-	URL  string          `json:"url" yaml:"url"`
-	Auth *common.APIAuth `json:"auth" yaml:"auth"`
+func (p *provider) Deregister(ctx context.Context, api *pb.API) (*common.VoidResponse, error) {
+	return nil, errors.New("not implement")
 }
 
-type API struct {
-	Name        string          `json:"name" yaml:"name"`
-	Method      string          `json:"method" yaml:"method"`
-	Path        string          `json:"path" yaml:"path"`
-	BackendPath string          `json:"backendPath" yaml:"backendPath"`
-	Auth        *common.APIAuth `json:"auth" yaml:"auth"`
+func adjust(api *pb.API) error {
+	u, err := url.Parse(api.GetUpstream())
+	if err != nil {
+		return errors.Wrapf(err, "api host %s is invalid", api.GetUpstream())
+	}
+	if u.Scheme == "" {
+		u.Scheme = "http"
+	}
+	api.Upstream = u.String()
+	if api.GetMethod() == "" {
+		api.Method = "*"
+	}
+	api.Method = strings.ToUpper(api.GetMethod())
+	if api.GetPath() == "" {
+		api.Path = "/"
+	}
+	if api.GetBackendPath() == "" {
+		api.BackendPath = api.GetPath()
+	}
+	return nil
 }

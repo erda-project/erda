@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package erda.core.openapi.dynamic_register;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb";
+
+import "common/http.proto";
+import "common/openapi.proto";
+
+service DynamicOpenapiRegister {
+  rpc Register(API) returns (common.VoidResponse) {}
+  rpc Deregister(API) returns (common.VoidResponse) {}
+}
+
+// register <upstream><path> to erda-openapi-server/api/module<backendPath>
+// like:
+//  upstream: http://ai-proxy:8081
+//  module: ai-proxy
+//  method: post
+//  path: /v1/chat/completion
+//  backendPath: /openai/v1/chat/completion
+// it will proxy as:
+//  http://ai-proxy:8081/v1/chat/completion -> openapi.erda.cloud/api/ai-proxy/openai/v1/chat/completion
+message API {
+  string upstream = 1;
+  string module = 2;
+  string method = 4;
+  string path = 5;
+  string backendPath = 6;
+  common.APIAuth auth = 7;
+}

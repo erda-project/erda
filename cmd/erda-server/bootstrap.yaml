@@ -120,6 +120,8 @@ http-server@openapi:
     max_body_size_bytes: ${OPENAPI_LOG_MAX_BODY_SIZE_BYTES:1024}
 http-server@openapi-admin:
   addr: ":9432"
+### external-openapi
+erda.openapi-ng.external-openapi:
 ### openapi-interceptor
 openapi-interceptor-dump:
   _enable: ${HTTP_DUMP:false}
