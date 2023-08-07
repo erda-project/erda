@@ -12,15 +12,26 @@ service DynamicOpenapiRegister {
   rpc Deregister(API) returns (common.VoidResponse) {}
 }
 
-// register <upstream><path> to erda-openapi-server/api/module<backendPath>
-// like:
+// register <upstream><backendPath> to erda-openapi-server/api/module<path>
+// case-1:
 //  upstream: http://ai-proxy:8081
-//  module: ai-proxy
+//  module: openai
 //  method: post
 //  path: /v1/chat/completion
-//  backendPath: /openai/v1/chat/completion
+//  backendPath: /v1/chat/completion
 // it will proxy as:
-//  http://ai-proxy:8081/v1/chat/completion -> openapi.erda.cloud/api/ai-proxy/openai/v1/chat/completion
+//  https://openapi.erda.cloud/api/openai/v1/chat/completion -> http://ai-proxy:8081/v1/chat/completion
+//  |<----------- domain --->|    |<module>|                    |<--- upstream --->|<-- backendPath -->|
+//                           |<prefix>| |<--- path ------->|
+//
+// case-2:
+//  upstream: http://ai-proxy:8081
+//  module: ai-proxy
+//  method: get
+//  path: /credentials
+//  backendPath: /api/ai-proxy/credentials
+// it will proxy as:
+//  https://openapi.erda.cloud/api/ai-proxy/credentials -> http://ai-proxy:8081/api/ai-proxy/credentials
 message API {
   string upstream = 1;
   string module = 2;
