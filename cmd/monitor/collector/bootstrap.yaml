@@ -69,7 +69,7 @@ erda.oap.collector.receiver.dummy:
 erda.oap.collector.receiver.prometheus-remote-write@prometheus:
 
 erda.oap.collector.receiver.prometheus-remote-write@external_metrics:
-  remote_write_url: "${EXTERNAL_METRIC_REMOTE_WRITE_URL:/api/v1/external-remote-write}"
+  remote_write_url: "${EXTERNAL_METRIC_REMOTE_WRITE_URL:/api/v1/external-prometheus-remote-write}"
 
 erda.oap.collector.receiver.jaeger:
 

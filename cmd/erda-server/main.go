@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/gallery"
 
 	// pkg
+	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda/internal/pkg/audit"
 	_ "github.com/erda-project/erda/internal/pkg/dingtalktest"
 	_ "github.com/erda-project/erda/internal/pkg/profileagent"
@@ -142,6 +143,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/sync"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/pipelinetemplate"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/project/home"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/project_report"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/publishitem"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/queue"
