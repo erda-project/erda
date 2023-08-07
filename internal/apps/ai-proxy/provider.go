@@ -151,8 +151,8 @@ func (p *provider) Init(_ servicehub.Context) error {
 	p.HTTP.Any("/**", p)
 
 	// open APIs on Erda
-	if err := p.openAPIsOnErda(); err != nil {
-		return err
+	if p.Config.OpenOnErda {
+		go p.openAPIsOnErdaInLoop()
 	}
 
 	return nil
@@ -189,6 +189,23 @@ func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	}
 }
 
+// openAPIsOnErdaInLoop register APIs to Erda Openapi every hour or minute if last time is failure.
+func (p *provider) openAPIsOnErdaInLoop() {
+	t := time.NewTicker(time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+			if err := p.openAPIsOnErda(); err != nil {
+				p.L.Errorf("failed to register APIs to Erda Openapi, it is going to try again in 1 minute, err: %v", err)
+				t.Reset(time.Minute)
+			} else {
+				t.Reset(time.Hour)
+			}
+		}
+	}
+}
+
 func (p *provider) openAPIsOnErda() error {
 	auth := &common.APIAuth{
 		CheckLogin: true,
@@ -220,6 +237,7 @@ func (p *provider) openAPIsOnErda() error {
 	for _, api := range handlers.APIs {
 		api.Upstream = p.Config.SelfURL
 		api.Module = "ai-proxy"
+		api.Path = strings.TrimPrefix(api.BackendPath, "/api/ai-proxy")
 		api.Auth = auth
 		if _, err := p.DynamicOpenapi.Register(context.Background(), api); err != nil {
 			return err
@@ -321,6 +339,7 @@ type config struct {
 	LogLevel     string              `json:"logLevel" yaml:"logLevel"`
 	Exporter     configPromExporter  `json:"exporter" yaml:"exporter"`
 	SelfURL      string              `json:"selfURL" yaml:"selfURL"`
+	OpenOnErda   bool                `json:"openOnErda" yaml:"openOnErda"`
 	Routes       route2.Routes       `json:"-" yaml:"-"`
 	Providers    provider2.Providers `json:"-" yaml:"-"`
 	Platforms    []*Platform         `json:"-" yaml:"-"`

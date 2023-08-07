@@ -65,9 +65,9 @@ func (p *provider) Register(ctx context.Context, api *pb.API) (*common.VoidRespo
 	}
 	proxy := &routes.APIProxy{
 		Method:      api.GetMethod(),
-		Path:        api.GetPath(),
+		Path:        path.Join("/api", path.Clean("/"+api.GetModule()), path.Clean("/"+api.GetPath())),
 		ServiceURL:  api.GetUpstream(),
-		BackendPath: path.Join(path.Clean("/"+api.GetModule()), path.Clean("/"+api.GetBackendPath())),
+		BackendPath: api.GetBackendPath(),
 		Auth:        api.GetAuth(),
 	}
 	p.Log.Infof("register external API to openapi, %s %s -> %s%s\n", proxy.Method, proxy.Path, proxy.ServiceURL, proxy.BackendPath)

@@ -120,8 +120,11 @@ http-server@openapi:
     max_body_size_bytes: ${OPENAPI_LOG_MAX_BODY_SIZE_BYTES:1024}
 http-server@openapi-admin:
   addr: ":9432"
-### external-openapi
+
+# 注册外部服务的接口到 erda openapi
+openapi-dynamic-register:
 erda.openapi-ng.external-openapi:
+
 ### openapi-interceptor
 openapi-interceptor-dump:
   _enable: ${HTTP_DUMP:false}
@@ -615,68 +618,3 @@ grpc-client@erda.core.monitor.settings:
   block: false
 erda.core.monitor.settings-client:
 service-profile-overview:
-
-# 注册外部服务的接口到 erda openapi
-openapi-dynamic-register:
-erda.openapi-ng.external-openapi@ai-proxy:
-  service:
-    name: ai-proxy
-    url: ${AI_PROXY_ADDRESS:http://ai-proxy:8081}
-    auth:
-      check_login: true
-      check_token: true
-  apis:
-    - method: post
-      path: /api/ai-proxy/access
-    - method: get
-      path: /api/ai-proxy/chat-logs
-    - method: get
-      path: /api/ai-proxy/sessions/{sessionId}/chat-logs
-    - method: get
-      path: /api/ai-proxy/credentials
-    - method: delete
-      path: /api/ai-proxy/credentials/{accessKeyId}
-    - method: put
-      path: /api/ai-proxy/credentials/{accessKeyId}
-    - method: get
-      path: /api/ai-proxy/credentials
-    - method: get
-      path: /api/ai-proxy/credentials/{accessKeyId}
-    - method: get
-      path: /api/ai-proxy/models
-    - method: post
-      path: /api/ai-proxy/providers
-    - method: delete
-      path: /api/ai-proxy/providers/{name}/instances/{instanceId}
-    - method: put
-      path: /api/ai-proxy/providers/{name}/instances/{instanceId}
-    - method: get
-      path: /api/ai-proxy/providers
-    - method: get
-      path: /api/ai-proxy/providers/{name}/instances/{instanceId}
-    - method: post
-      path: /api/ai-proxy/sessions
-    - method: put
-      path: /api/ai-proxy/sessions/{id}
-    - method: patch
-      path: /api/ai-proxy/sessions/{id}/actions/reset
-    - method: patch
-      path: /api/ai-proxy/sessions/{id}/actions/archive
-    - method: delete
-      path: /api/ai-proxy/sessions/{id}
-    - method: get
-      path: /api/ai-proxy/sessions
-    - method: get
-      path: /api/ai-proxy/sessions/{id}
-    - method: get
-      path: /api/ai-proxy/openai/v1/models
-      backendPath: /v1/models
-    - method: get
-      path: /api/ai-proxy/openai/v1/models/{model}
-      backendPath: /v1/models/{model}
-    - method: post
-      path: /api/ai-proxy/openai/v1/completions
-      backendPath: /v1/completions
-    - method: post
-      path: /api/ai-proxy/openai/v1/chat/completions
-      backendPath: /v1/chat/completions
