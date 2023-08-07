@@ -23,6 +23,9 @@ health:
 component-protocol:
 openapi-component-protocol:
 
+prometheus:
+  router_label_enable: false
+
 i18n:
   common: # core-services
     - conf/i18n/cs-i18n.yml # core-services
@@ -279,6 +282,7 @@ uc-adaptor:
 dop: { }
 erda.core.dop.taskerror: { }
 erda.dop.qa.unittest: { }
+project-management-report: { }
 erda.dop.search: { }
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
@@ -393,6 +397,8 @@ logs-index-query:
     file: conf/msp/logs/default_field_settings.yml
 etcd-election@msp:
   root_path: "/msp-election"
+etcd-election@project-management-report:
+  root_path: "/project-management-report-election"
 cassandra:
   _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"

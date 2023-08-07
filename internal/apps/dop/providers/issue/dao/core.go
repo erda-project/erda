@@ -528,12 +528,13 @@ func (client *DBClient) IssueStateCount2(issueIDs []uint64) ([]apistructs.Requir
 	return result, nil
 }
 
-// GetIssueManHourSum 事件下所有的任务总和
-func (client *DBClient) GetIssueManHourSum(req apistructs.IssuesStageRequest) (apistructs.IssueManHourSumResponse, error) {
+// GetTaskIssueManHourSum get task mam hour sum
+func (client *DBClient) GetTaskIssueManHourSum(req apistructs.IssuesStageRequest) (apistructs.IssueManHourSumResponse, error) {
 	var (
-		issues []Issue
-		ans          = make(map[string]int64)
-		sum    int64 = 0
+		issues          []Issue
+		ans                   = make(map[string]int64)
+		sumElapsedTime  int64 = 0
+		sumEstimateTime int64 = 0
 	)
 	sql := client.Table("dice_issues")
 	if len(req.StatisticRange) > 0 {
@@ -543,6 +544,9 @@ func (client *DBClient) GetIssueManHourSum(req apistructs.IssuesStageRequest) (a
 		if req.StatisticRange == "iteration" {
 			sql = sql.Where("iteration_id in (?)", req.RangeID)
 		}
+	}
+	if len(req.StateIDS) > 0 {
+		sql = sql.Where("state in (?)", req.StateIDS)
 	}
 	if err := sql.Where("deleted = ?", 0).Where("type = ?", apistructs.IssueTypeTask).Find(&issues).Error; err != nil {
 		return apistructs.IssueManHourSumResponse{}, err
@@ -559,7 +563,8 @@ func (client *DBClient) GetIssueManHourSum(req apistructs.IssuesStageRequest) (a
 			return apistructs.IssueManHourSumResponse{}, err
 		}
 		ans[each.Stage] += ret.ElapsedTime
-		sum += ret.ElapsedTime
+		sumElapsedTime += ret.ElapsedTime
+		sumEstimateTime += ret.EstimateTime
 	}
 	return apistructs.IssueManHourSumResponse{
 		DesignManHour:    ans["design"],
@@ -568,7 +573,8 @@ func (client *DBClient) GetIssueManHourSum(req apistructs.IssuesStageRequest) (a
 		ImplementManHour: ans["implement"],
 		DeployManHour:    ans["deploy"],
 		OperatorManHour:  ans["operator"],
-		SumManHour:       sum,
+		SumElapsedTime:   sumElapsedTime,
+		SumEstimateTime:  sumEstimateTime,
 	}, nil
 }
 
@@ -1090,4 +1096,35 @@ func (client *DBClient) ListIssueForIssueStateTransMigration() ([]IssueForIssueS
 	var issues []IssueForIssueStateTransMigration
 	err := client.Table("dice_issues").Where("deleted = 0").Find(&issues).Error
 	return issues, err
+}
+
+// GetHaveUndoneTaskAssigneeNum get the number of people with unfinished tasks under the iteration
+func (client *DBClient) GetHaveUndoneTaskAssigneeNum(iterationID uint64, doneStateIDS []int64) (uint64, error) {
+	var count uint64
+	if err := client.Table("dice_issues").Select("distinct(assignee)").Where("iteration_id = ?", iterationID).Where("deleted = 0").Where("type = 'TASK'").Where("state not in (?)", doneStateIDS).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (client *DBClient) GetSeriousBugNum(iterationID uint64) (uint64, error) {
+	var count uint64
+	if err := client.Table("dice_issues").Select("distinct(id)").Where("iteration_id = ?", iterationID).Where("deleted = 0").Where("type = 'BUG'").
+		Where("severity in (?)", []string{string(apistructs.IssueSeverityFatal), string(apistructs.IssueSeveritySerious)}).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (client *DBClient) GetDemandDesignBugNum(iterationID uint64) (uint64, error) {
+	var count uint64
+	if err := client.Table("dice_issues").Select("distinct(id)").
+		Where("iteration_id = ?", iterationID).
+		Where("deleted = 0").Where("type = ?", apistructs.IssueTypeBug).
+		Where("stage = ?", "demandDesign").
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

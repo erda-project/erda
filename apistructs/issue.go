@@ -1159,8 +1159,9 @@ type IssueTestCaseRelationsListRequest struct {
 
 // IssueManHourSumRequest 事件下所有的任务总和请求
 type IssuesStageRequest struct {
-	StatisticRange string `json:"statisticRange"` //事件类型 项目/迭代
-	RangeID        int64  `json:"rangeId"`        //项目id/迭代id
+	StatisticRange string  `json:"statisticRange"` //事件类型 项目/迭代
+	RangeID        int64   `json:"rangeId"`        //项目id/迭代id
+	StateIDS       []int64 `json:"stateIds"`       // state id list
 }
 
 // IssueManHourSumResponse 事件下所有的任务总和响应
@@ -1172,7 +1173,8 @@ type IssueManHourSumResponse struct {
 	ImplementManHour int64 `json:"implementManHour"`
 	DeployManHour    int64 `json:"deployManHour"`
 	OperatorManHour  int64 `json:"operatorManHour"`
-	SumManHour       int64 `json:"sumManHour"`
+	SumElapsedTime   int64 `json:"sumElapsedTime"`
+	SumEstimateTime  int64 `json:"sumEstimateTime"`
 }
 
 // IssueBugPercentageResponse 缺陷率响应
