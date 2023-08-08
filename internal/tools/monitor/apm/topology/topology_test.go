@@ -1120,6 +1120,10 @@ func (m mockMetricQuery) QueryWithFormat(ctx context.Context, tsql, statement, f
 	return nil, nil, nil
 }
 
+func (m mockMetricQuery) QueryExternalWithFormat(ctx context.Context, tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
+	return nil, nil, nil
+}
+
 func (m mockMetricQuery) Client() *elastic.Client {
 	//TODO implement me
 	panic("implement me")
@@ -1130,6 +1134,10 @@ func (m mockMetricQuery) Indices(metrics []string, clusters []string, start, end
 }
 
 func (m mockMetricQuery) Handle(r *http.Request) interface{} {
+	return nil
+}
+
+func (m mockMetricQuery) ExternalHandle(r *http.Request) interface{} {
 	return nil
 }
 
