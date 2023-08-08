@@ -23,6 +23,10 @@ import (
 	"time"
 )
 
+var (
+	LabelColors = []string{"purple", "blue", "orange", "cyan", "green", "magenta", "yellow", "red", "water-blue", "yellow-green"}
+)
+
 // 数据类型
 const (
 	String         = "string"
@@ -158,6 +162,11 @@ func randString(randType string) string {
 		s = append(s, rune(asciiValue))
 	}
 	return string(s)
+}
+
+func RandomLabelColor() string {
+	rand.Seed(time.Now().UnixNano())
+	return LabelColors[rand.Intn(len(LabelColors))]
 }
 
 func MockValue(mockType string) interface{} {
