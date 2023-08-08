@@ -17,11 +17,16 @@ package filters
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
+	"time"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/constant"
+	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/types"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/webhook"
 )
@@ -102,6 +107,56 @@ func testWebhookFilterDINGDINGURL(t *testing.T, f Filter) {
 	dd := m.Labels[types.LabelKey("/DINGDING")]
 	assert.NotNil(t, dd, fmt.Sprintf("%+v", m))
 
+}
+
+func TestWebhookFilter(t *testing.T) {
+	var (
+		whf = &WebhookFilter{}
+		whi = &webhook.WebHookImpl{}
+	)
+
+	hook := webhook.Hook{
+		ID: "1",
+		CreateHookRequest: apistructs.CreateHookRequest{
+			Name:   "test-event",
+			Events: []string{"event1", "event2"},
+			URL:    "https://localhost:8080/hook",
+			Active: true,
+			HookLocation: apistructs.HookLocation{
+				Org:         "-1",
+				Project:     "-1",
+				Application: "-1",
+				Env:         make([]string, 0),
+			},
+		},
+	}
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(whi), "SearchHooks", func(whi *webhook.WebHookImpl, location webhook.HookLocation, event string) []webhook.Hook {
+		return []webhook.Hook{hook}
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(whi), "ListHooks", func(whi *webhook.WebHookImpl, location webhook.HookLocation) (webhook.ListHooksResponse, error) {
+		return []webhook.Hook{hook}, nil
+	})
+
+	defer monkey.UnpatchAll()
+
+	dispatchErr := whf.Filter(&types.Message{
+		Sender:  "unit-test",
+		Content: "hello webhook",
+		Labels: map[types.LabelKey]interface{}{
+			types.LabelKey(constant.WebhookLabelKey): &apistructs.EventHeader{
+				Event:         "event1",
+				Action:        "update",
+				OrgID:         "1",
+				ProjectID:     "1",
+				ApplicationID: "1",
+				TimeStamp:     time.Now().String(),
+			},
+		},
+	})
+
+	assert.Equal(t, dispatchErr, errors.New())
 }
 
 // func TestWebhookFilter(t *testing.T) {

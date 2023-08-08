@@ -127,7 +127,7 @@ func Register(kind Kind, create CreateFn) error {
 
 // Get a GetEventChanFn according to an executor's name
 func RegisterEvChan(name Name, get GetEventChanFn, cb EventCbFn) error {
-	logrus.Debugf("in RegisterEvChan going to register executor: %s", name)
+	logrus.Infof("in RegisterEvChan going to register executor: %s", name)
 	if _, ok := EvFuncMap[name]; ok {
 		return errors.Errorf("duplicate to register executor's event channel: %s", name)
 	}
@@ -137,7 +137,7 @@ func RegisterEvChan(name Name, get GetEventChanFn, cb EventCbFn) error {
 }
 
 func UnRegisterEvChan(name Name) {
-	logrus.Debugf("in UnRegisterEvChan going to unregister executor: %s", name)
+	logrus.Infof("in UnRegisterEvChan going to unregister executor: %s", name)
 	delete(EvFuncMap, name)
 	delete(EvCbMap, name)
 }

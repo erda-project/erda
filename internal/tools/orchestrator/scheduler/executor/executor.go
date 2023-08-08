@@ -182,18 +182,19 @@ func deleteOneExecutor(m *Manager, config *executorconfig.ExecutorConfig) {
 		p.Stop()
 	}
 
-	executortypes.UnRegisterEvChan(executortypes.Name(config.Name))
+	executortypes.UnRegisterEvChan(name)
 	events.GetEventManager().UnRegisterEventCallback(config.Name)
 
-	if executor, ok := m.executors[executortypes.Name(config.Name)]; ok {
+	if executor, ok := m.executors[name]; ok {
 		executor.CleanUpBeforeDelete()
 	}
 
 	// Delete the creation function corresponding to the executor
-	delete(m.executors, executortypes.Name(config.Name))
+	delete(m.executors, name)
 	// Delete the configuration of the executor
-	delete(m.executorConfigs, executortypes.Name(config.Name))
-	//
+	delete(m.executorConfigs, name)
+	// Delete the pools
+	delete(m.pools, name)
 	//delete(m.executorStopCh, executortypes.Name(config.Name))
 	// Delete the map corresponding to the relationship between executor name and cluster name in conf
 	conf.GetConfStore().ExecutorStore.Delete(config.Name)

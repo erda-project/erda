@@ -60,12 +60,17 @@ func (w *WebhookFilter) Filter(m *types.Message) *errors.DispatchError {
 	internalHs := w.impl.SearchHooks(apistructs.HookLocation{
 		Org: "-1",
 	}, eventLabel.Event)
-	hs := w.impl.SearchHooks(apistructs.HookLocation{
-		Org:         eventLabel.OrgID,
-		Project:     eventLabel.ProjectID,
-		Application: eventLabel.ApplicationID,
-		Env:         []string{eventLabel.Env},
-	}, eventLabel.Event)
+
+	var hs []apistructs.Hook
+	if eventLabel.OrgID != "-1" {
+		hs = w.impl.SearchHooks(apistructs.HookLocation{
+			Org:         eventLabel.OrgID,
+			Project:     eventLabel.ProjectID,
+			Application: eventLabel.ApplicationID,
+			Env:         []string{eventLabel.Env},
+		}, eventLabel.Event)
+	}
+
 	if len(hs)+len(internalHs) == 0 {
 		logrus.Warnf("no webhook care event: %v", eventLabel)
 		return derr
