@@ -121,3 +121,24 @@ func (b *Bundle) ListLabelByIDs(ids []uint64) ([]apistructs.ProjectLabel, error)
 
 	return rsp.Data, nil
 }
+
+func (b *Bundle) CreateLabel(req apistructs.ProjectLabelCreateRequest) (int64, error) {
+	host, err := b.urls.ErdaServer()
+	if err != nil {
+		return 0, err
+	}
+	hc := b.hc
+
+	var rsp apistructs.ProjectLabelCreateResponse
+	httpResp, err := hc.Post(host).Path("/api/labels").
+		Header(httputil.InternalHeader, "bundle").
+		JSONBody(req).
+		Do().JSON(&rsp)
+	if err != nil {
+		return 0, err
+	}
+	if !httpResp.IsOK() || !rsp.Success {
+		return 0, toAPIError(httpResp.StatusCode(), rsp.Error)
+	}
+	return rsp.Data, nil
+}

@@ -51,6 +51,8 @@ type ProjectCreateRequest struct {
 	MemQuota float64 `json:"memQuota"`
 	// +required 项目模版
 	Template ProjectTemplate `json:"template"`
+
+	Labels []string `json:"labels"`
 }
 
 type ResourceConfigs struct {
@@ -178,6 +180,8 @@ type ProjectUpdateBody struct {
 	CpuQuota float64 `json:"cpuQuota"`
 	// +required 单位: GB
 	MemQuota float64 `json:"memQuota"`
+
+	Labels []string `json:"labels"`
 }
 
 // ProjectUpdateResponse PUT /api/projects/{projectId} 更新项目响应结构
@@ -327,6 +331,10 @@ type ProjectDTO struct {
 
 	// Project type
 	Type string `json:"type"`
+
+	// labels
+	Labels       []string       `json:"labels"`
+	LabelDetails []ProjectLabel `json:"labelDetails"`
 }
 
 type ResourceConfigsInfo struct {

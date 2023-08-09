@@ -27,11 +27,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/pkg/mock"
+
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	dwfpb "github.com/erda-project/erda-proto-go/dop/devflowrule/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -113,6 +116,32 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 		logrus.Warnf("failed to add state to db when create project, (%v)", err)
 	}
 
+	// create labels
+	for _, label := range projectCreateReq.Labels {
+		labelID, err := e.bdl.CreateLabel(apistructs.ProjectLabelCreateRequest{
+			Name:         label,
+			ProjectID:    projectID,
+			Type:         apistructs.LabelTypeProject,
+			Color:        mock.RandomLabelColor(),
+			IdentityInfo: identity,
+		})
+		if err != nil {
+			logrus.Warnf("failed to create label, labelName: %s, project: %s, err: %v",
+				label, projectCreateReq.Name, err)
+			continue
+		}
+
+		lr := &dao.LabelRelation{
+			LabelID: uint64(labelID),
+			RefType: apistructs.LabelTypeProject,
+			RefID:   strconv.FormatUint(projectID, 10),
+		}
+		if err := e.db.CreateLabelRelation(lr); err != nil {
+			logrus.Errorf("failed to create label relation, labelID: %d, projectID: %d, err: %v", labelID, projectID, err)
+			continue
+		}
+	}
+
 	// create devFlowRule
 	if _, err = e.DevFlowRule.CreateDevFlowRule(ctx, &dwfpb.CreateDevFlowRuleRequest{ProjectID: projectID, UserID: identity.UserID}); err != nil {
 		logrus.Warnf("failed to CreateDevFlowRule, (%v)", err)
@@ -188,6 +217,12 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	if err = e.issueDBClient.DeleteIssuesStateByProjectID(projectID); err != nil {
 		logrus.Warnf("failed to delete project state, (%v)", err)
 		return apierrors.ErrDeleteProject.InternalError(err).ToResp(), nil
+	}
+
+	// delete relation labels
+	if err = e.db.DeleteLabelRelations(apistructs.LabelTypeProject, strconv.FormatInt(projectID, 10), nil); err != nil {
+		logrus.Warnf("failed to delete project label relations for project: %s, projectID: %d, err: %v",
+			project.Name, projectID, err)
 	}
 
 	// delete devFlowRule
@@ -288,8 +323,26 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 	if dto.OrgID != orgID {
 		return apierrors.ErrGetProject.AccessDenied().ToResp(), nil
 	}
+	// labels
+	dto.Labels, dto.LabelDetails = e.getProjectLabelDetails(projectID)
 
 	return httpserver.OkResp(dto, append(dto.Owners, dto.Creator))
+}
+
+func (e *Endpoints) getProjectLabelDetails(projectID uint64) ([]string, []apistructs.ProjectLabel) {
+	lrs, _ := e.db.GetLabelRelationsByRef(apistructs.LabelTypeProject, strconv.FormatUint(projectID, 10))
+	labelIDs := make([]uint64, 0, len(lrs))
+	for _, v := range lrs {
+		labelIDs = append(labelIDs, v.LabelID)
+	}
+	var labelNames []string
+	var labels []apistructs.ProjectLabel
+	labels, _ = e.bdl.ListLabelByIDs(labelIDs)
+	labelNames = make([]string, 0, len(labels))
+	for _, v := range labels {
+		labelNames = append(labelNames, v.Name)
+	}
+	return labelNames, labels
 }
 
 // ListProject list project
@@ -573,6 +626,7 @@ func (e *Endpoints) setProjectResource(projectDTOs []apistructs.ProjectDTO) erro
 			projectDTOs[i].CpuAddonUsed = v.CpuAddonUsed
 			projectDTOs[i].MemAddonUsed = v.MemAddonUsed
 		}
+		projectDTOs[i].Labels, projectDTOs[i].LabelDetails = e.getProjectLabelDetails(projectDTOs[i].ID)
 	}
 	return nil
 }

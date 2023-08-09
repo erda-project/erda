@@ -95,3 +95,7 @@ func (client *DBClient) BatchQueryIssueLabelIDMap(issueIDs []int64) (map[uint64]
 	}
 	return m, nil
 }
+
+func (client *DBClient) BatchCreateLabelRelations(lr []LabelRelation) error {
+	return client.BulkInsert(lr)
+}
