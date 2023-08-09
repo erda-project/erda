@@ -25,6 +25,7 @@ const (
 )
 
 var (
-	HeaderKeyContentType   = textproto.CanonicalMIMEHeaderKey("content-type")
-	HeaderKeyContentLength = textproto.CanonicalMIMEHeaderKey("content-length")
+	HeaderKeyContentType              = textproto.CanonicalMIMEHeaderKey("content-type")
+	HeaderKeyContentLength            = textproto.CanonicalMIMEHeaderKey("content-length")
+	HeaderKeyAccessControlAllowOrigin = textproto.CanonicalMIMEHeaderKey("Access-Control-Allow-Origin")
 )

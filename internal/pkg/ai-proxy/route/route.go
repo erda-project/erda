@@ -17,6 +17,7 @@ package route
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"net/http"
 	"os"
 	"reflect"
@@ -121,7 +122,8 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 		ErrorLog:      nil,
 		BufferPool:    reverseproxy.DefaultBufferPool,
 		ModifyResponse: func(response *http.Response) error {
-			response.Header.Del("Access-Control-Allow-Origin")
+			// todo: delete CORS header and it will be remove soon if the frontend access apis by erda openapi
+			response.Header.Del(httputil.HeaderKeyAccessControlAllowOrigin)
 			return nil
 		},
 		ErrorHandler: nil,
@@ -148,7 +150,8 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		rp.ServeHTTP(w, r)
-		w.Header().Del("Access-Control-Allow-Origin")
+		// todo: delete CORS header and it will be remove soon if the frontend access apis by erda openapi
+		w.Header().Del(httputil.HeaderKeyAccessControlAllowOrigin)
 	}
 }
 

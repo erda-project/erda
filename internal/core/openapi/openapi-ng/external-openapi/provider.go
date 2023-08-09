@@ -17,7 +17,6 @@ package external_openapi
 import (
 	"context"
 	"net/url"
-	"path"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -65,7 +64,7 @@ func (p *provider) Register(ctx context.Context, api *pb.API) (*common.VoidRespo
 	}
 	proxy := &routes.APIProxy{
 		Method:      api.GetMethod(),
-		Path:        path.Join("/api", path.Clean("/"+api.GetModule()), path.Clean("/"+api.GetPath())),
+		Path:        api.GetPath(),
 		ServiceURL:  api.GetUpstream(),
 		BackendPath: api.GetBackendPath(),
 		Auth:        api.GetAuth(),
