@@ -19,15 +19,19 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
+	"github.com/pkg/errors"
+	"net/url"
+	"strconv"
 )
 
 const Name = "create-test-case"
 
 //go:embed schema.yaml
-var schema json.RawMessage
+var Schema json.RawMessage
 
 //go:embed system-message.txt
 var systemMessage string
@@ -41,11 +45,12 @@ func init() {
 }
 
 type Function struct {
-	background *functions.Background
+	prompt     string
+	background *pb.Background
 }
 
-func New(ctx context.Context, background *functions.Background) functions.Function {
-	return &Function{background: background}
+func New(ctx context.Context, prompt string, background *pb.Background) functions.Function {
+	return &Function{prompt: prompt, background: background}
 }
 
 func (f *Function) Name() string {
@@ -61,11 +66,11 @@ func (f *Function) SystemMessage() string {
 }
 
 func (f *Function) UserMessage() string {
-	return f.background.Prompt
+	return f.prompt
 }
 
 func (f *Function) Schema() json.RawMessage {
-	return schema
+	return Schema
 }
 
 func (f *Function) Callback(ctx context.Context, arguments json.RawMessage) (any, error) {
@@ -78,8 +83,19 @@ func (f *Function) Callback(ctx context.Context, arguments json.RawMessage) (any
 	req.Name = f.UserMessage()
 	req.ProjectID = f.background.ProjectID
 	req.Desc = fmt.Sprintf("Powered by AI.\n\n对应需求:\n%s", f.UserMessage())
-	testSetID, _ := f.background.Resources["TestSet"].Int64()
-	req.TestSetID = uint64(testSetID)
+	referer := f.background.GetReferer()
+	u, err := url.Parse(referer)
+	if err != nil {
+		return nil, err
+	}
+	testSetID := u.Query().Get("testSetID")
+	if testSetID == "" {
+		return nil, errors.New("bad request: bad background: testSetID in referer is required")
+	}
+	req.TestSetID, err = strconv.ParseUint(testSetID, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "bad request: bad background: invalid testSetID in referer")
+	}
 	req.Priority = apistructs.TestCasePriorityP3
 	req.UserID = f.background.UserID
 

@@ -17,6 +17,7 @@ package functions
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"sync"
 )
 
@@ -44,7 +45,7 @@ type Background struct {
 	Prompt        string `json:"prompt" yaml:"prompt"`
 }
 
-type FunctionFactory func(ctx context.Context, background *Background) Function
+type FunctionFactory func(ctx context.Context, prompt string, background *pb.Background) Function
 
 type CallbackURL struct{ CallbackURL any }
 

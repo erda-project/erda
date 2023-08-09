@@ -12,8 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package test_case_test
 
 import (
-	_ "github.com/erda-project/erda/internal/pkg/ai-functions/functions/test-case"
+	"encoding/json"
+	"sigs.k8s.io/yaml"
+	"testing"
+
+	test_case "github.com/erda-project/erda/internal/pkg/ai-functions/functions/test-case"
 )
+
+func TestSchema(t *testing.T) {
+	schema := test_case.Schema
+	t.Logf("json valid: %v", json.Valid(schema))
+	if err := yaml.Unmarshal(schema, &schema); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("convert to json: %s", string(schema))
+	t.Logf("json valid: %v", json.Valid(schema))
+}

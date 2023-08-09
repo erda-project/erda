@@ -69,13 +69,9 @@ var (
 		Services:    []string{"erda.app.ai-proxy.Server"},
 		Summary:     "ai-proxy server",
 		Description: "Reverse proxy service between AI vendors and client applications, providing a cut-through for service access",
-		ConfigFunc: func() interface{} {
-			return new(config) // todo: 启动时支持从初始配置文件或配置中心(Nacos, ETCD, MySQL)获取配置
-		},
-		Types: []reflect.Type{providerType},
-		Creator: func() servicehub.Provider {
-			return new(provider)
-		},
+		ConfigFunc:  func() interface{} { return new(config) }, // todo: 启动时支持从初始配置文件或配置中心(Nacos, ETCD, MySQL)获取配置
+		Types:       []reflect.Type{providerType},
+		Creator:     func() servicehub.Provider { return new(provider) },
 	}
 	rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {

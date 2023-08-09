@@ -618,3 +618,5 @@ grpc-client@erda.core.monitor.settings:
   block: false
 erda.core.monitor.settings-client:
 service-profile-overview:
+erda.app.ai-function:
+  openAIOpenapi: ${OPENAI_OPENAPI:http://ai-proxy:8081}

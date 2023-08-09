@@ -26,8 +26,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewClient(api *url.URL, client *http.Client) *Client {
-	return &Client{api: api, client: client}
+func NewClient(api *url.URL, client *http.Client) (*Client, error) {
+	switch api.Scheme {
+	case "http", "https":
+	default:
+		api.Scheme = "http"
+	}
+	if api.Host == "" {
+		return nil, errors.New("no host in openai url")
+	}
+	return &Client{api: api, client: client}, nil
 }
 
 type Client struct {
@@ -35,27 +43,33 @@ type Client struct {
 	client *http.Client
 }
 
-func CreateCompletion[FC string | *FunctionCall](ctx context.Context, c *Client, req *CreateCompletionOptions[FC]) (*ChatCompletions, error) {
-	if c.api == nil {
-		return nil, errors.New("openapi is not specified")
-	}
+func (c *Client) URLV1ChatCompletion() string {
+	var u = *c.api
+	u.Path = "/v1/chat/completions"
+	return u.String()
+}
+
+func (c *Client) HttpClient() *http.Client {
 	if c.client == nil {
-		c.client = http.DefaultClient
+		return http.DefaultClient
 	}
-	api := *c.api
-	api.Path = "/v1/chat/completions"
+	return c.client
+}
+
+func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOptions) (*ChatCompletions, error) {
 	req.Stream = false
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(req); err != nil {
 		return nil, errors.Wrap(err, "failed to Encode CreateCompletionOptions")
 	}
-	request, err := http.NewRequest(http.MethodPost, api.String(), &buf)
+	request, err := http.NewRequest(http.MethodPost, c.URLV1ChatCompletion(), &buf)
+	request.Header.Set("Authorization", "Bearer "+"e78c1fe49d704fda978041cb21770282")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to NewRequest, uri: %s", api.String())
+		return nil, errors.Wrapf(err, "failed to NewRequest, uri: %s", c.URLV1ChatCompletion())
 	}
-	response, err := c.client.Do(request)
+	response, err := c.HttpClient().Do(request)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to Do http request to %s", api.String())
+		return nil, errors.Wrapf(err, "failed to Do http request to %s", c.URLV1ChatCompletion())
 	}
 	defer func() { _ = response.Body.Close() }()
 
