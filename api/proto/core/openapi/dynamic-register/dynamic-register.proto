@@ -34,9 +34,8 @@ service DynamicOpenapiRegister {
 //  https://openapi.erda.cloud/api/ai-proxy/credentials -> http://ai-proxy:8081/api/ai-proxy/credentials
 message API {
   string upstream = 1;
-  string module = 2;
+  string backendPath = 2;
   string method = 4;
   string path = 5;
-  string backendPath = 6;
-  common.APIAuth auth = 7;
+  common.APIAuth auth = 6;
 }

@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"reflect"
 	"strings"
 	"sync"
@@ -152,7 +153,10 @@ func (p *provider) Init(_ servicehub.Context) error {
 
 	// open APIs on Erda
 	if p.Config.OpenOnErda {
-		go p.openAPIsOnErdaInLoop()
+		if err := p.openAPIsOnErda(); err != nil {
+			p.L.Errorf("failed to open APIs on Erda, err: %v", err)
+			return err
+		}
 	}
 
 	return nil
@@ -189,24 +193,7 @@ func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	}
 }
 
-// openAPIsOnErdaInLoop register APIs to Erda Openapi every hour or minute if last time is failure.
-func (p *provider) openAPIsOnErdaInLoop() {
-	t := time.NewTicker(time.Second)
-	defer t.Stop()
-	for {
-		select {
-		case <-t.C:
-			p.L.Infof("register APIs to Erda Openapi")
-			if err := p.openAPIsOnErda(); err != nil {
-				p.L.Errorf("failed to register APIs to Erda Openapi, it is going to try again in 1 minute, err: %v", err)
-				t.Reset(time.Minute)
-			} else {
-				t.Reset(time.Hour)
-			}
-		}
-	}
-}
-
+// openAPIsOnErda opens the ai-proxy APIs on Erda
 func (p *provider) openAPIsOnErda() error {
 	auth := &common.APIAuth{
 		CheckLogin: true,
@@ -217,9 +204,8 @@ func (p *provider) openAPIsOnErda() error {
 	for _, rout := range p.Config.Routes {
 		if _, err := p.DynamicOpenapi.Register(context.Background(), &dynamic.API{
 			Upstream:    p.Config.SelfURL,
-			Module:      "openai",
 			Method:      rout.Method,
-			Path:        rout.Path,
+			Path:        path.Join("/api/ai-proxy/openai", rout.Path),
 			BackendPath: rout.Path,
 			Auth:        auth,
 		}); err != nil {
@@ -230,8 +216,7 @@ func (p *provider) openAPIsOnErda() error {
 	// register admin APIs
 	for _, api := range handlers.APIs {
 		api.Upstream = p.Config.SelfURL
-		api.Module = "ai-proxy"
-		api.Path = strings.TrimPrefix(api.BackendPath, "/api/ai-proxy")
+		api.Path = api.BackendPath
 		api.Auth = auth
 		if _, err := p.DynamicOpenapi.Register(context.Background(), api); err != nil {
 			return err

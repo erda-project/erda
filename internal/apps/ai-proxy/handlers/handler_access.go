@@ -36,7 +36,7 @@ type AccessHandler struct {
 }
 
 func (h *AccessHandler) Access(ctx context.Context, req *pb.AccessReq) (*pb.AccessResponse, error) {
-	switch platform := req.GetPlatform(); platform {
+	switch platform := req.GetPlatform(); strings.ToLower(platform) {
 	case "erda":
 		switch scope := strings.ToLower(req.GetScope()); scope {
 		case "org", "organization":
