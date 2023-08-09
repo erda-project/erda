@@ -22,9 +22,10 @@ import (
 type ProjectLabelType string
 
 const (
-	LabelTypeIssue     ProjectLabelType = "issue"     // issue 标签类型
-	LabelTypeRelease   ProjectLabelType = "release"   // release 标签类型
-	LabelTypeIteration ProjectLabelType = "iteration" // iteration 标签类型
+	LabelTypeIssue     ProjectLabelType = "issue"     // issue label type
+	LabelTypeRelease   ProjectLabelType = "release"   // release label type
+	LabelTypeIteration ProjectLabelType = "iteration" // iteration label type
+	LabelTypeProject   ProjectLabelType = "project"   // project label type
 )
 
 // ProjectLabel 标签

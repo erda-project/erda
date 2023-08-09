@@ -77,14 +77,12 @@ func (c *PrometheusCollector) collectIterationInfo(ch chan<- prometheus.Metric) 
 		c.errors.Set(1)
 		logrus.Errorf("failed to get iteration info: %v", err)
 	}
-	rawLabels := map[string]struct{}{}
-	for _, iteration := range iterations {
-		for l := range c.iterationLabelsFunc(iteration) {
-			rawLabels[l] = struct{}{}
-		}
-	}
 
 	for _, iter := range iterations {
+		rawLabels := map[string]struct{}{}
+		for l := range c.iterationLabelsFunc(iter) {
+			rawLabels[l] = struct{}{}
+		}
 		values := make([]string, 0, len(rawLabels))
 		labels := make([]string, 0, len(rawLabels))
 		iterationLabels := c.iterationLabelsFunc(iter)

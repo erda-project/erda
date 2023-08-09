@@ -22,6 +22,7 @@ import (
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
 
 func (p *provider) refreshBasicIterations() error {
@@ -67,7 +68,7 @@ func (p *provider) refreshBasicIterations() error {
 				projectDto.Name, projectDto.ID, projectDto.OrgID)
 			continue
 		}
-		labels, _ := p.getIterationLabelDetails(iterations[i].ID)
+		labels, _ := p.getLabelDetails(iterations[i])
 		if iter := p.iterationSet.Get(iterations[i].ID); iter != nil {
 			iter.Iteration = &iterations[i]
 			iter.Labels = labels
@@ -84,10 +85,14 @@ func (p *provider) refreshBasicIterations() error {
 	return nil
 }
 
-func (p *provider) getIterationLabelDetails(iterationID uint64) ([]string, []apistructs.ProjectLabel) {
-	lrs, _ := p.iterationDB.GetLabelRelationsByRef(apistructs.LabelTypeIteration, strconv.FormatUint(iterationID, 10))
+func (p *provider) getLabelDetails(iteration dao.Iteration) ([]string, []apistructs.ProjectLabel) {
+	lrs, _ := p.iterationDB.GetLabelRelationsByRef(apistructs.LabelTypeIteration, strconv.FormatUint(iteration.ID, 10))
 	labelIDs := make([]uint64, 0, len(lrs))
 	for _, v := range lrs {
+		labelIDs = append(labelIDs, v.LabelID)
+	}
+	projectLrs, _ := p.iterationDB.GetLabelRelationsByRef(apistructs.LabelTypeProject, strconv.FormatUint(iteration.ProjectID, 10))
+	for _, v := range projectLrs {
 		labelIDs = append(labelIDs, v.LabelID)
 	}
 	var labelNames []string

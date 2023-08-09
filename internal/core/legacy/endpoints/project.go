@@ -19,10 +19,13 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/mock"
 
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
@@ -170,7 +173,77 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrUpdateProject.InternalError(err).ToResp(), nil
 	}
 
+	// update labels
+	if err := e.updateProjectLabels(uint64(projectID), projectUpdateReq.Labels); err != nil {
+		return apierrors.ErrUpdateProject.InternalError(err).ToResp(), nil
+	}
+
 	return httpserver.OkResp(projectID)
+}
+
+func (e *Endpoints) updateProjectLabels(projectID uint64, newLabels []string) error {
+	lrs, err := e.db.GetLabelRelationsByRef(apistructs.LabelTypeProject, strconv.FormatUint(uint64(projectID), 10))
+	if err != nil {
+		return err
+	}
+	labelIDs := make([]uint64, 0, len(lrs))
+	for _, v := range lrs {
+		labelIDs = append(labelIDs, v.LabelID)
+	}
+	labels, err := e.bdl.ListLabelByIDs(labelIDs)
+	if err != nil {
+		return err
+	}
+	currentLabelMap := make(map[string]bool)
+	newLabelMap := make(map[string]bool)
+	for _, curLabel := range labels {
+		currentLabelMap[curLabel.Name] = true
+	}
+	for _, newLabel := range newLabels {
+		newLabelMap[newLabel] = true
+	}
+	if !reflect.DeepEqual(currentLabelMap, newLabelMap) {
+		if err = e.db.DeleteLabelRelations(apistructs.LabelTypeProject, strconv.FormatUint(uint64(projectID), 10)); err != nil {
+			return err
+		}
+		ls, err := e.db.ListLabelByNames(projectID, newLabels)
+		if err != nil {
+			return err
+		}
+		existedLabels := make(map[string]int64)
+		for _, v := range ls {
+			existedLabels[v.Name] = v.ID
+		}
+		labelRelations := make([]dao.LabelRelation, 0, len(ls))
+		for k := range newLabelMap {
+			if id, ok := existedLabels[k]; ok {
+				labelRelations = append(labelRelations, dao.LabelRelation{
+					LabelID: uint64(id),
+					RefType: apistructs.LabelTypeProject,
+					RefID:   strconv.FormatUint(uint64(projectID), 10),
+				})
+				continue
+			}
+			newID, err := e.label.Create(&apistructs.ProjectLabelCreateRequest{
+				Name:      k,
+				ProjectID: projectID,
+				Color:     mock.RandomLabelColor(),
+				Type:      apistructs.LabelTypeProject,
+			})
+			if err != nil {
+				logrus.Errorf("failed to create new label, name: %s, err: %v", k, err)
+			}
+			labelRelations = append(labelRelations, dao.LabelRelation{
+				LabelID: uint64(newID),
+				RefType: apistructs.LabelTypeProject,
+				RefID:   strconv.FormatUint(uint64(projectID), 10),
+			})
+		}
+		if err := e.db.BatchCreateLabelRelations(labelRelations); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetProject 获取项目详情
