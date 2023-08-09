@@ -51,10 +51,12 @@ func (c *CreateCompletionOptions) Validate() error {
 
 type ChatCompletions struct {
 	ID                string                `json:"id" yaml:"id"`
+	Object            string                `json:"object,omitempty" yaml:"object,omitempty"`
 	Created           uint64                `json:"created" yaml:"created"`
+	Model             string                `json:"model,omitempty" yaml:"model,omitempty"`
 	Choices           []*ChatChoice         `json:"choices" yaml:"choices"`
-	PromptAnnotations []*PromptFilterResult `json:"prompt_annotations,omitempty" yaml:"prompt_annotations,omitempty"`
 	Usage             *CompletionsUsage     `json:"usage,omitempty" yaml:"usage,omitempty"`
+	PromptAnnotations []*PromptFilterResult `json:"prompt_annotations,omitempty" yaml:"prompt_annotations,omitempty"`
 }
 
 type ChatMessage struct {
@@ -105,25 +107,52 @@ type FunctionCall struct {
 }
 
 type ChatChoice struct {
-	Message              *ChatMessage             `json:"message" yaml:"message"`
-	Index                int32                    `json:"index" yaml:"index"`
-	FinishReason         *CompletionsFinishReason `json:"finish_reason,omitempty" yaml:"finish_reason,omitempty"`
-	Delta                *ChatMessage             `json:"delta,omitempty" yaml:"delta,omitempty"`
-	ContentFilterResults *ContentFilterResults    `json:"content_filter_results,omitempty" yaml:"content_filter_results,omitempty"`
+	Index                int32                 `json:"index" yaml:"index"`
+	Message              *ChatMessage          `json:"message" yaml:"message"`
+	FinishReason         string                `json:"finish_reason,omitempty" yaml:"finish_reason,omitempty"`
+	Delta                *ChatMessage          `json:"delta,omitempty" yaml:"delta,omitempty"`
+	ContentFilterResults *ContentFilterResults `json:"content_filter_results,omitempty" yaml:"content_filter_results,omitempty"`
 }
 
 type PromptFilterResult struct {
-	// todo:
+	PromptIndex          int32                `json:"prompt_index"`
+	ContentFilterResults ContentFilterResults `json:"content_filter_results" yaml:"content_filter_results"`
 }
 
 type CompletionsUsage struct {
 	// todo:
 }
 
-type CompletionsFinishReason struct {
-	// todo:
+type ContentFilterResults struct {
+	Sexual   ContentFilterResult `json:"sexual" yaml:"sexual"`
+	Violence ContentFilterResult `json:"violence" yaml:"violence"`
+	Hate     ContentFilterResult `json:"hate" yaml:"hate"`
+	SelfHarm ContentFilterResult `json:"self_harm" yaml:"self_harm"`
+	Error    ErrorBase           `json:"error" yaml:"error"`
 }
 
-type ContentFilterResults struct {
-	// todo:
+type ContentFilterResult struct {
+	Severity string `json:"severity" yaml:"severity"`
+	Filtered bool   `json:"filtered" yaml:"filtered"`
 }
+
+type ErrorBase struct {
+	Code    string `json:"code" yaml:"code"`
+	Message string `json:"error" yaml:"error"`
+}
+
+type Error struct {
+	*ErrorBase
+	Code       string
+	Message    string
+	Param      string
+	Type       string
+	InnerError InnerError
+}
+
+type InnerError struct {
+	Code                 InnerErrorCode       `json:"code" yaml:"code"`
+	ContentFilterResults ContentFilterResults `json:"contentFilterResults" yaml:"contentFilterResults"`
+}
+
+type InnerErrorCode string

@@ -16,6 +16,7 @@ package sdk_test
 
 import (
 	"encoding/json"
+	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
 	"testing"
 )
 
@@ -55,7 +56,7 @@ func TestFunctionDefinition_VerifyJSON(t *testing.T) {
 		Parameters:  json.RawMessage(testCaseSchema),
 	}
 	var j = `{"name": "dspo"}`
-	if err := df.VerifyJSON(json.RawMessage(j)); err == nil {
+	if err := df.VerifyArguments(json.RawMessage(j)); err == nil {
 		t.Error("err must not be nil")
 	}
 }
