@@ -15,19 +15,21 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
-	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
-	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/pkg/errors"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 	"net/http"
 	"net/url"
-	"sigs.k8s.io/yaml"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
+	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
+	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var (
@@ -39,7 +41,7 @@ type AIFunction struct {
 	OpenaiURL *url.URL
 }
 
-func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (*structpb.Value, error) {
+func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *structpb.Value, err error) {
 	h.Log.Infof("apply the function with request %s", strutil.TryGetJsonStr(req))
 
 	factory, ok := functions.Retrieve(req.GetFunctionName())
@@ -64,32 +66,37 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (*structpb
 			Description: f.Description(),
 			Parameters:  f.Schema(),
 		}
-		options = sdk.CreateCompletionOptions{
-			Messages:     []*sdk.ChatMessage{systemMsg, userMsg},
+		options = &sdk.CreateCompletionOptions{
+			Messages:     []*sdk.ChatMessage{systemMsg, userMsg}, // todo: history messages
 			Functions:    []*sdk.FunctionDefinition{fd},
 			FunctionCall: sdk.FunctionCall{Name: fd.Name},
-			Temperature:  "1",
+			Temperature:  "1", // default 1, can be modified by f.CompletionOptions()
 			Stream:       false,
-			Model:        "gpt-35-turbo-16k",
+			Model:        "gpt-35-turbo-16k", // default the newest model, can be modified by f.CompletionOptions()
 		}
 	)
+	ros := f.CompletionOptions()
+	for _, o := range ros {
+		o(options)
+	}
 	if valid := json.Valid(fd.Parameters); !valid {
-		if err := yaml.Unmarshal(f.Schema(), &fd.Parameters); err != nil {
+		if fd.Parameters, err = strutil.YamlOrJsonToJson(f.Schema()); err != nil {
 			return nil, err
 		}
 	}
-	client, err := sdk.NewClient(h.OpenaiURL, http.DefaultClient)
+	client, err := sdk.NewClient(h.OpenaiURL, http.DefaultClient, f.RequestOptions()...)
 	if err != nil {
 		return nil, err
 	}
-	completion, err := client.CreateCompletion(ctx, &options)
+	completion, err := client.CreateCompletion(ctx, options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to CreateCompletion")
 	}
-	if len(completion.Choices) == 0 {
+	if len(completion.Choices) == 0 || completion.Choices[0].Message == nil || completion.Choices[0].Message.FunctionCall == nil {
 		return nil, errors.New("no idea") // todo: do not return error, response friendly
 	}
-	arguments := json.RawMessage(completion.Choices[0].Message.FunctionCall.Arguments)
+	// todo: check index out of range and invalid memory reference
+	arguments := completion.Choices[0].Message.FunctionCall.JSONMessageArguments()
 	if err = fd.VerifyArguments(arguments); err != nil {
 		return nil, errors.Wrap(err, "invalid arguments from FunctionCall")
 	}
@@ -97,7 +104,30 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (*structpb
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to Callback with arguments: %s", string(arguments))
 	}
-	return structpb.NewValue(result)
+	var v = &structpb.Value{}
+	switch i := result.(type) {
+	case string:
+		if err := jsonpb.UnmarshalString(i, v); err != nil {
+			return nil, err
+		}
+	case []byte:
+		if err := jsonpb.UnmarshalString(string(i), v); err != nil {
+			return nil, err
+		}
+	case json.RawMessage:
+		if err := jsonpb.UnmarshalString(string(i), v); err != nil {
+			return nil, err
+		}
+	default:
+		var buf bytes.Buffer
+		if err := json.NewEncoder(&buf).Encode(result); err != nil {
+			return nil, err
+		}
+		if err := jsonpb.Unmarshal(&buf, v); err != nil {
+			return nil, err
+		}
+	}
+	return v, nil
 }
 
 // HTTPError todo: duplicate

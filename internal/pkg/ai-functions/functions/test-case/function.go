@@ -19,13 +19,16 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strconv"
+
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
-	"github.com/pkg/errors"
-	"net/url"
-	"strconv"
+	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
 )
 
 const Name = "create-test-case"
@@ -73,6 +76,19 @@ func (f *Function) Schema() json.RawMessage {
 	return Schema
 }
 
+func (f *Function) RequestOptions() []sdk.RequestOption {
+	return []sdk.RequestOption{
+		sdk.RequestOptionWithResetAPIVersion("2023-07-01-preview"),
+	}
+}
+
+func (f *Function) CompletionOptions() []sdk.PatchOption {
+	return []sdk.PatchOption{
+		sdk.PathOptionWithModel("gpt-35-turbo-16k"),
+		sdk.PathOptionWithTemperature("1"),
+	}
+}
+
 func (f *Function) Callback(ctx context.Context, arguments json.RawMessage) (any, error) {
 	var req apistructs.TestCaseCreateRequest
 	if err := json.Unmarshal(arguments, &req); err != nil {
@@ -99,10 +115,6 @@ func (f *Function) Callback(ctx context.Context, arguments json.RawMessage) (any
 	req.Priority = apistructs.TestCasePriorityP3
 	req.UserID = f.background.UserID
 
-	// create on daily
-	resp, err := bundle.New(bundle.WithErdaServer()).CreateTestCase(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	// todo: 封装一个 CreateTestCase 的本地调用和 gRPC 调用
+	return bundle.New(bundle.WithErdaServer()).CreateTestCase(req)
 }

@@ -9,7 +9,7 @@ properties:
     description: pre condition
     items:
       type: string
-  stepAndResult:
+  stepAndResults:
     type: array
     description: list of step and corresponding result
     items:
@@ -24,4 +24,4 @@ properties:
 required:
   - name
   - preCondition
-  - stepAndResult
+  - stepAndResults

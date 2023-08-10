@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewClient(api *url.URL, client *http.Client) (*Client, error) {
+func NewClient(api *url.URL, client *http.Client, options ...RequestOption) (*Client, error) {
 	switch api.Scheme {
 	case "http", "https":
 	default:
@@ -35,12 +35,13 @@ func NewClient(api *url.URL, client *http.Client) (*Client, error) {
 	if api.Host == "" {
 		return nil, errors.New("no host in openai url")
 	}
-	return &Client{api: api, client: client}, nil
+	return &Client{api: api, client: client, options: options}, nil
 }
 
 type Client struct {
-	api    *url.URL
-	client *http.Client
+	api     *url.URL
+	client  *http.Client
+	options []RequestOption
 }
 
 func (c *Client) URLV1ChatCompletion() string {
@@ -64,9 +65,14 @@ func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOpti
 	}
 	request, err := http.NewRequest(http.MethodPost, c.URLV1ChatCompletion(), &buf)
 	request.Header.Set("Authorization", "Bearer "+"e78c1fe49d704fda978041cb21770282") // todo: ak
+	request.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to NewRequest, uri: %s", c.URLV1ChatCompletion())
 	}
+	for _, o := range c.options {
+		o(request)
+	}
+
 	response, err := c.HttpClient().Do(request)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to Do http request to %s", c.URLV1ChatCompletion())
@@ -86,4 +92,30 @@ func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOpti
 	}
 
 	return &chatCompletion, nil
+}
+
+type PatchOption func(option *CreateCompletionOptions)
+
+func PathOptionWithModel(model string) PatchOption {
+	return func(cco *CreateCompletionOptions) {
+		cco.Model = model
+	}
+}
+
+func PathOptionWithTemperature(temperature json.Number) PatchOption {
+	return func(cco *CreateCompletionOptions) {
+		cco.Temperature = temperature
+	}
+}
+
+type RequestOption func(r *http.Request)
+
+func RequestOptionWithResetAPIVersion(version string) RequestOption {
+	return func(r *http.Request) {
+		key := "api-version"
+		query := r.URL.Query()
+		query.Del(key)
+		query.Set(key, version)
+		r.URL.RawQuery = query.Encode()
+	}
 }

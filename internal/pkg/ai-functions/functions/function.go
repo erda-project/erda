@@ -17,8 +17,10 @@ package functions
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"sync"
+
+	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
+	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
 )
 
 var (
@@ -32,6 +34,8 @@ type Function interface {
 	SystemMessage() string
 	UserMessage() string
 	Schema() json.RawMessage
+	RequestOptions() []sdk.RequestOption
+	CompletionOptions() []sdk.PatchOption
 	Callback(ctx context.Context, arguments json.RawMessage) (any, error)
 }
 

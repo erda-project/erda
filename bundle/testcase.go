@@ -15,26 +15,25 @@
 package bundle
 
 import (
+	"io"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) CreateTestCase(req apistructs.TestCaseCreateRequest) (*apistructs.TestCaseCreateResponse, error) {
-	host, err := b.urls.ErdaServer()
-	if err != nil {
-		return nil, err
-	}
-	var createResp apistructs.TestCaseCreateResponse
-	resp, err := b.hc.Post(host).Path("/api/testcases").
+func (b *Bundle) CreateTestCase(req apistructs.TestCaseCreateRequest) ([]byte, error) {
+	resp, err := b.hc.Post("localhost:9095").Path("/api/testcases").
 		Header(httputil.InternalHeader, "AI").
 		Header(httputil.UserHeader, req.IdentityInfo.UserID).
-		JSONBody(&req).Do().JSON(&createResp)
+		JSONBody(&req).Do().RAW()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !resp.IsOK() {
-		return nil, toAPIError(resp.StatusCode(), createResp.Error)
-	}
-	return &createResp, nil
+	defer func() { _ = resp.Body.Close() }()
+	data, err := io.ReadAll(resp.Body)
+	log.Printf("CreateTestCase response data: %s, err: %v", string(data), err)
+	return data, err
 }

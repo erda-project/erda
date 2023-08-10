@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sdk_test
+package oasconv_test
 
 import (
 	"encoding/json"
 	"testing"
+	
+	"sigs.k8s.io/yaml"
 
-	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
+	"github.com/erda-project/erda/pkg/swagger/oasconv"
 )
 
-var testCaseSchema = `
+const y = `$schema: http://json-schema.org/draft-07/schema#
 type: object
 properties:
   name:
@@ -32,7 +34,7 @@ properties:
     description: pre condition
     items:
       type: string
-  stepAndResult:
+  stepAndResults:
     type: array
     description: list of step and corresponding result
     items:
@@ -47,17 +49,28 @@ properties:
 required:
   - name
   - preCondition
-  - stepAndResult
+  - stepAndResults
 `
 
-func TestFunctionDefinition_VerifyJSON(t *testing.T) {
-	var df = sdk.FunctionDefinition{
-		Name:        "create-test-case",
-		Description: "create test case",
-		Parameters:  json.RawMessage(testCaseSchema),
-	}
-	var j = `{"name": "dspo"}`
-	if err := df.VerifyArguments(json.RawMessage(j)); err == nil {
-		t.Error("err must not be nil")
-	}
+func BenchmarkYAMLToJSON(b *testing.B) {
+	b.Run("YAMLToJSON", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if _, err := oasconv.YAMLToJSON([]byte(y)); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("YAMLToJSON by unmarshal", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if _, err := YAMLToJSON([]byte(y)); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
+func YAMLToJSON(data []byte) ([]byte, error) {
+	var j = make(json.RawMessage, 0)
+	err := yaml.Unmarshal(data, &j)
+	return j, err
 }

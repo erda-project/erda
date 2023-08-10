@@ -17,13 +17,13 @@ package sdk
 import (
 	_ "embed"
 	"encoding/json"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
-	"sigs.k8s.io/yaml"
-	"strings"
-)
 
-type CreateCompletionOption[FC string | *FunctionCall] func(options CreateCompletionOptions)
+	"github.com/erda-project/erda/pkg/strutil"
+)
 
 type CreateCompletionOptions struct {
 	Messages         []*ChatMessage        `json:"messages"`
@@ -76,15 +76,17 @@ type FunctionDefinition struct {
 }
 
 // VerifyArguments verifies that the given JSON conforms to the JSON Schema FunctionDefinition.Parameters
-func (fd *FunctionDefinition) VerifyArguments(data json.RawMessage) error {
+func (fd *FunctionDefinition) VerifyArguments(data json.RawMessage) (err error) {
 	// fd.Parameters and data may be either JSON or Yaml structured, convert to JSON structured uniformly.
-	if err := yaml.Unmarshal(fd.Parameters, &fd.Parameters); err != nil {
+	if fd.Parameters, err = strutil.YamlOrJsonToJson(fd.Parameters); err != nil {
 		return errors.Wrap(err, "failed to unmarshal Parameters to JSON")
 	}
-	if err := yaml.Unmarshal(data, &data); err != nil {
+	if data, err = strutil.YamlOrJsonToJson(data); err != nil {
 		return errors.Wrap(err, "failed to unmarshal to JSON")
 	}
-
+	if valid := json.Valid(data); !valid {
+		return errors.New("data is invalid JSON")
+	}
 	ls := gojsonschema.NewBytesLoader(fd.Parameters)
 	ld := gojsonschema.NewBytesLoader(data)
 	result, err := gojsonschema.Validate(ls, ld)
@@ -104,6 +106,14 @@ func (fd *FunctionDefinition) VerifyArguments(data json.RawMessage) error {
 type FunctionCall struct {
 	Name      string `json:"name" yaml:"name"`
 	Arguments string `json:"arguments,omitempty" yaml:"arguments,omitempty"`
+}
+
+func (fc *FunctionCall) JSONMessageArguments() json.RawMessage {
+	data, err := strutil.YamlOrJsonToJson([]byte(fc.Arguments))
+	if err != nil {
+		return json.RawMessage(fc.Arguments)
+	}
+	return data
 }
 
 type ChatChoice struct {

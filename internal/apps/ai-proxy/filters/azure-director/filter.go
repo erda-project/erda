@@ -167,24 +167,15 @@ func (f *AzureDirector) SetAPIKeyIfNotSpecified(ctx context.Context) error {
 }
 
 func (f *AzureDirector) AddQueries(ctx context.Context) error {
-	s, err := strconv.Unquote(f.processorArgs["AddQueries"])
-	if err != nil {
-		return errors.Wrap(err, "failed to get AddQueries args")
-	}
-	values, err := url.ParseQuery(s)
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse query args: %s", s)
-	}
-	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		queries := req.URL.Query()
-		for k, vv := range values {
-			for _, v := range vv {
-				queries.Add(k, v)
-			}
-		}
-		req.URL.RawQuery = queries.Encode()
-	})
-	return nil
+	return f.handleQueries(ctx, "AddQueries")
+}
+
+func (f *AzureDirector) SetQueries(ctx context.Context) error {
+	return f.handleQueries(ctx, "SetQueries")
+}
+
+func (f *AzureDirector) DefaultQueries(ctx context.Context) error {
+	return f.handleQueries(ctx, "DefaultQueries")
 }
 
 func (f *AzureDirector) RewriteScheme(ctx context.Context) error {
@@ -284,6 +275,36 @@ func (f *AzureDirector) responseNotImplementTranslator(w http.ResponseWriter, fr
 			"to":   to,
 		},
 	})
+}
+
+func (f *AzureDirector) handleQueries(ctx context.Context, funcName string) error {
+	s, err := strconv.Unquote(f.processorArgs[funcName])
+	if err != nil {
+		return err
+	}
+	values, err := url.ParseQuery(s)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse query args: %s", s)
+	}
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		queries := req.URL.Query()
+		for k, vv := range values {
+			for _, v := range vv {
+				switch funcName {
+				case "SetQueries":
+					queries.Set(k, v)
+				case "AddQueries":
+					queries.Add(k, v)
+				case "DefaultQueries":
+					if !queries.Has(k) {
+						queries.Add(k, v)
+					}
+				}
+			}
+		}
+		req.URL.RawQuery = queries.Encode()
+	})
+	return nil
 }
 
 type Config struct {
