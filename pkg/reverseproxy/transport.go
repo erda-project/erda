@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -79,6 +80,11 @@ type CurlPrinterTransport struct {
 func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.Inner == nil {
 		t.Inner = http.DefaultTransport
+	}
+	for key := range req.Header {
+		if strings.HasPrefix(key, "x-") || strings.HasPrefix(key, "X-") {
+			req.Header.Del(key)
+		}
 	}
 	t.Logger.Sub(reflect.TypeOf(t).String()).
 		Debug("generated cURL command:\n\t" + GenCurl(req))
