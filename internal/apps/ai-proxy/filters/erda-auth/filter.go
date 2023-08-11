@@ -15,20 +15,17 @@
 package erda_auth
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -115,17 +112,6 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 			*v = string(decoded)
 		}
 	}
-	access, err := f.access(ctx, infor, openapi, orgId)
-	if err != nil {
-		http.Error(w, "session is invalid or expired: "+err.Error(), http.StatusUnauthorized)
-		return reverseproxy.Intercept, nil
-	}
-	if !access {
-		l.Debugf("the user can not access the org, openapi: %s, userId: %s, orgId: %s",
-			openapi, userId, orgId)
-		http.Error(w, "the user cannot access the Erda AI Service", http.StatusForbidden)
-		return reverseproxy.Intercept, nil
-	}
 
 	// set orgId into metadata
 	metadata := map[string]any{"orgId": orgId, "userId": userId}
@@ -150,43 +136,6 @@ func (f *ErdaAuth) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (b
 		}
 	}
 	return false, nil
-}
-
-func (f *ErdaAuth) access(ctx context.Context, infor reverseproxy.HttpInfor, openapi *url.URL, orgId string) (bool, error) {
-	// prepare request
-	openapi.Path = "/api/permissions/actions/access"
-	req := &apistructs.ScopeRoleAccessRequest{
-		Scope: apistructs.Scope{
-			Type: "org",
-			ID:   orgId,
-		},
-	}
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(req); err != nil {
-		return false, err
-	}
-	request, err := http.NewRequest(http.MethodPost, openapi.String(), &buf)
-	if err != nil {
-		return false, err
-	}
-
-	// get cookie from raw request and set it to request
-	cookie, err := f.getOpenapiSessionCookie(infor)
-	if err != nil {
-		return false, err
-	}
-	request.Header.Set(httputil.UseTokenHeader, strconv.FormatBool(true))
-	request.AddCookie(cookie)
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return false, err
-	}
-	defer func() { _ = response.Body.Close() }()
-	var resp apistructs.ScopeRoleAccessResponse
-	if err = json.NewDecoder(response.Body).Decode(&resp); err != nil {
-		return false, err
-	}
-	return resp.Header.Success && resp.Data.Access, nil
 }
 
 func (f *ErdaAuth) getOpenapiSessionCookie(infor reverseproxy.HttpInfor) (*http.Cookie, error) {

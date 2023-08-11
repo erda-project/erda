@@ -45,11 +45,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
 	common "github.com/erda-project/erda-proto-go/common/pb"
-	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -93,14 +92,13 @@ func init() {
 }
 
 type provider struct {
-	Config       *config
-	L            logs.Logger
-	HTTP         httpserver.Router      `autowired:"http-server@ai"`
-	GRPC         grpcserver.Interface   `autowired:"grpc-server@ai"`
-	Dao          dao.DAO                `autowired:"erda.apps.ai-proxy.dao"`
-	OrgSvc       orgpb.OrgServiceServer `autowired:"erda.core.org.OrgService"`
-	Openapi      routes.Register        `autowired:"openapi-dynamic-register.client"`
-	ErdaOpenapis map[string]*url.URL
+	Config         *config
+	L              logs.Logger
+	HTTP           httpserver.Router                    `autowired:"http-server@ai"`
+	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
+	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
+	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
+	ErdaOpenapis   map[string]*url.URL
 }
 
 func (p *provider) Init(_ servicehub.Context) error {
@@ -141,40 +139,26 @@ func (p *provider) Init(_ servicehub.Context) error {
 		p.ErdaOpenapis[plat.Name] = openapi
 	}
 
-	// prepare handlers
-	for i := 0; i < len(p.Config.Routes); i++ {
-		rout := p.Config.Routes[i]
-
-		// validate every route config
-		if err := rout.Validate(); err != nil {
-			return errors.Wrapf(err, "rout %d is invalid", i)
-		}
-
-		// register to erda openapi
-		if err := p.Openapi.Register(&routes.APIProxy{
-			Method:      rout.Method,
-			Path:        path.Join("/api/ai-proxy", rout.Path),
-			ServiceURL:  p.Config.SelfURL,
-			BackendPath: rout.Path,
-			Auth: &common.APIAuth{
-				CheckLogin: true,
-				CheckToken: true,
-			},
-		}); err != nil {
-			return err
-		}
-	}
-
 	// register gRPC and http handler
+	pb.RegisterAccessImp(p, &handlers.AccessHandler{Dao: p.Dao, Log: p.L.Sub("AccessHandler")}, apis.Options())
 	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
+	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth)
 	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options())
 	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options())
-	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Any("/metrics", promhttp.Handler())
 	// reverse proxy to AI provider's server
-	p.HTTP.Any("/**", p, interceptors.CORS(false))
+	p.HTTP.Any("/**", p)
+
+	// open APIs on Erda
+	if p.Config.OpenOnErda {
+		if err := p.openAPIsOnErda(); err != nil {
+			p.L.Errorf("failed to open APIs on Erda, err: %v", err)
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -185,7 +169,6 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
-			vars.CtxKeyOrgSvc{}, p.OrgSvc,
 			vars.CtxKeyDAO{}, p.Dao,
 			vars.CtxKeyProviders{}, p.Config.Providers,
 			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,
@@ -208,6 +191,39 @@ func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	if p.GRPC != nil {
 		p.GRPC.RegisterService(desc, impl)
 	}
+}
+
+// openAPIsOnErda opens the ai-proxy APIs on Erda
+func (p *provider) openAPIsOnErda() error {
+	auth := &common.APIAuth{
+		CheckLogin: true,
+		CheckToken: true,
+	}
+
+	// register openai APis
+	for _, rout := range p.Config.Routes {
+		if _, err := p.DynamicOpenapi.Register(context.Background(), &dynamic.API{
+			Upstream:    p.Config.SelfURL,
+			Method:      rout.Method,
+			Path:        path.Join("/api/ai-proxy/openai", rout.Path),
+			BackendPath: rout.Path,
+			Auth:        auth,
+		}); err != nil {
+			return err
+		}
+	}
+
+	// register admin APIs
+	for _, api := range handlers.APIs {
+		api.Upstream = p.Config.SelfURL
+		api.Path = api.BackendPath
+		api.Auth = auth
+		if _, err := p.DynamicOpenapi.Register(context.Background(), api); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (p *provider) initLogger() {
@@ -240,7 +256,10 @@ func (p *provider) initLogger() {
 }
 
 func (p *provider) parseRoutesConfig() error {
-	return p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes)
+	if err := p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes); err != nil {
+		return err
+	}
+	return p.Config.Routes.Validate()
 }
 
 func (p *provider) parseProvidersConfig() error {
@@ -302,6 +321,7 @@ type config struct {
 	LogLevel     string              `json:"logLevel" yaml:"logLevel"`
 	Exporter     configPromExporter  `json:"exporter" yaml:"exporter"`
 	SelfURL      string              `json:"selfURL" yaml:"selfURL"`
+	OpenOnErda   bool                `json:"openOnErda" yaml:"openOnErda"`
 	Routes       route2.Routes       `json:"-" yaml:"-"`
 	Providers    provider2.Providers `json:"-" yaml:"-"`
 	Platforms    []*Platform         `json:"-" yaml:"-"`

@@ -12,20 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httputil
+package external_openapi
 
-import "net/textproto"
-
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	TextEventStream    ContentType = "text/event-stream"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
-)
-
-var (
-	HeaderKeyContentType              = textproto.CanonicalMIMEHeaderKey("content-type")
-	HeaderKeyContentLength            = textproto.CanonicalMIMEHeaderKey("content-length")
-	HeaderKeyAccessControlAllowOrigin = textproto.CanonicalMIMEHeaderKey("Access-Control-Allow-Origin")
+import (
+	_ "github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes/dynamic/register"
 )
