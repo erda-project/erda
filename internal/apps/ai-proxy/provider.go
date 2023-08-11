@@ -151,7 +151,7 @@ func (p *provider) Init(_ servicehub.Context) error {
 	if p.Config.OpenOnErda {
 		if err := p.openAPIsOnErda(); err != nil {
 			p.L.Errorf("failed to open APIs on Erda, err: %v", err)
-			return err
+			//return err
 		}
 	}
 
