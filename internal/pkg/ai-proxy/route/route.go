@@ -29,6 +29,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -55,6 +56,15 @@ func (routes Routes) FindRoute(req *http.Request) *Route {
 		}
 	}
 	return NotFoundRoute
+}
+
+func (routes Routes) Validate() error {
+	for _, item := range routes {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type Route struct {
@@ -109,9 +119,16 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 			},
 		},
 		FlushInterval: time.Millisecond * 100,
+		ErrorLog:      nil,
 		BufferPool:    reverseproxy.DefaultBufferPool,
-		Filters:       nil,
-		Context:       ctx,
+		ModifyResponse: func(response *http.Response) error {
+			// todo: delete CORS header and it will be remove soon if the frontend access apis by erda openapi
+			response.Header.Del(httputil.HeaderKeyAccessControlAllowOrigin)
+			return nil
+		},
+		ErrorHandler: nil,
+		Filters:      nil,
+		Context:      ctx,
 	}
 	for _, filterConfig := range r.Filters {
 		filter, err := reverseproxy.MustGetFilterCreator(filterConfig.Name)(filterConfig.Config)
@@ -131,7 +148,11 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 		}
 	}
 
-	return rp.ServeHTTP
+	return func(w http.ResponseWriter, r *http.Request) {
+		rp.ServeHTTP(w, r)
+		// todo: delete CORS header and it will be remove soon if the frontend access apis by erda openapi
+		w.Header().Del(httputil.HeaderKeyAccessControlAllowOrigin)
+	}
 }
 
 func (r *Route) Match(path, method string) bool {

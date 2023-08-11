@@ -21,6 +21,7 @@ const (
 	XAIProxyChatId             = "X-AI-Proxy-ChatId"
 	XAIProxySource             = "X-AI-Proxy-Source"
 	XAIProxyName               = "X-AI-Proxy-Name"
+	XAIProxyUsername           = "X-Ai-Proxy-Username"
 	XAIProxyPhone              = "X-AI-Proxy-Phone"
 	XAIProxyJobNumber          = "X-AI-Proxy-JobNumber"
 	XAIProxyEmail              = "X-AI-Proxy-Email"
@@ -40,7 +41,6 @@ const (
 )
 
 type (
-	CtxKeyOrgSvc      struct{ CtxKeyOrgSvc any }
 	CtxKeyDAO         struct{ CtxKeyDAO any }
 	CtxKeyProviders   struct{ CtxKeyProviders any }
 	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }

@@ -33,7 +33,7 @@ CREATE TABLE `ai_proxy_filter_audit`
     `request_body`          LONGTEXT     NOT NULL COMMENT '请求的 Body',
     `response_content_type` VARCHAR(32)  NOT NULL COMMENT '响应使用的 Content-Type',
     `response_body`         LONGTEXT     NOT NULL COMMENT '响应的 Body',
-    `user_agent`            VARCHAR(128) NOT NULL COMMENT 'http 客户端 User-Agent',
+    `user_agent`            TEXT         NOT NULL COMMENT 'http 客户端 User-Agent',
     `server`                VARCHAR(32)  NOT NULL COMMENT 'response server',
     `status`                VARCHAR(32)  NOT NULL COMMENT 'http response status',
     `status_code`           INT          NOT NULL COMMENT 'http response status code',

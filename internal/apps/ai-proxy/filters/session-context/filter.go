@@ -138,14 +138,14 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 				Message{
 					Role:    "user",
 					Content: item.Prompt,
-					Name:    "",
+					Name:    infor.Header().Get(vars.XAIProxyUsername),
 				})
 		}
 	}
 	messages = append(messages, Message{
 		Role:    "system",
-		Content: session.GetTopic(),
-		Name:    "",
+		Content: c.Config.SysMsg + "\ntopic: " + session.GetTopic(),
+		Name:    "system",
 	})
 	strutil.ReverseSlice(messages)
 	m["messages"], err = json.Marshal(messages)
@@ -194,7 +194,8 @@ func (c *SessionContext) updateSession(ctx context.Context, id string) {
 }
 
 type Config struct {
-	On []*common.On
+	SysMsg string       `json:"sysMsg" yaml:"sysMsg"`
+	On     []*common.On `json:"on" yaml:"o"`
 }
 
 type Message struct {

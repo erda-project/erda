@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 
@@ -225,6 +226,9 @@ func (f *Audit) SetSource(_ context.Context, header http.Header) error {
 
 func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 	f.Audit.Username = header.Get(vars.XAIProxyName)
+	if f.Audit.Username == "" {
+		f.Audit.Username = header.Get(vars.XAIProxyUsername)
+	}
 	f.Audit.PhoneNumber = header.Get(vars.XAIProxyPhone)
 	f.Audit.JobNumber = header.Get(vars.XAIProxyJobNumber)
 	if f.Audit.JobNumber == "" {
@@ -241,7 +245,7 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 		&f.Audit.DingtalkStaffID,
 		&f.Audit.Metadata,
 	} {
-		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil {
+		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil && utf8.Valid(decoded) {
 			*v = string(decoded)
 		}
 	}
