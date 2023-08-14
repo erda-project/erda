@@ -518,7 +518,7 @@
       "i": "view-SZ1zLD6E",
       "view": {
         "title": "Topic partition high water",
-        "description": "Partition Low Water Mark",
+        "description": "Partition High Water Mark",
         "chartType": "chart:line",
         "dataSourceType": "api",
         "staticData": {},
