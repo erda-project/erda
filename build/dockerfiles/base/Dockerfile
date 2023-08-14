@@ -1,4 +1,5 @@
-FROM --platform=$TARGETPLATFORM golang:1.19-bullseye
+#FROM --platform=$TARGETPLATFORM golang:1.19-bullseye
+FROM --platform=$TARGETPLATFORM golang:1.19-bookworm
 ARG TARGETPLATFORM
 
 # set timezone to CST
@@ -18,6 +19,8 @@ RUN apt update && apt install -y --no-install-recommends --no-install-suggests \
     python3-pip \
     librdkafka-dev \
     net-tools \
+    nginx \
+    nginx-extras \
  && rm -fr /var/lib/apt/lists/*
 
 # nodejs

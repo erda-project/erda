@@ -1542,6 +1542,24 @@ func validateCustomNginxConf(category, config string) error {
 	}
 
 	conf := fmt.Sprintf(`
+load_module modules/ndk_http_module.so;
+load_module modules/ngx_http_dav_ext_module.so;
+load_module modules/ngx_http_geoip2_module.so;
+load_module modules/ngx_http_image_filter_module.so;
+load_module modules/ngx_http_subs_filter_module.so;
+load_module modules/ngx_http_xslt_filter_module.so;
+load_module modules/ngx_http_auth_pam_module.so;
+load_module modules/ngx_http_echo_module.so;
+load_module modules/ngx_http_geoip_module.so;
+load_module modules/ngx_http_lua_module.so;
+load_module modules/ngx_http_uploadprogress_module.so;
+load_module modules/ngx_mail_module.so;
+load_module modules/ngx_http_cache_purge_module.so;
+load_module modules/ngx_http_fancyindex_module.so;
+load_module modules/ngx_http_headers_more_filter_module.so;
+load_module modules/ngx_http_perl_module.so;
+load_module modules/ngx_http_upstream_fair_module.so;
+load_module modules/ngx_stream_module.so;
 events {
 	accept_mutex on;   
 	multi_accept on;  
