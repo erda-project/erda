@@ -22,10 +22,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
-	"gorm.io/gorm"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
@@ -33,6 +29,8 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -71,6 +69,8 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		return reverseproxy.Intercept, err
 	}
 	if !ok {
+		l.Debugf("the filter is not on the request, headers: %s, on: %s",
+			strutil.TryGetJsonStr(infor.Header()), strutil.TryGetJsonStr(c.Config.On))
 		return reverseproxy.Continue, nil
 	}
 
@@ -118,15 +118,18 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	}
 	messages = []Message{messages[len(messages)-1]}
 	if session.GetContextLength() > 1 {
-		var audits []*models.AIProxyFilterAudit
-		if err := db.Q().
-			Where(map[string]any{"session_id": sessionId}).
-			Where("updated_at > ?", session.ResetAt.AsTime()).
-			Order("created_at DESC").
-			Limit(int(session.GetContextLength()) - 1).
-			Find(&audits).
-			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		var audits models.AIProxyFilterAuditList
+		total, err := (&audits).Pager(db.Q().Debug()).
+			Where(
+				audits.FieldSessionID().Equal(sessionId),
+				audits.FieldUpdatedAt().MoreThan(session.ResetAt.AsTime()),
+			).
+			Paging(int(session.GetContextLength()-1), 1, audits.FieldCreatedAt().DESC())
+		if err != nil {
 			l.Errorf("failed to Find audits for session %s", sessionId)
+		}
+		if total == 0 {
+			l.Debugf("no context for the session")
 		}
 		for _, item := range audits {
 			messages = append(messages,
@@ -141,6 +144,8 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 					Name:    infor.Header().Get(vars.XAIProxyUsername),
 				})
 		}
+	} else {
+		l.Debugf("session context length is less then 1, no context appended")
 	}
 	messages = append(messages, Message{
 		Role:    "system",
@@ -195,7 +200,7 @@ func (c *SessionContext) updateSession(ctx context.Context, id string) {
 
 type Config struct {
 	SysMsg string       `json:"sysMsg" yaml:"sysMsg"`
-	On     []*common.On `json:"on" yaml:"o"`
+	On     []*common.On `json:"on" yaml:"on"`
 }
 
 type Message struct {

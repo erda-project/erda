@@ -419,7 +419,7 @@ var GormGen = command.Command{
 	Name:       "gen",
 	ShortHelp:  "gen Go struct from create table stmt",
 	LongHelp:   "gen Go struct from create table stmt",
-	Example:    "erda-cli gorm gen --create-table 'create table t (id varchar(64))' --output app/models",
+	Example:    "erda-cli gorm gen -f some-file.sql --output app/models",
 	Flags: []command.Flag{
 		command.StringFlag{
 			Short:        "f",

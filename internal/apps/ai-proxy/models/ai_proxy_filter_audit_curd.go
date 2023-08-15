@@ -86,6 +86,26 @@ func (this *AIProxyFilterAudit) FieldPrompt() Field { return field{name: "prompt
 // FieldCompletion returns the Field interface{} for the field ai_proxy_filter_audit.completion
 func (this *AIProxyFilterAudit) FieldCompletion() Field { return field{name: "completion"} }
 
+// FieldReqFuncCallName returns the Field interface{} for the field ai_proxy_filter_audit.req_func_call_name
+func (this *AIProxyFilterAudit) FieldReqFuncCallName() Field {
+	return field{name: "req_func_call_name"}
+}
+
+// FieldReqFuncCallArgs returns the Field interface{} for the field ai_proxy_filter_audit.req_func_call_args
+func (this *AIProxyFilterAudit) FieldReqFuncCallArgs() Field {
+	return field{name: "req_func_call_args"}
+}
+
+// FieldResFuncCallName returns the Field interface{} for the field ai_proxy_filter_audit.res_func_call_name
+func (this *AIProxyFilterAudit) FieldResFuncCallName() Field {
+	return field{name: "res_func_call_name"}
+}
+
+// FieldResFuncCallArgs returns the Field interface{} for the field ai_proxy_filter_audit.res_func_call_args
+func (this *AIProxyFilterAudit) FieldResFuncCallArgs() Field {
+	return field{name: "res_func_call_args"}
+}
+
 // FieldMetadata returns the Field interface{} for the field ai_proxy_filter_audit.metadata
 func (this *AIProxyFilterAudit) FieldMetadata() Field { return field{name: "metadata"} }
 
@@ -221,6 +241,26 @@ func (list AIProxyFilterAuditList) FieldPrompt() Field { return field{name: "pro
 
 // FieldCompletion returns the Field interface{} for the field ai_proxy_filter_audit.completion
 func (list AIProxyFilterAuditList) FieldCompletion() Field { return field{name: "completion"} }
+
+// FieldReqFuncCallName returns the Field interface{} for the field ai_proxy_filter_audit.req_func_call_name
+func (list AIProxyFilterAuditList) FieldReqFuncCallName() Field {
+	return field{name: "req_func_call_name"}
+}
+
+// FieldReqFuncCallArgs returns the Field interface{} for the field ai_proxy_filter_audit.req_func_call_args
+func (list AIProxyFilterAuditList) FieldReqFuncCallArgs() Field {
+	return field{name: "req_func_call_args"}
+}
+
+// FieldResFuncCallName returns the Field interface{} for the field ai_proxy_filter_audit.res_func_call_name
+func (list AIProxyFilterAuditList) FieldResFuncCallName() Field {
+	return field{name: "res_func_call_name"}
+}
+
+// FieldResFuncCallArgs returns the Field interface{} for the field ai_proxy_filter_audit.res_func_call_args
+func (list AIProxyFilterAuditList) FieldResFuncCallArgs() Field {
+	return field{name: "res_func_call_args"}
+}
 
 // FieldMetadata returns the Field interface{} for the field ai_proxy_filter_audit.metadata
 func (list AIProxyFilterAuditList) FieldMetadata() Field { return field{name: "metadata"} }
