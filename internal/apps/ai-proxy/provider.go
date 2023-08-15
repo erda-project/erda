@@ -135,11 +135,18 @@ func (p *provider) Init(_ servicehub.Context) error {
 		p.ErdaOpenapis[plat.Name] = openapi
 	}
 
+	// 将静态文件中的 providers 同步到数据库
+	ph := &handlers.ProviderHandler{Dao: p.Dao, Log: p.L.Sub("ProviderHandler")}
+	if err := ph.Sync(context.Background(), p.Config.Providers); err != nil {
+		return errors.Wrap(err, "failed to sync providers from static config")
+	}
+
 	// register gRPC and http handler
 	pb.RegisterAccessImp(p, &handlers.AccessHandler{Dao: p.Dao, Log: p.L.Sub("AccessHandler")}, apis.Options())
 	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
 	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth)
 	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options())
+	pb.RegisterAIProviderImp(p, ph, apis.Options(), rootKeyAuth)
 	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options())
 
 	// ai-proxy prometheus metrics
@@ -166,7 +173,6 @@ func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
 			vars.CtxKeyDAO{}, p.Dao,
-			vars.CtxKeyProviders{}, p.Config.Providers,
 			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,
 		).
 		ServeHTTP(w, r)

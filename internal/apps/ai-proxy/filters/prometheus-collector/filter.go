@@ -25,9 +25,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/metrics"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -65,7 +65,7 @@ func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWrit
 	f.lvs.Source = infor.Header().Get(vars.XAIProxySource)
 	f.lvs.UserId = infor.Header().Get(vars.XAIProxyJobNumber)
 	f.lvs.UserName = infor.Header().Get(vars.XAIProxyName)
-	f.lvs.Provider = prov.(*provider.Provider).Name
+	f.lvs.Provider = prov.(*models.AIProxyProviders).Name
 	f.lvs.Model = f.getModel(ctx, infor)
 	f.lvs.OperationId = infor.Method()
 	if infor.URL() != nil {

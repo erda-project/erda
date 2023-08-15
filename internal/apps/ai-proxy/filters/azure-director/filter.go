@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -61,6 +61,21 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 		return nil, err
 	}
 	return &AzureDirector{Config: &cfg}, nil
+}
+
+// Enable 检查 request 的 provider.name 是否为 azure, 如是 azure 则启用, 否则不启用
+func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
+	// 从 context 中取出存储上下文的 map, 从 map 中取出 provider,
+	// 这个 provider 由 名为 context 的 filter 插入.
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	if !ok || value == nil {
+		return false
+	}
+	prov, ok := value.(*models.AIProxyProviders)
+	if !ok {
+		return false
+	}
+	return strings.EqualFold(prov.Name, "azure")
 }
 
 func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -116,24 +131,10 @@ func (f *AzureDirector) SetAuthorizationIfNotSpecified(ctx context.Context) erro
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*provider.Provider)
+	prov := value.(*models.AIProxyProviders)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		if appKey := prov.GetAppKey(); appKey != "" && req.Header.Get("Authorization") == "" {
+		if appKey := prov.GetAPIKeyWithDecrypt(); appKey != "" && req.Header.Get("Authorization") == "" {
 			req.Header.Set("Authorization", vars.ConcatBearer(appKey))
-		}
-	})
-	return nil
-}
-
-func (f *AzureDirector) SetOpenAIOrganizationIfNotSpecified(ctx context.Context) error {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
-	if !ok || value == nil {
-		return errors.New("provider not set in context map")
-	}
-	prov := value.(*provider.Provider)
-	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		if org := prov.GetOrganization(); org != "" && req.Header.Get("OpenAI-Organization") == "" {
-			req.Header.Set("OpenAI-Organization", org)
 		}
 	})
 	return nil
@@ -144,9 +145,9 @@ func (f *AzureDirector) TransAuthorization(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*provider.Provider)
+	prov := value.(*models.AIProxyProviders)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.Header.Set("Api-Key", prov.GetAppKey())
+		req.Header.Set("Api-Key", prov.GetAPIKeyWithDecrypt())
 		req.Header.Del("Authorization")
 	})
 	return nil
@@ -157,9 +158,9 @@ func (f *AzureDirector) SetAPIKeyIfNotSpecified(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*provider.Provider)
+	prov := value.(*models.AIProxyProviders)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		if appKey := prov.GetAppKey(); appKey != "" && req.Header.Get("Api-Key") == "" {
+		if appKey := prov.GetAPIKeyWithDecrypt(); appKey != "" && req.Header.Get("Api-Key") == "" {
 			req.Header.Set("Api-Key", appKey)
 		}
 	})
@@ -183,7 +184,7 @@ func (f *AzureDirector) RewriteScheme(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*provider.Provider)
+	prov := value.(*models.AIProxyProviders)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		if prov.Scheme == "http" || prov.Scheme == "https" {
 			req.URL.Scheme = prov.Scheme
@@ -201,7 +202,7 @@ func (f *AzureDirector) RewriteHost(ctx context.Context) error {
 		return errors.New("provider not set in context map")
 	}
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.Host = value.(*provider.Provider).Host
+		req.Host = value.(*models.AIProxyProviders).Host
 		req.URL.Host = req.Host
 		req.Header.Set("Host", req.Host)
 		req.Header.Set("X-Forwarded-Host", req.Host)
@@ -210,6 +211,8 @@ func (f *AzureDirector) RewriteHost(ctx context.Context) error {
 }
 
 func (f *AzureDirector) RewritePath(ctx context.Context) error {
+	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("RewritePath")
+
 	rewrite, err := strconv.Unquote(f.processorArgs["RewritePath"])
 	if err != nil {
 		return errors.Errorf("failed to get RewritePath args, err: %v", err)
@@ -223,7 +226,12 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 	if !ok || prov_ == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := prov_.(*provider.Provider)
+	prov := prov_.(*models.AIProxyProviders)
+	var metadata = make(map[string]string)
+	if err = json.Unmarshal([]byte(prov.Metadata), &metadata); err != nil {
+		l.Warnf("failed to json.Unmarshal prov.Metadata to map[string]string, prov.Name: %s, prov.InstanceID: %s, metadata: %s, err: %v",
+			prov.Name, prov.InstanceID, prov.Metadata, err)
+	}
 	for {
 		expr, start, end, err := strutil.FirstCustomExpression(rewrite, "${", "}", func(s string) bool {
 			s = strings.TrimSpace(s)
@@ -235,8 +243,8 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 		if strings.HasPrefix(expr, "env.") {
 			rewrite = strutil.Replace(rewrite, os.Getenv(strings.TrimPrefix(expr, "env.")), start, end)
 		}
-		if strings.HasPrefix(expr, "provider.metadata") && len(prov.Metadata) > 0 {
-			rewrite = strutil.Replace(rewrite, prov.Metadata[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
+		if strings.HasPrefix(expr, "provider.metadata") && len(metadata) > 0 {
+			rewrite = strutil.Replace(rewrite, metadata[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
 		}
 		if strings.HasPrefix(expr, "path.") {
 			rewrite = strutil.Replace(rewrite, values[strings.TrimPrefix(expr, "path.")], start, end)

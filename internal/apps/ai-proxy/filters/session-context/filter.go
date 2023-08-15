@@ -22,6 +22,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
@@ -29,8 +32,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 )
 
 const (

@@ -42,7 +42,6 @@ const (
 
 type (
 	CtxKeyDAO         struct{ CtxKeyDAO any }
-	CtxKeyProviders   struct{ CtxKeyProviders any }
 	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
 	MapKeyProvider    struct{ MapKeyProvider any }
 	MapKeyCredential  struct{ MapKeyCredential any }

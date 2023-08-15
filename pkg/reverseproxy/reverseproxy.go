@@ -308,6 +308,10 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	for _, item := range p.Filters {
 		if filter, ok := item.Filter.(RequestFilter); ok {
 			ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnRequest"))
+			if filter, ok := item.Filter.(Enable); ok && !filter.Enable(ctx, outreq) {
+				logger.Debugf("the fileter %s.OnRequest is not enabled on the request", reflect.TypeOf(filter).String())
+				continue
+			}
 			signal, err := filter.OnRequest(ctx, rw, infor)
 			if err != nil {
 				http.Error(rw, fmt.Sprintf(`{"success": false, "message": %s, "error": %s}`, strconv.Quote(http.StatusText(http.StatusBadRequest)), strconv.Quote(err.Error())), http.StatusBadRequest)
@@ -562,6 +566,10 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					continue
 				}
 				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseChunk"))
+				if filter, ok := p.Filters[i].Filter.(Enable); ok && !filter.Enable(ctx, response.Request.Clone(ctx)) {
+					logger.Debugf("the filter %s.OnResponseChunk is not enabled on the request", reflect.TypeOf(filter).String())
+					continue
+				}
 				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); {
 				case err != nil:
 					logger.Errorf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
@@ -581,6 +589,10 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					continue
 				}
 				ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnResponseEOF"))
+				if filter, ok := p.Filters[i].Filter.(Enable); ok && !filter.Enable(ctx, response.Request.Clone(ctx)) {
+					logger.Debugf("the filter %s.OnResponseEOF is not enabled on the request", reflect.TypeOf(filter).String())
+					continue
+				}
 				if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); err != nil {
 					logger.Errorf("%T.OnResponseEOF, err: %v", filter, err)
 					return rw.Filter.(*responseBodyWriter).written, err

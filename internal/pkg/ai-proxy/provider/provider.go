@@ -73,12 +73,3 @@ func (p *Provider) getRendered(s string) string {
 }
 
 type Providers []*Provider
-
-func (p Providers) FindProvider(name, instanceId string) (*Provider, bool) {
-	for _, provider := range p {
-		if provider.Name == name && provider.InstanceId == instanceId {
-			return provider, true
-		}
-	}
-	return nil, false
-}

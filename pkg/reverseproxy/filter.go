@@ -50,6 +50,11 @@ type ResponseFilter interface {
 	// 比如 OnResponseChunk 截留了的数据, 可以在此时写入 w Writer.
 	OnResponseEOF(ctx context.Context, infor HttpInfor, w Writer, chunk []byte) error
 }
+
+type Enable interface {
+	Enable(context.Context, *http.Request) bool
+}
+
 type HttpInfor interface {
 	Method() string
 	URL() *url.URL
