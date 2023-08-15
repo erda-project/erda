@@ -141,7 +141,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 				Message{
 					Role:    "user",
 					Content: item.Prompt,
-					Name:    infor.Header().Get(vars.XAIProxyUsername),
+					Name:    "erda",
 				})
 		}
 	} else {
