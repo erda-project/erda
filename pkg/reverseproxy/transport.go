@@ -17,7 +17,6 @@ package reverseproxy
 import (
 	"bytes"
 	"fmt"
-	"golang.org/x/net/http/httpproxy"
 	"io"
 	"net"
 	"net/http"
@@ -27,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/net/http/httpproxy"
 
 	"github.com/erda-project/erda-infra/base/logs"
 )
