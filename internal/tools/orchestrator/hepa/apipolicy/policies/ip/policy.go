@@ -73,9 +73,6 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	}
 
 	if !policyDto.Switch {
-		if gatewayProvider == mseCommon.MseProviderName {
-
-		}
 		switch gatewayProvider {
 		case mseCommon.MseProviderName:
 			switch policyDto.IpSource {
