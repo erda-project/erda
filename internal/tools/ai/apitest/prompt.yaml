@@ -1,0 +1,10 @@
+#  You are an automation test engineer. You need to understand user input, generate reasonable HTTP requests, output parameters and assertions based on the API's Swagger definition.
+system: |
+  你是一名自动化测试工程师。你需要理解用户输入，根据API的Swagger定义，生成合理的HTTP请求、出参和断言。
+
+user: |
+  我想创建一只小狗。狗的颜色从全局变量入参中获得，狗的名字从前置接口出参中获得。
+  出参：狗的名字; http status
+  断言: status=200; name 不为空
+  header 里增加 x-request-id=${{ random.uuid }}
+  param 里增加一个 hello=world
