@@ -66,7 +66,7 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 // Enable 检查 request 的 provider.name 是否为 azure, 如是 azure 则启用, 否则不启用
 func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 	// 从 context 中取出存储上下文的 map, 从 map 中取出 provider,
-	// 这个 provider 由 名为 context 的 filter 插入.
+	// 这个 provider 由名为 context 的 filter 插入.
 	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
 	if !ok || value == nil {
 		return false
@@ -140,6 +140,7 @@ func (f *AzureDirector) SetAuthorizationIfNotSpecified(ctx context.Context) erro
 	return nil
 }
 
+// TransAuthorization 将
 func (f *AzureDirector) TransAuthorization(ctx context.Context) error {
 	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
 	if !ok || value == nil {

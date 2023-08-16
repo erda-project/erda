@@ -36,14 +36,14 @@ const (
 )
 
 var (
-	_ reverseproxy.RequestFilter = (*AzureDirector)(nil)
+	_ reverseproxy.RequestFilter = (*OpenaiDirector)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type AzureDirector struct {
+type OpenaiDirector struct {
 	Config *Config
 
 	funcs         map[string]func(ctx context.Context) error
@@ -55,11 +55,11 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
 	}
-	return &AzureDirector{Config: &cfg}, nil
+	return &OpenaiDirector{Config: &cfg}, nil
 }
 
 // Enable 检查 request 的 provider.name 是否为 openai, 如是 openai 则启用, 否则不启用
-func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
+func (f *OpenaiDirector) Enable(ctx context.Context, req *http.Request) bool {
 	// 从 context 中取出存储上下文的 map, 从 map 中取出 provider,
 	// 这个 provider 由 名为 context 的 filter 插入.
 	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
@@ -73,14 +73,14 @@ func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 	return strings.EqualFold(prov.Name, "openai")
 }
 
-func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (f *OpenaiDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	if err := f.ProcessAll(ctx, infor); err != nil {
 		return reverseproxy.Intercept, err
 	}
 	return reverseproxy.Continue, nil
 }
 
-func (f *AzureDirector) ProcessAll(ctx context.Context, infor reverseproxy.HttpInfor) error {
+func (f *OpenaiDirector) ProcessAll(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger).Sub("ProcessAll")
 	var (
 		names      []string
@@ -107,7 +107,7 @@ func (f *AzureDirector) ProcessAll(ctx context.Context, infor reverseproxy.HttpI
 	return nil
 }
 
-func (f *AzureDirector) FindProcessor(ctx context.Context, processor string) (func(context.Context) error, error) {
+func (f *OpenaiDirector) FindProcessor(ctx context.Context, processor string) (func(context.Context) error, error) {
 	name, args, err := ParseProcessorNameArgs(processor)
 	if err != nil {
 		return nil, err
@@ -119,9 +119,39 @@ func (f *AzureDirector) FindProcessor(ctx context.Context, processor string) (fu
 	return f.AllDirectors()[name], nil
 }
 
-func (f *AzureDirector) DoNothing(context.Context) error { return nil }
+func (f *OpenaiDirector) DoNothing(context.Context) error { return nil }
 
-func (f *AzureDirector) RewriteHost(ctx context.Context) error {
+func (f *OpenaiDirector) TransAuthorization(ctx context.Context) error {
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	if !ok || value == nil {
+		return errors.New("provider not set in context map")
+	}
+	prov := value.(*models.AIProxyProviders)
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		req.Header.Del("Authorization")
+		req.Header.Set("Authorization", vars.ConcatBearer(prov.GetAPIKeyWithDecrypt()))
+	})
+	return nil
+}
+
+func (f *OpenaiDirector) RewriteScheme(ctx context.Context) error {
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	if !ok || value == nil {
+		return errors.New("provider not set in context map")
+	}
+	prov := value.(*models.AIProxyProviders)
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		if prov.Scheme == "http" || prov.Scheme == "https" {
+			req.URL.Scheme = prov.Scheme
+		}
+		if req.URL.Scheme == "" {
+			req.URL.Scheme = "https"
+		}
+	})
+	return nil
+}
+
+func (f *OpenaiDirector) RewriteHost(ctx context.Context) error {
 	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
@@ -135,7 +165,7 @@ func (f *AzureDirector) RewriteHost(ctx context.Context) error {
 	return nil
 }
 
-func (f *AzureDirector) AllDirectors() map[string]func(ctx context.Context) error {
+func (f *OpenaiDirector) AllDirectors() map[string]func(ctx context.Context) error {
 	if len(f.funcs) > 0 {
 		return f.funcs
 	}

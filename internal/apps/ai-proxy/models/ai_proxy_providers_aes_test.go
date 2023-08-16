@@ -31,12 +31,6 @@ func TestAIProxyProviders_ResetAesKey(t *testing.T) {
 	}
 }
 
-func TestAIProxyProviders_EncryptAPIKey(t *testing.T) {
-	var a = new(models.AIProxyProviders)
-	a.SetAPIKeyWithEncrypt("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")
-	t.Logf("a.APIKey: %s, raw: %s", a.APIKey, a.GetAPIKeyWithDecrypt())
-}
-
 func BenchmarkAIProxyProviders_EncryptAPIKey(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		key := make([]byte, 16)

@@ -23,10 +23,11 @@ import (
 func DoNothingDirector(_ *http.Request) {}
 
 func AppendDirectors(ctx context.Context, director ...func(r *http.Request)) {
-	var (
-		m         = ctx.Value(CtxKeyMap{}).(*sync.Map)
-		directors []func(*http.Request)
-	)
+	m, ok := ctx.Value(CtxKeyMap{}).(*sync.Map)
+	if !ok {
+		return
+	}
+	var directors []func(*http.Request)
 	if value, ok := m.Load(MapKeyDirectors{}); ok && value != nil {
 		if dirs, ok := value.([]func(r *http.Request)); ok {
 			directors = dirs

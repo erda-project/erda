@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -58,22 +57,23 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	return &SessionContext{Config: &cfg}, nil
 }
 
+func (c *SessionContext) Enable(_ context.Context, req *http.Request) bool {
+	for _, item := range c.Config.On {
+		if item == nil {
+			continue
+		}
+		if ok, _ := item.On(req.Header); ok {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var (
 		l  = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 		db = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
 	)
-
-	// check if this filter is enabled on this request
-	ok, err := c.checkIfIsEnabledOnTheRequest(infor)
-	if err != nil {
-		return reverseproxy.Intercept, err
-	}
-	if !ok {
-		l.Debugf("the filter is not on the request, headers: %s, on: %s",
-			strutil.TryGetJsonStr(infor.Header()), strutil.TryGetJsonStr(c.Config.On))
-		return reverseproxy.Continue, nil
-	}
 
 	sessionId := infor.Header().Get(vars.XAIProxySessionId)
 	if sessionId == "" {
@@ -127,10 +127,10 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 			).
 			Paging(int(session.GetContextLength()-1), 1, audits.FieldCreatedAt().DESC())
 		if err != nil {
-			l.Errorf("failed to Find audits for session %s", sessionId)
+			l.Errorf("failed to Find audits in the session %s, err: %v", sessionId, err)
 		}
 		if total == 0 {
-			l.Debugf("no context for the session")
+			l.Debugf("no context in the session %s", sessionId)
 		}
 		for _, item := range audits {
 			messages = append(messages,
@@ -167,22 +167,6 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	infor.SetBody(io.NopCloser(bytes.NewBuffer(data)), int64(len(data)))
 	l.Debugf("infor new body buffer: %s", infor.BodyBuffer().String())
 	return reverseproxy.Continue, nil
-}
-
-func (c *SessionContext) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (bool, error) {
-	for i, item := range c.Config.On {
-		if item == nil {
-			continue
-		}
-		ok, err := item.On(infor.Header())
-		if err != nil {
-			return false, errors.Wrapf(err, "invalid config: config.on[%d]", i)
-		}
-		if ok {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (c *SessionContext) updateSession(ctx context.Context, id string) {
