@@ -128,9 +128,10 @@ type Updater interface {
 	// Set returns an Updater with fields that will be set in the UPDATE clause.
 	Set(setters ...Setter) Updater
 	// Update executes "UPDATE ... SET ..." clause.
+	// It updates the whole model.
 	// It returns affected rows or an error.
 	Update() (affects int64, err error)
-	// Updates is a short cut for .Set(...).Update()
+	// Updates is a short cut for .Set(...).Updates() and updates fields by given.
 	Updates(setters ...Setter) (affects int64, err error)
 }
 
