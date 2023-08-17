@@ -70,15 +70,10 @@ type HttpInfor interface {
 	SetBody(body io.ReadCloser, size int64)
 	// BodyBuffer only for getting request body and only on request stage.
 	BodyBuffer() *bytes.Buffer
-	Mutex() *sync.Mutex
 }
 
 func NewInfor[R httputil.RequestResponse](ctx context.Context, r R) HttpInfor {
-	l, ok := ctx.Value(MutexCtxKey{}).(*sync.Mutex)
-	if ok {
-		return (&infor[R]{r: r}).WithMutex(l)
-	}
-	return (&infor[R]{r: r}).WithMutex(new(sync.Mutex))
+	return &infor[R]{r: r, mu: new(sync.Mutex)}
 }
 
 type Writer interface {
@@ -87,8 +82,8 @@ type Writer interface {
 }
 
 type infor[R httputil.RequestResponse] struct {
-	r R
-	l *sync.Mutex
+	r  R
+	mu *sync.Mutex
 }
 
 func (r *infor[R]) Method() string {
@@ -284,6 +279,9 @@ func (r *infor[R]) BodyBuffer() *bytes.Buffer {
 
 // SetBody only use on RequestFilter.OnRequest
 func (r *infor[R]) SetBody(body io.ReadCloser, size int64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	field := reflect.ValueOf(r.r)
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
@@ -298,15 +296,6 @@ func (r *infor[R]) SetBody(body io.ReadCloser, size int64) {
 		req.ContentLength = size
 		req.Header.Set(httputil.HeaderKeyContentLength, strconv.FormatUint(uint64(size), 10))
 	}
-}
-
-func (r *infor[R]) Mutex() *sync.Mutex {
-	return r.l
-}
-
-func (r *infor[R]) WithMutex(mutex *sync.Mutex) HttpInfor {
-	r.l = mutex
-	return r
 }
 
 type Signal int
