@@ -56,7 +56,6 @@ type DAO interface {
 	PagingChatLogs(sessionId string, pageNum, pageSize int) (int64, []*pb.ChatLog, error)
 	CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error)
 	UpdateSession(id string, setters ...models.Setter) error
-	DeleteSession(id string) error
 	GetSession(id string) (*pb.Session, bool, error)
 }
 
@@ -115,7 +114,7 @@ func (p *provider) CreateSession(userId, name, topic string, contextLength uint3
 func (p *provider) UpdateSession(id string, setters ...models.Setter) error {
 	var session models.AIProxySessions
 	var where = session.FieldID().Equal(id)
-	ok, err := (&session).Getter(p.DB).Where(where).Get()
+	ok, err := (&session).Retriever(p.DB).Where(where).Get()
 	if err != nil {
 		return err
 	}
@@ -126,14 +125,8 @@ func (p *provider) UpdateSession(id string, setters ...models.Setter) error {
 	return err
 }
 
-func (p *provider) DeleteSession(id string) error {
-	var session = new(models.AIProxySessions)
-	_, err := session.Deleter(p.DB).Where(session.FieldID().Equal(id)).Delete()
-	return err
-}
-
 func (p *provider) GetSession(id string) (*pb.Session, bool, error) {
 	var session models.AIProxySessions
-	ok, err := (&session).Getter(p.DB).Where(session.FieldID().Equal(id)).Get()
+	ok, err := (&session).Retriever(p.DB).Where(session.FieldID().Equal(id)).Get()
 	return session.ToProtobuf(), ok, err
 }

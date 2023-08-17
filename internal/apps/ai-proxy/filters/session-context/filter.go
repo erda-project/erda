@@ -148,11 +148,17 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	} else {
 		l.Debugf("session context length is less then 1, no context appended")
 	}
-	messages = append(messages, Message{
-		Role:    "system",
-		Content: c.Config.SysMsg + "\ntopic: " + session.GetTopic(),
-		Name:    "system",
-	})
+	messages = append(messages,
+		Message{
+			Role:    "system",
+			Content: "topic: " + session.GetTopic(),
+			Name:    "system",
+		},
+		Message{
+			Role:    "system",
+			Content: c.Config.SysMsg,
+			Name:    "system",
+		})
 	strutil.ReverseSlice(messages)
 	m["messages"], err = json.Marshal(messages)
 	if err != nil {

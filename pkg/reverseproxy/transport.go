@@ -30,6 +30,7 @@ import (
 	"golang.org/x/net/http/httpproxy"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 var (
@@ -116,32 +117,20 @@ var BaseTransport http.RoundTripper = &http.Transport{
 		Timeout:   60 * time.Second,
 		KeepAlive: 60 * time.Second,
 	}).DialContext,
-	Dial:                   nil,
-	DialTLSContext:         nil,
-	DialTLS:                nil,
-	TLSClientConfig:        nil,
-	TLSHandshakeTimeout:    10 * time.Second,
-	DisableKeepAlives:      false,
-	DisableCompression:     false,
-	MaxIdleConns:           100,
-	MaxIdleConnsPerHost:    0,
-	MaxConnsPerHost:        0,
-	IdleConnTimeout:        90 * time.Second,
-	ResponseHeaderTimeout:  0,
-	ExpectContinueTimeout:  1 * time.Second,
-	TLSNextProto:           nil,
-	ProxyConnectHeader:     nil,
-	GetProxyConnectHeader:  nil,
-	MaxResponseHeaderBytes: 0,
-	WriteBufferSize:        0,
-	ReadBufferSize:         0,
-	ForceAttemptHTTP2:      false,
+	TLSHandshakeTimeout:   10 * time.Second,
+	MaxIdleConns:          100,
+	IdleConnTimeout:       90 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+	ForceAttemptHTTP2:     true,
 }
 
 func GenCurl(req *http.Request) string {
 	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
 	for k, vv := range req.Header {
 		for _, v := range vv {
+			if strings.EqualFold(k, httputil.HeaderKeyContentLength) {
+				continue
+			}
 			curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
 		}
 	}

@@ -144,7 +144,7 @@ func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInf
 		q          = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
 		credential models.AIProxyCredentials
 	)
-	ok, err := (&credential).Getter(q).Where(
+	ok, err := (&credential).Retriever(q).Where(
 		credential.FieldName().Equal(infor.Header().Get(vars.XAIProxySource)),
 		credential.FieldName().NotEqual(""),
 		credential.FieldPlatform().Equal("erda"),

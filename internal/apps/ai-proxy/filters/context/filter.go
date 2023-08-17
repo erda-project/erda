@@ -97,7 +97,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	}
 
 	// 取出这个 credential 对应的 provider
-	if ok, _ := (&prov).Getter(q).Where(
+	if ok, _ := (&prov).Retriever(q).Where(
 		prov.FieldName().Equal(credential.ProviderName),
 		prov.FieldInstanceID().Equal(credential.ProviderInstanceID),
 	).Get(); !ok {

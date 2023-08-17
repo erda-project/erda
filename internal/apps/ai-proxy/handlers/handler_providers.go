@@ -43,7 +43,7 @@ func (p *ProviderHandler) Sync(_ context.Context, providers provider.Providers) 
 			prov.FieldInstanceID().Equal(item.InstanceId),
 		}
 
-		ok, err := prov.Getter(p.Dao.Q()).Where(where...).Get()
+		ok, err := prov.Retriever(p.Dao.Q()).Where(where...).Get()
 		if err != nil {
 			return err
 		}
