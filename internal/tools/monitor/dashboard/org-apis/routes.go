@@ -66,6 +66,11 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgCenter, permission.ActionList, p.Org,
 	))
+
+	// external metric query
+	routes.GET("/api/external/metrics/query", p.getExternalMetricQuery)
+	routes.POST("/api/external/metrics/query", p.getExternalMetricQuery)
+
 	return nil
 }
 
@@ -88,6 +93,10 @@ func (p *provider) getCmpMetricQuery(request *http.Request) interface{} {
 		}
 	}
 	return p.metricq.Handle(request)
+}
+
+func (p *provider) getExternalMetricQuery(request *http.Request) interface{} {
+	return p.metricq.ExternalHandle(request)
 }
 
 func (p *provider) getHostTypesMethod() func(*http.Request, struct {

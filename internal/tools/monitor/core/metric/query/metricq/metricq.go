@@ -49,6 +49,7 @@ type Queryer interface {
 	Client() *elastic.Client
 	Indices(metrics []string, clusters []string, start, end int64) []string
 	Handle(r *http.Request) interface{}
+	ExternalHandle(r *http.Request) interface{}
 	MetricNames(langCodes i18n.LanguageCodes, scope, scopeID string) ([]*pb.NameDefine, error)
 	MetricMeta(langCodes i18n.LanguageCodes, scope, scopeID string, pb ...string) ([]*pb.MetricMeta, error)
 	GetSingleMetricsMeta(langCodes i18n.LanguageCodes, scope, scopeID, metric string) (*pb.MetricMeta, error)
@@ -69,9 +70,10 @@ var Q Queryer
 
 type Metricq struct {
 	query.Queryer
-	index   indexloader.Interface
-	meta    *metricmeta.Manager
-	handler func(r *http.Request) interface{}
+	index           indexloader.Interface
+	meta            *metricmeta.Manager
+	handler         func(r *http.Request) interface{}
+	externalHandler func(r *http.Request) interface{}
 
 	queryv1   queryv1.Queryer
 	charts    *chartmeta.Manager
@@ -101,6 +103,10 @@ func (q *Metricq) Indices(metrics []string, clusters []string, start, end int64)
 // Handle .
 func (q *Metricq) Handle(r *http.Request) interface{} {
 	return q.handler(r)
+}
+
+func (q *Metricq) ExternalHandle(r *http.Request) interface{} {
+	return q.externalHandler(r)
 }
 
 // MetricMeta .

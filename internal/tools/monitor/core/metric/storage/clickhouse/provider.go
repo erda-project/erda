@@ -29,10 +29,12 @@ import (
 
 type (
 	config struct {
-		QueryTimeout    time.Duration `file:"query_timeout" default:"1m"`
-		QueryMaxThreads int           `file:"query_max_threads" default:"0"`
-		QueryMaxMemory  int64         `file:"query_max_memory" default:"0"`
-		RuntimeSettings []string      `file:"runtime_settings"`
+		QueryTimeout            time.Duration `file:"query_timeout" default:"1m"`
+		QueryMaxThreads         int           `file:"query_max_threads" default:"0"`
+		QueryMaxMemory          int64         `file:"query_max_memory" default:"0"`
+		RuntimeSettings         []string      `file:"runtime_settings"`
+		ExternalDefaultDatabase string        `file:"external_default_database" default:"monitor"`
+		ExternalDefaultTable    string        `file:"external_default_table" default:"external_metrics_all"`
 	}
 	provider struct {
 		Cfg    *config

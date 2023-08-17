@@ -784,8 +784,9 @@ func (e *Endpoints) ListMyProjectIDs(ctx context.Context, r *http.Request, vars 
 	if err != nil {
 		return apierrors.ErrListProject.InvalidParameter(err).ToResp(), nil
 	}
+	mustManager, _ := strconv.ParseBool(r.URL.Query().Get("mustBeManager"))
 
-	ids, err := e.project.GetMyProjectIDList(orgID, identityInfo.UserID)
+	ids, err := e.project.GetMyProjectIDList(orgID, identityInfo.UserID, mustManager)
 	if err != nil {
 		return apierrors.ErrListProjectID.InternalError(err).ToResp(), nil
 	}

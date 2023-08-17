@@ -183,6 +183,21 @@ func (q *queryer) doQuery(ctx context.Context, ql, statement string, params map[
 	return result, query, others, err
 }
 
+func (q *queryer) doQueryExternal(ctx context.Context, ql, statement string, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, tsql.Query, map[string]interface{}, error) {
+	parser, others, err := q.buildTSQLParser(ctx, ql, statement, params, filters, options)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	err = parser.Build()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	result, query, err := q.GetExternalResult(ctx, parser)
+	return result, query, others, err
+}
+
 func (q *queryer) GetResult(ctx context.Context, parser tsql.Parser) (*model.ResultSet, tsql.Query, error) {
 	var query tsql.Query
 	if q.ckStorage != nil {
@@ -211,6 +226,34 @@ func (q *queryer) GetResult(ctx context.Context, parser tsql.Parser) (*model.Res
 	return result, query, err
 }
 
+func (q *queryer) GetExternalResult(ctx context.Context, parser tsql.Parser) (*model.ResultSet, tsql.Query, error) {
+	var query tsql.Query
+	if q.ckStorage != nil {
+		metrics, err := parser.Metrics()
+		if err == nil {
+			if q.ckStorage.Select(metrics) {
+				queries, err := parser.ParseQuery(ctx, model.ClickhouseKind)
+				if err != nil {
+					return nil, nil, err
+				}
+				query = queries[0]
+				result, err := q.ckStorage.QueryExternal(ctx, query)
+				return result, query, err
+			}
+		}
+	}
+	queries, err := parser.ParseQuery(ctx, "")
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(queries) != 1 {
+		return nil, nil, fmt.Errorf("only support one statement")
+	}
+	query = queries[0]
+	result, err := q.storage.QueryExternal(ctx, query)
+	return result, query, err
+}
+
 // Query .
 func (q *queryer) Query(ctx context.Context, tsql, statement string, params map[string]interface{}, options url.Values) (*model.ResultSet, error) {
 	rs, _, _, err := q.doQuery(ctx, tsql, statement, params, nil, options)
@@ -236,6 +279,25 @@ func (q *queryer) QueryWithFormat(ctx context.Context, tsql, statement, format s
 	data, err := formats.Format(format, query, rs.Data, opts)
 	if err != nil {
 		q.log.Error("parse query result is error:", err)
+	}
+	return rs, data, err
+}
+
+func (q *queryer) QueryExternalWithFormat(ctx context.Context, tsql, statement, format string, langCodes i18n.LanguageCodes, params map[string]interface{}, filters []*model.Filter, options url.Values) (*model.ResultSet, interface{}, error) {
+	newCtx, span := otel.Tracer("external.metric.query").Start(ctx, "external.metric.query.with.format")
+	defer span.End()
+
+	rs, query, opts, err := q.doQueryExternal(newCtx, tsql, statement, params, filters, options)
+	if err != nil {
+		q.log.Error("query external tsql is error:", err)
+		return nil, nil, err
+	}
+	if rs.Details != nil {
+		return rs, nil, err
+	}
+	data, err := formats.Format(format, query, rs.Data, opts)
+	if err != nil {
+		q.log.Error("parse eternal query result is error:", err)
 	}
 	return rs, data, err
 }

@@ -400,6 +400,31 @@ func (b *Bundle) GetMyProjectIDs(orgID uint64, userID string) ([]uint64, error) 
 	return fetchResp.Data, nil
 }
 
+// GetMyManagedProjectIDs get the project IDs of the project owner, leader, and manager
+func (b *Bundle) GetMyManagedProjectIDs(orgID uint64, userID string) ([]uint64, error) {
+	host, err := b.urls.ErdaServer()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.MyProjectIDsResponse
+	resp, err := hc.Get(host, httpclient.RetryOption{}).
+		Path(fmt.Sprintf("/api/projects/actions/list-my-projectIDs")).
+		Param("mustBeManager", "true").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.FormatInt(int64(orgID), 10)).
+		Header(httputil.UserHeader, userID).
+		Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !fetchResp.Success {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+	return fetchResp.Data, nil
+}
+
 // GetProjectListByStates list projects by states
 func (b *Bundle) GetProjectListByStates(req apistructs.GetProjectIDListByStatesRequest) (*apistructs.GetProjectIDListByStatesData, error) {
 	host, err := b.urls.ErdaServer()

@@ -94,3 +94,43 @@ func (p *provider) queryMetrics(r *http.Request) interface{} {
 	}
 	return api.Success(data)
 }
+
+func (p *provider) queryExternalMetrics(r *http.Request) interface{} {
+	params := make(map[string]interface{})
+
+	ctx := context.Background()
+
+	err := r.ParseForm()
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+	ql, q, format := r.Form.Get("ql"), r.Form.Get("q"), r.Form.Get("format")
+	r.Form.Del("ql")
+	r.Form.Del("q")
+	r.Form.Del("format")
+	if len(format) == 0 {
+		format = "influxdb"
+	}
+	if len(ql) == 0 {
+		ql = "influxql"
+	}
+	if len(q) == 0 {
+		byts, err := ioutil.ReadAll(r.Body)
+		if err == nil {
+			q = string(byts)
+		}
+	}
+	resp, data, err := p.q.QueryExternalWithFormat(ctx, ql, q, format, api.Language(r), params, nil, r.Form)
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+	if resp.Details != nil {
+		return resp.Details
+	}
+	if response, ok := data.(httpserver.Response); ok {
+		return response
+	} else if response, ok := data.(httpserver.ResponseGetter); ok {
+		return response
+	}
+	return api.Success(data)
+}

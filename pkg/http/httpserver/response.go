@@ -140,11 +140,11 @@ func WriteJSON(w http.ResponseWriter, v interface{}) {
 	w.WriteHeader(http.StatusOK)
 	b, err := json.Marshal(v)
 	if err != nil {
-		logrus.Debugln(err)
+		logrus.Errorln(err)
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		logrus.Debugln(err)
+		logrus.Errorln(err)
 	}
 }
 

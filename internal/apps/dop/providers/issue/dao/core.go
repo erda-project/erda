@@ -936,7 +936,7 @@ func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint
 }
 
 func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
-	sql := client.Model(&Issue{}).Where("`type` = ?", apistructs.IssueTypeBug)
+	sql := client.Model(&Issue{}).Where("`type` = ?", apistructs.IssueTypeBug).Where("deleted = 0")
 	if projectID > 0 {
 		sql = sql.Where("project_id = ?", projectID)
 	}
@@ -1098,33 +1098,53 @@ func (client *DBClient) ListIssueForIssueStateTransMigration() ([]IssueForIssueS
 	return issues, err
 }
 
-// GetHaveUndoneTaskAssigneeNum get the number of people with unfinished tasks under the iteration
-func (client *DBClient) GetHaveUndoneTaskAssigneeNum(iterationID uint64, doneStateIDS []int64) (uint64, error) {
-	var count uint64
-	if err := client.Table("dice_issues").Select("distinct(assignee)").Where("iteration_id = ?", iterationID).Where("deleted = 0").Where("type = 'TASK'").Where("state not in (?)", doneStateIDS).Count(&count).Error; err != nil {
+// GetHaveUndoneTaskAssigneeNum get the number of people with unfinished tasks under the iteration or project
+func (client *DBClient) GetHaveUndoneTaskAssigneeNum(iterationID uint64, projectID uint64, doneStateIDS []int64) (uint64, error) {
+	var count Counter
+	sql := client.Table("dice_issues").Select("count(distinct(assignee)) as count").Where("deleted = 0").Where("type = 'TASK'").
+		Where("state not in (?)", doneStateIDS)
+	if iterationID > 0 {
+		sql = sql.Where("iteration_id = ?", iterationID)
+	}
+	if projectID > 0 {
+		sql = sql.Where("project_id = ?", projectID)
+	}
+	if err := sql.Find(&count).Error; err != nil {
 		return 0, err
 	}
-	return count, nil
+	return count.Count, nil
 }
 
 func (client *DBClient) GetSeriousBugNum(iterationID uint64) (uint64, error) {
-	var count uint64
-	if err := client.Table("dice_issues").Select("distinct(id)").Where("iteration_id = ?", iterationID).Where("deleted = 0").Where("type = 'BUG'").
+	var count Counter
+	if err := client.Table("dice_issues").Select("count(distinct(id)) as count").Where("iteration_id = ?", iterationID).Where("deleted = 0").Where("type = 'BUG'").
 		Where("severity in (?)", []string{string(apistructs.IssueSeverityFatal), string(apistructs.IssueSeveritySerious)}).
-		Count(&count).Error; err != nil {
+		Find(&count).Error; err != nil {
 		return 0, err
 	}
-	return count, nil
+	return count.Count, nil
 }
 
 func (client *DBClient) GetDemandDesignBugNum(iterationID uint64) (uint64, error) {
-	var count uint64
-	if err := client.Table("dice_issues").Select("distinct(id)").
+	var count Counter
+	if err := client.Table("dice_issues").Select("count(distinct(id)) as count").
 		Where("iteration_id = ?", iterationID).
 		Where("deleted = 0").Where("type = ?", apistructs.IssueTypeBug).
 		Where("stage = ?", "demandDesign").
-		Count(&count).Error; err != nil {
+		Find(&count).Error; err != nil {
 		return 0, err
 	}
-	return count, nil
+	return count.Count, nil
+}
+
+func (client *DBClient) GetIssueNumByStates(iterationID uint64, issueType apistructs.IssueType, states []uint64) (uint64, error) {
+	var count Counter
+	if err := client.Table("dice_issues").Select("count(distinct(id)) as count").
+		Where("iteration_id = ?", iterationID).
+		Where("deleted = 0").Where("type = ?", issueType).
+		Where("state in (?)", states).
+		Find(&count).Error; err != nil {
+		return 0, err
+	}
+	return count.Count, nil
 }

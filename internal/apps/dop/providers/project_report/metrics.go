@@ -62,7 +62,9 @@ type IterationMetricFields struct {
 	TaskDoneTotal                   uint64
 	TaskCompleteSchedule            float64
 	TaskBeInclusionRequirementTotal uint64
+	TaskUnAssociatedTotal           uint64
 	TaskAssociatedPercent           float64
+	TaskWorkingTotal                uint64
 
 	// requirement-related metrics
 	RequirementTotal               uint64
@@ -80,10 +82,14 @@ type IterationMetricFields struct {
 	ReopenBugTotal         uint64
 	ReopenBugPercent       float64
 	BugDoneTotal           uint64
+	BugUndoneTotal         uint64
 	BugCompleteSchedule    float64
+	BugWontfixTotal        uint64
+	BugWithWonfixTotal     uint64
 
 	// iteration-related metrics
 	IterationAssigneeNum uint64
+	ProjectAssigneeNum   uint64
 }
 
 // IsValid returns true if the IterationMetricFields is valid.
@@ -180,6 +186,23 @@ var (
 			},
 		},
 		{
+			name:      "iteration_task_unassociated_total",
+			help:      "Cumulative unassociated with requirement task type issue in iteration.",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.TaskUnAssociatedTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
 			name:      "iteration_task_complete_schedule",
 			help:      "Cumulative complete schedule of task type issue in iteration.",
 			valueType: prometheus.CounterValue,
@@ -187,6 +210,23 @@ var (
 				var value float64
 				if iterationInfo.IterationMetricFields != nil {
 					value = iterationInfo.IterationMetricFields.TaskCompleteSchedule
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_task_working_total",
+			help:      "Cumulative working task type issue in iteration.",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.TaskWorkingTotal)
 				}
 				return metricValues{
 					{
@@ -316,6 +356,40 @@ var (
 			},
 		},
 		{
+			name:      "iteration_bug_wontfix_total",
+			help:      "Cumulative wontfix bug total of bug type issue in iteration.",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.BugWontfixTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_bug_with_wonfix_total",
+			help:      "Cumulative with_wonfix bug total of bug type issue in iteration.",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.BugWithWonfixTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
 			name:      "iteration_assignee_total",
 			help:      "The number of people who still have unfinished tasks in the project as of now",
 			valueType: prometheus.CounterValue,
@@ -323,6 +397,23 @@ var (
 				var value uint64
 				if iterationInfo.IterationMetricFields != nil {
 					value = iterationInfo.IterationMetricFields.IterationAssigneeNum
+				}
+				return metricValues{
+					{
+						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "project_assignee_total",
+			help:      "The number of people who still have unfinished tasks in the project as of now",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value uint64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.ProjectAssigneeNum
 				}
 				return metricValues{
 					{
@@ -412,6 +503,23 @@ var (
 				return metricValues{
 					{
 						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_bug_undone_total",
+			help:      "The number of bug that have not been completed in the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.BugUndoneTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
 						timestamp: time.Now(),
 					},
 				}
