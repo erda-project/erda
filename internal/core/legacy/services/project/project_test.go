@@ -24,6 +24,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/internal/core/legacy/types"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -453,4 +455,37 @@ func TestProject_BatchConvertProjectDTO(t *testing.T) {
 	assert.Equal(t, got[0].Joined, false)
 	got = p.BatchConvertProjectDTO(nil, projects)
 	assert.Equal(t, got[0].Joined, true)
+}
+
+func Test_isManagerRole(t *testing.T) {
+	cases := []struct {
+		name      string
+		roles     string
+		isManager bool
+	}{
+		{
+			name:      "project manager",
+			roles:     types.RoleProjectPM,
+			isManager: true,
+		},
+		{
+			name:      "project owner",
+			roles:     types.RoleProjectPM,
+			isManager: true,
+		},
+		{
+			name:      "project leader",
+			roles:     types.RoleProjectLead,
+			isManager: true,
+		},
+		{
+			name:  "project developer",
+			roles: types.RoleProjectDev,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.isManager, isManagerRole(tc.roles))
+		})
+	}
 }

@@ -404,3 +404,10 @@
   action: DELETE
   role: Manager,Owner,Lead,PM,PD,Dev,QA
 ## subscribe end ##
+
+## 项目报表 start
+- role: Manager,Support
+  scope: org
+  resource: project-report
+  action: GET
+## 项目报表 end

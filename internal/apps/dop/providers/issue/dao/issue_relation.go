@@ -162,22 +162,26 @@ func (client *DBClient) BatchCreateIssueRelations(issueRels []IssueRelation) err
 	return client.BulkInsert(issueRels)
 }
 
+type Counter struct {
+	Count uint64
+}
+
 // GetRequirementInclusionTaskNum get the number of requirements associated with the task in this iteration
 func (client *DBClient) GetRequirementInclusionTaskNum(iterationID uint64) (uint64, error) {
-	var count uint64
-	if err := client.Table("dice_issue_relation").Select("distinct(issue_id)").Where(fmt.Sprintf("issue_id in (select id from dice_issues where iteration_id='%d' and type='REQUIREMENT') and type='inclusion'", iterationID)).
-		Count(&count).Error; err != nil {
+	var count Counter
+	if err := client.Table("dice_issue_relation").Select("count(distinct(issue_id)) as count").Where(fmt.Sprintf("issue_id in (select id from dice_issues where iteration_id='%d' and type='REQUIREMENT' and deleted=0) and type='inclusion'", iterationID)).
+		Find(&count).Error; err != nil {
 		return 0, err
 	}
-	return count, nil
+	return count.Count, nil
 }
 
 // GetTaskConnRequirementNum get the number of tasks associated with the requirement in this iteration
 func (client *DBClient) GetTaskConnRequirementNum(iterationID uint64) (uint64, error) {
-	var count uint64
-	if err := client.Table("dice_issue_relation").Select("distinct(related_issue)").Where(fmt.Sprintf("related_issue in (select id from dice_issues where iteration_id='%d' and type='TASK') and type='inclusion'", iterationID)).
-		Count(&count).Error; err != nil {
+	var count Counter
+	if err := client.Table("dice_issue_relation").Select("count(distinct(related_issue)) as count").Where(fmt.Sprintf("related_issue in (select id from dice_issues where iteration_id='%d' and type='TASK' and deleted=0) and type='inclusion'", iterationID)).
+		Find(&count).Error; err != nil {
 		return 0, err
 	}
-	return count, nil
+	return count.Count, nil
 }

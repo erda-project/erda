@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -25,6 +26,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/clickhouse"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda/bundle"
 	iterationdb "github.com/erda-project/erda/internal/apps/dop/dao"
@@ -55,11 +58,13 @@ type provider struct {
 	projDB      *dao.DBClient
 	issueDB     *issuedb.DBClient
 	iterationDB *iterationdb.DBClient
+	Clickhouse  clickhouse.Interface `autowired:"clickhouse" optional:"true"`
 
 	Org      org.Interface
 	IssueSvc query.Interface
 	Election election.Interface `autowired:"etcd-election@project-management-report"`
 	Js       jsonstore.JsonStore
+	Register transport.Register
 
 	orgSet       *orgCache
 	projectSet   *projectCache
@@ -102,6 +107,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.orgSet = &orgCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
 	p.projectSet = &projectCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
 	p.iterationSet = &iterationCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
+
+	p.Register.Add(http.MethodPost, "/api/project-report/actions/query", p.queryProjectReport)
 	return nil
 }
 

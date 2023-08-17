@@ -1362,7 +1362,7 @@ func genProjectNamespace(prjIDStr string) map[string]string {
 		"STAGING": "project-" + prjIDStr + "-staging", "PROD": "project-" + prjIDStr + "-prod"}
 }
 
-func (p *Project) GetMyProjectIDList(parentID int64, userID string) ([]uint64, error) {
+func (p *Project) GetMyProjectIDList(parentID int64, userID string, mustManager bool) ([]uint64, error) {
 	members, err := p.db.GetMembersByParentID(apistructs.ProjectScope, parentID, userID)
 	if err != nil {
 		return nil, errors.Errorf("failed to get permission when get projects, (%v)", err)
@@ -1371,10 +1371,26 @@ func (p *Project) GetMyProjectIDList(parentID int64, userID string) ([]uint64, e
 	projectIDList := make([]uint64, 0, len(members))
 	for i := range members {
 		if members[i].ResourceKey == apistructs.RoleResourceKey {
-			projectIDList = append(projectIDList, uint64(members[i].ScopeID))
+			if !mustManager {
+				projectIDList = append(projectIDList, uint64(members[i].ScopeID))
+				continue
+			}
+			if isManagerRole(members[i].ResourceValue) {
+				projectIDList = append(projectIDList, uint64(members[i].ScopeID))
+				continue
+			}
 		}
 	}
 	return projectIDList, nil
+}
+
+func isManagerRole(role string) bool {
+	switch role {
+	case types.RoleProjectOwner, types.RoleProjectLead, types.RoleProjectPM:
+		return true
+	default:
+		return false
+	}
 }
 
 func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, projectIDList []uint64) (int, []apistructs.ProjectDTO, error) {

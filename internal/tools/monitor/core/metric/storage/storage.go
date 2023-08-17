@@ -28,4 +28,5 @@ type Storage interface {
 	Select(metric []string) bool
 	NewWriter(ctx context.Context) (storekit.BatchWriter, error)
 	Query(ctx context.Context, query tsql.Query) (*model.ResultSet, error)
+	QueryExternal(ctx context.Context, q tsql.Query) (*model.ResultSet, error)
 }

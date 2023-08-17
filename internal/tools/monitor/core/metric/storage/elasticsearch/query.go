@@ -153,3 +153,7 @@ func getMetricsAndClustersFromSources(sources []*model.Source) (metrics []string
 func (p *provider) Select(metric []string) bool {
 	return true
 }
+
+func (p *provider) QueryExternal(ctx context.Context, q tsql.Query) (*model.ResultSet, error) {
+	return nil, fmt.Errorf("not support")
+}

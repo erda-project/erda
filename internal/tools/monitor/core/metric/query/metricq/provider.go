@@ -103,13 +103,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.q = &Metricq{
-		Queryer:   query.New(p.CkMetaLoader, p.Storage, p.CkStorageReader, p.Log),
-		queryv1:   queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
-		index:     p.Index,
-		meta:      p.Meta,
-		charts:    charts,
-		handler:   p.queryMetrics,
-		handlerV1: p.queryMetricsV1,
+		Queryer:         query.New(p.CkMetaLoader, p.Storage, p.CkStorageReader, p.Log),
+		queryv1:         queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
+		index:           p.Index,
+		meta:            p.Meta,
+		charts:          charts,
+		handler:         p.queryMetrics,
+		handlerV1:       p.queryMetricsV1,
+		externalHandler: p.queryExternalMetrics,
 	}
 	Q = p.q
 

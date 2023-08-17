@@ -150,7 +150,7 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 	fields := &IterationMetricFields{
 		CalculatedAt: time.Now(),
 	}
-	var doneReqStateIDS []int64
+	var doneReqStateIDs []int64
 	doneReqStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
 		ProjectID: iter.Iteration.ProjectID,
 		IssueType: []apistructs.IssueType{apistructs.IssueTypeRequirement},
@@ -163,10 +163,10 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		return nil, err
 	}
 	for i := range doneReqStates {
-		doneReqStateIDS = append(doneReqStateIDS, int64(doneReqStates[i].ID))
+		doneReqStateIDs = append(doneReqStateIDs, int64(doneReqStates[i].ID))
 	}
 
-	var doneTaskStateIDS []int64
+	var doneTaskStateIDs []int64
 	doneTaskStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
 		ProjectID: iter.Iteration.ProjectID,
 		IssueType: []apistructs.IssueType{apistructs.IssueTypeTask},
@@ -179,10 +179,25 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		return nil, err
 	}
 	for i := range doneTaskStates {
-		doneTaskStateIDS = append(doneTaskStateIDS, int64(doneTaskStates[i].ID))
+		doneTaskStateIDs = append(doneTaskStateIDs, int64(doneTaskStates[i].ID))
 	}
 
-	var doneBugStateIDS []int64
+	var workingTaskStateIDs []uint64
+	workingTaskStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
+		ProjectID: iter.Iteration.ProjectID,
+		IssueType: []apistructs.IssueType{apistructs.IssueTypeTask},
+		StateBelongs: []apistructs.IssueStateBelong{
+			apistructs.IssueStateBelongWorking,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	for i := range workingTaskStates {
+		workingTaskStateIDs = append(workingTaskStateIDs, workingTaskStates[i].ID)
+	}
+
+	var doneBugStateIDs []int64
 	doneBugStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
 		ProjectID: iter.Iteration.ProjectID,
 		IssueType: []apistructs.IssueType{apistructs.IssueTypeBug},
@@ -194,10 +209,31 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		return nil, err
 	}
 	for i := range doneBugStates {
-		doneBugStateIDS = append(doneBugStateIDS, int64(doneBugStates[i].ID))
+		doneBugStateIDs = append(doneBugStateIDs, int64(doneBugStates[i].ID))
 	}
 
-	iterationSummary := p.issueDB.GetIssueSummary(int64(iter.Iteration.ID), doneTaskStateIDS, doneBugStateIDS, doneReqStateIDS)
+	var wontfixBugStateIDs []uint64
+	wontfixBugStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
+		ProjectID: iter.Iteration.ProjectID,
+		IssueType: []apistructs.IssueType{apistructs.IssueTypeBug},
+		StateBelongs: []apistructs.IssueStateBelong{
+			apistructs.IssueStateBelongWontfix,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	for i := range wontfixBugStates {
+		wontfixBugStateIDs = append(wontfixBugStateIDs, wontfixBugStates[i].ID)
+	}
+
+	wontfixBugTotal, err := p.issueDB.GetIssueNumByStates(iter.Iteration.ID, apistructs.IssueTypeBug, wontfixBugStateIDs)
+	if err != nil {
+		return nil, err
+	}
+	fields.BugWontfixTotal = wontfixBugTotal
+
+	iterationSummary := p.issueDB.GetIssueSummary(int64(iter.Iteration.ID), doneTaskStateIDs, doneBugStateIDs, doneReqStateIDs)
 
 	fields.TaskTotal = uint64(iterationSummary.Task.UnDone + iterationSummary.Task.Done)
 	fields.RequirementTotal = uint64(iterationSummary.Requirement.UnDone + iterationSummary.Requirement.Done)
@@ -207,6 +243,12 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		return nil, err
 	}
 	fields.RequirementAssociatedTaskTotal = requirementInclusionTaskNum
+
+	workingTaskTotal, err := p.issueDB.GetIssueNumByStates(iter.Iteration.ID, apistructs.IssueTypeTask, workingTaskStateIDs)
+	if err != nil {
+		return nil, err
+	}
+	fields.TaskWorkingTotal = workingTaskTotal
 
 	totalTaskEstimateTime, err := p.issueDB.GetTaskIssueManHourSum(
 		apistructs.IssuesStageRequest{
@@ -226,19 +268,27 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 	if err != nil {
 		return nil, err
 	}
-	haveUndoneTaskAssigneeNum, err := p.issueDB.GetHaveUndoneTaskAssigneeNum(iter.Iteration.ID, doneTaskStateIDS)
+	haveUndoneTaskAssigneeNum, err := p.issueDB.GetHaveUndoneTaskAssigneeNum(iter.Iteration.ID, iter.Iteration.ProjectID, doneTaskStateIDs)
 	if err != nil {
 		return nil, err
 	}
 	fields.IterationAssigneeNum = haveUndoneTaskAssigneeNum
+
+	projectUndoneTaskAssigneeNum, err := p.issueDB.GetHaveUndoneTaskAssigneeNum(0, iter.Iteration.ProjectID, doneTaskStateIDs)
+	if err != nil {
+		return nil, err
+	}
+	fields.ProjectAssigneeNum = projectUndoneTaskAssigneeNum
 	fields.TaskDoneTotal = uint64(iterationSummary.Task.Done)
 	fields.TaskBeInclusionRequirementTotal = taskBeInclusionReqNum
 	if fields.TaskTotal > 0 {
+		fields.TaskUnAssociatedTotal = fields.TaskTotal - taskBeInclusionReqNum
 		fields.TaskCompleteSchedule = float64(iterationSummary.Task.Done) / float64(fields.TaskTotal)
 		fields.TaskAssociatedPercent = float64(taskBeInclusionReqNum) / float64(fields.TaskTotal)
 	}
 
-	fields.BugTotal = uint64(iterationSummary.Bug.UnDone + iterationSummary.Bug.Done)
+	fields.BugTotal = uint64(iterationSummary.Bug.UnDone+iterationSummary.Bug.Done) - wontfixBugTotal
+	fields.BugWithWonfixTotal = uint64(iterationSummary.Bug.UnDone + iterationSummary.Bug.Done)
 	seriousBugNum, err := p.issueDB.GetSeriousBugNum(iter.Iteration.ID)
 	if err != nil {
 		return nil, err
@@ -257,13 +307,14 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		fields.SeriousBugPercent = float64(seriousBugNum) / float64(fields.BugTotal)
 		fields.DemandDesignBugPercent = float64(demandDesignBugNum) / float64(fields.BugTotal)
 		fields.ReopenBugPercent = float64(reopenBugNum) / float64(fields.BugTotal+reopenBugNum)
+		fields.BugUndoneTotal = fields.BugTotal - fields.BugDoneTotal
 	}
 
 	doneTaskElapsedMinute, err := p.issueDB.GetTaskIssueManHourSum(
 		apistructs.IssuesStageRequest{
 			StatisticRange: "iteration",
 			RangeID:        int64(iter.Iteration.ID),
-			StateIDS:       doneTaskStateIDS,
+			StateIDS:       doneTaskStateIDs,
 		})
 	if err != nil {
 		return nil, err

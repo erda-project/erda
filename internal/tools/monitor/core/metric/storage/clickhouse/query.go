@@ -98,12 +98,12 @@ func (p *provider) Query(ctx context.Context, q tsql.Query) (*model.ResultSet, e
 		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
 	}
+	if rows == nil {
+		return nil, errors.New("no error, but no value")
+	}
 	if rows.Err() != nil {
 		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", rows.Err().Error())))
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
-	}
-	if rows == nil {
-		return nil, errors.New("no error, but no value")
 	}
 	defer func() {
 		err := rows.Close()
@@ -225,4 +225,77 @@ func (p *provider) exec(ctx context.Context, sql string) (driver.Rows, error) {
 	_, span := otel.Tracer("executive").Start(ctx, "exec.clickhouse")
 	defer span.End()
 	return p.clickhouse.Client().Query(p.buildQueryContext(ctx), sql)
+}
+
+func (p *provider) QueryExternal(ctx context.Context, q tsql.Query) (*model.ResultSet, error) {
+	newCtx, span := otel.Tracer("executive").Start(ctx, "external-metric.clickhouse")
+	defer span.End()
+
+	searchSource := q.SearchSource()
+	expr, ok := searchSource.(*goqu.SelectDataset)
+	if !ok || expr == nil {
+		return nil, errors.New("invalid search source")
+	}
+	if len(q.Sources()) <= 0 {
+		return nil, errors.New("no sources")
+	}
+
+	var metrics []string
+	for _, s := range q.Sources() {
+		metrics = append(metrics, s.Name)
+	}
+
+	span.SetAttributes(attribute.String("metrics", strings.Join(metrics, ",")))
+
+	expr = expr.Where(goqu.C("metric_group").In(metrics))
+	expr = expr.From(fmt.Sprintf("%s.%s", p.Cfg.ExternalDefaultDatabase, p.Cfg.ExternalDefaultTable))
+
+	sql, _, err := expr.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build sql")
+	}
+
+	result := &model.ResultSet{}
+
+	span.SetAttributes(attribute.String("sql", sql))
+	if q.Debug() {
+		result.Details = sql
+		fmt.Println(result.Details)
+		return result, nil
+	}
+
+	rows, err := p.exec(newCtx, sql)
+	if err != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to query: %s", sql))
+	}
+	if rows == nil {
+		return nil, errors.New("no error, but no value")
+	}
+	if rows.Err() != nil {
+		span.RecordError(rows.Err(), oteltrace.WithAttributes(attribute.String("error", rows.Err().Error())))
+		return nil, errors.Wrap(rows.Err(), fmt.Sprintf("failed to query: %s", sql))
+	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", "closes rows is error: "+err.Error())))
+		}
+	}()
+
+	result.Data, err = q.ParseResult(newCtx, rows)
+	if result != nil && result.Data != nil {
+		if result.Rows != nil {
+			if result.Rows != nil {
+				span.SetAttributes(attribute.Int("result_total", len(result.Rows)))
+			}
+			span.SetAttributes(trace.BigStringAttribute("result", result.String()))
+		}
+	}
+
+	if err != nil {
+		span.RecordError(err, oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to parse result: %s", sql))
+	}
+	return result, nil
 }
