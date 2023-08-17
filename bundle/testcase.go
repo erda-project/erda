@@ -25,7 +25,11 @@ import (
 )
 
 func (b *Bundle) CreateTestCase(req apistructs.TestCaseCreateRequest) ([]byte, error) {
-	resp, err := b.hc.Post("localhost:9095").Path("/api/testcases").
+	host, err := b.urls.ErdaServer()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := b.hc.Post(host).Path("/api/testcases").
 		Header(httputil.InternalHeader, "AI").
 		Header(httputil.UserHeader, req.IdentityInfo.UserID).
 		JSONBody(&req).Do().RAW()

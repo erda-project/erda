@@ -60,7 +60,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
-	p.Config.openAIOpenapiURL, err = url.Parse(p.Config.OpenAIOpenapi)
+	p.Config.openapiURL, err = url.Parse(p.Config.OpenaiAddr)
 	if err != nil {
 		return err
 	}
@@ -85,13 +85,13 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func (p *provider) AIFunction() pb.AiFunctionServer {
-	return &handler.AIFunction{Log: p.L.Sub("AIFunction"), OpenaiURL: p.Config.openAIOpenapiURL}
+	return &handler.AIFunction{Log: p.L.Sub("AIFunction"), OpenaiURL: p.Config.openapiURL}
 }
 
 type Config struct {
-	// OpenAIOpenapi is the API address which implemented the OpenAI API.
+	// OpenaiAddr is the API address which implemented the OpenAI API.
 	// It like https://api.openai.com, https://ai-proxy.erda.cloud
-	OpenAIOpenapi string `json:"openAIOpenapi" yaml:"openAIOpenapi"`
+	OpenaiAddr string `json:"openaiAddr" yaml:"openaiAddr"`
 
-	openAIOpenapiURL *url.URL
+	openapiURL *url.URL
 }

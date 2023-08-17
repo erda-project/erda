@@ -64,7 +64,6 @@ func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOpti
 		return nil, errors.Wrap(err, "failed to Encode CreateCompletionOptions")
 	}
 	request, err := http.NewRequest(http.MethodPost, c.URLV1ChatCompletion(), &buf)
-	request.Header.Set("Authorization", "Bearer "+"e78c1fe49d704fda978041cb21770282") // todo: ak
 	request.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to NewRequest, uri: %s", c.URLV1ChatCompletion())

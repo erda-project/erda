@@ -17,7 +17,9 @@ package handler
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"net/http"
 	"net/url"
 
@@ -75,8 +77,8 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 			Model:        "gpt-35-turbo-16k", // default the newest model, can be modified by f.CompletionOptions()
 		}
 	)
-	ros := f.CompletionOptions()
-	for _, o := range ros {
+	cos := f.CompletionOptions()
+	for _, o := range cos {
 		o(options)
 	}
 	if valid := json.Valid(fd.Parameters); !valid {
@@ -84,7 +86,14 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 			return nil, err
 		}
 	}
-	client, err := sdk.NewClient(h.OpenaiURL, http.DefaultClient, f.RequestOptions()...)
+	// 在 request option 中添加认证信息: 以某组织下某用户身份调用 ai-proxy,
+	// ai-proxy 中的 filter erda-auth 会回调 erda.cloud 的 openai, 检查该企业和用户是否有权使用 AI 能力
+	ros := append(f.RequestOptions(), func(r *http.Request) {
+		r.Header.Set("X-Ai-Proxy-Source", "erda.cloud") // todo: hard code source
+		r.Header.Set("X-Ai-Proxy-Org-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetOrgID(ctx))))
+		r.Header.Set("X-Ai-Proxy-User-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetUserID(ctx))))
+	})
+	client, err := sdk.NewClient(h.OpenaiURL, http.DefaultClient, ros...)
 	if err != nil {
 		return nil, err
 	}
