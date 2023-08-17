@@ -1440,47 +1440,6 @@ func getNginxConfFromPolicyConfig(p apipolicy.PolicyConfig) (map[string]string, 
 		}
 	}
 
-	if p.IngressController != nil {
-		for k, v := range p.IngressController.ConfigOption {
-			logrus.Infof("p.IngressController.ConfigOption[%s]=%v \n", k, p.IngressController.ConfigOption[k])
-			key := strings.ReplaceAll(k, "-", "_")
-			if _, ok := ret[key]; ok {
-				// more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
-				if !skipKeys[key] {
-					return ret, errors.Errorf("ConfigOption nginx conf %s duplicated", key)
-				}
-			}
-			if v == nil {
-				ret[key] = ""
-			} else {
-				ret[key] = *v
-			}
-		}
-
-		if p.IngressController.MainSnippet != nil {
-			src := *(p.IngressController.MainSnippet)
-			err := extractConfigFromString("p.IngressController.MainSnippet", src, ret)
-			if err != nil {
-				return ret, err
-			}
-		}
-
-		if p.IngressController.HttpSnippet != nil {
-			src := *(p.IngressController.HttpSnippet)
-			err := extractConfigFromString("p.IngressController.HttpSnippet", src, ret)
-			if err != nil {
-				return ret, err
-			}
-		}
-
-		if p.IngressController.ServerSnippet != nil {
-			src := *(p.IngressController.ServerSnippet)
-			err := extractConfigFromString("p.IngressController.ServerSnippet", src, ret)
-			if err != nil {
-				return ret, err
-			}
-		}
-	}
 	return ret, nil
 }
 

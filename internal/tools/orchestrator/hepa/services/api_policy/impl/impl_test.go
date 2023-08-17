@@ -123,7 +123,7 @@ location @LIMIT-xxxxxx {
 					IngressController: pc2,
 				},
 			},
-			want:    "proxy_next_upstream=error timeout http_429 non_idempotent",
+			want:    "",
 			wantErr: false,
 		},
 		{
@@ -138,7 +138,7 @@ location @LIMIT-xxxxxx {
 					IngressController: pc3,
 				},
 			},
-			want:    "proxy_next_upstream=error timeout http_581 non_idempotent",
+			want:    "",
 			wantErr: false,
 		},
 		{

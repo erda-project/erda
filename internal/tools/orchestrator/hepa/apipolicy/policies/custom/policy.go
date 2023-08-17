@@ -28,7 +28,8 @@ type Policy struct {
 }
 
 // 如下参数在 nginx-template 中有全局设置，因此不能在 cunstom 中再次设置
-var UNSETABLE_KEYS = map[string]string{"client_max_body_size": "100m",
+var UNSETABLE_KEYS = map[string]string{
+	"client_max_body_size":  "100m",
 	"proxy_connect_timeout": "5s",
 	"proxy_buffer_size":     "256k",
 	"proxy_buffers":         "4 256k",
