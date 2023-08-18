@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
@@ -53,12 +52,19 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		l           = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 		q           = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
 		m           = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
-		providers   = ctx.Value(vars.CtxKeyProviders{}).(provider.Providers)
-		credentials []*models.AIProxyCredentials
+		prov        models.AIProxyProviders
+		credentials models.AIProxyCredentialsList
 		appKey      = vars.TrimBearer(infor.Header().Get("Authorization"))
 	)
-	if err = q.Find(&credentials, map[string]any{"access_key_id": appKey}).Error; err != nil || len(credentials) == 0 {
-		l.Errorf("failed to Find credentials, access_key_id: %s, err: %v", appKey, err)
+	total, err := (&credentials).Pager(q).
+		Where(credentials.FieldAccessKeyID().Equal(appKey)).
+		Paging(-1, -1)
+	if err != nil {
+		l.Errorf("failed to list credentials, access_key_id: %s, err: %v", appKey, err)
+		return reverseproxy.Intercept, err
+	}
+	if total == 0 {
+		l.Debugf("no credential with the access_key_id: %s", appKey)
 		http.Error(w, "Authorization is invalid", http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
@@ -78,6 +84,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			return item.ProviderName == providerName && item.ProviderInstanceID == providerInstanceId
 		}
 	}
+	// 从 credentials 中取出匹配的 credential: 启用状态为 true && 未过期 && 能匹配上 provider
 	for _, item := range credentials {
 		if item.Enabled && item.ExpiredAt.After(time.Now()) && match(item) {
 			credential = item
@@ -85,20 +92,22 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		}
 	}
 	if credential == nil {
-		http.Error(w, "Authorization is disabled or expired", http.StatusForbidden)
+		http.Error(w, "Authorization is disabled or expired or not matches the specified provider", http.StatusForbidden)
 		return reverseproxy.Intercept, nil
 	}
 
-	// find provider
-	prov, ok := providers.FindProvider(credential.ProviderName, credential.ProviderInstanceID)
-	if !ok {
-		http.Error(w, "ProviderName Not Found", http.StatusNotFound)
+	// 取出这个 credential 对应的 provider
+	if ok, _ := (&prov).Retriever(q).Where(
+		prov.FieldName().Equal(credential.ProviderName),
+		prov.FieldInstanceID().Equal(credential.ProviderInstanceID),
+	).Get(); !ok {
+		http.Error(w, "ProviderName Not Found", http.StatusBadRequest)
 		return reverseproxy.Intercept, nil
 	}
 
-	// load data to context
+	// store data to context
 	m.Store(vars.MapKeyCredential{}, &credential)
-	m.Store(vars.MapKeyProvider{}, prov)
+	m.Store(vars.MapKeyProvider{}, &prov)
 
 	return reverseproxy.Continue, nil
 }

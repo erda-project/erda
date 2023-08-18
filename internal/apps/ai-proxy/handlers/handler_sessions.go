@@ -188,7 +188,7 @@ func (s *SessionsHandler) GetSession(ctx context.Context, req *pb.LocateSessionC
 	}
 
 	var session models.AIProxySessions
-	ok, err := (&session).Getter(s.Dao.Q()).
+	ok, err := (&session).Retriever(s.Dao.Q()).
 		Where(
 			session.FieldID().Equal(req.GetId()),
 			session.FieldUserID().Equal(userId),

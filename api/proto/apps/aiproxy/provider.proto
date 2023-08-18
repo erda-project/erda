@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "common/http.proto";
 
 service AIProvider {
-  rpc CreateProvider(Provider) returns (Provider) {
+  rpc CreateProvider(Provider) returns (common.VoidResponse) {
     option(google.api.http) = {
       post: "/api/ai-proxy/providers"
     };
@@ -46,7 +46,7 @@ message Provider {
   string scheme = 4;
   string description = 5;
   string docSite = 6;
-  string appKey = 7;
+  string apiKey = 7;
   string metadata = 8;
 }
 

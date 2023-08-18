@@ -35,7 +35,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -257,9 +256,9 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 	if !ok || prov == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov_ := prov.(*provider.Provider)
+	prov_ := prov.(*models.AIProxyProviders)
 	f.Audit.ProviderName = prov_.Name
-	f.Audit.ProviderInstanceID = prov_.InstanceId
+	f.Audit.ProviderInstanceID = prov_.InstanceID
 	return nil
 }
 
@@ -542,7 +541,7 @@ func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
 		if !ok {
 			return errors.New("provider not set in context map")
 		}
-		f.Audit.Server = prov.(*provider.Provider).Name
+		f.Audit.Server = prov.(*models.AIProxyProviders).Name
 	}
 	return nil
 }

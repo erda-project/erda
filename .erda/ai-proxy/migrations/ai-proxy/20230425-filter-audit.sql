@@ -24,6 +24,10 @@ CREATE TABLE `ai_proxy_filter_audit`
     `operation_id`          VARCHAR(128) NOT NULL COMMENT '调用的接口名称, HTTP Method + Path',
     `prompt`                MEDIUMTEXT   NOT NULL COMMENT '提示语',
     `completion`            LONGTEXT     NOT NULL COMMENT 'AI 回复多个 choices 中的一个',
+    `req_func_call_name`    VARCHAR(128) NOT NULL COMMENT 'function_call name in request message',
+    `req_func_call_args`    LONGTEXT     NOT NULL COMMENT 'function_call arguments in request message',
+    `res_func_call_name`    VARCHAR(128) NOT NULL COMMENT 'function_call name in response message',
+    `res_func_call_args`    LONGTEXT     NOT NULL COMMENT 'function_call arguments in response message',
     `metadata`              LONGTEXT     NOT NULL COMMENT '客户端要审计的其他信息',
 
     `x_request_id`          VARCHAR(64)  NOT NULL DEFAULT '' COMMENT 'http 请求中的 X-Request-Id',

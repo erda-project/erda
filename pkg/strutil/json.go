@@ -29,3 +29,9 @@ func TryGetYamlStr(v any) string {
 	data, _ := yaml.Marshal(v)
 	return string(data)
 }
+
+func YamlOrJsonToJson(data []byte) (json.RawMessage, error) {
+	var j = make(json.RawMessage, 0)
+	err := yaml.Unmarshal(data, &j)
+	return j, err
+}

@@ -12,26 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package ai_functions
 
-import (
-	"context"
-	"net/http"
-	"sync"
-)
+import "github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 
-func DoNothingDirector(_ *http.Request) {}
-
-func AppendDirectors(ctx context.Context, director ...func(r *http.Request)) {
-	m, ok := ctx.Value(CtxKeyMap{}).(*sync.Map)
-	if !ok {
-		return
-	}
-	var directors []func(*http.Request)
-	if value, ok := m.Load(MapKeyDirectors{}); ok && value != nil {
-		if dirs, ok := value.([]func(r *http.Request)); ok {
-			directors = dirs
-		}
-	}
-	m.Store(MapKeyDirectors{}, append(directors, director...))
+type Handlers interface {
+	AIFunction() pb.AiFunctionServer
 }

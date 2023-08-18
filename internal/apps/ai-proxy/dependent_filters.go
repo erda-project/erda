@@ -21,6 +21,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/openai-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/session-context"
 )

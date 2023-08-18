@@ -58,18 +58,20 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	return &ErdaAuth{Config: &cfg}, nil
 }
 
+func (f *ErdaAuth) Enable(_ context.Context, req *http.Request) bool {
+	for _, item := range f.Config.On {
+		if item == nil {
+			continue
+		}
+		if ok, _ := item.On(req.Header); ok {
+			return true
+		}
+	}
+	return false
+}
+
 func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
-
-	// check if this filter is enabled on this request
-	ok, err := f.checkIfIsEnabledOnTheRequest(infor)
-	if err != nil {
-		return reverseproxy.Intercept, err
-	}
-	if !ok {
-		l.Debugf("erda-auth is not enabled on the request, on: %+v", f.Config.On)
-		return reverseproxy.Continue, nil
-	}
 
 	// check if the platform is supported by the ai-proxy
 	platformName := infor.Header().Get(vars.XAIProxySource)
@@ -122,22 +124,6 @@ func (f *ErdaAuth) OnRequest(ctx context.Context, w http.ResponseWriter, infor r
 	return reverseproxy.Continue, nil
 }
 
-func (f *ErdaAuth) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (bool, error) {
-	for i, item := range f.Config.On {
-		if item == nil {
-			continue
-		}
-		ok, err := item.On(infor.Header())
-		if err != nil {
-			return false, errors.Wrapf(err, "invalid config: config.on[%d]", i)
-		}
-		if ok {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (f *ErdaAuth) getOpenapiSessionCookie(infor reverseproxy.HttpInfor) (*http.Cookie, error) {
 	cookie, err := infor.Cookie(httputil.CookieNameOpenapiSession)
 	if err == nil {
@@ -158,7 +144,7 @@ func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInf
 		q          = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
 		credential models.AIProxyCredentials
 	)
-	ok, err := (&credential).Getter(q).Where(
+	ok, err := (&credential).Retriever(q).Where(
 		credential.FieldName().Equal(infor.Header().Get(vars.XAIProxySource)),
 		credential.FieldName().NotEqual(""),
 		credential.FieldPlatform().Equal("erda"),
