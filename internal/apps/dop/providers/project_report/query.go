@@ -249,16 +249,32 @@ ORDER BY
             last_value(number_field_values[indexOf(number_field_keys,'online_bug_total')]) as bug_online_total,
             last_value(number_field_values[indexOf(number_field_keys,'iteration_reopen_bug_total')]) as bug_reopen_total,
             last_value(number_field_values[indexOf(number_field_keys,'iteration_task_inclusion_requirement_total')]) as task_associated_total,
-			last_value(number_field_values[indexOf(number_field_keys,'low_level_bug_total')]) as bug_low_level_total,
-			last_value(number_field_values[indexOf(number_field_keys,'iteration_bug_wontfix_total')]) as bug_wontfix_total,
-			last_value(number_field_values[indexOf(number_field_keys,'iteration_assignee_total')]) as iteration_unfinished_assignee_total
-        FROM monitor.external_metrics_all 
-        WHERE 
-            metric_group='%s' 
-            AND timestamp >= '%s' 
-            AND timestamp <= '%s' 
-            AND tag_values[indexOf(tag_keys,'org_id')] = '%d'
+            last_value(number_field_values[indexOf(number_field_keys,'low_level_bug_total')]) as bug_low_level_total,
+            last_value(number_field_values[indexOf(number_field_keys,'iteration_bug_wontfix_total')]) as bug_wontfix_total,
+            last_value(number_field_values[indexOf(number_field_keys,'iteration_assignee_total')]) as iteration_unfinished_assignee_total
+        FROM (
+        %s
+        )
+		GROUP BY
+            projectName,
+            projectID,
+            iteration_id,
+            timestamp,
+            empProjectCode
 `
+	dataSourceSql = `SELECT
+                *
+            FROM monitor.external_metrics_all
+            WHERE
+                metric_group='%s' 
+                AND timestamp >= '%s' 
+                AND timestamp <= '%s' 
+                AND tag_values[indexOf(tag_keys,'org_id')] = '%d'`
+
+	dataSourceOrderBy = `
+            ORDER BY
+                timestamp ASC`
+
 	lastValueGroupSql = `
         GROUP BY 
             tag_values[indexOf(tag_keys,'project_id')],
@@ -308,12 +324,12 @@ func (p *provider) queryProjectReport(rw http.ResponseWriter, r *http.Request) {
 		p.wrapBadRequest(rw, err)
 		return
 	}
+	dataSourceBasic := fmt.Sprintf(dataSourceSql, metricGroup, req.Start, req.End, req.OrgID)
 	lastValueWhereSql := genLastValueWhereSql(req)
-	lastValueBasic := fmt.Sprintf(lastValueBasicSql, metricGroup, req.Start, req.End, req.OrgID)
 	if lastValueWhereSql != "" {
-		lastValueBasic += " " + lastValueWhereSql
+		dataSourceBasic += " " + lastValueWhereSql
 	}
-	lastValueBasic += lastValueGroupSql
+	lastValueBasic := fmt.Sprintf(lastValueBasicSql, dataSourceBasic+dataSourceOrderBy)
 	basic := fmt.Sprintf(basicSql, lastValueBasic)
 	basicWhereSql := genBasicWhereSql(req)
 	if basicWhereSql != " " {
