@@ -70,7 +70,7 @@ func (h *CredentialsHandler) UpdateCredential(_ context.Context, credential *pb.
 		return nil, HTTPError(err, http.StatusBadRequest)
 	}
 	var model models.AIProxyCredentials
-	ok, err := (&model).Getter(h.Dao.Q()).Where(model.FieldAccessKeyID().Equal(credential.GetAccessKeyId())).Get()
+	ok, err := (&model).Retriever(h.Dao.Q()).Where(model.FieldAccessKeyID().Equal(credential.GetAccessKeyId())).Get()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find the credential")
 	}
@@ -117,7 +117,7 @@ func (h *CredentialsHandler) ListCredentials(_ context.Context, credential *pb.C
 
 func (h *CredentialsHandler) GetCredential(_ context.Context, req *pb.GetCredentialReq) (*pb.Credential, error) {
 	var credential models.AIProxyCredentials
-	ok, err := (&credential).Getter(h.Q()).Where(credential.FieldAccessKeyID().Equal(req.GetAccessKeyId())).Get()
+	ok, err := (&credential).Retriever(h.Q()).Where(credential.FieldAccessKeyID().Equal(req.GetAccessKeyId())).Get()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get credential")
 	}

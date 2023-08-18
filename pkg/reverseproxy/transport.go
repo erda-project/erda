@@ -18,11 +18,19 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 
+	"golang.org/x/net/http/httpproxy"
+
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 var (
@@ -63,7 +71,7 @@ type TimerTransport struct {
 func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 	if t.Inner == nil {
-		t.Inner = http.DefaultTransport
+		t.Inner = BaseTransport
 	}
 	res, err := t.Inner.RoundTrip(req)
 	t.Logger.Sub(reflect.TypeOf(t).String()).
@@ -78,17 +86,51 @@ type CurlPrinterTransport struct {
 
 func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.Inner == nil {
-		t.Inner = http.DefaultTransport
+		t.Inner = BaseTransport
 	}
 	t.Logger.Sub(reflect.TypeOf(t).String()).
 		Debug("generated cURL command:\n\t" + GenCurl(req))
 	return t.Inner.RoundTrip(req)
 }
 
+// ProxyConfig 是正向代理配置, 即 transport 出口流量的代理配置
+var ProxyConfig = &httpproxy.Config{
+	HTTPProxy:  os.Getenv("FORWARD_HTTP_PROXY"),
+	HTTPSProxy: os.Getenv("FORWARD_HTTPS_PROXY"),
+	NoProxy:    os.Getenv("NO_PROXY"),
+	CGI:        os.Getenv("REQUEST_METHOD") != "",
+}
+
+// BaseTransport 返回一个基础的 http.RoundTripper. 它检查 *http.Request 所请求的 host 是否在 FORWARD_PROXY_HOSTS 清单内,
+// 如果在清单内, 则使用 ProxyConfig 的代理配置, 如不在清单内, 则使用默认的代理配置 http.ProxyFromEnvironment.
+var BaseTransport http.RoundTripper = &http.Transport{
+	Proxy: func(req *http.Request) (*url.URL, error) {
+		hosts := strings.Split(os.Getenv("FORWARD_PROXY_HOSTS"), ",")
+		for _, host := range hosts {
+			if req.Host == host || req.URL.Host == host {
+				return ProxyConfig.ProxyFunc()(req.URL)
+			}
+		}
+		return http.ProxyFromEnvironment(req)
+	},
+	DialContext: (&net.Dialer{
+		Timeout:   60 * time.Second,
+		KeepAlive: 60 * time.Second,
+	}).DialContext,
+	TLSHandshakeTimeout:   10 * time.Second,
+	MaxIdleConns:          100,
+	IdleConnTimeout:       90 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+	ForceAttemptHTTP2:     true,
+}
+
 func GenCurl(req *http.Request) string {
 	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
 	for k, vv := range req.Header {
 		for _, v := range vv {
+			if strings.EqualFold(k, httputil.HeaderKeyContentLength) {
+				continue
+			}
 			curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
 		}
 	}
@@ -96,7 +138,7 @@ func GenCurl(req *http.Request) string {
 		var buf = bytes.NewBuffer(nil)
 		if _, err := buf.ReadFrom(req.Body); err == nil {
 			_ = req.Body.Close()
-			curl += ` --data '` + buf.String() + `'`
+			curl += ` --data ` + strconv.Quote(buf.String())
 			req.Body = io.NopCloser(buf)
 		}
 	}

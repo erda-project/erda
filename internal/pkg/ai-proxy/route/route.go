@@ -351,6 +351,7 @@ func NewPathMatcher(expr string) (*PathMatcher, error) {
 	}
 	var pm = PathMatcher{
 		Values: make(map[string]string),
+		mu:     new(sync.Mutex),
 	}
 	pm.match = func(path string) bool {
 		if !re.MatchString(path) {
@@ -360,7 +361,7 @@ func NewPathMatcher(expr string) (*PathMatcher, error) {
 		for _, subs := range matches {
 			for i, name := range re.SubexpNames() {
 				if i > 0 && i < len(subs) {
-					pm.Values[name] = subs[i]
+					pm.SetValue(name, subs[i])
 				}
 			}
 		}
@@ -373,10 +374,17 @@ type PathMatcher struct {
 	Values map[string]string
 
 	match func(path string) bool
+	mu    *sync.Mutex
 }
 
 func (p *PathMatcher) Match(path string) bool {
 	return p.match(path)
+}
+
+func (p *PathMatcher) SetValue(key, value string) {
+	p.mu.Lock()
+	p.Values[key] = value
+	p.mu.Unlock()
 }
 
 func IsComparable(v any) bool {

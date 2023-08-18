@@ -220,6 +220,9 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/monitor/core/storekit/elasticsearch/index/retention-strategy"
 	"github.com/erda-project/erda/internal/tools/monitor/extensions/loghub"
 	_ "github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/index/query"
+
+	// ai-function
+	_ "github.com/erda-project/erda/internal/pkg/ai-functions"
 )
 
 //go:embed bootstrap.yaml

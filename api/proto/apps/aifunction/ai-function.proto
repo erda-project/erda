@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package erda.apps.aifunction;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aifunction/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "common/http.proto";
+import "common/openapi.proto";
+
+service AiFunction {
+  option(erda.common.openapi_service) = {
+    service: "erda-server",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc Apply(ApplyRequest) returns (google.protobuf.Value) {
+    option(google.api.http) = {
+      post: "/api/ai-functions/{functionName}/actions/apply"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-functions/{functionName}/actions/apply"
+    };
+  }
+}
+
+message ApplyRequest {
+  string functionName = 1;
+  Prompt prompt = 2;
+  Background background = 3;
+}
+
+message Background {
+  string userID = 1;
+  uint64 orgID = 2;
+  string orgName = 3;
+  uint64 projectID = 4;
+  string projectName = 5;
+  uint64 applicationID = 6;
+  string applicationName = 7;
+  uint64 runtimeID = 8;
+  string referer = 9;
+}
+
+message Prompt {
+  string prompt = 1;
+}

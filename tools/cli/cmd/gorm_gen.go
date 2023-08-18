@@ -62,60 +62,135 @@ var (
 	_ Creator = &creator{}
 	_ Deleter = &deleter{}
 	_ Updater = &updater{}
-	_ Getter  = &getter{}
+	_ Retriever = &retriever{}
 	_ Pager   = &pager{}
 )
 
+// CRUDer represents an interface that can perform CRUD operations.
+type CRUDer interface {
+	// Creator returns a Creator interface that you can create record with.
+	Creator(db *gorm.DB) Creator
+	// Retriever returns a Retriever that you can select one record with.
+	Retriever(db *gorm.DB) Retriever
+	// Updater returns an Updater that you can update records with.
+	Updater(db *gorm.DB) Updater
+	// Deleter returns a Deleter that you can delete records with. 
+	Deleter(db *gorm.DB) Deleter
+}
+
+// Lister represents an interface that can query multi records with.
+type Lister interface {
+	// Pager returns a Pager that you can query records by paging with.
+	Pager(db*gorm.DB) Pager
+}
+
+// Field contains some operations on the model field.
+// The reason for generating such an interface is to make it easier to express field operations 
+// without having to pass a string when using the gorm interface.
 type Field interface {
+	// IsNull returns the condition "xx IS NULL"
 	IsNull() Where
+	// IsNotNull returns the condition "xx IS NOT NULL"
 	IsNotNull() Where
+	// Equal returns the condition expression "xx = ?, v"
 	Equal(v any) Where
+	// NotEqual returns the condition expression "xx != ?, v"
 	NotEqual(v any) Where
-	In([]any) Where
-	NotIn([]any) Where
+	// In returns the condition expression "xx IN (?), v"
+	In(v []any) Where
+	// NotIn returns the condition expression "xx NOT IN (?), v" 
+	NotIn(v []any) Where
+	// LessThan returns the condition expression "xx < ?, v"
 	LessThan(v any) Where
+	// MoreThan returns the condition expression "xx > ?, v" 
 	MoreThan(v any) Where
+	// LessEqualThan returns the condition expression "xx <= ?, v" 
 	LessEqualThan(v any) Where
+	// MoreEqualThan returns the condition expression "xx >= ?, v" 
 	MoreEqualThan(v any) Where
+	// Set returns a Setter for the Field which will be set in the UPDATE clause. 
 	Set(v any) Setter
+	// DESC means that the query results are sorted in descending order by the Field.
+	// It's used in the last parameter of the method Pager.Paging.
 	DESC() string
+	// ASC means the query results are in ascending order by the Field.
+	// It is used in the last parameter of the method Pager.Paging
 	ASC() string
 }
 
+// Where denotes a query condition.
+// It represents a WHERE clause.
 type Where interface {
 	Query() any
 	Args() []any
 }
 
+// Setter indicates that the "UPDATE ... SET ..." statement.
 type Setter interface {
 	Key() string
 	Value() any
 }
+
+// Creator is used to create a record.
+// It is used to represent an "INSERT INTO" statement.
 type Creator interface {
+	// Create executes "INSERT INTO" clause on the table.
+	// It create a record for the model.
+	// It reflects the creation result back to the given model structure pointer.
 	Create() error
 }
 
+// Deleter is used to delete records.
+// It represents a DELETE statement.
 type Deleter interface {
+	// Where returns a Deleter with the conditions.
 	Where(wheres ...Where) Deleter
+	// Delete executes "DELETE" clause on the table.
+	// It deletes records with the conditions on the table.
+	// It returns affected rows or an error.
 	Delete() (affects int64, err error)
 }
 
+// Updater is used to update a record.
+// It represents an UPDATE SET statement.
 type Updater interface {
+	// Where returns an Updater with the conditions.
 	Where(wheres ...Where) Updater
+	// Set returns an Updater with fields that will be set in the UPDATE clause.
 	Set(setters ...Setter) Updater
-	Updates(setters ...Setter) (affects int64, err error)
+	// Update executes "UPDATE ... SET ..." clause.
+	// It updates the whole model.
+	// It returns affected rows or an error.
     Update() (affects int64, err error)
+	// Updates is a short cut for .Set(...).Updates() and updates fields by given.
+	Updates(setters ...Setter) (affects int64, err error)
 }
 
-type Getter interface {
-	Where(wheres ...Where) Getter
+// Retriever is used to query for a record that matches a condition.
+// It represents the "SELECT ... LIMIT 1" statement.
+type Retriever interface {
+	// Where returns an Retriever with the conditions.
+	Where(wheres ...Where) Retriever
+	// Get executes the "SELECT . LIMIT 1" statement.
+	// If the query fails, return (false, err).
+	// If the query row is not found, return (false, nil), 
+	// so the caller doesn't have to decide the err for itself by errors.Is(err, gorm.ErrRecordNotFound).
+	// If there is at least one record that matches the condition, return (true, nil), 
+	// and reflect the result back to the given model struct pointer.
 	Get() (ok bool, err error)
 }
 
+// Pager is used to query for multiple matching records.
+// It means "select ... offset ... limit ..." statement.
 type Pager interface {
+	// Where sets conditions for paging.
 	Where(wheres ...Where) Pager
+
+	// Paging reflects the results of a paging query to the specified slice, returning count and error.
+	// When paging is not needed, pass -1, -1 for size and num.
 	Paging(size, num int, orders ...string) (total int64, err error)
 }
+
 type field struct {
 	name string
 }
@@ -266,18 +341,18 @@ func (u *updater) Update() (int64, error) {
 	return db.RowsAffected, err
 }
 
-type getter struct {
+type retriever struct {
 	model any
 	db    *gorm.DB
 	where []Where
 }
 
-func (g *getter) Where(wheres ...Where) Getter {
+func (g *retriever) Where(wheres ...Where) Retriever {
 	g.where = append(g.where, wheres...)
 	return g
 }
 
-func (g *getter) Get() (bool, error) {
+func (g *retriever) Get() (bool, error) {
 	var db = g.db
 	for _, w := range g.where {
 		db = db.Where(w.Query(), w.Args()...)
@@ -309,12 +384,14 @@ func (p *pager) Paging(size, num int, orders ...string) (int64, error) {
 		db = db.Where(w.Query(), w.Args()...)
 	}
 	var count int64
-	err := db.Count(&count).Error
-	if err != nil {
+	if err := db.Count(&count).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, nil
 		}
 		return 0, err
+	}
+	if count == 0 {
+		return 0, nil
 	}
 	if num > 0 && size >= 0 {
 		db = db.Limit(size).Offset((num - 1) * size)
@@ -322,7 +399,13 @@ func (p *pager) Paging(size, num int, orders ...string) (int64, error) {
 	for _, order := range orders {
 		db = db.Order(order)
 	}
-	return count, db.Find(p.list).Error
+	if err := db.Find(p.list).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return count, nil
 }
 `
 
@@ -356,24 +439,32 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	_ CRUDer = (*{{$.SName}})(nil)
+	_ Lister = (*{{$.SName}}List)(nil)
+)
+
 {{range $field := .Fields}}
 // Field{{.Name}} returns the Field interface{} for the field {{$.TableName}}.{{.Column}}
 func (this *{{$.SName}}) Field{{.Name}} () Field { return field{name: "{{.Column}}"} }
 
 {{end}}
 
+// Creator returns a Creator interface that you can create record with.
 func (this *{{$.SName}}) Creator(db *gorm.DB) Creator {
 	return &creator{db: db, model: this}
 }
 
-func (this *{{$.SName}}) Deleter(db *gorm.DB) Deleter {
-	return &deleter{
+// Retriever returns a Retriever that you can select one record with.
+func (this *{{$.SName}}) Retriever(db *gorm.DB) Retriever {
+	return &retriever{
 		db:    db.Model(this),
 		model: this,
 		where: make([]Where, 0),
 	}
 }
 
+// Updater returns an Updater that you can update records with.
 func (this *{{$.SName}}) Updater(db *gorm.DB) Updater {
 	return &updater{
 		db:      db.Model(this),
@@ -383,8 +474,9 @@ func (this *{{$.SName}}) Updater(db *gorm.DB) Updater {
 	}
 }
 
-func (this *{{$.SName}}) Getter(db *gorm.DB) Getter {
-	return &getter{
+// Deleter returns a Deleter that you can delete records with.
+func (this *{{$.SName}}) Deleter(db *gorm.DB) Deleter {
+	return &deleter{
 		db:    db.Model(this),
 		model: this,
 		where: make([]Where, 0),
@@ -397,6 +489,7 @@ func (list {{$.SName}}List) Field{{.Name}} () Field { return field{name: "{{.Col
 
 {{end}}
 
+// Pager returns a Pager that you can query records by paging with.
 func (list *{{$.SName}}List) Pager(db *gorm.DB) Pager {
 	return &pager{
 		db:    db,
@@ -419,7 +512,7 @@ var GormGen = command.Command{
 	Name:       "gen",
 	ShortHelp:  "gen Go struct from create table stmt",
 	LongHelp:   "gen Go struct from create table stmt",
-	Example:    "erda-cli gorm gen --create-table 'create table t (id varchar(64))' --output app/models",
+	Example:    "erda-cli gorm gen -f some-file.sql --output app/models",
 	Flags: []command.Flag{
 		command.StringFlag{
 			Short:        "f",
@@ -464,7 +557,7 @@ func RunGormGen(ctx *command.Context, filename, output string) error {
 	var packageCommon bytes.Buffer
 	var pkg = Package{
 		License: license,
-		Source:  filename,
+		Source:  "",
 		Package: path.Base(output),
 	}
 	if err := template.Must(template.New("package_common").Parse(templatePackage)).Execute(&packageCommon, pkg); err != nil {
@@ -480,6 +573,13 @@ func RunGormGen(ctx *command.Context, filename, output string) error {
 		return errors.Wrap(err, "failed to format.Source where.go")
 	}
 	files[path.Join(output, "crud.go")] = source
+
+	// regenerate package common
+	(&packageCommon).Reset()
+	pkg.Source = fmt.Sprintf("bin/erda-cli gorm gen -f %s -o %s", filename, output)
+	if err := template.Must(template.New("package_common").Parse(templatePackage)).Execute(&packageCommon, pkg); err != nil {
+		return err
+	}
 
 	// generate every table
 	data, err := os.ReadFile(filename)

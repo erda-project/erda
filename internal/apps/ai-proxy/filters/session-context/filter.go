@@ -22,9 +22,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
@@ -59,20 +57,23 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	return &SessionContext{Config: &cfg}, nil
 }
 
+func (c *SessionContext) Enable(_ context.Context, req *http.Request) bool {
+	for _, item := range c.Config.On {
+		if item == nil {
+			continue
+		}
+		if ok, _ := item.On(req.Header); ok {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var (
 		l  = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
 		db = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
 	)
-
-	// check if this filter is enabled on this request
-	ok, err := c.checkIfIsEnabledOnTheRequest(infor)
-	if err != nil {
-		return reverseproxy.Intercept, err
-	}
-	if !ok {
-		return reverseproxy.Continue, nil
-	}
 
 	sessionId := infor.Header().Get(vars.XAIProxySessionId)
 	if sessionId == "" {
@@ -118,15 +119,18 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	}
 	messages = []Message{messages[len(messages)-1]}
 	if session.GetContextLength() > 1 {
-		var audits []*models.AIProxyFilterAudit
-		if err := db.Q().
-			Where(map[string]any{"session_id": sessionId}).
-			Where("updated_at > ?", session.ResetAt.AsTime()).
-			Order("created_at DESC").
-			Limit(int(session.GetContextLength()) - 1).
-			Find(&audits).
-			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			l.Errorf("failed to Find audits for session %s", sessionId)
+		var audits models.AIProxyFilterAuditList
+		total, err := (&audits).Pager(db.Q().Debug()).
+			Where(
+				audits.FieldSessionID().Equal(sessionId),
+				audits.FieldUpdatedAt().MoreThan(session.ResetAt.AsTime()),
+			).
+			Paging(int(session.GetContextLength()-1), 1, audits.FieldCreatedAt().DESC())
+		if err != nil {
+			l.Errorf("failed to Find audits in the session %s, err: %v", sessionId, err)
+		}
+		if total == 0 {
+			l.Debugf("no context in the session %s", sessionId)
 		}
 		for _, item := range audits {
 			messages = append(messages,
@@ -138,15 +142,23 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 				Message{
 					Role:    "user",
 					Content: item.Prompt,
-					Name:    infor.Header().Get(vars.XAIProxyUsername),
+					Name:    "erda",
 				})
 		}
+	} else {
+		l.Debugf("session context length is less then 1, no context appended")
 	}
-	messages = append(messages, Message{
-		Role:    "system",
-		Content: c.Config.SysMsg + "\ntopic: " + session.GetTopic(),
-		Name:    "system",
-	})
+	messages = append(messages,
+		Message{
+			Role:    "system",
+			Content: "topic: " + session.GetTopic(),
+			Name:    "system",
+		},
+		Message{
+			Role:    "system",
+			Content: c.Config.SysMsg,
+			Name:    "system",
+		})
 	strutil.ReverseSlice(messages)
 	m["messages"], err = json.Marshal(messages)
 	if err != nil {
@@ -161,22 +173,6 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	infor.SetBody(io.NopCloser(bytes.NewBuffer(data)), int64(len(data)))
 	l.Debugf("infor new body buffer: %s", infor.BodyBuffer().String())
 	return reverseproxy.Continue, nil
-}
-
-func (c *SessionContext) checkIfIsEnabledOnTheRequest(infor reverseproxy.HttpInfor) (bool, error) {
-	for i, item := range c.Config.On {
-		if item == nil {
-			continue
-		}
-		ok, err := item.On(infor.Header())
-		if err != nil {
-			return false, errors.Wrapf(err, "invalid config: config.on[%d]", i)
-		}
-		if ok {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (c *SessionContext) updateSession(ctx context.Context, id string) {
@@ -195,7 +191,7 @@ func (c *SessionContext) updateSession(ctx context.Context, id string) {
 
 type Config struct {
 	SysMsg string       `json:"sysMsg" yaml:"sysMsg"`
-	On     []*common.On `json:"on" yaml:"o"`
+	On     []*common.On `json:"on" yaml:"on"`
 }
 
 type Message struct {
