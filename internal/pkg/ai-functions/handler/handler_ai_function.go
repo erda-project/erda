@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"net/http"
 	"net/url"
 
@@ -31,6 +30,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
