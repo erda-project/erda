@@ -57,7 +57,7 @@ const (
 
 var azMutex []*sync.Mutex
 
-// Nginx 配置 llocations 部分，more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return 等允许多次设置
+// Nginx 配置 llocations 部分，more_set_headers、proxy_set_header、set、limit_req、limit_conn、error_page、deny、allow、return、add_header 等允许多次设置
 var skipKeys = map[string]bool{
 	"more_set_headers": true,
 	"proxy_set_header": true,
@@ -68,6 +68,7 @@ var skipKeys = map[string]bool{
 	"deny":             true,
 	"allow":            true,
 	"return":           true,
+	"add_header":       true,
 }
 
 func init() {
