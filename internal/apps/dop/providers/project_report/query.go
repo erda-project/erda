@@ -73,6 +73,7 @@ type ProjectReportRow struct {
 	BugWontfixTotal            float64   `json:"bugWontfixTotal" ch:"bugWontfixTotal"`
 	IterationAssigneeTotal     float64   `json:"iterationAssigneeTotal" ch:"iterationAssigneeTotal"`
 	ProjectName                string    `json:"projectName" ch:"projectName"`
+	ProjectDisplayName         string    `json:"projectDisplayName" ch:"projectDisplayName"`
 	ProjectID                  string    `json:"projectID" ch:"projectID"`
 	Timestamp                  time.Time `json:"timestamp" ch:"timestamp"`
 	EmpProjectCode             string    `json:"empProjectCode" ch:"empProjectCode"`
@@ -121,6 +122,7 @@ SELECT
     bugWontfixTotal,
     iterationAssigneeTotal,
     projectName,
+    projectDisplayName,
     projectID,
     timestamp,
     empProjectCode
@@ -163,6 +165,7 @@ FROM
     	sum(bug_wontfix_total) as bugWontfixTotal,
     	sum(iteration_unfinished_assignee_total) as iterationAssigneeTotal,
         projectName,
+        projectDisplayName,
         projectID,
         timestamp,
         empProjectCode
@@ -172,6 +175,7 @@ FROM
     )
     GROUP BY
         projectName,
+        projectDisplayName,
         projectID,
         timestamp,
         empProjectCode
@@ -217,6 +221,7 @@ GROUP BY
     bugWontfixTotal,
     iterationAssigneeTotal,
     projectName,
+    projectDisplayName,
     projectID,
     timestamp,
     empProjectCode
@@ -226,6 +231,7 @@ ORDER BY
 `
 	lastValueBasicSql = `SELECT 
             tag_values[indexOf(tag_keys,'project_name')] as projectName,
+            tag_values[indexOf(tag_keys,'project_display_name')] as projectDisplayName,
             tag_values[indexOf(tag_keys,'project_id')] as projectID,
             tag_values[indexOf(tag_keys,'iteration_id')] as iteration_id,
             tag_values[indexOf(tag_keys,'emp_project_code')] as empProjectCode,
@@ -257,6 +263,7 @@ ORDER BY
         )
 		GROUP BY
             projectName,
+            projectDisplayName,
             projectID,
             iteration_id,
             timestamp,
@@ -279,6 +286,7 @@ ORDER BY
         GROUP BY 
             tag_values[indexOf(tag_keys,'project_id')],
             tag_values[indexOf(tag_keys,'project_name')],
+            tag_values[indexOf(tag_keys,'project_display_name')],
             timestamp,
             tag_values[indexOf(tag_keys,'iteration_id')],
             tag_values[indexOf(tag_keys,'emp_project_code')]  
@@ -404,6 +412,10 @@ func genLastValueWhereSql(req *apistructs.ProjectReportRequest) string {
 		iterationIDSql = fmt.Sprintf("AND tag_values[indexOf(tag_keys,'iteration_id')] IN (%s)", strings.Join(iterationIDs, ","))
 	}
 	for _, query := range req.LabelQuerys {
+		if query.Key == labelProjectName {
+			labelQuerySql += fmt.Sprintf("AND (tag_values[indexOf(tag_keys,'%s')] like '%%%s%%' or tag_values[indexOf(tag_keys,'%s')] like '%%%s%%') ", labelProjectName, query.Val, labelProjectDisplayName, query.Val)
+			continue
+		}
 		if query.Operation == "like" {
 			labelQuerySql += fmt.Sprintf("AND tag_values[indexOf(tag_keys,'%s')] %s '%%%s%%' ", query.Key, query.Operation, query.Val)
 			continue

@@ -343,6 +343,7 @@ func (p *provider) iterationLabelsFunc(iter *IterationInfo) map[string]string {
 		return labels
 	}
 	labels[labelProjectName] = projectDto.Name
+	labels[labelProjectDisplayName] = projectDto.DisplayName
 	labels[labelOrgID] = strconv.FormatInt(projectDto.OrgID, 10)
 	orgDto := p.orgSet.Get(uint64(projectDto.OrgID))
 	if orgDto == nil {
