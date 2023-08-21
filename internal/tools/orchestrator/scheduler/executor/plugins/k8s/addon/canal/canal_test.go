@@ -63,3 +63,38 @@ func TestCanalOperator(t *testing.T) {
 	mo.Update(sg)
 	mo.Remove(sg)
 }
+
+func TestCanalOperator2(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ns := mock.NewMockNamespaceUtil(ctrl)
+
+	mo := New(new(k8s), ns, nil, nil, httpclient.New())
+	sg := new(apistructs.ServiceGroup)
+	sg.Services = append(sg.Services, apistructs.Service{
+		Name: "canal",
+	})
+	sg.ID = "abcdefghigklmn"
+	mo.Name(sg)
+	mo.NamespacedName(sg)
+	mo.IsSupported()
+	mo.Validate(sg)
+	sg.Labels = make(map[string]string)
+	sg.Labels["USE_OPERATOR"] = "canal"
+	mo.Validate(sg)
+	sg.Services[0].Env = make(map[string]string)
+	mo.Validate(sg)
+	sg.Services[0].Env["CANAL_DESTINATION"] = "b"
+	sg.Services[0].Env["canal.admin.manager"] = "127.0.0.1:8089"
+	sg.Services[0].Env["spring.datasource.address"] = "1"
+	sg.Services[0].Env["spring.datasource.address"] = "1"
+	sg.Services[0].Env["spring.datasource.username"] = "2"
+	sg.Services[0].Env["spring.datasource.password"] = "3"
+	mo.Validate(sg)
+	mo.Convert(sg)
+	mo.Create(sg)
+	mo.Inspect(sg)
+	mo.Update(sg)
+	mo.Remove(sg)
+}
