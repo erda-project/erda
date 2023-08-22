@@ -73,6 +73,7 @@ type ProjectReportRow struct {
 	BugWontfixTotal            float64   `json:"bugWontfixTotal" ch:"bugWontfixTotal"`
 	IterationAssigneeTotal     float64   `json:"iterationAssigneeTotal" ch:"iterationAssigneeTotal"`
 	ProjectName                string    `json:"projectName" ch:"projectName"`
+	ProjectDisplayName         string    `json:"projectDisplayName" ch:"projectDisplayName"`
 	ProjectID                  string    `json:"projectID" ch:"projectID"`
 	Timestamp                  time.Time `json:"timestamp" ch:"timestamp"`
 	EmpProjectCode             string    `json:"empProjectCode" ch:"empProjectCode"`
@@ -121,6 +122,7 @@ SELECT
     bugWontfixTotal,
     iterationAssigneeTotal,
     projectName,
+    projectDisplayName,
     projectID,
     timestamp,
     empProjectCode
@@ -163,6 +165,7 @@ FROM
     	sum(bug_wontfix_total) as bugWontfixTotal,
     	sum(iteration_unfinished_assignee_total) as iterationAssigneeTotal,
         projectName,
+        projectDisplayName,
         projectID,
         timestamp,
         empProjectCode
@@ -172,6 +175,7 @@ FROM
     )
     GROUP BY
         projectName,
+        projectDisplayName,
         projectID,
         timestamp,
         empProjectCode
@@ -217,6 +221,7 @@ GROUP BY
     bugWontfixTotal,
     iterationAssigneeTotal,
     projectName,
+    projectDisplayName,
     projectID,
     timestamp,
     empProjectCode
@@ -225,45 +230,74 @@ ORDER BY
     projectID ASC
 `
 	lastValueBasicSql = `SELECT 
-            tag_values[indexOf(tag_keys,'project_name')] as projectName,
-            tag_values[indexOf(tag_keys,'project_id')] as projectID,
-            tag_values[indexOf(tag_keys,'iteration_id')] as iteration_id,
-            tag_values[indexOf(tag_keys,'emp_project_code')] as empProjectCode,
+            projectName as projectName,
+            projectDisplayName as projectDisplayName,
+            projectID as projectID,
+            iteration_id as iteration_id,
+            empProjectCode as empProjectCode,
             toStartOfInterval(timestamp, INTERVAL 1 day) as timestamp,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_requirement_total')]) as requirement_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_bug_total')]) as bug_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_task_total')]) as task_total,
-            last_value(number_field_values[indexOf(number_field_keys,'emp_project_budget_manday_total')]) as budget_manday_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_task_estimated_minute')]) as task_estimated_minute,
-            last_value(number_field_values[indexOf(number_field_keys,'emp_project_actual_manday_total')]) as actual_manday_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_task_done_total')]) as task_done_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_task_working_total')]) as task_working_total,
-            last_value(number_field_values[indexOf(number_field_keys,'project_assignee_total')]) as unfinished_assignee_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_requirement_done_total')]) as requirement_done_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_requirement_associated_task_total')]) as requirement_associated_total,
-            last_value(number_field_values[indexOf(number_field_keys,'requirement_unassigned_total')]) as requirement_unassigned_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_task_unassociated_total')]) as task_unassigned_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_bug_undone_total')]) as bug_undone_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_serious_bug_total')]) as bug_serious_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_demand_design_bug_total')]) as bug_demand_design_total,
-            last_value(number_field_values[indexOf(number_field_keys,'online_bug_total')]) as bug_online_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_reopen_bug_total')]) as bug_reopen_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_task_inclusion_requirement_total')]) as task_associated_total,
-            last_value(number_field_values[indexOf(number_field_keys,'low_level_bug_total')]) as bug_low_level_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_bug_wontfix_total')]) as bug_wontfix_total,
-            last_value(number_field_values[indexOf(number_field_keys,'iteration_assignee_total')]) as iteration_unfinished_assignee_total
+            last_value(requirement_total) as requirement_total,
+            last_value(bug_total) as bug_total,
+            last_value(task_total) as task_total,
+            last_value(budget_manday_total) as budget_manday_total,
+            last_value(task_estimated_minute) as task_estimated_minute,
+            last_value(actual_manday_total) as actual_manday_total,
+            last_value(task_done_total) as task_done_total,
+            last_value(task_working_total) as task_working_total,
+            last_value(unfinished_assignee_total) as unfinished_assignee_total,
+            last_value(requirement_done_total) as requirement_done_total,
+            last_value(requirement_associated_total) as requirement_associated_total,
+            last_value(requirement_unassigned_total) as requirement_unassigned_total,
+            last_value(task_unassigned_total) as task_unassigned_total,
+            last_value(bug_undone_total) as bug_undone_total,
+            last_value(bug_serious_total) as bug_serious_total,
+            last_value(bug_demand_design_total) as bug_demand_design_total,
+            last_value(bug_online_total) as bug_online_total,
+            last_value(bug_reopen_total) as bug_reopen_total,
+            last_value(task_associated_total) as task_associated_total,
+            last_value(bug_low_level_total) as bug_low_level_total,
+            last_value(bug_wontfix_total) as bug_wontfix_total,
+            last_value(iteration_unfinished_assignee_total) as iteration_unfinished_assignee_total
         FROM (
         %s
         )
 		GROUP BY
             projectName,
+            projectDisplayName,
             projectID,
             iteration_id,
             timestamp,
             empProjectCode
 `
 	dataSourceSql = `SELECT
-                *
+                tag_values[indexOf(tag_keys,'project_name')] as projectName,
+	            tag_values[indexOf(tag_keys,'project_display_name')] as projectDisplayName,
+	            tag_values[indexOf(tag_keys,'project_id')] as projectID,
+	            tag_values[indexOf(tag_keys,'iteration_id')] as iteration_id,
+	            tag_values[indexOf(tag_keys,'emp_project_code')] as empProjectCode,
+	            timestamp,
+	            number_field_values[indexOf(number_field_keys,'iteration_requirement_total')] as requirement_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_bug_total')] as bug_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_task_total')] as task_total,
+	            number_field_values[indexOf(number_field_keys,'emp_project_budget_manday_total')] as budget_manday_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_task_estimated_minute')] as task_estimated_minute,
+	            number_field_values[indexOf(number_field_keys,'emp_project_actual_manday_total')] as actual_manday_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_task_done_total')] as task_done_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_task_working_total')] as task_working_total,
+	            number_field_values[indexOf(number_field_keys,'project_assignee_total')] as unfinished_assignee_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_requirement_done_total')] as requirement_done_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_requirement_associated_task_total')] as requirement_associated_total,
+	            number_field_values[indexOf(number_field_keys,'requirement_unassigned_total')] as requirement_unassigned_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_task_unassociated_total')] as task_unassigned_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_bug_undone_total')] as bug_undone_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_serious_bug_total')] as bug_serious_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_demand_design_bug_total')] as bug_demand_design_total,
+	            number_field_values[indexOf(number_field_keys,'online_bug_total')] as bug_online_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_reopen_bug_total')] as bug_reopen_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_task_inclusion_requirement_total')] as task_associated_total,
+	            number_field_values[indexOf(number_field_keys,'low_level_bug_total')] as bug_low_level_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_bug_wontfix_total')] as bug_wontfix_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_assignee_total')] as iteration_unfinished_assignee_total
             FROM monitor.external_metrics_all
             WHERE
                 metric_group='%s' 
@@ -279,6 +313,7 @@ ORDER BY
         GROUP BY 
             tag_values[indexOf(tag_keys,'project_id')],
             tag_values[indexOf(tag_keys,'project_name')],
+            tag_values[indexOf(tag_keys,'project_display_name')],
             timestamp,
             tag_values[indexOf(tag_keys,'iteration_id')],
             tag_values[indexOf(tag_keys,'emp_project_code')]  
@@ -404,6 +439,10 @@ func genLastValueWhereSql(req *apistructs.ProjectReportRequest) string {
 		iterationIDSql = fmt.Sprintf("AND tag_values[indexOf(tag_keys,'iteration_id')] IN (%s)", strings.Join(iterationIDs, ","))
 	}
 	for _, query := range req.LabelQuerys {
+		if query.Key == labelProjectName {
+			labelQuerySql += fmt.Sprintf("AND (tag_values[indexOf(tag_keys,'%s')] like '%%%s%%' or tag_values[indexOf(tag_keys,'%s')] like '%%%s%%') ", labelProjectName, query.Val, labelProjectDisplayName, query.Val)
+			continue
+		}
 		if query.Operation == "like" {
 			labelQuerySql += fmt.Sprintf("AND tag_values[indexOf(tag_keys,'%s')] %s '%%%s%%' ", query.Key, query.Operation, query.Val)
 			continue

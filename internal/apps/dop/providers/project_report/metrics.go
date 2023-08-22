@@ -30,8 +30,9 @@ const (
 )
 
 const (
-	labelOrgName     = "org_name"
-	labelProjectName = "project_name"
+	labelOrgName            = "org_name"
+	labelProjectName        = "project_name"
+	labelProjectDisplayName = "project_display_name"
 
 	labelMeta           = "_meta"
 	labelMetricScope    = "_metric_scope"
