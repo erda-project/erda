@@ -93,8 +93,7 @@
               "ta_timing"
             ],
             "groupby": [
-              "time()",
-              "browser::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
@@ -216,8 +215,7 @@
               "ta_timing"
             ],
             "groupby": [
-              "time()",
-              "browser::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
