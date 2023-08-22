@@ -89,8 +89,7 @@
               "ta_error"
             ],
             "groupby": [
-              "time()",
-              "error::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
@@ -208,8 +207,7 @@
               "ta_error"
             ],
             "groupby": [
-              "time()",
-              "browser::tag"
+              "time()"
             ],
             "orderby": [],
             "select": [
