@@ -15,9 +15,19 @@
 package mux
 
 import (
+	"net/http"
 	"reflect"
+	"strings"
+	"time"
 
+	"github.com/gorilla/mux"
+
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+)
+
+var (
+	_ Mux = (*provider)(nil)
 )
 
 var (
@@ -38,22 +48,29 @@ func init() {
 
 type provider struct {
 	Config *Config
+	L      logs.Logger
 
-	mux Mux
+	Router *mux.Router
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.mux = New()
+	p.Router = mux.NewRouter()
 	return nil
-}
-
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...any) any {
-	return p.mux
 }
 
 // Start .
 func (p *provider) Start() error {
-	p.mux.LitenAndServe(p.Config.Addr)
+	go func() {
+		p.L.Infof("LitenAndServe %s", p.Config.Addr)
+		if err := (&http.Server{
+			Addr:              p.Config.Addr,
+			Handler:           p.Router,
+			ReadTimeout:       time.Second * 60,
+			ReadHeaderTimeout: time.Second * 60,
+		}).ListenAndServe(); err != nil {
+			p.L.Fatalf("failed to LitenAndServe %s: %v", err)
+		}
+	}()
 	return nil
 }
 
@@ -62,6 +79,39 @@ func (p *provider) Close() error {
 	return nil
 }
 
+func (p *provider) Handle(path, method string, h http.Handler, middles ...Middle) {
+	p.L.Infof("handle %s %s", path, method)
+	h = Wraps(h, middles...)
+	if method == "*" {
+		p.Router.Path(path).Handler(h)
+	} else {
+		p.Router.Path(path).Methods(strings.ToUpper(method)).Handler(h)
+	}
+}
+
+func (p *provider) HandlePrefix(prefix, method string, h http.Handler, middles ...Middle) {
+	p.L.Infof("handle prefix %s %s", prefix, method)
+	h = Wraps(h, middles...)
+	if method == "*" {
+		p.Router.PathPrefix(prefix).Handler(h)
+	} else {
+		p.Router.PathPrefix(prefix).Methods(strings.ToUpper(method)).Handler(h)
+	}
+}
+
+func (p *provider) HandleMatch(match func(r *http.Request) bool, h http.Handler, middles ...Middle) {
+	p.L.Infof("handle match %T", match)
+	h = Wraps(h, middles...)
+	p.Router.MatcherFunc(func(req *http.Request, _ *mux.RouteMatch) bool { return match(req) }).Handler(h)
+}
+
 type Config struct {
 	Addr string `json:"addr" yaml:"addr"`
+}
+
+func Wraps(h http.Handler, middles ...Middle) http.Handler {
+	for _, m := range middles {
+		h = m(h)
+	}
+	return h
 }
