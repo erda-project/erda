@@ -34,8 +34,35 @@ func (r *Canal) Default() {
 		r.Spec.CanalOptions = make(map[string]string)
 	}
 	if r.Spec.CanalOptions["canal.admin.manager"] != "" {
+		//TODO：admin和server各自独立部署，在admin中配置server
+
+		// if r.Spec.AdminOptions["spring.datasource.address"] == "" {
+		// 	r.Spec.AdminOptions["spring.datasource.address"] = "127.0.0.1:3306"
+		// }
+		if r.Spec.AdminOptions["spring.datasource.database"] == "" {
+			r.Spec.AdminOptions["spring.datasource.database"] = "canal_manager"
+		}
+		// if r.Spec.AdminOptions["spring.datasource.username"] == "" {
+		// 	r.Spec.AdminOptions["spring.datasource.username"] = "canal"
+		// }
+		// if r.Spec.AdminOptions["spring.datasource.password"] == "" {
+		// 	r.Spec.AdminOptions["spring.datasource.password"] = "canal"
+		// }
+		if r.Spec.AdminOptions["canal.adminUser"] == "" {
+			r.Spec.AdminOptions["canal.adminUser"] = "admin"
+		}
+		if r.Spec.AdminOptions["canal.adminPasswd"] == "" {
+			r.Spec.AdminOptions["canal.adminPasswd"] = "admin"
+		}
+
 		if r.Spec.CanalOptions["canal.admin.port"] == "" {
 			r.Spec.CanalOptions["canal.admin.port"] = "11110"
+		}
+		if r.Spec.CanalOptions["canal.admin.user"] == "" {
+			r.Spec.CanalOptions["canal.admin.user"] = r.Spec.AdminOptions["canal.adminUser"]
+		}
+		if r.Spec.CanalOptions["canal.admin.passwd"] == "" {
+			r.Spec.CanalOptions["canal.admin.passwd"] = r.Spec.AdminOptions["canal.adminPasswd"]
 		}
 	} else {
 		if r.Spec.CanalOptions["canal.port"] == "" {
@@ -79,9 +106,7 @@ func Between(i, min, max int) bool {
 }
 
 func (r *Canal) Validate() (err error) {
-	switch r.Spec.Version {
-	case "v1.1.4", "v1.1.5", "v1.1.6", "v1.1.7", "v1.1.8", "v1.1.9": //TODO
-	default:
+	if !strings.HasPrefix(r.Spec.Version, "v") {
 		return fmt.Errorf("version invalid: %s", r.Spec.Version)
 	}
 
@@ -92,7 +117,31 @@ func (r *Canal) Validate() (err error) {
 	if len(r.Spec.CanalOptions) == 0 {
 		return fmt.Errorf("canal properties required")
 	}
-	if r.Spec.CanalOptions["canal.admin.manager"] == "" {
+	if r.Spec.CanalOptions["canal.admin.manager"] != "" {
+		if r.Spec.CanalOptions["canal.admin.manager"] != "127.0.0.1:8089" {
+			return fmt.Errorf("canal.admin.manager must 127.0.0.1:8089")
+		}
+
+		if r.Spec.AdminOptions["spring.datasource.address"] == "" {
+			return fmt.Errorf("spring.datasource.address required")
+		}
+		// if r.Spec.AdminOptions["spring.datasource.database"] == "" {
+		// 	return fmt.Errorf("spring.datasource.database required")
+		// }
+		if r.Spec.AdminOptions["spring.datasource.username"] == "" {
+			return fmt.Errorf("spring.datasource.username required")
+		}
+		if r.Spec.AdminOptions["spring.datasource.password"] == "" {
+			return fmt.Errorf("spring.datasource.password required")
+		}
+
+		if r.Spec.AdminOptions["canal.adminUser"] != r.Spec.CanalOptions["canal.admin.user"] {
+			return fmt.Errorf("canal.adminUser/canal.admin.user mismatch")
+		}
+		if r.Spec.AdminOptions["canal.adminPasswd"] != r.Spec.CanalOptions["canal.admin.passwd"] {
+			return fmt.Errorf("canal.adminPasswd/canal.admin.passwd mismatch")
+		}
+	} else {
 		if r.Spec.CanalOptions["canal.auto.scan"] == "true" {
 			if r.Spec.CanalOptions["canal.destinations"] != "" {
 				return fmt.Errorf("canal.destinations not required")
