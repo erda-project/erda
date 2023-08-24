@@ -1,7 +1,6 @@
-http-server@ai:
-  addr: ":8081"
-  allow_cors: true
-health:
+gorilla-mux@ai:
+  addr: :8081
+
 grpc-server@ai:
   addr: ":8082"
 

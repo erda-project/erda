@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ai_proxy
+package mux
 
 import (
-	// infra basic
-	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-infra/providers/grpcserver"
-	_ "github.com/erda-project/erda-infra/providers/health"
-	_ "github.com/erda-project/erda-infra/providers/mysql/v2"
-
-	// gRPC
-	_ "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/client"
-
-	// ai-proxy
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	_ "github.com/erda-project/erda/internal/pkg/gorilla/mux"
+	"net/http"
 )
+
+type Mux interface {
+	Handle(path, method string, h http.Handler, middles ...Middle)
+	HandlePrefix(prefix, method string, h http.Handler, middles ...Middle)
+	HandleMatch(match func(r *http.Request) bool, h http.Handler, middles ...Middle)
+}
