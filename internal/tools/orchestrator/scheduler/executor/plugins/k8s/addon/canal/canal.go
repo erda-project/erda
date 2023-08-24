@@ -102,15 +102,32 @@ func (c *CanalOperator) Validate(sg *apistructs.ServiceGroup) error {
 	if sg.Services[0].Env["CANAL_DESTINATION"] == "" {
 		return fmt.Errorf("illegal service: %s, need env 'CANAL_DESTINATION'", sg.Services[0].Name)
 	}
-	if sg.Services[0].Env["canal.instance.master.address"] == "" {
-		return fmt.Errorf("illegal service: %s, need env 'canal.instance.master.address'", sg.Services[0].Name)
+
+	if sg.Services[0].Env["canal.admin.manager"] != "" {
+		if sg.Services[0].Env["admin.spring.datasource.address"] == "" {
+			return fmt.Errorf("illegal service: %s, need env 'admin.spring.datasource.address'", sg.Services[0].Name)
+		}
+		// if sg.Services[0].Env["admin.spring.datasource.database"] == "" {
+		// 	return fmt.Errorf("illegal service: %s, need env 'admin.spring.datasource.database'", sg.Services[0].Name)
+		// }
+		if sg.Services[0].Env["admin.spring.datasource.username"] == "" {
+			return fmt.Errorf("illegal service: %s, need env 'admin.spring.datasource.username'", sg.Services[0].Name)
+		}
+		if sg.Services[0].Env["admin.spring.datasource.password"] == "" {
+			return fmt.Errorf("illegal service: %s, need env 'admin.spring.datasource.password'", sg.Services[0].Name)
+		}
+	} else {
+		if sg.Services[0].Env["canal.instance.master.address"] == "" {
+			return fmt.Errorf("illegal service: %s, need env 'canal.instance.master.address'", sg.Services[0].Name)
+		}
+		if sg.Services[0].Env["canal.instance.dbUsername"] == "" {
+			return fmt.Errorf("illegal service: %s, need env 'canal.instance.dbUsername'", sg.Services[0].Name)
+		}
+		if sg.Services[0].Env["canal.instance.dbPassword"] == "" {
+			return fmt.Errorf("illegal service: %s, need env 'canal.instance.dbPassword'", sg.Services[0].Name)
+		}
 	}
-	if sg.Services[0].Env["canal.instance.dbUsername"] == "" {
-		return fmt.Errorf("illegal service: %s, need env 'canal.instance.dbUsername'", sg.Services[0].Name)
-	}
-	if sg.Services[0].Env["canal.instance.dbPassword"] == "" {
-		return fmt.Errorf("illegal service: %s, need env 'canal.instance.dbPassword'", sg.Services[0].Name)
-	}
+
 	return nil
 }
 
@@ -125,21 +142,41 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		Requests: corev1.ResourceList{},
 		Limits:   corev1.ResourceList{},
 	}
+	adminResources := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{},
+		Limits:   corev1.ResourceList{},
+	}
 	if canal.Resources.Cpu != 0 {
 		cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Cpu*1000)), "m"))
 		resources.Requests[corev1.ResourceCPU] = cpu
+
+		// 1/4
+		cpu = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Cpu*1000/4)), "m"))
+		adminResources.Requests[corev1.ResourceCPU] = cpu
 	}
 	if canal.Resources.MaxCPU != 0 {
 		maxCpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxCPU*1000)), "m"))
 		resources.Limits[corev1.ResourceCPU] = maxCpu
+
+		// 1/2
+		maxCpu = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxCPU*1000/2)), "m"))
+		adminResources.Limits[corev1.ResourceCPU] = maxCpu
 	}
 	if canal.Resources.Mem != 0 {
 		mem := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Mem)), "Mi"))
 		resources.Requests[corev1.ResourceMemory] = mem
+
+		// 1/3
+		mem = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Mem/3)), "Mi"))
+		adminResources.Requests[corev1.ResourceMemory] = mem
 	}
 	if canal.Resources.MaxMem != 0 {
 		maxMem := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxMem)), "Mi"))
 		resources.Limits[corev1.ResourceMemory] = maxMem
+
+		// 2/3
+		maxMem = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxMem*2/3)), "Mi"))
+		adminResources.Limits[corev1.ResourceMemory] = maxMem
 	}
 
 	v := "v1.1.5"
@@ -152,12 +189,18 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 	props := ""
 	canalOptions := make(map[string]string)
+	adminOptions := make(map[string]string)
 	for k, v := range canal.Env {
+		//TODO 确认所有选项如canal.instance./canal.mq.等入props，其余入canalOptions
 		switch k {
 		case "canal.zkServers", "canal.zookeeper.flush.period":
 			canalOptions[k] = v
 		default:
-			if strings.HasPrefix(k, "canal.") {
+			if strings.HasPrefix(k, "canal.admin.") {
+				canalOptions[k] = v
+			} else if strings.HasPrefix(k, "admin.") {
+				adminOptions[strings.TrimPrefix(k, "admin.")] = v
+			} else if strings.HasPrefix(k, "canal.") {
 				props += k + "=" + v + "\n"
 			}
 		}
@@ -177,10 +220,12 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 			Replicas: canal.Scale,
 
-			Affinity:     &affinity,
-			Resources:    resources,
-			Labels:       make(map[string]string),
-			CanalOptions: canalOptions,
+			Affinity:       &affinity,
+			Resources:      resources,
+			AdminResources: adminResources,
+			Labels:         make(map[string]string),
+			CanalOptions:   canalOptions,
+			AdminOptions:   adminOptions,
 			Annotations: map[string]string{
 				"_destination": canal.Env["CANAL_DESTINATION"],
 				"_props":       props,
@@ -353,6 +398,13 @@ func (c *CanalOperator) Inspect(sg *apistructs.ServiceGroup) (*apistructs.Servic
 		obj.Namespace,
 		"svc.cluster.local",
 	}, ".")
+	if canalsvc.Env == nil {
+		canalsvc.Env = make(map[string]string)
+	}
+	canalsvc.Env["CANAL_NAME"] = obj.Name
+	canalsvc.Env["CANAL_NAMESPACE"] = obj.Namespace
+	canalsvc.Env["CANAL_REPLICAS"] = strconv.Itoa(obj.Spec.Replicas)
+	canalsvc.Env["CANAL_ADMIN_MANAGER"] = obj.Spec.CanalOptions["canal.admin.manager"]
 
 	//TODO: check canal cm destination
 	time.Sleep(5 * time.Second)

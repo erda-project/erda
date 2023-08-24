@@ -235,6 +235,19 @@ func (a *Addon) CanalDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 	for _, valueItem := range serviceGroup.Dice.Services {
 		configMap[apistructs.AddonCanalHostName] = valueItem.Vip
 		configMap[apistructs.AddonCanalPortName] = apistructs.AddonCanalDefaultPort
+		if v := valueItem.Env["CANAL_ADMIN_MANAGER"]; v != "" {
+			configMap["CANAL_ADMIN_HOST"] = strings.Replace(valueItem.Vip, "-x.", "-admin.", 1)
+			configMap["CANAL_ADMIN_PORT"] = "8089"
+		}
+		if v := valueItem.Env["CANAL_REPLICAS"]; v != "" {
+			configMap["CANAL_REPLICAS"] = v
+		}
+		if v := valueItem.Env["CANAL_NAME"]; v != "" {
+			configMap["CANAL_NAME"] = v
+		}
+		if v := valueItem.Env["CANAL_NAMESPACE"]; v != "" {
+			configMap["CANAL_NAMESPACE"] = v
+		}
 		break
 	}
 	return configMap, nil
@@ -1480,6 +1493,7 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting,
 			address    string
 			dbusername string
 			dbpassword string
+			database   string
 		)
 
 		if routing.AddonName != "mysql" && routing.AddonName != "alicloud-rds" {
@@ -1502,6 +1516,14 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting,
 				continue
 			}
 		}
+
+		if optionmap["MYSQL_DATABASE"] != "" {
+			database = optionmap["MYSQL_DATABASE"]
+		} else if optionmap["MYSQL_DATABASES"] != "" {
+			database = optionmap["MYSQL_DATABASES"]
+			database = strings.Split(database, ",")[0]
+		}
+
 		ins, err := a.db.GetAddonInstance(routing.RealInstance)
 		if err != nil || ins == nil {
 			continue
@@ -1523,6 +1545,8 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting,
 				"canal.instance.master.address": address,
 				"canal.instance.dbUsername":     dbusername,
 				"canal.instance.dbPassword":     dbpassword,
+
+				"admin.spring.datasource.database": database,
 			}
 		}
 	}
@@ -1531,6 +1555,7 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting,
 			address    string
 			dbusername string
 			dbpassword string
+			database   string
 		)
 		if ins.AddonName != "mysql" && ins.AddonName != "alicloud-rds" {
 			continue
@@ -1562,11 +1587,21 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting,
 				logrus.Errorf("DecryptPassword: %v", err)
 				continue
 			}
+
+			if s, ok := configmap["MYSQL_DATABASE"].(string); ok && s != "" {
+				database = s
+			} else if s, ok = configmap["MYSQL_DATABASES"].(string); ok && s != "" {
+				database = s
+				database = strings.Split(database, ",")[0]
+			}
+
 			if address != "" && dbusername != "" && dbpassword != "" {
 				return map[string]string{
 					"canal.instance.master.address": address,
 					"canal.instance.dbUsername":     dbusername,
 					"canal.instance.dbPassword":     dbpassword,
+
+					"admin.spring.datasource.database": database,
 				}
 			}
 		}
@@ -1578,86 +1613,201 @@ func (a *Addon) guessCanalAddr(instanceroutings []dbclient.AddonInstanceRouting,
 // buildCanalServiceItem 构造canal的service信息
 func (a *Addon) BuildCanalServiceItem(useOperator bool, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance,
 	addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
-	if params.Options != nil && params.Options["mysql"] != "" {
-		idorname := params.Options["mysql"]
-		projectid, err := strconv.ParseUint(addonIns.ProjectID, 10, 64)
-		if err != nil {
-			return err
+	if params.Options["canal.admin.manager"] != "" {
+		if params.Options["canal.admin.manager"] != "127.0.0.1:8089" {
+			return fmt.Errorf("canal.admin.manager目前只能配127.0.0.1:8089，暂不支持其它地址")
 		}
-		foundmysql := false
-		routing, err := a.db.GetInstanceRouting(idorname)
-		if err != nil {
-			return err
-		}
-		if routing != nil {
-			ins, err := a.db.GetAddonInstance(routing.RealInstance)
+
+		if params.Options != nil && params.Options["mysql"] != "" {
+			idorname := params.Options["mysql"]
+			projectid, err := strconv.ParseUint(addonIns.ProjectID, 10, 64)
 			if err != nil {
 				return err
 			}
-			options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{*routing}, []dbclient.AddonInstance{*ins})
-			if len(options) == 0 {
-				return fmt.Errorf("未找到配置的 mysql 信息")
-			}
-			for k, v := range options {
-				params.Options[k] = v
-			}
-			foundmysql = true
-		} else {
-			addoninsList, err := a.db.ListAddonInstancesByProjectIDs([]uint64{projectid})
+			foundmysql := false
+			routing, err := a.db.GetInstanceRouting(idorname)
 			if err != nil {
 				return err
 			}
-			for _, addon := range *addoninsList {
-				if addon.Name == idorname {
-					routings, err := a.db.GetInstanceRoutingByRealInstance(addon.ID)
-					if err != nil {
-						return err
+			if routing != nil {
+				ins, err := a.db.GetAddonInstance(routing.RealInstance)
+				if err != nil {
+					return err
+				}
+				options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{*routing}, []dbclient.AddonInstance{*ins})
+				if len(options) == 0 {
+					return fmt.Errorf("未找到配置的 mysql 信息")
+				}
+				for k, v := range options {
+					params.Options[k] = v
+				}
+				foundmysql = true
+			} else {
+				addoninsList, err := a.db.ListAddonInstancesByProjectIDs([]uint64{projectid})
+				if err != nil {
+					return err
+				}
+				for _, addon := range *addoninsList {
+					if addon.Name == idorname {
+						routings, err := a.db.GetInstanceRoutingByRealInstance(addon.ID)
+						if err != nil {
+							return err
+						}
+						if len(*routings) != 1 {
+							continue
+						}
+						routing := (*routings)[0]
+						options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{routing}, []dbclient.AddonInstance{addon})
+						if len(options) == 0 {
+							continue
+						}
+						for k, v := range options {
+							switch k {
+							case "canal.instance.master.address":
+								k = "admin.spring.datasource.address"
+							case "canal.instance.dbUsername":
+								k = "admin.spring.datasource.username"
+							case "canal.instance.dbPassword":
+								k = "admin.spring.datasource.password"
+							}
+							params.Options[k] = v
+						}
+						foundmysql = true
+						break
 					}
-					if len(*routings) != 1 {
-						continue
-					}
-					routing := (*routings)[0]
-					options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{routing}, []dbclient.AddonInstance{addon})
-					if len(options) == 0 {
-						continue
-					}
-					for k, v := range options {
-						params.Options[k] = v
-					}
-					foundmysql = true
-					break
 				}
 			}
+			if !foundmysql {
+				return fmt.Errorf("未找到匹配的mysql")
+			}
+		} else if params.Options == nil ||
+			params.Options["admin.spring.datasource.address"] == "" ||
+			params.Options["admin.spring.datasource.username"] == "" ||
+			params.Options["admin.spring.datasource.password"] == "" {
+			// guess mysql info here
+			runtimeid, err := strconv.ParseUint(params.RuntimeID, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse runtimeid(%s):%v", params.RuntimeID, err)
+			}
+			instanceroutings, err := a.ListInstanceRoutingByRuntime(runtimeid)
+			if err != nil {
+				return err
+			}
+			instances, err := a.ListInstanceByRuntime(runtimeid)
+			if err != nil {
+				return err
+			}
+			addroptions := a.guessCanalAddr(*instanceroutings, instances)
+			if len(addroptions) == 0 {
+				return fmt.Errorf("未设置 canal 参数")
+			} else {
+				a.pushLog(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions), params)
+			}
+			if params.Options == nil {
+				params.Options = map[string]string{}
+			}
+			for k, v := range addroptions {
+				switch k {
+				case "canal.instance.master.address":
+					k = "admin.spring.datasource.address"
+				case "canal.instance.dbUsername":
+					k = "admin.spring.datasource.username"
+				case "canal.instance.dbPassword":
+					k = "admin.spring.datasource.password"
+				}
+				params.Options[k] = v
+			}
 		}
-		if !foundmysql {
-			return fmt.Errorf("未找到匹配的mysql")
-		}
-	} else if params.Options == nil || params.Options["canal.instance.master.address"] == "" || params.Options["canal.instance.dbUsername"] == "" ||
-		params.Options["canal.instance.dbPassword"] == "" {
-		// guess mysql info here
-		runtimeid, err := strconv.ParseUint(params.RuntimeID, 10, 64)
-		if err != nil {
-			return fmt.Errorf("failed to parse runtimeid(%s):%v", params.RuntimeID, err)
-		}
-		instanceroutings, err := a.ListInstanceRoutingByRuntime(runtimeid)
-		if err != nil {
-			return err
-		}
-		instances, err := a.ListInstanceByRuntime(runtimeid)
-		if err != nil {
-			return err
-		}
-		addroptions := a.guessCanalAddr(*instanceroutings, instances)
-		if len(addroptions) == 0 {
-			return fmt.Errorf("未设置 canal 参数")
-		} else {
-			a.pushLog(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions), params)
-		}
-		if params.Options == nil {
-			params.Options = map[string]string{}
-		}
-		for k, v := range addroptions {
-			params.Options[k] = v
+	} else {
+		if params.Options != nil && params.Options["mysql"] != "" {
+			idorname := params.Options["mysql"]
+			projectid, err := strconv.ParseUint(addonIns.ProjectID, 10, 64)
+			if err != nil {
+				return err
+			}
+			foundmysql := false
+			routing, err := a.db.GetInstanceRouting(idorname)
+			if err != nil {
+				return err
+			}
+			if routing != nil {
+				ins, err := a.db.GetAddonInstance(routing.RealInstance)
+				if err != nil {
+					return err
+				}
+				options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{*routing}, []dbclient.AddonInstance{*ins})
+				if len(options) == 0 {
+					return fmt.Errorf("未找到配置的 mysql 信息")
+				}
+				for k, v := range options {
+					params.Options[k] = v
+				}
+				foundmysql = true
+			} else {
+				addoninsList, err := a.db.ListAddonInstancesByProjectIDs([]uint64{projectid})
+				if err != nil {
+					return err
+				}
+				for _, addon := range *addoninsList {
+					if addon.Name == idorname {
+						routings, err := a.db.GetInstanceRoutingByRealInstance(addon.ID)
+						if err != nil {
+							return err
+						}
+						if len(*routings) != 1 {
+							continue
+						}
+						routing := (*routings)[0]
+						options := a.guessCanalAddr([]dbclient.AddonInstanceRouting{routing}, []dbclient.AddonInstance{addon})
+						if len(options) == 0 {
+							continue
+						}
+						for k, v := range options {
+							if k == "admin.spring.datasource.database" {
+								continue
+							}
+							params.Options[k] = v
+						}
+						foundmysql = true
+						break
+					}
+				}
+			}
+			if !foundmysql {
+				return fmt.Errorf("未找到匹配的mysql")
+			}
+		} else if params.Options == nil ||
+			params.Options["canal.instance.master.address"] == "" ||
+			params.Options["canal.instance.dbUsername"] == "" ||
+			params.Options["canal.instance.dbPassword"] == "" {
+			// guess mysql info here
+			runtimeid, err := strconv.ParseUint(params.RuntimeID, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse runtimeid(%s):%v", params.RuntimeID, err)
+			}
+			instanceroutings, err := a.ListInstanceRoutingByRuntime(runtimeid)
+			if err != nil {
+				return err
+			}
+			instances, err := a.ListInstanceByRuntime(runtimeid)
+			if err != nil {
+				return err
+			}
+			addroptions := a.guessCanalAddr(*instanceroutings, instances)
+			if len(addroptions) == 0 {
+				return fmt.Errorf("未设置 canal 参数")
+			} else {
+				a.pushLog(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions), params)
+			}
+			if params.Options == nil {
+				params.Options = map[string]string{}
+			}
+			for k, v := range addroptions {
+				if k == "admin.spring.datasource.database" {
+					continue
+				}
+				params.Options[k] = v
+			}
 		}
 	}
 
@@ -1702,7 +1852,7 @@ func (a *Addon) BuildCanalServiceItem(useOperator bool, params *apistructs.Addon
 			"CANAL_DESTINATION": destination,
 		}
 		for k, v := range params.Options {
-			if strings.HasPrefix(k, "canal.") {
+			if strings.HasPrefix(k, "canal.") || strings.HasPrefix(k, "admin.") {
 				serviceItem.Envs[k] = v
 			}
 		}

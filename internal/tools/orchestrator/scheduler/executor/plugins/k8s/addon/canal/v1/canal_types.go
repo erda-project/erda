@@ -27,7 +27,6 @@ type CanalSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	//+kubebuilder:validation:Enum=v1.1.5
 	//+kubebuilder:default=v1.1.5
 	//+optional
 	Version string `json:"version,omitempty"`
@@ -40,6 +39,20 @@ type CanalSpec struct {
 
 	//+optional
 	CanalOptions map[string]string `json:"canalOptions,omitempty"`
+	//canal.admin.manager 127.0.0.1:8089
+	//canal.admin.port    11110
+	//canal.admin.user    admin
+	//canal.admin.passwd  admin
+
+	//+optional
+	AdminOptions map[string]string `json:"adminOptions,omitempty"`
+	//spring.datasource.address  127.0.0.1:3306
+	//spring.datasource.database canal_manager
+	//spring.datasource.username canal
+	//spring.datasource.password canal
+	//canal.adminUser            admin
+	//canal.adminPasswd          admin
+
 	//+optional
 	JavaOptions string `json:"javaOptions,omitempty"`
 
@@ -49,14 +62,45 @@ type CanalSpec struct {
 	//+optional
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 
-	//+optional
-	Labels map[string]string `json:"labels,omitempty"`
-	//+optional
-	Annotations map[string]string `json:"annotations,omitempty"`
-	//+optional
-	Affinity *corev1.Affinity `json:"affinity,omitempty"`
-	//+optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	// Map of string keys and values that can be used to organize and categorize
+	// (scope and select) objects. May match selectors of replication controllers
+	// and services.
+	// More info: http://kubernetes.io/docs/user-guide/labels
+	// +optional
+	Labels map[string]string `json:"labels,omitempty" protobuf:"bytes,11,rep,name=labels"`
+
+	// Annotations is an unstructured key value map stored with a resource that may be
+	// set by external tools to store and retrieve arbitrary metadata. They are not
+	// queryable and should be preserved when modifying objects.
+	// More info: http://kubernetes.io/docs/user-guide/annotations
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,12,rep,name=annotations"`
+
+	// If specified, the pod's scheduling constraints
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty" protobuf:"bytes,18,opt,name=affinity"`
+
+	// Resources are not allowed for ephemeral containers. Ephemeral containers use spare resources
+	// already allocated to the pod.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,8,opt,name=resources"`
+	// +optional
+	AdminResources corev1.ResourceRequirements `json:"adminResources,omitempty" protobuf:"bytes,8,opt,name=adminResources"`
+
+	// List of sources to populate environment variables in the container.
+	// The keys defined within a source must be a C_IDENTIFIER. All invalid keys
+	// will be reported as an event when the container is starting. When a key exists in multiple
+	// sources, the value associated with the last source will take precedence.
+	// Values defined by an Env with a duplicate key will take precedence.
+	// Cannot be updated.
+	// +optional
+	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,19,rep,name=envFrom"`
+	// List of environment variables to set in the container.
+	// Cannot be updated.
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	Env []corev1.EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
 }
 
 const (
@@ -72,6 +116,9 @@ type CanalStatus struct {
 
 	//+optional
 	Color string `json:"color,omitempty"`
+
+	//+optional
+	AdminInitialized bool `json:"adminInitialized,omitempty"`
 }
 
 //+kubebuilder:object:root=true
