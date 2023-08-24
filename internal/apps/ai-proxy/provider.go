@@ -23,11 +23,9 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -41,8 +39,6 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
@@ -51,6 +47,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
+	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -90,14 +87,14 @@ func init() {
 type provider struct {
 	Config         *config
 	L              logs.Logger
-	HTTP           httpserver.Router                    `autowired:"http-server@ai"`
+	HTTP           mux.Mux                              `autowired:"gorilla-mux@ai"`
 	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
 	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
 	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
 	ErdaOpenapis   map[string]*url.URL
 }
 
-func (p *provider) Init(_ servicehub.Context) error {
+func (p *provider) Init(ctx servicehub.Context) error {
 	p.initLogger()
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
@@ -142,17 +139,19 @@ func (p *provider) Init(_ servicehub.Context) error {
 	}
 
 	// register gRPC and http handler
-	pb.RegisterAccessImp(p, &handlers.AccessHandler{Dao: p.Dao, Log: p.L.Sub("AccessHandler")}, apis.Options())
-	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options())
-	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth)
-	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options())
-	pb.RegisterAIProviderImp(p, ph, apis.Options(), rootKeyAuth)
-	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options())
+	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
+	pb.RegisterAccessImp(p, &handlers.AccessHandler{Dao: p.Dao, Log: p.L.Sub("AccessHandler")}, apis.Options(), encoderOpts)
+	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options(), encoderOpts)
+	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth, encoderOpts)
+	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options(), encoderOpts)
+	pb.RegisterAIProviderImp(p, ph, apis.Options(), rootKeyAuth, encoderOpts)
+	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options(), encoderOpts)
 
 	// ai-proxy prometheus metrics
-	p.HTTP.Any("/metrics", promhttp.Handler())
+	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
+	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	// reverse proxy to AI provider's server
-	p.HTTP.Any("/**", p)
+	p.ServeAIProxy()
 
 	// open APIs on Erda
 	if p.Config.OpenOnErda {
@@ -166,34 +165,26 @@ func (p *provider) Init(_ servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.Config.Routes.FindRoute(WrapRequest(r, SetXRequestId)).
-		HandlerWith(
+func (p *provider) ServeAIProxy() {
+	var f http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
+		p.Config.Routes.FindRoute(r).HandlerWith(
 			context.Background(),
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
 			vars.CtxKeyDAO{}, p.Dao,
 			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,
-		).
-		ServeHTTP(w, r)
+		).ServeHTTP(w, r)
+	}
+	p.HTTP.HandlePrefix("/", "*", f, mux.SetXRequestId, mux.CORS)
 }
 
-func (p *provider) Add(method, path string, handler transhttp.HandlerFunc) {
-	if p.HTTP != nil {
-		if err := p.HTTP.Add(method, path, handler,
-			httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs),
-			interceptors.CORS(true),
-		); err != nil {
-			p.L.Fatalf("failed to %T.Add(%s, %s, %T), err: %v", p, method, path, handler, err)
-		}
-	}
+func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {
+	p.HTTP.Handle(path, method, http.HandlerFunc(h))
 }
 
 func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
-	if p.GRPC != nil {
-		p.GRPC.RegisterService(desc, impl)
-	}
+	p.GRPC.RegisterService(desc, impl)
 }
 
 // openAPIsOnErda opens the ai-proxy APIs on Erda
@@ -334,19 +325,6 @@ type configPromExporter struct {
 	Namespace string `json:"namespace" yaml:"namespace"`
 	Subsystem string `json:"subsystem" yaml:"subsystem"`
 	Name      string `json:"name" yaml:"name"`
-}
-
-func WrapRequest(r *http.Request, wraps ...func(*http.Request)) *http.Request {
-	for _, wrap := range wraps {
-		wrap(r)
-	}
-	return r
-}
-
-func SetXRequestId(r *http.Request) {
-	if id := r.Header.Get("X-Request-Id"); id == "" {
-		r.Header.Set("X-Request-Id", strings.ReplaceAll(uuid.NewString(), "-", ""))
-	}
 }
 
 type Platform struct {
