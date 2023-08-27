@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb";
+
+message Metadata {
+    map<string, string> public = 1;
+    map<string, string> secret = 2;
+}

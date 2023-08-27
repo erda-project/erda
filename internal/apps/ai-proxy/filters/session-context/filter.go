@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -81,22 +81,15 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		return reverseproxy.Continue, nil
 	}
 
-	session, ok, err := db.GetSession(sessionId)
+	session, err := db.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: sessionId})
 	if err != nil {
 		l.Errorf("failed to db.GetSession(%s), err: %v", sessionId, err)
-		return reverseproxy.Continue, nil
-	}
-	if !ok {
-		l.Errorf("session not found, sessionId: %s", sessionId)
 		return reverseproxy.Continue, nil
 	}
 	if session.IsArchived {
 		l.Debugf("session(id=%s) is archived, continue", sessionId)
 		return reverseproxy.Continue, nil
 	}
-
-	// make the session is the latest updated
-	defer func() { go c.updateSession(ctx, sessionId) }()
 
 	var m = make(map[string]json.RawMessage)
 	if err = json.NewDecoder(infor.BodyBuffer()).Decode(&m); err != nil {
@@ -118,14 +111,14 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		return reverseproxy.Continue, nil
 	}
 	messages = []Message{messages[len(messages)-1]}
-	if session.GetContextLength() > 1 {
+	if session.NumOfCtxMsg > 1 {
 		var audits models.AIProxyFilterAuditList
 		total, err := (&audits).Pager(db.Q().Debug()).
 			Where(
 				audits.FieldSessionID().Equal(sessionId),
 				audits.FieldUpdatedAt().MoreThan(session.ResetAt.AsTime()),
 			).
-			Paging(int(session.GetContextLength()-1), 1, audits.FieldCreatedAt().DESC())
+			Paging(int(session.NumOfCtxMsg-1), 1, audits.FieldCreatedAt().DESC())
 		if err != nil {
 			l.Errorf("failed to Find audits in the session %s, err: %v", sessionId, err)
 		}
@@ -173,20 +166,6 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	infor.SetBody(io.NopCloser(bytes.NewBuffer(data)), int64(len(data)))
 	l.Debugf("infor new body buffer: %s", infor.BodyBuffer().String())
 	return reverseproxy.Continue, nil
-}
-
-func (c *SessionContext) updateSession(ctx context.Context, id string) {
-	var (
-		l       = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
-		db      = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
-		session models.AIProxySessions
-	)
-	if _, err := (&session).Updater(db.Q().Debug()).
-		Where(session.FieldID().Equal(id)).
-		Set(session.FieldUpdatedAt().Set(time.Now())).
-		Updates(); err != nil {
-		l.Errorf("failed to update session, err: %v", err)
-	}
 }
 
 type Config struct {

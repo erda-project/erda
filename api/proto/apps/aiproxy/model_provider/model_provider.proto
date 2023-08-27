@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model-provider/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service ModelProviderService {
+    rpc Create(ModelProviderCreateRequest) returns (ModelProvider) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/model-providers"
+        };
+    }
+
+    rpc Get(ModelProviderGetRequest) returns (ModelProvider) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/model-providers/{id}"
+        };
+    }
+
+    rpc Delete(ModelProviderDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/model-providers/{id}"
+        };
+    }
+
+    rpc Update(ModelProviderUpdateRequest) returns (ModelProvider) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/model-providers/{id}"
+        };
+    }
+}
+
+message ModelProvider {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string name = 5;
+    string desc = 6;
+    string apiKey = 7;
+    Metadata metadata = 8;
+}
+
+message ModelProviderCreateRequest {
+    string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
+    string apiKey = 3 [(validate.rules).string = {min_len: 0, max_len: 128}];
+    Metadata metadata = 4;
+}
+
+message ModelProviderGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message ModelProviderDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message ModelProviderUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string desc = 3 [(validate.rules).string = {min_len: 0, max_len: 1024}];
+    string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
+    Metadata metadata = 5;
+}

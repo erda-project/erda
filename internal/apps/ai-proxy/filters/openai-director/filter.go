@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -62,11 +62,11 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 func (f *OpenaiDirector) Enable(ctx context.Context, req *http.Request) bool {
 	// 从 context 中取出存储上下文的 map, 从 map 中取出 provider,
 	// 这个 provider 由 名为 context 的 filter 插入.
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 	if !ok || value == nil {
 		return false
 	}
-	prov, ok := value.(*models.AIProxyProviders)
+	prov, ok := value.(*model_provider.ModelProvider)
 	if !ok {
 		return false
 	}
@@ -122,27 +122,32 @@ func (f *OpenaiDirector) FindProcessor(ctx context.Context, processor string) (f
 func (f *OpenaiDirector) DoNothing(context.Context) error { return nil }
 
 func (f *OpenaiDirector) TransAuthorization(ctx context.Context) error {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*models.AIProxyProviders)
+	prov := value.(*model_provider.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.Header.Del("Authorization")
-		req.Header.Set("Authorization", vars.ConcatBearer(prov.GetAPIKeyWithDecrypt()))
+		req.Header.Set("Authorization", vars.ConcatBearer(prov.APIKey))
 	})
 	return nil
 }
 
 func (f *OpenaiDirector) RewriteScheme(ctx context.Context) error {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*models.AIProxyProviders)
+	prov := value.(*model_provider.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		if prov.Scheme == "http" || prov.Scheme == "https" {
-			req.URL.Scheme = prov.Scheme
+		meta, err := prov.Metadata.ToModelProviderMeta()
+		if err != nil {
+			return
+		}
+		scheme := meta.Public.Scheme
+		if scheme == "http" || scheme == "https" {
+			req.URL.Scheme = scheme
 		}
 		if req.URL.Scheme == "" {
 			req.URL.Scheme = "https"
@@ -152,12 +157,16 @@ func (f *OpenaiDirector) RewriteScheme(ctx context.Context) error {
 }
 
 func (f *OpenaiDirector) RewriteHost(ctx context.Context) error {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.Host = value.(*models.AIProxyProviders).Host
+		meta, err := (value.(*model_provider.ModelProvider).Metadata.ToModelProviderMeta())
+		if err != nil {
+			return
+		}
+		req.Host = meta.Public.Host
 		req.URL.Host = req.Host
 		req.Header.Set("Host", req.Host)
 		req.Header.Set("X-Forwarded-Host", req.Host)

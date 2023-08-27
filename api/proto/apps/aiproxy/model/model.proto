@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service ModelService {
+    rpc Create(ModelCreateRequest) returns (Model) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/models"
+        };
+    }
+
+    rpc Get(ModelGetRequest) returns (Model) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/models/{id}"
+        };
+    }
+
+    rpc Update(ModelUpdateRequest) returns (Model) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/models/{id}"
+        };
+    }
+
+    rpc Delete(ModelDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/models/{id}"
+        };
+    }
+}
+
+message Model {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string name = 5;
+    string desc = 6;
+    ModelType type = 7;
+    string providerId = 8;
+    string apiKey = 9;
+    Metadata metadata = 10;
+}
+
+enum ModelType {
+    text_generation = 0;
+    image = 1;
+    audio = 2;
+    embedding = 3;
+    text_moderation = 4;
+    multimodal_text__visual = 5;
+}
+
+message ModelCreateRequest {
+    string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string desc = 2 [(validate.rules).string.max_len = 1024];
+    ModelType type = 3 [(validate.rules).enum = {defined_only: true}];
+    string providerId = 4 [(validate.rules).string = {len: 36}];
+    string apiKey = 5;
+    Metadata metadata = 6;
+}
+
+message ModelUpdateRequest {
+    string id = 1;
+    string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string desc = 3 [(validate.rules).string.max_len = 1024];
+    ModelType type = 4;
+    string providerId = 5 [(validate.rules).string = {len: 36}];
+    string apiKey = 6;
+    Metadata metadata = 7;
+}
+
+message ModelDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message ModelGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}

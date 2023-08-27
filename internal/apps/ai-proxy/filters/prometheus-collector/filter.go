@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/metrics"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -56,7 +56,7 @@ type PrometheusCollector struct {
 }
 
 func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
-	prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 	if !ok || prov == nil {
 		return reverseproxy.Intercept, errors.New("provider not set in context map")
 	}
@@ -65,7 +65,7 @@ func (f *PrometheusCollector) OnRequest(ctx context.Context, w http.ResponseWrit
 	f.lvs.Source = infor.Header().Get(vars.XAIProxySource)
 	f.lvs.UserId = infor.Header().Get(vars.XAIProxyJobNumber)
 	f.lvs.UserName = infor.Header().Get(vars.XAIProxyName)
-	f.lvs.Provider = prov.(*models.AIProxyProviders).Name
+	f.lvs.Provider = prov.(*modelproviderpb.ModelProvider).Name
 	f.lvs.Model = f.getModel(ctx, infor)
 	f.lvs.OperationId = infor.Method()
 	if infor.URL() != nil {

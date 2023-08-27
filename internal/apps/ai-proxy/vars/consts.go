@@ -34,6 +34,8 @@ const (
 	XAIProxyMetadata           = "X-Ai-Proxy-Metadata"
 	XAiProxyErdaOpenapiSession = "X-Ai-Proxy-Erda-Openapi-Session"
 	XRequestId                 = "X-Request-Id"
+
+	XAIProxyModelId = "X-AI-Proxy-Model-Id"
 )
 
 const (
@@ -41,8 +43,9 @@ const (
 )
 
 type (
-	CtxKeyDAO         struct{ CtxKeyDAO any }
-	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
-	MapKeyProvider    struct{ MapKeyProvider any }
-	MapKeyCredential  struct{ MapKeyCredential any }
+	CtxKeyDAO           struct{ CtxKeyDAO any }
+	CtxKeyErdaOpenapi   struct{ CtxKeyErdaOpenapi any }
+	MapKeyClient        struct{ MapKeyClient any }
+	MapKeyModel         struct{ MapKeyModel any }
+	MapKeyModelProvider struct{ MapKeyModelProvider any }
 )

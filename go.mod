@@ -130,6 +130,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
+	github.com/sashabaranov/go-openai v1.14.2
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
@@ -146,6 +147,7 @@ require (
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.3.0
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
+	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
@@ -419,7 +421,6 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca // indirect
 	github.com/xuri/efp v0.0.0-20201016154823-031c29024257 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
