@@ -29,7 +29,7 @@ type Model struct {
 	Desc       string               `gorm:"column:desc;type:varchar(1024)" json:"desc" yaml:"desc"`
 	Type       model_type.ModelType `gorm:"column:type;type:varchar(32)" json:"type" yaml:"type"`
 	ProviderID string               `gorm:"column:provider_id;type:char(36)" json:"providerID" yaml:"providerID"`
-	APIKey     string               `gorm:"column:api_key;type:varchar(128)" json:"aPIKey" yaml:"aPIKey"`
+	APIKey     string               `gorm:"column:api_key;type:varchar(191)" json:"aPIKey" yaml:"aPIKey"`
 	Metadata   metadata.Metadata    `gorm:"column:metadata;type:mediumtext" json:"metadata" yaml:"metadata"`
 }
 

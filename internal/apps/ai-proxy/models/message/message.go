@@ -45,9 +45,9 @@ func (m Message) Value() (driver.Value, error) {
 }
 
 func FromProtobuf(pbMsgs []*pb.Message) Messages {
-	var result []*Message
+	var result []openai.ChatCompletionMessage
 	for _, pbMsg := range pbMsgs {
-		result = append(result, &Message{
+		result = append(result, openai.ChatCompletionMessage{
 			Role:         pbMsg.Role,
 			Content:      pbMsg.Content,
 			Name:         pbMsg.Name,
@@ -57,7 +57,7 @@ func FromProtobuf(pbMsgs []*pb.Message) Messages {
 	return result
 }
 
-type Messages []*Message
+type Messages []openai.ChatCompletionMessage
 
 func (msgs *Messages) Scan(src any) error {
 	if src == nil {

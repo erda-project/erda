@@ -18,16 +18,20 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_type"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 )
 
 type (
 	ClientMeta struct {
-		Public ClientMetaPublic
-		Secret ClientMetaSecret
+		Public ClientMetaPublic `json:"public,omitempty"`
+		Secret ClientMetaSecret `json:"secret,omitempty"`
 	}
 	ClientMetaPublic struct {
-		DefaultModelIds map[model_type.ModelType]string `json:"defaultModelIds,omitempty"` // key: model type, value: model id
+		DefaultModelIdOfTextGeneration string `json:"default_model_id_of_text_generation,omitempty"`
+		DefaultModelIdOfImage          string `json:"default_model_id_of_image,omitempty"`
+		DefaultModelIdOfAudio          string `json:"default_model_id_of_audio,omitempty"`
+		DefaultModelIdOfEmbedding      string `json:"default_model_id_of_embedding,omitempty"`
+		DefaultModelIdOfTextModeration string `json:"default_model_id_of_text_moderation,omitempty"`
 	}
 	ClientMetaSecret struct {
 	}
@@ -43,4 +47,15 @@ func (m *Metadata) ToClientMeta() (*ClientMeta, error) {
 		return nil, fmt.Errorf("failed to unmarshal string to ClientMeta: %v", err)
 	}
 	return &result, nil
+}
+
+func (p *ClientMetaPublic) GetDefaultModelIdByModelType(modelType modelpb.ModelType) (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	b, _ := json.Marshal(p)
+	m := make(map[string]string)
+	_ = json.Unmarshal(b, &m)
+	defaultModelId, ok := m["default_model_id_of_"+modelType.String()]
+	return defaultModelId, ok
 }

@@ -25,7 +25,6 @@ const (
 	XAIProxyJobNumber          = "X-AI-Proxy-JobNumber"
 	XAIProxyEmail              = "X-AI-Proxy-Email"
 	XAIProxyDingTalkStaffID    = "X-AI-Proxy-DingTalkStaffID"
-	XAIProxyPrompt             = "X-AI-Proxy-Prompt"
 	XAIProxyProviderName       = "X-AI-Proxy-Provider-Name"
 	XAIProxyProviderInstanceId = "X-AI-Proxy-Provider-Instance-Id"
 	XAIProxyOrgId              = "X-Ai-Proxy-Org-Id"
@@ -36,6 +35,7 @@ const (
 
 	XAIProxyModelId   = "X-AI-Proxy-Model-Id"
 	XAIProxySessionId = "X-AI-Proxy-Session-Id"
+	XAIProxyPromptId  = "X-AI-Proxy-Prompt-Id"
 )
 
 const (
@@ -48,4 +48,6 @@ type (
 	MapKeyClient        struct{ MapKeyClient any }
 	MapKeyModel         struct{ MapKeyModel any }
 	MapKeyModelProvider struct{ MapKeyModelProvider any }
+	MapKeyPrompt        struct{ MapKeyPrompt any }
+	MapKeySession       struct{ MapKeySession any }
 )

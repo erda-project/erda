@@ -33,12 +33,18 @@ type DBClient struct {
 }
 
 func (dbClient *DBClient) Create(ctx context.Context, req *pb.SessionCreateRequest) (*pb.Session, error) {
+	if req.NumOfCtxMsg == 0 {
+		req.NumOfCtxMsg = 10
+	}
+	if req.Temperature < 0 {
+		req.Temperature = 1
+	}
 	c := &Session{
 		ClientID:    req.ClientId,
 		PromptID:    req.PromptId,
 		ModelID:     req.ModelId,
-		Scene:       req.Scene,
 		UserID:      req.UserId,
+		Scene:       req.Scene,
 		Name:        req.Name,
 		Topic:       req.Topic,
 		NumOfCtxMsg: int64(req.NumOfCtxMsg),
@@ -78,8 +84,8 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.SessionUpdateReque
 		ClientID:    req.ClientId,
 		PromptID:    req.PromptId,
 		ModelID:     req.ModelId,
-		Scene:       req.Scene,
 		UserID:      req.UserId,
+		Scene:       req.Scene,
 		Name:        req.Name,
 		Topic:       req.Topic,
 		NumOfCtxMsg: int64(req.NumOfCtxMsg),
@@ -89,6 +95,37 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.SessionUpdateReque
 		return nil, err
 	}
 	return dbClient.Get(ctx, &pb.SessionGetRequest{Id: req.Id})
+}
+
+func (dbClient *DBClient) Paging(ctx context.Context, req *pb.SessionPagingRequest) (*pb.SessionPagingResponse, error) {
+	var (
+		count    int64
+		sessions Sessions
+	)
+	c := &Session{
+		ClientID:   req.ClientId,
+		PromptID:   req.PromptId,
+		ModelID:    req.ModelId,
+		UserID:     req.UserId,
+		Scene:      req.Scene,
+		IsArchived: req.IsArchived,
+	}
+	sql := dbClient.DB.Model(c).Where(c)
+	if req.Name != "" {
+		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
+	}
+	offset := (req.PageNum - 1) * req.PageSize
+	sql = sql.Count(&count).
+		Order("created_at DESC").
+		Limit(int(req.PageSize)).Offset(int(offset)).
+		Find(&sessions)
+	if sql.Error != nil {
+		return nil, sql.Error
+	}
+	return &pb.SessionPagingResponse{
+		Total: uint64(count),
+		List:  sessions.ToProtobuf(),
+	}, nil
 }
 
 func (dbClient *DBClient) Archive(ctx context.Context, req *pb.SessionArchiveRequest) (*pb.Session, error) {
@@ -130,6 +167,7 @@ func (dbClient *DBClient) GetChatLogs(ctx context.Context, req *pb.SessionChatLo
 	c := &audit.Audit{SessionID: req.SessionId}
 	if err := dbClient.DB.Model(c).Where(c).
 		Count(&count).
+		Order("created_at DESC").
 		Limit(int(req.PageSize)).Offset(int(offset)).Find(&chatLogs).Error; err != nil {
 		return nil, err
 	}

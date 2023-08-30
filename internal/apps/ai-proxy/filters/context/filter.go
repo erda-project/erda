@@ -26,9 +26,9 @@ import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_type"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -83,16 +83,18 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 
 	// find model
 	var model *modelpb.Model
+	var session *sessionpb.Session
 	// get from session if exists
 	headerSessionId := infor.Header().Get(vars.XAIProxySessionId)
 	headerModelId := infor.Header().Get(vars.XAIProxyModelId)
 	if headerSessionId != "" {
-		session, err := q.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: headerSessionId})
+		_session, err := q.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: headerSessionId})
 		if err != nil {
 			l.Errorf("failed to get session, id: %s, err: %v", headerSessionId, err)
 			http.Error(w, "SessionId is invalid", http.StatusBadRequest)
 			return reverseproxy.Intercept, err
 		}
+		session = _session
 		sessionModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: session.ModelId})
 		if err != nil {
 			l.Errorf("failed to get model, id: %s, err: %v", session.ModelId, err)
@@ -122,11 +124,6 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			http.Error(w, "Client meta is invalid", http.StatusBadRequest)
 			return reverseproxy.Intercept, err
 		}
-		if clientMeta.Public.DefaultModelIds == nil {
-			l.Errorf("failed to get client's default model")
-			http.Error(w, "Client's default model is invalid", http.StatusBadRequest)
-			return reverseproxy.Intercept, err
-		}
 		// judge by model type
 		modelType, ok := getModelTypeByRequest(infor)
 		if !ok {
@@ -134,7 +131,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			http.Error(w, "ModelType is invalid", http.StatusBadRequest)
 			return reverseproxy.Intercept, err
 		}
-		defaultModelId, ok := clientMeta.Public.DefaultModelIds[model_type.ModelType(modelType.String())]
+		defaultModelId, ok := clientMeta.Public.GetDefaultModelIdByModelType(modelType)
 		if !ok {
 			l.Errorf("failed to get client's default model")
 			http.Error(w, "Client's default model is invalid", http.StatusBadRequest)
@@ -157,17 +154,32 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		return reverseproxy.Intercept, err
 	}
 
+	// find prompt
+	headerPromptId := infor.Header().Get(vars.XAIProxyPromptId)
+	var prompt *promptpb.Prompt
+	if headerPromptId != "" {
+		_prompt, err := q.PromptClient().Get(ctx, &promptpb.PromptGetRequest{Id: headerPromptId})
+		if err != nil {
+			l.Errorf("failed to get prompt, id: %s, err: %v", headerPromptId, err)
+			http.Error(w, "PromptId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		prompt = _prompt
+	}
+
 	// store data to context
 	m.Store(vars.MapKeyClient{}, client)
 	m.Store(vars.MapKeyModel{}, model)
 	m.Store(vars.MapKeyModelProvider{}, modelProvider)
+	m.Store(vars.MapKeyPrompt{}, prompt)
+	m.Store(vars.MapKeySession{}, session)
 
 	return reverseproxy.Continue, nil
 }
 
 func getModelTypeByRequest(infor reverseproxy.HttpInfor) (modelpb.ModelType, bool) {
 	if strutil.HasPrefixes(infor.URL().Path, "/v1/chat/completions", "/v1/completions") {
-		return modelpb.ModelType_text_moderation, true
+		return modelpb.ModelType_text_generation, true
 	}
 	if strutil.HasPrefixes(infor.URL().Path, "/v1/images") {
 		return modelpb.ModelType_image, true

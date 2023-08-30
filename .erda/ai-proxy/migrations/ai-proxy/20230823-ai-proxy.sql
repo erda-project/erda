@@ -27,7 +27,7 @@ CREATE TABLE `ai_proxy_model_provider`
     `name`       VARCHAR(191) NOT NULL COMMENT '供应商名称，可以区分多账号或多地区，例如 azure-us-esat / azure-japan-east 等',
     `desc`       VARCHAR(1024)         DEFAULT NULL COMMENT '供应商描述',
     `type`       VARCHAR(191) NOT NULL COMMENT '供应商类型，例如 openai / azure 等',
-    `api_key`    varchar(128) NOT NULL COMMENT '供应商级别的 api-key，例如 openai 的 sk，可以使用该供应商下的所有模型',
+    `api_key`    varchar(191) NOT NULL COMMENT '供应商级别的 api-key，例如 openai 的 sk，可以使用该供应商下的所有模型',
     `metadata`   MEDIUMTEXT   NOT NULL COMMENT '供应商元数据',
 
     PRIMARY KEY (`id`),
@@ -47,7 +47,7 @@ CREATE TABLE `ai_proxy_model`
     `desc`        VARCHAR(1024)         DEFAULT NULL COMMENT '供应商描述',
     `type`        VARCHAR(32)  NOT NULL COMMENT '模型类型，例如 text-generation / image / audio / embedding / text-moderation / text+visual(多模态) 等',
     `provider_id` CHAR(36)     NOT NULL COMMENT '模型供应商 id',
-    `api_key`     varchar(128) NOT NULL COMMENT '模型级别的 api-key，优先级比 provider 级别更高',
+    `api_key`     varchar(191) NOT NULL COMMENT '模型级别的 api-key，优先级比 provider 级别更高',
     `metadata`    MEDIUMTEXT   NOT NULL COMMENT '模型元数据',
 
     PRIMARY KEY (`id`),
@@ -102,9 +102,9 @@ CREATE TABLE `ai_proxy_session`
     `prompt_id`      CHAR(36)     NOT NULL COMMENT '会话使用的 prompt id',
     `model_id`       CHAR(36)     NOT NULL COMMENT '会话用到的模型 id',
     `scene`          VARCHAR(191) NOT NULL COMMENT '会话场景，用于区分功能，例如：chat, 测试用例, API 测试 等',
-    `user_id`        VARCHAR(128) NOT NULL COMMENT '客户端传入的自定义 user_id，客户端用来区分用户',
+    `user_id`        VARCHAR(191) NOT NULL COMMENT '客户端传入的自定义 user_id，客户端用来区分用户',
 
-    `name`           VARCHAR(128) NOT NULL DEFAULT '' COMMENT '会话名称。可以为空，由 AI 总结生成',
+    `name`           VARCHAR(191) NOT NULL DEFAULT '' COMMENT '会话名称。可以为空，由 AI 总结生成',
     `topic`          TEXT         NOT NULL COMMENT '会话主题',
     `num_of_ctx_msg` INT          NOT NULL DEFAULT 0 COMMENT '上下文消息个数，0 表示不使用上下文，1 表示使用上一条消息作为上下文，2 表示使用上两条消息作为上下文，以此类推；一问一答为 2 条消息',
     `is_archived`    BOOLEAN      NOT NULL DEFAULT false COMMENT '是否归档',

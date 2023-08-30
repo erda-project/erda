@@ -29,10 +29,10 @@ type Session struct {
 	ClientID string `gorm:"column:client_id;type:char(36)" json:"clientID" yaml:"clientID"`
 	PromptID string `gorm:"column:prompt_id;type:char(36)" json:"promptID" yaml:"promptID"`
 	ModelID  string `gorm:"column:model_id;type:char(36)" json:"modelID" yaml:"modelID"`
-	Scene    string `gorm:"column:scene;type:varchar(128)" json:"scene" yaml:"scene"`
-	UserID   string `gorm:"column:user_id;type:varchar(128)" json:"userID" yaml:"userID"`
+	UserID   string `gorm:"column:user_id;type:varchar(191)" json:"userID" yaml:"userID"`
+	Scene    string `gorm:"column:scene;type:varchar(191)" json:"scene" yaml:"scene"`
 
-	Name        string           `gorm:"column:name;type:varchar(128)" json:"name" yaml:"name"`
+	Name        string           `gorm:"column:name;type:varchar(191)" json:"name" yaml:"name"`
 	Topic       string           `gorm:"column:topic;type:text" json:"topic" yaml:"topic"`
 	NumOfCtxMsg int64            `gorm:"column:num_of_ctx_msg;type:int(11)" json:"numOfCtxMsg" yaml:"numOfCtxMsg"`
 	IsArchived  bool             `gorm:"column:is_archived;type:tinyint(1)" json:"isArchived" yaml:"isArchived"`
@@ -63,4 +63,14 @@ func (s *Session) ToProtobuf() *pb.Session {
 		Temperature: s.Temperature,
 		Metadata:    s.Metadata.ToProtobuf(),
 	}
+}
+
+type Sessions []Session
+
+func (sessions Sessions) ToProtobuf() []*pb.Session {
+	var ret []*pb.Session
+	for _, session := range sessions {
+		ret = append(ret, session.ToProtobuf())
+	}
+	return ret
 }

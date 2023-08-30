@@ -42,6 +42,10 @@ func (h *SessionHandler) Update(ctx context.Context, req *pb.SessionUpdateReques
 	return h.DAO.SessionClient().Update(ctx, req)
 }
 
+func (h *SessionHandler) Paging(ctx context.Context, req *pb.SessionPagingRequest) (*pb.SessionPagingResponse, error) {
+	return h.DAO.SessionClient().Paging(ctx, req)
+}
+
 func (h *SessionHandler) Archive(ctx context.Context, req *pb.SessionArchiveRequest) (*pb.Session, error) {
 	return h.DAO.SessionClient().Archive(ctx, req)
 }

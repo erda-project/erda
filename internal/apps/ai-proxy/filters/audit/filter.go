@@ -305,14 +305,14 @@ func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor
 
 func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Prompt = "-"
-	if value := infor.Header().Get(vars.XAIProxyPrompt); value != "" {
-		prompt, err := base64.StdEncoding.DecodeString(value)
-		if err != nil {
-			return err
-		}
-		f.Audit.Prompt = string(prompt)
-		return nil
-	}
+	//if value := infor.Header().Get(vars.XAIProxyPromptId); value != "" {
+	//	prompt, err := base64.StdEncoding.DecodeString(value)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	f.Audit.Prompt = string(prompt)
+	//	return nil
+	//}
 
 	if infor.Method() == http.MethodGet || infor.Method() == http.MethodDelete {
 		f.Audit.Prompt = NoPromptByHttpMethod.String()

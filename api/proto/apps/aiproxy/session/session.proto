@@ -34,6 +34,12 @@ service SessionService {
         };
     }
 
+    rpc Paging(SessionPagingRequest) returns (SessionPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/sessions"
+        };
+    }
+
     rpc Archive(SessionArchiveRequest) returns (Session) {
         option(google.api.http) = {
             patch: "/api/ai-proxy/sessions/{id}/actions/archive"
@@ -66,10 +72,10 @@ message Session {
     google.protobuf.Timestamp deletedAt = 4;
 
     string clientId = 5 [(validate.rules).string = {len: 36}];
-    string promptId = 6 [(validate.rules).string = {len: 36}];
+    string promptId = 6 [(validate.rules).string = {max_len: 36}];
     string modelId = 7 [(validate.rules).string = {len: 36}];
-    string scene = 8 [(validate.rules).string = {min_len: 4, max_len: 191}];
-    string userId = 9;
+    string userId = 8 [(validate.rules).string = {max_len: 191}];
+    string scene = 9 [(validate.rules).string = {min_len: 4, max_len: 191}];
 
     string name = 10 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string topic = 11 [(validate.rules).string = {min_len: 1}];
@@ -126,13 +132,30 @@ message SessionUpdateRequest {
     string clientId = 2 [(validate.rules).string = {len: 36}];
     string promptId = 3 [(validate.rules).string = {len: 36}];
     string modelId = 4 [(validate.rules).string = {len: 36}];
-    string scene = 5 [(validate.rules).string = {min_len: 4, max_len: 191}];
-    string userId = 6;
+    string userId = 5 [(validate.rules).string = {max_len: 191}];
+    string scene = 6 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string name = 7 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string topic = 8 [(validate.rules).string = {min_len: 1}];
     uint64 numOfCtxMsg = 9;
     double temperature = 10 [(validate.rules).double = {gte: 0, lte: 2}];
     Metadata metadata = 11;
+}
+
+message SessionPagingRequest {
+    string clientId = 1 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string promptId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string modelId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string userId = 4 [(validate.rules).string = {max_len: 191}];
+    string scene = 5 [(validate.rules).string = {ignore_empty: true, min_len: 4, max_len: 191}];
+    string name = 6 [(validate.rules).string = {ignore_empty: true, min_len: 4, max_len: 191}];
+    bool isArchived = 7;
+    uint64 pageSize = 8 [(validate.rules).uint64 = {gte: 1}];
+    uint64 pageNum = 9 [(validate.rules).uint64 = {gte: 1, lte: 1000}];
+}
+
+message SessionPagingResponse {
+    uint64 total = 1;
+    repeated Session list = 2;
 }
 
 message SessionArchiveRequest {
