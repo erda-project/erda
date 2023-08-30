@@ -30,6 +30,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	// day = 8 * 60(minute)
+	day = 480
+)
+
 // Issue .
 type Issue struct {
 	dbengine.BaseModel
@@ -531,10 +536,13 @@ func (client *DBClient) IssueStateCount2(issueIDs []uint64) ([]apistructs.Requir
 // GetTaskIssueManHourSum get task mam hour sum
 func (client *DBClient) GetTaskIssueManHourSum(req apistructs.IssuesStageRequest) (apistructs.IssueManHourSumResponse, error) {
 	var (
-		issues          []Issue
-		ans                   = make(map[string]int64)
-		sumElapsedTime  int64 = 0
-		sumEstimateTime int64 = 0
+		issues             []Issue
+		ans                      = make(map[string]int64)
+		sumElapsedTime     int64 = 0
+		sumEstimateTime    int64 = 0
+		estimateDayGtOne   int64 = 0
+		esitmateDayGtTwo   int64 = 0
+		esitmateDayGtThree int64 = 0
 	)
 	sql := client.Table("dice_issues")
 	if len(req.StatisticRange) > 0 {
@@ -565,16 +573,29 @@ func (client *DBClient) GetTaskIssueManHourSum(req apistructs.IssuesStageRequest
 		ans[each.Stage] += ret.ElapsedTime
 		sumElapsedTime += ret.ElapsedTime
 		sumEstimateTime += ret.EstimateTime
+		estimateDay := float64(ret.EstimateTime) / day
+		if estimateDay > 1 {
+			estimateDayGtOne++
+		}
+		if estimateDay > 2 {
+			esitmateDayGtTwo++
+		}
+		if estimateDay > 3 {
+			esitmateDayGtThree++
+		}
 	}
 	return apistructs.IssueManHourSumResponse{
-		DesignManHour:    ans["design"],
-		DevManHour:       ans["dev"],
-		TestManHour:      ans["test"],
-		ImplementManHour: ans["implement"],
-		DeployManHour:    ans["deploy"],
-		OperatorManHour:  ans["operator"],
-		SumElapsedTime:   sumElapsedTime,
-		SumEstimateTime:  sumEstimateTime,
+		DesignManHour:               ans["design"],
+		DevManHour:                  ans["dev"],
+		TestManHour:                 ans["test"],
+		ImplementManHour:            ans["implement"],
+		DeployManHour:               ans["deploy"],
+		OperatorManHour:             ans["operator"],
+		SumElapsedTime:              sumElapsedTime,
+		SumEstimateTime:             sumEstimateTime,
+		EstimateManDayGtOneDayNum:   estimateDayGtOne,
+		EstimateManDayGtTwoDayNum:   esitmateDayGtTwo,
+		EstimateManDayGtThreeDayNum: esitmateDayGtThree,
 	}, nil
 }
 

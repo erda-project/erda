@@ -23,6 +23,7 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel"
 )
 
 func (p *provider) refreshBasicIterations() error {
@@ -166,6 +167,12 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		doneReqStateIDs = append(doneReqStateIDs, int64(doneReqStates[i].ID))
 	}
 
+	manHour, err := issueexcel.NewManhour(iter.Iteration.ManHour)
+	if err != nil {
+		return nil, err
+	}
+	fields.IterationEstimatedDayTotal = float64(manHour.EstimateTime) / 480
+
 	var doneTaskStateIDs []int64
 	doneTaskStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
 		ProjectID: iter.Iteration.ProjectID,
@@ -259,6 +266,9 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		return nil, err
 	}
 	fields.TaskEstimatedMinute = uint64(totalTaskEstimateTime.SumEstimateTime)
+	fields.TaskEstimatedDayGtOneTotal = uint64(totalTaskEstimateTime.EstimateManDayGtOneDayNum)
+	fields.TaskEstimatedDayGtTwoTotal = uint64(totalTaskEstimateTime.EstimateManDayGtTwoDayNum)
+	fields.TaskEstimatedDayGtThreeTotal = uint64(totalTaskEstimateTime.EstimateManDayGtThreeDayNum)
 
 	if fields.RequirementTotal > 0 {
 		fields.RequirementCompleteSchedule = float64(iterationSummary.Requirement.Done) / float64(fields.RequirementTotal)

@@ -37,46 +37,53 @@ var (
 )
 
 type ProjectReportRow struct {
-	RequirementTotal           float64   `json:"requirementTotal" ch:"requirementTotal"`
-	BugTotal                   float64   `json:"bugTotal" ch:"bugTotal"`
-	TaskTotal                  float64   `json:"taskTotal" ch:"taskTotal"`
-	BudgetMandayTotal          float64   `json:"budgetMandayTotal" ch:"budgetMandayTotal"`
-	TaskEstimatedMinute        float64   `json:"taskEstimatedMinute" ch:"taskEstimatedMinute"`
-	TaskEstimatedManday        float64   `json:"taskEstimatedManday" ch:"taskEstimatedManday"`
-	ActualMandayTotal          float64   `json:"actualMandayTotal" ch:"actualMandayTotal"`
-	RequirementDoneRate        float64   `json:"requirementDoneRate" ch:"requirementDoneRate"`
-	TaskDoneTotal              float64   `json:"taskDoneTotal" ch:"taskDoneTotal"`
-	TaskDoneRate               float64   `json:"taskDoneRate" ch:"taskDoneRate"`
-	UnfinishedAssigneeTotal    float64   `json:"unfinishedAssigneeTotal" ch:"unfinishedAssigneeTotal"`
-	RequirementDoneTotal       float64   `json:"requirementDoneTotal" ch:"requirementDoneTotal"`
-	RequirementAssociatedTotal float64   `json:"requirementAssociatedTotal" ch:"requirementAssociatedTotal"`
-	RequirementAssociatedRate  float64   `json:"requirementAssociatedRate" ch:"requirementAssociatedRate"`
-	RequirementUnassignedTotal float64   `json:"requirementUnassignedTotal" ch:"requirementUnassignedTotal"`
-	RequirementUnassignedRate  float64   `json:"requirementUnassignedRate" ch:"requirementUnassignedRate"`
-	TaskUnassignedTotal        float64   `json:"taskUnassignedTotal" ch:"taskUnassignedTotal"`
-	BugUndoneTotal             float64   `json:"bugUndoneTotal" ch:"bugUndoneTotal"`
-	BugDoneRate                float64   `json:"bugDoneRate" ch:"bugDoneRate"`
-	BugSeriousTotal            float64   `json:"bugSeriousTotal" ch:"bugSeriousTotal"`
-	BugSeriousRate             float64   `json:"bugSeriousRate" ch:"bugSeriousRate"`
-	BugDemandDesignTotal       float64   `json:"bugDemandDesignTotal" ch:"bugDemandDesignTotal"`
-	BugDemandDesignRate        float64   `json:"bugDemandDesignRate" ch:"bugDemandDesignRate"`
-	BugOnlineTotal             float64   `json:"bugOnlineTotal" ch:"bugOnlineTotal"`
-	BugOnlineRate              float64   `json:"bugOnlineRate" ch:"bugOnlineRate"`
-	BugReopenTotal             float64   `json:"bugReopenTotal" ch:"bugReopenTotal"`
-	BugReopenRate              float64   `json:"bugReopenRate" ch:"bugReopenRate"`
-	TaskAssociatedTotal        float64   `json:"taskAssociatedTotal" ch:"taskAssociatedTotal"`
-	TaskAssociatedRate         float64   `json:"taskAssociatedRate" ch:"taskAssociatedRate"`
-	BugLowLevelTotal           float64   `json:"bugLowLevelTotal" ch:"bugLowLevelTotal"`
-	BugLowLevelRate            float64   `json:"bugLowLevelRate" ch:"bugLowLevelRate"`
-	IterationCompletedRate     float64   `json:"iterationCompletedRate" ch:"iterationCompletedRate"`
-	TaskWorkingTotal           float64   `json:"taskWorkingTotal" ch:"taskWorkingTotal"`
-	BugWontfixTotal            float64   `json:"bugWontfixTotal" ch:"bugWontfixTotal"`
-	IterationAssigneeTotal     float64   `json:"iterationAssigneeTotal" ch:"iterationAssigneeTotal"`
-	ProjectName                string    `json:"projectName" ch:"projectName"`
-	ProjectDisplayName         string    `json:"projectDisplayName" ch:"projectDisplayName"`
-	ProjectID                  string    `json:"projectID" ch:"projectID"`
-	Timestamp                  time.Time `json:"timestamp" ch:"timestamp"`
-	EmpProjectCode             string    `json:"empProjectCode" ch:"empProjectCode"`
+	RequirementTotal             float64   `json:"requirementTotal" ch:"requirementTotal"`
+	BugTotal                     float64   `json:"bugTotal" ch:"bugTotal"`
+	TaskTotal                    float64   `json:"taskTotal" ch:"taskTotal"`
+	BudgetMandayTotal            float64   `json:"budgetMandayTotal" ch:"budgetMandayTotal"`
+	TaskEstimatedMinute          float64   `json:"taskEstimatedMinute" ch:"taskEstimatedMinute"`
+	TaskEstimatedManday          float64   `json:"taskEstimatedManday" ch:"taskEstimatedManday"`
+	ActualMandayTotal            float64   `json:"actualMandayTotal" ch:"actualMandayTotal"`
+	RequirementDoneRate          float64   `json:"requirementDoneRate" ch:"requirementDoneRate"`
+	TaskDoneTotal                float64   `json:"taskDoneTotal" ch:"taskDoneTotal"`
+	TaskDoneRate                 float64   `json:"taskDoneRate" ch:"taskDoneRate"`
+	TaskEstimatedDayGtOneTotal   float64   `json:"taskEstimatedDayGtOneTotal" ch:"taskEstimatedDayGtOneTotal"`
+	TaskEstimatedDayGtTwoTotal   float64   `json:"taskEstimatedDayGtTwoTotal" ch:"taskEstimatedDayGtTwoTotal"`
+	TaskEstimatedDayGtThreeTotal float64   `json:"taskEstimatedDayGtThreeTotal" ch:"taskEstimatedDayGtThreeTotal"`
+	UnfinishedAssigneeTotal      float64   `json:"unfinishedAssigneeTotal" ch:"unfinishedAssigneeTotal"`
+	RequirementDoneTotal         float64   `json:"requirementDoneTotal" ch:"requirementDoneTotal"`
+	RequirementAssociatedTotal   float64   `json:"requirementAssociatedTotal" ch:"requirementAssociatedTotal"`
+	RequirementAssociatedRate    float64   `json:"requirementAssociatedRate" ch:"requirementAssociatedRate"`
+	RequirementUnassignedTotal   float64   `json:"requirementUnassignedTotal" ch:"requirementUnassignedTotal"`
+	RequirementUnassignedRate    float64   `json:"requirementUnassignedRate" ch:"requirementUnassignedRate"`
+	TaskUnassignedTotal          float64   `json:"taskUnassignedTotal" ch:"taskUnassignedTotal"`
+	BugUndoneTotal               float64   `json:"bugUndoneTotal" ch:"bugUndoneTotal"`
+	BugDoneRate                  float64   `json:"bugDoneRate" ch:"bugDoneRate"`
+	BugSeriousTotal              float64   `json:"bugSeriousTotal" ch:"bugSeriousTotal"`
+	BugSeriousRate               float64   `json:"bugSeriousRate" ch:"bugSeriousRate"`
+	BugDemandDesignTotal         float64   `json:"bugDemandDesignTotal" ch:"bugDemandDesignTotal"`
+	BugDemandDesignRate          float64   `json:"bugDemandDesignRate" ch:"bugDemandDesignRate"`
+	BugOnlineTotal               float64   `json:"bugOnlineTotal" ch:"bugOnlineTotal"`
+	BugOnlineRate                float64   `json:"bugOnlineRate" ch:"bugOnlineRate"`
+	BugReopenTotal               float64   `json:"bugReopenTotal" ch:"bugReopenTotal"`
+	BugReopenRate                float64   `json:"bugReopenRate" ch:"bugReopenRate"`
+	TaskAssociatedTotal          float64   `json:"taskAssociatedTotal" ch:"taskAssociatedTotal"`
+	TaskAssociatedRate           float64   `json:"taskAssociatedRate" ch:"taskAssociatedRate"`
+	BugLowLevelTotal             float64   `json:"bugLowLevelTotal" ch:"bugLowLevelTotal"`
+	BugLowLevelRate              float64   `json:"bugLowLevelRate" ch:"bugLowLevelRate"`
+	IterationCompletedRate       float64   `json:"iterationCompletedRate" ch:"iterationCompletedRate"`
+	TaskWorkingTotal             float64   `json:"taskWorkingTotal" ch:"taskWorkingTotal"`
+	BugWontfixTotal              float64   `json:"bugWontfixTotal" ch:"bugWontfixTotal"`
+	IterationAssigneeTotal       float64   `json:"iterationAssigneeTotal" ch:"iterationAssigneeTotal"`
+	IterationEstimatedDayTotal   float64   `json:"iterationEstimatedDayTotal" ch:"iterationEstimatedDayTotal"`
+	ProjectName                  string    `json:"projectName" ch:"projectName"`
+	ProjectDisplayName           string    `json:"projectDisplayName" ch:"projectDisplayName"`
+	ProjectID                    string    `json:"projectID" ch:"projectID"`
+	Timestamp                    time.Time `json:"timestamp" ch:"timestamp"`
+	EmpProjectCode               string    `json:"empProjectCode" ch:"empProjectCode"`
+	BeginDate                    string    `json:"beginDate" ch:"beginDate"`
+	EndDate                      string    `json:"endDate" ch:"endDate"`
+	ActualEndDate                string    `json:"actualEndDate" ch:"actualEndDate"`
 }
 
 var (
@@ -95,6 +102,9 @@ SELECT
     actualMandayTotal,
     taskDoneTotal,
     taskDoneRate,
+    taskEstimatedDayGtOneTotal,
+    taskEstimatedDayGtTwoTotal,
+    taskEstimatedDayGtThreeTotal,
     requirementDoneRate,
     unfinishedAssigneeTotal,
     requirementDoneTotal,
@@ -121,11 +131,15 @@ SELECT
     taskWorkingTotal,
     bugWontfixTotal,
     iterationAssigneeTotal,
+    iterationEstimatedDayTotal,
     projectName,
     projectDisplayName,
     projectID,
     timestamp,
-    empProjectCode
+    empProjectCode,
+    last_value(beginDate) as beginDate,
+    last_value(endDate) as endDate,
+    last_value(actualEndDate) as actualEndDate
 FROM
     (
     SELECT
@@ -138,6 +152,9 @@ FROM
         sum(actual_manday_total) as actualMandayTotal,
         sum(task_done_total) as taskDoneTotal,
         if(sum(task_total) > 0, sum(task_done_total) / sum(task_total), 0) as taskDoneRate,
+        sum(task_estimated_day_gt_one_total) as taskEstimatedDayGtOneTotal,
+        sum(task_estimated_day_gt_two_total) as taskEstimatedDayGtTwoTotal,
+        sum(task_estimated_day_gt_three_total) as taskEstimatedDayGtThreeTotal,
         last_value(unfinished_assignee_total) as unfinishedAssigneeTotal,
         sum(requirement_done_total) as requirementDoneTotal,
     	if(sum(requirement_total) > 0, sum(requirement_done_total) / sum(requirement_total), 0) as requirementDoneRate,
@@ -164,6 +181,10 @@ FROM
         if(sum(task_total) > 0, (4*sum(task_done_total)+sum(task_working_total))/(4*sum(task_total)), 0) as iterationCompletedRate,
     	sum(bug_wontfix_total) as bugWontfixTotal,
     	sum(iteration_unfinished_assignee_total) as iterationAssigneeTotal,
+        sum(iteration_estimated_day_total) as iterationEstimatedDayTotal,
+        if(last_value(emp_project_begin_date) > 0, toString(fromUnixTimestamp(toInt64(last_value(emp_project_begin_date)))), '') as beginDate,
+        if(last_value(emp_project_end_date) > 0, toString(fromUnixTimestamp(toInt64(last_value(emp_project_end_date)))), '') as endDate,
+        if(last_value(emp_project_actual_end_date) > 0, toString(fromUnixTimestamp(toInt64(last_value(emp_project_actual_end_date)))), '') as actualEndDate,
         projectName,
         projectDisplayName,
         projectID,
@@ -195,6 +216,9 @@ GROUP BY
     requirementDoneRate,
     taskDoneTotal,
     taskDoneRate,
+    taskEstimatedDayGtOneTotal,
+    taskEstimatedDayGtTwoTotal,
+    taskEstimatedDayGtThreeTotal,
     unfinishedAssigneeTotal,
     requirementDoneTotal,
     requirementAssociatedTotal,
@@ -220,6 +244,7 @@ GROUP BY
     iterationCompletedRate,
     bugWontfixTotal,
     iterationAssigneeTotal,
+    iterationEstimatedDayTotal,
     projectName,
     projectDisplayName,
     projectID,
@@ -244,6 +269,9 @@ ORDER BY
             last_value(actual_manday_total) as actual_manday_total,
             last_value(task_done_total) as task_done_total,
             last_value(task_working_total) as task_working_total,
+            last_value(task_estimated_day_gt_one_total) as task_estimated_day_gt_one_total,
+            last_value(task_estimated_day_gt_two_total) as task_estimated_day_gt_two_total,
+            last_value(task_estimated_day_gt_three_total) as task_estimated_day_gt_three_total,
             last_value(unfinished_assignee_total) as unfinished_assignee_total,
             last_value(requirement_done_total) as requirement_done_total,
             last_value(requirement_associated_total) as requirement_associated_total,
@@ -257,7 +285,11 @@ ORDER BY
             last_value(task_associated_total) as task_associated_total,
             last_value(bug_low_level_total) as bug_low_level_total,
             last_value(bug_wontfix_total) as bug_wontfix_total,
-            last_value(iteration_unfinished_assignee_total) as iteration_unfinished_assignee_total
+            last_value(iteration_unfinished_assignee_total) as iteration_unfinished_assignee_total,
+            last_value(iteration_estimated_day_total) as iteration_estimated_day_total,
+            last_value(emp_project_begin_date) as emp_project_begin_date,
+            last_value(emp_project_end_date) as emp_project_end_date,
+            last_value(emp_project_actual_end_date) as emp_project_actual_end_date
         FROM (
         %s
         )
@@ -284,6 +316,9 @@ ORDER BY
 	            number_field_values[indexOf(number_field_keys,'emp_project_actual_manday_total')] as actual_manday_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_task_done_total')] as task_done_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_task_working_total')] as task_working_total,
+                number_field_values[indexOf(number_field_keys,'iteration_task_estimated_day_gt_one_total')] as task_estimated_day_gt_one_total,
+                number_field_values[indexOf(number_field_keys,'iteration_task_estimated_day_gt_two_total')] as task_estimated_day_gt_two_total,
+                number_field_values[indexOf(number_field_keys,'iteration_task_estimated_day_gt_three_total')] as task_estimated_day_gt_three_total,
 	            number_field_values[indexOf(number_field_keys,'project_assignee_total')] as unfinished_assignee_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_requirement_done_total')] as requirement_done_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_requirement_associated_task_total')] as requirement_associated_total,
@@ -297,7 +332,11 @@ ORDER BY
 	            number_field_values[indexOf(number_field_keys,'iteration_task_inclusion_requirement_total')] as task_associated_total,
 	            number_field_values[indexOf(number_field_keys,'low_level_bug_total')] as bug_low_level_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_bug_wontfix_total')] as bug_wontfix_total,
-	            number_field_values[indexOf(number_field_keys,'iteration_assignee_total')] as iteration_unfinished_assignee_total
+	            number_field_values[indexOf(number_field_keys,'iteration_assignee_total')] as iteration_unfinished_assignee_total,
+                number_field_values[indexOf(number_field_keys,'iteration_estimated_day_total')] as iteration_estimated_day_total,
+                number_field_values[indexOf(number_field_keys,'emp_project_begin_date')] as emp_project_begin_date,
+                number_field_values[indexOf(number_field_keys,'emp_project_end_date')] as emp_project_end_date,
+                number_field_values[indexOf(number_field_keys,'emp_project_actual_end_date')] as emp_project_actual_end_date
             FROM monitor.external_metrics_all
             WHERE
                 metric_group='%s' 

@@ -1167,14 +1167,17 @@ type IssuesStageRequest struct {
 // IssueManHourSumResponse 事件下所有的任务总和响应
 type IssueManHourSumResponse struct {
 	// Header
-	DesignManHour    int64 `json:"designManHour"`
-	DevManHour       int64 `json:"devManHour"`
-	TestManHour      int64 `json:"testManHour"`
-	ImplementManHour int64 `json:"implementManHour"`
-	DeployManHour    int64 `json:"deployManHour"`
-	OperatorManHour  int64 `json:"operatorManHour"`
-	SumElapsedTime   int64 `json:"sumElapsedTime"`
-	SumEstimateTime  int64 `json:"sumEstimateTime"`
+	DesignManHour               int64 `json:"designManHour"`
+	DevManHour                  int64 `json:"devManHour"`
+	TestManHour                 int64 `json:"testManHour"`
+	ImplementManHour            int64 `json:"implementManHour"`
+	DeployManHour               int64 `json:"deployManHour"`
+	OperatorManHour             int64 `json:"operatorManHour"`
+	SumElapsedTime              int64 `json:"sumElapsedTime"`
+	SumEstimateTime             int64 `json:"sumEstimateTime"`
+	EstimateManDayGtOneDayNum   int64 `json:"estimateManDayGtOneDayNum"`
+	EstimateManDayGtTwoDayNum   int64 `json:"estimateManDayGtTwoDayNum"`
+	EstimateManDayGtThreeDayNum int64 `json:"estimateManDayGtThreeDayNum"`
 }
 
 // IssueBugPercentageResponse 缺陷率响应
