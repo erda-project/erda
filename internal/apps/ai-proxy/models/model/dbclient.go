@@ -23,6 +23,7 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_type"
 )
 
 type DBClient struct {
@@ -33,7 +34,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelCreateRequest
 	c := &Model{
 		Name:       req.Name,
 		Desc:       req.Desc,
-		Type:       GetModelTypeFromProtobuf(req.Type),
+		Type:       model_type.GetModelTypeFromProtobuf(req.Type),
 		ProviderID: req.ProviderId,
 		APIKey:     req.ApiKey,
 		Metadata:   metadata.FromProtobuf(req.Metadata),
@@ -57,7 +58,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelUpdateRequest
 		BaseModel:  common.BaseModelWithID(req.Id),
 		Name:       req.Name,
 		Desc:       req.Desc,
-		Type:       ModelType(req.Type),
+		Type:       model_type.ModelType(req.Type),
 		ProviderID: req.ProviderId,
 		APIKey:     req.ApiKey,
 		Metadata:   metadata.FromProtobuf(req.Metadata),

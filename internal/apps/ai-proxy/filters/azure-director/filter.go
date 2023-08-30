@@ -29,6 +29,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
@@ -71,11 +74,11 @@ func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok || value == nil {
 		return false
 	}
-	prov, ok := value.(*model_provider.ModelProvider)
+	prov, ok := value.(*modelproviderpb.ModelProvider)
 	if !ok {
 		return false
 	}
-	return strings.EqualFold(prov.Name, "azure")
+	return prov.Type == modelproviderpb.ModelProviderType_Azure
 }
 
 func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -146,9 +149,9 @@ func (f *AzureDirector) TransAuthorization(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*model_provider.ModelProvider)
+	prov := value.(*modelproviderpb.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.Header.Set("Api-Key", prov.APIKey)
+		req.Header.Set("Api-Key", prov.ApiKey)
 		req.Header.Del("Authorization")
 	})
 	return nil
@@ -185,9 +188,10 @@ func (f *AzureDirector) RewriteScheme(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*model_provider.ModelProvider)
+	prov := value.(*modelproviderpb.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		meta, err := prov.Metadata.ToModelProviderMeta()
+		metaPb := metadata.FromProtobuf(prov.Metadata)
+		meta, err := metaPb.ToModelProviderMeta()
 		if err != nil {
 			return
 		}
@@ -207,8 +211,10 @@ func (f *AzureDirector) RewriteHost(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
+	prov := value.(*modelproviderpb.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		meta, err := value.(*model_provider.ModelProvider).Metadata.ToModelProviderMeta()
+		metaPb := metadata.FromProtobuf(prov.Metadata)
+		meta, err := metaPb.ToModelProviderMeta()
 		if err != nil {
 			return
 		}
@@ -233,11 +239,12 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 	}
 
 	values := ctx.Value(reverseproxy.CtxKeyPathMatcher{}).(*route.PathMatcher).Values
-	prov_, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
-	if !ok || prov_ == nil {
-		return errors.New("provider not set in context map")
+	model, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModel{})
+	if !ok || model == nil {
+		return errors.New("model not set in context map")
 	}
-	m := prov_.(*model_provider.ModelProvider).Metadata.MergeMap()
+	metaPb := metadata.FromProtobuf(model.(*modelpb.Model).Metadata)
+	m := metaPb.MergeMap()
 	for {
 		expr, start, end, err := strutil.FirstCustomExpression(rewrite, "${", "}", func(s string) bool {
 			s = strings.TrimSpace(s)

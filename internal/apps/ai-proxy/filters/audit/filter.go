@@ -33,8 +33,8 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -262,7 +262,7 @@ func (f *Audit) SetProvider(ctx context.Context) error {
 	if !ok || model == nil {
 		return errors.New("model not set in context map")
 	}
-	prov_ := prov.(*model_provider.ModelProvider)
+	prov_ := prov.(*modelproviderpb.ModelProvider)
 	f.Audit.ProviderName = prov_.Name
 	f.Audit.ProviderInstanceID = model.(*modelpb.Model).Id
 	return nil
@@ -547,7 +547,7 @@ func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
 		if !ok {
 			return errors.New("provider not set in context map")
 		}
-		f.Audit.Server = prov.(*model_provider.ModelProvider).Name
+		f.Audit.Server = prov.(*modelproviderpb.ModelProvider).Name
 	}
 	return nil
 }

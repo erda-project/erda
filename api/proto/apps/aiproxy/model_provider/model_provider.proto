@@ -43,15 +43,22 @@ message ModelProvider {
 
     string name = 5;
     string desc = 6;
-    string apiKey = 7;
-    Metadata metadata = 8;
+    ModelProviderType type = 7;
+    string apiKey = 8;
+    Metadata metadata = 9;
+}
+
+enum ModelProviderType {
+    OpenAI = 0;
+    Azure = 1;
 }
 
 message ModelProviderCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
-    string apiKey = 3 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    Metadata metadata = 4;
+    ModelProviderType type = 3 [(validate.rules).enum = {defined_only: true}];
+    string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
+    Metadata metadata = 5;
 }
 
 message ModelProviderGetRequest {
@@ -66,6 +73,7 @@ message ModelProviderUpdateRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string = {min_len: 0, max_len: 1024}];
-    string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    Metadata metadata = 5;
+    ModelProviderType type = 4 [(validate.rules).enum = {defined_only: true}];
+    string apiKey = 5 [(validate.rules).string = {min_len: 0, max_len: 128}];
+    Metadata metadata = 6;
 }

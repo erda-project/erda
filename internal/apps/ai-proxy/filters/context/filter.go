@@ -19,15 +19,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_type"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -56,11 +61,14 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		m = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
 	)
 	// find client
+	var client *clientpb.Client
 	ak := vars.TrimBearer(infor.Header().Get("Authorization"))
 	if ak == "" {
 		http.Error(w, "Authorization is required", http.StatusUnauthorized)
 		return reverseproxy.Intercept, nil
 	}
+	// try to remove Bearer
+	ak = strings.TrimPrefix(ak, "Bearer ")
 	clientPagingResult, err := q.ClientClient().Paging(ctx, &clientpb.ClientPagingRequest{
 		AccessKeyIds: []string{ak},
 		PageNum:      1,
@@ -71,18 +79,74 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		http.Error(w, "Authorization is invalid", http.StatusForbidden)
 		return reverseproxy.Intercept, err
 	}
+	client = clientPagingResult.List[0]
 
 	// find model
+	var model *modelpb.Model
+	// get from session if exists
+	headerSessionId := infor.Header().Get(vars.XAIProxySessionId)
 	headerModelId := infor.Header().Get(vars.XAIProxyModelId)
-	if headerModelId == "" {
-		http.Error(w, fmt.Sprintf("header %s is required", vars.XAIProxyModelId), http.StatusBadRequest)
-		return reverseproxy.Intercept, nil
-	}
-	model, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: headerModelId})
-	if err != nil {
-		l.Errorf("failed to get model, id: %s, err: %v", headerModelId, err)
-		http.Error(w, "ModelId is invalid", http.StatusBadRequest)
-		return reverseproxy.Intercept, err
+	if headerSessionId != "" {
+		session, err := q.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: headerSessionId})
+		if err != nil {
+			l.Errorf("failed to get session, id: %s, err: %v", headerSessionId, err)
+			http.Error(w, "SessionId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		sessionModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: session.ModelId})
+		if err != nil {
+			l.Errorf("failed to get model, id: %s, err: %v", session.ModelId, err)
+			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		model = sessionModel
+	} else if headerModelId != "" {
+		// get from model header
+		if headerModelId == "" {
+			http.Error(w, fmt.Sprintf("header %s is required", vars.XAIProxyModelId), http.StatusBadRequest)
+			return reverseproxy.Intercept, nil
+		}
+		headerModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: headerModelId})
+		if err != nil {
+			l.Errorf("failed to get model, id: %s, err: %v", headerModelId, err)
+			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		model = headerModel
+	} else {
+		// get client default model
+		clientPbMeta := metadata.FromProtobuf(client.Metadata)
+		clientMeta, err := clientPbMeta.ToClientMeta()
+		if err != nil {
+			l.Errorf("failed to get client meta, err: %v", err)
+			http.Error(w, "Client meta is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		if clientMeta.Public.DefaultModelIds == nil {
+			l.Errorf("failed to get client's default model")
+			http.Error(w, "Client's default model is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		// judge by model type
+		modelType, ok := getModelTypeByRequest(infor)
+		if !ok {
+			l.Errorf("failed to judge model type by request path")
+			http.Error(w, "ModelType is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		defaultModelId, ok := clientMeta.Public.DefaultModelIds[model_type.ModelType(modelType.String())]
+		if !ok {
+			l.Errorf("failed to get client's default model")
+			http.Error(w, "Client's default model is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		defaultModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: defaultModelId})
+		if err != nil {
+			l.Errorf("failed to get model, id: %s, err: %v", defaultModelId, err)
+			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		model = defaultModel
 	}
 
 	// find provider
@@ -94,9 +158,28 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	}
 
 	// store data to context
-	m.Store(vars.MapKeyClient{}, &clientPagingResult.List[0])
-	m.Store(vars.MapKeyModel{}, &model)
-	m.Store(vars.MapKeyModelProvider{}, &modelProvider)
+	m.Store(vars.MapKeyClient{}, client)
+	m.Store(vars.MapKeyModel{}, model)
+	m.Store(vars.MapKeyModelProvider{}, modelProvider)
 
 	return reverseproxy.Continue, nil
+}
+
+func getModelTypeByRequest(infor reverseproxy.HttpInfor) (modelpb.ModelType, bool) {
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/chat/completions", "/v1/completions") {
+		return modelpb.ModelType_text_moderation, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/images") {
+		return modelpb.ModelType_image, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/audio") {
+		return modelpb.ModelType_audio, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/embeddings") {
+		return modelpb.ModelType_embedding, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/moderations") {
+		return modelpb.ModelType_text_moderation, true
+	}
+	return -1, false
 }

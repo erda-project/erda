@@ -15,7 +15,6 @@
 package vars
 
 const (
-	XAIProxySessionId          = "X-AI-Proxy-SessionId"
 	XAIProxyChatType           = "X-AI-Proxy-ChatType"
 	XAIProxyChatTitle          = "X-AI-Proxy-ChatTitle"
 	XAIProxyChatId             = "X-AI-Proxy-ChatId"
@@ -35,7 +34,8 @@ const (
 	XAiProxyErdaOpenapiSession = "X-Ai-Proxy-Erda-Openapi-Session"
 	XRequestId                 = "X-Request-Id"
 
-	XAIProxyModelId = "X-AI-Proxy-Model-Id"
+	XAIProxyModelId   = "X-AI-Proxy-Model-Id"
+	XAIProxySessionId = "X-AI-Proxy-Session-Id"
 )
 
 const (

@@ -24,8 +24,9 @@ CREATE TABLE `ai_proxy_model_provider`
     `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted_at` DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
 
-    `name`       VARCHAR(191) NOT NULL COMMENT '供应商名称',
+    `name`       VARCHAR(191) NOT NULL COMMENT '供应商名称，可以区分多账号或多地区，例如 azure-us-esat / azure-japan-east 等',
     `desc`       VARCHAR(1024)         DEFAULT NULL COMMENT '供应商描述',
+    `type`       VARCHAR(191) NOT NULL COMMENT '供应商类型，例如 openai / azure 等',
     `api_key`    varchar(128) NOT NULL COMMENT '供应商级别的 api-key，例如 openai 的 sk，可以使用该供应商下的所有模型',
     `metadata`   MEDIUMTEXT   NOT NULL COMMENT '供应商元数据',
 

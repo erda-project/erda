@@ -17,16 +17,20 @@ package azure_director
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -66,11 +70,11 @@ func (f *OpenaiDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok || value == nil {
 		return false
 	}
-	prov, ok := value.(*model_provider.ModelProvider)
+	prov, ok := value.(*modelproviderpb.ModelProvider)
 	if !ok {
 		return false
 	}
-	return strings.EqualFold(prov.Name, "openai")
+	return prov.Type == modelproviderpb.ModelProviderType_OpenAI
 }
 
 func (f *OpenaiDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -126,10 +130,10 @@ func (f *OpenaiDirector) TransAuthorization(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*model_provider.ModelProvider)
+	prov := value.(*modelproviderpb.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.Header.Del("Authorization")
-		req.Header.Set("Authorization", vars.ConcatBearer(prov.APIKey))
+		req.Header.Set("Authorization", vars.ConcatBearer(prov.ApiKey))
 	})
 	return nil
 }
@@ -139,13 +143,14 @@ func (f *OpenaiDirector) RewriteScheme(ctx context.Context) error {
 	if !ok || value == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov := value.(*model_provider.ModelProvider)
+	prov := value.(*modelproviderpb.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		meta, err := prov.Metadata.ToModelProviderMeta()
+		meta := metadata.FromProtobuf(prov.Metadata)
+		mpMeta, err := meta.ToModelProviderMeta()
 		if err != nil {
 			return
 		}
-		scheme := meta.Public.Scheme
+		scheme := mpMeta.Public.Scheme
 		if scheme == "http" || scheme == "https" {
 			req.URL.Scheme = scheme
 		}
@@ -162,14 +167,40 @@ func (f *OpenaiDirector) RewriteHost(ctx context.Context) error {
 		return errors.New("provider not set in context map")
 	}
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		meta, err := (value.(*model_provider.ModelProvider).Metadata.ToModelProviderMeta())
+		meta := metadata.FromProtobuf(value.(*modelproviderpb.ModelProvider).Metadata)
+		mpMeta, err := meta.ToModelProviderMeta()
 		if err != nil {
 			return
 		}
-		req.Host = meta.Public.Host
+		req.Host = mpMeta.Public.Host
 		req.URL.Host = req.Host
 		req.Header.Set("Host", req.Host)
 		req.Header.Set("X-Forwarded-Host", req.Host)
+	})
+	return nil
+}
+
+func (f *OpenaiDirector) AddModelInRequestBody(ctx context.Context) error {
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModel{})
+	if !ok || value == nil {
+		return errors.New("model not set in context map")
+	}
+	model := value.(*modelpb.Model)
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		infor := reverseproxy.NewInfor(ctx, req)
+		// read body to json, then add a `model` field, then write back to body
+		var body map[string]interface{}
+		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&body); err != nil && err != io.EOF {
+			logrus.Errorf("failed to decode request body, err: %v", err)
+			return
+		}
+		body["model"] = model.Name
+		b, err := json.Marshal(body)
+		if err != nil {
+			logrus.Errorf("failed to marshal request body, err: %v", err)
+			return
+		}
+		infor.SetBody(io.NopCloser(strings.NewReader(string(b))), int64(len(b)))
 	})
 	return nil
 }

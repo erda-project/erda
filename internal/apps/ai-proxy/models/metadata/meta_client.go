@@ -17,32 +17,30 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_type"
 )
 
 type (
-	ModelProviderMeta struct {
-		Public ModelProviderMetaPublic `json:"public,omitempty"`
-		Secret ModelProviderMetaSecret `json:"secret,omitempty"`
+	ClientMeta struct {
+		Public ClientMetaPublic
+		Secret ClientMetaSecret
 	}
-	ModelProviderMetaPublic struct {
-		Scheme   string `json:"scheme,omitempty"`
-		Host     string `json:"host,omitempty"`
-		Location string `json:"location,omitempty"`
-		Region   string `json:"region,omitempty"`
+	ClientMetaPublic struct {
+		DefaultModelIds map[model_type.ModelType]string `json:"defaultModelIds,omitempty"` // key: model type, value: model id
 	}
-	ModelProviderMetaSecret struct {
-		APIKey string `json:"apiKey,omitempty"`
+	ClientMetaSecret struct {
 	}
 )
 
-func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {
+func (m *Metadata) ToClientMeta() (*ClientMeta, error) {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal Metadata to json: %v", err)
 	}
-	var result ModelProviderMeta
+	var result ClientMeta
 	if err := json.Unmarshal(b, &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal string to ModelProviderMeta: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal string to ClientMeta: %v", err)
 	}
 	return &result, nil
 }
