@@ -66,6 +66,9 @@ type IterationMetricFields struct {
 	TaskUnAssociatedTotal           uint64
 	TaskAssociatedPercent           float64
 	TaskWorkingTotal                uint64
+	TaskEstimatedDayGtOneTotal      uint64
+	TaskEstimatedDayGtTwoTotal      uint64
+	TaskEstimatedDayGtThreeTotal    uint64
 
 	// requirement-related metrics
 	RequirementTotal               uint64
@@ -89,8 +92,9 @@ type IterationMetricFields struct {
 	BugWithWonfixTotal     uint64
 
 	// iteration-related metrics
-	IterationAssigneeNum uint64
-	ProjectAssigneeNum   uint64
+	IterationAssigneeNum       uint64
+	IterationEstimatedDayTotal float64
+	ProjectAssigneeNum         uint64
 }
 
 // IsValid returns true if the IterationMetricFields is valid.
@@ -228,6 +232,57 @@ var (
 				var value float64
 				if iterationInfo.IterationMetricFields != nil {
 					value = float64(iterationInfo.IterationMetricFields.TaskWorkingTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_task_estimated_day_gt_one_total",
+			help:      "Cumulative estimated day greater than one of task type issue in iteration.",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.TaskEstimatedDayGtOneTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_task_estimated_day_gt_two_total",
+			help:      "Cumulative estimated day greater than two of task type issue in iteration.",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.TaskEstimatedDayGtTwoTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_task_estimated_day_gt_three_total",
+			help:      "Cumulative estimated day greater than three of task type issue in iteration.",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = float64(iterationInfo.IterationMetricFields.TaskEstimatedDayGtThreeTotal)
 				}
 				return metricValues{
 					{
@@ -572,6 +627,23 @@ var (
 				return metricValues{
 					{
 						value:     float64(value),
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
+			name:      "iteration_estimated_day_total",
+			help:      "The total number estimated days of the iteration",
+			valueType: prometheus.CounterValue,
+			getValues: func(iterationInfo *IterationInfo) metricValues {
+				var value float64
+				if iterationInfo.IterationMetricFields != nil {
+					value = iterationInfo.IterationMetricFields.IterationEstimatedDayTotal
+				}
+				return metricValues{
+					{
+						value:     value,
 						timestamp: time.Now(),
 					},
 				}
