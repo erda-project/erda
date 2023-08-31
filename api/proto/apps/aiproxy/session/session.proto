@@ -107,9 +107,9 @@ message SessionChatLogGetResponse {
 }
 
 message SessionCreateRequest {
-    string clientId = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 1 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string promptId = 2 [(validate.rules).string = {max_len: 36}];
-    string modelId = 3 [(validate.rules).string = {len: 36}];
+    string modelId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string scene = 4 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string userId = 5;
     string name = 6 [(validate.rules).string = {min_len: 4, max_len: 191}];
@@ -121,16 +121,18 @@ message SessionCreateRequest {
 
 message SessionGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
 message SessionDeleteRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
 message SessionUpdateRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     string clientId = 2 [(validate.rules).string = {len: 36}];
-    string promptId = 3 [(validate.rules).string = {len: 36}];
+    string promptId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string modelId = 4 [(validate.rules).string = {len: 36}];
     string userId = 5 [(validate.rules).string = {max_len: 191}];
     string scene = 6 [(validate.rules).string = {min_len: 4, max_len: 191}];
@@ -160,12 +162,15 @@ message SessionPagingResponse {
 
 message SessionArchiveRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
 message SessionUnArchiveRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
 message SessionResetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }

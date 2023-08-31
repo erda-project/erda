@@ -66,7 +66,7 @@ func (dbClient *DBClient) Get(ctx context.Context, req *pb.PromptGetRequest) (*p
 }
 
 func (dbClient *DBClient) Delete(ctx context.Context, req *pb.PromptDeleteRequest) (*commonpb.VoidResponse, error) {
-	c := &Prompt{BaseModel: common.BaseModelWithID(req.Id)}
+	c := &Prompt{BaseModel: common.BaseModelWithID(req.Id), ClientID: req.ClientId}
 	sql := dbClient.DB.Model(c).Delete(c)
 	if sql.Error != nil {
 		return nil, sql.Error
@@ -78,24 +78,38 @@ func (dbClient *DBClient) Delete(ctx context.Context, req *pb.PromptDeleteReques
 }
 
 func (dbClient *DBClient) Update(ctx context.Context, req *pb.PromptUpdateRequest) (*pb.Prompt, error) {
-	c := &Prompt{BaseModel: common.BaseModelWithID(req.Id)}
-	if err := dbClient.DB.Model(c).Updates(Prompt{
+	c := &Prompt{BaseModel: common.BaseModelWithID(req.Id), ClientID: req.ClientId}
+	sql := dbClient.DB.Model(c).Where(c).Updates(Prompt{
 		Name:     req.Name,
 		Desc:     req.Desc,
 		ClientID: req.ClientId,
 		Messages: message.FromProtobuf(req.Messages),
 		Metadata: metadata.FromProtobuf(req.Metadata),
-	}).Error; err != nil {
-		return nil, err
+	})
+	if sql.Error != nil {
+		return nil, sql.Error
+	}
+	if sql.RowsAffected < 1 {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return dbClient.Get(ctx, &pb.PromptGetRequest{Id: req.Id})
 }
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.PromptPagingRequest) (*pb.PromptPagingResponse, error) {
-	c := &Prompt{ClientID: req.ClientId}
-	sql := dbClient.DB.Model(c).Where(c)
+	c := &Prompt{}
+	sql := dbClient.DB.Model(c)
 	if req.Name != "" {
 		sql.Where("name LIKE ?", "%"+req.Name+"%")
+	}
+	if req.OnlySystemBuiltin {
+		sql.Where(`client_id IS NULL OR client_id = ''`)
+	} else {
+		if req.ClientId != "" {
+			sql.Where("client_id = ?", req.ClientId)
+		}
+		if req.IncludeSystemBuiltin {
+			sql.Or(`client_id IS NULL OR client_id = ''`)
+		}
 	}
 	var (
 		total int64

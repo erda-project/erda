@@ -39,12 +39,15 @@ const (
 )
 
 const (
-	EnvAIProxyRootKey = "AI_PROXY_ROOT_KEY"
+	EnvAIProxyAdminAuthKey = "AI_PROXY_ADMIN_AUTH_KEY"
 )
 
 type (
-	CtxKeyDAO           struct{ CtxKeyDAO any }
-	CtxKeyErdaOpenapi   struct{ CtxKeyErdaOpenapi any }
+	CtxKeyDAO         struct{ CtxKeyDAO any }
+	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
+	CtxKeyIsAdmin     struct{ CtxKeyIsAdmin bool }
+	CtxKeyClientId    struct{ CtxKeyClientId string }
+
 	MapKeyClient        struct{ MapKeyClient any }
 	MapKeyModel         struct{ MapKeyModel any }
 	MapKeyModelProvider struct{ MapKeyModelProvider any }

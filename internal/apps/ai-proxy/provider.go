@@ -48,18 +48,21 @@ import (
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -81,14 +84,27 @@ var (
 		Types:       []reflect.Type{providerType},
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
-	rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != vars.ConcatBearer(os.Getenv(vars.EnvAIProxyRootKey)) {
-				return nil, errors.New("Access denied to the admin API")
+	trySetAuth = func(dao dao.DAO) transport.ServiceOption {
+		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+			return func(ctx context.Context, req interface{}) (interface{}, error) {
+				// check admin key first
+				adminKey := vars.TrimBearer(apis.GetHeader(ctx, httputil.HeaderKeyAuthorization))
+				if len(adminKey) > 0 && adminKey == os.Getenv(vars.EnvAIProxyAdminAuthKey) {
+					ctx = context.WithValue(ctx, vars.CtxKeyIsAdmin{}, true)
+					return h(ctx, req)
+				}
+				// try set clientId by ak
+				clientId, err := akutil.CheckAk(ctx, req, dao)
+				if err != nil {
+					return nil, err
+				}
+				if clientId != "" {
+					ctx = context.WithValue(ctx, vars.CtxKeyClientId{}, clientId)
+				}
+				return h(ctx, req)
 			}
-			return h(ctx, req)
-		}
-	})
+		})
+	}
 )
 
 func init() {
@@ -145,12 +161,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	// register gRPC and http handler
 	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
-	clientpb.RegisterClientServiceImp(p, &handler_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts)
-	modelproviderpb.RegisterModelProviderServiceImp(p, &handler_model_provider.ModelProviderHandler{DAO: p.Dao}, apis.Options(), encoderOpts)
-	modelpb.RegisterModelServiceImp(p, &handler_model.ModelHandler{DAO: p.Dao}, apis.Options(), encoderOpts)
-	clientmodelrelationpb.RegisterClientModelRelationServiceImp(p, &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao}, apis.Options(), encoderOpts)
-	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts)
-	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts)
+	clientpb.RegisterClientServiceImp(p, &handler_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientPerm)
+	modelproviderpb.RegisterModelProviderServiceImp(p, &handler_model_provider.ModelProviderHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckModelProviderPerm)
+	modelpb.RegisterModelServiceImp(p, &handler_model.ModelHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckModelPerm)
+	clientmodelrelationpb.RegisterClientModelRelationServiceImp(p, &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
+	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
+	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())

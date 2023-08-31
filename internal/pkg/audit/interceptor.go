@@ -106,7 +106,7 @@ func (a *auditor) Audit(auditors ...*MethodAuditor) transport.ServiceOption {
 // Method .
 func Method(method interface{}, scope ScopeType, template string, getter GetScopeIDAndEntries, options ...Option) *MethodAuditor {
 	return &MethodAuditor{
-		method:   getMethodName(method),
+		method:   GetMethodName(method),
 		scope:    scope,
 		template: template,
 		getter:   getter,
@@ -121,7 +121,7 @@ func MethodWithError(method interface{}, scope ScopeType, template string, gette
 	return ma
 }
 
-func getMethodName(method interface{}) string {
+func GetMethodName(method interface{}) string {
 	if method == nil {
 		return ""
 	}
@@ -129,7 +129,7 @@ func getMethodName(method interface{}) string {
 	if ok {
 		return name
 	}
-	name = getMethodFullName(method)
+	name = GetMethodFullName(method)
 	parts := strings.Split(name, ".")
 	if len(parts) < 2 {
 		panic(fmt.Errorf("function %s is not method of type", name))
@@ -144,7 +144,7 @@ func getMethodName(method interface{}) string {
 	return name
 }
 
-func getMethodFullName(method interface{}) string {
+func GetMethodFullName(method interface{}) string {
 	if method == nil {
 		return ""
 	}

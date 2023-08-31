@@ -65,17 +65,19 @@ message PromptCreateRequest {
 
 message PromptGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
 message PromptDeleteRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
 }
 
 message PromptUpdateRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string = {max_len: 1024}];
-    string clientId = 4 [(validate.rules).string = {max_len: 36}];
+    string clientId = 4 [(validate.rules).string = {ignore_empty: true, max_len: 36}];
     repeated Message messages = 5;
     Metadata metadata = 6;
 }
@@ -84,7 +86,9 @@ message PromptPagingRequest {
     int64 pageNum = 1;
     int64 pageSize = 2;
     string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
-    string clientId = 4 [(validate.rules).string = {max_len: 36}];
+    string clientId = 4 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    bool includeSystemBuiltin = 5;
+    bool onlySystemBuiltin = 6;
 }
 
 message PromptPagingResponse {
