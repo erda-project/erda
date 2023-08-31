@@ -294,7 +294,8 @@ func (p *provider) getIssuePropertyInstance(issueID int64, properties []*pb.Issu
 	for _, v := range relations {
 		instance, ok := propertyInstanceMap[v.PropertyID]
 		if !ok {
-			return nil, apierrors.ErrGetIssuePropertyInstance.InvalidState("找不到使用的自定义字段")
+			return nil, apierrors.ErrGetIssuePropertyInstance.InvalidState(
+				fmt.Sprintf("找不到使用的自定义字段, issueID: %d, propertyID: %d", issueID, v.PropertyID))
 		}
 		if !common.IsOptions(instance.PropertyType.String()) {
 			instance.ArbitraryValue = structpb.NewStringValue(v.ArbitraryValue)
