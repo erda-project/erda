@@ -17,6 +17,7 @@ gorm.v2:
   username: "${MYSQL_USERNAME}"
   password: "${MYSQL_PASSWORD}"
   database: "${MYSQL_DATABASE}"
+  debug: true
 
 erda.apps.ai-proxy.dao:
 erda.app.ai-proxy.metrics:

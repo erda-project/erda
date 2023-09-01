@@ -54,7 +54,11 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 }
 
 func (f *BodySizeLimit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
-	if infor.ContentLength() > f.Cfg.MaxSize || int64(infor.BodyBuffer().Len()) > f.Cfg.MaxSize {
+	var bodyBufferLen int
+	if infor.BodyBuffer() != nil {
+		bodyBufferLen = infor.BodyBuffer().Len()
+	}
+	if infor.ContentLength() > f.Cfg.MaxSize || int64(bodyBufferLen) > f.Cfg.MaxSize {
 		if ok := json.Valid(f.Cfg.Message); ok {
 			w.Header().Set("Content-Type", string(httputil.ApplicationJson))
 		}

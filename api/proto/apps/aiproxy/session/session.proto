@@ -1,0 +1,176 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service SessionService {
+    rpc Create(SessionCreateRequest) returns (Session) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/sessions"
+        };
+    }
+
+    rpc Get(SessionGetRequest) returns (Session) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/sessions/{id}"
+        };
+    }
+
+    rpc Delete(SessionDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/sessions/{id}"
+        };
+    }
+
+    rpc Update(SessionUpdateRequest) returns (Session) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/sessions/{id}"
+        };
+    }
+
+    rpc Paging(SessionPagingRequest) returns (SessionPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/sessions"
+        };
+    }
+
+    rpc Archive(SessionArchiveRequest) returns (Session) {
+        option(google.api.http) = {
+            patch: "/api/ai-proxy/sessions/{id}/actions/archive"
+        };
+    }
+
+    rpc UnArchive(SessionUnArchiveRequest) returns (Session) {
+        option(google.api.http) = {
+            patch: "/api/ai-proxy/sessions/{id}/actions/unarchive"
+        };
+    }
+
+    rpc Reset(SessionResetRequest) returns (Session) {
+        option(google.api.http) = {
+            patch: "/api/ai-proxy/sessions/{id}/actions/reset"
+        };
+    }
+
+    rpc GetChatLogs(SessionChatLogGetRequest) returns (SessionChatLogGetResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/sessions/{sessionId}/chat-logs"
+        };
+    }
+}
+
+message Session {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string clientId = 5 [(validate.rules).string = {len: 36}];
+    string promptId = 6 [(validate.rules).string = {max_len: 36}];
+    string modelId = 7 [(validate.rules).string = {len: 36}];
+    string userId = 8 [(validate.rules).string = {max_len: 191}];
+    string scene = 9 [(validate.rules).string = {min_len: 4, max_len: 191}];
+
+    string name = 10 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string topic = 11 [(validate.rules).string = {min_len: 1}];
+    int64 numOfCtxMsg = 12;
+    double temperature = 13 [(validate.rules).double = {gte: 0, lte: 2}];
+    bool isArchived = 14;
+    google.protobuf.Timestamp resetAt = 15;
+    Metadata metadata = 16;
+}
+
+message ChatLog {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    google.protobuf.Timestamp requestAt = 2;
+    google.protobuf.Timestamp responseAt = 3;
+    string prompt = 4 [(validate.rules).string = {min_len: 1}];
+    string completion = 5;
+    string sessionId = 6 [(validate.rules).string = {len: 36}];
+}
+
+message SessionChatLogGetRequest {
+    string sessionId = 1 [(validate.rules).string = {len: 36}];
+    uint64 pageSize = 2;
+    uint64 pageNum = 3;
+}
+
+message SessionChatLogGetResponse {
+    uint64 total = 1;
+    repeated ChatLog list = 2;
+}
+
+message SessionCreateRequest {
+    string clientId = 1 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string promptId = 2 [(validate.rules).string = {max_len: 36}];
+    string modelId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string scene = 4 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string userId = 5;
+    string name = 6 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string topic = 7 [(validate.rules).string = {min_len: 1}];
+    uint64 numOfCtxMsg = 8;
+    double temperature = 9 [(validate.rules).double = {gte: 0, lte: 2}];
+    Metadata metadata = 10;
+}
+
+message SessionGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}
+
+message SessionDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}
+
+message SessionUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {len: 36}];
+    string promptId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string modelId = 4 [(validate.rules).string = {len: 36}];
+    string userId = 5 [(validate.rules).string = {max_len: 191}];
+    string scene = 6 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string name = 7 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string topic = 8 [(validate.rules).string = {min_len: 1}];
+    uint64 numOfCtxMsg = 9;
+    double temperature = 10 [(validate.rules).double = {gte: 0, lte: 2}];
+    Metadata metadata = 11;
+}
+
+message SessionPagingRequest {
+    string clientId = 1 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string promptId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string modelId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string userId = 4 [(validate.rules).string = {max_len: 191}];
+    string scene = 5 [(validate.rules).string = {ignore_empty: true, min_len: 4, max_len: 191}];
+    string name = 6 [(validate.rules).string = {ignore_empty: true, min_len: 4, max_len: 191}];
+    bool isArchived = 7;
+    uint64 pageSize = 8 [(validate.rules).uint64 = {gte: 1}];
+    uint64 pageNum = 9 [(validate.rules).uint64 = {gte: 1, lte: 1000}];
+}
+
+message SessionPagingResponse {
+    uint64 total = 1;
+    repeated Session list = 2;
+}
+
+message SessionArchiveRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}
+
+message SessionUnArchiveRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}
+
+message SessionResetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}

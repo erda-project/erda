@@ -15,7 +15,6 @@
 package vars
 
 const (
-	XAIProxySessionId          = "X-AI-Proxy-SessionId"
 	XAIProxyChatType           = "X-AI-Proxy-ChatType"
 	XAIProxyChatTitle          = "X-AI-Proxy-ChatTitle"
 	XAIProxyChatId             = "X-AI-Proxy-ChatId"
@@ -26,7 +25,6 @@ const (
 	XAIProxyJobNumber          = "X-AI-Proxy-JobNumber"
 	XAIProxyEmail              = "X-AI-Proxy-Email"
 	XAIProxyDingTalkStaffID    = "X-AI-Proxy-DingTalkStaffID"
-	XAIProxyPrompt             = "X-AI-Proxy-Prompt"
 	XAIProxyProviderName       = "X-AI-Proxy-Provider-Name"
 	XAIProxyProviderInstanceId = "X-AI-Proxy-Provider-Instance-Id"
 	XAIProxyOrgId              = "X-Ai-Proxy-Org-Id"
@@ -34,15 +32,25 @@ const (
 	XAIProxyMetadata           = "X-Ai-Proxy-Metadata"
 	XAiProxyErdaOpenapiSession = "X-Ai-Proxy-Erda-Openapi-Session"
 	XRequestId                 = "X-Request-Id"
+
+	XAIProxyModelId   = "X-AI-Proxy-Model-Id"
+	XAIProxySessionId = "X-AI-Proxy-Session-Id"
+	XAIProxyPromptId  = "X-AI-Proxy-Prompt-Id"
 )
 
 const (
-	EnvAIProxyRootKey = "AI_PROXY_ROOT_KEY"
+	EnvAIProxyAdminAuthKey = "AI_PROXY_ADMIN_AUTH_KEY"
 )
 
 type (
 	CtxKeyDAO         struct{ CtxKeyDAO any }
 	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
-	MapKeyProvider    struct{ MapKeyProvider any }
-	MapKeyCredential  struct{ MapKeyCredential any }
+	CtxKeyIsAdmin     struct{ CtxKeyIsAdmin bool }
+	CtxKeyClientId    struct{ CtxKeyClientId string }
+
+	MapKeyClient        struct{ MapKeyClient any }
+	MapKeyModel         struct{ MapKeyModel any }
+	MapKeyModelProvider struct{ MapKeyModelProvider any }
+	MapKeyPrompt        struct{ MapKeyPrompt any }
+	MapKeySession       struct{ MapKeySession any }
 )

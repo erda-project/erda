@@ -32,6 +32,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -177,7 +179,7 @@ func (f *Audit) SetAPIKey(_ context.Context, header http.Header) error {
 	if apiKey == "" {
 		apiKey = header.Get("Api-Key")
 	}
-	f.Audit.SetAPIKeySha256(apiKey)
+	f.Audit.APIKeySHA256 = apiKey
 	return nil
 }
 
@@ -252,13 +254,17 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 }
 
 func (f *Audit) SetProvider(ctx context.Context) error {
-	prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+	prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 	if !ok || prov == nil {
 		return errors.New("provider not set in context map")
 	}
-	prov_ := prov.(*models.AIProxyProviders)
+	model, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModel{})
+	if !ok || model == nil {
+		return errors.New("model not set in context map")
+	}
+	prov_ := prov.(*modelproviderpb.ModelProvider)
 	f.Audit.ProviderName = prov_.Name
-	f.Audit.ProviderInstanceID = prov_.InstanceID
+	f.Audit.ProviderInstanceID = model.(*modelpb.Model).Id
 	return nil
 }
 
@@ -299,14 +305,14 @@ func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor
 
 func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	f.Audit.Prompt = "-"
-	if value := infor.Header().Get(vars.XAIProxyPrompt); value != "" {
-		prompt, err := base64.StdEncoding.DecodeString(value)
-		if err != nil {
-			return err
-		}
-		f.Audit.Prompt = string(prompt)
-		return nil
-	}
+	//if value := infor.Header().Get(vars.XAIProxyPromptId); value != "" {
+	//	prompt, err := base64.StdEncoding.DecodeString(value)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	f.Audit.Prompt = string(prompt)
+	//	return nil
+	//}
 
 	if infor.Method() == http.MethodGet || infor.Method() == http.MethodDelete {
 		f.Audit.Prompt = NoPromptByHttpMethod.String()
@@ -537,11 +543,11 @@ func (f *Audit) SetResponseBody(_ context.Context, buf *bytes.Buffer) error {
 func (f *Audit) SetServer(ctx context.Context, header http.Header) error {
 	f.Audit.Server = header.Get("Server")
 	if f.Audit.Server == "" {
-		prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyProvider{})
+		prov, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 		if !ok {
 			return errors.New("provider not set in context map")
 		}
-		f.Audit.Server = prov.(*models.AIProxyProviders).Name
+		f.Audit.Server = prov.(*modelproviderpb.ModelProvider).Name
 	}
 	return nil
 }

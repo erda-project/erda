@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "apps/aiproxy/message/message.proto";
+import "common/http.proto";
+
+service PromptService {
+    rpc Create(PromptCreateRequest) returns (Prompt) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/prompts"
+        };
+    }
+
+    rpc Get(PromptGetRequest) returns (Prompt) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/prompts/{id}"
+        };
+    }
+
+    rpc Delete(PromptDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/prompts/{id}"
+        };
+    }
+
+    rpc Update(PromptUpdateRequest) returns (Prompt) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/prompts/{id}"
+        };
+    }
+
+    rpc Paging(PromptPagingRequest) returns (PromptPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/prompts"
+        };
+    }
+}
+
+message Prompt {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string name = 5 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string desc = 6 [(validate.rules).string = {max_len: 1024}];
+    string clientId = 7 [(validate.rules).string = {len: 36}];
+    repeated Message messages = 8;
+    Metadata metadata = 9;
+}
+
+message PromptCreateRequest {
+    string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string desc = 2 [(validate.rules).string = {max_len: 1024}];
+    string clientId = 3 [(validate.rules).string = {max_len: 36}];
+    repeated Message messages = 4;
+    Metadata metadata = 5;
+}
+
+message PromptGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}
+
+message PromptDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}
+
+message PromptUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string desc = 3 [(validate.rules).string = {max_len: 1024}];
+    string clientId = 4 [(validate.rules).string = {ignore_empty: true, max_len: 36}];
+    repeated Message messages = 5;
+    Metadata metadata = 6;
+}
+
+message PromptPagingRequest {
+    int64 pageNum = 1;
+    int64 pageSize = 2;
+    string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
+    string clientId = 4 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    bool includeSystemBuiltin = 5;
+    bool onlySystemBuiltin = 6;
+}
+
+message PromptPagingResponse {
+    int64 total = 1;
+    repeated Prompt list = 2;
+}

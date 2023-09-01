@@ -47,4 +47,6 @@ var APIs = []*dynamic.API{
 	{BackendPath: "/api/ai-proxy/sessions/{id}", Method: http.MethodGet},
 	{BackendPath: "/api/ai-proxy/sessions/{id}/actions/reset", Method: http.MethodPatch},
 	{BackendPath: "/api/ai-proxy/sessions/{id}/actions/archive", Method: http.MethodPatch},
+
+	{BackendPath: "/api/ai-proxy/model-providers", Method: http.MethodPost},
 }

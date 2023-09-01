@@ -39,16 +39,30 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
+	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
+	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -70,14 +84,27 @@ var (
 		Types:       []reflect.Type{providerType},
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
-	rootKeyAuth = transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			if auth := transport.ContextHeader(ctx).Get("Authorization"); len(auth) == 0 || auth[0] != vars.ConcatBearer(os.Getenv(vars.EnvAIProxyRootKey)) {
-				return nil, errors.New("Access denied to the admin API")
+	trySetAuth = func(dao dao.DAO) transport.ServiceOption {
+		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+			return func(ctx context.Context, req interface{}) (interface{}, error) {
+				// check admin key first
+				adminKey := vars.TrimBearer(apis.GetHeader(ctx, httputil.HeaderKeyAuthorization))
+				if len(adminKey) > 0 && adminKey == os.Getenv(vars.EnvAIProxyAdminAuthKey) {
+					ctx = context.WithValue(ctx, vars.CtxKeyIsAdmin{}, true)
+					return h(ctx, req)
+				}
+				// try set clientId by ak
+				clientId, err := akutil.CheckAk(ctx, req, dao)
+				if err != nil {
+					return nil, err
+				}
+				if clientId != "" {
+					ctx = context.WithValue(ctx, vars.CtxKeyClientId{}, clientId)
+				}
+				return h(ctx, req)
 			}
-			return h(ctx, req)
-		}
-	})
+		})
+	}
 )
 
 func init() {
@@ -132,20 +159,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.ErdaOpenapis[plat.Name] = openapi
 	}
 
-	// 将静态文件中的 providers 同步到数据库
-	ph := &handlers.ProviderHandler{Dao: p.Dao, Log: p.L.Sub("ProviderHandler")}
-	if err := ph.Sync(context.Background(), p.Config.Providers); err != nil {
-		return errors.Wrap(err, "failed to sync providers from static config")
-	}
-
 	// register gRPC and http handler
 	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
-	pb.RegisterAccessImp(p, &handlers.AccessHandler{Dao: p.Dao, Log: p.L.Sub("AccessHandler")}, apis.Options(), encoderOpts)
-	pb.RegisterChatLogsImp(p, &handlers.ChatLogsHandler{Dao: p.Dao, Log: p.L.Sub("ChatLogsHandler")}, apis.Options(), encoderOpts)
-	pb.RegisterCredentialsImp(p, &handlers.CredentialsHandler{Dao: p.Dao, Log: p.L.Sub("CredentialHandler")}, apis.Options(), rootKeyAuth, encoderOpts)
-	pb.RegisterModelsImp(p, &handlers.ModelsHandler{Dao: p.Dao, Log: p.L.Sub("ModelsHandler")}, apis.Options(), encoderOpts)
-	pb.RegisterAIProviderImp(p, ph, apis.Options(), rootKeyAuth, encoderOpts)
-	pb.RegisterSessionsImp(p, &handlers.SessionsHandler{Dao: p.Dao, Log: p.L.Sub("SessionsHandler")}, apis.Options(), encoderOpts)
+	clientpb.RegisterClientServiceImp(p, &handler_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientPerm)
+	modelproviderpb.RegisterModelProviderServiceImp(p, &handler_model_provider.ModelProviderHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckModelProviderPerm)
+	modelpb.RegisterModelServiceImp(p, &handler_model.ModelHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckModelPerm)
+	clientmodelrelationpb.RegisterClientModelRelationServiceImp(p, &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
+	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
+	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())

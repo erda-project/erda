@@ -20,15 +20,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -140,24 +137,25 @@ func (f *ErdaAuth) getOpenapiSessionCookie(infor reverseproxy.HttpInfor) (*http.
 }
 
 func (f *ErdaAuth) getCredential(ctx context.Context, infor reverseproxy.HttpInfor) (string, error) {
-	var (
-		q          = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
-		credential models.AIProxyCredentials
-	)
-	ok, err := (&credential).Retriever(q).Where(
-		credential.FieldName().Equal(infor.Header().Get(vars.XAIProxySource)),
-		credential.FieldName().NotEqual(""),
-		credential.FieldPlatform().Equal("erda"),
-		credential.FieldEnabled().Equal(true),
-		credential.FieldExpiredAt().MoreThan(time.Now()),
-	).Get()
-	if err != nil {
-		return "", err
-	}
-	if !ok {
-		return "", errors.New("platform permission denied")
-	}
-	return credential.AccessKeyID, nil
+	//var (
+	//	q          = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
+	//	credential models.AIProxyCredentials
+	//)
+	//ok, err := (&credential).Retriever(q).Where(
+	//	credential.FieldName().Equal(infor.Header().Get(vars.XAIProxySource)),
+	//	credential.FieldName().NotEqual(""),
+	//	credential.FieldPlatform().Equal("erda"),
+	//	credential.FieldEnabled().Equal(true),
+	//	credential.FieldExpiredAt().MoreThan(time.Now()),
+	//).Get()
+	//if err != nil {
+	//	return "", err
+	//}
+	//if !ok {
+	//	return "", errors.New("platform permission denied")
+	//}
+	//return credential.AccessKeyID, nil
+	return "", nil
 }
 
 type Config struct {

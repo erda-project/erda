@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service ClientService {
+    rpc Create(ClientCreateRequest) returns (Client) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/clients"
+        };
+    }
+
+    rpc Get(ClientGetRequest) returns (Client) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/clients/{id}"
+        };
+    }
+
+    rpc Delete(ClientDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/clients/{id}"
+        };
+    }
+
+    rpc Update(ClientUpdateRequest) returns (Client) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/clients/{id}"
+        };
+    }
+
+    rpc Paging(ClientPagingRequest) returns (ClientPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/clients"
+        };
+    }
+}
+
+message Client {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string name = 5;
+    string desc = 6;
+    string accessKeyId = 7 [(validate.rules).string = {min_len: 32, max_len: 36}];
+    string secretKeyId = 8 [(validate.rules).string = {min_len: 32, max_len: 36}];
+    Metadata metadata = 9;
+}
+
+message ClientCreateRequest {
+    string name = 1 [(validate.rules).string.min_len = 4, (validate.rules).string.max_len = 191];
+    string desc = 2 [(validate.rules).string.max_len = 1024];
+    string accessKeyId = 3 [(validate.rules).string = {min_len: 0, max_len: 36}]; // auto assigned if empty
+    string secretKeyId = 4 [(validate.rules).string = {min_len: 0, max_len: 36}]; // auto assigned if empty
+    Metadata metadata = 5;
+}
+
+message ClientGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message ClientDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message ClientUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string name = 2 [(validate.rules).string.min_len = 4, (validate.rules).string.max_len = 191];
+    string desc = 3 [(validate.rules).string.max_len = 1024];
+    string accessKeyId = 4 [(validate.rules).string = {min_len: 32, max_len: 32}];
+    string secretKeyId = 5 [(validate.rules).string = {min_len: 32, max_len: 32}];
+    Metadata metadata = 6;
+}
+
+message ClientPagingRequest {
+    int64 pageNum = 1;
+    int64 pageSize = 2;
+
+    repeated string ids = 3;
+    string name = 4;
+    repeated string accessKeyIds = 5;
+}
+
+message ClientPagingResponse {
+    int64 total = 1;
+    repeated Client list = 2;
+}
