@@ -25,6 +25,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 )
 
 //go:embed bootstrap.yaml

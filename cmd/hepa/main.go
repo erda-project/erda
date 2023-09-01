@@ -26,6 +26,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/client"
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/client"
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa"
 	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/providers/api_policy"
 	_ "github.com/erda-project/erda/internal/tools/orchestrator/hepa/providers/domain"
