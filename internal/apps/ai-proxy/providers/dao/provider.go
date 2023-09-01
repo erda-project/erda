@@ -15,14 +15,18 @@
 package dao
 
 import (
-	"strconv"
-	"time"
-
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_model_relation"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/prompt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/session"
 )
 
 var (
@@ -53,10 +57,12 @@ type DAO interface {
 	Q() *gorm.DB
 	Tx() *gorm.DB
 
-	PagingChatLogs(sessionId string, pageNum, pageSize int) (int64, []*pb.ChatLog, error)
-	CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error)
-	UpdateSession(id string, setters ...models.Setter) error
-	GetSession(id string) (*pb.Session, bool, error)
+	ModelProviderClient() *model_provider.DBClient
+	ClientClient() *client.DBClient
+	ModelClient() *model.DBClient
+	ClientModelRelationClient() *client_model_relation.DBClient
+	PromptClient() *prompt.DBClient
+	SessionClient() *session.DBClient
 }
 
 type provider struct {
@@ -88,45 +94,39 @@ func (p *provider) PagingChatLogs(sessionId string, pageNum, pageSize int) (int6
 	}
 	var chatLogs []*pb.ChatLog
 	for _, item := range audits {
-		chatLogs = append(chatLogs, item.ToProtobufChatLog())
+		pbChatLog := pb.ChatLog{
+			Id:         item.ID.String,
+			RequestAt:  timestamppb.New(item.RequestAt),
+			ResponseAt: timestamppb.New(item.ResponseAt),
+			Prompt:     item.Prompt,
+			Completion: item.Completion,
+			SessionId:  item.SessionID,
+		}
+		chatLogs = append(chatLogs, &pbChatLog)
 	}
 	return total, chatLogs, nil
 }
 
-func (p *provider) CreateSession(userId, name, topic string, contextLength uint32, source, model string, temperature float64) (id string, err error) {
-	var session = models.AIProxySessions{
-		UserID:        userId,
-		Name:          name,
-		Topic:         topic,
-		ContextLength: int64(contextLength),
-		Source:        source,
-		IsArchived:    false,
-		ResetAt:       time.Unix(0, 0),
-		Model:         model,
-		Temperature:   strconv.FormatFloat(temperature, 'f', 1, 64),
-	}
-	if err := (&session).Creator(p.DB).Create(); err != nil {
-		return "", err
-	}
-	return session.ID.String, nil
+func (p *provider) ModelProviderClient() *model_provider.DBClient {
+	return &model_provider.DBClient{DB: p.DB}
 }
 
-func (p *provider) UpdateSession(id string, setters ...models.Setter) error {
-	var session models.AIProxySessions
-	var where = session.FieldID().Equal(id)
-	ok, err := (&session).Retriever(p.DB).Where(where).Get()
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return nil
-	}
-	_, err = (&session).Updater(p.DB).Where(where).Updates(setters...)
-	return err
+func (p *provider) ClientClient() *client.DBClient {
+	return &client.DBClient{DB: p.DB}
 }
 
-func (p *provider) GetSession(id string) (*pb.Session, bool, error) {
-	var session models.AIProxySessions
-	ok, err := (&session).Retriever(p.DB).Where(session.FieldID().Equal(id)).Get()
-	return session.ToProtobuf(), ok, err
+func (p *provider) ModelClient() *model.DBClient {
+	return &model.DBClient{DB: p.DB}
+}
+
+func (p *provider) ClientModelRelationClient() *client_model_relation.DBClient {
+	return &client_model_relation.DBClient{DB: p.DB}
+}
+
+func (p *provider) PromptClient() *prompt.DBClient {
+	return &prompt.DBClient{DB: p.DB}
+}
+
+func (p *provider) SessionClient() *session.DBClient {
+	return &session.DBClient{DB: p.DB}
 }

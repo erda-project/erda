@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client-model-relation/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "apps/aiproxy/model/model.proto";
+import "common/http.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+service ClientModelRelationService {
+    rpc Allocate(AllocateRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/clients/{clientId}/actions/allocate-models"
+        };
+    }
+
+    rpc UnAllocate(AllocateRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/clients/{clientId}/actions/unallocate-models"
+        };
+    }
+
+    rpc ListClientModels(ListClientModelsRequest) returns (ListAllocatedModelsResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/clients/{clientId}/actions/list-models"
+        };
+    }
+}
+
+message ClientModelRelation {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string clientId = 5;
+    string modelId = 6;
+}
+
+message AllocateRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    repeated string modelIds = 2 [(validate.rules).repeated = {unique: true, items: {string: {len: 36}}}];
+}
+
+message ListAllocatedModelsResponse {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    repeated string modelIds = 2 [(validate.rules).repeated = {unique: true, items: {string: {len: 36}}}];
+}
+
+message ListClientModelsRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    repeated ModelType modelTypes = 2;
+}

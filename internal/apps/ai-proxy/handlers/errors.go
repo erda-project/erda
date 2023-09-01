@@ -28,6 +28,11 @@ var (
 	InvalidSessionSource  = errors.New("invalid session source")
 	InvalidSessionModel   = errors.New("invalid session model")
 	InvalidSessionResetAt = errors.New("invalid session resetAt")
+
+	ErrAkNotFound        = HTTPError(errors.New("ak not found"), http.StatusUnauthorized)
+	ErrAkNotMatch        = HTTPError(errors.New("ak not match"), http.StatusForbidden)
+	ErrNoPermission      = HTTPError(errors.New("no permission"), http.StatusForbidden)
+	ErrNoAdminPermission = HTTPError(errors.New("no admin permission"), http.StatusForbidden)
 )
 
 func HTTPError(err error, code int) error {

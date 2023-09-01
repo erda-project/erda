@@ -17,15 +17,22 @@ package context
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
+	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -49,65 +56,142 @@ func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 
 func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	var (
-		l           = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
-		q           = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO).Q()
-		m           = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
-		prov        models.AIProxyProviders
-		credentials models.AIProxyCredentialsList
-		appKey      = vars.TrimBearer(infor.Header().Get("Authorization"))
+		l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+		q = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+		m = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
 	)
-	total, err := (&credentials).Pager(q).
-		Where(credentials.FieldAccessKeyID().Equal(appKey)).
-		Paging(-1, -1)
-	if err != nil {
-		l.Errorf("failed to list credentials, access_key_id: %s, err: %v", appKey, err)
+	// find client
+	var client *clientpb.Client
+	ak := vars.TrimBearer(infor.Header().Get("Authorization"))
+	if ak == "" {
+		http.Error(w, "Authorization is required", http.StatusUnauthorized)
+		return reverseproxy.Intercept, nil
+	}
+	// try to remove Bearer
+	ak = strings.TrimPrefix(ak, "Bearer ")
+	clientPagingResult, err := q.ClientClient().Paging(ctx, &clientpb.ClientPagingRequest{
+		AccessKeyIds: []string{ak},
+		PageNum:      1,
+		PageSize:     1,
+	})
+	if err != nil || clientPagingResult.Total < 1 {
+		l.Errorf("failed to get client, access_key_id: %s, err: %v", ak, err)
+		http.Error(w, "Authorization is invalid", http.StatusForbidden)
 		return reverseproxy.Intercept, err
 	}
-	if total == 0 {
-		l.Debugf("no credential with the access_key_id: %s", appKey)
-		http.Error(w, "Authorization is invalid", http.StatusForbidden)
-		return reverseproxy.Intercept, nil
+	client = clientPagingResult.List[0]
+
+	// find model
+	var model *modelpb.Model
+	var session *sessionpb.Session
+	// get from session if exists
+	headerSessionId := infor.Header().Get(vars.XAIProxySessionId)
+	headerModelId := infor.Header().Get(vars.XAIProxyModelId)
+	if headerSessionId != "" {
+		_session, err := q.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: headerSessionId})
+		if err != nil {
+			l.Errorf("failed to get session, id: %s, err: %v", headerSessionId, err)
+			http.Error(w, "SessionId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		session = _session
+		sessionModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: session.ModelId})
+		if err != nil {
+			l.Errorf("failed to get model, id: %s, err: %v", session.ModelId, err)
+			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		model = sessionModel
+	} else if headerModelId != "" {
+		// get from model header
+		if headerModelId == "" {
+			http.Error(w, fmt.Sprintf("header %s is required", vars.XAIProxyModelId), http.StatusBadRequest)
+			return reverseproxy.Intercept, nil
+		}
+		headerModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: headerModelId})
+		if err != nil {
+			l.Errorf("failed to get model, id: %s, err: %v", headerModelId, err)
+			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		model = headerModel
+	} else {
+		// get client default model
+		clientPbMeta := metadata.FromProtobuf(client.Metadata)
+		clientMeta, err := clientPbMeta.ToClientMeta()
+		if err != nil {
+			l.Errorf("failed to get client meta, err: %v", err)
+			http.Error(w, "Client meta is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		// judge by model type
+		modelType, ok := getModelTypeByRequest(infor)
+		if !ok {
+			l.Errorf("failed to judge model type by request path")
+			http.Error(w, "ModelType is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		defaultModelId, ok := clientMeta.Public.GetDefaultModelIdByModelType(modelType)
+		if !ok {
+			l.Errorf("failed to get client's default model")
+			http.Error(w, "Client's default model is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		defaultModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: defaultModelId})
+		if err != nil {
+			l.Errorf("failed to get model, id: %s, err: %v", defaultModelId, err)
+			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		model = defaultModel
 	}
 
-	// find valid credential
-	var (
-		credential *models.AIProxyCredentials
-		match      = func(*models.AIProxyCredentials) bool { return true }
-	)
-	// if a provider is specified in the request header, refactor the function match
-	if providerName := infor.Header().Get(vars.XAIProxyProviderName); providerName != "" {
-		providerInstanceId := infor.Header().Get(vars.XAIProxyProviderInstanceId)
-		if providerInstanceId == "" {
-			providerInstanceId = "default"
-		}
-		match = func(item *models.AIProxyCredentials) bool {
-			return item.ProviderName == providerName && item.ProviderInstanceID == providerInstanceId
-		}
-	}
-	// 从 credentials 中取出匹配的 credential: 启用状态为 true && 未过期 && 能匹配上 provider
-	for _, item := range credentials {
-		if item.Enabled && item.ExpiredAt.After(time.Now()) && match(item) {
-			credential = item
-			break
-		}
-	}
-	if credential == nil {
-		http.Error(w, "Authorization is disabled or expired or not matches the specified provider", http.StatusForbidden)
-		return reverseproxy.Intercept, nil
+	// find provider
+	modelProvider, err := q.ModelProviderClient().Get(ctx, &modelproviderpb.ModelProviderGetRequest{Id: model.ProviderId})
+	if err != nil {
+		l.Errorf("failed to get model provider, id: %s, err: %v", model.ProviderId, err)
+		http.Error(w, "ModelProviderId is invalid", http.StatusBadRequest)
+		return reverseproxy.Intercept, err
 	}
 
-	// 取出这个 credential 对应的 provider
-	if ok, _ := (&prov).Retriever(q).Where(
-		prov.FieldName().Equal(credential.ProviderName),
-		prov.FieldInstanceID().Equal(credential.ProviderInstanceID),
-	).Get(); !ok {
-		http.Error(w, "ProviderName Not Found", http.StatusBadRequest)
-		return reverseproxy.Intercept, nil
+	// find prompt
+	headerPromptId := infor.Header().Get(vars.XAIProxyPromptId)
+	var prompt *promptpb.Prompt
+	if headerPromptId != "" {
+		_prompt, err := q.PromptClient().Get(ctx, &promptpb.PromptGetRequest{Id: headerPromptId})
+		if err != nil {
+			l.Errorf("failed to get prompt, id: %s, err: %v", headerPromptId, err)
+			http.Error(w, "PromptId is invalid", http.StatusBadRequest)
+			return reverseproxy.Intercept, err
+		}
+		prompt = _prompt
 	}
 
 	// store data to context
-	m.Store(vars.MapKeyCredential{}, &credential)
-	m.Store(vars.MapKeyProvider{}, &prov)
+	m.Store(vars.MapKeyClient{}, client)
+	m.Store(vars.MapKeyModel{}, model)
+	m.Store(vars.MapKeyModelProvider{}, modelProvider)
+	m.Store(vars.MapKeyPrompt{}, prompt)
+	m.Store(vars.MapKeySession{}, session)
 
 	return reverseproxy.Continue, nil
+}
+
+func getModelTypeByRequest(infor reverseproxy.HttpInfor) (modelpb.ModelType, bool) {
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/chat/completions", "/v1/completions") {
+		return modelpb.ModelType_text_generation, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/images") {
+		return modelpb.ModelType_image, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/audio") {
+		return modelpb.ModelType_audio, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/embeddings") {
+		return modelpb.ModelType_embedding, true
+	}
+	if strutil.HasPrefixes(infor.URL().Path, "/v1/moderations") {
+		return modelpb.ModelType_text_moderation, true
+	}
+	return -1, false
 }

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/message/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+message Message {
+    string role = 1 [(validate.rules).string = {min_len: 1}];
+    string content = 2 [(validate.rules).string = {min_len: 1}];
+    string name = 3;
+}
