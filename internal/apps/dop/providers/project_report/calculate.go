@@ -23,7 +23,6 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
-	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel"
 )
 
 func (p *provider) refreshBasicIterations() error {
@@ -167,11 +166,9 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		doneReqStateIDs = append(doneReqStateIDs, int64(doneReqStates[i].ID))
 	}
 
-	manHour, err := issueexcel.NewManhour(iter.Iteration.ManHour)
-	if err != nil {
-		return nil, err
-	}
-	fields.IterationEstimatedDayTotal = float64(manHour.EstimateTime) / 480
+	var iterManHour apistructs.IssueManHour
+	iterManHour.FromString(iter.Iteration.ManHour)
+	fields.IterationEstimatedDayTotal = float64(iterManHour.EstimateTime) / 480
 
 	var doneTaskStateIDs []int64
 	doneTaskStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
