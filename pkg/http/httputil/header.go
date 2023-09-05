@@ -30,6 +30,8 @@ const (
 	UserInfoDesensitizedHeader = "Openapi-Userinfo-Desensitized"
 	LangHeader                 = "lang"
 	UseTokenHeader             = "Use-Token"
+	ContentTypeHeader          = "Content-Type"
+	AuthorizationHeader        = "Authorization"
 
 	ClientIDHeader           = "Client-ID"
 	ClientNameHeader         = "Client-Name"

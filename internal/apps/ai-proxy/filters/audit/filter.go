@@ -355,14 +355,14 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 		}
 		{
 			var prompt []string
-			if err := json.Unmarshal(message, &prompt); err != nil {
+			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = strings.Join(prompt, "\n")
 				return nil
 			}
 		}
 		{
 			var prompt string
-			if err := json.Unmarshal(message, &prompt); err != nil {
+			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = string(message)
 				return nil
 			}
@@ -426,14 +426,14 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 		}
 		{
 			var prompt []string
-			if err := json.Unmarshal(message, &prompt); err != nil {
+			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = strings.Join(prompt, "\n")
 				return nil
 			}
 		}
 		{
 			var prompt string
-			if err := json.Unmarshal(message, &prompt); err != nil {
+			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = string(message)
 				return nil
 			}
@@ -461,14 +461,14 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 		}
 		{
 			var prompt []string
-			if err := json.Unmarshal(message, &prompt); err != nil {
+			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = strings.Join(prompt, "\n")
 				return nil
 			}
 		}
 		{
 			var prompt string
-			if err := json.Unmarshal(message, &prompt); err != nil {
+			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = string(message)
 				return nil
 			}
