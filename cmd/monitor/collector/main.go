@@ -28,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-infra/providers/prometheus"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 
 	// providers

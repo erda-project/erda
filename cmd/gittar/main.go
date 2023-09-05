@@ -25,6 +25,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/org/client"
 	_ "github.com/erda-project/erda-proto-go/core/token/client"
 	_ "github.com/erda-project/erda-proto-go/core/user/client"
+	_ "github.com/erda-project/erda/internal/pkg/profileagent"
 	_ "github.com/erda-project/erda/internal/tools/gittar"
 )
 

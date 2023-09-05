@@ -19,3 +19,4 @@ erda.core.org: {}
 grpc-client@erda.core.user:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
 erda.core.user-client: {}
+profile-agent:
