@@ -50,7 +50,7 @@ func (b *Bundle) AddonMetrics(path string, paramValues url.Values) (map[string]i
 	return data, nil
 }
 
-// UnregisterAddon 注销 runtime addon
+// ProjectResource .
 func (b *Bundle) ProjectResource(projectIDs []uint64) (*apistructs.ProjectResourceResponse, error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
