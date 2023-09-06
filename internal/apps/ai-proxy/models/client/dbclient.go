@@ -51,7 +51,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ClientCreateReques
 }
 
 func (dbClient *DBClient) Get(ctx context.Context, req *pb.ClientGetRequest) (*pb.Client, error) {
-	c := &Client{BaseModel: common.BaseModelWithID(req.Id)}
+	c := &Client{BaseModel: common.BaseModelWithID(req.ClientId)}
 	if err := dbClient.DB.Model(c).First(c).Error; err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (dbClient *DBClient) Get(ctx context.Context, req *pb.ClientGetRequest) (*p
 }
 
 func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ClientDeleteRequest) (*commonpb.VoidResponse, error) {
-	c := &Client{BaseModel: common.BaseModelWithID(req.Id)}
+	c := &Client{BaseModel: common.BaseModelWithID(req.ClientId)}
 	sql := dbClient.DB.Model(c).Delete(c)
 	if sql.Error != nil {
 		return nil, sql.Error
@@ -72,7 +72,7 @@ func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ClientDeleteReques
 
 func (dbClient *DBClient) Update(ctx context.Context, req *pb.ClientUpdateRequest) (*pb.Client, error) {
 	c := &Client{
-		BaseModel:   common.BaseModelWithID(req.Id),
+		BaseModel:   common.BaseModelWithID(req.ClientId),
 		Name:        req.Name,
 		Desc:        req.Desc,
 		AccessKeyID: req.AccessKeyId,
@@ -86,7 +86,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ClientUpdateReques
 	if sql.RowsAffected != 1 {
 		return nil, gorm.ErrRecordNotFound
 	}
-	return dbClient.Get(ctx, &pb.ClientGetRequest{Id: req.Id})
+	return dbClient.Get(ctx, &pb.ClientGetRequest{ClientId: req.ClientId})
 }
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ClientPagingRequest) (*pb.ClientPagingResponse, error) {
