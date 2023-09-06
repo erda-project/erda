@@ -144,8 +144,8 @@ jobs:
 
   CODE-TEST:
     runs-on: ubuntu-latest
-    container:
-      image: registry.erda.cloud/erda/erda-base:20230811
+#    container:
+#      image: registry.erda.cloud/erda/erda-base:20230811
     needs:
       - PREPARE
     strategy:
@@ -166,6 +166,10 @@ jobs:
           - ./internal/apps/msp/...
           - ./internal/apps/cmp/...
     steps:
+      - name: Free Disk Space
+        run: |
+          ls -l /opt/hostedtoolcache
+          rm -fr /opt/hostedtoolcache
       - name: Clone repo
         uses: actions/checkout@v3
         with:
@@ -180,6 +184,9 @@ jobs:
         run: |
           echo "::set-output name=go-build::$(go env GOCACHE)"
           echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.19' # The Go version to download (if necessary) and use.
       - uses: actions/cache@v3
         with:
           path: |
@@ -200,6 +207,7 @@ jobs:
           echo "::set-output name=name::coverage-${name}"
           echo "::set-output name=path::coverage-${name}.txt"
       - name: Run Go Test
+        uses: docker://registry.erda.cloud/erda/erda-base:20230811
         env:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
