@@ -19,8 +19,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -48,12 +46,36 @@ func init() {
 }
 
 type Function struct {
-	prompt     string
 	background *pb.Background
 }
 
+// FunctionParams 解析 *pb.ApplyRequest 字段 FunctionParams
+type FunctionParams struct {
+	TestSetID    uint64          `json:"testSetID,omitempty"`
+	Requirements []TestCaseParam `json:"requirements,omitempty"`
+}
+type TestCaseParam struct {
+	IssueID uint64 `json:"issueID,omitempty"`
+	Prompt  string `json:"prompt,omitempty"`
+}
+
+// TestCaseFunctionInput 用于为单个需求生成测试用例的输入
+type TestCaseFunctionInput struct {
+	TestSetID uint64
+	IssueID   uint64
+	Prompt    string
+}
+
+// TestCaseMeta 用于关联生成的测试用例与对应的需求
+type TestCaseMeta struct {
+	Req             apistructs.TestCaseCreateRequest `json:"testCaseCreateReq,omitempty"` // 当前项目 ID，用于权限校验
+	RequirementName string                           `json:"requirementName"`             // 需求对应的 issue 的 Title
+	RequirementID   uint64                           `json:"requirementID"`               // 需求对应的 issueID
+	TestCaseID      uint64                           `json:"testcaseID,omitempty"`        // 创建测试用例成功返回的测试用例 ID
+}
+
 func New(ctx context.Context, prompt string, background *pb.Background) functions.Function {
-	return &Function{prompt: prompt, background: background}
+	return &Function{background: background}
 }
 
 func (f *Function) Name() string {
@@ -69,7 +91,7 @@ func (f *Function) SystemMessage() string {
 }
 
 func (f *Function) UserMessage() string {
-	return f.prompt
+	return "Not really implemented."
 }
 
 func (f *Function) Schema() json.RawMessage {
@@ -89,32 +111,68 @@ func (f *Function) CompletionOptions() []sdk.PatchOption {
 	}
 }
 
-func (f *Function) Callback(ctx context.Context, arguments json.RawMessage) (any, error) {
+func (f *Function) Callback(ctx context.Context, arguments json.RawMessage, input interface{}, needAdjust bool) (any, error) {
+	testCaseInput, ok := input.(TestCaseFunctionInput)
+	if !ok {
+		err := errors.Errorf("input %v with type %T is not valid for AI Function %s", input, input, Name)
+		return nil, errors.Wrap(err, "bad request: invalid input")
+	}
+
+	bdl := bundle.New(bundle.WithErdaServer())
+	// 根据 issueID 获取对应的需求 Title
+	issue, err := bdl.GetIssue(testCaseInput.IssueID)
+	if err != nil {
+		return nil, errors.Wrap(err, "get requirement info failed")
+	}
+	if issue.Type != apistructs.IssueTypeRequirement {
+		return nil, errors.Wrap(err, "bad request: issue is not type REQUIREMENT")
+	}
+
 	var req apistructs.TestCaseCreateRequest
 	if err := json.Unmarshal(arguments, &req); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Unmarshal arguments to TestCaseCreateRequest failed")
+	}
+	f.adjustTestCaseCreateRequest(&req, testCaseInput.TestSetID, testCaseInput.Prompt, issue)
+
+	// 需要调整，则返回创建测试用例的请求 apistructs.TestCaseCreateRequest
+	if needAdjust {
+		return TestCaseMeta{
+			Req:             req,
+			RequirementName: issue.Title,
+			RequirementID:   uint64(issue.ID),
+		}, nil
 	}
 
-	// todo: 背景信息如何获取
-	req.Name = f.UserMessage()
+	// 无需调整，则返回创建测试用例的请求 apistructs.TestCaseCreateRequest 以及创建成功之后对应的 testcaseID
+	aiCreateTestCaseResponse, err := bdl.CreateTestCase(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "bundle CreateTestCase failed")
+	}
+
+	return TestCaseMeta{
+		Req:             req,
+		RequirementName: issue.Title,
+		RequirementID:   uint64(issue.ID),
+		TestCaseID:      aiCreateTestCaseResponse.TestCaseID,
+	}, nil
+}
+
+func (f *Function) adjustTestCaseCreateRequest(req *apistructs.TestCaseCreateRequest, testSetID uint64, prompt string, issue *apistructs.Issue) {
+	req.Name = issue.Title
 	req.ProjectID = f.background.ProjectID
-	req.Desc = fmt.Sprintf("Powered by AI.\n\n对应需求:\n%s", f.UserMessage())
-	referer := f.background.GetReferer()
-	u, err := url.Parse(referer)
-	if err != nil {
-		return nil, err
+	req.Desc = fmt.Sprintf("Powered by AI.\n\n对应需求:\n%s", prompt)
+	req.TestSetID = testSetID
+	// 根据需求优先级相应设置测试用例优先级
+	switch issue.Priority {
+	case apistructs.IssuePriorityUrgent:
+		req.Priority = apistructs.TestCasePriorityP0
+	case apistructs.IssuePriorityHigh:
+		req.Priority = apistructs.TestCasePriorityP1
+	case apistructs.IssuePriorityNormal:
+		req.Priority = apistructs.TestCasePriorityP2
+	default:
+		req.Priority = apistructs.TestCasePriorityP3
 	}
-	testSetID := u.Query().Get("testSetID")
-	if testSetID == "" {
-		return nil, errors.New("bad request: bad background: testSetID in referer is required")
-	}
-	req.TestSetID, err = strconv.ParseUint(testSetID, 10, 64)
-	if err != nil {
-		return nil, errors.Wrap(err, "bad request: bad background: invalid testSetID in referer")
-	}
-	req.Priority = apistructs.TestCasePriorityP3
 	req.UserID = f.background.UserID
-
-	// todo: 封装一个 CreateTestCase 的本地调用和 gRPC 调用
-	return bundle.New(bundle.WithErdaServer()).CreateTestCase(req)
+	return
 }

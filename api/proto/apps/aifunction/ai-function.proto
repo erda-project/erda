@@ -7,6 +7,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "common/http.proto";
 import "common/openapi.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 service AiFunction {
   option(erda.common.openapi_service) = {
@@ -28,23 +29,32 @@ service AiFunction {
 }
 
 message ApplyRequest {
-  string functionName = 1;
-  Prompt prompt = 2;
-  Background background = 3;
+  string functionName = 1 [(validate.rules).string = {min_len: 1}];
+  google.protobuf.Value functionParams = 2 [(validate.rules).message = {required: true}];
+  Background background = 3 [(validate.rules).message = {required: true}];
+  bool needAdjust = 4;
 }
 
 message Background {
-  string userID = 1;
-  uint64 orgID = 2;
+  string userID = 1 [(validate.rules).string = {min_len: 1}];
+  uint64 orgID = 2 [(validate.rules).uint64.gt = 0];
   string orgName = 3;
-  uint64 projectID = 4;
+  uint64 projectID = 4 [(validate.rules).uint64.gt = 0];
   string projectName = 5;
   uint64 applicationID = 6;
   string applicationName = 7;
   uint64 runtimeID = 8;
-  string referer = 9;
 }
 
-message Prompt {
-  string prompt = 1;
+/*
+message FunctionParams {
+  uint64 testSetID = 1 [(validate.rules).uint64.gt = 0];
+  repeated TestCaseParam requirements  = 2 [(validate.rules).repeated = {min_items: 1}];
 }
+
+message TestCaseParam {
+  // create-test-case
+  uint64 issueID = 1 [(validate.rules).uint64.gt = 0];
+  string prompt = 2 [(validate.rules).string = {min_len: 1}];
+}
+*/

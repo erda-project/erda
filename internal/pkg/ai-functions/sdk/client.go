@@ -22,8 +22,16 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/http/httputil"
+)
+
+const (
+	AIProxyClientAK = "AI_PROXY_CLIENT_AK"
 )
 
 func NewClient(api *url.URL, client *http.Client, options ...RequestOption) (*Client, error) {
@@ -63,15 +71,22 @@ func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOpti
 	if err := json.NewEncoder(&buf).Encode(req); err != nil {
 		return nil, errors.Wrap(err, "failed to Encode CreateCompletionOptions")
 	}
+	aiProxyClientAK := os.Getenv(AIProxyClientAK)
+	if aiProxyClientAK == "" {
+		err := errors.Errorf("env %s not set", AIProxyClientAK)
+		return nil, errors.Wrap(err, "failed to Encode CreateCompletionOptions")
+	}
 	request, err := http.NewRequest(http.MethodPost, c.URLV1ChatCompletion(), &buf)
-	request.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to NewRequest, uri: %s", c.URLV1ChatCompletion())
 	}
+	request.Header.Set(httputil.ContentTypeHeader, "application/json")
+	request.Header.Set(httputil.AuthorizationHeader, "Bearer "+aiProxyClientAK)
 	for _, o := range c.options {
 		o(request)
 	}
 
+	logrus.Debugf("WWWZZZ AI-Proxy Request: %+v", request)
 	response, err := c.HttpClient().Do(request)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to Do http request to %s", c.URLV1ChatCompletion())

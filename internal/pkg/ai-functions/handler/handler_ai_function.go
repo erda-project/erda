@@ -17,7 +17,6 @@ package handler
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -29,8 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
-	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
-	"github.com/erda-project/erda/pkg/common/apis"
+	aitestcase "github.com/erda-project/erda/internal/pkg/ai-functions/functions/test-case"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -51,70 +49,22 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 		err := errors.Errorf("AI function %s not found", req.GetFunctionName())
 		return nil, HTTPError(err, http.StatusBadRequest)
 	}
-	var (
-		f         = factory(ctx, req.GetPrompt().GetPrompt(), req.GetBackground())
-		systemMsg = &sdk.ChatMessage{
-			Role:    "system",
-			Content: f.SystemMessage(),
-			Name:    "system",
+
+	var results any
+	switch req.GetFunctionName() {
+	case aitestcase.Name:
+		results, err = h.createTestCaseForRequirementIDAndTestID(ctx, factory, req, h.OpenaiURL)
+		if err != nil {
+			return nil, HTTPError(err, http.StatusBadRequest)
 		}
-		userMsg = &sdk.ChatMessage{
-			Role:    "user",
-			Content: f.UserMessage(),
-			Name:    "erda",
-		}
-		fd = &sdk.FunctionDefinition{
-			Name:        f.Name(),
-			Description: f.Description(),
-			Parameters:  f.Schema(),
-		}
-		options = &sdk.CreateCompletionOptions{
-			Messages:     []*sdk.ChatMessage{systemMsg, userMsg}, // todo: history messages
-			Functions:    []*sdk.FunctionDefinition{fd},
-			FunctionCall: sdk.FunctionCall{Name: fd.Name},
-			Temperature:  "1", // default 1, can be modified by f.CompletionOptions()
-			Stream:       false,
-			Model:        "gpt-35-turbo-16k", // default the newest model, can be modified by f.CompletionOptions()
-		}
-	)
-	cos := f.CompletionOptions()
-	for _, o := range cos {
-		o(options)
+
+	default:
+		err := errors.Errorf("AI function %s not support for apply", req.GetFunctionName())
+		return nil, HTTPError(err, http.StatusBadRequest)
 	}
-	if valid := json.Valid(fd.Parameters); !valid {
-		if fd.Parameters, err = strutil.YamlOrJsonToJson(f.Schema()); err != nil {
-			return nil, err
-		}
-	}
-	// 在 request option 中添加认证信息: 以某组织下某用户身份调用 ai-proxy,
-	// ai-proxy 中的 filter erda-auth 会回调 erda.cloud 的 openai, 检查该企业和用户是否有权使用 AI 能力
-	ros := append(f.RequestOptions(), func(r *http.Request) {
-		r.Header.Set("X-Ai-Proxy-Source", "erda.cloud") // todo: hard code source
-		r.Header.Set("X-Ai-Proxy-Org-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetOrgID(ctx))))
-		r.Header.Set("X-Ai-Proxy-User-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetUserID(ctx))))
-	})
-	client, err := sdk.NewClient(h.OpenaiURL, http.DefaultClient, ros...)
-	if err != nil {
-		return nil, err
-	}
-	completion, err := client.CreateCompletion(ctx, options)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to CreateCompletion")
-	}
-	if len(completion.Choices) == 0 || completion.Choices[0].Message == nil || completion.Choices[0].Message.FunctionCall == nil {
-		return nil, errors.New("no idea") // todo: do not return error, response friendly
-	}
-	// todo: check index out of range and invalid memory reference
-	arguments := completion.Choices[0].Message.FunctionCall.JSONMessageArguments()
-	if err = fd.VerifyArguments(arguments); err != nil {
-		return nil, errors.Wrap(err, "invalid arguments from FunctionCall")
-	}
-	result, err := f.Callback(ctx, arguments)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to Callback with arguments: %s", string(arguments))
-	}
+
 	var v = &structpb.Value{}
-	switch i := result.(type) {
+	switch i := results.(type) {
 	case string:
 		if err := jsonpb.UnmarshalString(i, v); err != nil {
 			return nil, err
@@ -129,7 +79,7 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 		}
 	default:
 		var buf bytes.Buffer
-		if err := json.NewEncoder(&buf).Encode(result); err != nil {
+		if err := json.NewEncoder(&buf).Encode(results); err != nil {
 			return nil, err
 		}
 		if err := jsonpb.Unmarshal(&buf, v); err != nil {
