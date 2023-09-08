@@ -45,6 +45,7 @@ const (
 	PropConditionKeyClosed             string = "closedAtStartEnd"
 	PropConditionKeyComplexity         string = "complexities"
 	PropConditionKeParticipantIDs      string = "participantIDs"
+	PropConditionKeyReopenedCount      string = "reopenedCount"
 )
 
 type FrontendConditions struct {
@@ -65,6 +66,7 @@ type FrontendConditions struct {
 	ClosedAtStartEnd   []*int64 `json:"closedAtStartEnd,omitempty"`
 	Complexities       []string `json:"complexities,omitempty"`
 	ParticipantIDs     []string `json:"participantIDs,omitempty"`
+	ReopenedCount      []uint64 `json:"reopenedCount,omitempty"`
 }
 
 func (f *FrontendConditions) IsEmpty() bool {
@@ -168,6 +170,12 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	finished := model.NewDateRangeCondition(PropConditionKeyFinishedAtStartEnd, cputil.I18n(f.sdk.Ctx, "deadline"))
 	closed := model.NewDateRangeCondition(PropConditionKeyClosed, cputil.I18n(f.sdk.Ctx, "closed-at"))
 
+	reopenedOptions := []model.SelectOption{
+		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "reopened-count-gte-one"), 1),
+		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "reopened-count-gte-two"), 2),
+	}
+	reopened := model.NewSelectCondition(PropConditionKeyReopenedCount, cputil.I18n(f.sdk.Ctx, "reopened-count"), reopenedOptions)
+
 	var leftGroup, rightGroup []interface{}
 	if needIterationCond {
 		leftGroup = []interface{}{iterations}
@@ -216,7 +224,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 		leftGroup = append(leftGroup, stage)
 	case apistructs.IssueTypeBug.String():
 		leftGroup = append(leftGroup, severity, stage)
-		rightGroup = append(rightGroup, owner, closed)
+		rightGroup = append(rightGroup, owner, closed, reopened)
 	case "ALL":
 		rightGroup = append(rightGroup, owner)
 	case apistructs.IssueTypeTicket.String():

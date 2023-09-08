@@ -307,6 +307,9 @@ func (client *DBClient) PagingIssues(req pb.PagingIssueRequest, queryIDs bool) (
 	} else if len(req.TaskType) > 0 {
 		sql = sql.Where("stage IN (?)", req.TaskType)
 	}
+	if req.ReopenedCountGte > 0 {
+		sql = sql.Where("dice_issues.reopen_count >= ?", req.ReopenedCountGte)
+	}
 	if len(req.ExceptIDs) > 0 {
 		sql = sql.Where("dice_issues.id NOT IN (?)", req.ExceptIDs)
 	}

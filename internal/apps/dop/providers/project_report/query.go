@@ -398,6 +398,10 @@ func (p *provider) queryProjectReport(rw http.ResponseWriter, r *http.Request) {
 		p.wrapBadRequest(rw, err)
 		return
 	}
+	if !req.IsAdmin && len(req.ProjectIDs) == 0 {
+		httpserver.WriteData(rw, []*ProjectReportRow{})
+		return
+	}
 	dataSourceBasic := fmt.Sprintf(dataSourceSql, metricGroup, req.Start, req.End, req.OrgID)
 	lastValueWhereSql := genLastValueWhereSql(req)
 	if lastValueWhereSql != "" {
