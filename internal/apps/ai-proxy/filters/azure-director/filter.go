@@ -338,7 +338,7 @@ func ParseProcessorNameArgs(s string) (string, string, error) {
 		return s, "", nil
 	}
 	lastIndex := strings.LastIndexByte(s, ')')
-	if index < 0 {
+	if lastIndex < 0 {
 		return "", "", errors.Errorf("failed to ParseProcessorNameArgs, the configuration %s may be invalid", s)
 	}
 	if index+1 > lastIndex {

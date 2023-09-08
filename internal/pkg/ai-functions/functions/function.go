@@ -36,7 +36,7 @@ type Function interface {
 	Schema() json.RawMessage
 	RequestOptions() []sdk.RequestOption
 	CompletionOptions() []sdk.PatchOption
-	Callback(ctx context.Context, arguments json.RawMessage) (any, error)
+	Callback(ctx context.Context, arguments json.RawMessage, input interface{}, needAdjust bool) (any, error)
 }
 
 type Background struct {
