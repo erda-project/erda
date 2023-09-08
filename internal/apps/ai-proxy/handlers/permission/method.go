@@ -27,7 +27,7 @@ var CheckClientPerm = CheckPermissions(
 	&MethodPermission{Method: clientpb.ClientServiceServer.Create, OnlyAdmin: true},
 	&MethodPermission{Method: clientpb.ClientServiceServer.Get, AdminOrAk: true},
 	&MethodPermission{Method: clientpb.ClientServiceServer.Update, OnlyAdmin: true},
-	&MethodPermission{Method: clientpb.ClientServiceServer.Paging, AdminOrAk: true},
+	&MethodPermission{Method: clientpb.ClientServiceServer.Paging, OnlyAdmin: true},
 	&MethodPermission{Method: clientpb.ClientServiceServer.Delete, OnlyAdmin: true},
 )
 
