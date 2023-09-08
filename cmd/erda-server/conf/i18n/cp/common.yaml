@@ -64,6 +64,9 @@ zh:
   epic: 里程碑
   task-type: 任务类型
   import-source: 引入源
+  reopened-count: 重新打开次数
+  reopened-count-gte-one: ">=1"
+  reopened-count-gte-two: ">=2"
   demand-design: 需求设计
   architecture-design: 架构设计
   code-development: 代码研发
@@ -398,6 +401,9 @@ en:
   epic: EPIC
   task-type: Task Type
   import-source: Import source
+  reopened-count: reopened times
+  reopened-count-gte-one: ">=1"
+  reopened-count-gte-two: ">=2"
   demand-design: Demand Design
   architecture-design: Architecture Design
   code-development: Code Development

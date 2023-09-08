@@ -245,6 +245,10 @@ func (f *IssueFilter) generateIssuePagingRequest() pb.PagingIssueRequest {
 			endClosedAt = *f.State.FrontendConditionValues.ClosedAtStartEnd[1]
 		}
 	}
+	var reopenedCount uint64
+	for _, val := range f.State.FrontendConditionValues.ReopenedCount {
+		reopenedCount = val
+	}
 
 	req := pb.PagingIssueRequest{
 		PageNo:             1, // 每次走 filter，都需要重新查询，调整 pageNo 为 1
@@ -282,6 +286,7 @@ func (f *IssueFilter) generateIssuePagingRequest() pb.PagingIssueRequest {
 		External:           true,
 		WithProcessSummary: f.InParams.FrontendFixedIssueType == apistructs.IssueTypeRequirement.String(),
 		Participant:        f.State.FrontendConditionValues.ParticipantIDs,
+		ReopenedCountGte:   reopenedCount,
 	}
 	return req
 }

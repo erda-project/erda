@@ -878,6 +878,7 @@ message PagingIssueRequest {
   repeated string participant = 42;
 
   bool withCustomProperties = 43;
+  uint64 reopenedCountGte = 44;
 }
 
 message IssueListRequest {
