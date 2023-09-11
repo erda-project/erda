@@ -68,7 +68,16 @@ func TestPreCheck(t *testing.T) {
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListCustomInstancesByProjectAndEnv",
 		func(*dbclient.DBClient, uint64, string) ([]dbclient.AddonInstance, error) {
-			return []dbclient.AddonInstance{}, nil
+			return []dbclient.AddonInstance{
+				{
+					ID:        "ub2c26cbe2458417bab70c80f702dc62c",
+					Name:      "custom",
+					AddonName: "custom",
+					Category:  apistructs.AddonCustomCategory,
+					Workspace: string(apistructs.WorkspaceDev),
+					ProjectID: "1",
+				},
+			}, nil
 		},
 	)
 
