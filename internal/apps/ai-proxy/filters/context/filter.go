@@ -95,13 +95,15 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			return reverseproxy.Intercept, err
 		}
 		session = _session
-		sessionModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: session.ModelId})
-		if err != nil {
-			l.Errorf("failed to get model, id: %s, err: %v", session.ModelId, err)
-			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
-			return reverseproxy.Intercept, err
+		if session.ModelId != "" {
+			sessionModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: session.ModelId})
+			if err != nil {
+				l.Errorf("failed to get model, id: %s, err: %v", session.ModelId, err)
+				http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+				return reverseproxy.Intercept, err
+			}
+			model = sessionModel
 		}
-		model = sessionModel
 	} else if headerModelId != "" {
 		// get from model header
 		if headerModelId == "" {
@@ -115,7 +117,8 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			return reverseproxy.Intercept, err
 		}
 		model = headerModel
-	} else {
+	}
+	if model == nil {
 		// get client default model
 		clientPbMeta := metadata.FromProtobuf(client.Metadata)
 		clientMeta, err := clientPbMeta.ToClientMeta()
