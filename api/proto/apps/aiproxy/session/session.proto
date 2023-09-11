@@ -110,9 +110,9 @@ message SessionCreateRequest {
     string clientId = 1 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string promptId = 2 [(validate.rules).string = {max_len: 36}];
     string modelId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
-    string scene = 4 [(validate.rules).string = {min_len: 4, max_len: 191}];
-    string userId = 5;
-    string name = 6 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string userId = 4;
+    string scene = 5 [(validate.rules).string = {min_len: 2, max_len: 191}];
+    string name = 6 [(validate.rules).string = {min_len: 2, max_len: 191}];
     string topic = 7 [(validate.rules).string = {min_len: 1}];
     uint64 numOfCtxMsg = 8;
     double temperature = 9 [(validate.rules).double = {gte: 0, lte: 2}];
@@ -133,10 +133,10 @@ message SessionUpdateRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     string clientId = 2 [(validate.rules).string = {len: 36}];
     string promptId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
-    string modelId = 4 [(validate.rules).string = {len: 36}];
+    string modelId = 4 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string userId = 5 [(validate.rules).string = {max_len: 191}];
-    string scene = 6 [(validate.rules).string = {min_len: 4, max_len: 191}];
-    string name = 7 [(validate.rules).string = {min_len: 4, max_len: 191}];
+    string scene = 6 [(validate.rules).string = {min_len: 2, max_len: 191}];
+    string name = 7 [(validate.rules).string = {min_len: 2, max_len: 191}];
     string topic = 8 [(validate.rules).string = {min_len: 1}];
     uint64 numOfCtxMsg = 9;
     double temperature = 10 [(validate.rules).double = {gte: 0, lte: 2}];
@@ -148,8 +148,8 @@ message SessionPagingRequest {
     string promptId = 2 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string modelId = 3 [(validate.rules).string = {ignore_empty: true, len: 36}];
     string userId = 4 [(validate.rules).string = {max_len: 191}];
-    string scene = 5 [(validate.rules).string = {ignore_empty: true, min_len: 4, max_len: 191}];
-    string name = 6 [(validate.rules).string = {ignore_empty: true, min_len: 4, max_len: 191}];
+    string scene = 5 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
+    string name = 6 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     bool isArchived = 7;
     uint64 pageSize = 8 [(validate.rules).uint64 = {gte: 1}];
     uint64 pageNum = 9 [(validate.rules).uint64 = {gte: 1, lte: 1000}];
