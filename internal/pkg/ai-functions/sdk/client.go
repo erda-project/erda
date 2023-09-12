@@ -25,6 +25,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -65,16 +66,19 @@ func (c *Client) HttpClient() *http.Client {
 	return c.client
 }
 
-func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOptions) (*ChatCompletions, error) {
+func (c *Client) CreateCompletion(ctx context.Context, req *openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
 	req.Stream = false
+	logrus.Infof("CreateCompletion with req: %+v\n", *req)
+
 	var buf bytes.Buffer
+
 	if err := json.NewEncoder(&buf).Encode(req); err != nil {
 		return nil, errors.Wrap(err, "failed to Encode CreateCompletionOptions")
 	}
 	aiProxyClientAK := os.Getenv(AIProxyClientAK)
 	if aiProxyClientAK == "" {
 		err := errors.Errorf("env %s not set", AIProxyClientAK)
-		return nil, errors.Wrap(err, "failed to Encode CreateCompletionOptions")
+		return nil, errors.Wrap(err, "failed to get ai proxy client ak")
 	}
 	request, err := http.NewRequest(http.MethodPost, c.URLV1ChatCompletion(), &buf)
 	if err != nil {
@@ -86,7 +90,7 @@ func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOpti
 		o(request)
 	}
 
-	logrus.Debugf("WWWZZZ AI-Proxy Request: %+v", request)
+	logrus.Debugf("Post AI-Proxy Request: %+v", request)
 	response, err := c.HttpClient().Do(request)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to Do http request to %s", c.URLV1ChatCompletion())
@@ -100,7 +104,7 @@ func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOpti
 		}
 		return nil, errors.Errorf("response not ok, status: %s, message: %s", response.Status, string(data))
 	}
-	var chatCompletion ChatCompletions
+	var chatCompletion openai.ChatCompletionResponse
 	if err = json.NewDecoder(response.Body).Decode(&chatCompletion); err != nil {
 		return nil, errors.Wrap(err, "failed to Decode response to ChatCompletion")
 	}
@@ -108,16 +112,16 @@ func (c *Client) CreateCompletion(ctx context.Context, req *CreateCompletionOpti
 	return &chatCompletion, nil
 }
 
-type PatchOption func(option *CreateCompletionOptions)
+type PatchOption func(option *openai.ChatCompletionRequest)
 
 func PathOptionWithModel(model string) PatchOption {
-	return func(cco *CreateCompletionOptions) {
+	return func(cco *openai.ChatCompletionRequest) {
 		cco.Model = model
 	}
 }
 
-func PathOptionWithTemperature(temperature json.Number) PatchOption {
-	return func(cco *CreateCompletionOptions) {
+func PathOptionWithTemperature(temperature float32) PatchOption {
+	return func(cco *openai.ChatCompletionRequest) {
 		cco.Temperature = temperature
 	}
 }
