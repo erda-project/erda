@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const Name = "create-test-case"
@@ -94,8 +95,9 @@ func (f *Function) UserMessage() string {
 	return "Not really implemented."
 }
 
-func (f *Function) Schema() json.RawMessage {
-	return Schema
+func (f *Function) Schema() (json.RawMessage, error) {
+	schema, err := strutil.YamlOrJsonToJson(Schema)
+	return schema, err
 }
 
 func (f *Function) RequestOptions() []sdk.RequestOption {
@@ -107,7 +109,7 @@ func (f *Function) RequestOptions() []sdk.RequestOption {
 func (f *Function) CompletionOptions() []sdk.PatchOption {
 	return []sdk.PatchOption{
 		sdk.PathOptionWithModel("gpt-35-turbo-16k"),
-		sdk.PathOptionWithTemperature("1"),
+		sdk.PathOptionWithTemperature(1),
 	}
 }
 

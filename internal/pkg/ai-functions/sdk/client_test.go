@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sashabaranov/go-openai"
+
 	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
 )
 
@@ -51,13 +53,13 @@ required:
 `
 
 func TestFunctionDefinition_VerifyJSON(t *testing.T) {
-	var df = sdk.FunctionDefinition{
+	var df = openai.FunctionDefinition{
 		Name:        "create-test-case",
 		Description: "create test case",
 		Parameters:  json.RawMessage(testCaseSchema),
 	}
 	var j = `{"name": "dspo"}`
-	if err := df.VerifyArguments(json.RawMessage(j)); err == nil {
+	if err := sdk.VerifyArguments(df.Parameters.(json.RawMessage), json.RawMessage(j)); err == nil {
 		t.Error("err must not be nil")
 	}
 }

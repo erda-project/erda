@@ -24,6 +24,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/sashabaranov/go-openai"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -179,18 +180,18 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 			}
 
 			monkey.PatchInstanceMethod(reflect.TypeOf(&sdk.Client{}), "CreateCompletion", func(_ *sdk.Client,
-				ctx context.Context, req *sdk.CreateCompletionOptions) (*sdk.ChatCompletions, error) {
-				choices := make([]*sdk.ChatChoice, 0)
-				choices = append(choices, &sdk.ChatChoice{
+				ctx context.Context, req *openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+				choices := make([]openai.ChatCompletionChoice, 0)
+				choices = append(choices, openai.ChatCompletionChoice{
 					Index: 0,
-					Message: &sdk.ChatMessage{
-						FunctionCall: &sdk.FunctionCall{
+					Message: openai.ChatCompletionMessage{
+						FunctionCall: &openai.FunctionCall{
 							Arguments: arguments,
 						},
 					},
 				})
 
-				return &sdk.ChatCompletions{
+				return &openai.ChatCompletionResponse{
 					Choices: choices,
 				}, nil
 			})
