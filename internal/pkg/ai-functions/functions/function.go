@@ -33,7 +33,7 @@ type Function interface {
 	Description() string
 	SystemMessage() string
 	UserMessage() string
-	Schema() json.RawMessage
+	Schema() (json.RawMessage, error)
 	RequestOptions() []sdk.RequestOption
 	CompletionOptions() []sdk.PatchOption
 	Callback(ctx context.Context, arguments json.RawMessage, input interface{}, needAdjust bool) (any, error)

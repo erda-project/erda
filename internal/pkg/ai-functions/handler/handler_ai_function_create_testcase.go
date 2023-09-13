@@ -45,7 +45,7 @@ func (h *AIFunction) createTestCaseForRequirementIDAndTestID(ctx context.Context
 	logrus.Debugf("parse createTestCase functionParams=%+v", functionParams)
 
 	if err := validateParamsForCreateTestcase(functionParams); err != nil {
-		return nil, errors.Wrapf(err, "process single testCase create faild")
+		return nil, errors.Wrapf(err, "validateParamsForCreateTestcase faild")
 	}
 
 	for _, tp := range functionParams.Requirements {
