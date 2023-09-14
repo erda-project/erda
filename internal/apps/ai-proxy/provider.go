@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
+	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -51,6 +52,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
@@ -167,6 +169,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	clientmodelrelationpb.RegisterClientModelRelationServiceImp(p, &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
 	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
 	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
+	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
