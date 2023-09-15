@@ -41,3 +41,7 @@ func (h *ModelProviderHandler) Delete(ctx context.Context, req *pb.ModelProvider
 func (h *ModelProviderHandler) Update(ctx context.Context, req *pb.ModelProviderUpdateRequest) (*pb.ModelProvider, error) {
 	return h.DAO.ModelProviderClient().Update(ctx, req)
 }
+
+func (h *ModelProviderHandler) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
+	return h.DAO.ModelProviderClient().Paging(ctx, req)
+}

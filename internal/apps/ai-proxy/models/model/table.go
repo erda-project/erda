@@ -49,3 +49,13 @@ func (m *Model) ToProtobuf() *pb.Model {
 		Metadata:   m.Metadata.ToProtobuf(),
 	}
 }
+
+type Models []*Model
+
+func (models Models) ToProtobuf() []*pb.Model {
+	var pbClients []*pb.Model
+	for _, c := range models {
+		pbClients = append(pbClients, c.ToProtobuf())
+	}
+	return pbClients
+}
