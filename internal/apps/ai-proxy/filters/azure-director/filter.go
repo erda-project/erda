@@ -171,6 +171,28 @@ func (f *AzureDirector) SetAPIKeyIfNotSpecified(ctx context.Context) error {
 	return nil
 }
 
+func (f *AzureDirector) SetModelAPIVersionIfNotSpecified(ctx context.Context) error {
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModel{})
+	if !ok || value == nil {
+		return errors.New("model not set in context map")
+	}
+	model := value.(*modelpb.Model)
+	meta := metadata.FromProtobuf(model.Metadata)
+	modelApiVersion, ok := meta.GetPublicValueByKey("api_version")
+	if !ok {
+		return nil
+	}
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		inputApiVersion := req.URL.Query().Get("api-version")
+		if inputApiVersion == "" {
+			queries := req.URL.Query()
+			queries.Set("api-version", modelApiVersion)
+			req.URL.RawQuery = queries.Encode()
+		}
+	})
+	return nil
+}
+
 func (f *AzureDirector) AddQueries(ctx context.Context) error {
 	return f.handleQueries(ctx, "AddQueries")
 }

@@ -36,6 +36,7 @@ var CheckModelProviderPerm = CheckPermissions(
 	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Get, OnlyAdmin: true},
 	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Update, OnlyAdmin: true},
 	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Delete, OnlyAdmin: true},
+	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Paging, OnlyAdmin: true},
 )
 
 var CheckModelPerm = CheckPermissions(
@@ -43,6 +44,7 @@ var CheckModelPerm = CheckPermissions(
 	&MethodPermission{Method: modelpb.ModelServiceServer.Get, AdminOrAk: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.Update, OnlyAdmin: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.Delete, OnlyAdmin: true},
+	&MethodPermission{Method: modelpb.ModelServiceServer.Paging, OnlyAdmin: true},
 )
 
 var CheckClientModelRelationPerm = CheckPermissions(

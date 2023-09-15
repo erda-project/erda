@@ -36,6 +36,8 @@ const (
 	XAIProxyModelId   = "X-AI-Proxy-Model-Id"
 	XAIProxySessionId = "X-AI-Proxy-Session-Id"
 	XAIProxyPromptId  = "X-AI-Proxy-Prompt-Id"
+
+	UIValueUndefined = "undefined"
 )
 
 const (

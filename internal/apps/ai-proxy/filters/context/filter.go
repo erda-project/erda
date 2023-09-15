@@ -87,7 +87,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	// get from session if exists
 	headerSessionId := infor.Header().Get(vars.XAIProxySessionId)
 	headerModelId := infor.Header().Get(vars.XAIProxyModelId)
-	if headerSessionId != "" {
+	if headerSessionId != "" && headerSessionId != vars.UIValueUndefined {
 		_session, err := q.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: headerSessionId})
 		if err != nil {
 			l.Errorf("failed to get session, id: %s, err: %v", headerSessionId, err)

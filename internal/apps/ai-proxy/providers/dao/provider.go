@@ -15,12 +15,10 @@
 package dao
 
 import (
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
@@ -79,32 +77,6 @@ func (p *provider) Q() *gorm.DB {
 
 func (p *provider) Tx() *gorm.DB {
 	return p.DB.Session(&gorm.Session{})
-}
-
-func (p *provider) PagingChatLogs(sessionId string, pageNum, pageSize int) (int64, []*pb.ChatLog, error) {
-	var audits models.AIProxyFilterAuditList
-	total, err := (&audits).Pager(p.DB).
-		Where(audits.FieldSessionID().Equal(sessionId)).
-		Paging(pageSize, pageNum, audits.FieldCreatedAt().DESC())
-	if err != nil {
-		return 0, nil, err
-	}
-	if total == 0 {
-		return 0, nil, nil
-	}
-	var chatLogs []*pb.ChatLog
-	for _, item := range audits {
-		pbChatLog := pb.ChatLog{
-			Id:         item.ID.String,
-			RequestAt:  timestamppb.New(item.RequestAt),
-			ResponseAt: timestamppb.New(item.ResponseAt),
-			Prompt:     item.Prompt,
-			Completion: item.Completion,
-			SessionId:  item.SessionID,
-		}
-		chatLogs = append(chatLogs, &pbChatLog)
-	}
-	return total, chatLogs, nil
 }
 
 func (p *provider) ModelProviderClient() *model_provider.DBClient {

@@ -65,26 +65,28 @@ func (m *Metadata) MergeMap() map[string]string {
 	return result
 }
 
-func (m *Metadata) GetPublicValueByKey(key string) interface{} {
+func (m *Metadata) GetPublicValueByKey(key string) (string, bool) {
 	if m == nil {
-		return nil
+		return "", false
 	}
-	return m.Public[key]
+	v, ok := m.Public[key]
+	return v, ok
 }
 
-func (m *Metadata) GetSecretValueByKey(key string) interface{} {
+func (m *Metadata) GetSecretValueByKey(key string) (string, bool) {
 	if m == nil {
-		return nil
+		return "", false
 	}
-	return m.Secret[key]
+	v, ok := m.Secret[key]
+	return v, ok
 }
 
-func (m *Metadata) GetValueByKey(key string) interface{} {
+func (m *Metadata) GetValueByKey(key string) (string, bool) {
 	if m == nil {
-		return nil
+		return "", false
 	}
-	if v := m.GetPublicValueByKey(key); v != nil {
-		return v
+	if v, ok := m.GetPublicValueByKey(key); ok {
+		return v, ok
 	}
 	return m.GetSecretValueByKey(key)
 }

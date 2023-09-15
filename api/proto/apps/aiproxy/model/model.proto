@@ -33,6 +33,12 @@ service ModelService {
             delete: "/api/ai-proxy/models/{id}"
         };
     }
+
+    rpc Paging(ModelPagingRequest) returns (ModelPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/models?type={type}"
+        };
+    }
 }
 
 message Model {
@@ -50,18 +56,19 @@ message Model {
 }
 
 enum ModelType {
-    text_generation = 0;
-    image = 1;
-    audio = 2;
-    embedding = 3;
-    text_moderation = 4;
-    multimodal_text__visual = 5;
+    TYPE_UNSPECIFIED = 0;
+    text_generation = 1;
+    image = 2;
+    audio = 3;
+    embedding = 4;
+    text_moderation = 5;
+    multimodal_text__visual = 6;
 }
 
 message ModelCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string.max_len = 1024];
-    ModelType type = 3 [(validate.rules).enum = {defined_only: true}];
+    ModelType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string providerId = 4 [(validate.rules).string = {len: 36}];
     string apiKey = 5;
     Metadata metadata = 6;
@@ -71,7 +78,7 @@ message ModelUpdateRequest {
     string id = 1;
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string.max_len = 1024];
-    ModelType type = 4;
+    ModelType type = 4 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string providerId = 5 [(validate.rules).string = {len: 36}];
     string apiKey = 6;
     Metadata metadata = 7;
@@ -83,4 +90,17 @@ message ModelDeleteRequest {
 
 message ModelGetRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message ModelPagingRequest {
+    uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+    uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+    string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
+    ModelType type = 4 [(validate.rules).enum = {defined_only: true}];
+    string providerId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
+}
+
+message ModelPagingResponse {
+    int64 total = 1;
+    repeated Model list = 2;
 }
