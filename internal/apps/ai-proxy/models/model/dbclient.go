@@ -80,3 +80,35 @@ func (dbClient *DBClient) Delete(ctx context.Context, req *pb.ModelDeleteRequest
 	}
 	return &commonpb.VoidResponse{}, nil
 }
+
+func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest) (*pb.ModelPagingResponse, error) {
+	c := &Model{}
+	sql := dbClient.DB.Model(c)
+	if req.Name != "" {
+		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
+	}
+	if req.Type != pb.ModelType_TYPE_UNSPECIFIED {
+		c.Type = model_type.ModelType(req.Type)
+	}
+	c.ProviderID = req.ProviderId
+	sql = sql.Where(c)
+	var (
+		total int64
+		list  Models
+	)
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+	offset := (req.PageNum - 1) * req.PageSize
+	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ModelPagingResponse{
+		Total: total,
+		List:  list.ToProtobuf(),
+	}, nil
+}

@@ -78,3 +78,34 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelProviderUpdat
 	}
 	return dbClient.Get(ctx, &pb.ModelProviderGetRequest{Id: req.Id})
 }
+
+func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
+	c := &ModelProvider{}
+	sql := dbClient.DB.Model(c)
+	if req.Name != "" {
+		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
+	}
+	if req.Type != pb.ModelProviderType_TYPE_UNSPECIFIED {
+		c.Type = model_provider_type.GetModelProviderTypeFromProtobuf(req.Type)
+		sql = sql.Where("type = ?", c.Type)
+	}
+	var (
+		total int64
+		list  ModelProviders
+	)
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+	offset := (req.PageNum - 1) * req.PageSize
+	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ModelProviderPagingResponse{
+		Total: total,
+		List:  list.ToProtobuf(),
+	}, nil
+}

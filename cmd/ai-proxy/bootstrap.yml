@@ -12,12 +12,7 @@ erda.app.ai-proxy:
   openOnErda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
 
 gorm.v2:
-  host: "${MYSQL_HOST}"
-  port: "${MYSQL_PORT}"
-  username: "${MYSQL_USERNAME}"
-  password: "${MYSQL_PASSWORD}"
-  database: "${MYSQL_DATABASE}"
-  debug: true
+  debug: ${MYSQL_DEBUG:false}
 
 erda.apps.ai-proxy.dao:
 erda.app.ai-proxy.metrics:
