@@ -56,20 +56,22 @@ type FunctionParams struct {
 	Requirements []TestCaseParam `json:"requirements,omitempty"`
 }
 type TestCaseParam struct {
-	IssueID uint64 `json:"issueID,omitempty"`
-	Prompt  string `json:"prompt,omitempty"`
+	IssueID uint64                           `json:"issueID,omitempty"`
+	Prompt  string                           `json:"prompt,omitempty"`
+	Req     apistructs.TestCaseCreateRequest `json:"testCaseCreateReq,omitempty"`
 }
 
 // TestCaseFunctionInput 用于为单个需求生成测试用例的输入
 type TestCaseFunctionInput struct {
-	TestSetID uint64
-	IssueID   uint64
-	Prompt    string
+	TestSetParentID uint64
+	TestSetID       uint64
+	IssueID         uint64
+	Prompt          string
 }
 
 // TestCaseMeta 用于关联生成的测试用例与对应的需求
 type TestCaseMeta struct {
-	Req             apistructs.TestCaseCreateRequest `json:"testCaseCreateReq,omitempty"` // 当前项目 ID，用于权限校验
+	Req             apistructs.TestCaseCreateRequest `json:"testCaseCreateReq,omitempty"` // 当前项目 ID 对应的创建测试用例请求
 	RequirementName string                           `json:"requirementName"`             // 需求对应的 issue 的 Title
 	RequirementID   uint64                           `json:"requirementID"`               // 需求对应的 issueID
 	TestCaseID      uint64                           `json:"testcaseID,omitempty"`        // 创建测试用例成功返回的测试用例 ID
