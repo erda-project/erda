@@ -96,7 +96,7 @@ var (
 					return h(ctx, req)
 				}
 				// try set clientId by ak
-				clientId, err := akutil.CheckAk(ctx, req, dao)
+				clientId, err := akutil.CheckAkOrToken(ctx, req, dao)
 				if err != nil {
 					return nil, err
 				}

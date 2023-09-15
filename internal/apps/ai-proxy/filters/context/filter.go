@@ -24,13 +24,16 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -62,24 +65,42 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	)
 	// find client
 	var client *clientpb.Client
-	ak := vars.TrimBearer(infor.Header().Get("Authorization"))
+	ak := vars.TrimBearer(infor.Header().Get(httputil.HeaderKeyAuthorization))
 	if ak == "" {
 		http.Error(w, "Authorization is required", http.StatusUnauthorized)
 		return reverseproxy.Intercept, nil
 	}
-	// try to remove Bearer
-	ak = strings.TrimPrefix(ak, "Bearer ")
-	clientPagingResult, err := q.ClientClient().Paging(ctx, &clientpb.ClientPagingRequest{
-		AccessKeyIds: []string{ak},
-		PageNum:      1,
-		PageSize:     1,
-	})
-	if err != nil || clientPagingResult.Total < 1 {
-		l.Errorf("failed to get client, access_key_id: %s, err: %v", ak, err)
-		http.Error(w, "Authorization is invalid", http.StatusForbidden)
-		return reverseproxy.Intercept, err
+	if strings.HasPrefix(ak, client_token.TokenPrefix) {
+		tokenPagingResp, err := q.ClientTokenClient().Paging(ctx, &clienttokenpb.ClientTokenPagingRequest{
+			PageSize: 1,
+			PageNum:  1,
+			Token:    ak,
+		})
+		if err != nil || tokenPagingResp.Total < 1 {
+			l.Errorf("failed to get client token, token: %s, err: %v", ak, err)
+			http.Error(w, "Authorization is invalid", http.StatusForbidden)
+			return reverseproxy.Intercept, err
+		}
+		clientResp, err := q.ClientClient().Get(ctx, &clientpb.ClientGetRequest{ClientId: tokenPagingResp.List[0].ClientId})
+		if err != nil {
+			l.Errorf("failed to get client, id: %s, err: %v", tokenPagingResp.List[0].ClientId, err)
+			http.Error(w, "Authorization is invalid", http.StatusForbidden)
+			return reverseproxy.Intercept, err
+		}
+		client = clientResp
+	} else {
+		clientPagingResult, err := q.ClientClient().Paging(ctx, &clientpb.ClientPagingRequest{
+			AccessKeyIds: []string{ak},
+			PageNum:      1,
+			PageSize:     1,
+		})
+		if err != nil || clientPagingResult.Total < 1 {
+			l.Errorf("failed to get client, access_key_id: %s, err: %v", ak, err)
+			http.Error(w, "Authorization is invalid", http.StatusForbidden)
+			return reverseproxy.Intercept, err
+		}
+		client = clientPagingResult.List[0]
 	}
-	client = clientPagingResult.List[0]
 
 	// find model
 	var model *modelpb.Model

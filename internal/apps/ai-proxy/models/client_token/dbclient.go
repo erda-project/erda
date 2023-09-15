@@ -28,12 +28,12 @@ import (
 )
 
 const (
-	tokenPrefix          = "t_"
+	TokenPrefix          = "t_"
 	defaultExpireInHours = 24 * 7 // 7 days
 )
 
 func genToken() string {
-	return tokenPrefix + uuid.UUID()
+	return TokenPrefix + uuid.UUID()
 }
 
 type DBClient struct {
@@ -106,7 +106,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ClientTokenUpdateR
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ClientTokenPagingRequest) (*pb.ClientTokenPagingResponse, error) {
 	c := &ClientToken{ClientID: req.ClientId, UserID: req.UserId, Token: req.Token}
-	sql := dbClient.DB.Model(c)
+	sql := dbClient.DB.Model(c).Where(c)
 	var (
 		total int64
 		list  ClientTokens
