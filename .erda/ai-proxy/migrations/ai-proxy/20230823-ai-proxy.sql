@@ -171,15 +171,16 @@ CREATE TABLE `ai_proxy_filter_audit`
 
 CREATE TABLE `ai_proxy_client_token`
 (
-    `id`             CHAR(36)     NOT NULL COMMENT 'primary key',
-    `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `deleted_at`     DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
+    `id`         CHAR(36)     NOT NULL COMMENT 'primary key',
+    `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted_at` DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
 
-    `client_id`      CHAR(36)     NOT NULL COMMENT '会话所属的客户端 id',
-    `user_id`        VARCHAR(191) NOT NULL COMMENT '客户端传入的自定义 user_id，客户端用来区分用户',
-    `token`          CHAR(34)     NOT NULL COMMENT 't_ 前缀，len: uuid(32)+2',
-    `expired_at`     DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00',
+    `client_id`  CHAR(36)     NOT NULL COMMENT '会话所属的客户端 id',
+    `user_id`    VARCHAR(191) NOT NULL COMMENT '客户端传入的自定义 user_id，客户端用来区分用户',
+    `token`      CHAR(34)     NOT NULL COMMENT 't_ 前缀，len: uuid(32)+2',
+    `expired_at` DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00',
+    `metadata`   MEDIUMTEXT   NOT NULL COMMENT 'Token 元数据，主要包含 user 额外信息，用于审计',
 
     PRIMARY KEY (`id`),
     INDEX `idx_token` (`token`),

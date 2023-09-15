@@ -12,7 +12,7 @@ import "common/http.proto";
 service ClientTokenService {
     rpc Create(ClientTokenCreateRequest) returns (ClientToken) {
         option(google.api.http) = {
-            post: "/api/ai-proxy/clients/{clientId}/tokens"
+            post: "/api/ai-proxy/clients/{clientId}/tokens?createOrGet={createOrGet}"
         };
     }
 
@@ -51,12 +51,16 @@ message ClientToken {
     string userId = 6 [(validate.rules).string = {min_len:1, max_len: 191}];
     string token = 7 [(validate.rules).string = {len: 34}];
     google.protobuf.Timestamp expireAt = 8;
+    Metadata metadata = 9;
 }
 
 message ClientTokenCreateRequest {
     string clientId = 1 [(validate.rules).string = {len: 36}];
     string userId = 2 [(validate.rules).string = {min_len:1, max_len: 191}];
     uint64 expireInHours = 3 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 720}]; // max 30 days
+    Metadata metadata = 4;
+
+    bool createOrGet = 5; // get if token exists
 }
 
 message ClientTokenGetRequest {
@@ -73,6 +77,7 @@ message ClientTokenUpdateRequest {
     string clientId = 1 [(validate.rules).string = {len: 36}];
     string token = 2 [(validate.rules).string = {len: 34}];
     uint64 expireInHours = 3 [(validate.rules).uint64 = {gte: 0, lte: 720}]; // max 30 days
+    Metadata metadata = 4;
 }
 
 message ClientTokenPagingRequest {

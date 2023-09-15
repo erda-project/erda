@@ -21,14 +21,16 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
 
 type ClientToken struct {
 	common.BaseModel
-	ClientID  string    `gorm:"column:client_id;type:char(36)" json:"clientID" yaml:"clientID"`
-	UserID    string    `gorm:"column:user_id;type:varchar(191)" json:"userID" yaml:"userID"`
-	Token     string    `gorm:"column:token;type:char(34)" json:"token" yaml:"token"`
-	ExpiredAt time.Time `gorm:"column:expired_at;type:datetime" json:"expiredAt" yaml:"expiredAt"`
+	ClientID  string            `gorm:"column:client_id;type:char(36)" json:"clientID" yaml:"clientID"`
+	UserID    string            `gorm:"column:user_id;type:varchar(191)" json:"userID" yaml:"userID"`
+	Token     string            `gorm:"column:token;type:char(34)" json:"token" yaml:"token"`
+	ExpiredAt time.Time         `gorm:"column:expired_at;type:datetime" json:"expiredAt" yaml:"expiredAt"`
+	Metadata  metadata.Metadata `gorm:"column:metadata;type:json" json:"metadata" yaml:"metadata"`
 }
 
 func (*ClientToken) TableName() string { return "ai_proxy_client_token" }
@@ -43,6 +45,7 @@ func (c *ClientToken) ToProtobuf() *pb.ClientToken {
 		UserId:    c.UserID,
 		Token:     c.Token,
 		ExpireAt:  timestamppb.New(c.ExpiredAt),
+		Metadata:  c.Metadata.ToProtobuf(),
 	}
 }
 

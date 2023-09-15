@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
@@ -41,6 +42,29 @@ type DBClient struct {
 }
 
 func (dbClient *DBClient) Create(ctx context.Context, req *pb.ClientTokenCreateRequest) (*pb.ClientToken, error) {
+	// query first
+	if req.CreateOrGet {
+		pagingResp, err := dbClient.Paging(ctx, &pb.ClientTokenPagingRequest{
+			ClientId: req.ClientId,
+			UserId:   req.UserId,
+			PageNum:  1,
+			PageSize: 1,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to paging token, clientId: %s, userId: %s, err: %v", req.ClientId, req.UserId, err)
+		}
+		if pagingResp.Total == 1 { // already exist, return directly
+			if req.Metadata != nil { // do update
+				return dbClient.Update(ctx, &pb.ClientTokenUpdateRequest{
+					ClientId: req.ClientId,
+					Token:    pagingResp.List[0].Token,
+					Metadata: req.Metadata,
+				})
+			}
+			return pagingResp.List[0], nil
+		}
+	}
+	// do create
 	// set default expire option
 	if req.ExpireInHours == 0 {
 		req.ExpireInHours = defaultExpireInHours
@@ -50,6 +74,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ClientTokenCreateR
 		UserID:    req.UserId,
 		Token:     genToken(),
 		ExpiredAt: time.Now().Add(time.Hour * time.Duration(req.ExpireInHours)),
+		Metadata:  metadata.FromProtobuf(req.Metadata),
 	}
 	if err := dbClient.DB.Model(c).Create(c).Error; err != nil {
 		return nil, err
@@ -86,13 +111,14 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ClientTokenUpdateR
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token, clientId: %s, token: %s, err:, %v", req.ClientId, req.Token, err)
 	}
-	// set default expire option
-	if req.ExpireInHours == 0 {
-		req.ExpireInHours = defaultExpireInHours
-	}
 	c := &ClientToken{
 		BaseModel: common.BaseModelWithID(tokenResp.Id),
-		ExpiredAt: time.Now().Add(time.Hour * time.Duration(req.ExpireInHours)),
+	}
+	if req.ExpireInHours > 0 {
+		c.ExpiredAt = time.Now().Add(time.Hour * time.Duration(req.ExpireInHours))
+	}
+	if req.Metadata != nil {
+		c.Metadata = metadata.FromProtobuf(req.Metadata)
 	}
 	sql := dbClient.DB.Model(c).Updates(c)
 	if sql.Error != nil {
