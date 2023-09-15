@@ -164,7 +164,7 @@ func validateParamsForCreateTestcase(req aitestcase.FunctionParams) error {
 		if tp.IssueID <= 0 {
 			return errors.Errorf("AI function functionParams requirements[%d].issueID for %s invalid", idx, aitestcase.Name)
 		}
-		if tp.Prompt == "" {
+		if tp.Prompt == "" && len(tp.Req.StepAndResults) == 0 {
 			return errors.Errorf("AI function functionParams requirements[%d].prompt for %s invalid", idx, aitestcase.Name)
 		}
 	}
