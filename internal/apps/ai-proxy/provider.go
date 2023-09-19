@@ -129,14 +129,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	if err := p.parseProvidersConfig(); err != nil {
-		return errors.Wrap(err, "failed to parseProvidersConfig")
-	}
-	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.Providers))
-	if err := p.parsePlatformsConfig(); err != nil {
-		return errors.Wrap(err, "failed to parsePlatformsConfig")
-	}
-	p.L.Infof("platforms config:\n%s", strutil.TryGetYamlStr(p.Config.Platforms))
 
 	if p.Config.SelfURL == "" {
 		p.Config.SelfURL = "http://ai-proxy:8081"
@@ -146,19 +138,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	if len(p.ErdaOpenapis) == 0 {
 		p.ErdaOpenapis = make(map[string]*url.URL)
-	}
-	for i, plat := range p.Config.Platforms {
-		if plat.Name == "" {
-			return errors.Errorf("invalid platforms[%d] config, name is empty", i)
-		}
-		if plat.Openapi == "" {
-			return errors.Errorf("the platform %s's openapi is invalid", plat.Name)
-		}
-		openapi, err := url.Parse(plat.Openapi)
-		if err != nil {
-			return errors.Wrapf(err, "faield to parse openapi, name: %s, openapi: %s", plat.Name, plat.Openapi)
-		}
-		p.ErdaOpenapis[plat.Name] = openapi
 	}
 
 	// register gRPC and http handler
@@ -280,14 +259,6 @@ func (p *provider) parseRoutesConfig() error {
 	return p.Config.Routes.Validate()
 }
 
-func (p *provider) parseProvidersConfig() error {
-	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.Providers)
-}
-
-func (p *provider) parsePlatformsConfig() error {
-	return p.parseConfig(p.Config.PlatformsRef, "platforms", &p.Config.Platforms)
-}
-
 func (p *provider) parseConfig(ref, key string, i interface{}) error {
 	data, err := os.ReadFile(ref)
 	if err != nil {
@@ -333,16 +304,12 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 }
 
 type config struct {
-	RoutesRef    string              `json:"routesRef" yaml:"routesRef"`
-	ProvidersRef string              `json:"providersRef" yaml:"providersRef"`
-	PlatformsRef string              `json:"platformsRef" yaml:"platformsRef"`
-	LogLevel     string              `json:"logLevel" yaml:"logLevel"`
-	Exporter     configPromExporter  `json:"exporter" yaml:"exporter"`
-	SelfURL      string              `json:"selfURL" yaml:"selfURL"`
-	OpenOnErda   bool                `json:"openOnErda" yaml:"openOnErda"`
-	Routes       route2.Routes       `json:"-" yaml:"-"`
-	Providers    provider2.Providers `json:"-" yaml:"-"`
-	Platforms    []*Platform         `json:"-" yaml:"-"`
+	RoutesRef  string             `json:"routesRef" yaml:"routesRef"`
+	LogLevel   string             `json:"logLevel" yaml:"logLevel"`
+	Exporter   configPromExporter `json:"exporter" yaml:"exporter"`
+	SelfURL    string             `json:"selfURL" yaml:"selfURL"`
+	OpenOnErda bool               `json:"openOnErda" yaml:"openOnErda"`
+	Routes     route2.Routes      `json:"-" yaml:"-"`
 }
 
 type configPromExporter struct {
