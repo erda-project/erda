@@ -73,7 +73,7 @@ func TestAudit_SetUserInfo(t *testing.T) {
 
 	f, _ := audit.New(nil)
 	a := f.(*audit.Audit)
-	if err := a.SetUserInfo(context.Background(), header); err != nil {
+	if err := a.SetUserInfoFromHeader(context.Background(), header); err != nil {
 		t.Fatal(err)
 	}
 	if a.Audit.Username != m[vars.XAIProxyName] {

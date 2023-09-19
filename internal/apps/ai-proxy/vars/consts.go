@@ -55,4 +55,5 @@ type (
 	MapKeyModelProvider struct{ MapKeyModelProvider any }
 	MapKeyPrompt        struct{ MapKeyPrompt any }
 	MapKeySession       struct{ MapKeySession any }
+	MapKeyClientToken   struct{ MapKeyClientToken any }
 )

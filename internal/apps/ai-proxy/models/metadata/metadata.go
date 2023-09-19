@@ -16,6 +16,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
 )
@@ -65,30 +66,88 @@ func (m *Metadata) MergeMap() map[string]string {
 	return result
 }
 
-func (m *Metadata) GetPublicValueByKey(key string) (string, bool) {
+func (m *Metadata) GetPublicValueByKey(key string, ignoreCaseOpt ...bool) (string, bool) {
 	if m == nil {
 		return "", false
 	}
-	v, ok := m.Public[key]
-	return v, ok
+	var ignoreCase bool
+	if len(ignoreCaseOpt) > 0 {
+		ignoreCase = ignoreCaseOpt[0]
+	}
+	for k, v := range m.Public {
+		if ignoreCase {
+			if strings.EqualFold(key, k) {
+				return v, true
+			}
+		} else {
+			if key == k {
+				return v, true
+			}
+		}
+	}
+	return "", false
 }
 
-func (m *Metadata) GetSecretValueByKey(key string) (string, bool) {
+func (m *Metadata) GetSecretValueByKey(key string, ignoreCaseOpt ...bool) (string, bool) {
 	if m == nil {
 		return "", false
 	}
-	v, ok := m.Secret[key]
-	return v, ok
+	var ignoreCase bool
+	if len(ignoreCaseOpt) > 0 {
+		ignoreCase = ignoreCaseOpt[0]
+	}
+	for k, v := range m.Secret {
+		if ignoreCase {
+			if strings.EqualFold(key, k) {
+				return v, true
+			}
+		} else {
+			if key == k {
+				return v, true
+			}
+		}
+	}
+	return "", false
 }
 
-func (m *Metadata) GetValueByKey(key string) (string, bool) {
+func (m *Metadata) GetValueByKey(key string, optionalCfg ...Config) (string, bool) {
 	if m == nil {
 		return "", false
 	}
-	if v, ok := m.GetPublicValueByKey(key); ok {
+	cfg := getCfgFromArgs(optionalCfg...)
+	if v, ok := m.GetPublicValueByKey(key, cfg.IgnoreCase); ok {
 		return v, ok
 	}
-	return m.GetSecretValueByKey(key)
+	return m.GetSecretValueByKey(key, cfg.IgnoreCase)
+}
+
+type Config struct {
+	IgnoreCase   bool   // default: false
+	DefaultValue string // default: ""
+}
+
+func getCfgFromArgs(optionalCfg ...Config) Config {
+	cfg := Config{
+		IgnoreCase:   false,
+		DefaultValue: "",
+	}
+	if len(optionalCfg) > 0 {
+		cfg = optionalCfg[0]
+	}
+	return cfg
+}
+
+func (m *Metadata) MustGetValueByKey(key string, optionalCfg ...Config) string {
+	v, ok := m.GetValueByKey(key, optionalCfg...)
+	if ok {
+		return v
+	}
+	// check default value
+	cfg := getCfgFromArgs(optionalCfg...)
+	if cfg.DefaultValue != "" {
+		return cfg.DefaultValue
+	}
+	return ""
 }
 
 func FromProtobuf(pb *pb.Metadata) Metadata {

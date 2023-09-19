@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client-token/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service ClientTokenService {
+    rpc Create(ClientTokenCreateRequest) returns (ClientToken) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/clients/{clientId}/tokens?createOrGet={createOrGet}"
+        };
+    }
+
+    rpc Get(ClientTokenGetRequest) returns (ClientToken) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/clients/{clientId}/tokens/{token}"
+        };
+    }
+
+    rpc Delete(ClientTokenDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/clients/{clientId}/tokens/{token}"
+        };
+    }
+
+    rpc Update(ClientTokenUpdateRequest) returns (ClientToken) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/clients/{clientId}/tokens/{token}"
+        };
+    }
+
+    rpc Paging(ClientTokenPagingRequest) returns (ClientTokenPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/clients/{clientId}/tokens"
+        };
+    }
+}
+
+message ClientToken {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string clientId = 5 [(validate.rules).string = {len: 36}];
+    string userId = 6 [(validate.rules).string = {min_len:1, max_len: 191}];
+    string token = 7 [(validate.rules).string = {len: 34}];
+    google.protobuf.Timestamp expireAt = 8;
+    Metadata metadata = 9;
+}
+
+message ClientTokenCreateRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    string userId = 2 [(validate.rules).string = {min_len:1, max_len: 191}];
+    uint64 expireInHours = 3 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 720}]; // max 30 days
+    Metadata metadata = 4;
+
+    bool createOrGet = 5; // get if token exists
+}
+
+message ClientTokenGetRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    string token = 2 [(validate.rules).string = {len: 34}];
+}
+
+message ClientTokenDeleteRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    string token = 2 [(validate.rules).string = {len: 34}];
+}
+
+message ClientTokenUpdateRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    string token = 2 [(validate.rules).string = {len: 34}];
+    uint64 expireInHours = 3 [(validate.rules).uint64 = {gte: 0, lte: 720}]; // max 30 days
+    Metadata metadata = 4;
+}
+
+message ClientTokenPagingRequest {
+    string clientId = 1 [(validate.rules).string = {len: 36}];
+    string userId = 2 [(validate.rules).string = {ignore_empty: true, max_len: 191}];
+    string token = 3 [(validate.rules).string = {ignore_empty: true, max_len: 34}];
+    uint64 pageNum = 4 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+    uint64 pageSize = 5 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+}
+
+message ClientTokenPagingResponse {
+    int64 total = 1;
+    repeated ClientToken list = 2;
+}

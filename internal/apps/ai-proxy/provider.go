@@ -24,16 +24,13 @@ import (
 	"path"
 	"reflect"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
@@ -41,6 +38,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
+	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -51,6 +49,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
@@ -58,7 +57,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -94,7 +92,7 @@ var (
 					return h(ctx, req)
 				}
 				// try set clientId by ak
-				clientId, err := akutil.CheckAk(ctx, req, dao)
+				clientId, err := akutil.CheckAkOrToken(ctx, req, dao)
 				if err != nil {
 					return nil, err
 				}
@@ -122,19 +120,10 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.initLogger()
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
 	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-	if err := p.parseProvidersConfig(); err != nil {
-		return errors.Wrap(err, "failed to parseProvidersConfig")
-	}
-	p.L.Infof("providers config:\n%s", strutil.TryGetYamlStr(p.Config.Providers))
-	if err := p.parsePlatformsConfig(); err != nil {
-		return errors.Wrap(err, "failed to parsePlatformsConfig")
-	}
-	p.L.Infof("platforms config:\n%s", strutil.TryGetYamlStr(p.Config.Platforms))
 
 	if p.Config.SelfURL == "" {
 		p.Config.SelfURL = "http://ai-proxy:8081"
@@ -145,19 +134,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if len(p.ErdaOpenapis) == 0 {
 		p.ErdaOpenapis = make(map[string]*url.URL)
 	}
-	for i, plat := range p.Config.Platforms {
-		if plat.Name == "" {
-			return errors.Errorf("invalid platforms[%d] config, name is empty", i)
-		}
-		if plat.Openapi == "" {
-			return errors.Errorf("the platform %s's openapi is invalid", plat.Name)
-		}
-		openapi, err := url.Parse(plat.Openapi)
-		if err != nil {
-			return errors.Wrapf(err, "faield to parse openapi, name: %s, openapi: %s", plat.Name, plat.Openapi)
-		}
-		p.ErdaOpenapis[plat.Name] = openapi
-	}
 
 	// register gRPC and http handler
 	encoderOpts := mux.InfraEncoderOpt(mux.InfraCORS)
@@ -167,6 +143,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	clientmodelrelationpb.RegisterClientModelRelationServiceImp(p, &handler_client_model_relation.ClientModelRelationHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientModelRelationPerm)
 	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
 	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
+	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
@@ -241,48 +218,11 @@ func (p *provider) openAPIsOnErda() error {
 	return nil
 }
 
-func (p *provider) initLogger() {
-	if l, ok := p.L.(*logrusx.Logger); ok {
-		var logger = logrus.New()
-		var formatter = &logrus.TextFormatter{
-			ForceColors:      true,
-			DisableQuote:     true,
-			TimestampFormat:  time.RFC3339,
-			DisableSorting:   true,
-			QuoteEmptyFields: true,
-		}
-		p.L.Infof("logger formatter: %+v", formatter)
-		logger.SetFormatter(formatter)
-		if level, err := logrus.ParseLevel(p.Config.LogLevel); err == nil {
-			p.L.Infof("logger level: %s", p.Config.LogLevel)
-			logger.SetLevel(level)
-		} else {
-			p.L.Infof("failed to parse logger level from config, set it as %s", logrus.InfoLevel.String())
-			logger.SetLevel(logrus.InfoLevel)
-		}
-		l.Entry = logrus.NewEntry(logger)
-		return
-	}
-	p.L.Infof("logger level: %s", p.Config.LogLevel)
-	if err := p.L.SetLevel(p.Config.LogLevel); err != nil {
-		p.L.Infof("failed to set logger level from config, set it as %s", logrus.InfoLevel.String())
-		_ = p.L.SetLevel(logrus.InfoLevel.String())
-	}
-}
-
 func (p *provider) parseRoutesConfig() error {
 	if err := p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes); err != nil {
 		return err
 	}
 	return p.Config.Routes.Validate()
-}
-
-func (p *provider) parseProvidersConfig() error {
-	return p.parseConfig(p.Config.ProvidersRef, "providers", &p.Config.Providers)
-}
-
-func (p *provider) parsePlatformsConfig() error {
-	return p.parseConfig(p.Config.PlatformsRef, "platforms", &p.Config.Platforms)
 }
 
 func (p *provider) parseConfig(ref, key string, i interface{}) error {
@@ -330,16 +270,12 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 }
 
 type config struct {
-	RoutesRef    string              `json:"routesRef" yaml:"routesRef"`
-	ProvidersRef string              `json:"providersRef" yaml:"providersRef"`
-	PlatformsRef string              `json:"platformsRef" yaml:"platformsRef"`
-	LogLevel     string              `json:"logLevel" yaml:"logLevel"`
-	Exporter     configPromExporter  `json:"exporter" yaml:"exporter"`
-	SelfURL      string              `json:"selfURL" yaml:"selfURL"`
-	OpenOnErda   bool                `json:"openOnErda" yaml:"openOnErda"`
-	Routes       route2.Routes       `json:"-" yaml:"-"`
-	Providers    provider2.Providers `json:"-" yaml:"-"`
-	Platforms    []*Platform         `json:"-" yaml:"-"`
+	RoutesRef  string             `json:"routesRef" yaml:"routesRef"`
+	LogLevel   string             `json:"logLevel" yaml:"logLevel"`
+	Exporter   configPromExporter `json:"exporter" yaml:"exporter"`
+	SelfURL    string             `json:"selfURL" yaml:"selfURL"`
+	OpenOnErda bool               `json:"openOnErda" yaml:"openOnErda"`
+	Routes     route2.Routes      `json:"-" yaml:"-"`
 }
 
 type configPromExporter struct {

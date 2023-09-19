@@ -49,28 +49,6 @@ func CheckPermissions(perms ...*MethodPermission) transport.ServiceOption {
 	)
 }
 
-//var trySetAuth = func(dao dao.DAO) interceptor.Interceptor {
-//	return func(h interceptor.Handler) interceptor.Handler {
-//		return func(ctx context.Context, req interface{}) (interface{}, error) {
-//			// check admin key first
-//			adminKey := vars.TrimBearer(apis.GetHeader(ctx, httputil.HeaderKeyAuthorization))
-//			if len(adminKey) > 0 && adminKey == os.Getenv(vars.EnvAIProxyAdminAuthKey) {
-//				ctx = context.WithValue(ctx, vars.CtxKeyIsAdmin{}, true)
-//				return h(ctx, req)
-//			}
-//			// try set clientId by ak
-//			clientId, err := akutil.CheckAk(ctx, req, dao)
-//			if err != nil {
-//				return nil, err
-//			}
-//			if clientId != "" {
-//				ctx = context.WithValue(ctx, vars.CtxKeyClientId{}, clientId)
-//			}
-//			return h(ctx, req)
-//		}
-//	}
-//}
-
 var checkOneMethodPermission = func(methods map[string]*MethodPermission) interceptor.Interceptor {
 	return func(h interceptor.Handler) interceptor.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
