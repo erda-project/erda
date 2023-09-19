@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_model_relation"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/prompt"
@@ -61,6 +62,7 @@ type DAO interface {
 	ClientModelRelationClient() *client_model_relation.DBClient
 	PromptClient() *prompt.DBClient
 	SessionClient() *session.DBClient
+	ClientTokenClient() *client_token.DBClient
 }
 
 type provider struct {
@@ -101,4 +103,8 @@ func (p *provider) PromptClient() *prompt.DBClient {
 
 func (p *provider) SessionClient() *session.DBClient {
 	return &session.DBClient{DB: p.DB}
+}
+
+func (p *provider) ClientTokenClient() *client_token.DBClient {
+	return &client_token.DBClient{DB: p.DB}
 }

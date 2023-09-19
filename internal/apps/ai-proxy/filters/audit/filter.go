@@ -32,9 +32,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -86,7 +89,8 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 		f.SetXRequestId,
 		f.SetRequestAt,
 		f.SetSource,
-		f.SetUserInfo,
+		f.SetUserInfoFromHeader,
+		f.SetUserInfoFromClientToken,
 		f.SetProvider,
 		f.SetModel,
 		f.SetOperationId,
@@ -225,7 +229,7 @@ func (f *Audit) SetSource(_ context.Context, header http.Header) error {
 	return nil
 }
 
-func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
+func (f *Audit) SetUserInfoFromHeader(ctx context.Context, header http.Header) error {
 	f.Audit.Username = header.Get(vars.XAIProxyName)
 	if f.Audit.Username == "" {
 		f.Audit.Username = header.Get(vars.XAIProxyUsername)
@@ -248,6 +252,36 @@ func (f *Audit) SetUserInfo(ctx context.Context, header http.Header) error {
 	} {
 		if decoded, err := base64.StdEncoding.DecodeString(*v); err == nil && utf8.Valid(decoded) {
 			*v = string(decoded)
+		}
+	}
+	return nil
+}
+
+func (f *Audit) SetUserInfoFromClientToken(ctx context.Context) error {
+	_clientToken, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyClientToken{})
+	if !ok || _clientToken == nil {
+		return nil
+	}
+	clientToken := _clientToken.(*clienttokenpb.ClientToken)
+	meta := metadata.FromProtobuf(clientToken.Metadata)
+	metaCfg := metadata.Config{IgnoreCase: true}
+	f.Audit.DingtalkStaffID = meta.MustGetValueByKey(vars.XAIProxyDingTalkStaffID, metaCfg)
+	f.Audit.Email = meta.MustGetValueByKey(vars.XAIProxyEmail, metaCfg)
+	f.Audit.JobNumber = meta.MustGetValueByKey(vars.XAIProxyJobNumber, metaCfg)
+	f.Audit.Username = meta.MustGetValueByKey(vars.XAIProxyName, metaCfg)
+	f.Audit.PhoneNumber = meta.MustGetValueByKey(vars.XAIProxyPhone, metaCfg)
+	if f.Audit.Source == "" { // use token's client's name
+		_client, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyClient{})
+		if ok && _client != nil {
+			client := _client.(*clientpb.Client)
+			f.Audit.Source = client.Name
+		}
+	}
+	if f.Audit.Model == "" {
+		_model, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModel{})
+		if ok && _model != nil {
+			model := _model.(*modelpb.Model)
+			f.Audit.Model = model.Name
 		}
 	}
 	return nil
