@@ -81,13 +81,15 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			http.Error(w, "Authorization is invalid", http.StatusForbidden)
 			return reverseproxy.Intercept, err
 		}
-		clientResp, err := q.ClientClient().Get(ctx, &clientpb.ClientGetRequest{ClientId: tokenPagingResp.List[0].ClientId})
+		token := tokenPagingResp.List[0]
+		clientResp, err := q.ClientClient().Get(ctx, &clientpb.ClientGetRequest{ClientId: token.ClientId})
 		if err != nil {
 			l.Errorf("failed to get client, id: %s, err: %v", tokenPagingResp.List[0].ClientId, err)
 			http.Error(w, "Authorization is invalid", http.StatusForbidden)
 			return reverseproxy.Intercept, err
 		}
 		client = clientResp
+		m.Store(vars.MapKeyClientToken{}, token)
 	} else {
 		clientPagingResult, err := q.ClientClient().Paging(ctx, &clientpb.ClientPagingRequest{
 			AccessKeyIds: []string{ak},
