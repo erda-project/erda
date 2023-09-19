@@ -53,6 +53,7 @@ type Function struct {
 // FunctionParams 解析 *pb.ApplyRequest 字段 FunctionParams
 type FunctionParams struct {
 	TestSetID    uint64          `json:"testSetID,omitempty"`
+	SystemPrompt string          `json:"systemPrompt,omitempty"`
 	Requirements []TestCaseParam `json:"requirements,omitempty"`
 }
 type TestCaseParam struct {
