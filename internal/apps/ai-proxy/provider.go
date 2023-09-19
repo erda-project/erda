@@ -24,16 +24,13 @@ import (
 	"path"
 	"reflect"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
@@ -60,7 +57,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	provider2 "github.com/erda-project/erda/internal/pkg/ai-proxy/provider"
 	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -124,7 +120,6 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.initLogger()
 	if err := p.parseRoutesConfig(); err != nil {
 		return errors.Wrap(err, "failed to parseRoutesConfig")
 	}
@@ -221,35 +216,6 @@ func (p *provider) openAPIsOnErda() error {
 	}
 
 	return nil
-}
-
-func (p *provider) initLogger() {
-	if l, ok := p.L.(*logrusx.Logger); ok {
-		var logger = logrus.New()
-		var formatter = &logrus.TextFormatter{
-			ForceColors:      true,
-			DisableQuote:     true,
-			TimestampFormat:  time.RFC3339,
-			DisableSorting:   true,
-			QuoteEmptyFields: true,
-		}
-		p.L.Infof("logger formatter: %+v", formatter)
-		logger.SetFormatter(formatter)
-		if level, err := logrus.ParseLevel(p.Config.LogLevel); err == nil {
-			p.L.Infof("logger level: %s", p.Config.LogLevel)
-			logger.SetLevel(level)
-		} else {
-			p.L.Infof("failed to parse logger level from config, set it as %s", logrus.InfoLevel.String())
-			logger.SetLevel(logrus.InfoLevel)
-		}
-		l.Entry = logrus.NewEntry(logger)
-		return
-	}
-	p.L.Infof("logger level: %s", p.Config.LogLevel)
-	if err := p.L.SetLevel(p.Config.LogLevel); err != nil {
-		p.L.Infof("failed to set logger level from config, set it as %s", logrus.InfoLevel.String())
-		_ = p.L.SetLevel(logrus.InfoLevel.String())
-	}
 }
 
 func (p *provider) parseRoutesConfig() error {

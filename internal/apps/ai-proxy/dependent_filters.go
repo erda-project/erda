@@ -24,4 +24,5 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/message-context"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/openai-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/rate-limit"
 )
