@@ -6,8 +6,6 @@ grpc-server@ai:
 
 erda.app.ai-proxy:
   routesRef: conf/routes.yml
-  providersRef: conf/providers.yml
-  platformsRef: conf/erda-platforms.yml
   logLevel: ${LOG_LEVEL:debug}
   openOnErda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
 
