@@ -32,11 +32,12 @@ type pipelineSource struct {
 
 func (p pipelineSource) Create(ctx context.Context, request *pb.PipelineSourceCreateRequest) (*pb.PipelineSourceCreateResponse, error) {
 	unique := &db.PipelineSourceUnique{
-		SourceType: request.SourceType,
-		Remote:     request.Remote,
-		Ref:        request.Ref,
-		Path:       request.Path,
-		Name:       request.Name,
+		SourceType:  request.SourceType,
+		Remote:      request.Remote,
+		Ref:         request.Ref,
+		Path:        request.Path,
+		Name:        request.Name,
+		VersionLock: request.VersionLock,
 	}
 
 	var (

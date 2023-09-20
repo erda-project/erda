@@ -41,12 +41,13 @@ type PipelineSource struct {
 }
 
 type PipelineSourceUnique struct {
-	SourceType string   `json:"sourceType"`
-	Remote     string   `json:"remote"`
-	Ref        string   `json:"ref"`
-	Path       string   `json:"path"`
-	Name       string   `json:"name"`
-	IDList     []string `json:"idList"`
+	SourceType  string   `json:"sourceType"`
+	Remote      string   `json:"remote"`
+	Ref         string   `json:"ref"`
+	Path        string   `json:"path"`
+	Name        string   `json:"name"`
+	IDList      []string `json:"idList"`
+	VersionLock uint64   `json:"versionLock" xorm:"version_lock version"`
 }
 
 func (PipelineSource) TableName() string {
@@ -111,6 +112,7 @@ func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, op
 		Where("path = ?", unique.Path).
 		Where("name = ?", unique.Name).
 		Where("soft_deleted_at = 0").
+		Where("version_lock = ?", unique.VersionLock).
 		Find(&pipelineSources); err != nil {
 		return nil, err
 	}
