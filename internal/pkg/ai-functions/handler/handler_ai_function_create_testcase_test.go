@@ -211,7 +211,7 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 				OpenaiURL: url,
 			},
 			args: args{
-				ctx:       nil,
+				ctx:       context.Background(),
 				factory:   factory,
 				req:       req,
 				openaiURL: url,
@@ -226,7 +226,7 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 				OpenaiURL: url,
 			},
 			args: args{
-				ctx:       nil,
+				ctx:       context.Background(),
 				factory:   factory,
 				req:       req1,
 				openaiURL: url,
@@ -314,6 +314,17 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 					Title:            "用户登录",
 					Content:          "",
 					Priority:         apistructs.IssuePriorityNormal,
+				}, nil
+			})
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCurrentUser", func(_ *bundle.Bundle,
+				userID string) (*apistructs.UserInfo, error) {
+				return &apistructs.UserInfo{
+					ID:     "1003933",
+					Name:   "xxx",
+					Nick:   "yyy",
+					Avatar: "",
+					Phone:  "10111112222",
+					Email:  "xxx.yyy@123.com",
 				}, nil
 			})
 
