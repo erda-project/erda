@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	aitestcase "github.com/erda-project/erda/internal/pkg/ai-functions/functions/test-case"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -85,6 +86,33 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 		if err := jsonpb.Unmarshal(&buf, v); err != nil {
 			return nil, err
 		}
+	}
+	return v, nil
+}
+
+func (h *AIFunction) GetSystemPrompt(ctx context.Context, req *pb.GetSystemPromptRequest) (pbValue *structpb.Value, err error) {
+	h.Log.Infof("get system prompt for function name %s", req.GetFunctionName())
+
+	factory, ok := functions.Retrieve(req.GetFunctionName())
+	if !ok {
+		err := errors.Errorf("AI function %s not found", req.GetFunctionName())
+		return nil, HTTPError(err, http.StatusBadRequest)
+	}
+
+	f := factory(ctx, "", nil)
+
+	content := httpserver.Resp{
+		Success: true,
+		Data:    f.SystemMessage(),
+	}
+	result, err := json.Marshal(content)
+	if err != nil {
+		return nil, HTTPError(err, http.StatusInternalServerError)
+	}
+
+	var v = &structpb.Value{}
+	if err := jsonpb.UnmarshalString(string(result), v); err != nil {
+		return nil, err
 	}
 	return v, nil
 }

@@ -95,7 +95,7 @@ func (h *AIFunction) createTestCaseForRequirementIDAndTestID(ctx context.Context
 	for _, tp := range functionParams.Requirements {
 		wg.Add(1)
 		var err error
-		if err = processSingleTestCase(ctx, factory, req, openaiURL, &wg, tp, functionParams.TestSetID, &results); err != nil {
+		if err = processSingleTestCase(ctx, factory, req, openaiURL, &wg, tp, functionParams.TestSetID, functionParams.SystemPrompt, &results); err != nil {
 			return nil, errors.Wrapf(err, "process single testCase create faild")
 		}
 	}
@@ -108,7 +108,7 @@ func (h *AIFunction) createTestCaseForRequirementIDAndTestID(ctx context.Context
 	return json.Marshal(content)
 }
 
-func processSingleTestCase(ctx context.Context, factory functions.FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL, wg *sync.WaitGroup, tp aitestcase.TestCaseParam, testSetId uint64, results *[]any) error {
+func processSingleTestCase(ctx context.Context, factory functions.FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL, wg *sync.WaitGroup, tp aitestcase.TestCaseParam, testSetId uint64, systemPrompt string, results *[]any) error {
 	defer wg.Done()
 
 	callbackInput := aitestcase.TestCaseFunctionInput{
@@ -139,7 +139,7 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 		})
 	} else {
 		// 表示需要生成
-		result, err := aiHandlerUtils.GetChatMessageFunctionCallArguments(ctx, factory, req, openaiURL, tp.Prompt, callbackInput)
+		result, err := aiHandlerUtils.GetChatMessageFunctionCallArguments(ctx, factory, req, openaiURL, tp.Prompt, systemPrompt, callbackInput)
 		if err != nil {
 			return err
 		}

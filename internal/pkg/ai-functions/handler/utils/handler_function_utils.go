@@ -20,12 +20,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -33,21 +36,24 @@ import (
 )
 
 // getChatMessageFunctionCallArguments return result for AIFunction Server Call OpenAI
-func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL, prompt string, callbackInput interface{}) (any, error) {
+func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL, prompt string, systemPrompt string, callbackInput interface{}) (any, error) {
 	var (
 		err       error
 		f         = factory(ctx, "", req.GetBackground())
 		systemMsg = openai.ChatCompletionMessage{
-			Role:    "system",
+			Role:    openai.ChatMessageRoleSystem,
 			Content: f.SystemMessage(),
 			Name:    "system",
 		}
 		userMsg = openai.ChatCompletionMessage{
-			Role:    "user",
+			Role:    openai.ChatMessageRoleUser,
 			Content: prompt,
 			Name:    "erda",
 		}
 	)
+	if systemPrompt != "" {
+		systemMsg.Content = systemPrompt
+	}
 
 	schema, err := f.Schema()
 	if err != nil {
@@ -75,12 +81,25 @@ func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.
 		o(options)
 	}
 
+	bdl := bundle.New(bundle.WithErdaServer())
+	userInfo, err := bdl.GetCurrentUser(apis.GetUserID(ctx))
+	if err != nil {
+		return nil, err
+	}
+	userName := userInfo.Nick
+	if userName == "" {
+		userName = userInfo.Name
+	}
+
 	// 在 request option 中添加认证信息: 以某组织下某用户身份调用 ai-proxy,
 	// ai-proxy 中的 filter erda-auth 会回调 erda.cloud 的 openai, 检查该企业和用户是否有权使用 AI 能力
 	ros := append(f.RequestOptions(), func(r *http.Request) {
-		r.Header.Set("X-Ai-Proxy-Source", "erda.cloud") // todo: hard code source
+		r.Header.Set("X-Ai-Proxy-Source", base64.StdEncoding.EncodeToString([]byte(os.Getenv(string(apistructs.DICE_CLUSTER_NAME)))))
 		r.Header.Set("X-Ai-Proxy-Org-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetOrgID(ctx))))
 		r.Header.Set("X-Ai-Proxy-User-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetUserID(ctx))))
+		r.Header.Set("X-Ai-Proxy-Email", base64.StdEncoding.EncodeToString([]byte(userInfo.Email)))
+		r.Header.Set("X-Ai-Proxy-Name", base64.StdEncoding.EncodeToString([]byte(userName)))
+		r.Header.Set("X-Ai-Proxy-Phone", base64.StdEncoding.EncodeToString([]byte(userInfo.Phone)))
 	})
 	client, err := sdk.NewClient(openaiURL, http.DefaultClient, ros...)
 	if err != nil {

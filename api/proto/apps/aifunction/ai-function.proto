@@ -26,6 +26,16 @@ service AiFunction {
       path: "/api/ai-functions/{functionName}/actions/apply"
     };
   }
+
+  rpc GetSystemPrompt(GetSystemPromptRequest) returns (google.protobuf.Value){
+    option(google.api.http) = {
+      get: "/api/ai-functions/{functionName}/system-prompt"
+    };
+    option(erda.common.openapi) = {
+      path: "/api/ai-functions/{functionName}/system-prompt"
+    };
+  }
+
 }
 
 message ApplyRequest {
@@ -46,15 +56,8 @@ message Background {
   uint64 runtimeID = 8;
 }
 
-/*
-message FunctionParams {
-  uint64 testSetID = 1 [(validate.rules).uint64.gt = 0];
-  repeated TestCaseParam requirements  = 2 [(validate.rules).repeated = {min_items: 1}];
+
+message GetSystemPromptRequest {
+   string functionName = 1 [(validate.rules).string = {min_len: 1}];
 }
 
-message TestCaseParam {
-  // create-test-case
-  uint64 issueID = 1 [(validate.rules).uint64.gt = 0];
-  string prompt = 2 [(validate.rules).string = {min_len: 1}];
-}
-*/
