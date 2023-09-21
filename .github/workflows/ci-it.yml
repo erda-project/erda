@@ -199,6 +199,8 @@ jobs:
           echo ${name}.txt
           echo "::set-output name=name::coverage-${name}"
           echo "::set-output name=path::coverage-${name}.txt"
+          echo "execute df -h before go test"
+          df -h
       - name: Run Go Test
         env:
           GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
