@@ -69,7 +69,7 @@ type provider struct {
 	Org             org.Interface
 }
 
-// Run Run the provider
+// Run the provider
 func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)
 	p.Metrics = metrics.New(p.Server, ctx)
