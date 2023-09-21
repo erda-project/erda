@@ -25,6 +25,7 @@ import (
 type InstanceReader struct {
 	db         *dbengine.DBEngine
 	conditions []string
+	values     []string
 	limit      int
 }
 
@@ -38,6 +39,8 @@ func (c *Client) InstanceReader() *InstanceReader {
 
 func (r *InstanceReader) ByCluster(clustername string) *InstanceReader {
 	r.conditions = append(r.conditions, fmt.Sprintf("cluster = \"%s\"", clustername))
+	//r.conditions = append(r.conditions, "cluster = ？")
+	//r.values = append(r.values, clustername)
 	return r
 }
 func (r *InstanceReader) ByNamespace(ns string) *InstanceReader {
@@ -50,10 +53,14 @@ func (r *InstanceReader) ByName(name string) *InstanceReader {
 }
 func (r *InstanceReader) ByOrgName(name string) *InstanceReader {
 	r.conditions = append(r.conditions, fmt.Sprintf("org_name = \"%s\"", name))
+	//r.conditions = append(r.conditions, "org_name = ？")
+	//r.values = append(r.values, name)
 	return r
 }
 func (r *InstanceReader) ByOrgID(id string) *InstanceReader {
 	r.conditions = append(r.conditions, fmt.Sprintf("org_id = \"%s\"", id))
+	//r.conditions = append(r.conditions, "org_id = ?")
+	//r.values = append(r.values, id)
 	return r
 }
 func (r *InstanceReader) ByProjectName(name string) *InstanceReader {
@@ -70,6 +77,8 @@ func (r *InstanceReader) ByApplicationName(name string) *InstanceReader {
 }
 func (r *InstanceReader) ByEdgeApplicationName(name string) *InstanceReader {
 	r.conditions = append(r.conditions, fmt.Sprintf("edge_application_name = \"%s\"", name))
+	//r.conditions = append(r.conditions, "edge_application_name = ?")
+	//r.values = append(r.values, name)
 	return r
 }
 func (r *InstanceReader) ByEdgeSite(name string) *InstanceReader {
@@ -77,7 +86,10 @@ func (r *InstanceReader) ByEdgeSite(name string) *InstanceReader {
 	return r
 }
 func (r *InstanceReader) ByApplicationID(id string) *InstanceReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("application_id = \"%s\"", id))
+	//r.conditions = append(r.conditions, fmt.Sprintf("application_id = \"%s\"", id))
+	r.conditions = append(r.conditions, "application_id = ?")
+	r.values = append(r.values, id)
+
 	return r
 }
 func (r *InstanceReader) ByRuntimeName(name string) *InstanceReader {
@@ -102,10 +114,14 @@ func (r *InstanceReader) ByContainerID(id string) *InstanceReader {
 }
 func (r *InstanceReader) ByServiceType(tp string) *InstanceReader {
 	r.conditions = append(r.conditions, fmt.Sprintf("service_type = \"%s\"", tp))
+	//r.conditions = append(r.conditions, "service_type = ?")
+	//r.values = append(r.values, tp)
 	return r
 }
 func (r *InstanceReader) ByPhase(phase string) *InstanceReader {
 	r.conditions = append(r.conditions, fmt.Sprintf("phase = \"%s\"", phase))
+	//r.conditions = append(r.conditions, "phase = ?")
+	//r.values = append(r.values, phase)
 	return r
 }
 func (r *InstanceReader) ByPhases(phases ...string) *InstanceReader {
@@ -161,11 +177,12 @@ func (r *InstanceReader) Limit(n int) *InstanceReader {
 }
 func (r *InstanceReader) Do() ([]InstanceInfo, error) {
 	instanceinfo := []InstanceInfo{}
-	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true)).Order("started_at desc")
+	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), strutil.Join(r.values, " , ", true)).
+		Order("started_at desc")
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
-	if err := expr.Find(&instanceinfo).Error; err != nil {
+	if err := expr.Debug().Find(&instanceinfo).Error; err != nil {
 		r.conditions = []string{}
 		return nil, err
 	}
