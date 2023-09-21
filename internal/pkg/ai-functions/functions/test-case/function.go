@@ -112,7 +112,8 @@ func (f *Function) RequestOptions() []sdk.RequestOption {
 func (f *Function) CompletionOptions() []sdk.PatchOption {
 	return []sdk.PatchOption{
 		sdk.PathOptionWithModel("gpt-35-turbo-16k"),
-		sdk.PathOptionWithTemperature(1),
+		// 改变温度参数会改变模型的输出。 温度参数可以设置为 0 到 2。 较高的值（例如 0.7）将使输出更随机，并产生更多发散的响应，而较小的值（例如 0.2）将使输出更加集中和具体。
+		sdk.PathOptionWithTemperature(0.5),
 	}
 }
 
