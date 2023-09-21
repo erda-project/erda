@@ -47,3 +47,13 @@ func (m *ModelProvider) ToProtobuf() *pb.ModelProvider {
 		Metadata:  m.Metadata.ToProtobuf(),
 	}
 }
+
+type ModelProviders []*ModelProvider
+
+func (modelProviders ModelProviders) ToProtobuf() []*pb.ModelProvider {
+	var pbClients []*pb.ModelProvider
+	for _, c := range modelProviders {
+		pbClients = append(pbClients, c.ToProtobuf())
+	}
+	return pbClients
+}

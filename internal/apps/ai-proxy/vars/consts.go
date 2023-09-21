@@ -36,6 +36,8 @@ const (
 	XAIProxyModelId   = "X-AI-Proxy-Model-Id"
 	XAIProxySessionId = "X-AI-Proxy-Session-Id"
 	XAIProxyPromptId  = "X-AI-Proxy-Prompt-Id"
+
+	UIValueUndefined = "undefined"
 )
 
 const (
@@ -53,4 +55,5 @@ type (
 	MapKeyModelProvider struct{ MapKeyModelProvider any }
 	MapKeyPrompt        struct{ MapKeyPrompt any }
 	MapKeySession       struct{ MapKeySession any }
+	MapKeyClientToken   struct{ MapKeyClientToken any }
 )

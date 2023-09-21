@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	aitestcase "github.com/erda-project/erda/internal/pkg/ai-functions/functions/test-case"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
@@ -81,6 +82,7 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 		},
 		NeedAdjust: false,
 	}
+
 	factory, _ := functions.Retrieve(req.GetFunctionName())
 	results := []apistructs.TestCaseStepAndResult{
 		{
@@ -100,6 +102,47 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 			Step:   "用户点击注册",
 		},
 	}
+
+	params1 := params
+	params1.TestSetID = 0
+	reuirements1 := make([]aitestcase.TestCaseParam, 0)
+	reuirements1 = append(reuirements1, aitestcase.TestCaseParam{
+		IssueID: 30001127564,
+		Prompt:  "用户登录",
+		Req: apistructs.TestCaseCreateRequest{
+			ProjectID:      4717,
+			TestSetID:      24227,
+			Name:           "用户登录",
+			PreCondition:   "用户打开登录页面",
+			StepAndResults: results,
+			APIs:           nil,
+			Desc:           "Powered by AI.\n\n对应需求:\n用户登录",
+			Priority:       "P2",
+			LabelIDs:       nil,
+			IdentityInfo: apistructs.IdentityInfo{
+				UserID: "1003933",
+			},
+		},
+	})
+
+	params1.Requirements = reuirements1
+	jsonData, _ = json.Marshal(params1)
+	value1 := structpb.Value{}
+	jsonpb.UnmarshalString(string(jsonData), &value1)
+
+	req1 := &pb.ApplyRequest{
+		FunctionName:   aitestcase.Name,
+		FunctionParams: &value1,
+		Background: &pb.Background{
+			UserID:      "1003933",
+			OrgID:       633,
+			OrgName:     "erda-development",
+			ProjectID:   4717,
+			ProjectName: "testhpa",
+		},
+		NeedAdjust: false,
+	}
+
 	testCaseReq := apistructs.TestCaseCreateRequest{
 		ProjectID:      4717,
 		TestSetID:      24227,
@@ -107,15 +150,20 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 		PreCondition:   "用户打开登录页面",
 		StepAndResults: results,
 		APIs:           nil,
-		Desc:           "Powered by AI.\n\n对应需求:\n用户登录",
+		Desc:           fmt.Sprintf("Powered by AI.\n\n对应需求:\n%s", "用户登录"),
 		Priority:       "P2",
 		LabelIDs:       nil,
 		IdentityInfo: apistructs.IdentityInfo{
 			UserID: "1003933",
 		},
 	}
+
+	var requirementId int64
+	requirementId = 30001127564
 	issue := &apistructs.Issue{
-		RequirementID:    nil,
+		ID: requirementId,
+		//RequirementID:    nil,
+		RequirementID:    &requirementId,
 		RequirementTitle: "",
 		Type:             apistructs.IssueTypeRequirement,
 		Title:            "用户登录",
@@ -163,9 +211,24 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 				OpenaiURL: url,
 			},
 			args: args{
-				ctx:       nil,
+				ctx:       context.Background(),
 				factory:   factory,
 				req:       req,
+				openaiURL: url,
+			},
+			want:    wantData,
+			wantErr: false,
+		},
+		{
+			name: "Test_02",
+			fields: fields{
+				Log:       nil,
+				OpenaiURL: url,
+			},
+			args: args{
+				ctx:       context.Background(),
+				factory:   factory,
+				req:       req1,
 				openaiURL: url,
 			},
 			want:    wantData,
@@ -203,6 +266,72 @@ func TestAIFunction_createTestCaseForRequirementIDAndTestID(t *testing.T) {
 					RequirementName: issue.Title,
 					RequirementID:   uint64(issue.ID),
 					TestCaseID:      testcaseId,
+				}, nil
+			})
+
+			bdl := bundle.New(bundle.WithErdaServer())
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetTestSets", func(_ *bundle.Bundle,
+				req apistructs.TestSetListRequest) ([]apistructs.TestSet, error) {
+
+				if tt.name == "Test_02" {
+					return []apistructs.TestSet{}, nil
+				}
+
+				return []apistructs.TestSet{
+					{
+						ID:        10001,
+						Name:      AIGeneratedTestSeName,
+						ProjectID: 4717,
+						ParentID:  0,
+						Recycled:  false,
+						Directory: "/" + AIGeneratedTestSeName,
+						Order:     0,
+					},
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateTestSet", func(_ *bundle.Bundle,
+				req apistructs.TestSetCreateRequest) (*apistructs.TestSet, error) {
+				return &apistructs.TestSet{
+					ID:        24227,
+					Name:      "",
+					ProjectID: 0,
+					ParentID:  0,
+					Recycled:  false,
+					Directory: "",
+					Order:     0,
+					CreatorID: "",
+					UpdaterID: "",
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetIssue", func(_ *bundle.Bundle,
+				id uint64) (*apistructs.Issue, error) {
+				return &apistructs.Issue{
+					RequirementID:    nil,
+					RequirementTitle: "",
+					Type:             apistructs.IssueTypeRequirement,
+					Title:            "用户登录",
+					Content:          "",
+					Priority:         apistructs.IssuePriorityNormal,
+				}, nil
+			})
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCurrentUser", func(_ *bundle.Bundle,
+				userID string) (*apistructs.UserInfo, error) {
+				return &apistructs.UserInfo{
+					ID:     "1003933",
+					Name:   "xxx",
+					Nick:   "yyy",
+					Avatar: "",
+					Phone:  "10111112222",
+					Email:  "xxx.yyy@123.com",
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateTestCase", func(_ *bundle.Bundle,
+				req apistructs.TestCaseCreateRequest) (apistructs.AICreateTestCaseResponse, error) {
+				return apistructs.AICreateTestCaseResponse{
+					TestCaseID: testcaseId,
 				}, nil
 			})
 

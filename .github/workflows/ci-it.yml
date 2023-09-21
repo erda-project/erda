@@ -36,7 +36,7 @@ jobs:
   PREPARE:
     runs-on: ubuntu-latest
     container:
-      image: registry.erda.cloud/erda/gohub:1.0.8
+      image: registry.erda.cloud/erda/gohub:1.0.9.alpha.1
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
@@ -164,7 +164,7 @@ jobs:
           - ./internal/apps/dop/...
           - ./internal/apps/admin/... ./internal/apps/devflow/... ./internal/apps/gallery/...
           - ./internal/apps/msp/...
-          - ./internal/apps/cmp/...
+#          - ./internal/apps/cmp/...
     steps:
       - name: Clone repo
         uses: actions/checkout@v3

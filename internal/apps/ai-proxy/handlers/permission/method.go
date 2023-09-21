@@ -17,6 +17,7 @@ package permission
 import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
+	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -36,6 +37,7 @@ var CheckModelProviderPerm = CheckPermissions(
 	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Get, OnlyAdmin: true},
 	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Update, OnlyAdmin: true},
 	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Delete, OnlyAdmin: true},
+	&MethodPermission{Method: modelproviderpb.ModelProviderServiceServer.Paging, OnlyAdmin: true},
 )
 
 var CheckModelPerm = CheckPermissions(
@@ -43,6 +45,7 @@ var CheckModelPerm = CheckPermissions(
 	&MethodPermission{Method: modelpb.ModelServiceServer.Get, AdminOrAk: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.Update, OnlyAdmin: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.Delete, OnlyAdmin: true},
+	&MethodPermission{Method: modelpb.ModelServiceServer.Paging, OnlyAdmin: true},
 )
 
 var CheckClientModelRelationPerm = CheckPermissions(
@@ -69,4 +72,12 @@ var CheckSessionPerm = CheckPermissions(
 	&MethodPermission{Method: sessionpb.SessionServiceServer.UnArchive, AdminOrAk: true},
 	&MethodPermission{Method: sessionpb.SessionServiceServer.Reset, AdminOrAk: true},
 	&MethodPermission{Method: sessionpb.SessionServiceServer.GetChatLogs, AdminOrAk: true},
+)
+
+var CheckClientTokenPerm = CheckPermissions(
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Create, AdminOrAk: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Get, AdminOrAk: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Update, AdminOrAk: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Paging, AdminOrAk: true},
+	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Delete, AdminOrAk: true},
 )

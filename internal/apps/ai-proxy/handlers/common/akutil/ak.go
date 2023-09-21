@@ -19,9 +19,11 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -60,11 +62,20 @@ func (util *AKUtil) GetAkFromHeader(ctx context.Context) (string, bool) {
 	return v, v != ""
 }
 
-func CheckAk(ctx context.Context, req any, dao dao.DAO) (string, error) {
+func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (string, error) {
 	ak, ok := New(dao).GetAkFromHeader(ctx)
 	if !ok {
 		return "", handlers.ErrAkNotFound
 	}
+	// check by token
+	if strings.HasPrefix(ak, client_token.TokenPrefix) {
+		client, err := New(dao).TokenToClient(ak)
+		if err != nil {
+			return "", handlers.HTTPError(err, http.StatusUnauthorized)
+		}
+		return client.Id, nil
+	}
+	// check by ak
 	client, err := New(dao).AkToClient(ak)
 	if err != nil {
 		return "", handlers.HTTPError(err, http.StatusUnauthorized)
