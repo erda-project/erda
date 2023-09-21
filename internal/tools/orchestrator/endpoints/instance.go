@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -618,12 +617,8 @@ func (e *Endpoints) ListRuntimeUsage(ctx context.Context, r *http.Request, vars 
 	if orgID == "" {
 		return apierrors.ErrListInstance.InvalidParameter("org id header").ToResp(), nil
 	}
-	//rawQuery := r.URL.RawQuery
-	//params, err := url.ParseQuery(rawQuery)
-	//appID := params.Get("application")
+
 	appID := r.URL.Query().Get("application")
-	//appID, err := url.QueryUnescape(r.URL.Query().Get("application"))
-	appID, err := url.PathUnescape(appID)
 	if appID == "" {
 		return apierrors.ErrListInstance.MissingParameter("application").ToResp(), nil
 	}
