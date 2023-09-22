@@ -239,6 +239,21 @@ func (svc *Service) GetRepoLocked(project, app int64) (bool, error) {
 	return currentRepo.IsLocked, nil
 }
 
+func (svc *Service) ListAllRepos(req apistructs.GittarListRepoRequest) ([]*Repo, error) {
+	cli := svc.db.Table("dice_repos").Where("is_locked = 0")
+	if len(req.OrgIDS) > 0 {
+		cli = cli.Where("org_id in (?)", req.OrgIDS)
+	}
+	if len(req.ProjectIDS) > 0 {
+		cli = cli.Where("project_id in (?)", req.ProjectIDS)
+	}
+	var repos []*Repo
+	if err := cli.Find(&repos).Error; err != nil {
+		return nil, err
+	}
+	return repos, nil
+}
+
 // Repository struct
 type Repository struct {
 	Organization string `json:"org"`
