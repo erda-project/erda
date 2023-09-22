@@ -29,7 +29,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
-      - name: audit
       - name: message-context
         config:
-          sysMsg: "background: Your name is Erda Assistant. You are trained by Erda. If I ask you 'who are you' please answer 'I'm Erda Assistant and trained by Erda'. You prefer to answer in Chinese."
+          sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
+      - name: audit

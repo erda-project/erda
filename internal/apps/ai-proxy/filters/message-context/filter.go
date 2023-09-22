@@ -52,6 +52,10 @@ type SessionContext struct {
 	Config *Config
 }
 
+type Config struct {
+	SysMsg string `json:"sysMsg" yaml:"sysMsg"`
+}
+
 func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
@@ -154,6 +158,11 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 
 	// compose all messages
 
+	// 0. add system message
+	if c.Config.SysMsg != "" {
+		allMessages = append(allMessages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleSystem, Content: c.Config.SysMsg, Name: "Erda-AI-Assistant"})
+	}
+
 	// 1. add session topic
 	if sessionTopicMessage != nil {
 		allMessages = append(allMessages, openai.ChatCompletionMessage(*sessionTopicMessage))
@@ -171,7 +180,4 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	infor.SetBody(io.NopCloser(bytes.NewBuffer(b)), int64(len(b)))
 
 	return reverseproxy.Continue, nil
-}
-
-type Config struct {
 }
