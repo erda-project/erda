@@ -254,10 +254,11 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 	}
 	fields.TaskWorkingTotal = workingTaskTotal
 
-	totalTaskEstimateTime, err := p.issueDB.GetTaskIssueManHourSum(
+	totalTaskEstimateTime, err := p.issueDB.GetIssuesManHour(
 		apistructs.IssuesStageRequest{
 			StatisticRange: "iteration",
 			RangeID:        int64(iter.Iteration.ID),
+			IssueType:      apistructs.IssueTypeTask,
 		})
 	if err != nil {
 		return nil, err
@@ -317,11 +318,12 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		fields.BugUndoneTotal = fields.BugTotal - fields.BugDoneTotal
 	}
 
-	doneTaskElapsedMinute, err := p.issueDB.GetTaskIssueManHourSum(
+	doneTaskElapsedMinute, err := p.issueDB.GetIssuesManHour(
 		apistructs.IssuesStageRequest{
 			StatisticRange: "iteration",
 			RangeID:        int64(iter.Iteration.ID),
 			StateIDS:       doneTaskStateIDs,
+			IssueType:      apistructs.IssueTypeTask,
 		})
 	if err != nil {
 		return nil, err
