@@ -110,13 +110,13 @@ func NewCollector(svc *models.Service) *Collector {
 		errors: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: "gittar",
 			Name:      "scrape_error",
-			Help:      "1 if there was an error while getting personal contributor metrics, 0 otherwise",
+			Help:      "1 if there was an error while getting personal contribution metrics, 0 otherwise",
 		}),
 		svc: svc,
 	}
 }
 
-func (c *Collector) RefreshPersonalContributors() error {
+func (c *Collector) RefreshPersonalContributions() error {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)

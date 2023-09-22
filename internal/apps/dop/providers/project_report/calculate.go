@@ -322,7 +322,7 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		apistructs.IssuesStageRequest{
 			StatisticRange: "iteration",
 			RangeID:        int64(iter.Iteration.ID),
-			StateIDS:       doneTaskStateIDs,
+			StateIDs:       doneTaskStateIDs,
 			IssueType:      apistructs.IssueTypeTask,
 		})
 	if err != nil {

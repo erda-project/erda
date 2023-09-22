@@ -1164,7 +1164,7 @@ type IssuesStageRequest struct {
 	IssueType      IssueType `json:"issueType"`
 	StatisticRange string    `json:"statisticRange"` //事件类型 项目/迭代
 	RangeID        int64     `json:"rangeId"`        //项目id/迭代id
-	StateIDS       []int64   `json:"StateIDs"`       // state id list
+	StateIDs       []int64   `json:"StateIDs"`       // state id list
 }
 
 // IssueManHourResponse 事件下所有的任务总和响应

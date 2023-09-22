@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package performance_measure
+package efficiency_measure
 
 import (
 	"context"
@@ -66,13 +66,13 @@ type provider struct {
 
 	Org      org.Interface
 	IssueSvc query.Interface
-	Election election.Interface `autowired:"etcd-election@performance-measure"`
+	Election election.Interface `autowired:"etcd-election@efficiency-measure"`
 	Js       jsonstore.JsonStore
 	Register transport.Register
 
-	errors                 prometheus.Gauge
-	propertySet            *propertyCache
-	personalPerformanceSet *personalPerformanceCache
+	errors                prometheus.Gauge
+	propertySet           *propertyCache
+	personalEfficiencySet *personalEfficiencyCache
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -94,11 +94,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.errors = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "performance_measure",
+		Namespace: "efficiency_measure",
 		Name:      "scrape_error",
-		Help:      "1 if there was an error while getting performance measure metrics, 0 otherwise",
+		Help:      "1 if there was an error while getting efficiency measure metrics, 0 otherwise",
 	})
-	p.personalPerformanceSet = &personalPerformanceCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
+	p.personalEfficiencySet = &personalEfficiencyCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
 	p.propertySet = &propertyCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
 
 	registry := prometheus.NewRegistry()
@@ -107,8 +107,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Register.Add(http.MethodGet, "/personal-metrics", func(w http.ResponseWriter, r *http.Request) {
 		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(w, r)
 	})
-	p.Register.Add(http.MethodPost, "/api/performance-measure/actions/query", p.queryPersonalPerformance)
-	p.Register.Add(http.MethodPost, "/api/personal-contributor/actions/query", p.queryPersonalContributors)
+	p.Register.Add(http.MethodPost, "/api/efficiency-measure/actions/query", p.queryPersonalEfficiency)
+	p.Register.Add(http.MethodPost, "/api/personal-contribution/actions/query", p.queryPersonalContributors)
 	p.Register.Add(http.MethodPost, "/api/func-points-trend/actions/query", p.queryFuncPointTrend)
 	return nil
 }
@@ -140,9 +140,9 @@ func (p *provider) Start(ctx context.Context) {
 }
 
 func init() {
-	servicehub.Register("performance-measure", &servicehub.Spec{
-		Services:    []string{"performance-measure"},
-		Description: "performance measure",
+	servicehub.Register("efficiency-measure", &servicehub.Spec{
+		Services:    []string{"efficiency-measure"},
+		Description: "efficiency measure",
 		ConfigFunc:  func() interface{} { return &config{} },
 		Creator:     func() servicehub.Provider { return &provider{} },
 	})

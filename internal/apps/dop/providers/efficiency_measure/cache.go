@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package performance_measure
+package efficiency_measure
 
 import (
 	"fmt"
@@ -21,11 +21,11 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-type personalPerformanceCache struct {
+type personalEfficiencyCache struct {
 	*cache.Cache
 }
 
-func (p *personalPerformanceCache) Get(key uint64) *PersonalPerformanceInfo {
+func (p *personalEfficiencyCache) Get(key uint64) *PersonalPerformanceInfo {
 	info, ok := p.Cache.Get(strconv.FormatUint(key, 10))
 	if !ok {
 		return nil
@@ -33,11 +33,11 @@ func (p *personalPerformanceCache) Get(key uint64) *PersonalPerformanceInfo {
 	return info.(*PersonalPerformanceInfo)
 }
 
-func (p *personalPerformanceCache) Set(key uint64, info *PersonalPerformanceInfo) {
+func (p *personalEfficiencyCache) Set(key uint64, info *PersonalPerformanceInfo) {
 	p.Cache.Set(strconv.FormatUint(key, 10), info, cache.NoExpiration)
 }
 
-func (p *personalPerformanceCache) Iterate(fn func(k string, v interface{}) error) {
+func (p *personalEfficiencyCache) Iterate(fn func(k string, v interface{}) error) {
 	for k, v := range p.Cache.Items() {
 		if err := fn(k, v.Object); err != nil {
 			return
@@ -77,11 +77,11 @@ func genResolvedStateIDSKey(projectID uint64) string {
 	return fmt.Sprintf("resolved_state_ids_%d", projectID)
 }
 
-func (p *propertyCache) SetWontfixStateIDS(projectID uint64, stateIDS []uint64) {
+func (p *propertyCache) SetWontfixStateIDs(projectID uint64, stateIDS []uint64) {
 	p.Cache.Set(genWontfixStateIDSKey(projectID), stateIDS, cache.NoExpiration)
 }
 
-func (p *propertyCache) GetWonfixStateIDS(projectID uint64) []uint64 {
+func (p *propertyCache) GetWonfixStateIDs(projectID uint64) []uint64 {
 	stateIDS, ok := p.Cache.Get(genWontfixStateIDSKey(projectID))
 	if !ok {
 		return nil
@@ -89,11 +89,11 @@ func (p *propertyCache) GetWonfixStateIDS(projectID uint64) []uint64 {
 	return stateIDS.([]uint64)
 }
 
-func (p *propertyCache) SetOpenStateIDS(projectID uint64, stateIDS []uint64) {
+func (p *propertyCache) SetOpenStateIDs(projectID uint64, stateIDS []uint64) {
 	p.Cache.Set(genOpenStateIDSKey(projectID), stateIDS, cache.NoExpiration)
 }
 
-func (p *propertyCache) GetOpenStateIDS(projectID uint64) []uint64 {
+func (p *propertyCache) GetOpenStateIDs(projectID uint64) []uint64 {
 	stateIDS, ok := p.Cache.Get(genOpenStateIDSKey(projectID))
 	if !ok {
 		return nil
@@ -101,11 +101,11 @@ func (p *propertyCache) GetOpenStateIDS(projectID uint64) []uint64 {
 	return stateIDS.([]uint64)
 }
 
-func (p *propertyCache) SetWorkingStateIDS(projectID uint64, stateIDS []uint64) {
+func (p *propertyCache) SetWorkingStateIDs(projectID uint64, stateIDS []uint64) {
 	p.Cache.Set(genWorkingStateIDSKey(projectID), stateIDS, cache.NoExpiration)
 }
 
-func (p *propertyCache) GetWorkingStateIDS(projectID uint64) []uint64 {
+func (p *propertyCache) GetWorkingStateIDs(projectID uint64) []uint64 {
 	stateIDS, ok := p.Cache.Get(genWorkingStateIDSKey(projectID))
 	if !ok {
 		return nil
@@ -113,11 +113,11 @@ func (p *propertyCache) GetWorkingStateIDS(projectID uint64) []uint64 {
 	return stateIDS.([]uint64)
 }
 
-func (p *propertyCache) SetClosedStateIDS(projectID uint64, stateIDS []uint64) {
+func (p *propertyCache) SetClosedStateIDs(projectID uint64, stateIDS []uint64) {
 	p.Cache.Set(genClosedStateIDSKey(projectID), stateIDS, cache.NoExpiration)
 }
 
-func (p *propertyCache) GetClosedStateIDS(projectID uint64) []uint64 {
+func (p *propertyCache) GetClosedStateIDs(projectID uint64) []uint64 {
 	stateIDS, ok := p.Cache.Get(genClosedStateIDSKey(projectID))
 	if !ok {
 		return nil
@@ -125,11 +125,11 @@ func (p *propertyCache) GetClosedStateIDS(projectID uint64) []uint64 {
 	return stateIDS.([]uint64)
 }
 
-func (p *propertyCache) SetDoneStateIDS(projectID uint64, stateIDS []uint64) {
+func (p *propertyCache) SetDoneStateIDs(projectID uint64, stateIDS []uint64) {
 	p.Cache.Set(genDoneStateIDSKey(projectID), stateIDS, cache.NoExpiration)
 }
 
-func (p *propertyCache) GetDoneStateIDS(projectID uint64) []uint64 {
+func (p *propertyCache) GetDoneStateIDs(projectID uint64) []uint64 {
 	stateIDS, ok := p.Cache.Get(genDoneStateIDSKey(projectID))
 	if !ok {
 		return nil
@@ -137,11 +137,11 @@ func (p *propertyCache) GetDoneStateIDS(projectID uint64) []uint64 {
 	return stateIDS.([]uint64)
 }
 
-func (p *propertyCache) SetReopenStateIDS(projectID uint64, stateIDS []uint64) {
+func (p *propertyCache) SetReopenStateIDs(projectID uint64, stateIDS []uint64) {
 	p.Cache.Set(genReopenStateIDSKey(projectID), stateIDS, cache.NoExpiration)
 }
 
-func (p *propertyCache) GeReopenStateIDS(projectID uint64) []uint64 {
+func (p *propertyCache) GeReopenStateIDs(projectID uint64) []uint64 {
 	stateIDS, ok := p.Cache.Get(genReopenStateIDSKey(projectID))
 	if !ok {
 		return nil
@@ -149,11 +149,11 @@ func (p *propertyCache) GeReopenStateIDS(projectID uint64) []uint64 {
 	return stateIDS.([]uint64)
 }
 
-func (p *propertyCache) SetResolvedStateIDS(projectID uint64, stateIDS []uint64) {
+func (p *propertyCache) SetResolvedStateIDs(projectID uint64, stateIDS []uint64) {
 	p.Cache.Set(genResolvedStateIDSKey(projectID), stateIDS, cache.NoExpiration)
 }
 
-func (p *propertyCache) GeResolvedStateIDS(projectID uint64) []uint64 {
+func (p *propertyCache) GeResolvedStateIDs(projectID uint64) []uint64 {
 	stateIDS, ok := p.Cache.Get(genResolvedStateIDSKey(projectID))
 	if !ok {
 		return nil

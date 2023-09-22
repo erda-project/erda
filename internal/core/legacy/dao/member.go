@@ -484,7 +484,7 @@ func (client *DBClient) GetAllUserJoinedProjects(orgs []string) ([]*model.UserJo
 		Joins("left join uc_user as user on member.user_id = user.id").
 		Joins("left join erda_project as project on member.project_id = project.id").
 		Joins("left join dice_org as org on member.org_id = org.id").
-		Joins("left join dice_labels as labels on labels.project_id = member.project_id and labels.type = 'project'").
+		Joins("left join dice_labels as labels on labels.project_id = member.project_id and labels.type = 'project' and labels.id in (select label_id from dice_label_relations where ref_id=project.id)").
 		Where("member.scope_type = 'project' and org.id != 0")
 	if len(orgs) > 0 {
 		cli = cli.Where("org.name in (?)", orgs)

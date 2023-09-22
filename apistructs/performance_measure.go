@@ -14,7 +14,7 @@
 
 package apistructs
 
-type PersonalPerformanceRequest struct {
+type PersonalEfficiencyRequest struct {
 	Start       string                  `json:"start"`
 	End         string                  `json:"end"`
 	OrgID       uint64                  `json:"orgID"`
@@ -24,7 +24,7 @@ type PersonalPerformanceRequest struct {
 	LabelQuerys []ReportLabelOperation  `json:"labelQuerys"` // deliberately use labelQuerys instead of labelQueries
 }
 
-type PersonalContributorRequest struct {
+type PersonalContributionRequest struct {
 	Start          string   `json:"start"`
 	End            string   `json:"end"`
 	OrgID          uint64   `json:"orgID"`

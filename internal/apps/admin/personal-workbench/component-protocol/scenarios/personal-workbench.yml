@@ -12,6 +12,7 @@ hierarchy:
       - head
       - workTabs
       - workContainer
+      - performanceHead
       - messageTabs
       - messageContainer
     rightContent:
@@ -31,12 +32,13 @@ hierarchy:
       - userProfile
       - head
       - workTabs
-      - workContainer
       - messageTabs
       - messageContainer
     workTabs:
       - workCards
       - workList
+      - workContainer
+      - performanceHead
 
 components:
   page:
@@ -48,6 +50,8 @@ components:
   userProfile:
     type: Custom
   head:
+    type: Custom
+  performanceHead:
     type: Custom
   workTabs:
     type: RadioTabs
@@ -78,6 +82,8 @@ rendering:
           value: "{{ workTabs.value }}"
     - name: workListFilter
     - name: workList
+    - name: performanceHead
+    - name: workContainer
 
   workCards:
     - name: workList

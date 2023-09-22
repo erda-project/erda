@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package performance_measure
+package efficiency_measure
 
 func (p *provider) checkPersonalNumberFields() {
-	p.personalPerformanceSet.Iterate(func(key string, value interface{}) error {
+	p.personalEfficiencySet.Iterate(func(key string, value interface{}) error {
 		personalInfo := value.(*PersonalPerformanceInfo)
 		if personalInfo.metricFields == nil || !personalInfo.metricFields.IsValid() {
 			fields, err := p.getPersonalMetricFields(personalInfo)

@@ -94,7 +94,7 @@ func (p *provider) Initialize() error {
 		<-time.NewTimer(time.Duration(rand.Intn(5)) * time.Minute).C
 		rutil.ContinueWorking(context.Background(), p.Log, func(ctx context.Context) rutil.WaitDuration {
 			logrus.Infof("start refresh personal contributors")
-			if err := collector.RefreshPersonalContributors(); err != nil {
+			if err := collector.RefreshPersonalContributions(); err != nil {
 				logrus.Errorf("failed to refresh personal contributors, err: %v", err)
 			}
 
@@ -116,7 +116,7 @@ func (p *provider) Initialize() error {
 		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(ctx.Response(), ctx.Request())
 		return nil
 	})
-	e.POST("/personal-contributors", webcontext.WrapHandler(func(c *webcontext.Context) {
+	e.POST("/personal-contribution", webcontext.WrapHandler(func(c *webcontext.Context) {
 		var req apistructs.GittarListRepoRequest
 		err := c.BindJSON(&req)
 		if err != nil {

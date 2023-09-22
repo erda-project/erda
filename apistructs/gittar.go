@@ -839,8 +839,8 @@ type MergeBaseResponse struct {
 }
 
 type GittarListRepoRequest struct {
-	OrgIDS     []uint64   `json:"orgIDS"`
-	ProjectIDS []uint64   `json:"projectIDS"`
+	OrgIDs     []uint64   `json:"orgIDs"`
+	ProjectIDs []uint64   `json:"projectIDs"`
 	Start      *time.Time `json:"start"`
 	End        *time.Time `json:"end"`
 }

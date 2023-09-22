@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package performance_measure
+package efficiency_measure
 
 import (
 	"context"
@@ -174,7 +174,7 @@ func (p *provider) calPersonalFields(personalInfo *PersonalPerformanceInfo) (*pe
 		IssueType:      apistructs.IssueTypeBug,
 		StatisticRange: "project",
 		RangeID:        int64(projectID),
-		StateIDS:       endStateIDS,
+		StateIDs:       endStateIDS,
 	})
 	fields.AvgFixBugElapsedMinute = bugManHour.AvgElapsedMinute
 	fields.AvgFixBugEstimateMinute = bugManHour.AvgEstimateMinute
@@ -197,17 +197,17 @@ func (p *provider) getStateIDS(projectID uint64, stateBelong apistructs.IssueSta
 	var stateIDS []uint64
 	switch stateBelong {
 	case apistructs.IssueStateBelongWontfix:
-		stateIDS = p.propertySet.GetWonfixStateIDS(projectID)
+		stateIDS = p.propertySet.GetWonfixStateIDs(projectID)
 	case apistructs.IssueStateBelongOpen:
-		stateIDS = p.propertySet.GetOpenStateIDS(projectID)
+		stateIDS = p.propertySet.GetOpenStateIDs(projectID)
 	case apistructs.IssueStateBelongWorking:
-		stateIDS = p.propertySet.GetWorkingStateIDS(projectID)
+		stateIDS = p.propertySet.GetWorkingStateIDs(projectID)
 	case apistructs.IssueStateBelongClosed:
-		stateIDS = p.propertySet.GetClosedStateIDS(projectID)
+		stateIDS = p.propertySet.GetClosedStateIDs(projectID)
 	case apistructs.IssueStateBelongDone:
-		stateIDS = p.propertySet.GetDoneStateIDS(projectID)
+		stateIDS = p.propertySet.GetDoneStateIDs(projectID)
 	case apistructs.IssueStateBelongResolved:
-		stateIDS = p.propertySet.GeResolvedStateIDS(projectID)
+		stateIDS = p.propertySet.GeResolvedStateIDs(projectID)
 	default:
 		return nil, fmt.Errorf("unsupported issue state belong: %s", stateBelong)
 	}

@@ -565,8 +565,8 @@ func (client *DBClient) GetIssuesManHour(req apistructs.IssuesStageRequest) (api
 	if len(req.IssueType) > 0 {
 		sql = sql.Where("type = ?", req.IssueType)
 	}
-	if len(req.StateIDS) > 0 {
-		sql = sql.Where("state in (?)", req.StateIDS)
+	if len(req.StateIDs) > 0 {
+		sql = sql.Where("state in (?)", req.StateIDs)
 	}
 	if err := sql.Where("deleted = ?", 0).Where("type = ?", req.IssueType).Find(&issues).Error; err != nil {
 		return apistructs.IssueManHourResponse{}, err

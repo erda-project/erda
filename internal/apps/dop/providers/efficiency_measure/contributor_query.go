@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package performance_measure
+package efficiency_measure
 
 import (
 	"encoding/json"
@@ -55,7 +55,7 @@ func (p *provider) queryPersonalContributors(rw http.ResponseWriter, r *http.Req
 		p.wrapBadRequest(rw, err)
 		return
 	}
-	req := &apistructs.PersonalContributorRequest{}
+	req := &apistructs.PersonalContributionRequest{}
 	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		p.wrapBadRequest(rw, err)
@@ -121,12 +121,12 @@ func (p *provider) queryPersonalContributors(rw http.ResponseWriter, r *http.Req
 	}
 
 	httpserver.WriteData(rw, map[string]interface{}{
-		"codeContributors":   contributors,
-		"mandayContributors": mandays,
+		"codeContributions":   contributors,
+		"mandayContributions": mandays,
 	})
 }
 
-func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributorRequest) string {
+func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributionRequest) string {
 	dataSql := p.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		tx = tx.Table("monitor.external_metrics_all").
 			Select(`last_value(tag_values[indexOf(tag_keys,'org_name')]) as orgName,
@@ -181,7 +181,7 @@ func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributorRe
 	return basicSql
 }
 
-func (p *provider) makeActualManDaySql(req *apistructs.PersonalContributorRequest) string {
+func (p *provider) makeActualManDaySql(req *apistructs.PersonalContributionRequest) string {
 	basicSq := p.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		tx = tx.Table("monitor.external_metrics_all").
 			Select(`last_value(tag_values[indexOf(tag_keys,'org_name')]) as orgName,

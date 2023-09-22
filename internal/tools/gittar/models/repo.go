@@ -241,11 +241,11 @@ func (svc *Service) GetRepoLocked(project, app int64) (bool, error) {
 
 func (svc *Service) ListAllRepos(req apistructs.GittarListRepoRequest) ([]*Repo, error) {
 	cli := svc.db.Table("dice_repos").Where("is_locked = 0")
-	if len(req.OrgIDS) > 0 {
-		cli = cli.Where("org_id in (?)", req.OrgIDS)
+	if len(req.OrgIDs) > 0 {
+		cli = cli.Where("org_id in (?)", req.OrgIDs)
 	}
-	if len(req.ProjectIDS) > 0 {
-		cli = cli.Where("project_id in (?)", req.ProjectIDS)
+	if len(req.ProjectIDs) > 0 {
+		cli = cli.Where("project_id in (?)", req.ProjectIDs)
 	}
 	var repos []*Repo
 	if err := cli.Find(&repos).Error; err != nil {

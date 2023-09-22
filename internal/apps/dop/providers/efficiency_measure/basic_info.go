@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package performance_measure
+package efficiency_measure
 
 import "context"
 
@@ -23,10 +23,10 @@ func (p *provider) refreshBasicInfo() error {
 		return err
 	}
 	for i := range userProjects {
-		if personalInfo := p.personalPerformanceSet.Get(userProjects[i].ID); personalInfo != nil {
+		if personalInfo := p.personalEfficiencySet.Get(userProjects[i].ID); personalInfo != nil {
 			personalInfo.userProject = userProjects[i]
 		} else {
-			p.personalPerformanceSet.Set(userProjects[i].ID, &PersonalPerformanceInfo{
+			p.personalEfficiencySet.Set(userProjects[i].ID, &PersonalPerformanceInfo{
 				userProject: userProjects[i],
 			})
 		}
@@ -36,7 +36,7 @@ func (p *provider) refreshBasicInfo() error {
 
 func (p *provider) GetRequestedPersonalInfos() (map[uint64]*PersonalPerformanceInfo, error) {
 	result := make(map[uint64]*PersonalPerformanceInfo)
-	p.personalPerformanceSet.Iterate(func(key string, value interface{}) error {
+	p.personalEfficiencySet.Iterate(func(key string, value interface{}) error {
 		personalInfo := value.(*PersonalPerformanceInfo)
 		if personalInfo.metricFields == nil {
 			fields := &personalMetricField{}

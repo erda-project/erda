@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package performance_measure
+package efficiency_measure
 
 import (
 	"encoding/json"
@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-type PersonalPerformanceRow struct {
+type PersonalEfficiencyRow struct {
 	UserID                     string  `json:"userID" ch:"userID"`
 	UserName                   string  `json:"userName" ch:"userName"`
 	UserEmail                  string  `json:"userEmail" ch:"userEmail"`
@@ -63,6 +63,9 @@ type PersonalPerformanceRow struct {
 	DemandFuncPointsTotal      float64 `json:"demandFuncPointsTotal" ch:"demandFuncPointsTotal"`
 	TestFuncPointsTotal        float64 `json:"testFuncPointsTotal" ch:"testFuncPointsTotal"`
 	OnlineBugTotal             float64 `json:"onlineBugTotal" ch:"onlineBugTotal"`
+	LowLevelBugTotal           float64 `json:"lowLevelBugTotal" ch:"lowLevelBugTotal"`
+	OnlineBugRatio             float64 `json:"onlineBugRatio" ch:"onlineBugRatio"`
+	LowLevelBugRatio           float64 `json:"lowLevelBugRatio" ch:"lowLevelBugRatio"`
 	ResolvedBugTotal           float64 `json:"resolvedBugTotal" ch:"resolvedBugTotal"`
 	ActualMandayTotal          float64 `json:"actualMandayTotal" ch:"actualMandayTotal"`
 	RequirementDefectDensity   float64 `json:"requirementDefectDensity" ch:"requirementDefectDensity"`
@@ -72,19 +75,21 @@ type PersonalPerformanceRow struct {
 	DemandProductPDR           float64 `json:"demandProductPDR" ch:"demandProductPDR"`
 	DevProductPDR              float64 `json:"devProductPDR" ch:"devProductPDR"`
 	TestProductPDR             float64 `json:"testProductPDR" ch:"testProductPDR"`
+	ProjectFuncPointsTotal     float64 `json:"projectFuncPointsTotal" ch:"projectFuncPointsTotal"`
+	PointParticipationRatio    float64 `json:"pointParticipationRatio" ch:"pointParticipationRatio"`
 }
 
 func (p *provider) wrapBadRequest(rw http.ResponseWriter, err error) {
 	httpserver.WriteErr(rw, strconv.FormatInt(int64(http.StatusBadRequest), 10), err.Error())
 }
 
-func (p *provider) queryPersonalPerformance(rw http.ResponseWriter, r *http.Request) {
+func (p *provider) queryPersonalEfficiency(rw http.ResponseWriter, r *http.Request) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		p.wrapBadRequest(rw, err)
 		return
 	}
-	req := &apistructs.PersonalPerformanceRequest{}
+	req := &apistructs.PersonalEfficiencyRequest{}
 	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		p.wrapBadRequest(rw, err)
@@ -115,16 +120,16 @@ func (p *provider) queryPersonalPerformance(rw http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	rawSql := p.makePerformanceBasicSql(req)
+	rawSql := p.makeEfficiencyBasicSql(req)
 	rows, err := p.Clickhouse.Client().Query(r.Context(), rawSql)
 	if err != nil {
 		p.wrapBadRequest(rw, err)
 		return
 	}
 	defer rows.Close()
-	ans := make([]*PersonalPerformanceRow, 0)
+	ans := make([]*PersonalEfficiencyRow, 0)
 	for rows.Next() {
-		row := &PersonalPerformanceRow{}
+		row := &PersonalEfficiencyRow{}
 		if err := rows.ScanStruct(row); err != nil {
 			p.wrapBadRequest(rw, err)
 			return
@@ -134,7 +139,7 @@ func (p *provider) queryPersonalPerformance(rw http.ResponseWriter, r *http.Requ
 	httpserver.WriteData(rw, ans)
 }
 
-func (p *provider) makePerformanceBasicSql(req *apistructs.PersonalPerformanceRequest) string {
+func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequest) string {
 	sourceSql := p.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		tx = tx.Table("monitor.external_metrics_all").Select("*").Where("metric_group='performance_measure'").
 			Where("timestamp >= ?", req.Start).
@@ -154,7 +159,7 @@ func (p *provider) makePerformanceBasicSql(req *apistructs.PersonalPerformanceRe
 			}
 			tx = tx.Where(fmt.Sprintf("tag_values[indexOf(tag_keys,'%s')] %s '%s'", query.Key, query.Operation, query.Val))
 		}
-		return tx.Find(&[]PersonalPerformanceRow{})
+		return tx.Find(&[]PersonalEfficiencyRow{})
 	})
 	dataSql := p.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		tx = tx.Table(fmt.Sprintf("(%s)", sourceSql)).
@@ -190,11 +195,13 @@ func (p *provider) makePerformanceBasicSql(req *apistructs.PersonalPerformanceRe
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_dev_func_points_total')]) as devFuncPointsTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_demand_func_points_total')]) as demandFuncPointsTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_test_func_points_total')]) as testFuncPointsTotal,
+           last_value(number_field_values[indexOf(number_field_keys,'project_func_points_total')]) as projectFuncPointsTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_online_bug_total')]) as onlineBugTotal,
+           last_value(number_field_values[indexOf(number_field_keys,'personal_low_level_bug_total')]) as lowLevelBugTotal,
            last_value(number_field_values[indexOf(number_field_keys,'personal_resolved_bug_total')]) as resolvedBugTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'emp_user_actual_manday_total')]) as actualMandayTotal`)
 		tx = tx.Group("orgID, userID, projectID")
-		return tx.Find(&[]PersonalPerformanceRow{})
+		return tx.Find(&[]PersonalEfficiencyRow{})
 	})
 	basicSql := p.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		tx = tx.Table(fmt.Sprintf("(%s)", dataSql)).Select(`last_value(orgName) as orgName,
@@ -232,7 +239,12 @@ func (p *provider) makePerformanceBasicSql(req *apistructs.PersonalPerformanceRe
     sum(demandFuncPointsTotal) as demandFuncPointsTotal,
     sum(testFuncPointsTotal) as testFuncPointsTotal,
     sum(onlineBugTotal) as onlineBugTotal,
+    sum(lowLevelBugTotal) as lowLevelBugTotal,
     sum(actualMandayTotal) as actualMandayTotal,
+	sum(projectFuncPointsTotal) as projectFuncPointsTotal,
+    if(bugTotal > 0, onlineBugTotal / bugTotal, 0) as onlineBugRatio,
+    if(bugTotal > 0, lowLevelBugTotal / bugTotal, 0) as lowLevelBugRatio,
+    if(projectFuncPointsTotal > 0, responsibleFuncPointsTotal / projectFuncPointsTotal, 0) as pointParticipationRatio,
     if(demandFuncPointsTotal > 0, designBugTotal / demandFuncPointsTotal, 0) as requirementDefectDensity,
     if(demandFuncPointsTotal > 0, architectureBugTotal / demandFuncPointsTotal, 0) as demandDefectDensity,
     if(devFuncPointsTotal > 0, bugTotal / devFuncPointsTotal, 0) as devDefectDensity,
@@ -241,12 +253,12 @@ func (p *provider) makePerformanceBasicSql(req *apistructs.PersonalPerformanceRe
     if(devFuncPointsTotal > 0, actualMandayTotal * 8 / devFuncPointsTotal, 0) as devProductPDR,
     if(testFuncPointsTotal > 0, actualMandayTotal * 8 / testFuncPointsTotal, 0) as testProductPDR`).
 			Group("orgID, userID")
-		return tx.Find(&[]PersonalPerformanceRow{})
+		return tx.Find(&[]PersonalEfficiencyRow{})
 	})
 	return basicSql
 }
 
-func checkQueryRequest(req *apistructs.PersonalPerformanceRequest) error {
+func checkQueryRequest(req *apistructs.PersonalEfficiencyRequest) error {
 	if req.OrgID == 0 {
 		return fmt.Errorf("orgID required")
 	}
