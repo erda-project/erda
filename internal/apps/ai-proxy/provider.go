@@ -25,10 +25,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
-	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -45,6 +43,8 @@ import (
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
@@ -57,15 +57,11 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	route2 "github.com/erda-project/erda/internal/pkg/ai-proxy/route"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
-	"github.com/erda-project/erda/pkg/strutil"
 )
-
-// issue: 创建 session 时没有校验 org
 
 var (
 	_ transport.Register = (*provider)(nil)
@@ -78,7 +74,7 @@ var (
 		Services:    []string{"erda.app.ai-proxy.Server"},
 		Summary:     "ai-proxy server",
 		Description: "Reverse proxy service between AI vendors and client applications, providing a cut-through for service access",
-		ConfigFunc:  func() interface{} { return new(config) }, // todo: 启动时支持从初始配置文件或配置中心(Nacos, ETCD, MySQL)获取配置
+		ConfigFunc:  func() interface{} { return new(config.Config) },
 		Types:       []reflect.Type{providerType},
 		Creator:     func() servicehub.Provider { return new(provider) },
 	}
@@ -110,7 +106,7 @@ func init() {
 }
 
 type provider struct {
-	Config         *config
+	Config         *config.Config
 	L              logs.Logger
 	HTTP           mux.Mux                              `autowired:"gorilla-mux@ai"`
 	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
@@ -120,19 +116,9 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	if err := p.parseRoutesConfig(); err != nil {
-		return errors.Wrap(err, "failed to parseRoutesConfig")
-	}
-	p.L.Infof("routes config:\n%s", strutil.TryGetYamlStr(p.Config.Routes))
-
-	if p.Config.SelfURL == "" {
-		p.Config.SelfURL = "http://ai-proxy:8081"
-	}
-	if selfURL, ok := os.LookupEnv("SELF_URL"); ok && len(selfURL) > 0 {
-		p.Config.SelfURL = selfURL
-	}
-	if len(p.ErdaOpenapis) == 0 {
-		p.ErdaOpenapis = make(map[string]*url.URL)
+	// config
+	if err := p.Config.DoPost(); err != nil {
+		return err
 	}
 
 	// register gRPC and http handler
@@ -151,7 +137,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// reverse proxy to AI provider's server
 	p.ServeAIProxy()
 
-	// open APIs on Erda
+	// openapi on Erda
+	if len(p.ErdaOpenapis) == 0 {
+		p.ErdaOpenapis = make(map[string]*url.URL)
+	}
 	if p.Config.OpenOnErda {
 		if err := p.openAPIsOnErda(); err != nil {
 			p.L.Errorf("failed to open APIs on Erda, err: %v", err)
@@ -167,7 +156,8 @@ func (p *provider) ServeAIProxy() {
 	var f http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
 		p.Config.Routes.FindRoute(r).HandlerWith(
 			context.Background(),
-			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get("X-Request-Id")),
+			ctxhelper.CtxKeyOfConfig{}, p.Config,
+			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get(vars.XRequestId)),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
 			vars.CtxKeyDAO{}, p.Dao,
@@ -218,29 +208,6 @@ func (p *provider) openAPIsOnErda() error {
 	return nil
 }
 
-func (p *provider) parseRoutesConfig() error {
-	if err := p.parseConfig(p.Config.RoutesRef, "routes", &p.Config.Routes); err != nil {
-		return err
-	}
-	return p.Config.Routes.Validate()
-}
-
-func (p *provider) parseConfig(ref, key string, i interface{}) error {
-	data, err := os.ReadFile(ref)
-	if err != nil {
-		return err
-	}
-	var m = make(map[string]json.RawMessage)
-	if err := yaml.Unmarshal(data, &m); err != nil {
-		return err
-	}
-	data, ok := m[key]
-	if !ok {
-		return nil
-	}
-	return yaml.Unmarshal(data, i)
-}
-
 func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path, method string) {
 	w.Header().Set("Server", "AI Service on Erda")
 	w.WriteHeader(http.StatusNotFound)
@@ -267,25 +234,4 @@ func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterN
 		"error":  "failed to instantiate filter",
 		"filter": filterName,
 	})
-}
-
-type config struct {
-	RoutesRef  string             `json:"routesRef" yaml:"routesRef"`
-	LogLevel   string             `json:"logLevel" yaml:"logLevel"`
-	Exporter   configPromExporter `json:"exporter" yaml:"exporter"`
-	SelfURL    string             `json:"selfURL" yaml:"selfURL"`
-	OpenOnErda bool               `json:"openOnErda" yaml:"openOnErda"`
-	Routes     route2.Routes      `json:"-" yaml:"-"`
-}
-
-type configPromExporter struct {
-	Namespace string `json:"namespace" yaml:"namespace"`
-	Subsystem string `json:"subsystem" yaml:"subsystem"`
-	Name      string `json:"name" yaml:"name"`
-}
-
-type Platform struct {
-	Name        string `json:"name" yaml:"name"`
-	Openapi     string `json:"openapi" yaml:"openapi"`
-	Description string `json:"description" yaml:"description"`
 }
