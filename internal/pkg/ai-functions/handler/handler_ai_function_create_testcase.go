@@ -17,7 +17,9 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -116,15 +118,22 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 		IssueID:   tp.IssueID,
 		Prompt:    tp.Prompt,
 	}
+
+	bdl := bundle.New(bundle.WithErdaServer())
+	issue, err := bdl.GetIssue(tp.IssueID)
+	if err != nil {
+		return errors.Wrap(err, "get requirement info failed when create testcase")
+	}
+	// 根据需求内容生成 prompt
+	if hasDetailInfoInRequirementContent(issue.Content) {
+		callbackInput.Prompt = tuningPrompt(issue.Title, issue.Content)
+	} else {
+		callbackInput.Prompt = issue.Title
+	}
+	tp.Prompt = callbackInput.Prompt
+
 	if len(tp.Req.StepAndResults) > 0 {
 		// 表示是修改后批量应用应用生成的测试用例，直接调用创建接口，无需再次生成
-		bdl := bundle.New(bundle.WithErdaServer())
-		// 根据 issueID 获取对应的需求 Title
-		issue, err := bdl.GetIssue(tp.IssueID)
-		if err != nil {
-			return errors.Wrap(err, "get requirement info failed when create testcase")
-		}
-
 		aiCreateTestCaseResponse, err := bdl.CreateTestCase(tp.Req)
 		if err != nil {
 			err = errors.Errorf("create testcase with req %+v failed: %v", tp.Req, err)
@@ -138,7 +147,6 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 			TestCaseID:      aiCreateTestCaseResponse.TestCaseID,
 		})
 	} else {
-		// 表示需要生成
 		result, err := aiHandlerUtils.GetChatMessageFunctionCallArguments(ctx, factory, req, openaiURL, tp.Prompt, systemPrompt, callbackInput)
 		if err != nil {
 			return err
@@ -164,10 +172,69 @@ func validateParamsForCreateTestcase(req aitestcase.FunctionParams) error {
 		if tp.IssueID <= 0 {
 			return errors.Errorf("AI function functionParams requirements[%d].issueID for %s invalid", idx, aitestcase.Name)
 		}
-		if tp.Prompt == "" && len(tp.Req.StepAndResults) == 0 {
-			return errors.Errorf("AI function functionParams requirements[%d].prompt for %s invalid", idx, aitestcase.Name)
-		}
 	}
 
 	return nil
+}
+
+// tuningPrompt 提取需求的内容,整理成标准格式，如:
+// 需求名称： 注册需求
+// 需求描述：
+// 1. xxx
+// 2. xxx
+func tuningPrompt(title, content string) string {
+	result := make([]string, 0)
+	inputs := strings.Split(content, "###")
+	result = append(result, "需求名称： "+title)
+	result = append(result, "需求描述：")
+	item := 1
+
+	for i := 1; i < len(inputs); i++ {
+		// 意向用户 和 链接/参考 不作为需求的详细描述内容
+		if strings.Contains(inputs[i], "意向用户*") || strings.Contains(inputs[i], "链接/参考") {
+			continue
+		}
+
+		for _, r := range strings.Split(inputs[i], "\n") {
+			if r == "" || strings.Contains(r, "用户故事/要解决的问题*") || strings.Contains(r, "用户体验目标*") {
+				continue
+			}
+			r = strings.TrimSpace(r)
+			// 删除常见标题性质的内容
+			if (strings.HasPrefix(r, "功能需求") && len(r) <= 21) ||
+				(strings.HasPrefix(r, "安全需求") && len(r) <= 21) ||
+				(strings.HasPrefix(r, "性能需求") && len(r) <= 21) ||
+				(strings.HasPrefix(r, "兼容性需求") && len(r) <= 21) ||
+				(strings.HasPrefix(r, "业务需求") && len(r) <= 21) ||
+				(strings.HasPrefix(r, "用户需求") && len(r) <= 21) ||
+				(strings.HasPrefix(r, "系统需求") && len(r) <= 21) {
+				continue
+			}
+			result = append(result, fmt.Sprintf("%d. ", item)+r)
+			item++
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
+func hasDetailInfoInRequirementContent(input string) bool {
+	result := make([]string, 0)
+	inputs := strings.Split(input, "\n")
+
+	for i := 0; i < len(inputs); i++ {
+		if inputs[i] == "" {
+			continue
+		}
+		result = append(result, inputs[i])
+	}
+
+	input = strings.Join(result, "\n")
+	fmt.Printf("\nInput now:\n%s\n", input)
+
+	if len(result) == 4 {
+		return false
+	}
+
+	return true
 }
