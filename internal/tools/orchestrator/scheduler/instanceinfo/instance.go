@@ -54,7 +54,8 @@ func (r *InstanceReader) ByOrgName(name string) *InstanceReader {
 	return r
 }
 func (r *InstanceReader) ByOrgID(id string) *InstanceReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("org_id = \"%s\"", id))
+	r.conditions = append(r.conditions, "org_id = ?")
+	r.values = append(r.values, id)
 	return r
 }
 func (r *InstanceReader) ByProjectName(name string) *InstanceReader {
@@ -163,12 +164,11 @@ func (r *InstanceReader) Limit(n int) *InstanceReader {
 }
 func (r *InstanceReader) Do() ([]InstanceInfo, error) {
 	instanceinfo := []InstanceInfo{}
-	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), strutil.Join(r.values, " , ", true)).
-		Order("started_at desc")
+	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), r.values[0], r.values[1]).Order("started_at desc")
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
-	if err := expr.Find(&instanceinfo).Error; err != nil {
+	if err := expr.Debug().Find(&instanceinfo).Error; err != nil {
 		r.conditions = []string{}
 		return nil, err
 	}
