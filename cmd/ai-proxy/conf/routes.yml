@@ -5,6 +5,7 @@ routes:
     method: POST
     router: null
     filters:
+      - name: initial
       - name: log-http
       - name: rate-limit
       - name: body-size-limit

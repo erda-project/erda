@@ -18,10 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"strings"
 
-	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -47,15 +48,17 @@ type LogHttp struct {
 	lineCount     int
 }
 
+func (f *LogHttp) Enable(ctx context.Context, req *http.Request) bool {
+	cfg, ok := ctxhelper.GetConfig(ctx)
+	return ok && cfg.LogLevel == logrus.DebugLevel
+}
+
 func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 	return &LogHttp{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
 func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
-	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
-		return reverseproxy.Continue, nil
-	}
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+	var l = ctxhelper.GetLogger(ctx)
 	var url = infor.URL()
 	var m = map[string]any{
 		"scheme":        url.Scheme,
@@ -68,7 +71,7 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		"contentLength": infor.ContentLength(),
 	}
 	if body := infor.BodyBuffer(); body == nil {
-		m["body"] = json.RawMessage("null")
+		m["body"] = json.RawMessage{}
 	} else {
 		if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) {
 			m["body"] = json.RawMessage(body.Bytes())
@@ -81,8 +84,8 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 }
 
 func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
-	if strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") && !f.headerPrinted {
-		var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+	if !f.headerPrinted {
+		var l = ctxhelper.GetLogger(ctx)
 		var m = map[string]any{
 			"headers":     infor.Header(),
 			"status":      infor.Status(),
@@ -91,17 +94,11 @@ func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpIn
 		l.Debugf("response info: %s", strutil.TryGetJsonStr(m))
 		f.headerPrinted = true
 	}
-	return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk)
+	return reverseproxy.Continue, nil
 }
 
 func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
-	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
-		return err
-	}
-	if !strutil.Equal(os.Getenv("LOG_LEVEL"), "debug") {
-		return nil
-	}
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+	var l = ctxhelper.GetLogger(ctx)
 	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
 		l.Debugf("received response content: %s", f.String())
 		return nil
