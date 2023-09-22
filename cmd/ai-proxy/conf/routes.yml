@@ -1,0 +1,35 @@
+# see: internal/pkg/ai-proxy/route/route.go#Routes
+
+routes:
+  - path: /v1/chat/completions
+    method: POST
+    router: null
+    filters:
+      - name: initial
+      - name: log-http
+      - name: rate-limit
+      - name: body-size-limit
+        config:
+          maxSize: 102400
+          message: { "messages": [ { "role": "ai-proxy", "content": "问题超长啦, 请重置会话", "name": "ai-proxy" } ] }
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2023-07-01-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/chat/completions")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+      - name: message-context
+        config:
+          sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
+      - name: audit
