@@ -25,7 +25,7 @@ import (
 type InstanceReader struct {
 	db         *dbengine.DBEngine
 	conditions []string
-	values     []string
+	values     []interface{}
 	limit      int
 }
 
@@ -164,11 +164,11 @@ func (r *InstanceReader) Limit(n int) *InstanceReader {
 }
 func (r *InstanceReader) Do() ([]InstanceInfo, error) {
 	instanceinfo := []InstanceInfo{}
-	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), r.values[0], r.values[1]).Order("started_at desc")
+	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), r.values...).Order("started_at desc")
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
-	if err := expr.Debug().Find(&instanceinfo).Error; err != nil {
+	if err := expr.Find(&instanceinfo).Error; err != nil {
 		r.conditions = []string{}
 		return nil, err
 	}
