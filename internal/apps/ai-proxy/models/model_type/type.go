@@ -24,3 +24,7 @@ type ModelType string
 func GetModelTypeFromProtobuf(pbModelType pb.ModelType) ModelType {
 	return ModelType(pb.ModelType_name[int32(pbModelType)])
 }
+
+//func GetModelTypeFromProtobuf(pbModelType pb.ModelType) ModelType {
+//	return ModelType(pbModelType.String())
+//}

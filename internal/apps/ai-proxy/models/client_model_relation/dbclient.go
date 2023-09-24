@@ -17,14 +17,14 @@ package client_model_relation
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"github.com/pkg/errors"
 
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
 )
 
 type DBClient struct {
@@ -46,11 +46,10 @@ func (dbClient *DBClient) Allocate(ctx context.Context, req *pb.AllocateRequest)
 	}
 	// do allocate
 	for _, modelId := range req.ModelIds {
-		c := &ClientModelRelation{
+		if err := (&models.AIProxyClientModelRelation{
 			ClientID: req.ClientId,
 			ModelID:  modelId,
-		}
-		if err := tx.Model(c).Create(c).Error; err != nil {
+		}).Creator(tx).Create(); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("failed to allocate model %s to client %s: %v", modelId, req.ClientId, err)
 		}
@@ -72,9 +71,8 @@ func (dbClient *DBClient) UnAllocate(ctx context.Context, req *pb.AllocateReques
 		return nil, err
 	}
 	// do unallocate
-	if err := tx.Model(&ClientModelRelation{ClientID: req.ClientId}).
-		Where("model_id in (?)", req.ModelIds).
-		Delete(nil).Error; err != nil {
+	var relation models.AIProxyClientModelRelation
+	if _, err := (&relation).Deleter(tx).Where(relation.FieldModelID().In(req.GetModelIds())).Delete(); err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to unallocate models %v from client %s: %v", req.ModelIds, req.ClientId, err)
 	}
@@ -83,25 +81,33 @@ func (dbClient *DBClient) UnAllocate(ctx context.Context, req *pb.AllocateReques
 }
 
 func (dbClient *DBClient) ListClientModels(ctx context.Context, req *pb.ListClientModelsRequest) (*pb.ListAllocatedModelsResponse, error) {
-	modelTableName, relationTableName := (&model.Model{}).TableName(), (&ClientModelRelation{}).TableName()
-	var relations []ClientModelRelation
-	sql := dbClient.DB.Table(relationTableName).
-		Joins(fmt.Sprintf(`left join %s on %s.id = %s.model_id`, modelTableName, modelTableName, relationTableName)).
-		Where(fmt.Sprintf(`%s.client_id = ?`, relationTableName), req.ClientId)
-	if len(req.ModelTypes) > 0 {
-		sql = sql.Where(fmt.Sprintf(`%s.type in (?)`, modelTableName), req.ModelTypes)
+	var relations models.AIProxyClientModelRelationList
+	var wheres = []models.Where{
+		relations.FieldClientID().Equal(req.GetClientId()),
 	}
-	sql.Find(&relations)
-	if sql.Error != nil {
-		return nil, fmt.Errorf("failed to list client models: %v", sql.Error)
+	if len(req.GetModelTypes()) > 0 {
+		var models_ models.AIProxyModelList
+		total, err := (&models_).Pager(dbClient.DB).Where(models_.FieldType().In(req.GetModelTypes())).Paging(-1, -1)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to list models")
+		}
+		if total == 0 {
+			return nil, errors.Wrap(gorm.ErrRecordNotFound, "failed to list models")
+		}
+		wheres = append(wheres, relations.FieldModelID().In(models_.FieldBaseModelList().FieldIDList()))
 	}
-	var modelIds []string
-	for _, rel := range relations {
-		modelIds = append(modelIds, rel.ModelID)
+
+	total, err := (&relations).Pager(dbClient.DB).Where(wheres...).Paging(-1, -1)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list relations")
 	}
+	if total == 0 {
+		return nil, errors.Wrap(gorm.ErrRecordNotFound, "failed to list relations")
+	}
+
 	return &pb.ListAllocatedModelsResponse{
 		ClientId: req.ClientId,
-		ModelIds: modelIds,
+		ModelIds: relations.FieldModelIDList(),
 	}, nil
 }
 
@@ -109,14 +115,14 @@ func TxCheckClientID(tx *gorm.DB, clientID string) error {
 	if clientID == "" {
 		return fmt.Errorf("client id is empty")
 	}
-	var clientCount int64
-	c := &client.Client{BaseModel: common.BaseModelWithID(clientID)}
-	if err := tx.Model(c).Where(c).Count(&clientCount).Error; err != nil {
-		return fmt.Errorf("failed to check client id: %v", err)
+	ok, err := (&models.AIProxyClient{}).Retriever(tx).Where(models.FieldID.Equal(clientID)).Get()
+	if err != nil {
+		return errors.Wrapf(err, "failed to check client id: %s", clientID)
 	}
-	if clientCount == 0 {
-		return fmt.Errorf("client id %s not found", clientID)
+	if !ok {
+		return errors.Wrapf(gorm.ErrRecordNotFound, "failed to check client id: %s", clientID)
 	}
+
 	return nil
 }
 
@@ -124,14 +130,12 @@ func TxCheckModelIDs(tx *gorm.DB, modelIDs []string) error {
 	if len(modelIDs) == 0 {
 		return fmt.Errorf("modelIds is empty")
 	}
-	var existModelIds []string
-	if err := tx.Model(&model.Model{}).
-		Select("id").
-		Where("id in (?)", modelIDs).
-		Find(&existModelIds).Error; err != nil {
-		return fmt.Errorf("failed to check model ids: %v", err)
+	var models_ models.AIProxyModelList
+	_, err := (&models_).Pager(tx).Where(models.FieldID.In(modelIDs)).Paging(-1, -1)
+	if err != nil {
+		return errors.Wrap(err, "failed to check model ids")
 	}
-	if len(existModelIds) != len(modelIDs) {
+	if existModelIds := models_.FieldBaseModelList().FieldIDStrList(); len(existModelIds) != len(modelIDs) {
 		return fmt.Errorf("model ids %v not found", findMissingModelIds(modelIDs, existModelIds))
 	}
 	return nil

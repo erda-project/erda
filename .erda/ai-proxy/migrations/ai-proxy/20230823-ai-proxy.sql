@@ -9,7 +9,7 @@ CREATE TABLE `ai_proxy_client`
     `desc`          VARCHAR(1024)         DEFAULT NULL COMMENT '客户端描述',
     `access_key_id` CHAR(32)     NOT NULL COMMENT '客户端 AK',
     `secret_key_id` CHAR(32)     NOT NULL COMMENT '客户端 SK',
-    `metadata`      MEDIUMTEXT   NOT NULL COMMENT '客户端元数据',
+    `metadata`      MEDIUMTEXT   NOT NULL COMMENT '客户端元数据. goType:Metadata;',
 
     PRIMARY KEY (`id`),
     INDEX `idx_access_key_id` (`access_key_id`),
@@ -28,7 +28,7 @@ CREATE TABLE `ai_proxy_model_provider`
     `desc`       VARCHAR(1024)         DEFAULT NULL COMMENT '供应商描述',
     `type`       VARCHAR(191) NOT NULL COMMENT '供应商类型，例如 openai / azure 等',
     `api_key`    varchar(191) NOT NULL COMMENT '供应商级别的 api-key，例如 openai 的 sk，可以使用该供应商下的所有模型',
-    `metadata`   MEDIUMTEXT   NOT NULL COMMENT '供应商元数据',
+    `metadata`   MEDIUMTEXT   NOT NULL COMMENT '供应商元数据. goType:Metadata;',
 
     PRIMARY KEY (`id`),
     INDEX `idx_api_key` (`api_key`),
@@ -48,7 +48,7 @@ CREATE TABLE `ai_proxy_model`
     `type`        VARCHAR(32)  NOT NULL COMMENT '模型类型，例如 text-generation / image / audio / embedding / text-moderation / text+visual(多模态) 等',
     `provider_id` CHAR(36)     NOT NULL COMMENT '模型供应商 id',
     `api_key`     varchar(191) NOT NULL COMMENT '模型级别的 api-key，优先级比 provider 级别更高',
-    `metadata`    MEDIUMTEXT   NOT NULL COMMENT '模型元数据',
+    `metadata`    MEDIUMTEXT   NOT NULL COMMENT '模型元数据. goType:Metadata;',
 
     PRIMARY KEY (`id`),
     INDEX `idx_api_key` (`api_key`),
@@ -82,8 +82,8 @@ CREATE TABLE `ai_proxy_prompt`
     `name`       VARCHAR(191)  NOT NULL COMMENT 'prompt 名称',
     `desc`       VARCHAR(1024) NOT NULL COMMENT 'prompt 描述',
     `client_id`  CHAR(36)               DEFAULT NULL COMMENT '无 client_id 说明是平台级别的；有 client_id 则为客户端专属',
-    `messages`   LONGTEXT      NOT NULL COMMENT '数组，一组 message，格式为: [{"role": "role", "message": "content"}]',
-    `metadata`   MEDIUMTEXT    NOT NULL COMMENT 'prompt 元数据',
+    `messages`   LONGTEXT      NOT NULL COMMENT '数组，一组 message，格式为: [{"role": "role", "message": "content"}]. goType:Messages',
+    `metadata`   MEDIUMTEXT    NOT NULL COMMENT 'prompt 元数据. goType:Metadata;',
 
     PRIMARY KEY (`id`),
     INDEX `idx_name` (`name`),
@@ -109,8 +109,8 @@ CREATE TABLE `ai_proxy_session`
     `num_of_ctx_msg` INT          NOT NULL DEFAULT 0 COMMENT '上下文消息个数，0 表示不使用上下文，1 表示使用上一条消息作为上下文，2 表示使用上两条消息作为上下文，以此类推；一问一答为 2 条消息',
     `is_archived`    BOOLEAN      NOT NULL DEFAULT false COMMENT '是否归档',
     `reset_at`       DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
-    `temperature`    DECIMAL      NOT NULL DEFAULT 0.7 COMMENT 'Higher values will make the output more random, while lower values will make it more focused and deterministic',
-    `metadata`       MEDIUMTEXT   NOT NULL COMMENT '会话元数据',
+    `temperature`    DECIMAL      NOT NULL DEFAULT 0.7 COMMENT 'Higher values will make the output more random, while lower values will make it more focused and deterministic. goType:float64',
+    `metadata`       MEDIUMTEXT   NOT NULL COMMENT '会话元数据. goType:Metadata;',
 
     PRIMARY KEY (`id`),
     INDEX `idx_user_id` (`user_id`),
@@ -180,7 +180,7 @@ CREATE TABLE `ai_proxy_client_token`
     `user_id`    VARCHAR(191) NOT NULL COMMENT '客户端传入的自定义 user_id，客户端用来区分用户',
     `token`      CHAR(34)     NOT NULL COMMENT 't_ 前缀，len: uuid(32)+2',
     `expired_at` DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00',
-    `metadata`   MEDIUMTEXT   NOT NULL COMMENT 'Token 元数据，主要包含 user 额外信息，用于审计',
+    `metadata`   MEDIUMTEXT   NOT NULL COMMENT 'Token 元数据，主要包含 user 额外信息，用于审计. goType:Metadata;',
 
     PRIMARY KEY (`id`),
     INDEX `idx_token` (`token`),

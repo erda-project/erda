@@ -66,9 +66,9 @@ type Field interface {
 	// NotEqual returns the condition expression "xx != ?, v"
 	NotEqual(v any) Where
 	// In returns the condition expression "xx IN (?), v"
-	In(v []any) Where
+	In(v any) Where
 	// NotIn returns the condition expression "xx NOT IN (?), v"
-	NotIn(v []any) Where
+	NotIn(v any) Where
 	// LessThan returns the condition expression "xx < ?, v"
 	LessThan(v any) Where
 	// MoreThan returns the condition expression "xx > ?, v"
@@ -77,6 +77,8 @@ type Field interface {
 	LessEqualThan(v any) Where
 	// MoreEqualThan returns the condition expression "xx >= ?, v"
 	MoreEqualThan(v any) Where
+	// Like returns the condition expression "xx like ?, v"
+	Like(v any) Where
 	// Set returns a Setter for the Field which will be set in the UPDATE clause.
 	Set(v any) Setter
 	// DESC means that the query results are sorted in descending order by the Field.
@@ -180,12 +182,18 @@ func (w field) NotEqual(v any) Where {
 	return where{query: w.name + " != ?", args: []any{v}}
 }
 
-func (w field) In(v []any) Where {
-	return where{query: w.name + " in ?", args: []any{v}}
+func (w field) In(v any) Where {
+	if reflect.TypeOf(v).Kind() == reflect.Slice {
+		return where{query: w.name + " IN ?", args: []any{v}}
+	}
+	panic("the argument for In must be a slice")
 }
 
-func (w field) NotIn(v []any) Where {
-	return where{query: w.name + " not in ?", args: []any{v}}
+func (w field) NotIn(v any) Where {
+	if reflect.TypeOf(v).Kind() == reflect.Slice {
+		return where{query: w.name + " NOT IN ?", args: []any{v}}
+	}
+	panic("the argument for NotIn must be a slice")
 }
 
 func (w field) LessThan(v any) Where {
@@ -202,6 +210,10 @@ func (w field) LessEqualThan(v any) Where {
 
 func (w field) MoreEqualThan(v any) Where {
 	return where{query: w.name + " >= ?", args: []any{v}}
+}
+
+func (w field) Like(v any) Where {
+	return where{query: w.name + " LIKE ?", args: []any{v}}
 }
 
 func (w field) DESC() string {

@@ -22,5 +22,5 @@ import (
 type ModelProviderType string
 
 func GetModelProviderTypeFromProtobuf(pbModelProviderType pb.ModelProviderType) ModelProviderType {
-	return ModelProviderType(pb.ModelProviderType_name[int32(pbModelProviderType)])
+	return ModelProviderType(pbModelProviderType.String())
 }

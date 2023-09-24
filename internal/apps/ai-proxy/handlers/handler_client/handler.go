@@ -16,7 +16,6 @@ package handler_client
 
 import (
 	"context"
-
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"

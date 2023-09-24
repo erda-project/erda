@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client_model_relation
+package models_test
 
 import (
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-type ClientModelRelation struct {
-	common.BaseModel
-	ClientID string `gorm:"column:client_id;type:char(36)" json:"clientID" yaml:"clientID"`
-	ModelID  string `gorm:"column:model_id;type:char(36)" json:"modelID" yaml:"modelID"`
+func TestMetadata_FromProtobuf(t *testing.T) {
+	// nil metadata
+	var m *models.Metadata
+	m.FromProtobuf(nil)
+	assert.NotNil(t, m)
 }
-
-func (*ClientModelRelation) TableName() string { return "ai_proxy_client_model_relation" }

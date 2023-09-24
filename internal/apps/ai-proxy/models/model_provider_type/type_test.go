@@ -12,32 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package model_provider_type_test
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"fmt"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider_type"
+	"testing"
 )
 
-func (m *Metadata) Scan(src any) error {
-	if src == nil {
-		return nil
-	}
-	v, ok := src.([]byte)
-	if !ok {
-		return fmt.Errorf("invalid src type for metadata, got %T", src)
-	}
-	if len(v) == 0 {
-		return nil
-	}
-	return json.Unmarshal(v, m)
-}
-
-func (m Metadata) Value() (driver.Value, error) {
-	b, err := json.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-	return string(b), nil
+func TestGetModelProviderTypeFromProtobuf(t *testing.T) {
+	t.Log(model_provider_type.GetModelProviderTypeFromProtobuf(pb.ModelProviderType_TYPE_UNSPECIFIED))
+	t.Log(model_provider_type.GetModelProviderTypeFromProtobuf(pb.ModelProviderType_OpenAI))
+	t.Log(model_provider_type.GetModelProviderTypeFromProtobuf(pb.ModelProviderType_Azure))
 }

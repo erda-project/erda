@@ -18,7 +18,13 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/gorm"
+)
+
+var (
+	_ time.Time
 )
 
 var (
@@ -26,130 +32,113 @@ var (
 	_ Lister = (*AIProxyFilterAuditList)(nil)
 )
 
-// FieldID returns the Field interface{} for the field ai_proxy_filter_audit.id
-func (this *AIProxyFilterAudit) FieldID() Field { return field{name: "id"} }
-
-// FieldCreatedAt returns the Field interface{} for the field ai_proxy_filter_audit.created_at
-func (this *AIProxyFilterAudit) FieldCreatedAt() Field { return field{name: "created_at"} }
-
-// FieldUpdatedAt returns the Field interface{} for the field ai_proxy_filter_audit.updated_at
-func (this *AIProxyFilterAudit) FieldUpdatedAt() Field { return field{name: "updated_at"} }
-
-// FieldDeletedAt returns the Field interface{} for the field ai_proxy_filter_audit.deleted_at
-func (this *AIProxyFilterAudit) FieldDeletedAt() Field { return field{name: "deleted_at"} }
+// FieldBaseModel returns the Field interface{} for the field ai_proxy_filter_audit.id
+func (this AIProxyFilterAudit) FieldBaseModel() Field { return field{name: "id"} }
 
 // FieldAPIKeySHA256 returns the Field interface{} for the field ai_proxy_filter_audit.api_key_sha256
-func (this *AIProxyFilterAudit) FieldAPIKeySHA256() Field { return field{name: "api_key_sha256"} }
+func (this AIProxyFilterAudit) FieldAPIKeySHA256() Field { return field{name: "api_key_sha256"} }
 
 // FieldUsername returns the Field interface{} for the field ai_proxy_filter_audit.username
-func (this *AIProxyFilterAudit) FieldUsername() Field { return field{name: "username"} }
+func (this AIProxyFilterAudit) FieldUsername() Field { return field{name: "username"} }
 
 // FieldPhoneNumber returns the Field interface{} for the field ai_proxy_filter_audit.phone_number
-func (this *AIProxyFilterAudit) FieldPhoneNumber() Field { return field{name: "phone_number"} }
+func (this AIProxyFilterAudit) FieldPhoneNumber() Field { return field{name: "phone_number"} }
 
 // FieldJobNumber returns the Field interface{} for the field ai_proxy_filter_audit.job_number
-func (this *AIProxyFilterAudit) FieldJobNumber() Field { return field{name: "job_number"} }
+func (this AIProxyFilterAudit) FieldJobNumber() Field { return field{name: "job_number"} }
 
 // FieldEmail returns the Field interface{} for the field ai_proxy_filter_audit.email
-func (this *AIProxyFilterAudit) FieldEmail() Field { return field{name: "email"} }
+func (this AIProxyFilterAudit) FieldEmail() Field { return field{name: "email"} }
 
 // FieldDingtalkStaffID returns the Field interface{} for the field ai_proxy_filter_audit.dingtalk_staff_id
-func (this *AIProxyFilterAudit) FieldDingtalkStaffID() Field { return field{name: "dingtalk_staff_id"} }
+func (this AIProxyFilterAudit) FieldDingtalkStaffID() Field { return field{name: "dingtalk_staff_id"} }
 
 // FieldSessionID returns the Field interface{} for the field ai_proxy_filter_audit.session_id
-func (this *AIProxyFilterAudit) FieldSessionID() Field { return field{name: "session_id"} }
+func (this AIProxyFilterAudit) FieldSessionID() Field { return field{name: "session_id"} }
 
 // FieldChatType returns the Field interface{} for the field ai_proxy_filter_audit.chat_type
-func (this *AIProxyFilterAudit) FieldChatType() Field { return field{name: "chat_type"} }
+func (this AIProxyFilterAudit) FieldChatType() Field { return field{name: "chat_type"} }
 
 // FieldChatTitle returns the Field interface{} for the field ai_proxy_filter_audit.chat_title
-func (this *AIProxyFilterAudit) FieldChatTitle() Field { return field{name: "chat_title"} }
+func (this AIProxyFilterAudit) FieldChatTitle() Field { return field{name: "chat_title"} }
 
 // FieldChatID returns the Field interface{} for the field ai_proxy_filter_audit.chat_id
-func (this *AIProxyFilterAudit) FieldChatID() Field { return field{name: "chat_id"} }
+func (this AIProxyFilterAudit) FieldChatID() Field { return field{name: "chat_id"} }
 
 // FieldSource returns the Field interface{} for the field ai_proxy_filter_audit.source
-func (this *AIProxyFilterAudit) FieldSource() Field { return field{name: "source"} }
+func (this AIProxyFilterAudit) FieldSource() Field { return field{name: "source"} }
 
 // FieldProviderName returns the Field interface{} for the field ai_proxy_filter_audit.provider_name
-func (this *AIProxyFilterAudit) FieldProviderName() Field { return field{name: "provider_name"} }
+func (this AIProxyFilterAudit) FieldProviderName() Field { return field{name: "provider_name"} }
 
 // FieldProviderInstanceID returns the Field interface{} for the field ai_proxy_filter_audit.provider_instance_id
-func (this *AIProxyFilterAudit) FieldProviderInstanceID() Field {
+func (this AIProxyFilterAudit) FieldProviderInstanceID() Field {
 	return field{name: "provider_instance_id"}
 }
 
 // FieldModel returns the Field interface{} for the field ai_proxy_filter_audit.model
-func (this *AIProxyFilterAudit) FieldModel() Field { return field{name: "model"} }
+func (this AIProxyFilterAudit) FieldModel() Field { return field{name: "model"} }
 
 // FieldOperationID returns the Field interface{} for the field ai_proxy_filter_audit.operation_id
-func (this *AIProxyFilterAudit) FieldOperationID() Field { return field{name: "operation_id"} }
+func (this AIProxyFilterAudit) FieldOperationID() Field { return field{name: "operation_id"} }
 
 // FieldPrompt returns the Field interface{} for the field ai_proxy_filter_audit.prompt
-func (this *AIProxyFilterAudit) FieldPrompt() Field { return field{name: "prompt"} }
+func (this AIProxyFilterAudit) FieldPrompt() Field { return field{name: "prompt"} }
 
 // FieldCompletion returns the Field interface{} for the field ai_proxy_filter_audit.completion
-func (this *AIProxyFilterAudit) FieldCompletion() Field { return field{name: "completion"} }
+func (this AIProxyFilterAudit) FieldCompletion() Field { return field{name: "completion"} }
 
 // FieldReqFuncCallName returns the Field interface{} for the field ai_proxy_filter_audit.req_func_call_name
-func (this *AIProxyFilterAudit) FieldReqFuncCallName() Field {
-	return field{name: "req_func_call_name"}
-}
+func (this AIProxyFilterAudit) FieldReqFuncCallName() Field { return field{name: "req_func_call_name"} }
 
 // FieldReqFuncCallArgs returns the Field interface{} for the field ai_proxy_filter_audit.req_func_call_args
-func (this *AIProxyFilterAudit) FieldReqFuncCallArgs() Field {
-	return field{name: "req_func_call_args"}
-}
+func (this AIProxyFilterAudit) FieldReqFuncCallArgs() Field { return field{name: "req_func_call_args"} }
 
 // FieldResFuncCallName returns the Field interface{} for the field ai_proxy_filter_audit.res_func_call_name
-func (this *AIProxyFilterAudit) FieldResFuncCallName() Field {
-	return field{name: "res_func_call_name"}
-}
+func (this AIProxyFilterAudit) FieldResFuncCallName() Field { return field{name: "res_func_call_name"} }
 
 // FieldResFuncCallArgs returns the Field interface{} for the field ai_proxy_filter_audit.res_func_call_args
-func (this *AIProxyFilterAudit) FieldResFuncCallArgs() Field {
-	return field{name: "res_func_call_args"}
-}
+func (this AIProxyFilterAudit) FieldResFuncCallArgs() Field { return field{name: "res_func_call_args"} }
 
 // FieldMetadata returns the Field interface{} for the field ai_proxy_filter_audit.metadata
-func (this *AIProxyFilterAudit) FieldMetadata() Field { return field{name: "metadata"} }
+func (this AIProxyFilterAudit) FieldMetadata() Field { return field{name: "metadata"} }
 
 // FieldXRequestID returns the Field interface{} for the field ai_proxy_filter_audit.x_request_id
-func (this *AIProxyFilterAudit) FieldXRequestID() Field { return field{name: "x_request_id"} }
+func (this AIProxyFilterAudit) FieldXRequestID() Field { return field{name: "x_request_id"} }
 
 // FieldRequestAt returns the Field interface{} for the field ai_proxy_filter_audit.request_at
-func (this *AIProxyFilterAudit) FieldRequestAt() Field { return field{name: "request_at"} }
+func (this AIProxyFilterAudit) FieldRequestAt() Field { return field{name: "request_at"} }
 
 // FieldResponseAt returns the Field interface{} for the field ai_proxy_filter_audit.response_at
-func (this *AIProxyFilterAudit) FieldResponseAt() Field { return field{name: "response_at"} }
+func (this AIProxyFilterAudit) FieldResponseAt() Field { return field{name: "response_at"} }
 
 // FieldRequestContentType returns the Field interface{} for the field ai_proxy_filter_audit.request_content_type
-func (this *AIProxyFilterAudit) FieldRequestContentType() Field {
+func (this AIProxyFilterAudit) FieldRequestContentType() Field {
 	return field{name: "request_content_type"}
 }
 
 // FieldRequestBody returns the Field interface{} for the field ai_proxy_filter_audit.request_body
-func (this *AIProxyFilterAudit) FieldRequestBody() Field { return field{name: "request_body"} }
+func (this AIProxyFilterAudit) FieldRequestBody() Field { return field{name: "request_body"} }
 
 // FieldResponseContentType returns the Field interface{} for the field ai_proxy_filter_audit.response_content_type
-func (this *AIProxyFilterAudit) FieldResponseContentType() Field {
+func (this AIProxyFilterAudit) FieldResponseContentType() Field {
 	return field{name: "response_content_type"}
 }
 
 // FieldResponseBody returns the Field interface{} for the field ai_proxy_filter_audit.response_body
-func (this *AIProxyFilterAudit) FieldResponseBody() Field { return field{name: "response_body"} }
+func (this AIProxyFilterAudit) FieldResponseBody() Field { return field{name: "response_body"} }
 
 // FieldUserAgent returns the Field interface{} for the field ai_proxy_filter_audit.user_agent
-func (this *AIProxyFilterAudit) FieldUserAgent() Field { return field{name: "user_agent"} }
+func (this AIProxyFilterAudit) FieldUserAgent() Field { return field{name: "user_agent"} }
 
 // FieldServer returns the Field interface{} for the field ai_proxy_filter_audit.server
-func (this *AIProxyFilterAudit) FieldServer() Field { return field{name: "server"} }
+func (this AIProxyFilterAudit) FieldServer() Field { return field{name: "server"} }
 
 // FieldStatus returns the Field interface{} for the field ai_proxy_filter_audit.status
-func (this *AIProxyFilterAudit) FieldStatus() Field { return field{name: "status"} }
+func (this AIProxyFilterAudit) FieldStatus() Field { return field{name: "status"} }
 
 // FieldStatusCode returns the Field interface{} for the field ai_proxy_filter_audit.status_code
-func (this *AIProxyFilterAudit) FieldStatusCode() Field { return field{name: "status_code"} }
+func (this AIProxyFilterAudit) FieldStatusCode() Field { return field{name: "status_code"} }
 
 // Creator returns a Creator interface that you can create record with.
 func (this *AIProxyFilterAudit) Creator(db *gorm.DB) Creator {
@@ -183,18 +172,6 @@ func (this *AIProxyFilterAudit) Deleter(db *gorm.DB) Deleter {
 		where: make([]Where, 0),
 	}
 }
-
-// FieldID returns the Field interface{} for the field ai_proxy_filter_audit.id
-func (list AIProxyFilterAuditList) FieldID() Field { return field{name: "id"} }
-
-// FieldCreatedAt returns the Field interface{} for the field ai_proxy_filter_audit.created_at
-func (list AIProxyFilterAuditList) FieldCreatedAt() Field { return field{name: "created_at"} }
-
-// FieldUpdatedAt returns the Field interface{} for the field ai_proxy_filter_audit.updated_at
-func (list AIProxyFilterAuditList) FieldUpdatedAt() Field { return field{name: "updated_at"} }
-
-// FieldDeletedAt returns the Field interface{} for the field ai_proxy_filter_audit.deleted_at
-func (list AIProxyFilterAuditList) FieldDeletedAt() Field { return field{name: "deleted_at"} }
 
 // FieldAPIKeySHA256 returns the Field interface{} for the field ai_proxy_filter_audit.api_key_sha256
 func (list AIProxyFilterAuditList) FieldAPIKeySHA256() Field { return field{name: "api_key_sha256"} }
@@ -310,6 +287,346 @@ func (list AIProxyFilterAuditList) FieldStatus() Field { return field{name: "sta
 
 // FieldStatusCode returns the Field interface{} for the field ai_proxy_filter_audit.status_code
 func (list AIProxyFilterAuditList) FieldStatusCode() Field { return field{name: "status_code"} }
+
+// FieldBaseModelList returns a slice for the field BaseModel
+
+func (list AIProxyFilterAuditList) FieldBaseModelList() BaseModelList {
+	var results BaseModelList
+	for _, v := range list {
+		results = append(results, &v.BaseModel)
+	}
+	return results
+}
+
+// FieldAPIKeySHA256List returns a slice for the field APIKeySHA256
+
+func (list AIProxyFilterAuditList) FieldAPIKeySHA256List() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.APIKeySHA256)
+	}
+	return results
+}
+
+// FieldUsernameList returns a slice for the field Username
+
+func (list AIProxyFilterAuditList) FieldUsernameList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Username)
+	}
+	return results
+}
+
+// FieldPhoneNumberList returns a slice for the field PhoneNumber
+
+func (list AIProxyFilterAuditList) FieldPhoneNumberList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.PhoneNumber)
+	}
+	return results
+}
+
+// FieldJobNumberList returns a slice for the field JobNumber
+
+func (list AIProxyFilterAuditList) FieldJobNumberList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.JobNumber)
+	}
+	return results
+}
+
+// FieldEmailList returns a slice for the field Email
+
+func (list AIProxyFilterAuditList) FieldEmailList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Email)
+	}
+	return results
+}
+
+// FieldDingtalkStaffIDList returns a slice for the field DingtalkStaffID
+
+func (list AIProxyFilterAuditList) FieldDingtalkStaffIDList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.DingtalkStaffID)
+	}
+	return results
+}
+
+// FieldSessionIDList returns a slice for the field SessionID
+
+func (list AIProxyFilterAuditList) FieldSessionIDList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.SessionID)
+	}
+	return results
+}
+
+// FieldChatTypeList returns a slice for the field ChatType
+
+func (list AIProxyFilterAuditList) FieldChatTypeList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ChatType)
+	}
+	return results
+}
+
+// FieldChatTitleList returns a slice for the field ChatTitle
+
+func (list AIProxyFilterAuditList) FieldChatTitleList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ChatTitle)
+	}
+	return results
+}
+
+// FieldChatIDList returns a slice for the field ChatID
+
+func (list AIProxyFilterAuditList) FieldChatIDList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ChatID)
+	}
+	return results
+}
+
+// FieldSourceList returns a slice for the field Source
+
+func (list AIProxyFilterAuditList) FieldSourceList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Source)
+	}
+	return results
+}
+
+// FieldProviderNameList returns a slice for the field ProviderName
+
+func (list AIProxyFilterAuditList) FieldProviderNameList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ProviderName)
+	}
+	return results
+}
+
+// FieldProviderInstanceIDList returns a slice for the field ProviderInstanceID
+
+func (list AIProxyFilterAuditList) FieldProviderInstanceIDList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ProviderInstanceID)
+	}
+	return results
+}
+
+// FieldModelList returns a slice for the field Model
+
+func (list AIProxyFilterAuditList) FieldModelList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Model)
+	}
+	return results
+}
+
+// FieldOperationIDList returns a slice for the field OperationID
+
+func (list AIProxyFilterAuditList) FieldOperationIDList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.OperationID)
+	}
+	return results
+}
+
+// FieldPromptList returns a slice for the field Prompt
+
+func (list AIProxyFilterAuditList) FieldPromptList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Prompt)
+	}
+	return results
+}
+
+// FieldCompletionList returns a slice for the field Completion
+
+func (list AIProxyFilterAuditList) FieldCompletionList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Completion)
+	}
+	return results
+}
+
+// FieldReqFuncCallNameList returns a slice for the field ReqFuncCallName
+
+func (list AIProxyFilterAuditList) FieldReqFuncCallNameList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ReqFuncCallName)
+	}
+	return results
+}
+
+// FieldReqFuncCallArgsList returns a slice for the field ReqFuncCallArgs
+
+func (list AIProxyFilterAuditList) FieldReqFuncCallArgsList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ReqFuncCallArgs)
+	}
+	return results
+}
+
+// FieldResFuncCallNameList returns a slice for the field ResFuncCallName
+
+func (list AIProxyFilterAuditList) FieldResFuncCallNameList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ResFuncCallName)
+	}
+	return results
+}
+
+// FieldResFuncCallArgsList returns a slice for the field ResFuncCallArgs
+
+func (list AIProxyFilterAuditList) FieldResFuncCallArgsList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ResFuncCallArgs)
+	}
+	return results
+}
+
+// FieldMetadataList returns a slice for the field Metadata
+
+func (list AIProxyFilterAuditList) FieldMetadataList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Metadata)
+	}
+	return results
+}
+
+// FieldXRequestIDList returns a slice for the field XRequestID
+
+func (list AIProxyFilterAuditList) FieldXRequestIDList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.XRequestID)
+	}
+	return results
+}
+
+// FieldRequestAtList returns a slice for the field RequestAt
+
+func (list AIProxyFilterAuditList) FieldRequestAtList() []time.Time {
+	var results []time.Time
+	for _, v := range list {
+		results = append(results, v.RequestAt)
+	}
+	return results
+}
+
+// FieldResponseAtList returns a slice for the field ResponseAt
+
+func (list AIProxyFilterAuditList) FieldResponseAtList() []time.Time {
+	var results []time.Time
+	for _, v := range list {
+		results = append(results, v.ResponseAt)
+	}
+	return results
+}
+
+// FieldRequestContentTypeList returns a slice for the field RequestContentType
+
+func (list AIProxyFilterAuditList) FieldRequestContentTypeList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.RequestContentType)
+	}
+	return results
+}
+
+// FieldRequestBodyList returns a slice for the field RequestBody
+
+func (list AIProxyFilterAuditList) FieldRequestBodyList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.RequestBody)
+	}
+	return results
+}
+
+// FieldResponseContentTypeList returns a slice for the field ResponseContentType
+
+func (list AIProxyFilterAuditList) FieldResponseContentTypeList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ResponseContentType)
+	}
+	return results
+}
+
+// FieldResponseBodyList returns a slice for the field ResponseBody
+
+func (list AIProxyFilterAuditList) FieldResponseBodyList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.ResponseBody)
+	}
+	return results
+}
+
+// FieldUserAgentList returns a slice for the field UserAgent
+
+func (list AIProxyFilterAuditList) FieldUserAgentList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.UserAgent)
+	}
+	return results
+}
+
+// FieldServerList returns a slice for the field Server
+
+func (list AIProxyFilterAuditList) FieldServerList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Server)
+	}
+	return results
+}
+
+// FieldStatusList returns a slice for the field Status
+
+func (list AIProxyFilterAuditList) FieldStatusList() []string {
+	var results []string
+	for _, v := range list {
+		results = append(results, v.Status)
+	}
+	return results
+}
+
+// FieldStatusCodeList returns a slice for the field StatusCode
+
+func (list AIProxyFilterAuditList) FieldStatusCodeList() []int64 {
+	var results []int64
+	for _, v := range list {
+		results = append(results, v.StatusCode)
+	}
+	return results
+}
 
 // Pager returns a Pager that you can query records by paging with.
 func (list *AIProxyFilterAuditList) Pager(db *gorm.DB) Pager {

@@ -17,6 +17,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 	"go/format"
 	"os"
 	"path"
@@ -97,9 +98,9 @@ type Field interface {
 	// NotEqual returns the condition expression "xx != ?, v"
 	NotEqual(v any) Where
 	// In returns the condition expression "xx IN (?), v"
-	In(v []any) Where
+	In(v any) Where
 	// NotIn returns the condition expression "xx NOT IN (?), v" 
-	NotIn(v []any) Where
+	NotIn(v any) Where
 	// LessThan returns the condition expression "xx < ?, v"
 	LessThan(v any) Where
 	// MoreThan returns the condition expression "xx > ?, v" 
@@ -108,6 +109,8 @@ type Field interface {
 	LessEqualThan(v any) Where
 	// MoreEqualThan returns the condition expression "xx >= ?, v" 
 	MoreEqualThan(v any) Where
+	// Like returns the condition expression "xx like ?, v"
+	Like(v any) Where
 	// Set returns a Setter for the Field which will be set in the UPDATE clause. 
 	Set(v any) Setter
 	// DESC means that the query results are sorted in descending order by the Field.
@@ -211,12 +214,18 @@ func (w field) NotEqual(v any) Where {
 	return where{query: w.name + " != ?", args: []any{v}}
 }
 
-func (w field) In(v []any) Where {
-	return where{query: w.name + " in ?", args: []any{v}}
+func (w field) In(v any) Where {
+	if reflect.TypeOf(v).Kind() == reflect.Slice {
+		return where{query: w.name + " IN ?", args: []any{v}}
+	}
+	panic("the argument for In must be a slice")
 }
 
-func (w field) NotIn(v []any) Where {
-	return where{query: w.name + " not in ?", args: []any{v}}
+func (w field) NotIn(v any) Where {
+	if reflect.TypeOf(v).Kind() == reflect.Slice {
+		return where{query: w.name + " NOT IN ?", args: []any{v}}
+	}
+	panic("the argument for NotIn must be a slice")
 }
 
 func (w field) LessThan(v any) Where {
@@ -233,6 +242,10 @@ func (w field) LessEqualThan(v any) Where {
 
 func (w field) MoreEqualThan(v any) Where {
 	return where{query: w.name + " >= ?", args: []any{v}}
+}
+
+func (w field) Like(v any) Where {
+	return where{query: w.name + " LIKE ?", args: []any{v}}
 }
 
 func (w field) DESC() string {
@@ -423,20 +436,35 @@ import (
     "github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
 )
 
+var (
+    _ time.Time
+    _ fields.UUID
+)
+
 // {{.SName}} is the table {{.TableName}}
 type {{.SName}} struct { {{range .Fields}}
     {{.Name}} {{.Type}} {{.Tag}}{{end}}
 }
 
 // TableName returns the table name {{.TableName}}
-func (*{{.SName}}) TableName() string { return "{{.TableName}}" }
+func ({{.SName}}) TableName() string { return "{{.TableName}}" }
 
 type {{.SName}}List []*{{.SName}}
+
+// TableName returns the table name {{.TableName}}
+func ({{.SName}}List) TableName() string { return "{{.TableName}}" }
+
 `
 
 const templateCrud = `
 import (
+	"time"
+
 	"gorm.io/gorm"
+)
+
+var (
+	_ time.Time
 )
 
 var (
@@ -446,7 +474,7 @@ var (
 
 {{range $field := .Fields}}
 // Field{{.Name}} returns the Field interface{} for the field {{$.TableName}}.{{.Column}}
-func (this *{{$.SName}}) Field{{.Name}} () Field { return field{name: "{{.Column}}"} }
+func (this {{$.SName}}) Field{{.Name}} () Field { return field{name: "{{.Column}}"} }
 
 {{end}}
 
@@ -484,9 +512,32 @@ func (this *{{$.SName}}) Deleter(db *gorm.DB) Deleter {
 }
 
 {{range $field := .Fields}}
+{{if ne .Name "BaseModel"}}
 // Field{{.Name}} returns the Field interface{} for the field {{$.TableName}}.{{.Column}}
 func (list {{$.SName}}List) Field{{.Name}} () Field { return field{name: "{{.Column}}"} }
 
+{{end}}
+{{end}}
+
+{{range $field := .Fields}}
+// Field{{.Name}}List returns a slice for the field {{.Name}}
+{{if eq .Name "BaseModel"}}
+func (list {{$.SName}}List) FieldBaseModelList () BaseModelList {
+	var results BaseModelList
+	for _, v := range list {
+		results = append(results, &v.BaseModel)
+	}
+	return results
+}
+{{else}}
+func (list {{$.SName}}List) Field{{.Name}}List () []{{.Type}} {
+	var results []{{.Type}}
+	for _, v := range list {
+		results = append(results, v.{{.Name}})
+	}
+	return results
+}
+{{end}}
 {{end}}
 
 // Pager returns a Pager that you can query records by paging with.
@@ -496,6 +547,84 @@ func (list *{{$.SName}}List) Pager(db *gorm.DB) Pager {
 		list:  list,
 		where: nil,
 	}
+}
+`
+
+const templateBaseModel = `
+import (
+    "time"
+
+    "github.com/erda-project/erda-infra/providers/mysql/v2/plugins/fields"
+)
+
+var (
+	FieldID        = field{name: "id"}
+	FieldCreatedAt = field{name: "created_at"}
+	FieldUpdatedAt = field{name: "updated_at"}
+	FieldDeletedAt = field{name: "deleted_at"}
+)
+
+// BaseModel is the base struct for some models
+type {{.SName}} struct { {{range .Fields}}
+    {{.Name}} {{.Type}} {{.Tag}}{{end}}
+}
+
+// FieldID returns the Field interface{} for the field id
+func (this {{.SName}}) FieldID() Field { return FieldID }
+
+// FieldCreatedAt returns the Field interface{} for the field created_at
+func (this {{.SName}}) FieldCreatedAt() Field { return FieldCreatedAt }
+
+// FieldUpdatedAt returns the Field interface{} for the field updated_at
+func (this {{.SName}}) FieldUpdatedAt() Field { return FieldUpdatedAt }
+
+// FieldDeletedAt returns the Field interface{} for the field deleted_at
+func (this {{.SName}}) FieldDeletedAt() Field { return FieldDeletedAt }
+
+type BaseModelList []*BaseModel
+
+func (list BaseModelList) FieldIDStrList() []String {
+	var results []fields.UUID
+	for _, v := range list {
+		results = append(results, v.ID.String)
+	}
+	return results
+}
+
+func (list BaseModelList) FieldIDList() []fields.UUID {
+	var results []fields.UUID
+	for _, v := range list {
+		results = append(results, v.ID)
+	}
+	return results
+}
+
+func (list BaseModelList) FieldCreatedAtList() []time.Time {
+	var results []time.Time
+	for _, v := range list {
+		results = append(results, v.CreatedAt)
+	}
+	return results
+}
+
+func (list BaseModelList) FieldUpdatedAtList() []time.Time {
+	var results []time.Time
+	for _, v := range list {
+		results = append(results, v.UpdatedAt)
+	}
+	return results
+}
+
+func (list BaseModelList) FieldDeletedAtList() []fields.DeletedAt {
+	var results []fields.DeletedAt
+	for _, v := range list {
+		results = append(results, v.DeletedAt)
+	}
+	return results
+}
+// BaseModelWithID returns a new BaseModel with the string id
+func BaseModelWithID(id string) BaseModel {
+	return BaseModel{ID: fields.UUID{String: id, Valid: true}}
 }
 `
 
@@ -537,15 +666,21 @@ type Package struct {
 }
 
 type Table struct {
-	SName     string
+	// SName is the generated struct name
+	SName string
+	// TableName is the table's name
 	TableName string
-	Fields    []Field
+	// Fields is fields list
+	Fields []Field
 }
 
 type Field struct {
-	Name   string
-	Type   string
-	Tag    string
+	// Name is the field's name in the struct
+	Name string
+	// Type is the field's Go type in the struct
+	Type string
+	Tag  string
+	// Column is the field's gorm column name
 	Column string
 }
 
@@ -573,6 +708,44 @@ func RunGormGen(ctx *command.Context, filename, output string) error {
 		return errors.Wrap(err, "failed to format.Source where.go")
 	}
 	files[path.Join(output, "crud.go")] = source
+
+	// generate base_model.go
+	table := Table{
+		SName:     "BaseModel",
+		TableName: "base_model",
+		Fields: []Field{
+			{
+				Name:   "ID",
+				Type:   "fields.UUID",
+				Tag:    "`gorm:\"column:id;type:char(36)\" json:\"id\" yaml:\"id\"`",
+				Column: "id",
+			}, {
+				Name:   "CreatedAt",
+				Type:   "time.Time",
+				Tag:    "`gorm:\"column:created_at;type:datetime\" json:\"createdAt\" yaml:\"createdAt\"`",
+				Column: "created_at",
+			}, {
+				Name:   "UpdatedAt",
+				Type:   "time.Time",
+				Tag:    "`gorm:\"column:updated_at;type:datetime\" json:\"updatedAt\" yaml:\"updatedAt\"`",
+				Column: "updated_at",
+			}, {
+				Name:   "DeletedAt",
+				Type:   "fields.DeletedAt",
+				Tag:    "`gorm:\"column:deleted_at;type:datetime\" json:\"deletedAt\" yaml:\"deletedAt\"`",
+				Column: "deleted_at",
+			},
+		},
+	}
+	var baseModelBuf bytes.Buffer
+	if err = template.Must(template.New(table.SName).Parse(templateBaseModel)).Execute(&baseModelBuf, table); err != nil {
+		return err
+	}
+	source, err = format.Source(append(packageCommon.Bytes(), baseModelBuf.Bytes()...))
+	if err != nil {
+		return errors.Wrap(err, "failed to format.Source base_model.go")
+	}
+	files[path.Join(output, table.TableName+".go")] = source
 
 	// regenerate package common
 	(&packageCommon).Reset()
@@ -614,6 +787,7 @@ func RunGormGen(ctx *command.Context, filename, output string) error {
 		}
 		source, err = format.Source(append(packageCommon.Bytes(), whereBuf.Bytes()...))
 		if err != nil {
+			fmt.Println(whereBuf.String())
 			return errors.Wrap(err, "failed to format.Source "+table.TableName+"_crud.go")
 		}
 		files[path.Join(output, table.TableName+"_curd.go")] = source
@@ -634,18 +808,69 @@ func Stmt2Struct(stmt *ast.CreateTableStmt) *Table {
 		TableName: stmt.Table.Name.String(),
 		Fields:    nil,
 	}
+	var baseFieldsCount int
 	for _, col := range stmt.Cols {
-		name := TableNameToStructName(col.Name.String())
+		switch col.Name.String() {
+		case "id", "created_at", "updated_at", "deleted_at":
+			baseFieldsCount++
+		default:
+		}
+	}
+	if baseFieldsCount == 4 {
+		t.Fields = append(t.Fields, Field{Name: "BaseModel", Column: "id"})
+	}
+	for _, col := range stmt.Cols {
+		if baseFieldsCount == 4 {
+			switch col.Name.String() {
+			case "id", "created_at", "updated_at", "deleted_at":
+				continue
+			default:
+			}
+		}
+		name := GetFieldNameFromColumn(col)
 		tag := strings.ToLower(name[:1]) + name[1:]
 		tag = strconv.Quote(tag)
 		t.Fields = append(t.Fields, Field{
 			Name:   name,
-			Type:   SQLTypeToGoType(name, col.Tp.Tp),
+			Type:   GetFieldTypeFromColumn(col),
 			Tag:    fmt.Sprintf("`gorm:\"column:%s;type:%s\" json:%s yaml:%s`", col.Name.String(), col.Tp.String(), tag, tag),
 			Column: col.Name.String(),
 		})
 	}
 	return &t
+}
+
+func GetFieldNameFromColumn(col *ast.ColumnDef) string {
+	for _, columnOption := range col.Options {
+		if columnOption.Tp == ast.ColumnOptionComment {
+			if goNameIndex := strings.Index(columnOption.Text(), "goName:"); goNameIndex >= 0 {
+				if lastIndex := strings.Index(columnOption.Text()[goNameIndex:], ";"); lastIndex > 0 {
+					return columnOption.Text()[goNameIndex+7 : goNameIndex+7+lastIndex]
+				} else {
+					return columnOption.Text()[goNameIndex+7:]
+				}
+			}
+		}
+	}
+	return TableNameToStructName(col.Name.String())
+}
+
+func GetFieldTypeFromColumn(col *ast.ColumnDef) string {
+	for _, columnOption := range col.Options {
+		if columnOption.Tp == ast.ColumnOptionComment {
+			if ve, ok := columnOption.Expr.(*driver.ValueExpr); ok {
+				comment := ve.GetString()
+				if goTypeIndex := strings.Index(comment, "goType:"); goTypeIndex >= 0 {
+					if lastIndex := strings.Index(comment[goTypeIndex:], ";"); lastIndex > 0 {
+						return comment[goTypeIndex+7 : goTypeIndex+lastIndex]
+					} else {
+						return comment[goTypeIndex+7:]
+					}
+				}
+			}
+		}
+	}
+	return SQLTypeToGoType(GetFieldNameFromColumn(col), col.Tp.Tp)
 }
 
 func TableNameToStructName(name string) string {
