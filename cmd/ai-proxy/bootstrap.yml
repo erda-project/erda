@@ -5,9 +5,9 @@ grpc-server@ai:
   addr: ":8082"
 
 erda.app.ai-proxy:
-  routesRef: conf/routes.yml
-  logLevel: ${LOG_LEVEL:debug}
-  openOnErda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
+  routes_ref: conf/routes.yml
+  log_level: ${LOG_LEVEL:info}
+  open_on_erda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}
@@ -19,4 +19,4 @@ erda.app.ai-proxy.metrics:
 grpc-client@erda.core.openapi.dynamic_register:
   addr: ${ERDA_SERVER_GRPC_ADDR:erda-server:8096}
   block: false
-erda.core.openapi.dynamic_register-client: {}
+erda.core.openapi.dynamic_register-client: { }

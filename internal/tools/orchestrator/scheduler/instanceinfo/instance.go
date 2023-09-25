@@ -25,7 +25,6 @@ import (
 type InstanceReader struct {
 	db         *dbengine.DBEngine
 	conditions []string
-	values     []interface{}
 	limit      int
 }
 
@@ -54,8 +53,7 @@ func (r *InstanceReader) ByOrgName(name string) *InstanceReader {
 	return r
 }
 func (r *InstanceReader) ByOrgID(id string) *InstanceReader {
-	r.conditions = append(r.conditions, "org_id = ?")
-	r.values = append(r.values, id)
+	r.conditions = append(r.conditions, fmt.Sprintf("org_id = \"%s\"", id))
 	return r
 }
 func (r *InstanceReader) ByProjectName(name string) *InstanceReader {
@@ -79,8 +77,7 @@ func (r *InstanceReader) ByEdgeSite(name string) *InstanceReader {
 	return r
 }
 func (r *InstanceReader) ByApplicationID(id string) *InstanceReader {
-	r.conditions = append(r.conditions, "application_id = ?")
-	r.values = append(r.values, id)
+	r.conditions = append(r.conditions, fmt.Sprintf("application_id = \"%s\"", id))
 	return r
 }
 func (r *InstanceReader) ByRuntimeName(name string) *InstanceReader {
@@ -164,7 +161,7 @@ func (r *InstanceReader) Limit(n int) *InstanceReader {
 }
 func (r *InstanceReader) Do() ([]InstanceInfo, error) {
 	instanceinfo := []InstanceInfo{}
-	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), r.values...).Order("started_at desc")
+	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true)).Order("started_at desc")
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
