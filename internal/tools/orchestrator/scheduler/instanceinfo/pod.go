@@ -25,7 +25,6 @@ import (
 type PodReader struct {
 	db         *dbengine.DBEngine
 	conditions []string
-	values     []interface{}
 	limit      int
 }
 
@@ -53,8 +52,7 @@ func (r *PodReader) ByOrgName(name string) *PodReader {
 	return r
 }
 func (r *PodReader) ByOrgID(id string) *PodReader {
-	r.conditions = append(r.conditions, "org_id = ?")
-	r.values = append(r.values, id)
+	r.conditions = append(r.conditions, fmt.Sprintf("org_id = \"%s\"", id))
 	return r
 }
 func (r *PodReader) ByProjectName(name string) *PodReader {
@@ -70,8 +68,7 @@ func (r *PodReader) ByApplicationName(name string) *PodReader {
 	return r
 }
 func (r *PodReader) ByApplicationID(id string) *PodReader {
-	r.conditions = append(r.conditions, "application_id = ?")
-	r.values = append(r.values, id)
+	r.conditions = append(r.conditions, fmt.Sprintf("application_id = \"%s\"", id))
 	return r
 }
 func (r *PodReader) ByRuntimeName(name string) *PodReader {
@@ -132,7 +129,7 @@ func (r *PodReader) Limit(n int) *PodReader {
 }
 func (r *PodReader) Do() ([]PodInfo, error) {
 	podinfo := []PodInfo{}
-	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), r.values...).Order("started_at desc")
+	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true)).Order("started_at desc")
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
