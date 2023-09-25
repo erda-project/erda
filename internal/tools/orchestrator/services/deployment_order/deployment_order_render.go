@@ -214,7 +214,7 @@ func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, user
 	}
 
 	for _, v := range customAddons {
-		customAddonsMap[v.Name] = 0
+		customAddonsMap[strings.ToUpper(v.Name)] = 0
 	}
 
 	// check addon
@@ -249,7 +249,7 @@ func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, user
 		}
 
 		if extension.Category == apistructs.AddonCustomCategory {
-			_, ok := customAddonsMap[instanceName]
+			_, ok := customAddonsMap[strings.ToUpper(instanceName)]
 			if !ok {
 				failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nCustomAddonNotReady, instanceName))
 				continue
