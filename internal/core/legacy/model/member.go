@@ -92,3 +92,18 @@ func (m *Member) Convert2APIDTO() apistructs.Member {
 		Deleted: m.Deleted,
 	}
 }
+
+type UserJoinedProject struct {
+	ID                 uint64 `json:"id" gorm:"column:id"`
+	UserID             uint64 `json:"userID" gorm:"column:userID"`
+	UserName           string `json:"userName" gorm:"column:userName"`
+	UserNickName       string `json:"userNickName" gorm:"column:userNickName"`
+	UserEmail          string `json:"userEmail" gorm:"column:userEmail"`
+	ProjectID          uint64 `json:"projectID" gorm:"column:projectID"`
+	ProjectName        string `json:"projectName" gorm:"column:projectName"`
+	ProjectDisplayName string `json:"projectDisplayName" gorm:"column:projectDisplayName"`
+	OrgID              uint64 `json:"orgID" gorm:"column:orgID"`
+	OrgName            string `json:"orgName" gorm:"column:orgName"`
+	OrgDisplayName     string `json:"orgDisplayName" gorm:"column:orgDisplayName"`
+	ProjectLabels      string `json:"projectLabels" gorm:"column:projectLabels"`
+}

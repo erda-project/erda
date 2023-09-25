@@ -837,3 +837,10 @@ type MergeBaseResponse struct {
 	Header
 	Data *Commit `json:"data"`
 }
+
+type GittarListRepoRequest struct {
+	OrgIDs     []uint64   `json:"orgIDs"`
+	ProjectIDs []uint64   `json:"projectIDs"`
+	Start      *time.Time `json:"start"`
+	End        *time.Time `json:"end"`
+}

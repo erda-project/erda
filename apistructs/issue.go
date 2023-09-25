@@ -1159,13 +1159,16 @@ type IssueTestCaseRelationsListRequest struct {
 
 // IssueManHourSumRequest 事件下所有的任务总和请求
 type IssuesStageRequest struct {
-	StatisticRange string  `json:"statisticRange"` //事件类型 项目/迭代
-	RangeID        int64   `json:"rangeId"`        //项目id/迭代id
-	StateIDS       []int64 `json:"StateIDs"`       // state id list
+	Assignee       uint64    `json:"assignee"`
+	Owner          uint64    `json:"owner"`
+	IssueType      IssueType `json:"issueType"`
+	StatisticRange string    `json:"statisticRange"` //事件类型 项目/迭代
+	RangeID        int64     `json:"rangeId"`        //项目id/迭代id
+	StateIDs       []int64   `json:"StateIDs"`       // state id list
 }
 
-// IssueManHourSumResponse 事件下所有的任务总和响应
-type IssueManHourSumResponse struct {
+// IssueManHourResponse 事件下所有的任务总和响应
+type IssueManHourResponse struct {
 	// Header
 	DesignManHour               int64 `json:"designManHour"`
 	DevManHour                  int64 `json:"devManHour"`
@@ -1178,6 +1181,13 @@ type IssueManHourSumResponse struct {
 	EstimateManDayGtOneDayNum   int64 `json:"estimateManDayGtOneDayNum"`
 	EstimateManDayGtTwoDayNum   int64 `json:"estimateManDayGtTwoDayNum"`
 	EstimateManDayGtThreeDayNum int64 `json:"estimateManDayGtThreeDayNum"`
+
+	// AVG
+	Total               uint64  `json:"total"`
+	AvgEstimateMinute   float64 `json:"avgEstimateMinute"`
+	AvgElapsedMinute    float64 `json:"avgElapsedMinute"`
+	TotalEstimateMinute uint64  `json:"totalEstimateMinute"`
+	TotalElapsedMinute  uint64  `json:"totalElapsedMinute"`
 }
 
 // IssueBugPercentageResponse 缺陷率响应

@@ -348,6 +348,22 @@ func (repo *Repository) CommitsBetweenLimit(last *Commit, before *Commit, skip i
 	return repo.parsePrettyFormatLogToList(bytes.TrimSpace(stdout))
 }
 
+func (repo *Repository) CommitsBetweenDuration(revision, start, end string) ([]*Commit, error) {
+	args := []string{"log", revision, _PRETTY_LOG_FORMAT}
+	if start != "" {
+		args = append(args, "--since="+start)
+	}
+	if end != "" {
+		args = append(args, "--until="+end)
+	}
+
+	stdout, err := NewCommand(args...).RunInDirBytes(repo.DiskPath())
+	if err != nil {
+		return nil, err
+	}
+	return repo.parsePrettyFormatLogToList(stdout)
+}
+
 // CommitsBetween returns a list that contains commits between [last, before).
 func (repo *Repository) CommitsCountBetween(last *Commit, before *Commit) (int, error) {
 	if before == nil {

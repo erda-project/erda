@@ -16,6 +16,7 @@ package conf
 
 import (
 	"strings"
+	"time"
 
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/envconf"
@@ -55,6 +56,9 @@ type Conf struct {
 	OryKratosAddr          string `default:"kratos-public" env:"ORY_KRATOS_ADDR"`
 	OryKratosPrivateAddr   string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
 	GitRepoTreeSearchDepth int64  `default:"5" env:"GIT_REPO_TREE_SEARCH_DEPTH"`
+
+	// metrics
+	RefreshPersonalContributorDuration time.Duration `default:"12h" env:"REFRESH_PERSONAL_CONTRIBUTOR_DURATION"`
 }
 
 var cfg Conf
@@ -199,4 +203,8 @@ func GitRepoTreeSearchDepth() int64 {
 
 func DiceProtocol() string {
 	return cfg.DiceProtocol
+}
+
+func RefreshPersonalContributorDuration() time.Duration {
+	return cfg.RefreshPersonalContributorDuration
 }

@@ -26,13 +26,14 @@ type WorkbenchRequest struct {
 type WorkbenchItemType string
 
 const (
-	WorkbenchItemProj           WorkbenchItemType = "project"
-	WorkbenchItemApp            WorkbenchItemType = "app"
-	WorkbenchItemUnreadMes      WorkbenchItemType = "unreadMessages"
-	WorkbenchItemTicket         WorkbenchItemType = "tickets"
-	WorkbenchItemApproveRequest WorkbenchItemType = "approveRequest"
-	WorkbenchItemActivities     WorkbenchItemType = "activities"
-	WorkbenchItemDefault                          = WorkbenchItemProj
+	WorkbenchItemProj               WorkbenchItemType = "project"
+	WorkbenchItemApp                WorkbenchItemType = "app"
+	WorkbenchItemPerformanceMeasure WorkbenchItemType = "performance-measure"
+	WorkbenchItemUnreadMes          WorkbenchItemType = "unreadMessages"
+	WorkbenchItemTicket             WorkbenchItemType = "tickets"
+	WorkbenchItemApproveRequest     WorkbenchItemType = "approveRequest"
+	WorkbenchItemActivities         WorkbenchItemType = "activities"
+	WorkbenchItemDefault                              = WorkbenchItemProj
 )
 
 func (w WorkbenchItemType) IsEmpty() bool {

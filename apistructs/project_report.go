@@ -14,6 +14,11 @@
 
 package apistructs
 
+var (
+	validValueOperators = []string{"=", "!=", ">", "<", ">=", "<="}
+	validLabelOperators = []string{"like", "=", "!="}
+)
+
 type ReportFilterOperation struct {
 	Key       string  `json:"key"`
 	Val       float64 `json:"val"`
@@ -24,6 +29,24 @@ type ReportLabelOperation struct {
 	Key       string `json:"key"`
 	Val       string `json:"val"`
 	Operation string `json:"operation"`
+}
+
+func IsValidOperator(operator string) bool {
+	for _, op := range validValueOperators {
+		if op == operator {
+			return true
+		}
+	}
+	return false
+}
+
+func IsValidLabelOperator(operator string) bool {
+	for _, op := range validLabelOperators {
+		if op == operator {
+			return true
+		}
+	}
+	return false
 }
 
 type ProjectReportRequest struct {

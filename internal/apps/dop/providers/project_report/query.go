@@ -31,11 +31,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-var (
-	validValueOperators = []string{"=", "!=", ">", "<", ">=", "<="}
-	validLabelOperators = []string{"like", "=", "!="}
-)
-
 type ProjectReportRow struct {
 	RequirementTotal             float64   `json:"requirementTotal" ch:"requirementTotal"`
 	BugTotal                     float64   `json:"bugTotal" ch:"bugTotal"`
@@ -514,32 +509,14 @@ func checkQueryRequest(req *apistructs.ProjectReportRequest) error {
 		return fmt.Errorf("endTime required")
 	}
 	for _, operation := range req.Operations {
-		if !isValidOperator(operation.Operation) {
+		if !apistructs.IsValidOperator(operation.Operation) {
 			return fmt.Errorf("invalid operation %s", operation.Operation)
 		}
 	}
 	for _, query := range req.LabelQuerys {
-		if !isValidLabelOperator(query.Operation) {
+		if !apistructs.IsValidLabelOperator(query.Operation) {
 			return fmt.Errorf("invalid operation %s", query.Operation)
 		}
 	}
 	return nil
-}
-
-func isValidOperator(operator string) bool {
-	for _, op := range validValueOperators {
-		if op == operator {
-			return true
-		}
-	}
-	return false
-}
-
-func isValidLabelOperator(operator string) bool {
-	for _, op := range validLabelOperators {
-		if op == operator {
-			return true
-		}
-	}
-	return false
 }

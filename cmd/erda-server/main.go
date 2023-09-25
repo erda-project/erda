@@ -138,6 +138,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/cms"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/contribution"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/devflowrule"
+	_ "github.com/erda-project/erda/internal/apps/dop/providers/efficiency_measure"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/guide"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
 	_ "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"

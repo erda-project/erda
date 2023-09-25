@@ -106,6 +106,7 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	wtData := Data{Options: []Option{
 		{Value: apistructs.WorkbenchItemProj.String(), Label: wt.SDK.I18n("project")},
 		{Value: apistructs.WorkbenchItemApp.String(), Label: wt.SDK.I18n("app")},
+		{Value: apistructs.WorkbenchItemPerformanceMeasure.String(), Label: wt.SDK.I18n("performance-measure")},
 	}}
 	apiIdentity := apistructs.Identity{}
 	apiIdentity.UserID = wt.SDK.Identity.UserID

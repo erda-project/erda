@@ -288,6 +288,7 @@ dop: { }
 erda.core.dop.taskerror: { }
 erda.dop.qa.unittest: { }
 project-management-report: { }
+efficiency-measure: { }
 erda.dop.search: { }
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
@@ -404,6 +405,8 @@ etcd-election@msp:
   root_path: "/msp-election"
 etcd-election@project-management-report:
   root_path: "/project-management-report-election"
+etcd-election@efficiency-measure:
+  root_path: "/efficiency-measure-election"
 cassandra:
   _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"

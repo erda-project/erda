@@ -19,6 +19,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/etcd"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
@@ -27,6 +28,8 @@ import (
 )
 
 type provider struct {
+	Log logs.Logger
+
 	ETCD         etcd.Interface             // autowired
 	EtcdClient   *clientv3.Client           // autowired
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
