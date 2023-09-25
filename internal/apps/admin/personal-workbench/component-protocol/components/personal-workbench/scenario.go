@@ -17,7 +17,9 @@ package personal_workbench
 import (
 	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/messageList"
 	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/messageTabs"
+	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/performanceHead"
 	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/workCards"
+	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/workContainer"
 	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/workFilter"
 	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/workList"
 	_ "github.com/erda-project/erda/internal/apps/admin/personal-workbench/component-protocol/components/personal-workbench/workTabs"

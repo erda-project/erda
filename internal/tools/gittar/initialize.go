@@ -15,27 +15,40 @@
 package gittar
 
 import (
+	"context"
+	"fmt"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	ucidentity "github.com/erda-project/erda/internal/core/user/impl/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/api"
 	"github.com/erda-project/erda/internal/tools/gittar/auth"
 	"github.com/erda-project/erda/internal/tools/gittar/cache"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
+	"github.com/erda-project/erda/internal/tools/gittar/metrics"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gc"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/internal/tools/gittar/profiling"
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 	"github.com/erda-project/erda/internal/tools/gittar/webcontext"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/pkg/discover"
 	// "terminus.io/dice/telemetry/promxp"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Initialize 初始化应用启动服务.
 func (p *provider) Initialize() error {
@@ -75,6 +88,22 @@ func (p *provider) Initialize() error {
 	}
 	uc.InitializeUcClient(p.Identity)
 
+	svc := models.NewService(dbClient, diceBundle)
+	collector := metrics.NewCollector(svc)
+	go func() {
+		<-time.NewTimer(time.Duration(rand.Intn(5)) * time.Minute).C
+		rutil.ContinueWorking(context.Background(), p.Log, func(ctx context.Context) rutil.WaitDuration {
+			logrus.Infof("start refresh personal contributors")
+			if err := collector.RefreshPersonalContributions(); err != nil {
+				logrus.Errorf("failed to refresh personal contributors, err: %v", err)
+			}
+
+			return rutil.ContinueWorkingWithDefaultInterval
+		}, rutil.WithContinueWorkingDefaultRetryInterval(conf.RefreshPersonalContributorDuration()))
+	}()
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(collector)
+
 	webcontext.WithDB(dbClient)
 	webcontext.WithBundle(diceBundle)
 	webcontext.WithUCAuth(ucUserAuth)
@@ -83,6 +112,25 @@ func (p *provider) Initialize() error {
 	webcontext.WithOrgClient(p.Org)
 
 	e := echo.New()
+	e.GET("/metrics", func(ctx echo.Context) error {
+		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(ctx.Response(), ctx.Request())
+		return nil
+	})
+	e.POST("/personal-contribution", webcontext.WrapHandler(func(c *webcontext.Context) {
+		var req apistructs.GittarListRepoRequest
+		err := c.BindJSON(&req)
+		if err != nil {
+			c.AbortWithStatus(400, fmt.Errorf("request body parse failed, err: %v", err))
+			return
+		}
+
+		contributors, err := collector.IterateRepos(req)
+		if err != nil {
+			c.AbortWithStatus(400, fmt.Errorf("failed to list personal contributors, err: %v", err))
+			return
+		}
+		c.Success(contributors)
+	}))
 	systemGroup := e.Group("/_system")
 	{
 		systemGroup.GET("/cache/stats", webcontext.WrapHandler(api.ShowCacheStats))

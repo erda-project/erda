@@ -536,8 +536,8 @@ func (client *DBClient) IssueStateCount2(issueIDs []uint64) ([]apistructs.Requir
 	return result, nil
 }
 
-// GetTaskIssueManHourSum get task mam hour sum
-func (client *DBClient) GetTaskIssueManHourSum(req apistructs.IssuesStageRequest) (apistructs.IssueManHourSumResponse, error) {
+// GetIssuesManHour get issues mam hour
+func (client *DBClient) GetIssuesManHour(req apistructs.IssuesStageRequest) (apistructs.IssueManHourResponse, error) {
 	var (
 		issues             []Issue
 		ans                      = make(map[string]int64)
@@ -556,22 +556,34 @@ func (client *DBClient) GetTaskIssueManHourSum(req apistructs.IssuesStageRequest
 			sql = sql.Where("iteration_id in (?)", req.RangeID)
 		}
 	}
-	if len(req.StateIDS) > 0 {
-		sql = sql.Where("state in (?)", req.StateIDS)
+	if req.Assignee != 0 {
+		sql = sql.Where("assignee = ?", req.Assignee)
 	}
-	if err := sql.Where("deleted = ?", 0).Where("type = ?", apistructs.IssueTypeTask).Find(&issues).Error; err != nil {
-		return apistructs.IssueManHourSumResponse{}, err
+	if req.Owner != 0 {
+		sql = sql.Where("owner = ?", req.Owner)
+	}
+	if len(req.IssueType) > 0 {
+		sql = sql.Where("type = ?", req.IssueType)
+	}
+	if len(req.StateIDs) > 0 {
+		sql = sql.Where("state in (?)", req.StateIDs)
+	}
+	if err := sql.Where("deleted = ?", 0).Where("type = ?", req.IssueType).Find(&issues).Error; err != nil {
+		return apistructs.IssueManHourResponse{}, err
 	}
 	// 工时，单位与数据库一致 （人分）
 
+	var total, estimateMinute, elapsedMinute uint64
+	var avgEstimateMinute, avgElapsedMinute float64
 	for _, each := range issues {
 		ret := apistructs.IssueManHour{}
 		if each.ManHour == "" {
 			continue
 		}
+		total++
 		err := json.Unmarshal([]byte(each.ManHour), &ret)
 		if err != nil {
-			return apistructs.IssueManHourSumResponse{}, err
+			return apistructs.IssueManHourResponse{}, err
 		}
 		ans[each.Stage] += ret.ElapsedTime
 		sumElapsedTime += ret.ElapsedTime
@@ -586,8 +598,14 @@ func (client *DBClient) GetTaskIssueManHourSum(req apistructs.IssuesStageRequest
 		if estimateDay > 3 {
 			esitmateDayGtThree++
 		}
+		estimateMinute += uint64(ret.EstimateTime)
+		elapsedMinute += uint64(ret.ElapsedTime)
 	}
-	return apistructs.IssueManHourSumResponse{
+	if total > 0 {
+		avgEstimateMinute = float64(estimateMinute) / float64(total)
+		avgElapsedMinute = float64(elapsedMinute) / float64(total)
+	}
+	return apistructs.IssueManHourResponse{
 		DesignManHour:               ans["design"],
 		DevManHour:                  ans["dev"],
 		TestManHour:                 ans["test"],
@@ -599,6 +617,12 @@ func (client *DBClient) GetTaskIssueManHourSum(req apistructs.IssuesStageRequest
 		EstimateManDayGtOneDayNum:   estimateDayGtOne,
 		EstimateManDayGtTwoDayNum:   esitmateDayGtTwo,
 		EstimateManDayGtThreeDayNum: esitmateDayGtThree,
+
+		Total:               total,
+		AvgEstimateMinute:   avgEstimateMinute,
+		AvgElapsedMinute:    avgElapsedMinute,
+		TotalEstimateMinute: estimateMinute,
+		TotalElapsedMinute:  elapsedMinute,
 	}, nil
 }
 
@@ -776,9 +800,15 @@ func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) 
 func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([]Issue, uint64, error) {
 	var res []Issue
 	sql := client.Table("dice_issues").Joins(joinState)
-	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ? AND assignee = ? AND dice_issue_state.belong IN (?)", req.ProjectID, req.Assignees, req.StateBelongs)
+	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ?", req.ProjectID)
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
+	}
+	if len(req.Assignees) > 0 {
+		sql = sql.Where("assignee IN (?)", req.Assignees)
+	}
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
 	}
 	if req.OrderBy != "" {
 		if req.Asc {
