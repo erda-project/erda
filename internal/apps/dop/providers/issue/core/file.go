@@ -299,6 +299,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 
 	// result
 	dataForFulfill := issueexcel.DataForFulfill{
+		Bdl:                      i.bdl,
 		Locale:                   i.bdl.GetLocale(locale),
 		ProjectID:                projectID,
 		OrgID:                    orgID,
@@ -325,7 +326,6 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 	// import only
 	data.ImportOnly.DB = i.db
 	data.ImportOnly.LabelDB = &labeldao.DBClient{DB: i.db.DB}
-	data.ImportOnly.Bdl = i.bdl
 	data.ImportOnly.Identity = i.identity
 	data.ImportOnly.IssueCore = i
 	// current project issues
@@ -465,6 +465,9 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	dataForFulfill, err := i.createDataForFulfillForExport(req)
 	if err != nil {
 		panic(fmt.Errorf("failed to create data for fulfill, err: %v", err))
+	}
+	if err := dataForFulfill.CheckPermission(); err != nil {
+		panic(err)
 	}
 	if err := issueexcel.ExportFile(&buffer, *dataForFulfill); err != nil {
 		panic(fmt.Errorf("failed to export excel, err: %v", err))

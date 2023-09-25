@@ -61,9 +61,12 @@ func (e *APIError) NotLogin() *APIError {
 }
 
 // AccessDenied 无权限
-func (e *APIError) AccessDenied() *APIError {
-	return e.dup().appendCode(http.StatusForbidden, "AccessDenied").
-		appendLocaleTemplate(templateAccessDenied)
+func (e *APIError) AccessDenied(err ...interface{}) *APIError {
+	e = e.dup().appendCode(http.StatusForbidden, "AccessDenied")
+	if len(err) > 0 {
+		return e.appendLocaleTemplate(templateAccessDenied, toString(err[0]))
+	}
+	return e.appendLocaleTemplate(templateAccessDenied)
 }
 
 // NotFound 资源不存在

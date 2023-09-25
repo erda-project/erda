@@ -15,6 +15,7 @@
 package issueexcel
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -26,8 +27,10 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	legacydao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type DataForFulfill struct {
@@ -35,6 +38,7 @@ type DataForFulfill struct {
 	ImportOnly DataForFulfillImportOnly
 
 	// common
+	Bdl                   *bundle.Bundle
 	UserID                string
 	OrgID                 int64
 	ProjectID             uint64
@@ -57,7 +61,7 @@ type DataForFulfill struct {
 }
 
 type DataForFulfillExportOnly struct {
-	AllProjectIssues         bool
+	AllProjectIssues         bool // 全量导出
 	FileNameWithExt          string
 	Issues                   []*pb.Issue
 	IsDownloadTemplate       bool
@@ -71,7 +75,6 @@ type DataForFulfillExportOnly struct {
 type DataForFulfillImportOnly struct {
 	LabelDB   *legacydao.DBClient
 	DB        *dao.DBClient
-	Bdl       *bundle.Bundle
 	Identity  userpb.UserServiceServer
 	IssueCore pb.IssueCoreServiceServer
 
@@ -118,6 +121,36 @@ func (data *DataForFulfill) JudgeIfIsOldExcelFormat(excelSheets [][][]string) {
 			OriginalErdaProjectID: 0,
 		}
 	}
+}
+
+func (data *DataForFulfill) CheckPermission() error {
+	// 如果是全量导出，则只有项目管理员和项目经理有权限
+	if !data.ExportOnly.AllProjectIssues {
+		return nil
+	}
+	roleResp, err := data.Bdl.ScopeRoleAccess(data.UserID, &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.ProjectScope,
+			ID:   strutil.String(data.ProjectID),
+		},
+	})
+	if err != nil {
+		return apierrors.ErrExportExcelIssue.InternalError(err)
+	}
+	if !roleResp.Access {
+		return apierrors.ErrExportExcelIssue.AccessDenied()
+	}
+	var canExportAll bool
+	for _, role := range roleResp.Roles {
+		if role == bundle.RoleProjectOwner || role == bundle.RoleProjectPM {
+			canExportAll = true
+			break
+		}
+	}
+	if canExportAll {
+		return nil
+	}
+	return apierrors.ErrExportExcelIssue.AccessDenied(fmt.Errorf("only project Owner or PM can export all issues"))
 }
 
 func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
