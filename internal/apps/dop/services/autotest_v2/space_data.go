@@ -132,7 +132,7 @@ func (a *AutoTestSpaceDirector) ConstructFromSceneSet(setID uint64) error {
 	return nil
 }
 
-func (a *AutoTestSpaceData) addSpaceToExcel(file *excel.XlsxFile) error {
+func (a *AutoTestSpaceData) addSpaceToExcel(file *excel.File) error {
 	l := a.svc.bdl.GetLocale(a.Locale)
 	title := []excel.Cell{
 		excel.NewCell(l.Get(i18n.I18nKeySpaceNum)),
@@ -154,7 +154,7 @@ func (a *AutoTestSpaceData) addSpaceToExcel(file *excel.XlsxFile) error {
 	return excel.AddSheetByCell(file, allLines, sheetName)
 }
 
-func (a *AutoTestSpaceData) addSceneSetToExcel(file *excel.XlsxFile) error {
+func (a *AutoTestSpaceData) addSceneSetToExcel(file *excel.File) error {
 	l := a.svc.bdl.GetLocale(a.Locale)
 	title := []excel.Cell{
 		excel.NewCell(l.Get(i18n.I18nKeySceneSetNum)),
@@ -182,7 +182,7 @@ func (a *AutoTestSpaceData) addSceneSetToExcel(file *excel.XlsxFile) error {
 	return excel.AddSheetByCell(file, allLines, sheetName)
 }
 
-func (a *AutoTestSpaceData) addSceneToExcel(file *excel.XlsxFile) error {
+func (a *AutoTestSpaceData) addSceneToExcel(file *excel.File) error {
 	l := a.svc.bdl.GetLocale(a.Locale)
 
 	sceneTitle := []excel.Cell{
@@ -276,7 +276,7 @@ func (a *AutoTestSpaceData) addSceneToExcel(file *excel.XlsxFile) error {
 	return excel.AddSheetByCell(file, allOutputLines, outputSheetName)
 }
 
-func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.XlsxFile) error {
+func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.File) error {
 	l := a.svc.bdl.GetLocale(a.Locale)
 	title := []excel.Cell{
 		excel.NewCell(l.Get(i18n.I18nKeySceneStepNum)),
@@ -331,7 +331,7 @@ func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.XlsxFile) error {
 	return excel.AddSheetByCell(file, allLines, sheetName)
 }
 
-func (a *AutoTestSpaceData) addConfigsToExcel(file *excel.XlsxFile) error {
+func (a *AutoTestSpaceData) addConfigsToExcel(file *excel.File) error {
 	l := a.svc.bdl.GetLocale(a.Locale)
 	configTitle := []excel.Cell{
 		excel.NewCell(l.Get(i18n.I18nKeyConfigScopeName)),

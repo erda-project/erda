@@ -149,7 +149,7 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 	for _, member := range usersNeedToBeAddedAsMember {
 		// add to org first
 		if _, ok := data.OrgMemberByUserID[member.UserID]; !ok {
-			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
+			if err := data.Bdl.AddMember(apistructs.MemberAddRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.OrgScope,
 					ID:   strconv.FormatInt(data.OrgID, 10),
@@ -163,7 +163,7 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 		}
 		// add to project
 		if _, ok := data.ProjectMemberByUserID[member.UserID]; !ok {
-			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
+			if err := data.Bdl.AddMember(apistructs.MemberAddRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.ProjectScope,
 					ID:   strconv.FormatUint(data.ProjectID, 10),
@@ -178,7 +178,7 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 	}
 
 	// refresh member map, because bdl.AddMember won't return new member info
-	orgMember, projectMember, alreadyHaveProjectOwner, err := RefreshDataMembers(data.OrgID, data.ProjectID, data.ImportOnly.Bdl)
+	orgMember, projectMember, alreadyHaveProjectOwner, err := RefreshDataMembers(data.OrgID, data.ProjectID, data.Bdl)
 	if err != nil {
 		return fmt.Errorf("failed to refresh data members, org id: %d, project id: %d, err: %v", data.OrgID, data.ProjectID, err)
 	}
