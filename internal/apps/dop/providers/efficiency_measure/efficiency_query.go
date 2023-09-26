@@ -38,6 +38,7 @@ type PersonalEfficiencyRow struct {
 	UserPosition               string  `json:"userPosition" ch:"userPosition"`
 	UserPositionLevel          string  `json:"userPositionLevel" ch:"userPositionLevel"`
 	JobStatus                  string  `json:"jobStatus" ch:"jobStatus"`
+	ProjectName                string  `json:"projectName" ch:"projectName"`
 	RequirementTotal           float64 `json:"requirementTotal" ch:"requirementTotal"`
 	WorkingRequirementTotal    float64 `json:"workingRequirementTotal" ch:"workingRequirementTotal"`
 	PendingRequirementTotal    float64 `json:"pendingRequirementTotal" ch:"pendingRequirementTotal"`
@@ -77,6 +78,7 @@ type PersonalEfficiencyRow struct {
 	TestProductPDR             float64 `json:"testProductPDR" ch:"testProductPDR"`
 	ProjectFuncPointsTotal     float64 `json:"projectFuncPointsTotal" ch:"projectFuncPointsTotal"`
 	PointParticipationRatio    float64 `json:"pointParticipationRatio" ch:"pointParticipationRatio"`
+	ProductRequirementTotal    float64 `json:"productRequirementTotal" ch:"productRequirementTotal"`
 }
 
 func (p *provider) wrapBadRequest(rw http.ResponseWriter, err error) {
@@ -170,6 +172,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
             max(tag_values[indexOf(tag_keys,'emp_user_position')]) as userPosition,
             max(tag_values[indexOf(tag_keys,'emp_user_position_level')]) as userPositionLevel,
             max(tag_values[indexOf(tag_keys,'emp_job_status')]) as jobStatus,
+            last_value(tag_values[indexOf(tag_keys,'project_name')]) as projectName,
 	       tag_values[indexOf(tag_keys,'org_id')] as orgID,
 	       tag_values[indexOf(tag_keys,'user_id')] as userID,
 	       tag_values[indexOf(tag_keys,'project_id')] as projectID,
@@ -197,6 +200,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_test_func_points_total')]) as testFuncPointsTotal,
            last_value(number_field_values[indexOf(number_field_keys,'project_func_points_total')]) as projectFuncPointsTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_online_bug_total')]) as onlineBugTotal,
+           last_value(number_field_values[indexOf(number_field_keys,'personal_product_requirement_total')]) as productRequirementTotal,
            last_value(number_field_values[indexOf(number_field_keys,'personal_low_level_bug_total')]) as lowLevelBugTotal,
            last_value(number_field_values[indexOf(number_field_keys,'personal_resolved_bug_total')]) as resolvedBugTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'emp_user_actual_manday_total')]) as actualMandayTotal`)
@@ -213,6 +217,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     max(userPosition) as userPosition,
     max(userPositionLevel) as userPositionLevel,
     max(jobStatus) as jobStatus,
+    last_value(projectName) as projectName,
     sum(requirementTotal) as requirementTotal,
     sum(workingRequirementTotal) as workingRequirementTotal,
     sum(pendingRequirementTotal) as pendingRequirementTotal,
@@ -242,6 +247,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     sum(lowLevelBugTotal) as lowLevelBugTotal,
     sum(actualMandayTotal) as actualMandayTotal,
 	sum(projectFuncPointsTotal) as projectFuncPointsTotal,
+    sum(productRequirementTotal) as productRequirementTotal,
     if(bugTotal > 0, onlineBugTotal / bugTotal, 0) as onlineBugRatio,
     if(bugTotal > 0, lowLevelBugTotal / bugTotal, 0) as lowLevelBugRatio,
     if(projectFuncPointsTotal > 0, responsibleFuncPointsTotal / projectFuncPointsTotal, 0) as pointParticipationRatio,
@@ -253,6 +259,9 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     if(devFuncPointsTotal > 0, actualMandayTotal * 8 / devFuncPointsTotal, 0) as devProductPDR,
     if(testFuncPointsTotal > 0, actualMandayTotal * 8 / testFuncPointsTotal, 0) as testProductPDR`).
 			Group("orgID, userID")
+		if req.GroupByProject {
+			tx = tx.Group("projectID")
+		}
 		return tx.Find(&[]PersonalEfficiencyRow{})
 	})
 	return basicSql

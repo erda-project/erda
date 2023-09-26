@@ -15,13 +15,14 @@
 package apistructs
 
 type PersonalEfficiencyRequest struct {
-	Start       string                  `json:"start"`
-	End         string                  `json:"end"`
-	OrgID       uint64                  `json:"orgID"`
-	UserID      uint64                  `json:"userID"`
-	ProjectIDs  []uint64                `json:"projectIDs"`
-	Operations  []ReportFilterOperation `json:"operations"`
-	LabelQuerys []ReportLabelOperation  `json:"labelQuerys"` // deliberately use labelQuerys instead of labelQueries
+	Start          string                  `json:"start"`
+	End            string                  `json:"end"`
+	OrgID          uint64                  `json:"orgID"`
+	UserID         uint64                  `json:"userID"`
+	ProjectIDs     []uint64                `json:"projectIDs"`
+	Operations     []ReportFilterOperation `json:"operations"`
+	LabelQuerys    []ReportLabelOperation  `json:"labelQuerys"` // deliberately use labelQuerys instead of labelQueries
+	GroupByProject bool                    `json:"groupByProject"`
 }
 
 type PersonalContributionRequest struct {
