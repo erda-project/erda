@@ -39,6 +39,7 @@ type PersonalEfficiencyRow struct {
 	UserPositionLevel          string  `json:"userPositionLevel" ch:"userPositionLevel"`
 	JobStatus                  string  `json:"jobStatus" ch:"jobStatus"`
 	ProjectName                string  `json:"projectName" ch:"projectName"`
+	ProjectDisplayName         string  `json:"projectDisplayName" ch:"projectDisplayName"`
 	RequirementTotal           float64 `json:"requirementTotal" ch:"requirementTotal"`
 	WorkingRequirementTotal    float64 `json:"workingRequirementTotal" ch:"workingRequirementTotal"`
 	PendingRequirementTotal    float64 `json:"pendingRequirementTotal" ch:"pendingRequirementTotal"`
@@ -46,6 +47,7 @@ type PersonalEfficiencyRow struct {
 	WorkingTaskTotal           float64 `json:"workingTaskTotal" ch:"workingTaskTotal"`
 	PendingTaskTotal           float64 `json:"pendingTaskTotal" ch:"pendingTaskTotal"`
 	BugTotal                   float64 `json:"bugTotal" ch:"bugTotal"`
+	OwnerBugTotal              float64 `json:"ownerBugTotal" ch:"ownerBugTotal"`
 	PendingBugTotal            float64 `json:"pendingBugTotal" ch:"pendingBugTotal"`
 	WorkingBugTotal            float64 `json:"workingBugTotal" ch:"workingBugTotal"`
 	DesignBugTotal             float64 `json:"designBugTotal" ch:"designBugTotal"`
@@ -173,6 +175,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
             max(tag_values[indexOf(tag_keys,'emp_user_position_level')]) as userPositionLevel,
             max(tag_values[indexOf(tag_keys,'emp_job_status')]) as jobStatus,
             last_value(tag_values[indexOf(tag_keys,'project_name')]) as projectName,
+            last_value(tag_values[indexOf(tag_keys,'project_display_name')]) as projectDisplayName,
 	       tag_values[indexOf(tag_keys,'org_id')] as orgID,
 	       tag_values[indexOf(tag_keys,'user_id')] as userID,
 	       tag_values[indexOf(tag_keys,'project_id')] as projectID,
@@ -183,6 +186,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_working_task_total')]) as workingTaskTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_pending_task_total')]) as pendingTaskTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_bug_total')]) as bug_total,
+           last_value(number_field_values[indexOf(number_field_keys,'personal_owner_bug_total')]) as owner_bug_total,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_pending_bug_total')]) as pendingBugTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_working_bug_total')]) as workingBugTotal,
 	       last_value(number_field_values[indexOf(number_field_keys,'personal_demand_design_bug_total')]) as designBugTotal,
@@ -218,6 +222,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     max(userPositionLevel) as userPositionLevel,
     max(jobStatus) as jobStatus,
     last_value(projectName) as projectName,
+    last_value(projectDisplayName) as projectDisplayName,
     sum(requirementTotal) as requirementTotal,
     sum(workingRequirementTotal) as workingRequirementTotal,
     sum(pendingRequirementTotal) as pendingRequirementTotal,
@@ -233,6 +238,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     sum(reopenBugTotal) as reopenBugTotal,
     sum(submitBugTotal) as submitBugTotal,
     sum(testCaseTotal) as testCaseTotal,
+    sum(owner_bug_total) as ownerBugTotal,
     sum(fix_bug_elapsed_minute) as fixBugElapsedMinute,
     sum(fix_bug_estimate_minute) as fixBugEstimateMinute,
     sum(resolvedBugTotal) as resolvedBugTotal,
@@ -248,13 +254,13 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     sum(actualMandayTotal) as actualMandayTotal,
 	sum(projectFuncPointsTotal) as projectFuncPointsTotal,
     sum(productRequirementTotal) as productRequirementTotal,
-    if(bugTotal > 0, onlineBugTotal / bugTotal, 0) as onlineBugRatio,
-    if(bugTotal > 0, lowLevelBugTotal / bugTotal, 0) as lowLevelBugRatio,
+    if(ownerBugTotal > 0, onlineBugTotal / ownerBugTotal, 0) as onlineBugRatio,
+    if(ownerBugTotal > 0, lowLevelBugTotal / ownerBugTotal, 0) as lowLevelBugRatio,
     if(projectFuncPointsTotal > 0, responsibleFuncPointsTotal / projectFuncPointsTotal, 0) as pointParticipationRatio,
     if(demandFuncPointsTotal > 0, designBugTotal / demandFuncPointsTotal, 0) as requirementDefectDensity,
     if(demandFuncPointsTotal > 0, architectureBugTotal / demandFuncPointsTotal, 0) as demandDefectDensity,
     if(devFuncPointsTotal > 0, bugTotal / devFuncPointsTotal, 0) as devDefectDensity,
-    if(testFuncPointsTotal > 0, bugTotal / testFuncPointsTotal, 0) as bugDefectDensity,
+    if(testFuncPointsTotal > 0, onlineBugTotal / testFuncPointsTotal, 0) as bugDefectDensity,
     if(demandFuncPointsTotal > 0, actualMandayTotal * 8 / demandFuncPointsTotal, 0) as demandProductPDR,
     if(devFuncPointsTotal > 0, actualMandayTotal * 8 / devFuncPointsTotal, 0) as devProductPDR,
     if(testFuncPointsTotal > 0, actualMandayTotal * 8 / testFuncPointsTotal, 0) as testProductPDR`).

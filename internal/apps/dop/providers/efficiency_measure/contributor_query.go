@@ -29,24 +29,26 @@ import (
 )
 
 type PersonalContributorRow struct {
-	OrgID            string  `json:"orgID" ch:"orgID"`
-	UserEmail        string  `json:"userEmail" ch:"userEmail"`
-	ProjectName      string  `json:"projectName" ch:"projectName"`
-	CommitTotal      float64 `json:"commitTotal" ch:"commitTotal"`
-	FileChangedTotal float64 `json:"fileChangedTotal" ch:"fileChangedTotal"`
-	AdditionTotal    float64 `json:"additionTotal" ch:"additionTotal"`
-	DeletionTotal    float64 `json:"deletionTotal" ch:"deletionTotal"`
+	OrgID              string  `json:"orgID" ch:"orgID"`
+	UserEmail          string  `json:"userEmail" ch:"userEmail"`
+	ProjectName        string  `json:"projectName" ch:"projectName"`
+	ProjectDisplayName string  `json:"projectDisplayName" ch:"projectDisplayName"`
+	CommitTotal        float64 `json:"commitTotal" ch:"commitTotal"`
+	FileChangedTotal   float64 `json:"fileChangedTotal" ch:"fileChangedTotal"`
+	AdditionTotal      float64 `json:"additionTotal" ch:"additionTotal"`
+	DeletionTotal      float64 `json:"deletionTotal" ch:"deletionTotal"`
 }
 
 type PersonalActualMandayRow struct {
-	OrgID             string  `json:"orgID" ch:"orgID"`
-	OrgName           string  `json:"orgName" ch:"orgName"`
-	UserID            string  `json:"userID" ch:"userID"`
-	UserName          string  `json:"userName" ch:"userName"`
-	ProjectID         string  `json:"projectID" ch:"projectID"`
-	ProjectName       string  `json:"projectName" ch:"projectName"`
-	ProjectCode       string  `json:"projectCode" ch:"projectCode"`
-	ActualMandayTotal float64 `json:"actualMandayTotal" ch:"actualMandayTotal"`
+	OrgID              string  `json:"orgID" ch:"orgID"`
+	OrgName            string  `json:"orgName" ch:"orgName"`
+	UserID             string  `json:"userID" ch:"userID"`
+	UserName           string  `json:"userName" ch:"userName"`
+	ProjectID          string  `json:"projectID" ch:"projectID"`
+	ProjectName        string  `json:"projectName" ch:"projectName"`
+	ProjectDisplayName string  `json:"projectDisplayName" ch:"projectDisplayName"`
+	ProjectCode        string  `json:"projectCode" ch:"projectCode"`
+	ActualMandayTotal  float64 `json:"actualMandayTotal" ch:"actualMandayTotal"`
 }
 
 func (p *provider) queryPersonalContributors(rw http.ResponseWriter, r *http.Request) {
@@ -134,6 +136,7 @@ func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributionR
             last_value(tag_values[indexOf(tag_keys,'app_name')]) as appName,
             tag_values[indexOf(tag_keys,'app_id')] as appID,
             last_value(tag_values[indexOf(tag_keys,'project_name')]) as projectName,
+            last_value(tag_values[indexOf(tag_keys,'project_display_name')]) as projectDisplayName,
             tag_values[indexOf(tag_keys,'repo_id')] as repoID,
             tag_values[indexOf(tag_keys,'project_id')] as projectID,
             tag_values[indexOf(tag_keys,'org_id')] as orgID,
@@ -167,7 +170,7 @@ func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributionR
     sum(dailyAdditionTotal) as additionTotal,
     sum(dailyDeletionTotal) as deletionTotal`
 		if req.GroupByProject {
-			selectSql += ", last_value(projectName) as projectName"
+			selectSql += ", last_value(projectName) as projectName, last_value(projectDisplayName) as projectDisplayName"
 		}
 		tx = tx.Table(fmt.Sprintf("(%s)", dataSql)).
 			Select(selectSql).
@@ -187,6 +190,7 @@ func (p *provider) makeActualManDaySql(req *apistructs.PersonalContributionReque
 			Select(`last_value(tag_values[indexOf(tag_keys,'org_name')]) as orgName,
     last_value(tag_values[indexOf(tag_keys,'user_name')]) as userName,
     last_value(tag_values[indexOf(tag_keys,'project_name')]) as projectName,
+    last_value(tag_values[indexOf(tag_keys,'project_display_name')]) as projectDisplayName,
 	last_value(tag_values[indexOf(tag_keys,'emp_project_code')]) as projectCode,
     tag_values[indexOf(tag_keys,'project_id')] as projectID,
     tag_values[indexOf(tag_keys,'org_id')] as orgID,
