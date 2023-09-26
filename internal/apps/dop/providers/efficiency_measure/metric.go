@@ -147,6 +147,23 @@ var (
 			},
 		},
 		{
+			name:      "personal_owner_bug_total",
+			help:      "Total number of bug that owner is the user",
+			valueType: prometheus.CounterValue,
+			getValues: func(personalInfo *PersonalPerformanceInfo) metricValues {
+				var value float64
+				if personalInfo.metricFields != nil {
+					value = float64(personalInfo.metricFields.OwnerBugTotal)
+				}
+				return metricValues{
+					{
+						value:     value,
+						timestamp: time.Now(),
+					},
+				}
+			},
+		},
+		{
 			name:      "personal_pending_bug_total",
 			help:      "Total number of pending bugs",
 			valueType: prometheus.CounterValue,
@@ -406,6 +423,7 @@ type personalMetricField struct {
 	WorkingRequirementTotal uint64
 	PendingRequirementTotal uint64
 	BugTotal                uint64
+	OwnerBugTotal           uint64
 	WorkingBugTotal         uint64
 	PendingBugTotal         uint64
 

@@ -24,7 +24,7 @@ type Line struct {
 
 func (client *DBClient) GetBugCountByUserID(userID uint64, projectID uint64, wontfixStateIDS []uint64, stages []string, severities []string, withReopened bool, creator uint64) (uint64, error) {
 	var lines []Line
-	cli := client.Table("dice_issues").Select("id").Where("type = ?", apistructs.IssueTypeBug)
+	cli := client.Table("dice_issues").Select("id").Where("deleted = 0").Where("type = ?", apistructs.IssueTypeBug)
 	if userID != 0 {
 		cli = cli.Where("owner = ?", userID)
 	}
@@ -52,7 +52,7 @@ func (client *DBClient) GetBugCountByUserID(userID uint64, projectID uint64, won
 	return uint64(len(lines)), nil
 }
 
-func (client *DBClient) GetIssueNumByStatesAndUserID(ownerID, assigneeID, projectID uint64, issueType apistructs.IssueType, states []uint64) (uint64, error) {
+func (client *DBClient) GetIssueNumByStatesAndUserID(ownerID, assigneeID, projectID uint64, issueType apistructs.IssueType, states, statesNotIn []uint64) (uint64, error) {
 	var lines []Line
 	cli := client.Table("dice_issues").Where("deleted = 0").Select("id")
 	if ownerID != 0 {
@@ -69,6 +69,9 @@ func (client *DBClient) GetIssueNumByStatesAndUserID(ownerID, assigneeID, projec
 	}
 	if len(states) > 0 {
 		cli = cli.Where("state in (?)", states)
+	}
+	if len(statesNotIn) > 0 {
+		cli = cli.Where("state not in (?)", statesNotIn)
 	}
 	if err := cli.Find(&lines).Error; err != nil {
 		return 0, err

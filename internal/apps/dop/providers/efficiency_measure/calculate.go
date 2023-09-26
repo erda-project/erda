@@ -59,13 +59,13 @@ func (p *provider) calPersonalFields(personalInfo *PersonalPerformanceInfo) (*pe
 	if err != nil {
 		return nil, err
 	}
-	demandBugTotal, err := p.issueDB.GetBugCountByUserID(userID, projectID, wontfixStateIDS, []string{"demandDesign"}, nil, false, 0)
+	demandBugTotal, err := p.issueDB.GetBugCountByUserID(userID, projectID, wontfixStateIDS, p.Cfg.DemandStageList, nil, false, 0)
 	if err != nil {
 		return nil, err
 	}
 	fields.DemandDesignBugTotal = demandBugTotal
 
-	architectureDesignTotal, err := p.issueDB.GetBugCountByUserID(userID, projectID, wontfixStateIDS, []string{"architectureDesign"}, nil, false, 0)
+	architectureDesignTotal, err := p.issueDB.GetBugCountByUserID(userID, projectID, wontfixStateIDS, p.Cfg.ArchitectureStageList, nil, false, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (p *provider) calPersonalFields(personalInfo *PersonalPerformanceInfo) (*pe
 	}
 	fields.ReopenBugTotal = reopenBugTotal
 
-	submitBugTotal, err := p.issueDB.GetBugCountByUserID(0, projectID, nil, nil, nil, false, userID)
+	submitBugTotal, err := p.issueDB.GetBugCountByUserID(0, projectID, wontfixStateIDS, nil, nil, false, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (p *provider) calPersonalFields(personalInfo *PersonalPerformanceInfo) (*pe
 	}
 	fields.CreateTestCaseTotal = testCaseTotal
 
-	requirementTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeRequirement, nil)
+	requirementTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeRequirement, nil, wontfixStateIDS)
 	if err != nil {
 		return nil, err
 	}
@@ -109,49 +109,55 @@ func (p *provider) calPersonalFields(personalInfo *PersonalPerformanceInfo) (*pe
 	if err != nil {
 		return nil, err
 	}
-	workingRequirementTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeRequirement, workingStateIDS)
+	workingRequirementTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeRequirement, workingStateIDS, nil)
 	if err != nil {
 		return nil, err
 	}
 	fields.WorkingRequirementTotal = workingRequirementTotal
 
-	openRequirementTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeRequirement, openStateIDS)
+	openRequirementTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeRequirement, openStateIDS, nil)
 	if err != nil {
 		return nil, err
 	}
 	fields.PendingRequirementTotal = openRequirementTotal
 
-	bugTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeBug, nil)
+	bugTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeBug, nil, wontfixStateIDS)
 	if err != nil {
 		return nil, err
 	}
 	fields.BugTotal = bugTotal
 
-	workingBugTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeBug, workingStateIDS)
+	ownerBugTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(userID, 0, projectID, apistructs.IssueTypeBug, nil, wontfixStateIDS)
+	if err != nil {
+		return nil, err
+	}
+	fields.OwnerBugTotal = ownerBugTotal
+
+	workingBugTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeBug, workingStateIDS, nil)
 	if err != nil {
 		return nil, err
 	}
 	fields.WorkingBugTotal = workingBugTotal
 
-	pendingBugTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeBug, openStateIDS)
+	pendingBugTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeBug, openStateIDS, nil)
 	if err != nil {
 		return nil, err
 	}
 	fields.PendingBugTotal = pendingBugTotal
 
-	taskTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeTask, nil)
+	taskTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeTask, nil, wontfixStateIDS)
 	if err != nil {
 		return nil, err
 	}
 	fields.TaskTotal = taskTotal
 
-	workingTaskTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeTask, workingStateIDS)
+	workingTaskTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeTask, workingStateIDS, nil)
 	if err != nil {
 		return nil, err
 	}
 	fields.WorkingTaskTotal = workingTaskTotal
 
-	pendingTaskTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeTask, openStateIDS)
+	pendingTaskTotal, err := p.issueDB.GetIssueNumByStatesAndUserID(0, userID, projectID, apistructs.IssueTypeTask, openStateIDS, nil)
 	if err != nil {
 		return nil, err
 	}
