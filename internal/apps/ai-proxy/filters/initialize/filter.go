@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package initial
+package initialize
 
 import (
 	"context"
@@ -23,39 +23,39 @@ import (
 )
 
 const (
-	Name = "initial"
+	Name = "initialize"
 )
 
 var (
-	_ reverseproxy.RequestFilter  = (*Initial)(nil)
-	_ reverseproxy.ResponseFilter = (*Initial)(nil)
+	_ reverseproxy.RequestFilter  = (*Initialize)(nil)
+	_ reverseproxy.ResponseFilter = (*Initialize)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type Initial struct {
+type Initialize struct {
 	*reverseproxy.DefaultResponseFilter
 }
 
-// Enable is always true for initial filter
-func (f *Initial) Enable(ctx context.Context, req *http.Request) bool {
+// Enable is always true for initialize filter
+func (f *Initialize) Enable(ctx context.Context, req *http.Request) bool {
 	return true
 }
 
 func New(_ json.RawMessage) (reverseproxy.Filter, error) {
-	return &Initial{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
+	return &Initialize{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
-func (f *Initial) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (f *Initialize) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	return reverseproxy.Continue, nil
 }
 
-func (f *Initial) OnResponseChunkImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) (signal reverseproxy.Signal, err error) {
+func (f *Initialize) OnResponseChunkImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) (signal reverseproxy.Signal, err error) {
 	return reverseproxy.Continue, nil
 }
 
-func (f *Initial) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
+func (f *Initialize) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
 	return nil
 }
