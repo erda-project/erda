@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package initial
+package finalize
 
 import (
 	"context"
@@ -23,39 +23,39 @@ import (
 )
 
 const (
-	Name = "initial"
+	Name = "finalize"
 )
 
 var (
-	_ reverseproxy.RequestFilter  = (*Initial)(nil)
-	_ reverseproxy.ResponseFilter = (*Initial)(nil)
+	_ reverseproxy.RequestFilter  = (*Finalize)(nil)
+	_ reverseproxy.ResponseFilter = (*Finalize)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type Initial struct {
+type Finalize struct {
 	*reverseproxy.DefaultResponseFilter
 }
 
 // Enable is always true for initial filter
-func (f *Initial) Enable(ctx context.Context, req *http.Request) bool {
+func (f *Finalize) Enable(ctx context.Context, req *http.Request) bool {
 	return true
 }
 
 func New(_ json.RawMessage) (reverseproxy.Filter, error) {
-	return &Initial{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
+	return &Finalize{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
-func (f *Initial) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (f *Finalize) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	return reverseproxy.Continue, nil
 }
 
-func (f *Initial) OnResponseChunkImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) (signal reverseproxy.Signal, err error) {
+func (f *Finalize) OnResponseChunkImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) (signal reverseproxy.Signal, err error) {
 	return reverseproxy.Continue, nil
 }
 
-func (f *Initial) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
+func (f *Finalize) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
 	return nil
 }

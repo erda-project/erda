@@ -20,6 +20,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/body-size-limit"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/finalize"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/initial"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/message-context"

@@ -36,6 +36,7 @@ import (
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -131,12 +132,8 @@ func (f *Audit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reve
 	return reverseproxy.Continue, nil
 }
 
-func (f *Audit) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
-	var l = ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
-	if err := f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk); err != nil {
-		l.Errorf("failed to f.DefaultResponseFilter.OnResponseEOF, err: %v", err)
-		return err
-	}
+func (f *Audit) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
+	var l = ctxhelper.GetLogger(ctx)
 
 	for _, set := range []any{
 		f.SetResponseAt,

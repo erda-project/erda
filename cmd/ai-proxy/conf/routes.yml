@@ -33,3 +33,4 @@ routes:
         config:
           sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
       - name: audit
+      - name: finalize

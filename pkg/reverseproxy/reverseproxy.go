@@ -534,6 +534,9 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 
 		if nr > 0 {
 			nextReader := buf[:nr] // buf for next filter to write into
+			copiedChunk := make([]byte, nr)
+			copy(copiedChunk, buf[:nr])
+		LoopOnResponseChunk:
 			for i := 0; i < len(p.Filters); i++ {
 				filter, ok := p.Filters[i].Filter.(ResponseFilter)
 				if !ok {
@@ -544,10 +547,22 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					logger.Debugf("the filter %s.OnResponseChunk is not enabled on the request", reflect.TypeOf(filter).String())
 					continue
 				}
+				signal, err := filter.OnResponseChunkImmutable(ctx, NewInfor(p.Context, response), copiedChunk)
+				if err != nil {
+					logger.Errorf("%T.OnResponseChunkImmutable signal: %v, err: %v", filter, signal, err)
+					return rw.Filter.(*responseBodyWriter).written, err
+				}
+				if signal == Intercept {
+					logger.Debugf("%T.OnResponseChunkImmutable signal: %v, break", filter, signal)
+					break LoopOnResponseChunk
+				}
 				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); {
 				case err != nil:
 					logger.Errorf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
+				case signal == Intercept:
+					logger.Debugf("%T.OnResponseChunk signal: %v, break", filter, signal)
+					break LoopOnResponseChunk
 				default:
 					nextReader = nextWriter.Bytes()
 					nextWriter.Reset()
@@ -556,6 +571,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 		}
 		if rerr != nil {
 			var nextReader []byte
+			var copiedReader []byte
 			nextWriter.Reset()
 			for i := 0; i < len(p.Filters); i++ {
 				filter, ok := p.Filters[i].Filter.(ResponseFilter)
@@ -567,11 +583,16 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					logger.Debugf("the filter %s.OnResponseEOF is not enabled on the request", reflect.TypeOf(filter).String())
 					continue
 				}
+				if err := filter.OnResponseEOFImmutable(ctx, NewInfor(p.Context, response), copiedReader); err != nil {
+					logger.Errorf("%T.OnResponseEOFImmutable, err: %v", filter, err)
+					return rw.Filter.(*responseBodyWriter).written, err
+				}
 				if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); err != nil {
 					logger.Errorf("%T.OnResponseEOF, err: %v", filter, err)
 					return rw.Filter.(*responseBodyWriter).written, err
 				}
 				nextReader = nextWriter.Bytes()
+				copy(copiedReader, nextReader)
 				nextWriter.Reset()
 			}
 			if rerr == io.EOF {
