@@ -386,7 +386,7 @@ func (a *AutoTestSpaceData) addConfigsToExcel(file *excel.XlsxFile) error {
 
 // ConvertToExcel export space`s data to excel
 func (a *AutoTestSpaceData) ConvertToExcel(w io.Writer, fileName string) error {
-	file := excel.NewXLSXFile()
+	file := excel.NewFile()
 	if err := a.addSpaceToExcel(file); err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func (a *AutoTestSpaceData) ConvertToExcel(w io.Writer, fileName string) error {
 }
 
 func (a *AutoTestSpaceData) ConvertSceneSetToExcel(w io.Writer, fileName string) error {
-	file := excel.NewXLSXFile()
+	file := excel.NewFile()
 	if err := a.addSceneSetToExcel(file); err != nil {
 		return err
 	}

@@ -15,13 +15,14 @@
 package excel
 
 import (
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/tealeg/xlsx/v3"
 )
 
-// Decode excel file to [][]string
+// Decode excel file to [][][]string
 // return []sheet{[]row{[]cell}}
 // cell 的值即使为空，也可通过下标访问，不会出现越界问题
 func Decode(r io.Reader) ([][][]string, error) {
@@ -38,4 +39,46 @@ func Decode(r io.Reader) ([][][]string, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+// DecodeToSheets decode excel file to map[sheetName]sheet.
+// So you can get sheet by sheetName.
+func DecodeToSheets(r io.Reader) (map[string]Sheet, error) {
+	tmpF, err := os.CreateTemp("", "excel-")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := io.Copy(tmpF, r); err != nil {
+		return nil, err
+	}
+	f, err := xlsx.OpenFile(tmpF.Name(), xlsx.ValueOnly(), xlsx.RowLimit(xlsx.NoRowLimit), xlsx.ColLimit(xlsx.NoColLimit))
+	if err != nil {
+		return nil, err
+	}
+	sheets := make(map[string]Sheet)
+	for _, sheet := range f.Sheets {
+		sheets[sheet.Name] = NewSheet(sheet)
+	}
+	return sheets, nil
+}
+
+func (sheet *Sheet) DecodeSheetToSlice() ([][]string, error) {
+	output, err := sheet.File.ToSliceUnmerged()
+	if err != nil {
+		return nil, err
+	}
+	// get sheet order
+	var found bool
+	var sheetOrder int
+	for i, s := range sheet.File.XlsxFile.Sheets {
+		if s.Name == sheet.XlsxSheet.Name {
+			sheetOrder = i
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("sheet not found, sheetName: %s", sheet.XlsxSheet.Name)
+	}
+	return output[sheetOrder], nil
 }

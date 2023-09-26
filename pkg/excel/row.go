@@ -15,10 +15,47 @@
 package excel
 
 import (
+	"sync"
+
 	"github.com/tealeg/xlsx/v3"
 )
 
 type Row []Cell
 type Rows []Row
 type Column []Cell
-type Sheet *xlsx.Sheet
+type Sheet struct {
+	XlsxSheet *xlsx.Sheet
+	File      File
+}
+type File struct {
+	XlsxFile      *xlsx.File
+	UnmergedSlice [][][]string
+
+	decoded bool
+	sync.Mutex
+}
+
+func NewFile() *File {
+	return &File{XlsxFile: xlsx.NewFile()}
+}
+
+func NewSheet(sheet *xlsx.Sheet) Sheet {
+	return Sheet{XlsxSheet: sheet, File: File{XlsxFile: sheet.File}}
+}
+
+func (f *File) ToSliceUnmerged() ([][][]string, error) {
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+
+	if f.decoded {
+		return f.UnmergedSlice, nil
+	}
+	result, err := f.XlsxFile.ToSliceUnmerged()
+	if err != nil {
+		return nil, err
+	}
+	f.decoded = true
+	f.UnmergedSlice = result
+
+	return result, nil
+}

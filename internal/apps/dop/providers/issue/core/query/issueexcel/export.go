@@ -22,7 +22,7 @@ import (
 )
 
 func ExportFile(w io.Writer, data DataForFulfill) (err error) {
-	xlsxFile := excel.NewXLSXFile()
+	xlsxFile := excel.NewFile()
 	multiWriter := io.MultiWriter(w)
 	defer func() {
 		if err == nil {
