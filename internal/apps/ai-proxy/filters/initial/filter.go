@@ -39,7 +39,7 @@ type Initial struct {
 	*reverseproxy.DefaultResponseFilter
 }
 
-// Enable is always true for initialize filter
+// Enable is always true for initial filter
 func (f *Initial) Enable(ctx context.Context, req *http.Request) bool {
 	return true
 }
@@ -50,4 +50,12 @@ func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 
 func (f *Initial) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	return reverseproxy.Continue, nil
+}
+
+func (f *Initial) OnResponseChunkImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) (signal reverseproxy.Signal, err error) {
+	return reverseproxy.Continue, nil
+}
+
+func (f *Initial) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
+	return nil
 }
