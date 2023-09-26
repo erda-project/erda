@@ -45,7 +45,6 @@ func (d *DefaultResponseFilter) OnResponseChunk(ctx context.Context, _ HttpInfor
 	}
 	return map[bool]Signal{true: Continue, false: Intercept}[err == nil], err
 }
-
 func (d *DefaultResponseFilter) OnResponseChunkImmutable(ctx context.Context, _ HttpInfor, copiedChunk []byte) (signal Signal, err error) {
 	return Continue, nil
 }
@@ -60,7 +59,6 @@ func (d *DefaultResponseFilter) OnResponseEOF(ctx context.Context, _ HttpInfor, 
 	}
 	return err
 }
-
 func (d *DefaultResponseFilter) OnResponseEOFImmutable(ctx context.Context, _ HttpInfor, copiedChunk []byte) (err error) {
 	return nil
 }

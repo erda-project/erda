@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package initialize
+package initial
 
 import (
 	"context"
@@ -23,31 +23,31 @@ import (
 )
 
 const (
-	Name = "initialize"
+	Name = "initial"
 )
 
 var (
-	_ reverseproxy.RequestFilter  = (*Initialize)(nil)
-	_ reverseproxy.ResponseFilter = (*Initialize)(nil)
+	_ reverseproxy.RequestFilter  = (*Initial)(nil)
+	_ reverseproxy.ResponseFilter = (*Initial)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type Initialize struct {
+type Initial struct {
 	*reverseproxy.DefaultResponseFilter
 }
 
 // Enable is always true for initialize filter
-func (f *Initialize) Enable(ctx context.Context, req *http.Request) bool {
+func (f *Initial) Enable(ctx context.Context, req *http.Request) bool {
 	return true
 }
 
 func New(_ json.RawMessage) (reverseproxy.Filter, error) {
-	return &Initialize{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
+	return &Initial{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
-func (f *Initialize) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (f *Initial) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	return reverseproxy.Continue, nil
 }
