@@ -2,7 +2,7 @@ zh:
   Count: 数
   project: 项目
   app: 应用
-  performance-measure: 效能度量
+  efficiency-measurement: 效能度量
   star application: 星标应用
   star project: 星标项目
   api design: api设计
@@ -103,7 +103,7 @@ en:
   reject: Reject
   project: Projects
   app: Apps
-  performance-measure: Performance Measure
+  efficiency-measurement: Efficiency Measurement
   star application: Starred apps
   star project: Starred projects
   cancel star: Unstar

@@ -54,7 +54,7 @@ func (client *DBClient) GetBugCountByUserID(userID uint64, projectID uint64, won
 
 func (client *DBClient) GetIssueNumByStatesAndUserID(ownerID, assigneeID, projectID uint64, issueType apistructs.IssueType, states []uint64) (uint64, error) {
 	var lines []Line
-	cli := client.Table("dice_issues").Select("id")
+	cli := client.Table("dice_issues").Where("deleted = 0").Select("id")
 	if ownerID != 0 {
 		cli = cli.Where("owner = ?", ownerID)
 	}
