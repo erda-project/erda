@@ -49,6 +49,17 @@ type ResponseFilter interface {
 	// OnResponseEOF 当 OnResponseEOF 被调用时, 表示这是最后一次传入 response chunk, OnResponseEOF 应当做一些收尾工作.
 	// 比如 OnResponseChunk 截留了的数据, 可以在此时写入 w Writer.
 	OnResponseEOF(ctx context.Context, infor HttpInfor, w Writer, chunk []byte) error
+
+	ImmutableResponseFilter
+}
+
+type ImmutableResponseFilter interface {
+	// OnResponseChunkImmutable 对比 OnResponseChunk，不传入 w Writer，且传入的是 chunk 的拷贝，
+	// 因此对后续 filter 无影响，只是用于读取 chunk 数据并处理
+	OnResponseChunkImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) (signal Signal, err error)
+	// OnResponseEOFImmutable 对比 OnResponseEOF，不传入 w Writer，且传入的是 chunk 的拷贝，
+	// 因此对后续 filter 无影响，只是用于读取 chunk 数据并处理
+	OnResponseEOFImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) error
 }
 
 type Enable interface {
