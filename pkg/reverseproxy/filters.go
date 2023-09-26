@@ -77,7 +77,7 @@ func (r *responseBodyWriter) OnResponseChunk(ctx context.Context, infor HttpInfo
 	return Intercept, r.write(chunk)
 }
 func (r *responseBodyWriter) OnResponseChunkImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) (signal Signal, err error) {
-	return Intercept, nil
+	return Continue, nil
 }
 
 // OnResponseEOF responseBodyWriter 是一个特殊 ResponseFilter, 它不将数据写入传入的 io.Writer (即传递到下一个 filter),

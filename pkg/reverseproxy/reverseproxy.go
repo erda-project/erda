@@ -536,6 +536,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 			nextReader := buf[:nr] // buf for next filter to write into
 			copiedChunk := make([]byte, nr)
 			copy(copiedChunk, buf[:nr])
+		LoopOnResponseChunk:
 			for i := 0; i < len(p.Filters); i++ {
 				filter, ok := p.Filters[i].Filter.(ResponseFilter)
 				if !ok {
@@ -546,14 +547,22 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					logger.Debugf("the filter %s.OnResponseChunk is not enabled on the request", reflect.TypeOf(filter).String())
 					continue
 				}
-				if signal, err := filter.OnResponseChunkImmutable(ctx, NewInfor(p.Context, response), copiedChunk); err != nil {
+				signal, err := filter.OnResponseChunkImmutable(ctx, NewInfor(p.Context, response), copiedChunk)
+				if err != nil {
 					logger.Errorf("%T.OnResponseChunkImmutable signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
+				}
+				if signal == Intercept {
+					logger.Debugf("%T.OnResponseChunkImmutable signal: %v, break", filter, signal)
+					break LoopOnResponseChunk
 				}
 				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); {
 				case err != nil:
 					logger.Errorf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
+				case signal == Intercept:
+					logger.Debugf("%T.OnResponseChunk signal: %v, break", filter, signal)
+					break LoopOnResponseChunk
 				default:
 					nextReader = nextWriter.Bytes()
 					nextWriter.Reset()
