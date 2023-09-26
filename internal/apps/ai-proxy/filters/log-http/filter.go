@@ -83,7 +83,7 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	return reverseproxy.Continue, nil
 }
 
-func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
+func (f *LogHttp) OnResponseChunkImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) (signal reverseproxy.Signal, err error) {
 	if !f.headerPrinted {
 		var l = ctxhelper.GetLogger(ctx)
 		var m = map[string]any{
@@ -97,7 +97,7 @@ func (f *LogHttp) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpIn
 	return reverseproxy.Continue, nil
 }
 
-func (f *LogHttp) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
+func (f *LogHttp) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
 	var l = ctxhelper.GetLogger(ctx)
 	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
 		l.Debugf("received response content: %s", f.String())
