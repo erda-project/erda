@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package initial
+package initialize
 
 import (
 	"context"
@@ -23,39 +23,31 @@ import (
 )
 
 const (
-	Name = "initial"
+	Name = "initialize"
 )
 
 var (
-	_ reverseproxy.RequestFilter  = (*Initial)(nil)
-	_ reverseproxy.ResponseFilter = (*Initial)(nil)
+	_ reverseproxy.RequestFilter  = (*Initialize)(nil)
+	_ reverseproxy.ResponseFilter = (*Initialize)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type Initial struct {
+type Initialize struct {
 	*reverseproxy.DefaultResponseFilter
 }
 
-// Enable is always true for initial filter
-func (f *Initial) Enable(ctx context.Context, req *http.Request) bool {
+// Enable is always true for initialize filter
+func (f *Initialize) Enable(ctx context.Context, req *http.Request) bool {
 	return true
 }
 
 func New(_ json.RawMessage) (reverseproxy.Filter, error) {
-	return &Initial{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
+	return &Initialize{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
 }
 
-func (f *Initial) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (f *Initialize) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	return reverseproxy.Continue, nil
-}
-
-func (f *Initial) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
-	return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk)
-}
-
-func (f *Initial) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
-	return f.DefaultResponseFilter.OnResponseEOF(ctx, infor, w, chunk)
 }
