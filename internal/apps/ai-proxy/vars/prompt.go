@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	UserPromptStart = "|start|"
-	UserPromptEnd   = "|end|"
+	UserPromptStart = "'''\n"
+	UserPromptEnd   = "\n'''"
 )
 
 func UnwrapUserPrompt(v string) string {
