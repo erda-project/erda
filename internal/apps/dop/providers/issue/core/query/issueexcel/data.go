@@ -125,7 +125,7 @@ func (data *DataForFulfill) JudgeIfIsOldExcelFormat(excelSheets [][][]string) {
 
 func (data *DataForFulfill) CheckPermission() error {
 	// 如果是全量导出，则只有项目管理员和项目经理有权限
-	if !data.ExportOnly.AllProjectIssues {
+	if !data.IsFullExport() {
 		return nil
 	}
 	roleResp, err := data.Bdl.ScopeRoleAccess(data.UserID, &apistructs.ScopeRoleAccessRequest{
@@ -151,6 +151,10 @@ func (data *DataForFulfill) CheckPermission() error {
 		return nil
 	}
 	return apierrors.ErrExportExcelIssue.AccessDenied(fmt.Errorf("only project Owner or PM can export all issues"))
+}
+
+func (data *DataForFulfill) IsFullExport() bool {
+	return data.ExportOnly.AllProjectIssues
 }
 
 func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {

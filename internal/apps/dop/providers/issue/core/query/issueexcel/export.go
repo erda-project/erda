@@ -21,8 +21,15 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func ExportFile(w io.Writer, data DataForFulfill) error {
+func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	xlsxFile := excel.NewXLSXFile()
+	multiWriter := io.MultiWriter(w)
+	defer func() {
+		if err == nil {
+			err = excel.WriteFile(multiWriter, xlsxFile, data.ExportOnly.FileNameWithExt)
+		}
+	}()
+
 	// issue sheet
 	issueExcelRows, err := ExportIssueSheetLines(data)
 	if err != nil {
@@ -31,6 +38,12 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(issueExcelRows), "issue"); err != nil {
 		return fmt.Errorf("failed to add issue sheet, err: %v", err)
 	}
+
+	// only full export need to export other sheets
+	if !data.IsFullExport() {
+		return nil
+	}
+
 	// user sheet
 	userExcelRows, err := data.genUserSheet()
 	if err != nil {
@@ -79,8 +92,8 @@ func ExportFile(w io.Writer, data DataForFulfill) error {
 	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(stateExcelRows), "state"); err != nil {
 		return fmt.Errorf("failed to add state sheet, err: %v", err)
 	}
-	multiWriter := io.MultiWriter(w)
-	return excel.WriteFile(multiWriter, xlsxFile, data.ExportOnly.FileNameWithExt)
+
+	return nil
 }
 
 func ExportIssueSheetLines(data DataForFulfill) (excel.Rows, error) {
