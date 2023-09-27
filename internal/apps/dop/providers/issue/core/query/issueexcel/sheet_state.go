@@ -56,11 +56,15 @@ func (data DataForFulfill) genStateSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeStateSheet(excelSheets [][][]string) ([]dao.IssueState, []dao.IssueStateJoinSQL, error) {
+func (data DataForFulfill) decodeStateSheet(df excel.DecodedFile) ([]dao.IssueState, []dao.IssueStateJoinSQL, error) {
 	if data.IsOldExcelFormat() {
 		return nil, nil, nil
 	}
-	sheet := excelSheets[indexOfSheetState]
+	s, ok := df.Sheets.M[nameOfSheetState]
+	if !ok {
+		return nil, nil, nil
+	}
+	sheet := s.UnmergedSlice
 	// check sheet
 	if len(sheet) <= 1 {
 		return nil, nil, fmt.Errorf("invalid state sheet, title or data not found")

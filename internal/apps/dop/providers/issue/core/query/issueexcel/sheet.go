@@ -15,11 +15,11 @@
 package issueexcel
 
 const (
-	indexOfSheetIssue = iota
-	indexOfSheetUser
-	indexOfSheetLabel
-	indexOfSheetCustomField
-	indexOfSheetBaseInfo
-	indexOfSheetIteration
-	indexOfSheetState
+	nameOfSheetIssue       = "issue"
+	nameOfSheetUser        = "user"
+	nameOfSheetLabel       = "label"
+	nameOfSheetCustomField = "custom_field"
+	nameOfSheetBaseInfo    = "base_info"
+	nameOfSheetIteration   = "iteration"
+	nameOfSheetState       = "state"
 )

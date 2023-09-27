@@ -52,11 +52,15 @@ func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeUserSheet(excelSheets [][][]string) ([]apistructs.Member, error) {
+func (data DataForFulfill) decodeUserSheet(df excel.DecodedFile) ([]apistructs.Member, error) {
 	if data.IsOldExcelFormat() {
 		return nil, nil
 	}
-	sheet := excelSheets[indexOfSheetUser]
+	s, ok := df.Sheets.M[nameOfSheetUser]
+	if !ok {
+		return nil, nil
+	}
+	sheet := s.UnmergedSlice
 	// check title
 	if len(sheet) < 1 {
 		return nil, fmt.Errorf("user sheet is empty")

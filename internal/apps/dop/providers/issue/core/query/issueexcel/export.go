@@ -35,7 +35,7 @@ func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to export issue sheet, err: %v", err)
 	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(issueExcelRows), "issue"); err != nil {
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(issueExcelRows), nameOfSheetIssue); err != nil {
 		return fmt.Errorf("failed to add issue sheet, err: %v", err)
 	}
 
@@ -49,7 +49,7 @@ func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to gen user sheet, err: %v", err)
 	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(userExcelRows), "user"); err != nil {
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(userExcelRows), nameOfSheetUser); err != nil {
 		return fmt.Errorf("failed to add user sheet, err: %v", err)
 	}
 	// label sheet
@@ -57,7 +57,7 @@ func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to gen label sheet, err: %v", err)
 	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(labelExcelRows), "label"); err != nil {
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(labelExcelRows), nameOfSheetLabel); err != nil {
 		return fmt.Errorf("failed to add label sheet, err: %v", err)
 	}
 	// custom field sheet
@@ -65,7 +65,7 @@ func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to gen custom field sheet, err: %v", err)
 	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(customFieldExcelRows), "custom_field"); err != nil {
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(customFieldExcelRows), nameOfSheetCustomField); err != nil {
 		return fmt.Errorf("failed to add custom field sheet, err: %v", err)
 	}
 	// meta sheet
@@ -73,7 +73,7 @@ func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to gen meta sheet, err: %v", err)
 	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(baseInfoExcelRows), "base_info"); err != nil {
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(baseInfoExcelRows), nameOfSheetBaseInfo); err != nil {
 		return fmt.Errorf("failed to add meta sheet, err: %v", err)
 	}
 	// iteration sheet
@@ -81,7 +81,7 @@ func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to gen iteration sheet, err: %v", err)
 	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(iterationExcelRows), "iteration"); err != nil {
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(iterationExcelRows), nameOfSheetIteration); err != nil {
 		return fmt.Errorf("failed to add iteration sheet, err: %v", err)
 	}
 	// state sheet
@@ -89,7 +89,7 @@ func ExportFile(w io.Writer, data DataForFulfill) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to gen state sheet, err: %v", err)
 	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(stateExcelRows), "state"); err != nil {
+	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(stateExcelRows), nameOfSheetState); err != nil {
 		return fmt.Errorf("failed to add state sheet, err: %v", err)
 	}
 

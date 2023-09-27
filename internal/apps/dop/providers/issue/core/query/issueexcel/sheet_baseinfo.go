@@ -45,11 +45,15 @@ func (data DataForFulfill) genBaseInfoSheet() (excel.Rows, error) {
 	return excel.Rows{row}, nil
 }
 
-func (data *DataForFulfill) decodeBaseInfoSheet(excelSheets [][][]string) (*DataForFulfillImportOnlyBaseInfo, error) {
+func (data *DataForFulfill) decodeBaseInfoSheet(df excel.DecodedFile) (*DataForFulfillImportOnlyBaseInfo, error) {
 	if data.IsOldExcelFormat() {
 		return nil, nil
 	}
-	sheet := excelSheets[indexOfSheetBaseInfo]
+	s, ok := df.Sheets.M[nameOfSheetBaseInfo]
+	if !ok {
+		return nil, nil
+	}
+	sheet := s.UnmergedSlice
 	if len(sheet) != 1 {
 		return nil, fmt.Errorf("invalid base info sheet, rows: %d", len(sheet))
 	}

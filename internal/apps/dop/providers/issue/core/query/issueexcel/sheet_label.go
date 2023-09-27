@@ -62,11 +62,15 @@ func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeLabelSheet(excelSheets [][][]string) ([]*pb.ProjectLabel, error) {
+func (data DataForFulfill) decodeLabelSheet(df excel.DecodedFile) ([]*pb.ProjectLabel, error) {
 	if data.IsOldExcelFormat() {
 		return nil, nil
 	}
-	sheet := excelSheets[indexOfSheetLabel]
+	s, ok := df.Sheets.M[nameOfSheetLabel]
+	if !ok {
+		return nil, nil
+	}
+	sheet := s.UnmergedSlice
 	// check title
 	if len(sheet) < 1 {
 		return nil, fmt.Errorf("label sheet is empty")

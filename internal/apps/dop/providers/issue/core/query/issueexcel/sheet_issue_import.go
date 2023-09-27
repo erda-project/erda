@@ -31,11 +31,15 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) DecodeIssueSheet(excelSheets [][][]string) ([]IssueSheetModel, error) {
-	sheet := excelSheets[indexOfSheetIssue]
+func (data DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) ([]IssueSheetModel, error) {
 	if data.IsOldExcelFormat() {
-		return data.convertOldIssueSheet(sheet)
+		return data.convertOldIssueSheet(df.Sheets.L[0].UnmergedSlice)
 	}
+	s, ok := df.Sheets.M[nameOfSheetIssue]
+	if !ok {
+		return nil, fmt.Errorf("cannot find sheet: issue")
+	}
+	sheet := s.UnmergedSlice
 	// convert [][][]string to map[uuid]excel.Column
 	issueSheetRows := sheet
 	// polish sheet rows, remove empty rows

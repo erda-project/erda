@@ -28,26 +28,26 @@ import (
 
 func ImportFile(r io.Reader, data DataForFulfill) error {
 	// decode to sheets
-	excelSheets, err := excel.Decode(r)
+	df, err := excel.DecodeToSheets(r)
 	if err != nil {
 		return fmt.Errorf("failed to decode excel, err: %v", err)
 	}
 	// compatible
-	data.JudgeIfIsOldExcelFormat(excelSheets)
+	data.JudgeIfIsOldExcelFormat(df)
 
 	// base info sheet first
-	baseInfo, err := data.decodeBaseInfoSheet(excelSheets)
+	baseInfo, err := data.decodeBaseInfoSheet(df)
 	if err != nil {
 		return fmt.Errorf("failed to decode base info sheet, err: %v", err)
 	}
 	_ = baseInfo
 	// issue sheet
-	issueSheetModels, err := data.DecodeIssueSheet(excelSheets)
+	issueSheetModels, err := data.DecodeIssueSheet(df)
 	if err != nil {
 		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
 	}
 	// user sheet
-	members, err := data.decodeUserSheet(excelSheets)
+	members, err := data.decodeUserSheet(df)
 	if err != nil {
 		return fmt.Errorf("failed to decode user sheet, err: %v", err)
 	}
@@ -55,7 +55,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 		return fmt.Errorf("failed to map member, err: %v", err)
 	}
 	// label sheet
-	labels, err := data.decodeLabelSheet(excelSheets)
+	labels, err := data.decodeLabelSheet(df)
 	if err != nil {
 		return fmt.Errorf("failed to decode label sheet, err: %v", err)
 	}
@@ -64,7 +64,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 		return fmt.Errorf("failed to create label, err: %v", err)
 	}
 	// custom field sheet
-	customFields, err := data.decodeCustomFieldSheet(excelSheets)
+	customFields, err := data.decodeCustomFieldSheet(df)
 	if err != nil {
 		return fmt.Errorf("failed to decode custom field sheet, err: %v", err)
 	}
@@ -72,7 +72,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 		return fmt.Errorf("failed to create custom field, err: %v", err)
 	}
 	// iteration sheet
-	iterations, err := data.decodeIterationSheet(excelSheets)
+	iterations, err := data.decodeIterationSheet(df)
 	if err != nil {
 		return fmt.Errorf("failed to decode iteration sheet, err: %v", err)
 	}
@@ -81,7 +81,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 		return fmt.Errorf("failed to create iterations, err: %v", err)
 	}
 	// state sheet
-	states, stateRelations, err := data.decodeStateSheet(excelSheets)
+	states, stateRelations, err := data.decodeStateSheet(df)
 	if err != nil {
 		return fmt.Errorf("failed to decode state sheet, err: %v", err)
 	}

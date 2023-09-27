@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	legacydao "github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -111,15 +112,29 @@ func (data DataForFulfill) IsOldExcelFormat() bool {
 	return data.ImportOnly.IsOldExcelFormat
 }
 
-// JudgeIfIsOldExcelFormat old Excel format have only one sheet
-func (data *DataForFulfill) JudgeIfIsOldExcelFormat(excelSheets [][][]string) {
-	isOld := len(excelSheets) == 1
-	if isOld {
-		data.ImportOnly.IsOldExcelFormat = true
-		data.ImportOnly.BaseInfo = &DataForFulfillImportOnlyBaseInfo{
-			OriginalErdaPlatform:  "",
-			OriginalErdaProjectID: 0,
-		}
+// JudgeIfIsOldExcelFormat old Excel format have only one sheet and excel[0][0][0] = "ID"
+func (data *DataForFulfill) JudgeIfIsOldExcelFormat(df excel.DecodedFile) {
+	// only one sheet
+	if len(df.Sheets.L) != 1 {
+		return
+	}
+
+	// [0][0] is ID
+	if colLen := len(df.Sheets.L[0].UnmergedSlice); colLen == 0 {
+		return
+	}
+	if rowLen := len(df.Sheets.L[0].UnmergedSlice[0]); rowLen == 0 {
+		return
+	}
+	if df.Sheets.L[0].UnmergedSlice[0][0] != "ID" {
+		return
+	}
+
+	// set value
+	data.ImportOnly.IsOldExcelFormat = true
+	data.ImportOnly.BaseInfo = &DataForFulfillImportOnlyBaseInfo{
+		OriginalErdaPlatform:  "",
+		OriginalErdaProjectID: 0,
 	}
 }
 

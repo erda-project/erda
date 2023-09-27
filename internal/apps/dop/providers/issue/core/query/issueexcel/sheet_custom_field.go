@@ -58,11 +58,15 @@ func (data DataForFulfill) genCustomFieldSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeCustomFieldSheet(excelSheets [][][]string) ([]*pb.IssuePropertyIndex, error) {
+func (data DataForFulfill) decodeCustomFieldSheet(df excel.DecodedFile) ([]*pb.IssuePropertyIndex, error) {
 	if data.IsOldExcelFormat() {
 		return nil, nil
 	}
-	sheet := excelSheets[indexOfSheetCustomField]
+	s, ok := df.Sheets.M[nameOfSheetCustomField]
+	if !ok {
+		return nil, nil
+	}
+	sheet := s.UnmergedSlice
 	var customFields []*pb.IssuePropertyIndex
 	for i, row := range sheet {
 		if i == 0 {
