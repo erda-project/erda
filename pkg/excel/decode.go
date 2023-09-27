@@ -15,7 +15,6 @@
 package excel
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -41,44 +40,37 @@ func Decode(r io.Reader) ([][][]string, error) {
 	return data, nil
 }
 
-// DecodeToSheets decode excel file to map[sheetName]sheet.
+// DecodeToSheets decode Excel file to Sheets.
 // So you can get sheet by sheetName.
-func DecodeToSheets(r io.Reader) (map[string]Sheet, error) {
+func DecodeToSheets(r io.Reader) (DecodedFile, error) {
 	tmpF, err := os.CreateTemp("", "excel-")
 	if err != nil {
-		return nil, err
+		return EmptyDecodedFile(), err
 	}
 	if _, err := io.Copy(tmpF, r); err != nil {
-		return nil, err
+		return EmptyDecodedFile(), err
 	}
 	f, err := xlsx.OpenFile(tmpF.Name(), xlsx.ValueOnly(), xlsx.RowLimit(xlsx.NoRowLimit), xlsx.ColLimit(xlsx.NoColLimit))
 	if err != nil {
-		return nil, err
+		return EmptyDecodedFile(), err
 	}
-	sheets := make(map[string]Sheet)
-	for _, sheet := range f.Sheets {
-		sheets[sheet.Name] = NewSheet(sheet)
-	}
-	return sheets, nil
-}
-
-func (sheet *Sheet) DecodeSheetToSlice() ([][]string, error) {
-	output, err := sheet.File.ToSliceUnmerged()
+	fileUnmergedSlice, err := f.ToSliceUnmerged()
 	if err != nil {
-		return nil, err
+		return EmptyDecodedFile(), err
 	}
-	// get sheet order
-	var found bool
-	var sheetOrder int
-	for i, s := range sheet.File.XlsxFile.Sheets {
-		if s.Name == sheet.XlsxSheet.Name {
-			sheetOrder = i
-			found = true
-			break
-		}
+
+	sheets := Sheets{L: make([]*Sheet, 0, len(f.Sheets)), M: make(map[string]*Sheet, len(f.Sheets))}
+	for i, sheet := range f.Sheets {
+		s := NewSheet(sheet)
+		s.UnmergedSlice = fileUnmergedSlice[i]
+
+		sheets.L = append(sheets.L, s)
+		sheets.M[sheet.Name] = s
 	}
-	if !found {
-		return nil, fmt.Errorf("sheet not found, sheetName: %s", sheet.XlsxSheet.Name)
+
+	df := DecodedFile{
+		File:   &File{XlsxFile: f, UnmergedSlice: fileUnmergedSlice},
+		Sheets: sheets,
 	}
-	return output[sheetOrder], nil
+	return df, nil
 }

@@ -15,47 +15,43 @@
 package excel
 
 import (
-	"sync"
-
 	"github.com/tealeg/xlsx/v3"
 )
 
 type Row []Cell
 type Rows []Row
 type Column []Cell
+
+type File struct {
+	XlsxFile *xlsx.File
+
+	UnmergedSlice [][][]string
+}
+
+type DecodedFile struct {
+	File   *File
+	Sheets Sheets
+}
+
+type Sheets struct {
+	L []*Sheet
+	M map[string]*Sheet
+}
+
 type Sheet struct {
 	XlsxSheet *xlsx.Sheet
-	File      File
-}
-type File struct {
-	XlsxFile      *xlsx.File
-	UnmergedSlice [][][]string
+	RefFile   *File
 
-	decoded bool
-	sync.Mutex
+	UnmergedSlice [][]string
 }
 
 func NewFile() *File {
 	return &File{XlsxFile: xlsx.NewFile()}
 }
 
-func NewSheet(sheet *xlsx.Sheet) Sheet {
-	return Sheet{XlsxSheet: sheet, File: File{XlsxFile: sheet.File}}
+func NewSheet(sheet *xlsx.Sheet) *Sheet {
+	return &Sheet{XlsxSheet: sheet, RefFile: &File{XlsxFile: sheet.File}}
 }
 
-func (f *File) ToSliceUnmerged() ([][][]string, error) {
-	f.Mutex.Lock()
-	defer f.Mutex.Unlock()
-
-	if f.decoded {
-		return f.UnmergedSlice, nil
-	}
-	result, err := f.XlsxFile.ToSliceUnmerged()
-	if err != nil {
-		return nil, err
-	}
-	f.decoded = true
-	f.UnmergedSlice = result
-
-	return result, nil
-}
+func EmptyDecodedFile() DecodedFile { return DecodedFile{} }
+func EmptySheets() Sheets           { return Sheets{L: make([]*Sheet, 0), M: make(map[string]*Sheet)} }
