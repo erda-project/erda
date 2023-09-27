@@ -445,13 +445,7 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 			return errors.Errorf(`no field "input" in the request body, operation: %s`, operation)
 		}
 		{
-			var prompt []int
-			if err := json.Unmarshal(message, &prompt); err == nil {
-				f.Audit.Prompt = string(message)
-				return nil
-			}
-		}
-		{
+			// EmbeddingRequestTokens
 			var prompt [][]int
 			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = string(message)
@@ -459,6 +453,7 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 			}
 		}
 		{
+			// EmbeddingRequestStrings
 			var prompt []string
 			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = strings.Join(prompt, "\n")
@@ -466,6 +461,7 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 			}
 		}
 		{
+			// EmbeddingRequest
 			var prompt string
 			if err := json.Unmarshal(message, &prompt); err == nil {
 				f.Audit.Prompt = string(message)
