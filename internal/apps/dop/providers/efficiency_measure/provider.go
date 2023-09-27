@@ -52,7 +52,7 @@ type config struct {
 	PerformanceMetricEtcdPrefixKey             string        `file:"performance_metric_etcd_prefix_key" env:"PERFORMANCE_METRIC_ETCD_PREFIX_KEY" default:"/devops/metrics/performance/"`
 	OrgWhiteList                               []string      `file:"performance_measure_org_white_list" env:"PERFORMANCE_MEASURE_ORG_WHITE_LIST"`
 	DemandStageList                            []string      `file:"demand_stage_list" env:"DEMAND_STAGE_LIST" default:"demandDesign,需求设计,架构设计,architectureDesign,需求调研"`
-	ArchitectureStageList                      []string      `file:"architecture_stage_list" env:"ARCHITECTURE_STAGE_LIST" default:"代码研发,交互设计,技术设计"`
+	ArchitectureStageList                      []string      `file:"architecture_stage_list" env:"ARCHITECTURE_STAGE_LIST" default:"交互设计,技术设计,UI设计"`
 }
 
 // +provider
