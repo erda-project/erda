@@ -259,7 +259,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     if(projectFuncPointsTotal > 0, responsibleFuncPointsTotal / projectFuncPointsTotal, 0) as pointParticipationRatio,
     if(demandFuncPointsTotal > 0, designBugTotal / demandFuncPointsTotal, 0) as requirementDefectDensity,
     if(demandFuncPointsTotal > 0, architectureBugTotal / demandFuncPointsTotal, 0) as demandDefectDensity,
-    if(devFuncPointsTotal > 0, bugTotal / devFuncPointsTotal, 0) as devDefectDensity,
+    if(devFuncPointsTotal > 0, ownerBugTotal / devFuncPointsTotal, 0) as devDefectDensity,
     if(testFuncPointsTotal > 0, onlineBugTotal / testFuncPointsTotal, 0) as bugDefectDensity,
     if(demandFuncPointsTotal > 0, actualMandayTotal * 8 / demandFuncPointsTotal, 0) as demandProductPDR,
     if(devFuncPointsTotal > 0, actualMandayTotal * 8 / devFuncPointsTotal, 0) as devProductPDR,
