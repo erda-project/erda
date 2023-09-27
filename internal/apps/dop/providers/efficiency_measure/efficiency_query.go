@@ -35,6 +35,7 @@ type PersonalEfficiencyRow struct {
 	UserNickname               string  `json:"userNickname" ch:"userNickname"`
 	OrgID                      string  `json:"orgID" ch:"orgID"`
 	OrgName                    string  `json:"orgName" ch:"orgName"`
+	ProjectID                  string  `json:"projectID" ch:"projectID"`
 	UserPosition               string  `json:"userPosition" ch:"userPosition"`
 	UserPositionLevel          string  `json:"userPositionLevel" ch:"userPositionLevel"`
 	JobStatus                  string  `json:"jobStatus" ch:"jobStatus"`
@@ -212,7 +213,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
 		return tx.Find(&[]PersonalEfficiencyRow{})
 	})
 	basicSql := p.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		tx = tx.Table(fmt.Sprintf("(%s)", dataSql)).Select(`last_value(orgName) as orgName,
+		selectSql := `last_value(orgName) as orgName,
     last_value(userName) as userName,
     last_value(userEmail) as userEmail,
     last_value(userNickname) as userNickname,
@@ -263,11 +264,13 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     if(testFuncPointsTotal > 0, onlineBugTotal / testFuncPointsTotal, 0) as bugDefectDensity,
     if(demandFuncPointsTotal > 0, actualMandayTotal * 8 / demandFuncPointsTotal, 0) as demandProductPDR,
     if(devFuncPointsTotal > 0, actualMandayTotal * 8 / devFuncPointsTotal, 0) as devProductPDR,
-    if(testFuncPointsTotal > 0, actualMandayTotal * 8 / testFuncPointsTotal, 0) as testProductPDR`).
-			Group("orgID, userID")
+    if(testFuncPointsTotal > 0, actualMandayTotal * 8 / testFuncPointsTotal, 0) as testProductPDR`
 		if req.GroupByProject {
+			selectSql += ", projectID"
 			tx = tx.Group("projectID")
 		}
+		tx = tx.Table(fmt.Sprintf("(%s)", dataSql)).Select(selectSql).
+			Group("orgID, userID")
 		return tx.Find(&[]PersonalEfficiencyRow{})
 	})
 	return basicSql

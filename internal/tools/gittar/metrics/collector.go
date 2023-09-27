@@ -68,6 +68,7 @@ type PersonalMetric struct {
 }
 
 type MetricField struct {
+	CalculatedAt time.Time
 	// Historical cumulative total
 	CommitTotal     uint64
 	FileChangeTotal uint64
@@ -99,14 +100,14 @@ func NewPersonalMetric(author *gitmodule.Signature, repo *models.Repo) *Personal
 
 type Collector struct {
 	sync.RWMutex
-	errors               prometheus.Gauge
-	personalContributors []*PersonalMetric
-	svc                  *models.Service
+	errors                prometheus.Gauge
+	personalContributions []*PersonalMetric
+	svc                   *models.Service
 }
 
 func NewCollector(svc *models.Service) *Collector {
 	return &Collector{
-		personalContributors: make([]*PersonalMetric, 0),
+		personalContributions: make([]*PersonalMetric, 0),
 		errors: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: "gittar",
 			Name:      "scrape_error",
@@ -120,16 +121,16 @@ func (c *Collector) RefreshPersonalContributions() error {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
-	contributors, err := c.IterateRepos(apistructs.GittarListRepoRequest{
+	contributions, err := c.IterateRepos(apistructs.GittarListRepoRequest{
 		Start: &start,
 		End:   &end,
 	})
 	if err != nil {
 		return err
 	}
-	logrus.Infof("contributors: %v", contributors)
+	logrus.Infof("contributions: %v", contributions)
 	c.Lock()
-	c.personalContributors = contributors
+	c.personalContributions = contributions
 	c.Unlock()
 	return nil
 }
@@ -185,6 +186,11 @@ func (c *Collector) IterateRepos(req apistructs.GittarListRepoRequest) ([]*Perso
 			commitInDuration := inDuration(author.When, req.Start, req.End)
 			if repoMetrics[uniqueKey] == nil {
 				personalMetric := NewPersonalMetric(author, repo)
+				if req.Start != nil {
+					personalMetric.Field.CalculatedAt = *req.Start
+				} else {
+					personalMetric.Field.CalculatedAt = time.Now()
+				}
 				personalMetric.Field.CommitTotal += 1
 				repoMetrics[uniqueKey] = personalMetric
 			} else {
@@ -236,7 +242,10 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.errors.Set(0)
 	c.Lock()
 	defer c.Unlock()
-	for _, field := range c.personalContributors {
+	for _, field := range c.personalContributions {
+		if field.Field == nil || field.Field.CalculatedAt.Day() != time.Now().Day() {
+			continue
+		}
 		rawLabels := map[string]struct{}{}
 		for l := range c.personalLabelsFunc(field) {
 			rawLabels[l] = struct{}{}
