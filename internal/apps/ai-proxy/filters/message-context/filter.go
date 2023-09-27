@@ -102,7 +102,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		// handle user message, wrap by '|start| your question here |end|'
 		// to avoid from content-filter
 		if msg.Role == openai.ChatMessageRoleUser {
-			msg.Content = strutil.Concat("|start|", msg.Content, "|end|")
+			msg.Content = vars.WrapUserPrompt(msg.Content)
 		}
 		requestedMessages = append(requestedMessages, msg)
 	}

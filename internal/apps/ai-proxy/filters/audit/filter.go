@@ -335,6 +335,9 @@ func (f *Audit) SetOperationId(ctx context.Context, infor reverseproxy.HttpInfor
 }
 
 func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) error {
+	defer func() {
+		f.Audit.Prompt = vars.UnwrapUserPrompt(f.Audit.Prompt)
+	}()
 	f.Audit.Prompt = "-"
 	//if value := infor.Header().Get(vars.XAIProxyPromptId); value != "" {
 	//	prompt, err := base64.StdEncoding.DecodeString(value)
