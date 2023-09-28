@@ -27,7 +27,11 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func GenIterationSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+type Handler struct{}
+
+func (h *Handler) SheetName() string { return vars.NameOfSheetIteration }
+
+func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	// if AllProjectIssues=true, then export all iterations
 	// otherwise, just export iterations related to issues
 	relatedIterationMapByID := make(map[int64]struct{})
@@ -71,11 +75,11 @@ func GenIterationSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	return lines, nil
 }
 
-func DecodeIterationSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[vars.NameOfSheetIteration]
+	s, ok := df.Sheets.M[h.SheetName()]
 	if !ok {
 		return nil
 	}

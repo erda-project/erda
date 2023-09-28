@@ -29,7 +29,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func GenLabelSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+type Handler struct{}
+
+func (h *Handler) SheetName() string { return vars.NameOfSheetLabel }
+
+func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	var lines excel.Rows
 	// title: label id, label name, label detail (JSON)
 	title := excel.Row{
@@ -63,11 +67,11 @@ func GenLabelSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	return lines, nil
 }
 
-func DecodeLabelSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[vars.NameOfSheetLabel]
+	s, ok := df.Sheets.M[h.SheetName()]
 	if !ok {
 		return nil
 	}

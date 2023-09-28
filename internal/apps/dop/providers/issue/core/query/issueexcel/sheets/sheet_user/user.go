@@ -28,7 +28,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func GenUserSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+type Handler struct{}
+
+func (h *Handler) SheetName() string { return vars.NameOfSheetUser }
+
+func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	var lines excel.Rows
 	// title: user id, user name, user info (JSON)
 	title := excel.Row{
@@ -53,11 +57,11 @@ func GenUserSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	return lines, nil
 }
 
-func DecodeUserSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[vars.NameOfSheetUser]
+	s, ok := df.Sheets.M[h.SheetName()]
 	if !ok {
 		return nil
 	}

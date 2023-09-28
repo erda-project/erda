@@ -159,7 +159,19 @@ func autoMergeTitleCellsWithSameValue(rows excel.Rows) {
 	}
 }
 
-func GenIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetModelCellInfoByColumns, error) {
+func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+	mapByColumns, err := genIssueSheetTitleAndDataByColumn(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to gen sheet title and data by column, err: %v", err)
+	}
+	excelRows, err := mapByColumns.ConvertToExcelSheet()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert to excel sheet, err: %v", err)
+	}
+	return excelRows, nil
+}
+
+func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetModelCellInfoByColumns, error) {
 	models, err := getIssueSheetModels(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get issue sheet models, err: %v", err)

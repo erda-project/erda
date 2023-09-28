@@ -30,7 +30,11 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func GenCustomFieldSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+type Handler struct{}
+
+func (h *Handler) SheetName() string { return vars.NameOfSheetCustomField }
+
+func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	var lines excel.Rows
 	// title: custom field id, custom field name, custom field type, custom field value
 	title := excel.Row{
@@ -59,11 +63,11 @@ func GenCustomFieldSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	return lines, nil
 }
 
-func DecodeCustomFieldSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[vars.NameOfSheetCustomField]
+	s, ok := df.Sheets.M[h.SheetName()]
 	if !ok {
 		return nil
 	}

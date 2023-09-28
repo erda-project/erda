@@ -32,7 +32,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func DecodeIssueSheet(df excel.DecodedFile, data *vars.DataForFulfill) error {
+type Handler struct{}
+
+func (h *Handler) SheetName() string { return vars.NameOfSheetIssue }
+
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		convertedIssueSheetModels, err := convertOldIssueSheet(data, df.Sheets.L[0].UnmergedSlice)
 		if err != nil {
@@ -41,7 +45,7 @@ func DecodeIssueSheet(df excel.DecodedFile, data *vars.DataForFulfill) error {
 		data.ImportOnly.Sheets.Must.IssueInfo = convertedIssueSheetModels
 		return nil
 	}
-	s, ok := df.Sheets.M[vars.NameOfSheetIssue]
+	s, ok := df.Sheets.M[h.SheetName()]
 	if !ok {
 		return fmt.Errorf("cannot find sheet: %s", vars.NameOfSheetIssue)
 	}

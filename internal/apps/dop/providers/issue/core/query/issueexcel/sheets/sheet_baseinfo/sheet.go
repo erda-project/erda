@@ -23,11 +23,15 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func DecodeBaseInfoSheet(df excel.DecodedFile, data *vars.DataForFulfill) error {
+type Handler struct{}
+
+func (h *Handler) SheetName() string { return vars.NameOfSheetBaseInfo }
+
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[vars.NameOfSheetBaseInfo]
+	s, ok := df.Sheets.M[h.SheetName()]
 	if !ok {
 		return nil
 	}
@@ -50,7 +54,7 @@ func DecodeBaseInfoSheet(df excel.DecodedFile, data *vars.DataForFulfill) error 
 	return nil
 }
 
-func GenBaseInfoSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	// only one row, k=meta, v=JSON(dataForFulfillImportOnlyBaseInfo)
 	meta := vars.DataForFulfillImportOnlyBaseInfo{
 		OriginalErdaPlatform:  conf.DiceClusterName(),

@@ -30,7 +30,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func GenStateSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+type Handler struct{}
+
+func (h *Handler) SheetName() string { return vars.NameOfSheetState }
+
+func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	var lines excel.Rows
 
 	// title: state (JSON), state_relation (JSON)
@@ -57,11 +61,11 @@ func GenStateSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	return lines, nil
 }
 
-func DecodeStateSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[vars.NameOfSheetState]
+	s, ok := df.Sheets.M[h.SheetName()]
 	if !ok {
 		return nil
 	}

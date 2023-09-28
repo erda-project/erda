@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_baseinfo"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_customfield"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_issue"
@@ -38,33 +39,20 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 	// compatible
 	data.JudgeIfIsOldExcelFormat(df)
 
-	// base info sheet first
-	if err := sheet_baseinfo.DecodeBaseInfoSheet(df, data); err != nil {
-		return fmt.Errorf("failed to decode base info sheet, err: %v", err)
+	handlers := []sheets.Importer{
+		&sheet_baseinfo.Handler{},
+		&sheet_issue.Handler{},
+		&sheet_user.Handler{},
+		&sheet_label.Handler{},
+		&sheet_customfield.Handler{},
+		&sheet_iteration.Handler{},
+		&sheet_state.Handler{},
 	}
-	// issue sheet
-	if err := sheet_issue.DecodeIssueSheet(df, data); err != nil {
-		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
-	}
-	// user sheet
-	if err := sheet_user.DecodeUserSheet(data, df); err != nil {
-		return fmt.Errorf("failed to decode user sheet, err: %v", err)
-	}
-	// label sheet
-	if err := sheet_label.DecodeLabelSheet(data, df); err != nil {
-		return fmt.Errorf("failed to decode label sheet, err: %v", err)
-	}
-	// custom field sheet
-	if err := sheet_customfield.DecodeCustomFieldSheet(data, df); err != nil {
-		return fmt.Errorf("failed to decode custom field sheet, err: %v", err)
-	}
-	// iteration sheet
-	if err := sheet_iteration.DecodeIterationSheet(data, df); err != nil {
-		return fmt.Errorf("failed to decode iteration sheet, err: %v", err)
-	}
-	// state sheet
-	if err := sheet_state.DecodeStateSheet(data, df); err != nil {
-		return fmt.Errorf("failed to decode state sheet, err: %v", err)
+
+	for _, h := range handlers {
+		if err := h.DecodeSheet(data, df); err != nil {
+			return fmt.Errorf("failed to decode sheet %q, err: %v", h.SheetName(), err)
+		}
 	}
 
 	// 先创建或更新所有 issues，再创建或更新所有关联关系

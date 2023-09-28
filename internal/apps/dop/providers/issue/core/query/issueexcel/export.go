@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_baseinfo"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_customfield"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_issue"
@@ -38,82 +39,32 @@ func ExportFile(w io.Writer, data *vars.DataForFulfill) (err error) {
 		}
 	}()
 
-	// issue sheet
-	issueExcelRows, err := ExportIssueSheetLines(data)
-	if err != nil {
-		return fmt.Errorf("failed to export issue sheet, err: %v", err)
-	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(issueExcelRows), vars.NameOfSheetIssue); err != nil {
-		return fmt.Errorf("failed to add issue sheet, err: %v", err)
-	}
-
-	// only full export need to export other sheets
-	if !data.IsFullExport() {
-		return nil
+	handlers := []sheets.Exporter{
+		&sheet_baseinfo.Handler{},
+		&sheet_issue.Handler{},
+		&sheet_user.Handler{},
+		&sheet_label.Handler{},
+		&sheet_customfield.Handler{},
+		&sheet_iteration.Handler{},
+		&sheet_state.Handler{},
 	}
 
-	// user sheet
-	userExcelRows, err := sheet_user.GenUserSheet(data)
-	if err != nil {
-		return fmt.Errorf("failed to gen user sheet, err: %v", err)
-	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(userExcelRows), vars.NameOfSheetUser); err != nil {
-		return fmt.Errorf("failed to add user sheet, err: %v", err)
-	}
-	// label sheet
-	labelExcelRows, err := sheet_label.GenLabelSheet(data)
-	if err != nil {
-		return fmt.Errorf("failed to gen label sheet, err: %v", err)
-	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(labelExcelRows), vars.NameOfSheetLabel); err != nil {
-		return fmt.Errorf("failed to add label sheet, err: %v", err)
-	}
-	// custom field sheet
-	customFieldExcelRows, err := sheet_customfield.GenCustomFieldSheet(data)
-	if err != nil {
-		return fmt.Errorf("failed to gen custom field sheet, err: %v", err)
-	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(customFieldExcelRows), vars.NameOfSheetCustomField); err != nil {
-		return fmt.Errorf("failed to add custom field sheet, err: %v", err)
-	}
-	// meta sheet
-	baseInfoExcelRows, err := sheet_baseinfo.GenBaseInfoSheet(data)
-	if err != nil {
-		return fmt.Errorf("failed to gen meta sheet, err: %v", err)
-	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(baseInfoExcelRows), vars.NameOfSheetBaseInfo); err != nil {
-		return fmt.Errorf("failed to add meta sheet, err: %v", err)
-	}
-	// iteration sheet
-	iterationExcelRows, err := sheet_iteration.GenIterationSheet(data)
-	if err != nil {
-		return fmt.Errorf("failed to gen iteration sheet, err: %v", err)
-	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(iterationExcelRows), vars.NameOfSheetIteration); err != nil {
-		return fmt.Errorf("failed to add iteration sheet, err: %v", err)
-	}
-	// state sheet
-	stateExcelRows, err := sheet_state.GenStateSheet(data)
-	if err != nil {
-		return fmt.Errorf("failed to gen state sheet, err: %v", err)
-	}
-	if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(stateExcelRows), vars.NameOfSheetState); err != nil {
-		return fmt.Errorf("failed to add state sheet, err: %v", err)
+	for _, h := range handlers {
+		// only full export need to export other sheets
+		if !data.IsFullExport() && h.SheetName() != vars.NameOfSheetIssue {
+			continue
+		}
+
+		rows, err := h.EncodeSheet(data)
+		if err != nil {
+			return fmt.Errorf("failed to gen sheet %q, err: %v", h.SheetName(), err)
+		}
+		if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(rows), h.SheetName()); err != nil {
+			return fmt.Errorf("failed to add issue %q, err: %v", h.SheetName(), err)
+		}
 	}
 
 	return nil
-}
-
-func ExportIssueSheetLines(data *vars.DataForFulfill) (excel.Rows, error) {
-	mapByColumns, err := sheet_issue.GenIssueSheetTitleAndDataByColumn(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to gen sheet title and data by column, err: %v", err)
-	}
-	excelRows, err := mapByColumns.ConvertToExcelSheet()
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert to excel sheet, err: %v", err)
-	}
-	return excelRows, nil
 }
 
 func convertExcelRowsToCells(rows excel.Rows) [][]excel.Cell {
