@@ -12,24 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_issue
 
 import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 )
 
 // GenerateSampleIssueSheetModels
 //
 // one requirement, includes one task
 // the bug connects to the task
-func (data DataForFulfill) GenerateSampleIssueSheetModels() []IssueSheetModel {
+func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheetModel {
 	// time
 	now := time.Now()
 	nowPlusOneDay := now.AddDate(0, 0, 1)
 
-	common := IssueSheetModelCommon{
+	common := vars.IssueSheetModelCommon{
 		ID:                 0,
 		IterationName:      "迭代名",
 		IssueType:          0,
@@ -58,23 +59,23 @@ func (data DataForFulfill) GenerateSampleIssueSheetModels() []IssueSheetModel {
 	requirementCommon.Content = "这个一个需求，包含一个任务"
 	requirementCommon.State = "进行中"
 	requirementCommon.EstimateTime = "2d"
-	requirement := IssueSheetModel{
+	requirement := vars.IssueSheetModel{
 		Common: requirementCommon,
-		RequirementOnly: IssueSheetModelRequirementOnly{
+		RequirementOnly: vars.IssueSheetModelRequirementOnly{
 			InclusionIssueIDs: []int64{2, -(3 + uuidPartsMustLength)},
-			CustomFields:      formatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
+			CustomFields:      vars.FormatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
 		},
 		// Assign to `TaskOnly` and `BugOnly` fields to avoid uuid order mismatch error.
 		// Requirement is the first model, so just do for requirement only.
-		TaskOnly: IssueSheetModelTaskOnly{
+		TaskOnly: vars.IssueSheetModelTaskOnly{
 			TaskType:     "",
-			CustomFields: formatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_TASK, data),
+			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_TASK, data),
 		},
-		BugOnly: IssueSheetModelBugOnly{
+		BugOnly: vars.IssueSheetModelBugOnly{
 			OwnerName:    "",
 			Source:       "",
 			ReopenCount:  0,
-			CustomFields: formatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
+			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
 		},
 	}
 	// task
@@ -86,11 +87,11 @@ func (data DataForFulfill) GenerateSampleIssueSheetModels() []IssueSheetModel {
 	taskCommon.FinishAt = &nowPlusOneDay
 	taskCommon.EstimateTime = "1d"
 	taskCommon.Labels = []string{"label1"}
-	task := IssueSheetModel{
+	task := vars.IssueSheetModel{
 		Common: taskCommon,
-		TaskOnly: IssueSheetModelTaskOnly{
+		TaskOnly: vars.IssueSheetModelTaskOnly{
 			TaskType:     "开发",
-			CustomFields: formatIssueCustomFields(&pb.Issue{Id: int64(taskCommon.ID)}, pb.PropertyIssueTypeEnum_TASK, data),
+			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(taskCommon.ID)}, pb.PropertyIssueTypeEnum_TASK, data),
 		},
 	}
 	// bug
@@ -104,15 +105,15 @@ func (data DataForFulfill) GenerateSampleIssueSheetModels() []IssueSheetModel {
 	bugCommon.State = "待处理"
 	bugCommon.ConnectionIssueIDs = []int64{2}
 	bugCommon.Labels = []string{"label2"}
-	bug := IssueSheetModel{
+	bug := vars.IssueSheetModel{
 		Common: bugCommon,
-		BugOnly: IssueSheetModelBugOnly{
+		BugOnly: vars.IssueSheetModelBugOnly{
 			OwnerName:    data.UserID,
 			Source:       "代码研发",
 			ReopenCount:  0,
-			CustomFields: formatIssueCustomFields(&pb.Issue{Id: int64(bugCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
+			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(bugCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
 		},
 	}
 
-	return []IssueSheetModel{requirement, task, bug}
+	return []vars.IssueSheetModel{requirement, task, bug}
 }

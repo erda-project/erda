@@ -12,13 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package vars
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/golang/protobuf/ptypes/timestamp"
 
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
@@ -197,27 +194,4 @@ func (data *DataForFulfill) CheckPermission() error {
 
 func (data *DataForFulfill) IsFullExport() bool {
 	return data.ExportOnly.AllProjectIssues
-}
-
-func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
-	return timestamp.AsTime().In(time.Local).Format("2006-01-02 15:04:05")
-}
-
-func formatIssueCustomFields(issue *pb.Issue, propertyType pb.PropertyIssueTypeEnum_PropertyIssueType, data DataForFulfill) []ExcelCustomField {
-	var results []ExcelCustomField
-	for _, customField := range data.CustomFieldMapByTypeName[propertyType] {
-		results = append(results, formatOneCustomField(customField, issue, data))
-	}
-	return results
-}
-
-func formatOneCustomField(cf *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) ExcelCustomField {
-	return ExcelCustomField{
-		Title: cf.PropertyName,
-		Value: getCustomFieldValue(cf, issue, data),
-	}
-}
-
-func getCustomFieldValue(customField *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) string {
-	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.ExportOnly.PropertyEnumMap, data.ProjectMemberByUserID)
 }

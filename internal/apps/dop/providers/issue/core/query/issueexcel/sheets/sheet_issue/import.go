@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_issue
 
 import (
 	"fmt"
@@ -25,24 +25,25 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data *DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) error {
+func DecodeIssueSheet(df excel.DecodedFile, data *vars.DataForFulfill) error {
 	if data.IsOldExcelFormat() {
-		convertedIssueSheetModels, err := data.convertOldIssueSheet(df.Sheets.L[0].UnmergedSlice)
+		convertedIssueSheetModels, err := convertOldIssueSheet(data, df.Sheets.L[0].UnmergedSlice)
 		if err != nil {
 			return fmt.Errorf("failed to convert old issue sheet, err: %v", err)
 		}
 		data.ImportOnly.Sheets.Must.IssueInfo = convertedIssueSheetModels
 		return nil
 	}
-	s, ok := df.Sheets.M[nameOfSheetIssue]
+	s, ok := df.Sheets.M[vars.NameOfSheetIssue]
 	if !ok {
-		return fmt.Errorf("cannot find sheet: %s", nameOfSheetIssue)
+		return fmt.Errorf("cannot find sheet: %s", vars.NameOfSheetIssue)
 	}
 	sheet := s.UnmergedSlice
 	// convert [][][]string to map[uuid]excel.Column
@@ -75,7 +76,7 @@ func (data *DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) error {
 		}
 	}
 	// decode map to models
-	models, err := data.decodeMapToIssueSheetModel(m)
+	models, err := decodeMapToIssueSheetModel(data, m)
 	if err != nil {
 		return fmt.Errorf("failed to decode map to models, err: %v", err)
 	}
@@ -83,7 +84,7 @@ func (data *DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) error {
 	return nil
 }
 
-func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID]excel.Column) (_ []IssueSheetModel, err error) {
+func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColumnUUID]excel.Column) (_ []vars.IssueSheetModel, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -97,7 +98,7 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 		dataRowsNum = len(column)
 		break
 	}
-	models := make([]IssueSheetModel, dataRowsNum, dataRowsNum)
+	models := make([]vars.IssueSheetModel, dataRowsNum, dataRowsNum)
 	for uuid, column := range m {
 		parts := uuid.Decode()
 		if len(parts) != uuidPartsMustLength {
@@ -157,24 +158,24 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				case "AssigneeName":
 					model.Common.AssigneeName = cell.Value
 				case "CreatedAt":
-					model.Common.CreatedAt = mustParseStringTime(cell.Value, groupField)
+					model.Common.CreatedAt = vars.MustParseStringTime(cell.Value, groupField)
 				case "UpdatedAt":
-					model.Common.UpdatedAt = mustParseStringTime(cell.Value, groupField)
+					model.Common.UpdatedAt = vars.MustParseStringTime(cell.Value, groupField)
 				case "PlanStartedAt":
-					model.Common.PlanStartedAt = mustParseStringTime(cell.Value, groupField)
+					model.Common.PlanStartedAt = vars.MustParseStringTime(cell.Value, groupField)
 				case "PlanFinishedAt":
-					model.Common.PlanFinishedAt = mustParseStringTime(cell.Value, groupField)
+					model.Common.PlanFinishedAt = vars.MustParseStringTime(cell.Value, groupField)
 				case "StartAt":
-					model.Common.StartAt = mustParseStringTime(cell.Value, groupField)
+					model.Common.StartAt = vars.MustParseStringTime(cell.Value, groupField)
 				case "FinishAt":
-					model.Common.FinishAt = mustParseStringTime(cell.Value, groupField)
+					model.Common.FinishAt = vars.MustParseStringTime(cell.Value, groupField)
 				case "EstimateTime":
 					model.Common.EstimateTime = cell.Value
 				case "Labels":
-					model.Common.Labels = parseStringSliceByComma(cell.Value)
+					model.Common.Labels = vars.ParseStringSliceByComma(cell.Value)
 				case "ConnectionIssueIDs":
 					var ids []int64
-					for _, idStr := range parseStringSliceByComma(cell.Value) {
+					for _, idStr := range vars.ParseStringSliceByComma(cell.Value) {
 						id, err := parseStringIssueID(idStr)
 						if err != nil {
 							return nil, fmt.Errorf("invalid connection issue id: %s", idStr)
@@ -191,7 +192,7 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				switch groupField {
 				case "InclusionIssueIDs":
 					var ids []int64
-					for _, idStr := range parseStringSliceByComma(cell.Value) {
+					for _, idStr := range vars.ParseStringSliceByComma(cell.Value) {
 						id, err := parseStringIssueID(idStr)
 						if err != nil {
 							return nil, fmt.Errorf("invalid inclusion issue id: %s", idStr)
@@ -202,7 +203,7 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 					}
 					model.RequirementOnly.InclusionIssueIDs = ids
 				case "CustomFields":
-					model.RequirementOnly.CustomFields = append(model.RequirementOnly.CustomFields, ExcelCustomField{
+					model.RequirementOnly.CustomFields = append(model.RequirementOnly.CustomFields, vars.ExcelCustomField{
 						Title: parts[2],
 						Value: cell.Value,
 					})
@@ -212,7 +213,7 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 				case "TaskType":
 					model.TaskOnly.TaskType = cell.Value
 				case "CustomFields":
-					model.TaskOnly.CustomFields = append(model.TaskOnly.CustomFields, ExcelCustomField{
+					model.TaskOnly.CustomFields = append(model.TaskOnly.CustomFields, vars.ExcelCustomField{
 						Title: parts[2],
 						Value: cell.Value,
 					})
@@ -234,7 +235,7 @@ func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID
 					}
 					model.BugOnly.ReopenCount = int32(reopenCount)
 				case "CustomFields":
-					model.BugOnly.CustomFields = append(model.BugOnly.CustomFields, ExcelCustomField{
+					model.BugOnly.CustomFields = append(model.BugOnly.CustomFields, vars.ExcelCustomField{
 						Title: parts[2],
 						Value: cell.Value,
 					})
@@ -316,7 +317,7 @@ func parseStringSliceByComma(s string) []string {
 
 // createOrUpdateIssues 创建或更新 issues
 // 根据 project id 进行判断
-func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetModel) (_ []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel, err error) {
+func CreateOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.IssueSheetModel) (_ []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -324,7 +325,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 		}
 	}()
 	idMapping := make(map[int64]uint64) // key: old id(can be negative for Excel Line Num, like L5), value: new id
-	issueModelMapByIssueID = make(map[uint64]*IssueSheetModel)
+	issueModelMapByIssueID = make(map[uint64]*vars.IssueSheetModel)
 	var issues []*issuedao.Issue
 	for i, model := range issueSheetModels {
 		model := model
@@ -345,8 +346,8 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 		issue := issuedao.Issue{
 			BaseModel: dbengine.BaseModel{
 				ID:        uint64(model.Common.ID),
-				CreatedAt: changePointerTimeToTime(model.Common.CreatedAt),
-				UpdatedAt: changePointerTimeToTime(model.Common.UpdatedAt),
+				CreatedAt: vars.ChangePointerTimeToTime(model.Common.CreatedAt),
+				UpdatedAt: vars.ChangePointerTimeToTime(model.Common.UpdatedAt),
 			},
 			PlanStartedAt:  model.Common.PlanStartedAt,
 			PlanFinishedAt: model.Common.PlanFinishedAt,
@@ -364,10 +365,10 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 			Creator:        data.ImportOnly.UserIDByNick[model.Common.CreatorName],
 			Assignee:       data.ImportOnly.UserIDByNick[model.Common.AssigneeName],
 			Source:         "",
-			ManHour:        mustGetJsonManHour(model.Common.EstimateTime),
+			ManHour:        vars.MustGetJsonManHour(model.Common.EstimateTime),
 			External:       true,
 			Deleted:        false,
-			Stage:          getIssueStage(model),
+			Stage:          vars.GetIssueStage(model),
 			Owner:          data.ImportOnly.UserIDByNick[model.BugOnly.OwnerName],
 			FinishTime:     model.Common.FinishAt,
 			ExpiryStatus:   "",
@@ -420,7 +421,7 @@ func (data DataForFulfill) createOrUpdateIssues(issueSheetModels []IssueSheetMod
 	return issues, issueModelMapByIssueID, nil
 }
 
-func (data DataForFulfill) createIssueRelations(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+func CreateIssueRelations(data *vars.DataForFulfill, issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel) error {
 	for _, issue := range issues {
 		model, ok := issueModelMapByIssueID[issue.ID]
 		if !ok {

@@ -12,14 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package vars
 
-const (
-	nameOfSheetIssue       = "issue"
-	nameOfSheetUser        = "user"
-	nameOfSheetLabel       = "label"
-	nameOfSheetCustomField = "custom_field"
-	nameOfSheetBaseInfo    = "base_info"
-	nameOfSheetIteration   = "iteration"
-	nameOfSheetState       = "state"
-)

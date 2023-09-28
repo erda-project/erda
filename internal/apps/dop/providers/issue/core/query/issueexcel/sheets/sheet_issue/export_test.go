@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_issue
 
 import (
 	"fmt"
@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
 
@@ -40,8 +41,8 @@ func TestNewIssueSheetColumnUUID(t *testing.T) {
 }
 
 func Test_genIssueSheetTitleAndDataByColumn(t *testing.T) {
-	data := DataForFulfill{
-		ExportOnly: DataForFulfillExportOnly{
+	data := &vars.DataForFulfill{
+		ExportOnly: vars.DataForFulfillExportOnly{
 			Issues: []*pb.Issue{
 				{
 					Id:              1,
@@ -59,13 +60,13 @@ func Test_genIssueSheetTitleAndDataByColumn(t *testing.T) {
 			0: {},
 		},
 	}
-	info, err := data.genIssueSheetTitleAndDataByColumn()
+	info, err := genIssueSheetTitleAndDataByColumn(data)
 	assert.NoError(t, err)
 	fmt.Printf("%+v\n", info)
 }
 
 func Test_getStringCellValue(t *testing.T) {
-	common := IssueSheetModelCommon{
+	common := vars.IssueSheetModelCommon{
 		ID:                 1,
 		ConnectionIssueIDs: []int64{2, 3},
 	}
@@ -75,7 +76,7 @@ func Test_getStringCellValue(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, getStringCellValue(typeField, valueField), "2,3")
 
-	common = IssueSheetModelCommon{
+	common = vars.IssueSheetModelCommon{
 		ID:                 0,
 		ConnectionIssueIDs: []int64{2, -3},
 	}

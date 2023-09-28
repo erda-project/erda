@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_issue
 
 import (
 	"fmt"
 	"sort"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
@@ -26,7 +27,7 @@ import (
 // old 也有两个版本：
 // - 最老的版本，只有 18 个基础字段
 // - 其他版本，有 21 个基础字段 + 自定义字段
-func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetModel, error) {
+func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.IssueSheetModel, error) {
 	// convert by column fixed index
 	m := make(map[IssueSheetColumnUUID]excel.Column)
 	addM := func(m map[IssueSheetColumnUUID]excel.Column, uuid IssueSheetColumnUUID, s string) {
@@ -144,7 +145,7 @@ func (data DataForFulfill) convertOldIssueSheet(sheet [][]string) ([]IssueSheetM
 			}
 		}
 	}
-	models, err := data.decodeMapToIssueSheetModel(m)
+	models, err := decodeMapToIssueSheetModel(data, m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode old excel format map to issue sheet model, err: %v", err)
 	}

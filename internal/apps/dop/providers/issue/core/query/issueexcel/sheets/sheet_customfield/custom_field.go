@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_customfield
 
 import (
 	"context"
@@ -24,12 +24,13 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func (data DataForFulfill) genCustomFieldSheet() (excel.Rows, error) {
+func GenCustomFieldSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	var lines excel.Rows
 	// title: custom field id, custom field name, custom field type, custom field value
 	title := excel.Row{
@@ -58,11 +59,11 @@ func (data DataForFulfill) genCustomFieldSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data *DataForFulfill) decodeCustomFieldSheet(df excel.DecodedFile) error {
+func DecodeCustomFieldSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[nameOfSheetCustomField]
+	s, ok := df.Sheets.M[vars.NameOfSheetCustomField]
 	if !ok {
 		return nil
 	}
@@ -82,6 +83,11 @@ func (data *DataForFulfill) decodeCustomFieldSheet(df excel.DecodedFile) error {
 		customFields = append(customFields, &property)
 	}
 	data.ImportOnly.Sheets.Optional.CustomFieldInfo = customFields
+
+	// create custom field if not exists
+	if err := createCustomFieldIfNotExistsForImport(data, data.ImportOnly.Sheets.Optional.CustomFieldInfo); err != nil {
+		return fmt.Errorf("failed to create custom field, err: %v", err)
+	}
 	return nil
 }
 
@@ -92,7 +98,7 @@ func (data *DataForFulfill) decodeCustomFieldSheet(df excel.DecodedFile) error {
 // - 无法判断是否必填
 // - 无法判断和哪个类型关联
 // - 即使强行创建为 text 类型，由于要被具体事项类型关联才可以使用，所以万一判断错了，想调整类型也不行，解绑会删除所有 issue 关联的值
-func (data *DataForFulfill) createCustomFieldIfNotExistsForImport(originalCustomFields []*pb.IssuePropertyIndex) error {
+func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, originalCustomFields []*pb.IssuePropertyIndex) error {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
 
 	originalCustomFieldsNeedCreate := make([]*pb.IssuePropertyIndex, 0, len(originalCustomFields))
@@ -187,7 +193,7 @@ func polishPropertyValueEnumeratesForCreate(enumerates []*pb.Enumerate) {
 	}
 }
 
-func (data *DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel) error {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
 	for _, issue := range issues {
 		model, ok := issueModelMapByIssueID[issue.ID]
@@ -201,7 +207,7 @@ func (data *DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Is
 			Property:     nil,
 			IdentityInfo: nil,
 		}
-		var cfsNeedHandled []ExcelCustomField
+		var cfsNeedHandled []vars.ExcelCustomField
 		var cfType pb.PropertyIssueTypeEnum_PropertyIssueType
 		switch issue.Type {
 		case pb.IssueTypeEnum_REQUIREMENT.String():
@@ -246,7 +252,7 @@ func (data *DataForFulfill) createIssueCustomFieldRelation(issues []*issuedao.Is
 				PropertyEnumeratedValues: nil,
 			}
 			if common.IsOptions(property.PropertyType.String()) {
-				valuesInSheet := parseStringSliceByComma(cf.Value)
+				valuesInSheet := vars.ParseStringSliceByComma(cf.Value)
 				for _, valueInSheet := range valuesInSheet {
 					var foundEnumValue bool
 					for _, enumValue := range property.EnumeratedValues {

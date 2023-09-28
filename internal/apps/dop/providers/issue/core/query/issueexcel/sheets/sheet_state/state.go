@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_state
 
 import (
 	"context"
@@ -23,13 +23,14 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) genStateSheet() (excel.Rows, error) {
+func GenStateSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	var lines excel.Rows
 
 	// title: state (JSON), state_relation (JSON)
@@ -56,11 +57,11 @@ func (data DataForFulfill) genStateSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeStateSheet(df excel.DecodedFile) error {
+func DecodeStateSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[nameOfSheetState]
+	s, ok := df.Sheets.M[vars.NameOfSheetState]
 	if !ok {
 		return nil
 	}
@@ -79,14 +80,19 @@ func (data DataForFulfill) decodeStateSheet(df excel.DecodedFile) error {
 	if err := json.Unmarshal([]byte(row[1]), &stateRelations); err != nil {
 		return fmt.Errorf("failed to unmarshal state relation info, err: %v", err)
 	}
-	data.ImportOnly.Sheets.Optional.StateInfo = &StateInfo{
+	data.ImportOnly.Sheets.Optional.StateInfo = &vars.StateInfo{
 		States:        state,
 		StateJoinSQLs: stateRelations,
+	}
+
+	// sync state
+	if err := syncState(data, data.ImportOnly.Sheets.Optional.StateInfo); err != nil {
+		return fmt.Errorf("failed to sync custom issue state, err: %v", err)
 	}
 	return nil
 }
 
-func (data *DataForFulfill) syncState(originalProjectStatesInfo *StateInfo) error {
+func syncState(data *vars.DataForFulfill, originalProjectStatesInfo *vars.StateInfo) error {
 	if originalProjectStatesInfo == nil {
 		return nil
 	}
@@ -225,7 +231,7 @@ func RefreshDataState(projectID uint64, db *dao.DBClient) (map[int64]string, map
 // - 未开始：新建
 // - 进行中：
 // 6. 默认属于处理中
-func tryToGuessNewStateBelong(name string, model IssueSheetModel) pb.IssueStateBelongEnum_StateBelong {
+func tryToGuessNewStateBelong(name string, model vars.IssueSheetModel) pb.IssueStateBelongEnum_StateBelong {
 	if model.Common.FinishAt != nil && !model.Common.FinishAt.IsZero() {
 		return getDoneStateBelongByIssueType(model.Common.IssueType)
 	}

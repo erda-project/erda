@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_iteration
 
 import (
 	"encoding/json"
@@ -22,11 +22,12 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func (data DataForFulfill) genIterationSheet() (excel.Rows, error) {
+func GenIterationSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	// if AllProjectIssues=true, then export all iterations
 	// otherwise, just export iterations related to issues
 	relatedIterationMapByID := make(map[int64]struct{})
@@ -70,11 +71,11 @@ func (data DataForFulfill) genIterationSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data *DataForFulfill) decodeIterationSheet(df excel.DecodedFile) error {
+func DecodeIterationSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
-	s, ok := df.Sheets.M[nameOfSheetIteration]
+	s, ok := df.Sheets.M[vars.NameOfSheetIteration]
 	if !ok {
 		return nil
 	}
@@ -94,6 +95,11 @@ func (data *DataForFulfill) decodeIterationSheet(df excel.DecodedFile) error {
 		iterations = append(iterations, &iteration)
 	}
 	data.ImportOnly.Sheets.Optional.IterationInfo = iterations
+
+	// create iterations if not exists before issue create
+	if err := createIterationsIfNotExistForImport(data, data.ImportOnly.Sheets.Optional.IterationInfo); err != nil {
+		return fmt.Errorf("failed to create iterations, err: %v", err)
+	}
 	return nil
 }
 
@@ -101,7 +107,7 @@ func (data *DataForFulfill) decodeIterationSheet(df excel.DecodedFile) error {
 // check by name:
 // - if not exist, create new iteration
 // - if exist, do not update, take the existing one as the standard
-func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectIterations []*dao.Iteration) error {
+func createIterationsIfNotExistForImport(data *vars.DataForFulfill, originalProjectIterations []*dao.Iteration) error {
 	iterationsNeedCreate := make(map[string]*dao.Iteration) // only created sheet related iterations
 	now := time.Now()
 	currentDayBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())

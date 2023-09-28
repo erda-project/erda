@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_issue
 
 import (
 	"fmt"
@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
@@ -29,8 +30,8 @@ func Test_decodeMapToIssueSheetModel(t *testing.T) {
 		uuid := NewIssueSheetColumnUUID(parts...)
 		return IssueSheetColumnUUID(uuid.String())
 	}
-	data := DataForFulfill{}
-	models, err := data.decodeMapToIssueSheetModel(map[IssueSheetColumnUUID]excel.Column{
+	data := &vars.DataForFulfill{}
+	models, err := decodeMapToIssueSheetModel(data, map[IssueSheetColumnUUID]excel.Column{
 		autoCompleteUUID("Common", "ID"): {
 			{Value: "1"},
 		},
@@ -77,7 +78,7 @@ func Test_parseStringSlice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, parseStringSliceByComma(tt.args.s), "parseStringSliceByComma(%v)", tt.args.s)
+			assert.Equalf(t, tt.want, vars.ParseStringSliceByComma(tt.args.s), "parseStringSliceByComma(%v)", tt.args.s)
 		})
 	}
 }

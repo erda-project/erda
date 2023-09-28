@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_issue
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	streamcommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/excel"
@@ -158,8 +159,8 @@ func autoMergeTitleCellsWithSameValue(rows excel.Rows) {
 	}
 }
 
-func (data DataForFulfill) genIssueSheetTitleAndDataByColumn() (*IssueSheetModelCellInfoByColumns, error) {
-	models, err := data.getIssueSheetModels()
+func GenIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetModelCellInfoByColumns, error) {
+	models, err := getIssueSheetModels(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get issue sheet models, err: %v", err)
 	}
@@ -183,9 +184,9 @@ func (data DataForFulfill) genIssueSheetTitleAndDataByColumn() (*IssueSheetModel
 				uuid := uuid
 				uuid.AddPart(getStructFieldExcelTag(structField))
 				// custom fields 动态字段，返回多个 column cell
-				if structField.Type == reflect.TypeOf([]ExcelCustomField{}) {
+				if structField.Type == reflect.TypeOf([]vars.ExcelCustomField{}) {
 					// 遍历 customFields, 每个 cf 生成一个 column cell
-					for _, cf := range valueField.Interface().([]ExcelCustomField) {
+					for _, cf := range valueField.Interface().([]vars.ExcelCustomField) {
 						uuid := uuid
 						uuid.AddPart(cf.Title)
 						info.Add(uuid, strutil.String(cf.Value))
@@ -199,20 +200,20 @@ func (data DataForFulfill) genIssueSheetTitleAndDataByColumn() (*IssueSheetModel
 	return &info, nil
 }
 
-func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
-	models := make([]IssueSheetModel, 0, len(data.ExportOnly.Issues))
+func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, error) {
+	models := make([]vars.IssueSheetModel, 0, len(data.ExportOnly.Issues))
 	if data.ExportOnly.IsDownloadTemplate {
-		models = data.GenerateSampleIssueSheetModels()
+		models = GenerateSampleIssueSheetModels(data)
 		return models, nil
 	}
 	for _, issue := range data.ExportOnly.Issues {
-		var model IssueSheetModel
+		var model vars.IssueSheetModel
 		// iteration name
-		iterationName, err := data.getIterationName(issue)
+		iterationName, err := getIterationName(data, issue)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get iteration name, err: %v", err)
 		}
-		model.Common = IssueSheetModelCommon{
+		model.Common = vars.IssueSheetModelCommon{
 			ID:                 uint64(issue.Id),
 			IterationName:      iterationName,
 			IssueType:          issue.Type,
@@ -222,8 +223,8 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 			Priority:           issue.Priority,
 			Complexity:         issue.Complexity,
 			Severity:           issue.Severity,
-			CreatorName:        data.getUserNick(issue.Creator),
-			AssigneeName:       data.getUserNick(issue.Assignee),
+			CreatorName:        getUserNick(data, issue.Creator),
+			AssigneeName:       getUserNick(data, issue.Assignee),
 			CreatedAt:          pbutil.GetTimeInLocal(issue.CreatedAt),
 			UpdatedAt:          pbutil.GetTimeInLocal(issue.UpdatedAt),
 			PlanStartedAt:      pbutil.GetTimeInLocal(issue.PlanStartedAt),
@@ -234,19 +235,19 @@ func (data DataForFulfill) getIssueSheetModels() ([]IssueSheetModel, error) {
 			Labels:             issue.Labels,
 			ConnectionIssueIDs: data.ExportOnly.ConnectionMap[issue.Id],
 		}
-		model.RequirementOnly = IssueSheetModelRequirementOnly{
+		model.RequirementOnly = vars.IssueSheetModelRequirementOnly{
 			InclusionIssueIDs: data.ExportOnly.InclusionMap[issue.Id],
-			CustomFields:      formatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
+			CustomFields:      vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
 		}
-		model.TaskOnly = IssueSheetModelTaskOnly{
+		model.TaskOnly = vars.IssueSheetModelTaskOnly{
 			TaskType:     issue.TaskType,
-			CustomFields: formatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_TASK, data),
+			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_TASK, data),
 		}
-		model.BugOnly = IssueSheetModelBugOnly{
-			OwnerName:    data.getUserNick(issue.Owner),
+		model.BugOnly = vars.IssueSheetModelBugOnly{
+			OwnerName:    getUserNick(data, issue.Owner),
 			Source:       issue.BugStage,
 			ReopenCount:  issue.ReopenCount,
-			CustomFields: formatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
+			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
 		}
 		models = append(models, model)
 	}
@@ -259,24 +260,6 @@ func getStructFieldExcelTag(structField reflect.StructField) string {
 		tag = structField.Name
 	}
 	return tag
-}
-
-func (data DataForFulfill) getUserNick(userid string) string {
-	if userid == "" {
-		return ""
-	}
-	if u, ok := data.ProjectMemberByUserID[userid]; ok {
-		return u.Nick
-	}
-	return ""
-}
-
-func (data DataForFulfill) getIterationName(issue *pb.Issue) (string, error) {
-	iteration, ok := data.IterationMapByID[issue.IterationID]
-	if !ok {
-		return "", fmt.Errorf("iteration not found, issue id: %d, iteration id: %d", issue.Id, issue.IterationID)
-	}
-	return iteration.Title, nil
 }
 
 func getStringCellValue(structField reflect.StructField, fieldValue reflect.Value) string {
@@ -319,4 +302,22 @@ func getStringCellValue(structField reflect.StructField, fieldValue reflect.Valu
 	default:
 		return strutil.String(fieldValue.Interface())
 	}
+}
+
+func getIterationName(data *vars.DataForFulfill, issue *pb.Issue) (string, error) {
+	iteration, ok := data.IterationMapByID[issue.IterationID]
+	if !ok {
+		return "", fmt.Errorf("iteration not found, issue id: %d, iteration id: %d", issue.Id, issue.IterationID)
+	}
+	return iteration.Title, nil
+}
+
+func getUserNick(data *vars.DataForFulfill, userid string) string {
+	if userid == "" {
+		return ""
+	}
+	if u, ok := data.ProjectMemberByUserID[userid]; ok {
+		return u.Nick
+	}
+	return ""
 }
