@@ -56,40 +56,47 @@ func (data DataForFulfill) genStateSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeStateSheet(df excel.DecodedFile) ([]dao.IssueState, []dao.IssueStateJoinSQL, error) {
+func (data DataForFulfill) decodeStateSheet(df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil, nil
+		return nil
 	}
 	s, ok := df.Sheets.M[nameOfSheetState]
 	if !ok {
-		return nil, nil, nil
+		return nil
 	}
 	sheet := s.UnmergedSlice
 	// check sheet
 	if len(sheet) <= 1 {
-		return nil, nil, fmt.Errorf("invalid state sheet, title or data not found")
+		return fmt.Errorf("invalid state sheet, title or data not found")
 	}
 	var state []dao.IssueState
 	var stateRelations []dao.IssueStateJoinSQL
 	// only one row
 	row := sheet[1]
 	if err := json.Unmarshal([]byte(row[0]), &state); err != nil {
-		return nil, nil, fmt.Errorf("failed to unmarshal state info, err: %v", err)
+		return fmt.Errorf("failed to unmarshal state info, err: %v", err)
 	}
 	if err := json.Unmarshal([]byte(row[1]), &stateRelations); err != nil {
-		return nil, nil, fmt.Errorf("failed to unmarshal state relation info, err: %v", err)
+		return fmt.Errorf("failed to unmarshal state relation info, err: %v", err)
 	}
-	return state, stateRelations, nil
+	data.ImportOnly.Sheets.Optional.StateInfo = &StateInfo{
+		States:        state,
+		StateJoinSQLs: stateRelations,
+	}
+	return nil
 }
 
-func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, originalProjectStateRelations []dao.IssueStateJoinSQL, issueSheetModels []IssueSheetModel) error {
+func (data *DataForFulfill) syncState(originalProjectStatesInfo *StateInfo) error {
+	if originalProjectStatesInfo == nil {
+		return nil
+	}
 	ctx := apis.WithUserIDContext(context.Background(), apistructs.SystemUserID)
 	// compare original & current project states
 	// update data.StateMapByID
 
 	// 分事项类型，每个类型比较状态的差异，只创建，不删除，因为新项目可能有新的状态
 	originalStateByTypeAndName := make(map[string]map[string]dao.IssueState)
-	for _, state := range originalProjectStates {
+	for _, state := range originalProjectStatesInfo.States {
 		if _, ok := originalStateByTypeAndName[state.IssueType]; !ok {
 			originalStateByTypeAndName[state.IssueType] = make(map[string]dao.IssueState)
 		}
@@ -107,7 +114,7 @@ func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, or
 		}
 	}
 	// 遍历 issue 里的状态，找到只在 issue sheet 里声明的新状态，包括新老格式
-	for _, issueSheetModel := range issueSheetModels {
+	for _, issueSheetModel := range data.ImportOnly.Sheets.Must.IssueInfo {
 		// 如果 state 已经在当前项目存在，跳过
 		if _, ok := data.StateMapByTypeAndName[issueSheetModel.Common.IssueType.String()][issueSheetModel.Common.State]; ok {
 			continue

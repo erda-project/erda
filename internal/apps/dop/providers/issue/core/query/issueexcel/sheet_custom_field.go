@@ -58,13 +58,13 @@ func (data DataForFulfill) genCustomFieldSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeCustomFieldSheet(df excel.DecodedFile) ([]*pb.IssuePropertyIndex, error) {
+func (data *DataForFulfill) decodeCustomFieldSheet(df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
 	s, ok := df.Sheets.M[nameOfSheetCustomField]
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	sheet := s.UnmergedSlice
 	var customFields []*pb.IssuePropertyIndex
@@ -73,15 +73,16 @@ func (data DataForFulfill) decodeCustomFieldSheet(df excel.DecodedFile) ([]*pb.I
 			continue
 		}
 		if len(row) != 4 {
-			return nil, fmt.Errorf("invalid custom field row, row: %v", row)
+			return fmt.Errorf("invalid custom field row, row: %v", row)
 		}
 		var property pb.IssuePropertyIndex
 		if err := json.Unmarshal([]byte(row[3]), &property); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal custom field detail, row: %v, err: %v", row, err)
+			return fmt.Errorf("failed to unmarshal custom field detail, row: %v, err: %v", row, err)
 		}
 		customFields = append(customFields, &property)
 	}
-	return customFields, nil
+	data.ImportOnly.Sheets.Optional.CustomFieldInfo = customFields
+	return nil
 }
 
 // createCustomFieldIfNotExistsForImport

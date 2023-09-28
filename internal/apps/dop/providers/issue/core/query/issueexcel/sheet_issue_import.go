@@ -31,13 +31,18 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) ([]IssueSheetModel, error) {
+func (data *DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return data.convertOldIssueSheet(df.Sheets.L[0].UnmergedSlice)
+		convertedIssueSheetModels, err := data.convertOldIssueSheet(df.Sheets.L[0].UnmergedSlice)
+		if err != nil {
+			return fmt.Errorf("failed to convert old issue sheet, err: %v", err)
+		}
+		data.ImportOnly.Sheets.Must.IssueInfo = convertedIssueSheetModels
+		return nil
 	}
 	s, ok := df.Sheets.M[nameOfSheetIssue]
 	if !ok {
-		return nil, fmt.Errorf("cannot find sheet: issue")
+		return fmt.Errorf("cannot find sheet: %s", nameOfSheetIssue)
 	}
 	sheet := s.UnmergedSlice
 	// convert [][][]string to map[uuid]excel.Column
@@ -50,7 +55,7 @@ func (data DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) ([]IssueSheetM
 		break
 	}
 	if columnIndex == 0 {
-		return nil, fmt.Errorf("invalid issue sheet, no column")
+		return fmt.Errorf("invalid issue sheet, no column")
 	}
 	m := make(map[IssueSheetColumnUUID]excel.Column)
 	for i := 0; i < columnIndex; i++ {
@@ -72,9 +77,10 @@ func (data DataForFulfill) DecodeIssueSheet(df excel.DecodedFile) ([]IssueSheetM
 	// decode map to models
 	models, err := data.decodeMapToIssueSheetModel(m)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode map to models, err: %v", err)
+		return fmt.Errorf("failed to decode map to models, err: %v", err)
 	}
-	return models, nil
+	data.ImportOnly.Sheets.Must.IssueInfo = models
+	return nil
 }
 
 func (data DataForFulfill) decodeMapToIssueSheetModel(m map[IssueSheetColumnUUID]excel.Column) (_ []IssueSheetModel, err error) {

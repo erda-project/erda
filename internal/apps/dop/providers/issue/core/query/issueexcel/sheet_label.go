@@ -62,37 +62,38 @@ func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeLabelSheet(df excel.DecodedFile) ([]*pb.ProjectLabel, error) {
+func (data *DataForFulfill) decodeLabelSheet(df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
 	s, ok := df.Sheets.M[nameOfSheetLabel]
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	sheet := s.UnmergedSlice
 	// check title
 	if len(sheet) < 1 {
-		return nil, fmt.Errorf("label sheet is empty")
+		return fmt.Errorf("label sheet is empty")
 	}
 	var labels []*pb.ProjectLabel
 	for _, row := range sheet[1:] {
 		var label pb.ProjectLabel
 		if err := json.Unmarshal([]byte(row[2]), &label); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal label info, label id: %s, err: %v", row[0], err)
+			return fmt.Errorf("failed to unmarshal label info, label id: %s, err: %v", row[0], err)
 		}
 		labels = append(labels, &label)
 	}
-	return labels, nil
+	data.ImportOnly.Sheets.Optional.LabelInfo = labels
+	return nil
 }
 
-func (data DataForFulfill) mergeLabelsForCreate(labelsFromLabelSheet []*pb.ProjectLabel, issueModels []IssueSheetModel) []*pb.ProjectLabel {
+func (data DataForFulfill) mergeLabelsForCreate(labelsFromLabelSheet []*pb.ProjectLabel) []*pb.ProjectLabel {
 	labelsFromLabelSheetMap := make(map[string]*pb.ProjectLabel, len(labelsFromLabelSheet))
 	for _, label := range labelsFromLabelSheet {
 		labelsFromLabelSheetMap[label.Name] = label
 	}
 
-	for _, model := range issueModels {
+	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
 		for _, labelName := range model.Common.Labels {
 			if _, ok := labelsFromLabelSheetMap[labelName]; ok {
 				continue

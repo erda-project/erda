@@ -79,8 +79,6 @@ type DataForFulfillImportOnly struct {
 	Identity  userpb.UserServiceServer
 	IssueCore pb.IssueCoreServiceServer
 
-	BaseInfo *DataForFulfillImportOnlyBaseInfo
-
 	IsOldExcelFormat bool
 
 	CurrentProjectIssueMap map[uint64]bool
@@ -88,12 +86,41 @@ type DataForFulfillImportOnly struct {
 	UserIDByNick map[string]string // key: nick, value: userID
 
 	Warnings []string // used to record warnings
+
+	Sheets SheetsInfo
 }
+
+type (
+	SheetsInfo struct {
+		Must     MustSheetsInfo
+		Optional OptionalSheetsInfo
+	}
+	MustSheetsInfo struct {
+		IssueInfo []IssueSheetModel
+	}
+	OptionalSheetsInfo struct {
+		BaseInfo        *DataForFulfillImportOnlyBaseInfo
+		UserInfo        []apistructs.Member
+		LabelInfo       []*pb.ProjectLabel
+		CustomFieldInfo []*pb.IssuePropertyIndex
+		IterationInfo   []*dao.Iteration
+		StateInfo       *StateInfo
+	}
+	DataForFulfillImportOnlyBaseInfo struct {
+		OriginalErdaPlatform  string // get from dop conf.DiceClusterName()
+		OriginalErdaProjectID uint64
+		AllProjectIssues      bool
+	}
+	StateInfo struct {
+		States        []dao.IssueState
+		StateJoinSQLs []dao.IssueStateJoinSQL
+	}
+)
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
 	// only can do id-same-update when erda-platform is same && project-id is same
 	if data.IsSameErdaPlatform() {
-		if data.ImportOnly.BaseInfo.OriginalErdaProjectID == data.ProjectID {
+		if data.ImportOnly.Sheets.Optional.BaseInfo.OriginalErdaProjectID == data.ProjectID {
 			return true
 		}
 	}
@@ -102,10 +129,10 @@ func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
 }
 
 func (data DataForFulfill) IsSameErdaPlatform() bool {
-	if data.ImportOnly.BaseInfo == nil {
+	if data.ImportOnly.Sheets.Optional.BaseInfo == nil {
 		panic("baseInfo is nil")
 	}
-	return data.ImportOnly.BaseInfo.OriginalErdaPlatform == conf.DiceClusterName()
+	return data.ImportOnly.Sheets.Optional.BaseInfo.OriginalErdaPlatform == conf.DiceClusterName()
 }
 
 func (data DataForFulfill) IsOldExcelFormat() bool {
@@ -132,7 +159,7 @@ func (data *DataForFulfill) JudgeIfIsOldExcelFormat(df excel.DecodedFile) {
 
 	// set value
 	data.ImportOnly.IsOldExcelFormat = true
-	data.ImportOnly.BaseInfo = &DataForFulfillImportOnlyBaseInfo{
+	data.ImportOnly.Sheets.Optional.BaseInfo = &DataForFulfillImportOnlyBaseInfo{
 		OriginalErdaPlatform:  "",
 		OriginalErdaProjectID: 0,
 	}

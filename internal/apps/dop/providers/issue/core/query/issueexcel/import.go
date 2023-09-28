@@ -36,56 +36,48 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 	data.JudgeIfIsOldExcelFormat(df)
 
 	// base info sheet first
-	baseInfo, err := data.decodeBaseInfoSheet(df)
-	if err != nil {
+	if err := data.decodeBaseInfoSheet(df); err != nil {
 		return fmt.Errorf("failed to decode base info sheet, err: %v", err)
 	}
-	_ = baseInfo
 	// issue sheet
-	issueSheetModels, err := data.DecodeIssueSheet(df)
-	if err != nil {
+	if err := data.DecodeIssueSheet(df); err != nil {
 		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
 	}
 	// user sheet
-	members, err := data.decodeUserSheet(df)
-	if err != nil {
+	if err := data.decodeUserSheet(df); err != nil {
 		return fmt.Errorf("failed to decode user sheet, err: %v", err)
 	}
-	if err := data.mapMemberForImport(members, issueSheetModels); err != nil {
+	if err := data.mapMemberForImport(data.ImportOnly.Sheets.Optional.UserInfo); err != nil {
 		return fmt.Errorf("failed to map member, err: %v", err)
 	}
 	// label sheet
-	labels, err := data.decodeLabelSheet(df)
-	if err != nil {
+	if err := data.decodeLabelSheet(df); err != nil {
 		return fmt.Errorf("failed to decode label sheet, err: %v", err)
 	}
-	mergedLabels := data.mergeLabelsForCreate(labels, issueSheetModels)
+	mergedLabels := data.mergeLabelsForCreate(data.ImportOnly.Sheets.Optional.LabelInfo)
 	if err := data.createLabelIfNotExistsForImport(mergedLabels); err != nil {
 		return fmt.Errorf("failed to create label, err: %v", err)
 	}
 	// custom field sheet
-	customFields, err := data.decodeCustomFieldSheet(df)
-	if err != nil {
+	if err := data.decodeCustomFieldSheet(df); err != nil {
 		return fmt.Errorf("failed to decode custom field sheet, err: %v", err)
 	}
-	if err := data.createCustomFieldIfNotExistsForImport(customFields); err != nil {
+	if err := data.createCustomFieldIfNotExistsForImport(data.ImportOnly.Sheets.Optional.CustomFieldInfo); err != nil {
 		return fmt.Errorf("failed to create custom field, err: %v", err)
 	}
 	// iteration sheet
-	iterations, err := data.decodeIterationSheet(df)
-	if err != nil {
+	if err := data.decodeIterationSheet(df); err != nil {
 		return fmt.Errorf("failed to decode iteration sheet, err: %v", err)
 	}
 	// create iterations if not exists before issue create
-	if err := data.createIterationsIfNotExistForImport(iterations, issueSheetModels); err != nil {
+	if err := data.createIterationsIfNotExistForImport(data.ImportOnly.Sheets.Optional.IterationInfo); err != nil {
 		return fmt.Errorf("failed to create iterations, err: %v", err)
 	}
 	// state sheet
-	states, stateRelations, err := data.decodeStateSheet(df)
-	if err != nil {
+	if err := data.decodeStateSheet(df); err != nil {
 		return fmt.Errorf("failed to decode state sheet, err: %v", err)
 	}
-	if err := data.syncState(states, stateRelations, issueSheetModels); err != nil {
+	if err := data.syncState(data.ImportOnly.Sheets.Optional.StateInfo); err != nil {
 		return fmt.Errorf("failed to sync custom issue state, err: %v", err)
 	}
 
@@ -93,7 +85,7 @@ func ImportFile(r io.Reader, data DataForFulfill) error {
 
 	// 创建或更新 issues
 	// 更新 model 里的相关关联 ID 字段，比如 L1 转换为具体的 ID
-	issues, issueModelMapByIssueID, err := data.createOrUpdateIssues(issueSheetModels)
+	issues, issueModelMapByIssueID, err := data.createOrUpdateIssues(data.ImportOnly.Sheets.Must.IssueInfo)
 	if err != nil {
 		return fmt.Errorf("failed to create or update issues, err: %v", err)
 	}

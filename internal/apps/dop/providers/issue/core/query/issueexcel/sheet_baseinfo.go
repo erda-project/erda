@@ -22,12 +22,6 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-type DataForFulfillImportOnlyBaseInfo struct {
-	OriginalErdaPlatform  string // get from dop conf.DiceClusterName()
-	OriginalErdaProjectID uint64
-	AllProjectIssues      bool
-}
-
 func (data DataForFulfill) genBaseInfoSheet() (excel.Rows, error) {
 	// only one row, k=meta, v=JSON(dataForFulfillImportOnlyBaseInfo)
 	meta := DataForFulfillImportOnlyBaseInfo{
@@ -45,29 +39,29 @@ func (data DataForFulfill) genBaseInfoSheet() (excel.Rows, error) {
 	return excel.Rows{row}, nil
 }
 
-func (data *DataForFulfill) decodeBaseInfoSheet(df excel.DecodedFile) (*DataForFulfillImportOnlyBaseInfo, error) {
+func (data *DataForFulfill) decodeBaseInfoSheet(df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
 	s, ok := df.Sheets.M[nameOfSheetBaseInfo]
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	sheet := s.UnmergedSlice
 	if len(sheet) != 1 {
-		return nil, fmt.Errorf("invalid base info sheet, rows: %d", len(sheet))
+		return fmt.Errorf("invalid base info sheet, rows: %d", len(sheet))
 	}
 	if len(sheet[0]) != 2 {
-		return nil, fmt.Errorf("invalid base info sheet, cols: %d", len(sheet[0]))
+		return fmt.Errorf("invalid base info sheet, cols: %d", len(sheet[0]))
 	}
 	if sheet[0][0] != "meta" {
-		return nil, fmt.Errorf("invalid base info sheet, first col: %s", sheet[0][0])
+		return fmt.Errorf("invalid base info sheet, first col: %s", sheet[0][0])
 	}
 	var meta DataForFulfillImportOnlyBaseInfo
 	if err := json.Unmarshal([]byte(sheet[0][1]), &meta); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal meta, err: %v", err)
+		return fmt.Errorf("failed to unmarshal meta, err: %v", err)
 	}
 	// set into data
-	data.ImportOnly.BaseInfo = &meta
-	return &meta, nil
+	data.ImportOnly.Sheets.Optional.BaseInfo = &meta
+	return nil
 }

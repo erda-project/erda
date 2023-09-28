@@ -52,34 +52,35 @@ func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data DataForFulfill) decodeUserSheet(df excel.DecodedFile) ([]apistructs.Member, error) {
+func (data *DataForFulfill) decodeUserSheet(df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
 	s, ok := df.Sheets.M[nameOfSheetUser]
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	sheet := s.UnmergedSlice
 	// check title
 	if len(sheet) < 1 {
-		return nil, fmt.Errorf("user sheet is empty")
+		return fmt.Errorf("user sheet is empty")
 	}
 	var members []apistructs.Member
 	for _, row := range sheet[1:] {
 		var member apistructs.Member
 		if err := json.Unmarshal([]byte(row[2]), &member); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal user info, user id: %s, err: %v", row[0], err)
+			return fmt.Errorf("failed to unmarshal user info, user id: %s, err: %v", row[0], err)
 		}
 		members = append(members, member)
 	}
-	return members, nil
+	data.ImportOnly.Sheets.Optional.UserInfo = members
+	return nil
 }
 
 // createIterationsIfNotExistForImport do not create user, is too hack.
 // The import operator should create user first, then import.
 // We can auto add user as member into project.
-func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistructs.Member, issueSheetModels []IssueSheetModel) error {
+func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistructs.Member) error {
 	var usersNeedToBeAddedAsMember []apistructs.Member
 
 	// 先把所有原有的用户都尝试添加到 project member 中
@@ -119,7 +120,7 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 	}
 	// handle nicks from issue sheet
 	userNickMapFromIssueSheet := make(map[string]struct{})
-	for _, model := range issueSheetModels {
+	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
 		userNickMapFromIssueSheet[model.Common.AssigneeName] = struct{}{}
 		userNickMapFromIssueSheet[model.Common.CreatorName] = struct{}{}
 		userNickMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}

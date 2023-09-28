@@ -70,13 +70,13 @@ func (data DataForFulfill) genIterationSheet() (excel.Rows, error) {
 	return lines, nil
 }
 
-func (data *DataForFulfill) decodeIterationSheet(df excel.DecodedFile) ([]*dao.Iteration, error) {
+func (data *DataForFulfill) decodeIterationSheet(df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
 	s, ok := df.Sheets.M[nameOfSheetIteration]
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	sheet := s.UnmergedSlice
 	var iterations []*dao.Iteration
@@ -85,22 +85,23 @@ func (data *DataForFulfill) decodeIterationSheet(df excel.DecodedFile) ([]*dao.I
 			continue
 		}
 		if len(row) < 3 {
-			return nil, fmt.Errorf("invalid iteration sheet, row: %d, len(row): %d", i, len(row))
+			return fmt.Errorf("invalid iteration sheet, row: %d, len(row): %d", i, len(row))
 		}
 		var iteration dao.Iteration
 		if err := json.Unmarshal([]byte(row[2]), &iteration); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal iteration info, row: %d, err: %v", i, err)
+			return fmt.Errorf("failed to unmarshal iteration info, row: %d, err: %v", i, err)
 		}
 		iterations = append(iterations, &iteration)
 	}
-	return iterations, nil
+	data.ImportOnly.Sheets.Optional.IterationInfo = iterations
+	return nil
 }
 
 // createIterationsIfNotExistForImport create iterations if not exist for import.
 // check by name:
 // - if not exist, create new iteration
 // - if exist, do not update, take the existing one as the standard
-func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectIterations []*dao.Iteration, issueSheetModels []IssueSheetModel) error {
+func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectIterations []*dao.Iteration) error {
 	iterationsNeedCreate := make(map[string]*dao.Iteration) // only created sheet related iterations
 	now := time.Now()
 	currentDayBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -117,7 +118,7 @@ func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectI
 		// create
 		iterationsNeedCreate[originalProjectIteration.Title] = originalProjectIteration
 	}
-	for _, issueSheetModel := range issueSheetModels {
+	for _, issueSheetModel := range data.ImportOnly.Sheets.Must.IssueInfo {
 		_, ok := data.IterationMapByName[issueSheetModel.Common.IterationName]
 		if ok {
 			continue
