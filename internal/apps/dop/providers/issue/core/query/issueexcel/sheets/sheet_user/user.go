@@ -19,11 +19,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
+	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -43,6 +45,12 @@ func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	lines = append(lines, title)
 	// data
 	for _, user := range data.ProjectMemberByUserID {
+		// desensitize data
+		user.Name = desensitize.Name(user.Name)
+		user.Nick = desensitize.Name(user.Nick)
+		user.Mobile = desensitize.Mobile(user.Mobile)
+		user.Email = desensitize.Email(user.Email)
+
 		userInfo, err := json.Marshal(user)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal user info, user id: %s, err: %v", user.UserID, err)
@@ -109,7 +117,7 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 			}
 		}
 		// check by other info
-		findUser, err := tryToFindUserByPhoneEmailNickName(data, originalMember)
+		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, originalMember)
 		if err != nil {
 			return fmt.Errorf("failed to find user, originalMember: %+v, err: %v", originalMember, err)
 		}
@@ -140,7 +148,8 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 		if _, ok := data.ImportOnly.UserIDByNick[nick]; ok {
 			continue
 		}
-		findUser, err := tryToFindUserByPhoneEmailNickName(data, apistructs.Member{Nick: nick, Name: nick})
+		// Risk of having the same name
+		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, apistructs.Member{Nick: nick})
 		if err != nil {
 			return fmt.Errorf("failed to find user, nick: %s, err: %v", nick, err)
 		}
@@ -205,46 +214,78 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 	return nil
 }
 
-func tryToFindUserByPhoneEmailNickName(data *vars.DataForFulfill, member apistructs.Member) (*userpb.User, error) {
-	// find user by phone/email/nick/name by order
-	type Voucher struct {
-		Type  string
-		Value string
-	}
-	vouchers := []Voucher{
-		{Type: "mobile", Value: member.Mobile},
-		{Type: "email", Value: member.Email},
-		{Type: "nick", Value: member.Nick},
-		{Type: "name", Value: member.Name},
-	}
-	for _, voucher := range vouchers {
-		if voucher.Value == "" {
-			continue
-		}
+type Voucher struct {
+	Type   string
+	Value  string
+	Result map[string]*userpb.User // key is user id
+}
+
+func tryToFindUserByDesensitizedPhoneEmailNickName(data *vars.DataForFulfill, member apistructs.Member) (*userpb.User, error) {
+	// 使用 phone/email/nick/name 字段 `*` 后的数据分别查询，结果取交集
+	getUsers := func(voucherType, voucher string) ([]*userpb.User, error) {
 		resp, err := data.ImportOnly.Identity.FindUsersByKey(context.Background(), &userpb.FindUsersByKeyRequest{
-			Key: voucher.Value,
+			Key: getPartVoucherFromDesensitizedData(voucher),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to find user by %s: %s, err: %v", voucher.Type, voucher.Value, err)
+			return nil, fmt.Errorf("failed to find user by %s: %s, err: %v", voucherType, voucher, err)
 		}
-		if len(resp.Data) == 0 {
-			continue
+		return resp.Data, nil
+	}
+
+	vouchers := []*Voucher{
+		{Type: "mobile", Value: member.Mobile, Result: make(map[string]*userpb.User)},
+		{Type: "email", Value: member.Email, Result: make(map[string]*userpb.User)},
+		{Type: "nick", Value: member.Nick, Result: make(map[string]*userpb.User)},
+		{Type: "name", Value: member.Name, Result: make(map[string]*userpb.User)},
+	}
+	// remove voucher which value is empty
+	for i := len(vouchers) - 1; i >= 0; i-- {
+		if vouchers[i].Value == "" {
+			vouchers = append(vouchers[:i], vouchers[i+1:]...)
 		}
-		findUser := resp.Data[0]
-		switch voucher.Type {
-		case "nick": // must be equal
-			if findUser.Nick == voucher.Value {
-				return findUser, nil
+	}
+	// use map with minimal length as iterate base
+	var minLen int
+	var minLenVoucher *Voucher
+	for _, voucher := range vouchers {
+		findUsers, err := getUsers(voucher.Type, voucher.Value)
+		if err != nil {
+			return nil, err
+		}
+		for _, u := range findUsers {
+			voucher.Result[u.ID] = u
+		}
+		if minLen == 0 || len(voucher.Result) < minLen {
+			minLen = len(voucher.Result)
+			minLenVoucher = voucher
+		}
+	}
+	for _, u := range minLenVoucher.Result {
+		// check if all vouchers have this user
+		allHave := true
+		for _, voucher := range vouchers {
+			if _, ok := voucher.Result[u.ID]; !ok {
+				allHave = false
+				break
 			}
-		case "name": // must be equal
-			if findUser.Name == voucher.Value {
-				return findUser, nil
-			}
-		default:
-			return findUser, nil
+		}
+		if allHave {
+			return u, nil
 		}
 	}
 	return nil, nil
+}
+
+// getPartVoucherFromDesensitizedData
+// abc -> abc
+// abc*d -> d
+// "" -> ""
+func getPartVoucherFromDesensitizedData(voucher string) string {
+	if voucher == "" {
+		return ""
+	}
+	parts := strings.Split(voucher, "*")
+	return parts[len(parts)-1]
 }
 
 func addMemberToUserIDNickMap(data *vars.DataForFulfill, member apistructs.Member) {
