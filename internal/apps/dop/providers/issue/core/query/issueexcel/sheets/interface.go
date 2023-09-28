@@ -25,10 +25,10 @@ type Namer interface {
 
 type Importer interface {
 	Namer
-	DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error
+	ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error
 }
 
 type Exporter interface {
 	Namer
-	EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error)
+	ExportSheet(data *vars.DataForFulfill) (excel.Rows, error)
 }

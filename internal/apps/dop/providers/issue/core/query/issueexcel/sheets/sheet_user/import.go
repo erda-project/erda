@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
-	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -34,38 +33,7 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetUser }
 
-func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
-	var lines excel.Rows
-	// title: user id, user name, user info (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("user id"),
-		excel.NewTitleCell("user name"),
-		excel.NewTitleCell("user detail (json)"),
-	}
-	lines = append(lines, title)
-	// data
-	for _, user := range data.ProjectMemberByUserID {
-		// desensitize data
-		user.Name = desensitize.Name(user.Name)
-		user.Nick = desensitize.Name(user.Nick)
-		user.Mobile = desensitize.Mobile(user.Mobile)
-		user.Email = desensitize.Email(user.Email)
-
-		userInfo, err := json.Marshal(user)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal user info, user id: %s, err: %v", user.UserID, err)
-		}
-		lines = append(lines, excel.Row{
-			excel.NewCell(user.UserID),
-			excel.NewCell(user.Nick),
-			excel.NewCell(string(userInfo)),
-		})
-	}
-
-	return lines, nil
-}
-
-func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
@@ -236,7 +204,7 @@ func tryToFindUserByDesensitizedPhoneEmailNickName(data *vars.DataForFulfill, me
 		{Type: "mobile", Value: member.Mobile, Result: make(map[string]*userpb.User)},
 		{Type: "email", Value: member.Email, Result: make(map[string]*userpb.User)},
 		{Type: "nick", Value: member.Nick, Result: make(map[string]*userpb.User)},
-		{Type: "name", Value: member.Name, Result: make(map[string]*userpb.User)},
+		//{Type: "name", Value: member.Name, Result: make(map[string]*userpb.User)},
 	}
 	// remove voucher which value is empty
 	for i := len(vouchers) - 1; i >= 0; i-- {

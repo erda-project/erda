@@ -17,7 +17,6 @@ package sheet_issue
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,18 +26,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 )
-
-func TestNewIssueSheetColumnUUID(t *testing.T) {
-	uuid := NewIssueSheetColumnUUID("Common", "ID")
-	assert.Equal(t, uuid.String(), strings.Join([]string{"Common", "ID", "ID"}, issueSheetColumnUUIDSplitter))
-	uuid = NewIssueSheetColumnUUID("ID")
-	assert.Equal(t, uuid.String(), strings.Join([]string{"ID", "ID", "ID"}, issueSheetColumnUUIDSplitter))
-	uuid = NewIssueSheetColumnUUID("")
-	assert.Panicsf(t, func() { uuid.String() }, "uuid should not be empty")
-	uuid.AddPart("Common")
-	uuid.AddPart("ID")
-	assert.Equal(t, uuid.String(), strings.Join([]string{"Common", "ID", "ID"}, issueSheetColumnUUIDSplitter))
-}
 
 func Test_genIssueSheetTitleAndDataByColumn(t *testing.T) {
 	data := &vars.DataForFulfill{

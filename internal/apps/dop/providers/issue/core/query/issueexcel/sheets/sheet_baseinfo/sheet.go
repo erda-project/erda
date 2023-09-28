@@ -27,7 +27,7 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetBaseInfo }
 
-func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
@@ -54,7 +54,7 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 	return nil
 }
 
-func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	// only one row, k=meta, v=JSON(dataForFulfillImportOnlyBaseInfo)
 	meta := vars.DataForFulfillImportOnlyBaseInfo{
 		OriginalErdaPlatform:  conf.DiceClusterName(),

@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -34,36 +33,7 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetCustomField }
 
-func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
-	var lines excel.Rows
-	// title: custom field id, custom field name, custom field type, custom field value
-	title := excel.Row{
-		excel.NewTitleCell("custom field id"),
-		excel.NewTitleCell("custom field name"),
-		excel.NewTitleCell("custom field type"),
-		excel.NewTitleCell("custom field detail (json)"),
-	}
-	lines = append(lines, title)
-	// data
-	for propertyType, properties := range data.CustomFieldMapByTypeName {
-		for _, cf := range properties {
-			cfInfo, err := json.Marshal(cf)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal custom field info, custom field id: %d, err: %v", cf.PropertyID, err)
-			}
-			lines = append(lines, excel.Row{
-				excel.NewCell(strconv.FormatInt(cf.PropertyID, 10)),
-				excel.NewCell(cf.PropertyName),
-				excel.NewCell(propertyType.String()),
-				excel.NewCell(string(cfInfo)),
-			})
-		}
-	}
-
-	return lines, nil
-}
-
-func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}

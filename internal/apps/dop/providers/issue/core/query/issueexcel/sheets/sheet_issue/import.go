@@ -36,7 +36,7 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetIssue }
 
-func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		convertedIssueSheetModels, err := convertOldIssueSheet(data, df.Sheets.L[0].UnmergedSlice)
 		if err != nil {

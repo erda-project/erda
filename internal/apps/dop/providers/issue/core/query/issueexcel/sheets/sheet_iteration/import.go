@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -31,51 +30,7 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetIteration }
 
-func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
-	// if AllProjectIssues=true, then export all iterations
-	// otherwise, just export iterations related to issues
-	relatedIterationMapByID := make(map[int64]struct{})
-	if !data.ExportOnly.AllProjectIssues {
-		for _, issue := range data.ExportOnly.Issues {
-			relatedIterationMapByID[issue.IterationID] = struct{}{}
-		}
-	}
-
-	var lines excel.Rows
-	// title: iteration id, iteration name, iteration info (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("iteration id"),
-		excel.NewTitleCell("iteration name"),
-		excel.NewTitleCell("iteration detail (json)"),
-	}
-	lines = append(lines, title)
-	// data
-	for _, iteration := range data.IterationMapByID {
-		iteration := iteration
-		if iteration.ID <= 0 {
-			continue
-		}
-		if !data.ExportOnly.AllProjectIssues {
-			// only related iteration need to be exported
-			if _, ok := relatedIterationMapByID[int64(iteration.ID)]; !ok {
-				continue
-			}
-		}
-		b, err := json.Marshal(iteration)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal iteration info, iteration id: %d, err: %v", iteration.ID, err)
-		}
-		lines = append(lines, excel.Row{
-			excel.NewCell(strconv.FormatUint(iteration.ID, 10)),
-			excel.NewCell(iteration.Title),
-			excel.NewCell(string(b)),
-		})
-	}
-
-	return lines, nil
-}
-
-func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}

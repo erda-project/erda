@@ -34,34 +34,7 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetState }
 
-func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
-	var lines excel.Rows
-
-	// title: state (JSON), state_relation (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("state (json)"),
-		excel.NewTitleCell("state_relation (json)"),
-	}
-	lines = append(lines, title)
-
-	// data
-	stateBytes, err := json.Marshal(data.ExportOnly.States)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal state info, err: %v", err)
-	}
-	stateRelationBytes, err := json.Marshal(data.ExportOnly.StateRelations)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal state relation info, err: %v", err)
-	}
-	lines = append(lines, excel.Row{
-		excel.NewCell(string(stateBytes)),
-		excel.NewCell(string(stateRelationBytes)),
-	})
-
-	return lines, nil
-}
-
-func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}

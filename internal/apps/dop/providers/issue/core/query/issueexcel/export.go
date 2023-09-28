@@ -55,7 +55,7 @@ func ExportFile(w io.Writer, data *vars.DataForFulfill) (err error) {
 			continue
 		}
 
-		rows, err := h.EncodeSheet(data)
+		rows, err := h.ExportSheet(data)
 		if err != nil {
 			return fmt.Errorf("failed to gen sheet %q, err: %v", h.SheetName(), err)
 		}

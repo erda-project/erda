@@ -33,41 +33,7 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetLabel }
 
-func (h *Handler) EncodeSheet(data *vars.DataForFulfill) (excel.Rows, error) {
-	var lines excel.Rows
-	// title: label id, label name, label detail (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("label id"),
-		excel.NewTitleCell("label name"),
-		excel.NewTitleCell("label detail (json)"),
-	}
-	lines = append(lines, title)
-	// data
-	// collect labels from issues
-	labelMap := make(map[int64]*pb.ProjectLabel)
-	for _, issue := range data.ExportOnly.Issues {
-		for _, label := range issue.LabelDetails {
-			if _, ok := labelMap[label.Id]; !ok {
-				labelMap[label.Id] = label
-			}
-		}
-	}
-	for _, label := range labelMap {
-		labelInfo, err := json.Marshal(label)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal label info, label id: %d, err: %v", label.Id, err)
-		}
-		lines = append(lines, excel.Row{
-			excel.NewCell(strconv.FormatInt(label.Id, 10)),
-			excel.NewCell(label.Name),
-			excel.NewCell(string(labelInfo)),
-		})
-	}
-
-	return lines, nil
-}
-
-func (h *Handler) DecodeSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
