@@ -176,7 +176,7 @@ func (p *provider) calPersonalFields(personalInfo *PersonalPerformanceInfo) (*pe
 		endStateIDS = append(endStateIDS, int64(id))
 	}
 	bugManHour, err := p.issueDB.GetIssuesManHour(apistructs.IssuesStageRequest{
-		Assignee:       userID,
+		Owner:          userID,
 		IssueType:      apistructs.IssueTypeBug,
 		StatisticRange: "project",
 		RangeID:        int64(projectID),
