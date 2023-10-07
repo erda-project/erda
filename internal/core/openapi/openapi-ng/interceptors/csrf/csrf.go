@@ -135,18 +135,19 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 				referer := r.Header.Get("Referer")
 				p.Log.Debugf("referer: %s", referer)
 				if referer == "" {
-					p.Log.Debugf("skip validate token for empty referer")
+					p.Log.Debug("skip validate token for empty referer")
 					validateToken = false
 				}
 				if r.Host == os.Getenv("SELF_ADDR") {
-					p.Log.Debugf("skip validate token for self-addr")
+					p.Log.Debug("skip validate token for self-addr")
 					validateToken = false
 				}
 				if ref, err := url.Parse(referer); err == nil {
 					refHostPort := getHostPort(ref.Host, ref.Scheme)
 					rHostPort := getHostPort(r.Host, r.URL.Scheme)
+					p.Log.Debugf("refHostPort: %s, rHostPort: %s", refHostPort, rHostPort)
 					if refHostPort == rHostPort {
-						p.Log.Debugf("skip validate token for same host-port: %s", refHostPort)
+						p.Log.Debug("skip validate token for same host-port")
 						validateToken = false
 					}
 				}
