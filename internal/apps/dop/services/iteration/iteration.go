@@ -116,6 +116,24 @@ func (itr *Iteration) Update(id uint64, req apistructs.IterationUpdateRequest) e
 	return nil
 }
 
+func (itr *Iteration) GetIterationSummary(projectID uint64, iterationID uint64) (*apistructs.ISummary, error) {
+	bugCloseStateIDS, err := itr.getDoneStateIDSByType(projectID, apistructs.IssueTypeBug)
+	if err != nil {
+		return nil, err
+	}
+	taskDoneStateIDS, err := itr.getDoneStateIDSByType(projectID, apistructs.IssueTypeTask)
+	if err != nil {
+		return nil, err
+	}
+	reqDoneStateIDS, err := itr.getDoneStateIDSByType(projectID, apistructs.IssueTypeRequirement)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := itr.issueDBClient.GetIssueSummary(int64(iterationID), taskDoneStateIDS, bugCloseStateIDS, reqDoneStateIDS)
+	return &summary, nil
+}
+
 // Get 获取 iteration 详情
 func (itr *Iteration) Get(id uint64) (*dao.Iteration, error) {
 	iteration, err := itr.db.GetIteration(id)
