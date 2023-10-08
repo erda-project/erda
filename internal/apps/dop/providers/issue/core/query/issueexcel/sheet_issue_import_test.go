@@ -15,7 +15,9 @@
 package issueexcel
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -113,4 +115,78 @@ func Test_removeEmptySheetRows(t *testing.T) {
 	assert.True(t, len(rows) == 2)
 	assert.Equal(t, []string{"a", "b", ""}, rows[0])
 	assert.Equal(t, []string{"c", "", ""}, rows[1])
+}
+
+func Test_parseStringTime(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *time.Time
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "normal",
+			args: args{
+				s: "2021-07-12 12:00:00",
+			},
+			want: func() *time.Time {
+				t := time.Date(2021, 7, 12, 12, 0, 0, 0, time.Local)
+				return &t
+			}(),
+			wantErr: assert.NoError,
+		},
+		{
+			name: "normal slash",
+			args: args{
+				s: "2021/07/12 12:00:00",
+			},
+			want: func() *time.Time {
+				t := time.Date(2021, 7, 12, 12, 0, 0, 0, time.Local)
+				return &t
+			}(),
+			wantErr: assert.NoError,
+		},
+		{
+			name: "short slash",
+			args: args{
+				s: "2021/7/12 0:00:00",
+			},
+			want: func() *time.Time {
+				t := time.Date(2021, 7, 12, 0, 0, 0, 0, time.Local)
+				return &t
+			}(),
+			wantErr: assert.NoError,
+		},
+		{
+			name: "empty",
+			args: args{
+				s: "",
+			},
+			want:    nil,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "-",
+			args: args{
+				s: `2021\-07\-12 12:00:00`,
+			},
+			want: func() *time.Time {
+				t := time.Date(2021, 7, 12, 12, 0, 0, 0, time.Local)
+				return &t
+			}(),
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseStringTime(tt.args.s)
+			if !tt.wantErr(t, err, fmt.Sprintf("parseStringTime(%v)", tt.args.s)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "parseStringTime(%v)", tt.args.s)
+		})
+	}
 }
