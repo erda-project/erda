@@ -240,11 +240,51 @@ func parseStringTime(s string) (*time.Time, error) {
 	if s == "" {
 		return nil, nil
 	}
+	// replace '\' to ''
+	s = strings.ReplaceAll(s, `\`, "")
+	// parse as 2006-01-02 15:04:05
 	t, err := time.ParseInLocation("2006-01-02 15:04:05", s, time.Local)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		return &t, nil
 	}
-	return &t, nil
+	// parse as 2023/10/9 0:00:00
+	t, err = parseStringTimeSlash(s)
+	if err == nil {
+		return &t, nil
+	}
+	return nil, fmt.Errorf("invalid time: %s", s)
+}
+
+func parseStringTimeSlash(timeStr string) (time.Time, error) {
+	// 定义时间字符串的格式
+	layout := "2006/01/02 15:04:05"
+
+	timeStr = strings.TrimSpace(timeStr)
+
+	// 检查日期部分的位数
+	parts := strings.SplitN(timeStr, " ", 2)
+	if len(parts) < 2 {
+		return time.Time{}, fmt.Errorf("invalid time: %s", timeStr)
+	}
+
+	dateParts := strings.SplitN(parts[0], "/", 3)
+	if len(dateParts) < 3 {
+		return time.Time{}, fmt.Errorf("invalid time: %s", timeStr)
+	}
+	if len(dateParts[1]) == 1 { // month
+		dateParts[1] = "0" + dateParts[1]
+	}
+	if len(dateParts[2]) == 1 { // day
+		dateParts[2] = "0" + dateParts[2]
+	}
+	timeStr = fmt.Sprintf(`%s/%s/%s %s`, dateParts[0], dateParts[1], dateParts[2], parts[1])
+
+	// 解析时间字符串
+	t, err := time.ParseInLocation(layout, timeStr, time.Local)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t, nil
 }
 
 func mustParseStringTime(s string, typ string) *time.Time {
