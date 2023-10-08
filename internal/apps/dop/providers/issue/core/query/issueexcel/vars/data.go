@@ -193,5 +193,8 @@ func (data *DataForFulfill) CheckPermission() error {
 }
 
 func (data *DataForFulfill) IsFullExport() bool {
+	if data.ExportOnly.IsDownloadTemplate {
+		return false
+	}
 	return data.ExportOnly.AllProjectIssues
 }

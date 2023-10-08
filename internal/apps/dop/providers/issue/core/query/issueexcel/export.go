@@ -51,8 +51,10 @@ func ExportFile(w io.Writer, data *vars.DataForFulfill) (err error) {
 
 	for _, h := range handlers {
 		// only full export need to export other sheets
-		if !data.IsFullExport() && h.SheetName() != vars.NameOfSheetIssue {
-			continue
+		if h.SheetName() != vars.NameOfSheetIssue {
+			if !data.IsFullExport() {
+				continue
+			}
 		}
 
 		rows, err := h.ExportSheet(data)

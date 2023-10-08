@@ -69,7 +69,12 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 				// custom fields 动态字段，返回多个 column cell
 				if structField.Type == reflect.TypeOf([]vars.ExcelCustomField{}) {
 					// 遍历 customFields, 每个 cf 生成一个 column cell
-					for _, cf := range valueField.Interface().([]vars.ExcelCustomField) {
+					cfs := valueField.Interface().([]vars.ExcelCustomField)
+					if len(cfs) == 0 {
+						cfBelongingIssueType := getCustomFieldBelongingTypeFromUUID(uuid)
+						cfs = vars.FormatIssueCustomFields(&pb.Issue{Id: int64(model.Common.ID)}, getIssuePropertyEnumTypeByIssueType(cfBelongingIssueType), data)
+					}
+					for _, cf := range cfs {
 						uuid := uuid
 						uuid.AddPart(cf.Title)
 						info.Add(uuid, strutil.String(cf.Value))
@@ -81,6 +86,32 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 		}
 	}
 	return &info, nil
+}
+
+func getCustomFieldBelongingTypeFromUUID(uuid IssueSheetColumnUUID) pb.IssueTypeEnum_Type {
+	switch uuid.Decode()[0] {
+	case "RequirementOnly":
+		return pb.IssueTypeEnum_REQUIREMENT
+	case "TaskOnly":
+		return pb.IssueTypeEnum_TASK
+	case "BugOnly":
+		return pb.IssueTypeEnum_BUG
+	default:
+		panic(fmt.Errorf("failed to get issue type from uuid: %s", uuid.Decode()[0]))
+	}
+}
+
+func getIssuePropertyEnumTypeByIssueType(issueType pb.IssueTypeEnum_Type) pb.PropertyIssueTypeEnum_PropertyIssueType {
+	switch issueType {
+	case pb.IssueTypeEnum_REQUIREMENT:
+		return pb.PropertyIssueTypeEnum_REQUIREMENT
+	case pb.IssueTypeEnum_TASK:
+		return pb.PropertyIssueTypeEnum_TASK
+	case pb.IssueTypeEnum_BUG:
+		return pb.PropertyIssueTypeEnum_BUG
+	default:
+		panic(fmt.Errorf("unknown issue type: %s", issueType.String()))
+	}
 }
 
 func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, error) {

@@ -65,18 +65,6 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 			InclusionIssueIDs: []int64{2, -(3 + uuidPartsMustLength)},
 			CustomFields:      vars.FormatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
 		},
-		// Assign to `TaskOnly` and `BugOnly` fields to avoid uuid order mismatch error.
-		// Requirement is the first model, so just do for requirement only.
-		TaskOnly: vars.IssueSheetModelTaskOnly{
-			TaskType:     "",
-			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_TASK, data),
-		},
-		BugOnly: vars.IssueSheetModelBugOnly{
-			OwnerName:    "",
-			Source:       "",
-			ReopenCount:  0,
-			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(requirementCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
-		},
 	}
 	// task
 	taskCommon := common
