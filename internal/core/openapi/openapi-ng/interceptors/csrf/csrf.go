@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -125,24 +126,37 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 			// Reuse token
 			token = k.Value
 		}
+		p.Log.Debugf("token from cookie: %s", token)
 		switch r.Method {
 		case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
 		default:
 			validateToken := true
 			if p.Cfg.AllowValidReferer {
 				referer := r.Header.Get("Referer")
+				p.Log.Debugf("referer: %s", referer)
 				if referer == "" {
+					p.Log.Debug("skip validate token for empty referer")
+					validateToken = false
+				}
+				if r.Host == os.Getenv("SELF_ADDR") {
+					p.Log.Debug("skip validate token for self-addr")
 					validateToken = false
 				}
 				if ref, err := url.Parse(referer); err == nil {
-					if ref.Host == r.Host {
+					refHostPort := getHostPort(ref.Host, ref.Scheme)
+					rHostPort := getHostPort(r.Host, r.URL.Scheme)
+					p.Log.Debugf("refHostPort: %s, rHostPort: %s", refHostPort, rHostPort)
+					if refHostPort == rHostPort {
+						p.Log.Debug("skip validate token for same host-port")
 						validateToken = false
 					}
 				}
 			}
+			p.Log.Debugf("validateToken: %v", validateToken)
 			if validateToken {
 				// Validate token only for requests which are not defined as 'safe' by RFC7231
 				clientToken, err := p.extractor(r)
+				p.Log.Debugf("token from client: %s", clientToken)
 				if err != nil {
 					// Browsers block frontend JavaScript code from accessing the Set Cookie header,
 					// as required by the Fetch spec, which defines Set-Cookie as a forbidden response-header name
@@ -280,6 +294,18 @@ func firstNonEmpty(ss ...string) string {
 		}
 	}
 	return ""
+}
+
+func getHostPort(host, scheme string) string {
+	colon := strings.LastIndexByte(host, ':')
+	if colon != -1 {
+		return host
+	}
+	// plus port by scheme
+	if scheme == "https" {
+		return host + ":443"
+	}
+	return host + ":80"
 }
 
 func init() {
