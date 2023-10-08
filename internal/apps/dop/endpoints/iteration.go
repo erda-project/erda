@@ -289,9 +289,15 @@ func (e *Endpoints) GetIteration(ctx context.Context, r *http.Request, vars map[
 			return apierrors.ErrGetIteration.AccessDenied().ToResp(), nil
 		}
 	}
+	issueSummary, err := e.iteration.GetIterationSummary(iteration.ProjectID, iteration.ID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	convertIteration := iteration.Convert(e.getIterationLabelDetails(iterationID))
+	convertIteration.IssueSummary = *issueSummary
 
 	userIDs := []string{iteration.Creator}
-	return httpserver.OkResp(iteration.Convert(e.getIterationLabelDetails(iterationID)), userIDs)
+	return httpserver.OkResp(convertIteration, userIDs)
 }
 
 // PagingIterations 分页查询迭代
