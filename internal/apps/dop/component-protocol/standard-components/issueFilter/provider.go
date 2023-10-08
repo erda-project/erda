@@ -69,7 +69,7 @@ func init() {
 func (f *IssueFilter) Initial(sdk *cptype.SDK) {
 	f.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.issueFilterBmSvc = sdk.Ctx.Value(types.IssueFilterBmService).(*issuefilterbm.IssueFilterBookmark)
-	f.issueSvc = sdk.Ctx.Value(types.IssueService).(query.Interface)
+	f.issueSvc = sdk.Ctx.Value(types.IssueQuery).(query.Interface)
 	f.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
 	f.sdk = sdk
 	if err := f.setInParams(); err != nil {

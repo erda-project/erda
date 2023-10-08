@@ -51,7 +51,7 @@ func (i *Info) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	i.Issues = h.GetIssueList()
 
 	conditions := h.GetIssueCondtions()
-	issueSvc := ctx.Value(types.IssueService).(query.Interface)
+	issueSvc := ctx.Value(types.IssueQuery).(query.Interface)
 	projectID, err := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	if err != nil {
 		return err

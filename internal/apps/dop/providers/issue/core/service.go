@@ -545,6 +545,105 @@ func (i *IssueService) DeleteIssue(ctx context.Context, req *pb.DeleteIssueReque
 	return &pb.DeleteIssueResponse{Data: issue}, nil
 }
 
+// BatchDeleteIssues 批量删除
+func (i *IssueService) BatchDeleteIssues(ctx context.Context, req *pb.BatchDeleteIssueRequest) (*pb.BatchDeleteIssueResponse, error) {
+	numSlice := make([]uint64, len(req.Ids))
+	for i, str := range req.Ids {
+		num, err := strconv.ParseUint(str, 10, 64)
+		if err != nil {
+			return nil, apierrors.ErrBatchDeleteIssue.InvalidParameter(err)
+		}
+		numSlice[i] = num
+	}
+	ids := make([]int64, len(req.Ids))
+	for k, v := range numSlice {
+		ids[k] = int64(v)
+	}
+
+	identityInfo := apis.GetIdentityInfo(ctx)
+	if identityInfo == nil {
+		return nil, apierrors.ErrUpdateIssue.NotLogin()
+	}
+
+	issues, _, err := i.query.Paging(pb.PagingIssueRequest{IDs: ids, ProjectID: req.ProjectID})
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, issue := range issues {
+		rels, err := i.GetTestPlanCaseRels(uint64(issue.Id))
+		if err != nil {
+			return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
+		}
+		issue.TestPlanCaseRels = rels
+
+		if !apis.IsInternalClient(ctx) {
+			if identityInfo.UserID != issue.Creator && identityInfo.UserID != issue.Assignee {
+				access, err := i.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+					UserID:   identityInfo.UserID,
+					Scope:    apistructs.ProjectScope,
+					ScopeID:  issue.ProjectID,
+					Resource: "issue-" + strings.ToLower(issue.Type.String()),
+					Action:   apistructs.DeleteAction,
+				})
+				if err != nil {
+					return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
+				}
+				if !access.Access {
+					return nil, apierrors.ErrBatchDeleteIssue.AccessDenied()
+				}
+			}
+		}
+
+		// 删除史诗前判断是否关联了事件
+		if issue.Type == pb.IssueTypeEnum_EPIC {
+			relatingIssueIDs, err := i.db.GetRelatingIssues(uint64(numSlice[k]), []string{apistructs.IssueRelationConnection})
+			if err != nil {
+				return nil, err
+			}
+			if len(relatingIssueIDs) > 0 {
+				return nil, apierrors.ErrBatchDeleteIssue.InvalidState("史诗下关联了事件,不可删除")
+			}
+		}
+
+		// 删除测试计划用例关联
+		if issue.Type == pb.IssueTypeEnum_BUG {
+			if err := i.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{numSlice[k]}); err != nil {
+				return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
+			}
+		}
+	}
+
+	if err := i.db.BatchCleanIssueRelation(numSlice); err != nil {
+		return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
+	}
+
+	if err := i.db.BatchDeletePropertyRelationByIssueID(ids); err != nil {
+		return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
+	}
+
+	// delete issue state transition
+	if err = i.db.BatchDeleteIssuesStateTransition(numSlice); err != nil {
+		return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
+	}
+
+	if err = i.db.BatchDeleteIssues(numSlice); err != nil {
+		return nil, err
+	}
+
+	for _, issue := range issues {
+		if err := i.bdl.UpdateProjectActiveTime(apistructs.ProjectActiveTimeUpdateRequest{
+			ProjectID:  issue.ProjectID,
+			ActiveTime: time.Now(),
+		}); err != nil {
+			logrus.Errorf("update project active time err: %v", err)
+		}
+	}
+
+	return &pb.BatchDeleteIssueResponse{Data: issues}, nil
+}
+
 func (i *IssueService) GetTestPlanCaseRels(issueID uint64) ([]*pb.TestPlanCaseRel, error) {
 	// 查询关联的测试计划用例
 	testPlanCaseRels := make([]*pb.TestPlanCaseRel, 0)

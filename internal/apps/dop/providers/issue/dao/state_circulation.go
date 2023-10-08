@@ -52,6 +52,10 @@ func (client *DBClient) DeleteIssuesStateTransition(issueID uint64) error {
 	return client.Model(&IssueStateTransition{}).Where("issue_id = ?", issueID).Delete(IssueStateTransition{}).Error
 }
 
+func (client *DBClient) BatchDeleteIssuesStateTransition(issueIDs []uint64) error {
+	return client.Model(&IssueStateTransition{}).Where("issue_id IN (?)", issueIDs).Delete(IssueStateTransition{}).Error
+}
+
 func (client *DBClient) ListStatesTransByProjectID(projectID uint64) ([]IssueStateTransition, error) {
 	var statesTrans []IssueStateTransition
 	db := client.Model(&IssueStateTransition{}).Where("project_id = ?", projectID)

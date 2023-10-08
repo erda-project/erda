@@ -88,6 +88,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.NoPermMethod(IssueService.UpdateIssue),
 			perm.NoPermMethod(IssueService.DeleteIssue),
 			perm.Method(IssueService.BatchUpdateIssue, perm.ScopeProject, IssueResource, perm.ActionUpdate, ScopeID, perm.WithSkipPermInternalClient(true)),
+			perm.NoPermMethod(IssueService.BatchDeleteIssues),
 			perm.Method(IssueService.UpdateIssueType, perm.ScopeProject, "issue-type", perm.ActionUpdate, ScopeID, perm.WithSkipPermInternalClient(true)),
 			perm.NoPermMethod(IssueService.SubscribeIssue),
 			perm.NoPermMethod(IssueService.UnsubscribeIssue),

@@ -121,7 +121,7 @@ func (f *StackChart) InitFromProtocol(ctx context.Context, c *cptype.Component) 
 		return err
 	}
 
-	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
+	f.issueSvc = ctx.Value(types.IssueQuery).(query.Interface)
 	f.DateMap = make(map[time.Time]map[uint64]int, 0)
 	f.Dates = make([]time.Time, 0)
 	return f.setInParams(ctx)
