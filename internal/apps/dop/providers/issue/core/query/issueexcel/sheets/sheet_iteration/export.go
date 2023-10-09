@@ -24,10 +24,10 @@ import (
 )
 
 func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
-	// if AllProjectIssues=true, then export all iterations
+	// if IsFullExport=true, then export all iterations
 	// otherwise, just export iterations related to issues
 	relatedIterationMapByID := make(map[int64]struct{})
-	if !data.ExportOnly.AllProjectIssues {
+	if !data.ExportOnly.IsFullExport {
 		for _, issue := range data.ExportOnly.Issues {
 			relatedIterationMapByID[issue.IterationID] = struct{}{}
 		}
@@ -47,7 +47,7 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 		if iteration.ID <= 0 {
 			continue
 		}
-		if !data.ExportOnly.AllProjectIssues {
+		if !data.ExportOnly.IsFullExport {
 			// only related iteration need to be exported
 			if _, ok := relatedIterationMapByID[int64(iteration.ID)]; !ok {
 				continue

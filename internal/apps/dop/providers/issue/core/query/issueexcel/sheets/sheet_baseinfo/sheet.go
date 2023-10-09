@@ -59,7 +59,7 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	meta := vars.DataForFulfillImportOnlyBaseInfo{
 		OriginalErdaPlatform:  conf.DiceClusterName(),
 		OriginalErdaProjectID: data.ProjectID,
-		AllProjectIssues:      data.ExportOnly.AllProjectIssues,
+		AllProjectIssues:      data.ExportOnly.IsFullExport,
 	}
 	b, err := json.Marshal(&meta)
 	if err != nil {

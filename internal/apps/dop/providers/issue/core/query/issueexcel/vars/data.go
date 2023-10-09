@@ -59,7 +59,7 @@ type DataForFulfill struct {
 }
 
 type DataForFulfillExportOnly struct {
-	AllProjectIssues         bool // 全量导出
+	IsFullExport             bool // 全量导出
 	FileNameWithExt          string
 	Issues                   []*pb.Issue
 	IsDownloadTemplate       bool
@@ -201,5 +201,5 @@ func (data *DataForFulfill) IsFullExport() bool {
 	if data.ExportOnly.IsDownloadTemplate {
 		return false
 	}
-	return data.ExportOnly.AllProjectIssues
+	return data.ExportOnly.IsFullExport
 }

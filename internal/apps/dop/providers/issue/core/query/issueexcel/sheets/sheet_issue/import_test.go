@@ -191,3 +191,20 @@ func Test_parseStringTime(t *testing.T) {
 		})
 	}
 }
+
+func Test_autoFillEmptyRowCells(t *testing.T) {
+	rows := [][]string{
+		{"a", "b", "c"},
+		{"a"},
+		{"1", "2"},
+	}
+	autoFillEmptyRowCells(&rows, 3)
+	assert.Equal(t, 3, len(rows[0]))
+
+	assert.Equal(t, 3, len(rows[1]))
+	assert.Equal(t, "", rows[1][1])
+	assert.Equal(t, "", rows[1][2])
+
+	assert.Equal(t, 3, len(rows[2]))
+	assert.Equal(t, "", rows[2][2])
+}
