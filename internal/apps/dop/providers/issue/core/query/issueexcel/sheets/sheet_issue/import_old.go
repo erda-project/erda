@@ -54,6 +54,8 @@ func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.I
 	default:
 		return nil, fmt.Errorf("invalid column len: %d, please check excel", columnLen)
 	}
+	// auto fill empty cells
+	autoFillEmptyRowCells(&sheet, columnLen)
 	// try to match custom field name to issue type, because the order of custom field is not fixed
 	var customFieldNames []string
 	var columnIndexAndPropertyTypeMap map[int]pb.PropertyIssueTypeEnum_PropertyIssueType

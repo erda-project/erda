@@ -54,16 +54,19 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 	issueSheetRows := sheet
 	// polish sheet rows, remove empty rows
 	removeEmptySheetRows(&issueSheetRows)
-	var columnIndex int
+	var columnLen int
 	for _, row := range issueSheetRows {
-		columnIndex = len(row)
+		columnLen = len(row)
 		break
 	}
-	if columnIndex == 0 {
+	if columnLen == 0 {
 		return fmt.Errorf("invalid issue sheet, no column")
 	}
+	// auto fill empty cells
+	autoFillEmptyRowCells(&issueSheetRows, columnLen)
+
 	m := make(map[IssueSheetColumnUUID]excel.Column)
-	for i := 0; i < columnIndex; i++ {
+	for i := 0; i < columnLen; i++ {
 		// format like "Common---ID---ID"
 		var uuid IssueSheetColumnUUID
 		for j := 0; j < uuidPartsMustLength; j++ {
@@ -577,4 +580,13 @@ func removeEmptySheetRows(rows *[][]string) {
 		}
 	}
 	*rows = newRows
+}
+
+// autoFillEmptyRowCells fill empty cell if row is not empty
+func autoFillEmptyRowCells(rows *[][]string, columnIndex int) {
+	for i, row := range *rows {
+		if len(row) < columnIndex {
+			(*rows)[i] = append(row, make([]string, columnIndex-len(row))...)
+		}
+	}
 }
