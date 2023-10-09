@@ -126,6 +126,16 @@ func (client *DBClient) CleanIssueRelation(issueID uint64) error {
 	return nil
 }
 
+// BatchCleanIssueRelation 批量清理所有的issue关联关系
+func (client *DBClient) BatchCleanIssueRelation(issueIDs []uint64) error {
+	if err := client.Table("dice_issue_relation").Where("issue_id in (?) or related_issue in (?)", issueIDs, issueIDs).
+		Delete(IssueRelation{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *DBClient) GetIssueRelationsByIDs(issueIDs []uint64, relationTypes []string) ([]IssueRelation, error) {
 	sql := client.Table("dice_issue_relation").Where("issue_id in (?)", issueIDs)
 	if len(relationTypes) > 0 {

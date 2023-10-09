@@ -19,7 +19,8 @@ const (
 
 	IssueFilterBmService   = "issueFilterBookmark"
 	CodeCoverageService    = "codeCoverage"
-	IssueService           = "issue"
+	IssueQuery             = "issueQuery"
+	IssueService           = "issueService"
 	IterationService       = "iteration"
 	ManualTestCaseService  = "manual_test_case"
 	ManualTestPlanService  = "manual_test_plan"

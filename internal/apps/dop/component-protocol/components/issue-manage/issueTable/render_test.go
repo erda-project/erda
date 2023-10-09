@@ -123,7 +123,7 @@ func Test_eventHandler(t *testing.T) {
 	defer ctrl.Finish()
 	issueService := mock.NewMockIssueQuery(ctrl)
 	issueService.EXPECT().UpdateIssue(gomock.Any()).AnyTimes().Return(nil)
-	ctx = context.WithValue(ctx, "issue", issueService)
+	ctx = context.WithValue(ctx, "issueQuery", issueService)
 	tests := []struct {
 		name    string
 		args    args

@@ -76,5 +76,7 @@ func buildTableColumnProps(ctx context.Context, issueType string, customProperti
 		"columns":         columns,
 		"rowKey":          "id",
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
+		"batchOperations": []string{"delete"},
+		"selectable":      true,
 	}
 }

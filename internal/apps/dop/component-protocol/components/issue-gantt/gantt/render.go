@@ -46,7 +46,7 @@ func init() {
 func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	f.sdk = cputil.SDK(ctx)
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
+	f.issueSvc = ctx.Value(types.IssueQuery).(query.Interface)
 	f.users = make([]string, 0)
 	f.Data.Refresh = false
 	inParamsBytes, err := json.Marshal(cputil.SDK(ctx).InParams)

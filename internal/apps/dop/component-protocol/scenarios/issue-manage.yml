@@ -27,6 +27,8 @@ components:
     type: ComposeTable
   issueOperations:
     type: RowContainer
+  batchOperationTipModal:
+    type: Modal
   issueFilter:
     type: ConfigurableFilter
   issueExport:
@@ -46,6 +48,7 @@ rendering:
     - name: content
     - name: issueFilter
     - name: issueOperations
+    - name: batchOperationTipModal
     - name: issueImport
     - name: issueExport
     - name: issueTable

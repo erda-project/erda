@@ -158,6 +158,7 @@ var (
 	ErrUpdateIssue                   = err("ErrUpdateIssue", "更新 issue 失败")
 	ErrDeleteIssue                   = err("ErrDeleteIssue", "删除 issue 失败")
 	ErrBatchUpdateIssue              = err("ErrBatchUpdateIssue", "批量更新 issue 失败")
+	ErrBatchDeleteIssue              = err("ErrBatchDeleteIssue", "批量删除 issue 失败")
 	ErrUpdateIssueState              = err("ErrUpdateIssueState", "更新 issue 状态失败")
 	ErrGetIssue                      = err("ErrGetIssue", "查询 issue 失败")
 	ErrSubscribeIssue                = err("ErrSubscribeIssue", "订阅 issue 失败")
