@@ -70,6 +70,11 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 	// - 创建或更新 label
 	// - 创建或更新关联 issue 与 label 的关联关系
 
+	// create issue label
+	if err := sheet_label.CreateLabelFromIssueSheet(data); err != nil {
+		return fmt.Errorf("failed to create label from issue sheet, err: %v", err)
+	}
+
 	// create label relation
 	if err := sheet_label.CreateIssueLabelRelations(data, issues, issueModelMapByIssueID); err != nil {
 		return fmt.Errorf("failed to create issue label relations, err: %v", err)

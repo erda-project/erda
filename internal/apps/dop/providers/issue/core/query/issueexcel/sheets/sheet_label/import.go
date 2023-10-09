@@ -56,29 +56,27 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 	}
 	data.ImportOnly.Sheets.Optional.LabelInfo = labels
 
-	// merge labels for create
-	mergedLabels := mergeLabelsForCreate(data, data.ImportOnly.Sheets.Optional.LabelInfo)
-	if err := createLabelIfNotExistsForImport(data, mergedLabels); err != nil {
+	// create
+	if err := CreateLabelIfNotExistsForImport(data, labels); err != nil {
 		return fmt.Errorf("failed to create label, err: %v", err)
 	}
 	return nil
 }
 
-func mergeLabelsForCreate(data *vars.DataForFulfill, labelsFromLabelSheet []*pb.ProjectLabel) []*pb.ProjectLabel {
-	labelsFromLabelSheetMap := make(map[string]*pb.ProjectLabel, len(labelsFromLabelSheet))
-	for _, label := range labelsFromLabelSheet {
-		labelsFromLabelSheetMap[label.Name] = label
-	}
+func CreateLabelFromIssueSheet(data *vars.DataForFulfill) error {
+	issueLabelByName := make(map[string]*pb.ProjectLabel)
+	var issueLabels []*pb.ProjectLabel
 
+	// collect labels from issue sheet
 	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
 		for _, labelName := range model.Common.Labels {
-			if _, ok := labelsFromLabelSheetMap[labelName]; ok {
+			if _, ok := issueLabelByName[labelName]; ok {
 				continue
 			}
 			if _, ok := data.LabelMapByName[labelName]; ok {
 				continue
 			}
-			labelsFromLabelSheet = append(labelsFromLabelSheet, &pb.ProjectLabel{
+			issueLabels = append(issueLabels, &pb.ProjectLabel{
 				Name:      labelName,
 				Type:      pb.ProjectLabelTypeEnum_issue,
 				ProjectID: data.ProjectID,
@@ -86,10 +84,12 @@ func mergeLabelsForCreate(data *vars.DataForFulfill, labelsFromLabelSheet []*pb.
 			})
 		}
 	}
-	return labelsFromLabelSheet
+
+	// create
+	return CreateLabelIfNotExistsForImport(data, issueLabels)
 }
 
-func createLabelIfNotExistsForImport(data *vars.DataForFulfill, labels []*pb.ProjectLabel) error {
+func CreateLabelIfNotExistsForImport(data *vars.DataForFulfill, labels []*pb.ProjectLabel) error {
 	// create label if not exists
 	for _, label := range labels {
 		_, ok := data.LabelMapByName[label.Name]
