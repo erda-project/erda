@@ -116,6 +116,10 @@ type (
 )
 
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
+	// no base info sheet, trust as simple import, can do id-same-update if issue-id found in current project
+	if data.ImportOnly.Sheets.Optional.BaseInfo == nil {
+		return true
+	}
 	// only can do id-same-update when erda-platform is same && project-id is same
 	if data.IsSameErdaPlatform() {
 		if data.ImportOnly.Sheets.Optional.BaseInfo.OriginalErdaProjectID == data.ProjectID {
