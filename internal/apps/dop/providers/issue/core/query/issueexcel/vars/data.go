@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package vars
 
 import (
-	"time"
-
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"fmt"
 
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
@@ -26,8 +24,11 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/conf"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	legacydao "github.com/erda-project/erda/internal/core/legacy/dao"
+	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type DataForFulfill struct {
@@ -35,6 +36,7 @@ type DataForFulfill struct {
 	ImportOnly DataForFulfillImportOnly
 
 	// common
+	Bdl                   *bundle.Bundle
 	UserID                string
 	OrgID                 int64
 	ProjectID             uint64
@@ -57,7 +59,7 @@ type DataForFulfill struct {
 }
 
 type DataForFulfillExportOnly struct {
-	AllProjectIssues         bool
+	IsFullExport             bool // 全量导出
 	FileNameWithExt          string
 	Issues                   []*pb.Issue
 	IsDownloadTemplate       bool
@@ -71,25 +73,56 @@ type DataForFulfillExportOnly struct {
 type DataForFulfillImportOnly struct {
 	LabelDB   *legacydao.DBClient
 	DB        *dao.DBClient
-	Bdl       *bundle.Bundle
 	Identity  userpb.UserServiceServer
 	IssueCore pb.IssueCoreServiceServer
-
-	BaseInfo *DataForFulfillImportOnlyBaseInfo
 
 	IsOldExcelFormat bool
 
 	CurrentProjectIssueMap map[uint64]bool
 
-	UserIDByNick map[string]string // key: nick, value: userID
+	OrgMemberByDesensitizedKey map[string]string // key: phone / email / nick / name
+	UserIDByNick               map[string]string // key: nick, value: userID
 
 	Warnings []string // used to record warnings
+
+	Sheets SheetsInfo
 }
 
+type (
+	SheetsInfo struct {
+		Must     MustSheetsInfo
+		Optional OptionalSheetsInfo
+	}
+	MustSheetsInfo struct {
+		IssueInfo []IssueSheetModel
+	}
+	OptionalSheetsInfo struct {
+		BaseInfo        *DataForFulfillImportOnlyBaseInfo
+		UserInfo        []apistructs.Member
+		LabelInfo       []*pb.ProjectLabel
+		CustomFieldInfo []*pb.IssuePropertyIndex
+		IterationInfo   []*dao.Iteration
+		StateInfo       *StateInfo
+	}
+	DataForFulfillImportOnlyBaseInfo struct {
+		OriginalErdaPlatform  string // get from dop conf.DiceClusterName()
+		OriginalErdaProjectID uint64
+		AllProjectIssues      bool
+	}
+	StateInfo struct {
+		States        []dao.IssueState
+		StateJoinSQLs []dao.IssueStateJoinSQL
+	}
+)
+
 func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
+	// no base info sheet, trust as simple import, can do id-same-update if issue-id found in current project
+	if data.ImportOnly.Sheets.Optional.BaseInfo == nil {
+		return true
+	}
 	// only can do id-same-update when erda-platform is same && project-id is same
 	if data.IsSameErdaPlatform() {
-		if data.ImportOnly.BaseInfo.OriginalErdaProjectID == data.ProjectID {
+		if data.ImportOnly.Sheets.Optional.BaseInfo.OriginalErdaProjectID == data.ProjectID {
 			return true
 		}
 	}
@@ -98,47 +131,75 @@ func (data DataForFulfill) ShouldUpdateWhenIDSame() bool {
 }
 
 func (data DataForFulfill) IsSameErdaPlatform() bool {
-	if data.ImportOnly.BaseInfo == nil {
+	if data.ImportOnly.Sheets.Optional.BaseInfo == nil {
 		panic("baseInfo is nil")
 	}
-	return data.ImportOnly.BaseInfo.OriginalErdaPlatform == conf.DiceClusterName()
+	return data.ImportOnly.Sheets.Optional.BaseInfo.OriginalErdaPlatform == conf.DiceClusterName()
 }
 
 func (data DataForFulfill) IsOldExcelFormat() bool {
 	return data.ImportOnly.IsOldExcelFormat
 }
 
-// JudgeIfIsOldExcelFormat old Excel format have only one sheet
-func (data *DataForFulfill) JudgeIfIsOldExcelFormat(excelSheets [][][]string) {
-	isOld := len(excelSheets) == 1
-	if isOld {
-		data.ImportOnly.IsOldExcelFormat = true
-		data.ImportOnly.BaseInfo = &DataForFulfillImportOnlyBaseInfo{
-			OriginalErdaPlatform:  "",
-			OriginalErdaProjectID: 0,
+// JudgeIfIsOldExcelFormat old Excel format have only one sheet and excel[0][0][0] = "ID"
+func (data *DataForFulfill) JudgeIfIsOldExcelFormat(df excel.DecodedFile) {
+	// only one sheet
+	if len(df.Sheets.L) != 1 {
+		return
+	}
+
+	// [0][0] is ID
+	if colLen := len(df.Sheets.L[0].UnmergedSlice); colLen == 0 {
+		return
+	}
+	if rowLen := len(df.Sheets.L[0].UnmergedSlice[0]); rowLen == 0 {
+		return
+	}
+	if df.Sheets.L[0].UnmergedSlice[0][0] != "ID" {
+		return
+	}
+
+	// set value
+	data.ImportOnly.IsOldExcelFormat = true
+	data.ImportOnly.Sheets.Optional.BaseInfo = &DataForFulfillImportOnlyBaseInfo{
+		OriginalErdaPlatform:  "",
+		OriginalErdaProjectID: 0,
+	}
+}
+
+func (data *DataForFulfill) CheckPermission() error {
+	// 如果是全量导出，则只有项目管理员和项目经理有权限
+	if !data.IsFullExport() {
+		return nil
+	}
+	roleResp, err := data.Bdl.ScopeRoleAccess(data.UserID, &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.ProjectScope,
+			ID:   strutil.String(data.ProjectID),
+		},
+	})
+	if err != nil {
+		return apierrors.ErrExportExcelIssue.InternalError(err)
+	}
+	if !roleResp.Access {
+		return apierrors.ErrExportExcelIssue.AccessDenied()
+	}
+	var canExportAll bool
+	for _, role := range roleResp.Roles {
+		if role == bundle.RoleProjectOwner || role == bundle.RoleProjectPM {
+			canExportAll = true
+			break
 		}
 	}
-}
-
-func formatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
-	return timestamp.AsTime().In(time.Local).Format("2006-01-02 15:04:05")
-}
-
-func formatIssueCustomFields(issue *pb.Issue, propertyType pb.PropertyIssueTypeEnum_PropertyIssueType, data DataForFulfill) []ExcelCustomField {
-	var results []ExcelCustomField
-	for _, customField := range data.CustomFieldMapByTypeName[propertyType] {
-		results = append(results, formatOneCustomField(customField, issue, data))
+	if canExportAll {
+		return nil
 	}
-	return results
+	return apierrors.ErrExportExcelIssue.AccessDenied(fmt.Errorf("only project Owner or PM can export all issues"))
 }
 
-func formatOneCustomField(cf *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) ExcelCustomField {
-	return ExcelCustomField{
-		Title: cf.PropertyName,
-		Value: getCustomFieldValue(cf, issue, data),
+func (data *DataForFulfill) IsFullExport() bool {
+	if data.ExportOnly.IsDownloadTemplate {
+		return false
 	}
-}
-
-func getCustomFieldValue(customField *pb.IssuePropertyIndex, issue *pb.Issue, data DataForFulfill) string {
-	return query.GetCustomPropertyColumnValue(customField, data.ExportOnly.IssuePropertyRelationMap[issue.Id], data.ExportOnly.PropertyEnumMap, data.ProjectMemberByUserID)
+	return data.ExportOnly.IsFullExport
 }

@@ -12,14 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheets
 
-const (
-	indexOfSheetIssue = iota
-	indexOfSheetUser
-	indexOfSheetLabel
-	indexOfSheetCustomField
-	indexOfSheetBaseInfo
-	indexOfSheetIteration
-	indexOfSheetState
+import (
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
+	"github.com/erda-project/erda/pkg/excel"
 )
+
+type Namer interface {
+	SheetName() string
+}
+
+type Importer interface {
+	Namer
+	ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error
+}
+
+type Exporter interface {
+	Namer
+	ExportSheet(data *vars.DataForFulfill) (excel.Rows, error)
+}

@@ -21,7 +21,7 @@ import (
 	"github.com/tealeg/xlsx/v3"
 )
 
-// Decode excel file to [][]string
+// Decode excel file to [][][]string
 // return []sheet{[]row{[]cell}}
 // cell 的值即使为空，也可通过下标访问，不会出现越界问题
 func Decode(r io.Reader) ([][][]string, error) {
@@ -38,4 +38,39 @@ func Decode(r io.Reader) ([][][]string, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+// DecodeToSheets decode Excel file to Sheets.
+// So you can get sheet by sheetName.
+func DecodeToSheets(r io.Reader) (DecodedFile, error) {
+	tmpF, err := os.CreateTemp("", "excel-")
+	if err != nil {
+		return EmptyDecodedFile(), err
+	}
+	if _, err := io.Copy(tmpF, r); err != nil {
+		return EmptyDecodedFile(), err
+	}
+	f, err := xlsx.OpenFile(tmpF.Name(), xlsx.ValueOnly(), xlsx.RowLimit(xlsx.NoRowLimit), xlsx.ColLimit(xlsx.NoColLimit))
+	if err != nil {
+		return EmptyDecodedFile(), err
+	}
+	fileUnmergedSlice, err := f.ToSliceUnmerged()
+	if err != nil {
+		return EmptyDecodedFile(), err
+	}
+
+	sheets := Sheets{L: make([]*Sheet, 0, len(f.Sheets)), M: make(map[string]*Sheet, len(f.Sheets))}
+	for i, sheet := range f.Sheets {
+		s := NewSheet(sheet)
+		s.UnmergedSlice = fileUnmergedSlice[i]
+
+		sheets.L = append(sheets.L, s)
+		sheets.M[sheet.Name] = s
+	}
+
+	df := DecodedFile{
+		File:   &File{XlsxFile: f, UnmergedSlice: fileUnmergedSlice},
+		Sheets: sheets,
+	}
+	return df, nil
 }

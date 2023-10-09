@@ -29,6 +29,7 @@ var (
 	templateInvalidState          = i18n.NewTemplate("InvalidState", "状态异常 %s")
 	templateNotLogin              = i18n.NewTemplate("NotLogin", "未登录")
 	templateAccessDenied          = i18n.NewTemplate("AccessDenied", "无权限")
+	templateAccessDeniedWithArgs  = i18n.NewTemplate("AccessDenied", "无权限 %s")
 	templateNotFound              = i18n.NewTemplate("NotFound", "资源不存在")
 	templateAlreadyExists         = i18n.NewTemplate("AlreadyExists", "资源已存在")
 	templateInternalError         = i18n.NewTemplate("InternalError", "异常 %s")
@@ -61,9 +62,12 @@ func (e *APIError) NotLogin() *APIError {
 }
 
 // AccessDenied 无权限
-func (e *APIError) AccessDenied() *APIError {
-	return e.dup().appendCode(http.StatusForbidden, "AccessDenied").
-		appendLocaleTemplate(templateAccessDenied)
+func (e *APIError) AccessDenied(err ...interface{}) *APIError {
+	e = e.dup().appendCode(http.StatusForbidden, "AccessDenied")
+	if len(err) > 0 {
+		return e.appendLocaleTemplate(templateAccessDeniedWithArgs, toString(err[0]))
+	}
+	return e.appendLocaleTemplate(templateAccessDenied)
 }
 
 // NotFound 资源不存在

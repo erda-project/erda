@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_state
 
 import (
 	"context"
@@ -23,69 +23,63 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) genStateSheet() (excel.Rows, error) {
-	var lines excel.Rows
+type Handler struct{}
 
-	// title: state (JSON), state_relation (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("state (json)"),
-		excel.NewTitleCell("state_relation (json)"),
-	}
-	lines = append(lines, title)
+func (h *Handler) SheetName() string { return vars.NameOfSheetState }
 
-	// data
-	stateBytes, err := json.Marshal(data.ExportOnly.States)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal state info, err: %v", err)
-	}
-	stateRelationBytes, err := json.Marshal(data.ExportOnly.StateRelations)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal state relation info, err: %v", err)
-	}
-	lines = append(lines, excel.Row{
-		excel.NewCell(string(stateBytes)),
-		excel.NewCell(string(stateRelationBytes)),
-	})
-
-	return lines, nil
-}
-
-func (data DataForFulfill) decodeStateSheet(excelSheets [][][]string) ([]dao.IssueState, []dao.IssueStateJoinSQL, error) {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil, nil
+		return nil
 	}
-	sheet := excelSheets[indexOfSheetState]
+	s, ok := df.Sheets.M[h.SheetName()]
+	if !ok {
+		return nil
+	}
+	sheet := s.UnmergedSlice
 	// check sheet
 	if len(sheet) <= 1 {
-		return nil, nil, fmt.Errorf("invalid state sheet, title or data not found")
+		return fmt.Errorf("invalid state sheet, title or data not found")
 	}
 	var state []dao.IssueState
 	var stateRelations []dao.IssueStateJoinSQL
 	// only one row
 	row := sheet[1]
 	if err := json.Unmarshal([]byte(row[0]), &state); err != nil {
-		return nil, nil, fmt.Errorf("failed to unmarshal state info, err: %v", err)
+		return fmt.Errorf("failed to unmarshal state info, err: %v", err)
 	}
 	if err := json.Unmarshal([]byte(row[1]), &stateRelations); err != nil {
-		return nil, nil, fmt.Errorf("failed to unmarshal state relation info, err: %v", err)
+		return fmt.Errorf("failed to unmarshal state relation info, err: %v", err)
 	}
-	return state, stateRelations, nil
+	data.ImportOnly.Sheets.Optional.StateInfo = &vars.StateInfo{
+		States:        state,
+		StateJoinSQLs: stateRelations,
+	}
+
+	// sync state
+	if err := syncState(data, data.ImportOnly.Sheets.Optional.StateInfo); err != nil {
+		return fmt.Errorf("failed to sync custom issue state, err: %v", err)
+	}
+	return nil
 }
 
-func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, originalProjectStateRelations []dao.IssueStateJoinSQL, issueSheetModels []IssueSheetModel) error {
+func syncState(data *vars.DataForFulfill, originalProjectStatesInfo *vars.StateInfo) error {
+	if originalProjectStatesInfo == nil {
+		return nil
+	}
 	ctx := apis.WithUserIDContext(context.Background(), apistructs.SystemUserID)
 	// compare original & current project states
 	// update data.StateMapByID
 
 	// 分事项类型，每个类型比较状态的差异，只创建，不删除，因为新项目可能有新的状态
 	originalStateByTypeAndName := make(map[string]map[string]dao.IssueState)
-	for _, state := range originalProjectStates {
+	for _, state := range originalProjectStatesInfo.States {
 		if _, ok := originalStateByTypeAndName[state.IssueType]; !ok {
 			originalStateByTypeAndName[state.IssueType] = make(map[string]dao.IssueState)
 		}
@@ -103,7 +97,7 @@ func (data *DataForFulfill) syncState(originalProjectStates []dao.IssueState, or
 		}
 	}
 	// 遍历 issue 里的状态，找到只在 issue sheet 里声明的新状态，包括新老格式
-	for _, issueSheetModel := range issueSheetModels {
+	for _, issueSheetModel := range data.ImportOnly.Sheets.Must.IssueInfo {
 		// 如果 state 已经在当前项目存在，跳过
 		if _, ok := data.StateMapByTypeAndName[issueSheetModel.Common.IssueType.String()][issueSheetModel.Common.State]; ok {
 			continue
@@ -214,7 +208,7 @@ func RefreshDataState(projectID uint64, db *dao.DBClient) (map[int64]string, map
 // - 未开始：新建
 // - 进行中：
 // 6. 默认属于处理中
-func tryToGuessNewStateBelong(name string, model IssueSheetModel) pb.IssueStateBelongEnum_StateBelong {
+func tryToGuessNewStateBelong(name string, model vars.IssueSheetModel) pb.IssueStateBelongEnum_StateBelong {
 	if model.Common.FinishAt != nil && !model.Common.FinishAt.IsZero() {
 		return getDoneStateBelongByIssueType(model.Common.IssueType)
 	}

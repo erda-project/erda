@@ -21,4 +21,37 @@ import (
 type Row []Cell
 type Rows []Row
 type Column []Cell
-type Sheet *xlsx.Sheet
+
+type File struct {
+	XlsxFile *xlsx.File
+
+	UnmergedSlice [][][]string
+}
+
+type DecodedFile struct {
+	File   *File
+	Sheets Sheets
+}
+
+type Sheets struct {
+	L []*Sheet
+	M map[string]*Sheet
+}
+
+type Sheet struct {
+	XlsxSheet *xlsx.Sheet
+	RefFile   *File
+
+	UnmergedSlice [][]string
+}
+
+func NewFile() *File {
+	return &File{XlsxFile: xlsx.NewFile()}
+}
+
+func NewSheet(sheet *xlsx.Sheet) *Sheet {
+	return &Sheet{XlsxSheet: sheet, RefFile: &File{XlsxFile: sheet.File}}
+}
+
+func EmptyDecodedFile() DecodedFile { return DecodedFile{} }
+func EmptySheets() Sheets           { return Sheets{L: make([]*Sheet, 0), M: make(map[string]*Sheet)} }

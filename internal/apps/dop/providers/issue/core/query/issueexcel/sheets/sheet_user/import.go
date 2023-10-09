@@ -12,75 +12,66 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_user
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) genUserSheet() (excel.Rows, error) {
-	var lines excel.Rows
-	// title: user id, user name, user info (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("user id"),
-		excel.NewTitleCell("user name"),
-		excel.NewTitleCell("user detail (json)"),
-	}
-	lines = append(lines, title)
-	// data
-	for _, user := range data.ProjectMemberByUserID {
-		userInfo, err := json.Marshal(user)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal user info, user id: %s, err: %v", user.UserID, err)
-		}
-		lines = append(lines, excel.Row{
-			excel.NewCell(user.UserID),
-			excel.NewCell(user.Nick),
-			excel.NewCell(string(userInfo)),
-		})
-	}
+type Handler struct{}
 
-	return lines, nil
-}
+func (h *Handler) SheetName() string { return vars.NameOfSheetUser }
 
-func (data DataForFulfill) decodeUserSheet(excelSheets [][][]string) ([]apistructs.Member, error) {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
-	sheet := excelSheets[indexOfSheetUser]
+	s, ok := df.Sheets.M[h.SheetName()]
+	if !ok {
+		return nil
+	}
+	sheet := s.UnmergedSlice
 	// check title
 	if len(sheet) < 1 {
-		return nil, fmt.Errorf("user sheet is empty")
+		return fmt.Errorf("user sheet is empty")
 	}
 	var members []apistructs.Member
 	for _, row := range sheet[1:] {
 		var member apistructs.Member
 		if err := json.Unmarshal([]byte(row[2]), &member); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal user info, user id: %s, err: %v", row[0], err)
+			return fmt.Errorf("failed to unmarshal user info, user id: %s, err: %v", row[0], err)
 		}
 		members = append(members, member)
 	}
-	return members, nil
+	data.ImportOnly.Sheets.Optional.UserInfo = members
+
+	// map member for import
+	if err := mapMemberForImport(data, data.ImportOnly.Sheets.Optional.UserInfo); err != nil {
+		return fmt.Errorf("failed to map member, err: %v", err)
+	}
+
+	return nil
 }
 
 // createIterationsIfNotExistForImport do not create user, is too hack.
 // The import operator should create user first, then import.
 // We can auto add user as member into project.
-func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistructs.Member, issueSheetModels []IssueSheetModel) error {
+func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apistructs.Member) error {
 	var usersNeedToBeAddedAsMember []apistructs.Member
 
 	// 先把所有原有的用户都尝试添加到 project member 中
 	// 如果当前项目成员中不存在，则使用邮箱/手机进行关联查找
-	// 关键是找到用户，然后添加到企业/项目成员中，再进行用户名-ID映射
+	// 关键是在企业下找到用户，然后添加到项目成员中，再进行用户名-ID映射 (要求用户已经在企业下，导入导出不主动添加用户到企业)
 	// handle original users from user sheet
 	for _, originalMember := range originalProjectMembers {
 		originalMember := originalMember
@@ -88,12 +79,12 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 		if data.IsSameErdaPlatform() { // check by user id
 			findMember, ok := data.ProjectMemberByUserID[originalMember.UserID]
 			if ok {
-				data.addMemberToUserIDNickMap(findMember)
+				addMemberToUserIDNickMap(data, findMember)
 				continue
 			}
 		}
 		// check by other info
-		findUser, err := data.tryToFindUserByPhoneEmailNickName(originalMember)
+		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, originalMember)
 		if err != nil {
 			return fmt.Errorf("failed to find user, originalMember: %+v, err: %v", originalMember, err)
 		}
@@ -101,30 +92,40 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 			continue
 		}
 		newMember := apistructs.Member{
-			UserID: findUser.ID,
+			UserID: findUser.UserID,
 			Email:  findUser.Email,
-			Mobile: findUser.Phone,
+			Mobile: findUser.Mobile,
 			Name:   findUser.Name,
 			Nick:   findUser.Nick,
-			Avatar: findUser.AvatarURL,
+			Avatar: findUser.Avatar,
 			Roles:  originalMember.Roles,
 			Labels: originalMember.Labels,
 		}
-		data.addMemberToUserIDNickMap(newMember)
+		addMemberToUserIDNickMap(data, newMember)
 		usersNeedToBeAddedAsMember = append(usersNeedToBeAddedAsMember, newMember)
 	}
 	// handle nicks from issue sheet
 	userNickMapFromIssueSheet := make(map[string]struct{})
-	for _, model := range issueSheetModels {
-		userNickMapFromIssueSheet[model.Common.AssigneeName] = struct{}{}
-		userNickMapFromIssueSheet[model.Common.CreatorName] = struct{}{}
-		userNickMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}
+	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
+		if model.Common.AssigneeName != "" {
+			userNickMapFromIssueSheet[model.Common.AssigneeName] = struct{}{}
+		}
+		if model.Common.CreatorName != "" {
+			userNickMapFromIssueSheet[model.Common.CreatorName] = struct{}{}
+		}
+		if model.BugOnly.OwnerName != "" {
+			userNickMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}
+		}
 	}
 	for nick := range userNickMapFromIssueSheet {
+		if nick == "" {
+			continue
+		}
 		if _, ok := data.ImportOnly.UserIDByNick[nick]; ok {
 			continue
 		}
-		findUser, err := data.tryToFindUserByPhoneEmailNickName(apistructs.Member{Nick: nick, Name: nick})
+		// Risk of having the same name
+		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, apistructs.Member{Nick: nick})
 		if err != nil {
 			return fmt.Errorf("failed to find user, nick: %s, err: %v", nick, err)
 		}
@@ -132,43 +133,29 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 			continue
 		}
 		newMember := apistructs.Member{
-			UserID: findUser.ID,
+			UserID: findUser.UserID,
 			Email:  findUser.Email,
-			Mobile: findUser.Phone,
+			Mobile: findUser.Mobile,
 			Name:   findUser.Name,
 			Nick:   findUser.Nick,
-			Avatar: findUser.AvatarURL,
+			Avatar: findUser.Avatar,
 			Roles:  []string{bundle.RoleProjectDev},
 			Labels: nil,
 		}
-		data.addMemberToUserIDNickMap(newMember)
+		addMemberToUserIDNickMap(data, newMember)
 		usersNeedToBeAddedAsMember = append(usersNeedToBeAddedAsMember, newMember)
 	}
 
 	// add member
 	for _, member := range usersNeedToBeAddedAsMember {
-		// add to org first
-		if _, ok := data.OrgMemberByUserID[member.UserID]; !ok {
-			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
-				Scope: apistructs.Scope{
-					Type: apistructs.OrgScope,
-					ID:   strconv.FormatInt(data.OrgID, 10),
-				},
-				Roles:   []string{bundle.RoleOrgDev},
-				Labels:  nil,
-				UserIDs: []string{member.UserID},
-			}, apistructs.SystemUserID); err != nil {
-				return fmt.Errorf("failed to add member into org, org id: %d, user id: %s, err: %v", data.OrgID, member.UserID, err)
-			}
-		}
 		// add to project
 		if _, ok := data.ProjectMemberByUserID[member.UserID]; !ok {
-			if err := data.ImportOnly.Bdl.AddMember(apistructs.MemberAddRequest{
+			if err := data.Bdl.AddMember(apistructs.MemberAddRequest{
 				Scope: apistructs.Scope{
 					Type: apistructs.ProjectScope,
 					ID:   strconv.FormatUint(data.ProjectID, 10),
 				},
-				Roles:   data.polishMemberProjectRoles(member.Roles),
+				Roles:   polishMemberProjectRoles(data, member.Roles),
 				Labels:  member.Labels,
 				UserIDs: []string{member.UserID},
 			}, apistructs.SystemUserID); err != nil {
@@ -178,7 +165,7 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 	}
 
 	// refresh member map, because bdl.AddMember won't return new member info
-	orgMember, projectMember, alreadyHaveProjectOwner, err := RefreshDataMembers(data.OrgID, data.ProjectID, data.ImportOnly.Bdl)
+	orgMember, projectMember, alreadyHaveProjectOwner, err := RefreshDataMembers(data.OrgID, data.ProjectID, data.Bdl)
 	if err != nil {
 		return fmt.Errorf("failed to refresh data members, org id: %d, project id: %d, err: %v", data.OrgID, data.ProjectID, err)
 	}
@@ -189,49 +176,58 @@ func (data *DataForFulfill) mapMemberForImport(originalProjectMembers []apistruc
 	return nil
 }
 
-func (data DataForFulfill) tryToFindUserByPhoneEmailNickName(member apistructs.Member) (*userpb.User, error) {
-	// find user by phone/email/nick/name by order
-	type Voucher struct {
-		Type  string
-		Value string
+type Voucher struct {
+	Type   string
+	Value  string
+	Result map[string]*userpb.User // key is user id
+}
+
+func tryToFindUserByDesensitizedPhoneEmailNickName(data *vars.DataForFulfill, member apistructs.Member) (*apistructs.Member, error) {
+	// 使用 phone/email/nick/name 字段 `*` 后的数据分别匹配，全部匹配上即可
+	// 为空的字段不参加匹配
+	phoneMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Mobile]
+	emailMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Email]
+	nickMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Nick]
+	nameMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Name]
+	// check ids all equals
+	compares := make(map[string]struct{})
+	var findUserID string
+	if phoneMatchedUserID != "" {
+		compares[phoneMatchedUserID] = struct{}{}
+		findUserID = phoneMatchedUserID
 	}
-	vouchers := []Voucher{
-		{Type: "mobile", Value: member.Mobile},
-		{Type: "email", Value: member.Email},
-		{Type: "nick", Value: member.Nick},
-		{Type: "name", Value: member.Name},
+	if emailMatchedUserID != "" {
+		compares[emailMatchedUserID] = struct{}{}
+		findUserID = emailMatchedUserID
 	}
-	for _, voucher := range vouchers {
-		if voucher.Value == "" {
-			continue
-		}
-		resp, err := data.ImportOnly.Identity.FindUsersByKey(context.Background(), &userpb.FindUsersByKeyRequest{
-			Key: voucher.Value,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to find user by %s: %s, err: %v", voucher.Type, voucher.Value, err)
-		}
-		if len(resp.Data) == 0 {
-			continue
-		}
-		findUser := resp.Data[0]
-		switch voucher.Type {
-		case "nick": // must be equal
-			if findUser.Nick == voucher.Value {
-				return findUser, nil
-			}
-		case "name": // must be equal
-			if findUser.Name == voucher.Value {
-				return findUser, nil
-			}
-		default:
-			return findUser, nil
-		}
+	if nickMatchedUserID != "" {
+		compares[nickMatchedUserID] = struct{}{}
+		findUserID = nickMatchedUserID
+	}
+	if nameMatchedUserID != "" {
+		compares[nameMatchedUserID] = struct{}{}
+		findUserID = nameMatchedUserID
+	}
+	if len(compares) == 1 {
+		findUser := data.OrgMemberByUserID[findUserID]
+		return &findUser, nil
 	}
 	return nil, nil
 }
 
-func (data *DataForFulfill) addMemberToUserIDNickMap(member apistructs.Member) {
+// getPartVoucherFromDesensitizedData
+// abc -> abc
+// abc*d -> d
+// "" -> ""
+func getPartVoucherFromDesensitizedData(voucher string) string {
+	if voucher == "" {
+		return ""
+	}
+	parts := strings.Split(voucher, "*")
+	return parts[len(parts)-1]
+}
+
+func addMemberToUserIDNickMap(data *vars.DataForFulfill, member apistructs.Member) {
 	if member.Email != "" {
 		data.ImportOnly.UserIDByNick[member.Email] = member.UserID
 	}
@@ -247,7 +243,7 @@ func (data *DataForFulfill) addMemberToUserIDNickMap(member apistructs.Member) {
 }
 
 // polishMemberProjectRoles remove duplicated owner role
-func (data *DataForFulfill) polishMemberProjectRoles(roles []string) []string {
+func polishMemberProjectRoles(data *vars.DataForFulfill, roles []string) []string {
 	var newRoles []string
 	for _, role := range roles {
 		if role == bundle.RoleProjectOwner {

@@ -12,91 +12,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_iteration
 
 import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func (data DataForFulfill) genIterationSheet() (excel.Rows, error) {
-	// if AllProjectIssues=true, then export all iterations
-	// otherwise, just export iterations related to issues
-	relatedIterationMapByID := make(map[int64]struct{})
-	if !data.ExportOnly.AllProjectIssues {
-		for _, issue := range data.ExportOnly.Issues {
-			relatedIterationMapByID[issue.IterationID] = struct{}{}
-		}
-	}
+type Handler struct{}
 
-	var lines excel.Rows
-	// title: iteration id, iteration name, iteration info (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("iteration id"),
-		excel.NewTitleCell("iteration name"),
-		excel.NewTitleCell("iteration detail (json)"),
-	}
-	lines = append(lines, title)
-	// data
-	for _, iteration := range data.IterationMapByID {
-		iteration := iteration
-		if iteration.ID <= 0 {
-			continue
-		}
-		if !data.ExportOnly.AllProjectIssues {
-			// only related iteration need to be exported
-			if _, ok := relatedIterationMapByID[int64(iteration.ID)]; !ok {
-				continue
-			}
-		}
-		b, err := json.Marshal(iteration)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal iteration info, iteration id: %d, err: %v", iteration.ID, err)
-		}
-		lines = append(lines, excel.Row{
-			excel.NewCell(strconv.FormatUint(iteration.ID, 10)),
-			excel.NewCell(iteration.Title),
-			excel.NewCell(string(b)),
-		})
-	}
+func (h *Handler) SheetName() string { return vars.NameOfSheetIteration }
 
-	return lines, nil
-}
-
-func (data *DataForFulfill) decodeIterationSheet(excelSheets [][][]string) ([]*dao.Iteration, error) {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
-	sheet := excelSheets[indexOfSheetIteration]
+	s, ok := df.Sheets.M[h.SheetName()]
+	if !ok {
+		return nil
+	}
+	sheet := s.UnmergedSlice
 	var iterations []*dao.Iteration
 	for i, row := range sheet {
 		if i == 0 {
 			continue
 		}
 		if len(row) < 3 {
-			return nil, fmt.Errorf("invalid iteration sheet, row: %d, len(row): %d", i, len(row))
+			return fmt.Errorf("invalid iteration sheet, row: %d, len(row): %d", i, len(row))
 		}
 		var iteration dao.Iteration
 		if err := json.Unmarshal([]byte(row[2]), &iteration); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal iteration info, row: %d, err: %v", i, err)
+			return fmt.Errorf("failed to unmarshal iteration info, row: %d, err: %v", i, err)
 		}
 		iterations = append(iterations, &iteration)
 	}
-	return iterations, nil
+	data.ImportOnly.Sheets.Optional.IterationInfo = iterations
+
+	// create iterations if not exists before issue create
+	if err := createIterationsIfNotExistForImport(data, data.ImportOnly.Sheets.Optional.IterationInfo); err != nil {
+		return fmt.Errorf("failed to create iterations, err: %v", err)
+	}
+	return nil
 }
 
 // createIterationsIfNotExistForImport create iterations if not exist for import.
 // check by name:
 // - if not exist, create new iteration
 // - if exist, do not update, take the existing one as the standard
-func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectIterations []*dao.Iteration, issueSheetModels []IssueSheetModel) error {
+func createIterationsIfNotExistForImport(data *vars.DataForFulfill, originalProjectIterations []*dao.Iteration) error {
 	iterationsNeedCreate := make(map[string]*dao.Iteration) // only created sheet related iterations
 	now := time.Now()
 	currentDayBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -113,7 +83,7 @@ func (data *DataForFulfill) createIterationsIfNotExistForImport(originalProjectI
 		// create
 		iterationsNeedCreate[originalProjectIteration.Title] = originalProjectIteration
 	}
-	for _, issueSheetModel := range issueSheetModels {
+	for _, issueSheetModel := range data.ImportOnly.Sheets.Must.IssueInfo {
 		_, ok := data.IterationMapByName[issueSheetModel.Common.IterationName]
 		if ok {
 			continue
