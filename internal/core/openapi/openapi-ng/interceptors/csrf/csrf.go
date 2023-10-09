@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -132,26 +131,41 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 		default:
 			validateToken := true
 			if p.Cfg.AllowValidReferer {
+
+				// referer
 				referer := r.Header.Get("Referer")
 				p.Log.Debugf("referer: %s", referer)
 				if referer == "" {
 					p.Log.Debug("skip validate token for empty referer")
 					validateToken = false
+					goto VALIDATE
 				}
-				if r.Host == os.Getenv("SELF_ADDR") {
-					p.Log.Debug("skip validate token for self-addr")
+
+				// origin
+				origin := firstNonEmpty(r.Header.Get("Origin"))
+				p.Log.Debugf("origin: %s", origin)
+				if origin == "" {
+					p.Log.Debug("skip validate token for empty origin")
 					validateToken = false
+					goto VALIDATE
 				}
-				if ref, err := url.Parse(referer); err == nil {
+
+				// compare
+				ref, refErr := url.Parse(referer)
+				ori, oriErr := url.Parse(origin)
+				if refErr == nil && oriErr == nil {
 					refHostPort := getHostPort(ref.Host, ref.Scheme)
-					rHostPort := getHostPort(r.Host, r.URL.Scheme)
-					p.Log.Debugf("refHostPort: %s, rHostPort: %s", refHostPort, rHostPort)
-					if refHostPort == rHostPort {
+					oriHostPort := getHostPort(ori.Host, ori.Scheme)
+					p.Log.Debugf("refHostPort: %s, oriHostPort: %s", refHostPort, oriHostPort)
+					if refHostPort == oriHostPort {
 						p.Log.Debug("skip validate token for same host-port")
 						validateToken = false
+						goto VALIDATE
 					}
 				}
 			}
+
+		VALIDATE:
 			p.Log.Debugf("validateToken: %v", validateToken)
 			if validateToken {
 				// Validate token only for requests which are not defined as 'safe' by RFC7231
