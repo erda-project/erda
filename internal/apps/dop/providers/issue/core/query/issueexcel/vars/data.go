@@ -80,7 +80,8 @@ type DataForFulfillImportOnly struct {
 
 	CurrentProjectIssueMap map[uint64]bool
 
-	UserIDByNick map[string]string // key: nick, value: userID
+	OrgMemberByDesensitizedKey map[string]string // key: phone / email / nick / name
+	UserIDByNick               map[string]string // key: nick, value: userID
 
 	Warnings []string // used to record warnings
 

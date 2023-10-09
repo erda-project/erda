@@ -15,7 +15,6 @@
 package sheet_user
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -72,7 +71,7 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 
 	// 先把所有原有的用户都尝试添加到 project member 中
 	// 如果当前项目成员中不存在，则使用邮箱/手机进行关联查找
-	// 关键是找到用户，然后添加到企业/项目成员中，再进行用户名-ID映射
+	// 关键是在企业下找到用户，然后添加到项目成员中，再进行用户名-ID映射 (要求用户已经在企业下，导入导出不主动添加用户到企业)
 	// handle original users from user sheet
 	for _, originalMember := range originalProjectMembers {
 		originalMember := originalMember
@@ -93,12 +92,12 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 			continue
 		}
 		newMember := apistructs.Member{
-			UserID: findUser.ID,
+			UserID: findUser.UserID,
 			Email:  findUser.Email,
-			Mobile: findUser.Phone,
+			Mobile: findUser.Mobile,
 			Name:   findUser.Name,
 			Nick:   findUser.Nick,
-			Avatar: findUser.AvatarURL,
+			Avatar: findUser.Avatar,
 			Roles:  originalMember.Roles,
 			Labels: originalMember.Labels,
 		}
@@ -108,11 +107,20 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 	// handle nicks from issue sheet
 	userNickMapFromIssueSheet := make(map[string]struct{})
 	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
-		userNickMapFromIssueSheet[model.Common.AssigneeName] = struct{}{}
-		userNickMapFromIssueSheet[model.Common.CreatorName] = struct{}{}
-		userNickMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}
+		if model.Common.AssigneeName != "" {
+			userNickMapFromIssueSheet[model.Common.AssigneeName] = struct{}{}
+		}
+		if model.Common.CreatorName != "" {
+			userNickMapFromIssueSheet[model.Common.CreatorName] = struct{}{}
+		}
+		if model.BugOnly.OwnerName != "" {
+			userNickMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}
+		}
 	}
 	for nick := range userNickMapFromIssueSheet {
+		if nick == "" {
+			continue
+		}
 		if _, ok := data.ImportOnly.UserIDByNick[nick]; ok {
 			continue
 		}
@@ -125,12 +133,12 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 			continue
 		}
 		newMember := apistructs.Member{
-			UserID: findUser.ID,
+			UserID: findUser.UserID,
 			Email:  findUser.Email,
-			Mobile: findUser.Phone,
+			Mobile: findUser.Mobile,
 			Name:   findUser.Name,
 			Nick:   findUser.Nick,
-			Avatar: findUser.AvatarURL,
+			Avatar: findUser.Avatar,
 			Roles:  []string{bundle.RoleProjectDev},
 			Labels: nil,
 		}
@@ -140,20 +148,6 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 
 	// add member
 	for _, member := range usersNeedToBeAddedAsMember {
-		// add to org first
-		if _, ok := data.OrgMemberByUserID[member.UserID]; !ok {
-			if err := data.Bdl.AddMember(apistructs.MemberAddRequest{
-				Scope: apistructs.Scope{
-					Type: apistructs.OrgScope,
-					ID:   strconv.FormatInt(data.OrgID, 10),
-				},
-				Roles:   []string{bundle.RoleOrgDev},
-				Labels:  nil,
-				UserIDs: []string{member.UserID},
-			}, apistructs.SystemUserID); err != nil {
-				return fmt.Errorf("failed to add member into org, org id: %d, user id: %s, err: %v", data.OrgID, member.UserID, err)
-			}
-		}
 		// add to project
 		if _, ok := data.ProjectMemberByUserID[member.UserID]; !ok {
 			if err := data.Bdl.AddMember(apistructs.MemberAddRequest{
@@ -188,58 +182,35 @@ type Voucher struct {
 	Result map[string]*userpb.User // key is user id
 }
 
-func tryToFindUserByDesensitizedPhoneEmailNickName(data *vars.DataForFulfill, member apistructs.Member) (*userpb.User, error) {
-	// 使用 phone/email/nick/name 字段 `*` 后的数据分别查询，结果取交集
-	getUsers := func(voucherType, voucher string) ([]*userpb.User, error) {
-		resp, err := data.ImportOnly.Identity.FindUsersByKey(context.Background(), &userpb.FindUsersByKeyRequest{
-			Key: getPartVoucherFromDesensitizedData(voucher),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to find user by %s: %s, err: %v", voucherType, voucher, err)
-		}
-		return resp.Data, nil
+func tryToFindUserByDesensitizedPhoneEmailNickName(data *vars.DataForFulfill, member apistructs.Member) (*apistructs.Member, error) {
+	// 使用 phone/email/nick/name 字段 `*` 后的数据分别匹配，全部匹配上即可
+	// 为空的字段不参加匹配
+	phoneMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Mobile]
+	emailMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Email]
+	nickMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Nick]
+	nameMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Name]
+	// check ids all equals
+	compares := make(map[string]struct{})
+	var findUserID string
+	if phoneMatchedUserID != "" {
+		compares[phoneMatchedUserID] = struct{}{}
+		findUserID = phoneMatchedUserID
 	}
-
-	vouchers := []*Voucher{
-		{Type: "mobile", Value: member.Mobile, Result: make(map[string]*userpb.User)},
-		{Type: "email", Value: member.Email, Result: make(map[string]*userpb.User)},
-		{Type: "nick", Value: member.Nick, Result: make(map[string]*userpb.User)},
-		//{Type: "name", Value: member.Name, Result: make(map[string]*userpb.User)},
+	if emailMatchedUserID != "" {
+		compares[emailMatchedUserID] = struct{}{}
+		findUserID = emailMatchedUserID
 	}
-	// remove voucher which value is empty
-	for i := len(vouchers) - 1; i >= 0; i-- {
-		if vouchers[i].Value == "" {
-			vouchers = append(vouchers[:i], vouchers[i+1:]...)
-		}
+	if nickMatchedUserID != "" {
+		compares[nickMatchedUserID] = struct{}{}
+		findUserID = nickMatchedUserID
 	}
-	// use map with minimal length as iterate base
-	var minLen int
-	var minLenVoucher *Voucher
-	for _, voucher := range vouchers {
-		findUsers, err := getUsers(voucher.Type, voucher.Value)
-		if err != nil {
-			return nil, err
-		}
-		for _, u := range findUsers {
-			voucher.Result[u.ID] = u
-		}
-		if minLen == 0 || len(voucher.Result) < minLen {
-			minLen = len(voucher.Result)
-			minLenVoucher = voucher
-		}
+	if nameMatchedUserID != "" {
+		compares[nameMatchedUserID] = struct{}{}
+		findUserID = nameMatchedUserID
 	}
-	for _, u := range minLenVoucher.Result {
-		// check if all vouchers have this user
-		allHave := true
-		for _, voucher := range vouchers {
-			if _, ok := voucher.Result[u.ID]; !ok {
-				allHave = false
-				break
-			}
-		}
-		if allHave {
-			return u, nil
-		}
+	if len(compares) == 1 {
+		findUser := data.OrgMemberByUserID[findUserID]
+		return &findUser, nil
 	}
 	return nil, nil
 }

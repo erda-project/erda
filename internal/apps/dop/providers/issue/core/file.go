@@ -49,6 +49,7 @@ import (
 	labeldao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -307,7 +308,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		Locale:                   i.bdl.GetLocale(locale),
 		ProjectID:                projectID,
 		OrgID:                    orgID,
-		UserID:                   "",
+		UserID:                   userID,
 		StageMap:                 stageMap,
 		IterationMapByID:         iterationMapByID,
 		IterationMapByName:       iterationMapByName,
@@ -349,6 +350,23 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
 	}
 	data.ImportOnly.UserIDByNick = make(map[string]string)
+	memberByDesensitizedKey := make(map[string]string)
+	for userID, member := range data.OrgMemberByUserID {
+		userID := userID
+		if member.Mobile != "" {
+			memberByDesensitizedKey[desensitize.Mobile(member.Mobile)] = userID
+		}
+		if member.Email != "" {
+			memberByDesensitizedKey[desensitize.Email(member.Email)] = userID
+		}
+		if member.Nick != "" {
+			memberByDesensitizedKey[desensitize.Name(member.Nick)] = userID
+		}
+		if member.Name != "" {
+			memberByDesensitizedKey[desensitize.Name(member.Name)] = userID
+		}
+	}
+	data.ImportOnly.OrgMemberByDesensitizedKey = memberByDesensitizedKey
 	return data, nil
 }
 
