@@ -79,6 +79,7 @@ type ProjectReportRow struct {
 	BeginDate                    string    `json:"beginDate" ch:"beginDate"`
 	EndDate                      string    `json:"endDate" ch:"endDate"`
 	ActualEndDate                string    `json:"actualEndDate" ch:"actualEndDate"`
+	ProjectAssignees             []string  `json:"projectAssignees" ch:"projectAssignees"`
 }
 
 var (
@@ -101,7 +102,8 @@ SELECT
     taskEstimatedDayGtTwoTotal,
     taskEstimatedDayGtThreeTotal,
     requirementDoneRate,
-    unfinishedAssigneeTotal,
+    last_value(projectAssignees) as projectAssignees,
+    toFloat64(length(projectAssignees)) as unfinishedAssigneeTotal,
     requirementDoneTotal,
     requirementAssociatedTotal,
     requirementAssociatedRate,
@@ -180,6 +182,7 @@ FROM
         if(last_value(emp_project_begin_date) > 0, toString(fromUnixTimestamp(toInt64(last_value(emp_project_begin_date)))), '') as beginDate,
         if(last_value(emp_project_end_date) > 0, toString(fromUnixTimestamp(toInt64(last_value(emp_project_end_date)))), '') as endDate,
         if(last_value(emp_project_actual_end_date) > 0, toString(fromUnixTimestamp(toInt64(last_value(emp_project_actual_end_date)))), '') as actualEndDate,
+        groupUniqArrayArray(iteration_assignees) as projectAssignees,
         projectName,
         projectDisplayName,
         projectID,
@@ -214,7 +217,6 @@ GROUP BY
     taskEstimatedDayGtOneTotal,
     taskEstimatedDayGtTwoTotal,
     taskEstimatedDayGtThreeTotal,
-    unfinishedAssigneeTotal,
     requirementDoneTotal,
     requirementAssociatedTotal,
     requirementAssociatedRate,
@@ -284,7 +286,8 @@ ORDER BY
             last_value(iteration_estimated_day_total) as iteration_estimated_day_total,
             last_value(emp_project_begin_date) as emp_project_begin_date,
             last_value(emp_project_end_date) as emp_project_end_date,
-            last_value(emp_project_actual_end_date) as emp_project_actual_end_date
+            last_value(emp_project_actual_end_date) as emp_project_actual_end_date,
+            last_value(iteration_assignees) as iteration_assignees
         FROM (
         %s
         )
@@ -331,7 +334,8 @@ ORDER BY
                 number_field_values[indexOf(number_field_keys,'iteration_estimated_day_total')] as iteration_estimated_day_total,
                 number_field_values[indexOf(number_field_keys,'emp_project_begin_date')] as emp_project_begin_date,
                 number_field_values[indexOf(number_field_keys,'emp_project_end_date')] as emp_project_end_date,
-                number_field_values[indexOf(number_field_keys,'emp_project_actual_end_date')] as emp_project_actual_end_date
+                number_field_values[indexOf(number_field_keys,'emp_project_actual_end_date')] as emp_project_actual_end_date,
+                if(tag_values[indexOf(tag_keys,'iteration_assignees')] != '', splitByString(',',tag_values[indexOf(tag_keys,'iteration_assignees')]), []) as iteration_assignees
             FROM monitor.external_metrics_all
             WHERE
                 metric_group='%s' 
