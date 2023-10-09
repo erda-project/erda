@@ -220,6 +220,11 @@ func (client *DBClient) DeleteIssue(id uint64) error {
 	return client.Model(Issue{}).Where("id = ?", id).Update("deleted", 1).Error
 }
 
+// BatchDeleteIssues 批量删除
+func (client *DBClient) BatchDeleteIssues(ids []uint64) error {
+	return client.Model(Issue{}).Where("id IN (?)", ids).Update("deleted", 1).Error
+}
+
 // DeleteIssuesByRequirement .
 func (client *DBClient) DeleteIssuesByRequirement(requirementID uint64) error {
 	return client.Model(Issue{}).Where("requirement_id = ?", requirementID).Update("deleted", 1).Error

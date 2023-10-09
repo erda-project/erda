@@ -144,3 +144,7 @@ func (i IssueMock) GetIssuePropertyInstance(req *issuepb.GetIssuePropertyInstanc
 func (i IssueMock) BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*issuepb.IssueAndPropertyAndValue, error) {
 	panic("implement me")
 }
+
+func (i IssueMock) BatchGetIssue(id []int64, identityInfo *commonpb.IdentityInfo) ([]*issuepb.Issue, error) {
+	panic("implement me")
+}

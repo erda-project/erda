@@ -62,6 +62,15 @@ service IssueCoreService {
     };
   };
 
+  rpc BatchDeleteIssues(BatchDeleteIssueRequest) returns (BatchDeleteIssueResponse) {
+    option (google.api.http) = {
+      delete: "/api/issues/actions/batch-delete",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/issues/actions/batch-delete",
+    };
+  };
+
   rpc BatchUpdateIssue(BatchUpdateIssueRequest)
       returns (BatchUpdateIssueResponse) {
     option (google.api.http) = {
@@ -374,6 +383,15 @@ message DeleteIssueRequest {
 
 message DeleteIssueResponse {
   Issue data = 1;
+}
+
+message BatchDeleteIssueRequest {
+  repeated string ids = 1;
+  uint64 projectID = 2 [json_name = "projectId"];
+}
+
+message BatchDeleteIssueResponse {
+  repeated Issue data = 1;
 }
 
 message BatchUpdateIssueRequest {

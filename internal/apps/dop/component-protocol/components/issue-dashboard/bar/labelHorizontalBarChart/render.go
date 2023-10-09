@@ -62,7 +62,7 @@ func (f *ComponentAction) getState(c *cptype.Component) error {
 }
 
 func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
+	f.issueSvc = ctx.Value(types.IssueQuery).(query.Interface)
 	if err := f.setInParams(ctx); err != nil {
 		return err
 	}

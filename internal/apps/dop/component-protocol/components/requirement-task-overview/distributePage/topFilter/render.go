@@ -58,7 +58,7 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 	// sdk
 	f.sdk = cputil.SDK(ctx)
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	f.issueSvc = ctx.Value(types.IssueService).(query.Interface)
+	f.issueSvc = ctx.Value(types.IssueQuery).(query.Interface)
 	return f.setInParams(ctx)
 }
 

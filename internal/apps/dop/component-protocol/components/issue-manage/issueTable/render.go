@@ -90,10 +90,12 @@ type State struct {
 	Menus []map[string]interface{} `json:"menus"`
 	// Operations  map[string]interface{} `json:"operations"`
 	// PrefixIcon  string                 `json:"prefixIcon"`
-	Value       string `json:"value"`
-	RenderType  string `json:"renderType"`
-	Disabled    bool   `json:"disabled"`
-	DisabledTip string `json:"disabledTip"`
+	Value           string   `json:"value"`
+	RenderType      string   `json:"renderType"`
+	Disabled        bool     `json:"disabled"`
+	DisabledTip     string   `json:"disabledTip"`
+	SelectedRowKeys []string `json:"selectedRowKeys"`
+	ProjectID       uint64   `json:"projectId"`
 }
 
 type Priority struct {
@@ -133,17 +135,18 @@ type TableItem struct {
 	Complexity  Complexity `json:"complexity,omitempty"`
 	State       State      `json:"state"`
 	// Title       Title      `json:"title"`
-	Type          string    `json:"type"`
-	Deadline      Deadline  `json:"deadline"`
-	Assignee      Assignee  `json:"assignee"`
-	ClosedAt      Time      `json:"closedAt"`
-	Name          Name      `json:"name"`
-	ReopenCount   TextBlock `json:"reopenCount,omitempty"`
-	CreatedAt     Time      `json:"createdAt"`
-	Owner         Assignee  `json:"owner"`
-	Creator       Assignee  `json:"creator"`
-	PlanStartedAt Time      `json:"planStartedAt"`
-	Iteration     TextBlock `json:"iteration"`
+	Type            string    `json:"type"`
+	Deadline        Deadline  `json:"deadline"`
+	Assignee        Assignee  `json:"assignee"`
+	ClosedAt        Time      `json:"closedAt"`
+	Name            Name      `json:"name"`
+	ReopenCount     TextBlock `json:"reopenCount,omitempty"`
+	CreatedAt       Time      `json:"createdAt"`
+	Owner           Assignee  `json:"owner"`
+	Creator         Assignee  `json:"creator"`
+	PlanStartedAt   Time      `json:"planStartedAt"`
+	Iteration       TextBlock `json:"iteration"`
+	BatchOperations []string  `json:"batchOperations"`
 
 	Properties []*pb.IssuePropertyExtraProperty `json:"properties"`
 }
@@ -152,6 +155,7 @@ type TableItemForShow map[string]interface{}
 
 func (item *TableItem) toColumnDataRow() map[string]interface{} {
 	data := make(map[string]interface{})
+	item.BatchOperations = []string{"delete"}
 	cputil.MustObjJSONTransfer(item, &data)
 	// delete self properties field
 	delete(data, "properties")
@@ -240,9 +244,34 @@ type AssigneeOperationData struct {
 }
 
 type ComponentAction struct {
-	labels  []apistructs.ProjectLabel
-	isGuest bool
-	userMap map[string]string
+	labels   []apistructs.ProjectLabel
+	isGuest  bool
+	userMap  map[string]string
+	state    State
+	issueSvc pb.IssueCoreServiceServer
+	ctx      context.Context
+}
+
+type BatchState struct {
+	Visible         bool     `json:"visible"`
+	SelectedRowKeys []string `json:"selectedRowKeys"`
+}
+
+type Operation struct {
+	Key        string `json:"key"`
+	Reload     bool   `json:"reload"`
+	Meta       Meta   `json:"meta"`
+	SuccessMsg string `json:"successMsg"`
+}
+
+type Props struct {
+	Status  string `json:"status"`
+	Content string `json:"content"`
+	Title   string `json:"title"`
+}
+
+type Meta struct {
+	Type cptype.OperationKey `json:"type"`
 }
 
 var (
@@ -268,9 +297,13 @@ var (
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-	issueSvc := ctx.Value(types.IssueService).(query.Interface)
+	issueQuery := ctx.Value(types.IssueQuery).(query.Interface)
+	issueSvc := ctx.Value(types.IssueService).(pb.IssueCoreServiceServer)
 	identity := ctx.Value(types.IdentitiyService).(userpb.UserServiceServer)
+	ca.issueSvc = issueSvc
+
 	isGuest, err := ca.CheckUserPermission(ctx)
+
 	if err != nil {
 		return err
 	}
@@ -344,6 +377,15 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		cond.PageNo = 1
 	}
 
+	if event.Operation.String() == "delete" {
+		ca.ctx = ctx
+		cputil.MustObjJSONTransfer(&c.State, &ca.state)
+		_, err = ca.DeleteItems(ca.state.SelectedRowKeys, projectid)
+		if err != nil {
+			return err
+		}
+	}
+
 	// check reset pageNo
 	if c.State != nil && resetPageNoByFilterCondition(event.Operation.String(), TableItem{}, c.State) {
 		if _, ok := c.State["pageNo"]; ok {
@@ -356,7 +398,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		cond.WithCustomProperties = true
 	}
 
-	issues, total, err := issueSvc.Paging(cond)
+	issues, total, err := issueQuery.Paging(cond)
 	if err != nil {
 		return err
 	}
@@ -365,7 +407,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	pageTotal := getTotalPage(total, cond.PageSize)
 	if pageTotal < cond.PageNo {
 		cond.PageNo = 1
-		issues, total, err = issueSvc.Paging(cond)
+		issues, total, err = issueQuery.Paging(cond)
 		if err != nil {
 			return err
 		}
@@ -427,6 +469,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			"key":    "changePageSize",
 			"reload": true,
 		},
+		"delete": map[string]interface{}{
+			"confirm": "",
+			"key":     "delete",
+			"reload":  true,
+			"text":    "删除",
+		},
 	}
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = userids
 	if c.State == nil {
@@ -438,6 +486,17 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	urlquery := fmt.Sprintf(`{"pageNo":%d, "pageSize":%d}`, cond.PageNo, cond.PageSize)
 	c.State["issueTable__urlQuery"] = base64.StdEncoding.EncodeToString([]byte(urlquery))
 	return nil
+}
+
+func (ca *ComponentAction) DeleteItems(itemIDs []string, projectID uint64) (*pb.BatchDeleteIssueResponse, error) {
+	var req = &pb.BatchDeleteIssueRequest{}
+	req.Ids = itemIDs
+	req.ProjectID = projectID
+	k, err := ca.issueSvc.BatchDeleteIssues(ca.ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return k, err
 }
 
 func (ca *ComponentAction) buildTableItem(ctx context.Context, data *pb.Issue, iterations map[int64]string) *TableItem {
@@ -807,7 +866,7 @@ func buildTime(t *timestamppb.Timestamp) Time {
 
 func eventHandler(ctx context.Context, event cptype.ComponentEvent) error {
 	sdk := cputil.SDK(ctx)
-	issueSvc := ctx.Value(types.IssueService).(query.Interface)
+	issueSvc := ctx.Value(types.IssueQuery).(query.Interface)
 	if strutil.HasPrefixes(event.Operation.String(), "changePriorityTo") {
 		priority := apistructs.IssuePriorityLow
 		switch event.Operation.String() {

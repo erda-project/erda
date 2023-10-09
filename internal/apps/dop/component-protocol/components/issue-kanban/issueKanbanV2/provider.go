@@ -84,7 +84,7 @@ func (k *Kanban) Finalize(sdk *cptype.SDK) {
 }
 
 func (k *Kanban) BeforeHandleOp(sdk *cptype.SDK) {
-	k.issueSvc = sdk.Ctx.Value(types.IssueService).(query.Interface)
+	k.issueSvc = sdk.Ctx.Value(types.IssueQuery).(query.Interface)
 	gh := gshelper.NewGSHelper(sdk.GlobalState)
 	filterCond, ok := gh.GetIssuePagingRequest()
 	if !ok {

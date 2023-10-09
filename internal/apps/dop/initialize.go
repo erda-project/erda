@@ -122,7 +122,8 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		issuefilterbm.WithDBClient(db),
 	))
 	p.Protocol.WithContextValue(types.CodeCoverageService, ep.CodeCoverageService())
-	p.Protocol.WithContextValue(types.IssueService, p.Query)
+	p.Protocol.WithContextValue(types.IssueQuery, p.Query)
+	p.Protocol.WithContextValue(types.IssueService, p.IssueCoreSvc)
 	p.Protocol.WithContextValue(types.IterationService, ep.IterationService())
 	p.Protocol.WithContextValue(types.ManualTestCaseService, ep.ManualTestCaseService())
 	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
