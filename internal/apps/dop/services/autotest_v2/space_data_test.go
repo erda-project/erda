@@ -180,7 +180,7 @@ func Test_addSceneStepToExcel(t *testing.T) {
 			},
 		},
 	}
-	f := excel.NewXLSXFile()
+	f := excel.NewFile()
 	err := ad.addSceneStepToExcel(f)
 	assert.NoError(t, err)
 }

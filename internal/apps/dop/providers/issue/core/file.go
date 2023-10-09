@@ -39,12 +39,17 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_customfield"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_state"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_user"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/core/file/filetypes"
 	labeldao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -236,7 +241,7 @@ func (i *IssueService) updateIssueFileRecord(id uint64, state apistructs.FileRec
 	return nil
 }
 
-func (i *IssueService) createDataForFulfillCommon(locale string, userID string, orgID int64, projectID uint64, issueTypes []string) (*issueexcel.DataForFulfill, error) {
+func (i *IssueService) createDataForFulfillCommon(locale string, userID string, orgID int64, projectID uint64, issueTypes []string) (*vars.DataForFulfill, error) {
 	// stage map
 	stages, err := i.db.GetIssuesStageByOrgID(orgID)
 	if err != nil {
@@ -267,12 +272,12 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		iterationMapByName[v.Title] = &v
 	}
 	// state map
-	stateMapByID, stateMapByTypeAndName, err := issueexcel.RefreshDataState(projectID, i.db)
+	stateMapByID, stateMapByTypeAndName, err := sheet_state.RefreshDataState(projectID, i.db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get states, err: %v", err)
 	}
 	// member map
-	orgMemberMap, projectMemberMap, alreadyHaveProjectOwner, err := issueexcel.RefreshDataMembers(orgID, projectID, i.bdl)
+	orgMemberMap, projectMemberMap, alreadyHaveProjectOwner, err := sheet_user.RefreshDataMembers(orgID, projectID, i.bdl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get members, err: %v", err)
 	}
@@ -292,17 +297,18 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		labelMapByName[v.Name] = v
 	}
 	// custom fields
-	customFieldMapByTypeName, err := issueexcel.RefreshDataCustomFields(orgID, i)
+	customFieldMapByTypeName, err := sheet_customfield.RefreshDataCustomFields(orgID, i)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get custom fields, err: %v", err)
 	}
 
 	// result
-	dataForFulfill := issueexcel.DataForFulfill{
+	dataForFulfill := vars.DataForFulfill{
+		Bdl:                      i.bdl,
 		Locale:                   i.bdl.GetLocale(locale),
 		ProjectID:                projectID,
 		OrgID:                    orgID,
-		UserID:                   "",
+		UserID:                   userID,
 		StageMap:                 stageMap,
 		IterationMapByID:         iterationMapByID,
 		IterationMapByName:       iterationMapByName,
@@ -317,7 +323,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	return &dataForFulfill, nil
 }
 
-func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
+func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueRequest) (*vars.DataForFulfill, error) {
 	data, err := i.createDataForFulfillCommon(req.Locale, req.IdentityInfo.UserID, req.OrgID, req.ProjectID, nil) // ignore issueTypes, use all types
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
@@ -325,7 +331,6 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 	// import only
 	data.ImportOnly.DB = i.db
 	data.ImportOnly.LabelDB = &labeldao.DBClient{DB: i.db.DB}
-	data.ImportOnly.Bdl = i.bdl
 	data.ImportOnly.Identity = i.identity
 	data.ImportOnly.IssueCore = i
 	// current project issues
@@ -345,10 +350,27 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
 	}
 	data.ImportOnly.UserIDByNick = make(map[string]string)
+	memberByDesensitizedKey := make(map[string]string)
+	for userID, member := range data.OrgMemberByUserID {
+		userID := userID
+		if member.Mobile != "" {
+			memberByDesensitizedKey[desensitize.Mobile(member.Mobile)] = userID
+		}
+		if member.Email != "" {
+			memberByDesensitizedKey[desensitize.Email(member.Email)] = userID
+		}
+		if member.Nick != "" {
+			memberByDesensitizedKey[desensitize.Name(member.Nick)] = userID
+		}
+		if member.Name != "" {
+			memberByDesensitizedKey[desensitize.Name(member.Name)] = userID
+		}
+	}
+	data.ImportOnly.OrgMemberByDesensitizedKey = memberByDesensitizedKey
 	return data, nil
 }
 
-func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueRequest) (*issueexcel.DataForFulfill, error) {
+func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueRequest) (*vars.DataForFulfill, error) {
 	data, err := i.createDataForFulfillCommon(req.Locale, req.IdentityInfo.UserID, req.OrgID, req.ProjectID, req.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data for fulfill common, err: %v", err)
@@ -372,7 +394,11 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 		return nil, fmt.Errorf("failed to get project issues total num, err: %v", err)
 	}
 	if uint64(len(issues)) >= projectIssueTotalNum {
-		data.ExportOnly.AllProjectIssues = true
+		// TODO 前端明确区分是项目迁移还是正常导出
+		// 当用户在 UI 上清除所有筛选条件后，'按筛选条件导出' 和 '全量导出' 的差别就在 external 和 orderby 这两个字段
+		if req.External == false && req.OrderBy == "" {
+			data.ExportOnly.IsFullExport = true
+		}
 	}
 	data.ExportOnly.IsDownloadTemplate = req.IsDownloadTemplate
 	data.ExportOnly.FileNameWithExt = "issue-export.xlsx"
@@ -466,7 +492,10 @@ func (i *IssueService) ExportExcelAsync(record *legacydao.TestFileRecord) {
 	if err != nil {
 		panic(fmt.Errorf("failed to create data for fulfill, err: %v", err))
 	}
-	if err := issueexcel.ExportFile(&buffer, *dataForFulfill); err != nil {
+	if err := dataForFulfill.CheckPermission(); err != nil {
+		panic(err)
+	}
+	if err := issueexcel.ExportFile(&buffer, dataForFulfill); err != nil {
 		panic(fmt.Errorf("failed to export excel, err: %v", err))
 	}
 
@@ -521,7 +550,7 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 	if err != nil {
 		return fmt.Errorf("failed to create data for fulfill, err: %v", err)
 	}
-	if err = issueexcel.ImportFile(f, *data); err != nil {
+	if err = issueexcel.ImportFile(f, data); err != nil {
 		return fmt.Errorf("failed to import excel, err: %v", err)
 	}
 	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
@@ -937,7 +966,7 @@ func (i *IssueService) decodeFromExcelFile(req *pb.ImportExcelIssueRequest, r io
 		}
 		// row[17] EstimateTime
 		if len(row) >= 18 && row[17] != "" {
-			manHour, err := issueexcel.NewManhour(row[17])
+			manHour, err := vars.NewManhour(row[17])
 			if err != nil {
 				falseExcel = append(falseExcel, i+1)
 				falseReason = append(falseReason, fmt.Sprintf("failed to convert estimate time: %s, err: %v", row[17], err))

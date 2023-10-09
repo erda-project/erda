@@ -79,3 +79,13 @@ func Test_Decode(t *testing.T) {
 	}
 	fmt.Printf("%#v\n", m)
 }
+
+func TestDecodeSheetToSlice(t *testing.T) {
+	// test if an Excel file have two sheets with same name
+	f := NewFile()
+	assert.NoError(t, AddSheetByCell(f, nil, "sheet1"))
+	assert.Error(t, AddSheetByCell(f, nil, "sheet1"))
+
+	// decode file with two same-name sheets directly
+	// According to the Excel standard, it is not possible to create an Excel file with two sheets of the same name.
+}

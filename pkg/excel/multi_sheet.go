@@ -22,20 +22,11 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	"github.com/tealeg/xlsx/v3"
 )
 
-type XlsxFile struct {
-	*xlsx.File
-}
-
-func NewXLSXFile() *XlsxFile {
-	return &XlsxFile{File: xlsx.NewFile()}
-}
-
 // AddSheetByCell add sheet by cell data. You can add multiple sheets by calling this method multiple times.
-func AddSheetByCell(f *XlsxFile, data [][]Cell, sheetName string) error {
-	sheet, err := f.File.AddSheet(sheetName)
+func AddSheetByCell(f *File, data [][]Cell, sheetName string) error {
+	sheet, err := f.XlsxFile.AddSheet(sheetName)
 	if err != nil {
 		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
 	}
@@ -43,7 +34,7 @@ func AddSheetByCell(f *XlsxFile, data [][]Cell, sheetName string) error {
 	return nil
 }
 
-func WriteFile(w io.Writer, f *XlsxFile, filename string) error {
+func WriteFile(w io.Writer, f *File, filename string) error {
 	// set headers to http ResponseWriter `w` before write into `w`.
 	if rw, ok := w.(http.ResponseWriter); ok {
 		rw.Header().Add("Content-Disposition", "attachment;fileName="+url.QueryEscape(filename+".xlsx"))
@@ -51,7 +42,7 @@ func WriteFile(w io.Writer, f *XlsxFile, filename string) error {
 	}
 
 	var buff bytes.Buffer
-	if err := f.File.Write(&buff); err != nil {
+	if err := f.XlsxFile.Write(&buff); err != nil {
 		return errors.Errorf("failed to write content, sheetName: %s, err: %v", filename, err)
 	}
 

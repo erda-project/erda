@@ -143,7 +143,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							return err
 						}
 						var buffer bytes.Buffer
-						if err := issueexcel.ExportFile(&buffer, *dataForFulfill); err != nil {
+						if err := issueexcel.ExportFile(&buffer, dataForFulfill); err != nil {
 							return err
 						}
 						rw.Header().Add("Content-Disposition", "attachment;fileName=issue-template.xlsx")

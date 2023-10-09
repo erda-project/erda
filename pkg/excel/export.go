@@ -46,7 +46,7 @@ func ExportExcelByCell(w io.Writer, data [][]Cell, sheetName string) error {
 		logrus.Debugf("export excel cost: %fs", end.Sub(begin).Seconds())
 	}()
 
-	file := NewXLSXFile()
+	file := NewFile()
 	if err := AddSheetByCell(file, data, sheetName); err != nil {
 		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
 	}

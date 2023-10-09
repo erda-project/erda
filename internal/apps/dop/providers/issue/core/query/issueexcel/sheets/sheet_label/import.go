@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueexcel
+package sheet_label
 
 import (
 	"encoding/json"
@@ -22,81 +22,61 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (data DataForFulfill) genLabelSheet() (excel.Rows, error) {
-	var lines excel.Rows
-	// title: label id, label name, label detail (JSON)
-	title := excel.Row{
-		excel.NewTitleCell("label id"),
-		excel.NewTitleCell("label name"),
-		excel.NewTitleCell("label detail (json)"),
-	}
-	lines = append(lines, title)
-	// data
-	// collect labels from issues
-	labelMap := make(map[int64]*pb.ProjectLabel)
-	for _, issue := range data.ExportOnly.Issues {
-		for _, label := range issue.LabelDetails {
-			if _, ok := labelMap[label.Id]; !ok {
-				labelMap[label.Id] = label
-			}
-		}
-	}
-	for _, label := range labelMap {
-		labelInfo, err := json.Marshal(label)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal label info, label id: %d, err: %v", label.Id, err)
-		}
-		lines = append(lines, excel.Row{
-			excel.NewCell(strconv.FormatInt(label.Id, 10)),
-			excel.NewCell(label.Name),
-			excel.NewCell(string(labelInfo)),
-		})
-	}
+type Handler struct{}
 
-	return lines, nil
-}
+func (h *Handler) SheetName() string { return vars.NameOfSheetLabel }
 
-func (data DataForFulfill) decodeLabelSheet(excelSheets [][][]string) ([]*pb.ProjectLabel, error) {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
 	if data.IsOldExcelFormat() {
-		return nil, nil
+		return nil
 	}
-	sheet := excelSheets[indexOfSheetLabel]
+	s, ok := df.Sheets.M[h.SheetName()]
+	if !ok {
+		return nil
+	}
+	sheet := s.UnmergedSlice
 	// check title
 	if len(sheet) < 1 {
-		return nil, fmt.Errorf("label sheet is empty")
+		return fmt.Errorf("label sheet is empty")
 	}
 	var labels []*pb.ProjectLabel
 	for _, row := range sheet[1:] {
 		var label pb.ProjectLabel
 		if err := json.Unmarshal([]byte(row[2]), &label); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal label info, label id: %s, err: %v", row[0], err)
+			return fmt.Errorf("failed to unmarshal label info, label id: %s, err: %v", row[0], err)
 		}
 		labels = append(labels, &label)
 	}
-	return labels, nil
+	data.ImportOnly.Sheets.Optional.LabelInfo = labels
+
+	// create
+	if err := CreateLabelIfNotExistsForImport(data, labels); err != nil {
+		return fmt.Errorf("failed to create label, err: %v", err)
+	}
+	return nil
 }
 
-func (data DataForFulfill) mergeLabelsForCreate(labelsFromLabelSheet []*pb.ProjectLabel, issueModels []IssueSheetModel) []*pb.ProjectLabel {
-	labelsFromLabelSheetMap := make(map[string]*pb.ProjectLabel, len(labelsFromLabelSheet))
-	for _, label := range labelsFromLabelSheet {
-		labelsFromLabelSheetMap[label.Name] = label
-	}
+func CreateLabelFromIssueSheet(data *vars.DataForFulfill) error {
+	issueLabelByName := make(map[string]*pb.ProjectLabel)
+	var issueLabels []*pb.ProjectLabel
 
-	for _, model := range issueModels {
+	// collect labels from issue sheet
+	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
 		for _, labelName := range model.Common.Labels {
-			if _, ok := labelsFromLabelSheetMap[labelName]; ok {
+			if _, ok := issueLabelByName[labelName]; ok {
 				continue
 			}
 			if _, ok := data.LabelMapByName[labelName]; ok {
 				continue
 			}
-			labelsFromLabelSheet = append(labelsFromLabelSheet, &pb.ProjectLabel{
+			issueLabels = append(issueLabels, &pb.ProjectLabel{
 				Name:      labelName,
 				Type:      pb.ProjectLabelTypeEnum_issue,
 				ProjectID: data.ProjectID,
@@ -104,10 +84,12 @@ func (data DataForFulfill) mergeLabelsForCreate(labelsFromLabelSheet []*pb.Proje
 			})
 		}
 	}
-	return labelsFromLabelSheet
+
+	// create
+	return CreateLabelIfNotExistsForImport(data, issueLabels)
 }
 
-func (data *DataForFulfill) createLabelIfNotExistsForImport(labels []*pb.ProjectLabel) error {
+func CreateLabelIfNotExistsForImport(data *vars.DataForFulfill, labels []*pb.ProjectLabel) error {
 	// create label if not exists
 	for _, label := range labels {
 		_, ok := data.LabelMapByName[label.Name]
@@ -171,7 +153,7 @@ func randomColor() string {
 	return colors[rand.Intn(len(colors))]
 }
 
-func (data DataForFulfill) createIssueLabelRelations(issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*IssueSheetModel) error {
+func CreateIssueLabelRelations(data *vars.DataForFulfill, issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel) error {
 	// batch delete label relations
 	var issueIDs []uint64
 	for _, issue := range issues {
