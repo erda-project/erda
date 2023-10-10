@@ -201,7 +201,8 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 					}
 					model.Common.ConnectionIssueIDs = ids
 				default:
-					return nil, fmt.Errorf("unknown common field: %s", groupField)
+					// just skip
+					continue
 				}
 			case fieldRequirementOnly:
 				switch groupField {
