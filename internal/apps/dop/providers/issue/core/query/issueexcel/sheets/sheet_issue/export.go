@@ -140,7 +140,6 @@ func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, err
 			CreatorName:        getUserNick(data, issue.Creator),
 			AssigneeName:       getUserNick(data, issue.Assignee),
 			CreatedAt:          pbutil.GetTimeInLocal(issue.CreatedAt),
-			UpdatedAt:          pbutil.GetTimeInLocal(issue.UpdatedAt),
 			PlanStartedAt:      pbutil.GetTimeInLocal(issue.PlanStartedAt),
 			PlanFinishedAt:     pbutil.GetTimeInLocal(issue.PlanFinishedAt),
 			StartAt:            pbutil.GetTimeInLocal(issue.StartTime),
