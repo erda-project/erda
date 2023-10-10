@@ -27,6 +27,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -56,6 +57,7 @@ type IssueService struct {
 	ExportChannel chan uint64
 	ImportChannel chan uint64
 	identity      userpb.UserServiceServer
+	translator    i18n.I18n
 }
 
 func (i *IssueService) WithTestplan(testPlan *mttestplan.TestPlan) {
@@ -69,6 +71,10 @@ func (i *IssueService) WithTestcase(testcase *testcase.Service) {
 func (i *IssueService) WithChannel(export, im chan uint64) {
 	i.ExportChannel = export
 	i.ImportChannel = im
+}
+
+func (i *IssueService) WithTranslator(tran i18n.I18n) {
+	i.translator = tran
 }
 
 func (i *IssueService) DBClient() *dao.DBClient {

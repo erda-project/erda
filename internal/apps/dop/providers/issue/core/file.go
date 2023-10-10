@@ -305,8 +305,9 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	// result
 	dataForFulfill := vars.DataForFulfill{
 		Bdl:                      i.bdl,
-		Locale:                   i.bdl.GetLocale(locale),
 		ProjectID:                projectID,
+		Tran:                     i.translator.Translator("issue-excel"),
+		Lang:                     vars.GetI18nLang(locale),
 		OrgID:                    orgID,
 		UserID:                   userID,
 		StageMap:                 stageMap,

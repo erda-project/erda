@@ -70,7 +70,10 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 		// format like "Common---ID---ID"
 		var uuid IssueSheetColumnUUID
 		for j := 0; j < uuidPartsMustLength; j++ {
-			uuid.AddPart(issueSheetRows[j][i])
+			cellValue := issueSheetRows[j][i]
+			// parse i18n text to excel field key
+			cellValue = parseI18nTextToExcelFieldKey(cellValue)
+			uuid.AddPart(cellValue)
 		}
 		// data rows start from uuidPartsMustLength
 		for k := range issueSheetRows[uuidPartsMustLength:] {
@@ -89,6 +92,13 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 	}
 	data.ImportOnly.Sheets.Must.IssueInfo = models
 	return nil
+}
+
+func parseI18nTextToExcelFieldKey(text string) string {
+	if v, ok := i18nMapByText[text]; ok {
+		return v
+	}
+	return text
 }
 
 func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColumnUUID]excel.Column) (_ []vars.IssueSheetModel, err error) {
@@ -116,9 +126,9 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 			groupType := parts[0]
 			groupField := parts[1]
 			switch groupType {
-			case "Common":
+			case fieldCommon:
 				switch groupField {
-				case "ID":
+				case fieldID:
 					if cell.Value == "" { // update
 						model.Common.ID = 0
 						continue
@@ -128,59 +138,57 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 						return nil, fmt.Errorf("invalid id: %s", cell.Value)
 					}
 					model.Common.ID = id
-				case "IterationName":
+				case fieldIterationName:
 					model.Common.IterationName = cell.Value
-				case "IssueType":
+				case fieldIssueType:
 					issueType, err := parseStringIssueType(cell.Value)
 					if err != nil {
 						return nil, err
 					}
 					model.Common.IssueType = issueType
-				case "IssueTitle":
+				case fieldIssueTitle:
 					model.Common.IssueTitle = cell.Value
-				case "Content":
+				case fieldContent:
 					model.Common.Content = cell.Value
-				case "State":
+				case fieldState:
 					model.Common.State = cell.Value
-				case "Priority":
+				case fieldPriority:
 					priority, err := parseStringPriority(cell.Value)
 					if err != nil {
 						return nil, err
 					}
 					model.Common.Priority = priority
-				case "Complexity":
+				case fieldComplexity:
 					complexity, err := parseStringComplexity(cell.Value)
 					if err != nil {
 						return nil, err
 					}
 					model.Common.Complexity = complexity
-				case "Severity":
+				case fieldSeverity:
 					severity, err := parseStringSeverity(cell.Value)
 					if err != nil {
 						return nil, err
 					}
 					model.Common.Severity = severity
-				case "CreatorName":
+				case fieldCreatorName:
 					model.Common.CreatorName = cell.Value
-				case "AssigneeName":
+				case fieldAssigneeName:
 					model.Common.AssigneeName = cell.Value
-				case "CreatedAt":
+				case fieldCreatedAt:
 					model.Common.CreatedAt = vars.MustParseStringTime(cell.Value, groupField)
-				case "UpdatedAt":
-					model.Common.UpdatedAt = vars.MustParseStringTime(cell.Value, groupField)
-				case "PlanStartedAt":
+				case fieldPlanStartedAt:
 					model.Common.PlanStartedAt = vars.MustParseStringTime(cell.Value, groupField)
-				case "PlanFinishedAt":
+				case fieldPlanFinishedAt:
 					model.Common.PlanFinishedAt = vars.MustParseStringTime(cell.Value, groupField)
-				case "StartAt":
+				case fieldStartAt:
 					model.Common.StartAt = vars.MustParseStringTime(cell.Value, groupField)
-				case "FinishAt":
+				case fieldFinishAt:
 					model.Common.FinishAt = vars.MustParseStringTime(cell.Value, groupField)
-				case "EstimateTime":
+				case fieldEstimateTime:
 					model.Common.EstimateTime = cell.Value
-				case "Labels":
+				case fieldLabels:
 					model.Common.Labels = vars.ParseStringSliceByComma(cell.Value)
-				case "ConnectionIssueIDs":
+				case fieldConnectionIssueIDs:
 					var ids []int64
 					for _, idStr := range vars.ParseStringSliceByComma(cell.Value) {
 						id, err := parseStringIssueID(idStr)
@@ -195,9 +203,9 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				default:
 					return nil, fmt.Errorf("unknown common field: %s", groupField)
 				}
-			case "RequirementOnly":
+			case fieldRequirementOnly:
 				switch groupField {
-				case "InclusionIssueIDs":
+				case fieldInclusionIssueIDs:
 					var ids []int64
 					for _, idStr := range vars.ParseStringSliceByComma(cell.Value) {
 						id, err := parseStringIssueID(idStr)
@@ -209,29 +217,29 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 						}
 					}
 					model.RequirementOnly.InclusionIssueIDs = ids
-				case "CustomFields":
+				case fieldCustomFields:
 					model.RequirementOnly.CustomFields = append(model.RequirementOnly.CustomFields, vars.ExcelCustomField{
 						Title: parts[2],
 						Value: cell.Value,
 					})
 				}
-			case "TaskOnly":
+			case fieldTaskOnly:
 				switch groupField {
-				case "TaskType":
+				case fieldTaskType:
 					model.TaskOnly.TaskType = cell.Value
-				case "CustomFields":
+				case fieldCustomFields:
 					model.TaskOnly.CustomFields = append(model.TaskOnly.CustomFields, vars.ExcelCustomField{
 						Title: parts[2],
 						Value: cell.Value,
 					})
 				}
-			case "BugOnly":
+			case fieldBugOnly:
 				switch groupField {
-				case "OwnerName":
+				case fieldOwnerName:
 					model.BugOnly.OwnerName = cell.Value
-				case "Source":
+				case fieldSource:
 					model.BugOnly.Source = cell.Value
-				case "ReopenCount":
+				case fieldReopenCount:
 					if cell.Value == "" {
 						model.BugOnly.ReopenCount = 0
 						continue
@@ -241,7 +249,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 						return nil, fmt.Errorf("invalid reopen count: %s", cell.Value)
 					}
 					model.BugOnly.ReopenCount = int32(reopenCount)
-				case "CustomFields":
+				case fieldCustomFields:
 					model.BugOnly.CustomFields = append(model.BugOnly.CustomFields, vars.ExcelCustomField{
 						Title: parts[2],
 						Value: cell.Value,
@@ -354,7 +362,7 @@ func CreateOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 			BaseModel: dbengine.BaseModel{
 				ID:        uint64(model.Common.ID),
 				CreatedAt: vars.ChangePointerTimeToTime(model.Common.CreatedAt),
-				UpdatedAt: vars.ChangePointerTimeToTime(model.Common.UpdatedAt),
+				UpdatedAt: vars.ChangePointerTimeToTime(model.Common.CreatedAt),
 			},
 			PlanStartedAt:  model.Common.PlanStartedAt,
 			PlanFinishedAt: model.Common.PlanFinishedAt,

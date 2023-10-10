@@ -35,7 +35,7 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to gen sheet title and data by column, err: %v", err)
 	}
-	excelRows, err := mapByColumns.ConvertToExcelSheet()
+	excelRows, err := mapByColumns.ConvertToExcelSheet(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert to excel sheet, err: %v", err)
 	}

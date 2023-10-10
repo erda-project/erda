@@ -1,0 +1,42 @@
+zh:
+  # Common
+  Common: 通用字段
+  ID: ID
+  IterationName: 迭代
+  IssueType: 类型
+  IssueTitle: 标题
+  Content: 内容
+  State: 状态
+  Priority: 优先级
+  Complexity: 复杂度
+  Severity: 严重程度
+  CreatorName: 创建人
+  AssigneeName: 处理人
+  CreatedAt: 创建时间
+  PlanStartedAt: 计划开始时间
+  PlanFinishedAt: 计划结束时间
+  StartAt: 实际开始时间
+  FinishAt: 实际结束时间
+  EstimateTime: 预估耗时
+  Labels: 标签
+  ConnectionIssueIDs: 关联事项ID列表
+  CustomFields: 自定义字段
+
+  # RequirementOnly
+  RequirementOnly: 需求专属字段
+  InclusionIssueIDs: 待办事项ID列表
+
+  # TaskOnly
+  TaskOnly: 任务专属字段
+  TaskType: 任务类型
+
+  # BugOnly
+  BugOnly: 缺陷专属字段
+  OwnerName: 负责人
+  Source: 来源
+  ReopenCount: 重开次数
+
+en:
+  Common: "Common"
+  ID: ID
+  IterationName: IterationName
