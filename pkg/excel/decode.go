@@ -54,18 +54,34 @@ func DecodeToSheets(r io.Reader) (DecodedFile, error) {
 	if err != nil {
 		return EmptyDecodedFile(), err
 	}
+
+	sheets := Sheets{L: make([]*Sheet, 0, len(f.Sheets)), M: make(map[string]*Sheet, len(f.Sheets))}
+	for _, sheet := range f.Sheets {
+		// iterate sheet cells to set format
+		sheet.ForEachRow(func(r *xlsx.Row) error {
+			r.ForEachCell(func(c *xlsx.Cell) error {
+				if c.IsTime() {
+					c.SetFormat("yyyy-mm-dd hh:mm:ss") // the same as golang time format
+				}
+				return nil
+			})
+			return nil
+		})
+
+		s := NewSheet(sheet)
+		//s.UnmergedSlice = fileUnmergedSlice[i]
+
+		sheets.L = append(sheets.L, s)
+		sheets.M[sheet.Name] = s
+	}
+
+	// to slice unmerged after sheet iterated
 	fileUnmergedSlice, err := f.ToSliceUnmerged()
 	if err != nil {
 		return EmptyDecodedFile(), err
 	}
-
-	sheets := Sheets{L: make([]*Sheet, 0, len(f.Sheets)), M: make(map[string]*Sheet, len(f.Sheets))}
-	for i, sheet := range f.Sheets {
-		s := NewSheet(sheet)
-		s.UnmergedSlice = fileUnmergedSlice[i]
-
-		sheets.L = append(sheets.L, s)
-		sheets.M[sheet.Name] = s
+	for i, sheet := range sheets.L {
+		sheet.UnmergedSlice = fileUnmergedSlice[i]
 	}
 
 	df := DecodedFile{
