@@ -394,9 +394,8 @@ func (i *IssueService) createDataForFulfillForExport(req *pb.ExportExcelIssueReq
 		return nil, fmt.Errorf("failed to get project issues total num, err: %v", err)
 	}
 	if uint64(len(issues)) >= projectIssueTotalNum {
-		// TODO 前端明确区分是项目迁移还是正常导出
-		// 当用户在 UI 上清除所有筛选条件后，'按筛选条件导出' 和 '全量导出' 的差别就在 external 和 orderby 这两个字段
-		if req.External == false && req.OrderBy == "" {
+		// 前端明确区分是`按筛选条件导出`还是`全量导出`
+		if req.ExportType == vars.ExportTypeFull {
 			data.ExportOnly.IsFullExport = true
 		}
 	}
