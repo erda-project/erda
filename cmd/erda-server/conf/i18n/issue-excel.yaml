@@ -37,3 +37,4 @@ zh:
   ReopenCount: 重开次数
 
 en: # use key directly
+  Common: Common # need this line to pass i18n provider validation
