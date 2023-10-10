@@ -276,17 +276,18 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 	if err != nil {
 		return nil, err
 	}
-	haveUndoneTaskAssigneeNum, err := p.issueDB.GetHaveUndoneTaskAssigneeNum(iter.Iteration.ID, iter.Iteration.ProjectID, doneTaskStateIDs)
+	haveUndoneTaskAssignees, err := p.issueDB.GetHaveUndoneTaskAssigneeNum(iter.Iteration.ID, iter.Iteration.ProjectID, doneTaskStateIDs)
 	if err != nil {
 		return nil, err
 	}
-	fields.IterationAssigneeNum = haveUndoneTaskAssigneeNum
+	fields.IterationAssigneeNum = uint64(len(haveUndoneTaskAssignees))
+	fields.IterationAssignees = haveUndoneTaskAssignees
 
-	projectUndoneTaskAssigneeNum, err := p.issueDB.GetHaveUndoneTaskAssigneeNum(0, iter.Iteration.ProjectID, doneTaskStateIDs)
+	projectUndoneTaskAssignees, err := p.issueDB.GetHaveUndoneTaskAssigneeNum(0, iter.Iteration.ProjectID, doneTaskStateIDs)
 	if err != nil {
 		return nil, err
 	}
-	fields.ProjectAssigneeNum = projectUndoneTaskAssigneeNum
+	fields.ProjectAssigneeNum = uint64(len(projectUndoneTaskAssignees))
 	fields.TaskDoneTotal = uint64(iterationSummary.Task.Done)
 	fields.TaskBeInclusionRequirementTotal = taskBeInclusionReqNum
 	if fields.TaskTotal > 0 {
@@ -338,6 +339,12 @@ func (p *provider) iterationLabelsFunc(iter *IterationInfo) map[string]string {
 		labelIterationID:    strconv.FormatUint(iter.Iteration.ID, 10),
 		labelProjectID:      strconv.FormatUint(iter.Iteration.ProjectID, 10),
 		labelIterationTitle: iter.Iteration.Title,
+		labelIterationAssignees: func(iterInfo *IterationInfo) string {
+			if iter.IterationMetricFields == nil {
+				return ""
+			}
+			return strings.Join(iter.IterationMetricFields.IterationAssignees, ",")
+		}(iter),
 	}
 	for i := range iter.Labels {
 		label := iter.Labels[i]

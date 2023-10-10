@@ -34,13 +34,14 @@ const (
 	labelProjectName        = "project_name"
 	labelProjectDisplayName = "project_display_name"
 
-	labelMeta           = "_meta"
-	labelMetricScope    = "_metric_scope"
-	labelMetricScopeID  = "_metric_scope_id"
-	labelIterationID    = "iteration_id"
-	labelProjectID      = "project_id"
-	labelOrgID          = "org_id"
-	labelIterationTitle = "iteration_title"
+	labelMeta               = "_meta"
+	labelMetricScope        = "_metric_scope"
+	labelMetricScopeID      = "_metric_scope_id"
+	labelIterationID        = "iteration_id"
+	labelProjectID          = "project_id"
+	labelOrgID              = "org_id"
+	labelIterationTitle     = "iteration_title"
+	labelIterationAssignees = "iteration_assignees"
 )
 
 type IterationInfo struct {
@@ -93,6 +94,7 @@ type IterationMetricFields struct {
 
 	// iteration-related metrics
 	IterationAssigneeNum       uint64
+	IterationAssignees         []string
 	IterationEstimatedDayTotal float64
 	ProjectAssigneeNum         uint64
 }
