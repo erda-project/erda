@@ -180,15 +180,15 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				case fieldAssigneeName:
 					model.Common.AssigneeName = cell.Value
 				case fieldCreatedAt:
-					model.Common.CreatedAt = vars.MustParseStringTime(cell.Value, groupField)
+					model.Common.CreatedAt = mustParseStringTime(cell.Value, groupField)
 				case fieldPlanStartedAt:
-					model.Common.PlanStartedAt = vars.MustParseStringTime(cell.Value, groupField)
+					model.Common.PlanStartedAt = mustParseStringTime(cell.Value, groupField)
 				case fieldPlanFinishedAt:
-					model.Common.PlanFinishedAt = vars.MustParseStringTime(cell.Value, groupField)
+					model.Common.PlanFinishedAt = mustParseStringTime(cell.Value, groupField)
 				case fieldStartAt:
-					model.Common.StartAt = vars.MustParseStringTime(cell.Value, groupField)
+					model.Common.StartAt = mustParseStringTime(cell.Value, groupField)
 				case fieldFinishAt:
-					model.Common.FinishAt = vars.MustParseStringTime(cell.Value, groupField)
+					model.Common.FinishAt = mustParseStringTime(cell.Value, groupField)
 				case fieldEstimateTime:
 					model.Common.EstimateTime = cell.Value
 				case fieldLabels:

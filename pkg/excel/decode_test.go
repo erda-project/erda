@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tealeg/xlsx"
+	"github.com/tealeg/xlsx/v3"
 )
 
 type TaskSheet struct {
@@ -88,4 +88,31 @@ func TestDecodeSheetToSlice(t *testing.T) {
 
 	// decode file with two same-name sheets directly
 	// According to the Excel standard, it is not possible to create an Excel file with two sheets of the same name.
+}
+
+func TestDecodeToSheets_Time(t *testing.T) {
+	f, err := xlsx.OpenFile("./testdata/time.xlsx")
+	assert.NoError(t, err)
+
+	// before iterate
+	beforeS, err := f.ToSliceUnmerged()
+	assert.NoError(t, err)
+	assert.Equal(t, "9/10/23 16:01", beforeS[0][3][11])
+
+	// do iterate
+	sheet := f.Sheets[0]
+	sheet.ForEachRow(func(r *xlsx.Row) error {
+		r.ForEachCell(func(c *xlsx.Cell) error {
+			if c.IsTime() {
+				c.SetFormat("yyyy-mm-dd hh:mm:ss") // as golang default time format
+			}
+			return nil
+		})
+		return nil
+	})
+
+	// after iterate
+	afterS, err := f.ToSliceUnmerged()
+	assert.NoError(t, err)
+	assert.Equal(t, "2023-09-10 16:01:21", afterS[0][3][11])
 }
