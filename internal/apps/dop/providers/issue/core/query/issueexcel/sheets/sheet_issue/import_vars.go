@@ -103,7 +103,7 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 		parts := uuid.Decode()
 		for i, uuidPart := range parts {
 			cellValue := data.I18n(uuidPart)
-			if parts[1] == "CustomFields" && i == 2 {
+			if parts[1] == fieldCustomFields && i == 2 {
 				cellValue = uuidPart
 			}
 			rows[i][columnIndex] = excel.Cell{Value: cellValue, Style: &excel.CellStyle{IsTitle: true}}

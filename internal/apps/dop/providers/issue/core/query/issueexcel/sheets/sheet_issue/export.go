@@ -90,11 +90,11 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 
 func getCustomFieldBelongingTypeFromUUID(uuid IssueSheetColumnUUID) pb.IssueTypeEnum_Type {
 	switch uuid.Decode()[0] {
-	case "RequirementOnly":
+	case fieldRequirementOnly:
 		return pb.IssueTypeEnum_REQUIREMENT
-	case "TaskOnly":
+	case fieldTaskOnly:
 		return pb.IssueTypeEnum_TASK
-	case "BugOnly":
+	case fieldBugOnly:
 		return pb.IssueTypeEnum_BUG
 	default:
 		panic(fmt.Errorf("failed to get issue type from uuid: %s", uuid.Decode()[0]))

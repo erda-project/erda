@@ -70,9 +70,14 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 		// format like "Common---ID---ID"
 		var uuid IssueSheetColumnUUID
 		for j := 0; j < uuidPartsMustLength; j++ {
-			cellValue := issueSheetRows[j][i]
 			// parse i18n text to excel field key
-			cellValue = parseI18nTextToExcelFieldKey(cellValue)
+			rawValue := issueSheetRows[j][i]
+			cellValue := parseI18nTextToExcelFieldKey(rawValue)
+			// skip concrete custom field
+			parts := uuid.Decode()
+			if len(parts) >= 2 && parts[1] == fieldCustomFields { // it's the third part and part 2 is `CustomFields`
+				cellValue = rawValue
+			}
 			uuid.AddPart(cellValue)
 		}
 		// data rows start from uuidPartsMustLength

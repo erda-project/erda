@@ -36,7 +36,4 @@ zh:
   Source: 来源
   ReopenCount: 重开次数
 
-en:
-  Common: "Common"
-  ID: ID
-  IterationName: IterationName
+en: # use key directly
