@@ -85,52 +85,52 @@ func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.I
 			s := row[columnIdx]
 			switch columnIdx {
 			case 0: // ID
-				addM(m, NewIssueSheetColumnUUID("Common", "ID"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldID), s)
 			case 1: // Title
-				addM(m, NewIssueSheetColumnUUID("Common", "IssueTitle"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldIssueTitle), s)
 			case 2: // Content
-				addM(m, NewIssueSheetColumnUUID("Common", "Content"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldContent), s)
 			case 3: // State
-				addM(m, NewIssueSheetColumnUUID("Common", "State"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldState), s)
 			case 4: // Creator
-				addM(m, NewIssueSheetColumnUUID("Common", "CreatorName"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldCreatorName), s)
 			case 5: // Assignee
-				addM(m, NewIssueSheetColumnUUID("Common", "AssigneeName"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldAssigneeName), s)
 			case 6: // Owner
-				addM(m, NewIssueSheetColumnUUID("BugOnly", "OwnerName"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldBugOnly, fieldOwnerName), s)
 			case 7: // TaskType or BugSource
 				switch issueType {
 				case pb.IssueTypeEnum_TASK:
-					addM(m, NewIssueSheetColumnUUID("TaskOnly", "TaskType"), s)
+					addM(m, NewIssueSheetColumnUUID(fieldTaskOnly, fieldTaskType), s)
 				case pb.IssueTypeEnum_BUG:
-					addM(m, NewIssueSheetColumnUUID("BugOnly", "Source"), s)
+					addM(m, NewIssueSheetColumnUUID(fieldBugOnly, fieldSource), s)
 				}
 			case 8: // Priority
-				addM(m, NewIssueSheetColumnUUID("Common", "Priority"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldPriority), s)
 			case 9: // IterationName
-				addM(m, NewIssueSheetColumnUUID("Common", "IterationName"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldIterationName), s)
 			case 10: // Complexity
-				addM(m, NewIssueSheetColumnUUID("Common", "Complexity"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldComplexity), s)
 			case 11: // Severity
-				addM(m, NewIssueSheetColumnUUID("Common", "Severity"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldSeverity), s)
 			case 12: // Labels
-				addM(m, NewIssueSheetColumnUUID("Common", "Labels"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldLabels), s)
 			case 13: // IssueType
-				addM(m, NewIssueSheetColumnUUID("Common", "IssueType"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldIssueType), s)
 			case 14: // PlanFinishedAt
-				addM(m, NewIssueSheetColumnUUID("Common", "PlanFinishedAt"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldPlanFinishedAt), s)
 			case 15: // CreatedAt
-				addM(m, NewIssueSheetColumnUUID("Common", "CreatedAt"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldCreatedAt), s)
 			case 16: // ConnectionIssueIDs
-				addM(m, NewIssueSheetColumnUUID("Common", "ConnectionIssueIDs"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldConnectionIssueIDs), s)
 			case 17: // EstimateTime
-				addM(m, NewIssueSheetColumnUUID("Common", "EstimateTime"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldEstimateTime), s)
 			case 18: // FinishedAt
-				addM(m, NewIssueSheetColumnUUID("Common", "FinishAt"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldFinishAt), s)
 			case 19: // StartAt
-				addM(m, NewIssueSheetColumnUUID("Common", "PlanStartedAt"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldPlanStartedAt), s)
 			case 20: // ReopenCount
-				addM(m, NewIssueSheetColumnUUID("BugOnly", "ReopenCount"), s)
+				addM(m, NewIssueSheetColumnUUID(fieldBugOnly, fieldReopenCount), s)
 			default:
 			}
 		}
@@ -139,11 +139,11 @@ func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.I
 			s := row[i+oldExcelFormatCustomFieldRowColumnIndexFrom]
 			switch propertyType {
 			case pb.PropertyIssueTypeEnum_REQUIREMENT:
-				addM(m, NewIssueSheetColumnUUID("RequirementOnly", "CustomFields", customFieldNames[i]), s)
+				addM(m, NewIssueSheetColumnUUID(fieldRequirementOnly, fieldCustomFields, customFieldNames[i]), s)
 			case pb.PropertyIssueTypeEnum_TASK:
-				addM(m, NewIssueSheetColumnUUID("TaskOnly", "CustomFields", customFieldNames[i]), s)
+				addM(m, NewIssueSheetColumnUUID(fieldTaskOnly, fieldCustomFields, customFieldNames[i]), s)
 			case pb.PropertyIssueTypeEnum_BUG:
-				addM(m, NewIssueSheetColumnUUID("BugOnly", "CustomFields", customFieldNames[i]), s)
+				addM(m, NewIssueSheetColumnUUID(fieldBugOnly, fieldCustomFields, customFieldNames[i]), s)
 			}
 		}
 	}
