@@ -26,25 +26,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func ParseStringTime(s string) (*time.Time, error) {
-	if s == "" {
-		return nil, nil
-	}
-	t, err := time.ParseInLocation("2006-01-02 15:04:05", s, time.Local)
-	if err != nil {
-		return nil, err
-	}
-	return &t, nil
-}
-
-func MustParseStringTime(s string, typ string) *time.Time {
-	t, err := ParseStringTime(s)
-	if err != nil {
-		panic(fmt.Sprintf("invalid %s time: %s, err: %v", typ, s, err))
-	}
-	return t
-}
-
 func ParseStringSliceByComma(s string) []string {
 	results := strutil.Splits(s, []string{",", "，"}, true)
 	// trim space

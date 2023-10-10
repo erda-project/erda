@@ -69,7 +69,6 @@ func DecodeToSheets(r io.Reader) (DecodedFile, error) {
 		})
 
 		s := NewSheet(sheet)
-		//s.UnmergedSlice = fileUnmergedSlice[i]
 
 		sheets.L = append(sheets.L, s)
 		sheets.M[sheet.Name] = s
