@@ -1158,9 +1158,12 @@ func (client *DBClient) ListIssueForIssueStateTransMigration() ([]IssueForIssueS
 }
 
 // GetHaveUndoneTaskAssigneeNum get the number of people with unfinished tasks under the iteration or project
-func (client *DBClient) GetHaveUndoneTaskAssigneeNum(iterationID uint64, projectID uint64, doneStateIDS []int64) (uint64, error) {
-	var count Counter
-	sql := client.Table("dice_issues").Select("count(distinct(assignee)) as count").Where("deleted = 0").Where("type = 'TASK'").
+func (client *DBClient) GetHaveUndoneTaskAssigneeNum(iterationID uint64, projectID uint64, doneStateIDS []int64) ([]string, error) {
+	type Assignee struct {
+		Assignee string
+	}
+	assignees := make([]Assignee, 0)
+	sql := client.Table("dice_issues").Select("distinct(assignee) as assignee").Where("deleted = 0").Where("type = 'TASK' and assignee != ''").
 		Where("state not in (?)", doneStateIDS)
 	if iterationID > 0 {
 		sql = sql.Where("iteration_id = ?", iterationID)
@@ -1168,10 +1171,14 @@ func (client *DBClient) GetHaveUndoneTaskAssigneeNum(iterationID uint64, project
 	if projectID > 0 {
 		sql = sql.Where("project_id = ?", projectID)
 	}
-	if err := sql.Find(&count).Error; err != nil {
-		return 0, err
+	if err := sql.Find(&assignees).Error; err != nil {
+		return nil, err
 	}
-	return count.Count, nil
+	assigneeList := make([]string, 0)
+	for _, assignee := range assignees {
+		assigneeList = append(assigneeList, assignee.Assignee)
+	}
+	return assigneeList, nil
 }
 
 func (client *DBClient) GetSeriousBugNum(iterationID uint64) (uint64, error) {
