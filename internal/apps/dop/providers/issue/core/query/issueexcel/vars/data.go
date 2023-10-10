@@ -17,6 +17,7 @@ package vars
 import (
 	"fmt"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -27,7 +28,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	legacydao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/excel"
-	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -40,7 +40,8 @@ type DataForFulfill struct {
 	UserID                string
 	OrgID                 int64
 	ProjectID             uint64
-	Locale                *i18n.LocaleResource
+	Tran                  i18n.Translator
+	Lang                  i18n.LanguageCodes
 	StageMap              map[query.IssueStage]string
 	IterationMapByID      map[int64]*dao.Iteration           // key: iteration id
 	IterationMapByName    map[string]*dao.Iteration          // key: iteration name

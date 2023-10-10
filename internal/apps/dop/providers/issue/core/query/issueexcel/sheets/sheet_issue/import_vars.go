@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
@@ -79,7 +80,7 @@ func (info *IssueSheetModelCellInfoByColumns) Add(uuid IssueSheetColumnUUID, cel
 	info.M[uuid] = append(info.M[uuid], excel.Cell{Value: cellValue})
 }
 
-func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet() (excel.Rows, error) {
+func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	// create [][]excel.Cell
 	var dataRowLength int
 	// get data row length
@@ -101,7 +102,11 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet() (excel.Rows,
 		// set column title cells
 		parts := uuid.Decode()
 		for i, uuidPart := range parts {
-			rows[i][columnIndex] = excel.Cell{Value: uuidPart, Style: &excel.CellStyle{IsTitle: true}}
+			cellValue := data.I18n(uuidPart)
+			if parts[1] == fieldCustomFields && i == 2 {
+				cellValue = uuidPart
+			}
+			rows[i][columnIndex] = excel.Cell{Value: cellValue, Style: &excel.CellStyle{IsTitle: true}}
 		}
 		// auto merge title cells with same value
 		autoMergeTitleCellsWithSameValue(rows[:uuidPartsMustLength])

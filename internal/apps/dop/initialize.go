@@ -501,6 +501,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 
 	p.IssueCoreSvc.WithTestplan(testPlan)
 	p.IssueCoreSvc.WithTestcase(testCaseSvc)
+	p.IssueCoreSvc.WithTranslator(p.CPTran)
 
 	workBench := workbench.New(
 		workbench.WithBundle(bdl.Bdl),

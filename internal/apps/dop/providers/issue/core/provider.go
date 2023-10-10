@@ -137,6 +137,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						req.OrgID = orgID
 						// all type return same sample
 						req.Type = nil
+						// locale
+						lang := apis.HTTPLanguage(r)
+						if lang.Len() > 0 {
+							req.Locale = lang[0].String()
+						}
 						// use new excel export
 						dataForFulfill, err := p.issueService.createDataForFulfillForExport(&req)
 						if err != nil {

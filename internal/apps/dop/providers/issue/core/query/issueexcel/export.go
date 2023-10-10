@@ -49,6 +49,8 @@ func ExportFile(w io.Writer, data *vars.DataForFulfill) (err error) {
 		&sheet_state.Handler{},
 	}
 
+	sheet_issue.InitI18nMap(data)
+
 	for _, h := range handlers {
 		// only full export need to export other sheets
 		if h.SheetName() != vars.NameOfSheetIssue {

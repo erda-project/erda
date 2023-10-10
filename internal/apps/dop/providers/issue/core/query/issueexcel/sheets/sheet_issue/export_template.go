@@ -43,7 +43,6 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 		CreatorName:        data.UserID,
 		AssigneeName:       data.UserID,
 		CreatedAt:          &now,
-		UpdatedAt:          &now,
 		PlanStartedAt:      &now,
 		PlanFinishedAt:     &nowPlusOneDay,
 		StartAt:            &now,

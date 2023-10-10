@@ -994,6 +994,7 @@ message ExportExcelIssueRequest {
   repeated uint64 projectIDs = 41;
   string locale = 42;
   bool isDownloadTemplate = 43 [json_name = "isDownload"];
+  string exportType = 44; // byFilter, full
 }
 
 message ExportExcelIssueResponse {

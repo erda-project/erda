@@ -43,6 +43,7 @@ i18n:
     - conf/i18n/project-pipeline.yaml # dop
     - conf/i18n/api-management-trans.yaml # dop
     - conf/i18n/contribution.yaml # dop
+    - conf/i18n/issue-excel.yaml # dop
 
 gorm.v2:
   host: "${MYSQL_HOST}"

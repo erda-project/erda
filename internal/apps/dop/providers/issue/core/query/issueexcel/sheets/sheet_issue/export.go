@@ -35,7 +35,7 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to gen sheet title and data by column, err: %v", err)
 	}
-	excelRows, err := mapByColumns.ConvertToExcelSheet()
+	excelRows, err := mapByColumns.ConvertToExcelSheet(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert to excel sheet, err: %v", err)
 	}
@@ -90,11 +90,11 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 
 func getCustomFieldBelongingTypeFromUUID(uuid IssueSheetColumnUUID) pb.IssueTypeEnum_Type {
 	switch uuid.Decode()[0] {
-	case "RequirementOnly":
+	case fieldRequirementOnly:
 		return pb.IssueTypeEnum_REQUIREMENT
-	case "TaskOnly":
+	case fieldTaskOnly:
 		return pb.IssueTypeEnum_TASK
-	case "BugOnly":
+	case fieldBugOnly:
 		return pb.IssueTypeEnum_BUG
 	default:
 		panic(fmt.Errorf("failed to get issue type from uuid: %s", uuid.Decode()[0]))
@@ -140,7 +140,6 @@ func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, err
 			CreatorName:        getUserNick(data, issue.Creator),
 			AssigneeName:       getUserNick(data, issue.Assignee),
 			CreatedAt:          pbutil.GetTimeInLocal(issue.CreatedAt),
-			UpdatedAt:          pbutil.GetTimeInLocal(issue.UpdatedAt),
 			PlanStartedAt:      pbutil.GetTimeInLocal(issue.PlanStartedAt),
 			PlanFinishedAt:     pbutil.GetTimeInLocal(issue.PlanFinishedAt),
 			StartAt:            pbutil.GetTimeInLocal(issue.StartTime),
