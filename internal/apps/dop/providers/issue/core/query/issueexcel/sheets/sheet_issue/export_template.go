@@ -30,8 +30,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	now := time.Now()
 	nowPlusOneDay := now.AddDate(0, 0, 1)
 
-	user := data.OrgMemberByUserID[data.UserID]
-	userName := user.GetUserName()
+	userName := data.GetOrgUserNameByID(data.UserID)
 
 	common := vars.IssueSheetModelCommon{
 		ID:                 0,
