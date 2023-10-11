@@ -31,6 +31,7 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
@@ -138,7 +139,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						// all type return same sample
 						req.Type = nil
 						// locale
-						lang := apis.HTTPLanguage(r)
+						// window.open do not have header, so use query param
+						lang, _ := i18n.ParseLanguageCode(urlQuery.Get("Lang"))
 						if lang.Len() > 0 {
 							req.Locale = lang[0].String()
 						}
