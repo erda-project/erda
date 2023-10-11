@@ -15,6 +15,7 @@
 package issue_manage
 
 import (
+	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/batchOperationTipModal"
 	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueFilter"
 	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueImport"
 	_ "github.com/erda-project/erda/internal/apps/dop/component-protocol/components/issue-manage/issueTable"

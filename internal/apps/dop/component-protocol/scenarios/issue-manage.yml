@@ -5,6 +5,7 @@ hierarchy:
   structure:
     issueManage:
       - content
+      - batchOperationTipModal
     head:
       left: issueFilter
       right: issueOperations
@@ -42,13 +43,19 @@ rendering:
   issueFilter:
     - name: issueTable
 
+  issueTable:
+    - name: batchOperationTipModal
+
   __DefaultRendering__:
     - name: issueManage
     - name: head
     - name: content
     - name: issueFilter
     - name: issueOperations
-    - name: batchOperationTipModal
     - name: issueImport
     - name: issueExport
+    - name: issueTable
+    - name: batchOperationTipModal
+
+  batchOperationTipModal:
     - name: issueTable
