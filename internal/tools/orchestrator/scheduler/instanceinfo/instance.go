@@ -15,6 +15,8 @@
 package instanceinfo
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -32,7 +34,7 @@ type instanceWriter struct {
 }
 
 func (c *Client) InstanceReader() *InstanceReader {
-	return &InstanceReader{db: c.db, conditions: []string{}, limit: 0}
+	return &InstanceReader{db: c.db, conditions: []string{}, values: []interface{}{}, limit: 0}
 }
 
 func (r *InstanceReader) ByCluster(clustername string) *InstanceReader {
@@ -132,14 +134,14 @@ func (r *InstanceReader) ByPhases(phases ...string) *InstanceReader {
 }
 func (r *InstanceReader) ByFinishedTime(beforeNday int) *InstanceReader {
 	r.conditions = append(r.conditions, "finished_at < now() - interval ？ day")
-	r.values = append(r.values, beforeNday)
+	r.values = append(r.values, strconv.Itoa(beforeNday))
 	return r
 }
 func (r *InstanceReader) ByUpdatedTime(beforeNSecs int) *InstanceReader {
 	// Use scheduler time query to avoid the inconsistency between sceduler and database time and cause the instance to GC by mistake
 	now := time.Now().Format("2006-01-02 15:04:05")
-	r.conditions = append(r.conditions, "updated_at < "+now+" - interval ? second")
-	r.values = append(r.values, beforeNSecs)
+	r.conditions = append(r.conditions, fmt.Sprintf("updated_at < '%s' - interval ? second", now))
+	r.values = append(r.values, strconv.Itoa(beforeNSecs))
 	return r
 }
 func (r *InstanceReader) ByTaskID(id string) *InstanceReader {
@@ -196,6 +198,7 @@ func (r *InstanceReader) Do() ([]InstanceInfo, error) {
 		return nil, err
 	}
 	r.conditions = []string{}
+	r.values = []interface{}{}
 	return instanceinfo, nil
 }
 
