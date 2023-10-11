@@ -241,8 +241,8 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 							property.PropertyIssueType, property.PropertyType, property.PropertyName, cf.Value)
 					}
 				}
-			} else if property.PropertyType == pb.PropertyTypeEnum_Person { // 需要填写 userID
-				userID, ok := data.ImportOnly.UserIDByNick[cf.Value]
+			} else if property.PropertyType == pb.PropertyTypeEnum_Person {
+				userID, ok := data.ImportOnly.ProjectMemberIDByUserKey[cf.Value]
 				if !ok { // just log
 					warnMsg := fmt.Sprintf("failed to find user id by nick in custom field, field name: %s, new issue id: %d, type: %s, name: %s, nick: %s",
 						property.PropertyName, issue.ID, cfType.String(), cf.Title, cf.Value)
