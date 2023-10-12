@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -32,11 +33,12 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type Handler struct{}
+type Handler struct{ sheets.DefaultImporter }
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetIssue }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
+	initI18nMap(data)
 	if data.IsOldExcelFormat() {
 		convertedIssueSheetModels, err := convertOldIssueSheet(data, s.UnmergedSlice)
 		if err != nil {
@@ -89,9 +91,33 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	// decode map to models
 	models, err := decodeMapToIssueSheetModel(data, m)
 	if err != nil {
-		return fmt.Errorf("failed to decode map to models, err: %v", err)
+		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
 	}
 	data.ImportOnly.Sheets.Must.IssueInfo = models
+	return nil
+}
+
+func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
+	// check all fields
+	return nil
+}
+
+func (h *Handler) CreateIssues(data *vars.DataForFulfill) error {
+	issues, issueModelMapByIssueID, err := createOrUpdateIssues(data, data.ImportOnly.Sheets.Must.IssueInfo)
+	if err != nil {
+		return fmt.Errorf("failed to create or update issues, err: %v", err)
+	}
+	data.ImportOnly.Created = vars.Created{
+		Issues:                 issues,
+		IssueModelMapByIssueID: issueModelMapByIssueID,
+	}
+	return nil
+}
+
+func (h *Handler) AfterCreateIssues(data *vars.DataForFulfill) error {
+	if err := CreateIssueRelations(data, data.ImportOnly.Created.Issues, data.ImportOnly.Created.IssueModelMapByIssueID); err != nil {
+		return fmt.Errorf("failed to create issue relations, err: %v", err)
+	}
 	return nil
 }
 
@@ -334,7 +360,8 @@ func parseStringSliceByComma(s string) []string {
 
 // createOrUpdateIssues 创建或更新 issues
 // 根据 project id 进行判断
-func CreateOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.IssueSheetModel) (_ []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel, err error) {
+// 更新 model 里的相关关联 ID 字段，比如 L1 转换为具体的 ID
+func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.IssueSheetModel) (_ []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)

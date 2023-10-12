@@ -21,16 +21,17 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-type Handler struct{}
+type Handler struct{ sheets.DefaultImporter }
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetIteration }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
@@ -51,6 +52,10 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	}
 	data.ImportOnly.Sheets.Optional.IterationInfo = iterations
 
+	return nil
+}
+
+func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	// create iterations if not exists before issue create
 	if err := createIterationsIfNotExistForImport(data, data.ImportOnly.Sheets.Optional.IterationInfo); err != nil {
 		return fmt.Errorf("failed to create iterations, err: %v", err)

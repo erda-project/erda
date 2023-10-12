@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
@@ -29,11 +30,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type Handler struct{}
+type Handler struct{ sheets.DefaultImporter }
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetLabel }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
@@ -52,27 +53,43 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	}
 	data.ImportOnly.Sheets.Optional.LabelInfo = labels
 
-	// create
-	if err := CreateLabelIfNotExistsForImport(data, labels); err != nil {
-		return fmt.Errorf("failed to create label, err: %v", err)
-	}
 	return nil
 }
 
-func CreateLabelFromIssueSheet(data *vars.DataForFulfill) error {
-	issueLabelByName := make(map[string]*pb.ProjectLabel)
-	var issueLabels []*pb.ProjectLabel
+func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
+	labelsFromLabelSheet := data.ImportOnly.Sheets.Optional.LabelInfo
+	collectedLabelsFromIssueSheet := collectLabelsFromIssueSheet(data)
+
+	// merge labels from label-sheet & issue-sheet
+	labelsNeedCreated := append(labelsFromLabelSheet, collectedLabelsFromIssueSheet...)
+
+	// create
+	if err := createLabelIfNotExistsForImport(data, labelsNeedCreated); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *Handler) AfterCreateIssues(data *vars.DataForFulfill) error {
+	// create label relations
+	return createIssueLabelRelations(data, data.ImportOnly.Created.Issues, data.ImportOnly.Created.IssueModelMapByIssueID)
+}
+
+func collectLabelsFromIssueSheet(data *vars.DataForFulfill) []*pb.ProjectLabel {
+	collectedLabelByName := make(map[string]*pb.ProjectLabel)
+	var collectedLabels []*pb.ProjectLabel
 
 	// collect labels from issue sheet
 	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
 		for _, labelName := range model.Common.Labels {
-			if _, ok := issueLabelByName[labelName]; ok {
+			if _, ok := collectedLabelByName[labelName]; ok {
 				continue
 			}
 			if _, ok := data.LabelMapByName[labelName]; ok {
 				continue
 			}
-			issueLabels = append(issueLabels, &pb.ProjectLabel{
+			collectedLabels = append(collectedLabels, &pb.ProjectLabel{
 				Name:      labelName,
 				Type:      pb.ProjectLabelTypeEnum_issue,
 				ProjectID: data.ProjectID,
@@ -81,13 +98,12 @@ func CreateLabelFromIssueSheet(data *vars.DataForFulfill) error {
 		}
 	}
 
-	// create
-	return CreateLabelIfNotExistsForImport(data, issueLabels)
+	return collectedLabels
 }
 
-func CreateLabelIfNotExistsForImport(data *vars.DataForFulfill, labels []*pb.ProjectLabel) error {
+func createLabelIfNotExistsForImport(data *vars.DataForFulfill, labelsNeedCreated []*pb.ProjectLabel) error {
 	// create label if not exists
-	for _, label := range labels {
+	for _, label := range labelsNeedCreated {
 		_, ok := data.LabelMapByName[label.Name]
 		if ok {
 			continue
@@ -149,7 +165,7 @@ func randomColor() string {
 	return colors[rand.Intn(len(colors))]
 }
 
-func CreateIssueLabelRelations(data *vars.DataForFulfill, issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel) error {
+func createIssueLabelRelations(data *vars.DataForFulfill, issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel) error {
 	// batch delete label relations
 	var issueIDs []uint64
 	for _, issue := range issues {

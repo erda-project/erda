@@ -87,6 +87,13 @@ type DataForFulfillImportOnly struct {
 	Warnings []string // used to record warnings
 
 	Sheets SheetsInfo
+
+	Created Created
+}
+
+type Created struct {
+	Issues                 []*dao.Issue
+	IssueModelMapByIssueID map[uint64]*IssueSheetModel
 }
 
 type (

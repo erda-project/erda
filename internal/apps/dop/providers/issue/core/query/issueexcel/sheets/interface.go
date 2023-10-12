@@ -25,10 +25,29 @@ type Namer interface {
 
 type Importer interface {
 	Namer
-	ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error
+	DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error
+	ImporterBeforeCreateIssues
+	ImporterAfterCreateIssues
+}
+
+type ImporterBeforeCreateIssues interface {
+	BeforeCreateIssues(data *vars.DataForFulfill) error
+}
+
+type ImporterCreateIssues interface {
+	CreateIssues(data *vars.DataForFulfill) error
+}
+
+type ImporterAfterCreateIssues interface {
+	AfterCreateIssues(data *vars.DataForFulfill) error
 }
 
 type Exporter interface {
 	Namer
 	ExportSheet(data *vars.DataForFulfill) (excel.Rows, error)
 }
+
+type DefaultImporter struct{}
+
+func (d *DefaultImporter) BeforeCreateIssues(data *vars.DataForFulfill) error { return nil }
+func (d *DefaultImporter) AfterCreateIssues(data *vars.DataForFulfill) error  { return nil }

@@ -23,17 +23,18 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-type Handler struct{}
+type Handler struct{ sheets.DefaultImporter }
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetCustomField }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
@@ -54,9 +55,21 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	}
 	data.ImportOnly.Sheets.Optional.CustomFieldInfo = customFields
 
+	return nil
+}
+
+func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	// create custom field if not exists
 	if err := createCustomFieldIfNotExistsForImport(data, data.ImportOnly.Sheets.Optional.CustomFieldInfo); err != nil {
 		return fmt.Errorf("failed to create custom field, err: %v", err)
+	}
+	return nil
+}
+
+func (h *Handler) AfterCreateIssues(data *vars.DataForFulfill) error {
+	// create custom field relation
+	if err := CreateIssueCustomFieldRelation(data, data.ImportOnly.Created.Issues, data.ImportOnly.Created.IssueModelMapByIssueID); err != nil {
+		return fmt.Errorf("failed to create issue custom field relations, err: %v", err)
 	}
 	return nil
 }
@@ -68,14 +81,14 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 // - 无法判断是否必填
 // - 无法判断和哪个类型关联
 // - 即使强行创建为 text 类型，由于要被具体事项类型关联才可以使用，所以万一判断错了，想调整类型也不行，解绑会删除所有 issue 关联的值
-func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, originalCustomFields []*pb.IssuePropertyIndex) error {
+func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, customFieldsFromCustomFieldSheet []*pb.IssuePropertyIndex) error {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
 
-	originalCustomFieldsNeedCreate := make([]*pb.IssuePropertyIndex, 0, len(originalCustomFields))
-	originalCommonCustomFieldsNeedCreate := make([]*pb.IssuePropertyIndex, 0, len(originalCustomFields))
+	originalCustomFieldsNeedCreate := make([]*pb.IssuePropertyIndex, 0, len(customFieldsFromCustomFieldSheet))
+	originalCommonCustomFieldsNeedCreate := make([]*pb.IssuePropertyIndex, 0, len(customFieldsFromCustomFieldSheet))
 
 	// 处理原有的自定义字段
-	for _, originalCf := range originalCustomFields {
+	for _, originalCf := range customFieldsFromCustomFieldSheet {
 		originalCf := originalCf
 		// 根据类型和名称，确认在当前企业是否已存在
 		_, foundInCurrentOrg := data.CustomFieldMapByTypeName[originalCf.PropertyIssueType][originalCf.PropertyName]

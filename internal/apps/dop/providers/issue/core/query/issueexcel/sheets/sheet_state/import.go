@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -30,11 +31,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type Handler struct{}
+type Handler struct{ sheets.DefaultImporter }
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetState }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	if data.IsOldExcelFormat() {
 		return nil
 	}
@@ -58,9 +59,13 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 		StateJoinSQLs: stateRelations,
 	}
 
+	return nil
+}
+
+func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	// sync state
 	if err := syncState(data, data.ImportOnly.Sheets.Optional.StateInfo); err != nil {
-		return fmt.Errorf("failed to sync custom issue state, err: %v", err)
+		return fmt.Errorf("failed to sync custom issue state before create issues, err: %v", err)
 	}
 	return nil
 }
