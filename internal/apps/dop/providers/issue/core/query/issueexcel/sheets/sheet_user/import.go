@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mohae/deepcopy"
+
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -63,91 +65,78 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 	return nil
 }
 
-// createIterationsIfNotExistForImport do not create user, is too hack.
+func CreateMemberFromIssueSheet(data *vars.DataForFulfill) error {
+	return mapMemberForImport(data, nil)
+}
+
+// mapMemberForImport do not create user, is too hack.
 // The import operator should create user first, then import.
 // We can auto add user as member into project.
 func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apistructs.Member) error {
-	var usersNeedToBeAddedAsMember []apistructs.Member
+	var usersNeedToBeAddedAsProjectMember []apistructs.Member
 
 	// 先把所有原有的用户都尝试添加到 project member 中
 	// 如果当前项目成员中不存在，则使用邮箱/手机进行关联查找
 	// 关键是在企业下找到用户，然后添加到项目成员中，再进行用户名-ID映射 (要求用户已经在企业下，导入导出不主动添加用户到企业)
 	// handle original users from user sheet
-	for _, originalMember := range originalProjectMembers {
-		originalMember := originalMember
+	for _, originalProjectMember := range originalProjectMembers {
+		originalProjectMember := originalProjectMember
 		// check if already in the current project member map
 		if data.IsSameErdaPlatform() { // check by user id
-			findMember, ok := data.ProjectMemberByUserID[originalMember.UserID]
+			_, ok := data.ProjectMemberByUserID[originalProjectMember.UserID]
 			if ok {
-				addMemberToUserIDNickMap(data, findMember)
 				continue
 			}
 		}
 		// check by other info
-		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, originalMember)
+		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, originalProjectMember)
 		if err != nil {
-			return fmt.Errorf("failed to find user, originalMember: %+v, err: %v", originalMember, err)
+			return fmt.Errorf("failed to find user, originalProjectMember: %+v, err: %v", originalProjectMember, err)
 		}
 		if findUser == nil { // no matched user, just skip
 			continue
 		}
-		newMember := apistructs.Member{
-			UserID: findUser.UserID,
-			Email:  findUser.Email,
-			Mobile: findUser.Mobile,
-			Name:   findUser.Name,
-			Nick:   findUser.Nick,
-			Avatar: findUser.Avatar,
-			Roles:  originalMember.Roles,
-			Labels: originalMember.Labels,
-		}
-		addMemberToUserIDNickMap(data, newMember)
-		usersNeedToBeAddedAsMember = append(usersNeedToBeAddedAsMember, newMember)
+		newMember := deepcopy.Copy(originalProjectMember).(apistructs.Member)
+		newMember.Roles = originalProjectMember.Roles
+		newMember.Labels = originalProjectMember.Labels
+		usersNeedToBeAddedAsProjectMember = append(usersNeedToBeAddedAsProjectMember, newMember)
 	}
-	// handle nicks from issue sheet
-	userNickMapFromIssueSheet := make(map[string]struct{})
+
+	// handle users from issue sheet
+	userKeyMapFromIssueSheet := make(map[string]struct{})
 	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
 		if model.Common.AssigneeName != "" {
-			userNickMapFromIssueSheet[model.Common.AssigneeName] = struct{}{}
+			userKeyMapFromIssueSheet[model.Common.AssigneeName] = struct{}{}
 		}
 		if model.Common.CreatorName != "" {
-			userNickMapFromIssueSheet[model.Common.CreatorName] = struct{}{}
+			userKeyMapFromIssueSheet[model.Common.CreatorName] = struct{}{}
 		}
 		if model.BugOnly.OwnerName != "" {
-			userNickMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}
+			userKeyMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}
 		}
 	}
-	for nick := range userNickMapFromIssueSheet {
-		if nick == "" {
+	for userKey := range userKeyMapFromIssueSheet {
+		if userKey == "" {
 			continue
 		}
-		if _, ok := data.ImportOnly.UserIDByNick[nick]; ok {
+		if _, ok := data.ImportOnly.OrgMemberIDByUserKey[userKey]; !ok { // ignore user not in org
 			continue
 		}
 		// Risk of having the same name
-		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, apistructs.Member{Nick: nick})
+		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, apistructs.Member{Nick: userKey})
 		if err != nil {
-			return fmt.Errorf("failed to find user, nick: %s, err: %v", nick, err)
+			return fmt.Errorf("failed to find user, userKey: %s, err: %v", userKey, err)
 		}
 		if findUser == nil { // no matched user, just skip
 			continue
 		}
-		newMember := apistructs.Member{
-			UserID: findUser.UserID,
-			Email:  findUser.Email,
-			Mobile: findUser.Mobile,
-			Name:   findUser.Name,
-			Nick:   findUser.Nick,
-			Avatar: findUser.Avatar,
-			Roles:  []string{bundle.RoleProjectDev},
-			Labels: nil,
-		}
-		addMemberToUserIDNickMap(data, newMember)
-		usersNeedToBeAddedAsMember = append(usersNeedToBeAddedAsMember, newMember)
+		newMember := deepcopy.Copy(*findUser).(apistructs.Member)
+		newMember.Roles = []string{bundle.RoleProjectDev}
+		usersNeedToBeAddedAsProjectMember = append(usersNeedToBeAddedAsProjectMember, *findUser)
 	}
 
 	// add member
-	for _, member := range usersNeedToBeAddedAsMember {
+	for _, member := range usersNeedToBeAddedAsProjectMember {
 		// add to project
 		if _, ok := data.ProjectMemberByUserID[member.UserID]; !ok {
 			if err := data.Bdl.AddMember(apistructs.MemberAddRequest{
@@ -165,13 +154,9 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 	}
 
 	// refresh member map, because bdl.AddMember won't return new member info
-	orgMember, projectMember, alreadyHaveProjectOwner, err := RefreshDataMembers(data.OrgID, data.ProjectID, data.Bdl)
-	if err != nil {
+	if err := RefreshDataMembers(data); err != nil {
 		return fmt.Errorf("failed to refresh data members, org id: %d, project id: %d, err: %v", data.OrgID, data.ProjectID, err)
 	}
-	data.OrgMemberByUserID = orgMember
-	data.ProjectMemberByUserID = projectMember
-	data.AlreadyHaveProjectOwner = alreadyHaveProjectOwner
 
 	return nil
 }
@@ -185,10 +170,10 @@ type Voucher struct {
 func tryToFindUserByDesensitizedPhoneEmailNickName(data *vars.DataForFulfill, member apistructs.Member) (*apistructs.Member, error) {
 	// 使用 phone/email/nick/name 字段 `*` 后的数据分别匹配，全部匹配上即可
 	// 为空的字段不参加匹配
-	phoneMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Mobile]
-	emailMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Email]
-	nickMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Nick]
-	nameMatchedUserID := data.ImportOnly.OrgMemberByDesensitizedKey[member.Name]
+	phoneMatchedUserID := data.ImportOnly.OrgMemberIDByUserKey[member.Mobile]
+	emailMatchedUserID := data.ImportOnly.OrgMemberIDByUserKey[member.Email]
+	nickMatchedUserID := data.ImportOnly.OrgMemberIDByUserKey[member.Nick]
+	nameMatchedUserID := data.ImportOnly.OrgMemberIDByUserKey[member.Name]
 	// check ids all equals
 	compares := make(map[string]struct{})
 	var findUserID string
@@ -227,21 +212,6 @@ func getPartVoucherFromDesensitizedData(voucher string) string {
 	return parts[len(parts)-1]
 }
 
-func addMemberToUserIDNickMap(data *vars.DataForFulfill, member apistructs.Member) {
-	if member.Email != "" {
-		data.ImportOnly.UserIDByNick[member.Email] = member.UserID
-	}
-	if member.Mobile != "" {
-		data.ImportOnly.UserIDByNick[member.Mobile] = member.UserID
-	}
-	if member.Nick != "" {
-		data.ImportOnly.UserIDByNick[member.Nick] = member.UserID
-	}
-	if member.Name != "" {
-		data.ImportOnly.UserIDByNick[member.Name] = member.UserID
-	}
-}
-
 // polishMemberProjectRoles remove duplicated owner role
 func polishMemberProjectRoles(data *vars.DataForFulfill, roles []string) []string {
 	var newRoles []string
@@ -261,19 +231,19 @@ func polishMemberProjectRoles(data *vars.DataForFulfill, roles []string) []strin
 }
 
 // RefreshDataMembers return org member, project member, alreadyHaveProjectOwner and error.
-func RefreshDataMembers(orgID int64, projectID uint64, bdl *bundle.Bundle) (map[string]apistructs.Member, map[string]apistructs.Member, bool, error) {
+func RefreshDataMembers(data *vars.DataForFulfill) error {
 	// org
 	orgMemberQuery := apistructs.MemberListRequest{
 		ScopeType:         apistructs.OrgScope,
-		ScopeID:           orgID,
+		ScopeID:           data.OrgID,
 		PageNo:            1,
 		PageSize:          99999,
 		DesensitizeEmail:  false,
 		DesensitizeMobile: false,
 	}
-	orgMember, err := bdl.ListMembers(orgMemberQuery)
+	orgMember, err := data.Bdl.ListMembers(orgMemberQuery)
 	if err != nil {
-		return nil, nil, false, fmt.Errorf("failed to list orgMember, err: %v", err)
+		return fmt.Errorf("failed to list orgMember, err: %v", err)
 	}
 	orgMemberMap := map[string]apistructs.Member{}
 	for _, member := range orgMember {
@@ -283,15 +253,15 @@ func RefreshDataMembers(orgID int64, projectID uint64, bdl *bundle.Bundle) (map[
 	// project
 	projectMemberQuery := apistructs.MemberListRequest{
 		ScopeType:         apistructs.ProjectScope,
-		ScopeID:           int64(projectID),
+		ScopeID:           int64(data.ProjectID),
 		PageNo:            1,
 		PageSize:          99999,
 		DesensitizeEmail:  false,
 		DesensitizeMobile: false,
 	}
-	projectMember, err := bdl.ListMembers(projectMemberQuery)
+	projectMember, err := data.Bdl.ListMembers(projectMemberQuery)
 	if err != nil {
-		return nil, nil, false, fmt.Errorf("failed to list projectMember, err: %v", err)
+		return fmt.Errorf("failed to list projectMember, err: %v", err)
 	}
 	var alreadyHaveProjectOwner bool
 	projectMemberMap := map[string]apistructs.Member{}
@@ -309,5 +279,10 @@ func RefreshDataMembers(orgID int64, projectID uint64, bdl *bundle.Bundle) (map[
 		}
 	}
 
-	return orgMemberMap, projectMemberMap, alreadyHaveProjectOwner, nil
+	data.OrgMemberByUserID = orgMemberMap
+	data.ProjectMemberByUserID = projectMemberMap
+	data.AlreadyHaveProjectOwner = alreadyHaveProjectOwner
+	data.SetOrgAndProjectUserIDByUserKey()
+
+	return nil
 }

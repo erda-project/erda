@@ -28,7 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/tealeg/xlsx"
+	"github.com/tealeg/xlsx/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -49,7 +49,6 @@ import (
 	labeldao "github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/database/dbengine"
-	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -276,11 +275,6 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get states, err: %v", err)
 	}
-	// member map
-	orgMemberMap, projectMemberMap, alreadyHaveProjectOwner, err := sheet_user.RefreshDataMembers(orgID, projectID, i.bdl)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get members, err: %v", err)
-	}
 	// label map
 	labelMapByName := make(map[string]apistructs.ProjectLabel)
 	resp, err := i.bdl.ListLabel(apistructs.ProjectLabelListRequest{
@@ -315,11 +309,12 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		IterationMapByName:       iterationMapByName,
 		StateMap:                 stateMapByID,
 		StateMapByTypeAndName:    stateMapByTypeAndName,
-		ProjectMemberByUserID:    projectMemberMap,
-		OrgMemberByUserID:        orgMemberMap,
 		LabelMapByName:           labelMapByName,
 		CustomFieldMapByTypeName: customFieldMapByTypeName,
-		AlreadyHaveProjectOwner:  alreadyHaveProjectOwner,
+	}
+	// member map
+	if err = sheet_user.RefreshDataMembers(&dataForFulfill); err != nil {
+		return nil, fmt.Errorf("failed to get members, err: %v", err)
 	}
 	return &dataForFulfill, nil
 }
@@ -350,24 +345,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		current := current
 		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
 	}
-	data.ImportOnly.UserIDByNick = make(map[string]string)
-	memberByDesensitizedKey := make(map[string]string)
-	for userID, member := range data.OrgMemberByUserID {
-		userID := userID
-		if member.Mobile != "" {
-			memberByDesensitizedKey[desensitize.Mobile(member.Mobile)] = userID
-		}
-		if member.Email != "" {
-			memberByDesensitizedKey[desensitize.Email(member.Email)] = userID
-		}
-		if member.Nick != "" {
-			memberByDesensitizedKey[desensitize.Name(member.Nick)] = userID
-		}
-		if member.Name != "" {
-			memberByDesensitizedKey[desensitize.Name(member.Name)] = userID
-		}
-	}
-	data.ImportOnly.OrgMemberByDesensitizedKey = memberByDesensitizedKey
+	data.SetOrgAndProjectUserIDByUserKey()
 	return data, nil
 }
 

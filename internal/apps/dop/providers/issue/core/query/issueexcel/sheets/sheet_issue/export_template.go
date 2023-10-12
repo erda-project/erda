@@ -30,6 +30,8 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	now := time.Now()
 	nowPlusOneDay := now.AddDate(0, 0, 1)
 
+	userName := data.GetOrgUserNameByID(data.UserID)
+
 	common := vars.IssueSheetModelCommon{
 		ID:                 0,
 		IterationName:      "迭代名",
@@ -40,8 +42,8 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 		Priority:           pb.IssuePriorityEnum_NORMAL,
 		Complexity:         pb.IssueComplexityEnum_NORMAL,
 		Severity:           pb.IssueSeverityEnum_NORMAL,
-		CreatorName:        data.UserID,
-		AssigneeName:       data.UserID,
+		CreatorName:        userName,
+		AssigneeName:       userName,
 		CreatedAt:          &now,
 		PlanStartedAt:      &now,
 		PlanFinishedAt:     &nowPlusOneDay,
@@ -95,7 +97,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	bug := vars.IssueSheetModel{
 		Common: bugCommon,
 		BugOnly: vars.IssueSheetModelBugOnly{
-			OwnerName:    data.UserID,
+			OwnerName:    userName,
 			Source:       "代码研发",
 			ReopenCount:  0,
 			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(bugCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
