@@ -57,6 +57,11 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 		}
 	}
 
+	// create member before create issue
+	if err := sheet_user.CreateMemberFromIssueSheet(data); err != nil {
+		return fmt.Errorf("failed to create member from issue sheet, err: %v", err)
+	}
+
 	// 先创建或更新所有 issues，再创建或更新所有关联关系
 
 	// 创建或更新 issues
