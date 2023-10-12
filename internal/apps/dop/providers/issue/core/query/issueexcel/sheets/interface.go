@@ -25,7 +25,7 @@ type Namer interface {
 
 type Importer interface {
 	Namer
-	ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error
+	ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error
 }
 
 type Exporter interface {

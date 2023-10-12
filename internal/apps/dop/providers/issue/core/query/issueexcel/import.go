@@ -52,8 +52,13 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 	sheet_issue.InitI18nMap(data)
 
 	for _, h := range handlers {
-		if err := h.ImportSheet(data, df); err != nil {
-			return fmt.Errorf("failed to decode sheet %q, err: %v", h.SheetName(), err)
+		// check sheet exist or not
+		sheet, ok := df.Sheets.M[h.SheetName()]
+		if !ok {
+			continue
+		}
+		if err := h.ImportSheet(data, sheet); err != nil {
+			return fmt.Errorf("failed to import sheet %q, err: %v", h.SheetName(), err)
 		}
 	}
 

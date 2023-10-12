@@ -36,18 +36,14 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetIssue }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	if data.IsOldExcelFormat() {
-		convertedIssueSheetModels, err := convertOldIssueSheet(data, df.Sheets.L[0].UnmergedSlice)
+		convertedIssueSheetModels, err := convertOldIssueSheet(data, s.UnmergedSlice)
 		if err != nil {
 			return fmt.Errorf("failed to convert old issue sheet, err: %v", err)
 		}
 		data.ImportOnly.Sheets.Must.IssueInfo = convertedIssueSheetModels
 		return nil
-	}
-	s, ok := df.Sheets.M[h.SheetName()]
-	if !ok {
-		return fmt.Errorf("cannot find sheet: %s", vars.NameOfSheetIssue)
 	}
 	sheet := s.UnmergedSlice
 	// convert [][][]string to map[uuid]excel.Column

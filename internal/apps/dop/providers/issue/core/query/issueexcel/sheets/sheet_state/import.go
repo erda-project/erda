@@ -34,12 +34,8 @@ type Handler struct{}
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetState }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) ImportSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	if data.IsOldExcelFormat() {
-		return nil
-	}
-	s, ok := df.Sheets.M[h.SheetName()]
-	if !ok {
 		return nil
 	}
 	sheet := s.UnmergedSlice
