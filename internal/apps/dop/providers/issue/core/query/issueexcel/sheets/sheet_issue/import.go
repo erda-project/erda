@@ -38,7 +38,7 @@ type Handler struct{ sheets.DefaultImporter }
 func (h *Handler) SheetName() string { return vars.NameOfSheetIssue }
 
 func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
-	initI18nMap(data)
+	InitI18nMap(data)
 	if data.IsOldExcelFormat() {
 		convertedIssueSheetModels, err := convertOldIssueSheet(data, s.UnmergedSlice)
 		if err != nil {

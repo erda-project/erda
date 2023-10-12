@@ -101,7 +101,7 @@ var (
 	i18nMapByText = make(map[string]string)
 )
 
-func initI18nMap(data *vars.DataForFulfill) {
+func InitI18nMap(data *vars.DataForFulfill) {
 	for _, key := range excelFields {
 		i18nMapByText[key] = key // self
 		// en-US
