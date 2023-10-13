@@ -87,6 +87,13 @@ type DataForFulfillImportOnly struct {
 	Warnings []string // used to record warnings
 
 	Sheets SheetsInfo
+
+	Created Created
+}
+
+type Created struct {
+	Issues                 []*dao.Issue
+	IssueModelMapByIssueID map[uint64]*IssueSheetModel
 }
 
 type (
@@ -143,7 +150,7 @@ func (data DataForFulfill) IsOldExcelFormat() bool {
 }
 
 // JudgeIfIsOldExcelFormat old Excel format have only one sheet and excel[0][0][0] = "ID"
-func (data *DataForFulfill) JudgeIfIsOldExcelFormat(df excel.DecodedFile) {
+func (data *DataForFulfill) JudgeIfIsOldExcelFormat(df *excel.DecodedFile) {
 	// only one sheet
 	if len(df.Sheets.L) != 1 {
 		return

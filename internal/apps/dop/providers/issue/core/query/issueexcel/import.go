@@ -41,58 +41,61 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 
 	handlers := []sheets.Importer{
 		&sheet_baseinfo.Handler{},
-		&sheet_issue.Handler{},
 		&sheet_user.Handler{},
 		&sheet_label.Handler{},
 		&sheet_customfield.Handler{},
 		&sheet_iteration.Handler{},
 		&sheet_state.Handler{},
+		&sheet_issue.Handler{},
 	}
 
-	sheet_issue.InitI18nMap(data)
-
+	// 1. decode sheets
 	for _, h := range handlers {
-		if err := h.ImportSheet(data, df); err != nil {
-			return fmt.Errorf("failed to decode sheet %q, err: %v", h.SheetName(), err)
+		// check sheet exist or not
+		sheet, ok := df.Sheets.M[h.SheetName()]
+		if !ok {
+			continue
+		}
+		if err := h.DecodeSheet(data, sheet); err != nil {
+			return fmt.Errorf("failed to docode sheet %q, err: %v", h.SheetName(), err)
 		}
 	}
 
-	// create member before create issue
-	if err := sheet_user.CreateMemberFromIssueSheet(data); err != nil {
-		return fmt.Errorf("failed to create member from issue sheet, err: %v", err)
+	// 2. before create issues
+	// - add member to project
+	// - create label
+	// - create custom-field
+	// - create iteration
+	// - create state
+	// - check issues (relation, user, iteration, state, ...)
+	for _, h := range handlers {
+		// all handle can do sth before create issue, even if sheet not exist
+		if err := h.BeforeCreateIssues(data); err != nil {
+			return fmt.Errorf("failed to do before create issue, sheet: %q, err: %v", h.SheetName(), err)
+		}
 	}
 
-	// 先创建或更新所有 issues，再创建或更新所有关联关系
-
-	// 创建或更新 issues
-	// 更新 model 里的相关关联 ID 字段，比如 L1 转换为具体的 ID
-	issues, issueModelMapByIssueID, err := sheet_issue.CreateOrUpdateIssues(data, data.ImportOnly.Sheets.Must.IssueInfo)
-	if err != nil {
-		return fmt.Errorf("failed to create or update issues, err: %v", err)
+	// 3. create issues
+	for _, h := range handlers {
+		hh, ok := h.(sheets.ImporterCreateIssues)
+		if !ok {
+			continue
+		}
+		if err := hh.CreateIssues(data); err != nil {
+			return fmt.Errorf("failed to create issue, sheet: %q, err: %v", h.SheetName(), err)
+		}
 	}
 
-	// 先将数据进行合并，以 label 为例:
-	// - 收集 issue 里的 label
-	// - 与 label sheet 里的 label 进行合并
-	// - 创建或更新 label
-	// - 创建或更新关联 issue 与 label 的关联关系
-
-	// create issue label
-	if err := sheet_label.CreateLabelFromIssueSheet(data); err != nil {
-		return fmt.Errorf("failed to create label from issue sheet, err: %v", err)
+	// 4. after create issues
+	// - create relation: label <-> issue
+	// - create relation: custom-field <-> issue
+	// - create relation: issue <-> issue
+	for _, h := range handlers {
+		// all handle can do sth after create issue, even if sheet not exist
+		if err := h.AfterCreateIssues(data); err != nil {
+			return fmt.Errorf("failed to do after create issue, sheet: %q, err: %v", h.SheetName(), err)
+		}
 	}
 
-	// create label relation
-	if err := sheet_label.CreateIssueLabelRelations(data, issues, issueModelMapByIssueID); err != nil {
-		return fmt.Errorf("failed to create issue label relations, err: %v", err)
-	}
-	// create custom field relation
-	if err := sheet_customfield.CreateIssueCustomFieldRelation(data, issues, issueModelMapByIssueID); err != nil {
-		return fmt.Errorf("failed to create issue custom field relations, err: %v", err)
-	}
-	// create issue relation
-	if err := sheet_issue.CreateIssueRelations(data, issues, issueModelMapByIssueID); err != nil {
-		return fmt.Errorf("failed to create issue relations, err: %v", err)
-	}
 	return nil
 }
