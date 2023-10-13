@@ -83,7 +83,7 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 			}
 		}
 		// check by other info
-		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, originalProjectMember)
+		findUser, err := tryToFindUserByUserKeys(data, originalProjectMember)
 		if err != nil {
 			return fmt.Errorf("failed to find user, originalProjectMember: %+v, err: %v", originalProjectMember, err)
 		}
@@ -120,7 +120,7 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 		if _, ok := data.ImportOnly.OrgMemberIDByUserKey[userKey]; !ok { // ignore user not in org
 			continue
 		}
-		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, apistructs.Member{Nick: userKey})
+		findUser, err := tryToFindUserByUserKeys(data, apistructs.Member{Nick: userKey})
 		if err != nil {
 			return fmt.Errorf("failed to find user, userKey: %s, err: %v", userKey, err)
 		}
@@ -187,7 +187,7 @@ type Voucher struct {
 	Result map[string]*userpb.User // key is user id
 }
 
-func tryToFindUserByDesensitizedPhoneEmailNickName(data *vars.DataForFulfill, member apistructs.Member) (*apistructs.Member, error) {
+func tryToFindUserByUserKeys(data *vars.DataForFulfill, member apistructs.Member) (*apistructs.Member, error) {
 	// 使用 phone/email/nick/name 字段 `*` 后的数据分别匹配，全部匹配上即可
 	// 为空的字段不参加匹配
 	phoneMatchedUserID := data.ImportOnly.OrgMemberIDByUserKey[member.Mobile]
