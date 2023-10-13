@@ -121,7 +121,7 @@ func (a *UCUserAuth) PwdAuth(username, password string) (OAuthToken, error) {
 	}
 	basic := "Basic " + base64.StdEncoding.EncodeToString([]byte(a.ClientID+":"+a.ClientSecret))
 	formBody := make(url.Values)
-	formBody.Set("grant_type", "password")
+	formBody.Set("grant_type", "client_credentials")
 	formBody.Set("username", username)
 	formBody.Set("password", password)
 	formBody.Set("scope", "public_profile")
