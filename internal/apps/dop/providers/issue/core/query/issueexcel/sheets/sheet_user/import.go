@@ -25,21 +25,18 @@ import (
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type Handler struct{}
+type Handler struct{ sheets.DefaultImporter }
 
 func (h *Handler) SheetName() string { return vars.NameOfSheetUser }
 
-func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) error {
+func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	if data.IsOldExcelFormat() {
-		return nil
-	}
-	s, ok := df.Sheets.M[h.SheetName()]
-	if !ok {
 		return nil
 	}
 	sheet := s.UnmergedSlice
@@ -57,29 +54,25 @@ func (h *Handler) ImportSheet(data *vars.DataForFulfill, df excel.DecodedFile) e
 	}
 	data.ImportOnly.Sheets.Optional.UserInfo = members
 
-	// map member for import
-	if err := mapMemberForImport(data, data.ImportOnly.Sheets.Optional.UserInfo); err != nil {
-		return fmt.Errorf("failed to map member, err: %v", err)
-	}
-
 	return nil
 }
 
-func CreateMemberFromIssueSheet(data *vars.DataForFulfill) error {
-	return mapMemberForImport(data, nil)
+func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
+	if err := addMemberIntoProject(data, data.ImportOnly.Sheets.Optional.UserInfo); err != nil {
+		return fmt.Errorf("failed to add member into project, err: %v", err)
+	}
+	return nil
 }
 
-// mapMemberForImport do not create user, is too hack.
-// The import operator should create user first, then import.
-// We can auto add user as member into project.
-func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apistructs.Member) error {
+// addMemberIntoProject do not create user, is too hack.
+func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet []apistructs.Member) error {
 	var usersNeedToBeAddedAsProjectMember []apistructs.Member
 
+	// handle original users from user-sheet
 	// 先把所有原有的用户都尝试添加到 project member 中
 	// 如果当前项目成员中不存在，则使用邮箱/手机进行关联查找
 	// 关键是在企业下找到用户，然后添加到项目成员中，再进行用户名-ID映射 (要求用户已经在企业下，导入导出不主动添加用户到企业)
-	// handle original users from user sheet
-	for _, originalProjectMember := range originalProjectMembers {
+	for _, originalProjectMember := range projectMembersFromUserSheet {
 		originalProjectMember := originalProjectMember
 		// check if already in the current project member map
 		if data.IsSameErdaPlatform() { // check by user id
@@ -102,7 +95,7 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 		usersNeedToBeAddedAsProjectMember = append(usersNeedToBeAddedAsProjectMember, newMember)
 	}
 
-	// handle users from issue sheet
+	// handle users from issue-sheet
 	userKeyMapFromIssueSheet := make(map[string]struct{})
 	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
 		if model.Common.AssigneeName != "" {
@@ -135,7 +128,7 @@ func mapMemberForImport(data *vars.DataForFulfill, originalProjectMembers []apis
 		usersNeedToBeAddedAsProjectMember = append(usersNeedToBeAddedAsProjectMember, *findUser)
 	}
 
-	// add member
+	// add project member
 	for _, member := range usersNeedToBeAddedAsProjectMember {
 		// add to project
 		if _, ok := data.ProjectMemberByUserID[member.UserID]; !ok {

@@ -40,7 +40,7 @@ type Sheets struct {
 
 type Sheet struct {
 	XlsxSheet *xlsx.Sheet
-	RefFile   *File
+	RefFile   *DecodedFile
 
 	UnmergedSlice [][]string
 }
@@ -49,9 +49,8 @@ func NewFile() *File {
 	return &File{XlsxFile: xlsx.NewFile()}
 }
 
-func NewSheet(sheet *xlsx.Sheet) *Sheet {
-	return &Sheet{XlsxSheet: sheet, RefFile: &File{XlsxFile: sheet.File}}
+func NewSheet(sheet *xlsx.Sheet, df *DecodedFile) *Sheet {
+	return &Sheet{XlsxSheet: sheet, RefFile: df}
 }
 
-func EmptyDecodedFile() DecodedFile { return DecodedFile{} }
-func EmptySheets() Sheets           { return Sheets{L: make([]*Sheet, 0), M: make(map[string]*Sheet)} }
+func EmptySheets() Sheets { return Sheets{L: make([]*Sheet, 0), M: make(map[string]*Sheet)} }

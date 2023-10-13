@@ -42,18 +42,20 @@ func Decode(r io.Reader) ([][][]string, error) {
 
 // DecodeToSheets decode Excel file to Sheets.
 // So you can get sheet by sheetName.
-func DecodeToSheets(r io.Reader) (DecodedFile, error) {
+func DecodeToSheets(r io.Reader) (*DecodedFile, error) {
 	tmpF, err := os.CreateTemp("", "excel-")
 	if err != nil {
-		return EmptyDecodedFile(), err
+		return nil, err
 	}
 	if _, err := io.Copy(tmpF, r); err != nil {
-		return EmptyDecodedFile(), err
+		return nil, err
 	}
 	f, err := xlsx.OpenFile(tmpF.Name(), xlsx.ValueOnly(), xlsx.RowLimit(xlsx.NoRowLimit), xlsx.ColLimit(xlsx.NoColLimit))
 	if err != nil {
-		return EmptyDecodedFile(), err
+		return nil, err
 	}
+
+	df := &DecodedFile{}
 
 	sheets := Sheets{L: make([]*Sheet, 0, len(f.Sheets)), M: make(map[string]*Sheet, len(f.Sheets))}
 	for _, sheet := range f.Sheets {
@@ -68,7 +70,7 @@ func DecodeToSheets(r io.Reader) (DecodedFile, error) {
 			return nil
 		})
 
-		s := NewSheet(sheet)
+		s := NewSheet(sheet, df)
 
 		sheets.L = append(sheets.L, s)
 		sheets.M[sheet.Name] = s
@@ -77,15 +79,14 @@ func DecodeToSheets(r io.Reader) (DecodedFile, error) {
 	// to slice unmerged after sheet iterated
 	fileUnmergedSlice, err := f.ToSliceUnmerged()
 	if err != nil {
-		return EmptyDecodedFile(), err
+		return nil, err
 	}
 	for i, sheet := range sheets.L {
 		sheet.UnmergedSlice = fileUnmergedSlice[i]
 	}
 
-	df := DecodedFile{
-		File:   &File{XlsxFile: f, UnmergedSlice: fileUnmergedSlice},
-		Sheets: sheets,
-	}
+	df.File = &File{XlsxFile: f, UnmergedSlice: fileUnmergedSlice}
+	df.Sheets = sheets
+
 	return df, nil
 }
