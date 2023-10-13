@@ -23,6 +23,7 @@ import (
 	"github.com/mohae/deepcopy"
 
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
@@ -107,6 +108,10 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 		if model.BugOnly.OwnerName != "" {
 			userKeyMapFromIssueSheet[model.BugOnly.OwnerName] = struct{}{}
 		}
+		// custom fields
+		for _, userKey := range collectUserKeysFromCustomFields(data, model) {
+			userKeyMapFromIssueSheet[userKey] = struct{}{}
+		}
 	}
 	for userKey := range userKeyMapFromIssueSheet {
 		if userKey == "" {
@@ -115,7 +120,6 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 		if _, ok := data.ImportOnly.OrgMemberIDByUserKey[userKey]; !ok { // ignore user not in org
 			continue
 		}
-		// Risk of having the same name
 		findUser, err := tryToFindUserByDesensitizedPhoneEmailNickName(data, apistructs.Member{Nick: userKey})
 		if err != nil {
 			return fmt.Errorf("failed to find user, userKey: %s, err: %v", userKey, err)
@@ -125,7 +129,7 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 		}
 		newMember := deepcopy.Copy(*findUser).(apistructs.Member)
 		newMember.Roles = []string{bundle.RoleProjectDev}
-		usersNeedToBeAddedAsProjectMember = append(usersNeedToBeAddedAsProjectMember, *findUser)
+		usersNeedToBeAddedAsProjectMember = append(usersNeedToBeAddedAsProjectMember, newMember)
 	}
 
 	// add project member
@@ -152,6 +156,29 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 	}
 
 	return nil
+}
+
+func collectUserKeysFromCustomFields(data *vars.DataForFulfill, model vars.IssueSheetModel) []string {
+	var customFields []vars.ExcelCustomField
+	switch model.Common.IssueType {
+	case pb.IssueTypeEnum_REQUIREMENT:
+		customFields = model.RequirementOnly.CustomFields
+	case pb.IssueTypeEnum_TASK:
+		customFields = model.TaskOnly.CustomFields
+	case pb.IssueTypeEnum_BUG:
+		customFields = model.BugOnly.CustomFields
+	}
+	var userKeys []string
+	for _, excelCf := range customFields {
+		if excelCf.Value == "" {
+			continue
+		}
+		cf := data.CustomFieldMapByTypeName[pb.PropertyIssueTypeEnum_REQUIREMENT][excelCf.Title]
+		if cf.PropertyType == pb.PropertyTypeEnum_Person {
+			userKeys = append(userKeys, excelCf.Value)
+		}
+	}
+	return strutil.DedupSlice(userKeys, true)
 }
 
 type Voucher struct {
