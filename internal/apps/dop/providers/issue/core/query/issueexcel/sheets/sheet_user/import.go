@@ -160,20 +160,29 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 
 func collectUserKeysFromCustomFields(data *vars.DataForFulfill, model vars.IssueSheetModel) []string {
 	var customFields []vars.ExcelCustomField
+	var cfType pb.PropertyIssueTypeEnum_PropertyIssueType
 	switch model.Common.IssueType {
 	case pb.IssueTypeEnum_REQUIREMENT:
 		customFields = model.RequirementOnly.CustomFields
+		cfType = pb.PropertyIssueTypeEnum_REQUIREMENT
 	case pb.IssueTypeEnum_TASK:
 		customFields = model.TaskOnly.CustomFields
+		cfType = pb.PropertyIssueTypeEnum_TASK
 	case pb.IssueTypeEnum_BUG:
 		customFields = model.BugOnly.CustomFields
+		cfType = pb.PropertyIssueTypeEnum_BUG
+	default:
+		return nil
 	}
 	var userKeys []string
 	for _, excelCf := range customFields {
 		if excelCf.Value == "" {
 			continue
 		}
-		cf := data.CustomFieldMapByTypeName[pb.PropertyIssueTypeEnum_REQUIREMENT][excelCf.Title]
+		cf := data.CustomFieldMapByTypeName[cfType][excelCf.Title]
+		if cf == nil {
+			continue
+		}
 		if cf.PropertyType == pb.PropertyTypeEnum_Person {
 			userKeys = append(userKeys, excelCf.Value)
 		}
