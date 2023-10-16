@@ -18,7 +18,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
+	"github.com/tealeg/xlsx/v3"
 )
 
 func TestExportExcelByCell(t *testing.T) {
@@ -79,4 +81,38 @@ func TestExportExcelByRowStruct(t *testing.T) {
 	data = append(data, row1, row2)
 	err = ExportExcelByCell(file, data, "测试用例")
 	assert.NoError(t, err)
+}
+
+func TestSheetValidation(t *testing.T) {
+	xlsxF := xlsx.NewFile()
+	sheet, err := xlsxF.AddSheet("test")
+	assert.NoError(t, err)
+	row := sheet.AddRow()
+	cell1 := row.AddCell()
+	cell2 := row.AddCell()
+	dv1 := xlsx.NewDataValidation(0, 0, 1, 1, false)
+	//dv2 := xlsx.NewDataValidation(0, 1, 0, 1, false)
+	err = dv1.SetDropList([]string{"待处理", "进行中", "已完成"})
+	assert.NoError(t, err)
+	//err = dv2.SetDropList([]string{"需求", "任务", "缺陷"})
+	//assert.NoError(t, err)
+	fill := *xlsx.NewFill("solid", "FF92D050", "")
+	style := xlsx.NewStyle()
+	style.Fill = fill
+	cell1.SetStyle(style)
+	cell2.SetStyle(style)
+	sheet.AddDataValidation(dv1)
+
+	writeF, err := os.Create("./testdata/cell.xlsx")
+	err = xlsxF.Write(writeF)
+	assert.NoError(t, err)
+}
+
+func TestExistCellOptions(t *testing.T) {
+	f, err := xlsx.OpenFile("./testdata/cell.xlsx")
+	assert.NoError(t, err)
+	row, err := f.Sheets[0].Row(0)
+	assert.NoError(t, err)
+	cell := row.GetCell(0)
+	spew.Dump(cell)
 }

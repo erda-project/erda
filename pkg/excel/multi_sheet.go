@@ -22,13 +22,34 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	"github.com/tealeg/xlsx/v3"
 )
 
+type SheetHandler func(sheet *xlsx.Sheet) error
+
+func WithSheetDropList(startRow, startCol, endRow, endCol int, dropList []string) SheetHandler {
+	return func(sheet *xlsx.Sheet) error {
+		dv := xlsx.NewDataValidation(startRow, startCol, endRow, endCol, true)
+		if err := dv.SetDropList(dropList); err != nil {
+			return fmt.Errorf("failed to set drop list, err: %v", err)
+		}
+		sheet.AddDataValidation(dv)
+		return nil
+	}
+}
+
 // AddSheetByCell add sheet by cell data. You can add multiple sheets by calling this method multiple times.
-func AddSheetByCell(f *File, data [][]Cell, sheetName string) error {
+func AddSheetByCell(f *File, data [][]Cell, sheetName string, handlers ...SheetHandler) error {
 	sheet, err := f.XlsxFile.AddSheet(sheetName)
 	if err != nil {
 		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
+	}
+	if len(handlers) > 0 {
+		for _, handler := range handlers {
+			if err := handler(sheet); err != nil {
+				return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
+			}
+		}
 	}
 	fulfillCellDataIntoSheet(sheet, data)
 	return nil
