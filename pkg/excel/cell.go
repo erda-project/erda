@@ -45,9 +45,21 @@ type CellStyle struct {
 
 type CellOption func(*Cell)
 
-func WithStyle(s *CellStyle) CellOption {
+func WithStyle(s *xlsx.Style) CellOption {
 	return func(cell *Cell) {
-		cell.Style = s
+		if cell.Style == nil {
+			cell.Style = &CellStyle{IsTitle: false}
+		}
+		cell.Style.OverwriteStyle = s
+	}
+}
+
+func WithTitleStyle(s *xlsx.Style) CellOption {
+	return func(cell *Cell) {
+		if cell.Style == nil {
+			cell.Style = &CellStyle{IsTitle: true}
+		}
+		cell.Style.OverwriteStyle = s
 	}
 }
 
@@ -111,15 +123,15 @@ func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 			xlsxCell.Value = cell.Value
 			xlsxCell.HMerge = cell.HorizontalMergeNum
 			xlsxCell.VMerge = cell.VerticalMergeNum
-			xlsxCell.SetStyle(defaultStyle())
+			xlsxCell.SetStyle(DefaultCellStyle())
 			if cell.Style != nil {
 				if cell.Style.OverwriteStyle != nil {
 					xlsxCell.SetStyle(cell.Style.OverwriteStyle)
 				} else { // set default
 					if cell.Style.IsTitle {
-						xlsxCell.SetStyle(defaultTitleCellStyle())
+						xlsxCell.SetStyle(DefaultTitleCellStyle())
 					} else {
-						xlsxCell.SetStyle(defaultStyle())
+						xlsxCell.SetStyle(DefaultCellStyle())
 					}
 				}
 			}
@@ -130,12 +142,11 @@ func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 		_ = r.ForEachCell(func(c *xlsx.Cell) error {
 			return nil
 		}, xlsx.SkipEmptyCells)
-		r.SetHeightCM(2)
 		return nil
 	}, xlsx.SkipEmptyRows)
 }
 
-func defaultStyle() *xlsx.Style {
+func DefaultCellStyle() *xlsx.Style {
 	style := xlsx.NewStyle()
 	style.Alignment.Horizontal = "center"
 	style.Alignment.Vertical = "center"
@@ -144,15 +155,18 @@ func defaultStyle() *xlsx.Style {
 	return style
 }
 
-func defaultTitleCellStyle() *xlsx.Style {
-	style := defaultStyle()
+func DefaultTitleCellStyle() *xlsx.Style {
+	style := DefaultCellStyle()
 
 	style.Border = *xlsx.NewBorder("thin", "thin", "thin", "thin")
 	style.Alignment.ShrinkToFit = false
 	style.Alignment.WrapText = false
+	// font
+	style.Font.Size = 12
+	style.Font.Color = "FFFFFFFF"
 
 	// set color fill
-	fill := *xlsx.NewFill("solid", "FF92D050", "") // set proper color in Excel, and decode to get actual color value
+	fill := *xlsx.NewFill("solid", "FF92D050", "000000") // set proper color in Excel, and decode to get actual color value
 	style.Fill = fill
 
 	return style
