@@ -18,11 +18,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+func (h *Handler) ExportSheet(data *vars.DataForFulfill) (*sheets.RowsForExport, error) {
 	var lines excel.Rows
 
 	// title: state (JSON), state_relation (JSON)
@@ -46,5 +47,5 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 		excel.NewCell(string(stateRelationBytes)),
 	})
 
-	return lines, nil
+	return sheets.NewRowsForExport(lines), nil
 }

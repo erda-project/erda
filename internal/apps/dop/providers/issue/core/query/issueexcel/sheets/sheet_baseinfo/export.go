@@ -19,11 +19,12 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/internal/apps/dop/conf"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+func (h *Handler) ExportSheet(data *vars.DataForFulfill) (*sheets.RowsForExport, error) {
 	// only one row, k=meta, v=JSON(dataForFulfillImportOnlyBaseInfo)
 	meta := vars.DataForFulfillImportOnlyBaseInfo{
 		OriginalErdaPlatform:  conf.DiceClusterName(),
@@ -37,5 +38,5 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 	var row excel.Row
 	row = append(row, excel.NewCell(cellMeta))
 	row = append(row, excel.NewCell(string(b)))
-	return excel.Rows{row}, nil
+	return sheets.NewRowsForExport(excel.Rows{row}), nil
 }
