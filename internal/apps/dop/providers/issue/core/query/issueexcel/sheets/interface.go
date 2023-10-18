@@ -44,7 +44,16 @@ type ImporterAfterCreateIssues interface {
 
 type Exporter interface {
 	Namer
-	ExportSheet(data *vars.DataForFulfill) (excel.Rows, error)
+	ExportSheet(data *vars.DataForFulfill) (*RowsForExport, error)
+}
+
+type RowsForExport struct {
+	Rows          excel.Rows
+	SheetHandlers []excel.SheetHandler
+}
+
+func NewRowsForExport(rows excel.Rows, sheetHandlers ...excel.SheetHandler) *RowsForExport {
+	return &RowsForExport{Rows: rows, SheetHandlers: sheetHandlers}
 }
 
 type DefaultImporter struct{}

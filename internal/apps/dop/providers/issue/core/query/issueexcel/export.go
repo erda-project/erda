@@ -63,7 +63,7 @@ func ExportFile(w io.Writer, data *vars.DataForFulfill) (err error) {
 		if err != nil {
 			return fmt.Errorf("failed to gen sheet %q, err: %v", h.SheetName(), err)
 		}
-		if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(rows), h.SheetName()); err != nil {
+		if err := excel.AddSheetByCell(xlsxFile, convertExcelRowsToCells(rows.Rows), h.SheetName(), rows.SheetHandlers...); err != nil {
 			return fmt.Errorf("failed to add issue %q, err: %v", h.SheetName(), err)
 		}
 	}

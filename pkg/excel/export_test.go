@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tealeg/xlsx/v3"
 )
 
 func TestExportExcelByCell(t *testing.T) {
@@ -80,3 +81,98 @@ func TestExportExcelByRowStruct(t *testing.T) {
 	err = ExportExcelByCell(file, data, "测试用例")
 	assert.NoError(t, err)
 }
+
+func TestExportWithDataValidation(t *testing.T) {
+	f := NewFile()
+	requirementStyle := DefaultTitleCellStyle()
+	requirementStyle.Fill.FgColor = "FF16C2C2"
+	taskStyle := DefaultTitleCellStyle()
+	taskStyle.Fill.FgColor = "FF697FFF"
+	bugStyle := DefaultTitleCellStyle()
+	bugStyle.Fill.FgColor = "FFF3B519"
+	cells := [][]Cell{
+		{
+			NewTitleCell("ID"),
+			NewTitleCell("类型", WithMergeNum(0, 1)),
+			NewTitleCell("需求专属字段", WithTitleStyle(requirementStyle)),
+			NewTitleCell("任务专属字段", WithTitleStyle(taskStyle)),
+			NewTitleCell("缺陷专属字段", WithTitleStyle(bugStyle)),
+		},
+		{
+			NewTitleCell("ID"),
+			NewTitleCell("类型"),
+			NewTitleCell("需求专属字段", WithTitleStyle(requirementStyle)),
+			NewTitleCell("任务专属字段", WithTitleStyle(taskStyle)),
+			NewTitleCell("缺陷专属字段", WithTitleStyle(bugStyle)),
+		},
+		{
+			NewCell("10000000001"),
+			NewCell("需求"),
+			NewCell("hello"),
+			NewCell("world"),
+			NewCell("owner"),
+		},
+		{
+			NewCell("10000000002"),
+			NewCell("任务"),
+			NewCell("hello"),
+			NewCell("world"),
+			NewCell("owner"),
+		},
+	}
+	err := AddSheetByCell(f, cells, "issue",
+		NewSheetHandlerForDropList(2, 1, 4, 1, []string{"需求", "任务", "缺陷"}),
+		NewSheetHandlerForAutoColWidth(cells[1]),
+	)
+	assert.NoError(t, err)
+	outF, err := os.Create("./testdata/cell_dv.xlsx")
+	assert.NoError(t, err)
+	err = WriteFile(outF, f, "cell_dv")
+	assert.NoError(t, err)
+}
+
+func TestSheetValidation(t *testing.T) {
+	xlsxF := xlsx.NewFile()
+	sheet, err := xlsxF.AddSheet("test")
+	assert.NoError(t, err)
+
+	row1 := sheet.AddRow()
+	cell1_1 := row1.AddCell()
+	cell1_1.Value = "type"
+	row2 := sheet.AddRow()
+	cell2_1 := row2.AddCell()
+	cell2_1.Value = "type"
+
+	// merge row1 and row2
+	cell1_1.VMerge = 1
+
+	// add droplist for cell3_1
+	row3 := sheet.AddRow()
+	cell3_1 := row3.AddCell()
+	cell3_1.Value = "bug"
+
+	dv := xlsx.NewDataValidation(2, 0, 2, 0, true)
+	err = dv.SetDropList([]string{"bug", "task"})
+	assert.NoError(t, err)
+	title := "提示"
+	msg := "试试"
+	dv.SetInput(&title, &msg)
+	sheet.AddDataValidation(dv)
+
+	// set at cell level
+	cell3_1.DataValidation = dv
+
+	w, err := os.Create("./testdata/cell_dv_vmerge.xlsx")
+	assert.NoError(t, err)
+	err = xlsxF.Write(w)
+	assert.NoError(t, err)
+}
+
+//func TestExistCellOptions(t *testing.T) {
+//	f, err := xlsx.OpenFile("./testdata/cell_dv_vmerge.xlsx")
+//	assert.NoError(t, err)
+//	row, err := f.Sheets[0].Row(0)
+//	assert.NoError(t, err)
+//	cell := row.GetCell(0)
+//	spew.Dump(cell)
+//}

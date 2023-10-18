@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -71,16 +72,16 @@ type IssueSheetModelCellMapByColumns map[IssueSheetColumnUUID]excel.Column
 
 // Add
 // isDemoModel just used to set all custom fields' uuids in order, can't be added to truly data M
-func (info *IssueSheetModelCellInfoByColumns) Add(uuid IssueSheetColumnUUID, cellValue string) {
+func (info *IssueSheetModelCellInfoByColumns) Add(uuid IssueSheetColumnUUID, cellValue string, cellOpts ...excel.CellOption) {
 	uuid.AutoComplete()
 	// ordered uuids only add once
 	if _, ok := info.M[uuid]; !ok {
 		info.OrderedUUIDs = append(info.OrderedUUIDs, uuid)
 	}
-	info.M[uuid] = append(info.M[uuid], excel.Cell{Value: cellValue})
+	info.M[uuid] = append(info.M[uuid], excel.NewCell(cellValue, cellOpts...))
 }
 
-func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.DataForFulfill) (*sheets.RowsForExport, error) {
 	// create [][]excel.Cell
 	var dataRowLength int
 	// get data row length
@@ -94,6 +95,7 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 	}
 	// set by (x,y)
 	columnIndex := 0
+	var sheetHandlers []excel.SheetHandler
 	for _, uuid := range info.OrderedUUIDs {
 		column, ok := info.M[uuid]
 		if !ok {
@@ -106,7 +108,7 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 			if parts[1] == fieldCustomFields && i == 2 {
 				cellValue = uuidPart
 			}
-			rows[i][columnIndex] = excel.Cell{Value: cellValue, Style: &excel.CellStyle{IsTitle: true}}
+			rows[i][columnIndex] = excel.NewTitleCell(cellValue)
 		}
 		// auto merge title cells with same value
 		autoMergeTitleCellsWithSameValue(rows[:uuidPartsMustLength])
@@ -114,9 +116,18 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 		for i, cell := range column {
 			rows[uuidPartsMustLength+i][columnIndex] = cell
 		}
+		// set drop list
+		dropList := genDropList(data, parts[2])
+		if len(dropList) > 0 {
+			handler := excel.NewSheetHandlerForDropList(uuidPartsMustLength, columnIndex, len(rows)-1, columnIndex, dropList)
+			sheetHandlers = append(sheetHandlers, handler)
+		}
 		columnIndex++
 	}
-	return rows, nil
+	// auto set column width
+	widthHandler := excel.NewSheetHandlerForAutoColWidth(rows[uuidPartsMustLength-1]) // use third title row
+	sheetHandlers = append(sheetHandlers, widthHandler)
+	return sheets.NewRowsForExport(rows, sheetHandlers...), nil
 }
 
 // excel sheet 聚合时，主动对 title cell 进行探测
