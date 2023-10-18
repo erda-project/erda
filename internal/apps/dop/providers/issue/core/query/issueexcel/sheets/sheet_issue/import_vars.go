@@ -161,7 +161,7 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 			sheetHandlers = append(sheetHandlers, handler)
 		}
 		// set data validation input
-		inputTitle, inputMsg := genDataValidationInput(data, parts[1], parts[2])
+		inputTitle, inputMsg := genDataValidationTip(data, parts[1], parts[2])
 		if inputTitle != "" && inputMsg != "" {
 			handler := excel.NewSheetHandlerForTip(uuidPartsMustLength, columnIndex, len(rows)-1, columnIndex, inputTitle, inputMsg)
 			sheetHandlers = append(sheetHandlers, handler)

@@ -93,14 +93,14 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 	return &info, nil
 }
 
-func genDataValidationInput(data *vars.DataForFulfill, fieldName string, customFieldName string) (title, msg string) {
+func genDataValidationTip(data *vars.DataForFulfill, fieldName string, customFieldName string) (title, msg string) {
 	switch fieldName {
 	case fieldCustomFields:
 		for _, concreteIssueTypeCfs := range data.CustomFieldMapByTypeName {
 			for name, cf := range concreteIssueTypeCfs {
 				if name == customFieldName {
 					if cf.PropertyType == pb.PropertyTypeEnum_MultiSelect {
-						title = data.I18n("tipForMultiSelect")
+						title = data.I18n(makeI18nFieldTipTitleKey("MultiSelect"))
 						var dp []string
 						for _, ev := range cf.EnumeratedValues {
 							dp = append(dp, ev.Name)
@@ -111,9 +111,18 @@ func genDataValidationInput(data *vars.DataForFulfill, fieldName string, customF
 				}
 			}
 		}
+	case fieldInclusionIssueIDs:
+		title = data.I18n(makeI18nFieldTipTitleKey(fieldInclusionIssueIDs))
+		msg = data.I18n(makeI18nFieldTipMsgKey(fieldInclusionIssueIDs))
+	case fieldConnectionIssueIDs:
+		title = data.I18n(makeI18nFieldTipTitleKey(fieldConnectionIssueIDs))
+		msg = data.I18n(makeI18nFieldTipMsgKey(fieldConnectionIssueIDs))
 	}
 	return
 }
+
+func makeI18nFieldTipTitleKey(fieldKey string) string { return "tipTitleFor" + fieldKey }
+func makeI18nFieldTipMsgKey(fieldKey string) string   { return "tipMsgFor" + fieldKey }
 
 func genDropList(data *vars.DataForFulfill, fieldName string, customFieldName string) []string {
 	switch fieldName {
