@@ -21,6 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -30,7 +32,14 @@ func Test_decodeMapToIssueSheetModel(t *testing.T) {
 		uuid := NewIssueSheetColumnUUID(parts...)
 		return IssueSheetColumnUUID(uuid.String())
 	}
-	data := &vars.DataForFulfill{}
+	data := &vars.DataForFulfill{
+		StageMap: map[query.IssueStage]string{
+			query.IssueStage{
+				Type:  pb.IssueTypeEnum_TASK.String(),
+				Value: "code",
+			}: "code",
+		},
+	}
 	models, err := decodeMapToIssueSheetModel(data, map[IssueSheetColumnUUID]excel.Column{
 		autoCompleteUUID("Common", "ID"): {
 			{Value: "1"},
