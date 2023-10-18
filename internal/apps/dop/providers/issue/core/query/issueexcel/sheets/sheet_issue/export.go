@@ -23,23 +23,23 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	streamcommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/pkg/common/pbutil"
-	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+func (h *Handler) ExportSheet(data *vars.DataForFulfill) (*sheets.RowsForExport, error) {
 	mapByColumns, err := genIssueSheetTitleAndDataByColumn(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to gen sheet title and data by column, err: %v", err)
 	}
-	excelRows, err := mapByColumns.ConvertToExcelSheet(data)
+	rowsForExport, err := mapByColumns.ConvertToExcelSheet(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert to excel sheet, err: %v", err)
 	}
-	return excelRows, nil
+	return rowsForExport, nil
 }
 
 func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetModelCellInfoByColumns, error) {
@@ -86,6 +86,43 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 		}
 	}
 	return &info, nil
+}
+
+func genDropList(data *vars.DataForFulfill, fieldName string) []string {
+	switch fieldName {
+	case fieldIterationName:
+		var dp []string
+		for name := range data.IterationMapByName {
+			dp = append(dp, name)
+		}
+		return dp
+	case fieldIssueType:
+		return []string{"需求", "任务", "缺陷"}
+	case fieldState:
+		var dp []string
+		for issueType, v := range data.StateMapByTypeAndName {
+			dp = append(dp, fmt.Sprintf("---%s---", issueType))
+			dp = append(dp, issueType)
+			for stateName := range v {
+				dp = append(dp, stateName)
+			}
+		}
+		return dp
+	case fieldPriority:
+		return []string{"低", "中", "高", "紧急"}
+	case fieldComplexity:
+		return []string{"容易", "中", "复杂"}
+	case fieldSeverity:
+		return []string{"致命", "严重", "一般", "轻微", "建议"}
+	case fieldCreatorName, fieldAssigneeName, fieldOwnerName:
+		var dp []string
+		for _, member := range data.ProjectMemberByUserID {
+			dp = append(dp, member.Nick)
+		}
+		return dp
+	default:
+		return nil
+	}
 }
 
 func getCustomFieldBelongingTypeFromUUID(uuid IssueSheetColumnUUID) pb.IssueTypeEnum_Type {

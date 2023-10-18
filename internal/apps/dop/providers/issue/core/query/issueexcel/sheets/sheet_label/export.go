@@ -20,11 +20,12 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
 )
 
-func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
+func (h *Handler) ExportSheet(data *vars.DataForFulfill) (*sheets.RowsForExport, error) {
 	var lines excel.Rows
 	// title: label id, label name, label detail (JSON)
 	title := excel.Row{
@@ -55,5 +56,5 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (excel.Rows, error) {
 		})
 	}
 
-	return lines, nil
+	return sheets.NewRowsForExport(lines), nil
 }

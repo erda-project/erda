@@ -43,21 +43,48 @@ type CellStyle struct {
 	OverwriteStyle *xlsx.Style
 }
 
-func (style *CellStyle) ToXlsxStyle(defaultStyle xlsx.Style) *xlsx.Style {
-	if style.OverwriteStyle != nil {
-		return style.OverwriteStyle
+type CellOption func(*Cell)
+
+func WithStyle(s *xlsx.Style) CellOption {
+	return func(cell *Cell) {
+		if cell.Style == nil {
+			cell.Style = &CellStyle{IsTitle: false}
+		}
+		cell.Style.OverwriteStyle = s
 	}
-	if style.IsTitle {
-		defaultStyle.Font.Bold = true
-		defaultStyle.Border = *xlsx.NewBorder("none", "none", "thin", "thin")
-		defaultStyle.Alignment.ShrinkToFit = false
-		defaultStyle.Alignment.WrapText = true
-	}
-	return &defaultStyle
 }
 
-func NewCell(value string) Cell {
-	return Cell{Value: value}
+func WithTitleStyle(s *xlsx.Style) CellOption {
+	return func(cell *Cell) {
+		if cell.Style == nil {
+			cell.Style = &CellStyle{IsTitle: true}
+		}
+		cell.Style.OverwriteStyle = s
+	}
+}
+
+func WithIsTitle(isTitle bool) CellOption {
+	return func(cell *Cell) {
+		if cell.Style == nil {
+			cell.Style = &CellStyle{}
+		}
+		cell.Style.IsTitle = isTitle
+	}
+}
+
+func WithMergeNum(h, v int) CellOption {
+	return func(cell *Cell) {
+		cell.HorizontalMergeNum = h
+		cell.VerticalMergeNum = v
+	}
+}
+
+func NewCell(value string, opts ...CellOption) Cell {
+	cell := Cell{Value: value}
+	for _, opt := range opts {
+		opt(&cell)
+	}
+	return cell
 }
 func EmptyCell() Cell {
 	return Cell{}
@@ -72,28 +99,23 @@ func EmptyCells(count int) []Cell {
 
 // NewHMergeCell 需要在当前行配合 hMergeNum 个 EmptyCell 使用
 func NewHMergeCell(value string, hMergeNum int) Cell {
-	return Cell{Value: value, HorizontalMergeNum: hMergeNum}
+	return NewCell(value, WithMergeNum(hMergeNum, 0))
 }
 
 // NewVMergeCell 需要在下方连续 vMergeNum 行配合 EmptyCell 使用；如果下方使用带 Value 的 Cell 也会被 VMergeCell 覆盖，无法展示
 func NewVMergeCell(value string, vMergeNum int) Cell {
-	return Cell{Value: value, VerticalMergeNum: vMergeNum}
+	return NewCell(value, WithMergeNum(0, vMergeNum))
 }
 func NewHMergeCellsAuto(value string, hMergeNum int) []Cell {
 	return append([]Cell{NewHMergeCell(value, hMergeNum)}, EmptyCells(hMergeNum)...)
 }
 
-func NewTitleCell(value string) Cell {
-	return Cell{Value: value, Style: &CellStyle{IsTitle: true}}
+func NewTitleCell(value string, opts ...CellOption) Cell {
+	opts = append(opts, WithIsTitle(true))
+	return NewCell(value, opts...)
 }
 
 func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
-	defaultStyle := xlsx.NewStyle()
-	defaultStyle.Alignment.Horizontal = "center"
-	defaultStyle.Alignment.Vertical = "center"
-	defaultStyle.Alignment.ShrinkToFit = true
-	defaultStyle.Alignment.WrapText = true
-
 	for _, cells := range data {
 		row := sheet.AddRow()
 		for _, cell := range cells {
@@ -101,9 +123,17 @@ func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 			xlsxCell.Value = cell.Value
 			xlsxCell.HMerge = cell.HorizontalMergeNum
 			xlsxCell.VMerge = cell.VerticalMergeNum
-			xlsxCell.SetStyle(defaultStyle)
+			xlsxCell.SetStyle(DefaultCellStyle())
 			if cell.Style != nil {
-				xlsxCell.SetStyle(cell.Style.ToXlsxStyle(*defaultStyle))
+				if cell.Style.OverwriteStyle != nil {
+					xlsxCell.SetStyle(cell.Style.OverwriteStyle)
+				} else { // set default
+					if cell.Style.IsTitle {
+						xlsxCell.SetStyle(DefaultTitleCellStyle())
+					} else {
+						xlsxCell.SetStyle(DefaultCellStyle())
+					}
+				}
 			}
 		}
 	}
@@ -112,9 +142,34 @@ func fulfillCellDataIntoSheet(sheet *xlsx.Sheet, data [][]Cell) {
 		_ = r.ForEachCell(func(c *xlsx.Cell) error {
 			return nil
 		}, xlsx.SkipEmptyCells)
-		r.SetHeightCM(2)
 		return nil
 	}, xlsx.SkipEmptyRows)
+}
+
+func DefaultCellStyle() *xlsx.Style {
+	style := xlsx.NewStyle()
+	style.Alignment.Horizontal = "center"
+	style.Alignment.Vertical = "center"
+	style.Alignment.ShrinkToFit = true
+	style.Alignment.WrapText = true
+	return style
+}
+
+func DefaultTitleCellStyle() *xlsx.Style {
+	style := DefaultCellStyle()
+
+	style.Border = *xlsx.NewBorder("thin", "thin", "thin", "thin")
+	style.Alignment.ShrinkToFit = false
+	style.Alignment.WrapText = false
+	// font
+	style.Font.Size = 12
+	style.Font.Color = "FFFFFFFF"
+
+	// set color fill
+	fill := *xlsx.NewFill("solid", "FF92D050", "000000") // set proper color in Excel, and decode to get actual color value
+	style.Fill = fill
+
+	return style
 }
 
 func convertStringDataToCellData(data [][]string) [][]Cell {

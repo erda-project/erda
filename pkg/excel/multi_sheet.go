@@ -15,22 +15,73 @@
 package excel
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/pkg/errors"
+	"github.com/tealeg/xlsx/v3"
+	"golang.org/x/text/width"
+
+	"github.com/erda-project/erda/pkg/numeral"
 )
 
+type SheetHandler func(sheet *xlsx.Sheet) error
+
+func NewSheetHandlerForDropList(startRow, startCol, endRow, endCol int, dropList []string) SheetHandler {
+	return func(sheet *xlsx.Sheet) error {
+		dv := xlsx.NewDataValidation(startRow, startCol, endRow, endCol, true)
+		if err := dv.SetDropList(dropList); err != nil {
+			return fmt.Errorf("failed to set drop list, err: %v", err)
+		}
+		sheet.AddDataValidation(dv)
+		return nil
+	}
+}
+
+func NewSheetHandlerForAutoColWidth(basedRow Row) SheetHandler {
+	return func(sheet *xlsx.Sheet) error {
+		// set column index
+		for columnIndex := range basedRow {
+			err := sheet.SetColAutoWidth(columnIndex+1, func(s string) float64 {
+				// calculate proper Excel cell width by string length
+				cellWidth := 0
+				for _, r := range s {
+					w := width.LookupRune(r)
+					if w.Kind() == width.EastAsianWide || w.Kind() == width.EastAsianFullwidth {
+						cellWidth += 2
+					} else {
+						cellWidth += 1
+					}
+				}
+				atLeast := float64(9.6)
+				calculated := float64(cellWidth) * 2
+				return numeral.MaxFloat64([]float64{atLeast, calculated})
+			})
+			if err != nil {
+				return fmt.Errorf("failed to set column width, err: %v", err)
+			}
+		}
+		return nil
+	}
+}
+
 // AddSheetByCell add sheet by cell data. You can add multiple sheets by calling this method multiple times.
-func AddSheetByCell(f *File, data [][]Cell, sheetName string) error {
+func AddSheetByCell(f *File, data [][]Cell, sheetName string, handlers ...SheetHandler) error {
 	sheet, err := f.XlsxFile.AddSheet(sheetName)
 	if err != nil {
 		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
 	}
 	fulfillCellDataIntoSheet(sheet, data)
+	// do handler after cell added
+	if len(handlers) > 0 {
+		for _, handler := range handlers {
+			if err := handler(sheet); err != nil {
+				return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -41,13 +92,8 @@ func WriteFile(w io.Writer, f *File, filename string) error {
 		rw.Header().Add("Content-Type", "application/vnd.ms-excel")
 	}
 
-	var buff bytes.Buffer
-	if err := f.XlsxFile.Write(&buff); err != nil {
+	if err := f.XlsxFile.Write(w); err != nil {
 		return errors.Errorf("failed to write content, sheetName: %s, err: %v", filename, err)
-	}
-
-	if _, err := io.Copy(w, &buff); err != nil {
-		return errors.Errorf("failed to copy excel content, err: %v", err)
 	}
 
 	return nil
