@@ -72,7 +72,7 @@ func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.I
 			continue
 		}
 		// get issue type first
-		issueType, err := parseStringIssueType(sheet[rowIdx][oldExcelFormatIndexOfIssueType])
+		issueType, err := parseStringIssueType(data, sheet[rowIdx][oldExcelFormatIndexOfIssueType])
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse issue type, err: %v", err)
 		}
@@ -99,7 +99,7 @@ func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.I
 			case 6: // Owner
 				addM(m, NewIssueSheetColumnUUID(fieldBugOnly, fieldOwnerName), s)
 			case 7: // TaskType or BugSource
-				switch issueType {
+				switch *issueType {
 				case pb.IssueTypeEnum_TASK:
 					addM(m, NewIssueSheetColumnUUID(fieldTaskOnly, fieldTaskType), s)
 				case pb.IssueTypeEnum_BUG:

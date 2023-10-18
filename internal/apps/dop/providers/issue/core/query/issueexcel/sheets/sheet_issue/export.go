@@ -42,6 +42,7 @@ func (h *Handler) ExportSheet(data *vars.DataForFulfill) (*sheets.RowsForExport,
 	return rowsForExport, nil
 }
 
+// genIssueSheetTitleAndDataByColumn
 func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetModelCellInfoByColumns, error) {
 	models, err := getIssueSheetModels(data)
 	if err != nil {
@@ -65,7 +66,8 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 				valueField := groupField.Field(j)
 				structField := groupField.Type().Field(j)
 				uuid := uuid
-				uuid.AddPart(getStructFieldExcelTag(structField))
+				thisPart := getStructFieldExcelTag(structField)
+				uuid.AddPart(thisPart)
 				// custom fields 动态字段，返回多个 column cell
 				if structField.Type == reflect.TypeOf([]vars.ExcelCustomField{}) {
 					// 遍历 customFields, 每个 cf 生成一个 column cell
@@ -80,7 +82,10 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 						info.Add(uuid, strutil.String(cf.Value))
 					}
 				} else { // 其他字段，直接取值
-					info.Add(uuid, getStringCellValue(structField, valueField))
+					// set custom key for some fields for i18n
+					cellValue := getStringCellValue(structField, valueField)
+					cellValue = makeI18nKey(thisPart, cellValue)
+					info.Add(uuid, cellValue)
 				}
 			}
 		}
@@ -88,38 +93,59 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 	return &info, nil
 }
 
-func genDropList(data *vars.DataForFulfill, fieldName string) []string {
+func genDataValidationInput(data *vars.DataForFulfill, fieldName string, customFieldName string) (title, msg string) {
+	switch fieldName {
+	case fieldCustomFields:
+		for _, concreteIssueTypeCfs := range data.CustomFieldMapByTypeName {
+			for name, cf := range concreteIssueTypeCfs {
+				if name == customFieldName {
+					if cf.PropertyType == pb.PropertyTypeEnum_MultiSelect {
+						title = data.I18n("tipForMultiSelect")
+						var dp []string
+						for _, ev := range cf.EnumeratedValues {
+							dp = append(dp, ev.Name)
+						}
+						msg = strutil.Join(dp, "\n")
+						return
+					}
+				}
+			}
+		}
+	}
+	return
+}
+
+func genDropList(data *vars.DataForFulfill, fieldName string, customFieldName string) []string {
 	switch fieldName {
 	case fieldIterationName:
-		var dp []string
-		for name := range data.IterationMapByName {
-			dp = append(dp, name)
-		}
-		return dp
+		return getIterationDropList(data)
 	case fieldIssueType:
-		return []string{"需求", "任务", "缺陷"}
+		return getFieldIssueTypeDropList(data)
 	case fieldState:
 		var dp []string
 		for issueType, v := range data.StateMapByTypeAndName {
-			dp = append(dp, fmt.Sprintf("---%s---", issueType))
-			dp = append(dp, issueType)
-			for stateName := range v {
-				dp = append(dp, stateName)
+			if strutil.InSlice(issueType, supportedIssueTypes) {
+				dp = append(dp, fmt.Sprintf("---%s---", data.I18n(makeI18nKey(fieldIssueType, issueType.String()))))
+				for stateName := range v {
+					dp = append(dp, stateName)
+				}
 			}
 		}
 		return dp
 	case fieldPriority:
-		return []string{"低", "中", "高", "紧急"}
+		return getFieldPriorityDropList(data)
 	case fieldComplexity:
-		return []string{"容易", "中", "复杂"}
+		return getFieldComplexityDropList(data)
 	case fieldSeverity:
-		return []string{"致命", "严重", "一般", "轻微", "建议"}
+		return getFieldSeverityDropList(data)
 	case fieldCreatorName, fieldAssigneeName, fieldOwnerName:
-		var dp []string
-		for _, member := range data.ProjectMemberByUserID {
-			dp = append(dp, member.Nick)
-		}
-		return dp
+		return getUserRelatedDropList(data)
+	case fieldTaskType:
+		return getFieldTaskTypeDropList(data)
+	case fieldSource:
+		return getFieldSourceDropList(data)
+	case fieldCustomFields:
+		return getFieldCustomFieldsDropList(data, customFieldName)
 	default:
 		return nil
 	}

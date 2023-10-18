@@ -114,12 +114,21 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 		autoMergeTitleCellsWithSameValue(rows[:uuidPartsMustLength])
 		// set column data cells
 		for i, cell := range column {
+			// set i18n value
+			fieldKey := parts[1]
+			cell.Value = getDataCellI18nValue(data, fieldKey, cell.Value)
 			rows[uuidPartsMustLength+i][columnIndex] = cell
 		}
 		// set drop list
-		dropList := genDropList(data, parts[2])
+		dropList := genDropList(data, parts[1], parts[2])
 		if len(dropList) > 0 {
 			handler := excel.NewSheetHandlerForDropList(uuidPartsMustLength, columnIndex, len(rows)-1, columnIndex, dropList)
+			sheetHandlers = append(sheetHandlers, handler)
+		}
+		// set data validation input
+		inputTitle, inputMsg := genDataValidationInput(data, parts[1], parts[2])
+		if inputTitle != "" && inputMsg != "" {
+			handler := excel.NewSheetHandlerForTip(uuidPartsMustLength, columnIndex, len(rows)-1, columnIndex, inputTitle, inputMsg)
 			sheetHandlers = append(sheetHandlers, handler)
 		}
 		columnIndex++

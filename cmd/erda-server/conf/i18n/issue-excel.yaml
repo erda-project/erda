@@ -36,5 +36,57 @@ zh:
   Source: 来源
   ReopenCount: 重开次数
 
+  # supported issue type
+  issue_type:REQUIREMENT: 需求
+  issue_type:TASK: 任务
+  issue_type:BUG: 缺陷
+
+  # supported priority
+  priority:LOW: 低
+  priority:NORMAL: 中
+  priority:HIGH: 高
+  priority:URGENT: 紧急
+
+  # supported complexity
+  complexity:EASY: 容易
+  complexity:NORMAL: 中
+  complexity:HARD: 复杂
+
+  # supported severity
+  severity:SUGGEST: 建议
+  severity:SLIGHT: 轻微
+  severity:NORMAL: 一般
+  severity:SERIOUS: 严重
+  severity:FATAL: 致命
+
+  # others
+  tipForMultiSelect: 复选，使用英文逗号(,)分隔
+
 en: # use key directly
   Common: Common # need this line to pass i18n provider validation
+
+  # supported issue type
+  issue_type:REQUIREMENT: REQUIREMENT
+  issue_type:TASK: TASK
+  issue_type:BUG: BUG
+
+  # supported priority
+  priority:LOW: LOW
+  priority:NORMAL: NORMAL
+  priority:HIGH: HIGH
+  priority:URGENT: URGENT
+
+  # supported complexity
+  complexity:EASY: EASY
+  complexity:NORMAL: NORMAL
+  complexity:HARD: HARD
+
+  # supported severity
+  severity:SUGGEST: SUGGEST
+  severity:SLIGHT: SLIGHT
+  severity:NORMAL: NORMAL
+  severity:SERIOUS: SERIOUS
+  severity:FATAL: FATAL
+
+  # others
+  tipForMultiSelect: multi-select, use comma(,) to separate
