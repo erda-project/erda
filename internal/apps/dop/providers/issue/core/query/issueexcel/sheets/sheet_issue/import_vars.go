@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tealeg/xlsx/v3"
+
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
@@ -81,6 +83,25 @@ func (info *IssueSheetModelCellInfoByColumns) Add(uuid IssueSheetColumnUUID, cel
 	info.M[uuid] = append(info.M[uuid], excel.NewCell(cellValue, cellOpts...))
 }
 
+var (
+	commonTitleStyle      = excel.DefaultTitleCellStyle()
+	requirementTitleStyle = func() *xlsx.Style {
+		s := excel.DefaultTitleCellStyle()
+		s.Fill.FgColor = "FF16C2C2" // the same as issue-management
+		return s
+	}()
+	taskTitleStyle = func() *xlsx.Style {
+		s := excel.DefaultTitleCellStyle()
+		s.Fill.FgColor = "FF697FFF"
+		return s
+	}()
+	bugTitleStyle = func() *xlsx.Style {
+		s := excel.DefaultTitleCellStyle()
+		s.Fill.FgColor = "FFF3B519"
+		return s
+	}()
+)
+
 func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.DataForFulfill) (*sheets.RowsForExport, error) {
 	// create [][]excel.Cell
 	var dataRowLength int
@@ -108,7 +129,21 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 			if parts[1] == fieldCustomFields && i == 2 {
 				cellValue = uuidPart
 			}
-			rows[i][columnIndex] = excel.NewTitleCell(cellValue)
+
+			// custom style
+			var titleStyle *xlsx.Style
+			switch parts[0] {
+			case fieldRequirementOnly:
+				titleStyle = requirementTitleStyle
+			case fieldTaskOnly:
+				titleStyle = taskTitleStyle
+			case fieldBugOnly:
+				titleStyle = bugTitleStyle
+			default:
+				titleStyle = commonTitleStyle
+			}
+
+			rows[i][columnIndex] = excel.NewTitleCell(cellValue, excel.WithTitleStyle(titleStyle))
 		}
 		// auto merge title cells with same value
 		autoMergeTitleCellsWithSameValue(rows[:uuidPartsMustLength])
