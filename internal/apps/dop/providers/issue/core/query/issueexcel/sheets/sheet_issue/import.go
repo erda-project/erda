@@ -168,11 +168,11 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				case fieldIterationName:
 					model.Common.IterationName = cell.Value
 				case fieldIssueType:
-					issueType, err := parseStringIssueType(cell.Value)
+					issueType, err := parseStringIssueType(data, cell.Value)
 					if err != nil {
 						return nil, err
 					}
-					model.Common.IssueType = issueType
+					model.Common.IssueType = *issueType
 				case fieldIssueTitle:
 					model.Common.IssueTitle = cell.Value
 				case fieldContent:
@@ -180,23 +180,23 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				case fieldState:
 					model.Common.State = cell.Value
 				case fieldPriority:
-					priority, err := parseStringPriority(cell.Value)
+					priority, err := parseStringPriority(data, cell.Value)
 					if err != nil {
 						return nil, err
 					}
-					model.Common.Priority = priority
+					model.Common.Priority = *priority
 				case fieldComplexity:
-					complexity, err := parseStringComplexity(cell.Value)
+					complexity, err := parseStringComplexity(data, cell.Value)
 					if err != nil {
 						return nil, err
 					}
-					model.Common.Complexity = complexity
+					model.Common.Complexity = *complexity
 				case fieldSeverity:
-					severity, err := parseStringSeverity(cell.Value)
+					severity, err := parseStringSeverity(data, cell.Value)
 					if err != nil {
 						return nil, err
 					}
-					model.Common.Severity = severity
+					model.Common.Severity = *severity
 				case fieldCreatorName:
 					model.Common.CreatorName = cell.Value
 				case fieldAssigneeName:
@@ -254,7 +254,11 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 			case fieldTaskOnly:
 				switch groupField {
 				case fieldTaskType:
-					model.TaskOnly.TaskType = cell.Value
+					taskType, err := parseStringTaskType(data, cell.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid task type: %s", cell.Value)
+					}
+					model.TaskOnly.TaskType = taskType
 				case fieldCustomFields:
 					model.TaskOnly.CustomFields = append(model.TaskOnly.CustomFields, vars.ExcelCustomField{
 						Title: parts[2],
@@ -266,7 +270,11 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				case fieldOwnerName:
 					model.BugOnly.OwnerName = cell.Value
 				case fieldSource:
-					model.BugOnly.Source = cell.Value
+					source, err := parseStringSource(data, cell.Value)
+					if err != nil {
+						return nil, fmt.Errorf("invalid source: %s", cell.Value)
+					}
+					model.BugOnly.Source = source
 				case fieldReopenCount:
 					if cell.Value == "" {
 						model.BugOnly.ReopenCount = 0
@@ -374,7 +382,7 @@ func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 	for i, model := range issueSheetModels {
 		model := model
 		// check state
-		stateID, ok := data.StateMapByTypeAndName[model.Common.IssueType.String()][model.Common.State]
+		stateID, ok := data.StateMapByTypeAndName[model.Common.IssueType][model.Common.State]
 		if !ok {
 			return nil, nil, fmt.Errorf("unknown state: %s, please contact project manager to add the corresponding status first", model.Common.State)
 		}
@@ -531,74 +539,271 @@ func parseStringIssueID(s string) (*int64, error) {
 	return &i, nil
 }
 
-func parseStringIssueType(s string) (pb.IssueTypeEnum_Type, error) {
-	var t pb.IssueTypeEnum_Type
-	switch strings.ToLower(s) {
-	case strings.ToLower(pb.IssueTypeEnum_REQUIREMENT.String()), "需求":
-		t = pb.IssueTypeEnum_REQUIREMENT
-	case strings.ToLower(pb.IssueTypeEnum_TASK.String()), "任务":
-		t = pb.IssueTypeEnum_TASK
-	case strings.ToLower(pb.IssueTypeEnum_BUG.String()), "缺陷":
-		t = pb.IssueTypeEnum_BUG
-	case strings.ToLower(pb.IssueTypeEnum_EPIC.String()), "史诗":
-		t = pb.IssueTypeEnum_EPIC
-	case strings.ToLower(pb.IssueTypeEnum_TICKET.String()), "工单":
-		t = pb.IssueTypeEnum_TICKET
-	default:
-		return t, fmt.Errorf("invalid issue type: %s", s)
+var supportedIssueTypes = []pb.IssueTypeEnum_Type{pb.IssueTypeEnum_REQUIREMENT, pb.IssueTypeEnum_TASK, pb.IssueTypeEnum_BUG}
+var (
+	i18nKeyPrefixOfIssueType  = "issue_type:"
+	i18nKeyPrefixOfPriority   = "priority:"
+	i18nKeyPrefixOfComplexity = "complexity:"
+	i18nKeyPrefixOfSeverity   = "severity:"
+
+	i18nKeyPrefixMapByFieldKey = map[string]string{
+		fieldIssueType:  i18nKeyPrefixOfIssueType,
+		fieldPriority:   i18nKeyPrefixOfPriority,
+		fieldComplexity: i18nKeyPrefixOfComplexity,
+		fieldSeverity:   i18nKeyPrefixOfSeverity,
 	}
-	return t, nil
+)
+
+func getDataCellI18nValue(data *vars.DataForFulfill, fieldKey string, cellValue string) string {
+	if cellValue == "" {
+		return ""
+	}
+	if _, ok := i18nKeyPrefixMapByFieldKey[fieldKey]; !ok {
+		return cellValue
+	}
+	return data.I18n(cellValue)
 }
 
-func parseStringPriority(s string) (pb.IssuePriorityEnum_Priority, error) {
-	var p pb.IssuePriorityEnum_Priority
-	switch strings.ToLower(s) {
-	case strings.ToLower(pb.IssuePriorityEnum_LOW.String()), "低":
-		p = pb.IssuePriorityEnum_LOW
-	case strings.ToLower(pb.IssuePriorityEnum_NORMAL.String()), "中":
-		p = pb.IssuePriorityEnum_NORMAL
-	case strings.ToLower(pb.IssuePriorityEnum_HIGH.String()), "高":
-		p = pb.IssuePriorityEnum_HIGH
-	case strings.ToLower(pb.IssuePriorityEnum_URGENT.String()), "紧急":
-		p = pb.IssuePriorityEnum_URGENT
-	default:
-		return p, fmt.Errorf("invalid issue priority: %s", s)
+func makeI18nKey(fieldKey string, args ...string) string {
+	if len(args) == 0 {
+		return fieldKey
 	}
-	return p, nil
+	arg := args[0]
+	prefix, ok := i18nKeyPrefixMapByFieldKey[fieldKey]
+	if !ok {
+		return arg
+	}
+	return prefix + arg
 }
 
-func parseStringComplexity(s string) (pb.IssueComplexityEnum_Complextity, error) {
-	var c pb.IssueComplexityEnum_Complextity
-	switch strings.ToLower(s) {
-	case strings.ToLower(pb.IssueComplexityEnum_EASY.String()), "容易":
-		c = pb.IssueComplexityEnum_EASY
-	case strings.ToLower(pb.IssueComplexityEnum_NORMAL.String()), "中":
-		c = pb.IssueComplexityEnum_NORMAL
-	case strings.ToLower(pb.IssueComplexityEnum_HARD.String()), "复杂":
-		c = pb.IssueComplexityEnum_HARD
-	default:
-		return c, fmt.Errorf("invalid issue complexity: %s", s)
+func getFieldIssueTypeDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for _, issueType := range supportedIssueTypes {
+		s := data.I18n(i18nKeyPrefixOfIssueType + issueType.String())
+		dp = append(dp, s)
 	}
-	return c, nil
+	return dp
 }
 
-func parseStringSeverity(s string) (pb.IssueSeverityEnum_Severity, error) {
-	var c pb.IssueSeverityEnum_Severity
-	switch strings.ToLower(s) {
-	case strings.ToLower(pb.IssueSeverityEnum_FATAL.String()), "致命":
-		c = pb.IssueSeverityEnum_FATAL
-	case strings.ToLower(pb.IssueSeverityEnum_SERIOUS.String()), "严重":
-		c = pb.IssueSeverityEnum_SERIOUS
-	case strings.ToLower(pb.IssueSeverityEnum_NORMAL.String()), "一般":
-		c = pb.IssueSeverityEnum_NORMAL
-	case strings.ToLower(pb.IssueSeverityEnum_SLIGHT.String()), "轻微":
-		c = pb.IssueSeverityEnum_SLIGHT
-	case strings.ToLower(pb.IssueSeverityEnum_SUGGEST.String()), "建议":
-		c = pb.IssueSeverityEnum_SUGGEST
-	default:
-		return c, fmt.Errorf("invalid issue severity: %s", s)
+func getFieldPriorityDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for i := 0; i < len(pb.IssuePriorityEnum_Priority_name); i++ {
+		priority := pb.IssuePriorityEnum_Priority_name[int32(i)]
+		s := data.I18n(makeI18nKey(fieldPriority, priority))
+		dp = append(dp, s)
 	}
-	return c, nil
+	return dp
+}
+
+func getFieldComplexityDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for i := 0; i < len(pb.IssueComplexityEnum_Complextity_name); i++ {
+		complexity := pb.IssueComplexityEnum_Complextity_name[int32(i)]
+		s := data.I18n(makeI18nKey(fieldComplexity, complexity))
+		dp = append(dp, s)
+	}
+	return dp
+}
+
+func getFieldSeverityDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for i := 0; i < len(pb.IssueSeverityEnum_Severity_name); i++ {
+		severity := pb.IssueSeverityEnum_Severity_name[int32(i)]
+		s := data.I18n(makeI18nKey(fieldSeverity, severity))
+		dp = append(dp, s)
+	}
+	return dp
+}
+
+func getFieldTaskTypeDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for kv, name := range data.StageMap {
+		if kv.Type == pb.IssueTypeEnum_TASK.String() {
+			dp = append(dp, name)
+		}
+	}
+	return dp
+}
+
+func getFieldSourceDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for kv, name := range data.StageMap {
+		if kv.Type == pb.IssueTypeEnum_BUG.String() {
+			dp = append(dp, name)
+		}
+	}
+	return dp
+}
+
+func getIterationDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for _, iteration := range data.IterationMapByID {
+		dp = append(dp, iteration.Title)
+	}
+	return dp
+}
+
+func getFieldCustomFieldsDropList(data *vars.DataForFulfill, customFieldName string) []string {
+	for _, concreteIssueTypeCfs := range data.CustomFieldMapByTypeName {
+		for name, cf := range concreteIssueTypeCfs {
+			if name == customFieldName {
+				if cf.PropertyType == pb.PropertyTypeEnum_Person {
+					return getUserRelatedDropList(data)
+				}
+				if cf.PropertyType == pb.PropertyTypeEnum_Select {
+					var dp []string
+					for _, ev := range cf.EnumeratedValues {
+						dp = append(dp, ev.Name)
+					}
+					return dp
+				}
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func getUserRelatedDropList(data *vars.DataForFulfill) []string {
+	var dp []string
+	for _, member := range data.ProjectMemberByUserID {
+		dp = append(dp, member.Nick)
+	}
+	return strutil.DedupSlice(dp, true)
+}
+
+func parseStringIssueType(data *vars.DataForFulfill, input string) (*pb.IssueTypeEnum_Type, error) {
+	kvs := []struct {
+		i18nKeys    []string
+		matchedType pb.IssueTypeEnum_Type
+	}{
+		{
+			i18nKeys:    data.AllI18nValuesByKey(makeI18nKey(fieldIssueType, pb.IssueTypeEnum_REQUIREMENT.String())),
+			matchedType: pb.IssueTypeEnum_REQUIREMENT,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType + pb.IssueTypeEnum_TASK.String()),
+			matchedType: pb.IssueTypeEnum_TASK,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType + pb.PropertyIssueTypeEnum_BUG.String()),
+			matchedType: pb.IssueTypeEnum_BUG,
+		},
+	}
+	for _, kv := range kvs {
+		if strutil.InSlice(input, kv.i18nKeys) {
+			return &kv.matchedType, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid issue type: %s", input)
+}
+
+func parseStringPriority(data *vars.DataForFulfill, input string) (*pb.IssuePriorityEnum_Priority, error) {
+	kvs := []struct {
+		i18nKeys    []string
+		matchedType pb.IssuePriorityEnum_Priority
+	}{
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfPriority + pb.IssuePriorityEnum_LOW.String()),
+			matchedType: pb.IssuePriorityEnum_LOW,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfPriority + pb.IssuePriorityEnum_NORMAL.String()),
+			matchedType: pb.IssuePriorityEnum_NORMAL,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfPriority + pb.IssuePriorityEnum_HIGH.String()),
+			matchedType: pb.IssuePriorityEnum_HIGH,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfPriority + pb.IssuePriorityEnum_URGENT.String()),
+			matchedType: pb.IssuePriorityEnum_URGENT,
+		},
+	}
+	for _, kv := range kvs {
+		if strutil.InSlice(input, kv.i18nKeys) {
+			return &kv.matchedType, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid issue priority: %s", input)
+}
+
+func parseStringComplexity(data *vars.DataForFulfill, input string) (*pb.IssueComplexityEnum_Complextity, error) {
+	kvs := []struct {
+		i18nKeys    []string
+		matchedType pb.IssueComplexityEnum_Complextity
+	}{
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfComplexity + pb.IssueComplexityEnum_EASY.String()),
+			matchedType: pb.IssueComplexityEnum_EASY,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfComplexity + pb.IssueComplexityEnum_NORMAL.String()),
+			matchedType: pb.IssueComplexityEnum_NORMAL,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfComplexity + pb.IssueComplexityEnum_HARD.String()),
+			matchedType: pb.IssueComplexityEnum_HARD,
+		},
+	}
+	for _, kv := range kvs {
+		if strutil.InSlice(input, kv.i18nKeys) {
+			return &kv.matchedType, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid issue complexity: %s", input)
+}
+
+func parseStringSeverity(data *vars.DataForFulfill, input string) (*pb.IssueSeverityEnum_Severity, error) {
+	kvs := []struct {
+		i18nKeys    []string
+		matchedType pb.IssueSeverityEnum_Severity
+	}{
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfSeverity + pb.IssueSeverityEnum_SUGGEST.String()),
+			matchedType: pb.IssueSeverityEnum_SUGGEST,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfSeverity + pb.IssueSeverityEnum_SLIGHT.String()),
+			matchedType: pb.IssueSeverityEnum_SLIGHT,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfSeverity + pb.IssueSeverityEnum_NORMAL.String()),
+			matchedType: pb.IssueSeverityEnum_NORMAL,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfSeverity + pb.IssueSeverityEnum_SERIOUS.String()),
+			matchedType: pb.IssueSeverityEnum_SERIOUS,
+		},
+		{
+			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfSeverity + pb.IssueSeverityEnum_FATAL.String()),
+			matchedType: pb.IssueSeverityEnum_FATAL,
+		},
+	}
+	for _, kv := range kvs {
+		if strutil.InSlice(input, kv.i18nKeys) {
+			return &kv.matchedType, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid issue severity: %s", input)
+}
+
+func parseStringTaskType(data *vars.DataForFulfill, input string) (string, error) {
+	for kv, name := range data.StageMap {
+		if kv.Type == pb.IssueTypeEnum_TASK.String() && name == input {
+			return kv.Value, nil
+		}
+	}
+	return "", fmt.Errorf("invalid task type: %s", input)
+}
+
+func parseStringSource(data *vars.DataForFulfill, input string) (string, error) {
+	for kv, name := range data.StageMap {
+		if kv.Type == pb.IssueTypeEnum_BUG.String() && name == input {
+			return kv.Value, nil
+		}
+	}
+	return "", fmt.Errorf("invalid source: %s", input)
 }
 
 // removeEmptySheetRows remove if row if all cells are empty

@@ -79,12 +79,13 @@ func syncState(data *vars.DataForFulfill, originalProjectStatesInfo *vars.StateI
 	// update data.StateMapByID
 
 	// 分事项类型，每个类型比较状态的差异，只创建，不删除，因为新项目可能有新的状态
-	originalStateByTypeAndName := make(map[string]map[string]dao.IssueState)
+	originalStateByTypeAndName := make(map[pb.IssueTypeEnum_Type]map[string]dao.IssueState)
 	for _, state := range originalProjectStatesInfo.States {
-		if _, ok := originalStateByTypeAndName[state.IssueType]; !ok {
-			originalStateByTypeAndName[state.IssueType] = make(map[string]dao.IssueState)
+		issueType := pb.IssueTypeEnum_Type(pb.IssueTypeEnum_Type_value[state.IssueType])
+		if _, ok := originalStateByTypeAndName[issueType]; !ok {
+			originalStateByTypeAndName[issueType] = make(map[string]dao.IssueState)
 		}
-		originalStateByTypeAndName[state.IssueType][state.Name] = state
+		originalStateByTypeAndName[issueType][state.Name] = state
 	}
 	var originalStateNeedCreate []dao.IssueState
 	originalStateNeedCreateMap := make(map[string]dao.IssueState) // key: issueType + stateName
@@ -93,14 +94,14 @@ func syncState(data *vars.DataForFulfill, originalProjectStatesInfo *vars.StateI
 		for stateName, state := range stateMap {
 			if _, ok := data.StateMapByTypeAndName[issueType][stateName]; !ok { // 不存在，需要新增
 				originalStateNeedCreate = append(originalStateNeedCreate, state)
-				originalStateNeedCreateMap[issueType+stateName] = state
+				originalStateNeedCreateMap[issueType.String()+stateName] = state
 			}
 		}
 	}
 	// 遍历 issue 里的状态，找到只在 issue sheet 里声明的新状态，包括新老格式
 	for _, issueSheetModel := range data.ImportOnly.Sheets.Must.IssueInfo {
 		// 如果 state 已经在当前项目存在，跳过
-		if _, ok := data.StateMapByTypeAndName[issueSheetModel.Common.IssueType.String()][issueSheetModel.Common.State]; ok {
+		if _, ok := data.StateMapByTypeAndName[issueSheetModel.Common.IssueType][issueSheetModel.Common.State]; ok {
 			continue
 		}
 		// 如果 state 已经在 originalStateNeedCreateMap 中存在，跳过
@@ -180,20 +181,21 @@ func sortRelationsIntoBelongs(issueType string, relations []*pb.IssueStateRelati
 	})
 }
 
-func RefreshDataState(projectID uint64, db *dao.DBClient) (map[int64]string, map[string]map[string]int64, error) {
+func RefreshDataState(projectID uint64, db *dao.DBClient) (map[int64]string, map[pb.IssueTypeEnum_Type]map[string]int64, error) {
 	// state map
 	stateMapByID := make(map[int64]string)
-	stateMapByTypeAndName := make(map[string]map[string]int64) // outerkey: issueType, innerkey: stateName
+	stateMapByTypeAndName := make(map[pb.IssueTypeEnum_Type]map[string]int64) // outerkey: issueType, innerkey: stateName
 	states, err := db.GetIssuesStatesByProjectID(projectID, "")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get states, err: %v", err)
 	}
 	for _, v := range states {
 		stateMapByID[int64(v.ID)] = v.Name
-		if _, ok := stateMapByTypeAndName[v.IssueType]; !ok {
-			stateMapByTypeAndName[v.IssueType] = make(map[string]int64)
+		issueType := pb.IssueTypeEnum_Type(pb.IssueTypeEnum_Type_value[v.IssueType])
+		if _, ok := stateMapByTypeAndName[issueType]; !ok {
+			stateMapByTypeAndName[issueType] = make(map[string]int64)
 		}
-		stateMapByTypeAndName[v.IssueType][v.Name] = int64(v.ID)
+		stateMapByTypeAndName[issueType][v.Name] = int64(v.ID)
 	}
 	return stateMapByID, stateMapByTypeAndName, nil
 }

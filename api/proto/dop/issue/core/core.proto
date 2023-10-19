@@ -674,28 +674,28 @@ message IssueTypeEnum {
 
 message IssuePriorityEnum {
   enum Priority {
-    NORMAL = 0;
-    URGENT = 1;
+    LOW = 0;
+    NORMAL = 1;
     HIGH = 2;
-    LOW = 3;
+    URGENT = 3;
   }
 }
 
 message IssueComplexityEnum {
   enum Complextity {
-    NORMAL = 0;
-    HARD = 1;
-    EASY = 2;
+    EASY = 0;
+    NORMAL = 1;
+    HARD = 2;
   }
 }
 
 message IssueSeverityEnum {
   enum Severity {
-    NORMAL = 0;
-    FATAL = 1;
-    SERIOUS = 2;
-    SLIGHT = 3;
-    SUGGEST = 4;
+    SUGGEST = 0;
+    SLIGHT = 1;
+    NORMAL = 2;
+    SERIOUS = 3;
+    FATAL = 4;
   }
 }
 

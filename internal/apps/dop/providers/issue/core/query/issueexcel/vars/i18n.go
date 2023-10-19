@@ -16,6 +16,7 @@ package vars
 
 import (
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -24,13 +25,28 @@ const (
 )
 
 func (data *DataForFulfill) I18n(key string, args ...interface{}) string {
+	return doI18n(data.Tran, data.Lang, key, args...)
+}
+
+func doI18n(tran i18n.Translator, lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	if len(args) == 0 {
-		try := data.Tran.Text(data.Lang, key)
+		try := tran.Text(lang, key)
 		if try != key {
 			return try
 		}
 	}
-	return data.Tran.Sprintf(data.Lang, key, args...)
+	return tran.Sprintf(lang, key, args...)
+}
+
+func (data *DataForFulfill) AllI18nValuesByKey(key string, args ...interface{}) []string {
+	// iterate all supported langs
+	langs := allSupportedLangs()
+	var allValues []string
+	for _, lang := range langs {
+		s := doI18n(data.Tran, lang, key, args...)
+		allValues = append(allValues, s)
+	}
+	return strutil.DedupSlice(allValues, true)
 }
 
 func GetI18nLang(locale string) i18n.LanguageCodes {
@@ -40,4 +56,10 @@ func GetI18nLang(locale string) i18n.LanguageCodes {
 	}
 	l, _ := i18n.ParseLanguageCode(I18nLang_zh_CN)
 	return l
+}
+
+func allSupportedLangs() []i18n.LanguageCodes {
+	l1, _ := i18n.ParseLanguageCode(I18nLang_zh_CN)
+	l2, _ := i18n.ParseLanguageCode(I18nLang_en_US)
+	return []i18n.LanguageCodes{l1, l2}
 }
