@@ -43,13 +43,13 @@ type DataForFulfill struct {
 	Tran                  i18n.Translator
 	Lang                  i18n.LanguageCodes
 	StageMap              map[query.IssueStage]string
-	IterationMapByID      map[int64]*dao.Iteration           // key: iteration id
-	IterationMapByName    map[string]*dao.Iteration          // key: iteration name
-	StateMap              map[int64]string                   // key: state id
-	StateMapByTypeAndName map[string]map[string]int64        // key: state name
-	ProjectMemberByUserID map[string]apistructs.Member       // key: user id
-	OrgMemberByUserID     map[string]apistructs.Member       // key: user id
-	LabelMapByName        map[string]apistructs.ProjectLabel // key: label name
+	IterationMapByID      map[int64]*dao.Iteration                   // key: iteration id
+	IterationMapByName    map[string]*dao.Iteration                  // key: iteration name
+	StateMap              map[int64]string                           // key: state id
+	StateMapByTypeAndName map[pb.IssueTypeEnum_Type]map[string]int64 // key: state name
+	ProjectMemberByUserID map[string]apistructs.Member               // key: user id
+	OrgMemberByUserID     map[string]apistructs.Member               // key: user id
+	LabelMapByName        map[string]apistructs.ProjectLabel         // key: label name
 
 	// CustomFieldMapByTypeName outerKey: property type, innerKey: property name (可以直接使用 2 层 map 判断，每个类型保证不为空)
 	// 在同一类型下，property name 唯一

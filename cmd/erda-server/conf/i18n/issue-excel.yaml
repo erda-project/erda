@@ -36,5 +36,65 @@ zh:
   Source: 来源
   ReopenCount: 重开次数
 
+  # supported issue type
+  issue_type:REQUIREMENT: 需求
+  issue_type:TASK: 任务
+  issue_type:BUG: 缺陷
+
+  # supported priority
+  priority:LOW: 低
+  priority:NORMAL: 中
+  priority:HIGH: 高
+  priority:URGENT: 紧急
+
+  # supported complexity
+  complexity:EASY: 容易
+  complexity:NORMAL: 中
+  complexity:HARD: 复杂
+
+  # supported severity
+  severity:SUGGEST: 建议
+  severity:SLIGHT: 轻微
+  severity:NORMAL: 一般
+  severity:SERIOUS: 严重
+  severity:FATAL: 致命
+
+  # others
+  tipTitleForMultiSelect: 复选，使用英文逗号(,)分隔
+  tipTitleForInclusionIssueIDs: 使用英文逗号(,)分隔
+  tipMsgForInclusionIssueIDs: 若要关联的事项还未被创建，可以通过 `L行号` 的方式进行关联。例如 `L6`，表示关联当前Sheet的第6行；`2,L6` 则表示关联ID为2的事项，和当前Sheet的第6行
+  tipTitleForConnectionIssueIDs: 使用英文逗号(,)分隔
+  tipMsgForConnectionIssueIDs: 若要包含的事项还未被创建，可以通过 `L行号` 的方式进行关联。例如 `L6`，表示关联当前Sheet的第6行；`2,L6` 则表示关联ID为2的事项，和当前Sheet的第6行
+
 en: # use key directly
   Common: Common # need this line to pass i18n provider validation
+
+  # supported issue type
+  issue_type:REQUIREMENT: REQUIREMENT
+  issue_type:TASK: TASK
+  issue_type:BUG: BUG
+
+  # supported priority
+  priority:LOW: LOW
+  priority:NORMAL: NORMAL
+  priority:HIGH: HIGH
+  priority:URGENT: URGENT
+
+  # supported complexity
+  complexity:EASY: EASY
+  complexity:NORMAL: NORMAL
+  complexity:HARD: HARD
+
+  # supported severity
+  severity:SUGGEST: SUGGEST
+  severity:SLIGHT: SLIGHT
+  severity:NORMAL: NORMAL
+  severity:SERIOUS: SERIOUS
+  severity:FATAL: FATAL
+
+  # others
+  tipForMultiSelect: multi-select, use comma(,) to separate
+  tipTitleForInclusionIssueIDs: use comma(,) to separate
+  tipMsgForInclusionIssueIDs: if the issue to be included has not been created, you can associate it by `LlineNumber`. For example, `L6` means to associate the sixth line of the current sheet; `2,L6` means to associate the issue with ID 2 and the sixth line of the current sheet
+  tipTitleForConnectionIssueIDs: use comma(,) to separate
+  tipMsgForConnectionIssueIDs: if the issue to be included has not been created, you can associate it by `LlineNumber`. For example, `L6` means to associate the sixth line of the current sheet; `2,L6` means to associate the issue with ID 2 and the sixth line of the current sheet

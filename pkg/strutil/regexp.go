@@ -45,7 +45,7 @@ func IsValidPrjOrAppName(repo string) bool {
 	return reg.MatchString(repo)
 }
 
-func InSlice(item string, dst []string) bool {
+func InSlice[T comparable](item T, dst []T) bool {
 	for _, v := range dst {
 		if item == v {
 			return true

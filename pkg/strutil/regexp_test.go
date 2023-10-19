@@ -18,7 +18,7 @@ import (
 	"regexp"
 	"testing"
 
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReplaceAllStringSubmatchFunc(t *testing.T) {
@@ -60,4 +60,15 @@ func TestPrefixWithSemVer(t *testing.T) {
 			t.Fatalf("assert error, version: %s, expected: %v, actual: %v", version, expected, ok)
 		}
 	}
+}
+
+func TestInSlice(t *testing.T) {
+	assert.True(t, InSlice("a", []string{"a", "b", "c"}))
+	assert.True(t, InSlice(1, []int{1, 2, 3}))
+
+	type T struct {
+		A string
+		B int
+	}
+	assert.True(t, InSlice(T{"a", 1}, []T{{"a", 1}, {"b", 2}, {"c", 3}}))
 }

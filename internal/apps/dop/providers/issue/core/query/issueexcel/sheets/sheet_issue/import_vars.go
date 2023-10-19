@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tealeg/xlsx/v3"
+
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/pkg/excel"
@@ -81,6 +83,25 @@ func (info *IssueSheetModelCellInfoByColumns) Add(uuid IssueSheetColumnUUID, cel
 	info.M[uuid] = append(info.M[uuid], excel.NewCell(cellValue, cellOpts...))
 }
 
+var (
+	commonTitleStyle      = excel.DefaultTitleCellStyle()
+	requirementTitleStyle = func() *xlsx.Style {
+		s := excel.DefaultTitleCellStyle()
+		s.Fill.FgColor = "FF16C2C2" // the same as issue-management
+		return s
+	}()
+	taskTitleStyle = func() *xlsx.Style {
+		s := excel.DefaultTitleCellStyle()
+		s.Fill.FgColor = "FF697FFF"
+		return s
+	}()
+	bugTitleStyle = func() *xlsx.Style {
+		s := excel.DefaultTitleCellStyle()
+		s.Fill.FgColor = "FFF3B519"
+		return s
+	}()
+)
+
 func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.DataForFulfill) (*sheets.RowsForExport, error) {
 	// create [][]excel.Cell
 	var dataRowLength int
@@ -108,18 +129,41 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 			if parts[1] == fieldCustomFields && i == 2 {
 				cellValue = uuidPart
 			}
-			rows[i][columnIndex] = excel.NewTitleCell(cellValue)
+
+			// custom style
+			var titleStyle *xlsx.Style
+			switch parts[0] {
+			case fieldRequirementOnly:
+				titleStyle = requirementTitleStyle
+			case fieldTaskOnly:
+				titleStyle = taskTitleStyle
+			case fieldBugOnly:
+				titleStyle = bugTitleStyle
+			default:
+				titleStyle = commonTitleStyle
+			}
+
+			rows[i][columnIndex] = excel.NewTitleCell(cellValue, excel.WithTitleStyle(titleStyle))
 		}
 		// auto merge title cells with same value
 		autoMergeTitleCellsWithSameValue(rows[:uuidPartsMustLength])
 		// set column data cells
 		for i, cell := range column {
+			// set i18n value
+			fieldKey := parts[1]
+			cell.Value = getDataCellI18nValue(data, fieldKey, cell.Value)
 			rows[uuidPartsMustLength+i][columnIndex] = cell
 		}
 		// set drop list
-		dropList := genDropList(data, parts[2])
+		dropList := genDropList(data, parts[1], parts[2])
 		if len(dropList) > 0 {
 			handler := excel.NewSheetHandlerForDropList(uuidPartsMustLength, columnIndex, len(rows)-1, columnIndex, dropList)
+			sheetHandlers = append(sheetHandlers, handler)
+		}
+		// set data validation input
+		inputTitle, inputMsg := genDataValidationTip(data, parts[1], parts[2])
+		if inputTitle != "" && inputMsg != "" {
+			handler := excel.NewSheetHandlerForTip(uuidPartsMustLength, columnIndex, len(rows)-1, columnIndex, inputTitle, inputMsg)
 			sheetHandlers = append(sheetHandlers, handler)
 		}
 		columnIndex++

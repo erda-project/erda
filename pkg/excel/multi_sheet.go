@@ -40,6 +40,15 @@ func NewSheetHandlerForDropList(startRow, startCol, endRow, endCol int, dropList
 	}
 }
 
+func NewSheetHandlerForTip(startRow, startCol, endRow, endCol int, title, msg string) SheetHandler {
+	return func(sheet *xlsx.Sheet) error {
+		dv := xlsx.NewDataValidation(startRow, startCol, endRow, endCol, true)
+		dv.SetInput(&title, &msg)
+		sheet.AddDataValidation(dv)
+		return nil
+	}
+}
+
 func NewSheetHandlerForAutoColWidth(basedRow Row) SheetHandler {
 	return func(sheet *xlsx.Sheet) error {
 		// set column index
