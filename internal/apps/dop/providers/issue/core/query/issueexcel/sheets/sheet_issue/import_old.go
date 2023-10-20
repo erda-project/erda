@@ -29,10 +29,11 @@ import (
 // - 其他版本，有 21 个基础字段 + 自定义字段
 func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.IssueSheetModel, error) {
 	// convert by column fixed index
-	m := make(map[IssueSheetColumnUUID]excel.Column)
+	info := NewIssueSheetModelCellInfoByColumns()
+	m := info.M
 	addM := func(m map[IssueSheetColumnUUID]excel.Column, uuid IssueSheetColumnUUID, s string) {
 		uuid.AutoComplete()
-		m[uuid] = append(m[uuid], excel.NewCell(s))
+		info.Add(uuid, s)
 	}
 	// handle custom fields
 	if len(sheet) == 0 {
@@ -147,7 +148,7 @@ func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.I
 			}
 		}
 	}
-	models, err := decodeMapToIssueSheetModel(data, m)
+	models, err := decodeMapToIssueSheetModel(data, info)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode old excel format map to issue sheet model, err: %v", err)
 	}

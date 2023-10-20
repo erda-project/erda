@@ -122,7 +122,7 @@ func TestExportWithDataValidation(t *testing.T) {
 	}
 	err := AddSheetByCell(f, cells, "issue",
 		NewSheetHandlerForDropList(2, 1, 4, 1, []string{"需求", "任务", "缺陷"}),
-		NewSheetHandlerForAutoColWidth(cells[1]),
+		NewSheetHandlerForAutoColWidth(len(cells[1])),
 	)
 	assert.NoError(t, err)
 	outF, err := os.Create("./testdata/cell_dv.xlsx")

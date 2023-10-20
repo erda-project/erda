@@ -49,10 +49,7 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 		return nil, fmt.Errorf("failed to get issue sheet models, err: %v", err)
 	}
 	// 返回值
-	info := IssueSheetModelCellInfoByColumns{
-		M:            make(IssueSheetModelCellMapByColumns),
-		OrderedUUIDs: make([]IssueSheetColumnUUID, 0),
-	}
+	info := NewIssueSheetModelCellInfoByColumns()
 	// 反射
 	for _, model := range models {
 		modelValue := reflect.ValueOf(&model).Elem()

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/tealeg/xlsx/v3"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -63,7 +64,7 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	// auto fill empty cells
 	autoFillEmptyRowCells(&issueSheetRows, columnLen)
 
-	m := make(map[IssueSheetColumnUUID]excel.Column)
+	info := NewIssueSheetModelCellInfoByColumns()
 	for i := 0; i < columnLen; i++ {
 		// format like "Common---ID---ID"
 		var uuid IssueSheetColumnUUID
@@ -81,15 +82,11 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 		// data rows start from uuidPartsMustLength
 		for k := range issueSheetRows[uuidPartsMustLength:] {
 			row := issueSheetRows[uuidPartsMustLength+k]
-			m[uuid] = append(m[uuid], excel.Cell{
-				Value:              row[i],
-				VerticalMergeNum:   0,
-				HorizontalMergeNum: 0,
-			})
+			info.Add(uuid, row[i])
 		}
 	}
 	// decode map to models
-	models, err := decodeMapToIssueSheetModel(data, m)
+	models, err := decodeMapToIssueSheetModel(data, info)
 	if err != nil {
 		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
 	}
@@ -98,7 +95,6 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 }
 
 func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
-	// check all fields
 	return nil
 }
 
@@ -121,6 +117,75 @@ func (h *Handler) AfterCreateIssues(data *vars.DataForFulfill) error {
 	return nil
 }
 
+func (h *Handler) AppendErrorColumn(data *vars.DataForFulfill, sheet *excel.Sheet) {
+	// check collected errors
+	if len(data.ImportOnly.Errs) == 0 {
+		return
+	}
+	currentLineNum := 1
+	totalColumnNum := len(sheet.UnmergedSlice[0]) + 1
+	haveErrorColumn := false
+	errorColumnIndex := -1
+	_ = sheet.XlsxSheet.ForEachRow(func(r *xlsx.Row) error {
+		defer func() {
+			currentLineNum++
+		}()
+		// check if error column already exists
+		currentColumnIndex := 0
+		if currentLineNum == 1 {
+			_ = r.ForEachCell(func(c *xlsx.Cell) error {
+				defer func() {
+					currentColumnIndex++
+				}()
+				if strutil.InSlice(c.Value, data.AllI18nValuesByKey(fieldError)) {
+					haveErrorColumn = true
+					errorColumnIndex = currentColumnIndex
+					return nil
+				}
+				return nil
+			})
+		}
+		// if error column have, just update it; or we need add cell
+		var cell *xlsx.Cell
+		if haveErrorColumn {
+			cell = r.GetCell(errorColumnIndex)
+		} else {
+			cell = r.AddCell()
+		}
+		cell.Value = "" // reset before assign
+		if currentLineNum <= 3 {
+			if currentLineNum == 1 {
+				cell.VMerge = 2
+				cell.Value = data.I18n(fieldError)
+				style := excel.DefaultTitleCellStyle()
+				style.Fill.FgColor = "FFFF0000"
+				cell.SetStyle(style)
+			}
+			return nil
+		}
+		for _, err := range data.ImportOnly.Errs {
+			if err.LineNum == currentLineNum {
+				if cell.Value == "" {
+					cell.Value = err.Msg
+				} else {
+					cell.Value += "; " + err.Msg
+				}
+			}
+		}
+		return nil
+	})
+	widthHandler := excel.NewSheetHandlerForAutoColWidth(totalColumnNum)
+	_ = widthHandler(sheet.XlsxSheet)
+}
+
+func getI18nErr(data *vars.DataForFulfill, fieldKey string, args ...interface{}) string {
+	v := data.I18n("invalid") + data.I18n(fieldKey)
+	if len(args) > 0 {
+		v = fmt.Sprintf("%s: %v", v, args)
+	}
+	return v
+}
+
 func parseI18nTextToExcelFieldKey(text string) string {
 	if v, ok := i18nMapByText[text]; ok {
 		return v
@@ -128,7 +193,32 @@ func parseI18nTextToExcelFieldKey(text string) string {
 	return text
 }
 
-func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColumnUUID]excel.Column) (_ []vars.IssueSheetModel, err error) {
+func getAvailableIssueIDs(data *vars.DataForFulfill, idColumn excel.Column) (map[int64]struct{}, error) {
+	availableIDsMap := make(map[int64]struct{})
+	for i, cell := range idColumn {
+		// add line num
+		lineNum := i + (uuidPartsMustLength + 1)
+		availableIDsMap[-int64(lineNum)] = struct{}{}
+		// add cell value if have
+		if cell.Value != "" {
+			id, err := strconv.ParseUint(cell.Value, 10, 64)
+			if err != nil {
+				data.AppendImportError(lineNum, getI18nErr(data, fieldID, cell.Value))
+				continue
+			}
+			availableIDsMap[int64(id)] = struct{}{}
+		}
+	}
+	// add current project issue ids
+	for id := range data.ImportOnly.CurrentProjectIssueMap {
+		availableIDsMap[int64(id)] = struct{}{}
+	}
+	return availableIDsMap, nil
+}
+
+// decodeMapToIssueSheetModel
+// check cell value when decode
+func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelCellInfoByColumns) (_ []vars.IssueSheetModel, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -137,21 +227,31 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 		}
 	}()
 	// prepare models
+	m := info.M
 	var dataRowsNum int
 	for _, column := range m {
 		dataRowsNum = len(column)
 		break
 	}
+	// get all ids for id check use
+	availableIDsMap, err := getAvailableIssueIDs(data, m[NewIssueSheetColumnUUID(fieldCommon, fieldID, fieldID)])
+	if err != nil {
+		return nil, fmt.Errorf("failed to get available issue ids, err: %v", err)
+	}
+
 	models := make([]vars.IssueSheetModel, dataRowsNum, dataRowsNum)
-	for uuid, column := range m {
+	for _, uuid := range info.OrderedUUIDs {
+		column := m[uuid]
 		parts := uuid.Decode()
 		if len(parts) != uuidPartsMustLength {
 			return nil, fmt.Errorf("invalid uuid: %s", uuid)
 		}
 		for i, cell := range column {
 			model := &models[i]
+			model.Common.LineNum = i + (uuidPartsMustLength + 1) // Excel line num from 1
 			groupType := parts[0]
 			groupField := parts[1]
+			i18nErrV := getI18nErr(data, groupField, cell.Value)
 			switch groupType {
 			case fieldCommon:
 				switch groupField {
@@ -162,15 +262,22 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 					}
 					id, err := strconv.ParseUint(cell.Value, 10, 64)
 					if err != nil {
-						return nil, fmt.Errorf("invalid id: %s", cell.Value)
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.Common.ID = id
 				case fieldIterationName:
-					model.Common.IterationName = cell.Value
+					iterationName, err := parseIterationName(data, cell.Value)
+					if err != nil {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
+					model.Common.IterationName = iterationName
 				case fieldIssueType:
 					issueType, err := parseStringIssueType(data, cell.Value)
 					if err != nil {
-						return nil, err
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.Common.IssueType = *issueType
 				case fieldIssueTitle:
@@ -179,22 +286,29 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 					model.Common.Content = cell.Value
 				case fieldState:
 					model.Common.State = cell.Value
+					if _, ok := data.StateMapByTypeAndName[model.Common.IssueType][model.Common.State]; !ok {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
 				case fieldPriority:
 					priority, err := parseStringPriority(data, cell.Value)
 					if err != nil {
-						return nil, err
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.Common.Priority = *priority
 				case fieldComplexity:
 					complexity, err := parseStringComplexity(data, cell.Value)
 					if err != nil {
-						return nil, err
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.Common.Complexity = *complexity
 				case fieldSeverity:
 					severity, err := parseStringSeverity(data, cell.Value)
 					if err != nil {
-						return nil, err
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.Common.Severity = *severity
 				case fieldCreatorName:
@@ -202,16 +316,45 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				case fieldAssigneeName:
 					model.Common.AssigneeName = cell.Value
 				case fieldCreatedAt:
-					model.Common.CreatedAt = mustParseStringTime(cell.Value, groupField)
+					createdAt, err := parseStringTime(cell.Value)
+					if err != nil {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
+					model.Common.CreatedAt = createdAt
 				case fieldPlanStartedAt:
-					model.Common.PlanStartedAt = mustParseStringTime(cell.Value, groupField)
+					planStartedAt, err := parseStringTime(cell.Value)
+					if err != nil {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
+					model.Common.PlanStartedAt = planStartedAt
 				case fieldPlanFinishedAt:
-					model.Common.PlanFinishedAt = mustParseStringTime(cell.Value, groupField)
+					planFinishedAt, err := parseStringTime(cell.Value)
+					if err != nil {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
+					model.Common.PlanFinishedAt = planFinishedAt
 				case fieldStartAt:
-					model.Common.StartAt = mustParseStringTime(cell.Value, groupField)
+					startedAt, err := parseStringTime(cell.Value)
+					if err != nil {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
+					model.Common.StartAt = startedAt
 				case fieldFinishAt:
-					model.Common.FinishAt = mustParseStringTime(cell.Value, groupField)
+					finishedAt, err := parseStringTime(cell.Value)
+					if err != nil {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
+					model.Common.FinishAt = finishedAt
 				case fieldEstimateTime:
+					if _, err := vars.NewManhour(cell.Value); err != nil {
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
+					}
 					model.Common.EstimateTime = cell.Value
 				case fieldLabels:
 					model.Common.Labels = vars.ParseStringSliceByComma(cell.Value)
@@ -220,9 +363,15 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 					for _, idStr := range vars.ParseStringSliceByComma(cell.Value) {
 						id, err := parseStringIssueID(idStr)
 						if err != nil {
-							return nil, fmt.Errorf("invalid connection issue id: %s", idStr)
+							data.AppendImportError(model.Common.LineNum, i18nErrV)
+							continue
 						}
 						if id != nil {
+							// check id is available
+							if _, ok := availableIDsMap[*id]; !ok {
+								data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldConnectionIssueIDs, idStr))
+								continue
+							}
 							ids = append(ids, *id)
 						}
 					}
@@ -238,9 +387,15 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 					for _, idStr := range vars.ParseStringSliceByComma(cell.Value) {
 						id, err := parseStringIssueID(idStr)
 						if err != nil {
-							return nil, fmt.Errorf("invalid inclusion issue id: %s", idStr)
+							data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldInclusionIssueIDs, idStr))
+							continue
 						}
 						if id != nil {
+							// check id is available
+							if _, ok := availableIDsMap[*id]; !ok {
+								data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldInclusionIssueIDs, idStr))
+								continue
+							}
 							ids = append(ids, *id)
 						}
 					}
@@ -256,7 +411,8 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				case fieldTaskType:
 					taskType, err := parseStringTaskType(data, cell.Value)
 					if err != nil {
-						return nil, fmt.Errorf("invalid task type: %s", cell.Value)
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.TaskOnly.TaskType = taskType
 				case fieldCustomFields:
@@ -272,7 +428,8 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 				case fieldSource:
 					source, err := parseStringSource(data, cell.Value)
 					if err != nil {
-						return nil, fmt.Errorf("invalid source: %s", cell.Value)
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.BugOnly.Source = source
 				case fieldReopenCount:
@@ -282,7 +439,8 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, m map[IssueSheetColum
 					}
 					reopenCount, err := strconv.ParseInt(cell.Value, 10, 32)
 					if err != nil {
-						return nil, fmt.Errorf("invalid reopen count: %s", cell.Value)
+						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						continue
 					}
 					model.BugOnly.ReopenCount = int32(reopenCount)
 				case fieldCustomFields:
@@ -357,15 +515,6 @@ func mustParseStringTime(s string, typ string) *time.Time {
 	return t
 }
 
-func parseStringSliceByComma(s string) []string {
-	results := strutil.Splits(s, []string{",", "，"}, true)
-	// trim space
-	for i, v := range results {
-		results[i] = strings.TrimSpace(v)
-	}
-	return results
-}
-
 // createOrUpdateIssues 创建或更新 issues
 // 根据 project id 进行判断
 // 更新 model 里的相关关联 ID 字段，比如 L1 转换为具体的 ID
@@ -379,13 +528,8 @@ func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 	idMapping := make(map[int64]uint64) // key: old id(can be negative for Excel Line Num, like L5), value: new id
 	issueModelMapByIssueID = make(map[uint64]*vars.IssueSheetModel)
 	var issues []*issuedao.Issue
-	for i, model := range issueSheetModels {
+	for _, model := range issueSheetModels {
 		model := model
-		// check state
-		stateID, ok := data.StateMapByTypeAndName[model.Common.IssueType][model.Common.State]
-		if !ok {
-			return nil, nil, fmt.Errorf("unknown state: %s, please contact project manager to add the corresponding status first", model.Common.State)
-		}
 		// check iteration
 		iterationID := int64(-1) // default iteration value -1 for 待规划
 		iteration, ok := data.IterationMapByName[model.Common.IterationName]
@@ -410,7 +554,7 @@ func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 			Type:           model.Common.IssueType.String(),
 			Title:          model.Common.IssueTitle,
 			Content:        model.Common.Content,
-			State:          stateID,
+			State:          data.StateMapByTypeAndName[model.Common.IssueType][model.Common.State],
 			Priority:       model.Common.Priority.String(),
 			Complexity:     model.Common.Complexity.String(),
 			Severity:       model.Common.Severity.String(),
@@ -444,7 +588,7 @@ func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 		issueModelMapByIssueID[issue.ID] = &model
 		// got new issue id here, set id mapping
 		idMapping[int64(model.Common.ID)] = issue.ID
-		idMapping[-int64(i+(uuidPartsMustLength+1))] = issue.ID // excel line num, star from 1
+		idMapping[-int64(model.Common.LineNum)] = issue.ID // excel line num, star from 1
 	}
 	// all id mapping done here, update old ids
 	for i := range issueSheetModels {
@@ -672,6 +816,16 @@ func getUserRelatedDropList(data *vars.DataForFulfill) []string {
 	return strutil.DedupSlice(dp, true)
 }
 
+func parseIterationName(data *vars.DataForFulfill, input string) (string, error) {
+	if input != "" {
+		if _, ok := data.IterationMapByName[input]; ok {
+			return input, nil
+		}
+	}
+	defaultIterationName := data.IterationMapByID[-1].Title
+	return defaultIterationName, nil
+}
+
 func parseStringIssueType(data *vars.DataForFulfill, input string) (*pb.IssueTypeEnum_Type, error) {
 	kvs := []struct {
 		i18nKeys    []string
@@ -725,7 +879,9 @@ func parseStringPriority(data *vars.DataForFulfill, input string) (*pb.IssuePrio
 			return &kv.matchedType, nil
 		}
 	}
-	return nil, fmt.Errorf("invalid issue priority: %s", input)
+	// use default priority
+	defaultPriority := pb.IssuePriorityEnum_NORMAL
+	return &defaultPriority, nil
 }
 
 func parseStringComplexity(data *vars.DataForFulfill, input string) (*pb.IssueComplexityEnum_Complextity, error) {
@@ -751,7 +907,9 @@ func parseStringComplexity(data *vars.DataForFulfill, input string) (*pb.IssueCo
 			return &kv.matchedType, nil
 		}
 	}
-	return nil, fmt.Errorf("invalid issue complexity: %s", input)
+	// use default complexity
+	defaultComplexity := pb.IssueComplexityEnum_NORMAL
+	return &defaultComplexity, nil
 }
 
 func parseStringSeverity(data *vars.DataForFulfill, input string) (*pb.IssueSeverityEnum_Severity, error) {
@@ -785,25 +943,35 @@ func parseStringSeverity(data *vars.DataForFulfill, input string) (*pb.IssueSeve
 			return &kv.matchedType, nil
 		}
 	}
-	return nil, fmt.Errorf("invalid issue severity: %s", input)
+	// use default severity
+	defaultSeverity := pb.IssueSeverityEnum_NORMAL
+	return &defaultSeverity, nil
 }
 
 func parseStringTaskType(data *vars.DataForFulfill, input string) (string, error) {
+	if input == "" {
+		return "", nil
+	}
 	for kv, name := range data.StageMap {
 		if kv.Type == pb.IssueTypeEnum_TASK.String() && name == input {
 			return kv.Value, nil
 		}
 	}
-	return "", fmt.Errorf("invalid task type: %s", input)
+	// empty if not found
+	return "", nil
 }
 
 func parseStringSource(data *vars.DataForFulfill, input string) (string, error) {
+	if input == "" {
+		return "", nil
+	}
 	for kv, name := range data.StageMap {
 		if kv.Type == pb.IssueTypeEnum_BUG.String() && name == input {
 			return kv.Value, nil
 		}
 	}
-	return "", fmt.Errorf("invalid source: %s", input)
+	// empty if not found
+	return "", nil
 }
 
 // removeEmptySheetRows remove if row if all cells are empty

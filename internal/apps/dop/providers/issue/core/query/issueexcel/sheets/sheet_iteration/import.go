@@ -109,6 +109,9 @@ func createIterationsIfNotExistForImport(data *vars.DataForFulfill, originalProj
 	order := getOrderedIterationsTitles(iterationsNeedCreate)
 	for _, title := range order {
 		iteration := iterationsNeedCreate[title]
+		if iteration.Title == "" {
+			continue
+		}
 		iteration.ID = 0
 		iteration.ProjectID = data.ProjectID
 		if err := data.ImportOnly.DB.CreateIteration(iteration); err != nil {
