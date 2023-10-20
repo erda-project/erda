@@ -528,7 +528,7 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 			ID:          record.ID,
 			State:       apistructs.FileRecordStateFail,
 			ApiFileUUID: uuid,
-			Description: "please download failed file and check the last column",
+			Description: data.I18n("ImportFailTip"),
 		})
 		return nil
 	}
