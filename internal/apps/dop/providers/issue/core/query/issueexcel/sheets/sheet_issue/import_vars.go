@@ -176,7 +176,7 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 		columnIndex++
 	}
 	// auto set column width
-	widthHandler := excel.NewSheetHandlerForAutoColWidth(columnIndex + 1)
+	widthHandler := excel.NewSheetHandlerForAutoColWidth(len(info.OrderedUUIDs))
 	sheetHandlers = append(sheetHandlers, widthHandler)
 	return sheets.NewRowsForExport(rows, sheetHandlers...), nil
 }
