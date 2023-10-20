@@ -35,6 +35,11 @@ type ProjectReportRow struct {
 	RequirementTotal             float64   `json:"requirementTotal" ch:"requirementTotal"`
 	BugTotal                     float64   `json:"bugTotal" ch:"bugTotal"`
 	TaskTotal                    float64   `json:"taskTotal" ch:"taskTotal"`
+	ResponsibleFuncPointsTotal   float64   `json:"responsibleFuncPointsTotal" ch:"responsibleFuncPointsTotal"`
+	RequirementFuncPointsTotal   float64   `json:"requirementFuncPointsTotal" ch:"requirementFuncPointsTotal"`
+	DevFuncPointsTotal           float64   `json:"devFuncPointsTotal" ch:"devFuncPointsTotal"`
+	DemandFuncPointsTotal        float64   `json:"demandFuncPointsTotal" ch:"demandFuncPointsTotal"`
+	TestFuncPointsTotal          float64   `json:"testFuncPointsTotal" ch:"testFuncPointsTotal"`
 	BudgetMandayTotal            float64   `json:"budgetMandayTotal" ch:"budgetMandayTotal"`
 	TaskEstimatedMinute          float64   `json:"taskEstimatedMinute" ch:"taskEstimatedMinute"`
 	TaskEstimatedManday          float64   `json:"taskEstimatedManday" ch:"taskEstimatedManday"`
@@ -92,6 +97,11 @@ SELECT
     requirementTotal,
     bugTotal,
     taskTotal,
+    responsibleFuncPointsTotal,
+    requirementFuncPointsTotal,
+    devFuncPointsTotal,
+    demandFuncPointsTotal,
+    testFuncPointsTotal,
     budgetMandayTotal,
     taskEstimatedMinute,
     taskEstimatedManday,
@@ -143,6 +153,11 @@ FROM
         sum(requirement_total) as requirementTotal,
         sum(bug_total) as bugTotal,
         sum(task_total) as taskTotal,
+    	sum(responsible_func_points_total) as responsibleFuncPointsTotal,
+    	sum(requirement_func_points_total) as requirementFuncPointsTotal,
+    	sum(dev_func_points_total) as devFuncPointsTotal,
+    	sum(demand_func_points_total) as demandFuncPointsTotal,
+    	sum(test_func_points_total) as testFuncPointsTotal,
         sum(budget_manday_total) as budgetMandayTotal,
         sum(task_estimated_minute) as taskEstimatedMinute,
     	sum(task_estimated_minute) / 480 as taskEstimatedManday,
@@ -207,6 +222,11 @@ GROUP BY
     requirementTotal,
     bugTotal,
     taskTotal,
+    responsibleFuncPointsTotal,
+    requirementFuncPointsTotal,
+    devFuncPointsTotal,
+    demandFuncPointsTotal,
+    testFuncPointsTotal,
     budgetMandayTotal,
     taskEstimatedMinute,
     taskEstimatedManday,
@@ -252,15 +272,20 @@ ORDER BY
     projectID ASC
 `
 	lastValueBasicSql = `SELECT 
-            projectName as projectName,
-            projectDisplayName as projectDisplayName,
+            last_value(projectName) as projectName,
+            last_value(projectDisplayName) as projectDisplayName,
             projectID as projectID,
             iteration_id as iteration_id,
-            empProjectCode as empProjectCode,
+            last_value(empProjectCode) as empProjectCode,
             toStartOfInterval(timestamp, INTERVAL 1 day) as timestamp,
             last_value(requirement_total) as requirement_total,
             last_value(bug_total) as bug_total,
             last_value(task_total) as task_total,
+            last_value(responsible_func_points_total) as responsible_func_points_total,
+            last_value(requirement_func_points_total) as requirement_func_points_total,
+            last_value(dev_func_points_total) as dev_func_points_total,
+            last_value(demand_func_points_total) as demand_func_points_total,
+            last_value(test_func_points_total) as test_func_points_total,
             last_value(budget_manday_total) as budget_manday_total,
             last_value(task_estimated_minute) as task_estimated_minute,
             last_value(actual_manday_total) as actual_manday_total,
@@ -292,12 +317,9 @@ ORDER BY
         %s
         )
 		GROUP BY
-            projectName,
-            projectDisplayName,
             projectID,
             iteration_id,
-            timestamp,
-            empProjectCode
+            timestamp
 `
 	dataSourceSql = `SELECT
                 tag_values[indexOf(tag_keys,'project_name')] as projectName,
@@ -309,6 +331,11 @@ ORDER BY
 	            number_field_values[indexOf(number_field_keys,'iteration_requirement_total')] as requirement_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_bug_total')] as bug_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_task_total')] as task_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_responsible_func_points_total')] as responsible_func_points_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_requirement_func_points_total')] as requirement_func_points_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_dev_func_points_total')] as dev_func_points_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_demand_func_points_total')] as demand_func_points_total,
+	            number_field_values[indexOf(number_field_keys,'iteration_test_func_points_total')] as test_func_points_total,
 	            number_field_values[indexOf(number_field_keys,'emp_project_budget_manday_total')] as budget_manday_total,
 	            number_field_values[indexOf(number_field_keys,'iteration_task_estimated_minute')] as task_estimated_minute,
 	            number_field_values[indexOf(number_field_keys,'emp_project_actual_manday_total')] as actual_manday_total,
