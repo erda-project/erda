@@ -95,21 +95,6 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 }
 
 func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
-	// check all fields
-	models := data.ImportOnly.Sheets.Must.IssueInfo
-	// - check iteration
-	for _, model := range models {
-		if _, ok := data.IterationMapByName[model.Common.IterationName]; !ok {
-			data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldIterationName, model.Common.IterationName))
-		}
-	}
-	// - check issue type
-	// - check state
-	for _, model := range models {
-		if _, ok := data.StateMapByTypeAndName[model.Common.IssueType][model.Common.State]; !ok {
-			data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldState, model.Common.State))
-		}
-	}
 	return nil
 }
 
