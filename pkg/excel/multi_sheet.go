@@ -59,10 +59,10 @@ func NewSheetHandlerForError(startRow, startCol, endRow, endCol int, err error) 
 	}
 }
 
-func NewSheetHandlerForAutoColWidth(basedRow Row) SheetHandler {
+func NewSheetHandlerForAutoColWidth(totalColumNum int) SheetHandler {
 	return func(sheet *xlsx.Sheet) error {
 		// set column index
-		for columnIndex := range basedRow {
+		for columnIndex := 0; columnIndex < totalColumNum; columnIndex++ {
 			err := sheet.SetColAutoWidth(columnIndex+1, func(s string) float64 {
 				// calculate proper Excel cell width by string length
 				cellWidth := 0

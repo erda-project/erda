@@ -518,6 +518,20 @@ func (i *IssueService) ImportExcel(record *legacydao.TestFileRecord) (err error)
 	if err = issueexcel.ImportFile(f, data); err != nil {
 		return fmt.Errorf("failed to import excel, err: %v", err)
 	}
+	// reUpload file with error info
+	if len(data.ImportOnly.Errs) > 0 {
+		uuid, err := i.ExportFailedExcel(data)
+		if err != nil {
+			return fmt.Errorf("failed to export failed excel, err: %v", err)
+		}
+		i.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{
+			ID:          record.ID,
+			State:       apistructs.FileRecordStateFail,
+			ApiFileUUID: uuid,
+			Description: "please download failed file and check the last column",
+		})
+		return nil
+	}
 	i.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
 	return
 }
@@ -736,33 +750,27 @@ func importIssueBuilder(issue pb.Issue, request *pb.ImportExcelIssueRequest, mem
 	return create
 }
 
-func (i *IssueService) ExportFailedExcel(r io.Reader, falseIndex []int, falseReason []string, allNumber int) (*apistructs.IssueImportExcelResponse, error) {
-	var res apistructs.IssueImportExcelResponse
-	sheets, err := excel.Decode(r)
+func (i *IssueService) ExportFailedExcel(data *vars.DataForFulfill) (string, error) {
+	file := data.ImportOnly.DecodedFile.File.XlsxFile
+	var buff bytes.Buffer
+	if err := file.Write(&buff); err != nil {
+		return "", err
+	}
+	expiredAt := time.Now().Add(time.Duration(conf.ExportIssueFileStoreDay()) * 24 * time.Hour)
+	diceFile, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
+		FileNameWithExt: "failed.xlsx",
+		ByteSize:        int64(buff.Len()),
+		FileReader:      io.NopCloser(&buff),
+		From:            "issueImport",
+		IsPublic:        true,
+		Encrypt:         false,
+		Creator:         "system",
+		ExpiredAt:       &expiredAt,
+	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	var exportExcel [][]string
-	indexMap := make(map[int]int)
-	for i, v := range falseIndex {
-		indexMap[v] = i + 1
-	}
-	rows := sheets[0]
-	for i, row := range rows {
-		if indexMap[i] > 0 {
-			r := append(row, falseReason[indexMap[i]-1])
-			exportExcel = append(exportExcel, r)
-		}
-	}
-	tableName := "失败文件"
-	uuid, err := i.ExportExcel2(exportExcel, tableName)
-	if err != nil {
-		return nil, err
-	}
-	res.FalseNumber = len(falseIndex) - 1
-	res.SuccessNumber = allNumber - res.FalseNumber
-	res.UUID = uuid
-	return &res, nil
+	return diceFile.UUID, nil
 }
 
 func (i *IssueService) ExportExcel2(data [][]string, sheetName string) (string, error) {

@@ -87,7 +87,8 @@ type DataForFulfillImportOnly struct {
 	Warnings []Record // used to record warnings
 	Errs     []Record
 
-	Sheets SheetsInfo
+	DecodedFile *excel.DecodedFile
+	Sheets      SheetsInfo
 
 	Created Created
 }

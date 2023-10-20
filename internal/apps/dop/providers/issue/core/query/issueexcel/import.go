@@ -36,6 +36,7 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode excel, err: %v", err)
 	}
+	data.ImportOnly.DecodedFile = df
 	// compatible
 	data.JudgeIfIsOldExcelFormat(df)
 
@@ -59,6 +60,10 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 		if err := h.DecodeSheet(data, sheet); err != nil {
 			return fmt.Errorf("failed to docode sheet %q, err: %v", h.SheetName(), err)
 		}
+	}
+
+	if checkImportError(data, df, handlers) == signalStop {
+		return nil
 	}
 
 	// 2. before create issues
@@ -98,4 +103,26 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 	}
 
 	return nil
+}
+
+type signal int
+
+const (
+	signalContinue signal = iota
+	signalStop
+)
+
+func checkImportError(data *vars.DataForFulfill, df *excel.DecodedFile, handlers []sheets.Importer) signal {
+	if len(data.ImportOnly.Errs) == 0 {
+		return signalContinue
+	}
+	for _, h := range handlers {
+		hh, ok := h.(sheets.ImporterAppendErrorColumn)
+		if !ok {
+			continue
+		}
+		sheet := df.Sheets.M[h.SheetName()]
+		hh.AppendErrorColumn(data, sheet)
+	}
+	return signalStop
 }

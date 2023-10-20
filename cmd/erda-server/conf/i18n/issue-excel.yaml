@@ -36,6 +36,9 @@ zh:
   Source: 来源
   ReopenCount: 重开次数
 
+  # Error
+  Error: 异常
+
   # supported issue type
   issue_type:REQUIREMENT: 需求
   issue_type:TASK: 任务
@@ -65,6 +68,7 @@ zh:
   tipMsgForInclusionIssueIDs: 若要关联的事项还未被创建，可以通过 `L行号` 的方式进行关联。例如 `L6`，表示关联当前Sheet的第6行；`2,L6` 则表示关联ID为2的事项，和当前Sheet的第6行
   tipTitleForConnectionIssueIDs: 使用英文逗号(,)分隔
   tipMsgForConnectionIssueIDs: 若要包含的事项还未被创建，可以通过 `L行号` 的方式进行关联。例如 `L6`，表示关联当前Sheet的第6行；`2,L6` 则表示关联ID为2的事项，和当前Sheet的第6行
+  invalid: 无效的
 
 en: # use key directly
   Common: Common # need this line to pass i18n provider validation
@@ -98,3 +102,4 @@ en: # use key directly
   tipMsgForInclusionIssueIDs: if the issue to be included has not been created, you can associate it by `LlineNumber`. For example, `L6` means to associate the sixth line of the current sheet; `2,L6` means to associate the issue with ID 2 and the sixth line of the current sheet
   tipTitleForConnectionIssueIDs: use comma(,) to separate
   tipMsgForConnectionIssueIDs: if the issue to be included has not been created, you can associate it by `LlineNumber`. For example, `L6` means to associate the sixth line of the current sheet; `2,L6` means to associate the issue with ID 2 and the sixth line of the current sheet
+  invalid: 'invalid '
