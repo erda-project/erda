@@ -84,11 +84,18 @@ type DataForFulfillImportOnly struct {
 	OrgMemberIDByUserKey     map[string]string // key: (both desensitized and raw) phone / email / nick / name / userid, value: userID
 	ProjectMemberIDByUserKey map[string]string // key: (both desensitized and raw) phone / email / nick / name / userid, value: userID
 
-	Warnings []string // used to record warnings
+	Warnings []Record // used to record warnings
+	Errs     []Record
 
-	Sheets SheetsInfo
+	DecodedFile *excel.DecodedFile
+	Sheets      SheetsInfo
 
 	Created Created
+}
+
+type Record struct {
+	LineNum int // <= 0 means no line num
+	Msg     string
 }
 
 type Created struct {

@@ -56,6 +56,9 @@ const (
 	fieldOwnerName   = "OwnerName"
 	fieldSource      = "Source"
 	fieldReopenCount = "ReopenCount"
+
+	// Error
+	fieldError = "Error"
 )
 
 var excelFields = []string{

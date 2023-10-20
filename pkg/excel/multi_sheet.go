@@ -23,8 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tealeg/xlsx/v3"
 	"golang.org/x/text/width"
-
-	"github.com/erda-project/erda/pkg/numeral"
 )
 
 type SheetHandler func(sheet *xlsx.Sheet) error
@@ -49,10 +47,22 @@ func NewSheetHandlerForTip(startRow, startCol, endRow, endCol int, title, msg st
 	}
 }
 
-func NewSheetHandlerForAutoColWidth(basedRow Row) SheetHandler {
+// NewSheetHandlerForError
+// TODO although the code seems right, it not works now
+func NewSheetHandlerForError(startRow, startCol, endRow, endCol int, err error) SheetHandler {
+	return func(sheet *xlsx.Sheet) error {
+		dv := xlsx.NewDataValidation(startRow, startCol, endRow, endCol, true)
+		title := err.Error()
+		dv.SetError(xlsx.StyleStop, &title, &title)
+		sheet.AddDataValidation(dv)
+		return nil
+	}
+}
+
+func NewSheetHandlerForAutoColWidth(totalColumNum int) SheetHandler {
 	return func(sheet *xlsx.Sheet) error {
 		// set column index
-		for columnIndex := range basedRow {
+		for columnIndex := 0; columnIndex < totalColumNum; columnIndex++ {
 			err := sheet.SetColAutoWidth(columnIndex+1, func(s string) float64 {
 				// calculate proper Excel cell width by string length
 				cellWidth := 0
@@ -65,8 +75,15 @@ func NewSheetHandlerForAutoColWidth(basedRow Row) SheetHandler {
 					}
 				}
 				atLeast := float64(9.6)
+				max := float64(30)
 				calculated := float64(cellWidth) * 2
-				return numeral.MaxFloat64([]float64{atLeast, calculated})
+				if calculated < atLeast {
+					return atLeast
+				}
+				if calculated > max {
+					return max
+				}
+				return calculated
 			})
 			if err != nil {
 				return fmt.Errorf("failed to set column width, err: %v", err)

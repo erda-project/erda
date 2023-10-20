@@ -38,6 +38,10 @@ type ImporterCreateIssues interface {
 	CreateIssues(data *vars.DataForFulfill) error
 }
 
+type ImporterAppendErrorColumn interface {
+	AppendErrorColumn(data *vars.DataForFulfill, sheet *excel.Sheet)
+}
+
 type ImporterAfterCreateIssues interface {
 	AfterCreateIssues(data *vars.DataForFulfill) error
 }

@@ -72,6 +72,13 @@ type IssueSheetModelCellInfoByColumns struct {
 
 type IssueSheetModelCellMapByColumns map[IssueSheetColumnUUID]excel.Column
 
+func NewIssueSheetModelCellInfoByColumns() IssueSheetModelCellInfoByColumns {
+	return IssueSheetModelCellInfoByColumns{
+		M:            make(IssueSheetModelCellMapByColumns),
+		OrderedUUIDs: make([]IssueSheetColumnUUID, 0),
+	}
+}
+
 // Add
 // isDemoModel just used to set all custom fields' uuids in order, can't be added to truly data M
 func (info *IssueSheetModelCellInfoByColumns) Add(uuid IssueSheetColumnUUID, cellValue string, cellOpts ...excel.CellOption) {
@@ -169,7 +176,7 @@ func (info *IssueSheetModelCellInfoByColumns) ConvertToExcelSheet(data *vars.Dat
 		columnIndex++
 	}
 	// auto set column width
-	widthHandler := excel.NewSheetHandlerForAutoColWidth(rows[uuidPartsMustLength-1]) // use third title row
+	widthHandler := excel.NewSheetHandlerForAutoColWidth(len(info.OrderedUUIDs))
 	sheetHandlers = append(sheetHandlers, widthHandler)
 	return sheets.NewRowsForExport(rows, sheetHandlers...), nil
 }

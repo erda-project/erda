@@ -21,11 +21,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
-	"github.com/erda-project/erda/pkg/excel"
 )
+
+type MockTran struct{ i18n.Translator }
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string { return "" }
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
 
 func Test_decodeMapToIssueSheetModel(t *testing.T) {
 	autoCompleteUUID := func(parts ...string) IssueSheetColumnUUID {
@@ -39,21 +46,15 @@ func Test_decodeMapToIssueSheetModel(t *testing.T) {
 				Value: "code",
 			}: "code",
 		},
+		Lang: vars.GetI18nLang(vars.I18nLang_zh_CN),
+		Tran: &MockTran{},
 	}
-	models, err := decodeMapToIssueSheetModel(data, map[IssueSheetColumnUUID]excel.Column{
-		autoCompleteUUID("Common", "ID"): {
-			{Value: "1"},
-		},
-		autoCompleteUUID("Common", "IssueTitle"): {
-			{Value: "title"},
-		},
-		autoCompleteUUID("TaskOnly", "TaskType"): {
-			{Value: "code"},
-		},
-		autoCompleteUUID("TaskOnly", "CustomFields", "cf-1"): {
-			{Value: "v-of-cf-1"},
-		},
-	})
+	info := NewIssueSheetModelCellInfoByColumns()
+	info.Add(autoCompleteUUID("Common", "ID"), "1")
+	info.Add(autoCompleteUUID("Common", "IssueTitle"), "title")
+	info.Add(autoCompleteUUID("TaskOnly", "TaskType"), "code")
+	info.Add(autoCompleteUUID("TaskOnly", "CustomFields", "cf-1"), "v-of-cf-1")
+	models, err := decodeMapToIssueSheetModel(data, info)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(models))
 	model := models[0]

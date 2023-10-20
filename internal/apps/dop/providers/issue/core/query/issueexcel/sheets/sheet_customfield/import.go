@@ -213,7 +213,7 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 			property, ok := data.CustomFieldMapByTypeName[cfType][cf.Title]
 			if !ok { // just ignore unknown custom field
 				warnMsg := fmt.Sprintf("failed to find custom field, new issue id: %d, type: %s, name: %s", issue.ID, cfType.String(), cf.Title)
-				data.ImportOnly.Warnings = append(data.ImportOnly.Warnings, warnMsg)
+				data.AppendImportWarning(model.Common.LineNum, warnMsg)
 				continue
 			}
 			instance := &pb.IssuePropertyInstance{
@@ -255,7 +255,7 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 				if !ok { // just log
 					warnMsg := fmt.Sprintf("failed to find user id by nick in custom field, field name: %s, new issue id: %d, type: %s, name: %s, nick: %s",
 						property.PropertyName, issue.ID, cfType.String(), cf.Title, cf.Value)
-					data.ImportOnly.Warnings = append(data.ImportOnly.Warnings, warnMsg)
+					data.AppendImportWarning(model.Common.LineNum, warnMsg)
 				}
 				instance.ArbitraryValue = structpb.NewStringValue(userID)
 			} else {
