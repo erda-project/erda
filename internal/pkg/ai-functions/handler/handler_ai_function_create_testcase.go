@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
@@ -34,7 +35,9 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-const AIGeneratedTestSeName = "AI_Generated"
+const (
+	AIGeneratedTestSeName = "AI_Generated"
+)
 
 func (h *AIFunction) createTestCaseForRequirementIDAndTestID(ctx context.Context, factory functions.FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL) (any, error) {
 	results := make([]any, 0)
@@ -126,7 +129,8 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 	}
 	// 根据需求内容生成 prompt
 	if hasDetailInfoInRequirementContent(issue.Content) {
-		callbackInput.Prompt = tuningPrompt(issue.Title, issue.Content)
+		callbackInput.Prompt = issue.Content
+		// callbackInput.Prompt = tuningPrompt(issue.Title, issue.Content)
 	} else {
 		callbackInput.Prompt = issue.Title
 	}
@@ -147,7 +151,36 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 			TestCaseID:      aiCreateTestCaseResponse.TestCaseID,
 		})
 	} else {
-		result, err := aiHandlerUtils.GetChatMessageFunctionCallArguments(ctx, factory, req, openaiURL, tp.Prompt, systemPrompt, callbackInput)
+
+		var (
+			f          = factory(ctx, "", req.GetBackground())
+			systemMsg0 = openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: f.SystemMessage(), // 系统提示语
+				Name:    "system",
+			}
+			userMsg0 = openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: "requirement name:" + issue.Title,
+				Name:    "erda",
+			}
+			userMsg1 = openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: "requirement description (markdown format): \n" + issue.Content,
+				Name:    "erda",
+			}
+			systemMsg1 = openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: "Please generate a high-quality, complete test case based on the user's requirement name and description, including functional dimensions, boundary values, exception scenarios, performance scenarios, security scenarios and compatibility scenarios.",
+			}
+		)
+		if systemPrompt != "" {
+			systemMsg1.Content = systemPrompt
+		}
+
+		messages := []openai.ChatCompletionMessage{systemMsg0, userMsg0, userMsg1, systemMsg1}
+
+		result, err := aiHandlerUtils.GetChatMessageFunctionCallArguments(ctx, factory, req, openaiURL, messages, callbackInput)
 		if err != nil {
 			return err
 		}

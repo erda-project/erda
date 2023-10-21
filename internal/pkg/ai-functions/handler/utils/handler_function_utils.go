@@ -36,24 +36,11 @@ import (
 )
 
 // getChatMessageFunctionCallArguments return result for AIFunction Server Call OpenAI
-func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL, prompt string, systemPrompt string, callbackInput interface{}) (any, error) {
+func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL, messages []openai.ChatCompletionMessage, callbackInput interface{}) (any, error) {
 	var (
-		err       error
-		f         = factory(ctx, "", req.GetBackground())
-		systemMsg = openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: f.SystemMessage(),
-			Name:    "system",
-		}
-		userMsg = openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleUser,
-			Content: prompt,
-			Name:    "erda",
-		}
+		err error
+		f   = factory(ctx, "", req.GetBackground())
 	)
-	if systemPrompt != "" {
-		systemMsg.Content = systemPrompt
-	}
 
 	schema, err := f.Schema()
 	if err != nil {
@@ -68,7 +55,7 @@ func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.
 	logrus.Debugf("openai.FunctionDefinition fd.Parameters string: %s\n", fd.Parameters)
 
 	options := &openai.ChatCompletionRequest{
-		Messages:     []openai.ChatCompletionMessage{systemMsg, userMsg}, // todo: history messages
+		Messages:     messages, // todo: history messages
 		Functions:    []openai.FunctionDefinition{fd},
 		FunctionCall: openai.FunctionCall{Name: fd.Name},
 		Temperature:  1, // default 1, can be modified by f.CompletionOptions()
