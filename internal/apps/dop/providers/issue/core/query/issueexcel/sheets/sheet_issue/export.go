@@ -23,6 +23,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	streamcommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
@@ -222,12 +223,12 @@ func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, err
 			CustomFields:      vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
 		}
 		model.TaskOnly = vars.IssueSheetModelTaskOnly{
-			TaskType:     issue.TaskType,
+			TaskType:     getIssueStage(data, issue),
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_TASK, data),
 		}
 		model.BugOnly = vars.IssueSheetModelBugOnly{
 			OwnerName:    getUserNick(data, issue.Owner),
-			Source:       issue.BugStage,
+			Source:       getIssueStage(data, issue),
 			ReopenCount:  issue.ReopenCount,
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
 		}
@@ -302,4 +303,16 @@ func getUserNick(data *vars.DataForFulfill, userid string) string {
 		return u.Nick
 	}
 	return ""
+}
+
+func getIssueStage(data *vars.DataForFulfill, issue *pb.Issue) string {
+	stage := query.IssueStage{
+		Type:  issue.Type.String(),
+		Value: issue.TaskType,
+	}
+	v, ok := data.StageMap[stage]
+	if ok {
+		return v
+	}
+	return issue.TaskType
 }

@@ -954,7 +954,7 @@ func parseStringTaskType(data *vars.DataForFulfill, input string) (string, error
 		return "", nil
 	}
 	for kv, name := range data.StageMap {
-		if kv.Type == pb.IssueTypeEnum_TASK.String() && name == input {
+		if kv.Type == pb.IssueTypeEnum_TASK.String() && (name == input || kv.Value == input) {
 			return kv.Value, nil
 		}
 	}
