@@ -23,7 +23,9 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_customfield"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	streamcommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/pkg/common/pbutil"
@@ -64,6 +66,9 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 				structField := groupField.Type().Field(j)
 				uuid := uuid
 				thisPart := getStructFieldExcelTag(structField)
+				if thisPart == "-" {
+					continue // ignore `-` field, like `lineNum`
+				}
 				uuid.AddPart(thisPart)
 				// custom fields 动态字段，返回多个 column cell
 				if structField.Type == reflect.TypeOf([]vars.ExcelCustomField{}) {
@@ -71,7 +76,7 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 					cfs := valueField.Interface().([]vars.ExcelCustomField)
 					if len(cfs) == 0 {
 						cfBelongingIssueType := getCustomFieldBelongingTypeFromUUID(uuid)
-						cfs = vars.FormatIssueCustomFields(&pb.Issue{Id: int64(model.Common.ID)}, getIssuePropertyEnumTypeByIssueType(cfBelongingIssueType), data)
+						cfs = vars.FormatIssueCustomFields(&pb.Issue{Id: int64(model.Common.ID)}, sheet_customfield.MustGetIssuePropertyEnumTypeByIssueType(cfBelongingIssueType), data)
 					}
 					for _, cf := range cfs {
 						uuid := uuid
@@ -170,19 +175,6 @@ func getCustomFieldBelongingTypeFromUUID(uuid IssueSheetColumnUUID) pb.IssueType
 	}
 }
 
-func getIssuePropertyEnumTypeByIssueType(issueType pb.IssueTypeEnum_Type) pb.PropertyIssueTypeEnum_PropertyIssueType {
-	switch issueType {
-	case pb.IssueTypeEnum_REQUIREMENT:
-		return pb.PropertyIssueTypeEnum_REQUIREMENT
-	case pb.IssueTypeEnum_TASK:
-		return pb.PropertyIssueTypeEnum_TASK
-	case pb.IssueTypeEnum_BUG:
-		return pb.PropertyIssueTypeEnum_BUG
-	default:
-		panic(fmt.Errorf("unknown issue type: %s", issueType.String()))
-	}
-}
-
 func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, error) {
 	models := make([]vars.IssueSheetModel, 0, len(data.ExportOnly.Issues))
 	if data.ExportOnly.IsDownloadTemplate {
@@ -222,12 +214,12 @@ func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, err
 			CustomFields:      vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
 		}
 		model.TaskOnly = vars.IssueSheetModelTaskOnly{
-			TaskType:     issue.TaskType,
+			TaskType:     getIssueStageName(data, issue, pb.IssueTypeEnum_TASK),
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_TASK, data),
 		}
 		model.BugOnly = vars.IssueSheetModelBugOnly{
 			OwnerName:    getUserNick(data, issue.Owner),
-			Source:       issue.BugStage,
+			Source:       getIssueStageName(data, issue, pb.IssueTypeEnum_BUG),
 			ReopenCount:  issue.ReopenCount,
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
 		}
@@ -302,4 +294,30 @@ func getUserNick(data *vars.DataForFulfill, userid string) string {
 		return u.Nick
 	}
 	return ""
+}
+
+func getIssueStageName(data *vars.DataForFulfill, issue *pb.Issue, targetIssueType pb.IssueTypeEnum_Type) string {
+	if issue.Type != targetIssueType {
+		return ""
+	}
+	stage := query.IssueStage{
+		Type:  issue.Type.String(),
+		Value: getIssueStageValue(issue),
+	}
+	v, ok := data.StageMap[stage]
+	if ok {
+		return v
+	}
+	return getIssueStageValue(issue)
+}
+
+func getIssueStageValue(issue *pb.Issue) string {
+	switch issue.Type {
+	case pb.IssueTypeEnum_TASK:
+		return issue.TaskType
+	case pb.IssueTypeEnum_BUG:
+		return issue.BugStage
+	default:
+		return ""
+	}
 }

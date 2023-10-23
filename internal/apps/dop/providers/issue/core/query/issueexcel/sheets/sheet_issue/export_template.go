@@ -34,7 +34,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 
 	common := vars.IssueSheetModelCommon{
 		ID:                 0,
-		IterationName:      "迭代名",
+		IterationName:      data.IterationMapByID[-1].Title,
 		IssueType:          0,
 		IssueTitle:         "标题",
 		Content:            "内容",
@@ -76,10 +76,17 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	taskCommon.FinishAt = &nowPlusOneDay
 	taskCommon.EstimateTime = "1d"
 	taskCommon.Labels = []string{"label1"}
+	var taskType string
+	for kv, name := range data.StageMap {
+		if kv.Type == taskCommon.IssueType.String() {
+			taskType = name
+			break
+		}
+	}
 	task := vars.IssueSheetModel{
 		Common: taskCommon,
 		TaskOnly: vars.IssueSheetModelTaskOnly{
-			TaskType:     "开发",
+			TaskType:     taskType,
 			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(taskCommon.ID)}, pb.PropertyIssueTypeEnum_TASK, data),
 		},
 	}
@@ -94,11 +101,18 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	bugCommon.State = "待处理"
 	bugCommon.ConnectionIssueIDs = []int64{2}
 	bugCommon.Labels = []string{"label2"}
+	var bugSource string
+	for kv, name := range data.StageMap {
+		if kv.Type == bugCommon.IssueType.String() {
+			bugSource = name
+			break
+		}
+	}
 	bug := vars.IssueSheetModel{
 		Common: bugCommon,
 		BugOnly: vars.IssueSheetModelBugOnly{
 			OwnerName:    userName,
-			Source:       "代码研发",
+			Source:       bugSource,
 			ReopenCount:  0,
 			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(bugCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
 		},

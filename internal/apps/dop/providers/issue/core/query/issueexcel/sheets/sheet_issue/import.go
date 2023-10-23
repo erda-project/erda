@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_customfield"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -85,16 +86,17 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 			info.Add(uuid, row[i])
 		}
 	}
-	// decode map to models
-	models, err := decodeMapToIssueSheetModel(data, info)
-	if err != nil {
-		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
-	}
-	data.ImportOnly.Sheets.Must.IssueInfo = models
+	data.ImportOnly.Sheets.Must.RawIssueInfo = info
 	return nil
 }
 
 func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
+	// decode map to models
+	models, err := decodeMapToIssueSheetModel(data, data.ImportOnly.Sheets.Must.RawIssueInfo.(IssueSheetModelCellInfoByColumns))
+	if err != nil {
+		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
+	}
+	data.ImportOnly.Sheets.Must.IssueInfo = models
 	return nil
 }
 
@@ -179,7 +181,14 @@ func (h *Handler) AppendErrorColumn(data *vars.DataForFulfill, sheet *excel.Shee
 }
 
 func getI18nErr(data *vars.DataForFulfill, fieldKey string, args ...interface{}) string {
-	v := data.I18n("invalid") + data.I18n(fieldKey)
+	return getI18nErr2(data, []string{fieldKey}, args...)
+}
+
+func getI18nErr2(data *vars.DataForFulfill, fieldKeys []string, args ...interface{}) string {
+	v := data.I18n("invalid")
+	for _, fieldKey := range fieldKeys {
+		v += data.I18n(fieldKey)
+	}
 	if len(args) > 0 {
 		v = fmt.Sprintf("%s: %v", v, args)
 	}
@@ -401,10 +410,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.RequirementOnly.InclusionIssueIDs = ids
 				case fieldCustomFields:
-					model.RequirementOnly.CustomFields = append(model.RequirementOnly.CustomFields, vars.ExcelCustomField{
-						Title: parts[2],
-						Value: cell.Value,
-					})
+					parseCustomField(data, pb.IssueTypeEnum_REQUIREMENT, model, parts[2], cell.Value, &model.RequirementOnly.CustomFields)
 				}
 			case fieldTaskOnly:
 				switch groupField {
@@ -416,10 +422,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.TaskOnly.TaskType = taskType
 				case fieldCustomFields:
-					model.TaskOnly.CustomFields = append(model.TaskOnly.CustomFields, vars.ExcelCustomField{
-						Title: parts[2],
-						Value: cell.Value,
-					})
+					parseCustomField(data, pb.IssueTypeEnum_TASK, model, parts[2], cell.Value, &model.TaskOnly.CustomFields)
 				}
 			case fieldBugOnly:
 				switch groupField {
@@ -428,7 +431,13 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 				case fieldSource:
 					source, err := parseStringSource(data, cell.Value)
 					if err != nil {
-						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						data.AppendImportError(model.Common.LineNum, getI18nErr2(data,
+							[]string{
+								makeI18nKey(i18nKeyPrefixOfIssueType, model.Common.IssueType.String()),
+								fieldCustomFields,
+								parts[2],
+							},
+							cell.Value))
 						continue
 					}
 					model.BugOnly.Source = source
@@ -444,10 +453,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.BugOnly.ReopenCount = int32(reopenCount)
 				case fieldCustomFields:
-					model.BugOnly.CustomFields = append(model.BugOnly.CustomFields, vars.ExcelCustomField{
-						Title: parts[2],
-						Value: cell.Value,
-					})
+					parseCustomField(data, pb.IssueTypeEnum_BUG, model, parts[2], cell.Value, &model.BugOnly.CustomFields)
 				}
 			}
 		}
@@ -832,15 +838,15 @@ func parseStringIssueType(data *vars.DataForFulfill, input string) (*pb.IssueTyp
 		matchedType pb.IssueTypeEnum_Type
 	}{
 		{
-			i18nKeys:    data.AllI18nValuesByKey(makeI18nKey(fieldIssueType, pb.IssueTypeEnum_REQUIREMENT.String())),
+			i18nKeys:    append(data.AllI18nValuesByKey(makeI18nKey(fieldIssueType, pb.IssueTypeEnum_REQUIREMENT.String())), pb.PropertyIssueTypeEnum_REQUIREMENT.String()),
 			matchedType: pb.IssueTypeEnum_REQUIREMENT,
 		},
 		{
-			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType + pb.IssueTypeEnum_TASK.String()),
+			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.IssueTypeEnum_TASK.String()), pb.PropertyIssueTypeEnum_TASK.String()),
 			matchedType: pb.IssueTypeEnum_TASK,
 		},
 		{
-			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType + pb.PropertyIssueTypeEnum_BUG.String()),
+			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.PropertyIssueTypeEnum_BUG.String()), pb.PropertyIssueTypeEnum_BUG.String()),
 			matchedType: pb.IssueTypeEnum_BUG,
 		},
 	}
@@ -953,7 +959,7 @@ func parseStringTaskType(data *vars.DataForFulfill, input string) (string, error
 		return "", nil
 	}
 	for kv, name := range data.StageMap {
-		if kv.Type == pb.IssueTypeEnum_TASK.String() && name == input {
+		if kv.Type == pb.IssueTypeEnum_TASK.String() && (name == input || kv.Value == input) {
 			return kv.Value, nil
 		}
 	}
@@ -972,6 +978,31 @@ func parseStringSource(data *vars.DataForFulfill, input string) (string, error) 
 	}
 	// empty if not found
 	return "", nil
+}
+
+func parseCustomField(data *vars.DataForFulfill, expectIssueType pb.IssueTypeEnum_Type, model *vars.IssueSheetModel, cfName, cfValue string, appendable *[]vars.ExcelCustomField) {
+	if cfValue == "" {
+		return
+	}
+	if model.Common.IssueType != expectIssueType { // skip check if issue type mismatch
+		return
+	}
+	cf := vars.ExcelCustomField{
+		Title: cfName,
+		Value: cfValue,
+	}
+	if err := sheet_customfield.CheckCustomFieldValue(data, model.Common.IssueType, cf.Title, cf.Value); err != nil {
+		data.AppendImportError(model.Common.LineNum, getI18nErr2(data,
+			[]string{
+				makeI18nKey(i18nKeyPrefixOfIssueType, model.Common.IssueType.String()),
+				fieldCustomFields,
+				"-",
+				cfName,
+			},
+			cfValue))
+		return
+	}
+	*appendable = append(*appendable, cf)
 }
 
 // removeEmptySheetRows remove if row if all cells are empty

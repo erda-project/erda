@@ -19,6 +19,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 	"github.com/tealeg/xlsx/v3"
@@ -30,12 +32,31 @@ type SheetHandler func(sheet *xlsx.Sheet) error
 func NewSheetHandlerForDropList(startRow, startCol, endRow, endCol int, dropList []string) SheetHandler {
 	return func(sheet *xlsx.Sheet) error {
 		dv := xlsx.NewDataValidation(startRow, startCol, endRow, endCol, true)
+		ensureDropList(&dropList, dataValidationFormulaStrLen)
 		if err := dv.SetDropList(dropList); err != nil {
 			return fmt.Errorf("failed to set drop list, err: %v", err)
 		}
 		sheet.AddDataValidation(dv)
 		return nil
 	}
+}
+
+const (
+	dataValidationFormulaStrLen = 257 // see: xlsx#dataValidationFormulaStrLen
+)
+
+func ensureDropList(dropList *[]string, maxLimit int) {
+	formula := "\"" + strings.Join(*dropList, ",") + "\""
+	if maxLimit >= utf8.RuneCountInString(formula) {
+		return
+	}
+	endIndex := len(*dropList) - 1
+	if endIndex <= 0 {
+		*dropList = []string{}
+		return
+	}
+	*dropList = (*dropList)[:endIndex]
+	ensureDropList(dropList, maxLimit)
 }
 
 func NewSheetHandlerForTip(startRow, startCol, endRow, endCol int, title, msg string) SheetHandler {
