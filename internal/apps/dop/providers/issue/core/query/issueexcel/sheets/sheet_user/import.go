@@ -90,7 +90,7 @@ func addMemberIntoProject(data *vars.DataForFulfill, projectMembersFromUserSheet
 		if findUser == nil { // no matched user, just skip
 			continue
 		}
-		newMember := deepcopy.Copy(originalProjectMember).(apistructs.Member)
+		newMember := deepcopy.Copy(*findUser).(apistructs.Member)
 		newMember.Roles = originalProjectMember.Roles
 		newMember.Labels = originalProjectMember.Labels
 		usersNeedToBeAddedAsProjectMember = append(usersNeedToBeAddedAsProjectMember, newMember)

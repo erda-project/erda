@@ -20,6 +20,7 @@ import (
 
 // GetStageMap return a map,the key is the struct of dice_issue_stage.Value and dice_issue_stage.IssueType,
 // the value is dice_issue_stage.Name
+// example: name: 代码研发, value: codeDevelopment
 func GetStageMap(stages []dao.IssueStage) map[IssueStage]string {
 	stageMap := make(map[IssueStage]string, len(stages))
 	for _, v := range stages {
