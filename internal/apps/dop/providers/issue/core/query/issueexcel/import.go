@@ -80,6 +80,10 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 		}
 	}
 
+	if checkImportError(data, df, handlers) == signalStop {
+		return nil
+	}
+
 	// 3. create issues
 	for _, h := range handlers {
 		hh, ok := h.(sheets.ImporterCreateIssues)
