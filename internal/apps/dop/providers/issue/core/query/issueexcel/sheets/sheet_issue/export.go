@@ -214,12 +214,12 @@ func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, err
 			CustomFields:      vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
 		}
 		model.TaskOnly = vars.IssueSheetModelTaskOnly{
-			TaskType:     getIssueStage(data, issue),
+			TaskType:     getIssueStage(data, issue, pb.IssueTypeEnum_TASK),
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_TASK, data),
 		}
 		model.BugOnly = vars.IssueSheetModelBugOnly{
 			OwnerName:    getUserNick(data, issue.Owner),
-			Source:       getIssueStage(data, issue),
+			Source:       getIssueStage(data, issue, pb.IssueTypeEnum_BUG),
 			ReopenCount:  issue.ReopenCount,
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
 		}
@@ -296,7 +296,10 @@ func getUserNick(data *vars.DataForFulfill, userid string) string {
 	return ""
 }
 
-func getIssueStage(data *vars.DataForFulfill, issue *pb.Issue) string {
+func getIssueStage(data *vars.DataForFulfill, issue *pb.Issue, targetIssueType pb.IssueTypeEnum_Type) string {
+	if issue.Type != targetIssueType {
+		return ""
+	}
 	stage := query.IssueStage{
 		Type:  issue.Type.String(),
 		Value: issue.TaskType,
