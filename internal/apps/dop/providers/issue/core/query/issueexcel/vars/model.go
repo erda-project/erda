@@ -64,7 +64,7 @@ type (
 		Labels             []string
 		ConnectionIssueIDs []int64 // L264 转为 -264
 
-		LineNum int // 行号，用于错误和告警跟踪
+		LineNum int `excel:"-"` // 行号，用于错误和告警跟踪
 	}
 	IssueSheetModelRequirementOnly struct {
 		InclusionIssueIDs []int64

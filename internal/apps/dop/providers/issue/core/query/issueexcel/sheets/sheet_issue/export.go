@@ -66,6 +66,9 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 				structField := groupField.Type().Field(j)
 				uuid := uuid
 				thisPart := getStructFieldExcelTag(structField)
+				if thisPart == "-" {
+					continue // ignore `-` field, like `lineNum`
+				}
 				uuid.AddPart(thisPart)
 				// custom fields 动态字段，返回多个 column cell
 				if structField.Type == reflect.TypeOf([]vars.ExcelCustomField{}) {
