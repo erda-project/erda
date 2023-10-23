@@ -838,15 +838,15 @@ func parseStringIssueType(data *vars.DataForFulfill, input string) (*pb.IssueTyp
 		matchedType pb.IssueTypeEnum_Type
 	}{
 		{
-			i18nKeys:    data.AllI18nValuesByKey(makeI18nKey(fieldIssueType, pb.IssueTypeEnum_REQUIREMENT.String())),
+			i18nKeys:    append(data.AllI18nValuesByKey(makeI18nKey(fieldIssueType, pb.IssueTypeEnum_REQUIREMENT.String())), pb.PropertyIssueTypeEnum_REQUIREMENT.String()),
 			matchedType: pb.IssueTypeEnum_REQUIREMENT,
 		},
 		{
-			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType + pb.IssueTypeEnum_TASK.String()),
+			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.IssueTypeEnum_TASK.String()), pb.PropertyIssueTypeEnum_TASK.String()),
 			matchedType: pb.IssueTypeEnum_TASK,
 		},
 		{
-			i18nKeys:    data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType + pb.PropertyIssueTypeEnum_BUG.String()),
+			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.PropertyIssueTypeEnum_BUG.String()), pb.PropertyIssueTypeEnum_BUG.String()),
 			matchedType: pb.IssueTypeEnum_BUG,
 		},
 	}

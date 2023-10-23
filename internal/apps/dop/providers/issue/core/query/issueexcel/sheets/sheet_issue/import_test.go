@@ -48,10 +48,16 @@ func Test_decodeMapToIssueSheetModel(t *testing.T) {
 		},
 		Lang: vars.GetI18nLang(vars.I18nLang_zh_CN),
 		Tran: &MockTran{},
+		CustomFieldMapByTypeName: map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex{
+			pb.PropertyIssueTypeEnum_TASK: {
+				"cf-1": {},
+			},
+		},
 	}
 	info := NewIssueSheetModelCellInfoByColumns()
 	info.Add(autoCompleteUUID("Common", "ID"), "1")
 	info.Add(autoCompleteUUID("Common", "IssueTitle"), "title")
+	info.Add(autoCompleteUUID(fieldCommon, fieldIssueType), pb.IssueTypeEnum_TASK.String())
 	info.Add(autoCompleteUUID("TaskOnly", "TaskType"), "code")
 	info.Add(autoCompleteUUID("TaskOnly", "CustomFields", "cf-1"), "v-of-cf-1")
 	models, err := decodeMapToIssueSheetModel(data, info)
