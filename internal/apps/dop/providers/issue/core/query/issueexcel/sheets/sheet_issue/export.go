@@ -214,12 +214,12 @@ func getIssueSheetModels(data *vars.DataForFulfill) ([]vars.IssueSheetModel, err
 			CustomFields:      vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_REQUIREMENT, data),
 		}
 		model.TaskOnly = vars.IssueSheetModelTaskOnly{
-			TaskType:     getIssueStage(data, issue, pb.IssueTypeEnum_TASK),
+			TaskType:     getIssueStageName(data, issue, pb.IssueTypeEnum_TASK),
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_TASK, data),
 		}
 		model.BugOnly = vars.IssueSheetModelBugOnly{
 			OwnerName:    getUserNick(data, issue.Owner),
-			Source:       getIssueStage(data, issue, pb.IssueTypeEnum_BUG),
+			Source:       getIssueStageName(data, issue, pb.IssueTypeEnum_BUG),
 			ReopenCount:  issue.ReopenCount,
 			CustomFields: vars.FormatIssueCustomFields(issue, pb.PropertyIssueTypeEnum_BUG, data),
 		}
@@ -296,17 +296,28 @@ func getUserNick(data *vars.DataForFulfill, userid string) string {
 	return ""
 }
 
-func getIssueStage(data *vars.DataForFulfill, issue *pb.Issue, targetIssueType pb.IssueTypeEnum_Type) string {
+func getIssueStageName(data *vars.DataForFulfill, issue *pb.Issue, targetIssueType pb.IssueTypeEnum_Type) string {
 	if issue.Type != targetIssueType {
 		return ""
 	}
 	stage := query.IssueStage{
 		Type:  issue.Type.String(),
-		Value: issue.TaskType,
+		Value: getIssueStageValue(issue),
 	}
 	v, ok := data.StageMap[stage]
 	if ok {
 		return v
 	}
-	return issue.TaskType
+	return getIssueStageValue(issue)
+}
+
+func getIssueStageValue(issue *pb.Issue) string {
+	switch issue.Type {
+	case pb.IssueTypeEnum_TASK:
+		return issue.TaskType
+	case pb.IssueTypeEnum_BUG:
+		return issue.BugStage
+	default:
+		return ""
+	}
 }
