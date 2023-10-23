@@ -191,19 +191,8 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 			IdentityInfo: nil,
 		}
 		var cfsNeedHandled []vars.ExcelCustomField
-		var cfType pb.PropertyIssueTypeEnum_PropertyIssueType
-		switch issue.Type {
-		case pb.IssueTypeEnum_REQUIREMENT.String():
-			cfsNeedHandled = model.RequirementOnly.CustomFields
-			cfType = pb.PropertyIssueTypeEnum_REQUIREMENT
-		case pb.IssueTypeEnum_TASK.String():
-			cfsNeedHandled = model.TaskOnly.CustomFields
-			cfType = pb.PropertyIssueTypeEnum_TASK
-		case pb.IssueTypeEnum_BUG.String():
-			cfsNeedHandled = model.BugOnly.CustomFields
-			cfType = pb.PropertyIssueTypeEnum_BUG
-		case pb.IssueTypeEnum_TICKET.String():
-		default:
+		cfType, err := GetIssuePropertyEnumTypeByIssueType(pb.IssueTypeEnum_Type(pb.IssueTypeEnum_Type_value[issue.Type]))
+		if err != nil {
 			return fmt.Errorf("invalid issue type, issue type: %s", issue.Type)
 		}
 		for _, cf := range cfsNeedHandled {
@@ -263,7 +252,7 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 			}
 			relationRequest.Property = append(relationRequest.Property, instance)
 		}
-		_, err := data.ImportOnly.IssueCore.CreateIssuePropertyInstance(ctx, relationRequest)
+		_, err = data.ImportOnly.IssueCore.CreateIssuePropertyInstance(ctx, relationRequest)
 		if err != nil {
 			return fmt.Errorf("failed to create issue custom field relation, issue id: %d, err: %v", issue.ID, err)
 		}
@@ -286,4 +275,53 @@ func RefreshDataCustomFields(orgID int64, i pb.IssueCoreServiceServer) (map[pb.P
 		customFieldMapByTypeName[v.PropertyIssueType][v.PropertyName] = v
 	}
 	return customFieldMapByTypeName, nil
+}
+
+func CheckCustomFieldValue(data *vars.DataForFulfill, issueType pb.IssueTypeEnum_Type, cfName, cfValue string) error {
+	cfIssueType, err := GetIssuePropertyEnumTypeByIssueType(issueType)
+	if err != nil {
+		return err
+	}
+	property, ok := data.CustomFieldMapByTypeName[cfIssueType][cfName]
+	if !ok { // just ignore unknown custom field
+		return fmt.Errorf("not found")
+	}
+	if common.IsOptions(property.PropertyType.String()) {
+		valuesInSheet := vars.ParseStringSliceByComma(cfValue)
+		for _, valueInSheet := range valuesInSheet {
+			var foundEnumValue bool
+			for _, enumValue := range property.EnumeratedValues {
+				if enumValue.Name == valueInSheet {
+					foundEnumValue = true
+					break
+				}
+			}
+			if !foundEnumValue {
+				return fmt.Errorf("failed to find enum value by name, issue type: %s, property type: %s, property name: %s, enum value name: %s",
+					property.PropertyIssueType, property.PropertyType, property.PropertyName, cfValue)
+			}
+		}
+	}
+	return nil
+}
+
+func GetIssuePropertyEnumTypeByIssueType(issueType pb.IssueTypeEnum_Type) (pb.PropertyIssueTypeEnum_PropertyIssueType, error) {
+	switch issueType {
+	case pb.IssueTypeEnum_REQUIREMENT:
+		return pb.PropertyIssueTypeEnum_REQUIREMENT, nil
+	case pb.IssueTypeEnum_TASK:
+		return pb.PropertyIssueTypeEnum_TASK, nil
+	case pb.IssueTypeEnum_BUG:
+		return pb.PropertyIssueTypeEnum_BUG, nil
+	default:
+		return 0, fmt.Errorf("unknown issue type: %s", issueType.String())
+	}
+}
+
+func MustGetIssuePropertyEnumTypeByIssueType(issueType pb.IssueTypeEnum_Type) pb.PropertyIssueTypeEnum_PropertyIssueType {
+	t, err := GetIssuePropertyEnumTypeByIssueType(issueType)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }

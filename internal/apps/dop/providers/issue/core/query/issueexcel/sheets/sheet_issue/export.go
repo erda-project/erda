@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_customfield"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	streamcommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/stream/common"
 	"github.com/erda-project/erda/pkg/common/pbutil"
@@ -72,7 +73,7 @@ func genIssueSheetTitleAndDataByColumn(data *vars.DataForFulfill) (*IssueSheetMo
 					cfs := valueField.Interface().([]vars.ExcelCustomField)
 					if len(cfs) == 0 {
 						cfBelongingIssueType := getCustomFieldBelongingTypeFromUUID(uuid)
-						cfs = vars.FormatIssueCustomFields(&pb.Issue{Id: int64(model.Common.ID)}, getIssuePropertyEnumTypeByIssueType(cfBelongingIssueType), data)
+						cfs = vars.FormatIssueCustomFields(&pb.Issue{Id: int64(model.Common.ID)}, sheet_customfield.MustGetIssuePropertyEnumTypeByIssueType(cfBelongingIssueType), data)
 					}
 					for _, cf := range cfs {
 						uuid := uuid
@@ -168,19 +169,6 @@ func getCustomFieldBelongingTypeFromUUID(uuid IssueSheetColumnUUID) pb.IssueType
 		return pb.IssueTypeEnum_BUG
 	default:
 		panic(fmt.Errorf("failed to get issue type from uuid: %s", uuid.Decode()[0]))
-	}
-}
-
-func getIssuePropertyEnumTypeByIssueType(issueType pb.IssueTypeEnum_Type) pb.PropertyIssueTypeEnum_PropertyIssueType {
-	switch issueType {
-	case pb.IssueTypeEnum_REQUIREMENT:
-		return pb.PropertyIssueTypeEnum_REQUIREMENT
-	case pb.IssueTypeEnum_TASK:
-		return pb.PropertyIssueTypeEnum_TASK
-	case pb.IssueTypeEnum_BUG:
-		return pb.PropertyIssueTypeEnum_BUG
-	default:
-		panic(fmt.Errorf("unknown issue type: %s", issueType.String()))
 	}
 }
 

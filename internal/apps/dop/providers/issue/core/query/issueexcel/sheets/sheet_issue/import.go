@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_customfield"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -180,7 +181,14 @@ func (h *Handler) AppendErrorColumn(data *vars.DataForFulfill, sheet *excel.Shee
 }
 
 func getI18nErr(data *vars.DataForFulfill, fieldKey string, args ...interface{}) string {
-	v := data.I18n("invalid") + data.I18n(fieldKey)
+	return getI18nErr2(data, []string{fieldKey}, args...)
+}
+
+func getI18nErr2(data *vars.DataForFulfill, fieldKeys []string, args ...interface{}) string {
+	v := data.I18n("invalid")
+	for _, fieldKey := range fieldKeys {
+		v += data.I18n(fieldKey)
+	}
 	if len(args) > 0 {
 		v = fmt.Sprintf("%s: %v", v, args)
 	}
@@ -402,10 +410,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.RequirementOnly.InclusionIssueIDs = ids
 				case fieldCustomFields:
-					model.RequirementOnly.CustomFields = append(model.RequirementOnly.CustomFields, vars.ExcelCustomField{
-						Title: parts[2],
-						Value: cell.Value,
-					})
+					parseCustomField(data, model, parts[2], cell.Value, &model.RequirementOnly.CustomFields)
 				}
 			case fieldTaskOnly:
 				switch groupField {
@@ -417,10 +422,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.TaskOnly.TaskType = taskType
 				case fieldCustomFields:
-					model.TaskOnly.CustomFields = append(model.TaskOnly.CustomFields, vars.ExcelCustomField{
-						Title: parts[2],
-						Value: cell.Value,
-					})
+					parseCustomField(data, model, parts[2], cell.Value, &model.TaskOnly.CustomFields)
 				}
 			case fieldBugOnly:
 				switch groupField {
@@ -429,7 +431,13 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 				case fieldSource:
 					source, err := parseStringSource(data, cell.Value)
 					if err != nil {
-						data.AppendImportError(model.Common.LineNum, i18nErrV)
+						data.AppendImportError(model.Common.LineNum, getI18nErr2(data,
+							[]string{
+								makeI18nKey(i18nKeyPrefixOfIssueType, model.Common.IssueType.String()),
+								fieldCustomFields,
+								parts[2],
+							},
+							cell.Value))
 						continue
 					}
 					model.BugOnly.Source = source
@@ -445,10 +453,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.BugOnly.ReopenCount = int32(reopenCount)
 				case fieldCustomFields:
-					model.BugOnly.CustomFields = append(model.BugOnly.CustomFields, vars.ExcelCustomField{
-						Title: parts[2],
-						Value: cell.Value,
-					})
+					parseCustomField(data, model, parts[2], cell.Value, &model.BugOnly.CustomFields)
 				}
 			}
 		}
@@ -973,6 +978,27 @@ func parseStringSource(data *vars.DataForFulfill, input string) (string, error) 
 	}
 	// empty if not found
 	return "", nil
+}
+
+func parseCustomField(data *vars.DataForFulfill, model *vars.IssueSheetModel, cfName, cfValue string, appendable *[]vars.ExcelCustomField) {
+	if cfValue == "" {
+		return
+	}
+	cf := vars.ExcelCustomField{
+		Title: cfName,
+		Value: cfValue,
+	}
+	if err := sheet_customfield.CheckCustomFieldValue(data, model.Common.IssueType, cf.Title, cf.Value); err != nil {
+		data.AppendImportError(model.Common.LineNum, getI18nErr2(data,
+			[]string{
+				makeI18nKey(i18nKeyPrefixOfIssueType, model.Common.IssueType.String()),
+				fieldCustomFields,
+				cfName,
+			},
+			cfValue))
+		return
+	}
+	*appendable = append(*appendable, cf)
 }
 
 // removeEmptySheetRows remove if row if all cells are empty

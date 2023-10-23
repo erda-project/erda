@@ -44,9 +44,9 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 		&sheet_baseinfo.Handler{},
 		&sheet_user.Handler{},
 		&sheet_label.Handler{},
-		&sheet_customfield.Handler{},
 		&sheet_iteration.Handler{},
 		&sheet_state.Handler{},
+		&sheet_customfield.Handler{},
 		&sheet_issue.Handler{},
 	}
 
