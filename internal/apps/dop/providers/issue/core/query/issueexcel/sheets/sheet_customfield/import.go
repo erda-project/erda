@@ -190,8 +190,8 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 			Property:     nil,
 			IdentityInfo: nil,
 		}
-		var cfsNeedHandled []vars.ExcelCustomField
-		cfType, err := GetIssuePropertyEnumTypeByIssueType(pb.IssueTypeEnum_Type(pb.IssueTypeEnum_Type_value[issue.Type]))
+		cfsNeedHandled := getCustomFieldsByIssueType(model)
+		cfType, err := GetIssuePropertyEnumTypeByIssueType(model.Common.IssueType)
 		if err != nil {
 			return fmt.Errorf("invalid issue type, issue type: %s", issue.Type)
 		}
@@ -218,7 +218,7 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 				Relation:                 property.Relation,
 				Index:                    property.Index,
 				EnumeratedValues:         property.EnumeratedValues,
-				Values:                   property.Values,
+				Values:                   nil,
 				RelatedIssue:             property.RelatedIssue, // related issue type
 				ArbitraryValue:           nil,
 				PropertyEnumeratedValues: nil,
@@ -324,4 +324,17 @@ func MustGetIssuePropertyEnumTypeByIssueType(issueType pb.IssueTypeEnum_Type) pb
 		panic(err)
 	}
 	return t
+}
+
+func getCustomFieldsByIssueType(model *vars.IssueSheetModel) []vars.ExcelCustomField {
+	switch model.Common.IssueType {
+	case pb.IssueTypeEnum_REQUIREMENT:
+		return model.RequirementOnly.CustomFields
+	case pb.IssueTypeEnum_TASK:
+		return model.TaskOnly.CustomFields
+	case pb.IssueTypeEnum_BUG:
+		return model.BugOnly.CustomFields
+	default:
+		return nil
+	}
 }
