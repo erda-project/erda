@@ -85,16 +85,17 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 			info.Add(uuid, row[i])
 		}
 	}
-	// decode map to models
-	models, err := decodeMapToIssueSheetModel(data, info)
-	if err != nil {
-		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
-	}
-	data.ImportOnly.Sheets.Must.IssueInfo = models
+	data.ImportOnly.Sheets.Must.RawIssueInfo = info
 	return nil
 }
 
 func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
+	// decode map to models
+	models, err := decodeMapToIssueSheetModel(data, data.ImportOnly.Sheets.Must.RawIssueInfo.(IssueSheetModelCellInfoByColumns))
+	if err != nil {
+		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
+	}
+	data.ImportOnly.Sheets.Must.IssueInfo = models
 	return nil
 }
 
