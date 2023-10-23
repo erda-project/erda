@@ -410,7 +410,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.RequirementOnly.InclusionIssueIDs = ids
 				case fieldCustomFields:
-					parseCustomField(data, model, parts[2], cell.Value, &model.RequirementOnly.CustomFields)
+					parseCustomField(data, pb.IssueTypeEnum_REQUIREMENT, model, parts[2], cell.Value, &model.RequirementOnly.CustomFields)
 				}
 			case fieldTaskOnly:
 				switch groupField {
@@ -422,7 +422,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.TaskOnly.TaskType = taskType
 				case fieldCustomFields:
-					parseCustomField(data, model, parts[2], cell.Value, &model.TaskOnly.CustomFields)
+					parseCustomField(data, pb.IssueTypeEnum_TASK, model, parts[2], cell.Value, &model.TaskOnly.CustomFields)
 				}
 			case fieldBugOnly:
 				switch groupField {
@@ -453,7 +453,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.BugOnly.ReopenCount = int32(reopenCount)
 				case fieldCustomFields:
-					parseCustomField(data, model, parts[2], cell.Value, &model.BugOnly.CustomFields)
+					parseCustomField(data, pb.IssueTypeEnum_BUG, model, parts[2], cell.Value, &model.BugOnly.CustomFields)
 				}
 			}
 		}
@@ -980,8 +980,11 @@ func parseStringSource(data *vars.DataForFulfill, input string) (string, error) 
 	return "", nil
 }
 
-func parseCustomField(data *vars.DataForFulfill, model *vars.IssueSheetModel, cfName, cfValue string, appendable *[]vars.ExcelCustomField) {
+func parseCustomField(data *vars.DataForFulfill, expectIssueType pb.IssueTypeEnum_Type, model *vars.IssueSheetModel, cfName, cfValue string, appendable *[]vars.ExcelCustomField) {
 	if cfValue == "" {
+		return
+	}
+	if model.Common.IssueType != expectIssueType { // skip check if issue type mismatch
 		return
 	}
 	cf := vars.ExcelCustomField{
@@ -993,6 +996,7 @@ func parseCustomField(data *vars.DataForFulfill, model *vars.IssueSheetModel, cf
 			[]string{
 				makeI18nKey(i18nKeyPrefixOfIssueType, model.Common.IssueType.String()),
 				fieldCustomFields,
+				"-",
 				cfName,
 			},
 			cfValue))
