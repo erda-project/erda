@@ -21,9 +21,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mohae/deepcopy"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets/sheet_issue"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -62,6 +65,34 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	return nil
 }
 
+func (h *Handler) Precheck(data *vars.DataForFulfill) {
+	checkIssueSheetModelStates(data, data.ImportOnly.Sheets.Optional.StateInfo)
+}
+
+func checkIssueSheetModelStates(data *vars.DataForFulfill, originalProjectStateInfo *vars.StateInfo) {
+	allStateMapByTypeAndName := deepcopy.Copy(data.StateMapByTypeAndName).(map[pb.IssueTypeEnum_Type]map[string]int64)
+	// add original states
+	for issueType, originalStates := range getOriginalStateByTypeAndName(originalProjectStateInfo) {
+		if _, ok := allStateMapByTypeAndName[issueType]; !ok {
+			allStateMapByTypeAndName[issueType] = make(map[string]int64)
+		}
+		for stateName, state := range originalStates {
+			allStateMapByTypeAndName[issueType][stateName] = int64(state.ID)
+		}
+	}
+	// check state exists
+	for _, model := range data.ImportOnly.Sheets.Must.IssueInfo {
+		stateName := model.Common.State
+		if stateName == "" {
+			continue
+		}
+		if _, ok := allStateMapByTypeAndName[model.Common.IssueType][model.Common.State]; !ok {
+			data.AppendImportError(model.Common.LineNum, sheet_issue.GetI18nErr(data, sheet_issue.FieldState, stateName))
+			continue
+		}
+	}
+}
+
 func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	// sync state
 	if err := syncState(data, data.ImportOnly.Sheets.Optional.StateInfo); err != nil {
@@ -79,14 +110,7 @@ func syncState(data *vars.DataForFulfill, originalProjectStatesInfo *vars.StateI
 	// update data.StateMapByID
 
 	// 分事项类型，每个类型比较状态的差异，只创建，不删除，因为新项目可能有新的状态
-	originalStateByTypeAndName := make(map[pb.IssueTypeEnum_Type]map[string]dao.IssueState)
-	for _, state := range originalProjectStatesInfo.States {
-		issueType := pb.IssueTypeEnum_Type(pb.IssueTypeEnum_Type_value[state.IssueType])
-		if _, ok := originalStateByTypeAndName[issueType]; !ok {
-			originalStateByTypeAndName[issueType] = make(map[string]dao.IssueState)
-		}
-		originalStateByTypeAndName[issueType][state.Name] = state
-	}
+	originalStateByTypeAndName := getOriginalStateByTypeAndName(originalProjectStatesInfo)
 	var originalStateNeedCreate []dao.IssueState
 	originalStateNeedCreateMap := make(map[string]dao.IssueState) // key: issueType + stateName
 	// 遍历原项目状态，找到需要新增的状态
@@ -97,25 +121,6 @@ func syncState(data *vars.DataForFulfill, originalProjectStatesInfo *vars.StateI
 				originalStateNeedCreateMap[issueType.String()+stateName] = state
 			}
 		}
-	}
-	// 遍历 issue 里的状态，找到只在 issue sheet 里声明的新状态，包括新老格式
-	for _, issueSheetModel := range data.ImportOnly.Sheets.Must.IssueInfo {
-		// 如果 state 已经在当前项目存在，跳过
-		if _, ok := data.StateMapByTypeAndName[issueSheetModel.Common.IssueType][issueSheetModel.Common.State]; ok {
-			continue
-		}
-		// 如果 state 已经在 originalStateNeedCreateMap 中存在，跳过
-		if _, ok := originalStateNeedCreateMap[issueSheetModel.Common.IssueType.String()+issueSheetModel.Common.State]; ok {
-			continue
-		}
-		// 确认是一个新的状态，则需要新增
-		newState := dao.IssueState{
-			IssueType: issueSheetModel.Common.IssueType.String(),
-			Name:      issueSheetModel.Common.State,
-			Belong:    tryToGuessNewStateBelong(issueSheetModel.Common.State, issueSheetModel).String(),
-		}
-		originalStateNeedCreate = append(originalStateNeedCreate, newState)
-		originalStateNeedCreateMap[issueSheetModel.Common.IssueType.String()+issueSheetModel.Common.State] = newState
 	}
 	// 新增状态
 	for i, stateNeedCreate := range originalStateNeedCreate {
@@ -164,6 +169,21 @@ func syncState(data *vars.DataForFulfill, originalProjectStatesInfo *vars.StateI
 	data.StateMapByTypeAndName = stateMapByTypeAndName
 
 	return nil
+}
+
+func getOriginalStateByTypeAndName(originalProjectStatesInfo *vars.StateInfo) map[pb.IssueTypeEnum_Type]map[string]dao.IssueState {
+	if originalProjectStatesInfo == nil {
+		return nil
+	}
+	originalStateByTypeAndName := make(map[pb.IssueTypeEnum_Type]map[string]dao.IssueState)
+	for _, state := range originalProjectStatesInfo.States {
+		issueType := pb.IssueTypeEnum_Type(pb.IssueTypeEnum_Type_value[state.IssueType])
+		if _, ok := originalStateByTypeAndName[issueType]; !ok {
+			originalStateByTypeAndName[issueType] = make(map[string]dao.IssueState)
+		}
+		originalStateByTypeAndName[issueType][state.Name] = state
+	}
+	return originalStateByTypeAndName
 }
 
 // sortRelationsIntoBelongs

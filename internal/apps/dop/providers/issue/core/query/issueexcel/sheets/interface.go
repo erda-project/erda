@@ -26,8 +26,13 @@ type Namer interface {
 type Importer interface {
 	Namer
 	DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error
+	ImporterPrecheck
 	ImporterBeforeCreateIssues
 	ImporterAfterCreateIssues
+}
+
+type ImporterPrecheck interface {
+	Precheck(data *vars.DataForFulfill)
 }
 
 type ImporterBeforeCreateIssues interface {
@@ -62,5 +67,6 @@ func NewRowsForExport(rows excel.Rows, sheetHandlers ...excel.SheetHandler) *Row
 
 type DefaultImporter struct{}
 
+func (d *DefaultImporter) Precheck(data *vars.DataForFulfill)                 {}
 func (d *DefaultImporter) BeforeCreateIssues(data *vars.DataForFulfill) error { return nil }
 func (d *DefaultImporter) AfterCreateIssues(data *vars.DataForFulfill) error  { return nil }

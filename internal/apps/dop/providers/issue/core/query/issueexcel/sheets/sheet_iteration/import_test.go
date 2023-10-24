@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
@@ -38,4 +39,29 @@ func Test_getOrderedIterationsTitles(t *testing.T) {
 
 	order := getOrderedIterationsTitles(m)
 	assert.Equal(t, []string{"i2", "i3", "i1", "i4"}, order)
+}
+
+func Test_checkIssueSheetModelIterations(t *testing.T) {
+	data := &vars.DataForFulfill{
+		ImportOnly: vars.DataForFulfillImportOnly{
+			Sheets: vars.SheetsInfo{
+				Must: vars.MustSheetsInfo{
+					IssueInfo: []vars.IssueSheetModel{
+						{
+							Common: vars.IssueSheetModelCommon{
+								IterationName: "not exist",
+							},
+						},
+					},
+				},
+			},
+		},
+		IterationMapByID: map[int64]*dao.Iteration{
+			-1: {Title: "待规划"},
+		},
+	}
+	model := &data.ImportOnly.Sheets.Must.IssueInfo[0]
+	assert.Equal(t, "not exist", model.Common.IterationName)
+	checkIssueSheetModelIterations(data)
+	assert.Equal(t, "待规划", model.Common.IterationName)
 }
