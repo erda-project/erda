@@ -27,7 +27,7 @@ const (
 	fieldIssueType          = "IssueType"
 	fieldIssueTitle         = "IssueTitle"
 	fieldContent            = "Content"
-	fieldState              = "State"
+	FieldState              = "State"
 	fieldPriority           = "Priority"
 	fieldComplexity         = "Complexity"
 	fieldSeverity           = "Severity"
@@ -69,7 +69,7 @@ var excelFields = []string{
 	fieldIssueType,
 	fieldIssueTitle,
 	fieldContent,
-	fieldState,
+	FieldState,
 	fieldPriority,
 	fieldComplexity,
 	fieldSeverity,

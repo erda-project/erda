@@ -109,8 +109,7 @@ type (
 		Optional OptionalSheetsInfo
 	}
 	MustSheetsInfo struct {
-		RawIssueInfo interface{}
-		IssueInfo    []IssueSheetModel
+		IssueInfo []IssueSheetModel
 	}
 	OptionalSheetsInfo struct {
 		BaseInfo        *DataForFulfillImportOnlyBaseInfo
