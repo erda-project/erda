@@ -92,7 +92,7 @@ func convertOldIssueSheet(data *vars.DataForFulfill, sheet [][]string) ([]vars.I
 			case 2: // Content
 				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldContent), s)
 			case 3: // State
-				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldState), s)
+				addM(m, NewIssueSheetColumnUUID(fieldCommon, FieldState), s)
 			case 4: // Creator
 				addM(m, NewIssueSheetColumnUUID(fieldCommon, fieldCreatorName), s)
 			case 5: // Assignee

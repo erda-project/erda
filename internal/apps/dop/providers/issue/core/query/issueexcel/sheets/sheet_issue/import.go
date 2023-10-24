@@ -86,17 +86,17 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 			info.Add(uuid, row[i])
 		}
 	}
-	data.ImportOnly.Sheets.Must.RawIssueInfo = info
-	return nil
-}
-
-func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	// decode map to models
-	models, err := decodeMapToIssueSheetModel(data, data.ImportOnly.Sheets.Must.RawIssueInfo.(IssueSheetModelCellInfoByColumns))
+	// 只校验数据格式，不做关联判断，关联判断由具体 sheet handler 处理
+	models, err := decodeMapToIssueSheetModel(data, info)
 	if err != nil {
 		return fmt.Errorf("failed to decode issue sheet, err: %v", err)
 	}
 	data.ImportOnly.Sheets.Must.IssueInfo = models
+	return nil
+}
+
+func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	return nil
 }
 
@@ -180,7 +180,7 @@ func (h *Handler) AppendErrorColumn(data *vars.DataForFulfill, sheet *excel.Shee
 	_ = widthHandler(sheet.XlsxSheet)
 }
 
-func getI18nErr(data *vars.DataForFulfill, fieldKey string, args ...interface{}) string {
+func GetI18nErr(data *vars.DataForFulfill, fieldKey string, args ...interface{}) string {
 	return getI18nErr2(data, []string{fieldKey}, args...)
 }
 
@@ -212,7 +212,7 @@ func getAvailableIssueIDs(data *vars.DataForFulfill, idColumn excel.Column) (map
 		if cell.Value != "" {
 			id, err := strconv.ParseUint(cell.Value, 10, 64)
 			if err != nil {
-				data.AppendImportError(lineNum, getI18nErr(data, fieldID, cell.Value))
+				data.AppendImportError(lineNum, GetI18nErr(data, fieldID, cell.Value))
 				continue
 			}
 			availableIDsMap[int64(id)] = struct{}{}
@@ -260,7 +260,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 			model.Common.LineNum = i + (uuidPartsMustLength + 1) // Excel line num from 1
 			groupType := parts[0]
 			groupField := parts[1]
-			i18nErrV := getI18nErr(data, groupField, cell.Value)
+			i18nErrV := GetI18nErr(data, groupField, cell.Value)
 			switch groupType {
 			case fieldCommon:
 				switch groupField {
@@ -276,12 +276,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					}
 					model.Common.ID = id
 				case fieldIterationName:
-					iterationName, err := parseIterationName(data, cell.Value)
-					if err != nil {
-						data.AppendImportError(model.Common.LineNum, i18nErrV)
-						continue
-					}
-					model.Common.IterationName = iterationName
+					model.Common.IterationName = cell.Value
 				case fieldIssueType:
 					issueType, err := parseStringIssueType(data, cell.Value)
 					if err != nil {
@@ -293,12 +288,8 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					model.Common.IssueTitle = cell.Value
 				case fieldContent:
 					model.Common.Content = cell.Value
-				case fieldState:
+				case FieldState:
 					model.Common.State = cell.Value
-					if _, ok := data.StateMapByTypeAndName[model.Common.IssueType][model.Common.State]; !ok {
-						data.AppendImportError(model.Common.LineNum, i18nErrV)
-						continue
-					}
 				case fieldPriority:
 					priority, err := parseStringPriority(data, cell.Value)
 					if err != nil {
@@ -378,7 +369,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 						if id != nil {
 							// check id is available
 							if _, ok := availableIDsMap[*id]; !ok {
-								data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldConnectionIssueIDs, idStr))
+								data.AppendImportError(model.Common.LineNum, GetI18nErr(data, fieldConnectionIssueIDs, idStr))
 								continue
 							}
 							ids = append(ids, *id)
@@ -396,13 +387,13 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 					for _, idStr := range vars.ParseStringSliceByComma(cell.Value) {
 						id, err := parseStringIssueID(idStr)
 						if err != nil {
-							data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldInclusionIssueIDs, idStr))
+							data.AppendImportError(model.Common.LineNum, GetI18nErr(data, fieldInclusionIssueIDs, idStr))
 							continue
 						}
 						if id != nil {
 							// check id is available
 							if _, ok := availableIDsMap[*id]; !ok {
-								data.AppendImportError(model.Common.LineNum, getI18nErr(data, fieldInclusionIssueIDs, idStr))
+								data.AppendImportError(model.Common.LineNum, GetI18nErr(data, fieldInclusionIssueIDs, idStr))
 								continue
 							}
 							ids = append(ids, *id)
@@ -820,16 +811,6 @@ func getUserRelatedDropList(data *vars.DataForFulfill) []string {
 		dp = append(dp, member.Nick)
 	}
 	return strutil.DedupSlice(dp, true)
-}
-
-func parseIterationName(data *vars.DataForFulfill, input string) (string, error) {
-	if input != "" {
-		if _, ok := data.IterationMapByName[input]; ok {
-			return input, nil
-		}
-	}
-	defaultIterationName := data.IterationMapByID[-1].Title
-	return defaultIterationName, nil
 }
 
 func parseStringIssueType(data *vars.DataForFulfill, input string) (*pb.IssueTypeEnum_Type, error) {

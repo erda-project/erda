@@ -18,9 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"time"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
@@ -55,6 +53,10 @@ func (h *Handler) DecodeSheet(data *vars.DataForFulfill, s *excel.Sheet) error {
 	return nil
 }
 
+func (h *Handler) Precheck(data *vars.DataForFulfill) {
+	checkIssueSheetModelIterations(data)
+}
+
 func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	// create iterations if not exists before issue create
 	if err := createIterationsIfNotExistForImport(data, data.ImportOnly.Sheets.Optional.IterationInfo); err != nil {
@@ -63,15 +65,37 @@ func (h *Handler) BeforeCreateIssues(data *vars.DataForFulfill) error {
 	return nil
 }
 
+func checkIssueSheetModelIterations(data *vars.DataForFulfill) {
+	for i := range data.ImportOnly.Sheets.Must.IssueInfo {
+		model := &data.ImportOnly.Sheets.Must.IssueInfo[i]
+		iterationName := model.Common.IterationName
+		// check in current project
+		if _, ok := data.IterationMapByName[iterationName]; ok {
+			continue
+		}
+		// check in iteration sheet (waiting to create)
+		for _, iteration := range data.ImportOnly.Sheets.Optional.IterationInfo {
+			if iteration.Title == iterationName {
+				continue
+			}
+		}
+		// check as default iteration
+		switch iterationName {
+		case "待规划", "待办事项", "待处理":
+			continue
+		}
+		// use default if not found
+		defaultIterationName := data.IterationMapByID[-1].Title
+		model.Common.IterationName = defaultIterationName
+	}
+}
+
 // createIterationsIfNotExistForImport create iterations if not exist for import.
 // check by name:
 // - if not exist, create new iteration
 // - if exist, do not update, take the existing one as the standard
 func createIterationsIfNotExistForImport(data *vars.DataForFulfill, originalProjectIterations []*dao.Iteration) error {
 	iterationsNeedCreate := make(map[string]*dao.Iteration) // only created sheet related iterations
-	now := time.Now()
-	currentDayBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	currentDayEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
 	for _, originalProjectIteration := range originalProjectIterations {
 		originalProjectIteration := originalProjectIteration
 		_, ok := data.IterationMapByName[originalProjectIteration.Title]
@@ -83,27 +107,6 @@ func createIterationsIfNotExistForImport(data *vars.DataForFulfill, originalProj
 		}
 		// create
 		iterationsNeedCreate[originalProjectIteration.Title] = originalProjectIteration
-	}
-	for _, issueSheetModel := range data.ImportOnly.Sheets.Must.IssueInfo {
-		_, ok := data.IterationMapByName[issueSheetModel.Common.IterationName]
-		if ok {
-			continue
-		}
-		switch issueSheetModel.Common.IterationName {
-		case "待规划", "待办事项", "待处理":
-			continue
-		}
-		newIteration := dao.Iteration{
-			ProjectID:  data.ProjectID,
-			Title:      issueSheetModel.Common.IterationName,
-			State:      apistructs.IterationStateUnfiled,
-			StartedAt:  &currentDayBegin,
-			FinishedAt: &currentDayEnd,
-		}
-		if _, ok := iterationsNeedCreate[newIteration.Title]; ok {
-			continue
-		}
-		iterationsNeedCreate[newIteration.Title] = &newIteration
 	}
 	// create by order
 	order := getOrderedIterationsTitles(iterationsNeedCreate)

@@ -132,7 +132,7 @@ func genDropList(data *vars.DataForFulfill, fieldName string, customFieldName st
 		return getIterationDropList(data)
 	case fieldIssueType:
 		return getFieldIssueTypeDropList(data)
-	case fieldState:
+	case FieldState:
 		var dp []string
 		for issueType, v := range data.StateMapByTypeAndName {
 			if strutil.InSlice(issueType, supportedIssueTypes) {

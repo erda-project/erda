@@ -61,30 +61,34 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 			return fmt.Errorf("failed to docode sheet %q, err: %v", h.SheetName(), err)
 		}
 	}
+	// check import error after precheck together
 
+	// 2. precheck
+	// - check issues (relation, user, iteration, state, ...)
+	for _, h := range handlers {
+		h.Precheck(data)
+	}
 	if checkImportError(data, df, handlers) == signalStop {
 		return nil
 	}
 
-	// 2. before create issues
+	// 3. before create issues
 	// - add member to project
 	// - create label
 	// - create custom-field
 	// - create iteration
 	// - create state
-	// - check issues (relation, user, iteration, state, ...)
 	for _, h := range handlers {
 		// all handle can do sth before create issue, even if sheet not exist
 		if err := h.BeforeCreateIssues(data); err != nil {
 			return fmt.Errorf("failed to do before create issue, sheet: %q, err: %v", h.SheetName(), err)
 		}
 	}
-
 	if checkImportError(data, df, handlers) == signalStop {
 		return nil
 	}
 
-	// 3. create issues
+	// 4. create issues
 	for _, h := range handlers {
 		hh, ok := h.(sheets.ImporterCreateIssues)
 		if !ok {
@@ -95,7 +99,7 @@ func ImportFile(r io.Reader, data *vars.DataForFulfill) error {
 		}
 	}
 
-	// 4. after create issues
+	// 5. after create issues
 	// - create relation: label <-> issue
 	// - create relation: custom-field <-> issue
 	// - create relation: issue <-> issue
