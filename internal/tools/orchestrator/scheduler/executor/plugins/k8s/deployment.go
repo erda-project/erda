@@ -1431,12 +1431,12 @@ func setPodLabelsFromService(hasHostPath bool, labels map[string]string, podLabe
 	for key, value := range labels {
 		if len(value) > 63 {
 			logrus.Warnf("Label key: %s with Invalid value: %s: must be no more than 63 characters", key, value)
-			logrus.Warnf("Label key: %s with value: %s will not convert to j8s label.", key, value)
+			logrus.Warnf("Label key: %s with value: %s will not convert to kubernetes label.", key, value)
 			continue
 		}
 
 		if errs := validation.IsValidLabelValue(value); len(errs) > 0 {
-			logrus.Warnf("Label key: %s with invalid value: %s will not convert to j8s label.", key, value)
+			logrus.Warnf("Label key: %s with invalid value: %s will not convert to kubernetes label.", key, value)
 			continue
 		}
 
