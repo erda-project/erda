@@ -44,7 +44,9 @@ func ParseDiceYmlJobBinds(diceYmlJob *diceyml.Job) ([]apistructs.Bind, error) {
 func GenerateTaskCommonBinds(mountPoint string) []apistructs.Bind {
 
 	const (
-		dockerSock = "/var/run/docker.sock"
+		dockerSock            = "/var/run/docker.sock"
+		defaultContainerdSock = "/run/containerd/containerd.sock"
+		erdaContainerdSock    = "/data/containerd/run/containerd.sock"
 	)
 
 	var binds []apistructs.Bind
@@ -53,7 +55,17 @@ func GenerateTaskCommonBinds(mountPoint string) []apistructs.Bind {
 		ContainerPath: dockerSock,
 		ReadOnly:      true,
 	}
-	binds = append(binds, dockerSockBind)
+	defaultContainerdSockBind := apistructs.Bind{
+		HostPath:      defaultContainerdSock,
+		ContainerPath: defaultContainerdSock,
+		ReadOnly:      true,
+	}
+	erdaContainerdSockBind := apistructs.Bind{
+		HostPath:      erdaContainerdSock,
+		ContainerPath: erdaContainerdSock,
+		ReadOnly:      true,
+	}
+	binds = append(binds, dockerSockBind, defaultContainerdSockBind, erdaContainerdSockBind)
 
 	storageURL := conf.StorageURL()
 	URL, _ := url.Parse(storageURL)
