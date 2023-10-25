@@ -53,6 +53,9 @@ func Test_decodeMapToIssueSheetModel(t *testing.T) {
 				"cf-1": {},
 			},
 		},
+		ImportOnly: vars.DataForFulfillImportOnly{
+			AvailableIssueIDsMap: map[int64]uint64{},
+		},
 	}
 	info := NewIssueSheetModelCellInfoByColumns()
 	info.Add(autoCompleteUUID("Common", "ID"), "1")

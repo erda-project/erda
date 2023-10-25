@@ -80,6 +80,7 @@ type DataForFulfillImportOnly struct {
 	IsOldExcelFormat bool
 
 	CurrentProjectIssueMap map[uint64]bool
+	AvailableIssueIDsMap   map[int64]uint64 // key: issue id, maybe negative for line num, value: 0 means exists, >=1 means truly issue id
 
 	OrgMemberIDByUserKey     map[string]string // key: (both desensitized and raw) phone / email / nick / name / userid, value: userID
 	ProjectMemberIDByUserKey map[string]string // key: (both desensitized and raw) phone / email / nick / name / userid, value: userID

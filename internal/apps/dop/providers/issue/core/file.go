@@ -341,6 +341,7 @@ func (i *IssueService) createDataForFulfillForImport(req *pb.ImportExcelIssueReq
 		return nil, fmt.Errorf("failed to page current project issues, err: %v", err)
 	}
 	data.ImportOnly.CurrentProjectIssueMap = make(map[uint64]bool)
+	data.ImportOnly.AvailableIssueIDsMap = make(map[int64]uint64)
 	for _, current := range currentProjectIssues {
 		current := current
 		data.ImportOnly.CurrentProjectIssueMap[current.ID] = true
