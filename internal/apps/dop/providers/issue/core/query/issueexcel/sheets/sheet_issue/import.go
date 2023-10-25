@@ -202,12 +202,11 @@ func parseI18nTextToExcelFieldKey(text string) string {
 	return text
 }
 
-func getAvailableIssueIDs(data *vars.DataForFulfill, idColumn excel.Column) (map[int64]struct{}, error) {
-	availableIDsMap := make(map[int64]struct{})
+func getAvailableIssueIDs(data *vars.DataForFulfill, idColumn excel.Column) {
 	for i, cell := range idColumn {
 		// add line num
 		lineNum := i + (uuidPartsMustLength + 1)
-		availableIDsMap[-int64(lineNum)] = struct{}{}
+		data.ImportOnly.AvailableIssueIDsMap[-int64(lineNum)] = 0
 		// add cell value if have
 		if cell.Value != "" {
 			id, err := strconv.ParseUint(cell.Value, 10, 64)
@@ -215,14 +214,13 @@ func getAvailableIssueIDs(data *vars.DataForFulfill, idColumn excel.Column) (map
 				data.AppendImportError(lineNum, GetI18nErr(data, fieldID, cell.Value))
 				continue
 			}
-			availableIDsMap[int64(id)] = struct{}{}
+			data.ImportOnly.AvailableIssueIDsMap[int64(id)] = 0
 		}
 	}
 	// add current project issue ids
 	for id := range data.ImportOnly.CurrentProjectIssueMap {
-		availableIDsMap[int64(id)] = struct{}{}
+		data.ImportOnly.AvailableIssueIDsMap[int64(id)] = id
 	}
-	return availableIDsMap, nil
 }
 
 // decodeMapToIssueSheetModel
@@ -243,7 +241,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 		break
 	}
 	// get all ids for id check use
-	availableIDsMap, err := getAvailableIssueIDs(data, m[NewIssueSheetColumnUUID(fieldCommon, fieldID, fieldID)])
+	getAvailableIssueIDs(data, m[NewIssueSheetColumnUUID(fieldCommon, fieldID, fieldID)])
 	if err != nil {
 		return nil, fmt.Errorf("failed to get available issue ids, err: %v", err)
 	}
@@ -368,7 +366,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 						}
 						if id != nil {
 							// check id is available
-							if _, ok := availableIDsMap[*id]; !ok {
+							if _, ok := data.ImportOnly.AvailableIssueIDsMap[*id]; !ok {
 								data.AppendImportError(model.Common.LineNum, GetI18nErr(data, fieldConnectionIssueIDs, idStr))
 								continue
 							}
@@ -392,7 +390,7 @@ func decodeMapToIssueSheetModel(data *vars.DataForFulfill, info IssueSheetModelC
 						}
 						if id != nil {
 							// check id is available
-							if _, ok := availableIDsMap[*id]; !ok {
+							if _, ok := data.ImportOnly.AvailableIssueIDsMap[*id]; !ok {
 								data.AppendImportError(model.Common.LineNum, GetI18nErr(data, fieldInclusionIssueIDs, idStr))
 								continue
 							}
@@ -522,7 +520,6 @@ func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 			fmt.Println(string(debug.Stack()))
 		}
 	}()
-	idMapping := make(map[int64]uint64) // key: old id(can be negative for Excel Line Num, like L5), value: new id
 	issueModelMapByIssueID = make(map[uint64]*vars.IssueSheetModel)
 	var issues []*issuedao.Issue
 	for _, model := range issueSheetModels {
@@ -584,17 +581,19 @@ func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 		issues = append(issues, &issue)
 		issueModelMapByIssueID[issue.ID] = &model
 		// got new issue id here, set id mapping
-		idMapping[int64(model.Common.ID)] = issue.ID
-		idMapping[-int64(model.Common.LineNum)] = issue.ID // excel line num, star from 1
+		if model.Common.ID > 0 {
+			data.ImportOnly.AvailableIssueIDsMap[int64(model.Common.ID)] = issue.ID
+		}
+		data.ImportOnly.AvailableIssueIDsMap[-int64(model.Common.LineNum)] = issue.ID // excel line num, star from 1
 	}
 	// all id mapping done here, update old ids
 	for i := range issueSheetModels {
 		model := issueSheetModels[i]
 		// id
-		model.Common.ID = idMapping[int64(model.Common.ID)]
+		model.Common.ID = data.ImportOnly.AvailableIssueIDsMap[int64(model.Common.ID)]
 		// connection issue id
 		for j := range model.Common.ConnectionIssueIDs {
-			newID, ok := idMapping[model.Common.ConnectionIssueIDs[j]]
+			newID, ok := data.ImportOnly.AvailableIssueIDsMap[model.Common.ConnectionIssueIDs[j]]
 			if !ok {
 				return nil, nil, fmt.Errorf("invalid connection issue id: %d", model.Common.ConnectionIssueIDs[j])
 			}
@@ -602,7 +601,7 @@ func createOrUpdateIssues(data *vars.DataForFulfill, issueSheetModels []vars.Iss
 		}
 		// inclusion issue id
 		for j := range model.RequirementOnly.InclusionIssueIDs {
-			newID, ok := idMapping[model.RequirementOnly.InclusionIssueIDs[j]]
+			newID, ok := data.ImportOnly.AvailableIssueIDsMap[model.RequirementOnly.InclusionIssueIDs[j]]
 			if !ok {
 				return nil, nil, fmt.Errorf("invalid inclusion issue id: %d", model.RequirementOnly.InclusionIssueIDs[j])
 			}
