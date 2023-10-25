@@ -31,7 +31,7 @@ func SetAddonLabelsAndAnnotations(service apistructs.Service, labels, annotation
 			continue
 		} else {
 			if errs := validation.IsValidLabelValue(lv); len(errs) > 0 {
-				logrus.Warnf("Label key: %s with invalid value: %s will not convert to j8s label.", lk, lv)
+				logrus.Warnf("Label key: %s with invalid value: %s will not convert to kubernetes label.", lk, lv)
 				continue
 			}
 			labels[lk] = lv
