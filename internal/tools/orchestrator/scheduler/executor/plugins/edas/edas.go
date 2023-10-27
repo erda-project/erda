@@ -251,7 +251,7 @@ func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.Stat
 		// check k8s deployment status
 		deployStatus, err := e.getDeploymentStatus(appName)
 		if err != nil {
-			l.Errorf("get deployment from k8s error: %+v", err)
+			l.Errorf("get app %s deployment from k8s error: %+v", appName, err)
 
 			runtime.Services[i].StatusDesc = rtStatusDesc
 			isReady = false
@@ -354,6 +354,7 @@ func (e *EDAS) Update(ctx context.Context, specObj interface{}) (interface{}, er
 
 	// Get the deploy list from k8s API
 	l.Debugf("update runtime, new runtime: %+v", newRun)
+
 	group := utils.CombineEDASAppGroup(newRun.Type, newRun.ID)
 	if err := e.wrapClientSet.GetK8sDeployList(group, &oldRun.Services); err != nil {
 		l.Debugf("get deploy from k8s error: %+v", err)

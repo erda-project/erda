@@ -29,6 +29,11 @@ const (
 	EDAS_SLB_EXTERNAL SlbType = "internet"
 )
 
+const (
+	// EDASAppIDLabel TODO: instead of EDAS API
+	EDASAppIDLabel = "edas.appid"
+)
+
 // ChangeOrderStatus change orderId status
 type ChangeOrderStatus int
 
@@ -115,6 +120,8 @@ type ServiceSpec struct {
 	Readiness string `json:"readiness"`
 	// e.g. {"annotation-name-1":"annotation-value-1","annotation-name-2":"annotation-value-2"}
 	Annotations string `json:"annotations"`
+	// e.g. {"label-name-1":"label-value-1","label-name-2":"label-value-2"}
+	//Labels string `json:"labels"`
 }
 
 // ByCreateTime change order for sort
