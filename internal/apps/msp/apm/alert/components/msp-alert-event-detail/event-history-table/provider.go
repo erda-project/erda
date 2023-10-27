@@ -217,7 +217,7 @@ func (p *provider) formatTriggerDuration(colMap map[string]int, row *metricpb.Ro
 func (p *provider) getTriggerValueLabels(colMap map[string]int, row *metricpb.Row) commodel.Labels {
 	var labels = commodel.Labels{}
 	index, ok := colMap["alert_trigger_functions::field"]
-	if !ok {
+	if !ok || index >= len(row.Values) {
 		return labels
 	}
 
