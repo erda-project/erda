@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/mcuadros/go-version"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
@@ -234,4 +235,15 @@ func TestBuildMysqlOperatorServiceItem(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+}
+
+func TestRedisVersionCompare(t *testing.T) {
+	lowRedisVersion := "3.2.12"
+	assert.Equal(t, false, version.Compare(lowRedisVersion, "6.2.10", ">="))
+
+	supportedVersion := "6.2.10"
+	assert.Equal(t, true, version.Compare(supportedVersion, "6.2.10", ">="))
+
+	highVersion := "6.3"
+	assert.Equal(t, true, version.Compare(highVersion, "6.2.10", ">="))
 }
