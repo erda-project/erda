@@ -29,7 +29,7 @@ type Interface interface {
 	GetK8sService(name string) (*corev1.Service, error)
 	GetK8sDeployList(group string, services *[]apistructs.Service) error
 	CreateK8sService(appName string, appID string, ports []int) error
-	CreateK8sServiceIfNotExist(appName string, appID string, ports []int) error
+	CreateOrUpdateK8sService(appName string, appID string, ports []int) error
 	DeleteK8sService(appName string) error
 }
 

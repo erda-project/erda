@@ -22,8 +22,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/types"
 )
 
-var notFound = "not found"
-
 type wrapEDAS struct {
 	l *logrus.Entry
 

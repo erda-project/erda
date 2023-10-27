@@ -331,7 +331,7 @@ func TestDeleteAppByName(t *testing.T) {
 			args: args{
 				appName: "no-existed-app-name",
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
@@ -339,7 +339,7 @@ func TestDeleteAppByName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := c.DeleteAppByName(tt.args.appName)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("DeleteAppByName error, got: %v", err)
+				t.Fatalf("DeleteAppByName error, err: %v", err)
 			}
 		})
 	}

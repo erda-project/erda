@@ -39,7 +39,7 @@ func (c *wrapEDAS) ListRecentChangeOrderInfo(appID string) (*api.ChangeOrderList
 		return nil, errors.Wrap(err, "edas list recent change order info")
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 
 	return &resp.ChangeOrderList, nil
 }
@@ -92,7 +92,7 @@ func (c *wrapEDAS) AbortChangeOrder(changeOrderID string) error {
 		return errors.Errorf("failed to abort change order(%s), err: %v", changeOrderID, err)
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 
 	return nil
 }
@@ -111,7 +111,7 @@ func (c *wrapEDAS) getChangeOrderInfo(orderID string) (types.ChangeOrderStatus, 
 		return types.CHANGE_ORDER_STATUS_ERROR, errors.Wrap(err, "edas get change order info")
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 
 	status := types.ChangeOrderStatus(resp.ChangeOrderInfo.Status)
 	l.Infof("get change order info, orderID: %s, status: %v", orderID, status)
