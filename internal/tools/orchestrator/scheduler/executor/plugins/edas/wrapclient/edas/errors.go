@@ -16,4 +16,7 @@ package edas
 
 import "github.com/pkg/errors"
 
-var ErrAPINotSupport = errors.New("api not support")
+var (
+	ErrApplicationNotFound = errors.New("application not found")
+	ErrAPINotSupport       = errors.New("api not support")
+)

@@ -16,7 +16,6 @@ package edas
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sort"
 	"strings"
@@ -47,11 +46,11 @@ func (c *wrapEDAS) GetAppID(appName string) (string, error) {
 		return "", errors.Wrap(err, "list application")
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 
 	switch len(resp.ApplicationList.Application) {
 	case 0:
-		return "", errors.New("application list count is 0")
+		return "", ErrApplicationNotFound
 	case 1:
 		app := resp.ApplicationList.Application[0]
 
@@ -84,7 +83,7 @@ func (c *wrapEDAS) deleteAppByID(id string) error {
 		return errors.Errorf("response http context: %s, error: %v", resp.GetHttpContentString(), err)
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 	l.Debugf("delete app(%s) response, requestID: %s, code: %d, message: %s, changeOrderID: %s",
 		id, resp.RequestId, resp.Code, resp.Message, resp.ChangeOrderId)
 
@@ -119,7 +118,7 @@ func (c *wrapEDAS) stopAppByID(id string) error {
 		return errors.Errorf("response http context: %s, error: %v", stopResp.GetHttpContentString(), err)
 	}
 
-	l.Info("request id", stopResp.RequestId)
+	l.Info("request id: ", stopResp.RequestId)
 
 	l.Debugf("stop app(%s) response, requestID: %s, code: %d, message: %s, changeOrderID: %s",
 		id, stopResp.RequestId, stopResp.Code, stopResp.Message, stopResp.ChangeOrderId)
@@ -162,7 +161,7 @@ func (c *wrapEDAS) QueryAppStatus(appName string) (types.AppStatus, error) {
 		return state, err
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 	l.Debugf("QueryAppStatus response, appName: %s, code: %d, message: %s, app: %+v",
 		appName, resp.Code, resp.Message, resp.AppInfo)
 
@@ -261,7 +260,7 @@ func (c *wrapEDAS) InsertK8sApp(spec *types.ServiceSpec) (string, error) {
 		return "", errors.Errorf("edas insert app, response http context: %s, error: %v", resp.GetHttpContentString(), err)
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 	l.Debugf("InsertK8sApp response, code: %d, message: %s, applicationInfo: %+v", resp.Code, resp.Message, resp.ApplicationInfo)
 
 	l.Debugf("start loop termination status: appName: %s", req.AppName)
@@ -340,7 +339,7 @@ func (c *wrapEDAS) DeployApp(appID string, spec *types.ServiceSpec) error {
 		return errors.Errorf("response http context: %s, error: %v", resp.GetHttpContentString(), err)
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 	l.Debugf("DeployApp response, requestID: %s, code: %d, message: %s, ChangeOrderId: %+v",
 		resp.RequestId, resp.Code, resp.Message, resp.ChangeOrderId)
 
@@ -368,7 +367,7 @@ func (c *wrapEDAS) DeleteAppByName(appName string) error {
 	// get appId
 	appID, err := c.GetAppID(appName)
 	if err != nil {
-		if err.Error() == notFound {
+		if errors.Is(err, ErrApplicationNotFound) {
 			return nil
 		}
 		return err
@@ -394,20 +393,20 @@ func (c *wrapEDAS) ScaleApp(appID string, replica int) error {
 
 	l.Infof("sart to scale app: %s, target replica: %d", appID, replica)
 
-	request := api.CreateScaleK8sApplicationRequest()
-	request.SetDomain(c.addr)
+	req := api.CreateScaleK8sApplicationRequest()
+	req.SetDomain(c.addr)
 
-	request.Headers = utils.AppendCommonHeaders(request.Headers)
-	request.AppId = appID
-	request.RegionId = c.regionID
-	request.Replicas = requests.NewInteger(replica)
+	req.Headers = utils.AppendCommonHeaders(req.Headers)
+	req.AppId = appID
+	req.RegionId = c.regionID
+	req.Replicas = requests.NewInteger(replica)
 
-	resp, err := c.client.ScaleK8sApplication(request)
+	resp, err := c.client.ScaleK8sApplication(req)
 	if err != nil {
 		return errors.Errorf("scale k8s application err: %v", err)
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 	l.Debugf("operation ScaleK8sApplication response, requestID: %s, code: %d, message: %s, ChangeOrderId: %+v",
 		resp.RequestId, resp.Code, resp.Message, resp.ChangeOrderId)
 
@@ -431,13 +430,12 @@ func (c *wrapEDAS) GetAppDeployment(appName string) (*appsv1.Deployment, error) 
 	resp, err := c.client.GetAppDeployment(req)
 	if err != nil {
 		if resp.GetHttpStatus() == http.StatusNotFound {
-			l.Errorf("get edas app deployment err, %+v", err)
 			return nil, ErrAPINotSupport
 		}
-		return nil, fmt.Errorf("get edas app deployment err, %+v", err)
+		return nil, errors.Wrapf(err, "get edas app %s deployment", appName)
 	}
 
-	l.Info("request id", resp.RequestId)
+	l.Info("request id: ", resp.RequestId)
 
 	var deployment appsv1.Deployment
 

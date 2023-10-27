@@ -84,7 +84,7 @@ func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGro
 	appName := utils.CombineEDASAppName(runtime.Type, runtime.ID, s.Name)
 
 	//create k8s service
-	if err := e.wrapClientSet.CreateK8sService(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+	if err = e.wrapClientSet.CreateK8sService(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 		l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
 		return errors.Wrap(err, "edas create k8s service")
 	}
@@ -121,14 +121,14 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return errors.Wrap(err, "fill service spec")
 		}
 
-		if err := e.wrapClientSet.CreateK8sServiceIfNotExist(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
-			l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
-			return errors.Wrap(err, "edas create k8s service")
-		}
-
 		if err = e.wrapEDASClient.DeployApp(appID, svcSpec); err != nil {
 			l.Errorf("failed to deploy app: %s, error: %v", appName, err)
 			return err
+		}
+
+		if err := e.wrapClientSet.CreateOrUpdateK8sService(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+			l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
+			return errors.Wrap(err, "edas create k8s service")
 		}
 	}
 
@@ -141,7 +141,7 @@ func (e *EDAS) removeService(ctx context.Context, group string, s *apistructs.Se
 
 	appName := utils.CombineEDASAppGroup(group, s.Name)
 	if err := e.wrapEDASClient.DeleteAppByName(appName); err != nil {
-		l.Errorf("Failed to delete app(%s): %v", appName, err)
+		l.Errorf("failed to delete app(%s): %v", appName, err)
 		return err
 	}
 
@@ -196,7 +196,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
 					l.Infof("cyclicupdate to create service %s", svcName)
 					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
-						l.Errorf("Failed to create service: %s, error: %v", appName, err)
+						l.Errorf("failed to create service: %s, error: %v", appName, err)
 						errChan <- err
 						return
 					}
@@ -206,7 +206,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				// update service
 				// Does not include domain name updates
 				if err = e.updateService(ctx, newRuntime, newSvc); err != nil {
-					l.Errorf("Failed to update service: %s, error: %v", appName, err)
+					l.Errorf("failed to update service: %s, error: %v", appName, err)
 					errChan <- err
 					return
 				}
@@ -495,7 +495,7 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 	}
 
 	if envs, err = e.generateServiceEnvs(s, runtime); err != nil {
-		l.Errorf("Failed to generate service envs: %s, error: %s", appName, err)
+		l.Errorf("failed to generate service envs: %s, error: %s", appName, err)
 		return nil, err
 	}
 
@@ -525,15 +525,12 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 }
 
 func (e *EDAS) getDeploymentStatus(appName string) (apistructs.StatusDesc, error) {
-	l := e.l.WithField("func", "getDeploymentStatus")
-
 	status := apistructs.StatusDesc{
 		Status: apistructs.StatusUnknown,
 	}
 
 	dep, err := e.wrapEDASClient.GetAppDeployment(appName)
 	if err != nil {
-		l.Errorf("failed to get app deployment, err, %+v", err)
 		return status, err
 	}
 
