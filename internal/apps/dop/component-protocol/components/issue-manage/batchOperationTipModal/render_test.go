@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
@@ -32,39 +33,28 @@ func (t NopTranslator) Sprintf(lang i18n.LanguageCodes, key string, args ...inte
 	return fmt.Sprintf(key, args...)
 }
 
-func TestTransfer(t *testing.T) {
-	type TestData struct {
-		Name string
-		Age  int
+func TestObjJSONTransfer(t *testing.T) {
+	bot := struct {
+		Operations []string
+	}{
+		Operations: []string{"op1", "op2", "op3"},
 	}
 
-	// 准备测试数据
-	a := TestData{Name: "John", Age: 30}
-	var b TestData
+	c := struct {
+		Operations []string
+	}{}
 
-	// 调用被测试的方法
-	err := Transfer(a, &b)
+	cputil.ObjJSONTransfer(bot.Operations, &c.Operations)
 
-	// 检查返回的错误
-	if err != nil {
-		t.Errorf("Transfer() returned an error: %v", err)
+	expected := []string{"op1", "op2", "op3"}
+	if len(c.Operations) != len(expected) {
+		t.Errorf("Expected %d operations, but got %d", len(expected), len(c.Operations))
 	}
 
-	// 检查b是否与a相等
-	if b != a {
-		t.Errorf("Transfer() did not transfer data correctly. Expected: %v, Got: %v", a, b)
-	}
-
-	// 测试传递nil值的情况
-	err = Transfer(nil, &b)
-	if err == nil {
-		t.Error("Transfer() should return an error when passing nil value")
-	}
-
-	// 测试传递非指针类型的情况
-	err = Transfer(a, b)
-	if err == nil {
-		t.Error("Transfer() should return an error when passing non-pointer value")
+	for i := 0; i < len(expected); i++ {
+		if c.Operations[i] != expected[i] {
+			t.Errorf("Expected operation %s, but got %s", expected[i], c.Operations[i])
+		}
 	}
 }
 
