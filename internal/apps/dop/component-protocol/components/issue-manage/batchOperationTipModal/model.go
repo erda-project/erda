@@ -19,7 +19,6 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
-
 	"github.com/erda-project/erda/bundle"
 )
 
