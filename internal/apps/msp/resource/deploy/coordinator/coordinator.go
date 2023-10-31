@@ -108,6 +108,13 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 	p.Log.Infof("[%s/%s] check if it needs to deploy tmc instance: %v,  needs to apply tenant: %v\n",
 		req.Engine, req.Az, needDeployInstance, needApplyTenant)
 
+	// create tmc_instance record if necessary
+	var clusterConfig map[string]string
+	clusterConfig, err = handler.GetClusterConfig(req.Az)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to GetClusterConfig(%s)", req.Az)
+	}
+
 	var subResults []*handlers.ResourceDeployResult
 	// resolve dependency resources
 	if needApplyTenant || needDeployInstance {
@@ -126,6 +133,11 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 			}()
 
 			for name, addon := range resourceInfo.Dice.AddOns {
+				if !isNeedDeployGatewayDependedAddon(resourceInfo.Spec.Type, resourceInfo.Spec.Name, clusterConfig) {
+					// 部署的是 api-gateway 且网关用 MSE， 则无需部署 网关 api-gateway 对应的 dice.yml 中依赖的 addons (postgresql)
+					break
+				}
+
 				// deploy dependency resource recursive
 				subReq := handler.BuildSubResourceDeployRequest(name, addon, &req)
 				if subReq == nil {
@@ -142,12 +154,6 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 		}
 	}
 
-	// create tmc_instance record if necessary
-	var clusterConfig map[string]string
-	clusterConfig, err = handler.GetClusterConfig(req.Az)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to GetClusterConfig(%s)", req.Az)
-	}
 	if needDeployInstance {
 		// initialize tmc_instance
 		tmcInstance, err = handler.InitializeTmcInstance(&req, resourceInfo, subResults)
@@ -315,4 +321,15 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 	}
 	p.Log.Infof("[%s/%s] to deploy: %+v\n", req.Engine, req.Az, req)
 	return deploy(req)
+}
+
+func isNeedDeployGatewayDependedAddon(resourceSpecType, resourceSpecName string, clusterConfig map[string]string) bool {
+	if resourceSpecType == "addon" && resourceSpecName == apistructs.AddonApiGateway {
+		gatewayProvider, ok := clusterConfig[handlers.GatewayProviderVendorKey]
+		if ok && gatewayProvider != "" {
+			// 部署的是 api-gateway 且网关用 MSE， 则无需部署 网关 api-gateway 对应的 dice.yml 中依赖的 addons (postgresql)
+			return false
+		}
+	}
+	return true
 }
