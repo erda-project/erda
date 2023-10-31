@@ -16,10 +16,7 @@ package batchOperationTipModal
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -28,7 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
-
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
 )
 
@@ -37,24 +33,24 @@ func init() {
 		return &BatchOperationTipModal{}
 	})
 }
-func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Component, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	bot.SDK = cputil.SDK(ctx)
 	projectid, _ := strconv.ParseUint(bot.SDK.InParams["projectId"].(string), 10, 64)
 	bot.ctx = ctx
 	var IssueDoshboardBatchSubmit cptype.OperationKey = "batchSubmit"
-	err := Transfer(c.Operations, &bot.Operations)
+	err := cputil.ObjJSONTransfer(c.Operations, &bot.Operations)
 	if err != nil {
 		return err
 	}
 	switch event.Operation {
 	case cptype.InitializeOperation:
 		bot.getOperations()
-		err := Transfer(bot.Operations, &c.Operations)
+		err := cputil.ObjJSONTransfer(bot.Operations, &c.Operations)
 		if err != nil {
 			return err
 		}
 		bot.getProps()
-		err = Transfer(bot.Props, &c.Props)
+		err = cputil.ObjJSONTransfer(bot.Props, &c.Props)
 		if err != nil {
 			return err
 		}
@@ -70,7 +66,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			selectRowKeys := (*gs)["SelectedRowKeys"].([]string)
 			bot.State.SelectedRowKeys = selectRowKeys
 			ops := Operation{}
-			err := Transfer(bot.Operations["onOk"], &ops)
+			err := cputil.ObjJSONTransfer(bot.Operations["onOk"], &ops)
 			if err != nil {
 				return err
 			}
@@ -81,7 +77,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 	case IssueDoshboardBatchSubmit:
 		bot.State.Visible = false
 		ops := Operation{}
-		err := Transfer(bot.Operations["onOk"], &ops)
+		err := cputil.ObjJSONTransfer(bot.Operations["onOk"], &ops)
 		if err != nil {
 			return err
 		}
@@ -102,15 +98,15 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 }
 
 func (bot *BatchOperationTipModal) SetComponent(c *cptype.Component) error {
-	err := Transfer(bot.Props, &c.Props)
+	err := cputil.ObjJSONTransfer(bot.Props, &c.Props)
 	if err != nil {
 		return err
 	}
-	err = Transfer(bot.State, &c.State)
+	err = cputil.ObjJSONTransfer(bot.State, &c.State)
 	if err != nil {
 		return err
 	}
-	err = Transfer(bot.Operations, &c.Operations)
+	err = cputil.ObjJSONTransfer(bot.Operations, &c.Operations)
 	if err != nil {
 		return err
 	}
@@ -135,24 +131,6 @@ func (bot *BatchOperationTipModal) DeleteItems(itemIDs []string, projectID uint6
 		return nil, err
 	}
 	return k, err
-}
-
-// Transfer transfer a to b with json, kind of b must be pointer
-func Transfer(a, b interface{}) error {
-	if reflect.ValueOf(b).Kind() != reflect.Ptr {
-		return errors.New("ptr is required")
-	}
-	if a == nil {
-		return errors.New("nothing to be done")
-	}
-	aBytes, err := json.Marshal(a)
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(aBytes, b); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (bot *BatchOperationTipModal) getOperations() {

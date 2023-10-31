@@ -34,7 +34,6 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
