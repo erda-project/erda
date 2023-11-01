@@ -50,10 +50,12 @@ type (
 	CtxKeyIsAdmin     struct{ CtxKeyIsAdmin bool }
 	CtxKeyClientId    struct{ CtxKeyClientId string }
 
-	MapKeyClient        struct{ MapKeyClient any }
-	MapKeyModel         struct{ MapKeyModel any }
-	MapKeyModelProvider struct{ MapKeyModelProvider any }
-	MapKeyPrompt        struct{ MapKeyPrompt any }
-	MapKeySession       struct{ MapKeySession any }
-	MapKeyClientToken   struct{ MapKeyClientToken any }
+	MapKeyClient         struct{ MapKeyClient any }
+	MapKeyModel          struct{ MapKeyModel any }
+	MapKeyModelProvider  struct{ MapKeyModelProvider any }
+	MapKeyPromptTemplate struct{ MapKeyPromptTemplate any }
+	MapKeySession        struct{ MapKeySession any }
+	MapKeyClientToken    struct{ MapKeyClientToken any }
+	MapKeyMessageGroup   struct{ MapKeyMessageGroup any }
+	MapKeyUserPrompt     struct{ MapKeyUserPrompt any }
 )

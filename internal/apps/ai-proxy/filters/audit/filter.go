@@ -403,23 +403,8 @@ func (f *Audit) SetPrompt(ctx context.Context, infor reverseproxy.HttpInfor) err
 		}
 		f.Audit.Prompt = NoPromptByNotParsed.String()
 	case method == http.MethodPost && path == "/v1/chat/completions":
-		message, ok := m["messages"]
-		if !ok {
-			f.Audit.Prompt = NoPromptByMissingField.String()
-			return errors.Errorf(`no field "messages" in the request body, operation: %s`, operation)
-		}
-		var messages []struct {
-			Content string `json:"content" yaml:"content"`
-		}
-		if err := json.Unmarshal(message, &messages); err != nil {
-			f.Audit.Prompt = NoPromptByNotParsed.String()
-			return err
-		}
-		if len(messages) == 0 {
-			f.Audit.Prompt = NoPromptByNoItem.String()
-			return errors.Errorf(`no itmes in the request body messages`)
-		}
-		f.Audit.Prompt = messages[len(messages)-1].Content
+		prompt, _ := ctxhelper.GetUserPrompt(ctx)
+		f.Audit.Prompt = prompt
 	case method == http.MethodPost && path == "/v1/edits":
 		message, ok := m["edit"]
 		if !ok {

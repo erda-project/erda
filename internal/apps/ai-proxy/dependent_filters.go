@@ -17,6 +17,7 @@ package ai_proxy
 import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/bailian-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/body-size-limit"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"

@@ -19,9 +19,10 @@ import "net/textproto"
 type ContentType string
 
 const (
-	ApplicationJson    ContentType = "application/json"
-	TextEventStream    ContentType = "text/event-stream"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
+	ApplicationJson     ContentType = "application/json"
+	ApplicationJsonUTF8 ContentType = "application/json; charset=utf-8"
+	TextEventStream     ContentType = "text/event-stream"
+	URLEncodedFormMime  ContentType = "application/x-www-form-urlencoded"
 )
 
 var (
