@@ -17,11 +17,12 @@ package dop
 import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 
 var ProjectReportQuery = apis.ApiSpec{
-	Path:          "/api/project-report/actions/query",
-	BackendPath:   "/api/project-report/actions/query",
-	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:        "http",
-	Method:        "POST",
-	TryCheckLogin: true,
-	Doc:           "summary: 查询项目交付报表",
+	Path:        "/api/project-report/actions/query",
+	BackendPath: "/api/project-report/actions/query",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      "POST",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 查询项目交付报表",
 }

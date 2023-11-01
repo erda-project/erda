@@ -17,11 +17,12 @@ package dop
 import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 
 var PersonalContributorQuery = apis.ApiSpec{
-	Path:          "/api/personal-contribution/actions/query",
-	BackendPath:   "/api/personal-contribution/actions/query",
-	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:        "http",
-	Method:        "POST",
-	TryCheckLogin: true,
-	Doc:           "summary: 个人贡献查询接口",
+	Path:        "/api/personal-contribution/actions/query",
+	BackendPath: "/api/personal-contribution/actions/query",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      "POST",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 个人贡献查询接口",
 }
