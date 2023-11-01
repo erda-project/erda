@@ -45,10 +45,14 @@ func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type BailianDirector struct{}
+type BailianDirector struct {
+	*reverseproxy.DefaultResponseFilter
+}
 
 func New(config json.RawMessage) (reverseproxy.Filter, error) {
-	return &BailianDirector{}, nil
+	return &BailianDirector{
+		DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter(),
+	}, nil
 }
 
 func (f *BailianDirector) Enable(ctx context.Context, req *http.Request) bool {
@@ -77,6 +81,7 @@ func (f *BailianDirector) OnRequest(ctx context.Context, w http.ResponseWriter, 
 		// rewrite authorization header
 		r.Header.Set(httputil.HeaderKeyContentType, string(httputil.ApplicationJsonUTF8))
 		r.Header.Set(httputil.HeaderKeyAuthorization, vars.ConcatBearer(token))
+		r.Header.Set(httputil.HeaderKeyAccept, string(httputil.ApplicationJsonUTF8))
 	})
 
 	// parse original request body
@@ -101,6 +106,7 @@ func (f *BailianDirector) OnRequest(ctx context.Context, w http.ResponseWriter, 
 		AppId:   &modelMeta.Secret.AppId,
 		Prompt:  &prompt,
 		History: historyMsgs,
+		Stream:  false, // stream=true has bug in bailian
 	}
 	b, err := json.Marshal(&bailianReq)
 	if err != nil {
