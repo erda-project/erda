@@ -17,11 +17,12 @@ package dop
 import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 
 var PerformanceMeasureQuery = apis.ApiSpec{
-	Path:          "/api/efficiency-measure/actions/query",
-	BackendPath:   "/api/efficiency-measure/actions/query",
-	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:        "http",
-	Method:        "POST",
-	TryCheckLogin: true,
-	Doc:           "summary: 查询效能度量",
+	Path:        "/api/efficiency-measure/actions/query",
+	BackendPath: "/api/efficiency-measure/actions/query",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      "POST",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 查询效能度量",
 }

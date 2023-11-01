@@ -17,11 +17,12 @@ package dop
 import "github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 
 var FuncPointsQuery = apis.ApiSpec{
-	Path:          "/api/func-points-trend/actions/query",
-	BackendPath:   "/api/func-points-trend/actions/query",
-	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:        "http",
-	Method:        "POST",
-	TryCheckLogin: true,
-	Doc:           "summary: 功能点生产率PDR查询",
+	Path:        "/api/func-points-trend/actions/query",
+	BackendPath: "/api/func-points-trend/actions/query",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      "POST",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 功能点生产率PDR查询",
 }
