@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -122,29 +121,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 				l.Errorf("failed to get session's chat logs, sessionId: %s, err: %v", session.Id, err)
 				return reverseproxy.Intercept, err
 			}
-			// reverse the chat logs
-			sort.Slice(chatLogResp.List, func(i, j int) bool {
-				return chatLogResp.List[i].RequestAt.AsTime().Before(chatLogResp.List[j].RequestAt.AsTime())
-			})
-			var num int64
-			for _, chatLog := range chatLogResp.List {
-				if num > session.NumOfCtxMsg {
-					break
-				}
-				sessionPreviousMessages = append(sessionPreviousMessages, openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleAssistant,
-					Content: chatLog.Completion,
-				})
-				if num > session.NumOfCtxMsg {
-					break
-				}
-				sessionPreviousMessages = append(sessionPreviousMessages, openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleUser,
-					Content: chatLog.Prompt,
-				})
-			}
-			// reverse previousMessages to make it in order
-			strutil.ReverseSlice(sessionPreviousMessages)
+			sessionPreviousMessages = getOrderedLimitedChatLogs(chatLogResp.List, int(session.NumOfCtxMsg))
 
 			// add topic
 			if session.Topic != "" {
@@ -192,4 +169,30 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	ctxhelper.PutUserPrompt(ctx, requestedMessages[len(requestedMessages)-1].Content)
 
 	return reverseproxy.Continue, nil
+}
+
+func getOrderedLimitedChatLogs(chatLogs []*sessionpb.ChatLog, limitIncluded int) message.Messages {
+	// sort by requestAt, oldest first
+	sort.Slice(chatLogs, func(i, j int) bool {
+		return chatLogs[i].RequestAt.AsTime().Before(chatLogs[j].RequestAt.AsTime())
+	})
+	// convert to messages
+	var limitedChatLogMessages message.Messages
+	for _, chatLog := range chatLogs {
+		limitedChatLogMessages = append(limitedChatLogMessages,
+			openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: chatLog.Prompt,
+			},
+			openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: chatLog.Completion,
+			},
+		)
+	}
+	// cut down to session.NumOfCtxMsg
+	if len(limitedChatLogMessages) > limitIncluded {
+		limitedChatLogMessages = limitedChatLogMessages[len(limitedChatLogMessages)-limitIncluded:]
+	}
+	return limitedChatLogMessages
 }
