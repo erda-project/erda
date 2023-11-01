@@ -15,6 +15,7 @@
 package agenttool
 
 import (
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
@@ -113,9 +114,13 @@ func IsTarCommandExist() bool {
 // return size unit is Byte
 func GetDiskSize(path string) (datasize.ByteSize, error) {
 	var totalSize datasize.ByteSize
-	fi, err := os.Stat(path)
+	fi, err := os.Lstat(path)
 	if err != nil {
 		return 0, err
+	}
+	// skip symlink
+	if fi.Mode()&fs.ModeSymlink != 0 {
+		return 0, nil
 	}
 	if fi.IsDir() {
 		files, err := os.ReadDir(path)
