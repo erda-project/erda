@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type PersonalContributorRow struct {
@@ -158,7 +159,7 @@ func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributionR
 			Group("repoID").
 			Group("timestamp")
 		if len(req.ProjectIDs) > 0 {
-			tx = tx.Where("tag_values[indexOf(tag_keys,'org_id')] in (?)", req.ProjectIDs)
+			tx = tx.Where("tag_values[indexOf(tag_keys,'project_id')] in (?)", strutil.ToStrSlice(req.ProjectIDs))
 		}
 		return tx.Find(&[]PersonalContributorRow{})
 	})
