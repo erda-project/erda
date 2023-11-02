@@ -48,7 +48,6 @@ func (f *BailianDirector) OnResponseChunk(ctx context.Context, infor reverseprox
 // data: {"Data":{"Debug":{},"DocReferences":[],"ResponseId":"ba91dde7238
 // ```
 // the last line may be incomplete.
-
 func (f *BailianDirector) handleResponseStreamChunk(ctx context.Context, w reverseproxy.Writer, bailianChunk []byte) (reverseproxy.Signal, error) {
 	f.DefaultResponseFilter.Buffer.Write(bailianChunk)
 	signal, lastCompleteDeltaResp := f.getDeltaTextFromStreamChunk(f.DefaultResponseFilter.Buffer.Bytes())
@@ -69,7 +68,6 @@ func (f *BailianDirector) handleResponseStreamChunk(ctx context.Context, w rever
 	if _, err := w.Write(b); err != nil {
 		return reverseproxy.Intercept, fmt.Errorf("failed to write openai response, err: %v", err)
 	}
-	// adjust header content-length
 	return reverseproxy.Continue, nil
 }
 
