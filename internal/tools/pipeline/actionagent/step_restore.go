@@ -17,6 +17,7 @@ package actionagent
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -116,6 +117,9 @@ func (agent *Agent) restoreCache(tarFile, tarExecPath string) (err error) {
 		}
 	}
 	tarExecDir := filepath.Dir(tarExecPath)
+	if err := filehelper.CheckExist(tarExecDir, true); err != nil {
+		os.MkdirAll(tarExecDir, 0755)
+	}
 	if err = agenttool.Mv(filepath.Join(tmpDir, filepath.Base(tarExecPath)), tarExecDir); err != nil {
 		return err
 	}
