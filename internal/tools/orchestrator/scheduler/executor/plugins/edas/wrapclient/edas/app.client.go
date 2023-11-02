@@ -93,6 +93,9 @@ func (c *wrapEDAS) deleteAppByID(id string) error {
 			return errors.Wrapf(err, "get delete status by loop")
 		}
 
+		l.Infof("loop termination status from delete application, order id: %s, status: %s",
+			resp.ChangeOrderId, types.ChangeOrderStatusString[status])
+
 		if status != types.CHANGE_ORDER_STATUS_SUCC {
 			return errors.Errorf("failed to get the status of deleting app(%s), status = %s", id, types.ChangeOrderStatusString[status])
 		}
@@ -130,6 +133,9 @@ func (c *wrapEDAS) stopAppByID(id string) error {
 		if err != nil {
 			return errors.Wrapf(err, "get stop status by loop")
 		}
+
+		l.Infof("loop termination status from stop application, order id: %s, status: %s",
+			stopResp.ChangeOrderId, types.ChangeOrderStatusString[status])
 
 		if status != types.CHANGE_ORDER_STATUS_SUCC {
 			return errors.Errorf("failed to get the status of stopping app(%s), status = %s",
@@ -363,7 +369,7 @@ func (c *wrapEDAS) DeployApp(appID string, spec *types.ServiceSpec) error {
 func (c *wrapEDAS) DeleteAppByName(appName string) error {
 	l := c.l.WithField("func", "DeleteAppByName")
 
-	l.Infof("sart to delete app: %s", appName)
+	l.Infof("start to delete app: %s", appName)
 	// get appId
 	appID, err := c.GetAppID(appName)
 	if err != nil {
@@ -391,7 +397,7 @@ func (c *wrapEDAS) DeleteAppByName(appName string) error {
 func (c *wrapEDAS) ScaleApp(appID string, replica int) error {
 	l := c.l.WithField("func", "ScaleApp")
 
-	l.Infof("sart to scale app: %s, target replica: %d", appID, replica)
+	l.Infof("start to scale app: %s, target replica: %d", appID, replica)
 
 	req := api.CreateScaleK8sApplicationRequest()
 	req.SetDomain(c.addr)
