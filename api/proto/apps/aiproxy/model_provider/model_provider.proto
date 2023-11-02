@@ -58,6 +58,7 @@ enum ModelProviderType {
     TYPE_UNSPECIFIED = 0;
     OpenAI = 1;
     Azure = 2;
+    AliyunBailian = 3;
 }
 
 message ModelProviderCreateRequest {
