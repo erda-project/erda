@@ -167,6 +167,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	}
 	ctxhelper.PutMessageGroup(ctx, messageGroup)
 	ctxhelper.PutUserPrompt(ctx, requestedMessages[len(requestedMessages)-1].Content)
+	ctxhelper.PutIsStream(ctx, chatCompletionRequest.Stream)
 
 	return reverseproxy.Continue, nil
 }

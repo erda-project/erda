@@ -47,6 +47,9 @@ func init() {
 
 type BailianDirector struct {
 	*reverseproxy.DefaultResponseFilter
+
+	lastCompletionDataLineIndex int
+	lastCompletionDataLineText  string
 }
 
 func New(config json.RawMessage) (reverseproxy.Filter, error) {
@@ -106,7 +109,7 @@ func (f *BailianDirector) OnRequest(ctx context.Context, w http.ResponseWriter, 
 		AppId:   &modelMeta.Secret.AppId,
 		Prompt:  &prompt,
 		History: historyMsgs,
-		Stream:  false, // stream=true has bug in bailian
+		Stream:  openaiReq.Stream,
 	}
 	b, err := json.Marshal(&bailianReq)
 	if err != nil {
