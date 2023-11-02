@@ -60,7 +60,7 @@ func (agent *Agent) store() {
 				continue
 			}
 			if err := agent.storeCache(tarFile, out.Labels[pvolumes.TaskCachePath]); err != nil {
-				logrus.Debugf("failed to tar cache path: %s to file: %s, err: %v", out.Labels[pvolumes.TaskCachePath], tarFile, err)
+				logrus.Warningf("failed to tar cache path: %s to file: %s, err: %v", out.Labels[pvolumes.TaskCachePath], tarFile, err)
 				continue
 			}
 			logrus.Printf("upload action cache %s success", out.Labels[pvolumes.TaskCachePath])
