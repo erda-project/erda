@@ -17,6 +17,7 @@ package azure_director
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,11 +27,14 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sashabaranov/go-openai"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -346,6 +350,29 @@ func (f *AzureDirector) handleQueries(ctx context.Context, funcName string) erro
 			}
 		}
 		req.URL.RawQuery = queries.Encode()
+	})
+	return nil
+}
+
+func (f *AzureDirector) AddContextMessages(ctx context.Context) error {
+	messageGroup, ok := ctxhelper.GetMessageGroup(ctx)
+	if !ok {
+		return nil
+	}
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		infor := reverseproxy.NewInfor(ctx, req)
+		var openaiReq openai.ChatCompletionRequest
+		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&openaiReq); err != nil && err != io.EOF {
+			logrus.Errorf("failed to decode request body, err: %v", err)
+			return
+		}
+		openaiReq.Messages = messageGroup.AllMessages
+		b, err := json.Marshal(&openaiReq)
+		if err != nil {
+			logrus.Errorf("failed to marshal request body, err: %v", err)
+			return
+		}
+		infor.SetBody(io.NopCloser(strings.NewReader(string(b))), int64(len(b)))
 	})
 	return nil
 }

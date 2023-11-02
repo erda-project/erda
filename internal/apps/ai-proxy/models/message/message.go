@@ -44,6 +44,10 @@ func (m Message) Value() (driver.Value, error) {
 	return json.Marshal(m)
 }
 
+func (m *Message) ToOpenAI() *openai.ChatCompletionMessage {
+	return (*openai.ChatCompletionMessage)(m)
+}
+
 func FromProtobuf(pbMsgs []*pb.Message) Messages {
 	var result []openai.ChatCompletionMessage
 	for _, pbMsg := range pbMsgs {

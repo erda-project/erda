@@ -13,6 +13,9 @@ routes:
           maxSize: 102400
           message: { "messages": [ { "role": "ai-proxy", "content": "问题超长啦, 请重置会话", "name": "ai-proxy" } ] }
       - name: context
+      - name: message-context
+        config:
+          sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
       - name: azure-director
         config:
           directors:
@@ -22,6 +25,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/chat/completions")
+            - AddContextMessages
       - name: openai-director
         config:
           directors:
@@ -29,9 +33,9 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
-      - name: message-context
-        config:
-          sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
+            - AddContextMessages
+      - name: bailian-director
+      - name: openai-director
       - name: audit
       - name: finalize
   - path: /v1/embeddings

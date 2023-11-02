@@ -16,6 +16,7 @@ package session
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -26,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 )
 
 type DBClient struct {
@@ -153,6 +155,12 @@ func (dbClient *DBClient) Reset(ctx context.Context, req *pb.SessionResetRequest
 }
 
 func (dbClient *DBClient) GetChatLogs(ctx context.Context, req *pb.SessionChatLogGetRequest) (*pb.SessionChatLogGetResponse, error) {
+	// get session first
+	session, err := dbClient.Get(ctx, &pb.SessionGetRequest{Id: req.SessionId})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get session, id: %s, err: %v", req.SessionId, err)
+	}
+	// get chat logs after session reset
 	var (
 		count    int64
 		chatLogs audit.Audits
@@ -165,11 +173,15 @@ func (dbClient *DBClient) GetChatLogs(ctx context.Context, req *pb.SessionChatLo
 	}
 	offset := (req.PageNum - 1) * req.PageSize
 	c := &audit.Audit{SessionID: req.SessionId}
-	if err := dbClient.DB.Model(c).Where(c).
-		Count(&count).
+	sql := dbClient.DB.Model(c).Where(c)
+	if session.ResetAt != nil {
+		sql = sql.Where("request_at > ?", pbutil.GetTimeInLocal(session.ResetAt))
+	}
+	sql.Count(&count).
 		Order("created_at DESC").
-		Limit(int(req.PageSize)).Offset(int(offset)).Find(&chatLogs).Error; err != nil {
-		return nil, err
+		Limit(int(req.PageSize)).Offset(int(offset)).Find(&chatLogs)
+	if sql.Error != nil {
+		return nil, sql.Error
 	}
 	return &pb.SessionChatLogGetResponse{
 		Total: uint64(count),

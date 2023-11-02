@@ -197,7 +197,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	m.Store(vars.MapKeyClient{}, client)
 	m.Store(vars.MapKeyModel{}, model)
 	m.Store(vars.MapKeyModelProvider{}, modelProvider)
-	m.Store(vars.MapKeyPrompt{}, prompt)
+	m.Store(vars.MapKeyPromptTemplate{}, prompt)
 	m.Store(vars.MapKeySession{}, session)
 
 	return reverseproxy.Continue, nil

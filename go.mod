@@ -14,12 +14,13 @@ require (
 	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
+	github.com/alibabacloud-go/bailian-20230601 v1.0.0
 	github.com/alibabacloud-go/darabonba-openapi v0.1.9
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2
 	github.com/alibabacloud-go/dingtalk v1.2.1
 	github.com/alibabacloud-go/mse-20190531/v3 v3.0.3119
 	github.com/alibabacloud-go/tea v1.1.19
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.1
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.4
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1600
 	github.com/aliyun/aliyun-log-go-sdk v0.1.19
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58

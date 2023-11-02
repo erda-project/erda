@@ -15,10 +15,8 @@
 package message_context
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"sort"
 	"sync"
@@ -33,7 +31,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -76,7 +73,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 
 	// judge use session-id or prompt-id
 	sessionValue, sessionOk := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeySession{})
-	promptValue, promptOk := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyPrompt{})
+	promptValue, promptOk := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyPromptTemplate{})
 
 	if !sessionOk && !promptOk {
 		return reverseproxy.Continue, nil
@@ -88,6 +85,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	}
 
 	var allMessages message.Messages
+	var systemMessage *message.Message
 	var sessionTopicMessage *message.Message
 	var promptMessages message.Messages
 	var sessionPreviousMessages message.Messages
@@ -123,29 +121,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 				l.Errorf("failed to get session's chat logs, sessionId: %s, err: %v", session.Id, err)
 				return reverseproxy.Intercept, err
 			}
-			// reverse the chat logs
-			sort.Slice(chatLogResp.List, func(i, j int) bool {
-				return chatLogResp.List[i].RequestAt.AsTime().Before(chatLogResp.List[j].RequestAt.AsTime())
-			})
-			var num int64
-			for _, chatLog := range chatLogResp.List {
-				if num > session.NumOfCtxMsg {
-					break
-				}
-				sessionPreviousMessages = append(sessionPreviousMessages, openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleAssistant,
-					Content: chatLog.Completion,
-				})
-				if num > session.NumOfCtxMsg {
-					break
-				}
-				sessionPreviousMessages = append(sessionPreviousMessages, openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleUser,
-					Content: chatLog.Prompt,
-				})
-			}
-			// reverse previousMessages to make it in order
-			strutil.ReverseSlice(sessionPreviousMessages)
+			sessionPreviousMessages = getOrderedLimitedChatLogs(chatLogResp.List, int(session.NumOfCtxMsg))
 
 			// add topic
 			if session.Topic != "" {
@@ -165,12 +141,13 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 
 	// 0. add system message
 	if c.Config.SysMsg != "" {
-		allMessages = append(allMessages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleSystem, Content: c.Config.SysMsg, Name: "Erda-AI-Assistant"})
+		systemMessage = &message.Message{Role: openai.ChatMessageRoleSystem, Content: c.Config.SysMsg, Name: "Erda-AI-Assistant"}
+		allMessages = append(allMessages, *systemMessage.ToOpenAI())
 	}
 
 	// 1. add session topic
 	if sessionTopicMessage != nil {
-		allMessages = append(allMessages, openai.ChatCompletionMessage(*sessionTopicMessage))
+		allMessages = append(allMessages, *sessionTopicMessage.ToOpenAI())
 	}
 	// 2. add prompt messages
 	allMessages = append(allMessages, promptMessages...)
@@ -179,14 +156,43 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	// 4. add requested messages
 	allMessages = append(allMessages, requestedMessages...)
 
-	// set to request body
-	chatCompletionRequest.Messages = allMessages
-	b, err := json.Marshal(&chatCompletionRequest)
-	if err != nil {
-		l.Errorf("failed to marshal request body, err: %v", err)
-		return reverseproxy.Intercept, err
+	// 不同的模型，body 不同，不能直接 set，而是塞入上下文，由真正的 model filters 进行转换
+	messageGroup := message.Group{
+		AllMessages:             allMessages,
+		SystemMessage:           systemMessage,
+		SessionTopicMessage:     sessionTopicMessage,
+		PromptTemplateMessages:  promptMessages,
+		SessionPreviousMessages: sessionPreviousMessages,
+		RequestedMessages:       requestedMessages,
 	}
-	infor.SetBody(io.NopCloser(bytes.NewBuffer(b)), int64(len(b)))
+	ctxhelper.PutMessageGroup(ctx, messageGroup)
+	ctxhelper.PutUserPrompt(ctx, requestedMessages[len(requestedMessages)-1].Content)
 
 	return reverseproxy.Continue, nil
+}
+
+func getOrderedLimitedChatLogs(chatLogs []*sessionpb.ChatLog, limitIncluded int) message.Messages {
+	// sort by requestAt, oldest first
+	sort.Slice(chatLogs, func(i, j int) bool {
+		return chatLogs[i].RequestAt.AsTime().Before(chatLogs[j].RequestAt.AsTime())
+	})
+	// convert to messages
+	var limitedChatLogMessages message.Messages
+	for _, chatLog := range chatLogs {
+		limitedChatLogMessages = append(limitedChatLogMessages,
+			openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: chatLog.Prompt,
+			},
+			openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: chatLog.Completion,
+			},
+		)
+	}
+	// cut down to session.NumOfCtxMsg
+	if len(limitedChatLogMessages) > limitIncluded {
+		limitedChatLogMessages = limitedChatLogMessages[len(limitedChatLogMessages)-limitIncluded:]
+	}
+	return limitedChatLogMessages
 }
