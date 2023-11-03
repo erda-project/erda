@@ -160,7 +160,7 @@ func transferHistoryMessages(g message.Group) []*ChatQaMessage {
 
 var botOKMsg = openai.ChatCompletionMessage{
 	Role:    openai.ChatMessageRoleAssistant,
-	Content: "OK",
+	Content: "Got it",
 }
 
 func autoFillQaPair(msgs message.Messages) []*ChatQaMessage {
