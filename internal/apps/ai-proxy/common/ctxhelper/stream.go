@@ -12,24 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vars
+package ctxhelper
 
 import (
-	"strings"
+	"context"
+	"sync"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
-func ConcatBearer(v string) string {
-	return "Bearer " + v
+func GetIsStream(ctx context.Context) (bool, bool) {
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyIsStream{})
+	if !ok || value == nil {
+		return false, false
+	}
+	isStream, ok := value.(bool)
+	if !ok {
+		return false, false
+	}
+	return isStream, true
 }
 
-func TrimBearer(v string) string {
-	return strings.TrimPrefix(v, "Bearer ")
-}
-
-func ConcatChunkDataPrefix(v []byte) []byte {
-	return []byte("data: " + string(v) + "\n\n")
-}
-
-func TrimChunkDataPrefix(v []byte) []byte {
-	return []byte(strings.TrimPrefix(strings.TrimSuffix(string(v), "\n\n"), "data: "))
+func PutIsStream(ctx context.Context, isStream bool) {
+	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
+	m.Store(vars.MapKeyIsStream{}, isStream)
 }
