@@ -58,4 +58,5 @@ type (
 	MapKeyClientToken    struct{ MapKeyClientToken any }
 	MapKeyMessageGroup   struct{ MapKeyMessageGroup any }
 	MapKeyUserPrompt     struct{ MapKeyUserPrompt any }
+	MapKeyIsStream       struct{ MapKeyIsStream any }
 )
