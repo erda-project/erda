@@ -31,4 +31,5 @@ var (
 	HeaderKeyAccessControlAllowOrigin = textproto.CanonicalMIMEHeaderKey("Access-Control-Allow-Origin")
 	HeaderKeyAuthorization            = textproto.CanonicalMIMEHeaderKey("Authorization")
 	HeaderKeyAccept                   = textproto.CanonicalMIMEHeaderKey("Accept")
+	HeaderKeyAcceptEncoding           = textproto.CanonicalMIMEHeaderKey("Accept-Encoding")
 )
