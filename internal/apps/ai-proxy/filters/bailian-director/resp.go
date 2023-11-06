@@ -156,16 +156,19 @@ func convertToOpenaiStreamChunk(model *modelpb.Model, bailianResponse Completion
 	return openaiResp, nil
 }
 
-func convertToOpenaiResponse(model *modelpb.Model, bailianResponse CompletionResponse) (*openai.CompletionResponse, error) {
-	openaiResp := &openai.CompletionResponse{
+func convertToOpenaiResponse(model *modelpb.Model, bailianResponse CompletionResponse) (*openai.ChatCompletionResponse, error) {
+	openaiResp := &openai.ChatCompletionResponse{
 		ID:     *bailianResponse.Data.ResponseId,
 		Object: "chat.completion",
 		Model:  model.Name,
-		Choices: []openai.CompletionChoice{
+		Choices: []openai.ChatCompletionChoice{
 			{
-				Text:         *bailianResponse.Data.Text,
-				Index:        0,
-				FinishReason: string(openai.FinishReasonStop),
+				Index: 0,
+				Message: openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleAssistant,
+					Content: *bailianResponse.Data.Text,
+				},
+				FinishReason: openai.FinishReasonStop,
 			},
 		},
 	}
