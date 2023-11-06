@@ -85,6 +85,7 @@ func (f *BailianDirector) OnRequest(ctx context.Context, w http.ResponseWriter, 
 		r.Header.Set(httputil.HeaderKeyContentType, string(httputil.ApplicationJsonUTF8))
 		r.Header.Set(httputil.HeaderKeyAuthorization, vars.ConcatBearer(token))
 		r.Header.Set(httputil.HeaderKeyAccept, string(httputil.ApplicationJsonUTF8))
+		r.Header.Del(httputil.HeaderKeyAcceptEncoding) // remove gzip. Actual test: gzip is not ok; deflate is ok; br is ok
 	})
 
 	// parse original request body
