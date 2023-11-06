@@ -77,11 +77,29 @@ func TestRegexGroupMap(t *testing.T) {
 	}{
 		{
 			args: args{
-				pattern: regexp.MustCompile("^/kubepods/\\w+/[\\w|\\-]+/(?P<container_id>\\w+)"),
+				pattern: regexp.MustCompile("/kubepods.*?(?P<container_id>\\w{64})"),
 				s:       "/kubepods/burstable/pod164ec226-8106-4904-9bcb-0218a9b2b793/8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec",
 			},
 			want: map[string]string{
 				"container_id": "8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec",
+			},
+		},
+		{
+			args: args{
+				pattern: regexp.MustCompile("/kubepods.*?(?P<container_id>\\w{64})"),
+				s:       "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod1a12223c_7554_4ced_b17c_168b016f218e.slice/cri-containerd-03e25d833346fe6f59608fdbbc5a7776680788609c2daf34e29f9be95ffbda24.scope",
+			},
+			want: map[string]string{
+				"container_id": "03e25d833346fe6f59608fdbbc5a7776680788609c2daf34e29f9be95ffbda24",
+			},
+		},
+		{
+			args: args{
+				pattern: regexp.MustCompile("/kubepods.*?(?P<container_id>\\w{64})"),
+				s:       "/system.slice/containerd.service/kubepods-burstable-pod29c95a11_3435_474a_be34_226976d3035f.slice:cri-containerd:01c5cfd0633692a2a14bfa656e947cd4c23e5d17492382f354f262c72f27802d",
+			},
+			want: map[string]string{
+				"container_id": "01c5cfd0633692a2a14bfa656e947cd4c23e5d17492382f354f262c72f27802d",
 			},
 		},
 		{
