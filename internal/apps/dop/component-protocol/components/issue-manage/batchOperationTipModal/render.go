@@ -33,7 +33,7 @@ func init() {
 		return &BatchOperationTipModal{}
 	})
 }
-func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Component, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	bot.SDK = cputil.SDK(ctx)
 	projectid, _ := strconv.ParseUint(bot.SDK.InParams["projectId"].(string), 10, 64)
 	bot.ctx = ctx
@@ -56,6 +56,11 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 		}
 		return nil
 	case cptype.RenderingOperation:
+		bot.getOperations()
+		err := cputil.ObjJSONTransfer(bot.Operations, &c.Operations)
+		if err != nil {
+			return err
+		}
 		bot.State.Visible = false
 		operationKey := (*gs)["OperationKey"]
 		if operationKey == nil {
