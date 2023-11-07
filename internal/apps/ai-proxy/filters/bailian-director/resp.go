@@ -30,8 +30,7 @@ import (
 )
 
 func (f *BailianDirector) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
-	isStream, _ := ctxhelper.GetIsStream(ctx)
-	if !isStream {
+	if !ctxhelper.GetIsStream(ctx) {
 		f.DefaultResponseFilter.Buffer.Write(chunk)
 		return reverseproxy.Continue, nil
 	}
@@ -111,8 +110,7 @@ func (f *BailianDirector) getDeltaTextFromStreamChunk(allChunks []byte) (reverse
 
 func (f *BailianDirector) OnResponseEOF(ctx context.Context, _ reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (err error) {
 	// only stream style need append [DONE] chunk
-	isStream, _ := ctxhelper.GetIsStream(ctx)
-	if !isStream {
+	if !ctxhelper.GetIsStream(ctx) {
 		// convert all at once
 		model, _ := ctxhelper.GetModel(ctx)
 		var bailianResp CompletionResponse

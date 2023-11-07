@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package httputil
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
+import (
+	"net/http"
 
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+	"github.com/erda-project/erda/pkg/strutil"
 )
+
+func GetUserAgent(header http.Header) string {
+	return strutil.FirstNoneEmpty(
+		header.Get(HeaderKeyUserAgent),
+		header.Get("X-User-Agent"),
+		header.Get("X-Device-User-Agent"),
+	)
+}

@@ -15,6 +15,7 @@
 package ctxhelper
 
 import (
+	"bytes"
 	"context"
 	"sync"
 
@@ -22,19 +23,17 @@ import (
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
-func GetIsStream(ctx context.Context) bool {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyIsStream{})
+func GetLLMDirectorActualResponseBuffer(ctx context.Context) *bytes.Buffer {
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyLLMDirectorActualResponseWriter{})
 	if !ok || value == nil {
-		return false
+		return putLLMDirectorActualResponseWriter(ctx)
 	}
-	isStream, ok := value.(bool)
-	if !ok {
-		return false
-	}
-	return isStream
+	return value.(*bytes.Buffer)
 }
 
-func PutIsStream(ctx context.Context, isStream bool) {
+func putLLMDirectorActualResponseWriter(ctx context.Context) *bytes.Buffer {
 	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
-	m.Store(vars.MapKeyIsStream{}, isStream)
+	buffer := bytes.NewBuffer(nil)
+	m.Store(vars.MapKeyLLMDirectorActualResponseWriter{}, buffer)
+	return buffer
 }

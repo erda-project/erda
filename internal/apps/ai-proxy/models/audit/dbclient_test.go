@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package audit
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
-
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+	"time"
 )
+
+func TestJsonRawMessage(t *testing.T) {
+	raw := json.RawMessage(time.Now().Sub(time.Now().Add(-time.Second)).String())
+	fmt.Println(string(raw))
+}

@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/audit"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
@@ -63,6 +64,7 @@ type DAO interface {
 	PromptClient() *prompt.DBClient
 	SessionClient() *session.DBClient
 	ClientTokenClient() *client_token.DBClient
+	AuditClient() *audit.DBClient
 }
 
 type provider struct {
@@ -107,4 +109,8 @@ func (p *provider) SessionClient() *session.DBClient {
 
 func (p *provider) ClientTokenClient() *client_token.DBClient {
 	return &client_token.DBClient{DB: p.DB}
+}
+
+func (p *provider) AuditClient() *audit.DBClient {
+	return &audit.DBClient{DB: p.DB}
 }

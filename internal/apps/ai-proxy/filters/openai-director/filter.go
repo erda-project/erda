@@ -50,6 +50,7 @@ func init() {
 }
 
 type OpenaiDirector struct {
+	*reverseproxy.DefaultResponseFilter
 	Config *Config
 
 	funcs         map[string]func(ctx context.Context) error
@@ -61,7 +62,11 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	if err := yaml.Unmarshal(config, &cfg); err != nil {
 		return nil, err
 	}
-	return &OpenaiDirector{Config: &cfg}, nil
+	return &OpenaiDirector{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter(), Config: &cfg}, nil
+}
+
+func (f *OpenaiDirector) MultiResponseWriter(ctx context.Context) []io.ReadWriter {
+	return []io.ReadWriter{ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)}
 }
 
 // Enable 检查 request 的 provider.name 是否为 openai, 如是 openai 则启用, 否则不启用

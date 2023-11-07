@@ -12,15 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package vars
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
-
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+import (
+	"encoding/base64"
+	"unicode/utf8"
 )
+
+var base64std = base64.StdEncoding
+
+func TryUnwrapBase64(v string) string {
+	decoded, err := base64std.DecodeString(v)
+	if err == nil {
+		// if decoded value contains non-utf-8 characters, treat it as raw value
+		if !utf8.Valid(decoded) {
+			return v
+		}
+		return string(decoded)
+	}
+	return v
+}
