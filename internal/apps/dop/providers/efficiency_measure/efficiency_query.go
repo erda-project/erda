@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type PersonalEfficiencyRow struct {
@@ -198,7 +199,7 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
 			tx = tx.Where("tag_values[indexOf(tag_keys,'user_id')] = '?'", req.UserID)
 		}
 		if len(req.ProjectIDs) > 0 {
-			tx = tx.Where("tag_values[indexOf(tag_keys,'project_id')] in (?)", req.ProjectIDs)
+			tx = tx.Where("tag_values[indexOf(tag_keys,'project_id')] in (?)", strutil.ToStrSlice(req.ProjectIDs))
 		}
 		for _, query := range req.LabelQuerys {
 			if query.Operation == "like" {
@@ -298,7 +299,6 @@ func (p *provider) makeEfficiencyBasicSql(req *apistructs.PersonalEfficiencyRequ
     last_value(projectDisplayName) as projectDisplayName,
     sum(lastRequirementTotal) as requirementTotal,
     if(requirementTotal - sum(firstRequirementTotal) > 0, requirementTotal - sum(firstRequirementTotal), 0) as rangeRequirementTotal,
-    sum(lastRequirementTotal) as requirementTotal,
     sum(workingRequirementTotal) as workingRequirementTotal,
     if(workingRequirementTotal - sum(firstWorkingRequirementTotal) > 0, workingRequirementTotal - sum(firstWorkingRequirementTotal), 0) as rangeWorkingRequirementTotal,
     sum(pendingRequirementTotal) as pendingRequirementTotal,

@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ProjectReportRow struct {
@@ -494,18 +495,10 @@ func (p *provider) checkPermission(req *apistructs.ProjectReportRequest, identit
 func genLastValueWhereSql(req *apistructs.ProjectReportRequest) string {
 	var projectIDSql, iterationIDSql, labelQuerySql string
 	if len(req.ProjectIDs) > 0 {
-		var projectIDs []string
-		for _, id := range req.ProjectIDs {
-			projectIDs = append(projectIDs, fmt.Sprintf("'%d'", id))
-		}
-		projectIDSql = fmt.Sprintf("AND tag_values[indexOf(tag_keys,'project_id')] IN (%s)", strings.Join(projectIDs, ","))
+		projectIDSql = fmt.Sprintf("AND tag_values[indexOf(tag_keys,'project_id')] IN (%s)", strings.Join(strutil.ToStrSlice(req.ProjectIDs, true), ","))
 	}
 	if len(req.IterationIDs) > 0 {
-		var iterationIDs []string
-		for _, id := range req.IterationIDs {
-			iterationIDs = append(iterationIDs, fmt.Sprintf("'%d'", id))
-		}
-		iterationIDSql = fmt.Sprintf("AND tag_values[indexOf(tag_keys,'iteration_id')] IN (%s)", strings.Join(iterationIDs, ","))
+		iterationIDSql = fmt.Sprintf("AND tag_values[indexOf(tag_keys,'iteration_id')] IN (%s)", strings.Join(strutil.ToStrSlice(req.IterationIDs, true), ","))
 	}
 	for _, query := range req.LabelQuerys {
 		if query.Key == labelProjectName {

@@ -15,6 +15,7 @@
 package strutil
 
 import (
+	"fmt"
 	"unsafe"
 )
 
@@ -23,4 +24,24 @@ func NoCopyBytesToString(b []byte) string {
 }
 func NoCopyStringToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&s))
+}
+
+func ToStrSlice[T uint64 | uint | int64 | int](input []T, withQuote ...bool) []string {
+	result := make([]string, len(input))
+	var quote bool
+	if len(withQuote) > 0 && withQuote[0] {
+		quote = true
+	}
+
+	for i, val := range input {
+		var str string
+		if quote {
+			str = fmt.Sprintf("'%v'", val)
+		} else {
+			str = fmt.Sprintf("%v", val)
+		}
+		result[i] = str
+	}
+
+	return result
 }

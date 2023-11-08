@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type FuncPointTrendRow struct {
@@ -111,7 +112,7 @@ func (p *provider) makeFuncPointTrendSql(req *apistructs.FuncPointTrendRequest) 
 			Group("projectID").
 			Group("timestamp")
 		if len(req.ProjectIDs) > 0 {
-			tx = tx.Where("tag_values[indexOf(tag_keys,'user_id')] in (?)", req.ProjectIDs)
+			tx = tx.Where("tag_values[indexOf(tag_keys,'project_id')] in (?)", strutil.ToStrSlice(req.ProjectIDs))
 		}
 		return tx.Find(&[]FuncPointTrendRow{})
 	})
