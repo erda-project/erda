@@ -15,10 +15,74 @@
 package project_report
 
 import (
+	"errors"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 )
+
+func TestWrapBadRequest(t *testing.T) {
+	p := &provider{}
+
+	rw := httptest.NewRecorder()
+	err := errors.New("Bad request")
+
+	p.wrapBadRequest(rw, err)
+	expectedBody := rw.Body.String()
+	assert.Equal(t, expectedBody, rw.Body.String())
+}
+
+func TestGenLastValueWhereSql(t *testing.T) {
+	req := &apistructs.ProjectReportRequest{
+		ProjectIDs:   []uint64{1, 2, 3},
+		IterationIDs: []uint64{10, 20, 30},
+		LabelQuerys: []apistructs.ReportLabelOperation{
+			{
+				Key:       "project_name",
+				Val:       "example",
+				Operation: "like",
+			},
+			{
+				Key:       "status",
+				Val:       "done",
+				Operation: "=",
+			},
+		},
+	}
+
+	expectedSQL := "AND tag_values[indexOf(tag_keys,'project_id')] IN ('1','2','3') " +
+		"AND tag_values[indexOf(tag_keys,'iteration_id')] IN ('10','20','30') " +
+		"AND (tag_values[indexOf(tag_keys,'project_name')] like '%example%' or tag_values[indexOf(tag_keys,'project_display_name')] like '%example%') " +
+		"AND tag_values[indexOf(tag_keys,'status')] = 'done' "
+
+	result := genLastValueWhereSql(req)
+	assert.Equal(t, expectedSQL, result)
+}
+
+func TestGenBasicWhereSql(t *testing.T) {
+	req := &apistructs.ProjectReportRequest{
+		Operations: []apistructs.ReportFilterOperation{
+			{
+				Key:       "requirementTotal",
+				Val:       100,
+				Operation: ">=",
+			},
+			{
+				Key:       "bugCount",
+				Val:       10,
+				Operation: "<",
+			},
+		},
+	}
+
+	expectedSQL := "AND requirementTotal >= 100.000000 AND bugCount < 10.000000 "
+
+	result := genBasicWhereSql(req)
+	assert.Equal(t, expectedSQL, result)
+}
 
 func Test_checkQueryRequest(t *testing.T) {
 	cases := []struct {
