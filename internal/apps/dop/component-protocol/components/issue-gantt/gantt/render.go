@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	issuecommon "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	protocol "github.com/erda-project/erda/internal/core/openapi/legacy/component-protocol"
@@ -155,21 +154,20 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 }
 
 func (f *ComponentGantt) issueChildrenRetriever(id uint64) ([]dao.IssueItem, error) {
-	stateBelongs := []string{pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String()}
 	req := pb.PagingIssueRequest{
 		ProjectID:    f.projectID,
 		Type:         []string{pb.IssueTypeEnum_REQUIREMENT.String(), pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()},
 		IterationIDs: f.State.Values.IterationIDs,
 		Label:        f.State.Values.LabelIDs,
 		Assignee:     f.State.Values.AssigneeIDs,
-		StateBelongs: issuecommon.UnfinishedStateBelongs,
+		State:        f.State.Values.StateIDs,
 	}
 	if id > 0 {
 		req = pb.PagingIssueRequest{
-			ProjectID:    f.projectID,
-			Assignee:     f.State.Values.AssigneeIDs,
-			Type:         []string{pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()},
-			StateBelongs: stateBelongs,
+			ProjectID: f.projectID,
+			Assignee:  f.State.Values.AssigneeIDs,
+			Type:      []string{pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String()},
+			State:     f.State.Values.StateIDs,
 		}
 	}
 	req.PageNo = 1
