@@ -18,12 +18,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 )
 
 type ComponentFilter struct {
 	impl.DefaultFilter
 	sdk              *cptype.SDK
 	bdl              *bundle.Bundle
+	issueSvc         query.Interface
 	State            State
 	FrontendUrlQuery string
 	projectID        uint64
@@ -40,4 +42,5 @@ type FrontendConditions struct {
 	IterationIDs []int64  `json:"iterationIDs,omitempty"`
 	AssigneeIDs  []string `json:"assignee,omitempty"`
 	LabelIDs     []uint64 `json:"label,omitempty"`
+	StateIDs     []int64  `json:"states,omitempty"`
 }

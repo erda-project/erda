@@ -1067,6 +1067,9 @@ func (client *DBClient) FindIssueRoot(req pb.PagingIssueRequest) ([]IssueItem, [
 	if len(req.Assignee) > 0 {
 		sql = sql.Where("a.assignee in (?)", req.Assignee)
 	}
+	if len(req.State) > 0 {
+		sql = sql.Where("a.state in (?)", req.State)
+	}
 	var items []IssueItem
 	var totalTask uint64
 	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order(ganttOrder).Offset(offset).Limit(req.PageSize).Find(&items).

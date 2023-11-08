@@ -15,10 +15,12 @@
 package filter
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
@@ -26,10 +28,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -38,6 +42,7 @@ func init() {
 }
 
 func (f *ComponentFilter) BeforeHandleOp(sdk *cptype.SDK) {
+	f.issueSvc = sdk.Ctx.Value(types.IssueQuery).(query.Interface)
 	f.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.sdk = sdk
 	cputil.MustObjJSONTransfer(&f.StdStatePtr, &f.State)
@@ -93,11 +98,18 @@ func (f *ComponentFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 		labels := model.NewTagsSelectCondition("label", cputil.I18n(f.sdk.Ctx, "label"), labelOptions)
 		labels.ConditionBase.Placeholder = cputil.I18n(f.sdk.Ctx, "please-choose-label")
-		conditions = append(conditions, assignee, labels)
+		states, err := f.getStateIDOptions()
+		if err != nil {
+			panic(err)
+		}
+		conditions = append(conditions, assignee, labels, states)
 		f.StdDataPtr.Conditions = conditions
 		f.StdDataPtr.HideSave = true
 		f.StdDataPtr.Operations = map[cptype.OperationKey]cptype.Operation{
 			filter.OpFilter{}.OpKey(): cputil.NewOpBuilder().Build(),
+		}
+		if err := f.setDefaultState(); err != nil {
+			panic(err)
 		}
 		return nil
 	}
@@ -175,6 +187,16 @@ func (f *ComponentFilter) getProjectMemberOptions() ([]model.SelectOption, error
 	return results, nil
 }
 
+func (f *ComponentFilter) getStateIDOptions() (*model.SelectConditionWithChildren, error) {
+	states, err := f.issueSvc.GetIssueStatesMap(&pb.GetIssueStatesRequest{
+		ProjectID: f.projectID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return model.NewSelectConditionWithChildren("states", cputil.I18n(f.sdk.Ctx, "state"), convertAllConditions(f.sdk.Ctx, states)), nil
+}
+
 func (f *ComponentFilter) getProjectLabelsOptions() ([]model.TagsSelectOption, error) {
 	labels, err := f.bdl.Labels(string(apistructs.LabelTypeIssue), f.projectID, f.sdk.Identity.UserID)
 	if err != nil {
@@ -235,4 +257,43 @@ func defaultIterationRetriever(iterations []apistructs.Iteration) int64 {
 		}
 	}
 	return -1
+}
+
+func convertConditions(status []pb.IssueStatus) []model.SelectOption {
+	options := make([]model.SelectOption, 0, len(status))
+	for _, i := range status {
+		options = append(options, *model.NewSelectOption(i.StateName, i.StateID))
+	}
+	return options
+}
+
+func convertAllConditions(ctx context.Context, stateMap map[string][]pb.IssueStatus) []model.SelectOptionWithChildren {
+	options := make([]model.SelectOptionWithChildren, 0, len(stateMap))
+	for i, v := range stateMap {
+		switch i {
+		case pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String(), pb.IssueTypeEnum_REQUIREMENT.String():
+			options = append(options, model.SelectOptionWithChildren{
+				SelectOption: *model.NewSelectOption(cputil.I18n(ctx, strings.ToLower(i)), i),
+				Children:     convertConditions(v),
+			})
+		}
+	}
+	return options
+}
+
+func (f *ComponentFilter) setDefaultState() error {
+	var stateIDs []int64
+	for _, t := range []string{pb.IssueTypeEnum_TASK.String(), pb.IssueTypeEnum_BUG.String(), pb.IssueTypeEnum_REQUIREMENT.String()} {
+		ids, err := f.issueSvc.GetIssueStateIDs(&pb.GetIssueStatesRequest{
+			ProjectID:    f.projectID,
+			StateBelongs: []string{pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String()},
+			IssueType:    t,
+		})
+		if err != nil {
+			return err
+		}
+		stateIDs = append(stateIDs, ids...)
+	}
+	f.State.Values.StateIDs = stateIDs
+	return nil
 }
