@@ -230,6 +230,12 @@ erda.oap.collector.processor.modifier@docker_container_summary:
     - action: rename
       key: tags.terminus_define_tag
       value: tags.job_id
+    - action: copy
+      key: tags.pod_labels_dice_component
+      value: tags.component_name
+      condition:
+        op: key_exist
+        key: tags.pod_labels_dice_component
     # --- instance_type logic block ---
     - action: set
       key: tags.instance_type
