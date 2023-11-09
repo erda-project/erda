@@ -1089,6 +1089,9 @@ func (client *DBClient) FindIssueRoot(req pb.PagingIssueRequest) ([]IssueItem, [
 	if len(req.StateBelongs) > 0 {
 		sql = sql.Where("e.belong IN (?)", req.StateBelongs)
 	}
+	if len(req.State) > 0 {
+		sql = sql.Where("e.id IN (?)", req.State)
+	}
 	var res []IssueItem
 	var totalReq uint64
 	if err := sql.Select("DISTINCT a.*, e.name, e.belong").Offset(offset).Limit(req.PageSize).Find(&res).
