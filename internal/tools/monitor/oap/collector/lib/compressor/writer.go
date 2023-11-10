@@ -19,9 +19,11 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"sync"
 )
 
 type gzipEncoder struct {
+	sync.Mutex
 	buf    *bytes.Buffer
 	writer *gzip.Writer
 }
@@ -39,7 +41,9 @@ func (ge *gzipEncoder) Compress(buf []byte) ([]byte, error) {
 	defer func() {
 		ge.buf.Reset()
 		ge.writer.Reset(ge.buf)
+		ge.Unlock()
 	}()
+	ge.Lock()
 	if _, err := ge.writer.Write(buf); err != nil {
 		return nil, fmt.Errorf("gizp write data: %w", err)
 	}
