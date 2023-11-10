@@ -25,18 +25,17 @@ WORKDIR /erda
 RUN ./build/scripts/build_all/app_handler.sh /erda "${MODULE_PATH}" /erda-handled
 
 
+FROM --platform=$TARGETPLATFORM registry.erda.cloud/retag/kubectl:1.24.16 as kubectl
 FROM --platform=$TARGETPLATFORM ${BASE_DOCKER_IMAGE}
 ARG MODULE_PATH
 ARG TARGETARCH
 ENV MODULE_PATH=${MODULE_PATH}
-ENV KUBECTL_VERSION=v1.24.6
 
 COPY --from=app-handler /erda-handled /erda
 COPY --from=app-handler /erda/build/scripts/cluster-agent/* /usr/bin/
+COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
 
-RUN curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl > /usr/bin/kubectl \
-    && chmod +x /usr/bin/kubectl \
-    && chmod 777 /usr/bin/kubectl-shell.sh /usr/bin/shell-setup.sh
+RUN chmod 777 /usr/bin/kubectl-shell.sh /usr/bin/shell-setup.sh
 
 WORKDIR /erda
 CMD ["bash", "-c", "/erda/cmd/${MODULE_PATH}/bin"]
