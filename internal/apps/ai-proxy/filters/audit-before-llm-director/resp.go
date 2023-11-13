@@ -97,7 +97,10 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 		delta := items[len(items)-1].Delta
 		completion += delta.Content
 		if delta.FunctionCall != nil {
-			fcName = delta.FunctionCall.Name
+			if delta.FunctionCall.Name != "" {
+				fcName = delta.FunctionCall.Name
+			}
+			completion += delta.FunctionCall.Arguments
 		}
 	}
 
@@ -124,6 +127,7 @@ func ExtractApplicationJsonCompletionAndFcName(responseBody string) (completion 
 	completion = msg.Content
 	if msg.FunctionCall != nil {
 		fcName = msg.FunctionCall.Name
+		completion = msg.FunctionCall.Arguments
 	}
 	return
 }
