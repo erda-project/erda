@@ -114,7 +114,8 @@ message AuditUpdateRequestAfterLLMDirectorResponse {
     string auditId = 1 [(validate.rules).string = {len: 36}];
     string completion = 2;
     string responseBody = 3;
-    string responseFunctionCallName = 4;
+    string responseHeader = 4;
+    string responseFunctionCallName = 5;
 }
 
 message AuditGetRequest {

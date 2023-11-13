@@ -35,9 +35,6 @@ const (
 
 type Filter any
 
-//	type IsLLMDirector interface {
-//		IsLLMDirector() bool
-//	}
 type RequestFilter interface {
 	OnRequest(ctx context.Context, w http.ResponseWriter, infor HttpInfor) (signal Signal, err error)
 }
