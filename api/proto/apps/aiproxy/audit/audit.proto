@@ -76,6 +76,7 @@ message AuditCreateRequestWhenReceived {
 
     string username = 15;
     string email = 16;
+    string bizSource = 17;
 }
 
 message AuditUpdateRequestAfterContextParsed {
