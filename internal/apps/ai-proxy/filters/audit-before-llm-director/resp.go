@@ -36,18 +36,25 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 	if !ok || auditRecID == "" {
 		return nil
 	}
-	actualRespBuffer := ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)
+	respBuffer := ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)
 	var completion, responseFunctionCallName string
 	if ctxhelper.GetIsStream(ctx) {
-		completion, responseFunctionCallName = ExtractEventStreamCompletionAndFcName(actualRespBuffer.String())
+		completion, responseFunctionCallName = ExtractEventStreamCompletionAndFcName(respBuffer.String())
 	} else {
-		completion, responseFunctionCallName = ExtractApplicationJsonCompletionAndFcName(actualRespBuffer.String())
+		completion, responseFunctionCallName = ExtractApplicationJsonCompletionAndFcName(respBuffer.String())
 	}
 	// collect actual llm response info
 	updateReq := pb.AuditUpdateRequestAfterLLMDirectorResponse{
-		AuditId:                  auditRecID,
-		Completion:               completion,
-		ResponseBody:             actualRespBuffer.String(),
+		AuditId:      auditRecID,
+		Completion:   completion,
+		ResponseBody: respBuffer.String(),
+		ResponseHeader: func() string {
+			b, err := json.Marshal(infor.Header())
+			if err != nil {
+				return err.Error()
+			}
+			return string(b)
+		}(),
 		ResponseFunctionCallName: responseFunctionCallName,
 	}
 
@@ -90,7 +97,10 @@ func ExtractEventStreamCompletionAndFcName(responseBody string) (completion stri
 		delta := items[len(items)-1].Delta
 		completion += delta.Content
 		if delta.FunctionCall != nil {
-			fcName = delta.FunctionCall.Name
+			if delta.FunctionCall.Name != "" {
+				fcName = delta.FunctionCall.Name
+			}
+			completion += delta.FunctionCall.Arguments
 		}
 	}
 
@@ -117,6 +127,7 @@ func ExtractApplicationJsonCompletionAndFcName(responseBody string) (completion 
 	completion = msg.Content
 	if msg.FunctionCall != nil {
 		fcName = msg.FunctionCall.Name
+		completion = msg.FunctionCall.Arguments
 	}
 	return
 }
