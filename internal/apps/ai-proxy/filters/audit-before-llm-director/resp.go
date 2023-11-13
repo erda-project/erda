@@ -36,18 +36,25 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 	if !ok || auditRecID == "" {
 		return nil
 	}
-	actualRespBuffer := ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)
+	respBuffer := ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)
 	var completion, responseFunctionCallName string
 	if ctxhelper.GetIsStream(ctx) {
-		completion, responseFunctionCallName = ExtractEventStreamCompletionAndFcName(actualRespBuffer.String())
+		completion, responseFunctionCallName = ExtractEventStreamCompletionAndFcName(respBuffer.String())
 	} else {
-		completion, responseFunctionCallName = ExtractApplicationJsonCompletionAndFcName(actualRespBuffer.String())
+		completion, responseFunctionCallName = ExtractApplicationJsonCompletionAndFcName(respBuffer.String())
 	}
 	// collect actual llm response info
 	updateReq := pb.AuditUpdateRequestAfterLLMDirectorResponse{
-		AuditId:                  auditRecID,
-		Completion:               completion,
-		ResponseBody:             actualRespBuffer.String(),
+		AuditId:      auditRecID,
+		Completion:   completion,
+		ResponseBody: respBuffer.String(),
+		ResponseHeader: func() string {
+			b, err := json.Marshal(infor.Header())
+			if err != nil {
+				return err.Error()
+			}
+			return string(b)
+		}(),
 		ResponseFunctionCallName: responseFunctionCallName,
 	}
 

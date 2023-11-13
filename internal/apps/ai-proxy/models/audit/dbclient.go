@@ -193,6 +193,11 @@ func (dbClient *DBClient) UpdateAfterLLMDirectorResponse(ctx context.Context, re
 	c.ResponseBody = req.ResponseBody
 	c.ResponseFunctionCallName = req.ResponseFunctionCallName
 
+	var auditMetadata metadata.AuditMetadata
+	cputil.MustObjJSONTransfer(&c.Metadata, &auditMetadata)
+	auditMetadata.Public.ResponseHeader = req.ResponseHeader
+	cputil.MustObjJSONTransfer(&auditMetadata, &c.Metadata)
+
 	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {
 		return nil, err
 	}
