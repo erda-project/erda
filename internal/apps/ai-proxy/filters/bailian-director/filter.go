@@ -58,6 +58,10 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	}, nil
 }
 
+func (f *BailianDirector) MultiResponseWriter(ctx context.Context) []io.ReadWriter {
+	return []io.ReadWriter{ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)}
+}
+
 func (f *BailianDirector) Enable(ctx context.Context, req *http.Request) bool {
 	prov, ok := ctxhelper.GetModelProvider(ctx)
 	return ok && prov.Type == modelproviderpb.ModelProviderType_AliyunBailian
@@ -87,6 +91,7 @@ func (f *BailianDirector) OnRequest(ctx context.Context, w http.ResponseWriter, 
 		r.Header.Set(httputil.HeaderKeyAccept, string(httputil.ApplicationJsonUTF8))
 		r.Header.Del(httputil.HeaderKeyAcceptEncoding) // remove gzip. Actual test: gzip is not ok; deflate is ok; br is ok
 	})
+	//infor.Header().Del(httputil.HeaderKeyAcceptEncoding)
 
 	// parse original request body
 	var openaiReq openai.ChatCompletionRequest

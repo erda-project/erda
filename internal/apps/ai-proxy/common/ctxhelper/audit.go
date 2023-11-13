@@ -12,15 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package ctxhelper
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
+import (
+	"context"
+	"sync"
 
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
+
+func GetAuditID(ctx context.Context) (string, bool) {
+	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyAudit{})
+	if !ok || value == nil {
+		return "", false
+	}
+	auditID, ok := value.(string)
+	if !ok {
+		return "", false
+	}
+	return auditID, true
+}
+
+func PutAuditID(ctx context.Context, auditID string) {
+	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
+	m.Store(vars.MapKeyAudit{}, auditID)
+}

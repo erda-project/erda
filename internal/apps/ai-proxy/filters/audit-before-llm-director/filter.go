@@ -12,15 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package audit_before_llm_director
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
+import (
+	"encoding/json"
 
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
+
+const (
+	Name = "audit-before-llm-director"
+)
+
+var (
+	_ reverseproxy.OriginalRequestFilter = (*Filter)(nil)
+	_ reverseproxy.ResponseFilter        = (*Filter)(nil)
+)
+
+func init() {
+	reverseproxy.RegisterFilterCreator(Name, New)
+}
+
+type Filter struct {
+	*reverseproxy.DefaultResponseFilter
+}
+
+func New(_ json.RawMessage) (reverseproxy.Filter, error) {
+	return &Filter{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
+}

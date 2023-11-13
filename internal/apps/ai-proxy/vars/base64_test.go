@@ -12,15 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package vars
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
-
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+import (
+	"testing"
 )
+
+func TestTryUnwrapBase64(t *testing.T) {
+	cases := []string{
+		"erda",
+		"13012345678",
+		"erda@terminus.io",
+		"中文",
+	}
+	for _, c := range cases {
+		// base64 encode
+		encoded := base64std.EncodeToString([]byte(c))
+		// try unwrap
+		got := TryUnwrapBase64(encoded)
+		if got != c {
+			t.Errorf("TryUnwrapBase64(%q) == %q, want %q", encoded, got, c)
+		}
+		// raw
+		got = TryUnwrapBase64(c)
+		if got != c {
+			t.Errorf("TryUnwrapBase64(%q) == %q, want %q", c, got, c)
+		}
+	}
+}

@@ -35,8 +35,18 @@ const (
 
 type Filter any
 
+//	type IsLLMDirector interface {
+//		IsLLMDirector() bool
+//	}
 type RequestFilter interface {
 	OnRequest(ctx context.Context, w http.ResponseWriter, infor HttpInfor) (signal Signal, err error)
+}
+
+type ActualRequestFilter interface {
+	OnActualRequest(ctx context.Context, infor HttpInfor)
+}
+type OriginalRequestFilter interface {
+	OnOriginalRequest(ctx context.Context, infor HttpInfor)
 }
 
 type ResponseFilter interface {
@@ -51,6 +61,10 @@ type ResponseFilter interface {
 	OnResponseEOF(ctx context.Context, infor HttpInfor, w Writer, chunk []byte) error
 
 	ImmutableResponseFilter
+}
+
+type MultiResponseWriter interface {
+	MultiResponseWriter(ctx context.Context) []io.ReadWriter
 }
 
 type ImmutableResponseFilter interface {

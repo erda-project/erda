@@ -13,9 +13,10 @@ routes:
           maxSize: 102400
           message: { "messages": [ { "role": "ai-proxy", "content": "问题超长啦, 请重置会话", "name": "ai-proxy" } ] }
       - name: context
-      - name: message-context
+      - name: context-chat
         config:
           sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
+      - name: audit-before-llm-director
       - name: azure-director
         config:
           directors:
@@ -36,7 +37,7 @@ routes:
             - AddContextMessages
       - name: bailian-director
       - name: openai-director
-      - name: audit
+      - name: audit-after-llm-director
       - name: finalize
   - path: /v1/embeddings
     method: POST
@@ -46,6 +47,8 @@ routes:
       - name: log-http
       - name: rate-limit
       - name: context
+      - name: context-embedding
+      - name: audit-before-llm-director
       - name: azure-director
         config:
           directors:
@@ -62,5 +65,5 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
-      - name: audit
+      - name: audit-after-llm-director
       - name: finalize
