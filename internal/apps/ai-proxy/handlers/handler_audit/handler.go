@@ -12,15 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package handler_audit
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
+import (
+	"context"
 
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
+
+type AuditHandler struct {
+	DAO dao.DAO
+}
+
+func (a *AuditHandler) Get(ctx context.Context, req *pb.AuditGetRequest) (*pb.Audit, error) {
+	return a.DAO.AuditClient().Get(ctx, req)
+}
+
+func (a *AuditHandler) Paging(ctx context.Context, req *pb.AuditPagingRequest) (*pb.AuditPagingResponse, error) {
+	return a.DAO.AuditClient().Paging(ctx, req)
+}

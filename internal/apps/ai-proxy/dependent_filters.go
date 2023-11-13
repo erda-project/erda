@@ -15,16 +15,18 @@
 package ai_proxy
 
 import (
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit-after-llm-director"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit-before-llm-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/bailian-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/body-size-limit"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-chat"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-embedding"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/finalize"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/initialize"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/message-context"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/openai-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/rate-limit"

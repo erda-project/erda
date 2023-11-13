@@ -15,6 +15,7 @@
 package vars
 
 const (
+	XAIProxyHeaderPrefix       = "X-AI-Proxy-"
 	XAIProxyChatType           = "X-AI-Proxy-ChatType"
 	XAIProxyChatTitle          = "X-AI-Proxy-ChatTitle"
 	XAIProxyChatId             = "X-AI-Proxy-ChatId"
@@ -59,4 +60,8 @@ type (
 	MapKeyMessageGroup   struct{ MapKeyMessageGroup any }
 	MapKeyUserPrompt     struct{ MapKeyUserPrompt any }
 	MapKeyIsStream       struct{ MapKeyIsStream any }
+	MapKeyAudit          struct{ MapKeyAudit any }
+
+	MapKeyLLMDirectorPassedOnRequest      struct{ MapKeyLLMDirectorPassedOnRequest any }
+	MapKeyLLMDirectorActualResponseWriter struct{ MapKeyLLMDirectorActualResponseWriter any }
 )

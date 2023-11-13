@@ -140,6 +140,12 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 		}
 	}
 
+	//// handler for actual request
+	//handleFuncForActualRequst := ctx.Value(reverseproxy.CtxKeyHandleFuncForActualRequest{})
+	//if handleFuncForActualRequst != nil {
+	//	rp.HandleFuncForActualRequest = handleFuncForActualRequst.(func(ctx context.Context, req *http.Request))
+	//}
+
 	return rp.ServeHTTP
 }
 

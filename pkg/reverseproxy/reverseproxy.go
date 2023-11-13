@@ -279,6 +279,16 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	infor := NewInfor(p.Context, outreq)
+
+	// handle original request info here
+	for _, item := range p.Filters {
+		if filter, ok := item.Filter.(OriginalRequestFilter); ok {
+			ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnOriginalRequest"))
+			filter.OnOriginalRequest(ctx, infor)
+		}
+	}
+
+	// handle request info here
 	for _, item := range p.Filters {
 		if filter, ok := item.Filter.(RequestFilter); ok {
 			ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnRequest"))
@@ -345,6 +355,14 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 		if !omit {
 			outreq.Header.Set("X-Forwarded-For", clientIP)
+		}
+	}
+
+	// handle actual request info here
+	for _, item := range p.Filters {
+		if filter, ok := item.Filter.(ActualRequestFilter); ok {
+			ctx := context.WithValue(p.Context, LoggerCtxKey{}, logger.Sub(reflect.TypeOf(filter).String()).Sub("OnActualRequest"))
+			filter.OnActualRequest(ctx, infor)
 		}
 	}
 
@@ -547,7 +565,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					logger.Debugf("the filter %s.OnResponseChunk is not enabled on the request", reflect.TypeOf(filter).String())
 					continue
 				}
-				signal, err := filter.OnResponseChunkImmutable(ctx, NewInfor(p.Context, response), copiedChunk)
+				signal, err := filter.(ResponseFilter).OnResponseChunkImmutable(ctx, NewInfor(p.Context, response), copiedChunk)
 				if err != nil {
 					logger.Errorf("%T.OnResponseChunkImmutable signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
@@ -556,7 +574,13 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					logger.Debugf("%T.OnResponseChunkImmutable signal: %v, break", filter, signal)
 					break LoopOnResponseChunk
 				}
-				switch signal, err := filter.OnResponseChunk(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); {
+				mw := []io.Writer{&nextWriter}
+				if ff, ok := filter.(MultiResponseWriter); ok {
+					for _, w := range ff.MultiResponseWriter(ctx) {
+						mw = append(mw, w.(io.Writer))
+					}
+				}
+				switch signal, err := filter.(ResponseFilter).OnResponseChunk(ctx, NewInfor(p.Context, response), NewMultiByteWriter(mw...), nextReader); {
 				case err != nil:
 					logger.Errorf("%T.OnResponseChunk signal: %v, err: %v", filter, signal, err)
 					return rw.Filter.(*responseBodyWriter).written, err
@@ -583,11 +607,17 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 					logger.Debugf("the filter %s.OnResponseEOF is not enabled on the request", reflect.TypeOf(filter).String())
 					continue
 				}
-				if err := filter.OnResponseEOFImmutable(ctx, NewInfor(p.Context, response), copiedReader); err != nil {
+				if err := filter.(ResponseFilter).OnResponseEOFImmutable(ctx, NewInfor(p.Context, response), copiedReader); err != nil {
 					logger.Errorf("%T.OnResponseEOFImmutable, err: %v", filter, err)
 					return rw.Filter.(*responseBodyWriter).written, err
 				}
-				if err := filter.OnResponseEOF(ctx, NewInfor(p.Context, response), &nextWriter, nextReader); err != nil {
+				mw := []io.Writer{&nextWriter}
+				if ff, ok := filter.(MultiResponseWriter); ok {
+					for _, w := range ff.MultiResponseWriter(ctx) {
+						mw = append(mw, w.(io.Writer))
+					}
+				}
+				if err := filter.(ResponseFilter).OnResponseEOF(ctx, NewInfor(p.Context, response), NewMultiByteWriter(mw...), nextReader); err != nil {
 					logger.Errorf("%T.OnResponseEOF, err: %v", filter, err)
 					return rw.Filter.(*responseBodyWriter).written, err
 				}
@@ -820,4 +850,26 @@ func lower(b byte) byte {
 type NamingFilter struct {
 	Name   string
 	Filter Filter
+}
+
+type MultiByteWriter struct {
+	writers []io.Writer
+}
+
+func (mbw *MultiByteWriter) WriteByte(c byte) error {
+	_, err := mbw.Write([]byte{c})
+	return err
+}
+
+func (mbw *MultiByteWriter) Write(p []byte) (n int, err error) {
+	for _, w := range mbw.writers {
+		if n, err := w.Write(p); err != nil {
+			return n, err
+		}
+	}
+	return len(p), nil
+}
+
+func NewMultiByteWriter(writers ...io.Writer) *MultiByteWriter {
+	return &MultiByteWriter{writers: writers}
 }
