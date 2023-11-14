@@ -40,10 +40,16 @@ var (
 type AIFunction struct {
 	Log       logs.Logger
 	OpenaiURL *url.URL
+	ModelIds  map[string]string
 }
+
+const (
+	EnvAiProxyChatgpt4ModelId = "AI_PROXY_CHATGPT4_MODEL_ID"
+)
 
 func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *structpb.Value, err error) {
 	h.Log.Infof("apply the function with request %s", strutil.TryGetJsonStr(req))
+	var results any
 
 	factory, ok := functions.Retrieve(req.GetFunctionName())
 	if !ok {
@@ -51,17 +57,25 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 		return nil, HTTPError(err, http.StatusBadRequest)
 	}
 
-	var results any
+	f := factory(ctx, "", req.GetBackground())
+	xAIProxyModelId := ""
 	switch req.GetFunctionName() {
 	case aitestcase.Name:
-		results, err = h.createTestCaseForRequirementIDAndTestID(ctx, factory, req, h.OpenaiURL)
-		if err != nil {
-			return nil, HTTPError(err, http.StatusBadRequest)
+		// 需要 ChatGPT4 模型进行需求分组
+		xAIProxyModelId, _ = h.ModelIds["gpt-4"]
+		if xAIProxyModelId == "" {
+			h.Log.Errorf("config modelIds[\"gpt-4\"] not set, please set env %s", EnvAiProxyChatgpt4ModelId)
+			err = errors.Errorf("config modelIds[\"gpt-4\"] not set")
+			return nil, HTTPError(err, http.StatusInternalServerError)
 		}
-
 	default:
 		err := errors.Errorf("AI function %s not support for apply", req.GetFunctionName())
 		return nil, HTTPError(err, http.StatusBadRequest)
+	}
+
+	results, err = f.Handler(ctx, factory, req, h.OpenaiURL, xAIProxyModelId)
+	if err != nil {
+		return nil, HTTPError(err, http.StatusInternalServerError)
 	}
 
 	var v = &structpb.Value{}
@@ -98,7 +112,6 @@ func (h *AIFunction) GetSystemPrompt(ctx context.Context, req *pb.GetSystemPromp
 		err := errors.Errorf("AI function %s not found", req.GetFunctionName())
 		return nil, HTTPError(err, http.StatusBadRequest)
 	}
-
 	f := factory(ctx, "", nil)
 
 	content := httpserver.Resp{

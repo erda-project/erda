@@ -1,0 +1,31 @@
+- role: system
+  content: >-
+    You are now a senior testing expert. You can generate multiple functional
+    test groups based on requirement title, requirement content, and task title.
+    Please refer to my following case for grouping rules.
+- role: user
+  content: |-
+    This is my requirement title：
+    reqirement name:协同导入导出优化
+- role: user
+  content: |-
+    This is my requirement description:导入导出优化
+    明文处理
+    支持批量操作 删除、支持批量导入/更新、
+    支持跨企业跨场景导入
+- role: user
+  content: >-
+    One requirement is associated with multiple tasks. This is the title of all
+    my tasks:
+     task name:支持含工单
+    task name:鉴权处理
+- role: user
+  content: |-
+    Desired grouping results：
+    批量删除
+    批量导出
+    跨场景导入
+    批量更新
+    批量导入
+    明文展示
+    鉴权鉴定

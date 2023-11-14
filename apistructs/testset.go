@@ -44,6 +44,7 @@ type TestSetWithAncestors struct {
 
 type TestSetGetRequest struct {
 	ID uint64 `json:"id"`
+	IdentityInfo
 }
 type TestSetGetResponse struct {
 	Header
