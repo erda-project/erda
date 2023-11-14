@@ -28,10 +28,10 @@
           "activedMetricGroups": ["all", "all@docker_container_summary"],
           "resultFilters": [{
             "alias": "容器ID",
-            "field": "docker_container_summary-container_id::tag",
+            "field": "docker_container_summary-pod_uid::tag",
             "filter": {
               "operation": "=",
-              "value": "{{containerId}}"
+              "value": "{{podUid}}"
             },
             "key": "filter8AtJEzGt",
             "resultType": "string",
@@ -81,7 +81,7 @@
             "alias": "valueNLlik561",
             "expr": "max(mem_limit::field)"
           }],
-          "where": ["container_id::tag='{{containerId}}'"]
+          "where": ["pod_uid::tag='{{podUid}}'"]
         },
         "method": "post",
         "query": {
@@ -119,10 +119,10 @@
           "activedMetricGroups": ["all", "all@docker_container_summary"],
           "resultFilters": [{
             "alias": "容器ID",
-            "field": "docker_container_summary-container_id::tag",
+            "field": "docker_container_summary-pod_uid::tag",
             "filter": {
               "operation": "=",
-              "value": "{{containerId}}"
+              "value": "{{podUid}}"
             },
             "key": "filtereTOuVq3y",
             "resultType": "string",
@@ -167,7 +167,7 @@
             "expr": "max(cpu_usage_percent::field)"
           }],
           "where": [
-            "container_id::tag='{{containerId}}'"
+            "pod_uid::tag='{{podUid}}'"
           ]
         },
         "method": "post",
@@ -206,10 +206,10 @@
           "activedMetricGroups": ["all", "all@docker_container_summary"],
           "resultFilters": [{
             "alias": "容器ID",
-            "field": "container_summary-container_id::tag",
+            "field": "container_summary-pod_uid::tag",
             "filter": {
               "operation": "=",
-              "value": "{{containerId}}"
+              "value": "{{podUid}}"
             },
             "key": "filterkI5La3rU",
             "resultType": "string",
@@ -273,7 +273,7 @@
             "alias": "valueedfvbYOB",
             "expr": "diffps(blk_write_bytes::field)"
           }],
-          "where": ["container_id::tag='{{containerId}}'"]
+          "where": ["pod_uid::tag='{{podUid}}'"]
         },
         "method": "post",
         "query": {
