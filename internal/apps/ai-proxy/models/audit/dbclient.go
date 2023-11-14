@@ -80,6 +80,9 @@ func (dbClient *DBClient) CreateWhenReceived(ctx context.Context, req *pb.AuditC
 	c.RequestBody = req.RequestBody
 	c.UserAgent = req.UserAgent
 	c.XRequestID = req.XRequestId
+	c.Username = req.Username
+	c.Email = req.Email
+	c.BizSource = req.BizSource
 
 	// metadata
 	meta := metadata.AuditMetadata{
@@ -121,12 +124,29 @@ func (dbClient *DBClient) UpdateAfterContextParsed(ctx context.Context, req *pb.
 	c.Username = req.Username
 	c.Email = req.Email
 
-	c.BizSource = req.BizSource
 	c.OperationID = req.OperationId
+	if req.BizSource != "" {
+		c.BizSource = req.BizSource
+	}
+	if req.Username != "" {
+		c.Username = req.Username
+	}
+	if req.Email != "" {
+		c.Email = req.Email
+	}
 
 	var auditMetadata metadata.AuditMetadata
 	cputil.MustObjJSONTransfer(&c.Metadata, &auditMetadata)
 	auditMetadata.Public.RequestFunctionCallName = req.RequestFunctionCallName
+	if req.DingtalkStaffId != "" {
+		auditMetadata.Secret.DingtalkStaffId = req.DingtalkStaffId
+	}
+	if req.IdentityJobNumber != "" {
+		auditMetadata.Secret.IdentityJobNumber = req.IdentityJobNumber
+	}
+	if req.IdentityPhoneNumber != "" {
+		auditMetadata.Secret.IdentityPhoneNumber = req.IdentityPhoneNumber
+	}
 	cputil.MustObjJSONTransfer(&auditMetadata, &c.Metadata)
 
 	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {
