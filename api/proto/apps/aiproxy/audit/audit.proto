@@ -73,6 +73,10 @@ message AuditCreateRequestWhenReceived {
     string dingtalkChatType = 11;
     string dingtalkChatTitle = 12;
     string dingtalkChatId = 13;
+
+    string username = 15;
+    string email = 16;
+    string bizSource = 17;
 }
 
 message AuditUpdateRequestAfterContextParsed {
@@ -83,13 +87,17 @@ message AuditUpdateRequestAfterContextParsed {
     string modelId = 4 [(validate.rules).string = {len: 36}];
     string sessionId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
 
-    string username = 6;
-    string email = 7;
+    string bizSource = 7;
+    string operationId = 8;
 
-    string bizSource = 8;
-    string operationId = 9;
+    string requestFunctionCallName = 9;
 
-    string requestFunctionCallName = 10;
+    // parsed from client token
+    string dingtalkStaffId = 10;
+    string email = 11;
+    string identityJobNumber = 12;
+    string username = 13;
+    string identityPhoneNumber = 14;
 }
 
 message AuditUpdateRequestAfterLLMDirectorInvoke {

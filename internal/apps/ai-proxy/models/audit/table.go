@@ -31,7 +31,7 @@ type Audit struct {
 	ResponseAt time.Time `gorm:"column:response_at;type:datetime" json:"responseAt" yaml:"responseAt"`
 
 	AuthKey            string `gorm:"column:auth_key;type:varchar(191)" json:"authKey" yaml:"authKey"`
-	Status             int32  `gorm:"column:status_code;type:int(11)" json:"status" yaml:"status"`
+	Status             int32  `gorm:"column:status;type:int(11)" json:"status" yaml:"status"`
 	Prompt             string `gorm:"column:prompt;type:mediumtext" json:"prompt" yaml:"prompt"`
 	Completion         string `gorm:"column:completion;type:longtext" json:"completion" yaml:"completion"`
 	RequestBody        string `gorm:"column:request_body;type:longtext" json:"requestBody" yaml:"requestBody"`
