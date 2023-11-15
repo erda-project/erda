@@ -1041,6 +1041,9 @@ func (client *DBClient) FindIssueChildren(id uint64, req pb.PagingIssueRequest) 
 	if len(req.StateBelongs) > 0 {
 		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
 	}
+	if len(req.State) > 0 {
+		sql = sql.Where("a.state in (?)", req.State)
+	}
 	sql = applyCondition(sql, req)
 	offset := (req.PageNo - 1) * req.PageSize
 	var total uint64
