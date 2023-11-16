@@ -17,6 +17,7 @@ package functions
 import (
 	"context"
 	"encoding/json"
+	"net/url"
 	"sync"
 
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
@@ -36,7 +37,8 @@ type Function interface {
 	Schema() (json.RawMessage, error)
 	RequestOptions() []sdk.RequestOption
 	CompletionOptions() []sdk.PatchOption
-	Callback(ctx context.Context, arguments json.RawMessage, input interface{}, needAdjust bool) (any, error)
+	Callback(ctx context.Context, arguments json.RawMessage, input interface{}) (any, error)
+	Handler(ctx context.Context, factory FunctionFactory, req *pb.ApplyRequest, openaiURL *url.URL, xAIProxyModelId string) (any, error)
 }
 
 type Background struct {

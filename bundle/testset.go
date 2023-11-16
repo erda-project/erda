@@ -70,3 +70,27 @@ func (b *Bundle) GetTestSets(req apistructs.TestSetListRequest) ([]apistructs.Te
 
 	return data.Data, nil
 }
+
+// GET {Path: "/api/testsets/{testSetID}", Method: http.MethodGet, Handler: e.GetTestSet},
+func (b *Bundle) GetTestSetById(req apistructs.TestSetGetRequest) (*apistructs.TestSetWithAncestors, error) {
+	host, err := b.urls.ErdaServer()
+	if err != nil {
+		return nil, err
+	}
+
+	var data apistructs.TestSetGetResponse
+	path := fmt.Sprintf("/api/testsets/%d", req.ID)
+	r, err := b.hc.Get(host).Path(path).
+		Header(httputil.InternalHeader, "AI").
+		Header(httputil.UserHeader, req.IdentityInfo.UserID).
+		JSONBody(&req).Do().JSON(&data)
+
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() {
+		return nil, toAPIError(r.StatusCode(), apistructs.ErrorResponse{Msg: "GetTestSetById failed"})
+	}
+
+	return data.Data, nil
+}

@@ -26,21 +26,22 @@ const (
 // TestCase 测试用例详情
 type TestCase struct {
 	ID             uint64                  `json:"id"`
-	Name           string                  `json:"name"`           // 用例名称
-	Priority       TestCasePriority        `json:"priority"`       // 优先级
-	PreCondition   string                  `json:"preCondition"`   // 前置条件
-	Desc           string                  `json:"desc"`           // 补充说明
-	Recycled       *bool                   `json:"recycled"`       // 是否回收，0：不回收，1：回收
-	TestSetID      uint64                  `json:"testSetID"`      // 所属测试集 ID
-	ProjectID      uint64                  `json:"projectID"`      // 当前项目id，用于权限校验
-	CreatorID      string                  `json:"creatorID"`      // 创建者 ID
-	UpdaterID      string                  `json:"updaterID"`      // 更新者 ID
-	BugIDs         []uint64                `json:"bugIDs"`         // 关联缺陷 IDs
-	LabelIDs       []uint64                `json:"labelIDs"`       // 关联缺陷 IDs
-	Attachments    []string                `json:"attachments"`    // 上传附件 uuid 列表,仅供创建时使用
-	StepAndResults []TestCaseStepAndResult `json:"stepAndResults"` // 步骤及结果
-	Labels         []ProjectLabel          `json:"labels"`         // 标签
-	APIs           []*ApiTestInfo          `json:"apis"`           // 接口测试集合
+	Name           string                  `json:"name"`                 // 用例名称
+	Priority       TestCasePriority        `json:"priority"`             // 优先级
+	PreCondition   string                  `json:"preCondition"`         // 前置条件
+	Desc           string                  `json:"desc"`                 // 补充说明
+	Recycled       *bool                   `json:"recycled"`             // 是否回收，0：不回收，1：回收
+	TestSetID      uint64                  `json:"testSetID"`            // 所属测试集 ID
+	TestSetDir     string                  `json:"testSetDir,omitempty"` // 所属测试集 Directory
+	ProjectID      uint64                  `json:"projectID"`            // 当前项目id，用于权限校验
+	CreatorID      string                  `json:"creatorID"`            // 创建者 ID
+	UpdaterID      string                  `json:"updaterID"`            // 更新者 ID
+	BugIDs         []uint64                `json:"bugIDs"`               // 关联缺陷 IDs
+	LabelIDs       []uint64                `json:"labelIDs"`             // 关联缺陷 IDs
+	Attachments    []string                `json:"attachments"`          // 上传附件 uuid 列表,仅供创建时使用
+	StepAndResults []TestCaseStepAndResult `json:"stepAndResults"`       // 步骤及结果
+	Labels         []ProjectLabel          `json:"labels"`               // 标签
+	APIs           []*ApiTestInfo          `json:"apis"`                 // 接口测试集合
 	APICount       TestCaseAPICount        `json:"apiCount"`
 	CreatedAt      time.Time               `json:"createdAt"`
 	UpdatedAt      time.Time               `json:"updatedAt"`
@@ -115,15 +116,20 @@ type TestCaseGetResponse struct {
 
 // TestCaseCreateRequest POST 创建测试用例请求
 type TestCaseCreateRequest struct {
-	ProjectID      uint64                  `json:"projectID"`      // 当前项目 ID，用于权限校验
-	TestSetID      uint64                  `json:"testSetID"`      // 所属测试集 ID
-	Name           string                  `json:"name"`           // 用例名称
-	PreCondition   string                  `json:"preCondition"`   // 前置条件
-	StepAndResults []TestCaseStepAndResult `json:"stepAndResults"` // 步骤及结果
-	APIs           []*ApiTestInfo          `json:"apis"`           // 接口测试集合
-	Desc           string                  `json:"desc"`           // 补充说明
-	Priority       TestCasePriority        `json:"priority"`       // 优先级
-	LabelIDs       []uint64                `json:"labelIDs"`       // 关联缺陷 IDs
+	TestCaseID       uint64                  `json:"testcaseID,omitempty"` // 创建测试用例成功后可以回填,专用于 AI 生成测试用例的场景
+	ProjectID        uint64                  `json:"projectID"`            // 当前项目 ID，用于权限校验
+	ParentTestSetID  uint64                  `json:"parentTestSetID"`      // 所属测试集的 Parent 测试集 ID
+	ParentTestSetDir string                  `json:"parentTestSetDir"`     // 所属测试集的 Parent 测试集 Directory
+	TestSetID        uint64                  `json:"testSetID"`            // 所属测试集 ID
+	TestSetDir       string                  `json:"testSetDir"`           // 所属测试集 Directory
+	TestSetName      string                  `json:"testSetName"`          // 所属测试集 Name
+	Name             string                  `json:"name"`                 // 用例名称
+	PreCondition     string                  `json:"preCondition"`         // 前置条件
+	StepAndResults   []TestCaseStepAndResult `json:"stepAndResults"`       // 步骤及结果
+	APIs             []*ApiTestInfo          `json:"apis"`                 // 接口测试集合
+	Desc             string                  `json:"desc"`                 // 补充说明
+	Priority         TestCasePriority        `json:"priority"`             // 优先级
+	LabelIDs         []uint64                `json:"labelIDs"`             // 关联缺陷 IDs
 
 	IdentityInfo
 }
@@ -352,8 +358,25 @@ type TestCaseExportRequest struct {
 
 	FileType TestCaseFileType `schema:"fileType"`
 
-	Locale string `schema:"-"`
+	Locale            string          `schema:"-"`
+	TestSetCasesMetas []TestCasesMeta `schema:"testSetCasesMetas"`
 }
+
+// TestCaseMeta 用于关联分组生成的测试用例与对应的需求
+type TestCasesMeta struct {
+	Reqs            []TestCaseCreateRequest `json:"testCaseCreateReqs,omitempty"` // 当前项目 ID 对应的创建测试用例请求
+	RequirementName string                  `json:"requirementName"`              // 需求对应的 issue 的 Title
+	RequirementID   uint64                  `json:"issueID"`                      // 需求对应的 issueID
+}
+
+// TestCaseMeta 用于关联单组生成的测试用例与对应的需求
+type TestCaseMeta struct {
+	Req             TestCaseCreateRequest `json:"testCaseCreateReq,omitempty"` // 当前项目 ID 对应的创建测试用例请求
+	RequirementName string                `json:"requirementName"`             // 需求对应的 issue 的 Title
+	RequirementID   uint64                `json:"issueID"`                     // 需求对应的 issueID
+	TestCaseID      uint64                `json:"testcaseID,omitempty"`        // 创建测试用例成功返回的测试用例 ID
+}
+
 type TestCaseExportResponse struct {
 	Header
 	Data uint64 `json:"data"`

@@ -70,6 +70,27 @@ func (b *Bundle) GetIssue(id uint64) (*apistructs.Issue, error) {
 	return issueResp.Data, nil
 }
 
+// GetIssue 通过 id 获取关联的 issues
+func (b *Bundle) GetIssueRelations(id uint64) (*apistructs.IssueRelations, error) {
+	host, err := b.urls.DOP()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var issueRelationsResp apistructs.IssueRelationGetResponse
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/issues/%d/relations", id)).
+		Header(httputil.InternalHeader, "bundle").Do().JSON(&issueRelationsResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !issueRelationsResp.Success {
+		return nil, toAPIError(resp.StatusCode(), issueRelationsResp.Error)
+	}
+
+	return issueRelationsResp.Data, nil
+}
+
 // CreateIssueTicket 创建工单
 // TODO 和ps_ticket的bundle同名了，待前者废弃后改回
 func (b *Bundle) CreateIssueTicket(createReq apistructs.IssueCreateRequest) (uint64, error) {
