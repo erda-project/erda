@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package erda.dop.ai;
+option go_package = "github.com/erda-project/erda-proto-go/dop/ai/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "common/openapi.proto";
+import "google/protobuf/struct.proto";
+import "common/http.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+service AIRelated {
+  option(erda.common.openapi_service) = {
+    service: "dop",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc EXPORT_AI_GENERATED_TESTCASES (TestCaseAIGeneratedExportRequest) returns (TestCaseAIGeneratedExportResponse) {
+    option (google.api.http) = {
+      post: "/api/testcases/actions/export-ai-testcases",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/testcases/actions/export-ai-testcases",
+      doc: "summary: 导出 AI 生成的测试用例",
+    };
+  };
+}
+
+message TestCaseAIGeneratedExportRequest {
+  google.protobuf.Value testCasePagingRequest = 1;
+  string fileType = 2;
+  string locale = 3;
+  google.protobuf.Value testSetCasesMetas = 4;
+}
+
+message TestCaseAIGeneratedExportResponse {
+  uint64 data = 1;
+}

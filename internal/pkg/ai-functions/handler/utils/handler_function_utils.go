@@ -109,7 +109,7 @@ func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.
 		return nil, errors.Wrap(err, "invalid arguments from FunctionCall")
 	}
 
-	result, err := f.Callback(ctx, arguments, callbackInput, req.NeedAdjust)
+	result, err := f.Callback(ctx, arguments, callbackInput)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to Callback with arguments: %s", string(arguments))
 	}

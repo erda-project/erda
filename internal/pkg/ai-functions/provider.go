@@ -16,7 +16,10 @@ package ai_functions
 
 import (
 	"net/url"
+	"os"
 	"reflect"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -64,6 +67,14 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	_, ok := p.Config.ModelIds["gpt-4"]
+	if !ok {
+		p.Config.ModelIds["gpt-4"] = os.Getenv(handler.EnvAiProxyChatgpt4ModelId)
+	}
+	if p.Config.ModelIds["gpt-4"] == "" {
+		return errors.Errorf("env %s not set", handler.EnvAiProxyChatgpt4ModelId)
+	}
+
 	pb.RegisterAiFunctionImp(p.R, p.AIFunction())
 	return nil
 }
@@ -85,13 +96,17 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func (p *provider) AIFunction() pb.AiFunctionServer {
-	return &handler.AIFunction{Log: p.L.Sub("AIFunction"), OpenaiURL: p.Config.openapiURL}
+	return &handler.AIFunction{Log: p.L.Sub("AIFunction"), OpenaiURL: p.Config.openapiURL, ModelIds: p.Config.ModelIds}
 }
 
 type Config struct {
 	// OpenaiAddr is the API address which implemented the OpenAI API.
 	// It like https://api.openai.com, https://ai-proxy.erda.cloud
 	OpenaiAddr string `json:"openaiAddr" yaml:"openaiAddr"`
+
+	// ModelIds for designated special purposes
+	// such as, AI create testcases use chatgpt4 for grouping. ModelIds["chatgpt4"]="5426f79c-****-****-****-1598dc10f1be"
+	ModelIds map[string]string `json:"modelIds" yaml:"modelIds"`
 
 	openapiURL *url.URL
 }

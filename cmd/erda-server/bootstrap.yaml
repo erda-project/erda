@@ -624,3 +624,5 @@ erda.core.monitor.settings-client:
 service-profile-overview:
 erda.app.ai-function:
   openaiAddr: ${AI_PROXY_ADDR:http://ai-proxy:8081}
+  modelIds:
+    gpt-4: ${AI_PROXY_CHATGPT4_MODEL_ID}

@@ -20,6 +20,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-proto-go/dop/ai/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -427,5 +431,89 @@ func (e *Endpoints) ImportTestCases(ctx context.Context, r *http.Request, vars m
 	return httpserver.HTTPResponse{
 		Status:  http.StatusAccepted,
 		Content: importResult,
+	}, nil
+}
+
+// ExportTestCases 导出测试用例
+func (e *Endpoints) ExportAIGeneratedTestCases(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrExportTestCases.NotLogin().ToResp(), nil
+	}
+
+	var pbReq pb.TestCaseAIGeneratedExportRequest
+	if err := json.NewDecoder(r.Body).Decode(&pbReq); err != nil {
+		return apierrors.ErrExportTestCases.InvalidParameter(err).ToResp(), nil
+	}
+
+	var testCasePR apistructs.TestCasePagingRequest
+	testCasePRBytes, err := pbReq.TestCasePagingRequest.MarshalJSON()
+	if err != nil {
+		return apierrors.ErrExportTestCases.InternalError(errors.Errorf("MarshalJSON pb.TestCaseAIGeneratedExportRequest TestCasePagingRequest failed: %v", err)).ToResp(), nil
+	}
+	err = json.Unmarshal(testCasePRBytes, &testCasePR)
+	if err != nil {
+		return apierrors.ErrExportTestCases.InternalError(errors.Errorf("Unmarshal pb.TestCaseAIGeneratedExportRequest TestCasePagingRequest to apistructs.TestCasePagingRequest failed: %v", err)).ToResp(), nil
+	}
+
+	var testCasesMetas []apistructs.TestCasesMeta
+	testCaseMetaBytes, err := pbReq.TestSetCasesMetas.MarshalJSON()
+	if err != nil {
+		return apierrors.ErrExportTestCases.InternalError(errors.Errorf("MarshalJSON pb.TestCaseAIGeneratedExportRequest TestCasesMetas failed: %v", err)).ToResp(), nil
+	}
+	err = json.Unmarshal(testCaseMetaBytes, &testCasesMetas)
+	if err != nil {
+		return apierrors.ErrExportTestCases.InternalError(errors.Errorf("Unmarshal pb.TestCaseAIGeneratedExportRequest TestCasesMetas to []apistructs.TestCaseMeta failed: %v", err)).ToResp(), nil
+	}
+
+	var req apistructs.TestCaseExportRequest
+	req.FileType = apistructs.TestCaseFileType(pbReq.FileType)
+	req.TestCasePagingRequest = testCasePR
+	req.TestSetCasesMetas = testCasesMetas
+	req.IdentityInfo = identityInfo
+
+	l := e.bdl.GetLocaleByRequest(r)
+	req.Locale = l.Name()
+
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: apistructs.TestCaseResource,
+			Action:   apistructs.GetAction,
+		}); err != nil || !access.Access {
+			return apierrors.ErrGetTestCase.AccessDenied().ToResp(), nil
+		}
+	}
+
+	fileID, err := e.testcase.ExportAIGenerated(req)
+	if err != nil {
+		return apierrors.ErrExportTestCases.InternalError(err).ToResp(), nil
+	}
+	logrus.Infof("ExportAIGenerated testcase with id=%d from erda_file_record\n", fileID)
+	record, err := e.db.GetRecord(fileID)
+	if err != nil {
+		return apierrors.ErrExportTestCases.InternalError(errors.Errorf("GetRecord by id %d error= %v\n", fileID, err)).ToResp(), nil
+	}
+
+	fileUUID, err := e.testcase.ExportTestCases(&req, record.FileName, false)
+	if err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		// 因为该条记录是本次 API 调用创建的, 所以失败时删除该记录
+		e.db.DeleteRecordBy(record.ID)
+		return apierrors.ErrImportTestCases.InternalError(err).ToResp(), nil
+	}
+	if err := e.testcase.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateSuccess, ApiFileUUID: fileUUID}); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		e.db.DeleteRecordBy(record.ID)
+		return apierrors.ErrImportTestCases.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: fileID,
 	}, nil
 }
