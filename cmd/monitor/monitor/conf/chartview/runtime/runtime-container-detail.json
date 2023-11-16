@@ -55,7 +55,7 @@
             "alias": "Mem Limit",
             "key": "valueNLlik561",
             "type": "expr",
-            "expr": "max(mem_limit::field)",
+            "expr": "min(mem_limit::field)",
             "unit": {
               "type": "CAPACITY",
               "unit": "B"
@@ -79,7 +79,7 @@
             "expr": "max(mem_usage::field)"
           }, {
             "alias": "valueNLlik561",
-            "expr": "max(mem_limit::field)"
+            "expr": "min(mem_limit::field)"
           }],
           "where": ["pod_uid::tag='{{podUid}}'"]
         },
