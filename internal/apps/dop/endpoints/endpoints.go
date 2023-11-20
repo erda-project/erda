@@ -279,6 +279,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/testcases/actions/batch-copy", Method: http.MethodPost, Handler: e.BatchCopyTestCases},
 		{Path: "/api/testcases/actions/batch-clean-from-recycle-bin", Method: http.MethodDelete, Handler: e.BatchCleanTestCasesFromRecycleBin},
 		{Path: "/api/testcases/actions/export", Method: http.MethodGet, Handler: e.ExportTestCases},
+		{Path: "/api/testcases/actions/export-ai-testcases", Method: http.MethodPost, Handler: e.ExportAIGeneratedTestCases},
 		{Path: "/api/testcases/actions/import", Method: http.MethodPost, Handler: e.ImportTestCases},
 
 		// 测试集 管理

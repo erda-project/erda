@@ -42,7 +42,6 @@ message ApplyRequest {
   string functionName = 1 [(validate.rules).string = {min_len: 1}];
   google.protobuf.Value functionParams = 2 [(validate.rules).message = {required: true}];
   Background background = 3 [(validate.rules).message = {required: true}];
-  bool needAdjust = 4;
 }
 
 message Background {
