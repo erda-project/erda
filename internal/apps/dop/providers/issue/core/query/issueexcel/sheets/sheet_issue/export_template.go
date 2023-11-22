@@ -34,10 +34,10 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 
 	common := vars.IssueSheetModelCommon{
 		ID:                 0,
-		IterationName:      data.IterationMapByID[-1].Title,
+		IterationName:      data.I18n(fieldToBePlaned),
 		IssueType:          0,
-		IssueTitle:         "标题",
-		Content:            "内容",
+		IssueTitle:         data.I18n(fieldIssueTitle),
+		Content:            data.I18n(fieldContent),
 		State:              "",
 		Priority:           pb.IssuePriorityEnum_NORMAL,
 		Complexity:         pb.IssueComplexityEnum_NORMAL,
@@ -57,8 +57,8 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	requirementCommon := common
 	requirementCommon.ID = 1
 	requirementCommon.IssueType = pb.IssueTypeEnum_REQUIREMENT
-	requirementCommon.Content = "这个一个需求，包含一个任务"
-	requirementCommon.State = "进行中"
+	requirementCommon.Content = data.I18n(fieldRequirementContent)
+	requirementCommon.State = data.I18n(fieldProcessing)
 	requirementCommon.EstimateTime = "2d"
 	requirement := vars.IssueSheetModel{
 		Common: requirementCommon,
@@ -71,8 +71,8 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	taskCommon := common
 	taskCommon.ID = 2
 	taskCommon.IssueType = pb.IssueTypeEnum_TASK
-	taskCommon.Content = "这个一个任务，被需求包含"
-	taskCommon.State = "已完成"
+	taskCommon.Content = data.I18n(fieldTaskContent)
+	taskCommon.State = data.I18n(fieldCompleted)
 	taskCommon.FinishAt = &nowPlusOneDay
 	taskCommon.EstimateTime = "1d"
 	taskCommon.Labels = []string{"label1"}
@@ -94,11 +94,11 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	bugCommon := common
 	bugCommon.ID = 0
 	bugCommon.IssueType = pb.IssueTypeEnum_BUG
-	bugCommon.Content = "这个一个bug，关联到任务"
+	bugCommon.Content = data.I18n(fieldBugContent)
 	bugCommon.PlanStartedAt = nil
 	bugCommon.PlanFinishedAt = nil
 	bugCommon.StartAt = nil
-	bugCommon.State = "待处理"
+	bugCommon.State = data.I18n(fieldPending)
 	bugCommon.ConnectionIssueIDs = []int64{2}
 	bugCommon.Labels = []string{"label2"}
 	var bugSource string
