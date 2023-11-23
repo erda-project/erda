@@ -232,12 +232,20 @@ func (e *Endpoints) GetMiddlewareResource(ctx context.Context, r *http.Request, 
 
 func (e *Endpoints) getMiddlewareListParams(r *http.Request) (*apistructs.MiddlewareListRequest, error) {
 	var (
-		projectID uint64
-		err       error
+		projectID     uint64
+		haveInstances = true
+		err           error
 	)
 	projectIDStr := r.URL.Query().Get("projectId")
 	if projectIDStr != "" {
 		projectID, err = strconv.ParseUint(projectIDStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+	haveInstancesStr := r.URL.Query().Get("haveInstances")
+	if haveInstancesStr != "" {
+		haveInstances, err = strconv.ParseBool(haveInstancesStr)
 		if err != nil {
 			return nil, err
 		}
@@ -274,12 +282,13 @@ func (e *Endpoints) getMiddlewareListParams(r *http.Request) (*apistructs.Middle
 	instanceID := r.URL.Query().Get("instanceId")
 	instanceIP := r.URL.Query().Get("ip")
 	return &apistructs.MiddlewareListRequest{
-		ProjectID:  projectID,
-		AddonName:  addonName,
-		Workspace:  workspace,
-		PageNo:     pageNo,
-		PageSize:   pageSize,
-		InstanceID: instanceID,
-		InstanceIP: instanceIP,
+		ProjectID:     projectID,
+		AddonName:     addonName,
+		Workspace:     workspace,
+		PageNo:        pageNo,
+		PageSize:      pageSize,
+		InstanceID:    instanceID,
+		InstanceIP:    instanceIP,
+		HaveInstances: haveInstances,
 	}, nil
 }
