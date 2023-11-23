@@ -17,6 +17,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/helper"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
@@ -131,6 +133,25 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 		}
 		if !conflictInfo.HasConflict {
 			ctx.Service.TriggerEvent(ctx.Repository, apistructs.CheckRunEvent, request)
+		}
+	}()
+	go func() { // ai code review
+		mrCodeReviewReq := models.AICodeReviewNoteRequest{Type: models.AICodeReviewTypeMR}
+		reviewer, err := cr.NewCodeReviewer(mrCodeReviewReq, ctx.Repository, request)
+		if err != nil {
+			logrus.Errorf("failed to create code reviewer err:%s", err)
+			return
+		}
+		suggestions := reviewer.CodeReview()
+		// create note
+		_, err = ctx.Service.CreateNormalNote(ctx.Repository, ctx.User, request.Id,
+			models.NoteRequest{
+				Note: suggestions,
+				Type: models.NoteTypeNormal,
+				Role: models.NoteRoleAI,
+			})
+		if err != nil {
+			logrus.Errorf("failed to create note, merge request id: %d, err:%s", request.Id, err)
 		}
 	}()
 	ctx.Success(request)
@@ -595,4 +616,53 @@ func GetMergeBase(ctx *webcontext.Context) {
 
 	ctx.Success(baseCommit)
 
+}
+
+func AIMRCodeReview(ctx *webcontext.Context) {
+	id := ctx.ParamInt32("id", 0)
+	if id == 0 {
+		ctx.Abort(ERROR_ARG_ID)
+		return
+	}
+
+	mergeRequestInfo, err := ctx.Service.GetMergeRequestDetail(ctx.Repository, id)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+
+	// bind request body
+	var req models.AICodeReviewNoteRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.AbortWithStatus(http.StatusBadRequest, err)
+		return
+	}
+
+	reviewer, err := cr.NewCodeReviewer(req, ctx.Repository, mergeRequestInfo)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusBadRequest, err)
+		return
+	}
+
+	// ai code review
+	suggestions := reviewer.CodeReview()
+
+	// create note according to type
+	noteRequest := req.NoteLocation
+	noteRequest.Role = models.NoteRoleAI
+	noteRequest.Note = suggestions
+	switch req.Type {
+	case models.AICodeReviewTypeMR:
+		noteRequest.Type = models.NoteTypeNormal
+	case models.AICodeReviewTypeMRFile:
+		noteRequest.Type = models.NoteTypeNormal
+	case models.AICodeReviewTypeMRCodeSnippet:
+		noteRequest.Type = models.NoteTypeDiffNote
+	}
+
+	_, err = ctx.Service.CreateNote(ctx.Repository, ctx.User, mergeRequestInfo.Id, noteRequest)
+	if err != nil {
+		logrus.Errorf("failed to create note, merge request id: %d, err:%s", mergeRequestInfo.Id, err)
+	}
+	ctx.Success(nil)
 }

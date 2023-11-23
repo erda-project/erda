@@ -33,6 +33,7 @@ const (
 // 答疑用户的固定 ID
 const SupportID string = "2020"
 const SystemUserID string = "1110"
+const AIUserID string = "1111"
 
 // MSP
 const (

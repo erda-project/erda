@@ -59,6 +59,10 @@ type Conf struct {
 
 	// metrics
 	RefreshPersonalContributorDuration time.Duration `default:"12h" env:"REFRESH_PERSONAL_CONTRIBUTOR_DURATION"`
+
+	// AI
+	AIProxyURL      string `env:"AI_PROXY_URL"`
+	AIProxyClientAK string `env:"AI_PROXY_CLIENT_AK"`
 }
 
 var cfg Conf
@@ -207,4 +211,12 @@ func DiceProtocol() string {
 
 func RefreshPersonalContributorDuration() time.Duration {
 	return cfg.RefreshPersonalContributorDuration
+}
+
+func AIProxyURL() string {
+	return cfg.AIProxyURL
+}
+
+func AIProxyClientAK() string {
+	return cfg.AIProxyClientAK
 }
