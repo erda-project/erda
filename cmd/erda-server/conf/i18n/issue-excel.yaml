@@ -76,11 +76,6 @@ zh:
   TaskContent: 这是一个任务，被需求包含
   BugContent: 这是一个bug，关联到任务
 
-  # state
-  Processing: 进行中
-  Completed: 已完成
-  Pending: 待处理
-
   # IterationName
   ToBePlaned: 待规划
 
@@ -124,11 +119,6 @@ en: # use key directly
   RequirementContent: This is a requirement which contains a task
   TaskContent: This is a task which covered by the requirement
   BugContent: This is a bug which related to the task
-
-  # state
-  Processing: processing
-  Completed: completed
-  Pending: pending
 
   # IterationName
   ToBePlaned: to be planed

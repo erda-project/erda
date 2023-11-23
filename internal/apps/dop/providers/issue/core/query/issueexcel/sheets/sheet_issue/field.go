@@ -65,11 +65,7 @@ const (
 	fieldTaskContent        = "TaskContent"
 	fieldBugContent         = "BugContent"
 
-	// State
-	fieldProcessing = "Processing"
-	fieldCompleted  = "Completed"
-	fieldPending    = "Pending"
-
+	// IterationName
 	fieldToBePlaned = "ToBePlaned"
 )
 
@@ -115,11 +111,6 @@ var excelFields = []string{
 	fieldRequirementContent,
 	fieldTaskContent,
 	fieldBugContent,
-
-	// State
-	fieldProcessing,
-	fieldCompleted,
-	fieldPending,
 
 	// IterationName
 	fieldToBePlaned,

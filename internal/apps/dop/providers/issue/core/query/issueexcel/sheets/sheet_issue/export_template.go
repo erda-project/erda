@@ -58,7 +58,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	requirementCommon.ID = 1
 	requirementCommon.IssueType = pb.IssueTypeEnum_REQUIREMENT
 	requirementCommon.Content = data.I18n(fieldRequirementContent)
-	requirementCommon.State = data.I18n(fieldProcessing)
+	requirementCommon.State = "进行中"
 	requirementCommon.EstimateTime = "2d"
 	requirement := vars.IssueSheetModel{
 		Common: requirementCommon,
@@ -72,7 +72,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	taskCommon.ID = 2
 	taskCommon.IssueType = pb.IssueTypeEnum_TASK
 	taskCommon.Content = data.I18n(fieldTaskContent)
-	taskCommon.State = data.I18n(fieldCompleted)
+	taskCommon.State = "已完成"
 	taskCommon.FinishAt = &nowPlusOneDay
 	taskCommon.EstimateTime = "1d"
 	taskCommon.Labels = []string{"label1"}
@@ -98,7 +98,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	bugCommon.PlanStartedAt = nil
 	bugCommon.PlanFinishedAt = nil
 	bugCommon.StartAt = nil
-	bugCommon.State = data.I18n(fieldPending)
+	bugCommon.State = "待处理"
 	bugCommon.ConnectionIssueIDs = []int64{2}
 	bugCommon.Labels = []string{"label2"}
 	var bugSource string
