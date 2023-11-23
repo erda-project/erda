@@ -12,7 +12,7 @@ en:
   childrenInProgress: "reason: included task has started"
   mrCreated: "reason: task/bug is related by MR"
   iterationChanged: "reason: iteration is changed"
-  planFinishedAtChanged: "resaon: plan finished at is changed"
+  planFinishedAtChanged: "reason: plan finished at is changed"
   childrenPlanUpdated: "reason: plan time of included task is changed"
   parentLabelsChanged: "reason: labels of the requirement are changed"
   parentIterationChanged: "reason: iteration of the requirement is changed"

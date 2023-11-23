@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/crontypes"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -57,7 +58,7 @@ func (s *pipelineService) PipelineDetail(ctx context.Context, req *pb.PipelineDe
 	if req.SimplePipelineBaseResult {
 		detailDTO, err = s.SimplePipelineBaseDetail(req.PipelineID)
 	} else {
-		detailDTO, err = s.Detail(req.PipelineID)
+		detailDTO, err = s.Detail(ctx, req.PipelineID)
 	}
 
 	if err != nil {
@@ -112,8 +113,13 @@ func (s *pipelineService) SimplePipelineBaseDetail(pipelineID uint64) (*pb.Pipel
 	return &detail, nil
 }
 
-func (s *pipelineService) Detail(pipelineID uint64) (*pb.PipelineDetailDTO, error) {
+func (s *pipelineService) Detail(ctx context.Context, pipelineID uint64) (*pb.PipelineDetailDTO, error) {
 	p, err := s.dbClient.GetPipeline(pipelineID)
+
+	lang := apis.GetLang(ctx)
+	if lang == "" {
+		lang = i18n.ZH
+	}
 
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
@@ -191,7 +197,7 @@ func (s *pipelineService) Detail(pipelineID uint64) (*pb.PipelineDetailDTO, erro
 					if err := yaml.Unmarshal([]byte(specYmlStr), &actionSpec); err != nil {
 						logrus.Errorf("unmarshal action spec error: %v, continue merge task param", err)
 					}
-					taskDTO.Extra.Action = actionSpec.Convert2PBDetail()
+					taskDTO.Extra.Action = actionSpec.Convert2PBDetail(lang)
 				}
 			}
 			for _, actionTask := range actionTasks {
@@ -310,7 +316,7 @@ func (s *pipelineService) Detail(pipelineID uint64) (*pb.PipelineDetailDTO, erro
 
 	detail.PipelineButton = &buttons
 
-	s.setPipelineTaskActionDetail(&detail, actionMap)
+	s.setPipelineTaskActionDetail(&detail, actionMap, lang)
 
 	pipelineParams, err := getPipelineParams(p.PipelineYml, p.Snapshot.RunPipelineParams)
 	if err != nil {
@@ -447,7 +453,7 @@ func (s *pipelineService) getPipelineEvents(pipelineID uint64) []*basepb.Pipelin
 }
 
 // setPipelineTaskActionDetail set the action's logo and displayName for the pipelineTask to display to the front end
-func (s *pipelineService) setPipelineTaskActionDetail(detail *pb.PipelineDetailDTO, actionMap map[string]apistructs.ExtensionVersion) {
+func (s *pipelineService) setPipelineTaskActionDetail(detail *pb.PipelineDetailDTO, actionMap map[string]apistructs.ExtensionVersion, lang string) {
 	stageDetails := detail.PipelineStages
 
 	// 遍历 stageDetails 数组，根据 task 的 name 获取其 extension 详情
@@ -480,8 +486,8 @@ func (s *pipelineService) setPipelineTaskActionDetail(detail *pb.PipelineDetailD
 
 		actionDetails[task.Type] = &basepb.PipelineTaskActionDetail{
 			LogoUrl:     actionSpec.LogoUrl,
-			DisplayName: actionSpec.GetLocaleDisplayName(i18n.GetGoroutineBindLang()),
-			Description: actionSpec.GetLocaleDesc(i18n.GetGoroutineBindLang()),
+			DisplayName: actionSpec.GetLocaleDisplayName(lang),
+			Description: actionSpec.GetLocaleDesc(lang),
 		}
 	})
 	detail.PipelineTaskActionDetails = actionDetails

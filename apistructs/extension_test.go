@@ -49,7 +49,7 @@ func TestConvertToDetail(t *testing.T) {
 			Desc:        "代码仓库克隆",
 		},
 	}
-	actionDetail := s.ConvertToDetail()
+	actionDetail := s.ConvertToDetail("zh-CN")
 	assert.Equal(t, "git-checkout", actionDetail.Name)
 	assert.Equal(t, "1.0", actionDetail.Version)
 	assert.Equal(t, "git-checkout", actionDetail.DisplayName)

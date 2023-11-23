@@ -23,7 +23,7 @@ import (
 
 func (s *pipelineService) PipelineTaskView(ctx context.Context, req *pb.PipelineTaskViewRequest) (*pb.PipelineTaskViewResponse, error) {
 	if req.PipelineID != 0 {
-		detail, err := s.Detail(req.PipelineID)
+		detail, err := s.Detail(ctx, req.PipelineID)
 		if err != nil {
 			return nil, apierrors.ErrTaskView.InternalError(err)
 		}
@@ -49,7 +49,7 @@ func (s *pipelineService) PipelineTaskView(ctx context.Context, req *pb.Pipeline
 		return nil, apierrors.ErrTaskView.NotFound()
 	}
 
-	detail, err := s.Detail(pageResult.Pipelines[0].ID)
+	detail, err := s.Detail(ctx, pageResult.Pipelines[0].ID)
 	if err != nil {
 		return nil, apierrors.ErrTaskView.InternalError(err)
 	}

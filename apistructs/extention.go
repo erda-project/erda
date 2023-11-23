@@ -328,25 +328,25 @@ type ActionSpec struct {
 	Executor          *ActionExecutor     `json:"executor" yaml:"executor"`
 }
 
-func (s *ActionSpec) ConvertToDetail() PipelineTaskActionDetail {
+func (s *ActionSpec) ConvertToDetail(lang string) PipelineTaskActionDetail {
 	return PipelineTaskActionDetail{
 		Name:        s.Name,
 		Version:     s.Version,
 		Type:        s.Type,
 		LogoUrl:     s.LogoUrl,
-		DisplayName: s.GetLocaleDisplayName(i18n.GetGoroutineBindLang()),
-		Description: s.GetLocaleDesc(i18n.GetGoroutineBindLang()),
+		DisplayName: s.GetLocaleDisplayName(lang),
+		Description: s.GetLocaleDesc(lang),
 	}
 }
 
-func (s *ActionSpec) Convert2PBDetail() *basepb.PipelineTaskActionDetail {
+func (s *ActionSpec) Convert2PBDetail(lang string) *basepb.PipelineTaskActionDetail {
 	return &basepb.PipelineTaskActionDetail{
 		Name:        s.Name,
 		Version:     s.Version,
 		Type:        s.Type,
 		LogoUrl:     s.LogoUrl,
-		DisplayName: s.GetLocaleDisplayName(i18n.GetGoroutineBindLang()),
-		Description: s.GetLocaleDesc(i18n.GetGoroutineBindLang()),
+		DisplayName: s.GetLocaleDisplayName(lang),
+		Description: s.GetLocaleDesc(lang),
 	}
 }
 

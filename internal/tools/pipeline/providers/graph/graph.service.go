@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -49,13 +50,17 @@ func (s *graphService) PipelineYmlGraph(ctx context.Context, req *pb.PipelineYml
 			Data: graph,
 		}, nil
 	}
-	if err := s.loadGraphActionNameAndLogo(graph); err != nil {
+	lang := apis.GetLang(ctx)
+	if lang == "" {
+		lang = i18n.ZH
+	}
+	if err := s.loadGraphActionNameAndLogo(graph, lang); err != nil {
 		return nil, apierrors.ErrParsePipelineYml.InternalError(err)
 	}
 	return &pb.PipelineYmlGraphResponse{Data: graph}, nil
 }
 
-func (s *graphService) loadGraphActionNameAndLogo(graph *basepb.PipelineYml) error {
+func (s *graphService) loadGraphActionNameAndLogo(graph *basepb.PipelineYml, lang string) error {
 	stages := graph.Stages
 	var graphStages [][]*basepb.PipelineYmlAction
 	stageBytes, err := stages.MarshalJSON()
@@ -111,9 +116,9 @@ func (s *graphService) loadGraphActionNameAndLogo(graph *basepb.PipelineYml) err
 				continue
 			}
 
-			action.DisplayName = actionSpec.GetLocaleDisplayName(i18n.GetGoroutineBindLang())
+			action.DisplayName = actionSpec.GetLocaleDisplayName(lang)
 			action.LogoUrl = actionSpec.LogoUrl
-			action.Description = actionSpec.GetLocaleDesc(i18n.GetGoroutineBindLang())
+			action.Description = actionSpec.GetLocaleDesc(lang)
 			actionValue, err := convertAction2Value(action)
 			if err != nil {
 				return err

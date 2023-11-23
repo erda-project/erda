@@ -27,7 +27,7 @@ import (
 type Interface interface {
 	pb.PipelineServiceServer
 
-	Detail(pipelineID uint64) (*pb.PipelineDetailDTO, error)
+	Detail(ctx context.Context, pipelineID uint64) (*pb.PipelineDetailDTO, error)
 	List(req *pb.PipelinePagingRequest) (*pb.PipelineListResponseData, error)
 	PreCheck(p *spec.Pipeline, stages []spec.PipelineStage, userID string, autoRun bool) error
 	DealPipelineCallbackOfAction(data []byte) (err error)
