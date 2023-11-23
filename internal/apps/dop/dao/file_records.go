@@ -90,6 +90,11 @@ func (client *DBClient) GetRecord(id uint64) (*TestFileRecord, error) {
 	return &res, nil
 }
 
+// Delete Record by id
+func (client *DBClient) DeleteRecordBy(id uint64) error {
+	return client.Where("`id` = ?", id).Delete(&TestFileRecord{}).Error
+}
+
 type stateCounter struct {
 	Type  string
 	Count int

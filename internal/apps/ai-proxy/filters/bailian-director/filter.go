@@ -58,6 +58,10 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 	}, nil
 }
 
+func (f *BailianDirector) MultiResponseWriter(ctx context.Context) []io.ReadWriter {
+	return []io.ReadWriter{ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)}
+}
+
 func (f *BailianDirector) Enable(ctx context.Context, req *http.Request) bool {
 	prov, ok := ctxhelper.GetModelProvider(ctx)
 	return ok && prov.Type == modelproviderpb.ModelProviderType_AliyunBailian

@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service AuditService {
+    rpc Get(AuditGetRequest) returns (Audit) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/audits/{auditId}"
+        };
+    }
+    rpc Paging(AuditPagingRequest) returns (AuditPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/audits"
+        };
+    }
+}
+
+message Audit {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+    google.protobuf.Timestamp requestAt = 5;
+    google.protobuf.Timestamp responseAt = 6;
+
+    string authKey = 7;
+    int32 status = 8;
+    string prompt = 9;
+    string completion = 10;
+    string requestBody = 11;
+    string responseBody = 12;
+    string actualRequestBody = 13;
+    string actualResponseBody = 14;
+    string userAgent = 15;
+    string xRequestId = 16;
+
+    string clientId = 17;
+    string modelId = 18;
+    string sessionId = 19;
+
+    string username = 20;
+    string email = 21;
+
+    string bizSource = 22; // 客户端定义的业务来源
+    string operationId = 23;
+
+    string responseFunctionCallName = 24;
+
+    Metadata metadata = 25;
+}
+
+message AuditCreateRequestWhenReceived {
+    google.protobuf.Timestamp requestAt = 1;
+    string authKey = 2;
+    string requestBody = 3;
+    string userAgent = 4;
+    string xRequestId = 5;
+
+    string requestContentType = 6;
+    string requestHeader = 7;
+
+    string identityPhoneNumber = 8;
+    string identityJobNumber = 9;
+
+    string dingtalkStaffId = 10;
+    string dingtalkChatType = 11;
+    string dingtalkChatTitle = 12;
+    string dingtalkChatId = 13;
+
+    string username = 15;
+    string email = 16;
+    string bizSource = 17;
+}
+
+message AuditUpdateRequestAfterContextParsed {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+    string prompt = 2;
+
+    string clientId = 3 [(validate.rules).string = {len: 36}];
+    string modelId = 4 [(validate.rules).string = {len: 36}];
+    string sessionId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
+
+    string bizSource = 7;
+    string operationId = 8;
+
+    string requestFunctionCallName = 9;
+
+    // parsed from client token
+    string dingtalkStaffId = 10;
+    string email = 11;
+    string identityJobNumber = 12;
+    string username = 13;
+    string identityPhoneNumber = 14;
+}
+
+message AuditUpdateRequestAfterLLMDirectorInvoke {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+    string actualRequestBody = 2;
+    string actualRequestURL = 3;
+    string actualRequestHeader = 4;
+}
+
+message AuditUpdateRequestAfterLLMResponse {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+    google.protobuf.Timestamp responseAt = 2; // first response
+    google.protobuf.Timestamp responseStreamDoneAt = 3;
+    int32 status = 4;
+    string actualResponseBody = 5;
+    string actualResponseHeader = 6;
+
+    string responseContentType = 7;
+}
+
+message AuditUpdateRequestAfterLLMDirectorResponse {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+    string completion = 2;
+    string responseBody = 3;
+    string responseHeader = 4;
+    string responseFunctionCallName = 5;
+}
+
+message AuditGetRequest {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+}
+
+message AuditPagingRequest {
+    int64 pageNum = 1;
+    int64 pageSize = 2;
+
+    repeated string ids = 3 [(validate.rules).repeated.items.string = {len: 36}];
+    string source = 4;
+}
+
+message AuditPagingResponse {
+    int64 total = 1;
+    repeated Audit list = 2;
+}

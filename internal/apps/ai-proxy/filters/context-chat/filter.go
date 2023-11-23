@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package message_context
+package context_chat
 
 import (
 	"context"
@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	Name = "message-context"
+	Name = "context-chat"
 )
 
 var (
@@ -166,7 +166,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		RequestedMessages:       requestedMessages,
 	}
 	ctxhelper.PutMessageGroup(ctx, messageGroup)
-	ctxhelper.PutUserPrompt(ctx, requestedMessages[len(requestedMessages)-1].Content)
+	ctxhelper.PutUserPrompt(ctx, vars.UnwrapUserPrompt(requestedMessages[len(requestedMessages)-1].Content))
 	ctxhelper.PutIsStream(ctx, chatCompletionRequest.Stream)
 
 	return reverseproxy.Continue, nil

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 
@@ -32,19 +33,22 @@ func TestFunction_Callback(t *testing.T) {
 		background *pb.Background
 	}
 	type args struct {
-		ctx        context.Context
-		arguments  json.RawMessage
-		input      interface{}
-		needAdjust bool
+		ctx       context.Context
+		arguments json.RawMessage
+		input     interface{}
 	}
 
-	var testcaseId uint64
+	var testcaseId, testSetId uint64
 	testcaseId = 113523
+	//testSetId = 25111
 
 	input := TestCaseFunctionInput{
 		TestSetID: 24227,
 		IssueID:   30001127564,
 		Prompt:    "用户登录",
+		Name:      "groupName",
+		UserId:    "1003933",
+		ProjectId: 4717,
 	}
 
 	results := []apistructs.TestCaseStepAndResult{
@@ -66,27 +70,46 @@ func TestFunction_Callback(t *testing.T) {
 		},
 	}
 
-	tc := apistructs.TestCase{
-		Name:           "用户登录",
-		PreCondition:   "用户打开登录页面",
-		StepAndResults: results,
-	}
-	arguments, _ := json.Marshal(tc)
-	req := apistructs.TestCaseCreateRequest{
-		ProjectID:      4717,
-		TestSetID:      24227,
+	list := make([]apistructs.TestCaseCreateRequest, 0)
+	list = append(list, apistructs.TestCaseCreateRequest{
+		TestCaseID:     0,
+		ProjectID:      0,
+		TestSetID:      0,
 		Name:           "用户登录",
 		PreCondition:   "用户打开登录页面",
 		StepAndResults: results,
 		APIs:           nil,
-		Desc:           "Powered by AI.\n\n对应需求:\n用户登录",
+		Desc:           "",
+		Priority:       "",
+		LabelIDs:       nil,
+		IdentityInfo:   apistructs.IdentityInfo{},
+	})
+	tcrl := TestCaseCreateRequestList{
+		List: list,
+	}
+
+	arguments, _ := json.Marshal(tcrl)
+	reqs := make([]apistructs.TestCaseCreateRequest, 0)
+	//reqs2 := make([]apistructs.TestCaseCreateRequest, 0)
+	req := apistructs.TestCaseCreateRequest{
+		ProjectID:      4717,
+		TestSetID:      testSetId,
+		TestSetDir:     "/groupName",
+		TestSetName:    "groupName",
+		Name:           "用户登录",
+		PreCondition:   "用户打开登录页面",
+		StepAndResults: results,
+		APIs:           nil,
+		Desc:           "Powered by AI.",
 		Priority:       "P2",
 		LabelIDs:       nil,
 		IdentityInfo: apistructs.IdentityInfo{
 			UserID: "1003933",
 		},
 	}
-
+	reqs = append(reqs, req)
+	//req.TestCaseID = testcaseId
+	//reqs2 = append(reqs2, req)
 	issue := &apistructs.Issue{
 		RequirementID:    nil,
 		RequirementTitle: "",
@@ -115,38 +138,13 @@ func TestFunction_Callback(t *testing.T) {
 				},
 			},
 			args: args{
-				arguments:  arguments,
-				input:      input,
-				needAdjust: true,
+				arguments: arguments,
+				input:     input,
 			},
-			want: TestCaseMeta{
-				Req:             req,
+			want: apistructs.TestCasesMeta{
+				Reqs:            reqs,
 				RequirementName: issue.Title,
 				RequirementID:   uint64(issue.ID),
-			},
-			wantErr: false,
-		},
-		{
-			name: "Test_02",
-			fields: fields{
-				background: &pb.Background{
-					UserID:      "1003933",
-					OrgID:       633,
-					OrgName:     "erda-development",
-					ProjectID:   4717,
-					ProjectName: "testhpa",
-				},
-			},
-			args: args{
-				arguments:  arguments,
-				input:      input,
-				needAdjust: false,
-			},
-			want: TestCaseMeta{
-				Req:             req,
-				RequirementName: issue.Title,
-				RequirementID:   uint64(issue.ID),
-				TestCaseID:      testcaseId,
 			},
 			wantErr: false,
 		},
@@ -177,15 +175,345 @@ func TestFunction_Callback(t *testing.T) {
 				}, nil
 			})
 
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateTestSet", func(_ *bundle.Bundle,
+				req apistructs.TestSetCreateRequest) (*apistructs.TestSet, error) {
+				return &apistructs.TestSet{
+					ID: testSetId,
+				}, nil
+			})
+
 			defer monkey.UnpatchAll()
 
-			got, err := f.Callback(tt.args.ctx, tt.args.arguments, tt.args.input, tt.args.needAdjust)
+			got, err := f.Callback(tt.args.ctx, tt.args.arguments, tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Callback() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			var fakeId uint64
+			fakeId = uint64(time.Now().Nanosecond())
+			gotStruct, _ := got.(apistructs.TestCasesMeta)
+			for idx := range gotStruct.Reqs {
+				gotStruct.Reqs[idx].TestSetID = fakeId
+			}
+			wantStruct, _ := tt.want.(apistructs.TestCasesMeta)
+			for idx := range wantStruct.Reqs {
+				wantStruct.Reqs[idx].TestSetID = fakeId
+			}
+
+			if !reflect.DeepEqual(gotStruct, wantStruct) {
 				t.Errorf("Callback() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_validateParamsForCreateTestcase(t *testing.T) {
+	type args struct {
+		req FunctionParams
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				req: FunctionParams{
+					TestSetID: 24227,
+					Requirements: []TestCaseParam{
+						{
+							IssueID: 30001127564,
+							Prompt:  "用户登录",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateParamsForCreateTestcase(tt.args.req); (err != nil) != tt.wantErr {
+				t.Errorf("validateParamsForCreateTestcase() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_createRootTestSetIfNecessary(t *testing.T) {
+	type args struct {
+		fps       *FunctionParams
+		bdl       *bundle.Bundle
+		userId    string
+		projectId uint64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				fps: &FunctionParams{
+					TestSetID:    0,
+					SystemPrompt: "xxx",
+					Requirements: []TestCaseParam{
+						{
+							IssueID: 30001127564,
+							Prompt:  "用户登录",
+						},
+					},
+				},
+				bdl:       bundle.New(),
+				userId:    "10001",
+				projectId: 1,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(tt.args.bdl), "GetTestSets", func(_ *bundle.Bundle,
+				req apistructs.TestSetListRequest) ([]apistructs.TestSet, error) {
+				return []apistructs.TestSet{
+					{
+						ID:        1,
+						Name:      "",
+						ProjectID: 1,
+						ParentID:  0,
+						Recycled:  false,
+						Directory: "/",
+						Order:     0,
+						CreatorID: "10001",
+						UpdaterID: "10001",
+					},
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(tt.args.bdl), "CreateTestSet", func(_ *bundle.Bundle,
+				req apistructs.TestSetCreateRequest) (*apistructs.TestSet, error) {
+				return &apistructs.TestSet{
+					ID:        2,
+					Name:      AIGeneratedTestSetName,
+					ProjectID: 1,
+					ParentID:  1,
+					Recycled:  false,
+					Directory: "/" + AIGeneratedTestSetName,
+					Order:     1,
+					CreatorID: "10001",
+					UpdaterID: "10001",
+				}, nil
+			})
+
+			defer monkey.UnpatchAll()
+
+			if err := createRootTestSetIfNecessary(tt.args.fps, tt.args.bdl, tt.args.userId, tt.args.projectId); (err != nil) != tt.wantErr {
+				t.Errorf("createRootTestSetIfNecessary() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_getOperationType(t *testing.T) {
+	type args struct {
+		fps FunctionParams
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				fps: FunctionParams{
+					TestSetID:    0,
+					SystemPrompt: "xxx",
+					Requirements: []TestCaseParam{
+						{
+							IssueID: 30001127564,
+							Prompt:  "用户登录",
+						},
+					},
+				},
+			},
+			want: OperationTypeGenerate,
+		},
+		{
+			name: "Test_02",
+			args: args{
+				fps: FunctionParams{
+					TestSetID:    0,
+					SystemPrompt: "xxx",
+					Requirements: []TestCaseParam{
+						{
+							IssueID: 30001127564,
+							Prompt:  "用户登录",
+							Reqs: []apistructs.TestCaseCreateRequest{
+								{
+									StepAndResults: []apistructs.TestCaseStepAndResult{
+										{
+											Step:   "Step",
+											Result: "Result",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: OperationTypeSave,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getOperationType(tt.args.fps); got != tt.want {
+				t.Errorf("getOperationType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_execOperationTypeSave(t *testing.T) {
+	type args struct {
+		fps       *FunctionParams
+		bdl       *bundle.Bundle
+		userId    string
+		projectId uint64
+	}
+
+	var issueId, testcaseId, AIGeneratedTestSetId uint64
+	issueId = 30001127564
+	testcaseId = 111001
+	AIGeneratedTestSetId = 2
+	issueName := "用户登录"
+
+	results := make([]apistructs.TestCaseMeta, 0)
+	results = append(results, apistructs.TestCaseMeta{
+		Req: apistructs.TestCaseCreateRequest{
+			//TestCaseID:       111,
+			ProjectID:        1,
+			ParentTestSetID:  1,
+			ParentTestSetDir: "/1",
+			TestSetID:        AIGeneratedTestSetId,
+			TestSetDir:       "/" + AIGeneratedTestSetName,
+			TestSetName:      "1",
+			Name:             "",
+			PreCondition:     "",
+			StepAndResults: []apistructs.TestCaseStepAndResult{
+				{
+					Step:   "Step",
+					Result: "Result",
+				},
+			},
+			Desc:     "",
+			Priority: "",
+
+			IdentityInfo: apistructs.IdentityInfo{
+				UserID: "10001",
+			},
+		},
+		RequirementName: issueName,
+		RequirementID:   issueId,
+		TestCaseID:      testcaseId,
+	})
+	tests := []struct {
+		name    string
+		args    args
+		want    AICreateTestCasesResult
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				fps: &FunctionParams{
+					TestSetID:    1,
+					SystemPrompt: "xxx",
+					Requirements: []TestCaseParam{
+						{
+							IssueID:          issueId,
+							Prompt:           issueName,
+							ParentTestSetID:  1,
+							ParentTestSetDir: "/1",
+							Reqs: []apistructs.TestCaseCreateRequest{
+								{
+									TestSetID:        111,
+									ProjectID:        1,
+									ParentTestSetID:  1,
+									ParentTestSetDir: "/1",
+									TestSetDir:       "/" + AIGeneratedTestSetName,
+									TestSetName:      "1",
+									StepAndResults: []apistructs.TestCaseStepAndResult{
+										{
+											Step:   "Step",
+											Result: "Result",
+										},
+									},
+									IdentityInfo: apistructs.IdentityInfo{
+										UserID: "10001",
+									},
+								},
+							},
+						},
+					},
+				},
+				bdl:       bundle.New(),
+				userId:    "10001",
+				projectId: 1,
+			},
+			want: AICreateTestCasesResult{
+				IsSaveTestCasesSave: true,
+				//TestCases: results,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(tt.args.bdl), "CreateTestSet", func(_ *bundle.Bundle,
+				req apistructs.TestSetCreateRequest) (*apistructs.TestSet, error) {
+				return &apistructs.TestSet{
+					ID:        AIGeneratedTestSetId,
+					Name:      AIGeneratedTestSetName,
+					ProjectID: 1,
+					ParentID:  1,
+					Recycled:  false,
+					Directory: "/" + AIGeneratedTestSetName,
+					Order:     1,
+					CreatorID: "10001",
+					UpdaterID: "10001",
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(tt.args.bdl), "GetIssue", func(_ *bundle.Bundle,
+				id uint64) (*apistructs.Issue, error) {
+				return &apistructs.Issue{
+					ID:    int64(issueId),
+					Title: issueName,
+				}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(tt.args.bdl), "CreateTestCase", func(_ *bundle.Bundle,
+				req apistructs.TestCaseCreateRequest) (apistructs.AICreateTestCaseResponse, error) {
+				return apistructs.AICreateTestCaseResponse{
+					TestCaseID: testcaseId,
+				}, nil
+			})
+
+			defer monkey.UnpatchAll()
+
+			got, err := execOperationTypeSave(tt.args.fps, tt.args.bdl, tt.args.userId, tt.args.projectId)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("execOperationTypeSave() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("execOperationTypeSave() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

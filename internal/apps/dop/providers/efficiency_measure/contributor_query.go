@@ -20,35 +20,39 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type PersonalContributorRow struct {
-	OrgID              string  `json:"orgID" ch:"orgID"`
-	UserEmail          string  `json:"userEmail" ch:"userEmail"`
-	ProjectName        string  `json:"projectName" ch:"projectName"`
-	ProjectDisplayName string  `json:"projectDisplayName" ch:"projectDisplayName"`
-	CommitTotal        float64 `json:"commitTotal" ch:"commitTotal"`
-	FileChangedTotal   float64 `json:"fileChangedTotal" ch:"fileChangedTotal"`
-	AdditionTotal      float64 `json:"additionTotal" ch:"additionTotal"`
-	DeletionTotal      float64 `json:"deletionTotal" ch:"deletionTotal"`
+	OrgID              string    `json:"orgID" ch:"orgID"`
+	UserEmail          string    `json:"userEmail" ch:"userEmail"`
+	ProjectName        string    `json:"projectName" ch:"projectName"`
+	ProjectDisplayName string    `json:"projectDisplayName" ch:"projectDisplayName"`
+	CommitTotal        float64   `json:"commitTotal" ch:"commitTotal"`
+	FileChangedTotal   float64   `json:"fileChangedTotal" ch:"fileChangedTotal"`
+	AdditionTotal      float64   `json:"additionTotal" ch:"additionTotal"`
+	DeletionTotal      float64   `json:"deletionTotal" ch:"deletionTotal"`
+	Timestamp          time.Time `json:"timestamp" ch:"timestamp"`
 }
 
 type PersonalActualMandayRow struct {
-	OrgID              string  `json:"orgID" ch:"orgID"`
-	OrgName            string  `json:"orgName" ch:"orgName"`
-	UserID             string  `json:"userID" ch:"userID"`
-	UserName           string  `json:"userName" ch:"userName"`
-	ProjectID          string  `json:"projectID" ch:"projectID"`
-	ProjectName        string  `json:"projectName" ch:"projectName"`
-	ProjectDisplayName string  `json:"projectDisplayName" ch:"projectDisplayName"`
-	ProjectCode        string  `json:"projectCode" ch:"projectCode"`
-	ActualMandayTotal  float64 `json:"actualMandayTotal" ch:"actualMandayTotal"`
+	OrgID              string    `json:"orgID" ch:"orgID"`
+	OrgName            string    `json:"orgName" ch:"orgName"`
+	UserID             string    `json:"userID" ch:"userID"`
+	UserName           string    `json:"userName" ch:"userName"`
+	ProjectID          string    `json:"projectID" ch:"projectID"`
+	ProjectName        string    `json:"projectName" ch:"projectName"`
+	ProjectDisplayName string    `json:"projectDisplayName" ch:"projectDisplayName"`
+	ProjectCode        string    `json:"projectCode" ch:"projectCode"`
+	ActualMandayTotal  float64   `json:"actualMandayTotal" ch:"actualMandayTotal"`
+	Timestamp          time.Time `json:"timestamp" ch:"timestamp"`
 }
 
 func (p *provider) queryPersonalContributors(rw http.ResponseWriter, r *http.Request) {
@@ -158,7 +162,7 @@ func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributionR
 			Group("repoID").
 			Group("timestamp")
 		if len(req.ProjectIDs) > 0 {
-			tx = tx.Where("tag_values[indexOf(tag_keys,'org_id')] in (?)", req.ProjectIDs)
+			tx = tx.Where("tag_values[indexOf(tag_keys,'project_id')] in (?)", strutil.ToStrSlice(req.ProjectIDs))
 		}
 		return tx.Find(&[]PersonalContributorRow{})
 	})
@@ -172,12 +176,19 @@ func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributionR
 		if req.GroupByProject {
 			selectSql += ", last_value(projectName) as projectName, last_value(projectDisplayName) as projectDisplayName"
 		}
+		if req.GroupByDay {
+			selectSql += ", timestamp"
+		}
 		tx = tx.Table(fmt.Sprintf("(%s)", dataSql)).
 			Select(selectSql).
 			Group("orgID").
 			Group("userEmail")
 		if req.GroupByProject {
 			tx = tx.Group("projectID")
+		}
+		if req.GroupByDay {
+			tx = tx.Group("timestamp")
+			tx = tx.Order("timestamp ASC")
 		}
 		return tx.Find(&[]PersonalContributorRow{})
 	})
@@ -186,8 +197,7 @@ func (p *provider) makeContributorBasicSql(req *apistructs.PersonalContributionR
 
 func (p *provider) makeActualManDaySql(req *apistructs.PersonalContributionRequest) string {
 	basicSq := p.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		tx = tx.Table("monitor.external_metrics_all").
-			Select(`last_value(tag_values[indexOf(tag_keys,'org_name')]) as orgName,
+		selectSql := `last_value(tag_values[indexOf(tag_keys,'org_name')]) as orgName,
     last_value(tag_values[indexOf(tag_keys,'user_name')]) as userName,
     last_value(tag_values[indexOf(tag_keys,'project_name')]) as projectName,
     last_value(tag_values[indexOf(tag_keys,'project_display_name')]) as projectDisplayName,
@@ -195,7 +205,12 @@ func (p *provider) makeActualManDaySql(req *apistructs.PersonalContributionReque
     tag_values[indexOf(tag_keys,'project_id')] as projectID,
     tag_values[indexOf(tag_keys,'org_id')] as orgID,
     tag_values[indexOf(tag_keys,'user_id')] as userID,
-    max(number_field_values[indexOf(number_field_keys,'emp_user_actual_manday_total')]) as actualMandayTotal`).
+    max(number_field_values[indexOf(number_field_keys,'emp_user_actual_manday_total')]) as actualMandayTotal`
+		if req.GroupByDay {
+			selectSql += ", toStartOfInterval(timestamp, INTERVAL 1 day) as timestamp"
+		}
+		tx = tx.Table("monitor.external_metrics_all").
+			Select(selectSql).
 			Where("metric_group='performance_measure'").
 			Where("timestamp >= ?", req.Start).
 			Where("timestamp <= ?", req.End).
@@ -203,6 +218,10 @@ func (p *provider) makeActualManDaySql(req *apistructs.PersonalContributionReque
 			Where("tag_values[indexOf(tag_keys,'user_id')] = '?'", req.UserID).
 			Where("tag_values[indexOf(tag_keys,'emp_project_code')] != ''").
 			Group("orgID, projectID, userID")
+		if req.GroupByDay {
+			tx = tx.Group("timestamp")
+			tx = tx.Order("timestamp ASC")
+		}
 		return tx.Find(&[]PersonalActualMandayRow{})
 	})
 	return basicSq

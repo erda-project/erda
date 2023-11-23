@@ -39,6 +39,13 @@ type RequestFilter interface {
 	OnRequest(ctx context.Context, w http.ResponseWriter, infor HttpInfor) (signal Signal, err error)
 }
 
+type ActualRequestFilter interface {
+	OnActualRequest(ctx context.Context, infor HttpInfor)
+}
+type OriginalRequestFilter interface {
+	OnOriginalRequest(ctx context.Context, infor HttpInfor)
+}
+
 type ResponseFilter interface {
 	// OnResponseChunk 每被调用一次, 传入一个 response chunk, ResponseFilter 的实现者需要自行决定如何处理这些 chunk.
 	// 对大多数情况来说, 实现者可以将这些 chunk 缓存到 filter 实例中, 待 response chunks 全部传完后整体处理.
@@ -51,6 +58,10 @@ type ResponseFilter interface {
 	OnResponseEOF(ctx context.Context, infor HttpInfor, w Writer, chunk []byte) error
 
 	ImmutableResponseFilter
+}
+
+type MultiResponseWriter interface {
+	MultiResponseWriter(ctx context.Context) []io.ReadWriter
 }
 
 type ImmutableResponseFilter interface {

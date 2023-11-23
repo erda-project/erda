@@ -33,6 +33,7 @@ type PersonalContributionRequest struct {
 	UserEmail      string   `json:"userEmail"`
 	ProjectIDs     []uint64 `json:"projectIDs"`
 	GroupByProject bool     `json:"groupByProject"`
+	GroupByDay     bool     `json:"groupByDay"`
 }
 
 type FuncPointTrendRequest struct {

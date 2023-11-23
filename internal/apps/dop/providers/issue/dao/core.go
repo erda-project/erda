@@ -1041,6 +1041,9 @@ func (client *DBClient) FindIssueChildren(id uint64, req pb.PagingIssueRequest) 
 	if len(req.StateBelongs) > 0 {
 		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
 	}
+	if len(req.State) > 0 {
+		sql = sql.Where("a.state in (?)", req.State)
+	}
 	sql = applyCondition(sql, req)
 	offset := (req.PageNo - 1) * req.PageSize
 	var total uint64
@@ -1067,6 +1070,9 @@ func (client *DBClient) FindIssueRoot(req pb.PagingIssueRequest) ([]IssueItem, [
 	if len(req.Assignee) > 0 {
 		sql = sql.Where("a.assignee in (?)", req.Assignee)
 	}
+	if len(req.State) > 0 {
+		sql = sql.Where("a.state in (?)", req.State)
+	}
 	var items []IssueItem
 	var totalTask uint64
 	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order(ganttOrder).Offset(offset).Limit(req.PageSize).Find(&items).
@@ -1085,6 +1091,9 @@ func (client *DBClient) FindIssueRoot(req pb.PagingIssueRequest) ([]IssueItem, [
 	}
 	if len(req.StateBelongs) > 0 {
 		sql = sql.Where("e.belong IN (?)", req.StateBelongs)
+	}
+	if len(req.State) > 0 {
+		sql = sql.Where("e.id IN (?)", req.State)
 	}
 	var res []IssueItem
 	var totalReq uint64

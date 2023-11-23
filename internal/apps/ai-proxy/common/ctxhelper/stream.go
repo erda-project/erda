@@ -22,16 +22,16 @@ import (
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
-func GetIsStream(ctx context.Context) (bool, bool) {
+func GetIsStream(ctx context.Context) bool {
 	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyIsStream{})
 	if !ok || value == nil {
-		return false, false
+		return false
 	}
 	isStream, ok := value.(bool)
 	if !ok {
-		return false, false
+		return false
 	}
-	return isStream, true
+	return isStream
 }
 
 func PutIsStream(ctx context.Context, isStream bool) {
