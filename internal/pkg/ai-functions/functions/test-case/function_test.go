@@ -518,3 +518,65 @@ func Test_execOperationTypeSave(t *testing.T) {
 		})
 	}
 }
+
+func Test_verifyAIGenerateResults(t *testing.T) {
+	type args struct {
+		results interface{}
+	}
+
+	groups := make([]string, 0)
+	groups = append(groups, "group")
+	results01 := make([]RequirementGroup, 0)
+	results02 := make([]RequirementGroup, 0)
+	results03 := make([]RequirementGroup, 0)
+	results02 = append(results01, RequirementGroup{
+		ID:     101,
+		Groups: nil,
+	})
+	results03 = append(results01, RequirementGroup{
+		ID:     101,
+		Groups: groups,
+	})
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				results: results01,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test_02",
+			args: args{
+				results: results02,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test_03",
+			args: args{
+				results: results03,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test_04",
+			args: args{
+				results: make([]any, 0),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := verifyAIGenerateResults(tt.args.results); (err != nil) != tt.wantErr {
+				t.Errorf("verifyAIGenerateResults() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

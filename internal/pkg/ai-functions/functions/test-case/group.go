@@ -75,6 +75,12 @@ func GenerateGroupsForRequirements(ctx context.Context, requirements []*apistruc
 	}
 	wg.Wait()
 
+	// 异步操作可能请求参数、Header 错误或者后端 ai-proxy 服务不可用，导致实际没有生成任何结果，因此要判断是否按目标生成期望结果
+	err = verifyAIGenerateResults(results)
+	if err != nil {
+		return nil, err
+	}
+
 	requirementIdToGroups = make(map[uint64][]string)
 	for _, rmg := range results {
 		requirementIdToGroups[uint64(rmg.ID)] = rmg.Groups
