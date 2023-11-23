@@ -73,6 +73,8 @@ func (s *provider) Init(ctx servicehub.Context) error {
 					locale := i18n.GetLocaleNameByRequest(r)
 					if locale != "" {
 						i18n.SetGoroutineBindLang(locale)
+					} else {
+						i18n.SetGoroutineBindLang(i18n.ZH)
 					}
 					return encoding.DecodeRequest(r, data)
 				}),

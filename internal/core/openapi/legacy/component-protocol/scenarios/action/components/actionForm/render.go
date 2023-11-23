@@ -272,7 +272,7 @@ func GenLoopProps(local *i18n.LocaleResource, loop *apistructs.PipelineTaskLoop)
 
 func GenActionProps(ctx context.Context, c *apistructs.Component, name, version string) (err error) {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	actionExt, versions, err := QueryExtensionVersion(bdl.Bdl, name, version)
+	actionExt, versions, err := QueryExtensionVersion(bdl.Bdl, name, version, bdl.Locale)
 	if err != nil {
 		logrus.Errorf("query extension version failed, name:%s, version:%s, err:%v", name, version, err)
 		return

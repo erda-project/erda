@@ -82,12 +82,12 @@ func GetActionVersion(c *apistructs.Component) string {
 	return versionValue
 }
 
-func QueryExtensionVersion(bdl *bundle.Bundle, name, version string) (*apistructs.ExtensionVersion, []VersionOption, error) {
+func QueryExtensionVersion(bdl *bundle.Bundle, name, version, lang string) (*apistructs.ExtensionVersion, []VersionOption, error) {
 	var (
 		target   *apistructs.ExtensionVersion
 		versions []VersionOption
 	)
-	actions, err := bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: name, YamlFormat: false})
+	actions, err := bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: name, YamlFormat: false, Lang: lang})
 	if err != nil {
 		return nil, nil, err
 	}

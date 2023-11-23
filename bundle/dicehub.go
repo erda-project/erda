@@ -56,6 +56,7 @@ func (b *Bundle) QueryExtensionVersions(req apistructs.ExtensionVersionQueryRequ
 		Param("yamlFormat", strconv.FormatBool(req.YamlFormat)).
 		Param("orderByVersionDesc", strconv.FormatBool(req.OrderByVersionDesc)).
 		Header("Internal-Client", "bundle").
+		Header("Lang", req.Lang).
 		Do().JSON(&getResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

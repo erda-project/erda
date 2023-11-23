@@ -250,6 +250,8 @@ type ExtensionVersionQueryRequest struct {
 	//默认false查询有效版本, true查询所有版本
 	All                bool `query:"all"`
 	OrderByVersionDesc bool `query:"orderByVersionDesc"`
+	// 需要转换的语言
+	Lang string
 }
 
 // ExtensionVersionGetResponse Extension详情API返回数据结构
