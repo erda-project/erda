@@ -15,6 +15,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -29,7 +31,7 @@ type Interface interface {
 	GetK8sService(name string) (*corev1.Service, error)
 	GetK8sDeployList(group string, services *[]apistructs.Service) error
 	CreateK8sService(appName string, appID string, ports []int) error
-	CreateOrUpdateK8sService(appName string, appID string, ports []int) error
+	CreateOrUpdateK8sService(ctx context.Context, appName string, appID string, ports []int) error
 	DeleteK8sService(appName string) error
 }
 
