@@ -63,7 +63,7 @@ en:
   traceServices: Service
   traceDistribution: Tracing time distribution
   cpuUsage: Container CPU
-  memoryUsage: Container 内存
+  memoryUsage: Container Memory
   diskioUsage: Disk IO
   networkUsage: Container Network
   nodejs_memory_heap: Heap Memory

@@ -46,7 +46,7 @@ type taskService struct {
 }
 
 func (s *taskService) PipelineTaskDetail(ctx context.Context, req *pb.PipelineTaskDetailRequest) (*pb.PipelineTaskDetailResponse, error) {
-	p, err := s.pipelineSvc.Detail(req.PipelineID)
+	p, err := s.pipelineSvc.Detail(ctx, req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineTaskDetail.InternalError(err)
 	}
@@ -67,7 +67,7 @@ func (s *taskService) PipelineTaskDetail(ctx context.Context, req *pb.PipelineTa
 }
 
 func (s *taskService) PipelineTaskGetBootstrapInfo(ctx context.Context, req *pb.PipelineTaskGetBootstrapInfoRequest) (*pb.PipelineTaskGetBootstrapInfoResponse, error) {
-	p, err := s.pipelineSvc.Detail(req.PipelineID)
+	p, err := s.pipelineSvc.Detail(ctx, req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetTaskBootstrapInfo.InternalError(err)
 	}
