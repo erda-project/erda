@@ -76,10 +76,10 @@ func (e *wrapKubernetes) CreateK8sService(appName string, appID string, ports []
 }
 
 // CreateOrUpdateK8sService create or update kubernetes service
-func (e *wrapKubernetes) CreateOrUpdateK8sService(appName string, appID string, ports []int) error {
+func (e *wrapKubernetes) CreateOrUpdateK8sService(ctx context.Context, appName string, appID string, ports []int) error {
 	l := e.l.WithField("func", "CreateOrUpdateK8sService")
 
-	_, err := e.cs.CoreV1().Services(e.namespace).Get(context.TODO(), appName, metav1.GetOptions{})
+	currentSvc, err := e.cs.CoreV1().Services(e.namespace).Get(ctx, appName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return e.CreateK8sService(appName, appID, ports)
@@ -88,9 +88,13 @@ func (e *wrapKubernetes) CreateOrUpdateK8sService(appName string, appID string, 
 	}
 
 	l.Infof("start to update k8s svc, appname: %s", appName)
-	newService := e.combineK8sService(appName, appID, ports)
-	if _, err := e.cs.CoreV1().Services(e.namespace).Update(context.TODO(), newService,
-		metav1.UpdateOptions{}); err != nil {
+	newSvc := e.combineK8sService(appName, appID, ports)
+
+	currentSvc.Spec = newSvc.Spec
+	currentSvc.Labels = newSvc.Labels
+
+	if _, err := e.cs.CoreV1().Services(e.namespace).
+		Update(ctx, currentSvc, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
