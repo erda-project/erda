@@ -114,7 +114,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run SQL Lint
-        run: make proto-go-in-local && make prepare && make miglint
+        run: HOME=/root make proto-go-in-local && make prepare && make miglint
 
   CODE-CHECK:
     runs-on: ubuntu-latest
