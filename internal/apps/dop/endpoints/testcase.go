@@ -436,6 +436,10 @@ func (e *Endpoints) ImportTestCases(ctx context.Context, r *http.Request, vars m
 
 // ExportTestCases 导出测试用例
 func (e *Endpoints) ExportAIGeneratedTestCases(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	type AITestCasesExportResponse struct {
+		RecordID    uint64 `json:"recordId"`
+		ApiFileUUID string `json:"apiFileUUID"`
+	}
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrExportTestCases.NotLogin().ToResp(), nil
@@ -513,7 +517,10 @@ func (e *Endpoints) ExportAIGeneratedTestCases(ctx context.Context, r *http.Requ
 	}
 
 	return httpserver.HTTPResponse{
-		Status:  http.StatusAccepted,
-		Content: fileID,
+		Status: http.StatusOK,
+		Content: AITestCasesExportResponse{
+			RecordID:    fileID,
+			ApiFileUUID: fileUUID,
+		},
 	}, nil
 }
