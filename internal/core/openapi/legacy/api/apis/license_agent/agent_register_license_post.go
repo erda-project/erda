@@ -1,9 +1,10 @@
 package license_agent
 
 import (
+	"net/http"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
-	"net/http"
 )
 
 var AGENT_REGISTER_LICENSE_POST = apis.ApiSpec{

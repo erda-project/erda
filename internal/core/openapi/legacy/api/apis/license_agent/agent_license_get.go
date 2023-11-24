@@ -1,8 +1,9 @@
 package license_agent
 
 import (
-	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 	"net/http"
+
+	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 )
 
 var AGENT_LICENSE_GET = apis.ApiSpec{
