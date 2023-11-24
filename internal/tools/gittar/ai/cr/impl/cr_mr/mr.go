@@ -12,41 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cr
+package cr_mr
 
 import (
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/crtypes"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl/cr_mr_file"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type mrReviewer struct {
-	repository *gitmodule.Repository
-	mr         *apistructs.MergeRequestInfo
+	req  models.AICodeReviewNoteRequest
+	repo *gitmodule.Repository
+	user *models.User
+	mr   *apistructs.MergeRequestInfo
 }
 
-func newMRReviewer(repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo) CodeReviewer {
-	return &mrReviewer{repository: repo, mr: mr}
+func init() {
+	crtypes.Register(models.AICodeReviewTypeMR, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (crtypes.CodeReviewer, error) {
+		return &mrReviewer{req: req, repo: repo, user: user, mr: mr}, nil
+	})
 }
 
 func (r *mrReviewer) CodeReview() string {
-	diff := getDiffFromMR(r.repository, r.mr)
+	diff := mrutil.GetDiffFromMR(r.repo, r.mr)
 
 	// mr has many changed files, we will review only the first ten files one by one. Then, combine the file-level suggestions.
 
-	var changedFiles []FileCodeReviewer
+	var changedFiles []crtypes.FileCodeReviewer
 	for _, diffFile := range diff.Files {
 		if len(changedFiles) >= 10 {
 			break
 		}
 		if len(diffFile.Sections) > 0 {
-			fr := newFileReviewer(diffFile, convertToModelUser(r.mr.AuthorUser), r.mr)
+			fr := cr_mr_file.NewFileReviewer(diffFile, r.user, r.mr)
 			changedFiles = append(changedFiles, fr)
 		}
 	}
@@ -60,7 +64,7 @@ func (r *mrReviewer) CodeReview() string {
 	wg.Add(len(changedFiles))
 	for _, file := range changedFiles {
 		fileOrder = append(fileOrder, file.GetFileName())
-		go func(file FileCodeReviewer) {
+		go func(file crtypes.FileCodeReviewer) {
 			defer wg.Done()
 
 			mu.Lock()
@@ -78,45 +82,4 @@ func (r *mrReviewer) CodeReview() string {
 	}
 
 	return mrReviewResult
-}
-
-func getDiffFromMR(repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo) *gitmodule.Diff {
-	fromCommit, err := repo.GetCommit(mr.SourceSha)
-	if err != nil {
-		logrus.Errorf("failed to get commit, sha: %s, err: %s", mr.SourceSha, err)
-		return nil
-	}
-	toCommit, err := repo.GetCommit(mr.TargetSha)
-	if err != nil {
-		logrus.Errorf("failed to get commit, sha: %s, err: %s", mr.TargetSha, err)
-		return nil
-	}
-	diff, err := repo.GetDiff(fromCommit, toCommit)
-	if err != nil {
-		logrus.Errorf("failed to get diff, from: %s, to: %s, err: %s", mr.SourceSha, mr.TargetSha, err)
-		return nil
-	}
-	return diff
-}
-
-func getDiffFileFromMR(repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, fileName string) *gitmodule.DiffFile {
-	diff := getDiffFromMR(repo, mr)
-	if diff == nil {
-		return nil
-	}
-	for _, diffFile := range diff.Files {
-		if diffFile.Name == fileName {
-			return diffFile
-		}
-	}
-	return nil
-}
-
-func convertToModelUser(userInfo *apistructs.UserInfoDto) *models.User {
-	return &models.User{
-		Id:       strutil.String(userInfo.UserID),
-		Name:     userInfo.Username,
-		NickName: userInfo.NickName,
-		Email:    userInfo.Email,
-	}
 }

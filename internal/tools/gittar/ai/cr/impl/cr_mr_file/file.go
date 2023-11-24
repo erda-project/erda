@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cr
+package cr_mr_file
 
 import (
 	"bytes"
@@ -30,27 +30,45 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/aiutil"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/crtypes"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl/cr_mr_code_snippet"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/aiutil"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
+
+const MAX_FILE_CHANGES_CHAR_SIZE = 9 * 1000
 
 type OneChangedFile struct {
 	FileName     string
 	CodeLanguage string
 	Truncated    bool
-	CodeSnippets []CodeSnippet
+	CodeSnippets []cr_mr_code_snippet.CodeSnippet
 
 	mr       *apistructs.MergeRequestInfo
 	diffFile *gitmodule.DiffFile
 	user     *models.User
 }
 
-func newFileReviewer(diffFile *gitmodule.DiffFile, user *models.User, mr *apistructs.MergeRequestInfo) FileCodeReviewer {
+func NewFileReviewer(diffFile *gitmodule.DiffFile, user *models.User, mr *apistructs.MergeRequestInfo) crtypes.FileCodeReviewer {
 	fr := OneChangedFile{diffFile: diffFile, user: user, mr: mr}
 	fr.FileName = diffFile.Name
 	fr.CodeLanguage = strings.TrimPrefix(filepath.Ext(diffFile.Name), ".")
 	return &fr
+}
+
+func init() {
+	crtypes.Register(models.AICodeReviewTypeMRFile, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (crtypes.CodeReviewer, error) {
+		if req.FileRelated == nil || req.FileRelated.NewFilePath == "" {
+			return nil, fmt.Errorf("no file specified")
+		}
+		diffFile := mrutil.GetDiffFileFromMR(repo, mr, req.FileRelated.NewFilePath)
+		if diffFile == nil {
+			return nil, fmt.Errorf("file not found")
+		}
+		return NewFileReviewer(diffFile, user, mr), nil
+	})
 }
 
 func (r *OneChangedFile) GetFileName() string {
@@ -65,7 +83,7 @@ func (r *OneChangedFile) CodeReview() string {
 	r.parseCodeSnippets()
 
 	// invoke ai
-	result := aiutil.InvokeAI(r.ConstructAIRequest(), r.user)
+	result := aiutil.InvokeAI(r.constructAIRequest(), r.user)
 	if result == "" {
 		return ""
 	}
@@ -87,7 +105,7 @@ func (r *OneChangedFile) CodeReview() string {
 	var s string
 	for snippetIndex := range r.CodeSnippets {
 		// add original code
-		s += fmt.Sprintf("**Snippet:**\n%s\n", r.CodeSnippets[snippetIndex].getMarkdownCode())
+		s += fmt.Sprintf("**Snippet:**\n%s\n", r.CodeSnippets[snippetIndex].GetMarkdownCode())
 		for _, issue := range snippetIndexIssues[snippetIndex] {
 			s += fmt.Sprintf("**RiskLevel:** %s\n", issue.RiskLevel)
 			s += fmt.Sprintf("\n%s\n\n", issue.Details)
@@ -123,7 +141,7 @@ func init() {
 	}
 }
 
-func (r *OneChangedFile) ConstructAIRequest() openai.ChatCompletionRequest {
+func (r *OneChangedFile) constructAIRequest() openai.ChatCompletionRequest {
 	msgs := deepcopy.Copy(promptStruct.Messages).([]openai.ChatCompletionMessage)
 
 	req := openai.ChatCompletionRequest{
@@ -233,11 +251,10 @@ func (r *OneChangedFile) parseCodeSnippets() {
 			truncated = true
 			r.Truncated = true
 		}
-		codeSnippet := CodeSnippet{
+		codeSnippet := cr_mr_code_snippet.CodeSnippet{
 			CodeLanguage: strings.TrimPrefix(filepath.Ext(r.diffFile.Name), "."),
 			SelectedCode: strings.Join(changes, "\n"),
 			Truncated:    truncated,
-			user:         r.user,
 		}
 		r.CodeSnippets = append(r.CodeSnippets, codeSnippet)
 	}

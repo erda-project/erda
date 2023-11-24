@@ -137,7 +137,7 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 	}()
 	go func() { // ai code review
 		mrCodeReviewReq := models.AICodeReviewNoteRequest{Type: models.AICodeReviewTypeMR}
-		reviewer, err := cr.NewCodeReviewer(mrCodeReviewReq, ctx.Repository, request)
+		reviewer, err := cr.NewCodeReviewer(mrCodeReviewReq, ctx.Repository, ctx.User, request)
 		if err != nil {
 			logrus.Errorf("failed to create code reviewer err:%s", err)
 			return
@@ -638,7 +638,7 @@ func AIMRCodeReview(ctx *webcontext.Context) {
 		return
 	}
 
-	reviewer, err := cr.NewCodeReviewer(req, ctx.Repository, mergeRequestInfo)
+	reviewer, err := cr.NewCodeReviewer(req, ctx.Repository, ctx.User, mergeRequestInfo)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusBadRequest, err)
 		return
