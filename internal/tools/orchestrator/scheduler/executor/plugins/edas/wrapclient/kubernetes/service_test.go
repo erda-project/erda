@@ -15,6 +15,7 @@
 package kubernetes
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -73,7 +74,7 @@ func TestCreateOrUpdateK8sService(t *testing.T) {
 				_ = kubernetesWrapper.CreateK8sService(appName, appID, ports)
 			}
 
-			err := kubernetesWrapper.CreateOrUpdateK8sService(args.appName, args.appID, args.ports)
+			err := kubernetesWrapper.CreateOrUpdateK8sService(context.Background(), args.appName, args.appID, args.ports)
 
 			if test.expectedError && err == nil {
 				t.Error("Expected an error, but got nil.")

@@ -104,7 +104,7 @@ locale:
 	s := &graphService{
 		bdl: bdl,
 	}
-	err = s.loadGraphActionNameAndLogo(yml)
+	err = s.loadGraphActionNameAndLogo(yml, "zh-CN")
 	assert.NoError(t, err)
 	ymlbyte, err := yml.MarshalJSON()
 	assert.NoError(t, err)

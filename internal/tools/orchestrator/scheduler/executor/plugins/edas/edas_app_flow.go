@@ -126,9 +126,9 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return err
 		}
 
-		if err := e.wrapClientSet.CreateOrUpdateK8sService(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
-			l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
-			return errors.Wrap(err, "edas create k8s service")
+		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+			l.Errorf("failed to update k8s service, appName: %s, error: %v", appName, err)
+			return errors.Wrap(err, "edas update k8s service")
 		}
 	}
 
