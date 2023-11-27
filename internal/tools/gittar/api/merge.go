@@ -149,9 +149,10 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 		// create note
 		_, err = ctx.Service.CreateNormalNote(ctx.Repository, ctx.User, request.Id,
 			models.NoteRequest{
-				Note: suggestions,
-				Type: models.NoteTypeNormal,
-				Role: models.NoteRoleAI,
+				Note:             suggestions,
+				Type:             models.NoteTypeNormal,
+				Role:             models.NoteRoleAI,
+				AICodeReviewType: models.AICodeReviewTypeMR,
 			})
 		if err != nil {
 			logrus.Errorf("failed to create note, merge request id: %d, err:%s", request.Id, err)
@@ -659,6 +660,7 @@ func AIMRCodeReview(ctx *webcontext.Context) {
 	noteRequest := req.NoteLocation
 	noteRequest.Role = models.NoteRoleAI
 	noteRequest.Note = suggestions
+	noteRequest.AICodeReviewType = req.Type
 	switch req.Type {
 	case models.AICodeReviewTypeMR:
 		noteRequest.Type = models.NoteTypeNormal

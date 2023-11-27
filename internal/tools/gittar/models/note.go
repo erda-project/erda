@@ -39,6 +39,8 @@ type NoteRequest struct {
 	NewLine      int      `json:"newLine"`
 	Score        int      `json:"score" default:"-1"`
 	Role         NoteRole `json:"role"`
+
+	AICodeReviewType AICodeReviewType `json:"aiCodeReviewType,omitempty"`
 }
 
 const MAX_NOTE_DIFF_LINE_COUNT = 15
@@ -77,6 +79,8 @@ type NoteData struct {
 	NewLine     int                   `json:"newLine"`
 	OldCommitId string                `json:"oldCommitId"`
 	NewCommitId string                `json:"newCommitId"`
+
+	AICodeReviewType AICodeReviewType `json:"aiCodeReviewType,omitempty"`
 }
 
 type NoteRole string
@@ -184,6 +188,8 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 		NewPath:     request.NewPath,
 		OldCommitId: request.OldCommitId,
 		NewCommitId: request.NewCommitId,
+
+		AICodeReviewType: request.AICodeReviewType,
 	}
 
 	noteDataBytes, err := json.Marshal(noteData)
