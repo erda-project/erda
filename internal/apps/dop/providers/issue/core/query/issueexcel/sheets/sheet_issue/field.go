@@ -59,14 +59,6 @@ const (
 
 	// Error
 	fieldError = "Error"
-
-	// Template
-	fieldRequirementContent = "RequirementContent"
-	fieldTaskContent        = "TaskContent"
-	fieldBugContent         = "BugContent"
-
-	// IterationName
-	fieldToBePlaned = "ToBePlaned"
 )
 
 var excelFields = []string{
@@ -106,14 +98,6 @@ var excelFields = []string{
 	fieldOwnerName,
 	fieldSource,
 	fieldReopenCount,
-
-	// Template
-	fieldRequirementContent,
-	fieldTaskContent,
-	fieldBugContent,
-
-	// IterationName
-	fieldToBePlaned,
 }
 
 var (

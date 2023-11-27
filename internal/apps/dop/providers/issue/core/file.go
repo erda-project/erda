@@ -53,6 +53,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	// Template IterationName
+	TemplateBacklogIteration = "Template.BacklogIteration"
+)
+
 func (i *IssueService) ExportExcelIssue(ctx context.Context, req *pb.ExportExcelIssueRequest) (*pb.ExportExcelIssueResponse, error) {
 	switch req.OrderBy {
 	case "":
@@ -258,12 +263,6 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get iterations, err: %v", err)
 	}
-	// add backlog iteration first, then the existing iteration with the same name can be overwritten
-	backlogIteration := &dao.Iteration{Title: "待规划"}
-	iterationMapByID[-1] = backlogIteration
-	iterationMapByName["待办事项"] = backlogIteration
-	iterationMapByName["待规划"] = backlogIteration
-	iterationMapByName["待处理"] = backlogIteration
 	// add existing iterations
 	for _, v := range iterations {
 		v := v
@@ -316,6 +315,13 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 	if err = sheet_user.RefreshDataMembers(&dataForFulfill); err != nil {
 		return nil, fmt.Errorf("failed to get members, err: %v", err)
 	}
+	// set template iteration Name and set it in locale
+	backlogIteration := &dao.Iteration{Title: dataForFulfill.I18n(TemplateBacklogIteration)}
+	dataForFulfill.IterationMapByID[-1] = backlogIteration
+	// add backlog iteration , then the existing iteration with the same name can be overwritten
+	iterationMapByName["待办事项"] = backlogIteration
+	iterationMapByName["待规划"] = backlogIteration
+	iterationMapByName["待处理"] = backlogIteration
 	return &dataForFulfill, nil
 }
 

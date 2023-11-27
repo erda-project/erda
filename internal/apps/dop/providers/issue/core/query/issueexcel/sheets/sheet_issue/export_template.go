@@ -21,6 +21,14 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 )
 
+// issue-excel-template
+const (
+	// Template
+	TemplateRequirementContent = "Template.RequirementContent"
+	TemplateTaskContent        = "Template.TaskContent"
+	TemplateBugContent         = "Template.BugContent"
+)
+
 // GenerateSampleIssueSheetModels
 //
 // one requirement, includes one task
@@ -34,7 +42,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 
 	common := vars.IssueSheetModelCommon{
 		ID:                 0,
-		IterationName:      data.I18n(fieldToBePlaned),
+		IterationName:      data.IterationMapByID[-1].Title,
 		IssueType:          0,
 		IssueTitle:         data.I18n(fieldIssueTitle),
 		Content:            data.I18n(fieldContent),
@@ -57,7 +65,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	requirementCommon := common
 	requirementCommon.ID = 1
 	requirementCommon.IssueType = pb.IssueTypeEnum_REQUIREMENT
-	requirementCommon.Content = data.I18n(fieldRequirementContent)
+	requirementCommon.Content = data.I18n(TemplateRequirementContent)
 	requirementCommon.State = "进行中"
 	requirementCommon.EstimateTime = "2d"
 	requirement := vars.IssueSheetModel{
@@ -71,7 +79,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	taskCommon := common
 	taskCommon.ID = 2
 	taskCommon.IssueType = pb.IssueTypeEnum_TASK
-	taskCommon.Content = data.I18n(fieldTaskContent)
+	taskCommon.Content = data.I18n(TemplateTaskContent)
 	taskCommon.State = "已完成"
 	taskCommon.FinishAt = &nowPlusOneDay
 	taskCommon.EstimateTime = "1d"
@@ -94,7 +102,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	bugCommon := common
 	bugCommon.ID = 0
 	bugCommon.IssueType = pb.IssueTypeEnum_BUG
-	bugCommon.Content = data.I18n(fieldBugContent)
+	bugCommon.Content = data.I18n(TemplateBugContent)
 	bugCommon.PlanStartedAt = nil
 	bugCommon.PlanFinishedAt = nil
 	bugCommon.StartAt = nil
