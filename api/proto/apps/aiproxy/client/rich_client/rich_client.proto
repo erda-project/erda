@@ -21,7 +21,7 @@ service RichClientService {
 }
 
 message GetByClientAccessKeyIdRequest {
-    string accessKeyId = 1 [(validate.rules).string = {min_len: 32, max_len: 36}];
+    string accessKeyId = 1 [(validate.rules).string = {ignore_empty: true, min_len: 32, max_len: 36}];
 }
 
 message RichClient {

@@ -33,6 +33,16 @@ type ClientHandler struct {
 }
 
 func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClientAccessKeyIdRequest) (*pb.RichClient, error) {
+	// check access key id
+	if req.AccessKeyId == "" {
+		if auth.IsClient(ctx) { // use client's access key id
+			req.AccessKeyId = auth.GetClient(ctx).AccessKeyId
+		}
+	}
+	if req.AccessKeyId == "" {
+		return nil, fmt.Errorf("access key id required")
+	}
+
 	// check data permission
 	if auth.IsClient(ctx) {
 		authedClient := auth.GetClient(ctx)
