@@ -136,6 +136,9 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 		}
 	}()
 	go func() { // ai code review
+		if !conf.AIEnabled() {
+			return
+		}
 		mrCodeReviewReq := models.AICodeReviewNoteRequest{Type: models.AICodeReviewTypeMR}
 		reviewer, err := cr.NewCodeReviewer(mrCodeReviewReq, ctx.Repository, ctx.User, request)
 		if err != nil {
@@ -619,6 +622,11 @@ func GetMergeBase(ctx *webcontext.Context) {
 }
 
 func AIMRCodeReview(ctx *webcontext.Context) {
+	if !conf.AIEnabled() {
+		ctx.Abort(ERROR_AI_NOT_ENABLED)
+		return
+	}
+
 	id := ctx.ParamInt32("id", 0)
 	if id == 0 {
 		ctx.Abort(ERROR_ARG_ID)

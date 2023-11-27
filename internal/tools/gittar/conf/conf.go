@@ -220,3 +220,7 @@ func AIProxyURL() string {
 func AIProxyClientAK() string {
 	return cfg.AIProxyClientAK
 }
+
+func AIEnabled() bool {
+	return cfg.AIProxyURL != "" && cfg.AIProxyClientAK != ""
+}
