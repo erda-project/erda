@@ -56,7 +56,7 @@ message Model {
 }
 
 enum ModelType {
-    TYPE_UNSPECIFIED = 0;
+    MODEL_TYPE_UNSPECIFIED = 0;
     text_generation = 1;
     image = 2;
     audio = 3;
@@ -98,6 +98,7 @@ message ModelPagingRequest {
     string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     ModelType type = 4 [(validate.rules).enum = {defined_only: true}];
     string providerId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    repeated string ids = 6 [(validate.rules).repeated.items.string = {len: 36}];
 }
 
 message ModelPagingResponse {

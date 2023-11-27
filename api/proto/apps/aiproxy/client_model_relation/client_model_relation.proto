@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package erda.apps.aiproxy;
-option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client-model-relation/pb";
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb";
 
 import "google/api/annotations.proto";
 import "apps/aiproxy/metadata/metadata.proto";

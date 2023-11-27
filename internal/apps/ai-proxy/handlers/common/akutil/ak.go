@@ -62,25 +62,25 @@ func (util *AKUtil) GetAkFromHeader(ctx context.Context) (string, bool) {
 	return v, v != ""
 }
 
-func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (string, error) {
+func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (*clientpb.Client, error) {
 	ak, ok := New(dao).GetAkFromHeader(ctx)
 	if !ok {
-		return "", handlers.ErrAkNotFound
+		return nil, handlers.ErrAkNotFound
 	}
 	// check by token
 	if strings.HasPrefix(ak, client_token.TokenPrefix) {
 		client, err := New(dao).TokenToClient(ak)
 		if err != nil {
-			return "", handlers.HTTPError(err, http.StatusUnauthorized)
+			return nil, handlers.HTTPError(err, http.StatusUnauthorized)
 		}
-		return client.Id, nil
+		return client, nil
 	}
 	// check by ak
 	client, err := New(dao).AkToClient(ak)
 	if err != nil {
-		return "", handlers.HTTPError(err, http.StatusUnauthorized)
+		return nil, handlers.HTTPError(err, http.StatusUnauthorized)
 	}
-	return client.Id, nil
+	return client, nil
 }
 
 func AutoCheckAndSetClientId(clientId string, req any, skipSet bool) error {

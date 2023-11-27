@@ -17,6 +17,7 @@ package auth
 import (
 	"context"
 
+	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -38,6 +39,10 @@ func IsClient(ctx context.Context) bool {
 
 func GetClientId(ctx context.Context) string {
 	return ctx.Value(vars.CtxKeyClientId{}).(string)
+}
+
+func GetClient(ctx context.Context) *clientpb.Client {
+	return ctx.Value(vars.CtxKeyClient{}).(*clientpb.Client)
 }
 
 func Valid(ctx context.Context) bool {
