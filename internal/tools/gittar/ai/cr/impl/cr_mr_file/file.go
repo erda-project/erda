@@ -25,7 +25,6 @@ import (
 
 	"github.com/mohae/deepcopy"
 	"github.com/sashabaranov/go-openai"
-	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
@@ -36,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const MAX_FILE_CHANGES_CHAR_SIZE = 9 * 1000
@@ -129,6 +129,10 @@ type (
 //go:embed prompt.yaml
 var promptYaml string
 
+//go:embed fc.yaml
+var functionDefinitionYaml string
+var functionDefinition json.RawMessage
+
 type PromptStruct = struct {
 	Messages []openai.ChatCompletionMessage `yaml:"messages"`
 }
@@ -137,6 +141,11 @@ var promptStruct PromptStruct
 
 func init() {
 	if err := yaml.Unmarshal([]byte(promptYaml), &promptStruct); err != nil {
+		panic(err)
+	}
+	var err error
+	functionDefinition, err = strutil.YamlOrJsonToJson([]byte(functionDefinitionYaml))
+	if err != nil {
 		panic(err)
 	}
 }
@@ -151,36 +160,7 @@ func (r *OneChangedFile) constructAIRequest() openai.ChatCompletionRequest {
 			{
 				Name:        "create-cr-note",
 				Description: "create code review note",
-				Parameters: &jsonschema.Definition{
-					Type:        jsonschema.Object,
-					Description: "create code review note for each file",
-					Properties: map[string]jsonschema.Definition{
-						"fileReviewResult": {
-							Type:        jsonschema.Array,
-							Description: "review result for each file",
-							Items: &jsonschema.Definition{
-								Type: jsonschema.Object,
-								Properties: map[string]jsonschema.Definition{
-									"snippetIndex": {
-										Type:        jsonschema.Integer,
-										Description: "snippet index",
-									},
-									"riskLevel": {
-										Type:        jsonschema.String,
-										Description: "risk level (使用普通人能听懂的话，例如：建议、严重、致命等)",
-									},
-									"details": {
-										Type:        jsonschema.String,
-										Description: "details, one or array. (总结这段代码；对于每个 issue，如果可以，请给出用于修复的示例代码)",
-									},
-								},
-								Required: []string{"snippetIndex", "riskLevel", "details"},
-							},
-							Required: []string{"fileReviewResult"},
-						},
-					},
-					Items: &jsonschema.Definition{},
-				},
+				Parameters:  functionDefinition,
 			},
 		},
 		FunctionCall: openai.FunctionCall{
