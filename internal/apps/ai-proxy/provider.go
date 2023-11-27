@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
@@ -53,6 +54,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -88,12 +90,13 @@ var (
 					return h(ctx, req)
 				}
 				// try set clientId by ak
-				clientId, err := akutil.CheckAkOrToken(ctx, req, dao)
+				client, err := akutil.CheckAkOrToken(ctx, req, dao)
 				if err != nil {
 					return nil, err
 				}
-				if clientId != "" {
-					ctx = context.WithValue(ctx, vars.CtxKeyClientId{}, clientId)
+				if client != nil {
+					ctx = context.WithValue(ctx, vars.CtxKeyClient{}, client)
+					ctx = context.WithValue(ctx, vars.CtxKeyClientId{}, client.Id)
 				}
 				return h(ctx, req)
 			}
@@ -130,6 +133,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
 	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
 	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
+	richclientpb.RegisterRichClientServiceImp(p, &handler_rich_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
