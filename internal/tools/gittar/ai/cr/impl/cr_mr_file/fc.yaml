@@ -1,0 +1,27 @@
+$schema: http://json-schema.org/draft-07/schema#
+type: object
+description: create code review note
+required:
+  - fileReviewResult
+properties:
+  fileReviewResult:
+    type: array
+    description: review result for each file
+    items:
+      type: object
+      required:
+        - snippetIndex
+        - riskLevel
+        - details
+      properties:
+        snippetIndex:
+          type: integer
+          description: snippet index
+        riskLevel:
+          type: string
+          description: |
+            risk level (using language understandable to ordinary people, such as: advisory, severe, fatal, etc.)
+        details:
+          type: string
+          description: |
+            details, one or array. (Summarize this code; for each issue, if possible, please provide example code for fixing)
