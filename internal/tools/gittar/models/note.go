@@ -255,11 +255,20 @@ func (svc *Service) CreateNormalNote(repo *gitmodule.Repository, user *User, mer
 		Score:    note.Score,
 		Role:     note.Role,
 	}
-	if note.AICodeReviewType != "" {
-		b, _ := json.Marshal(&NoteData{AICodeReviewType: note.AICodeReviewType})
-		if len(b) > 0 {
-			Note.Data = string(b)
-		}
+	noteData := NoteData{
+		OldLine:     note.OldLine,
+		NewLine:     note.NewLine,
+		OldPath:     note.OldPath,
+		NewPath:     note.NewPath,
+		OldCommitId: note.OldCommitId,
+		NewCommitId: note.NewCommitId,
+
+		AICodeReviewType: note.AICodeReviewType,
+	}
+	if noteDataBytes, err := json.Marshal(noteData); err != nil {
+		return nil, err
+	} else {
+		Note.Data = string(noteDataBytes)
 	}
 	err := svc.db.Create(&Note).Error
 	if err != nil {
