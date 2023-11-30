@@ -255,6 +255,12 @@ func (svc *Service) CreateNormalNote(repo *gitmodule.Repository, user *User, mer
 		Score:    note.Score,
 		Role:     note.Role,
 	}
+	if note.AICodeReviewType != "" {
+		b, _ := json.Marshal(&NoteData{AICodeReviewType: note.AICodeReviewType})
+		if len(b) > 0 {
+			Note.Data = string(b)
+		}
+	}
 	err := svc.db.Create(&Note).Error
 	if err != nil {
 		return nil, err
