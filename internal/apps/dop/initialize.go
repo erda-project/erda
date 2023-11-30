@@ -24,7 +24,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
@@ -100,6 +103,10 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Infof("set log level: %s", logrus.DebugLevel)
+	}
+
+	if conf.PipelineGrpcClientMaxCallSendSizeBytes() > 0 {
+		p.PipelineSvc = ctx.Service("erda.core.pipeline.pipeline.PipelineService", grpc.MaxCallSendMsgSize(conf.PipelineGrpcClientMaxCallSendSizeBytes())).(pipelinepb.PipelineServiceServer)
 	}
 
 	// TODO invoke self use service
