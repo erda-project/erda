@@ -128,6 +128,7 @@ type Container struct {
 	Message     string  `json:"message,omitempty"`
 	Stage       string  `json:"stage,omitempty"`
 	StartedAt   string  `json:"startedAt,omitempty"`
+	FinishedAt  string  `json:"finishedAt,omitempty"`
 	UpdatedAt   string  `json:"updatedAt,omitempty"`
 	Service     string  `json:"service,omitempty"`
 	ClusterName string  `json:"clusterName,omitempty"`
