@@ -160,6 +160,9 @@ func (e *Endpoints) getContainers(req apistructs.InstanceInfoRequest) (apistruct
 			Service:             v.ServiceName,
 			ClusterName:         v.Cluster,
 		}
+		if v.FinishedAt != nil {
+			instance.FinishedAt = v.FinishedAt.Format(time.RFC3339Nano)
+		}
 		instances = append(instances, instance)
 	}
 	return instances, nil
