@@ -225,7 +225,7 @@ func (e *Endpoints) getOrCreateDefinitionID(ctx context.Context, app *apistructs
 	}
 
 	const sourceType = "erda"
-	projectPipeline, err := e.ProjectPipelineSvc.Create(ctx, &pb.CreateProjectPipelineRequest{
+	projectPipeline, err := e.ProjectPipelineSvc.Create(context.WithValue(ctx, apistructs.NotCreatePipeline, true), &pb.CreateProjectPipelineRequest{
 		ProjectID:  app.ProjectID,
 		Name:       projectpipeline.MakeProjectPipelineName(strPipelineYml, name),
 		AppID:      app.ID,

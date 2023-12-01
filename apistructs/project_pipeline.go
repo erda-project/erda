@@ -38,6 +38,10 @@ const (
 	SourceTypeErda = "erda"
 )
 
+const (
+	NotCreatePipeline = "not-create-pipeline"
+)
+
 func (p ProjectPipelineType) String() string {
 	return string(p)
 }
