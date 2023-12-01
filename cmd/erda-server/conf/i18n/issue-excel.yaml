@@ -71,6 +71,15 @@ zh:
   invalid: 无效的
   ImportFailTip: 请下载文件，检查错误信息(最后一列)
 
+  # template
+  Template.RequirementContent: 这是一个需求，包含一个任务
+  Template.TaskContent: 这是一个任务，被需求包含
+  Template.BugContent: 这是一个bug，关联到任务
+
+  # template - IterationName
+  Template.BacklogIteration: 待规划
+
+
 en: # use key directly
   Common: Common # need this line to pass i18n provider validation
 
@@ -105,3 +114,11 @@ en: # use key directly
   tipMsgForConnectionIssueIDs: if the issue to be included has not been created, you can associate it by `LlineNumber`. For example, `L6` means to associate the sixth line of the current sheet; `2,L6` means to associate the issue with ID 2 and the sixth line of the current sheet
   invalid: 'invalid '
   ImportFailTip: Please download failed file and check the last column
+
+  # template
+  Template.RequirementContent: This is a requirement which contains a task
+  Template.TaskContent: This is a task which covered by the requirement
+  Template.BugContent: This is a bug which related to the task
+
+  # template - IterationName
+  Template.BacklogIteration: Backlog

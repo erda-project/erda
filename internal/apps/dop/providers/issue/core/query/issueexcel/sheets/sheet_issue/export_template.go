@@ -21,6 +21,14 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
 )
 
+// issue-excel-template
+const (
+	// Template
+	TemplateRequirementContent = "Template.RequirementContent"
+	TemplateTaskContent        = "Template.TaskContent"
+	TemplateBugContent         = "Template.BugContent"
+)
+
 // GenerateSampleIssueSheetModels
 //
 // one requirement, includes one task
@@ -36,8 +44,8 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 		ID:                 0,
 		IterationName:      data.IterationMapByID[-1].Title,
 		IssueType:          0,
-		IssueTitle:         "标题",
-		Content:            "内容",
+		IssueTitle:         data.I18n(fieldIssueTitle),
+		Content:            data.I18n(fieldContent),
 		State:              "",
 		Priority:           pb.IssuePriorityEnum_NORMAL,
 		Complexity:         pb.IssueComplexityEnum_NORMAL,
@@ -57,7 +65,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	requirementCommon := common
 	requirementCommon.ID = 1
 	requirementCommon.IssueType = pb.IssueTypeEnum_REQUIREMENT
-	requirementCommon.Content = "这个一个需求，包含一个任务"
+	requirementCommon.Content = data.I18n(TemplateRequirementContent)
 	requirementCommon.State = "进行中"
 	requirementCommon.EstimateTime = "2d"
 	requirement := vars.IssueSheetModel{
@@ -71,7 +79,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	taskCommon := common
 	taskCommon.ID = 2
 	taskCommon.IssueType = pb.IssueTypeEnum_TASK
-	taskCommon.Content = "这个一个任务，被需求包含"
+	taskCommon.Content = data.I18n(TemplateTaskContent)
 	taskCommon.State = "已完成"
 	taskCommon.FinishAt = &nowPlusOneDay
 	taskCommon.EstimateTime = "1d"
@@ -94,7 +102,7 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 	bugCommon := common
 	bugCommon.ID = 0
 	bugCommon.IssueType = pb.IssueTypeEnum_BUG
-	bugCommon.Content = "这个一个bug，关联到任务"
+	bugCommon.Content = data.I18n(TemplateBugContent)
 	bugCommon.PlanStartedAt = nil
 	bugCommon.PlanFinishedAt = nil
 	bugCommon.StartAt = nil
