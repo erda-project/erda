@@ -534,11 +534,11 @@ func (p *Pipeline) diceYmlCheck(pipelineYml, gitRepo, branch string, workspace a
 
 func (p *Pipeline) setClusterName(clusterName string, pv *pipelinepb.PipelineCreateRequestV2) error {
 	pv.ClusterName = clusterName
-	clusterInfo, err := p.bdl.QueryClusterInfo(clusterName)
+	clusterInfo, err := p.bdl.GetCluster(clusterName)
 	if err != nil {
 		return fmt.Errorf("failed to get cluster info by cluster name: %s, err: %v", clusterName, err)
 	}
-	jobCluster := clusterInfo.Get(apistructs.JOB_CLUSTER)
+	jobCluster := clusterInfo.CM.Get(apistructs.JOB_CLUSTER)
 	if jobCluster != "" {
 		return p.setClusterName(jobCluster, pv)
 	}
