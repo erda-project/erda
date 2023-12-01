@@ -362,12 +362,6 @@ func (p *ProjectPipelineService) CreateOne(ctx context.Context, params *pb.Creat
 		return nil, err
 	}
 
-	// When creating a definition, a scheduled task is created
-	err = p.createCronIfNotExist(definitionRsp.PipelineDefinition, pipelineSourceType)
-	if err != nil {
-		return nil, fmt.Errorf("failed to createCronIfNotExist error %v", err)
-	}
-
 	_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref, Kind: "pipeline"})
 	if err != nil {
 		p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
