@@ -15,6 +15,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -25,6 +26,14 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
+
+func getErrResponse(body []byte) (apistructs.Header, error) {
+	var resp apistructs.Header
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return resp, err
+	}
+	return resp, nil
+}
 
 // CreatePipeline 创建流水线
 // 如何从结构体便捷地构造关键参数 pipeline.yml 内容：
@@ -65,7 +74,12 @@ func (b *Bundle) CreatePipeline(req interface{}) (*basepb.PipelineDTO, error) {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() {
-		return nil, toAPIError(resp.StatusCode(), apistructs.ErrorResponse{})
+		if errResp, err := getErrResponse(resp.Body()); err == nil {
+			return nil, toAPIError(resp.StatusCode(), errResp.Error)
+		}
+		return nil, toAPIError(resp.StatusCode(), apistructs.ErrorResponse{
+			Msg: string(resp.Body()),
+		})
 	}
 
 	return createResp.Data, nil
@@ -86,7 +100,12 @@ func (b *Bundle) GetPipeline(pipelineID uint64) (*pb.PipelineDetailDTO, error) {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !httpResp.IsOK() {
-		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
+		if errResp, err := getErrResponse(httpResp.Body()); err == nil {
+			return nil, toAPIError(httpResp.StatusCode(), errResp.Error)
+		}
+		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{
+			Msg: string(httpResp.Body()),
+		})
 	}
 	return pipelineResp.Data, nil
 }
@@ -168,7 +187,12 @@ func (b *Bundle) RunPipeline(req pb.PipelineRunRequest) error {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 	if !httpResp.IsOK() {
-		return toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
+		if errResp, err := getErrResponse(httpResp.Body()); err == nil {
+			return toAPIError(httpResp.StatusCode(), errResp.Error)
+		}
+		return toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{
+			Msg: string(httpResp.Body()),
+		})
 	}
 	return nil
 }
@@ -188,7 +212,12 @@ func (b *Bundle) CancelPipeline(req pb.PipelineCancelRequest) error {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 	if !httpResp.IsOK() {
-		return toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
+		if errResp, err := getErrResponse(httpResp.Body()); err == nil {
+			return toAPIError(httpResp.StatusCode(), errResp.Error)
+		}
+		return toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{
+			Msg: string(httpResp.Body()),
+		})
 	}
 	return nil
 }
@@ -209,7 +238,12 @@ func (b *Bundle) RerunPipeline(req pb.PipelineRerunRequest) (*basepb.PipelineDTO
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !httpResp.IsOK() {
-		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
+		if errResp, err := getErrResponse(httpResp.Body()); err == nil {
+			return nil, toAPIError(httpResp.StatusCode(), errResp.Error)
+		}
+		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{
+			Msg: string(httpResp.Body()),
+		})
 	}
 	return rerunResp.Data, nil
 }
@@ -230,7 +264,12 @@ func (b *Bundle) RerunFailedPipeline(req pb.PipelineRerunFailedRequest) (*basepb
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !httpResp.IsOK() {
-		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{})
+		if errResp, err := getErrResponse(httpResp.Body()); err == nil {
+			return nil, toAPIError(httpResp.StatusCode(), errResp.Error)
+		}
+		return nil, toAPIError(httpResp.StatusCode(), apistructs.ErrorResponse{
+			Msg: string(httpResp.Body()),
+		})
 	}
 	return rerunFailedResp.Data, nil
 }
