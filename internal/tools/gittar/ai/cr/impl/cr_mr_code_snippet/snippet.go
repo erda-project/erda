@@ -64,8 +64,8 @@ func init() {
 		if req.CodeSnippetRelated == nil || req.CodeSnippetRelated.SelectedCode == "" {
 			return nil, fmt.Errorf("no code selected")
 		}
-		if req.CodeSnippetRelated.CodeLanguage == "" && req.CodeSnippetRelated.NewFilePath != "" {
-			ext := strings.TrimPrefix(filepath.Ext(req.CodeSnippetRelated.NewFilePath), ".")
+		if req.CodeSnippetRelated.CodeLanguage == "" && req.NoteLocation.NewPath != "" {
+			ext := strings.TrimPrefix(filepath.Ext(req.NoteLocation.NewPath), ".")
 			req.CodeSnippetRelated.CodeLanguage = ext
 		}
 		return newSnippetCodeReviewer(req.CodeSnippetRelated.CodeLanguage, req.CodeSnippetRelated.SelectedCode, false, user), nil
