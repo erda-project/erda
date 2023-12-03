@@ -15,7 +15,7 @@ routes:
       - name: context
       - name: context-chat
         config:
-          sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
+          #sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
       - name: audit-before-llm-director
       - name: azure-director
         config:
