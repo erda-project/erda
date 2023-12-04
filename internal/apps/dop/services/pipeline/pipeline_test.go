@@ -256,11 +256,11 @@ func Test_makeAppWorkspaceLevelCmsNs(t *testing.T) {
 
 func Test_setClusterName(t *testing.T) {
 	var bdl *bundle.Bundle
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, clusterName string) (apistructs.ClusterInfoData, error) {
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCluster", func(_ *bundle.Bundle, clusterName string) (*apistructs.ClusterInfo, error) {
 		if clusterName == "erda-edge" {
-			return apistructs.ClusterInfoData{apistructs.JOB_CLUSTER: "erda-center", apistructs.DICE_IS_EDGE: "true"}, nil
+			return &apistructs.ClusterInfo{CM: apistructs.ClusterInfoData{apistructs.JOB_CLUSTER: "erda-center", apistructs.DICE_IS_EDGE: "true"}}, nil
 		}
-		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "false"}, nil
+		return &apistructs.ClusterInfo{CM: apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "false"}}, nil
 	})
 	defer m1.Unpatch()
 	pipelineSvc := New(WithBundle(bdl))
