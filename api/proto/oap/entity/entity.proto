@@ -79,6 +79,8 @@ message ListEntitiesRequest {
   int64               updateTimeUnixNanoMin = 4;
   int64               updateTimeUnixNanoMax = 5;
   bool                debug                 = 6;
+  int64               createTimeUnixNanoMin = 7;
+  int64               createTimeUnixNanoMax = 8;
 }
 
 message ListEntitiesResponse {
