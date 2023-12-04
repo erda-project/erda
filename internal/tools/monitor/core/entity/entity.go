@@ -29,7 +29,7 @@ type Entity struct {
 }
 
 type GroupedEntity struct {
-	Timestamp       time.Time         `ch:"timestamp"`
+	Timestamp       time.Time         `ch:"_timestamp"`
 	UpdateTimestamp time.Time         `ch:"_update_timestamp"`
 	ID              string            `ch:"id"`
 	Type            string            `ch:"_type"`

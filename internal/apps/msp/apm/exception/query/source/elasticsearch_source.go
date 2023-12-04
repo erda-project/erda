@@ -46,8 +46,8 @@ func (source *ElasticsearchSource) GetExceptions(ctx context.Context, req *pb.Ge
 		Type:                  "error_exception",
 		Labels:                conditions,
 		Limit:                 int64(1000),
-		UpdateTimeUnixNanoMin: req.StartTime * 1e6,
-		UpdateTimeUnixNanoMax: req.EndTime * 1e6,
+		CreateTimeUnixNanoMin: req.StartTime * 1e6,
+		CreateTimeUnixNanoMax: req.EndTime * 1e6,
 		Debug:                 req.Debug,
 	}
 	exceptions, err := source.fetchErdaErrorFromES(ctx, entityReq, req.StartTime, req.EndTime)
