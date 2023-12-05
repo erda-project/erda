@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
@@ -393,10 +394,22 @@ func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 	task.Result.Events = pt.Inspect.Events
 	task.Result.Errors = pt.MergeErrors2PB()
 	// handle metadata
+	newMetadata := make([]*commonpb.MetadataField, 0, len(task.Result.Metadata))
 	for _, field := range task.Result.Metadata {
 		field.Level = field.GetLevel()
+		// 将等级为ERROR的metadata添加到Errors中
+		if field.Level == string(metadata.MetadataLevelError) {
+			task.Result.Errors = append(task.Result.Errors, &basepb.ErrorResponse{
+				Msg: field.Value,
+			})
+			continue
+		}
+		// 重排Metadata
+		v := field
+		newMetadata = append(newMetadata, v)
 	}
-
+	task.Result.Metadata = newMetadata
+	logrus.Infof("Metadata errors =====> %+v", task.Result.Errors)
 	if pt.Status.IsSuccessStatus() {
 		task.Result.Errors = nil
 		notErrorMeta, _ := metadata.FilterNoErrorLevelMeta(task.Result.Metadata)
