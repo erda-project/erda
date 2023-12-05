@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -863,7 +864,8 @@ func (fsm *DeployFSMContext) requestAddons() error {
 	}
 	logrus.Infof("addon create request body: %v", string(bb))
 	if err := fsm.addon.BatchCreate(&addonReq); err != nil {
-		return errors.Wrapf(err, "failed to request addons, runtimeId %d", runtime.ID)
+		//return errors.Wrapf(err, " runtimeId %d", runtime.ID)
+		return err
 	}
 	return nil
 }

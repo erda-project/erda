@@ -61,21 +61,68 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 // GetAddonExtention 获取addon的spec，dice.yml信息
 func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
 	extensionList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: true})
+
+	// 类型错误, addon不存在
 	if err != nil || len(extensionList) == 0 {
-		return nil, nil, errors.New("没有匹配的addon信息")
+		err := errors.New("没有匹配的addon信息")
+		logrus.Errorf("cannot find addon : %s", params.AddonName)
+		return nil, nil, err
 	}
+
+	// 规格错误，basic 中间价无法部署在生产环境中
+	if params.Plan == "basic" && params.Workspace == "PROD" {
+		if params.AddonName != apistructs.AddonApiGateway &&
+			params.AddonName != apistructs.AddonMonitor &&
+			params.AddonName != apistructs.AddonConfigCenter &&
+			params.AddonName != apistructs.AddonTerminusRoost {
+			err := fmt.Errorf("the production environment does not allow the deployment of basic addon")
+			logrus.Errorf(err.Error())
+			return nil, nil, err
+		}
+	}
+
+	// 查询对应版本是否存在
+	var (
+		hasVersion = false            // 是否存在该版本
+		addon      = extensionList[0] // 最终要部署的addon
+	)
 
 	// 查看用户是否设置了版本号，如果没有，则选择默认版本
-	var addon = extensionList[0]
-	for _, item := range extensionList {
-		if item.IsDefault {
-			addon = item
+	emptyVersion := params.Options["version"] == ""
+
+	for _, v := range extensionList {
+		// 若版本为空，则找到第一个默认addon后跳出循环
+		if emptyVersion && v.IsDefault {
+			hasVersion = true
+			addon = v
+			break
 		}
-		if version := params.Options["version"]; version != "" && version == item.Version {
-			addon = item
+		// 若版本不为空，找到匹配的版本后跳出循环
+		if !emptyVersion && v.Version == params.Options["version"] {
+			hasVersion = true
+			addon = v
+			break
 		}
 	}
 
+	// 若循环结束hasVersion仍然为false，说明没有找到对应的Addon版本
+	if !hasVersion {
+		err := fmt.Errorf("%s (in gallery) dont have match version: %v", params.AddonName, params.Options["version"])
+		logrus.Errorf(err.Error())
+		return nil, nil, err
+	}
+
+	// ========== 删除此逻辑，添加前置校验 ==========
+	// 查看用户是否设置了版本号，如果没有，则选择默认版本
+	//var addon = extensionList[0]
+	//for _, item := range extensionList {
+	//	if item.IsDefault {
+	//		addon = item
+	//	}
+	//	if version := params.Options["version"]; version != "" && version == item.Version {
+	//		addon = item
+	//	}
+	//}
 	if len(extensionList) == 1 {
 		addon = extensionList[0]
 	} else {
@@ -893,6 +940,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 				if err := a.FailAndDelete(addonIns); err != nil {
 					return err
 				}
+				return err
 			}
 		} else {
 			if err := a.providerAddonDeploy(addonIns, addonInsRouting, params, addonSpec); err != nil {
