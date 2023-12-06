@@ -62,48 +62,36 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
 	extensionList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: true})
 
-	// 类型错误, addon不存在
+	// Type error, addon does not exist
 	if err != nil || len(extensionList) == 0 {
 		err := errors.New("没有匹配的addon信息")
 		logrus.Errorf("cannot find addon : %s", params.AddonName)
 		return nil, nil, err
 	}
 
-	// 规格错误，basic 中间件无法部署在生产环境中
-	if params.Plan == "basic" && params.Workspace == "PROD" {
-		// 只有API网关、Monitor、配置中心、注册中心 允许使用basic版本部署在生产环境中
-		if params.AddonName != apistructs.AddonApiGateway &&
-			params.AddonName != apistructs.AddonMonitor &&
-			params.AddonName != apistructs.AddonConfigCenter &&
-			params.AddonName != apistructs.AddonTerminusRoost {
-			err := fmt.Errorf("the production environment does not allow the deployment of basic addon")
-			logrus.Errorf(err.Error())
-			return nil, nil, err
-		}
-	}
-
-	// 查询对应版本是否存在
+	// Queries whether the corresponding version exists
 	var (
-		hasVersion = false            // 是否存在该版本
-		addon      = extensionList[0] // 最终要部署的addon
+		hasVersion = false            // Existence of the version
+		addon      = extensionList[0] // The final addon to be deployed
 	)
 
-	// 查看用户是否设置了版本号，如果没有，则选择默认版本
+	// See if the user has set a version number, if not, select the default version
 	v, ok := params.Options["version"]
 	version := strings.Trim(v, " ")
 	emptyVersion := !ok || version == ""
 
-	// Monitor 项目会默认添加此addon，且由于它并没有默认版本，因此为了避免报错，需要跳过此逻辑
-	// （将数据表 `dice_extension_version` 中的monitor设置为默认 也可以解决此问题）
+	// The project adds the Monitor addon by default,
+	// and since it doesn't have a default version,
+	// need to skip this logic to avoid reporting errors.
 	if params.AddonName != apistructs.AddonMonitor {
 		for _, v := range extensionList {
-			// 若版本为空，则找到第一个默认addon后跳出循环
+			// If the version is empty, find the first default addon and jump out of the loop.
 			if emptyVersion && v.IsDefault {
 				hasVersion = true
 				addon = v
 				break
 			}
-			// 若版本不为空，找到匹配的版本后跳出循环
+			// If the version is not null, find the matching version and jump out of the loop
 			if !emptyVersion && v.Version == params.Options["version"] {
 				hasVersion = true
 				addon = v
@@ -111,10 +99,10 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 			}
 		}
 
-		// 若循环结束hasVersion仍然为false，说明没有找到对应的Addon版本
+		// If hasVersion is still false at the end of the loop, it means that the corresponding Addon version has not been found.
 		if !hasVersion {
 			if emptyVersion {
-				// 若用户未制定具体版本，且没找到默认配置时，报错
+				// If the user does not have a specific version and the default configuration is not found, an error is reported.
 				err := fmt.Errorf("%s dont have default, must have version", params.AddonName)
 				logrus.Errorf(err.Error())
 				return nil, nil, err
@@ -126,17 +114,6 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		}
 	}
 
-	// ========== 删除此逻辑，添加前置校验 ==========
-	// 查看用户是否设置了版本号，如果没有，则选择默认版本
-	//var addon = extensionList[0]
-	//for _, item := range extensionList {
-	//	if item.IsDefault {
-	//		addon = item
-	//	}
-	//	if version := params.Options["version"]; version != "" && version == item.Version {
-	//		addon = item
-	//	}
-	//}
 	if len(extensionList) == 1 {
 		addon = extensionList[0]
 	} else {
@@ -180,6 +157,13 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	if specErr != nil {
 		return nil, nil, errors.Wrap(specErr, "failed to parse addon spec")
 	}
+
+	if addonSpec.SubCategory == apistructs.BasicAddon {
+		err = a.preCheck(params)
+		logrus.Errorf(err.Error())
+		return nil, nil, err
+	}
+
 	if len(params.Options) == 0 {
 		params.Options = map[string]string{}
 	}
