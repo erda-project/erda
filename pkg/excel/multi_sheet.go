@@ -36,6 +36,7 @@ func NewSheetHandlerForDropList(startRow, startCol, endRow, endCol int, dropList
 		if err := dv.SetDropList(dropList); err != nil {
 			return fmt.Errorf("failed to set drop list, err: %v", err)
 		}
+		dv.SetError(xlsx.StyleInformation, nil, nil)
 		sheet.AddDataValidation(dv)
 		return nil
 	}
@@ -63,18 +64,6 @@ func NewSheetHandlerForTip(startRow, startCol, endRow, endCol int, title, msg st
 	return func(sheet *xlsx.Sheet) error {
 		dv := xlsx.NewDataValidation(startRow, startCol, endRow, endCol, true)
 		dv.SetInput(&title, &msg)
-		sheet.AddDataValidation(dv)
-		return nil
-	}
-}
-
-// NewSheetHandlerForError
-// TODO although the code seems right, it not works now
-func NewSheetHandlerForError(startRow, startCol, endRow, endCol int, err error) SheetHandler {
-	return func(sheet *xlsx.Sheet) error {
-		dv := xlsx.NewDataValidation(startRow, startCol, endRow, endCol, true)
-		title := err.Error()
-		dv.SetError(xlsx.StyleStop, &title, &title)
 		sheet.AddDataValidation(dv)
 		return nil
 	}
@@ -145,12 +134,3 @@ func WriteFile(w io.Writer, f *File, filename string) error {
 
 	return nil
 }
-
-//func AddSheetByColumn(f *XlsxFile, columns map[]string, sheetName string) error {
-//	sheet, err := f.File.AddSheet(sheetName)
-//	if err != nil {
-//		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
-//	}
-//	fulfillColumnDataIntoSheet(sheet, columns)
-//	return nil
-//}

@@ -29,6 +29,8 @@ type (
 		Limit                 int
 		UpdateTimeUnixNanoMin int64
 		UpdateTimeUnixNanoMax int64
+		CreateTimeUnixNanoMin int64
+		CreateTimeUnixNanoMax int64
 		Debug                 bool
 	}
 	// Storage .

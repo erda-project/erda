@@ -32,11 +32,8 @@ var (
 )
 
 type AICodeReviewRequestForMR struct{}
-type AICodeReviewRequestForFile struct {
-	NewFilePath string `json:"newFilePath,omitempty"`
-}
+type AICodeReviewRequestForFile struct{}
 type AICodeReviewRequestForCodeSnippet struct {
-	NewFilePath  string `json:"newFilePath,omitempty"`
 	CodeLanguage string `json:"codeLanguage,omitempty"`
 	SelectedCode string `json:"selectedCode,omitempty"`
 }

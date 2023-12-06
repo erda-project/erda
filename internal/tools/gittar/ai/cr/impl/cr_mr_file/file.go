@@ -60,10 +60,10 @@ func NewFileReviewer(diffFile *gitmodule.DiffFile, user *models.User, mr *apistr
 
 func init() {
 	crtypes.Register(models.AICodeReviewTypeMRFile, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (crtypes.CodeReviewer, error) {
-		if req.FileRelated == nil || req.FileRelated.NewFilePath == "" {
+		if req.NoteLocation.NewPath == "" {
 			return nil, fmt.Errorf("no file specified")
 		}
-		diffFile := mrutil.GetDiffFileFromMR(repo, mr, req.FileRelated.NewFilePath)
+		diffFile := mrutil.GetDiffFileFromMR(repo, mr, req.NoteLocation.NewPath)
 		if diffFile == nil {
 			return nil, fmt.Errorf("file not found")
 		}

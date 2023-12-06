@@ -101,7 +101,7 @@ func (p *provider) GetEntity(ctx context.Context, typ, key string) (*entity.Enti
 func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) ([]*entity.Entity, int64, error) {
 	table, _ := p.Loader.GetSearchTable("")
 	sql := goqu.From(table).Select(
-		goqu.L("min(timestamp)").As("timestamp"),
+		goqu.L("min(timestamp)").As("_timestamp"),
 		goqu.L("max(update_timestamp)").As("_update_timestamp"),
 		goqu.L("any(id)").As("id"),
 		goqu.L("any(type)").As("_type"),
@@ -117,6 +117,10 @@ func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) 
 		}
 		for k, v := range opts.Labels {
 			sql = sql.Where(goqu.L("labels[?]", k).Eq(v))
+		}
+		if opts.CreateTimeUnixNanoMin > 0 || opts.CreateTimeUnixNanoMax > 0 {
+			sql = sql.Where(goqu.C("timestamp").Gte(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", opts.CreateTimeUnixNanoMin)),
+				goqu.C("timestamp").Lt(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", opts.CreateTimeUnixNanoMax)))
 		}
 		if opts.UpdateTimeUnixNanoMin > 0 || opts.UpdateTimeUnixNanoMax > 0 {
 			sql = sql.Where(goqu.C("update_timestamp").Gte(goqu.L("fromUnixTimestamp64Nano(cast(?,'Int64'))", opts.UpdateTimeUnixNanoMin)),
