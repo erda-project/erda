@@ -105,6 +105,11 @@ func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, op
 		pipelineSources []PipelineSource
 		err             error
 	)
+
+	if unique.VersionLock != 0 {
+		session.Where("version_lock = ?", unique.VersionLock)
+	}
+
 	if err = session.
 		Where("source_type = ?", unique.SourceType).
 		Where("remote = ?", unique.Remote).
@@ -112,7 +117,7 @@ func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, op
 		Where("path = ?", unique.Path).
 		Where("name = ?", unique.Name).
 		Where("soft_deleted_at = 0").
-		Where("version_lock = ?", unique.VersionLock).
+		OrderBy("created_at DESC").
 		Find(&pipelineSources); err != nil {
 		return nil, err
 	}
