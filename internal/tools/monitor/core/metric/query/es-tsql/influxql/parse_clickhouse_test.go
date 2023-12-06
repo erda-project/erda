@@ -781,7 +781,7 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "group. axis",
 			sql:  "select avg(load1::field),avg(load5::field),avg(load15::field),service_id::tag from table GROUP BY service_id::tag,time()",
-			want: `SELECT AVG(if(indexOf(number_field_keys,'load15') == 0,null,number_field_values[indexOf(number_field_keys,'load15')])) AS "f401d9b077f06a6e", AVG(if(indexOf(number_field_keys,'load1') == 0,null,number_field_values[indexOf(number_field_keys,'load1')])) AS "719d37bba7262d89", AVG(if(indexOf(number_field_keys,'load5') == 0,null,number_field_values[indexOf(number_field_keys,'load5')])) AS "2756505adaab8174", toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS "service_id::tag", MIN("timestamp") AS "bucket_timestamp" FROM "table" GROUP BY "service_id::tag", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY "service_id::tag" ASC, "bucket_timestamp" ASC`,
+			want: `SELECT AVG(if(indexOf(number_field_keys,'load15') == 0,null,number_field_values[indexOf(number_field_keys,'load15')])) AS "f401d9b077f06a6e", AVG(if(indexOf(number_field_keys,'load1') == 0,null,number_field_values[indexOf(number_field_keys,'load1')])) AS "719d37bba7262d89", AVG(if(indexOf(number_field_keys,'load5') == 0,null,number_field_values[indexOf(number_field_keys,'load5')])) AS "2756505adaab8174", toNullable(tag_values[indexOf(tag_keys,'service_id')]) AS "service_id::tag", MIN("timestamp") AS "bucket_timestamp" FROM "table" GROUP BY "service_id::tag", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY "bucket_timestamp" ASC, "service_id::tag" ASC`,
 		},
 		{
 			name: "avg column",
@@ -806,7 +806,7 @@ func TestOrderBy(t *testing.T) {
 		{
 			name: "test",
 			sql:  "SELECT key::tag,max(value) as max_value FROM jvm_gc GROUP BY time(),key::tag",
-			want: "SELECT MAX(value) AS \"max_value\", key AS \"key::tag\", addSeconds(toDateTime('1970-01-01 00:00:00'),intDiv(toRelativeSecondNum(timestamp), 60) * 60) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"key::tag\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"key::tag\" ASC, \"bucket_timestamp\" ASC",
+			want: "SELECT MAX(value) AS \"max_value\", key AS \"key::tag\", addSeconds(toDateTime('1970-01-01 00:00:00'),intDiv(toRelativeSecondNum(timestamp), 60) * 60) AS \"bucket_timestamp\" FROM \"table\" GROUP BY \"key::tag\", intDiv(toRelativeSecondNum(timestamp), 60) ORDER BY \"bucket_timestamp\" ASC, \"key::tag\" ASC",
 		},
 	}
 	for _, test := range tests {
