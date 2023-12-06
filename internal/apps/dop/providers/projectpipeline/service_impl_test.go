@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/mock"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	gmock "github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -50,6 +51,12 @@ type ProjectPipelineOrgMock struct {
 func (m ProjectPipelineOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
 	return &orgpb.GetOrgResponse{Data: &orgpb.Org{ID: 1, Name: "org"}}, nil
 }
+
+type mockLogger struct {
+	gmock.MockLogger
+}
+
+func (m *mockLogger) Debugf(template string, args ...interface{}) {}
 
 func TestGetRulesByCategoryKey(t *testing.T) {
 	tt := []struct {
@@ -1265,4 +1272,47 @@ func TestProjectPipelineService_cronList(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_getOrgName(t *testing.T) {
+	testCases := []struct {
+		name string
+		p    *spec.Pipeline
+		want string
+	}{
+		{
+			name: "valid orgID",
+			p: &spec.Pipeline{
+				PipelineExtra: spec.PipelineExtra{
+					NormalLabels: map[string]string{
+						apistructs.LabelOrgID: "1",
+					},
+				},
+			},
+			want: "org",
+		},
+		{
+			name: "invalid orgID",
+			p: &spec.Pipeline{
+				PipelineExtra: spec.PipelineExtra{
+					NormalLabels: map[string]string{
+						apistructs.LabelOrgID: "invalid id",
+					},
+				},
+			},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &ProjectPipelineService{
+				org:    ProjectPipelineOrgMock{},
+				logger: &mockLogger{},
+			}
+			orgName := p.getOrgName(tc.p)
+			assert.Equal(t, tc.want, orgName)
+		})
+	}
+
 }
