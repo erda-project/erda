@@ -88,7 +88,16 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	)
 
 	// 查看用户是否设置了版本号，如果没有，则选择默认版本
-	emptyVersion := params.Options["version"] == ""
+	v, ok := params.Options["version"]
+	version := strings.Trim(v, " ")
+	emptyVersion := !ok || version == ""
+
+	for k, v := range params.Options {
+		logrus.Infof("params.Options ====> %v : %v", k, v)
+	}
+	for _, v := range extensionList {
+		logrus.Infof("extensionList ====> %v ", v)
+	}
 
 	for _, v := range extensionList {
 		// 若版本为空，则找到第一个默认addon后跳出循环
