@@ -69,8 +69,9 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		return nil, nil, err
 	}
 
-	// 规格错误，basic 中间价无法部署在生产环境中
+	// 规格错误，basic 中间件无法部署在生产环境中
 	if params.Plan == "basic" && params.Workspace == "PROD" {
+		// 只有API网关、Monitor、配置中心、注册中心 允许使用basic版本部署在生产环境中
 		if params.AddonName != apistructs.AddonApiGateway &&
 			params.AddonName != apistructs.AddonMonitor &&
 			params.AddonName != apistructs.AddonConfigCenter &&
@@ -92,33 +93,37 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	version := strings.Trim(v, " ")
 	emptyVersion := !ok || version == ""
 
-	for k, v := range params.Options {
-		logrus.Infof("params.Options ====> %v : %v", k, v)
-	}
-	for _, v := range extensionList {
-		logrus.Infof("extensionList ====> %v ", v)
-	}
-
-	for _, v := range extensionList {
-		// 若版本为空，则找到第一个默认addon后跳出循环
-		if emptyVersion && v.IsDefault {
-			hasVersion = true
-			addon = v
-			break
+	// Monitor 项目会默认添加此addon，且由于它并没有默认版本，因此为了避免报错，需要跳过此逻辑
+	// （将数据表 `dice_extension_version` 中的monitor设置为默认 也可以解决此问题）
+	if params.AddonName != apistructs.AddonMonitor {
+		for _, v := range extensionList {
+			// 若版本为空，则找到第一个默认addon后跳出循环
+			if emptyVersion && v.IsDefault {
+				hasVersion = true
+				addon = v
+				break
+			}
+			// 若版本不为空，找到匹配的版本后跳出循环
+			if !emptyVersion && v.Version == params.Options["version"] {
+				hasVersion = true
+				addon = v
+				break
+			}
 		}
-		// 若版本不为空，找到匹配的版本后跳出循环
-		if !emptyVersion && v.Version == params.Options["version"] {
-			hasVersion = true
-			addon = v
-			break
-		}
-	}
 
-	// 若循环结束hasVersion仍然为false，说明没有找到对应的Addon版本
-	if !hasVersion {
-		err := fmt.Errorf("%s (in gallery) dont have match version: %v", params.AddonName, params.Options["version"])
-		logrus.Errorf(err.Error())
-		return nil, nil, err
+		// 若循环结束hasVersion仍然为false，说明没有找到对应的Addon版本
+		if !hasVersion {
+			if emptyVersion {
+				// 若用户未制定具体版本，且没找到默认配置时，报错
+				err := fmt.Errorf("%s dont have default, must have version", params.AddonName)
+				logrus.Errorf(err.Error())
+				return nil, nil, err
+			} else {
+				err := fmt.Errorf("%s (in gallery) dont have match version: %v", params.AddonName, params.Options["version"])
+				logrus.Errorf(err.Error())
+				return nil, nil, err
+			}
+		}
 	}
 
 	// ========== 删除此逻辑，添加前置校验 ==========
