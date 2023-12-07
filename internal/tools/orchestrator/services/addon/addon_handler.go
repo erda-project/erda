@@ -60,10 +60,12 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 
 // GetAddonExtention 获取addon的spec，dice.yml信息
 func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
-	extensionList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: true})
+	// get addons from cache
+	versionMap, err := GetCache().Get(params.AddonName)
+	addons := versionMap.(*VersionMap)
 
 	// Type error, addon does not exist
-	if err != nil || len(extensionList) == 0 {
+	if err != nil || len(*addons) == 0 {
 		err := errors.New("没有匹配的addon信息")
 		logrus.Errorf("cannot find addon : %s", params.AddonName)
 		return nil, nil, err
@@ -71,8 +73,8 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 
 	// Queries whether the corresponding version exists
 	var (
-		hasVersion = false            // Existence of the version
-		addon      = extensionList[0] // The final addon to be deployed
+		hasVersion = false                     // Existence of the version
+		addon      apistructs.ExtensionVersion // The final addon to be deployed
 	)
 
 	// See if the user has set a version number, if not, select the default version
@@ -80,57 +82,51 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	version := strings.Trim(v, " ")
 	emptyVersion := !ok || version == ""
 
-	// The project adds the Monitor addon by default,
-	// and since it doesn't have a default version,
-	// need to skip this logic to avoid reporting errors.
-	if params.AddonName != apistructs.AddonMonitor {
-		for _, v := range extensionList {
-			// If the version is empty, find the first default addon and jump out of the loop.
-			if emptyVersion && v.IsDefault {
-				hasVersion = true
-				addon = v
-				break
-			}
-			// If the version is not null, find the matching version and jump out of the loop
-			if !emptyVersion && v.Version == params.Options["version"] {
-				hasVersion = true
-				addon = v
-				break
-			}
+	for _, val := range *addons {
+		addon = val
+		// If the version is empty, find the first default addon and jump out of the loop.
+		if emptyVersion && val.IsDefault {
+			hasVersion = true
+			addon = val
+			break
+		}
+		// If the version is not null, find the matching version and jump out of the loop
+		if !emptyVersion && val.Version == params.Options["version"] {
+			hasVersion = true
+			addon = val
+			break
+		}
+	}
+
+	// spec.yml forced conversion to string type
+	addonSpecBytes, err := json.Marshal(addon.Spec)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to parse addon spec")
+	}
+	addonSpec := apistructs.AddonExtension{}
+	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
+	if specErr != nil {
+		return nil, nil, errors.Wrap(specErr, "failed to parse addon spec")
+	}
+
+	if addonSpec.SubCategory == apistructs.BasicAddon {
+		// Ensure that basic components are not deployed in the production environment
+		if err = a.preCheck(params); err != nil {
+			logrus.Errorf(err.Error())
+			return nil, nil, err
 		}
 
 		// If hasVersion is still false at the end of the loop, it means that the corresponding Addon version has not been found.
 		if !hasVersion {
 			if emptyVersion {
 				// If the user does not have a specific version and the default configuration is not found, an error is reported.
-				err := fmt.Errorf("%s dont have default, must have version", params.AddonName)
+				err := fmt.Errorf("%s dont have default, must have version ", params.AddonName)
 				logrus.Errorf(err.Error())
 				return nil, nil, err
 			} else {
-				err := fmt.Errorf("%s (in gallery) dont have match version: %v", params.AddonName, params.Options["version"])
+				err := fmt.Errorf("%s dont have match version: %v ", params.AddonName, params.Options["version"])
 				logrus.Errorf(err.Error())
 				return nil, nil, err
-			}
-		}
-	}
-
-	if len(extensionList) == 1 {
-		addon = extensionList[0]
-	} else {
-		if params.Options["version"] != "" {
-			for _, extensionItem := range extensionList {
-				if extensionItem.Version == params.Options["version"] {
-					addon = extensionItem
-					break
-				}
-			}
-		} else {
-			// 用户没有指定version，则选择默认版本
-			for _, extentionItem := range extensionList {
-				if extentionItem.IsDefault {
-					logrus.Info("addon extension name ready")
-					addon = extentionItem
-				}
 			}
 		}
 	}
@@ -146,23 +142,6 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		params.Options = map[string]string{}
 	}
 	params.Options["version"] = addon.Version
-
-	// spec.yml强制转换为string类型
-	addonSpecBytes, err := json.Marshal(addon.Spec)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse addon spec")
-	}
-	addonSpec := apistructs.AddonExtension{}
-	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
-	if specErr != nil {
-		return nil, nil, errors.Wrap(specErr, "failed to parse addon spec")
-	}
-
-	if addonSpec.SubCategory == apistructs.BasicAddon {
-		err = a.preCheck(params)
-		logrus.Errorf(err.Error())
-		return nil, nil, err
-	}
 
 	if len(params.Options) == 0 {
 		params.Options = map[string]string{}
