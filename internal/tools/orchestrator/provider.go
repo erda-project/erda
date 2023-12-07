@@ -15,11 +15,14 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/i18n"
+
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
@@ -40,6 +43,12 @@ type provider struct {
 	PipelineSvc       pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 	TenantSvc         tenantpb.TenantServiceServer     `autowired:"erda.msp.tenant.TenantService"`
 	Org               org.ClientInterface
+	Cfg               *config
+}
+
+type config struct {
+	CacheTTL  time.Duration `file:"cache_ttl" default:"10m"`
+	CacheSize int           `file:"cache_size" default:"5000"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -54,6 +63,9 @@ func init() {
 			"http-server",
 			"mysql",
 			"erda.orchestrator.events",
+		},
+		ConfigFunc: func() interface{} {
+			return &config{}
 		},
 		Creator: func() servicehub.Provider { return &provider{} },
 	})

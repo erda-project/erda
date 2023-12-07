@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
+
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
@@ -68,6 +69,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}
 
 	orgCache.InitCache(p.Org)
+	addon.InitCache(p.Cfg.CacheTTL, p.Cfg.CacheSize)
 
 	// init endpoints
 	ep, err := p.initEndpoints(db)
