@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -3000,10 +3001,12 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	needDeployAddons := []apistructs.AddonHandlerCreateItem{}
 	for _, v := range deploys {
 		if _, ok := AddonInfos.Load(v.AddonName); !ok {
+			errStr := i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), "AddonTypeDoseNoExist", v.AddonName)
 			a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, fmt.Sprintf("%d", req.RuntimeID),
-				i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), "AddonTypeDoseNoExist", v.AddonName),
+				errStr,
 				fmt.Sprintf("not found addon: %s", v.AddonName))
-			return errors.Errorf("not found addon: %s", v.AddonName)
+
+			return errors.Errorf(errStr)
 		}
 
 		createItem := &apistructs.AddonHandlerCreateItem{
@@ -3057,7 +3060,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		createItem := needDeployAddons[index]
 		instanceRes, err := a.AttachAndCreate(&createItem)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create addon: %s", v.AddonName)
+			return err
 		}
 		v.InstanceID = instanceRes.RealInstanceID
 		v.RoutingInstanceID = instanceRes.InstanceID

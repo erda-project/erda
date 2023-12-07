@@ -11,6 +11,9 @@ zh:
     如果已创建, 请检查制品文件中 addonName 是否未匹配
 
   AddonTypeDoseNoExist: "不存在该类型 addon: %s, 请检查 dice.yml 中 addon 部分是否正确"
+  AddonVersionDoseNoExist: "不存在该版本 addon: %s 版本: %s, 请检查 dice.yml 中 addon 部分是否正确"
+  AddonDefaultVersionDoseNoExist: "不存在默认版本 addon: %s, 请声明addon具体版本"
+  AddonPlanNotSupport: "addon %s 不支持当前的部署规格: %s, 请检查 dice.yml 中 addon 部分是否正确"
   NotEnoughQuotaToDeploy: 资源配额不足无法部署
   FailedToSchedule.NoNodeToDeploy: 调度失败，失败原因：没有匹配的节点能部署, 请检查节点标签是否正确
   InvalidServiceName: "不合法的服务名称: %s"
@@ -30,6 +33,9 @@ en:
     If the addon has been created, please check the addonName in your release file
 
   AddonTypeDoseNoExist: "The addon type %s dose not exist, please check it in your release file"
+  AddonVersionDoseNoExist: "The addon %s version %s dose not exist, please check it in your release file"
+  AddonDefaultVersionDoseNoExist: "Default version of addon %s does not exist, please declare a specific version of addon"
+  AddonPlanNotSupport: "addon %s is not supported by the current deployment plan: %s, please check it in your release file"
   NotEnoughQuotaToDeploy: Not enough resource quota to deploy
   FailedToSchedule.NoNodeToDeploy: Failed to schedule：no matching node. Please check nodes labels in the Cloud Management Platform
   InvalidServiceName: "Invalid service name: %s"
