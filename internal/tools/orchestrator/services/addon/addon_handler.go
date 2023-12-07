@@ -47,6 +47,14 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	AddonTypeDoseNoExist           = "AddonTypeDoseNoExist"
+	AddonVersionDoseNoExist        = "AddonVersionDoseNoExist"
+	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
+	AddonPlanIllegal               = "AddonPlanIllegal"
+	AddonPlanNotSupport            = "AddonPlanNotSupport"
+)
+
 // AttachAndCreate addon创建，runtime建立关系方法
 func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonInstanceRes, error) {
 	// 获取addon extension信息
@@ -66,8 +74,8 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 
 	// Type error, addon does not exist
 	if err != nil || len(*addons) == 0 {
-		err := errors.New("没有匹配的addon信息")
-		logrus.Errorf("cannot find addon : %s", params.AddonName)
+		err := errors.New(i18n.OrgSprintf(params.OrgID, AddonTypeDoseNoExist, params.AddonName))
+		logrus.Errorf(err.Error())
 		return nil, nil, err
 	}
 
@@ -112,6 +120,7 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	if addonSpec.SubCategory == apistructs.BasicAddon {
 		// Ensure that basic components are not deployed in the production environment
 		if err = a.preCheck(params); err != nil {
+			err := errors.New(i18n.OrgSprintf(params.OrgID, AddonPlanIllegal, params.AddonName))
 			logrus.Errorf(err.Error())
 			return nil, nil, err
 		}
@@ -120,15 +129,23 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		if !hasVersion {
 			if emptyVersion {
 				// If the user does not have a specific version and the default configuration is not found, an error is reported.
-				err := fmt.Errorf("%s dont have default, must have version ", params.AddonName)
+				err := errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
 				logrus.Errorf(err.Error())
 				return nil, nil, err
 			} else {
-				err := fmt.Errorf("%s dont have match version: %v ", params.AddonName, params.Options["version"])
+				err := errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
 				logrus.Errorf(err.Error())
 				return nil, nil, err
 			}
 		}
+
+		// Check that the addon meets the current deployment specifications
+		if _, ok = addonSpec.Plan[params.Plan]; !ok {
+			err := errors.New(i18n.OrgSprintf(params.OrgID, AddonPlanNotSupport, params.AddonName, params.Plan))
+			logrus.Errorf(err.Error())
+			return nil, nil, err
+		}
+
 	}
 
 	if addon.Version == "" {
