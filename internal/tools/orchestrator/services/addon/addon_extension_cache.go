@@ -25,6 +25,11 @@ type Cache struct {
 // VersionMap Version of the corresponding addon
 type VersionMap map[string]apistructs.ExtensionVersion
 
+func (v *VersionMap) GetDefault() (apistructs.ExtensionVersion, bool) {
+	res, ok := (*v)["default"]
+	return res, ok
+}
+
 var (
 	cache *Cache
 	mutex = &sync.Mutex{}

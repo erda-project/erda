@@ -82,17 +82,17 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	version := strings.Trim(v, " ")
 	emptyVersion := !ok || version == ""
 
-	for _, val := range *addons {
-		addon = val
-		// If the version is empty, find the first default addon and jump out of the loop.
-		if emptyVersion && val.IsDefault {
-			hasVersion = true
-			addon = val
-			break
-		}
-		// If the version is not null, find the matching version and jump out of the loop
-		if !emptyVersion && val.Version == params.Options["version"] {
-			hasVersion = true
+	if emptyVersion {
+		// If version is null, get the default version of addon
+		addon, hasVersion = addons.GetDefault()
+	} else {
+		// If version is not null, then get the version addon.
+		addon, hasVersion = (*addons)[version]
+	}
+
+	// If there is no default value and no corresponding version, then a random version of addon is obtained for judgment.
+	if !hasVersion {
+		for _, val := range *addons {
 			addon = val
 			break
 		}
