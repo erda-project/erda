@@ -21,16 +21,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
@@ -50,7 +48,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/utils"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	def "github.com/erda-project/erda/internal/tools/pipeline/providers/definition"
-	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
@@ -461,6 +458,20 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 		return err
 	}
 
+	createV2 := extra.CreateRequest
+	createV2.DefinitionID = definition.ID
+
+	// parse pipelineYml and can use the `pipelineYml.Spec().xxx` to get the field
+	pipelineYml, err := pipelineyml.New([]byte(createV2.PipelineYml), pipelineyml.WithEnvs(createV2.Envs))
+	if err != nil {
+		return apierrors.ErrParseProjectPackage.InternalError(err)
+	}
+	
+	// if cronExpr is not exist return it,otherwise create cron
+	if pipelineYml.Spec().Cron != "" {
+		return nil
+	}
+
 	crons, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 		AllSources: false,
 		Sources:    []string{extra.CreateRequest.PipelineSource},
@@ -475,10 +486,7 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 		return nil
 	}
 
-	createV2 := extra.CreateRequest
-	createV2.DefinitionID = definition.ID
-
-	cronCreateRequest, err := p.constructCronCreateRequestFromV2(createV2)
+	cronCreateRequest, err := p.constructCronCreateRequestFromV2(createV2, pipelineYml)
 	if err != nil {
 		return fmt.Errorf("failed to constructCronCreateRequestFromV2,err :%v", err)
 	}
@@ -492,120 +500,22 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 }
 
 // constructCronCreateRequestFromV2 make `PipelineCreateRequestV2` to `CronCreateRequest`
-func (p *ProjectPipelineService) constructCronCreateRequestFromV2(req *pipelinesvcpb.PipelineCreateRequestV2) (*cronpb.CronCreateRequest, error) {
-
-	// parse pipelineYml and can use the `pipelineYml.Spec().xxx` to get the field
-	pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml), pipelineyml.WithEnvs(req.Envs))
-	if err != nil {
-		return nil, apierrors.ErrParseProjectPackage.InternalError(err)
-	}
-
-	sp := &spec.Pipeline{}
-	sp.PipelineYml = req.PipelineYml
-	sp.PipelineYmlName = req.PipelineYmlName
-	sp.PipelineSource = apistructs.PipelineSource(req.PipelineSource)
-	sp.ClusterName = req.ClusterName
-	sp.PipelineDefinitionID = req.DefinitionID
-
-	sp.NormalLabels = req.NormalLabels
-	if sp.NormalLabels == nil {
-		sp.NormalLabels = make(map[string]string)
-	}
-	sp.Labels = req.Labels
-	if sp.Labels == nil {
-		sp.Labels = make(map[string]string)
-	}
-	sp.Labels[apistructs.LabelCreateUserID] = req.UserID
-
-	sp.Snapshot.Envs = req.Envs
-
-	if req.UserID != "" {
-		sp.Extra.SubmitUser = &basepb.PipelineUser{
-			ID: structpb.NewStringValue(req.UserID),
-		}
-	}
-
-	labels := sp.MergeLabels()
-
-	sp.Extra.DiceWorkspace = apistructs.DiceWorkspace(labels[apistructs.LabelDiceWorkspace])
-	if v, ok := labels[apistructs.LabelCommitDetail]; ok {
-		var detail apistructs.CommitDetail
-		if err := json.Unmarshal([]byte(v), &detail); err != nil {
-			p.logger.Errorf("compatible from labels failed, key: %s, value: %s, err: %v", apistructs.LabelCommitDetail, v, err)
-		}
-		sp.CommitDetail = detail
-	}
-	if v, ok := labels[apistructs.LabelCommit]; ok {
-		sp.CommitDetail.CommitID = v
-	}
-
-	sp.Extra.PipelineYmlSource = apistructs.PipelineYmlSourceContent
-	if v, ok := labels[apistructs.LabelPipelineYmlSource]; ok {
-		if !apistructs.PipelineYmlSource(v).Valid() {
-			p.logger.Errorf("compatible from labels failed, key: %s, value: %s, err: %v", apistructs.LabelPipelineYmlSource, v, nil)
-		}
-		sp.Extra.PipelineYmlSource = apistructs.PipelineYmlSource(v)
-	}
-
-	if v, ok := labels[apistructs.LabelPipelineType]; ok {
-		if !apistructs.PipelineType(v).Valid() {
-			p.logger.Errorf("compatible from labels failed, key: %s, value: %s, err: %v", apistructs.LabelPipelineType, v, nil)
-		}
-		sp.Type = apistructs.PipelineType(v)
-	}
-
-	if v, ok := labels[apistructs.LabelPipelineCronTriggerTime]; ok {
-		nano, err := strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			return nil, apierrors.ErrCreatePipeline.InvalidParameter(err)
-		}
-		cronTriggerTime := time.Unix(0, nano)
-		sp.Extra.CronTriggerTime = &cronTriggerTime
-	}
-
-	sp.Extra.OwnerUser = req.OwnerUser
-	sp.Extra.InternalClient = req.InternalClient
-	sp.NormalLabels = req.NormalLabels
-	if sp.GetOwnerUserID() != "" {
-		sp.Labels[apistructs.LabelOwnerUserID] = sp.GetOwnerUserID()
-	}
-
-	if sp.GetOrgName() == "" {
-		sp.NormalLabels[apistructs.LabelOrgName] = p.getOrgName(sp)
-	}
-
+func (p *ProjectPipelineService) constructCronCreateRequestFromV2(req *pipelinesvcpb.PipelineCreateRequestV2, pipelineYml *pipelineyml.PipelineYml) (*cronpb.CronCreateRequest, error) {
 	return &cronpb.CronCreateRequest{
-		PipelineSource:         apistructs.PipelineSource(req.PipelineSource).String(),
-		PipelineYmlName:        req.PipelineYmlName,
 		CronExpr:               pipelineYml.Spec().Cron,
+		PipelineYmlName:        req.PipelineYmlName,
+		PipelineSource:         apistructs.PipelineSource(req.PipelineSource).String(),
 		Enable:                 wrapperspb.Bool(false),
 		PipelineYml:            req.PipelineYml,
 		ClusterName:            req.ClusterName,
-		FilterLabels:           sp.Labels,
-		NormalLabels:           sp.GenerateNormalLabelsForCreateV2(),
+		FilterLabels:           req.Labels,
+		NormalLabels:           req.NormalLabels,
 		Envs:                   req.Envs,
 		ConfigManageNamespaces: req.ConfigManageNamespaces,
 		CronStartFrom:          req.CronStartFrom,
 		IncomingSecrets:        req.Secrets,
 		PipelineDefinitionID:   req.DefinitionID,
 	}, nil
-}
-
-func (p *ProjectPipelineService) getOrgName(sp *spec.Pipeline) string {
-	orgIDStr := sp.MergeLabels()[apistructs.LabelOrgID]
-	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-	if err != nil {
-		p.logger.Debugf("failed to parse orgID : %s, err :%v", orgIDStr, err)
-		return ""
-	}
-	org, err := p.org.GetOrg(apis.WithInternalClientContext(context.Background(), discover.DOP()), &orgpb.GetOrgRequest{
-		IdOrName: strconv.FormatUint(orgID, 10),
-	})
-	if err != nil {
-		p.logger.Debugf("failed to get org by id : %d, err: %v", orgID, err)
-		return ""
-	}
-	return org.Data.Name
 }
 
 func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64, definitionID, name string) (bool, error) {
