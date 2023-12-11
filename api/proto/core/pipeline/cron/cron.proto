@@ -86,7 +86,7 @@ message CronStopResponse {
 
 // cron create
 message CronCreateRequest {
-  uint64 ID = 1;
+  uint64 ID = 1; // TODO 改进一下逻辑，创建请求应该不需要传id
   string cronExpr = 2;
   string pipelineYmlName = 3;
   string pipelineSource = 4;
@@ -100,6 +100,11 @@ message CronCreateRequest {
   google.protobuf.Timestamp cronStartFrom = 12;
   map<string,string> incomingSecrets = 13;
   string pipelineDefinitionID = 14;
+
+  common.IdentityInfo identityInfo = 15;
+  core.pipeline.base.PipelineUser ownerUser = 16;
+
+
 }
 
 message CronCreateResponse {

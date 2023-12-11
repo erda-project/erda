@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -44,6 +45,27 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	}
 	if req.PipelineYml == "" {
 		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("missing pipelineYml"))
+	}
+
+	// Get User Info if not exist
+	if _, ok := req.NormalLabels[apistructs.LabelUserID]; !ok {
+		if req.IdentityInfo != nil && req.IdentityInfo.UserID != "" {
+			req.NormalLabels[apistructs.LabelUserID] = req.IdentityInfo.UserID
+		}
+	}
+
+	// Get Owner Info
+	if _, ok := req.FilterLabels[apistructs.LabelOwnerUserID]; !ok {
+		if req.OwnerUser != nil && req.OwnerUser.ID != nil {
+			ownerId := req.OwnerUser.ID.GetStringValue()
+			if ownerId == "" {
+				ownerId = conf.InternalUserID()
+			}
+			req.FilterLabels[apistructs.LabelOwnerUserID] = ownerId
+		}
+	}
+	if req.NormalLabels[apistructs.LabelOwnerUserID] != req.FilterLabels[apistructs.LabelOwnerUserID] {
+		req.NormalLabels[apistructs.LabelOwnerUserID] = req.FilterLabels[apistructs.LabelOwnerUserID]
 	}
 
 	pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml))

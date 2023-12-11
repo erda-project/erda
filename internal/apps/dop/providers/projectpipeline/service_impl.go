@@ -21,15 +21,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
@@ -466,9 +468,9 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 	if err != nil {
 		return apierrors.ErrParseProjectPackage.InternalError(err)
 	}
-	
+
 	// if cronExpr is not exist return it,otherwise create cron
-	if pipelineYml.Spec().Cron != "" {
+	if pipelineYml.Spec().Cron == "" {
 		return nil
 	}
 
@@ -501,6 +503,15 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 
 // constructCronCreateRequestFromV2 make `PipelineCreateRequestV2` to `CronCreateRequest`
 func (p *ProjectPipelineService) constructCronCreateRequestFromV2(req *pipelinesvcpb.PipelineCreateRequestV2, pipelineYml *pipelineyml.PipelineYml) (*cronpb.CronCreateRequest, error) {
+	var err error
+	// valid
+	if pipelineYml == nil {
+		pipelineYml, err = pipelineyml.New([]byte(req.PipelineYml), pipelineyml.WithEnvs(req.Envs))
+		if err != nil {
+			return &cronpb.CronCreateRequest{}, apierrors.ErrParseProjectPackage.InternalError(err)
+		}
+	}
+
 	return &cronpb.CronCreateRequest{
 		CronExpr:               pipelineYml.Spec().Cron,
 		PipelineYmlName:        req.PipelineYmlName,
@@ -515,6 +526,11 @@ func (p *ProjectPipelineService) constructCronCreateRequestFromV2(req *pipelines
 		CronStartFrom:          req.CronStartFrom,
 		IncomingSecrets:        req.Secrets,
 		PipelineDefinitionID:   req.DefinitionID,
+		IdentityInfo: &commonpb.IdentityInfo{
+			UserID:         req.UserID,
+			InternalClient: req.InternalClient,
+		},
+		OwnerUser: req.OwnerUser,
 	}, nil
 }
 

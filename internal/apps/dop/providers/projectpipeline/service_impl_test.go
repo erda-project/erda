@@ -1076,14 +1076,6 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 			if err := p.createCronIfNotExist(tt.args.definition, tt.args.projectPipelineType); (err != nil) != tt.wantErr {
 				t.Errorf("createCronIfNotExist() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			//p := &ProjectPipelineService{
-			//	bundle:          tt.fields.bundle,
-			//	PipelineCron:    tt.fields.PipelineCron,
-			//	pipelineService: tt.fields.pipelineSvc,
-			//}
-			//if err := p.createCronIfNotExist(tt.args.definition, tt.args.projectPipelineType); (err != nil) != tt.wantErr {
-			//	t.Errorf("createCronIfNotExist() error = %v, wantErr %v", err, tt.wantErr)
-			//}
 		})
 	}
 }
