@@ -239,8 +239,8 @@ func TestQ_calcBugReopenRate(t *testing.T) {
 	// no bug, score is 100
 	dbClientForNoBug := &dao.DBClient{}
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForNoBug), "BugReopenCount",
-		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
-			return 0, 0, nil
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, ids []uint64, err error) {
+			return 0, 0, []uint64{}, nil
 		},
 	)
 	defer monkey.Unpatch(dbClientForNoBug)
@@ -252,8 +252,8 @@ func TestQ_calcBugReopenRate(t *testing.T) {
 	// some bug, score > 0
 	dbClientForSomeBug := &dao.DBClient{}
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForSomeBug), "BugReopenCount",
-		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
-			return 5, 10, nil
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, ids []uint64, err error) {
+			return 5, 10, []uint64{}, nil
 		},
 	)
 	defer monkey.Unpatch(dbClientForSomeBug)
@@ -265,8 +265,8 @@ func TestQ_calcBugReopenRate(t *testing.T) {
 	// bad bugs, score < 0
 	dbClientForBadBug := &dao.DBClient{}
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForBadBug), "BugReopenCount",
-		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
-			return 100, 10, nil
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, ids []uint64, err error) {
+			return 100, 10, []uint64{}, nil
 		},
 	)
 	defer monkey.Unpatch(dbClientForBadBug)

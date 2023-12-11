@@ -155,9 +155,15 @@ type Iteration struct {
 
 // ISummary 与迭代相关的事件完成状态的统计信息
 type ISummary struct {
-	Requirement ISummaryState `json:"requirement"`
-	Task        ISummaryState `json:"task"`
-	Bug         ISummaryState `json:"bug"`
+	Requirement        ISummaryState `json:"requirement"`
+	Task               ISummaryState `json:"task"`
+	Bug                ISummaryState `json:"bug"`
+	ReqDoneCountIDs    []uint64      `json:"reqDoneCountIDs"`
+	ReqUnDoneCountIDs  []uint64      `json:"reqUnDoneCountIDs"`
+	TaskDoneCountIDs   []uint64      `json:"taskDoneCountIDs"`
+	TaskUnDoneCountIDs []uint64      `json:"taskUnDoneCountIDs"`
+	BugDoneCountIDs    []uint64      `json:"bugDoneCountIDs"`
+	BugUnDoneCountIDs  []uint64      `json:"bugUnDoneCountIDs"`
 }
 
 type ISummaryState struct {

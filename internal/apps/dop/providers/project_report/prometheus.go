@@ -32,12 +32,13 @@ type metricValue struct {
 type metricValues []metricValue
 
 type iterationMetric struct {
-	name        string
-	help        string
-	valueType   prometheus.ValueType
-	extraLabels []string
-	condition   func(i *apistructs.Iteration) bool
-	getValues   func(i *IterationInfo) metricValues
+	name              string
+	help              string
+	valueType         prometheus.ValueType
+	extraLabels       []string
+	condition         func(i *apistructs.Iteration) bool
+	getValues         func(i *IterationInfo) metricValues
+	getMetricsItemIDs func(i *IterationInfo) string
 }
 
 func (im *iterationMetric) desc(baseLabels []string) *prometheus.Desc {
@@ -64,9 +65,71 @@ func (c *PrometheusCollector) Collect(ch chan<- prometheus.Metric) {
 	c.errors.Collect(ch)
 }
 
+func (i *iterationCollector) Collect(ch chan<- prometheus.Metric) {
+	i.helper.errors.Set(0)
+	iterations, err := i.helper.infoProvider.GetRequestedIterationsInfo()
+	if err != nil {
+		i.helper.errors.Set(1)
+		logrus.Errorf("failed to get iteration info: %v", err)
+	}
+
+	for _, iter := range iterations {
+		if iter.IterationMetricFields == nil {
+			continue
+		}
+		rawLabels := map[string]struct{}{}
+		for l := range i.iterationIDsLabelsFunc(iter) {
+			rawLabels[l] = struct{}{}
+		}
+		values := make([]string, 0, len(rawLabels))
+		labels := make([]string, 0, len(rawLabels))
+		iterationLabels := i.iterationIDsLabelsFunc(iter)
+		for l := range rawLabels {
+			duplicate := false
+			sl := sanitizeLabelName(l)
+			for _, x := range labels {
+				if sl == x {
+					duplicate = true
+					break
+				}
+			}
+			if !duplicate {
+				labels = append(labels, sl)
+				values = append(values, iterationLabels[sl])
+			}
+		}
+
+		for _, im := range i.helper.iterationMetrics {
+			for k, v := range labels {
+				if v == "metrics_type" {
+					values[k] = im.name
+				}
+				if v == "ids" {
+					values[k] = im.getMetricsItemIDs(iter)
+				}
+			}
+			desc := im.desc(labels)
+			for _, metricVal := range im.getValues(iter) {
+				ch <- prometheus.NewMetricWithTimestamp(
+					metricVal.timestamp,
+					prometheus.MustNewConstMetric(desc, im.valueType, metricVal.value, append(values, metricVal.labels...)...),
+				)
+			}
+		}
+	}
+	i.helper.errors.Collect(ch)
+}
+
 func (c *PrometheusCollector) Describe(ch chan<- *prometheus.Desc) {
 	c.errors.Describe(ch)
 	for _, im := range c.iterationMetrics {
+		ch <- im.desc([]string{})
+	}
+}
+
+func (i *iterationCollector) Describe(ch chan<- *prometheus.Desc) {
+	i.helper.errors.Describe(ch)
+	for _, im := range i.helper.iterationMetrics {
 		ch <- im.desc([]string{})
 	}
 }
@@ -79,13 +142,17 @@ func (c *PrometheusCollector) collectIterationInfo(ch chan<- prometheus.Metric) 
 	}
 
 	for _, iter := range iterations {
+		iterationLabels := c.iterationLabelsFunc(iter)
+		if iter.IterationMetricFields != nil {
+			iterationLabels[labelIterationItemUUID] = iter.IterationMetricFields.UUID
+		}
 		rawLabels := map[string]struct{}{}
-		for l := range c.iterationLabelsFunc(iter) {
+		for l := range iterationLabels {
 			rawLabels[l] = struct{}{}
 		}
 		values := make([]string, 0, len(rawLabels))
 		labels := make([]string, 0, len(rawLabels))
-		iterationLabels := c.iterationLabelsFunc(iter)
+
 		for l := range rawLabels {
 			duplicate := false
 			sl := sanitizeLabelName(l)

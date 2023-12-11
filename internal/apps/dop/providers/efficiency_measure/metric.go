@@ -43,6 +43,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.TaskTotalIDs)
+			},
 		},
 		{
 			name:      "personal_working_task_total",
@@ -59,6 +62,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.WorkingTaskTotalIDs)
 			},
 		},
 		{
@@ -77,6 +83,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.PendingTaskTotalIDs)
+			},
 		},
 		{
 			name:      "personal_requirement_total",
@@ -93,6 +102,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.RequirementTotalIDs)
 			},
 		},
 		{
@@ -111,6 +123,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.WorkingRequirementTotalIDs)
+			},
 		},
 		{
 			name:      "personal_pending_requirement_total",
@@ -127,6 +142,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.PendingRequirementTotalIDs)
 			},
 		},
 		{
@@ -145,6 +163,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.BugTotalIDs)
+			},
 		},
 		{
 			name:      "personal_owner_bug_total",
@@ -161,6 +182,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.OwnerBugTotalIDs)
 			},
 		},
 		{
@@ -179,6 +203,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.PendingBugTotalIDs)
+			},
 		},
 		{
 			name:      "personal_working_bug_total",
@@ -195,6 +222,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.WorkingBugTotalIDs)
 			},
 		},
 		{
@@ -213,6 +243,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.DemandDesignBugTotalIDs)
+			},
 		},
 		{
 			name:      "personal_architecture_design_bug_total",
@@ -229,6 +262,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.ArchitectureDesignBugTotalIDs)
 			},
 		},
 		{
@@ -247,6 +283,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.SeriousBugTotalIDs)
+			},
 		},
 		{
 			name:      "personal_reopen_bug_total",
@@ -263,6 +302,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.ReopenBugTotalIDs)
 			},
 		},
 		{
@@ -281,6 +323,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.SubmitBugTotalIDs)
+			},
 		},
 		{
 			name:      "personal_test_case_total",
@@ -297,6 +342,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return GetMetricsItemIDs(p.metricFields.CreateTestCaseTotalIDs)
 			},
 		},
 		{
@@ -315,6 +363,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "personal_fix_bug_estimate_minute",
@@ -331,6 +382,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -349,6 +403,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "personal_fix_bug_elapsed_minute_total",
@@ -365,6 +422,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -383,6 +443,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(p *PersonalPerformanceInfo) string {
+				return "0"
+			},
 		},
 	}
 )
@@ -396,11 +459,12 @@ type metricValue struct {
 type metricValues []metricValue
 
 type personalMetric struct {
-	name        string
-	help        string
-	valueType   prometheus.ValueType
-	extraLabels []string
-	getValues   func(p *PersonalPerformanceInfo) metricValues
+	name              string
+	help              string
+	valueType         prometheus.ValueType
+	extraLabels       []string
+	getValues         func(p *PersonalPerformanceInfo) metricValues
+	getMetricsItemIDs func(p *PersonalPerformanceInfo) string
 }
 
 func (pm *personalMetric) desc(baseLabels []string) *prometheus.Desc {
@@ -416,29 +480,47 @@ type PersonalPerformanceInfo struct {
 type personalMetricField struct {
 	CalculatedAt time.Time
 
-	TaskTotal               uint64
-	WorkingTaskTotal        uint64
-	PendingTaskTotal        uint64
-	RequirementTotal        uint64
-	WorkingRequirementTotal uint64
-	PendingRequirementTotal uint64
-	BugTotal                uint64
-	OwnerBugTotal           uint64
-	WorkingBugTotal         uint64
-	PendingBugTotal         uint64
+	UUID string
 
-	SeriousBugTotal             uint64
-	DemandDesignBugTotal        uint64
-	ArchitectureDesignBugTotal  uint64
-	ReopenBugTotal              uint64
-	SubmitBugTotal              uint64
-	AvgFixBugElapsedMinute      float64
-	AvgFixBugEstimateMinute     float64
-	ResolvedBugTotal            float64
-	TotalFixFixBugElapsedMinute float64
-	TotalFixBugEstimateMinute   float64
+	TaskTotal                  uint64
+	TaskTotalIDs               []uint64
+	WorkingTaskTotal           uint64
+	WorkingTaskTotalIDs        []uint64
+	PendingTaskTotal           uint64
+	PendingTaskTotalIDs        []uint64
+	RequirementTotal           uint64
+	RequirementTotalIDs        []uint64
+	WorkingRequirementTotal    uint64
+	WorkingRequirementTotalIDs []uint64
+	PendingRequirementTotal    uint64
+	PendingRequirementTotalIDs []uint64
+	BugTotal                   uint64
+	BugTotalIDs                []uint64
+	OwnerBugTotal              uint64
+	OwnerBugTotalIDs           []uint64
+	WorkingBugTotal            uint64
+	WorkingBugTotalIDs         []uint64
+	PendingBugTotal            uint64
+	PendingBugTotalIDs         []uint64
 
-	CreateTestCaseTotal uint64
+	SeriousBugTotal               uint64
+	SeriousBugTotalIDs            []uint64
+	DemandDesignBugTotal          uint64
+	DemandDesignBugTotalIDs       []uint64
+	ArchitectureDesignBugTotal    uint64
+	ArchitectureDesignBugTotalIDs []uint64
+	ReopenBugTotal                uint64
+	ReopenBugTotalIDs             []uint64
+	SubmitBugTotal                uint64
+	SubmitBugTotalIDs             []uint64
+	AvgFixBugElapsedMinute        float64
+	AvgFixBugEstimateMinute       float64
+	ResolvedBugTotal              float64
+	TotalFixFixBugElapsedMinute   float64
+	TotalFixBugEstimateMinute     float64
+
+	CreateTestCaseTotal    uint64
+	CreateTestCaseTotalIDs []uint64
 }
 
 // IsValid returns true if the personalMetricField is valid.
@@ -459,6 +541,7 @@ func (p *provider) personalLabelsFunc(info *PersonalPerformanceInfo) map[string]
 		"project_display_name": info.userProject.ProjectDisplayName,
 		"org_name":             info.userProject.OrgName,
 		"org_display_name":     info.userProject.OrgDisplayName,
+		"item_ids_uuid":        "",
 	}
 	projectLabels := strings.Split(info.userProject.ProjectLabels, ",")
 	for _, label := range projectLabels {
@@ -470,10 +553,88 @@ func (p *provider) personalLabelsFunc(info *PersonalPerformanceInfo) map[string]
 	return labels
 }
 
+func GetMetricsItemIDs(a []uint64) string {
+	if len(a) == 0 {
+		return "0"
+	}
+	var b string
+	for _, num := range a {
+		b += strconv.FormatUint(num, 10) + " "
+	}
+	return b
+}
+
+func (p *provider) personalLabelsIDsFunc(infoIDs *PersonalPerformanceInfo) map[string]string {
+	if infoIDs.metricFields == nil {
+		return nil
+	}
+	labels := map[string]string{
+		"uuid":         infoIDs.metricFields.UUID,
+		"metrics_type": "",
+		"ids":          "",
+	}
+	return labels
+}
+
 var invalidNameCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 
 func sanitizeLabelName(name string) string {
 	return invalidNameCharRE.ReplaceAllString(name, "_")
+}
+
+func (i *itemCollector) Collect(ch chan<- prometheus.Metric) {
+	i.helper.errors.Set(0)
+	personalInfos, err := i.helper.GetRequestedPersonalInfos()
+	if err != nil {
+		i.helper.errors.Set(1)
+		i.helper.Log.Errorf("failed to get requested personal infos, err: %v", err)
+	}
+
+	for _, personalInfoIDs := range personalInfos {
+		rawLabels := map[string]struct{}{}
+
+		personalLabels := i.helper.personalLabelsIDsFunc(personalInfoIDs)
+		if personalLabels == nil {
+			continue
+		}
+		for l := range personalLabels {
+			rawLabels[l] = struct{}{}
+		}
+
+		values := make([]string, 0, len(rawLabels))
+		labels := make([]string, 0, len(rawLabels))
+		for l := range rawLabels {
+			duplicate := false
+			for _, x := range labels {
+				if l == x {
+					duplicate = true
+					break
+				}
+			}
+			if !duplicate {
+				labels = append(labels, l)
+				values = append(values, personalLabels[l])
+			}
+		}
+		for _, im := range allPersonalMetrics {
+			desc := im.desc(labels)
+			for _, metricVal := range im.getValues(personalInfoIDs) {
+				for l := range labels {
+					if labels[l] == "metrics_type" {
+						values[l] = im.name + "_ids"
+					}
+					if labels[l] == "ids" {
+						values[l] = im.getMetricsItemIDs(personalInfoIDs)
+					}
+				}
+				ch <- prometheus.NewMetricWithTimestamp(
+					metricVal.timestamp,
+					prometheus.MustNewConstMetric(desc, im.valueType, metricVal.value, append(values, metricVal.labels...)...),
+				)
+			}
+		}
+	}
+	i.helper.errors.Collect(ch)
 }
 
 func (p *provider) Collect(ch chan<- prometheus.Metric) {
@@ -485,12 +646,15 @@ func (p *provider) Collect(ch chan<- prometheus.Metric) {
 	}
 	for _, personalInfo := range personalInfos {
 		rawLabels := map[string]struct{}{}
-		for l := range p.personalLabelsFunc(personalInfo) {
+		personalLabels := p.personalLabelsFunc(personalInfo)
+		for l := range personalLabels {
 			rawLabels[l] = struct{}{}
 		}
 		values := make([]string, 0, len(rawLabels))
 		labels := make([]string, 0, len(rawLabels))
-		personalLabels := p.personalLabelsFunc(personalInfo)
+		if personalInfo.metricFields != nil {
+			personalLabels["item_ids_uuid"] = personalInfo.metricFields.UUID
+		}
 		for l := range rawLabels {
 			duplicate := false
 			for _, x := range labels {
@@ -519,6 +683,12 @@ func (p *provider) Collect(ch chan<- prometheus.Metric) {
 
 func (p *provider) Describe(ch chan<- *prometheus.Desc) {
 	p.errors.Describe(ch)
+	for _, pm := range allPersonalMetrics {
+		ch <- pm.desc([]string{})
+	}
+}
+func (i *itemCollector) Describe(ch chan<- *prometheus.Desc) {
+	i.helper.errors.Describe(ch)
 	for _, pm := range allPersonalMetrics {
 		ch <- pm.desc([]string{})
 	}
