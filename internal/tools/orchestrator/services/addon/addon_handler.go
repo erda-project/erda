@@ -70,10 +70,15 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
 	// get addons from cache
 	versionMap, err := GetCache().Get(params.AddonName)
+	if err != nil {
+		err := errors.New(i18n.OrgSprintf(params.OrgID, AddonTypeDoseNoExist, params.AddonName))
+		logrus.Errorf(err.Error())
+		return nil, nil, err
+	}
 	addons := versionMap.(*VersionMap)
 
 	// Type error, addon does not exist
-	if err != nil || len(*addons) == 0 {
+	if len(*addons) == 0 {
 		err := errors.New(i18n.OrgSprintf(params.OrgID, AddonTypeDoseNoExist, params.AddonName))
 		logrus.Errorf(err.Error())
 		return nil, nil, err
