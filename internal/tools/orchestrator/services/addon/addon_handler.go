@@ -53,6 +53,9 @@ const (
 	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
 	AddonPlanIllegal               = "AddonPlanIllegal"
 	AddonPlanNotSupport            = "AddonPlanNotSupport"
+
+	AddonConfigCenter   = "config-center"
+	AddonRegisterCenter = "registercenter"
 )
 
 // AttachAndCreate addon创建，runtime建立关系方法
@@ -95,14 +98,15 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	version := strings.Trim(v, " ")
 	emptyVersion := !ok || version == ""
 
-	if emptyVersion {
+	if emptyVersion ||
+		params.AddonName == AddonConfigCenter ||
+		params.AddonName == AddonRegisterCenter {
 		// If version is null, get the default version of addon
 		addon, hasVersion = addons.GetDefault()
 	} else {
 		// If version is not null, then get the version addon.
 		addon, hasVersion = (*addons)[version]
 	}
-
 	// If there is no default value and no corresponding version, then a random version of addon is obtained for judgment.
 	if !hasVersion {
 		for _, val := range *addons {
@@ -152,6 +156,8 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		}
 
 	}
+
+	logrus.Infof("%s addon is ready to deploy, verison %s", params.AddonName, addon.Version)
 
 	if addon.Version == "" {
 		return nil, nil, errors.New("failed to create addon, can't find information about addon " + params.AddonName)
