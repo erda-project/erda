@@ -17,6 +17,8 @@ package query
 import (
 	"fmt"
 
+	"google.golang.org/grpc"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -29,9 +31,14 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
+const (
+	defaultEntityGrpcClientMaxRecvBytes = 4194304
+)
+
 type config struct {
-	Cassandra   cassandra.SessionConfig `file:"cassandra"`
-	QuerySource querySource             `file:"query_source"`
+	Cassandra                    cassandra.SessionConfig `file:"cassandra"`
+	QuerySource                  querySource             `file:"query_source"`
+	EntityGrpcClientMaxRecvBytes int                     `file:"entity_grpc_client_max_recv_bytes" env:"ENTITY_GRPC_CLIENT_MAX_RECV_BYTES" default:"4194304"`
 }
 
 type querySource struct {
@@ -68,6 +75,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 	}
 	if p.Cfg.QuerySource.ElasticSearch {
+		if p.Cfg.EntityGrpcClientMaxRecvBytes != defaultEntityGrpcClientMaxRecvBytes {
+			p.Entity = ctx.Service("erda.oap.entity.EntityService", grpc.MaxCallRecvMsgSize(p.Cfg.EntityGrpcClientMaxRecvBytes)).(entitypb.EntityServiceServer)
+		}
 		p.Source = &source.ElasticsearchSource{Metric: p.Metric, Event: p.Event, Entity: p.Entity}
 	}
 
