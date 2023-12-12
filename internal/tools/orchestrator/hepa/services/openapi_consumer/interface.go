@@ -45,4 +45,5 @@ type GatewayOpenapiConsumerService interface {
 	UpdatePackageAcls(string, *dto.PackageAclsDto) (bool, error)
 	GetPackageApiAcls(string, string) ([]dto.PackageAclInfoDto, error)
 	UpdatePackageApiAcls(string, string, *dto.PackageAclsDto) (bool, error)
+	TouchPackageApiAclRules(packageId, packageApiId string) error
 }

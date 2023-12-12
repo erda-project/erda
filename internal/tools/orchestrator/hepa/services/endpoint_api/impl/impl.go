@@ -2587,7 +2587,19 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackageApi(packageId, apiId string, 
 			if err != nil {
 				return
 			}
+			// 可能在更新路由操作之前，已经手动调整过路由授权，因此需要恢复手动创建的调用方授权
+			err = (*impl.consumerBiz).TouchPackageApiAclRules(packageId, apiId)
+			if err != nil {
+				return
+			}
+
 		} else if updateDao.AclType == gw.ACL_OFF {
+			// 可能在更新路由操作之前，已经手动调整过路由授权，因此先要清理掉，然后再创建
+			err = impl.deleteApiPassAuthRules(apiId)
+			if err != nil {
+				return
+			}
+
 			err = impl.createApiPassAuthRules(pack, apiId)
 			if err != nil {
 				return
