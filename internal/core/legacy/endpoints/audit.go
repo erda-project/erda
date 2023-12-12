@@ -307,7 +307,7 @@ func getPermissionBody(listReq *apistructs.AuditsListRequest, identityInfo apist
 		pcr.Scope = apistructs.SysScope
 	} else {
 		pcr.Scope = apistructs.OrgScope
-		pcr.ScopeID = uint64(listReq.OrgID)
+		pcr.ScopeID = listReq.OrgID[0]
 	}
 
 	return pcr

@@ -48,6 +48,35 @@ type AuditSettings struct {
 	Config OrgConfig
 }
 
+type ListAuditParam struct {
+	// +required 查询事件起始时间
+	StartAt string
+	// +required 查询事件终止时间
+	EndAt string
+	// +optional 可见范围类型
+	ScopeType []apistructs.ScopeType
+	// +optional 企业id列表
+	OrgId []uint64
+	// +optional UserID列表
+	UserID []string
+	// +optional FDP项目ID
+	FDPProjectID []string
+	// +optional ScopeID列表
+	ScopeID []uint64
+	// +optional 应用ID列表
+	AppID []uint64
+	// +optional 项目ID列表
+	ProjectID []uint64
+	// +optional 日志模版列表
+	TemplateName []apistructs.TemplateName
+	// +optional 客户端IP
+	ClientIp []string
+	// default 1
+	PageNo int
+	// default 20
+	PageSize int
+}
+
 // TableName 设置模型对应数据库表名称
 func (Audit) TableName() string {
 	return "dice_audit"

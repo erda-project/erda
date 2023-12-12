@@ -23,6 +23,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -31,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/pkg/arrays"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -113,7 +115,113 @@ func (a *Audit) BatchCreateAudit(reqs []apistructs.Audit) error {
 
 // List 通过参数过滤事件
 func (a *Audit) List(param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
-	return a.db.GetAuditsByParam(param)
+	reqParam := &model.ListAuditParam{
+		StartAt:      param.StartAt,
+		EndAt:        param.EndAt,
+		FDPProjectID: param.FDPProjectID,
+		UserID:       param.UserID,
+		TemplateName: param.TemplateName,
+		PageNo:       param.PageNo,
+		PageSize:     param.PageSize,
+		ClientIp:     param.ClientIP,
+		ScopeType:    param.ScopeType,
+	}
+
+	if param.Sys {
+		// if scope_type is sys，there is no need to perform parameter validation
+		reqParam.ProjectID = param.ProjectID
+		reqParam.AppID = param.AppID
+		reqParam.OrgId = param.OrgID
+	} else {
+		// Valid OrgID,in org level,the len(param.OrgID) must equals 1
+		if param.OrgID == nil || len(param.OrgID) > 1 {
+			return 0, nil, errors.New("The orgId is invalid")
+		}
+		reqParam.OrgId = []uint64{param.OrgID[0]}
+		if len(param.ProjectID) > 0 {
+			// check if the projectId is owned to the org
+			projectIds, err := a.GetAllProjectIdInOrg(param.OrgID[0])
+			if err != nil {
+				return 0, nil, err
+			}
+			if _, flag := arrays.IsArrayContained(projectIds, param.ProjectID); !flag {
+				return 0, nil, errors.New("用户所选择的项目不属于其所属于的组织")
+			}
+			reqParam.ProjectID = param.ProjectID
+		}
+		if len(param.AppID) > 0 {
+			// check if the appId is owned to the project which owned to the org
+			var appIds []uint64
+			var err error
+			if len(param.ProjectID) > 0 {
+				// if projectId is not nil,the app must owned to the projectId
+				appIds, err = a.GetAllAppIdByProjectIds(param.ProjectID)
+				if err != nil {
+					return 0, nil, err
+				}
+				if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
+					return 0, nil, errors.New("用户所选择的应用不属于所选的项目")
+				}
+			} else {
+				// projectId is nil,the app must owned to the orgId
+				appIds, err = a.GetAllAppIdByOrgId(param.OrgID[0])
+				if err != nil {
+					return 0, nil, err
+				}
+				if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
+					return 0, nil, errors.New("用户所选择的应用不属于其所属的组织")
+				}
+			}
+			reqParam.AppID = param.AppID
+		}
+	}
+
+	return a.db.GetAuditsByParam(reqParam)
+}
+
+// GetAllProjectIdInOrg Get all the projectId List in org
+func (a *Audit) GetAllProjectIdInOrg(orgId uint64) ([]uint64, error) {
+	projectList, err := a.db.ListProjectByOrgID(orgId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the id field from projectList
+	projectIds := make([]uint64, len(projectList))
+	for index, project := range projectList {
+		projectIds[index] = uint64(project.ID)
+	}
+
+	return projectIds, nil
+}
+
+// GetAllAppIdByProjectIds batch get appId By ProjectIds
+func (a *Audit) GetAllAppIdByProjectIds(projectIds []uint64) ([]uint64, error) {
+	apps, err := a.db.GetApplicationsByProjectIDs(projectIds)
+	if err != nil {
+		return nil, err
+	}
+
+	appIds := make([]uint64, len(apps))
+	for index, app := range apps {
+		appIds[index] = uint64(app.ID)
+	}
+	return appIds, nil
+}
+
+// GetAllAppIdByOrgId get appIds By OrgId
+func (a *Audit) GetAllAppIdByOrgId(orgId uint64) ([]uint64, error) {
+	apps, err := a.db.GetApplicationsByOrgId(orgId)
+	if err != nil {
+		return nil, err
+	}
+
+	appIds := make([]uint64, len(apps))
+	for index, app := range apps {
+		appIds[index] = uint64(app.ID)
+	}
+
+	return appIds, nil
 }
 
 // UpdateAuditCleanCron 更新审计事件周期

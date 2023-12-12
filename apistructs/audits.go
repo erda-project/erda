@@ -366,23 +366,29 @@ const (
 
 // AuditsListRequest GET /api/audits/actions/list 审计事件查询请求结构
 type AuditsListRequest struct {
-	// +required 是否是查看系统的事件
+	// +optional 是否是查看系统的事件
 	Sys bool `schema:"sys"`
-	// +required 企业ID
-	OrgID uint64 `schema:"orgId"`
+	// +optional 企业ID
+	OrgID []uint64 `schema:"orgId"`
 	// +required 事件开始时间
 	StartAt string `schema:"startAt"`
 	// +required 事件结束事件
 	EndAt string `schema:"endAt"`
 	// +optional fdp项目id
-	FDPProjectID string `schema:"fdpProjectId"`
+	FDPProjectID []string `schema:"fdpProjectId"`
 	// +optional 通过用户id过滤事件
 	UserID []string `schema:"userId"`
 	// +optional 通过模版过滤事件
-	TemplateName []string `schema:"templateName"`
+	TemplateName []TemplateName `schema:"templateName"`
 	// +optional 通过客户端ip过滤
-	ClientIP string `schema:"clientIp"`
-	// default 1
+	ClientIP []string `schema:"clientIP"`
+	// +optional 应用ID查询
+	AppID []uint64 `schema:"appId"`
+	// +optional 项目ID列表查询
+	ProjectID []uint64 `schema:"projectId"`
+	// +optional 查看日志类型
+	ScopeType []ScopeType `schema:"scopeType"`
+	//default 1
 	PageNo int `schema:"pageNo"`
 	// default 20
 	PageSize int `schema:"pageSize"`
@@ -391,7 +397,7 @@ type AuditsListRequest struct {
 // Check 检查 AuditsListRequest 是否合法
 func (a *AuditsListRequest) Check() error {
 	// 看系统事件则允许orgID为空
-	if !a.Sys && a.OrgID == 0 {
+	if !a.Sys && len(a.OrgID) == 0 {
 		return errors.Errorf("invalid request, sys and orgid cann't be empty at the same time")
 	}
 
