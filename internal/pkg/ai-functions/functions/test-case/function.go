@@ -672,7 +672,10 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 	})
 
 	if systemPrompt != "" {
-		messages[0].Content = systemPrompt
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: systemPrompt,
+		})
 	}
 
 	result, err := aiHandlerUtils.GetChatMessageFunctionCallArguments(ctx, factory, req, openaiURL, messages, callbackInput)
