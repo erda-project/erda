@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
+package erda.apps.aiproxy.session;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb";
 
 import "google/api/annotations.proto";
@@ -83,7 +83,7 @@ message Session {
     double temperature = 13 [(validate.rules).double = {gte: 0, lte: 2}];
     bool isArchived = 14;
     google.protobuf.Timestamp resetAt = 15;
-    Metadata metadata = 16;
+    metadata.Metadata metadata = 16;
 }
 
 message ChatLog {
@@ -116,7 +116,7 @@ message SessionCreateRequest {
     string topic = 7 [(validate.rules).string = {min_len: 1}];
     uint64 numOfCtxMsg = 8;
     double temperature = 9 [(validate.rules).double = {gte: 0, lte: 2}];
-    Metadata metadata = 10;
+    metadata.Metadata metadata = 10;
 }
 
 message SessionGetRequest {
@@ -140,7 +140,7 @@ message SessionUpdateRequest {
     string topic = 8 [(validate.rules).string = {min_len: 1}];
     uint64 numOfCtxMsg = 9;
     double temperature = 10 [(validate.rules).double = {gte: 0, lte: 2}];
-    Metadata metadata = 11;
+    metadata.Metadata metadata = 11;
 }
 
 message SessionPagingRequest {

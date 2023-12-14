@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
+package erda.apps.aiproxy.client;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb";
 
 import "google/api/annotations.proto";
@@ -51,7 +51,7 @@ message Client {
     string desc = 6;
     string accessKeyId = 7 [(validate.rules).string = {min_len: 32, max_len: 36}];
     string secretKeyId = 8 [(validate.rules).string = {min_len: 32, max_len: 36}];
-    Metadata metadata = 9;
+    metadata.Metadata metadata = 9;
 }
 
 message ClientCreateRequest {
@@ -59,7 +59,7 @@ message ClientCreateRequest {
     string desc = 2 [(validate.rules).string.max_len = 1024];
     string accessKeyId = 3 [(validate.rules).string = {min_len: 0, max_len: 36}]; // auto assigned if empty
     string secretKeyId = 4 [(validate.rules).string = {min_len: 0, max_len: 36}]; // auto assigned if empty
-    Metadata metadata = 5;
+    metadata.Metadata metadata = 5;
 }
 
 message ClientGetRequest {
@@ -76,7 +76,7 @@ message ClientUpdateRequest {
     string desc = 3 [(validate.rules).string.max_len = 1024];
     string accessKeyId = 4 [(validate.rules).string = {min_len: 32, max_len: 32}];
     string secretKeyId = 5 [(validate.rules).string = {min_len: 32, max_len: 32}];
-    Metadata metadata = 6;
+    metadata.Metadata metadata = 6;
 }
 
 message ClientPagingRequest {

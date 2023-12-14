@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
+package erda.apps.aiproxy.audit;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb";
 
 import "google/api/annotations.proto";
@@ -53,7 +53,7 @@ message Audit {
 
     string responseFunctionCallName = 24;
 
-    Metadata metadata = 25;
+    metadata.Metadata metadata = 25;
 }
 
 message AuditCreateRequestWhenReceived {
