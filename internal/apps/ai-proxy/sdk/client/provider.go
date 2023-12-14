@@ -14,13 +14,14 @@ import (
 
 type Interface interface {
 	AIEnabled() bool
+	Config() *config
 	Context(yourCtx ...context.Context) context.Context
 	Session() sessionpb.SessionServiceServer
 }
 
 var Instance Interface
 
-var ErrorAINotEnabled = fmt.Errorf("AI not enabled")
+var ErrorAINotEnabled = fmt.Errorf("AI Not Enabled")
 
 type config struct {
 	URL      string `file:"url" env:"AI_PROXY_URL"`
@@ -36,6 +37,10 @@ type provider struct {
 
 func (p *provider) AIEnabled() bool {
 	return p.Cfg.URL != "" && p.Cfg.ClientAK != ""
+}
+
+func (p *provider) Config() *config {
+	return p.Cfg
 }
 
 func (p *provider) Context(yourCtx ...context.Context) context.Context {

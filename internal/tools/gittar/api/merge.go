@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	aiproxyclient "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr"
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
@@ -136,7 +137,7 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 		}
 	}()
 	go func() { // ai code review
-		if !conf.AIEnabled() {
+		if !aiproxyclient.Instance.AIEnabled() {
 			return
 		}
 		mrCodeReviewReq := models.AICodeReviewNoteRequest{Type: models.AICodeReviewTypeMR}
@@ -158,7 +159,11 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 			logrus.Errorf("failed to create note, merge request id: %d, err:%s", request.Id, err)
 		}
 	}()
-	ctx.Success(request)
+	wrappedRequest := apistructs.WrappedMergeRequestInfo{
+		MergeRequestInfo: *request,
+		AIMRCRCreating:   aiproxyclient.Instance.AIEnabled(),
+	}
+	ctx.Success(wrappedRequest)
 }
 
 func GetMergeRequestDetail(ctx *webcontext.Context) {
@@ -623,8 +628,8 @@ func GetMergeBase(ctx *webcontext.Context) {
 }
 
 func AIMRCodeReview(ctx *webcontext.Context) {
-	if !conf.AIEnabled() {
-		ctx.Abort(ERROR_AI_NOT_ENABLED)
+	if !aiproxyclient.Instance.AIEnabled() {
+		ctx.Abort(aiproxyclient.ErrorAINotEnabled)
 		return
 	}
 

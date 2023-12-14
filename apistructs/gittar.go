@@ -311,6 +311,12 @@ type MergeRequestInfo struct {
 	IsJoinTempBranch     bool         `json:"isJoinTempBranch"`
 }
 
+type WrappedMergeRequestInfo struct {
+	MergeRequestInfo
+	// other infos
+	AIMRCRCreating bool `json:"aiMRCRCreating,omitempty"`
+}
+
 type MergeStatusInfo struct {
 	HasConflict bool   `json:"hasConflict"`
 	IsMerged    bool   `json:"isMerged"`

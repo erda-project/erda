@@ -212,15 +212,3 @@ func DiceProtocol() string {
 func RefreshPersonalContributorDuration() time.Duration {
 	return cfg.RefreshPersonalContributorDuration
 }
-
-func AIProxyURL() string {
-	return cfg.AIProxyURL
-}
-
-func AIProxyClientAK() string {
-	return cfg.AIProxyClientAK
-}
-
-func AIEnabled() bool {
-	return cfg.AIProxyURL != "" && cfg.AIProxyClientAK != ""
-}
