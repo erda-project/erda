@@ -26,6 +26,7 @@ grpc-client@erda.apps.aiproxy.session:
   addr: "${AI_PROXY_GRPC_ADDR:ai-proxy:8082}"
   tls:
     insecure_skip_verify: "${AI_PROXY_GRPC_CLIENT_TLS_INSECURE_SKIP_VERIFY:true}"
+  block: false # maybe ai disabled
 erda.apps.aiproxy.session-client: { }
 
 ai-proxy-client:

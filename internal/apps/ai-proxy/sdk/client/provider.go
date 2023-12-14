@@ -2,6 +2,7 @@ package aiproxyclient
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -18,6 +19,8 @@ type Interface interface {
 }
 
 var Instance Interface
+
+var ErrorAINotEnabled = fmt.Errorf("AI not enabled")
 
 type config struct {
 	URL      string `file:"url" env:"AI_PROXY_URL"`
