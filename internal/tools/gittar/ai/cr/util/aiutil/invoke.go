@@ -23,8 +23,8 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 
+	aiproxyclient "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 )
 
@@ -48,8 +48,8 @@ func InvokeAI(req openai.ChatCompletionRequest, user *models.User) string {
 
 func getOpenAIClient(user *models.User) *openai.Client {
 	// config
-	clientConfig := openai.DefaultConfig(conf.AIProxyClientAK())
-	clientConfig.BaseURL = strings.TrimSuffix(conf.AIProxyURL(), "/") + "/v1"
+	clientConfig := openai.DefaultConfig(aiproxyclient.Instance.Config().ClientAK)
+	clientConfig.BaseURL = strings.TrimSuffix(aiproxyclient.Instance.Config().URL, "/") + "/v1"
 	clientConfig.HTTPClient = http.DefaultClient
 	clientConfig.HTTPClient.Transport = &transport{RoundTripper: http.DefaultTransport, User: user}
 	client := openai.NewClientWithConfig(clientConfig)

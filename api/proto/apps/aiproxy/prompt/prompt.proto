@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
+package erda.apps.aiproxy.prompt;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb";
 
 import "google/api/annotations.proto";
@@ -51,16 +51,16 @@ message Prompt {
     string name = 5 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 6 [(validate.rules).string = {max_len: 1024}];
     string clientId = 7 [(validate.rules).string = {len: 36}];
-    repeated Message messages = 8;
-    Metadata metadata = 9;
+    repeated message.Message messages = 8;
+    metadata.Metadata metadata = 9;
 }
 
 message PromptCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string = {max_len: 1024}];
     string clientId = 3 [(validate.rules).string = {max_len: 36}];
-    repeated Message messages = 4;
-    Metadata metadata = 5;
+    repeated message.Message messages = 4;
+    metadata.Metadata metadata = 5;
 }
 
 message PromptGetRequest {
@@ -78,8 +78,8 @@ message PromptUpdateRequest {
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string = {max_len: 1024}];
     string clientId = 4 [(validate.rules).string = {ignore_empty: true, max_len: 36}];
-    repeated Message messages = 5;
-    Metadata metadata = 6;
+    repeated message.Message messages = 5;
+    metadata.Metadata metadata = 6;
 }
 
 message PromptPagingRequest {

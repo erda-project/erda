@@ -49,8 +49,8 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/cloud-on-k8s/v2 v2.0.0-20221101080201-221fa719f43b
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v1.0.8
-	github.com/erda-project/erda-infra/tools v0.0.0-20220922112628-1965c0260662
+	github.com/erda-project/erda-infra v1.0.9-0.20231213094429-67b1657b3593
+	github.com/erda-project/erda-infra/tools v0.0.0-20231213094429-67b1657b3593
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v1.4.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -176,8 +176,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.3.2
-	gorm.io/driver/sqlite v1.3.1
-	gorm.io/gorm v1.23.5
+	gorm.io/driver/sqlite v1.5.3
+	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
 	gorm.io/plugin/soft_delete v1.1.0
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.6.2
@@ -476,7 +476,6 @@ replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.4
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
-	github.com/erda-project/erda-infra => github.com/erda-project/erda-infra v0.0.0-20230711160226-c6156f3b1be1
 	github.com/erda-project/erda-proto-go v1.4.0 => ./api/proto-go
 	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.49.0
 	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0

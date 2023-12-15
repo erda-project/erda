@@ -32,5 +32,4 @@ var (
 	ERROR_HOOK_NOT_FOUND = errors.New("hook not found")
 	ERROR_LOCKED_DENIED  = errors.New("locked denied")
 	ERROR_REPO_LOCKED    = errors.New("repo locked")
-	ERROR_AI_NOT_ENABLED = errors.New("ai not enabled")
 )
