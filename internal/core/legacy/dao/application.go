@@ -232,8 +232,8 @@ func (client *DBClient) GetApplicationsByNames(projectID uint64, names []string)
 	return applications, err
 }
 
-func (client *DBClient) GetApplicationsByOrgId(orgId uint64) ([]model.Application, error) {
+func (client *DBClient) GetApplicationsByOrgId(orgID uint64) ([]model.Application, error) {
 	var applications []model.Application
-	err := client.Where("org_id = ?", orgId).Find(&applications).Error
+	err := client.Where("org_id = ?", orgID).Find(&applications).Error
 	return applications, err
 }

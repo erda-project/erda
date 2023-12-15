@@ -37,6 +37,14 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 )
 
+// audit log err i18n key
+const (
+	ErrInvalidOrg          = "ErrInvalidOrg"
+	ErrInvalidProjectInOrg = "ErrInvalidProjectInOrg"
+	ErrInvalidAppInOrg     = "ErrInvalidAppInOrg"
+	ErrInvalidAppInProject = "ErrInvalidAppInProject"
+)
+
 // Audit 成员操作封装
 type Audit struct {
 	db    *dao.DBClient
@@ -113,9 +121,55 @@ func (a *Audit) BatchCreateAudit(reqs []apistructs.Audit) error {
 	return nil
 }
 
-// List 通过参数过滤事件
-func (a *Audit) List(param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
-	reqParam := &model.ListAuditParam{
+// List Filter Audit Logs By param
+func (a *Audit) List(ctx context.Context, param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
+	filterParam := &model.ListAuditParam{}
+
+	// if it is sys level，there is no need to perform parameter validation
+	if param.Sys {
+		filterParam = &model.ListAuditParam{
+			StartAt:      param.StartAt,
+			EndAt:        param.EndAt,
+			FDPProjectID: param.FDPProjectID,
+			UserID:       param.UserID,
+			TemplateName: param.TemplateName,
+			PageNo:       param.PageNo,
+			PageSize:     param.PageSize,
+			ClientIP:     param.ClientIP,
+			ScopeType:    param.ScopeType,
+			ProjectID:    param.ProjectID,
+			AppID:        param.AppID,
+			OrgID:        param.OrgID,
+		}
+		return a.db.GetAuditsByParam(filterParam)
+	}
+
+	// if it is not the sys level,valid the param and construct the filterParam
+	var err error
+	filterParam, err = a.constructFilterParamByReq(ctx, param)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return a.db.GetAuditsByParam(filterParam)
+}
+
+// constructFilterParamByReq valid the param and construct the filterParam to query db by `apistruct.AuditsListRequest`
+func (a *Audit) constructFilterParamByReq(ctx context.Context, param *apistructs.AuditsListRequest) (*model.ListAuditParam, error) {
+	langCodes, ok := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	if !ok {
+		return nil, errors.New("Invalid Language")
+	}
+	if langCodes == nil {
+		langCodes = i18n.LanguageCodes{
+			&i18n.LanguageCode{
+				Code:    "zh-CN",
+				Quality: 1,
+			},
+		}
+	}
+
+	filterParam := &model.ListAuditParam{
 		StartAt:      param.StartAt,
 		EndAt:        param.EndAt,
 		FDPProjectID: param.FDPProjectID,
@@ -123,60 +177,51 @@ func (a *Audit) List(param *apistructs.AuditsListRequest) (int, []model.Audit, e
 		TemplateName: param.TemplateName,
 		PageNo:       param.PageNo,
 		PageSize:     param.PageSize,
-		ClientIp:     param.ClientIP,
+		ClientIP:     param.ClientIP,
 		ScopeType:    param.ScopeType,
 	}
-
-	if param.Sys {
-		// if scope_type is sys，there is no need to perform parameter validation
-		reqParam.ProjectID = param.ProjectID
-		reqParam.AppID = param.AppID
-		reqParam.OrgId = param.OrgID
-	} else {
-		// Valid OrgID,in org level,the len(param.OrgID) must equals 1
-		if param.OrgID == nil || len(param.OrgID) > 1 {
-			return 0, nil, errors.New("The orgId is invalid")
-		}
-		reqParam.OrgId = []uint64{param.OrgID[0]}
-		if len(param.ProjectID) > 0 {
-			// check if the projectId is owned to the org
-			projectIds, err := a.GetAllProjectIdInOrg(param.OrgID[0])
-			if err != nil {
-				return 0, nil, err
-			}
-			if _, flag := arrays.IsArrayContained(projectIds, param.ProjectID); !flag {
-				return 0, nil, errors.New("用户所选择的项目不属于其所属于的组织")
-			}
-			reqParam.ProjectID = param.ProjectID
-		}
-		if len(param.AppID) > 0 {
-			// check if the appId is owned to the project which owned to the org
-			var appIds []uint64
-			var err error
-			if len(param.ProjectID) > 0 {
-				// if projectId is not nil,the app must owned to the projectId
-				appIds, err = a.GetAllAppIdByProjectIds(param.ProjectID)
-				if err != nil {
-					return 0, nil, err
-				}
-				if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
-					return 0, nil, errors.New("用户所选择的应用不属于所选的项目")
-				}
-			} else {
-				// projectId is nil,the app must owned to the orgId
-				appIds, err = a.GetAllAppIdByOrgId(param.OrgID[0])
-				if err != nil {
-					return 0, nil, err
-				}
-				if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
-					return 0, nil, errors.New("用户所选择的应用不属于其所属的组织")
-				}
-			}
-			reqParam.AppID = param.AppID
-		}
+	// Valid OrgID,in org level,the len(param.OrgID) must equals 1
+	if param.OrgID == nil || len(param.OrgID) > 1 {
+		return nil, errors.New(a.trans.Text(langCodes, ErrInvalidOrg))
 	}
-
-	return a.db.GetAuditsByParam(reqParam)
+	filterParam.OrgID = []uint64{param.OrgID[0]}
+	if len(param.ProjectID) > 0 {
+		// check if the projectId is owned to the org
+		projectIds, err := a.GetAllProjectIdInOrg(param.OrgID[0])
+		if err != nil {
+			return nil, err
+		}
+		if _, flag := arrays.IsArrayContained(projectIds, param.ProjectID); !flag {
+			return nil, errors.New(a.trans.Text(langCodes, ErrInvalidProjectInOrg))
+		}
+		filterParam.ProjectID = param.ProjectID
+	}
+	if len(param.AppID) > 0 {
+		// check if the appId is owned to the project which owned to the org
+		var appIds []uint64
+		var err error
+		if len(param.ProjectID) > 0 {
+			// if projectId is not nil,the app must own to the projectId
+			appIds, err = a.GetAllAppIdByProjectIds(param.ProjectID)
+			if err != nil {
+				return nil, err
+			}
+			if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
+				return nil, errors.New(a.trans.Text(langCodes, ErrInvalidAppInProject))
+			}
+		} else {
+			// projectId is nil,the app must own to the orgId
+			appIds, err = a.GetAllAppIdByOrgId(param.OrgID[0])
+			if err != nil {
+				return nil, err
+			}
+			if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
+				return nil, errors.New(a.trans.Text(langCodes, ErrInvalidAppInOrg))
+			}
+		}
+		filterParam.AppID = param.AppID
+	}
+	return filterParam, nil
 }
 
 // GetAllProjectIdInOrg Get all the projectId List in org

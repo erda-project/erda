@@ -366,27 +366,27 @@ const (
 
 // AuditsListRequest GET /api/audits/actions/list 审计事件查询请求结构
 type AuditsListRequest struct {
-	// +optional 是否是查看系统的事件
+	// +optional if sys event to get audit log
 	Sys bool `schema:"sys"`
-	// +optional 企业ID
+	// +optional List of organization IDS
 	OrgID []uint64 `schema:"orgId"`
-	// +required 事件开始时间
+	// +required Start time of the query event
 	StartAt string `schema:"startAt"`
-	// +required 事件结束事件
+	// +required End time of the query event
 	EndAt string `schema:"endAt"`
-	// +optional fdp项目id
+	// +optional List of FDP project IDs
 	FDPProjectID []string `schema:"fdpProjectId"`
-	// +optional 通过用户id过滤事件
+	// +optional List of user IDs
 	UserID []string `schema:"userId"`
-	// +optional 通过模版过滤事件
+	// +optional List of log template name
 	TemplateName []TemplateName `schema:"templateName"`
-	// +optional 通过客户端ip过滤
+	// +optional List of client IP address
 	ClientIP []string `schema:"clientIP"`
-	// +optional 应用ID查询
+	// +optional List of application IDs
 	AppID []uint64 `schema:"appId"`
-	// +optional 项目ID列表查询
+	// +optional List of project IDs
 	ProjectID []uint64 `schema:"projectId"`
-	// +optional 查看日志类型
+	// +optional Scope type for visibility
 	ScopeType []ScopeType `schema:"scopeType"`
 	//default 1
 	PageNo int `schema:"pageNo"`

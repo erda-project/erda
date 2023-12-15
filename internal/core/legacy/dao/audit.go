@@ -43,8 +43,8 @@ func (client *DBClient) GetAuditsByParam(param *model.ListAuditParam) (int, []mo
 	if len(param.ScopeType) > 0 {
 		db = db.Where("scope_type in ( ? )", param.ScopeType)
 	}
-	if len(param.OrgId) > 0 {
-		db = db.Where("org_id in ( ? )", param.OrgId)
+	if len(param.OrgID) > 0 {
+		db = db.Where("org_id in ( ? )", param.OrgID)
 	}
 
 	if len(param.ScopeID) > 0 {
@@ -62,8 +62,8 @@ func (client *DBClient) GetAuditsByParam(param *model.ListAuditParam) (int, []mo
 	if len(param.TemplateName) > 0 {
 		db = db.Where("template_name in ( ? )", param.TemplateName)
 	}
-	if len(param.ClientIp) > 0 {
-		for _, ip := range param.ClientIp {
+	if len(param.ClientIP) > 0 {
+		for _, ip := range param.ClientIP {
 			db = db.Or("client_ip LIKE ?", "%"+ip+"%")
 		}
 	}

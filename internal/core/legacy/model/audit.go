@@ -48,29 +48,30 @@ type AuditSettings struct {
 	Config OrgConfig
 }
 
+// ListAuditParam Filtering params for audit log queries.
 type ListAuditParam struct {
-	// +required 查询事件起始时间
+	// +required Start time of the query event
 	StartAt string
-	// +required 查询事件终止时间
+	// +required End time of the query event
 	EndAt string
-	// +optional 可见范围类型
+	// +optional Scope type for visibility
 	ScopeType []apistructs.ScopeType
-	// +optional 企业id列表
-	OrgId []uint64
-	// +optional UserID列表
+	// +optional List of organization IDS
+	OrgID []uint64
+	// +optional List of user IDs
 	UserID []string
-	// +optional FDP项目ID
+	// +optional List of FDP project IDs
 	FDPProjectID []string
-	// +optional ScopeID列表
+	// +optional List of scope IDs
 	ScopeID []uint64
-	// +optional 应用ID列表
+	// +optional List of application IDs
 	AppID []uint64
-	// +optional 项目ID列表
+	// +optional List of project IDs
 	ProjectID []uint64
-	// +optional 日志模版列表
+	// +optional List of log template name
 	TemplateName []apistructs.TemplateName
-	// +optional 客户端IP
-	ClientIp []string
+	// +optional List of client IP address
+	ClientIP []string
 	// default 1
 	PageNo int
 	// default 20

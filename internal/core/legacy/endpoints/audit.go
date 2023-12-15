@@ -109,6 +109,8 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
 
+	ctx = context.WithValue(ctx, "lang_codes", i18n.Language(r))
+
 	// 权限检查
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -125,7 +127,7 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 		}
 	}
 
-	total, audits, err := e.audit.List(&listReq)
+	total, audits, err := e.audit.List(ctx, &listReq)
 	if err != nil {
 		return apierrors.ErrListAudit.InternalError(err).ToResp(), nil
 	}
@@ -195,7 +197,7 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 	listReq.PageNo = 1
 	listReq.PageSize = 99999
 
-	_, audits, err := e.audit.List(&listReq)
+	_, audits, err := e.audit.List(ctx, &listReq)
 	if err != nil {
 		return apierrors.ErrExportExcelAudit.InternalError(err)
 	}
@@ -306,6 +308,11 @@ func getPermissionBody(listReq *apistructs.AuditsListRequest, identityInfo apist
 	if listReq.Sys {
 		pcr.Scope = apistructs.SysScope
 	} else {
+		// if it has multiple orgID provided in org scope
+		// set pcr as nil,then use CheckPermission(pcr) will return error directly
+		if len(listReq.OrgID) > 1 {
+			return nil
+		}
 		pcr.Scope = apistructs.OrgScope
 		pcr.ScopeID = listReq.OrgID[0]
 	}

@@ -17,6 +17,7 @@ package permission
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -171,6 +172,11 @@ var checkAdaptor security.PermissionAdaptor
 // CheckPermission 鉴权Z
 func (p *Permission) CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error) {
 	logrus.Debugf("invoke permission, time: %s, req: %+v", time.Now().Format(time.RFC3339), req)
+
+	// if the param is invalid,it will set the req as nil
+	if req == nil {
+		return false, errors.New("the user operation is invalid,maybe the param is invalid")
+	}
 
 	checkAdaptor.Once.Do(func() {
 		checkAdaptor.Db = p.db
