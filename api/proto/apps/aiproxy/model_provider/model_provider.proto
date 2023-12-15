@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
+package erda.apps.aiproxy.model_provider;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb";
 
 import "google/api/annotations.proto";
@@ -51,7 +51,7 @@ message ModelProvider {
     string desc = 6;
     ModelProviderType type = 7;
     string apiKey = 8;
-    Metadata metadata = 9;
+    metadata.Metadata metadata = 9;
 }
 
 enum ModelProviderType {
@@ -66,7 +66,7 @@ message ModelProviderCreateRequest {
     string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
     ModelProviderType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    Metadata metadata = 5;
+    metadata.Metadata metadata = 5;
 }
 
 message ModelProviderGetRequest {
@@ -83,7 +83,7 @@ message ModelProviderUpdateRequest {
     string desc = 3 [(validate.rules).string = {min_len: 0, max_len: 1024}];
     ModelProviderType type = 4 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string apiKey = 5 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    Metadata metadata = 6;
+    metadata.Metadata metadata = 6;
 }
 
 message ModelProviderPagingRequest {

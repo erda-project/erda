@@ -22,8 +22,10 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/etcd"
+	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/session/client"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/core/org"
 )
 

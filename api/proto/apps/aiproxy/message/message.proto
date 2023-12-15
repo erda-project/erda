@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
+package erda.apps.aiproxy.message;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/message/pb";
 
 import "google/api/annotations.proto";

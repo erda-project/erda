@@ -167,13 +167,14 @@ func (w whereValue) In(cols ...string) Option {
 
 func Paging(size, no int) Option {
 	if size < 0 {
-		size = 0
+		size = -1
 	}
-	if no < 1 {
-		no = 1
+	offset := (no - 1) * size
+	if no <= 0 {
+		offset = 0
 	}
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Limit(size).Offset((no - 1) * size)
+		return db.Limit(size).Offset(offset)
 	}
 }
 

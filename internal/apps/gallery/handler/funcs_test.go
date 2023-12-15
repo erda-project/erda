@@ -82,10 +82,10 @@ func TestPrepareListOpusesOptions(t *testing.T) {
 		Vars []interface{}
 	}{
 		{
-			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE type = ? AND name = ? AND (display_name LIKE ? OR display_name_i18n LIKE ? OR summary LIKE ? OR summary_i18n LIKE ?) AND (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
+			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE type = ? AND name = ? AND (display_name LIKE ? OR display_name_i18n LIKE ? OR summary LIKE ? OR summary_i18n LIKE ?) AND (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` <= ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
 			Vars: []interface{}{cases[0].Type, cases[0].Name, "%mysql%", "%mysql%", "%mysql%", "%mysql%", cases[0].OrgID, types.OpusLevelSystem, time.Unix(0, 0)},
 		}, {
-			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
+			SQL:  "SELECT * FROM `erda_gallery_opus` WHERE (org_id = ? OR level = ?) AND (`erda_gallery_opus`.`deleted_at` <= ? OR `erda_gallery_opus`.`deleted_at` IS NULL) ORDER BY type DESC,name DESC,updated_at DESC LIMIT 10 OFFSET 10",
 			Vars: []interface{}{cases[1].OrgID, types.OpusLevelSystem, time.Unix(0, 0)},
 		},
 	}
@@ -126,7 +126,7 @@ func TestPrepareListOpusesKeywordFilterOption(t *testing.T) {
 	var (
 		keyword  = "mysql"
 		versions = []*model.OpusVersion{new(model.OpusVersion), new(model.OpusVersion)}
-		sql      = "SELECT * FROM `erda_gallery_opus` WHERE (name LIKE ? OR display_name LIKE ? OR id IN (?,?)) AND (`erda_gallery_opus`.`deleted_at` = ? OR `erda_gallery_opus`.`deleted_at` IS NULL)"
+		sql      = "SELECT * FROM `erda_gallery_opus` WHERE (name LIKE ? OR display_name LIKE ? OR id IN (?,?)) AND (`erda_gallery_opus`.`deleted_at` <= ? OR `erda_gallery_opus`.`deleted_at` IS NULL)"
 		vars     = []interface{}{"%mysql%", "%mysql%"}
 	)
 	for i := range versions {
@@ -165,7 +165,7 @@ func TestPrepareListVersionsInOpusesIDsOption(t *testing.T) {
 
 	var (
 		opuses = []*model.Opus{new(model.Opus), new(model.Opus)}
-		sql    = "SELECT * FROM `erda_gallery_opus_version` WHERE opus_id IN (?,?) AND (`erda_gallery_opus_version`.`deleted_at` = ? OR `erda_gallery_opus_version`.`deleted_at` IS NULL)"
+		sql    = "SELECT * FROM `erda_gallery_opus_version` WHERE opus_id IN (?,?) AND (`erda_gallery_opus_version`.`deleted_at` <= ? OR `erda_gallery_opus_version`.`deleted_at` IS NULL)"
 		vars   = []interface{}{fields.UUID{String: uuid.New().String(), Valid: true}, fields.UUID{String: uuid.New().String(), Valid: true}, time.Unix(0, 0)}
 	)
 	for i := range opuses {

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
-option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/rich_client/pb";
+package erda.apps.aiproxy.rich_client;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb";
 
 import "google/api/annotations.proto";
 import "apps/aiproxy/metadata/metadata.proto";
@@ -25,12 +25,12 @@ message GetByClientAccessKeyIdRequest {
 }
 
 message RichClient {
-    Client client = 1;
+    client.Client client = 1;
     repeated RichModel models = 2;
 }
 
 message RichModel {
-    Model model = 1;
-    ModelProvider provider = 2;
+    model.Model model = 1;
+    model_provider.ModelProvider provider = 2;
 }
 
