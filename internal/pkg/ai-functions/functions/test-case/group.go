@@ -135,7 +135,7 @@ func generateGroupsFromRequirement(ctx context.Context, wg *sync.WaitGroup, user
 	}
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
-		Content: "请根据需求标题、需求内容和任务标题，帮助我生成一系列高质量的测试用例功能分组。将测试用例分组的规则参考我上面给出的案例。测试用例功能分组应该基于需求的主题和任务的关联性。并使用功能点对每个功能分组进行命名。",
+		Content: "请根据需求标题、需求内容和任务标题，帮助我生成一系列高质量的测试用例功能分组。生成测试用例分组的规则参考我上面给出的案例。测试用例功能分组应该基于需求的主题和任务的关联性。并使用功能点对每个功能分组进行命名。不要出现含义相同或者重复的测试用例功能分组。",
 	})
 
 	schema, err := strutil.YamlOrJsonToJson(GroupSchema)
