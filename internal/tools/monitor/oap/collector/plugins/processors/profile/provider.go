@@ -125,6 +125,7 @@ func (p *provider) Put(ctx context.Context, pi *storage.PutInput) error {
 
 	sk := pi.Key.SegmentKey()
 	skWithTime := fmt.Sprintf("%s:%d", sk, pi.EndTime.Unix())
+	skKey := sk
 
 	st := segment.New()
 	st.SetMetadata(metadata.Metadata{
@@ -133,13 +134,13 @@ func (p *provider) Put(ctx context.Context, pi *storage.PutInput) error {
 		Units:           pi.Units,
 		AggregationType: pi.AggregationType,
 	})
-	ingest.SegmentKey = skWithTime
-	ingest.CollectTime = &pi.EndTime
+	ingest.SegmentKey = skKey
+	ingest.CollectTime = &pi.StartTime
 	ingest.App = app
 
 	samples := pi.Val.Samples()
 	err := st.Put(pi.StartTime, pi.EndTime, samples, func(depth int, t time.Time, r *big.Rat, addons []segment.Addon) {
-		tk := pi.Key.TreeKey(depth, t)
+		tk := pi.Key.TreeKey()
 		cachedTree := tree.New()
 		treeClone := pi.Val.Clone(r)
 		cachedTree.Lock()

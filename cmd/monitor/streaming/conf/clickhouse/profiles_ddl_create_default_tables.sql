@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS <database>.main ON CLUSTER '{cluster}'
     `v` String,
     `timestamp` DateTime64(9, 'Asia/Shanghai')
 )
-ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/main', '{replica}')
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/main', '{replica}')
 PRIMARY KEY (k)
 PARTITION BY toYYYYMMDD(timestamp)
 ORDER BY (k)
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS <database>.trees ON CLUSTER '{cluster}'
     `v` String,
     `timestamp` DateTime64(9, 'Asia/Shanghai')
 )
-ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/trees', '{replica}')
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/trees', '{replica}')
 PRIMARY KEY (k)
 PARTITION BY toYYYYMMDD(timestamp)
 ORDER BY (k)
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS <database>.segments ON CLUSTER '{cluster}'
     `v` String,
     `timestamp` DateTime64(9, 'Asia/Shanghai')
 )
-ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/segments', '{replica}')
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/segments', '{replica}')
 PRIMARY KEY (k)
 PARTITION BY toYYYYMMDD(timestamp)
 ORDER BY (k)
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS <database>.dimensions ON CLUSTER '{cluster}'
     `v` String,
     `timestamp` DateTime64(9, 'Asia/Shanghai')
 )
-ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/dimensions', '{replica}')
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/dimensions', '{replica}')
 PRIMARY KEY (k)
 PARTITION BY toYYYYMMDD(timestamp)
 ORDER BY (k)
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS <database>.profiles ON CLUSTER '{cluster}'
     `v` String,
     `timestamp` DateTime64(9, 'Asia/Shanghai')
 )
-ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/profiles', '{replica}')
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/profiles', '{replica}')
 PRIMARY KEY (k)
 PARTITION BY toYYYYMMDD(timestamp)
 ORDER BY (k)
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS <database>.dicts ON CLUSTER '{cluster}'
     `v` String,
     `timestamp` DateTime64(9, 'Asia/Shanghai')
 )
-ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{cluster}-{shard}/dicts', '{replica}')
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{cluster}-{shard}/dicts', '{replica}')
 PRIMARY KEY (k)
 PARTITION BY toYYYYMMDD(timestamp)
 ORDER BY (k)
