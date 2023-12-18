@@ -57,10 +57,8 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	if _, ok := req.FilterLabels[apistructs.LabelOwnerUserID]; !ok {
 		if req.OwnerUser != nil && req.OwnerUser.ID != nil {
 			req.FilterLabels[apistructs.LabelOwnerUserID] = req.OwnerUser.ID.GetStringValue()
+			req.NormalLabels[apistructs.LabelOwnerUserID] = req.OwnerUser.ID.GetStringValue()
 		}
-	}
-	if req.NormalLabels[apistructs.LabelOwnerUserID] != req.FilterLabels[apistructs.LabelOwnerUserID] {
-		req.NormalLabels[apistructs.LabelOwnerUserID] = req.FilterLabels[apistructs.LabelOwnerUserID]
 	}
 
 	pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml))

@@ -86,7 +86,7 @@ message CronStopResponse {
 
 // cron create
 message CronCreateRequest {
-  uint64 ID = 1; // TODO 改进一下逻辑，创建请求应该不需要传id
+  uint64 ID = 1;
   string cronExpr = 2;
   string pipelineYmlName = 3;
   string pipelineSource = 4;
