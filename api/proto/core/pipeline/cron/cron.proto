@@ -103,8 +103,6 @@ message CronCreateRequest {
 
   common.IdentityInfo identityInfo = 15;
   core.pipeline.base.PipelineUser ownerUser = 16;
-
-
 }
 
 message CronCreateResponse {

@@ -503,9 +503,9 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 
 // constructCronCreateRequestFromV2 make `PipelineCreateRequestV2` to `CronCreateRequest`
 func (p *ProjectPipelineService) constructCronCreateRequestFromV2(req *pipelinesvcpb.PipelineCreateRequestV2, pipelineYml *pipelineyml.PipelineYml) (*cronpb.CronCreateRequest, error) {
-	var err error
 	// valid
 	if pipelineYml == nil {
+		var err error
 		pipelineYml, err = pipelineyml.New([]byte(req.PipelineYml), pipelineyml.WithEnvs(req.Envs))
 		if err != nil {
 			return &cronpb.CronCreateRequest{}, apierrors.ErrParseProjectPackage.InternalError(err)
