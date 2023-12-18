@@ -27,6 +27,7 @@ import (
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/core/org"
+	_ "github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl"
 )
 
 type provider struct {

@@ -14,6 +14,30 @@
 
 package models
 
+import (
+	"fmt"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+)
+
+type CodeReviewer interface {
+	CodeReview() string
+}
+
+type FileCodeReviewer interface {
+	CodeReviewer
+	GetFileName() string
+}
+
+type CreateFunc func(req AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *User) (CodeReviewer, error)
+
+var Factory = map[AICodeReviewType]CreateFunc{}
+
+func Register(t AICodeReviewType, f CreateFunc) {
+	Factory[t] = f
+}
+
 type AICodeReviewNoteRequest struct {
 	NoteLocation NoteRequest `json:"noteLocation"`
 
@@ -34,6 +58,14 @@ var (
 type AICodeReviewRequestForMR struct{}
 type AICodeReviewRequestForFile struct{}
 type AICodeReviewRequestForCodeSnippet struct {
-	CodeLanguage string `json:"codeLanguage,omitempty"`
+	CodeLanguage string `json:"codeLanguage,omitempty"` // if empty, will parse by newFilePath
 	SelectedCode string `json:"selectedCode,omitempty"`
+}
+
+func NewCodeReviewer(req AICodeReviewNoteRequest, repo *gitmodule.Repository, user *User, mr *apistructs.MergeRequestInfo) (cr CodeReviewer, err error) {
+	f, ok := Factory[req.Type]
+	if !ok {
+		return nil, fmt.Errorf("unknown code review type: %s", req.Type)
+	}
+	return f(req, repo, mr, user)
 }
