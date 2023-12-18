@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
-option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model-provider/pb";
+package erda.apps.aiproxy.model_provider;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb";
 
 import "google/api/annotations.proto";
 import "apps/aiproxy/metadata/metadata.proto";
@@ -51,11 +51,11 @@ message ModelProvider {
     string desc = 6;
     ModelProviderType type = 7;
     string apiKey = 8;
-    Metadata metadata = 9;
+    metadata.Metadata metadata = 9;
 }
 
 enum ModelProviderType {
-    TYPE_UNSPECIFIED = 0;
+    MODEL_PROVIDER_TYPE_UNSPECIFIED = 0;
     OpenAI = 1;
     Azure = 2;
     AliyunBailian = 3;
@@ -66,7 +66,7 @@ message ModelProviderCreateRequest {
     string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
     ModelProviderType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    Metadata metadata = 5;
+    metadata.Metadata metadata = 5;
 }
 
 message ModelProviderGetRequest {
@@ -83,7 +83,7 @@ message ModelProviderUpdateRequest {
     string desc = 3 [(validate.rules).string = {min_len: 0, max_len: 1024}];
     ModelProviderType type = 4 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string apiKey = 5 [(validate.rules).string = {min_len: 0, max_len: 128}];
-    Metadata metadata = 6;
+    metadata.Metadata metadata = 6;
 }
 
 message ModelProviderPagingRequest {
@@ -91,6 +91,7 @@ message ModelProviderPagingRequest {
     uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
     string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     ModelProviderType type = 4 [(validate.rules).enum = {defined_only: true}];
+    repeated string ids = 5 [(validate.rules).repeated.items.string = {len: 36}];
 }
 
 message ModelProviderPagingResponse {

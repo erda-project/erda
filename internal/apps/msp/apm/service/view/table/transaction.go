@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/time"
 )
 
 var (
@@ -39,7 +40,7 @@ var (
 var TransactionTableSortFieldSqlMap = map[string]string{
 	columnReqCount.Key:    "sum(elapsed_count::field)",
 	columnErrorCount.Key:  "sum(if(eq(error::tag, 'true'),elapsed_count::field,0))",
-	columnAvgDuration.Key: "avg(elapsed_mean::field)",
+	columnAvgDuration.Key: "sum(elapsed_sum::field)/sum(elapsed_count::field)",
 }
 
 type TransactionTableRow struct {
@@ -122,7 +123,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"%s,"+
 		"sum(elapsed_count::field),"+
 		"sum(if(eq(error::tag, 'true'),elapsed_count::field,0)),"+
-		"format_duration(avg(elapsed_mean::field),'',2) "+
+		"sum(elapsed_sum::field)/sum(elapsed_count::field) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
@@ -154,11 +155,12 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		return table, nil
 	}
 	for _, row := range response.Results[0].Series[0].Rows {
+		duration, unit := time.AutomaticConversionUnit(row.Values[3].GetNumberValue())
 		transRow := &TransactionTableRow{
 			TransactionName: row.Values[0].GetStringValue(),
 			ReqCount:        row.Values[1].GetNumberValue(),
 			ErrorCount:      row.Values[2].GetNumberValue(),
-			AvgDuration:     row.Values[3].GetStringValue(),
+			AvgDuration:     fmt.Sprintf("%v%s", duration, unit),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}

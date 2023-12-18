@@ -16,6 +16,7 @@ package permission
 
 import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
+	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
@@ -80,4 +81,8 @@ var CheckClientTokenPerm = CheckPermissions(
 	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Update, AdminOrAk: true},
 	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Paging, AdminOrAk: true},
 	&MethodPermission{Method: clienttokenpb.ClientTokenServiceServer.Delete, AdminOrAk: true},
+)
+
+var CheckRichClientPerm = CheckPermissions(
+	&MethodPermission{Method: richclientpb.RichClientServiceServer.GetByAccessKeyId, AdminOrAk: true},
 )

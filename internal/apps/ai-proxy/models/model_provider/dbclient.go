@@ -85,9 +85,12 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagin
 	if req.Name != "" {
 		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
 	}
-	if req.Type != pb.ModelProviderType_TYPE_UNSPECIFIED {
+	if req.Type != pb.ModelProviderType_MODEL_PROVIDER_TYPE_UNSPECIFIED {
 		c.Type = model_provider_type.GetModelProviderTypeFromProtobuf(req.Type)
 		sql = sql.Where("type = ?", c.Type)
+	}
+	if len(req.Ids) > 0 {
+		sql = sql.Where("id in (?)", req.Ids)
 	}
 	var (
 		total int64

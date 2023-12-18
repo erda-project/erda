@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.apps.aiproxy;
+package erda.apps.aiproxy.model;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb";
 
 import "google/api/annotations.proto";
@@ -52,11 +52,11 @@ message Model {
     ModelType type = 7;
     string providerId = 8;
     string apiKey = 9;
-    Metadata metadata = 10;
+    metadata.Metadata metadata = 10;
 }
 
 enum ModelType {
-    TYPE_UNSPECIFIED = 0;
+    MODEL_TYPE_UNSPECIFIED = 0;
     text_generation = 1;
     image = 2;
     audio = 3;
@@ -71,7 +71,7 @@ message ModelCreateRequest {
     ModelType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string providerId = 4 [(validate.rules).string = {len: 36}];
     string apiKey = 5;
-    Metadata metadata = 6;
+    metadata.Metadata metadata = 6;
 }
 
 message ModelUpdateRequest {
@@ -81,7 +81,7 @@ message ModelUpdateRequest {
     ModelType type = 4 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
     string providerId = 5 [(validate.rules).string = {len: 36}];
     string apiKey = 6;
-    Metadata metadata = 7;
+    metadata.Metadata metadata = 7;
 }
 
 message ModelDeleteRequest {
@@ -98,6 +98,7 @@ message ModelPagingRequest {
     string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     ModelType type = 4 [(validate.rules).enum = {defined_only: true}];
     string providerId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    repeated string ids = 6 [(validate.rules).repeated.items.string = {len: 36}];
 }
 
 message ModelPagingResponse {

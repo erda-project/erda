@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.rich_client;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb";
+
+import "google/api/annotations.proto";
+import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+import "apps/aiproxy/client/client.proto";
+import "apps/aiproxy/model/model.proto";
+import "apps/aiproxy/model_provider/model_provider.proto";
+
+service RichClientService {
+    rpc GetByAccessKeyId(GetByClientAccessKeyIdRequest) returns (RichClient) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/clients/actions/get-by-access-key-id?accessKeyId={accessKeyId}"
+        };
+    }
+}
+
+message GetByClientAccessKeyIdRequest {
+    string accessKeyId = 1 [(validate.rules).string = {ignore_empty: true, min_len: 32, max_len: 36}];
+}
+
+message RichClient {
+    client.Client client = 1;
+    repeated RichModel models = 2;
+}
+
+message RichModel {
+    model.Model model = 1;
+    model_provider.ModelProvider provider = 2;
+}
+

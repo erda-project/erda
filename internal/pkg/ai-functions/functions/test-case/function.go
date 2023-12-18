@@ -645,7 +645,7 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 		}
 	}
 	if len(tasks) > 0 {
-		taskContent := "One requirement is associated with multiple tasks. This is the title of all my tasks:"
+		taskContent := "需求和任务相关联，一个需求事项包含多个任务事项，这是我所有的任务标题:"
 		for idx, task := range tasks {
 			tasks[idx] = "\ntask name:" + task
 		}
@@ -658,7 +658,7 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 	}
 
 	// 添加分组信息
-	groupContent := "This is the test function grouping name I generated: \n"
+	groupContent := "这是我的功能分组: \n"
 	groupContent = groupContent + strings.Join(groups, "\n") + "\n"
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleAssistant,
@@ -668,11 +668,14 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 	// 最后生成指令
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
-		Content: fmt.Sprintf("请根据 %s 这个功能分组帮我生成多条测试用例，测试用例的生成规则请参考需求名称、需求描述、任务名称。测试用例的生成维度请按照功能点、边界值、异常场景、兼容性、性能场景、安全场景。", groupName),
+		Content: fmt.Sprintf("请根据 '%s' 这个功能分组，基于需求名称、需求描述和任务名称设计一系列高质量的功能测试用例。测试用例的名称应该以对应的功能点作为命名。请确保生成的测试用例能够充分覆盖该功能分组，并包括清晰的输入条件、操作步骤和期望的输出结果。", groupName),
 	})
 
 	if systemPrompt != "" {
-		messages[0].Content = systemPrompt
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: systemPrompt,
+		})
 	}
 
 	result, err := aiHandlerUtils.GetChatMessageFunctionCallArguments(ctx, factory, req, openaiURL, messages, callbackInput)

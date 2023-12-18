@@ -59,6 +59,10 @@ type Conf struct {
 
 	// metrics
 	RefreshPersonalContributorDuration time.Duration `default:"12h" env:"REFRESH_PERSONAL_CONTRIBUTOR_DURATION"`
+
+	// AI
+	AIProxyURL      string `env:"AI_PROXY_URL"`
+	AIProxyClientAK string `env:"AI_PROXY_CLIENT_AK"`
 }
 
 var cfg Conf

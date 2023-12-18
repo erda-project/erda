@@ -78,6 +78,8 @@ type Conf struct {
 	ExportIssueFileStoreDay     int    `env:"EXPORT_ISSUE_FILE_STORE_DAY" default:"7"`
 	UpdateGuideExpiryStatusCron string `env:"UPDATE_GUIDE_EXPIRY_STATUS_CRON" default:"0 0/5 * * * ?"`
 
+	PipelineGrpcClientMaxCallSendSizeBytes int `env:"PIPELINE_GRPC_CLIENT_MAX_SEND_SIZE_BYTES" default:"0"`
+
 	GittarPublicURL string `env:"GITTAR_PUBLIC_URL"`
 }
 
@@ -276,4 +278,10 @@ func UpdateGuideExpiryStatusCron() string {
 
 func GittarPublicURL() string {
 	return cfg.GittarPublicURL
+}
+
+// PipelineGrpcClientMaxCallSendSizeBytes The maximum amount of data that the grpc client can send to the pipeline server
+// see https://stackoverflow.com/questions/55362342/grpc-received-message-larger-than-max-8653851-vs-4194304
+func PipelineGrpcClientMaxCallSendSizeBytes() int {
+	return cfg.PipelineGrpcClientMaxCallSendSizeBytes
 }

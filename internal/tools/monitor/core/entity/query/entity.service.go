@@ -70,6 +70,8 @@ func (s *entityService) ListEntities(ctx context.Context, req *pb.ListEntitiesRe
 		Limit:                 int(req.Limit),
 		UpdateTimeUnixNanoMax: req.UpdateTimeUnixNanoMax,
 		UpdateTimeUnixNanoMin: req.UpdateTimeUnixNanoMin,
+		CreateTimeUnixNanoMax: req.CreateTimeUnixNanoMax,
+		CreateTimeUnixNanoMin: req.CreateTimeUnixNanoMin,
 		Debug:                 req.Debug,
 	})
 	if err != nil {

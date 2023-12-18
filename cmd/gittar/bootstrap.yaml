@@ -1,5 +1,7 @@
 gittar:
 
+profile-agent:
+
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:
@@ -9,14 +11,24 @@ etcd:
 
 grpc-client@erda.core.token:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
-erda.core.token-client: {}
+erda.core.token-client: { }
 
 grpc-client@erda.core.org:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
-erda.core.org-client: {}
-erda.core.org: {}
+erda.core.org-client: { }
+erda.core.org: { }
 
 grpc-client@erda.core.user:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
-erda.core.user-client: {}
-profile-agent:
+erda.core.user-client: { }
+
+grpc-client@erda.apps.aiproxy.session:
+  addr: "${AI_PROXY_GRPC_ADDR:ai-proxy:8082}"
+  tls:
+    insecure_skip_verify: "${AI_PROXY_GRPC_CLIENT_TLS_INSECURE_SKIP_VERIFY:true}"
+  block: false # maybe ai disabled
+erda.apps.aiproxy.session-client: { }
+
+ai-proxy-client:
+  url: "${AI_PROXY_URL:http://ai-proxy:8082}"
+  client_ak: "${AI_PROXY_CLIENT_AK:}"

@@ -1382,7 +1382,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdatePackageApiAcls(packageId, pa
 			}
 		}
 	}
-	err = impl.touchPackageApiAclRules(packageId, packageApiId)
+	err = impl.TouchPackageApiAclRules(packageId, packageApiId)
 	if err != nil {
 		return
 	}
@@ -1390,7 +1390,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) UpdatePackageApiAcls(packageId, pa
 	return
 }
 
-func (impl GatewayOpenapiConsumerServiceImpl) touchPackageApiAclRules(packageId, packageApiId string) error {
+func (impl GatewayOpenapiConsumerServiceImpl) TouchPackageApiAclRules(packageId, packageApiId string) error {
 	pack, err := impl.packageDb.Get(packageId)
 	if err != nil {
 		return err

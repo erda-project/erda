@@ -102,7 +102,7 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 		Params:    queryParams,
 	}
 
-	metricQueryCtx := apis.GetContext(t.SdkCtx, func(header *transport.Header) {
+	metricQueryCtx := apis.GetContext(ctx, func(header *transport.Header) {
 		header.Set("terminus_key", t.TenantId)
 	})
 

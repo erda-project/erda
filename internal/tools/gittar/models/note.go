@@ -17,27 +17,34 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
+	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/apistructs"
+	aiproxyclient "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/util/guid"
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 )
 
 type NoteRequest struct {
-	Note         string `json:"note"`
-	Type         string `json:"type"`
-	DiscussionId string `json:"discussionId"` //讨论id
-	OldCommitId  string `json:"oldCommitId"`
-	NewCommitId  string `json:"newCommitId"`
-	OldPath      string `json:"oldPath"`
-	NewPath      string `json:"newPath"`
-	OldLine      int    `json:"oldLine"`
-	NewLine      int    `json:"newLine"`
-	Score        int    `json:"score" default:"-1"`
+	Note         string   `json:"note"`
+	Type         string   `json:"type"`
+	DiscussionId string   `json:"discussionId"` //讨论id
+	OldCommitId  string   `json:"oldCommitId"`
+	NewCommitId  string   `json:"newCommitId"`
+	OldPath      string   `json:"oldPath"`
+	NewPath      string   `json:"newPath"`
+	OldLine      int      `json:"oldLine"`
+	NewLine      int      `json:"newLine"`
+	Score        int      `json:"score" default:"-1"`
+	Role         NoteRole `json:"role"`
+
+	AICodeReviewType AICodeReviewType `json:"aiCodeReviewType,omitempty"`
+	StartAISession   bool             `json:"startAISession,omitempty"`
 }
 
 const MAX_NOTE_DIFF_LINE_COUNT = 15
@@ -61,10 +68,11 @@ type Note struct {
 	Data         string                  `json:"-" gorm:"type:text"`
 	DataResult   NoteData                `json:"data" gorm:"-"`
 	AuthorId     string                  `json:"authorId"`
-	AuthorUser   *apistructs.UserInfoDto `json:"author",gorm:"-"`
+	AuthorUser   *apistructs.UserInfoDto `json:"author" gorm:"-"`
 	CreatedAt    time.Time               `json:"createdAt"`
 	UpdatedAt    time.Time               `json:"updatedAt"`
 	Score        int                     `json:"score" gorm:"size:150;index:idx_score"`
+	Role         NoteRole                `json:"role"`
 }
 
 type NoteData struct {
@@ -75,7 +83,17 @@ type NoteData struct {
 	NewLine     int                   `json:"newLine"`
 	OldCommitId string                `json:"oldCommitId"`
 	NewCommitId string                `json:"newCommitId"`
+
+	AICodeReviewType AICodeReviewType `json:"aiCodeReviewType,omitempty"`
+	AISessionID      string           `json:"aiSessionID,omitempty"`
 }
+
+type NoteRole string
+
+var (
+	NoteRoleAI   = NoteRole("AI")
+	NoteRoleUser = NoteRole("USER")
+)
 
 func (svc *Service) CreateNote(repo *gitmodule.Repository, user *User, mergeId int64, note NoteRequest) (*Note, error) {
 	switch note.Type {
@@ -175,6 +193,8 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 		NewPath:     request.NewPath,
 		OldCommitId: request.OldCommitId,
 		NewCommitId: request.NewCommitId,
+
+		AICodeReviewType: request.AICodeReviewType,
 	}
 
 	noteDataBytes, err := json.Marshal(noteData)
@@ -192,6 +212,7 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 		DiscussionId: guid.NewString(),
 		Type:         NoteTypeDiffNote,
 		Data:         string(noteDataBytes),
+		Role:         request.Role,
 	}
 	err = svc.db.Create(&Note).Error
 	if err != nil {
@@ -229,20 +250,44 @@ func (svc *Service) ReplyDiscussionNote(repo *gitmodule.Repository, user *User, 
 	return &Note, nil
 }
 
-func (svc *Service) CreateNormalNote(repo *gitmodule.Repository, user *User, mergeId int64, note NoteRequest) (*Note, error) {
-	Note := Note{
+func (svc *Service) CreateNormalNote(repo *gitmodule.Repository, user *User, mergeId int64, req NoteRequest) (*Note, error) {
+	note := Note{
 		MergeId:  mergeId,
-		Note:     note.Note,
+		Note:     req.Note,
 		AuthorId: user.Id,
 		RepoID:   repo.ID,
 		Type:     NoteTypeNormal,
-		Score:    note.Score,
+		Score:    req.Score,
+		Role:     req.Role,
 	}
-	err := svc.db.Create(&Note).Error
+	noteData := NoteData{
+		OldLine:     req.OldLine,
+		NewLine:     req.NewLine,
+		OldPath:     req.OldPath,
+		NewPath:     req.NewPath,
+		OldCommitId: req.OldCommitId,
+		NewCommitId: req.NewCommitId,
+
+		AICodeReviewType: req.AICodeReviewType,
+	}
+	// create AI session if necessary
+	if req.StartAISession {
+		aiSessionID, err := svc.createAISession(repo, note, noteData, user)
+		if err != nil {
+			return nil, err
+		}
+		noteData.AISessionID = aiSessionID
+	}
+	if noteDataBytes, err := json.Marshal(noteData); err != nil {
+		return nil, err
+	} else {
+		note.Data = string(noteDataBytes)
+	}
+	err := svc.db.Create(&note).Error
 	if err != nil {
 		return nil, err
 	}
-	return &Note, nil
+	return &note, nil
 }
 
 func (svc *Service) QueryAllNotes(repo *gitmodule.Repository, mergeId int64) ([]Note, error) {
@@ -292,4 +337,23 @@ func (svc *Service) QueryDiffNotes(repo *gitmodule.Repository, mergeId int64, ol
 		}
 	}
 	return notes, nil
+}
+
+func (svc *Service) createAISession(repo *gitmodule.Repository, note Note, noteData NoteData, user *User) (string, error) {
+	if !aiproxyclient.Instance.AIEnabled() {
+		return "", aiproxyclient.ErrorAINotEnabled
+	}
+	sessionName := fmt.Sprintf("mr#%d-author#%s", note.MergeId, user.NickName)
+	req := sessionpb.SessionCreateRequest{
+		UserId:      user.Id,
+		Scene:       "ai-cr-session",
+		Name:        sessionName,
+		Topic:       "This is a code review session, please answer professionally. \nRelated Code And Review: \n" + note.Note,
+		NumOfCtxMsg: 100,
+	}
+	aiSession, err := aiproxyclient.Instance.Session().Create(aiproxyclient.Instance.Context(), &req)
+	if err != nil {
+		return "", err
+	}
+	return aiSession.Id, nil
 }

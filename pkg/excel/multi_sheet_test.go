@@ -15,6 +15,7 @@
 package excel
 
 import (
+	"os"
 	"testing"
 	"unicode/utf8"
 
@@ -62,4 +63,21 @@ func Test_ensureDropList1(t *testing.T) {
 	dropList = []string{"a", "b", "c"} // 1(a)+2(")=3
 	ensureDropList(&dropList, 0)
 	assert.Equal(t, 0, len(dropList))
+}
+
+func TestExcelDataValidationError(t *testing.T) {
+	f := NewFile()
+	row1 := []Cell{NewTitleCell("status")}
+	row2 := []Cell{NewCell("")}
+	data := [][]Cell{row1, row2}
+	err := AddSheetByCell(f, data, "test", NewSheetHandlerForDropList(1, 0, 1, 0, []string{"", "init", "ing", "done"}))
+	outputF, err := os.Create("./test_with_error_style.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(outputF.Name())
+	err = WriteFile(outputF, f, "test_with_error_style.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
 }

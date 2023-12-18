@@ -25,6 +25,23 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
+func WithCustomHeaderKVContext(ctx context.Context, kvs ...string) context.Context {
+	header := transport.Header{}
+	for i := 0; i < len(kvs); i += 2 {
+		header.Set(kvs[i], kvs[i+1])
+	}
+	return transport.WithHeader(ctx, header)
+}
+
+func WithCustomHeaderContext(ctx context.Context, header transport.Header) context.Context {
+	// ensure all header keys are valid
+	validMD := make(transport.Header)
+	for k, vs := range header {
+		validMD.Set(k, vs...)
+	}
+	return transport.WithHeader(ctx, validMD)
+}
+
 // WithInternalClientContext .
 func WithInternalClientContext(ctx context.Context, internalClient string) context.Context {
 	header := transport.Header{}

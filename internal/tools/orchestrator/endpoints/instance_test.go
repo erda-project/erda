@@ -19,6 +19,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
@@ -43,6 +44,43 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 )
+
+func TestGetContainers(t *testing.T) {
+	e := &Endpoints{
+		instanceinfoImpl: &instanceinfo.InstanceInfoImpl{},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(e.instanceinfoImpl), "GetInstanceInfo", func(i *instanceinfo.InstanceInfoImpl, req apistructs.InstanceInfoRequest) (apistructs.InstanceInfoDataList, error) {
+		res := apistructs.InstanceInfoDataList{}
+		for i := 0; i < 5; i++ {
+			infoData := apistructs.InstanceInfoData{
+				Meta:        fmt.Sprintf("Meta - %v", i),
+				TaskID:      fmt.Sprintf("TaskID - %v", i),
+				ContainerID: fmt.Sprintf("ContainerID - %v", i),
+				ContainerIP: "127.0.0.1",
+				HostIP:      "127.0.0.1",
+				Image:       fmt.Sprintf("Image - %v", i),
+				CpuRequest:  float64(i),
+				MemRequest:  i,
+				Phase:       fmt.Sprintf("Phase - %v", i),
+				ExitCode:    200,
+				Message:     "success",
+				StartedAt:   time.Now(),
+				ServiceName: fmt.Sprintf("ServiceName - %v", i),
+				Cluster:     fmt.Sprintf("Cluster - %v", i),
+			}
+			if i%2 == 0 {
+				finish := time.Now()
+				infoData.FinishedAt = &finish
+			}
+			res = append(res, infoData)
+		}
+		return res, nil
+	})
+	_, err := e.getContainers(apistructs.InstanceInfoRequest{})
+	if err != nil {
+		t.Errorf("getContainers error %v", err.Error())
+	}
+}
 
 func TestParseMeta(t *testing.T) {
 	var (
