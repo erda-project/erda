@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -57,11 +56,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 	// Get Owner Info
 	if _, ok := req.FilterLabels[apistructs.LabelOwnerUserID]; !ok {
 		if req.OwnerUser != nil && req.OwnerUser.ID != nil {
-			ownerId := req.OwnerUser.ID.GetStringValue()
-			if ownerId == "" {
-				ownerId = conf.InternalUserID()
-			}
-			req.FilterLabels[apistructs.LabelOwnerUserID] = ownerId
+			req.FilterLabels[apistructs.LabelOwnerUserID] = req.OwnerUser.ID.GetStringValue()
 		}
 	}
 	if req.NormalLabels[apistructs.LabelOwnerUserID] != req.FilterLabels[apistructs.LabelOwnerUserID] {
