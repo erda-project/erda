@@ -59,7 +59,7 @@ func init() {
 		panic(err)
 	}
 	// register
-	models.Register(models.AICodeReviewTypeMRCodeSnippet, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
+	models.RegisterCodeReviewer(models.AICodeReviewTypeMRCodeSnippet, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
 		if req.CodeSnippetRelated == nil || req.CodeSnippetRelated.SelectedCode == "" {
 			return nil, fmt.Errorf("no code selected")
 		}

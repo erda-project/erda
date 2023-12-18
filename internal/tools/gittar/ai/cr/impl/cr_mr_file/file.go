@@ -56,7 +56,7 @@ func NewFileReviewer(diffFile *gitmodule.DiffFile, user *models.User, mr *apistr
 }
 
 func init() {
-	models.Register(models.AICodeReviewTypeMRFile, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
+	models.RegisterCodeReviewer(models.AICodeReviewTypeMRFile, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
 		if req.NoteLocation.NewPath == "" {
 			return nil, fmt.Errorf("no file specified")
 		}

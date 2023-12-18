@@ -33,7 +33,7 @@ type mrReviewer struct {
 }
 
 func init() {
-	models.Register(models.AICodeReviewTypeMR, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
+	models.RegisterCodeReviewer(models.AICodeReviewTypeMR, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
 		return &mrReviewer{req: req, repo: repo, user: user, mr: mr}, nil
 	})
 }

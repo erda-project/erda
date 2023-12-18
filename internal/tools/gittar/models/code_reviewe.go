@@ -30,12 +30,12 @@ type FileCodeReviewer interface {
 	GetFileName() string
 }
 
-type CreateFunc func(req AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *User) (CodeReviewer, error)
+type CodeReviewerCreateFunc func(req AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *User) (CodeReviewer, error)
 
-var Factory = map[AICodeReviewType]CreateFunc{}
+var CodeReviewerFactory = map[AICodeReviewType]CodeReviewerCreateFunc{}
 
-func Register(t AICodeReviewType, f CreateFunc) {
-	Factory[t] = f
+func RegisterCodeReviewer(t AICodeReviewType, f CodeReviewerCreateFunc) {
+	CodeReviewerFactory[t] = f
 }
 
 type AICodeReviewNoteRequest struct {
@@ -63,7 +63,7 @@ type AICodeReviewRequestForCodeSnippet struct {
 }
 
 func NewCodeReviewer(req AICodeReviewNoteRequest, repo *gitmodule.Repository, user *User, mr *apistructs.MergeRequestInfo) (cr CodeReviewer, err error) {
-	f, ok := Factory[req.Type]
+	f, ok := CodeReviewerFactory[req.Type]
 	if !ok {
 		return nil, fmt.Errorf("unknown code review type: %s", req.Type)
 	}
