@@ -14,27 +14,6 @@
 
 package models
 
-import (
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/bundle"
+const (
+	I18nKeyMrNoteCommentCannotBeEmpty = "mr.note.comment.cannot.be.empty"
 )
-
-type Service struct {
-	db       *DBClient
-	bundle   *bundle.Bundle
-	i18nTran i18n.Translator
-	lang     i18n.LanguageCodes
-}
-
-func NewService(dbClient *DBClient, bundle *bundle.Bundle, i18nTran i18n.Translator, lang i18n.LanguageCodes) *Service {
-	s := Service{}
-	s.db = dbClient
-	s.bundle = bundle
-	s.i18nTran = i18nTran
-	s.lang = lang
-	return &s
-}
-
-func (svc *Service) I18n(key string) string {
-	return svc.i18nTran.Text(svc.lang, key)
-}

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -125,6 +126,11 @@ func (svc *Service) CreateNote(repo *gitmodule.Repository, user *User, mr *apist
 		return nil, err
 	}
 
+	// check note
+	if strings.TrimSpace(note.Note) == "" {
+		return nil, fmt.Errorf(svc.I18n(I18nKeyMrNoteCommentCannotBeEmpty))
+	}
+
 	// marshal note data
 	noteDataBytes, err := json.Marshal(note.DataResult)
 	if err != nil {
@@ -170,12 +176,17 @@ func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, 
 	}
 
 	// start AI session
+	// if `AICodeReviewType` specified, suggestions will be set as Session Topic
 	if req.StartAISession {
 		aiSessionID, err := svc.createAISession(*note, user)
 		if err != nil {
 			return err
 		}
 		note.DataResult.AISessionID = aiSessionID
+		// bypass note check
+		if strings.TrimSpace(note.Note) == "" {
+			note.Note = "AI Code Review Session Started"
+		}
 	}
 
 	return nil

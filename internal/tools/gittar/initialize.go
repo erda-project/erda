@@ -88,7 +88,7 @@ func (p *provider) Initialize() error {
 	}
 	uc.InitializeUcClient(p.Identity)
 
-	svc := models.NewService(dbClient, diceBundle)
+	svc := models.NewService(dbClient, diceBundle, p.I18n, nil)
 	collector := metrics.NewCollector(svc)
 	go func() {
 		<-time.NewTimer(time.Duration(rand.Intn(5)) * time.Minute).C
@@ -110,6 +110,7 @@ func (p *provider) Initialize() error {
 	webcontext.WithEtcdClient(p.EtcdClient)
 	webcontext.WithTokenService(&p.TokenService)
 	webcontext.WithOrgClient(p.Org)
+	webcontext.WithI18n(p.I18n)
 
 	e := echo.New()
 	e.GET("/metrics", func(ctx echo.Context) error {

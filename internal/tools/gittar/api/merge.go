@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -421,11 +420,6 @@ func CreateNotes(ctx *webcontext.Context) {
 	err := ctx.BindJSON(&noteRequest)
 	if err != nil {
 		ctx.Abort(err)
-		return
-	}
-
-	if strings.TrimSpace(noteRequest.Note) == "" {
-		ctx.Abort(errors.New("评论不能为空"))
 		return
 	}
 

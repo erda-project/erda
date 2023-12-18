@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -53,6 +54,7 @@ type Context struct {
 	EtcdClient   *clientv3.Client
 	TokenService tokenpb.TokenServiceServer
 	orgClient    org.ClientInterface
+	i18nTran     i18n.Translator
 }
 
 type ContextHandlerFunc func(*Context)
@@ -63,6 +65,7 @@ var ucAuthInstance *uc.UCUserAuth
 var etcdClientInstance *clientv3.Client
 var tokenServiceInstance *tokenpb.TokenServiceServer
 var orgClient org.ClientInterface
+var i18nTran i18n.Translator
 
 func WithDB(db *models.DBClient) {
 	dbClientInstance = db
@@ -86,6 +89,10 @@ func WithTokenService(tokenService *tokenpb.TokenServiceServer) {
 
 func WithOrgClient(org org.ClientInterface) {
 	orgClient = org
+}
+
+func WithI18n(i18n i18n.Translator) {
+	i18nTran = i18n
 }
 
 func WrapHandler(handlerFunc ContextHandlerFunc) echo.HandlerFunc {
@@ -156,7 +163,7 @@ func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 		Repository:   repository.(*gitmodule.Repository),
 		EchoContext:  c,
 		User:         user,
-		Service:      models.NewService(db, diceBundleInstance),
+		Service:      models.NewService(db, diceBundleInstance, i18nTran, apis.HTTPLanguage(c.Request())),
 		DBClient:     db,
 		UCAuth:       ucAuthInstance,
 		Bundle:       diceBundleInstance,
