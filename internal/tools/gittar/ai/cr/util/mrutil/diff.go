@@ -34,18 +34,24 @@ func GetDiffFileFromMR(repo *gitmodule.Repository, mr *apistructs.MergeRequestIn
 	return nil
 }
 
+// GetDiffFromMR ref to: internal/tools/gittar/api/repo.go:411#Compare
 func GetDiffFromMR(repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo) *gitmodule.Diff {
-	fromCommit, err := repo.GetCommit(mr.SourceSha)
+	fromCommit, err := repo.GetBranchCommit(mr.SourceBranch)
 	if err != nil {
 		logrus.Errorf("failed to get commit, sha: %s, err: %s", mr.SourceSha, err)
 		return nil
 	}
-	toCommit, err := repo.GetCommit(mr.TargetSha)
+	toCommit, err := repo.GetBranchCommit(mr.TargetBranch)
 	if err != nil {
 		logrus.Errorf("failed to get commit, sha: %s, err: %s", mr.TargetSha, err)
 		return nil
 	}
-	diff, err := repo.GetDiff(fromCommit, toCommit)
+	baseCommit, err := repo.GetMergeBase(fromCommit, toCommit)
+	if err != nil {
+		logrus.Errorf("failed to get merge base, from: %s, to: %s, err: %s", mr.SourceSha, mr.TargetSha, err)
+		return nil
+	}
+	diff, err := repo.GetDiff(fromCommit, baseCommit)
 	if err != nil {
 		logrus.Errorf("failed to get diff, from: %s, to: %s, err: %s", mr.SourceSha, mr.TargetSha, err)
 		return nil

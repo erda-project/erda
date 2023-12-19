@@ -18,7 +18,6 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/crtypes"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl/cr_mr_file"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
@@ -34,7 +33,7 @@ type mrReviewer struct {
 }
 
 func init() {
-	crtypes.Register(models.AICodeReviewTypeMR, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (crtypes.CodeReviewer, error) {
+	models.RegisterCodeReviewer(models.AICodeReviewTypeMR, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
 		return &mrReviewer{req: req, repo: repo, user: user, mr: mr}, nil
 	})
 }
@@ -44,7 +43,7 @@ func (r *mrReviewer) CodeReview() string {
 
 	// mr has many changed files, we will review only the first ten files one by one. Then, combine the file-level suggestions.
 
-	var changedFiles []crtypes.FileCodeReviewer
+	var changedFiles []models.FileCodeReviewer
 	for _, diffFile := range diff.Files {
 		if len(changedFiles) >= 10 {
 			break
@@ -64,7 +63,7 @@ func (r *mrReviewer) CodeReview() string {
 	wg.Add(len(changedFiles))
 	for _, file := range changedFiles {
 		fileOrder = append(fileOrder, file.GetFileName())
-		go func(file crtypes.FileCodeReviewer) {
+		go func(file models.FileCodeReviewer) {
 			defer wg.Done()
 
 			mu.Lock()

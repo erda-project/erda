@@ -2,6 +2,11 @@ gittar:
 
 profile-agent:
 
+i18n:
+  common:
+    - conf/i18n/i18n.yaml
+  files:
+
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:

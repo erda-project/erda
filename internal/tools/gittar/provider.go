@@ -22,11 +22,13 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/etcd"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	_ "github.com/erda-project/erda-proto-go/apps/aiproxy/session/client"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/core/org"
+	_ "github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl"
 )
 
 type provider struct {
@@ -37,6 +39,7 @@ type provider struct {
 	TokenService tokenpb.TokenServiceServer `autowired:"erda.core.token.TokenService"`
 	Identity     userpb.UserServiceServer
 	Org          org.ClientInterface
+	I18n         i18n.Translator `translator:"common"`
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
