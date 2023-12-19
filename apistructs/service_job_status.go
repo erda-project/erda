@@ -110,7 +110,7 @@ const (
 
 const (
 	// HealthCheckDuration 最小健康检查时间，单位为秒
-	HealthCheckDuration int = 420
+	HealthCheckDuration int = 180
 )
 
 // ResourceInsufficientInfo 描述部署过程中资源不足的信息
