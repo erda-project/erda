@@ -27,7 +27,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/crtypes"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/aiutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
@@ -60,7 +59,7 @@ func init() {
 		panic(err)
 	}
 	// register
-	crtypes.Register(models.AICodeReviewTypeMRCodeSnippet, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (crtypes.CodeReviewer, error) {
+	models.RegisterCodeReviewer(models.AICodeReviewTypeMRCodeSnippet, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
 		if req.CodeSnippetRelated == nil || req.CodeSnippetRelated.SelectedCode == "" {
 			return nil, fmt.Errorf("no code selected")
 		}
@@ -72,7 +71,7 @@ func init() {
 	})
 }
 
-func newSnippetCodeReviewer(codeLang, selectedCode string, truncated bool, user *models.User) crtypes.CodeReviewer {
+func newSnippetCodeReviewer(codeLang, selectedCode string, truncated bool, user *models.User) models.CodeReviewer {
 	cs := CodeSnippet{
 		CodeLanguage: codeLang,
 		SelectedCode: selectedCode,

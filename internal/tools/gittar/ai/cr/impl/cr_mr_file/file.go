@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/crtypes"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl/cr_mr_code_snippet"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/aiutil"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
@@ -37,8 +36,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/pkg/strutil"
 )
-
-const MAX_FILE_CHANGES_CHAR_SIZE = 9 * 1000
 
 type OneChangedFile struct {
 	FileName     string
@@ -51,7 +48,7 @@ type OneChangedFile struct {
 	user     *models.User
 }
 
-func NewFileReviewer(diffFile *gitmodule.DiffFile, user *models.User, mr *apistructs.MergeRequestInfo) crtypes.FileCodeReviewer {
+func NewFileReviewer(diffFile *gitmodule.DiffFile, user *models.User, mr *apistructs.MergeRequestInfo) models.FileCodeReviewer {
 	fr := OneChangedFile{diffFile: diffFile, user: user, mr: mr}
 	fr.FileName = diffFile.Name
 	fr.CodeLanguage = strings.TrimPrefix(filepath.Ext(diffFile.Name), ".")
@@ -59,7 +56,7 @@ func NewFileReviewer(diffFile *gitmodule.DiffFile, user *models.User, mr *apistr
 }
 
 func init() {
-	crtypes.Register(models.AICodeReviewTypeMRFile, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (crtypes.CodeReviewer, error) {
+	models.RegisterCodeReviewer(models.AICodeReviewTypeMRFile, func(req models.AICodeReviewNoteRequest, repo *gitmodule.Repository, mr *apistructs.MergeRequestInfo, user *models.User) (models.CodeReviewer, error) {
 		if req.NoteLocation.NewPath == "" {
 			return nil, fmt.Errorf("no file specified")
 		}
@@ -203,37 +200,13 @@ func (r *OneChangedFile) constructAIRequest() openai.ChatCompletionRequest {
 
 func (r *OneChangedFile) parseCodeSnippets() {
 	for _, section := range r.diffFile.Sections {
-		var changes []string
-		truncated := false
-		for _, line := range section.Lines {
-			s := line.Content
-			switch line.Type {
-			case gitmodule.DIFF_LINE_ADD:
-				s = "+" + s
-			case gitmodule.DIFF_LINE_DEL:
-				s = "-" + s
-			case "": // ignore: \ No newline at end of file
-				continue
-			case gitmodule.DIFF_LINE_SECTION:
-			default:
-				s = " " + s
-			}
-			if s == "" {
-				continue
-			}
-			changes = append(changes, s)
-		}
-		if len(changes) == 0 {
+		selectedCode, truncated := mrutil.ConvertDiffLinesToSnippet(section.Lines)
+		if selectedCode == "" {
 			continue
-		}
-		if len(changes) > MAX_FILE_CHANGES_CHAR_SIZE {
-			changes = changes[:MAX_FILE_CHANGES_CHAR_SIZE]
-			truncated = true
-			r.Truncated = true
 		}
 		codeSnippet := cr_mr_code_snippet.CodeSnippet{
 			CodeLanguage: strings.TrimPrefix(filepath.Ext(r.diffFile.Name), "."),
-			SelectedCode: strings.Join(changes, "\n"),
+			SelectedCode: selectedCode,
 			Truncated:    truncated,
 		}
 		r.CodeSnippets = append(r.CodeSnippets, codeSnippet)

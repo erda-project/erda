@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -25,24 +26,34 @@ import (
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/apistructs"
 	aiproxyclient "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/util/guid"
 	"github.com/erda-project/erda/internal/tools/gittar/uc"
 )
 
-type NoteRequest struct {
-	Note         string   `json:"note"`
-	Type         string   `json:"type"`
-	DiscussionId string   `json:"discussionId"` //讨论id
-	OldCommitId  string   `json:"oldCommitId"`
-	NewCommitId  string   `json:"newCommitId"`
-	OldPath      string   `json:"oldPath"`
-	NewPath      string   `json:"newPath"`
-	OldLine      int      `json:"oldLine"`
-	NewLine      int      `json:"newLine"`
-	Score        int      `json:"score" default:"-1"`
-	Role         NoteRole `json:"role"`
+type NoteRole string
 
+var (
+	NoteRoleAI   = NoteRole("AI")
+	NoteRoleUser = NoteRole("USER")
+)
+
+type NoteRequest struct {
+	Note         string `json:"note"`
+	Type         string `json:"type"`
+	DiscussionId string `json:"discussionId"` //讨论id
+	OldCommitId  string `json:"oldCommitId"`
+	NewCommitId  string `json:"newCommitId"`
+	OldPath      string `json:"oldPath"`
+	NewPath      string `json:"newPath"`
+	OldLine      int    `json:"oldLine"`
+	NewLine      int    `json:"newLine"`
+	OldLineTo    int    `json:"oldLineTo"`
+	NewLineTo    int    `json:"newLineTo"` // these four index number must in a same section
+	Score        int    `json:"score" default:"-1"`
+
+	Role             NoteRole         `json:"role"`
 	AICodeReviewType AICodeReviewType `json:"aiCodeReviewType,omitempty"`
 	StartAISession   bool             `json:"startAISession,omitempty"`
 }
@@ -81,6 +92,8 @@ type NoteData struct {
 	NewPath     string                `json:"newPath"`
 	OldLine     int                   `json:"oldLine"`
 	NewLine     int                   `json:"newLine"`
+	OldLineTo   int                   `json:"oldLineTo"`
+	NewLineTo   int                   `json:"newLineTo"`
 	OldCommitId string                `json:"oldCommitId"`
 	NewCommitId string                `json:"newCommitId"`
 
@@ -88,24 +101,95 @@ type NoteData struct {
 	AISessionID      string           `json:"aiSessionID,omitempty"`
 }
 
-type NoteRole string
-
-var (
-	NoteRoleAI   = NoteRole("AI")
-	NoteRoleUser = NoteRole("USER")
-)
-
-func (svc *Service) CreateNote(repo *gitmodule.Repository, user *User, mergeId int64, note NoteRequest) (*Note, error) {
-	switch note.Type {
+func (svc *Service) CreateNote(repo *gitmodule.Repository, user *User, mr *apistructs.MergeRequestInfo, req NoteRequest) (note *Note, err error) {
+	switch req.Type {
 	case NoteTypeNormal:
-		return svc.CreateNormalNote(repo, user, mergeId, note)
+		note, err = svc.constructNormalNote(repo, user, mr.Id, req)
 	case NoteTypeDiffNote:
-		return svc.CreateDiscussionNote(repo, user, mergeId, note)
+		note, err = svc.constructDiscussionNote(repo, user, mr.Id, req)
 	case NoteTypeDiffNoteReply:
-		return svc.ReplyDiscussionNote(repo, user, mergeId, note)
+		note, err = svc.constructReplyDiscussionNote(repo, user, mr.Id, req)
 	default:
-		return nil, errors.New("not support note type")
+		return nil, fmt.Errorf("not support note type: %s", req.Type)
 	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct note, err: %v", err)
+	}
+
+	// role
+	if note.Role == "" {
+		note.Role = NoteRoleUser
+	}
+
+	// AI
+	if err := svc.handleAIRelatedNote(repo, user, mr, req, note); err != nil {
+		return nil, err
+	}
+
+	// check note
+	if strings.TrimSpace(note.Note) == "" {
+		return nil, fmt.Errorf(svc.I18n(I18nKeyMrNoteCommentCannotBeEmpty))
+	}
+
+	// marshal note data
+	noteDataBytes, err := json.Marshal(note.DataResult)
+	if err != nil {
+		return nil, err
+	}
+	note.Data = string(noteDataBytes)
+
+	// create note
+	err = svc.db.Create(note).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return note, nil
+}
+
+func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, mr *apistructs.MergeRequestInfo, req NoteRequest, note *Note) error {
+	// role
+	if req.AICodeReviewType != "" {
+		note.Role = NoteRoleAI
+	}
+
+	// AI code review
+	if req.AICodeReviewType != "" {
+		note.DataResult.AICodeReviewType = req.AICodeReviewType
+
+		// get AI code review result as note content
+		crReq := AICodeReviewNoteRequest{Type: req.AICodeReviewType, NoteLocation: req}
+		switch req.AICodeReviewType {
+		case AICodeReviewTypeMR:
+		case AICodeReviewTypeMRFile:
+			crReq.FileRelated = &AICodeReviewRequestForFile{}
+		case AICodeReviewTypeMRCodeSnippet:
+			selectedCode, _ := mrutil.ConvertDiffLinesToSnippet(note.DataResult.DiffLines)
+			crReq.CodeSnippetRelated = &AICodeReviewRequestForCodeSnippet{SelectedCode: selectedCode}
+		}
+		reviewer, err := NewCodeReviewer(crReq, repo, user, mr)
+		if err != nil {
+			return fmt.Errorf("failed to create code reviewer err: %v", err)
+		}
+		suggestions := reviewer.CodeReview()
+		note.Note = suggestions
+	}
+
+	// start AI session
+	// if `AICodeReviewType` specified, suggestions will be set as Session Topic
+	if req.StartAISession {
+		aiSessionID, err := svc.createAISession(*note, user)
+		if err != nil {
+			return err
+		}
+		note.DataResult.AISessionID = aiSessionID
+		// bypass note check
+		if strings.TrimSpace(note.Note) == "" {
+			note.Note = "AI Code Review Session Started"
+		}
+	}
+
+	return nil
 }
 
 const (
@@ -113,7 +197,21 @@ const (
 	lineTypeNew = "new"
 )
 
-func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
+func (svc *Service) constructDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
+	if request.OldLineTo != 0 {
+		if request.OldLineTo < request.OldLine {
+			return nil, errors.New("invalid oldLineTo")
+		}
+	} else {
+		request.OldLineTo = request.OldLine
+	}
+	if request.NewLineTo != 0 {
+		if request.NewLineTo < request.NewLine {
+			return nil, errors.New("invalid newLineTo")
+		}
+	} else {
+		request.NewLineTo = request.NewLine
+	}
 	commitTo, err := repo.GetCommit(request.OldCommitId)
 	if err != nil {
 		return nil, err
@@ -128,13 +226,16 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 		return nil, err
 	}
 	lineType := ""
-	line := -1
+	lineFrom := -1
+	lineTo := -1
 	if request.OldLine > 0 {
 		lineType = lineTypeOld
-		line = request.OldLine
+		lineFrom = request.OldLine
+		lineTo = request.OldLineTo
 	} else if request.NewLine > 0 {
 		lineType = lineTypeNew
-		line = request.NewLine
+		lineFrom = request.NewLine
+		lineTo = request.NewLineTo
 	}
 
 	//找出section
@@ -142,12 +243,12 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 	for _, section := range diff.Sections {
 		for _, diffLine := range section.Lines {
 			if lineType == lineTypeOld {
-				if diffLine.OldLineNo == line {
+				if diffLine.OldLineNo == lineFrom {
 					diffSection = section
 					break
 				}
 			} else {
-				if diffLine.NewLineNo == line {
+				if diffLine.NewLineNo == lineFrom {
 					diffSection = section
 					break
 				}
@@ -165,14 +266,14 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 	var lines []*gitmodule.DiffLine
 	for _, v := range diffSection.Lines {
 		if lineType == lineTypeOld {
-			if v.OldLineNo <= line {
+			if v.OldLineNo <= lineTo {
 				lines = append(lines, v)
 			} else {
 				break
 			}
 		}
 		if lineType == lineTypeNew {
-			if v.NewLineNo <= line {
+			if v.NewLineNo <= lineTo {
 				lines = append(lines, v)
 			} else {
 				break
@@ -193,16 +294,9 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 		NewPath:     request.NewPath,
 		OldCommitId: request.OldCommitId,
 		NewCommitId: request.NewCommitId,
-
-		AICodeReviewType: request.AICodeReviewType,
 	}
 
-	noteDataBytes, err := json.Marshal(noteData)
-	if err != nil {
-		return nil, err
-	}
-
-	Note := Note{
+	note := Note{
 		RepoID:       repo.ID,
 		MergeId:      mergeId,
 		Note:         request.Note,
@@ -211,17 +305,12 @@ func (svc *Service) CreateDiscussionNote(repo *gitmodule.Repository, user *User,
 		NewCommitId:  request.NewCommitId,
 		DiscussionId: guid.NewString(),
 		Type:         NoteTypeDiffNote,
-		Data:         string(noteDataBytes),
-		Role:         request.Role,
+		DataResult:   noteData,
 	}
-	err = svc.db.Create(&Note).Error
-	if err != nil {
-		return nil, err
-	}
-	return &Note, nil
+	return &note, nil
 }
 
-func (svc *Service) ReplyDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
+func (svc *Service) constructReplyDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
 	var oldDiffNote Note
 	err := svc.db.Where("repo_id = ? and merge_id=? and discussion_id= ?",
 		repo.ID, mergeId, request.DiscussionId).
@@ -232,7 +321,7 @@ func (svc *Service) ReplyDiscussionNote(repo *gitmodule.Repository, user *User, 
 		return nil, err
 	}
 
-	Note := Note{
+	note := Note{
 		RepoID:       repo.ID,
 		MergeId:      mergeId,
 		Type:         NoteTypeDiffNoteReply,
@@ -243,14 +332,10 @@ func (svc *Service) ReplyDiscussionNote(repo *gitmodule.Repository, user *User, 
 		NewCommitId:  oldDiffNote.NewCommitId,
 	}
 
-	err = svc.db.Create(&Note).Error
-	if err != nil {
-		return nil, err
-	}
-	return &Note, nil
+	return &note, nil
 }
 
-func (svc *Service) CreateNormalNote(repo *gitmodule.Repository, user *User, mergeId int64, req NoteRequest) (*Note, error) {
+func (svc *Service) constructNormalNote(repo *gitmodule.Repository, user *User, mergeId int64, req NoteRequest) (*Note, error) {
 	note := Note{
 		MergeId:  mergeId,
 		Note:     req.Note,
@@ -258,34 +343,6 @@ func (svc *Service) CreateNormalNote(repo *gitmodule.Repository, user *User, mer
 		RepoID:   repo.ID,
 		Type:     NoteTypeNormal,
 		Score:    req.Score,
-		Role:     req.Role,
-	}
-	noteData := NoteData{
-		OldLine:     req.OldLine,
-		NewLine:     req.NewLine,
-		OldPath:     req.OldPath,
-		NewPath:     req.NewPath,
-		OldCommitId: req.OldCommitId,
-		NewCommitId: req.NewCommitId,
-
-		AICodeReviewType: req.AICodeReviewType,
-	}
-	// create AI session if necessary
-	if req.StartAISession {
-		aiSessionID, err := svc.createAISession(repo, note, noteData, user)
-		if err != nil {
-			return nil, err
-		}
-		noteData.AISessionID = aiSessionID
-	}
-	if noteDataBytes, err := json.Marshal(noteData); err != nil {
-		return nil, err
-	} else {
-		note.Data = string(noteDataBytes)
-	}
-	err := svc.db.Create(&note).Error
-	if err != nil {
-		return nil, err
 	}
 	return &note, nil
 }
@@ -339,7 +396,7 @@ func (svc *Service) QueryDiffNotes(repo *gitmodule.Repository, mergeId int64, ol
 	return notes, nil
 }
 
-func (svc *Service) createAISession(repo *gitmodule.Repository, note Note, noteData NoteData, user *User) (string, error) {
+func (svc *Service) createAISession(note Note, user *User) (string, error) {
 	if !aiproxyclient.Instance.AIEnabled() {
 		return "", aiproxyclient.ErrorAINotEnabled
 	}
