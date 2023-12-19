@@ -173,9 +173,9 @@ var checkAdaptor security.PermissionAdaptor
 func (p *Permission) CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error) {
 	logrus.Debugf("invoke permission, time: %s, req: %+v", time.Now().Format(time.RFC3339), req)
 
-	// if the param is invalid,it will set the req as nil
+	// if the param is invalid, it will set the req as nil
 	if req == nil {
-		return false, errors.New("the user operation is invalid,maybe the param is invalid")
+		return false, errors.New("the user operation is invalid, maybe the param is invalid")
 	}
 
 	checkAdaptor.Once.Do(func() {

@@ -176,8 +176,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.3.2
-	gorm.io/driver/sqlite v1.3.1
-	gorm.io/gorm v1.23.5
+	gorm.io/driver/sqlite v1.5.3
+	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
 	gorm.io/plugin/soft_delete v1.1.0
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.6.2

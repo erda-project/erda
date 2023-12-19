@@ -101,7 +101,7 @@ func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) 
 		return nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("failed to list Audit, status code: %d, body: %v",
 				resp.StatusCode(),
-				resp.Body(),
+				string(resp.Body()),
 			))
 	}
 

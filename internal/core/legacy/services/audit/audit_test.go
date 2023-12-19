@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 )
@@ -249,13 +250,14 @@ func Test_constructFilterParamByReq(t *testing.T) {
 
 	for _, tt := range testcase {
 		t.Run(tt.Name, func(t *testing.T) {
-			ctx := context.WithValue(context.Background(), "lang_codes", i18n.LanguageCodes{})
+			//ctx := context.WithValue(context.Background(), "lang_codes", i18n.LanguageCodes{})
+			ctx := ctxhelper.PutAuditLanguage(context.Background(), i18n.LanguageCodes{})
 			filterParam, err := audit.constructFilterParamByReq(ctx, tt.param)
 			assert.Equal(t, filterParam, tt.want.filterParam)
 			if err != nil {
-				assert.Equal(t, err.Error(), tt.want.err.Error())
+				assert.Equal(t, tt.want.err.Error(), err.Error())
 			} else {
-				assert.Equal(t, err, tt.want.err)
+				assert.Equal(t, tt.want.err, err)
 			}
 		})
 	}

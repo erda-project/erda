@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -109,7 +110,8 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
 
-	ctx = context.WithValue(ctx, "lang_codes", i18n.Language(r))
+	// set `i18n.LanguageCodes` in ctx
+	ctx = ctxhelper.PutAuditLanguage(ctx, i18n.Language(r))
 
 	// 权限检查
 	identityInfo, err := user.GetIdentityInfo(r)
@@ -179,7 +181,7 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 		return apierrors.ErrExportExcelAudit.InvalidParameter(err)
 	}
 
-	ctx = context.WithValue(ctx, "lang_codes", i18n.Language(r))
+	ctx = ctxhelper.PutAuditLanguage(ctx, i18n.Language(r))
 	// 权限检查
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {

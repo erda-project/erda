@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
@@ -144,7 +145,7 @@ func (a *Audit) List(ctx context.Context, param *apistructs.AuditsListRequest) (
 		return a.db.GetAuditsByParam(filterParam)
 	}
 
-	// if it is not the sys level,valid the param and construct the filterParam
+	// if it is not the sys level, valid the param and construct the filterParam
 	var err error
 	filterParam, err = a.constructFilterParamByReq(ctx, param)
 	if err != nil {
@@ -156,17 +157,9 @@ func (a *Audit) List(ctx context.Context, param *apistructs.AuditsListRequest) (
 
 // constructFilterParamByReq valid the param and construct the filterParam to query db by `apistruct.AuditsListRequest`
 func (a *Audit) constructFilterParamByReq(ctx context.Context, param *apistructs.AuditsListRequest) (*model.ListAuditParam, error) {
-	langCodes, ok := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes, ok := ctxhelper.GetAuditLanguage(ctx)
 	if !ok {
-		return nil, errors.New("Invalid Language")
-	}
-	if langCodes == nil {
-		langCodes = i18n.LanguageCodes{
-			&i18n.LanguageCode{
-				Code:    "zh-CN",
-				Quality: 1,
-			},
-		}
+		return nil, errors.New("missing language")
 	}
 
 	filterParam := &model.ListAuditParam{
@@ -180,7 +173,7 @@ func (a *Audit) constructFilterParamByReq(ctx context.Context, param *apistructs
 		ClientIP:     param.ClientIP,
 		ScopeType:    param.ScopeType,
 	}
-	// Valid OrgID,in org level,the len(param.OrgID) must equals 1
+	// Valid OrgID, in org level, the len(param.OrgID) must equals 1
 	if param.OrgID == nil || len(param.OrgID) > 1 {
 		return nil, errors.New(a.trans.Text(langCodes, ErrInvalidOrg))
 	}
@@ -201,7 +194,7 @@ func (a *Audit) constructFilterParamByReq(ctx context.Context, param *apistructs
 		var appIds []uint64
 		var err error
 		if len(param.ProjectID) > 0 {
-			// if projectId is not nil,the app must own to the projectId
+			// if projectId is not nil, the app must own to the projectId
 			appIds, err = a.GetAllAppIdByProjectIds(param.ProjectID)
 			if err != nil {
 				return nil, err
@@ -210,7 +203,7 @@ func (a *Audit) constructFilterParamByReq(ctx context.Context, param *apistructs
 				return nil, errors.New(a.trans.Text(langCodes, ErrInvalidAppInProject))
 			}
 		} else {
-			// projectId is nil,the app must own to the orgId
+			// projectId is nil, the app must own to the orgId
 			appIds, err = a.GetAllAppIdByOrgId(param.OrgID[0])
 			if err != nil {
 				return nil, err
@@ -231,7 +224,7 @@ func (a *Audit) GetAllProjectIdInOrg(orgId uint64) ([]uint64, error) {
 		return nil, err
 	}
 
-	// Get the id field from projectList
+	// get the id field from projectList
 	projectIds := make([]uint64, len(projectList))
 	for index, project := range projectList {
 		projectIds[index] = uint64(project.ID)
@@ -325,7 +318,7 @@ func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Aud
 }
 
 func (a *Audit) getContent(ctx context.Context, audit model.Audit) string {
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes, _ := ctxhelper.GetAuditLanguage(ctx)
 	var locale string
 	if len(langCodes) != 0 {
 		locale = langCodes[0].Code

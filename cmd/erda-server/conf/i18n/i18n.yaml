@@ -22,7 +22,7 @@ zh:
   ErrAddMemberOwner: "添加所有者失败，数量超过上限"
 
   # audit error
-  ErrInvalidOrg: "OrgID 非法，可能是不存在orgID或者多个orgID"
+  ErrInvalidOrg: "OrgID 非法，可能是不存在 OrgID 或者多个 OrgID"
   ErrInvalidProjectInOrg: "所选项目错误，用户所选择的项目不属于其组织"
   ErrInvalidAppInOrg: "所选应用错误，用户所选择的应用不属于其组织"
   ErrInvalidAppInProject: "所选应用错误，用户所选择的应用不属于其选择的项目"
@@ -51,7 +51,7 @@ en:
   ErrAddMemberOwner: "failed to add project owner, quantity exceeds limit"
 
   # audit error
-  ErrInvalidOrgID: "Invalid OrgID,it may not exist or multiple OrgIDs"
+  ErrInvalidOrgID: "Invalid OrgID, it may not exist or multiple OrgIDs"
   ErrInvalidProjectInOrg: "Invalid selected project. The project does not belong to the user's organization"
   ErrInvalidAppInOrg: "Invalid selected application. The application does not belong to user's organization."
   ErrInvalidAppInProject: "Invalid selected application. The application does not belong to the selected project"
