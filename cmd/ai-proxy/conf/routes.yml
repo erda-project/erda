@@ -15,7 +15,7 @@ routes:
       - name: context
       - name: context-chat
         config:
-          #sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
+        #sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
       - name: audit-before-llm-director
       - name: azure-director
         config:
@@ -75,6 +75,10 @@ routes:
       - name: log-http
       - name: rate-limit
       - name: context
+      - name: context-audio
+        config:
+          maxAudioSize: 25MB
+          supportedAudioFileTypes: [ "flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm" ]
       - name: audit-before-llm-director
       - name: azure-director
         config:

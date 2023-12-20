@@ -57,7 +57,8 @@ func (f *Filter) OnActualRequest(ctx context.Context, infor reverseproxy.HttpInf
 	dbClient := dao.AuditClient()
 	_, err := dbClient.UpdateAfterLLMDirectorInvoke(ctx, &updateReq)
 	if err != nil {
-		// log it
+		l := ctxhelper.GetLogger(ctx)
+		l.Errorf("failed to update audit after llm director invoke, audit id: %s, err: %v", auditRecID, err)
 	}
 	return
 }

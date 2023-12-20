@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"net/http"
 	"time"
 
@@ -69,9 +70,12 @@ func (f *Filter) OnOriginalRequest(ctx context.Context, infor reverseproxy.HttpI
 	// insert audit into db
 	newAudit, err := ctxhelper.MustGetDBClient(ctx).AuditClient().CreateWhenReceived(ctx, &createReq)
 	if err != nil {
-		// log it
+		l := ctxhelper.GetLogger(ctx)
+		l.Errorf("failed to create audit: %v", err)
 	}
-	ctxhelper.PutAuditID(ctx, newAudit.Id)
+	if newAudit != nil {
+		ctxhelper.PutAuditID(ctx, newAudit.Id)
+	}
 	return
 }
 
@@ -83,11 +87,6 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 	auditRecID, ok := ctxhelper.GetAuditID(ctx)
 	if !ok || auditRecID == "" {
 		return
-	}
-
-	var openaiReq openai.ChatCompletionRequest
-	if err := json.NewDecoder(infor.BodyBuffer()).Decode(&openaiReq); err != nil {
-		return reverseproxy.Continue, err
 	}
 
 	var updateReq pb.AuditUpdateRequestAfterContextParsed
@@ -113,24 +112,49 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 	// operation id
 	updateReq.OperationId = infor.Method() + " " + infor.URL().Path
 
-	// metadata
-	updateReq.RequestFunctionCallName = func() string {
-		// switch type
-		switch openaiReq.FunctionCall.(type) {
-		case string:
-			return openaiReq.FunctionCall.(string)
-		case map[string]interface{}:
-			var reqFuncCall openai.FunctionCall
-			cputil.MustObjJSONTransfer(openaiReq.FunctionCall, &reqFuncCall)
-			return reqFuncCall.Name
-		case openai.FunctionCall:
-			return openaiReq.FunctionCall.(openai.FunctionCall).Name
-		case nil:
-			return ""
-		default:
-			return fmt.Sprintf("%v", openaiReq.FunctionCall)
+	// metadata, routing by model type
+	switch model.Type {
+	case modelpb.ModelType_text_generation:
+		var openaiReq openai.ChatCompletionRequest
+		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&openaiReq); err != nil {
+			goto Next
 		}
-	}()
+		updateReq.RequestFunctionCallName = func() string {
+			// switch type
+			switch openaiReq.FunctionCall.(type) {
+			case string:
+				return openaiReq.FunctionCall.(string)
+			case map[string]interface{}:
+				var reqFuncCall openai.FunctionCall
+				cputil.MustObjJSONTransfer(openaiReq.FunctionCall, &reqFuncCall)
+				return reqFuncCall.Name
+			case openai.FunctionCall:
+				return openaiReq.FunctionCall.(openai.FunctionCall).Name
+			case nil:
+				return ""
+			default:
+				return fmt.Sprintf("%v", openaiReq.FunctionCall)
+			}
+		}()
+	case modelpb.ModelType_audio:
+		audioInfo, ok := ctxhelper.GetAudioInfo(ctx)
+		if !ok {
+			goto Next
+		}
+		updateReq.AudioFileName = audioInfo.FileName
+		updateReq.AudioFileSize = audioInfo.FileSize.String()
+		updateReq.AudioFileHeaders = func() string {
+			b, err := json.Marshal(audioInfo.FileHeaders)
+			if err != nil {
+				return err.Error()
+			}
+			return string(b)
+		}()
+	default:
+		// do nothing
+	}
+
+Next:
 
 	// set from client token
 	setUserInfoFromClientToken(ctx, infor, &updateReq)
@@ -139,6 +163,8 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 	_, err = ctxhelper.MustGetDBClient(ctx).AuditClient().UpdateAfterContextParsed(ctx, &updateReq)
 	if err != nil {
 		// log it
+		l := ctxhelper.GetLogger(ctx)
+		l.Errorf("failed to update audit: %v", err)
 	}
 	return reverseproxy.Continue, nil
 }

@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
@@ -38,11 +39,26 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 	}
 	respBuffer := ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)
 	var completion, responseFunctionCallName string
-	if ctxhelper.GetIsStream(ctx) {
-		completion, responseFunctionCallName = ExtractEventStreamCompletionAndFcName(respBuffer.String())
-	} else {
-		completion, responseFunctionCallName = ExtractApplicationJsonCompletionAndFcName(respBuffer.String())
+
+	// routing by model type
+	model, _ := ctxhelper.GetModel(ctx)
+	switch model.Type {
+	case modelpb.ModelType_text_generation:
+		if ctxhelper.GetIsStream(ctx) {
+			completion, responseFunctionCallName = ExtractEventStreamCompletionAndFcName(respBuffer.String())
+		} else {
+			completion, responseFunctionCallName = ExtractApplicationJsonCompletionAndFcName(respBuffer.String())
+		}
+	case modelpb.ModelType_audio:
+		var openaiAudioResp openai.AudioResponse
+		respBufferStr := respBuffer.String()
+		if err := json.NewDecoder(respBuffer).Decode(&openaiAudioResp); err == nil {
+			completion = openaiAudioResp.Text
+		} else {
+			completion = respBufferStr
+		}
 	}
+
 	// collect actual llm response info
 	updateReq := pb.AuditUpdateRequestAfterLLMDirectorResponse{
 		AuditId:      auditRecID,
@@ -63,7 +79,8 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 	dbClient := dao.AuditClient()
 	_, err = dbClient.UpdateAfterLLMDirectorResponse(ctx, &updateReq)
 	if err != nil {
-		// log it
+		l := ctxhelper.GetLogger(ctx)
+		l.Errorf("failed to update audit on response EOF, audit id: %s, err: %v", auditRecID, err)
 	}
 	return nil
 }

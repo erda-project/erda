@@ -98,6 +98,11 @@ message AuditUpdateRequestAfterContextParsed {
     string identityJobNumber = 12;
     string username = 13;
     string identityPhoneNumber = 14;
+
+    // audio info parsed from multipart/form-data request body
+    string audioFileName = 15;
+    string audioFileSize = 16;
+    string audioFileHeaders = 17;
 }
 
 message AuditUpdateRequestAfterLLMDirectorInvoke {

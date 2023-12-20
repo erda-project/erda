@@ -18,14 +18,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"io"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
-
-	"github.com/erda-project/erda/pkg/http/httputil"
+	"unicode/utf8"
 )
 
 const (
@@ -91,7 +92,9 @@ type HttpInfor interface {
 	Body() io.ReadCloser
 	SetBody(body io.ReadCloser, size int64)
 	// BodyBuffer only for getting request body and only on request stage.
-	BodyBuffer() *bytes.Buffer
+	BodyBuffer(all ...bool) *bytes.Buffer
+	// Request only on request stage.
+	Request() *http.Request
 }
 
 func NewInfor[R httputil.RequestResponse](ctx context.Context, r R) HttpInfor {
@@ -273,7 +276,7 @@ func (r *infor[R]) Body() io.ReadCloser {
 }
 
 // BodyBuffer only for request body
-func (r *infor[R]) BodyBuffer() *bytes.Buffer {
+func (r *infor[R]) BodyBuffer(all ...bool) *bytes.Buffer {
 	var request *http.Request
 	switch i := (any)(r.r).(type) {
 	case http.Request:
@@ -288,6 +291,67 @@ func (r *infor[R]) BodyBuffer() *bytes.Buffer {
 
 	if request.Body == nil {
 		return nil
+	}
+
+	allOpt := false
+	if len(all) > 0 {
+		allOpt = all[0]
+	}
+
+	// handle body buffer here, according to content-type
+	if !allOpt && strings.HasPrefix(request.Header.Get(httputil.HeaderKeyContentType), httputil.ContentTypeMultiPartFormData) {
+		data, err := io.ReadAll(request.Body)
+		if err != nil {
+			return nil
+		}
+		_ = request.Body.Close()
+		request.Body = io.NopCloser(bytes.NewReader(data))
+
+		//formBodyChunkBuffer := bytes.NewBuffer(make([]byte, 0, 1024))
+		//_, _ = io.CopyN(formBodyChunkBuffer, request.Body, 1024)
+		//defer func() {
+		//	// reset request body after read first 1024 bytes
+		//	request.Body = io.NopCloser(io.MultiReader(formBodyChunkBuffer, request.Body))
+		//}()
+		//formLines := strings.Split(formBodyChunkBuffer.String(), "\r\n")
+		formLines := strings.Split(bytes.NewBuffer(data).String(), "\r\n")
+		var nonFileContentLines []string
+		dataMarkInserted := false
+	filterLine:
+		for _, line := range formLines {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			if utf8.ValidString(line) {
+				nonFileContentLines = append(nonFileContentLines, line)
+				continue
+			}
+			// check first char is alpha or -
+			char := line[0]
+			if char == '-' {
+				dataMarkInserted = false
+			}
+			//if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '-') {
+			//	if !dataMarkInserted {
+			//		nonFileContentLines = append(nonFileContentLines, "(data)")
+			//		dataMarkInserted = true
+			//	}
+			//	continue
+			//}
+			for _, char := range line {
+				// if char is unprintable char, like \x00, skip this line
+				//if char < 32 || char > 126 {
+				if char < 32 {
+					if !dataMarkInserted {
+						nonFileContentLines = append(nonFileContentLines, "(data)")
+						dataMarkInserted = true
+					}
+					continue filterLine
+				}
+			}
+			nonFileContentLines = append(nonFileContentLines, line)
+		}
+		return bytes.NewBufferString(strings.Join(nonFileContentLines, "\r\n"))
 	}
 
 	data, err := io.ReadAll(request.Body)
@@ -317,6 +381,19 @@ func (r *infor[R]) SetBody(body io.ReadCloser, size int64) {
 	if req, ok := (any)(r.r).(*http.Request); ok {
 		req.ContentLength = size
 		req.Header.Set(httputil.HeaderKeyContentLength, strconv.FormatUint(uint64(size), 10))
+	}
+}
+
+func (r *infor[R]) Request() *http.Request {
+	switch i := (any)(r.r).(type) {
+	case http.Request:
+		return &i
+	case *http.Request:
+		return i
+	case http.Response, *http.Response:
+		return nil
+	default:
+		panic("not expected type")
 	}
 }
 
