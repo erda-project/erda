@@ -212,7 +212,7 @@ const (
 // oldLineNo:  6, newLineNo: -1, type: "delete"
 // oldLineNo:  7, newLineNo: -1, type: "delete"
 // oldLineNo: -1, newLineNo: 12, type: "add"
-func findDiffSectionInOneFile(req *NoteRequest, diffFile *gitmodule.DiffFile) (*gitmodule.DiffSection, []*gitmodule.DiffLine, error) {
+func findDiffSectionInOneFile(req NoteRequest, diffFile *gitmodule.DiffFile) (*gitmodule.DiffSection, []*gitmodule.DiffLine, error) {
 	// check line numbers
 	// 1. 兼容老数据：如果 oldLineTo 或 newLineTo 有一个为 0，则必须同时为 0
 	if (req.OldLineTo == 0 || req.NewLineTo == 0) && req.OldLineTo|req.NewLineTo != 0 {
@@ -288,7 +288,7 @@ func (svc *Service) constructDiscussionNote(repo *gitmodule.Repository, user *Us
 		return nil, err
 	}
 
-	_, relatedDiffLines, err := findDiffSectionInOneFile(&req, diffFile)
+	_, relatedDiffLines, err := findDiffSectionInOneFile(req, diffFile)
 	if err != nil {
 		return nil, err
 	}
