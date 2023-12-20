@@ -395,18 +395,29 @@ type AuditsListRequest struct {
 }
 
 // Check 检查 AuditsListRequest 是否合法
-func (a *AuditsListRequest) Check() error {
-	// 看系统事件则允许orgID为空
+func (a *AuditsListRequest) Check(headerOrgID uint64) error {
+	// if OrgID is empty, use the OrgID from the request header
 	if !a.Sys && len(a.OrgID) == 0 {
-		return errors.Errorf("invalid request, sys and orgid cann't be empty at the same time")
+		a.OrgID = []uint64{headerOrgID}
+	}
+
+	if !a.Sys && len(a.OrgID) >= 1 {
+		// if it is not sys scope, check param.OrgID
+		if len(a.OrgID) > 1 {
+			return errors.Errorf("invalid request, when sys is false, the OrgID can't exceed 1")
+		}
+
+		if a.OrgID[0] != headerOrgID {
+			return errors.Errorf("invaid request, when sys is false, the OrgID should match your origanization ID")
+		}
 	}
 
 	if a.StartAt == "" {
-		return errors.Errorf("invalid request, startAt cann't be empty")
+		return errors.Errorf("invalid request, startAt can't be empty")
 	}
 
 	if a.EndAt == "" {
-		return errors.Errorf("invalid request, endAt cann't be empty")
+		return errors.Errorf("invalid request, endAt can't be empty")
 	}
 
 	if a.PageNo == 0 {

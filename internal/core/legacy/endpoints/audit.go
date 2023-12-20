@@ -105,8 +105,14 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
 
-	// 查询参数检查
-	if err := listReq.Check(); err != nil {
+	// if the OrgID in the request param does not match the one in the header
+	headerOrgID, err := user.GetOrgIDFromBundleHeader(r)
+	if err != nil {
+		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
+	}
+
+	// check list Request param
+	if err := listReq.Check(headerOrgID); err != nil {
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
 
@@ -176,8 +182,14 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 		return apierrors.ErrExportExcelAudit.InvalidParameter(err)
 	}
 
-	// 查询参数检查
-	if err := listReq.Check(); err != nil {
+	// if the OrgID in the request param does not match the one in the header
+	headerOrgID, err := user.GetOrgIDFromBundleHeader(r)
+	if err != nil {
+		return apierrors.ErrListAudit.InvalidParameter(err)
+	}
+
+	// check list Request param
+	if err := listReq.Check(headerOrgID); err != nil {
 		return apierrors.ErrExportExcelAudit.InvalidParameter(err)
 	}
 
@@ -310,11 +322,6 @@ func getPermissionBody(listReq *apistructs.AuditsListRequest, identityInfo apist
 	if listReq.Sys {
 		pcr.Scope = apistructs.SysScope
 	} else {
-		// if it has multiple orgID provided in org scope
-		// set pcr as nil,then use CheckPermission(pcr) will return error directly
-		if len(listReq.OrgID) > 1 {
-			return nil
-		}
 		pcr.Scope = apistructs.OrgScope
 		pcr.ScopeID = listReq.OrgID[0]
 	}

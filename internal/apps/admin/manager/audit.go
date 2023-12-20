@@ -39,7 +39,7 @@ func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars 
 		return apierrors.ErrListAudit.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
 	}
 
-	var orgIDStr = ""
+	var orgIDStr = "0"
 	if req.URL.Query().Get("sys") == "" {
 		id, err := GetOrgID(req)
 		if err != nil {
