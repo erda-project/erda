@@ -16,7 +16,6 @@ package models
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -58,7 +57,7 @@ type NoteRequest struct {
 	StartAISession   bool             `json:"startAISession,omitempty"`
 }
 
-const MAX_NOTE_DIFF_LINE_COUNT = 15
+const RelatedDiffLinesCountBefore = 3
 
 var (
 	NoteTypeNormal        = "normal"
@@ -192,117 +191,43 @@ func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, 
 	return nil
 }
 
-const (
-	lineTypeOld = "old"
-	lineTypeNew = "new"
-)
-
-func (svc *Service) constructDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
-	if request.OldLineTo != 0 {
-		if request.OldLineTo < request.OldLine {
-			return nil, errors.New("invalid oldLineTo")
-		}
-	} else {
-		request.OldLineTo = request.OldLine
-	}
-	if request.NewLineTo != 0 {
-		if request.NewLineTo < request.NewLine {
-			return nil, errors.New("invalid newLineTo")
-		}
-	} else {
-		request.NewLineTo = request.NewLine
-	}
-	commitTo, err := repo.GetCommit(request.OldCommitId)
+func (svc *Service) constructDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, req NoteRequest) (*Note, error) {
+	commitTo, err := repo.GetCommit(req.OldCommitId)
 	if err != nil {
 		return nil, err
 	}
-	commitFrom, err := repo.GetCommit(request.NewCommitId)
+	commitFrom, err := repo.GetCommit(req.NewCommitId)
 	if err != nil {
 		return nil, err
 	}
 
-	diff, err := repo.GetDiffFile(commitFrom, commitTo, request.OldPath, request.NewPath)
+	diffFile, err := repo.GetDiffFile(commitFrom, commitTo, req.OldPath, req.NewPath)
 	if err != nil {
 		return nil, err
 	}
-	lineType := ""
-	lineFrom := -1
-	lineTo := -1
-	if request.OldLine > 0 {
-		lineType = lineTypeOld
-		lineFrom = request.OldLine
-		lineTo = request.OldLineTo
-	} else if request.NewLine > 0 {
-		lineType = lineTypeNew
-		lineFrom = request.NewLine
-		lineTo = request.NewLineTo
-	}
 
-	//找出section
-	var diffSection *gitmodule.DiffSection
-	for _, section := range diff.Sections {
-		for _, diffLine := range section.Lines {
-			if lineType == lineTypeOld {
-				if diffLine.OldLineNo == lineFrom {
-					diffSection = section
-					break
-				}
-			} else {
-				if diffLine.NewLineNo == lineFrom {
-					diffSection = section
-					break
-				}
-			}
-		}
-		if diffSection != nil {
-			break
-		}
-	}
-
-	if diffSection == nil {
-		return nil, errors.New("invalid lineNo")
-	}
-
-	var lines []*gitmodule.DiffLine
-	for _, v := range diffSection.Lines {
-		if lineType == lineTypeOld {
-			if v.OldLineNo <= lineTo {
-				lines = append(lines, v)
-			} else {
-				break
-			}
-		}
-		if lineType == lineTypeNew {
-			if v.NewLineNo <= lineTo {
-				lines = append(lines, v)
-			} else {
-				break
-			}
-		}
-	}
-
-	lineCount := len(lines)
-	if lineCount > MAX_NOTE_DIFF_LINE_COUNT {
-		lines = lines[lineCount-MAX_NOTE_DIFF_LINE_COUNT : lineCount]
+	_, relatedDiffLines, err := findDiffSectionInOneFile(req, diffFile)
+	if err != nil {
+		return nil, err
 	}
 
 	noteData := NoteData{
-		DiffLines:   lines,
-		OldLine:     request.OldLine,
-		NewLine:     request.NewLine,
-		OldPath:     request.OldPath,
-		NewPath:     request.NewPath,
-		OldCommitId: request.OldCommitId,
-		NewCommitId: request.NewCommitId,
+		DiffLines:   relatedDiffLines,
+		OldLine:     req.OldLine,
+		NewLine:     req.NewLine,
+		OldPath:     req.OldPath,
+		NewPath:     req.NewPath,
+		OldCommitId: req.OldCommitId,
+		NewCommitId: req.NewCommitId,
 	}
 
 	note := Note{
 		RepoID:       repo.ID,
 		MergeId:      mergeId,
-		Note:         request.Note,
+		Note:         req.Note,
 		AuthorId:     user.Id,
-		OldCommitId:  request.OldCommitId,
-		NewCommitId:  request.NewCommitId,
+		OldCommitId:  req.OldCommitId,
+		NewCommitId:  req.NewCommitId,
 		DiscussionId: guid.NewString(),
 		Type:         NoteTypeDiffNote,
 		DataResult:   noteData,
@@ -413,4 +338,78 @@ func (svc *Service) createAISession(note Note, user *User) (string, error) {
 		return "", err
 	}
 	return aiSession.Id, nil
+}
+
+// findDiffSectionInOneFile
+// diffLines example:
+// oldLineNo: -1, newLineNo: -1, type: "section"
+// oldLineNo:  1, newLineNo: 1,  type: "context"
+// oldLineNo:  2, newLineNo: 2,  type: "context"
+// oldLineNo: -1, newLineNo: 3,  type: "add"
+// oldLineNo: -1, newLineNo: 4,  type: "add"
+// oldLineNo: -1, newLineNo: 5,  type: "add"
+// oldLineNo: -1, newLineNo: 6,  type: "add"
+// oldLineNo: -1, newLineNo: 7,  type: "add"
+// oldLineNo: -1, newLineNo: 8,  type: "add"
+// oldLineNo:  3, newLineNo: 9,  type: "context"
+// oldLineNo:  4, newLineNo: 10, type: "context"
+// oldLineNo:  5, newLineNo: 11, type: "context"
+// oldLineNo:  6, newLineNo: -1, type: "delete"
+// oldLineNo:  7, newLineNo: -1, type: "delete"
+// oldLineNo: -1, newLineNo: 12, type: "add"
+func findDiffSectionInOneFile(req NoteRequest, diffFile *gitmodule.DiffFile) (*gitmodule.DiffSection, []*gitmodule.DiffLine, error) {
+	// check line numbers
+	// 1. 兼容老数据：如果 oldLineTo 或 newLineTo 有一个为 0，则必须同时为 0
+	if (req.OldLineTo == 0 || req.NewLineTo == 0) && req.OldLineTo|req.NewLineTo != 0 {
+		return nil, nil, fmt.Errorf("invalid line numbers: oldLineTo and newLineTo must be 0 at the same time")
+	}
+	// 2. 若 oldLineTo == newLineTo == 0，则将其分别设置为 oldLine 和 newLine，将单行视为多行的特例
+	if req.OldLineTo == 0 && req.NewLineTo == 0 {
+		req.OldLineTo = req.OldLine
+		req.NewLineTo = req.NewLine
+	}
+	// 3. 校验合法性，当 To != -1 时，From 必须小于等于 To
+	if req.OldLineTo != -1 && req.OldLine > req.OldLineTo {
+		return nil, nil, fmt.Errorf("invalid line numbers: oldLine must <= oldLineTo")
+	}
+	if req.NewLineTo != -1 && req.NewLine > req.NewLineTo {
+		return nil, nil, fmt.Errorf("invalid line numbers: newLine must <= newLineTo")
+	}
+
+	// find section in diffFile
+	var diffSection *gitmodule.DiffSection
+	var matchedLineIndexInSectionStart int
+	var matchedLineIndexInSectionEnd int
+	findFrom, findTo := false, false
+	for _, section := range diffFile.Sections {
+		// 需要同时匹配 oldLine/newLine 和 oldLineTo/newLineTo，不允许跨 section 的范围选择
+		for index, line := range section.Lines {
+			// find from
+			if line.OldLineNo == req.OldLine && line.NewLineNo == req.NewLine {
+				matchedLineIndexInSectionStart = index
+				findFrom = true
+			}
+			// find to
+			if line.OldLineNo == req.OldLineTo && line.NewLineNo == req.NewLineTo {
+				matchedLineIndexInSectionEnd = index
+				findTo = true
+			}
+			if findFrom && findTo {
+				diffSection = section
+				break
+			}
+		}
+	}
+	if diffSection == nil {
+		return nil, nil, fmt.Errorf("failed to find diff section according to line numbers")
+	}
+
+	// also return diff lines (include some context lines, maybe 3 lines before)
+	diffLinesStartIndex := matchedLineIndexInSectionStart - RelatedDiffLinesCountBefore
+	if diffLinesStartIndex < 0 {
+		diffLinesStartIndex = 0
+	}
+	relatedDiffLines := diffSection.Lines[diffLinesStartIndex : matchedLineIndexInSectionEnd+1]
+
+	return diffSection, relatedDiffLines, nil
 }
