@@ -205,8 +205,8 @@ services:
       replicas: 1
     image: test.image.com/nginx:testTag
     resources:
-      cpu: 0.1
-      mem: 128
+      cpu: ${cpu:0.1}
+      mem: ${mem:128}
 version: "2.0"
 `,
 	}

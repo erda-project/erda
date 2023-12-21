@@ -1068,8 +1068,8 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 		return err
 	}
 
-	logrus.Infof("get unrefered release before %s (%s ago), count: %d",
-		before.String(), d.String(), len(releases))
+	logrus.Infof("found %d releases that had no references before %s",
+		len(releases), before.Format("2006-01-02 15:04:05"))
 
 	for i := range releases {
 		release := releases[i]
