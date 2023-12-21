@@ -20,7 +20,6 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 )
@@ -36,23 +35,41 @@ func (client *DBClient) BatchCreateAudit(audits []model.Audit) error {
 }
 
 // GetAuditsByParam 通过参数查询成员
-func (client *DBClient) GetAuditsByParam(param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
+func (client *DBClient) GetAuditsByParam(param *model.ListAuditParam) (int, []model.Audit, error) {
 	var audits []model.Audit
 	var total int
 	db := client.Table("dice_audit").Scopes(NotDeleted).Where("start_time >= ? AND start_time <= ?", param.StartAt, param.EndAt)
 
-	if !param.Sys {
-		db = db.Where("org_id = ?", param.OrgID)
-	} else {
-		db = db.Where("scope_type = 'sys'")
+	if len(param.ScopeType) > 0 {
+		db = db.Where("scope_type in ( ? )", param.ScopeType)
+	}
+	if len(param.OrgID) > 0 {
+		db = db.Where("org_id in ( ? )", param.OrgID)
 	}
 
-	if param.UserID != nil {
+	if len(param.ScopeID) > 0 {
+		db = db.Where("scope_id in ( ? )", param.ScopeID)
+	}
+	if len(param.AppID) > 0 {
+		db = db.Where("app_id in ( ? )", param.AppID)
+	}
+	if len(param.ProjectID) > 0 {
+		db = db.Where("project_id in ( ? )", param.ProjectID)
+	}
+	if len(param.UserID) > 0 {
 		db = db.Where("user_id in ( ? )", param.UserID)
 	}
+	if len(param.TemplateName) > 0 {
+		db = db.Where("template_name in ( ? )", param.TemplateName)
+	}
+	if len(param.ClientIP) > 0 {
+		for _, ip := range param.ClientIP {
+			db = db.Or("client_ip LIKE ?", "%"+ip+"%")
+		}
+	}
 
-	if param.FDPProjectID != "" {
-		db = db.Where("fdp_project_id = ?", param.FDPProjectID)
+	if len(param.FDPProjectID) > 0 {
+		db = db.Where("fdp_project_id in ( ? )", param.FDPProjectID)
 	} else {
 		db = db.Where("fdp_project_id = ? or fdp_project_id is NULL", "")
 	}

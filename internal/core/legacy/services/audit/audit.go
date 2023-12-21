@@ -23,16 +23,27 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/dao"
 	"github.com/erda-project/erda/internal/core/legacy/model"
+	"github.com/erda-project/erda/pkg/arrays"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/excel"
+)
+
+// audit log err i18n key
+const (
+	ErrInvalidOrg          = "ErrInvalidOrg"
+	ErrInvalidProjectInOrg = "ErrInvalidProjectInOrg"
+	ErrInvalidAppInOrg     = "ErrInvalidAppInOrg"
+	ErrInvalidAppInProject = "ErrInvalidAppInProject"
 )
 
 // Audit 成员操作封装
@@ -111,9 +122,144 @@ func (a *Audit) BatchCreateAudit(reqs []apistructs.Audit) error {
 	return nil
 }
 
-// List 通过参数过滤事件
-func (a *Audit) List(param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
-	return a.db.GetAuditsByParam(param)
+// List Filter Audit Logs By param
+func (a *Audit) List(ctx context.Context, param *apistructs.AuditsListRequest) (int, []model.Audit, error) {
+	filterParam := &model.ListAuditParam{}
+
+	// if it is sys level，there is no need to perform parameter validation
+	if param.Sys {
+		filterParam = &model.ListAuditParam{
+			StartAt:      param.StartAt,
+			EndAt:        param.EndAt,
+			FDPProjectID: param.FDPProjectID,
+			UserID:       param.UserID,
+			TemplateName: param.TemplateName,
+			PageNo:       param.PageNo,
+			PageSize:     param.PageSize,
+			ClientIP:     param.ClientIP,
+			ScopeType:    param.ScopeType,
+			ProjectID:    param.ProjectID,
+			AppID:        param.AppID,
+			OrgID:        param.OrgID,
+		}
+		return a.db.GetAuditsByParam(filterParam)
+	}
+
+	// if it is not the sys level, valid the param and construct the filterParam
+	var err error
+	filterParam, err = a.constructFilterParamByReq(ctx, param)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return a.db.GetAuditsByParam(filterParam)
+}
+
+// constructFilterParamByReq valid the param and construct the filterParam to query db by `apistruct.AuditsListRequest`
+func (a *Audit) constructFilterParamByReq(ctx context.Context, param *apistructs.AuditsListRequest) (*model.ListAuditParam, error) {
+	langCodes, ok := ctxhelper.GetAuditLanguage(ctx)
+	if !ok {
+		return nil, errors.New("missing language")
+	}
+
+	filterParam := &model.ListAuditParam{
+		StartAt:      param.StartAt,
+		EndAt:        param.EndAt,
+		FDPProjectID: param.FDPProjectID,
+		UserID:       param.UserID,
+		TemplateName: param.TemplateName,
+		PageNo:       param.PageNo,
+		PageSize:     param.PageSize,
+		ClientIP:     param.ClientIP,
+		ScopeType:    param.ScopeType,
+	}
+	// Valid OrgID, in org level, the len(param.OrgID) must equals 1
+	if param.OrgID == nil || len(param.OrgID) > 1 {
+		return nil, errors.New(a.trans.Text(langCodes, ErrInvalidOrg))
+	}
+	filterParam.OrgID = []uint64{param.OrgID[0]}
+	if len(param.ProjectID) > 0 {
+		// check if the projectId is owned to the org
+		projectIds, err := a.GetAllProjectIdInOrg(param.OrgID[0])
+		if err != nil {
+			return nil, err
+		}
+		if _, flag := arrays.IsArrayContained(projectIds, param.ProjectID); !flag {
+			return nil, errors.New(a.trans.Text(langCodes, ErrInvalidProjectInOrg))
+		}
+		filterParam.ProjectID = param.ProjectID
+	}
+	if len(param.AppID) > 0 {
+		// check if the appId is owned to the project which owned to the org
+		var appIds []uint64
+		var err error
+		if len(param.ProjectID) > 0 {
+			// if projectId is not nil, the app must own to the projectId
+			appIds, err = a.GetAllAppIdByProjectIds(param.ProjectID)
+			if err != nil {
+				return nil, err
+			}
+			if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
+				return nil, errors.New(a.trans.Text(langCodes, ErrInvalidAppInProject))
+			}
+		} else {
+			// projectId is nil, the app must own to the orgId
+			appIds, err = a.GetAllAppIdByOrgId(param.OrgID[0])
+			if err != nil {
+				return nil, err
+			}
+			if _, flag := arrays.IsArrayContained(appIds, param.AppID); !flag {
+				return nil, errors.New(a.trans.Text(langCodes, ErrInvalidAppInOrg))
+			}
+		}
+		filterParam.AppID = param.AppID
+	}
+	return filterParam, nil
+}
+
+// GetAllProjectIdInOrg Get all the projectId List in org
+func (a *Audit) GetAllProjectIdInOrg(orgId uint64) ([]uint64, error) {
+	projectList, err := a.db.ListProjectByOrgID(orgId)
+	if err != nil {
+		return nil, err
+	}
+
+	// get the id field from projectList
+	projectIds := make([]uint64, len(projectList))
+	for index, project := range projectList {
+		projectIds[index] = uint64(project.ID)
+	}
+
+	return projectIds, nil
+}
+
+// GetAllAppIdByProjectIds batch get appId By ProjectIds
+func (a *Audit) GetAllAppIdByProjectIds(projectIds []uint64) ([]uint64, error) {
+	apps, err := a.db.GetApplicationsByProjectIDs(projectIds)
+	if err != nil {
+		return nil, err
+	}
+
+	appIds := make([]uint64, len(apps))
+	for index, app := range apps {
+		appIds[index] = uint64(app.ID)
+	}
+	return appIds, nil
+}
+
+// GetAllAppIdByOrgId get appIds By OrgId
+func (a *Audit) GetAllAppIdByOrgId(orgId uint64) ([]uint64, error) {
+	apps, err := a.db.GetApplicationsByOrgId(orgId)
+	if err != nil {
+		return nil, err
+	}
+
+	appIds := make([]uint64, len(apps))
+	for index, app := range apps {
+		appIds[index] = uint64(app.ID)
+	}
+
+	return appIds, nil
 }
 
 // UpdateAuditCleanCron 更新审计事件周期
@@ -172,7 +318,7 @@ func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Aud
 }
 
 func (a *Audit) getContent(ctx context.Context, audit model.Audit) string {
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes, _ := ctxhelper.GetAuditLanguage(ctx)
 	var locale string
 	if len(langCodes) != 0 {
 		locale = langCodes[0].Code

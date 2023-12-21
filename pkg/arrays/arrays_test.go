@@ -25,3 +25,27 @@ func TestIsContain(t *testing.T) {
 	assert.Equal(t, is, true)
 
 }
+
+func TestIsArrayContained(t *testing.T) {
+	var index int
+	var flag bool
+	index, flag = IsArrayContained([]int{1, 3, 4, 5}, []int{1, 3, 4})
+	assert.Equal(t, index, -1)
+	assert.Equal(t, flag, true)
+
+	index, flag = IsArrayContained([]string{"e", "r", "d", "a"}, []string{"e"})
+	assert.Equal(t, index, -1)
+	assert.Equal(t, flag, true)
+
+	index, flag = IsArrayContained([]uint64{1}, []uint64{})
+	assert.Equal(t, index, -1)
+	assert.Equal(t, flag, true)
+
+	index, flag = IsArrayContained([]int64{1, 3, 5, 2}, []int64{2, 5, 4})
+	assert.Equal(t, index, 2)
+	assert.Equal(t, flag, false)
+
+	index, flag = IsArrayContained([]uint8{}, []uint8{'a'})
+	assert.Equal(t, index, 0)
+	assert.Equal(t, flag, false)
+}

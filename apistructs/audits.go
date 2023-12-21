@@ -366,37 +366,59 @@ const (
 
 // AuditsListRequest GET /api/audits/actions/list 审计事件查询请求结构
 type AuditsListRequest struct {
-	// +required 是否是查看系统的事件
+	// +optional if sys event to get audit log
 	Sys bool `schema:"sys"`
-	// +required 企业ID
-	OrgID uint64 `schema:"orgId"`
-	// +required 事件开始时间
+	// +optional List of organization IDS
+	OrgID []uint64 `schema:"orgId"`
+	// +required Start time of the query event
 	StartAt string `schema:"startAt"`
-	// +required 事件结束事件
+	// +required End time of the query event
 	EndAt string `schema:"endAt"`
-	// +optional fdp项目id
-	FDPProjectID string `schema:"fdpProjectId"`
-	// +optional 通过用户id过滤事件
+	// +optional List of FDP project IDs
+	FDPProjectID []string `schema:"fdpProjectId"`
+	// +optional List of user IDs
 	UserID []string `schema:"userId"`
-	// default 1
+	// +optional List of log template name
+	TemplateName []TemplateName `schema:"templateName"`
+	// +optional List of client IP address
+	ClientIP []string `schema:"clientIP"`
+	// +optional List of application IDs
+	AppID []uint64 `schema:"appId"`
+	// +optional List of project IDs
+	ProjectID []uint64 `schema:"projectId"`
+	// +optional Scope type for visibility
+	ScopeType []ScopeType `schema:"scopeType"`
+	//default 1
 	PageNo int `schema:"pageNo"`
 	// default 20
 	PageSize int `schema:"pageSize"`
 }
 
 // Check 检查 AuditsListRequest 是否合法
-func (a *AuditsListRequest) Check() error {
-	// 看系统事件则允许orgID为空
-	if !a.Sys && a.OrgID == 0 {
-		return errors.Errorf("invalid request, sys and orgid cann't be empty at the same time")
+func (a *AuditsListRequest) Check(headerOrgID uint64) error {
+	// if OrgID is empty, use the OrgID from the request header
+	if !a.Sys && len(a.OrgID) == 0 {
+		a.OrgID = []uint64{headerOrgID}
+	}
+
+	if !a.Sys && len(a.OrgID) >= 1 {
+		// if it is not sys scope, the OrgID can't exceed 1
+		if len(a.OrgID) > 1 {
+			return errors.Errorf("invalid request, when sys is false, the OrgID can't exceed 1")
+		}
+
+		// if the OrgID in the request param does not match the one in the header
+		if a.OrgID[0] != headerOrgID {
+			return errors.Errorf("invaid request, when sys is false, the OrgID should match your origanization ID")
+		}
 	}
 
 	if a.StartAt == "" {
-		return errors.Errorf("invalid request, startAt cann't be empty")
+		return errors.Errorf("invalid request, startAt can't be empty")
 	}
 
 	if a.EndAt == "" {
-		return errors.Errorf("invalid request, endAt cann't be empty")
+		return errors.Errorf("invalid request, endAt can't be empty")
 	}
 
 	if a.PageNo == 0 {

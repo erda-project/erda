@@ -48,5 +48,5 @@ func TestLoad(t *testing.T) {
 	f.Close()
 	os.Setenv("ERDA_CONFIGS_BASE_PATH", baseDir)
 	Load()
-	assert.Equal(t, uint64(30), OrgAuditDefaultRetentionDays())
+	assert.Equal(t, uint64(365), OrgAuditDefaultRetentionDays())
 }

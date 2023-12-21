@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/legacy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/core/legacy/conf"
 	"github.com/erda-project/erda/internal/core/legacy/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -104,10 +105,23 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
 
-	// 查询参数检查
-	if err := listReq.Check(); err != nil {
+	var headerOrgID uint64
+	var err error
+	// if it is sys,the headerOrgID is "", not use the GetOrgID method to parse Uint64
+	if !listReq.Sys {
+		headerOrgID, err = user.GetOrgID(r)
+		if err != nil {
+			return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
+		}
+	}
+
+	// check list Request param
+	if err = listReq.Check(headerOrgID); err != nil {
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
+
+	// set `i18n.LanguageCodes` in ctx
+	ctx = ctxhelper.PutAuditLanguage(ctx, i18n.Language(r))
 
 	// 权限检查
 	identityInfo, err := user.GetIdentityInfo(r)
@@ -125,7 +139,7 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 		}
 	}
 
-	total, audits, err := e.audit.List(&listReq)
+	total, audits, err := e.audit.List(ctx, &listReq)
 	if err != nil {
 		return apierrors.ErrListAudit.InternalError(err).ToResp(), nil
 	}
@@ -172,12 +186,21 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 		return apierrors.ErrExportExcelAudit.InvalidParameter(err)
 	}
 
-	// 查询参数检查
-	if err := listReq.Check(); err != nil {
+	var headerOrgID uint64
+	// if it is sys,the headerOrgID is "", not use the GetOrgID method to parse Uint64
+	if !listReq.Sys {
+		headerOrgID, err = user.GetOrgID(r)
+		if err != nil {
+			return apierrors.ErrListAudit.InvalidParameter(err)
+		}
+	}
+
+	// check list Request param
+	if err := listReq.Check(headerOrgID); err != nil {
 		return apierrors.ErrExportExcelAudit.InvalidParameter(err)
 	}
 
-	ctx = context.WithValue(ctx, "lang_codes", i18n.Language(r))
+	ctx = ctxhelper.PutAuditLanguage(ctx, i18n.Language(r))
 	// 权限检查
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -195,7 +218,7 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 	listReq.PageNo = 1
 	listReq.PageSize = 99999
 
-	_, audits, err := e.audit.List(&listReq)
+	_, audits, err := e.audit.List(ctx, &listReq)
 	if err != nil {
 		return apierrors.ErrExportExcelAudit.InternalError(err)
 	}
@@ -307,7 +330,7 @@ func getPermissionBody(listReq *apistructs.AuditsListRequest, identityInfo apist
 		pcr.Scope = apistructs.SysScope
 	} else {
 		pcr.Scope = apistructs.OrgScope
-		pcr.ScopeID = uint64(listReq.OrgID)
+		pcr.ScopeID = listReq.OrgID[0]
 	}
 
 	return pcr
