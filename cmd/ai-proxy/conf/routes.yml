@@ -15,7 +15,7 @@ routes:
       - name: context
       - name: context-chat
         config:
-          #sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
+        #sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."
       - name: audit-before-llm-director
       - name: azure-director
         config:
@@ -58,6 +58,38 @@ routes:
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/embeddings")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+      - name: audit-after-llm-director
+      - name: finalize
+  - path: /v1/audio/transcriptions
+    method: POST
+    router: null
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-audio
+        config:
+          maxAudioSize: 25MB
+          supportedAudioFileTypes: [ "flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm" ]
+          defaultOpenAIAudioModel: whisper-1
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2023-09-01-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/audio/transcriptions")
       - name: openai-director
         config:
           directors:

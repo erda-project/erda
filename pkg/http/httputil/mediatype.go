@@ -14,7 +14,9 @@
 
 package httputil
 
-import "net/textproto"
+import (
+	"net/textproto"
+)
 
 type ContentType string
 
@@ -33,4 +35,9 @@ var (
 	HeaderKeyAccept                   = textproto.CanonicalMIMEHeaderKey("Accept")
 	HeaderKeyAcceptEncoding           = textproto.CanonicalMIMEHeaderKey("Accept-Encoding")
 	HeaderKeyUserAgent                = textproto.CanonicalMIMEHeaderKey("User-Agent")
+	HeaderKeyContentDisposition       = textproto.CanonicalMIMEHeaderKey("Content-Disposition")
+)
+
+var (
+	ContentTypeMultiPartFormData = "multipart/form-data"
 )

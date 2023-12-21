@@ -32,6 +32,10 @@ type (
 		ResponseHeader           string `json:"response.header,omitempty"`
 
 		TimeCost string `json:"time_cost,omitempty"`
+
+		AudioFileName    string `json:"audio.file.name,omitempty"`
+		AudioFileSize    string `json:"audio.file.size,omitempty"`
+		AudioFileHeaders string `json:"audio.file.headers,omitempty"`
 	}
 	AuditMetadataSecret struct {
 		IdentityPhoneNumber string `json:"identity.phone_number,omitempty"`

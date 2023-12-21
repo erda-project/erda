@@ -66,7 +66,8 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 	dbClient := dao.AuditClient()
 	_, err = dbClient.UpdateAfterLLMResponse(ctx, &updateReq)
 	if err != nil {
-		// log it
+		l := ctxhelper.GetLogger(ctx)
+		l.Errorf("failed to update audit after llm response, audit id: %s, err: %v", auditRecID, err)
 	}
 	return nil
 }
