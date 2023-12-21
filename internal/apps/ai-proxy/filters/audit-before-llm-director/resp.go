@@ -18,12 +18,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
