@@ -21,6 +21,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/bailian-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/body-size-limit"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-audio"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-chat"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-embedding"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"

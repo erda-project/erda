@@ -302,7 +302,7 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 				return
 			}
 			if signal != Continue {
-				logger.Warnf("[WARN] reverseproxy filters is not continued by %s", item.Name)
+				logger.Warnf("[WARN] reverseproxy filters is not continued by filter: %q", item.Name)
 				return
 			}
 		}

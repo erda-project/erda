@@ -147,6 +147,16 @@ func (dbClient *DBClient) UpdateAfterContextParsed(ctx context.Context, req *pb.
 	if req.IdentityPhoneNumber != "" {
 		auditMetadata.Secret.IdentityPhoneNumber = req.IdentityPhoneNumber
 	}
+	// audio info
+	if req.AudioFileName != "" {
+		auditMetadata.Public.AudioFileName = req.AudioFileName
+	}
+	if req.AudioFileSize != "" {
+		auditMetadata.Public.AudioFileSize = req.AudioFileSize
+	}
+	if req.AudioFileHeaders != "" {
+		auditMetadata.Public.AudioFileHeaders = req.AudioFileHeaders
+	}
 	cputil.MustObjJSONTransfer(&auditMetadata, &c.Metadata)
 
 	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {

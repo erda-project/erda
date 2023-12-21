@@ -89,7 +89,7 @@ func (t *CurlPrinterTransport) RoundTrip(req *http.Request) (*http.Response, err
 		t.Inner = BaseTransport
 	}
 	t.Logger.Sub(reflect.TypeOf(t).String()).
-		Debug("generated cURL command:\n\t" + GenCurl(req))
+		Debug("generated cURL command:\n\t" + GenCurl(NewInfor(nil, req)))
 	return t.Inner.RoundTrip(req)
 }
 
@@ -124,9 +124,9 @@ var BaseTransport http.RoundTripper = &http.Transport{
 	ForceAttemptHTTP2:     true,
 }
 
-func GenCurl(req *http.Request) string {
-	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, req.Method, req.URL.Scheme, req.Host, req.URL.RequestURI())
-	for k, vv := range req.Header {
+func GenCurl(infor HttpInfor) string {
+	var curl = fmt.Sprintf(`curl -v -N -X %s '%s://%s%s'`, infor.Method(), infor.URL().Scheme, infor.Host(), infor.URL().RequestURI())
+	for k, vv := range infor.Header() {
 		for _, v := range vv {
 			if strings.EqualFold(k, httputil.HeaderKeyContentLength) {
 				continue
@@ -134,12 +134,55 @@ func GenCurl(req *http.Request) string {
 			curl += fmt.Sprintf(` -H '%s: %s'`, k, v)
 		}
 	}
-	if req.Body != nil {
-		var buf = bytes.NewBuffer(nil)
-		if _, err := buf.ReadFrom(req.Body); err == nil {
-			_ = req.Body.Close()
-			curl += ` --data ` + strconv.Quote(buf.String())
-			req.Body = io.NopCloser(buf)
+	if bodyBuffer := infor.BodyBuffer(); bodyBuffer != nil {
+		// handle multipart form format
+		if strings.HasPrefix(infor.Header().Get(httputil.HeaderKeyContentType), httputil.ContentTypeMultiPartFormData) {
+			return genCurlPartsForMultipartForm(curl, bodyBuffer)
+		}
+		// normal
+		curl += ` --data ` + strconv.Quote(bodyBuffer.String())
+	}
+	return curl
+}
+
+func genCurlPartsForMultipartForm(curl string, bodyBuffer *bytes.Buffer) string {
+	lines := strings.Split(bodyBuffer.String(), "\r\n")
+	var fieldKey, value, fileName string
+	for _, line := range lines {
+		if strings.HasPrefix(line, "---") {
+			if fieldKey == "" {
+				continue
+			}
+			if value != "" {
+				curl += fmt.Sprintf(` --form %s`, strconv.Quote(fieldKey+"="+value))
+			}
+			if fileName != "" {
+				curl += fmt.Sprintf(` --form %s`, strconv.Quote(fieldKey+"=@"+fileName))
+			}
+			fieldKey = ""
+			value = ""
+			fileName = ""
+			continue
+		}
+		if strings.HasPrefix(line, httputil.HeaderKeyContentDisposition+": form-data") {
+			ss := strings.Split(line, ";")
+			for _, s := range ss {
+				s = strings.TrimSpace(s)
+				if strings.HasPrefix(s, "name=") {
+					fieldKey = strings.Trim(strings.TrimPrefix(s, "name="), `"`)
+				}
+				if strings.HasPrefix(s, "filename=") {
+					fileName = strings.Trim(strings.TrimPrefix(s, "filename="), `"`)
+				}
+			}
+		} else {
+			if fileName == "" && line != "" {
+				// not file field, treat coming lines as value. Or the coming lines are file content (data).
+				if value != "" {
+					value += "\n"
+				}
+				value += line
+			}
 		}
 	}
 	return curl
