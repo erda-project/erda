@@ -640,7 +640,7 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 		return errors.Wrap(err, "processSingleTestCase get requirement related tasks info failed")
 	}
 	for _, include := range issueRelations.IssueInclude {
-		if include.Type == apistructs.IssueTypeTask {
+		if include.Type == apistructs.IssueTypeTask && (include.TaskType == "dev" || include.TaskType == "开发") {
 			tasks = append(tasks, include.Title)
 		}
 	}
