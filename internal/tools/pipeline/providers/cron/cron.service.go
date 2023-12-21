@@ -46,6 +46,21 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("missing pipelineYml"))
 	}
 
+	// Get User Info if not exist
+	if _, ok := req.NormalLabels[apistructs.LabelUserID]; !ok {
+		if req.IdentityInfo != nil && req.IdentityInfo.UserID != "" {
+			req.NormalLabels[apistructs.LabelUserID] = req.IdentityInfo.UserID
+		}
+	}
+
+	// Get Owner Info
+	if _, ok := req.FilterLabels[apistructs.LabelOwnerUserID]; !ok {
+		if req.OwnerUser != nil && req.OwnerUser.ID != nil {
+			req.FilterLabels[apistructs.LabelOwnerUserID] = req.OwnerUser.ID.GetStringValue()
+			req.NormalLabels[apistructs.LabelOwnerUserID] = req.OwnerUser.ID.GetStringValue()
+		}
+	}
+
 	pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml))
 	if err != nil {
 		return nil, apierrors.ErrParsePipelineYml.InternalError(err)

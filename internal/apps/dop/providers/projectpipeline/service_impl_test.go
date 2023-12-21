@@ -31,7 +31,6 @@ import (
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	ppb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
-	pipelinesvcpb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -50,6 +49,12 @@ type ProjectPipelineOrgMock struct {
 func (m ProjectPipelineOrgMock) GetOrg(ctx context.Context, request *orgpb.GetOrgRequest) (*orgpb.GetOrgResponse, error) {
 	return &orgpb.GetOrgResponse{Data: &orgpb.Org{ID: 1, Name: "org"}}, nil
 }
+
+type mockLogger struct {
+	gmock.MockLogger
+}
+
+func (m *mockLogger) Debugf(template string, args ...interface{}) {}
 
 func TestGetRulesByCategoryKey(t *testing.T) {
 	tt := []struct {
@@ -968,7 +973,6 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 	type fields struct {
 		bundle       *bundle.Bundle
 		PipelineCron cronpb.CronServiceServer
-		pipelineSvc  *gmock.MockPipelineServiceServer
 	}
 	type args struct {
 		definition          *dpb.PipelineDefinition
@@ -978,8 +982,8 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 	mockPipelineCron := &MockPipelineCron{}
 
 	bdl := &bundle.Bundle{}
-	pipelineSvc := &gmock.MockPipelineServiceServer{}
-	monkey.PatchInstanceMethod(reflect.TypeOf(pipelineSvc), "PipelineCreateV2", func(_ *gmock.MockPipelineServiceServer, ctx context.Context, req *pipelinesvcpb.PipelineCreateRequestV2) (*pipelinesvcpb.PipelineCreateResponse, error) {
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(mockPipelineCron), "CronCreate", func(_ *MockPipelineCron, ctx context.Context, req *cronpb.CronCreateRequest) (*cronpb.CronCreateResponse, error) {
 		return nil, nil
 	})
 
@@ -988,19 +992,24 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 {
     "createRequest": {
         "pipelineYmlName": "pipeline1.yml",
-        "pipelineSource": "dice"
+        "pipelineSource": "dice",
+		"pipelineYml": "version: \"1.1\"\nname: \"\"\ncron: 15 * * * * *\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n "
     },
     "runParams": null
 }`
+
+	// cronExpr is not exist
 	sourceType2 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
 	sourceType2.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
 {
     "createRequest": {
         "pipelineYmlName": "pipeline2.yml",
-        "pipelineSource": "dice"
+        "pipelineSource": "dice",
+		"pipelineYml": "version: \"1.1\"\nname: \"\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n "
     },
     "runParams": null
 }`
+
 	sourceType3 := NewProjectSourceType(deftype.ErdaProjectPipelineType.String())
 	sourceType3.(*ErdaProjectSourceType).PipelineCreateRequestV2 = `
 {
@@ -1017,11 +1026,10 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "test with exist",
+			name: "test with cron exist",
 			fields: fields{
 				bundle:       bdl,
 				PipelineCron: mockPipelineCron,
-				pipelineSvc:  pipelineSvc,
 			},
 			args: args{
 				definition: &dpb.PipelineDefinition{
@@ -1032,11 +1040,10 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test with not exist",
+			name: "test cron is nil",
 			fields: fields{
 				bundle:       bdl,
 				PipelineCron: mockPipelineCron,
-				pipelineSvc:  pipelineSvc,
 			},
 			args: args{
 				definition: &dpb.PipelineDefinition{
@@ -1047,11 +1054,10 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test with error",
+			name: "test pipelineYml is invalid",
 			fields: fields{
 				bundle:       bdl,
 				PipelineCron: mockPipelineCron,
-				pipelineSvc:  pipelineSvc,
 			},
 			args: args{
 				definition: &dpb.PipelineDefinition{
@@ -1065,9 +1071,7 @@ func TestProjectPipelineService_createCronIfNotExist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &ProjectPipelineService{
-				bundle:          tt.fields.bundle,
-				PipelineCron:    tt.fields.PipelineCron,
-				pipelineService: tt.fields.pipelineSvc,
+				PipelineCron: tt.fields.PipelineCron,
 			}
 			if err := p.createCronIfNotExist(tt.args.definition, tt.args.projectPipelineType); (err != nil) != tt.wantErr {
 				t.Errorf("createCronIfNotExist() error = %v, wantErr %v", err, tt.wantErr)
