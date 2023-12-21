@@ -19,8 +19,6 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -72,7 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		p.Config.ModelIds["gpt-4"] = os.Getenv(handler.EnvAiProxyChatgpt4ModelId)
 	}
 	if p.Config.ModelIds["gpt-4"] == "" {
-		return errors.Errorf("env %s not set", handler.EnvAiProxyChatgpt4ModelId)
+		p.L.Warnf("env %s not set", handler.EnvAiProxyChatgpt4ModelId)
 	}
 
 	pb.RegisterAiFunctionImp(p.R, p.AIFunction())
