@@ -19,29 +19,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"sigs.k8s.io/yaml"
 	"strings"
 
+	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
+	"sigs.k8s.io/yaml"
+
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
-	Name                        = "context-audio"
+	Name = "context-audio"
+
 	formBodyFieldFile           = "file"
 	formBodyFieldPrompt         = "prompt"
 	formBodyFieldResponseFormat = "response_format"
 	formBodyFieldModel          = "model"
-
-	allowedAudioResponseFormat = "json"
 )
 
 var (

@@ -17,7 +17,6 @@ package dbclient
 import (
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -478,8 +477,6 @@ func (client *Client) PageListPipelines(req *pipelinepb.PipelinePagingRequest, o
 			CurrentPageSize:   currentPageSize,
 		}, nil
 	}
-
-	runtime.Callers()
 
 	// select columns
 	if len(req.SelectCols) > 0 {

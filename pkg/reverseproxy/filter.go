@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"io"
 	"net/http"
 	"net/url"
@@ -27,6 +26,8 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
@@ -307,13 +308,6 @@ func (r *infor[R]) BodyBuffer(all ...bool) *bytes.Buffer {
 		_ = request.Body.Close()
 		request.Body = io.NopCloser(bytes.NewReader(data))
 
-		//formBodyChunkBuffer := bytes.NewBuffer(make([]byte, 0, 1024))
-		//_, _ = io.CopyN(formBodyChunkBuffer, request.Body, 1024)
-		//defer func() {
-		//	// reset request body after read first 1024 bytes
-		//	request.Body = io.NopCloser(io.MultiReader(formBodyChunkBuffer, request.Body))
-		//}()
-		//formLines := strings.Split(formBodyChunkBuffer.String(), "\r\n")
 		formLines := strings.Split(bytes.NewBuffer(data).String(), "\r\n")
 		var nonFileContentLines []string
 		dataMarkInserted := false
@@ -331,16 +325,8 @@ func (r *infor[R]) BodyBuffer(all ...bool) *bytes.Buffer {
 			if char == '-' {
 				dataMarkInserted = false
 			}
-			//if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '-') {
-			//	if !dataMarkInserted {
-			//		nonFileContentLines = append(nonFileContentLines, "(data)")
-			//		dataMarkInserted = true
-			//	}
-			//	continue
-			//}
 			for _, char := range line {
 				// if char is unprintable char, like \x00, skip this line
-				//if char < 32 || char > 126 {
 				if char < 32 {
 					if !dataMarkInserted {
 						nonFileContentLines = append(nonFileContentLines, "(data)")

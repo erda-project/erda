@@ -16,9 +16,10 @@ package ctxhelper
 
 import (
 	"context"
-	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 	"net/textproto"
 	"sync"
+
+	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
