@@ -15,13 +15,17 @@
 package context
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"sigs.k8s.io/yaml"
@@ -35,6 +39,7 @@ const (
 	formBodyFieldFile           = "file"
 	formBodyFieldPrompt         = "prompt"
 	formBodyFieldResponseFormat = "response_format"
+	formBodyFieldModel          = "model"
 
 	allowedAudioResponseFormat = "json"
 )
@@ -55,6 +60,7 @@ type Config struct {
 	MaxAudioSizeStr         string            `json:"maxAudioSize" yaml:"maxAudioSize"`
 	MaxAudioSize            bytesize.ByteSize `json:"-" yaml:"-"`
 	SupportedAudioFileTypes []string          `json:"supportedAudioFileTypes" yaml:"supportedAudioFileTypes"`
+	DefaultOpenAIAudioModel string            `json:"defaultOpenAIAudioModel" yaml:"defaultOpenAIAudioModel"`
 }
 
 func New(configJSON json.RawMessage) (reverseproxy.Filter, error) {
@@ -72,12 +78,6 @@ func New(configJSON json.RawMessage) (reverseproxy.Filter, error) {
 
 func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	r := infor.Request()
-
-	// recover body finally
-	originalBody := infor.BodyBuffer(true)
-	defer func() {
-		infor.SetBody(io.NopCloser(originalBody), int64(originalBody.Len()))
-	}()
 
 	// parse multipart form
 	if err := r.ParseMultipartForm(int64(f.Config.MaxAudioSize)); err != nil {
@@ -104,6 +104,19 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		return reverseproxy.Intercept, fmt.Errorf("audio file size exceeds limit: %s (max: %s)", bytesize.ByteSize(fileInfo.Size), f.Config.MaxAudioSize)
 	}
 
+	// force set model for openai
+	modelProvider, _ := ctxhelper.GetModelProvider(ctx)
+	if modelProvider.Type == modelproviderpb.ModelProviderType_OpenAI {
+		r.MultipartForm.Value[formBodyFieldModel] = []string{f.Config.DefaultOpenAIAudioModel}
+	}
+
+	// reconstruct body
+	newMultipartBody, err := reconstructMultipartBody(r)
+	if err != nil {
+		return reverseproxy.Intercept, err
+	}
+	infor.SetBody(io.NopCloser(newMultipartBody), int64(newMultipartBody.Len()))
+
 	// put audio info into context
 	audioInfo := ctxhelper.AudioInfo{
 		FileName:    fileInfo.Filename,
@@ -113,4 +126,62 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	ctxhelper.PutAudioInfo(ctx, audioInfo)
 
 	return reverseproxy.Continue, nil
+}
+
+func reconstructMultipartBody(r *http.Request) (*bytes.Buffer, error) {
+	originalBoundary, err := getMultipartBoundary(r.Header.Get(httputil.HeaderKeyContentType))
+	if err != nil {
+		return nil, err
+	}
+
+	newBody := &bytes.Buffer{}
+	multipartWriter := multipart.NewWriter(newBody)
+	if err := multipartWriter.SetBoundary(originalBoundary); err != nil {
+		return nil, err
+	}
+	for field, files := range r.MultipartForm.File {
+		for _, file := range files {
+			part, err := multipartWriter.CreateFormFile(field, file.Filename)
+			if err != nil {
+				return nil, err
+			}
+			fileReader, err := file.Open()
+			if err != nil {
+				return nil, err
+			}
+			if _, err := io.Copy(part, fileReader); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for field, values := range r.MultipartForm.Value {
+		for _, value := range values {
+			part, err := multipartWriter.CreateFormField(field)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := io.Copy(part, strings.NewReader(value)); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if err := multipartWriter.Close(); err != nil {
+		return nil, err
+	}
+	return newBody, nil
+}
+
+func getMultipartBoundary(contentType string) (boundary string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			boundary = ""
+			err = fmt.Errorf("failed to get multipart boundary: %v", r)
+		}
+		if boundary == "" {
+			err = fmt.Errorf("failed to get multipart boundary")
+		}
+	}()
+	boundary = strings.SplitN(contentType, ";", 2)[1]
+	boundary = strings.SplitN(boundary, "=", 2)[1]
+	return boundary, nil
 }

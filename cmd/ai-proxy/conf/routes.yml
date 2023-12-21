@@ -79,6 +79,7 @@ routes:
         config:
           maxAudioSize: 25MB
           supportedAudioFileTypes: [ "flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm" ]
+          defaultOpenAIAudioModel: whisper-1
       - name: audit-before-llm-director
       - name: azure-director
         config:
