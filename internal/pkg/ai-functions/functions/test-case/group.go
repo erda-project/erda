@@ -98,7 +98,7 @@ func generateGroupsFromRequirement(ctx context.Context, wg *sync.WaitGroup, user
 		return errors.Wrap(err, "generateGroupsFromRequirement get requirement related tasks info failed")
 	}
 	for _, include := range issueRelations.IssueInclude {
-		if include.Type == apistructs.IssueTypeTask {
+		if include.Type == apistructs.IssueTypeTask && (include.TaskType == "dev" || include.TaskType == "开发") {
 			tasks = append(tasks, include.Title)
 		}
 	}
