@@ -30,6 +30,7 @@ import (
 type ProjectSourceType interface {
 	GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error)
 	GetPipelineCreateRequestV2() string
+	GeneratePipelineCreateRequestV2(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*pipelinepb.PipelineCreateRequestV2, error)
 }
 
 type ErdaProjectSourceType struct {
@@ -52,11 +53,7 @@ func NewProjectSourceType(t string) ProjectSourceType {
 	return nil
 }
 
-func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
-	app, err := p.bundle.GetApp(params.AppID)
-	if err != nil {
-		return nil, err
-	}
+func (s *ErdaProjectSourceType) GeneratePipelineCreateRequestV2(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*pipelinepb.PipelineCreateRequestV2, error) {
 	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&pipelinepb.PipelineCreateRequest{
 		PipelineYmlName:    filepath.Join(params.Path, params.FileName),
 		AppID:              params.AppID,
@@ -67,6 +64,7 @@ func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipel
 	if err != nil {
 		return nil, err
 	}
+
 	var extra apistructs.PipelineDefinitionExtraValue
 	extra.CreateRequest = createReqV2
 	b, err := json.Marshal(extra)
@@ -74,6 +72,18 @@ func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipel
 		return nil, err
 	}
 	s.PipelineCreateRequestV2 = string(b)
+	return extra.CreateRequest, nil
+}
+
+func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+	createReqV2, err := s.GeneratePipelineCreateRequestV2(ctx, p, params)
+	if err != nil {
+		return nil, err
+	}
 	return &spb.PipelineSourceCreateRequest{
 		SourceType:  params.SourceType,
 		Remote:      makeRemote(app),
@@ -98,4 +108,8 @@ func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPip
 
 func (s *GithubProjectSourceType) GetPipelineCreateRequestV2() string {
 	return s.PipelineCreateRequestV2
+}
+
+func (s *GithubProjectSourceType) GeneratePipelineCreateRequestV2(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*pipelinepb.PipelineCreateRequestV2, error) {
+	return nil, nil
 }
