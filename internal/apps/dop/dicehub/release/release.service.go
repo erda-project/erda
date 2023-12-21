@@ -1057,7 +1057,7 @@ func (s *ReleaseService) GetLatestReleasesByProjectAndVersion(projectID int64, v
 
 // RemoveDeprecatedsReleases Recycling expired release
 func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
-	d, err := time.ParseDuration(strutil.Concat("-", s.Config.MaxTimeReserved, "h")) // one month before, eg: -720h
+	d, err := time.ParseDuration(strutil.Concat("-", s.Config.MaxTimeReserved, "h"))
 	if err != nil {
 		return err
 	}
@@ -1068,7 +1068,8 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 		return err
 	}
 
-	logrus.Infof("get unrefered release before %v, count: %d", d.String(), len(releases))
+	logrus.Infof("get unrefered release before %s (%s ago), count: %d",
+		before.String(), d.String(), len(releases))
 
 	for i := range releases {
 		release := releases[i]
