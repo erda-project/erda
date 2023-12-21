@@ -48,6 +48,36 @@ type AuditSettings struct {
 	Config OrgConfig
 }
 
+// ListAuditParam Filtering params for audit log queries.
+type ListAuditParam struct {
+	// +required Start time of the query event
+	StartAt string
+	// +required End time of the query event
+	EndAt string
+	// +optional Scope type for visibility
+	ScopeType []apistructs.ScopeType
+	// +optional List of organization IDS
+	OrgID []uint64
+	// +optional List of user IDs
+	UserID []string
+	// +optional List of FDP project IDs
+	FDPProjectID []string
+	// +optional List of scope IDs
+	ScopeID []uint64
+	// +optional List of application IDs
+	AppID []uint64
+	// +optional List of project IDs
+	ProjectID []uint64
+	// +optional List of log template name
+	TemplateName []apistructs.TemplateName
+	// +optional List of client IP address
+	ClientIP []string
+	// default 1
+	PageNo int
+	// default 20
+	PageSize int
+}
+
 // TableName 设置模型对应数据库表名称
 func (Audit) TableName() string {
 	return "dice_audit"

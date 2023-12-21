@@ -71,11 +71,11 @@ type Conf struct {
 	// --- 文件管理 end ---
 
 	// audit
-	AuditCleanCron               string `env:"AUDIT_CLEAN_CRON" default:"0 0 3 * * ?"`        // audit soft delete cron
-	AuditArchiveCron             string `env:"AUDIT_ARCHIVE_CRON" default:"0 0 4 * * ?"`      // audit archive cron
-	SysAuditCleanInterval        int    `env:"SYS_AUDIT_CLEAN_INTERVAL" default:"-7"`         // sys audit clean interval
-	OrgAuditMaxRetentionDays     uint64 `env:"ORG_AUDIT_MAX_RETENTION_DAYS" default:"180"`    // org level audit max retention days
-	OrgAuditDefaultRetentionDays uint64 `env:"ORG_AUDIT_DEFAULT_RETENTION_DAYS" default:"30"` // org level audit default retention days
+	AuditCleanCron               string `env:"AUDIT_CLEAN_CRON" default:"0 0 3 * * ?"`         // audit soft delete cron
+	AuditArchiveCron             string `env:"AUDIT_ARCHIVE_CRON" default:"0 0 4 * * ?"`       // audit archive cron
+	SysAuditCleanInterval        int    `env:"SYS_AUDIT_CLEAN_INTERVAL" default:"-30"`         // sys audit clean interval
+	OrgAuditMaxRetentionDays     uint64 `env:"ORG_AUDIT_MAX_RETENTION_DAYS" default:"500"`     // org level audit max retention days
+	OrgAuditDefaultRetentionDays uint64 `env:"ORG_AUDIT_DEFAULT_RETENTION_DAYS" default:"365"` // org level audit default retention days
 
 	// erda-configs
 	ErdaConfigsBasePath string `env:"ERDA_CONFIGS_BASE_PATH" default:"common-conf/erda-configs"`
