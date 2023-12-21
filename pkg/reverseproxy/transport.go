@@ -137,24 +137,52 @@ func GenCurl(infor HttpInfor) string {
 	if bodyBuffer := infor.BodyBuffer(); bodyBuffer != nil {
 		// handle multipart form format
 		if strings.HasPrefix(infor.Header().Get(httputil.HeaderKeyContentType), httputil.ContentTypeMultiPartFormData) {
-			lines := strings.Split(bodyBuffer.String(), "\n")
-			for _, line := range lines {
-				if strings.HasPrefix(line, "Content-Disposition: form-data") {
-					ss := strings.Split(line, ";")
-					for _, s := range ss {
-						s = strings.TrimSpace(s)
-						if strings.HasPrefix(s, "filename=") {
-							filename := strings.TrimPrefix(s, "filename=")
-							curl += fmt.Sprintf(` --form 'file=@%s'`, filename)
-							break
-						}
-					}
-					break
+			return genCurlPartsForMultipartForm(curl, bodyBuffer)
+		}
+		// normal
+		curl += ` --data ` + strconv.Quote(bodyBuffer.String())
+	}
+	return curl
+}
+
+func genCurlPartsForMultipartForm(curl string, bodyBuffer *bytes.Buffer) string {
+	lines := strings.Split(bodyBuffer.String(), "\r\n")
+	var fieldKey, value, fileName string
+	for _, line := range lines {
+		if strings.HasPrefix(line, "---") {
+			if fieldKey == "" {
+				continue
+			}
+			if value != "" {
+				curl += fmt.Sprintf(` --form %s`, strconv.Quote(fieldKey+"="+value))
+			}
+			if fileName != "" {
+				curl += fmt.Sprintf(` --form %s`, strconv.Quote(fieldKey+"=@"+fileName))
+			}
+			fieldKey = ""
+			value = ""
+			fileName = ""
+			continue
+		}
+		if strings.HasPrefix(line, httputil.HeaderKeyContentDisposition+": form-data") {
+			ss := strings.Split(line, ";")
+			for _, s := range ss {
+				s = strings.TrimSpace(s)
+				if strings.HasPrefix(s, "name=") {
+					fieldKey = strings.Trim(strings.TrimPrefix(s, "name="), `"`)
+				}
+				if strings.HasPrefix(s, "filename=") {
+					fileName = strings.Trim(strings.TrimPrefix(s, "filename="), `"`)
 				}
 			}
 		} else {
-			// normal
-			curl += ` --data ` + strconv.Quote(bodyBuffer.String())
+			if fileName == "" && line != "" {
+				// not file field, treat coming lines as value. Or the coming lines are file content (data).
+				if value != "" {
+					value += "\n"
+				}
+				value += line
+			}
 		}
 	}
 	return curl
