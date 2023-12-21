@@ -105,14 +105,18 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
 
-	// if the OrgID in the request param does not match the one in the header
-	headerOrgID, err := user.GetOrgIDFromBundleHeader(r)
-	if err != nil {
-		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
+	var headerOrgID uint64
+	var err error
+	// if it is sys,the headerOrgID is "", not use the GetOrgID method to parse Uint64
+	if !listReq.Sys {
+		headerOrgID, err = user.GetOrgID(r)
+		if err != nil {
+			return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
+		}
 	}
 
 	// check list Request param
-	if err := listReq.Check(headerOrgID); err != nil {
+	if err = listReq.Check(headerOrgID); err != nil {
 		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
 	}
 
@@ -182,10 +186,13 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 		return apierrors.ErrExportExcelAudit.InvalidParameter(err)
 	}
 
-	// if the OrgID in the request param does not match the one in the header
-	headerOrgID, err := user.GetOrgIDFromBundleHeader(r)
-	if err != nil {
-		return apierrors.ErrListAudit.InvalidParameter(err)
+	var headerOrgID uint64
+	// if it is sys,the headerOrgID is "", not use the GetOrgID method to parse Uint64
+	if !listReq.Sys {
+		headerOrgID, err = user.GetOrgID(r)
+		if err != nil {
+			return apierrors.ErrListAudit.InvalidParameter(err)
+		}
 	}
 
 	// check list Request param

@@ -402,11 +402,12 @@ func (a *AuditsListRequest) Check(headerOrgID uint64) error {
 	}
 
 	if !a.Sys && len(a.OrgID) >= 1 {
-		// if it is not sys scope, check param.OrgID
+		// if it is not sys scope, the OrgID can't exceed 1
 		if len(a.OrgID) > 1 {
 			return errors.Errorf("invalid request, when sys is false, the OrgID can't exceed 1")
 		}
 
+		// if the OrgID in the request param does not match the one in the header
 		if a.OrgID[0] != headerOrgID {
 			return errors.Errorf("invaid request, when sys is false, the OrgID should match your origanization ID")
 		}

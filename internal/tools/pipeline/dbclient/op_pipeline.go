@@ -280,7 +280,6 @@ func (client *Client) PageListPipelines(req *pipelinepb.PipelinePagingRequest, o
 	if req.PageNum <= 0 {
 		req.PageNum = 1
 	}
-
 	// default pageSize = 20 (Range: 0 < pageSize <= 100)
 	if req.PageSize <= 0 || (req.PageSize > 100 && !req.LargePageSize) {
 		req.PageSize = 20
