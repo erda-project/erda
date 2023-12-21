@@ -188,7 +188,8 @@ func (p *ProjectPipelineService) CreateSourcePreCheck(ctx context.Context, param
 
 	if len(definitionList.Data) == 0 {
 		return &pb.CreateProjectPipelineSourcePreCheckResponse{
-			Pass: true,
+			Pass:   true,
+			Source: resp.Data[0],
 		}, nil
 	}
 	definitionName := definitionList.Data[0].Name
@@ -332,14 +333,34 @@ func (p *ProjectPipelineService) CreateOne(ctx context.Context, params *pb.Creat
 	}
 
 	pipelineSourceType := NewProjectSourceType(params.SourceType)
-	sourceReq, err := pipelineSourceType.GenerateReq(ctx, p, params)
-	if err != nil {
-		return nil, err
+
+	// construct sourceReq from sourceCheckResult
+	var sourceReq *spb.PipelineSourceCreateRequest
+	sourceRsp := &spb.PipelineSourceCreateResponse{
+		PipelineSource: sourceCheckResult.Source,
 	}
 
-	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
-	if err != nil {
-		return nil, err
+	// if source is exist, ignore the logic of create source
+	if sourceRsp.PipelineSource == nil {
+		sourceReq, err = pipelineSourceType.GenerateReq(ctx, p, params)
+		if err != nil {
+			return nil, err
+		}
+
+		sourceRsp, err = p.PipelineSource.Create(ctx, sourceReq)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// if sourceReq is nil, it means that source is exist, get pipelineyml from sourceRsp and construct the createV2
+	if sourceReq == nil {
+		sourceReq = &spb.PipelineSourceCreateRequest{
+			PipelineYml: sourceRsp.PipelineSource.PipelineYml,
+		}
+		if _, err = pipelineSourceType.GeneratePipelineCreateRequestV2(ctx, p, params); err != nil {
+			return nil, err
+		}
 	}
 
 	location, err := p.makeLocationByAppID(params.AppID)
