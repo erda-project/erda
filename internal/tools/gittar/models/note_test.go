@@ -26,6 +26,7 @@ import (
 )
 
 const diffLineExamples = `
+oldLineNo: -1, newLineNo: -1, type: "section"
 oldLineNo:  1, newLineNo: 1,  type: "context"
 oldLineNo:  2, newLineNo: 2,  type: "context"
 oldLineNo: -1, newLineNo: 3,  type: "add"
@@ -109,10 +110,10 @@ func Test_findDiffSectionInOneFile(t *testing.T) {
 			wantDiffLineLen: 0,
 		},
 		{
-			name:            "invalid: oldLine == newLine == -1",
+			name:            "valid: oldLine == newLine == -1, means section",
 			args:            args{req: NoteRequest{OldLine: -1, NewLine: -1}},
-			wantErr:         true,
-			wantDiffLineLen: 0,
+			wantErr:         false,
+			wantDiffLineLen: 1,
 		},
 		{
 			name:            "valid: oldLine=1, newLineNo=1, oldLineTo=-1, newLineTo=12",

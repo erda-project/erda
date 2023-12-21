@@ -342,6 +342,7 @@ func (svc *Service) createAISession(note Note, user *User) (string, error) {
 
 // findDiffSectionInOneFile
 // diffLines example:
+// oldLineNo: -1, newLineNo: -1, type: "section"
 // oldLineNo:  1, newLineNo: 1,  type: "context"
 // oldLineNo:  2, newLineNo: 2,  type: "context"
 // oldLineNo: -1, newLineNo: 3,  type: "add"
@@ -367,11 +368,7 @@ func findDiffSectionInOneFile(req NoteRequest, diffFile *gitmodule.DiffFile) (*g
 		req.OldLineTo = req.OldLine
 		req.NewLineTo = req.NewLine
 	}
-	// 3. 校验合法性，oldLine/newLine 和 oldLineTo/newLineTo 不能同时为 -1
-	if (req.OldLine == -1 && req.NewLine == -1) || (req.OldLineTo == -1 && req.NewLineTo == -1) {
-		return nil, nil, fmt.Errorf("invalid line numbers: oldLine/newLine & oldLineTo/newLineTo cannot be -1 at the same time")
-	}
-	// 4. 校验合法性，当 To != -1 时，From 必须小于等于 To
+	// 3. 校验合法性，当 To != -1 时，From 必须小于等于 To
 	if req.OldLineTo != -1 && req.OldLine > req.OldLineTo {
 		return nil, nil, fmt.Errorf("invalid line numbers: oldLine must <= oldLineTo")
 	}
