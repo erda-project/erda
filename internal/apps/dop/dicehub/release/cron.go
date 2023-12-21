@@ -56,7 +56,7 @@ func (p *provider) ImageGCCron(client *v3.Client) {
 				logrus.Infof("key: %s already exists in etcd, don't run during this turn", key)
 				continue
 			}
-			if err := p.releaseService.RemoveDeprecatedsReleases(now); err != nil {
+			if err := p.releaseService.RemoveDeprecatedsReleases(next); err != nil {
 				logrus.Warnf("remove deprecated release error: %v", err)
 			}
 			if _, err := client.Delete(context.Background(), key); err != nil {

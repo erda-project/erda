@@ -799,20 +799,22 @@ func convertToListReleaseResponse(release *db.Release, tagIDs []uint64, tagsMap 
 
 // GetImages get image by ReleaseRequest
 func (s *ReleaseService) GetImages(dices []string) []*imagedb.Image {
+	l := logrus.WithField("func", "*ReleaseService.GetImages")
+
 	existed := make(map[string]struct{})
 	images := make([]*imagedb.Image, 0)
 	for _, yml := range dices {
-		var dice diceyml.Object
-		err := yaml.Unmarshal([]byte(yml), &dice)
+		dice, err := diceyml.New([]byte(yml), true)
 		if err != nil {
+			l.Errorf("failed to parse diceyml, err: %v", err)
 			continue
 		}
 
 		// Get images from dice.yml
-		for key, service := range dice.Services {
+		for key, service := range dice.Obj().Services {
 			// Check service if contain any image
 			if service.Image == "" {
-				logrus.Errorf("service %s doesn't contain any image", key)
+				l.Errorf("service %s doesn't contain any image", key)
 				continue
 			}
 			repoName, tag := parseImage(service.Image)
@@ -826,10 +828,10 @@ func (s *ReleaseService) GetImages(dices []string) []*imagedb.Image {
 				existed[image.Image] = struct{}{}
 			}
 		}
-		for key, job := range dice.Jobs {
+		for key, job := range dice.Obj().Jobs {
 			// Check service if contain any image
 			if job.Image == "" {
-				logrus.Errorf("job %s doesn't contain any image", key)
+				l.Errorf("job %s doesn't contain any image", key)
 				continue
 			}
 			repoName, tag := parseImage(job.Image)
@@ -844,6 +846,7 @@ func (s *ReleaseService) GetImages(dices []string) []*imagedb.Image {
 			}
 		}
 	}
+
 	return images
 }
 
