@@ -24,10 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
@@ -211,6 +211,11 @@ func (e *Endpoints) pipelineCronCreate(ctx context.Context, r *http.Request, var
 		CronStartFrom:          req.CronStartFrom,
 		IncomingSecrets:        req.GetSecrets(),
 		PipelineDefinitionID:   req.DefinitionID,
+		IdentityInfo: &commonpb.IdentityInfo{
+			UserID:         identityInfo.UserID,
+			InternalClient: identityInfo.InternalClient,
+		},
+		OwnerUser: req.OwnerUser,
 	})
 	if err != nil {
 		return errorresp.ErrResp(err)

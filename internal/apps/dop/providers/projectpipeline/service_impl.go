@@ -31,6 +31,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
@@ -480,6 +481,20 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 		return err
 	}
 
+	createV2 := extra.CreateRequest
+	createV2.DefinitionID = definition.ID
+
+	// parse pipelineYml and can use the `pipelineYml.Spec().xxx` to get the field
+	pipelineYml, err := pipelineyml.New([]byte(createV2.PipelineYml), pipelineyml.WithEnvs(createV2.Envs))
+	if err != nil {
+		return apierrors.ErrParseProjectPackage.InternalError(err)
+	}
+
+	// if cronExpr is not exist return it,otherwise create cron
+	if pipelineYml.Spec().Cron == "" {
+		return nil
+	}
+
 	crons, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 		AllSources: false,
 		Sources:    []string{extra.CreateRequest.PipelineSource},
@@ -494,14 +509,50 @@ func (p *ProjectPipelineService) createCronIfNotExist(definition *dpb.PipelineDe
 		return nil
 	}
 
-	createV2 := extra.CreateRequest
-	createV2.DefinitionID = definition.ID
-	_, err = p.pipelineService.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.DOP()), createV2)
+	cronCreateRequest, err := p.constructCronCreateRequestFromV2(createV2, pipelineYml)
+	if err != nil {
+		return fmt.Errorf("failed to constructCronCreateRequestFromV2,err :%v", err)
+	}
+
+	_, err = p.PipelineCron.CronCreate(apis.WithInternalClientContext(context.Background(), discover.DOP()), cronCreateRequest)
 	if err != nil {
 		return fmt.Errorf("failed to CreatePipeline, err: %v", err)
 	}
 
 	return nil
+}
+
+// constructCronCreateRequestFromV2 make `PipelineCreateRequestV2` to `CronCreateRequest`
+func (p *ProjectPipelineService) constructCronCreateRequestFromV2(req *pipelinesvcpb.PipelineCreateRequestV2, pipelineYml *pipelineyml.PipelineYml) (*cronpb.CronCreateRequest, error) {
+	// valid
+	if pipelineYml == nil {
+		var err error
+		pipelineYml, err = pipelineyml.New([]byte(req.PipelineYml), pipelineyml.WithEnvs(req.Envs))
+		if err != nil {
+			return &cronpb.CronCreateRequest{}, apierrors.ErrParseProjectPackage.InternalError(err)
+		}
+	}
+
+	return &cronpb.CronCreateRequest{
+		CronExpr:               pipelineYml.Spec().Cron,
+		PipelineYmlName:        req.PipelineYmlName,
+		PipelineSource:         apistructs.PipelineSource(req.PipelineSource).String(),
+		Enable:                 wrapperspb.Bool(false),
+		PipelineYml:            req.PipelineYml,
+		ClusterName:            req.ClusterName,
+		FilterLabels:           req.Labels,
+		NormalLabels:           req.NormalLabels,
+		Envs:                   req.Envs,
+		ConfigManageNamespaces: req.ConfigManageNamespaces,
+		CronStartFrom:          req.CronStartFrom,
+		IncomingSecrets:        req.Secrets,
+		PipelineDefinitionID:   req.DefinitionID,
+		IdentityInfo: &commonpb.IdentityInfo{
+			UserID:         req.UserID,
+			InternalClient: req.InternalClient,
+		},
+		OwnerUser: req.OwnerUser,
+	}, nil
 }
 
 func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64, definitionID, name string) (bool, error) {
