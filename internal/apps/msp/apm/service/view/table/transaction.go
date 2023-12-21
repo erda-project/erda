@@ -38,9 +38,8 @@ var (
 )
 
 var TransactionTableSortFieldSqlMap = map[string]string{
-	columnReqCount.Key:    "sum(elapsed_count::field)",
-	columnErrorCount.Key:  "sum(if(eq(error::tag, 'true'),elapsed_count::field,0))",
-	columnAvgDuration.Key: "sum(elapsed_sum::field)/sum(elapsed_count::field)",
+	columnReqCount.Key:   "sum(elapsed_count::field)",
+	columnErrorCount.Key: "sum(if(eq(error::tag, 'true'),elapsed_count::field,0))",
 }
 
 type TransactionTableRow struct {
