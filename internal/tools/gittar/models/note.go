@@ -359,6 +359,10 @@ func (svc *Service) createAISession(note Note, user *User) (string, error) {
 // oldLineNo: -1, newLineNo: 12, type: "add"
 func findDiffSectionInOneFile(req NoteRequest, diffFile *gitmodule.DiffFile) (*gitmodule.DiffSection, []*gitmodule.DiffLine, error) {
 	// check line numbers
+	// 0. 如果均为 0，说明不需要 find section (例如 MR_FILE 类型的 AI 评审，只是需要 req 里的 oldPath/newPath)
+	if req.OldLine == 0 && req.NewLine == 0 && req.OldLineTo == 0 && req.NewLineTo == 0 {
+		return nil, nil, nil
+	}
 	// 1. 兼容老数据：如果 oldLineTo 或 newLineTo 有一个为 0，则必须同时为 0
 	if (req.OldLineTo == 0 || req.NewLineTo == 0) && req.OldLineTo|req.NewLineTo != 0 {
 		return nil, nil, fmt.Errorf("invalid line numbers: oldLineTo and newLineTo must be 0 at the same time")

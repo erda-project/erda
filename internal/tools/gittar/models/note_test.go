@@ -95,42 +95,56 @@ func Test_findDiffSectionInOneFile(t *testing.T) {
 		name            string
 		args            args
 		wantErr         bool
+		wantSection     bool
 		wantDiffLineLen int
 	}{
+		{
+			name:            "MR_FILE type aiCodeReview",
+			args:            args{req: NoteRequest{OldLine: 0, NewLine: 0, OldLineTo: 0, NewLineTo: 0}},
+			wantErr:         false,
+			wantSection:     false,
+			wantDiffLineLen: 0,
+		},
 		{
 			name:            "invalid: oldLineTo and newLineTo must be 0 at the same time",
 			args:            args{req: NoteRequest{OldLineTo: 0, NewLineTo: 1}},
 			wantErr:         true,
+			wantSection:     false,
 			wantDiffLineLen: 0,
 		},
 		{
 			name:            "invalid: oldLineTo < oldLine, when oldLineTo != -1",
 			args:            args{req: NoteRequest{OldLine: 4, OldLineTo: 3, NewLine: 4, NewLineTo: -1}},
 			wantErr:         true,
+			wantSection:     false,
 			wantDiffLineLen: 0,
 		},
 		{
 			name:            "valid: oldLine == newLine == -1, means section",
 			args:            args{req: NoteRequest{OldLine: -1, NewLine: -1}},
 			wantErr:         false,
+			wantSection:     false,
 			wantDiffLineLen: 1,
 		},
 		{
 			name:            "valid: oldLine=1, newLineNo=1, oldLineTo=-1, newLineTo=12",
 			args:            args{req: NoteRequest{OldLine: 1, NewLine: 1, OldLineTo: -1, NewLineTo: 12}},
 			wantErr:         false,
+			wantSection:     true,
 			wantDiffLineLen: validLineCount,
 		},
 		{
 			name:            "valid: oldLine=-1, newLineNo=4, oldLineTo=4, newLineTo=10",
 			args:            args{req: NoteRequest{OldLine: -1, NewLine: 4, OldLineTo: 4, NewLineTo: 10}},
 			wantErr:         false,
+			wantSection:     true,
 			wantDiffLineLen: 7 + RelatedDiffLinesCountBefore,
 		},
 		{
 			name:            "valid: oneline, oldLine=3, newLineNo=9, oldLineTo=3, newLineTo=9",
 			args:            args{req: NoteRequest{OldLine: 3, NewLine: 9, OldLineTo: 3, NewLineTo: 9}},
 			wantErr:         false,
+			wantSection:     true,
 			wantDiffLineLen: 1 + RelatedDiffLinesCountBefore,
 		},
 	}
@@ -145,8 +159,10 @@ func Test_findDiffSectionInOneFile(t *testing.T) {
 				if len(findDiffLines) != tt.wantDiffLineLen {
 					t.Errorf("findDiffSectionInOneFile() gotDiffLineLen = %v, want %v", len(findDiffLines), tt.wantDiffLineLen)
 				}
-				if !reflect.DeepEqual(findSection, diffFile.Sections[0]) {
-					t.Errorf("findDiffSectionInOneFile() gotSection = %v, want %v", findSection, diffFile.Sections[0])
+				if tt.wantSection {
+					if !reflect.DeepEqual(findSection, diffFile.Sections[0]) {
+						t.Errorf("findDiffSectionInOneFile() gotSection = %v, want %v", findSection, diffFile.Sections[0])
+					}
 				}
 			}
 		})
