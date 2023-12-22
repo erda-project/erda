@@ -77,6 +77,10 @@ type provider struct {
 	personalEfficiencySet *personalEfficiencyCache
 }
 
+type itemCollector struct {
+	helper *provider
+}
+
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithErdaServer())
 	js, err := jsonstore.New()
@@ -106,8 +110,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(p)
 
+	i := &itemCollector{
+		helper: p,
+	}
+	registryIDs := prometheus.NewRegistry()
+	registryIDs.MustRegister(i)
+
 	p.Register.Add(http.MethodGet, "/personal-metrics", func(w http.ResponseWriter, r *http.Request) {
 		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(w, r)
+	})
+	p.Register.Add(http.MethodGet, "/personal-metrics-item-ids", func(w http.ResponseWriter, r *http.Request) {
+		promhttp.HandlerFor(registryIDs, promhttp.HandlerOpts{}).ServeHTTP(w, r)
 	})
 	p.Register.Add(http.MethodPost, "/api/efficiency-measure/actions/query", p.queryPersonalEfficiency)
 	p.Register.Add(http.MethodPost, "/api/personal-contribution/actions/query", p.queryPersonalContributors)
