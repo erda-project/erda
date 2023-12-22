@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-audio"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-chat"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-embedding"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-image"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/finalize"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/initialize"

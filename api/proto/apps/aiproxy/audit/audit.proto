@@ -103,6 +103,11 @@ message AuditUpdateRequestAfterContextParsed {
     string audioFileName = 15;
     string audioFileSize = 16;
     string audioFileHeaders = 17;
+
+    // image info
+    string imageQuality = 18;
+    string imageSize = 19;
+    string imageStyle = 20;
 }
 
 message AuditUpdateRequestAfterLLMDirectorInvoke {
