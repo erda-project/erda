@@ -51,11 +51,10 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 		}
 	case modelpb.ModelType_audio:
 		var openaiAudioResp openai.AudioResponse
-		respBufferStr := respBuffer.String()
-		if err := json.NewDecoder(respBuffer).Decode(&openaiAudioResp); err == nil {
+		if err := json.Unmarshal([]byte(respBuffer.String()), &openaiAudioResp); err == nil {
 			completion = openaiAudioResp.Text
 		} else {
-			completion = respBufferStr
+			completion = respBuffer.String()
 		}
 	}
 
