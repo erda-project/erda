@@ -298,7 +298,10 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 			signal, err := filter.OnRequest(ctx, rw, infor)
 			if err != nil {
-				http.Error(rw, fmt.Sprintf(`{"success": false, "message": %s, "error": %s}`, strconv.Quote(http.StatusText(http.StatusBadRequest)), strconv.Quote(err.Error())), http.StatusBadRequest)
+				// set content-type to application/json
+				rw.Header().Set("Content-Type", "application/json")
+				rw.WriteHeader(http.StatusBadRequest)
+				rw.Write([]byte(fmt.Sprintf(`{"success": false, "message": %s, "error": %s}`, strconv.Quote(http.StatusText(http.StatusBadRequest)), strconv.Quote(err.Error()))))
 				return
 			}
 			if signal != Continue {
