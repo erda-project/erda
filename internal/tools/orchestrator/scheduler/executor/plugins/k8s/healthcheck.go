@@ -100,7 +100,7 @@ func NewHealthCheck(hc *apistructs.NewHealthCheck) *apiv1.Probe {
 			Scheme: apiv1.URIScheme("HTTP"),
 		}
 
-		if times := int32(httpCheck.Duration) / 15; times > probe.FailureThreshold {
+		if times := int32(httpCheck.Duration) / 15; times > 0 {
 			probe.FailureThreshold = times
 		}
 	} else if hc.ExecHealthCheck != nil {
