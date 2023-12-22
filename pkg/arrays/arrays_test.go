@@ -49,3 +49,12 @@ func TestIsArrayContained(t *testing.T) {
 	assert.Equal(t, index, 0)
 	assert.Equal(t, flag, false)
 }
+func TestDifferenceSet(t *testing.T) {
+	arr1 := []uint64{1, 2, 3, 4, 5}
+	arr2 := []uint64{2, 4}
+
+	result := DifferenceSet(arr1, arr2)
+
+	expectedResult := []uint64{1, 3, 5}
+	assert.Equal(t, expectedResult, result)
+}

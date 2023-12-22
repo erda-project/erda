@@ -23,6 +23,7 @@ import (
 
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -71,6 +72,10 @@ type provider struct {
 	iterationSet *iterationCache
 }
 
+type iterationCollector struct {
+	helper *PrometheusCollector
+}
+
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithErdaServer())
 	js, err := jsonstore.New()
@@ -94,7 +99,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		},
 	}
 
-	prometheus.MustRegister(&PrometheusCollector{
+	pr := &PrometheusCollector{
 		infoProvider:        p,
 		iterationLabelsFunc: p.iterationLabelsFunc,
 		errors: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -103,11 +108,21 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			Help:      "1 if there was an error while getting iteration metrics, 0 otherwise",
 		}),
 		iterationMetrics: allIterationMetrics,
-	})
+	}
+	prometheus.MustRegister(pr)
+	i := &iterationCollector{
+		helper: pr,
+	}
+	registryIDs := prometheus.NewRegistry()
+	registryIDs.MustRegister(i)
+
 	p.orgSet = &orgCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
 	p.projectSet = &projectCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
 	p.iterationSet = &iterationCache{cache.New(cache.NoExpiration, cache.NoExpiration)}
 
+	p.Register.Add(http.MethodGet, "/metrics-item-ids", func(w http.ResponseWriter, r *http.Request) {
+		promhttp.HandlerFor(registryIDs, promhttp.HandlerOpts{}).ServeHTTP(w, r)
+	})
 	p.Register.Add(http.MethodPost, "/api/project-report/actions/query", p.queryProjectReport)
 	return nil
 }
@@ -142,6 +157,10 @@ func (p *provider) GetRequestedIterationsInfo() (map[uint64]*IterationInfo, erro
 	result := make(map[uint64]*IterationInfo)
 	p.iterationSet.Iterate(func(key string, value interface{}) error {
 		iterationInfo := value.(*IterationInfo)
+		if iterationInfo.IterationMetricFields == nil || iterationInfo.IterationMetricFields.IsValid() {
+			fields, _ := p.getIterationFields(iterationInfo)
+			iterationInfo.IterationMetricFields = fields
+		}
 		result[iterationInfo.Iteration.ID] = iterationInfo
 		return nil
 	})

@@ -23,6 +23,8 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
+	"github.com/erda-project/erda/pkg/arrays"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (p *provider) refreshBasicIterations() error {
@@ -149,6 +151,7 @@ func (p *provider) getIterationFields(iter *IterationInfo) (*IterationMetricFiel
 func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFields, error) {
 	fields := &IterationMetricFields{
 		CalculatedAt: time.Now(),
+		UUID:         uuid.New(),
 	}
 	var doneReqStateIDs []int64
 	doneReqStates, err := p.issueDB.GetIssuesStatesByTypes(&apistructs.IssueStatesRequest{
@@ -231,28 +234,38 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		wontfixBugStateIDs = append(wontfixBugStateIDs, wontfixBugStates[i].ID)
 	}
 
-	wontfixBugTotal, err := p.issueDB.GetIssueNumByStates(iter.Iteration.ID, apistructs.IssueTypeBug, wontfixBugStateIDs)
+	wontfixBugTotal, wontfixBugTotalIDs, err := p.issueDB.GetIssueNumByStates(iter.Iteration.ID, apistructs.IssueTypeBug, wontfixBugStateIDs)
 	if err != nil {
 		return nil, err
 	}
 	fields.BugWontfixTotal = wontfixBugTotal
+	fields.BugWontfixTotalIDs = wontfixBugTotalIDs
 
 	iterationSummary := p.issueDB.GetIssueSummary(int64(iter.Iteration.ID), doneTaskStateIDs, doneBugStateIDs, doneReqStateIDs)
 
 	fields.TaskTotal = uint64(iterationSummary.Task.UnDone + iterationSummary.Task.Done)
+	fields.TaskTotalIDs = append(iterationSummary.TaskDoneCountIDs, iterationSummary.TaskUnDoneCountIDs...)
 	fields.RequirementTotal = uint64(iterationSummary.Requirement.UnDone + iterationSummary.Requirement.Done)
+	fields.RequirementTotalIDs = append(iterationSummary.ReqDoneCountIDs, iterationSummary.ReqUnDoneCountIDs...)
 	fields.RequirementDoneTotal = uint64(iterationSummary.Requirement.Done)
-	requirementInclusionTaskNum, err := p.issueDB.GetRequirementInclusionTaskNum(iter.Iteration.ID)
+	fields.RequirementDoneTotalIDs = iterationSummary.ReqDoneCountIDs
+	fields.TaskDoneTotalIDs = iterationSummary.TaskDoneCountIDs
+	fields.BugDoneTotalIDs = iterationSummary.BugDoneCountIDs
+	fields.BugUndoneTotalIDs = iterationSummary.BugUnDoneCountIDs
+
+	requirementInclusionTaskNum, requirementInclusionTaskNumIDs, err := p.issueDB.GetRequirementInclusionTaskNum(iter.Iteration.ID)
 	if err != nil {
 		return nil, err
 	}
 	fields.RequirementAssociatedTaskTotal = requirementInclusionTaskNum
+	fields.RequirementAssociatedTaskTotalIDs = requirementInclusionTaskNumIDs
 
-	workingTaskTotal, err := p.issueDB.GetIssueNumByStates(iter.Iteration.ID, apistructs.IssueTypeTask, workingTaskStateIDs)
+	workingTaskTotal, workingTaskTotalIDs, err := p.issueDB.GetIssueNumByStates(iter.Iteration.ID, apistructs.IssueTypeTask, workingTaskStateIDs)
 	if err != nil {
 		return nil, err
 	}
 	fields.TaskWorkingTotal = workingTaskTotal
+	fields.TaskWorkingTotalIDs = workingTaskTotalIDs
 
 	totalTaskEstimateTime, err := p.issueDB.GetIssuesManHour(
 		apistructs.IssuesStageRequest{
@@ -272,7 +285,7 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 		fields.RequirementCompleteSchedule = float64(iterationSummary.Requirement.Done) / float64(fields.RequirementTotal)
 		fields.RequirementAssociatedPercent = float64(requirementInclusionTaskNum) / float64(fields.RequirementTotal)
 	}
-	taskBeInclusionReqNum, err := p.issueDB.GetTaskConnRequirementNum(iter.Iteration.ID)
+	taskBeInclusionReqNum, taskBeInclusionReqNumIDs, err := p.issueDB.GetTaskConnRequirementNum(iter.Iteration.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -290,26 +303,34 @@ func (p *provider) calIterationFields(iter *IterationInfo) (*IterationMetricFiel
 	fields.ProjectAssigneeNum = uint64(len(projectUndoneTaskAssignees))
 	fields.TaskDoneTotal = uint64(iterationSummary.Task.Done)
 	fields.TaskBeInclusionRequirementTotal = taskBeInclusionReqNum
+	fields.TaskBeInclusionRequirementTotalIDs = taskBeInclusionReqNumIDs
+
 	if fields.TaskTotal > 0 {
 		fields.TaskUnAssociatedTotal = fields.TaskTotal - taskBeInclusionReqNum
+		fields.TaskUnAssociatedTotalIDs = iterationSummary.TaskUnDoneCountIDs
 		fields.TaskCompleteSchedule = float64(iterationSummary.Task.Done) / float64(fields.TaskTotal)
 		fields.TaskAssociatedPercent = float64(taskBeInclusionReqNum) / float64(fields.TaskTotal)
 	}
 
 	fields.BugTotal = uint64(iterationSummary.Bug.UnDone+iterationSummary.Bug.Done) - wontfixBugTotal
 	fields.BugWithWonfixTotal = uint64(iterationSummary.Bug.UnDone + iterationSummary.Bug.Done)
-	seriousBugNum, err := p.issueDB.GetSeriousBugNum(iter.Iteration.ID)
+	fields.BugWithWonfixTotalIDs = append(iterationSummary.BugDoneCountIDs, iterationSummary.BugUnDoneCountIDs...)
+	fields.BugTotalIDs = arrays.DifferenceSet(fields.BugWithWonfixTotalIDs, fields.BugWontfixTotalIDs)
+	seriousBugNum, seriousBugNumIDs, err := p.issueDB.GetSeriousBugNum(iter.Iteration.ID)
 	if err != nil {
 		return nil, err
 	}
-	demandDesignBugNum, err := p.issueDB.GetDemandDesignBugNum(iter.Iteration.ID)
+	demandDesignBugNum, demandDesignBugNumIDs, err := p.issueDB.GetDemandDesignBugNum(iter.Iteration.ID)
 	if err != nil {
 		return nil, err
 	}
-	reopenBugNum, _, err := p.issueDB.BugReopenCount(iter.Iteration.ProjectID, []uint64{iter.Iteration.ID})
+	reopenBugNum, _, reopenBugNumIDs, err := p.issueDB.BugReopenCount(iter.Iteration.ProjectID, []uint64{iter.Iteration.ID})
 	fields.SeriousBugTotal = seriousBugNum
+	fields.SeriousBugTotalIDs = seriousBugNumIDs
 	fields.DemandDesignBugTotal = demandDesignBugNum
+	fields.DemandDesignBugTotalIDs = demandDesignBugNumIDs
 	fields.ReopenBugTotal = reopenBugNum
+	fields.ReopenBugTotalIDs = reopenBugNumIDs
 	fields.BugDoneTotal = uint64(iterationSummary.Bug.Done)
 	if fields.BugTotal > 0 {
 		fields.BugCompleteSchedule = float64(iterationSummary.Bug.Done) / float64(fields.BugTotal)
@@ -366,5 +387,18 @@ func (p *provider) iterationLabelsFunc(iter *IterationInfo) map[string]string {
 		return labels
 	}
 	labels[labelOrgName] = orgDto.Name
+	labels[labelIterationItemUUID] = ""
+	return labels
+}
+
+func (i *iterationCollector) iterationIDsLabelsFunc(iter *IterationInfo) map[string]string {
+	if iter.IterationMetricFields == nil {
+		return nil
+	}
+	labels := map[string]string{
+		"uuid":         iter.IterationMetricFields.UUID,
+		"metrics_type": "",
+		"ids":          "",
+	}
 	return labels
 }

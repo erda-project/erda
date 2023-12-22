@@ -177,21 +177,29 @@ type Counter struct {
 }
 
 // GetRequirementInclusionTaskNum get the number of requirements associated with the task in this iteration
-func (client *DBClient) GetRequirementInclusionTaskNum(iterationID uint64) (uint64, error) {
-	var count Counter
-	if err := client.Table("dice_issue_relation").Select("count(distinct(issue_id)) as count").Where(fmt.Sprintf("issue_id in (select id from dice_issues where iteration_id='%d' and type='REQUIREMENT' and deleted=0) and type='inclusion'", iterationID)).
-		Find(&count).Error; err != nil {
-		return 0, err
+func (client *DBClient) GetRequirementInclusionTaskNum(iterationID uint64) (issueRelationIDsCount uint64, issueRelationIDsUint64 []uint64, err error) {
+	var issueRelationIDs []IssueRelation
+	if err = client.Table("dice_issue_relation").Select("distinct(issue_id)").Where(fmt.Sprintf("issue_id in (select id from dice_issues where iteration_id='%d' and type='REQUIREMENT' and deleted=0) and type='inclusion'", iterationID)).
+		Find(&issueRelationIDs).Error; err != nil {
+		return 0, []uint64{}, err
 	}
-	return count.Count, nil
+	for _, v := range issueRelationIDs {
+		issueRelationIDsUint64 = append(issueRelationIDsUint64, v.IssueID)
+	}
+	issueRelationIDsCount = uint64(len(issueRelationIDs))
+	return issueRelationIDsCount, issueRelationIDsUint64, err
 }
 
 // GetTaskConnRequirementNum get the number of tasks associated with the requirement in this iteration
-func (client *DBClient) GetTaskConnRequirementNum(iterationID uint64) (uint64, error) {
-	var count Counter
-	if err := client.Table("dice_issue_relation").Select("count(distinct(related_issue)) as count").Where(fmt.Sprintf("related_issue in (select id from dice_issues where iteration_id='%d' and type='TASK' and deleted=0) and type='inclusion'", iterationID)).
-		Find(&count).Error; err != nil {
-		return 0, err
+func (client *DBClient) GetTaskConnRequirementNum(iterationID uint64) (issueRelationIDsCount uint64, issueRelationIDsUint64 []uint64, err error) {
+	var issueRelationIDs []IssueRelation
+	if err := client.Table("dice_issue_relation").Select("distinct(issue_id)").Where(fmt.Sprintf("related_issue in (select id from dice_issues where iteration_id='%d' and type='TASK' and deleted=0) and type='inclusion'", iterationID)).
+		Find(&issueRelationIDs).Error; err != nil {
+		return 0, []uint64{}, err
 	}
-	return count.Count, nil
+	for _, v := range issueRelationIDs {
+		issueRelationIDsUint64 = append(issueRelationIDsUint64, v.IssueID)
+	}
+	issueRelationIDsCount = uint64(len(issueRelationIDs))
+	return issueRelationIDsCount, issueRelationIDsUint64, nil
 }

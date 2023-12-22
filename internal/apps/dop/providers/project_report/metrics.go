@@ -22,6 +22,7 @@ import (
 
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	iterationdb "github.com/erda-project/erda/internal/apps/dop/dao"
+	em "github.com/erda-project/erda/internal/apps/dop/providers/efficiency_measure"
 	"github.com/erda-project/erda/internal/core/legacy/model"
 )
 
@@ -42,6 +43,7 @@ const (
 	labelOrgID              = "org_id"
 	labelIterationTitle     = "iteration_title"
 	labelIterationAssignees = "iteration_assignees"
+	labelIterationItemUUID  = "item_ids_uuid"
 )
 
 type IterationInfo struct {
@@ -56,41 +58,58 @@ type IterationInfo struct {
 type IterationMetricFields struct {
 	IterationID  uint64
 	CalculatedAt time.Time
+	UUID         string
 
 	// task-related metrics
-	TaskTotal                       uint64
-	TaskEstimatedMinute             uint64
-	TaskElapsedMinute               uint64
-	TaskDoneTotal                   uint64
-	TaskCompleteSchedule            float64
-	TaskBeInclusionRequirementTotal uint64
-	TaskUnAssociatedTotal           uint64
-	TaskAssociatedPercent           float64
-	TaskWorkingTotal                uint64
-	TaskEstimatedDayGtOneTotal      uint64
-	TaskEstimatedDayGtTwoTotal      uint64
-	TaskEstimatedDayGtThreeTotal    uint64
+	TaskTotal                          uint64
+	TaskTotalIDs                       []uint64
+	TaskEstimatedMinute                uint64
+	TaskElapsedMinute                  uint64
+	TaskDoneTotal                      uint64
+	TaskDoneTotalIDs                   []uint64
+	TaskCompleteSchedule               float64
+	TaskBeInclusionRequirementTotal    uint64
+	TaskBeInclusionRequirementTotalIDs []uint64
+	TaskUnAssociatedTotal              uint64
+	TaskUnAssociatedTotalIDs           []uint64
+	TaskAssociatedPercent              float64
+	TaskWorkingTotal                   uint64
+	TaskWorkingTotalIDs                []uint64
+	TaskEstimatedDayGtOneTotal         uint64
+	TaskEstimatedDayGtTwoTotal         uint64
+	TaskEstimatedDayGtThreeTotal       uint64
 
 	// requirement-related metrics
-	RequirementTotal               uint64
-	RequirementDoneTotal           uint64
-	RequirementCompleteSchedule    float64
-	RequirementAssociatedTaskTotal uint64
-	RequirementAssociatedPercent   float64
+	RequirementTotal                  uint64
+	RequirementTotalIDs               []uint64
+	RequirementDoneTotal              uint64
+	RequirementDoneTotalIDs           []uint64
+	RequirementCompleteSchedule       float64
+	RequirementAssociatedTaskTotal    uint64
+	RequirementAssociatedTaskTotalIDs []uint64
+	RequirementAssociatedPercent      float64
 
 	// bug-related metrics
-	BugTotal               uint64
-	SeriousBugTotal        uint64
-	SeriousBugPercent      float64
-	DemandDesignBugTotal   uint64
-	DemandDesignBugPercent float64
-	ReopenBugTotal         uint64
-	ReopenBugPercent       float64
-	BugDoneTotal           uint64
-	BugUndoneTotal         uint64
-	BugCompleteSchedule    float64
-	BugWontfixTotal        uint64
-	BugWithWonfixTotal     uint64
+	BugTotal                uint64
+	BugTotalIDs             []uint64
+	SeriousBugTotal         uint64
+	SeriousBugTotalIDs      []uint64
+	SeriousBugPercent       float64
+	DemandDesignBugTotal    uint64
+	DemandDesignBugTotalIDs []uint64
+	DemandDesignBugPercent  float64
+	ReopenBugTotal          uint64
+	ReopenBugTotalIDs       []uint64
+	ReopenBugPercent        float64
+	BugDoneTotal            uint64
+	BugDoneTotalIDs         []uint64
+	BugUndoneTotal          uint64
+	BugUndoneTotalIDs       []uint64
+	BugCompleteSchedule     float64
+	BugWontfixTotal         uint64
+	BugWontfixTotalIDs      []uint64
+	BugWithWonfixTotal      uint64
+	BugWithWonfixTotalIDs   []uint64
 
 	// iteration-related metrics
 	IterationAssigneeNum       uint64
@@ -123,6 +142,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.TaskTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_requirement_total",
@@ -139,6 +161,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.RequirementDoneTotalIDs)
 			},
 		},
 		{
@@ -157,6 +182,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.BugTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_task_estimated_minute",
@@ -173,6 +201,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -191,6 +222,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "iteration_task_unassociated_total",
@@ -207,6 +241,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.TaskUnAssociatedTotalIDs)
 			},
 		},
 		{
@@ -225,6 +262,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "iteration_task_working_total",
@@ -241,6 +281,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.TaskWorkingTotalIDs)
 			},
 		},
 		{
@@ -259,6 +302,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "iteration_task_estimated_day_gt_two_total",
@@ -275,6 +321,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -293,6 +342,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "iteration_task_associated_percent",
@@ -309,6 +361,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -327,6 +382,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "iteration_requirement_associated_percent",
@@ -343,6 +401,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -361,6 +422,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "iteration_demand_design_bug_percent",
@@ -377,6 +441,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -395,6 +462,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "iteration_bug_complete_schedule",
@@ -411,6 +481,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -429,6 +502,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.BugWontfixTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_bug_with_wonfix_total",
@@ -445,6 +521,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.BugWithWonfixTotalIDs)
 			},
 		},
 		{
@@ -463,6 +542,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
+			},
 		},
 		{
 			name:      "project_assignee_total",
@@ -479,6 +561,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 		{
@@ -497,6 +582,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.TaskDoneTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_task_inclusion_requirement_total",
@@ -513,6 +601,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.TaskBeInclusionRequirementTotalIDs)
 			},
 		},
 		{
@@ -531,6 +622,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.RequirementDoneTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_requirement_associated_task_total",
@@ -547,6 +641,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.RequirementAssociatedTaskTotalIDs)
 			},
 		},
 		{
@@ -565,6 +662,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.SeriousBugTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_bug_undone_total",
@@ -581,6 +681,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.BugUndoneTotalIDs)
 			},
 		},
 		{
@@ -599,6 +702,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.DemandDesignBugTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_reopen_bug_total",
@@ -615,6 +721,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.ReopenBugTotalIDs)
 			},
 		},
 		{
@@ -633,6 +742,9 @@ var (
 					},
 				}
 			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return em.GetMetricsItemIDs(i.IterationMetricFields.BugDoneTotalIDs)
+			},
 		},
 		{
 			name:      "iteration_estimated_day_total",
@@ -649,6 +761,9 @@ var (
 						timestamp: time.Now(),
 					},
 				}
+			},
+			getMetricsItemIDs: func(i *IterationInfo) string {
+				return "0"
 			},
 		},
 	}

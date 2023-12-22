@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
+	"github.com/erda-project/erda/pkg/arrays"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -462,40 +463,70 @@ func (client *DBClient) ListIssue(req pb.IssueListRequest) ([]Issue, error) {
 
 // GetIssueSummary 获取迭代相关的issue统计信息
 func (client *DBClient) GetIssueSummary(iterationID int64, task, bug, requirement []int64) apistructs.ISummary {
-	var reqDoneCount, reqUnDoneCount, taskDoneCount, taskUnDoneCount, bugDoneCount, bugUnDoneCount int
+	var reqDoneCountIDsLine, reqUnDoneCountIDsLine, taskDoneCountIDsLine, taskUnDoneCountIDsLine, bugDoneCountIDsLine, bugUnDoneCountIDsLine []Issue
 	// 已完成需求数
-	client.Model(Issue{}).Where("type = ?", apistructs.IssueTypeRequirement).Where("deleted = ?", 0).
-		Where("state in (?)", requirement).Where("iteration_id = ?", iterationID).Count(&reqDoneCount)
+	client.Model(Issue{}).Select("id").Where("type = ?", apistructs.IssueTypeRequirement).Where("deleted = ?", 0).
+		Where("state in (?)", requirement).Where("iteration_id = ?", iterationID).Find(&reqDoneCountIDsLine)
 	// 总需求数
-	client.Model(Issue{}).Where("type = ?", apistructs.IssueTypeRequirement).Where("deleted = ?", 0).
-		Where("iteration_id = ?", iterationID).Count(&reqUnDoneCount)
+	client.Model(Issue{}).Select("id").Where("type = ?", apistructs.IssueTypeRequirement).Where("deleted = ?", 0).
+		Where("iteration_id = ?", iterationID).Find(&reqUnDoneCountIDsLine)
 	// 已完成任务数
-	client.Model(Issue{}).Where("type = ?", apistructs.IssueTypeTask).Where("deleted = ?", 0).
-		Where("state in (?)", task).Where("iteration_id = ?", iterationID).Count(&taskDoneCount)
+	client.Model(Issue{}).Select("id").Where("type = ?", apistructs.IssueTypeTask).Where("deleted = ?", 0).
+		Where("state in (?)", task).Where("iteration_id = ?", iterationID).Find(&taskDoneCountIDsLine)
 	// 总任务数
-	client.Model(Issue{}).Where("type = ?", apistructs.IssueTypeTask).Where("deleted = ?", 0).
-		Where("iteration_id = ?", iterationID).Count(&taskUnDoneCount)
+	client.Model(Issue{}).Select("id").Where("type = ?", apistructs.IssueTypeTask).Where("deleted = ?", 0).
+		Where("iteration_id = ?", iterationID).Find(&taskUnDoneCountIDsLine)
 	// 已完成bug数
-	client.Model(Issue{}).Where("type = ?", apistructs.IssueTypeBug).Where("deleted = ?", 0).
-		Where("state in (?)", bug).Where("iteration_id = ?", iterationID).Count(&bugDoneCount)
+	client.Model(Issue{}).Select("id").Where("type = ?", apistructs.IssueTypeBug).Where("deleted = ?", 0).
+		Where("state in (?)", bug).Where("iteration_id = ?", iterationID).Find(&bugDoneCountIDsLine)
 	// 总bug数
-	client.Model(Issue{}).Where("type = ?", apistructs.IssueTypeBug).Where("deleted = ?", 0).
-		Where("iteration_id = ?", iterationID).Count(&bugUnDoneCount)
+	client.Model(Issue{}).Select("id").Where("type = ?", apistructs.IssueTypeBug).Where("deleted = ?", 0).
+		Where("iteration_id = ?", iterationID).Find(&bugUnDoneCountIDsLine)
+
+	reqDoneCountIDs := issuesToUint64(reqDoneCountIDsLine)
+	reqUnDoneCountIDs := issuesToUint64(reqUnDoneCountIDsLine)
+	taskDoneCountIDs := issuesToUint64(taskDoneCountIDsLine)
+	taskUnDoneCountIDs := issuesToUint64(taskUnDoneCountIDsLine)
+	bugDoneCountIDs := issuesToUint64(bugDoneCountIDsLine)
+	bugUnDoneCountIDs := issuesToUint64(bugUnDoneCountIDsLine)
+	reqUnDoneCountIDs = arrays.DifferenceSet(reqUnDoneCountIDs, reqDoneCountIDs)
+	taskUnDoneCountIDs = arrays.DifferenceSet(taskUnDoneCountIDs, taskDoneCountIDs)
+	bugUnDoneCountIDs = arrays.DifferenceSet(bugUnDoneCountIDs, bugDoneCountIDs)
 
 	return apistructs.ISummary{
 		Requirement: apistructs.ISummaryState{
-			Done:   reqDoneCount,
-			UnDone: reqUnDoneCount - reqDoneCount,
+			Done:   len(reqDoneCountIDsLine),
+			UnDone: len(reqUnDoneCountIDsLine) - len(reqDoneCountIDsLine),
 		},
 		Task: apistructs.ISummaryState{
-			Done:   taskDoneCount,
-			UnDone: taskUnDoneCount - taskDoneCount,
+			Done:   len(taskDoneCountIDsLine),
+			UnDone: len(taskUnDoneCountIDsLine) - len(taskDoneCountIDsLine),
 		},
 		Bug: apistructs.ISummaryState{
-			Done:   bugDoneCount,
-			UnDone: bugUnDoneCount - bugDoneCount,
+			Done:   len(bugDoneCountIDsLine),
+			UnDone: len(bugUnDoneCountIDsLine) - len(bugDoneCountIDsLine),
 		},
+		ReqDoneCountIDs:    reqDoneCountIDs,
+		ReqUnDoneCountIDs:  reqUnDoneCountIDs,
+		TaskDoneCountIDs:   taskDoneCountIDs,
+		TaskUnDoneCountIDs: taskUnDoneCountIDs,
+		BugDoneCountIDs:    bugDoneCountIDs,
+		BugUnDoneCountIDs:  bugUnDoneCountIDs,
 	}
+}
+
+func lineToUint64(lines []Line) (issueIDs []uint64) {
+	for _, v := range lines {
+		issueIDs = append(issueIDs, v.ID)
+	}
+	return
+}
+
+func issuesToUint64(issues []Issue) (issueIDs []uint64) {
+	for _, v := range issues {
+		issueIDs = append(issueIDs, v.ID)
+	}
+	return
 }
 
 func (client *DBClient) ListIssueSummaryStates(projectID uint64, iterationIDS []int64) ([]IssueSummary, error) {
@@ -994,7 +1025,8 @@ func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint
 	return m, nil
 }
 
-func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
+func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, ids []uint64, err error) {
+	var issues []Issue
 	sql := client.Model(&Issue{}).Where("`type` = ?", apistructs.IssueTypeBug).Where("deleted = 0")
 	if projectID > 0 {
 		sql = sql.Where("project_id = ?", projectID)
@@ -1006,13 +1038,17 @@ func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) 
 	type Line struct {
 		Sum   uint64
 		Total uint64
+		IDs   []uint64
 	}
 	var result Line
 	if err := sql.Select("SUM(`reopen_count`) AS sum, COUNT(*) AS total").Scan(&result).Error; err != nil {
-		return 0, 0, fmt.Errorf("failed to sum bug reopen count, err: %v", err)
+		return 0, 0, []uint64{}, fmt.Errorf("failed to sum bug reopen count, err: %v", err)
 	}
-
-	return result.Sum, result.Total, nil
+	if err := sql.Select("id").Find(&issues).Error; err != nil {
+		return 0, 0, []uint64{}, fmt.Errorf("failed to sum bug reopen count, err: %v", err)
+	}
+	ids = issuesToUint64(issues)
+	return result.Sum, result.Total, ids, nil
 }
 
 const (
@@ -1190,36 +1226,42 @@ func (client *DBClient) GetHaveUndoneTaskAssigneeNum(iterationID uint64, project
 	return assigneeList, nil
 }
 
-func (client *DBClient) GetSeriousBugNum(iterationID uint64) (uint64, error) {
-	var count Counter
-	if err := client.Table("dice_issues").Select("count(distinct(id)) as count").Where("iteration_id = ?", iterationID).Where("deleted = 0").Where("type = 'BUG'").
+func (client *DBClient) GetSeriousBugNum(iterationID uint64) (issueIDsCount uint64, issueIDsUint64 []uint64, err error) {
+	var issueIDs []Issue
+	if err = client.Table("dice_issues").Select("distinct(id)").Where("iteration_id = ?", iterationID).Where("deleted = 0").Where("type = 'BUG'").
 		Where("severity in (?)", []string{string(apistructs.IssueSeverityFatal), string(apistructs.IssueSeveritySerious)}).
-		Find(&count).Error; err != nil {
-		return 0, err
+		Find(&issueIDs).Error; err != nil {
+		return 0, issueIDsUint64, err
 	}
-	return count.Count, nil
+	issueIDsUint64 = issuesToUint64(issueIDs)
+	issueIDsCount = uint64(len(issueIDs))
+	return issueIDsCount, issueIDsUint64, err
 }
 
-func (client *DBClient) GetDemandDesignBugNum(iterationID uint64) (uint64, error) {
-	var count Counter
-	if err := client.Table("dice_issues").Select("count(distinct(id)) as count").
+func (client *DBClient) GetDemandDesignBugNum(iterationID uint64) (issueIDsCount uint64, issueIDsUint64 []uint64, err error) {
+	var issueIDs []Issue
+	if err = client.Table("dice_issues").Select("distinct(id)").
 		Where("iteration_id = ?", iterationID).
 		Where("deleted = 0").Where("type = ?", apistructs.IssueTypeBug).
 		Where("stage = ?", "demandDesign").
-		Find(&count).Error; err != nil {
-		return 0, err
+		Find(&issueIDs).Error; err != nil {
+		return 0, []uint64{}, err
 	}
-	return count.Count, nil
+	issueIDsUint64 = issuesToUint64(issueIDs)
+	issueIDsCount = uint64(len(issueIDs))
+	return issueIDsCount, issueIDsUint64, err
 }
 
-func (client *DBClient) GetIssueNumByStates(iterationID uint64, issueType apistructs.IssueType, states []uint64) (uint64, error) {
-	var count Counter
-	if err := client.Table("dice_issues").Select("count(distinct(id)) as count").
+func (client *DBClient) GetIssueNumByStates(iterationID uint64, issueType apistructs.IssueType, states []uint64) (issueIDsCount uint64, issueIDsUint64 []uint64, err error) {
+	var issueIDs []Issue
+	if err := client.Table("dice_issues").Select("distinct(id)").
 		Where("iteration_id = ?", iterationID).
 		Where("deleted = 0").Where("type = ?", issueType).
 		Where("state in (?)", states).
-		Find(&count).Error; err != nil {
-		return 0, err
+		Find(&issueIDs).Error; err != nil {
+		return 0, []uint64{}, err
 	}
-	return count.Count, nil
+	issueIDsUint64 = issuesToUint64(issueIDs)
+	issueIDsCount = uint64(len(issueIDs))
+	return issueIDsCount, issueIDsUint64, err
 }

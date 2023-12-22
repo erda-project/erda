@@ -55,3 +55,19 @@ func Test_iterationLabelsFunc(t *testing.T) {
 	assert.Equal(t, "project1", labels["project_name"])
 	assert.Equal(t, "iteration1", labels["iteration_title"])
 }
+func TestIterationIDsLabelsFunc(t *testing.T) {
+	i := &iterationCollector{}
+	iter := &IterationInfo{
+		IterationMetricFields: &IterationMetricFields{
+			UUID: "some-uuid",
+		},
+	}
+	labels := i.iterationIDsLabelsFunc(iter)
+
+	expectedLabels := map[string]string{
+		"uuid":         "some-uuid",
+		"metrics_type": "",
+		"ids":          "",
+	}
+	assert.Equal(t, expectedLabels, labels)
+}

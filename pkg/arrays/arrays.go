@@ -86,3 +86,20 @@ func IsArrayContained[T comparable](array []T, sub []T) (int, bool) {
 
 	return -1, true
 }
+func DifferenceSet[T comparable](arr1, arr2 []T) []T {
+	arr2Map := make(map[T]bool)
+	for _, v := range arr2 {
+		arr2Map[v] = true
+	}
+
+	// 原地修改 arr1，移除存在于 arr2 中的元素
+	j := 0
+	for i := 0; i < len(arr1); i++ {
+		if !arr2Map[arr1[i]] {
+			arr1[j] = arr1[i]
+			j++
+		}
+	}
+	arr1 = arr1[:j]
+	return arr1
+}
