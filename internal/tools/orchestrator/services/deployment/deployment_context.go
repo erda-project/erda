@@ -864,8 +864,7 @@ func (fsm *DeployFSMContext) requestAddons() error {
 	}
 	logrus.Infof("addon create request body: %v", string(bb))
 	if err := fsm.addon.BatchCreate(&addonReq); err != nil {
-		//return errors.Wrapf(err, " runtimeId %d", runtime.ID)
-		return err
+		return errors.Wrapf(err, "failed to request addons, runtimeId %d", runtime.ID)
 	}
 	return nil
 }
