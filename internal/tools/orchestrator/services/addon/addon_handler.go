@@ -78,7 +78,12 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		logrus.Errorf(err.Error())
 		return nil, nil, err
 	}
-	addons := versionMap.(*VersionMap)
+	addons, ok := versionMap.(*VersionMap)
+	if !ok {
+		err := errors.New("cache data type error")
+		logrus.Errorf(err.Error())
+		return nil, nil, err
+	}
 
 	// Type error, addon does not exist
 	if len(*addons) == 0 {
@@ -136,16 +141,14 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 
 		// If hasVersion is still false at the end of the loop, it means that the corresponding Addon version has not been found.
 		if !hasVersion {
+			var err error
 			if emptyVersion {
-				// If the user does not have a specific version and the default configuration is not found, an error is reported.
-				err := errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
-				logrus.Errorf(err.Error())
-				return nil, nil, err
+				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
 			} else {
-				err := errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
-				logrus.Errorf(err.Error())
-				return nil, nil, err
+				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
 			}
+			logrus.Errorf(err.Error())
+			return nil, nil, err
 		}
 
 		// Check that the addon meets the current deployment specifications
