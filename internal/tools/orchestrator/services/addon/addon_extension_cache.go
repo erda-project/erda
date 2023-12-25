@@ -69,18 +69,6 @@ func InitCache(ttl time.Duration, size int) {
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
 		bundle.WithErdaServer(),
-		bundle.WithScheduler(),
-		bundle.WithCollector(),
-		bundle.WithMonitor(),
-		bundle.WithHepa(),
-		bundle.WithCMP(),
-		bundle.WithKMS(),
-		bundle.WithOpenapi(),
-		bundle.WithPipeline(),
-		bundle.WithGittar(),
-		bundle.WithMSP(),
-		bundle.WithDOP(),
-		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
 
