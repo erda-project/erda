@@ -150,6 +150,14 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 			}
 			return string(b)
 		}()
+	case modelpb.ModelType_image:
+		imageInfo, ok := ctxhelper.GetImageInfo(ctx)
+		if !ok {
+			goto Next
+		}
+		updateReq.ImageQuality = imageInfo.ImageQuality
+		updateReq.ImageSize = imageInfo.ImageSize
+		updateReq.ImageStyle = imageInfo.ImageStyle
 	default:
 		// do nothing
 	}

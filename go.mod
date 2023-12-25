@@ -131,7 +131,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
-	github.com/sashabaranov/go-openai v1.14.2
+	github.com/sashabaranov/go-openai v1.17.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
@@ -526,4 +526,5 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.21.2
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client => sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.19
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.9.2
+	sourcegraph.com/sourcegraph/appdash-data => github.com/sourcegraph/appdash-data v0.0.0-20151005221446-73f23eafcf67
 )
