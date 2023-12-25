@@ -1,4 +1,4 @@
 Django==3.2.23
 pytz==2021.1
 sqlparse==0.4.4
-requests==2.31.0
+requests==2.27.1
