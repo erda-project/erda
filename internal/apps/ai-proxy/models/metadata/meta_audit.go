@@ -36,6 +36,10 @@ type (
 		AudioFileName    string `json:"audio.file.name,omitempty"`
 		AudioFileSize    string `json:"audio.file.size,omitempty"`
 		AudioFileHeaders string `json:"audio.file.headers,omitempty"`
+
+		ImageQuality string `json:"image.quality,omitempty"`
+		ImageSize    string `json:"image.size,omitempty"`
+		ImageStyle   string `json:"image.style,omitempty"`
 	}
 	AuditMetadataSecret struct {
 		IdentityPhoneNumber string `json:"identity.phone_number,omitempty"`

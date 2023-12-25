@@ -157,6 +157,17 @@ func (dbClient *DBClient) UpdateAfterContextParsed(ctx context.Context, req *pb.
 	if req.AudioFileHeaders != "" {
 		auditMetadata.Public.AudioFileHeaders = req.AudioFileHeaders
 	}
+	// image info
+	if req.ImageQuality != "" {
+		auditMetadata.Public.ImageQuality = req.ImageQuality
+	}
+	if req.ImageSize != "" {
+		auditMetadata.Public.ImageSize = req.ImageSize
+	}
+	if req.ImageStyle != "" {
+		auditMetadata.Public.ImageStyle = req.ImageStyle
+	}
+
 	cputil.MustObjJSONTransfer(&auditMetadata, &c.Metadata)
 
 	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {

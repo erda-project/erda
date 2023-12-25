@@ -67,6 +67,7 @@ type (
 	MapKeyIsStream       struct{ MapKeyIsStream any }
 	MapKeyAudit          struct{ MapKeyAudit any }
 	MapKeyAudioInfo      struct{ MapKeyAudioInfo any }
+	MapKeyImageInfo      struct{ MapKeyImageInfo any }
 
 	MapKeyLLMDirectorPassedOnRequest      struct{ MapKeyLLMDirectorPassedOnRequest any }
 	MapKeyLLMDirectorActualResponseWriter struct{ MapKeyLLMDirectorActualResponseWriter any }

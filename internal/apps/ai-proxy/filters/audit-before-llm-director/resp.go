@@ -56,6 +56,14 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 		} else {
 			completion = respBuffer.String()
 		}
+	case modelpb.ModelType_image:
+		completion = respBuffer.String()
+		var openaiImageResp openai.ImageResponse
+		if err := json.Unmarshal([]byte(respBuffer.String()), &openaiImageResp); err == nil {
+			if len(openaiImageResp.Data) > 0 {
+				completion = openaiImageResp.Data[0].URL
+			}
+		}
 	}
 
 	// collect actual llm response info
