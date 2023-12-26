@@ -44,9 +44,8 @@ type provider struct {
 	js       jsonstore.JsonStore
 	etcd     *etcd.Store
 	dbClient *db.Client
-
-	MySQL mysqlxorm.Interface
-	LW    leaderworker.Interface
+	MySQL    mysqlxorm.Interface
+	LW       leaderworker.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -62,6 +61,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.etcd = etcdStore
 
 	p.dbClient = &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}}
+
 	return nil
 }
 

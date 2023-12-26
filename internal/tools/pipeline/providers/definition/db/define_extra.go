@@ -28,6 +28,7 @@ type PipelineDefinitionExtra struct {
 	TimeUpdated          *time.Time                              `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 	PipelineDefinitionID string                                  `json:"pipelineDefinitionID"`
 	PipelineSourceID     string                                  `json:"pipeline_source_id"`
+	SoftDeletedAt        uint64                                  `json:"soft_deleted_at"`
 }
 
 func (PipelineDefinitionExtra) TableName() string {
@@ -128,4 +129,14 @@ func (client *Client) ListPipelineDefinitionExtraByDefinitionIDList(definitionID
 	}
 
 	return pipelineDefinitionExtras, nil
+}
+
+func (client *Client) BatchDeletePipelineDefinitionExtra(ids []string, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+	var err error
+	if _, err = session.Table(new(PipelineDefinitionExtra)).In("pipeline_definition_id", ids).Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6}); err != nil {
+		return err
+	}
+	return nil
 }

@@ -48,6 +48,16 @@ type PipelineSourceUnique struct {
 	Name        string   `json:"name"`
 	IDList      []string `json:"idList"`
 	VersionLock uint64   `json:"versionLock" xorm:"version_lock version"`
+	Deleted     bool     `json:"deleted"`
+}
+
+type PipelineSourceUniqueGroup struct {
+	SourceType string `json:"sourceType"`
+	Remote     string `json:"remote"`
+	Ref        string `json:"ref"`
+	Path       string `json:"path"`
+	Name       string `json:"name"`
+	Count      int    `json:"count"`
 }
 
 func (PipelineSource) TableName() string {
@@ -110,13 +120,16 @@ func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, op
 		session.Where("version_lock = ?", unique.VersionLock)
 	}
 
+	if !unique.Deleted {
+		session.Where("soft_deleted_at = 0")
+	}
+
 	if err = session.
 		Where("source_type = ?", unique.SourceType).
 		Where("remote = ?", unique.Remote).
 		Where("ref = ?", unique.Ref).
 		Where("path = ?", unique.Path).
 		Where("name = ?", unique.Name).
-		Where("soft_deleted_at = 0").
 		OrderBy("created_at DESC").
 		Find(&pipelineSources); err != nil {
 		return nil, err
@@ -164,4 +177,38 @@ func (p *PipelineSource) Convert() *pb.PipelineSource {
 		TimeCreated: timestamppb.New(p.CreatedAt),
 		TimeUpdated: timestamppb.New(p.UpdatedAt),
 	}
+}
+
+// GetDistinctUniqueSource get the distinct unique source
+func (client *Client) GetDistinctUniqueSource(ops ...mysqlxorm.SessionOption) (uniqueGroup []PipelineSource, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	if err = session.Select("DISTINCT source_type, remote, ref, path, name").Find(&uniqueGroup); err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+func (client *Client) GetUniqueSourceGroup(ops ...mysqlxorm.SessionOption) (uniqueSourceGroup []PipelineSourceUniqueGroup, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	err = session.Table(&PipelineSource{}).
+		Select("source_type, remote, ref, path, name, count(*) as count").
+		Where("soft_deleted_at = 0").
+		GroupBy("source_type, remote, ref, path, name").
+		Find(&uniqueSourceGroup)
+
+	return uniqueSourceGroup, err
+}
+
+func (client *Client) CountPipelineSource(ops ...mysqlxorm.SessionOption) (int64, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	count, err := session.Where("soft_deleted_at = 0").Count(&PipelineSource{})
+
+	return count, err
 }

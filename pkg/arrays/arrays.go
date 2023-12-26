@@ -86,6 +86,7 @@ func IsArrayContained[T comparable](array []T, sub []T) (int, bool) {
 
 	return -1, true
 }
+
 func DifferenceSet[T comparable](arr1, arr2 []T) []T {
 	arr2Map := make(map[T]bool)
 	for _, v := range arr2 {
@@ -102,4 +103,94 @@ func DifferenceSet[T comparable](arr1, arr2 []T) []T {
 	}
 	arr1 = arr1[:j]
 	return arr1
+}
+
+// StructArray2Map converts a struct array into a map after deduplication
+// and you should offer a fn to get the key,value and ifSkip the kvs from the struct.
+//
+// For example:
+//
+//	 Call:
+//		type itemStruct struct{
+//			Key string
+//		 	Value string
+//		 	Other interface{}
+//		}
+//
+//		arr := []itemStruct{
+//			{Key:"this is key1",Value:"this is value1",Other:""},
+//		 	{Key:"this is key2",Value:"this is value2“,Other:""},
+//		 	{Key:"",Value:"",Other:""},
+//		}
+//
+//		array2Map := StructArray2Map(arr,func(item itemStruct)(key string,value string,skip bool){
+//				if item.Key == "" {
+//					return "","",true
+//				}
+//				return item.Key,item.Value,false
+//		})
+//
+// Result:
+//
+//	array2Map = map[string]string{
+//		"this is key1": "this is value1",
+//	 "this is key2": "this is value2",
+//	}
+func StructArray2Map[T any, Key comparable, Value comparable](arr []T, getKV func(T) (Key, Value, bool)) map[Key]Value {
+	arr2Map := make(map[Key]Value)
+
+	for _, item := range arr {
+		key, value, skip := getKV(item)
+		if skip {
+			continue
+		}
+		if _, ok := arr2Map[key]; ok {
+			continue
+		}
+		arr2Map[key] = value
+	}
+
+	return arr2Map
+}
+
+// Array2Map convert the deduplicated array into map
+func Array2Map[Key comparable](keys []Key) map[Key]struct{} {
+	arr2Map := make(map[Key]struct{})
+
+	for _, key := range keys {
+		if _, ok := arr2Map[key]; ok {
+			continue
+		}
+		arr2Map[key] = struct{}{}
+	}
+	return arr2Map
+}
+
+// GetFieldArrFromStruct
+// construct a elem array from the structs
+//
+// For example:
+//
+// Call:
+//
+//	  type itemStruct struct {
+//			Field string
+//		}
+//		arr := []itemStruct{
+//			{Field: "123"},
+//			{Field: "5321"},
+//			{Field: "45"},
+//		}
+//	 result := GetFieldArrFromStruct(arr, func(item itemStruct) string {
+//			return item.Field
+//		})
+//
+// Result:
+// result = []string{"123", "5321", "45"}
+func GetFieldArrFromStruct[Struct any, Filed any](s []Struct, getField func(Struct) Filed) []Filed {
+	arr := make([]Filed, len(s))
+	for index, item := range s {
+		arr[index] = getField(item)
+	}
+	return arr
 }

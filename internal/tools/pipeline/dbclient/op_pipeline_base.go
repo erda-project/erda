@@ -16,6 +16,7 @@ package dbclient
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
@@ -23,6 +24,23 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
+
+type PipelineBaseFilter struct {
+	ID                   []uint64
+	PipelineSource       []apistructs.PipelineSource
+	PipelineYmName       []string
+	ClusterName          []string
+	Status               []apistructs.PipelineStatus
+	Type                 []apistructs.PipelineType
+	TriggerMode          []apistructs.PipelineTriggerMode
+	CronID               []uint64
+	IsSnippet            []uint64
+	StartTimeCreated     *time.Time
+	EndTimeCreated       *time.Time
+	StartTimeUpdated     *time.Time
+	EndTimeUpdated       *time.Time
+	PipelineDefinitionID []string
+}
 
 func (client *Client) ListPipelineBasesByIDs(pipelineIDs []uint64, ops ...SessionOption) (map[uint64]spec.PipelineBase, error) {
 	session := client.NewSession(ops...)
@@ -88,6 +106,91 @@ func (client *Client) GetPipelineBase(id uint64, ops ...SessionOption) (spec.Pip
 	return base, found, nil
 }
 
+func (client *Client) GetPipelineBaseByFilter(filter *PipelineBaseFilter, ops ...SessionOption) ([]spec.PipelineBase, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var baseList []spec.PipelineBase
+
+	if len(filter.ID) > 0 {
+		session.In("id", filter.ID)
+	}
+	if len(filter.PipelineSource) > 0 {
+		session.In("pipeline_source", filter.PipelineSource)
+	}
+
+	if len(filter.PipelineYmName) > 0 {
+		session.In("pipeline_yml_name", filter.PipelineYmName)
+	}
+
+	if len(filter.ClusterName) > 0 {
+		session.In("cluster_name", filter.ClusterName)
+	}
+
+	if len(filter.Status) > 0 {
+		session.In("status", filter.Status)
+	}
+
+	if len(filter.Type) > 0 {
+		session.In("type", filter.Type)
+	}
+
+	if len(filter.TriggerMode) > 0 {
+		session.In("trigger_mode", filter.TriggerMode)
+	}
+
+	if len(filter.CronID) > 0 {
+		session.In("cron_id", filter.CronID)
+	}
+
+	if len(filter.IsSnippet) > 0 {
+		session.In("is_snippet", filter.IsSnippet)
+	}
+
+	if filter.StartTimeCreated != nil {
+		session.Where("time_created >= ?", filter.StartTimeCreated)
+	}
+
+	if filter.EndTimeCreated != nil {
+		session.Where("time_created <= ?", filter.StartTimeCreated)
+	}
+
+	if filter.StartTimeUpdated != nil {
+		session.Where("time_updated >= ?", filter.StartTimeCreated)
+	}
+
+	if filter.EndTimeUpdated != nil {
+		session.Where("time_updated <= ?", filter.StartTimeCreated)
+	}
+
+	if len(filter.PipelineDefinitionID) > 0 {
+		session.In("pipeline_definition_id", filter.PipelineDefinitionID)
+	}
+
+	err := session.Desc("time_created").Find(&baseList)
+
+	return baseList, err
+}
+
+func (client *Client) BatchUpdatePipelineBaseByID(ids []uint64, base *spec.PipelineBase, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.Table(&spec.PipelineBase{}).In("id", ids).Update(base)
+
+	return err
+}
+
+func (client *Client) GetPipelineBaseByDefinitionIDs(ids []string, ops ...SessionOption) ([]spec.PipelineBase, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var bases []spec.PipelineBase
+	err := session.In("id", ids).Desc("time_created").Find(&bases)
+
+	return bases, err
+}
+
 func (client *Client) GetPipelineStatus(id uint64, ops ...SessionOption) (apistructs.PipelineStatus, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -108,5 +211,14 @@ func (client *Client) UpdatePipelineBaseStatus(id uint64, status apistructs.Pipe
 	defer session.Close()
 
 	_, err := session.ID(id).Cols("status").Update(&spec.PipelineBase{Status: status})
+	return err
+}
+
+func (client *Client) BatchUpdatePipelineBaseByDefinitionIDs(ids []string, base *spec.PipelineBase, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.Table(&spec.PipelineBase{}).In("pipeline_definition_id", ids).Update(base)
+
 	return err
 }
