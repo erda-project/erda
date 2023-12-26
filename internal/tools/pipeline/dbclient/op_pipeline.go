@@ -386,6 +386,11 @@ func (client *Client) PageListPipelines(req *pipelinepb.PipelinePagingRequest, o
 		}
 	}
 
+	if req.IsNoSnapshotInDefinition {
+		baseSQL.Join("LEFT", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
+		baseSQL.Where(tableFieldName(definitiondb.PipelineDefinition{}.TableName(), "id") + " is null or " + fmt.Sprintf("%v.pipeline_id != %v.id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
+	}
+
 	if !req.AllSources && len(req.Source) > 0 {
 		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_source"), req.Source)
 	}

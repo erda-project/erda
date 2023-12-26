@@ -97,3 +97,153 @@ func TestReverseString(t *testing.T) {
 		t.Error("error")
 	}
 }
+
+func TestDistinctArray(t *testing.T) {
+	var (
+		a      = []string{"1", "@", "#", "@", "3", "124", "@@", "#"}
+		a_want = []string{"1", "@", "#", "3", "124", "@@"}
+		b      = []int{1, 5, 2, 5, 5, 7}
+		b_want = []int{1, 5, 2, 7}
+	)
+
+	a = strutil.DistinctArray(a)
+	for i := 0; i < len(a); i++ {
+		if a[i] != a_want[i] {
+			t.Error("err in distinctArrayWithFilter in array 'a'")
+		}
+	}
+
+	b = strutil.DistinctArray(b)
+	for i := 0; i < len(b); i++ {
+		if b[i] != b_want[i] {
+			t.Error("err in distinctArrayWithFilter in array 'b'")
+		}
+	}
+
+}
+
+func TestDistinctArrayInStructByFiled(t *testing.T) {
+	type TestIntStruct struct {
+		Name  string
+		Field int
+	}
+
+	type TestStringStruct struct {
+		Name  string
+		Field string
+	}
+
+	testInt := []TestIntStruct{
+		{Field: 1, Name: "1"},
+		{Field: 2, Name: "2"},
+		{Field: 1, Name: "3"},
+	}
+	testIntWant := []TestIntStruct{
+		{Field: 1, Name: "1"},
+		{Field: 2, Name: "2"},
+	}
+
+	testString := []TestStringStruct{
+		{Name: "1", Field: "123"},
+		{Name: "2", Field: "234"},
+		{Name: "#", Field: "#"},
+		{Name: "#2", Field: "#"},
+		{Name: "#3", Field: "#"},
+		{Name: "123", Field: "123"},
+	}
+
+	testStringWant := []TestStringStruct{
+		{Name: "2", Field: "234"},
+		{Name: "#", Field: "#"},
+	}
+
+	testIntResp := strutil.DistinctArrayInStructByFiled(testInt, func(t TestIntStruct) (int, bool) {
+		return t.Field, false
+	})
+	if len(testIntResp) != len(testIntWant) {
+		t.Error("length is not equal")
+	}
+	for i := 0; i < len(testIntWant); i++ {
+		if testIntWant[i] != testIntResp[i] {
+			t.Error("err in test int")
+			return
+		}
+	}
+
+	testStringResp := strutil.DistinctArrayInStructByFiled(testString, func(t TestStringStruct) (string, bool) {
+		if t.Field == "123" {
+			return t.Field, true
+		}
+		return t.Field, false
+	})
+	if len(testStringResp) != len(testStringWant) {
+		t.Error("length is not equal")
+	}
+	for i := 0; i < len(testStringResp); i++ {
+		if testStringWant[i] != testStringResp[i] {
+			t.Error("err in test string")
+			return
+		}
+	}
+
+}
+
+func TestDistinctArrayFiledInStruct(t *testing.T) {
+	type TestIntStruct struct {
+		Name  string
+		Field int
+	}
+
+	type TestStringStruct struct {
+		Name  string
+		Field string
+	}
+
+	testInt := []TestIntStruct{
+		{Field: 1, Name: "1"},
+		{Field: 2, Name: "2"},
+		{Field: 1, Name: "3"},
+	}
+	testIntWant := []int{1, 2}
+
+	testString := []TestStringStruct{
+		{Name: "1", Field: "123"},
+		{Name: "2", Field: "234"},
+		{Name: "#", Field: "#"},
+		{Name: "#2", Field: "#"},
+		{Name: "#3", Field: "#"},
+		{Name: "123", Field: "123"},
+	}
+
+	testStringWant := []string{"123", "234"}
+
+	testIntResp := strutil.DistinctArrayFiledInStruct(testInt, func(t TestIntStruct) (int, bool) {
+		return t.Field, false
+	})
+	if len(testIntResp) != len(testIntWant) {
+		t.Error("length is not equal")
+	}
+	for i := 0; i < len(testIntWant); i++ {
+		if testIntWant[i] != testIntResp[i] {
+			t.Error("err in test int")
+			return
+		}
+	}
+
+	testStringResp := strutil.DistinctArrayFiledInStruct(testString, func(t TestStringStruct) (string, bool) {
+		if t.Field == "#" {
+			return t.Field, true
+		}
+		return t.Field, false
+	})
+	if len(testStringResp) != len(testStringWant) {
+		t.Error("length is not equal")
+	}
+	for i := 0; i < len(testStringResp); i++ {
+		if testStringWant[i] != testStringResp[i] {
+			t.Error("err in test string")
+			return
+		}
+	}
+
+}

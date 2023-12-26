@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"strings"
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
@@ -34,7 +33,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
-	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -72,17 +70,20 @@ func (p *provider) doPipelineDatabaseGC(ctx context.Context, req *pb.PipelinePag
 			p.Log.Errorf("failed to compensate pipeline req: %v, err: %v", req, err)
 			return rutil.ContinueWorkingWithDefaultInterval
 		}
+
 		pipelineResults := result.Pipelines
 		if len(pipelineResults) <= 0 {
 			return rutil.ContinueWorkingAbort
 		}
+
 		req.EndIDLt = result.GetMinPipelineID()
 		for _, pipeline := range pipelineResults {
 			if !pipeline.Status.CanDelete() {
 				continue
 			}
+
 			// gc logic
-			if err := p.DoDBGC(pipeline.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive(pipeline)}); err != nil {
+			if err := p.DoDBGC(&pipeline, apistructs.PipelineGCDBOption{NeedArchive: needArchive(pipeline)}); err != nil {
 				p.Log.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipeline.PipelineID, err)
 				continue
 			}
@@ -109,12 +110,13 @@ func (p *provider) doAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippetPi
 	var req pb.PipelinePagingRequest
 	req.Status = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
-	req.DescCols = []string{"id"}
+	req.AscCols = []string{"id"}
 	req.EndTimeCreated = timestamppb.New(time.Now().Add(-time.Second * time.Duration(conf.AnalyzedPipelineDefaultDatabaseGCTTLSec())))
 	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
+	req.IsNoSnapshotInDefinition = true
 
 	p.doPipelineDatabaseGC(ctx, &req)
 }
@@ -124,12 +126,13 @@ func (p *provider) doNotAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippe
 	var req pb.PipelinePagingRequest
 	req.NotStatus = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
-	req.DescCols = []string{"id"}
+	req.AscCols = []string{"id"}
 	req.EndTimeCreated = timestamppb.New(time.Now().Add(-time.Second * time.Duration(conf.FinishedPipelineDefaultDatabaseGCTTLSec())))
 	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
+	req.IsNoSnapshotInDefinition = true
 
 	p.doPipelineDatabaseGC(ctx, &req)
 }
@@ -154,65 +157,65 @@ func (p *provider) doNotAnalyzedPipelineArchiveGC() {
 }
 
 // ListenDatabaseGC 监听需要 GC 的 pipeline database record.
-func (p *provider) ListenDatabaseGC() {
-	p.Log.Info("start watching gc pipelines")
-	for {
-		ctx := context.Background()
-
-		err := p.js.IncludeWatch().Watch(ctx, etcdDBGCWatchPrefix, true, false, false, apistructs.PipelineGCInfo{},
-			func(key string, value interface{}, t storetypes.ChangeType) error {
-
-				// async handle, non-blocking, so we can watch subsequent incoming pipelines
-				go func() {
-
-					p.Log.Infof("gc watched a key change, key: %s, changeType: %s", key, t.String())
-					// only listen del op
-					if t != storetypes.Del {
-						return
-					}
-
-					pipelineID, parseErr := getPipelineIDFromDBGCWatchedKey(key)
-					if parseErr != nil {
-						p.Log.Errorf("failed to get pipelineID from key, key: %s, err: %v", key, parseErr)
-						return
-					}
-
-					// acquire a dlock
-					gcDBLockKey := makeDBGCDLockKey(pipelineID)
-					lock, err := p.etcd.GetClient().Txn(context.Background()).
-						If(v3.Compare(v3.Version(gcDBLockKey), "=", 0)).
-						Then(v3.OpPut(gcDBLockKey, "")).
-						Commit()
-					defer func() {
-						_, _ = p.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcDBLockKey)).Commit()
-					}()
-					if err != nil {
-						return
-					}
-					if lock != nil && !lock.Succeeded {
-						return
-					}
-
-					gcOption, err := getGCOptionFromValue(value.(*apistructs.PipelineGCInfo).Data)
-					if err != nil {
-						p.Log.Errorf("failed to get gc option from value, pipelineID: %d, err: %v", pipelineID, err)
-						return
-					}
-
-					// gc logic
-					if err := p.DoDBGC(pipelineID, gcOption); err != nil {
-						p.Log.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipelineID, err)
-						return
-					}
-				}()
-				return nil
-			},
-		)
-		if err != nil {
-			p.Log.Errorf("failed to gc watch, err: %v", err)
-		}
-	}
-}
+//func (p *provider) ListenDatabaseGC() {
+//	p.Log.Info("start watching gc pipelines")
+//	for {
+//		ctx := context.Background()
+//
+//		err := p.js.IncludeWatch().Watch(ctx, etcdDBGCWatchPrefix, true, false, false, apistructs.PipelineGCInfo{},
+//			func(key string, value interface{}, t storetypes.ChangeType) error {
+//
+//				// async handle, non-blocking, so we can watch subsequent incoming pipelines
+//				go func() {
+//
+//					p.Log.Infof("gc watched a key change, key: %s, changeType: %s", key, t.String())
+//					// only listen del op
+//					if t != storetypes.Del {
+//						return
+//					}
+//
+//					pipelineID, parseErr := getPipelineIDFromDBGCWatchedKey(key)
+//					if parseErr != nil {
+//						p.Log.Errorf("failed to get pipelineID from key, key: %s, err: %v", key, parseErr)
+//						return
+//					}
+//
+//					// acquire a dlock
+//					gcDBLockKey := makeDBGCDLockKey(pipelineID)
+//					lock, err := p.etcd.GetClient().Txn(context.Background()).
+//						If(v3.Compare(v3.Version(gcDBLockKey), "=", 0)).
+//						Then(v3.OpPut(gcDBLockKey, "")).
+//						Commit()
+//					defer func() {
+//						_, _ = p.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcDBLockKey)).Commit()
+//					}()
+//					if err != nil {
+//						return
+//					}
+//					if lock != nil && !lock.Succeeded {
+//						return
+//					}
+//
+//					gcOption, err := getGCOptionFromValue(value.(*apistructs.PipelineGCInfo).Data)
+//					if err != nil {
+//						p.Log.Errorf("failed to get gc option from value, pipelineID: %d, err: %v", pipelineID, err)
+//						return
+//					}
+//
+//					// gc logic
+//					if err := p.DoDBGC(pipelineID, gcOption); err != nil {
+//						p.Log.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipelineID, err)
+//						return
+//					}
+//				}()
+//				return nil
+//			},
+//		)
+//		if err != nil {
+//			p.Log.Errorf("failed to gc watch, err: %v", err)
+//		}
+//	}
+//}
 
 func (p *provider) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 	var err error
@@ -249,43 +252,17 @@ func (p *provider) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 	}
 }
 
-func (p *provider) DoDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
-	pipeline, exist, err := p.dbClient.GetPipelineWithExistInfo(pipelineID)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		p.Log.Infof("no need to gc db, pipeline already not exist in db, pipelineID: %d", pipelineID)
-		return nil
-	}
-
-	// If the pipeline is referenced by the definition and the record is GC
-	// the definition cannot see the execution record.
-	// There are two ways:
-	// 		one is to update the definition information contact binding
-	//	 	and the other is not to go to the GC pipeline record
-	// It is decided not to record this pipeline
-	if strings.TrimSpace(pipeline.PipelineDefinitionID) != "" {
-		definition, _, err := p.dbClient.GetPipelineDefinitionByPipelineID(pipeline.PipelineID)
-		if err != nil {
-			p.Log.Errorf("failed to GetPipelineDefinitionByPipelineID, id: %d, err: %v", pipeline.ID, err)
-		}
-		if definition != nil {
-			p.Log.Infof("referenced by definition can not gc pipeline id: %v", pipeline.PipelineID)
-			return nil
-		}
-	}
-
+func (p *provider) DoDBGC(pipeline *spec.Pipeline, gcOption apistructs.PipelineGCDBOption) error {
 	if gcOption.NeedArchive {
 		// 归档
-		_, err = p.dbClient.ArchivePipeline(pipeline.ID)
+		_, err := p.dbClient.ArchivePipeline(pipeline.ID)
 		if err != nil {
 			p.Log.Errorf("failed to archive pipeline, id: %d, err: %v", pipeline.ID, err)
 		}
 		p.Log.Debugf("archive pipeline success, id: %d", pipeline.ID)
 	} else {
 		// 删除
-		if err = p.dbClient.DeletePipelineRelated(pipeline.ID); err != nil {
+		if err := p.dbClient.DeletePipelineRelated(pipeline.ID); err != nil {
 			p.Log.Errorf("failed to delete pipeline, id: %d, err: %v", pipeline.ID, err)
 		}
 		p.Log.Debugf("delete pipeline success, id: %d", pipeline.ID)

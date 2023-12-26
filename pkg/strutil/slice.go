@@ -60,3 +60,58 @@ func DedupAnySlice(s interface{}, uniq func(i int) interface{}) interface{} {
 	}
 	return out.Interface()
 }
+
+// DistinctArray is used to get unique elements from a slice with comparable type \
+func DistinctArray[T comparable](arr []T) []T {
+	dupMap := make(map[T]struct{})
+	unique := make([]T, 0)
+	for _, item := range arr {
+		// if not exist, add in the unique array
+		if _, ok := dupMap[item]; !ok {
+			dupMap[item] = struct{}{}
+			unique = append(unique, item)
+		}
+	}
+
+	return unique
+}
+
+// DistinctArrayInStructByFiled it is used to get unique elements from struct array filter by filed
+// you should offer a function to get the field from the struct
+// besides, the function you can set a skip condition, if skip is true, it will ignore the elem
+// it returns the array of Type T(the same as the array offered)
+func DistinctArrayInStructByFiled[T any, C comparable](arr []T, fn func(T) (target C, skip bool)) []T {
+	dupMap := make(map[C]struct{})
+	unique := make([]T, 0)
+	for _, item := range arr {
+		value, skip := fn(item)
+		if skip {
+			continue
+		}
+		if _, ok := dupMap[value]; !ok {
+			dupMap[value] = struct{}{}
+			unique = append(unique, item)
+		}
+	}
+	return unique
+}
+
+// DistinctArrayFiledInStruct it is used to get unique elements from struct
+// you should offer a function to get the field from the struct
+// besides, the function you can set a skip condition, if skip is true, it will ignore the elem
+// it returns the array of Type C(the field type)
+func DistinctArrayFiledInStruct[T any, C comparable](arr []T, fn func(T) (target C, skip bool)) []C {
+	dupMap := make(map[C]struct{})
+	unique := make([]C, 0)
+	for _, item := range arr {
+		value, skip := fn(item)
+		if skip {
+			continue
+		}
+		if _, ok := dupMap[value]; !ok {
+			dupMap[value] = struct{}{}
+			unique = append(unique, value)
+		}
+	}
+	return unique
+}

@@ -406,6 +406,7 @@ message PipelinePagingRequest {
   uint64 endIDLt = 40;
   PipelineDefinitionRequest pipelineDefinitionRequest = 41;
   string pipelineDefinition = 42;
+  bool IsNoSnapshotInDefinition = 43;
 }
 
 message PipelinePagingResponse {
