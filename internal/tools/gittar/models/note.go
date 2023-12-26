@@ -214,7 +214,9 @@ func (svc *Service) constructDiscussionNote(repo *gitmodule.Repository, user *Us
 	noteData := NoteData{
 		DiffLines:   relatedDiffLines,
 		OldLine:     req.OldLine,
+		OldLineTo:   req.OldLineTo,
 		NewLine:     req.NewLine,
+		NewLineTo:   req.NewLineTo,
 		OldPath:     req.OldPath,
 		NewPath:     req.NewPath,
 		OldCommitId: req.OldCommitId,
