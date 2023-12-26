@@ -239,12 +239,17 @@ func (svc *Service) constructDiscussionNote(repo *gitmodule.Repository, user *Us
 
 func (svc *Service) constructReplyDiscussionNote(repo *gitmodule.Repository, user *User, mergeId int64, request NoteRequest) (*Note, error) {
 	var oldDiffNote Note
-	err := svc.db.Where("repo_id = ? and merge_id=? and discussion_id= ?",
+	err := svc.db.Where("repo_id = ? and merge_id = ? and discussion_id = ?",
 		repo.ID, mergeId, request.DiscussionId).
 		Limit(1).First(&oldDiffNote).Error
 
-	//是否已存在,不存在已有DiscussionId不能新增
+	// check if discussion exists. if not, cannot add new note reply
 	if err != nil {
+		return nil, err
+	}
+
+	// parse body
+	if err := json.Unmarshal([]byte(oldDiffNote.Data), &oldDiffNote.DataResult); err != nil {
 		return nil, err
 	}
 
@@ -257,6 +262,7 @@ func (svc *Service) constructReplyDiscussionNote(repo *gitmodule.Repository, use
 		DiscussionId: oldDiffNote.DiscussionId,
 		OldCommitId:  oldDiffNote.OldCommitId,
 		NewCommitId:  oldDiffNote.NewCommitId,
+		DataResult:   oldDiffNote.DataResult,
 	}
 
 	return &note, nil
