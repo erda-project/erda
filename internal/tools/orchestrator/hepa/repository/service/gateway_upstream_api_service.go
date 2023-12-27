@@ -61,7 +61,7 @@ func (impl *GatewayUpstreamApiServiceImpl) updateFields(update *orm.GatewayUpstr
 func (impl *GatewayUpstreamApiServiceImpl) GetLastApiId(cond *orm.GatewayUpstreamApi) string {
 	var descList []orm.GatewayUpstreamApi
 	err := orm.Desc(impl.engine, "register_id").And("upstream_id = ? and api_name = ? and api_id != ''",
-		cond.UpstreamId, cond.ApiName).Find(&descList)
+		cond.UpstreamId, cond.ApiName).Limit(1).Find(&descList)
 	if err != nil {
 		log.Errorf("error happend:%+v", errors.WithStack(err))
 		return ""
