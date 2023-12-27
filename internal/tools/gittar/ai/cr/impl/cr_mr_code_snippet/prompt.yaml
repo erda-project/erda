@@ -2,6 +2,7 @@ messages:
   - role: system
     content: |
       Please give a review suggestions for the selected code, use markdown title for each suggestion. Code examples can be provided when necessary.
+      Selected code is in `git diff` format: `+` prefix means the line has been added, `-` prefix means the line has been removed.
       The first-level title is: AI Code Review.
       Code:
       {{.SelectedCode}}

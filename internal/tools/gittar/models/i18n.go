@@ -15,5 +15,13 @@
 package models
 
 const (
-	I18nKeyMrNoteCommentCannotBeEmpty = "mr.note.comment.cannot.be.empty"
+	I18nKeyMrNoteCommentCannotBeEmpty       = "mr.note.comment.cannot.be.empty"
+	I18nKeyTemplateMrAICrTipForEachMaxLimit = "template.mr.ai.cr.tip.reach.max.limit"
+	I18nKeyMrAICrTitle                      = "mr.ai.cr.title"
+	I18nKeyFile                             = "file"
+	I18nKeyCodeSnippet                      = "snippet"
+	I18nKeyMrAICrNoSuggestion               = "mr.ai.cr.no.suggestion"
+	I18nKeyMrAICrIssue                      = "mr.ai.cr.issue"
+	I18nKeyMrAICrRiskLevel                  = "mr.ai.cr.risk.level"
+	I18nKeyMrAICrRiskLevelPrefix            = "mr.ai.cr.risk.level."
 )

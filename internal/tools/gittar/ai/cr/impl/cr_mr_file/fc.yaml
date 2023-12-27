@@ -1,12 +1,12 @@
 $schema: http://json-schema.org/draft-07/schema#
 type: object
-description: create code review note
+description: code review
 required:
   - fileReviewResult
 properties:
   fileReviewResult:
     type: array
-    description: review result for each file
+    description: file review result
     items:
       type: object
       required:
@@ -16,12 +16,12 @@ properties:
       properties:
         snippetIndex:
           type: integer
-          description: snippet index
+          description: code snippet index
         riskLevel:
           type: string
           description: |
-            risk level (using language understandable to ordinary people, such as: advisory, severe, fatal, etc.)
+            risk level, must be one of: none, suggestion, low, medium, high
         details:
           type: string
           description: |
-            details, one or array. (Summarize this code; for each issue, if possible, please provide example code for fixing)
+            review details, one or array. use markdown format for code snippet.

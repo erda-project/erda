@@ -26,6 +26,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/aiutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
@@ -82,8 +83,8 @@ func newSnippetCodeReviewer(codeLang, selectedCode string, truncated bool, user 
 	return cs
 }
 
-func (cs CodeSnippet) CodeReview() string {
-	// invoke ai
+func (cs CodeSnippet) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string {
+	// construct AI request
 	req := cs.constructAIRequest()
 
 	// invoke

@@ -23,6 +23,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
+
 	"github.com/mohae/deepcopy"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
@@ -73,7 +75,7 @@ func (r *OneChangedFile) GetFileName() string {
 }
 
 // CodeReview for file level, invoke once with all code snippets.
-func (r *OneChangedFile) CodeReview() string {
+func (r *OneChangedFile) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string {
 	if r.diffFile == nil {
 		return ""
 	}
@@ -99,17 +101,20 @@ func (r *OneChangedFile) CodeReview() string {
 		snippetIndexIssues[item.SnippetIndex] = append(snippetIndexIssues[item.SnippetIndex], item)
 	}
 	// handle each snippet index
-	var s string
+	var lines []string
 	for snippetIndex := range r.CodeSnippets {
 		// add original code
-		s += fmt.Sprintf("**Snippet:**\n%s\n", r.CodeSnippets[snippetIndex].GetMarkdownCode())
+		lines = append(lines, fmt.Sprintf("### %s:", i18n.Text(lang, models.I18nKeyCodeSnippet)), r.CodeSnippets[snippetIndex].GetMarkdownCode())
 		for _, issue := range snippetIndexIssues[snippetIndex] {
-			s += fmt.Sprintf("**RiskLevel:** %s\n", issue.RiskLevel)
-			s += fmt.Sprintf("\n%s\n\n", issue.Details)
+			if ss := strings.Split(issue.Details, "\n"); len(ss) > 1 {
+				issue.Details = "\n" + issue.Details
+			}
+			lines = append(lines, fmt.Sprintf("**%s:** %s", i18n.Text(lang, models.I18nKeyMrAICrIssue), issue.Details), "")
+			lines = append(lines, fmt.Sprintf("**%s:** %s", i18n.Text(lang, models.I18nKeyMrAICrRiskLevel), i18n.Text(lang, models.I18nKeyMrAICrRiskLevelPrefix+issue.RiskLevel)), "")
 		}
-		s += "\n"
+		lines = append(lines, "---", "")
 	}
-	return s
+	return strings.Join(lines, "\n")
 }
 
 type (
@@ -201,7 +206,7 @@ func (r *OneChangedFile) constructAIRequest() openai.ChatCompletionRequest {
 func (r *OneChangedFile) parseCodeSnippets() {
 	for _, section := range r.diffFile.Sections {
 		selectedCode, truncated := mrutil.ConvertDiffLinesToSnippet(section.Lines)
-		if selectedCode == "" {
+		if strings.TrimSpace(selectedCode) == "" {
 			continue
 		}
 		codeSnippet := cr_mr_code_snippet.CodeSnippet{

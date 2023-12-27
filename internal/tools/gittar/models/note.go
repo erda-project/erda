@@ -170,7 +170,7 @@ func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, 
 		if err != nil {
 			return fmt.Errorf("failed to create code reviewer err: %v", err)
 		}
-		suggestions := reviewer.CodeReview()
+		suggestions := reviewer.CodeReview(svc.i18nTran, svc.lang)
 		note.Note = suggestions
 	}
 

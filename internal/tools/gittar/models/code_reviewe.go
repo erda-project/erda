@@ -17,12 +17,13 @@ package models
 import (
 	"fmt"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
 
 type CodeReviewer interface {
-	CodeReview() string
+	CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string
 }
 
 type FileCodeReviewer interface {
