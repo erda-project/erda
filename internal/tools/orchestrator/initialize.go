@@ -68,6 +68,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}
 
 	orgCache.InitCache(p.Org)
+	addon.InitCache(p.Cfg.CacheTTL, p.Cfg.CacheSize)
 
 	// init endpoints
 	ep, err := p.initEndpoints(db)
