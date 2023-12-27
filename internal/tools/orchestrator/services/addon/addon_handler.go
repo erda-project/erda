@@ -47,6 +47,17 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	AddonTypeDoseNoExist           = "AddonTypeDoseNoExist"
+	AddonVersionDoseNoExist        = "AddonVersionDoseNoExist"
+	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
+	AddonPlanIllegal               = "AddonPlanIllegal"
+	AddonPlanNotSupport            = "AddonPlanNotSupport"
+
+	AddonConfigCenter   = "config-center"
+	AddonRegisterCenter = "registercenter"
+)
+
 // AttachAndCreate addon创建，runtime建立关系方法
 func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonInstanceRes, error) {
 	// 获取addon extension信息
@@ -60,42 +71,96 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 
 // GetAddonExtention 获取addon的spec，dice.yml信息
 func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
-	extensionList, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: params.AddonName, All: true})
-	if err != nil || len(extensionList) == 0 {
-		return nil, nil, errors.New("没有匹配的addon信息")
+	// get addons from cache
+	versionMap, err := GetCache().Get(params.AddonName)
+	if err != nil {
+		err := errors.New(i18n.OrgSprintf(params.OrgID, AddonTypeDoseNoExist, params.AddonName))
+		logrus.Errorf(err.Error())
+		return nil, nil, err
+	}
+	addons, ok := versionMap.(*VersionMap)
+	if !ok {
+		err := errors.New("cache data type error")
+		logrus.Errorf(err.Error())
+		return nil, nil, err
 	}
 
-	// 查看用户是否设置了版本号，如果没有，则选择默认版本
-	var addon = extensionList[0]
-	for _, item := range extensionList {
-		if item.IsDefault {
-			addon = item
-		}
-		if version := params.Options["version"]; version != "" && version == item.Version {
-			addon = item
-		}
+	// Type error, addon does not exist
+	if len(*addons) == 0 {
+		err := errors.New(i18n.OrgSprintf(params.OrgID, AddonTypeDoseNoExist, params.AddonName))
+		logrus.Errorf(err.Error())
+		return nil, nil, err
 	}
 
-	if len(extensionList) == 1 {
-		addon = extensionList[0]
+	// Queries whether the corresponding version exists
+	var (
+		hasVersion = false                     // Existence of the version
+		addon      apistructs.ExtensionVersion // The final addon to be deployed
+	)
+
+	// See if the user has set a version number, if not, select the default version
+	v, ok := params.Options["version"]
+	version := strings.Trim(v, " ")
+	emptyVersion := !ok || version == ""
+
+	if emptyVersion ||
+		params.AddonName == AddonConfigCenter ||
+		params.AddonName == AddonRegisterCenter {
+		// If version is null, get the default version of addon
+		addon, hasVersion = addons.GetDefault()
 	} else {
-		if params.Options["version"] != "" {
-			for _, extensionItem := range extensionList {
-				if extensionItem.Version == params.Options["version"] {
-					addon = extensionItem
-					break
-				}
-			}
-		} else {
-			// 用户没有指定version，则选择默认版本
-			for _, extentionItem := range extensionList {
-				if extentionItem.IsDefault {
-					logrus.Info("addon extension name ready")
-					addon = extentionItem
-				}
-			}
+		// If version is not null, then get the version addon.
+		addon, hasVersion = (*addons)[version]
+	}
+	// If there is no default value and no corresponding version, then a random version of addon is obtained for judgment.
+	if !hasVersion {
+		for _, val := range *addons {
+			addon = val
+			break
 		}
 	}
+
+	// spec.yml forced conversion to string type
+	addonSpecBytes, err := json.Marshal(addon.Spec)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to parse addon spec")
+	}
+	addonSpec := apistructs.AddonExtension{}
+	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
+	if specErr != nil {
+		return nil, nil, errors.Wrap(specErr, "failed to parse addon spec")
+	}
+
+	if addonSpec.SubCategory == apistructs.BasicAddon {
+		// Ensure that basic components are not deployed in the production environment
+		if err = a.preCheck(params); err != nil {
+			err := errors.New(i18n.OrgSprintf(params.OrgID, AddonPlanIllegal, params.AddonName))
+			logrus.Errorf(err.Error())
+			return nil, nil, err
+		}
+
+		// If hasVersion is still false at the end of the loop, it means that the corresponding Addon version has not been found.
+		if !hasVersion {
+			var err error
+			if emptyVersion {
+				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
+			} else {
+				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
+			}
+			logrus.Errorf(err.Error())
+			return nil, nil, err
+		}
+
+		// Check that the addon meets the current deployment specifications
+		if _, ok = addonSpec.Plan[params.Plan]; !ok {
+			err := errors.New(i18n.OrgSprintf(params.OrgID, AddonPlanNotSupport, params.AddonName, params.Plan))
+			logrus.Errorf(err.Error())
+			return nil, nil, err
+		}
+
+	}
+
+	logrus.Infof("%s addon is ready to deploy, verison %s", params.AddonName, addon.Version)
 
 	if addon.Version == "" {
 		return nil, nil, errors.New("failed to create addon, can't find information about addon " + params.AddonName)
@@ -109,16 +174,6 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	}
 	params.Options["version"] = addon.Version
 
-	// spec.yml强制转换为string类型
-	addonSpecBytes, err := json.Marshal(addon.Spec)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse addon spec")
-	}
-	addonSpec := apistructs.AddonExtension{}
-	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
-	if specErr != nil {
-		return nil, nil, errors.Wrap(specErr, "failed to parse addon spec")
-	}
 	if len(params.Options) == 0 {
 		params.Options = map[string]string{}
 	}
@@ -893,6 +948,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 				if err := a.FailAndDelete(addonIns); err != nil {
 					return err
 				}
+				return err
 			}
 		} else {
 			if err := a.providerAddonDeploy(addonIns, addonInsRouting, params, addonSpec); err != nil {

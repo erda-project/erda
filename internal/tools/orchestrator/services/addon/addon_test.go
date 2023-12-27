@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/cluster-manager/cluster"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime/mock"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -913,6 +914,22 @@ func TestAddon2(t *testing.T) {
 			return nil, errors.New("error")
 		},
 	)
+
+	monkey.Patch(i18n.OrgSprintf, func(orgId string, key string, args ...any) string {
+		switch key {
+		case AddonTypeDoseNoExist:
+			return "AddonTypeDoseNoExist"
+		case AddonVersionDoseNoExist:
+			return "AddonVersionDoseNoExist"
+		case AddonDefaultVersionDoseNoExist:
+			return "AddonDefaultVersionDoseNoExist"
+		case AddonPlanIllegal:
+			return "AddonPlanIllegal"
+		case AddonPlanNotSupport:
+			return "AddonPlanNotSupport"
+		}
+		return "default"
+	})
 
 	a.buildAddonInstance(&apistructs.AddonExtension{}, &apistructs.AddonHandlerCreateItem{})
 

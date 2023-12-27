@@ -1,4 +1,6 @@
 orchestrator:
+  cache_ttl: "10m"
+  cache_size: 300
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:
