@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (e *Endpoints) CreateAddonDirectly(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -158,12 +157,6 @@ func (e *Endpoints) UpdateCustomAddon(ctx context.Context, r *http.Request, vars
 		return apierrors.ErrUpdateAddon.InvalidParameter("body").ToResp(), nil
 	}
 	logrus.Infof("custom addon update info: %+v", customAddonReq)
-
-	for key := range customAddonReq {
-		if err := strutil.EnvKeyValidator(key); err != nil {
-			return apierrors.ErrUpdateAddon.InternalError(err).ToResp(), nil
-		}
-	}
 
 	// 更新 config 信息至 DB
 	if err := e.addon.UpdateCustom(userID.String(), vars["addonID"], orgID, &customAddonReq); err != nil {
@@ -647,12 +640,6 @@ func (e *Endpoints) checkCustomAddonCreateParam(req *apistructs.CustomAddonCreat
 
 	if req.CustomAddonType == apistructs.CUSTOM_TYPE_CUSTOM && len(req.Configs) == 0 {
 		return errors.Errorf("missing param configs")
-	}
-
-	for key := range req.Configs {
-		if err := strutil.EnvKeyValidator(key); err != nil {
-			return err
-		}
 	}
 
 	return nil
