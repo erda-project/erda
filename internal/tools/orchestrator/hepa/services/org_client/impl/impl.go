@@ -164,6 +164,10 @@ func (impl GatewayOrgClientServiceImpl) GetCredentials(id string) (res dto.Clien
 	if err != nil {
 		return
 	}
+	if dao == nil {
+		err = errors.New("client not found")
+		return
+	}
 	res = dto.ClientInfoDto{
 		ClientId:     dao.Id,
 		ClientSecret: dao.ClientSecret,
