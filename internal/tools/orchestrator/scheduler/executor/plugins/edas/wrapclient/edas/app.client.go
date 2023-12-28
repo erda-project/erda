@@ -48,17 +48,14 @@ func (c *wrapEDAS) GetAppID(appName string) (string, error) {
 
 	l.Info("request id: ", resp.RequestId)
 
-	switch len(resp.ApplicationList.Application) {
-	case 0:
-		return "", ErrApplicationNotFound
-	case 1:
-		app := resp.ApplicationList.Application[0]
-
-		l.Infof("successfully to get app id: %s, name: %s", app.AppId, appName)
-		return app.AppId, nil
-	default:
-		return "", errors.Errorf("application %s get multi response", appName)
+	for _, app := range resp.ApplicationList.Application {
+		if app.Name == appName {
+			l.Infof("successfully to get app id: %s, name: %s", app.AppId, appName)
+			return app.AppId, nil
+		}
 	}
+
+	return "", ErrApplicationNotFound
 }
 
 // deleteAppByID delete application by app id
