@@ -1,4 +1,4 @@
-CREATE TABLE erda_licenses
+CREATE TABLE erda_license
 (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '许可证ID',
     `entity_type` ENUM('PLATFORM', 'ORG') NOT NULL COMMENT '实体类型',
