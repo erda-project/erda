@@ -100,8 +100,7 @@ func (p *provider) GetProjectID() perm.ValueGetter {
 	scopeGetter := perm.FieldValue("ScopeId")
 	return func(ctx context.Context, req interface{}) (string, error) {
 		scope, _ := scopeGetter(ctx, req)
-		projectId, err := p.notifyGroupService.GetProjectIdByScopeId(scope)
-		return projectId, err
+		return p.notifyGroupService.GetProjectIdByScopeId(scope)
 	}
 }
 
