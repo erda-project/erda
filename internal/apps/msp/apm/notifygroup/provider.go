@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-
 	notifygroup "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
