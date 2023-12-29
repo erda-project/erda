@@ -15,6 +15,7 @@
 package diceyml
 
 var (
+	invalidRawData             = errortype("invalid raw data")
 	notfoundJob                = errortype("not found job in yaml")
 	notfoundService            = errortype("not found service in yaml")
 	invalidService             = errortype("invalid service defined in yaml")

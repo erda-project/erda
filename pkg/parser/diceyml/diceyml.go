@@ -348,6 +348,9 @@ func polish(obj *Object) {
 }
 
 func validateE(obj *Object, raw []byte) error {
+	if len(raw) == 0 {
+		return invalidRawData
+	}
 	errs := validate(obj, raw)
 	if len(errs) > 0 {
 		es := []string{}
