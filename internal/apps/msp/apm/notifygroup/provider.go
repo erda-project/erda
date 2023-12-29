@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+
 	notifygroup "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
@@ -31,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/audit"
 	db2 "github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
 type config struct {
@@ -48,6 +50,7 @@ type provider struct {
 	audit              audit.Auditor
 	Tenant             tenantpb.TenantServiceServer         `autowired:"erda.msp.tenant.TenantService"`
 	NotifyGroup        notifygroup.NotifyGroupServiceServer `autowired:"erda.core.messenger.notifygroup.NotifyGroupService"`
+	Perm               perm.Interface                       `autowired:"permission"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -58,8 +61,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.mspTenantDB = &db.MSPTenantDB{DB: p.DB}
 	p.monitorDB = &db2.MonitorDb{DB: p.DB}
 	if p.Register != nil {
-		type NotifyService = pb.NotifyGroupServiceServer
+		type NotifyService = notifygroup.NotifyGroupServiceServer
+
 		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options(),
+			p.Perm.Check(
+				perm.Method(NotifyService.CreateNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, p.GetProjectID()),
+				perm.Method(NotifyService.QueryNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.GetProjectID()),
+				perm.Method(NotifyService.GetNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.GetProjectID()),
+				perm.Method(NotifyService.UpdateNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.GetProjectID()),
+				perm.Method(NotifyService.GetNotifyGroupDetail, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.GetProjectID()),
+				perm.Method(NotifyService.DeleteNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionDelete, p.GetProjectID()),
+			),
 			p.audit.Audit(
 				audit.Method(NotifyService.CreateNotifyGroup, audit.ProjectScope, string(apistructs.CreateServiceNotifyGroup),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
@@ -83,6 +95,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		)
 	}
 	return nil
+}
+
+func (p *provider) GetProjectID() perm.ValueGetter {
+	scopeGetter := perm.FieldValue("ScopeId")
+	return func(ctx context.Context, req interface{}) (string, error) {
+		scope, _ := scopeGetter(ctx, req)
+		projectId, err := p.notifyGroupService.GetProjectIdByScopeId(scope)
+		return projectId, err
+	}
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
