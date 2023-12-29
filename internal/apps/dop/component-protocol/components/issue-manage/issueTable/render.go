@@ -154,6 +154,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	} else if event.Operation == cptype.OperationKey(apistructs.RenderingOperation) {
 		cond.PageNo = 1
+		c.State["selectedRowKeys"] = []string{}
 	}
 
 	if event.Operation.String() == "delete" {
@@ -249,7 +250,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			"confirm": "",
 			"key":     "delete",
 			"reload":  true,
-			"text":    "删除",
+			"text":    sdk.I18n("Delete"),
 		},
 	}
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = userids
