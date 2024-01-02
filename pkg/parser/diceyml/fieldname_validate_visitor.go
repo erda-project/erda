@@ -19,6 +19,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -36,6 +37,11 @@ func NewFieldnameValidateVisitor(raw []byte) (DiceYmlVisitor, error) {
 	if err := yaml.Unmarshal(raw, &rawmap); err != nil {
 		return nil, err
 	}
+
+	if rawmap == nil {
+		return nil, errors.New("unmarshalled map is nil")
+	}
+
 	tp := reflect.TypeOf(rawmap)
 	if tp.Kind() != reflect.Map || tp.Key().Kind() != reflect.Interface || tp.Elem().Kind() != reflect.Interface {
 		return nil, fmt.Errorf("not a map[interface{}]interface{} type")

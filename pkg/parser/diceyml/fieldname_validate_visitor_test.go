@@ -69,8 +69,32 @@ addons:
 `
 
 func TestFieldnameValidate(t *testing.T) {
-	d, err := New([]byte(fieldname_validate_yml), false)
-	assert.Nil(t, err)
-	es := FieldnameValidate(d.Obj(), []byte(fieldname_validate_yml))
-	assert.Equal(t, 4, len(es))
+	tests := []struct {
+		name           string
+		yamlData       []byte
+		expectErrCount int
+	}{
+		{
+			name:           "Valid YAML",
+			yamlData:       []byte(fieldname_validate_yml),
+			expectErrCount: 4,
+		},
+		{
+			name:           "Invalid YAML",
+			yamlData:       []byte(""),
+			expectErrCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := New(tt.yamlData, false)
+			assert.NoError(t, err)
+
+			es := FieldnameValidate(d.Obj(), tt.yamlData)
+			if len(es) != tt.expectErrCount {
+				t.Fatalf("expect %d errors, but got %d errors", tt.expectErrCount, len(es))
+			}
+		})
+	}
 }
