@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -50,14 +52,19 @@ type provider struct {
 	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
-func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64, tenantId, instanceId, serviceId string) ([]*model.LineGraphMetaData, error) {
+func toQueryParams(instanceId string) map[string]*structpb.Value {
+	queryParams := map[string]*structpb.Value{
+		"pod_uid": structpb.NewStringValue(instanceId),
+	}
+	return queryParams
+}
+
+func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64, instanceId string) ([]*model.LineGraphMetaData, error) {
 	statement := fmt.Sprintf("SELECT avg(cpu_usage_percent::field),tostring('usage rate') " +
 		"FROM docker_container_summary " +
-		"WHERE terminus_key::tag=$terminus_key " +
-		"AND service_id::tag=$service_id " +
-		"AND service_instance_id::tag=$instance_id " +
+		"WHERE pod_uid::tag=$pod_uid " +
 		"GROUP BY time()")
-	queryParams := model.ToQueryParams(tenantId, serviceId, instanceId)
+	queryParams := toQueryParams(instanceId)
 
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(startTime, 10),
@@ -84,14 +91,12 @@ func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64
 	return metadata, nil
 }
 
-func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime int64, tenantId, instanceId, serviceId string) ([]*model.LineGraphMetaData, error) {
+func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime int64, instanceId string) ([]*model.LineGraphMetaData, error) {
 	statement := fmt.Sprintf("SELECT round_float(avg(mem_limit::field), 2),round_float(avg(mem_usage::field), 2) " +
 		"FROM docker_container_summary " +
-		"WHERE terminus_key::tag=$terminus_key " +
-		"AND service_id::tag=$service_id " +
-		"AND service_instance_id::tag=$instance_id " +
+		"WHERE pod_uid::tag=$pod_uid " +
 		"GROUP BY time()")
-	queryParams := model.ToQueryParams(tenantId, serviceId, instanceId)
+	queryParams := toQueryParams(instanceId)
 
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(startTime, 10),
@@ -125,14 +130,12 @@ func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime in
 	return metadata, nil
 }
 
-func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime int64, tenantId, instanceId, serviceId string) ([]*model.LineGraphMetaData, error) {
+func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime int64, instanceId string) ([]*model.LineGraphMetaData, error) {
 	statement := fmt.Sprintf("SELECT round_float(diffps(blk_read_bytes::field), 2),round_float(diffps(blk_write_bytes::field), 2) " +
 		"FROM docker_container_summary " +
-		"WHERE terminus_key::tag=$terminus_key " +
-		"AND service_id::tag=$service_id " +
-		"AND service_instance_id::tag=$instance_id " +
+		"WHERE pod_uid::tag=$pod_uid " +
 		"GROUP BY time()")
-	queryParams := model.ToQueryParams(tenantId, serviceId, instanceId)
+	queryParams := toQueryParams(instanceId)
 
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(startTime, 10),
@@ -173,14 +176,12 @@ func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime in
 	return metadata, nil
 }
 
-func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime int64, tenantId, instanceId, serviceId string) ([]*model.LineGraphMetaData, error) {
+func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime int64, instanceId string) ([]*model.LineGraphMetaData, error) {
 	statement := fmt.Sprintf("SELECT round_float(diffps(rx_bytes::field), 2),round_float(diffps(tx_bytes::field), 2) " +
 		"FROM docker_container_summary " +
-		"WHERE terminus_key::tag=$terminus_key " +
-		"AND service_id::tag=$service_id " +
-		"AND service_instance_id::tag=$instance_id " +
+		"WHERE pod_uid::tag=$pod_uid " +
 		"GROUP BY time()")
-	queryParams := model.ToQueryParams(tenantId, serviceId, instanceId)
+	queryParams := toQueryParams(instanceId)
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(startTime, 10),
 		End:       strconv.FormatInt(endTime, 10),
@@ -224,8 +225,6 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		startTime := p.ServiceInParams.InParamsPtr.StartTime
 		endTime := p.ServiceInParams.InParamsPtr.EndTime
-		tenantId := p.ServiceInParams.InParamsPtr.TenantId
-		serviceId := p.ServiceInParams.InParamsPtr.ServiceId
 		instanceId := p.ServiceInParams.InParamsPtr.InstanceId
 
 		ctx := apis.GetContext(sdk.Ctx, func(header *transport.Header) {
@@ -233,28 +232,28 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		switch sdk.Comp.Name {
 		case cpu:
-			graph, err := p.getCpuLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getCpuLineGraph(ctx, startTime, endTime, instanceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, cpu, structure.String, "rateUnit", graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case memory:
-			graph, err := p.getMemoryLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getMemoryLineGraph(ctx, startTime, endTime, instanceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, structure.Storage, structure.KB, graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case diskIO:
-			graph, err := p.getDiskIoLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getDiskIoLineGraph(ctx, startTime, endTime, instanceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, diskIO, structure.TrafficRate, structure.KBSlashS, graph)
 			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case network:
-			graph, err := p.getNetworkLineGraph(ctx, startTime, endTime, tenantId, instanceId, serviceId)
+			graph, err := p.getNetworkLineGraph(ctx, startTime, endTime, instanceId)
 			if err != nil {
 				return nil
 			}
