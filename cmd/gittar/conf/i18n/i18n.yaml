@@ -1,28 +1,16 @@
 zh:
   mr.note.comment.cannot.be.empty: 评论不能为空
-  template.mr.ai.cr.tip.reach.max.limit: 这里仅展示前 %d 个文件的审查结果。对于其他未审查到的文件，请在 "**变更**" 里手动点击 "**AI 审查**" 按钮。
+  template.mr.ai.cr.tip.reach.max.limit: 这里仅展示前 %d 个文件的审查结果。对于其他未审查到的文件，请移至 "**变更**" 页里，手动点击 "**AI 审查**" 按钮，或者手动选择代码片段开启 "**AI 对话**"。
   mr.ai.cr.title: AI 代码审查
   file: 文件
   snippet: 代码片段
   mr.ai.cr.no.suggestion: 你的代码变更看起来不错，暂无审查建议。
-  mr.ai.cr.issue: 问题
-  mr.ai.cr.risk.level: 风险等级
-  mr.ai.cr.risk.level.none: 无
-  mr.ai.cr.risk.level.suggestion: 建议
-  mr.ai.cr.risk.level.low: 低
-  mr.ai.cr.risk.level.medium: 中
-  mr.ai.cr.risk.level.high: 高
+  template.mr.ai.cr.file.content.max.limit: 文件内容超长，本次审查至第 %d 行。对于其他未审查到的内容，请在 "**变更**" 页里手动选择代码片段开启 "**AI 对话**"。
 en:
   mr.note.comment.cannot.be.empty: Comment cannot be empty
-  template.mr.ai.cr.tip.reach.max.limit: Only the first %d files are displayed here. For other files that have not been reviewed, please manually click the "AI Review" button in "Changes".
+  template.mr.ai.cr.tip.reach.max.limit: Only the first %d files are displayed here. For other files that have not been reviewed, please manually click the "**AI Code Review**" button in the "**Changes**" tab, or manually select the code snippet to start the "**AI Conversation**".
   mr.ai.cr.title: AI Code Review
   file: File
   snippet: Code Snippet
   mr.ai.cr.no.suggestion: Your code changes look good, no review suggestions for now.
-  mr.ai.cr.issue: Issue
-  mr.ai.cr.risk.level: Risk Level
-  mr.ai.cr.risk.level.none: None
-  mr.ai.cr.risk.level.suggestion: Suggestion
-  mr.ai.cr.risk.level.low: Low
-  mr.ai.cr.risk.level.medium: Medium
-  mr.ai.cr.risk.level.high: High
+  template.mr.ai.cr.file.content.max.limit: The file content is too long, only the first %d lines are reviewed. For other content that has not been reviewed, please manually select the code snippet in "Changes" tab to start the "AI Conversation".

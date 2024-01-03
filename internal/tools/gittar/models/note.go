@@ -161,7 +161,6 @@ func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, 
 		switch req.AICodeReviewType {
 		case AICodeReviewTypeMR:
 		case AICodeReviewTypeMRFile:
-			crReq.FileRelated = &AICodeReviewRequestForFile{}
 		case AICodeReviewTypeMRCodeSnippet:
 			selectedCode, _ := mrutil.ConvertDiffLinesToSnippet(note.DataResult.DiffLines)
 			crReq.CodeSnippetRelated = &AICodeReviewRequestForCodeSnippet{SelectedCode: selectedCode}

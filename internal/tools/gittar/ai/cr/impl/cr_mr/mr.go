@@ -19,9 +19,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl/cr_mr_file"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mdutil"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
@@ -58,7 +61,11 @@ func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) s
 			break
 		}
 		if len(diffFile.Sections) > 0 {
-			fr := cr_mr_file.NewFileReviewer(diffFile, r.user, r.mr)
+			fr, err := cr_mr_file.NewFileReviewer(diffFile.Name, r.repo, r.mr, r.user)
+			if err != nil {
+				logrus.Warnf("failed to create file reviewer for file %s, err: %v", diffFile.Name, err)
+				continue
+			}
 			changedFiles = append(changedFiles, fr)
 		}
 	}
@@ -75,11 +82,11 @@ func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) s
 		go func(file models.FileCodeReviewer) {
 			defer wg.Done()
 
-			mu.Lock()
 			fileSuggestion := file.CodeReview(i18n, lang)
 			if strings.TrimSpace(fileSuggestion) == "" {
 				fileSuggestion = i18n.Text(lang, models.I18nKeyMrAICrNoSuggestion)
 			}
+			mu.Lock()
 			fileSuggestions[file.GetFileName()] = fileSuggestion
 			mu.Unlock()
 		}(file)
@@ -90,7 +97,9 @@ func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) s
 	var mrReviewResults []string
 	mrReviewResults = append(mrReviewResults, fmt.Sprintf("# %s", i18n.Text(lang, models.I18nKeyMrAICrTitle)))
 	if reachMaxDiffFileNumLimit {
-		mrReviewResults = append(mrReviewResults, fmt.Sprintf(i18n.Text(lang, models.I18nKeyTemplateMrAICrTipForEachMaxLimit), MaxDiffFileNum))
+		tip := fmt.Sprintf(i18n.Text(lang, models.I18nKeyTemplateMrAICrTipForEachMaxLimit), MaxDiffFileNum)
+		tip = mdutil.MakeRef(mdutil.MakeItalic(tip))
+		mrReviewResults = append(mrReviewResults, tip)
 	}
 	mrReviewResults = append(mrReviewResults, "")
 	for _, fileName := range fileOrder {
@@ -98,6 +107,7 @@ func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) s
 		mrReviewResults = append(mrReviewResults, fmt.Sprintf("## %s: `%s`", i18n.Text(lang, models.I18nKeyFile), fileName))
 		mrReviewResults = append(mrReviewResults, "")
 		mrReviewResults = append(mrReviewResults, fileSuggestions[fileName])
+		mrReviewResults = append(mrReviewResults, "")
 	}
 
 	return strings.Join(mrReviewResults, "\n")

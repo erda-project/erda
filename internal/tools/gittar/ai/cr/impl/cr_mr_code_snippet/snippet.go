@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/aiutil"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/i18nutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
@@ -42,6 +43,7 @@ type CodeSnippet struct {
 	CodeLanguage string
 	SelectedCode string
 	Truncated    bool // if there are too many changes, we have to truncate the content according to the model context
+	UserLang     string
 
 	user *models.User
 }
@@ -85,13 +87,14 @@ func newSnippetCodeReviewer(codeLang, selectedCode string, truncated bool, user 
 
 func (cs CodeSnippet) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string {
 	// construct AI request
-	req := cs.constructAIRequest()
+	req := cs.constructAIRequest(i18n, lang)
 
 	// invoke
 	return aiutil.InvokeAI(req, cs.user)
 }
 
-func (cs CodeSnippet) constructAIRequest() openai.ChatCompletionRequest {
+func (cs CodeSnippet) constructAIRequest(i18n i18n.Translator, lang i18n.LanguageCodes) openai.ChatCompletionRequest {
+	cs.UserLang = i18nutil.GetUserLang(lang)
 	msgs := deepcopy.Copy(promptStruct.Messages).([]openai.ChatCompletionMessage)
 
 	// invoke ai

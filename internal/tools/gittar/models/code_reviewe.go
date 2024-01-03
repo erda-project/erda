@@ -42,9 +42,7 @@ func RegisterCodeReviewer(t AICodeReviewType, f CodeReviewerCreateFunc) {
 type AICodeReviewNoteRequest struct {
 	NoteLocation NoteRequest `json:"noteLocation"`
 
-	Type AICodeReviewType `json:"type,omitempty"`
-
-	FileRelated        *AICodeReviewRequestForFile        `json:"fileRelated,omitempty"`
+	Type               AICodeReviewType                   `json:"type,omitempty"`
 	CodeSnippetRelated *AICodeReviewRequestForCodeSnippet `json:"codeSnippetRelated,omitempty"`
 }
 
@@ -57,7 +55,6 @@ var (
 )
 
 type AICodeReviewRequestForMR struct{}
-type AICodeReviewRequestForFile struct{}
 type AICodeReviewRequestForCodeSnippet struct {
 	CodeLanguage string `json:"codeLanguage,omitempty"` // if empty, will parse by newFilePath
 	SelectedCode string `json:"selectedCode,omitempty"`
