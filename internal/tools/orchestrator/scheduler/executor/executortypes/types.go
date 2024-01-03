@@ -113,6 +113,8 @@ var Factory = map[Kind]CreateFn{}
 var EvFuncMap = map[Name]GetEventChanFn{}
 var EvCbMap = map[Name]EventCbFn{}
 
+var evMutex = sync.RWMutex{}
+
 // Register add a executor's create function.
 func Register(kind Kind, create CreateFn) error {
 	if !kind.Validate() {
@@ -127,6 +129,9 @@ func Register(kind Kind, create CreateFn) error {
 
 // Get a GetEventChanFn according to an executor's name
 func RegisterEvChan(name Name, get GetEventChanFn, cb EventCbFn) error {
+	evMutex.Lock()
+	defer evMutex.Unlock()
+
 	logrus.Infof("in RegisterEvChan going to register executor: %s", name)
 	if _, ok := EvFuncMap[name]; ok {
 		return errors.Errorf("duplicate to register executor's event channel: %s", name)
@@ -137,6 +142,9 @@ func RegisterEvChan(name Name, get GetEventChanFn, cb EventCbFn) error {
 }
 
 func UnRegisterEvChan(name Name) {
+	evMutex.Lock()
+	defer evMutex.Unlock()
+
 	logrus.Infof("in UnRegisterEvChan going to unregister executor: %s", name)
 	delete(EvFuncMap, name)
 	delete(EvCbMap, name)
