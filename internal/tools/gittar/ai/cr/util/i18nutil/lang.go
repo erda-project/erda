@@ -12,35 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package limit_sync_group
+package i18nutil
 
-import "sync"
+import (
+	"strings"
 
-// encapsulate sync.WaitGroup
-// realize a controllable number of WaitGroup
-type limitSyncGroup struct {
-	c  chan struct{}
-	wg *sync.WaitGroup
-}
+	"github.com/erda-project/erda-infra/providers/i18n"
+)
 
-func NewSemaphore(maxSize int) *limitSyncGroup {
-	return &limitSyncGroup{
-		c:  make(chan struct{}, maxSize),
-		wg: new(sync.WaitGroup),
+const (
+	Chinese = "Chinese"
+	English = "English"
+
+	CodeZh = "zh"
+	CodeEn = "en"
+)
+
+func GetUserLang(langs i18n.LanguageCodes) string {
+	var code string
+	if len(langs) == 0 {
+		code = CodeZh
+	} else {
+		code = langs[0].RestrictedCode()
 	}
-}
-func (s *limitSyncGroup) Add(delta int) {
-	s.wg.Add(delta)
-	go func() {
-		for i := 0; i < delta; i++ {
-			s.c <- struct{}{}
-		}
-	}()
-}
-func (s *limitSyncGroup) Done() {
-	<-s.c
-	s.wg.Done()
-}
-func (s *limitSyncGroup) Wait() {
-	s.wg.Wait()
+	code = strings.ToLower(code)
+	switch code {
+	case CodeZh:
+		return Chinese
+	case CodeEn:
+		return English
+	default:
+		return Chinese
+	}
 }

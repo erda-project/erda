@@ -17,12 +17,13 @@ package models
 import (
 	"fmt"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
 
 type CodeReviewer interface {
-	CodeReview() string
+	CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string
 }
 
 type FileCodeReviewer interface {
@@ -41,9 +42,7 @@ func RegisterCodeReviewer(t AICodeReviewType, f CodeReviewerCreateFunc) {
 type AICodeReviewNoteRequest struct {
 	NoteLocation NoteRequest `json:"noteLocation"`
 
-	Type AICodeReviewType `json:"type,omitempty"`
-
-	FileRelated        *AICodeReviewRequestForFile        `json:"fileRelated,omitempty"`
+	Type               AICodeReviewType                   `json:"type,omitempty"`
 	CodeSnippetRelated *AICodeReviewRequestForCodeSnippet `json:"codeSnippetRelated,omitempty"`
 }
 
@@ -56,7 +55,6 @@ var (
 )
 
 type AICodeReviewRequestForMR struct{}
-type AICodeReviewRequestForFile struct{}
 type AICodeReviewRequestForCodeSnippet struct {
 	CodeLanguage string `json:"codeLanguage,omitempty"` // if empty, will parse by newFilePath
 	SelectedCode string `json:"selectedCode,omitempty"`
