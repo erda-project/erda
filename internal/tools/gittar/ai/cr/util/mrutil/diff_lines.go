@@ -53,23 +53,3 @@ func ConvertDiffLinesToSnippet(diffLines []*gitmodule.DiffLine) (selectedCode st
 	selectedCode = strings.Join(changes, "\n")
 	return
 }
-
-func ConvertDiffLinesToSnippet2(diffLines []*gitmodule.DiffLine) (selectedCode string, truncated bool) {
-	var changes []string
-	truncated = false
-	for _, line := range diffLines {
-		if line.Type == gitmodule.DIFF_LINE_DEL {
-			continue
-		}
-		changes = append(changes, line.Content)
-	}
-	if len(changes) == 0 {
-		return
-	}
-	if len(changes) > MAX_FILE_CHANGES_CHAR_SIZE {
-		changes = changes[:MAX_FILE_CHANGES_CHAR_SIZE]
-		truncated = true
-	}
-	selectedCode = strings.Join(changes, "\n")
-	return
-}

@@ -53,14 +53,10 @@ func NewFileReviewer(filePath string, repo *gitmodule.Repository, mr *apistructs
 	if err != nil {
 		return nil, err
 	}
-	diffFile := mrutil.GetDiffFileFromMR(repo, mr, filePath)
-	if diffFile == nil {
-		return nil, fmt.Errorf("file not found")
-	}
 
 	fr := OneChangedFile{
-		FileName:     diffFile.Name,
-		CodeLanguage: strings.TrimPrefix(filepath.Ext(diffFile.Name), "."),
+		FileName:     filePath,
+		CodeLanguage: strings.TrimPrefix(filepath.Ext(filePath), "."),
 		FileContent:  fileContent,
 		Truncated:    truncated,
 
