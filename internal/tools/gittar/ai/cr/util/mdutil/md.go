@@ -12,35 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package limit_sync_group
+package mdutil
 
-import "sync"
-
-// encapsulate sync.WaitGroup
-// realize a controllable number of WaitGroup
-type limitSyncGroup struct {
-	c  chan struct{}
-	wg *sync.WaitGroup
-}
-
-func NewSemaphore(maxSize int) *limitSyncGroup {
-	return &limitSyncGroup{
-		c:  make(chan struct{}, maxSize),
-		wg: new(sync.WaitGroup),
+func WrapCodeBlock(code string, lang ...string) string {
+	if len(lang) == 0 {
+		return "```\n" + code + "\n```"
 	}
+	return "```" + lang[0] + "\n" + code + "\n```"
 }
-func (s *limitSyncGroup) Add(delta int) {
-	s.wg.Add(delta)
-	go func() {
-		for i := 0; i < delta; i++ {
-			s.c <- struct{}{}
-		}
-	}()
+
+func MakeItalic(text string) string {
+	return "_" + text + "_"
 }
-func (s *limitSyncGroup) Done() {
-	<-s.c
-	s.wg.Done()
+
+func MakeBold(text string) string {
+	return "**" + text + "**"
 }
-func (s *limitSyncGroup) Wait() {
-	s.wg.Wait()
+
+func MakeRef(text string) string {
+	return "> " + text
 }
