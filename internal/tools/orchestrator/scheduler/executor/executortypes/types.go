@@ -113,7 +113,7 @@ var Factory = map[Kind]CreateFn{}
 var EvFuncMap = map[Name]GetEventChanFn{}
 var EvCbMap = map[Name]EventCbFn{}
 
-var evMutex = sync.RWMutex{}
+var evMutex = sync.Mutex{}
 
 // Register add a executor's create function.
 func Register(kind Kind, create CreateFn) error {
