@@ -85,12 +85,12 @@ func newSnippetCodeReviewer(codeLang, selectedCode string, truncated bool, user 
 	return cs
 }
 
-func (cs CodeSnippet) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string {
+func (cs CodeSnippet) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, aiSessionID string) string {
 	// construct AI request
 	req := cs.constructAIRequest(i18n, lang)
 
 	// invoke
-	return aiutil.InvokeAI(req, cs.user)
+	return aiutil.InvokeAI(req, cs.user, aiSessionID)
 }
 
 func (cs CodeSnippet) constructAIRequest(i18n i18n.Translator, lang i18n.LanguageCodes) openai.ChatCompletionRequest {
