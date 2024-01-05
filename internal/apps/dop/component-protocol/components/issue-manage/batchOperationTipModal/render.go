@@ -97,6 +97,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 				return err
 			}
 			(*gs)["OperationKey"] = ""
+			c.State["selectedRowKeys"] = []string{}
 		}
 	}
 	return bot.SetComponent(c)
@@ -143,7 +144,7 @@ func (bot *BatchOperationTipModal) getOperations() {
 		"onOk": Operation{
 			Key:        "batchSubmit",
 			Reload:     true,
-			SuccessMsg: bot.SDK.I18n("status update success"),
+			SuccessMsg: bot.SDK.I18n("Items deleted successfully"),
 			Meta:       Meta{Type: ""},
 		},
 	}
