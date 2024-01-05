@@ -23,7 +23,7 @@ import (
 )
 
 type CodeReviewer interface {
-	CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string
+	CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, aiSessionID string) string
 }
 
 type FileCodeReviewer interface {
