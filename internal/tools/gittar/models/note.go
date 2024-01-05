@@ -336,7 +336,7 @@ func (svc *Service) createAISession(mergeID int64, user *User) (string, error) {
 		UserId:      user.Id,
 		Scene:       "ai-cr-session",
 		Name:        sessionName,
-		Topic:       "This is a code review session, please answer professionally.",
+		Topic:       svc.I18n(I18nKeyMrAICrSessionTopic),
 		NumOfCtxMsg: 100,
 	}
 	aiSession, err := aiproxyclient.Instance.Session().Create(aiproxyclient.Instance.Context(), &req)
