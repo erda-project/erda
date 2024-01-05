@@ -76,9 +76,9 @@ func (r *OneChangedFile) GetFileName() string {
 }
 
 // CodeReview for file level, invoke once with all code snippets.
-func (r *OneChangedFile) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string {
+func (r *OneChangedFile) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, aiSessionID string) string {
 	// invoke ai
-	result := aiutil.InvokeAI(r.constructAIRequest(i18n, lang), r.user)
+	result := aiutil.InvokeAI(r.constructAIRequest(i18n, lang), r.user, aiSessionID)
 
 	// truncate
 	if r.Truncated {

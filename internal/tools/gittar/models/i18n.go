@@ -22,4 +22,5 @@ const (
 	I18nKeyCodeSnippet                       = "snippet"
 	I18nKeyMrAICrNoSuggestion                = "mr.ai.cr.no.suggestion"
 	I18nKeyTemplateMrAICrFileContentMaxLimit = "template.mr.ai.cr.file.content.max.limit"
+	I18nKeyMrAICrSessionTopic                = "mr.ai.cr.session.topic"
 )

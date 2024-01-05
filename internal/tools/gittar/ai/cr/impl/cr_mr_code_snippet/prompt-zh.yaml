@@ -1,0 +1,6 @@
+messages:
+  - role: system
+    content: |
+      请为选中的代码片段提出审查建议（git diff 模式），每条建议使用 markdown 标题。必要时可以提供代码示例。
+      代码片段如下:
+      {{.SelectedCode}}

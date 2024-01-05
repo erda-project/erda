@@ -48,7 +48,7 @@ func init() {
 	})
 }
 
-func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string {
+func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, aiSessionID string) string {
 	diff := mrutil.GetDiffFromMR(r.repo, r.mr)
 
 	// mr has many changed files, we will review only the first ten files one by one. Then, combine the file-level suggestions.
@@ -82,7 +82,7 @@ func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) s
 		go func(file models.FileCodeReviewer) {
 			defer wg.Done()
 
-			fileSuggestion := file.CodeReview(i18n, lang)
+			fileSuggestion := file.CodeReview(i18n, lang, "")
 			if strings.TrimSpace(fileSuggestion) == "" {
 				fileSuggestion = i18n.Text(lang, models.I18nKeyMrAICrNoSuggestion)
 			}

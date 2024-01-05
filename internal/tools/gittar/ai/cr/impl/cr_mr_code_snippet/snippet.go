@@ -51,14 +51,21 @@ type CodeSnippet struct {
 //go:embed prompt.yaml
 var promptYaml string
 
+//go:embed prompt-zh.yaml
+var promptZhYaml string
+
 type PromptStruct = struct {
 	Messages []openai.ChatCompletionMessage `yaml:"messages"`
 }
 
 var promptStruct PromptStruct
+var promptZhStruct PromptStruct
 
 func init() {
 	if err := yaml.Unmarshal([]byte(promptYaml), &promptStruct); err != nil {
+		panic(err)
+	}
+	if err := yaml.Unmarshal([]byte(promptZhYaml), &promptZhStruct); err != nil {
 		panic(err)
 	}
 	// register
@@ -85,17 +92,21 @@ func newSnippetCodeReviewer(codeLang, selectedCode string, truncated bool, user 
 	return cs
 }
 
-func (cs CodeSnippet) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes) string {
+func (cs CodeSnippet) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, aiSessionID string) string {
 	// construct AI request
 	req := cs.constructAIRequest(i18n, lang)
 
 	// invoke
-	return aiutil.InvokeAI(req, cs.user)
+	return aiutil.InvokeAI(req, cs.user, aiSessionID)
 }
 
 func (cs CodeSnippet) constructAIRequest(i18n i18n.Translator, lang i18n.LanguageCodes) openai.ChatCompletionRequest {
 	cs.UserLang = i18nutil.GetUserLang(lang)
-	msgs := deepcopy.Copy(promptStruct.Messages).([]openai.ChatCompletionMessage)
+	usedPromptStruct := promptStruct
+	if cs.UserLang == i18nutil.Chinese {
+		usedPromptStruct = promptZhStruct
+	}
+	msgs := deepcopy.Copy(usedPromptStruct.Messages).([]openai.ChatCompletionMessage)
 
 	// invoke ai
 	req := openai.ChatCompletionRequest{
