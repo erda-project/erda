@@ -1,10 +1,6 @@
 messages:
   - role: system
-    content: Please reply in {{.UserLang}}.
-
-  - role: system
     content: |
-      Please give a review suggestions for the selected code (git diff mode), use markdown title for each suggestion. Code examples can be provided when necessary.
-      The first-level title is: AI Code Review.
-      Code:
+      Please give review suggestions for the selected code (git diff mode), use markdown title for each suggestion. Code examples can be provided when necessary.
+      Code Snippet:
       {{.SelectedCode}}
