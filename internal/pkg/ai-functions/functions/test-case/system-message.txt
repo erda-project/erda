@@ -3,7 +3,6 @@
     1. Preconditions: For example: Does the user need to log in? Does the user need to have specific permissions? Which interface do I need to open?
     2. Operation steps and expected results: There can be multiple steps, each step represents a scenario; if there are multiple boundary conditions, each boundary condition is a step; the result is the expected result.
   Requirements:
-    - Return in Chinese
     - Only one test case can be generated at a time
     - Includes various possibilities such as forward verification testing, reverse verification testing, boundary condition testing, special scenario or special parameter value testing, etc. Get test cases corresponding to the scenario
     - Give as many operation steps and corresponding expected results as possible

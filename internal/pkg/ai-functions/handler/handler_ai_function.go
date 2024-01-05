@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	aitestcase "github.com/erda-project/erda/internal/pkg/ai-functions/functions/test-case"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -116,7 +117,7 @@ func (h *AIFunction) GetSystemPrompt(ctx context.Context, req *pb.GetSystemPromp
 
 	content := httpserver.Resp{
 		Success: true,
-		Data:    f.SystemMessage(),
+		Data:    f.SystemMessage(apis.GetLang(ctx)), // 系统提示语,
 	}
 	result, err := json.Marshal(content)
 	if err != nil {

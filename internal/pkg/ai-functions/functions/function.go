@@ -32,7 +32,7 @@ var (
 type Function interface {
 	Name() string
 	Description() string
-	SystemMessage() string
+	SystemMessage(lang string) string
 	UserMessage() string
 	Schema() (json.RawMessage, error)
 	RequestOptions() []sdk.RequestOption
