@@ -27,10 +27,12 @@ import (
 	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var (
 	defaultBranch = "master"
+	targetBranch  = []string{"master", "Master", "main", "Main", "dev", "Dev", "develop", "Develop", "release", "Release"}
 )
 
 var (
@@ -96,6 +98,13 @@ func NewPersonalMetric(author *gitmodule.Signature, repo *models.Repo) *Personal
 		OrgName:     repo.OrgName,
 		Field:       &MetricField{},
 	}
+}
+
+func IsValidBranch(s string, prefixes ...string) bool {
+	if !strutil.HasPrefixes(s, prefixes...) {
+		return false
+	}
+	return true
 }
 
 type Collector struct {
@@ -165,20 +174,39 @@ func (c *Collector) IterateRepos(req apistructs.GittarListRepoRequest) ([]*Perso
 		gitRepository.Url = conf.GittarUrl() + "/" + repo.Path
 		gitRepository.IsExternal = repo.IsExternal
 
-		branch, err := gitRepository.GetDefaultBranch()
+		branches, err := gitRepository.GetBranches()
 		if err != nil {
-			logrus.Warningf("failed to get default branch for repo: %s, err: %v, use branch: %s as default", repo.Path, err, defaultBranch)
-			branch = defaultBranch
+			logrus.Warningf("failed to get all branch for repo: %s, err: %v, use branch: %s as default", repo.Path, err, defaultBranch)
+			branches = []string{defaultBranch}
 		}
-		sourceCommit, err := gitRepository.GetBranchCommit(branch)
-		if err != nil {
-			logrus.Errorf("failed to get commit for branch: %s", branch)
-			continue
+		var allSourceCommit []*gitmodule.Commit
+		for _, branch := range branches {
+			if !IsValidBranch(branch, targetBranch...) {
+				continue
+			}
+			SourceCommit, err := gitRepository.GetBranchCommit(branch)
+			if err != nil {
+				logrus.Errorf("failed to get curCommit for branch: %s", branch)
+				continue
+			}
+			allSourceCommit = append(allSourceCommit, SourceCommit)
 		}
-		commits, err := gitRepository.CommitsBetweenDuration(sourceCommit.ID, start, end)
-		if err != nil {
-			logrus.Errorf("failed to list commits for repo: %s, branch: %s", repo.Path, branch)
-			continue
+		commitsSet := make(map[string]struct{})
+		var commits []*gitmodule.Commit
+		for _, sourceCommit := range allSourceCommit {
+			curCommits, err := gitRepository.CommitsBetweenDuration(sourceCommit.ID, start, end)
+			if err != nil {
+				logrus.Errorf("failed to list commits for repo: %s, commit-id: %s", repo.Path, sourceCommit.ID)
+				continue
+			}
+			for _, curCommit := range curCommits {
+				if _, ok := commitsSet[curCommit.ID]; ok {
+					continue
+				} else {
+					commits = append(commits, curCommit)
+					commitsSet[curCommit.ID] = struct{}{}
+				}
+			}
 		}
 		for _, commit := range commits {
 			author := commit.Author
