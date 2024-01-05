@@ -1,6 +1,10 @@
 zh:
   progress: 进度
+  Delete: 删除
   Delete following items: 删除以下事项：
+  Items deleted successfully: 事项删除成功
 en:
   progress: Progress
+  Delete: Delete
   Delete following items: Delete following items：
+  Items deleted successfully: Items deleted successfully
