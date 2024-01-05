@@ -17,6 +17,7 @@ package test_case
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -576,6 +577,99 @@ func Test_verifyAIGenerateResults(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := verifyAIGenerateResults(tt.args.results); (err != nil) != tt.wantErr {
 				t.Errorf("verifyAIGenerateResults() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestFunction_SystemMessage(t *testing.T) {
+	type fields struct {
+		background *pb.Background
+	}
+	type args struct {
+		lang string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{
+			name: "Test_01",
+			fields: fields{
+				background: &pb.Background{},
+			},
+			args: args{
+				lang: I18nLang_en_US,
+			},
+			want: systemMessage + "\n    - Return in English",
+		},
+		{
+			name: "Test_02",
+			fields: fields{
+				background: &pb.Background{},
+			},
+			args: args{
+				lang: I18nLang_zh_CN,
+			},
+			want: systemMessage + "\n    - Return in Chinese",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &Function{
+				background: tt.fields.background,
+			}
+			if got := f.SystemMessage(tt.args.lang); got != tt.want {
+				t.Errorf("SystemMessage() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_adjustMessageByLanguage(t *testing.T) {
+	type args struct {
+		lang      string
+		groupName string
+	}
+	groupName := "Test"
+	tests := []struct {
+		name string
+		args args
+		want MessageByLanguage
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				lang:      I18nLang_zh_CN,
+				groupName: groupName,
+			},
+			want: MessageByLanguage{
+				TaskContent:   "需求和任务相关联，一个需求事项包含多个任务事项，这是我所有的任务标题:",
+				GroupContent:  "这是我的功能分组: \n",
+				GenerateTC:    fmt.Sprintf("请根据 '%s' 这个功能分组，基于需求名称、需求描述和任务名称设计一系列高质量的功能测试用例。测试用例的名称应该以对应的功能点作为命名。请确保生成的测试用例能够充分覆盖该功能分组，并包括清晰的输入条件、操作步骤和期望的输出结果。", groupName),
+				GenerateGroup: "请根据需求标题、需求内容和任务标题，帮助我生成一系列高质量的测试用例功能分组。生成测试用例分组的规则参考我上面给出的案例。测试用例功能分组应该基于需求的主题和任务的关联性。并使用功能点对每个功能分组进行命名。不要出现含义相同或者重复的测试用例功能分组。",
+			},
+		},
+		{
+			name: "Test_02",
+			args: args{
+				lang:      I18nLang_en_US,
+				groupName: groupName,
+			},
+			want: MessageByLanguage{
+				TaskContent:   "Requirements are related to tasks. A requirement item contains multiple task items. This is the title of all my tasks:",
+				GroupContent:  "This is my function grouping result: \n",
+				GenerateTC:    fmt.Sprintf("Please design a series of high-quality functional test cases based on the requirement name, requirement description and task name according to the functional grouping '%s'. The name of the test case should be named after the corresponding function point. Please ensure that the generated test cases can fully cover the functional grouping and include clear input conditions, operation steps and expected output results. The results must be returned in English.", groupName),
+				GenerateGroup: "Please help me generate a series of high-quality test case functional groupings based on the requirement title, requirement content and task title. The rules for generating test case groups refer to the case I gave above. Functional grouping of test cases should be based on the topic of the requirements and the relevance of the tasks. And use function points to name each function group. The naming results must be expressed in English. There should be no test case function groups with the same meaning or duplicates.",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := adjustMessageByLanguage(tt.args.lang, tt.args.groupName); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("adjustMessageByLanguage() = %v, want %v", got, tt.want)
 			}
 		})
 	}

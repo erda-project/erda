@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	aiHandlerUtils "github.com/erda-project/erda/internal/pkg/ai-functions/handler/utils"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -48,6 +49,9 @@ const (
 	OperationTypeGenerate = "Generate"
 	// OperationTypeSave 表示当前调用接口触发测试用例 保存 操作
 	OperationTypeSave = "Save"
+
+	I18nLang_zh_CN = "zh-CN"
+	I18nLang_en_US = "en-US"
 )
 
 //go:embed schema.yaml
@@ -119,6 +123,32 @@ type AICreateTestCasesResult struct {
 type RequireTestCaseIndex struct {
 	RequirementIndex int // aitestcase.FunctionParams.Requirements  的 index
 	TestCaseIndex    int // aitestcase.FunctionParams.Requirements[].Reqs 的 index 列表
+}
+
+type MessageByLanguage struct {
+	TaskContent   string
+	GroupContent  string
+	GenerateTC    string
+	GenerateGroup string
+}
+
+func adjustMessageByLanguage(lang string, groupName string) MessageByLanguage {
+	data := MessageByLanguage{
+		TaskContent:   "需求和任务相关联，一个需求事项包含多个任务事项，这是我所有的任务标题:",
+		GroupContent:  "这是我的功能分组: \n",
+		GenerateTC:    fmt.Sprintf("请根据 '%s' 这个功能分组，基于需求名称、需求描述和任务名称设计一系列高质量的功能测试用例。测试用例的名称应该以对应的功能点作为命名。请确保生成的测试用例能够充分覆盖该功能分组，并包括清晰的输入条件、操作步骤和期望的输出结果。", groupName),
+		GenerateGroup: "请根据需求标题、需求内容和任务标题，帮助我生成一系列高质量的测试用例功能分组。生成测试用例分组的规则参考我上面给出的案例。测试用例功能分组应该基于需求的主题和任务的关联性。并使用功能点对每个功能分组进行命名。不要出现含义相同或者重复的测试用例功能分组。",
+	}
+
+	if lang == I18nLang_en_US {
+		data = MessageByLanguage{
+			TaskContent:   "Requirements are related to tasks. A requirement item contains multiple task items. This is the title of all my tasks:",
+			GroupContent:  "This is my function grouping result: \n",
+			GenerateTC:    fmt.Sprintf("Please design a series of high-quality functional test cases based on the requirement name, requirement description and task name according to the functional grouping '%s'. The name of the test case should be named after the corresponding function point. Please ensure that the generated test cases can fully cover the functional grouping and include clear input conditions, operation steps and expected output results. The results must be returned in English.", groupName),
+			GenerateGroup: "Please help me generate a series of high-quality test case functional groupings based on the requirement title, requirement content and task title. The rules for generating test case groups refer to the case I gave above. Functional grouping of test cases should be based on the topic of the requirements and the relevance of the tasks. And use function points to name each function group. The naming results must be expressed in English. There should be no test case function groups with the same meaning or duplicates.",
+		}
+	}
+	return data
 }
 
 // createRootTestSetIfNecessary 根据请求参数确定创建的测试集的 Root 测试集(不存在则创建)
@@ -357,8 +387,12 @@ func (f *Function) Description() string {
 	return "create test case"
 }
 
-func (f *Function) SystemMessage() string {
-	return systemMessage
+func (f *Function) SystemMessage(lang string) string {
+	languagePrompt := "\n    - Return in Chinese"
+	if lang == I18nLang_en_US {
+		languagePrompt = "\n    - Return in English"
+	}
+	return systemMessage + languagePrompt
 }
 
 func (f *Function) UserMessage() string {
@@ -609,13 +643,16 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 	}
 	tp.Prompt = callbackInput.Prompt
 
+	lang := apis.GetLang(ctx)
+	messByLang := adjustMessageByLanguage(lang, groupName)
+
 	// 1. 生成 操作
 	var f = factory(ctx, "", req.GetBackground())
 	messages := make([]openai.ChatCompletionMessage, 0)
 	// 添加系统提示词
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
-		Content: f.SystemMessage(), // 系统提示语
+		Content: f.SystemMessage(lang), // 系统提示语
 		Name:    "system",
 	})
 
@@ -645,11 +682,10 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 		}
 	}
 	if len(tasks) > 0 {
-		taskContent := "需求和任务相关联，一个需求事项包含多个任务事项，这是我所有的任务标题:"
 		for idx, task := range tasks {
 			tasks[idx] = "\ntask name:" + task
 		}
-		taskContent = taskContent + strings.Join(tasks, ",")
+		taskContent := messByLang.TaskContent + strings.Join(tasks, ",")
 
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
@@ -658,8 +694,7 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 	}
 
 	// 添加分组信息
-	groupContent := "这是我的功能分组: \n"
-	groupContent = groupContent + strings.Join(groups, "\n") + "\n"
+	groupContent := messByLang.GroupContent + strings.Join(groups, "\n") + "\n"
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleAssistant,
 		Content: groupContent,
@@ -668,7 +703,7 @@ func processSingleTestCase(ctx context.Context, factory functions.FunctionFactor
 	// 最后生成指令
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
-		Content: fmt.Sprintf("请根据 '%s' 这个功能分组，基于需求名称、需求描述和任务名称设计一系列高质量的功能测试用例。测试用例的名称应该以对应的功能点作为命名。请确保生成的测试用例能够充分覆盖该功能分组，并包括清晰的输入条件、操作步骤和期望的输出结果。", groupName),
+		Content: messByLang.GenerateTC,
 	})
 
 	if systemPrompt != "" {
