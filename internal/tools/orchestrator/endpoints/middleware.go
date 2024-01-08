@@ -246,13 +246,7 @@ func (e *Endpoints) getMiddlewareListParams(r *http.Request) (*apistructs.Middle
 			return nil, err
 		}
 	}
-	haveInstancesStr := r.URL.Query().Get("haveInstances")
-	if haveInstancesStr != "" {
-		haveInstances, err = strconv.ParseBool(haveInstancesStr)
-		if err != nil {
-			return nil, err
-		}
-	}
+
 	addonName := r.URL.Query().Get("addonName")
 	workspace := r.URL.Query().Get("workspace")
 	switch strings.ToUpper(workspace) {
