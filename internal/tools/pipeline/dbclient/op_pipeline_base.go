@@ -181,16 +181,6 @@ func (client *Client) BatchUpdatePipelineBaseByID(ids []uint64, base *spec.Pipel
 	return err
 }
 
-func (client *Client) GetPipelineBaseByDefinitionIDs(ids []string, ops ...SessionOption) ([]spec.PipelineBase, error) {
-	session := client.NewSession(ops...)
-	defer session.Close()
-
-	var bases []spec.PipelineBase
-	err := session.In("id", ids).Desc("time_created").Find(&bases)
-
-	return bases, err
-}
-
 func (client *Client) GetPipelineStatus(id uint64, ops ...SessionOption) (apistructs.PipelineStatus, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()

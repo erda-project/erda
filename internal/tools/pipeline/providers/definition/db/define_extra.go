@@ -22,7 +22,7 @@ import (
 )
 
 type PipelineDefinitionExtra struct {
-	ID                   string                                  `json:"id" xorm:"pk autoincr"`
+	ID                   string                                  `json:"id" xorm:"pk"`
 	Extra                apistructs.PipelineDefinitionExtraValue `json:"extra" xorm:"json"`
 	TimeCreated          *time.Time                              `json:"timeCreated,omitempty" xorm:"created_at created"`
 	TimeUpdated          *time.Time                              `json:"timeUpdated,omitempty" xorm:"updated_at updated"`

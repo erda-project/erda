@@ -134,7 +134,7 @@ func DifferenceSet[T comparable](arr1, arr2 []T) []T {
 //
 //	array2Map = map[string]string{
 //		"this is key1": "this is value1",
-//	 "this is key2": "this is value2",
+//	    "this is key2": "this is value2",
 //	}
 func StructArray2Map[T any, Key comparable, Value comparable](arr []T, getKV func(T) (Key, Value, bool)) map[Key]Value {
 	arr2Map := make(map[Key]Value)

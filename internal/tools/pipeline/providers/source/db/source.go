@@ -179,18 +179,6 @@ func (p *PipelineSource) Convert() *pb.PipelineSource {
 	}
 }
 
-// GetDistinctUniqueSource get the distinct unique source
-func (client *Client) GetDistinctUniqueSource(ops ...mysqlxorm.SessionOption) (uniqueGroup []PipelineSource, err error) {
-	session := client.NewSession(ops...)
-	defer session.Close()
-
-	if err = session.Select("DISTINCT source_type, remote, ref, path, name").Find(&uniqueGroup); err != nil {
-		return nil, err
-	}
-
-	return
-}
-
 func (client *Client) GetUniqueSourceGroup(ops ...mysqlxorm.SessionOption) (uniqueSourceGroup []PipelineSourceUniqueGroup, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
