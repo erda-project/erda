@@ -109,13 +109,11 @@ func (dbClient *DBClient) CreateWhenReceived(ctx context.Context, req *pb.AuditC
 	return c.ToProtobuf(), nil
 }
 
-func (dbClient *DBClient) UpdateAfterContextParsed(ctx context.Context, req *pb.AuditUpdateRequestAfterContextParsed) (*pb.Audit, error) {
+func (dbClient *DBClient) UpdateAfterBasicContextParsed(ctx context.Context, req *pb.AuditUpdateRequestAfterBasicContextParsed) (*pb.Audit, error) {
 	c := &Audit{BaseModel: common.BaseModelWithID(req.AuditId)}
 	if err := dbClient.DB.Model(c).First(c).Error; err != nil {
 		return nil, err
 	}
-
-	c.Prompt = req.Prompt
 
 	c.ClientID = req.ClientId
 	c.ModelID = req.ModelId
@@ -137,7 +135,6 @@ func (dbClient *DBClient) UpdateAfterContextParsed(ctx context.Context, req *pb.
 
 	var auditMetadata metadata.AuditMetadata
 	cputil.MustObjJSONTransfer(&c.Metadata, &auditMetadata)
-	auditMetadata.Public.RequestFunctionCallName = req.RequestFunctionCallName
 	if req.DingtalkStaffId != "" {
 		auditMetadata.Secret.DingtalkStaffId = req.DingtalkStaffId
 	}
@@ -147,6 +144,26 @@ func (dbClient *DBClient) UpdateAfterContextParsed(ctx context.Context, req *pb.
 	if req.IdentityPhoneNumber != "" {
 		auditMetadata.Secret.IdentityPhoneNumber = req.IdentityPhoneNumber
 	}
+
+	cputil.MustObjJSONTransfer(&auditMetadata, &c.Metadata)
+
+	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {
+		return nil, err
+	}
+	return c.ToProtobuf(), nil
+}
+
+func (dbClient *DBClient) UpdateAfterSpecificContextParsed(ctx context.Context, req *pb.AuditUpdateRequestAfterSpecificContextParsed) (*pb.Audit, error) {
+	c := &Audit{BaseModel: common.BaseModelWithID(req.AuditId)}
+	if err := dbClient.DB.Model(c).First(c).Error; err != nil {
+		return nil, err
+	}
+
+	c.Prompt = req.Prompt
+
+	var auditMetadata metadata.AuditMetadata
+	cputil.MustObjJSONTransfer(&c.Metadata, &auditMetadata)
+	auditMetadata.Public.RequestFunctionCallName = req.RequestFunctionCallName
 	// audio info
 	if req.AudioFileName != "" {
 		auditMetadata.Public.AudioFileName = req.AudioFileName
