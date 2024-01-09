@@ -636,8 +636,6 @@ type MiddlewareListRequest struct {
 	PageSize int `query:"pageSize"`
 	// EndTime 截止时间
 	EndTime *time.Time
-	// HaveInstances query addon that have instances, default will be true
-	HaveInstances bool `query:"haveInstances"`
 }
 
 // MiddlewareListResponse addon 真实实例列表响应
