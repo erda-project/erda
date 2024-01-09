@@ -137,10 +137,7 @@ func (db *DBClient) ListAddonInstancesByParams(orgID uint64, params *apistructs.
 		Joins("LEFT JOIN tb_middle_node ON tb_addon_instance.id = tb_middle_node.instance_id AND tb_middle_node.is_deleted = 'N'").
 		Where("tb_addon_instance.org_id = ?", orgID).
 		Where("tb_addon_instance.platform_service_type = ?", 0)
-	if params.HaveInstances {
-		dbClient = dbClient.Joins("LEFT JOIN s_instance_info ON s_instance_info.addon_id = tb_addon_instance.id").
-			Where("s_instance_info.id != ''")
-	}
+
 	if params.ProjectID != 0 {
 		dbClient = dbClient.Where("tb_addon_instance.project_id = ?", params.ProjectID)
 	}

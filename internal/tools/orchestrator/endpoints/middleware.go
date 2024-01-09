@@ -211,7 +211,7 @@ func (e *Endpoints) GetMiddlewareResource(ctx context.Context, r *http.Request, 
 	permissionResult, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.OrgScope,
-		ScopeID:  uint64(orgID),
+		ScopeID:  orgID,
 		Resource: "middleware",
 		Action:   apistructs.GetAction,
 	})
@@ -227,14 +227,17 @@ func (e *Endpoints) GetMiddlewareResource(ctx context.Context, r *http.Request, 
 		return apierrors.ErrFetchAddon.InternalError(err).ToResp(), nil
 	}
 
+	if len(middlewareResource) == 0 {
+		return apierrors.ErrEmptyAddonInstances.NotFound().ToResp(), nil
+	}
+
 	return httpserver.OkResp(middlewareResource)
 }
 
 func (e *Endpoints) getMiddlewareListParams(r *http.Request) (*apistructs.MiddlewareListRequest, error) {
 	var (
-		projectID     uint64
-		haveInstances = true
-		err           error
+		projectID uint64
+		err       error
 	)
 	projectIDStr := r.URL.Query().Get("projectId")
 	if projectIDStr != "" {
@@ -243,13 +246,7 @@ func (e *Endpoints) getMiddlewareListParams(r *http.Request) (*apistructs.Middle
 			return nil, err
 		}
 	}
-	haveInstancesStr := r.URL.Query().Get("haveInstances")
-	if haveInstancesStr != "" {
-		haveInstances, err = strconv.ParseBool(haveInstancesStr)
-		if err != nil {
-			return nil, err
-		}
-	}
+
 	addonName := r.URL.Query().Get("addonName")
 	workspace := r.URL.Query().Get("workspace")
 	switch strings.ToUpper(workspace) {
@@ -282,13 +279,12 @@ func (e *Endpoints) getMiddlewareListParams(r *http.Request) (*apistructs.Middle
 	instanceID := r.URL.Query().Get("instanceId")
 	instanceIP := r.URL.Query().Get("ip")
 	return &apistructs.MiddlewareListRequest{
-		ProjectID:     projectID,
-		AddonName:     addonName,
-		Workspace:     workspace,
-		PageNo:        pageNo,
-		PageSize:      pageSize,
-		InstanceID:    instanceID,
-		InstanceIP:    instanceIP,
-		HaveInstances: haveInstances,
+		ProjectID:  projectID,
+		AddonName:  addonName,
+		Workspace:  workspace,
+		PageNo:     pageNo,
+		PageSize:   pageSize,
+		InstanceID: instanceID,
+		InstanceIP: instanceIP,
 	}, nil
 }

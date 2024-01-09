@@ -63,13 +63,14 @@ var (
 )
 
 var (
-	ErrCreateAddon     = err("ErrCreateAddon", "创建 addon 失败")
-	ErrUpdateAddon     = err("ErrUpdateAddon", "更新 addon 失败")
-	ErrFetchAddon      = err("ErrFetchAddon", "获取 addon 详情失败")
-	ErrDeleteAddon     = err("ErrDeleteAddon", "删除 addon 失败")
-	ErrListAddon       = err("ErrListAddon", "获取 addon 列表失败")
-	ErrScaleAddon      = err("ErrScaleAddon", "扩缩 addon 实例副本失败")
-	ErrListAddonMetris = err("ErrListAddonMetris", "获取 addon 监控失败")
+	ErrCreateAddon         = err("ErrCreateAddon", "创建 addon 失败")
+	ErrUpdateAddon         = err("ErrUpdateAddon", "更新 addon 失败")
+	ErrFetchAddon          = err("ErrFetchAddon", "获取 addon 详情失败")
+	ErrEmptyAddonInstances = err("ErrEmptyAddonInstances", "addon 实例为空")
+	ErrDeleteAddon         = err("ErrDeleteAddon", "删除 addon 失败")
+	ErrListAddon           = err("ErrListAddon", "获取 addon 列表失败")
+	ErrScaleAddon          = err("ErrScaleAddon", "扩缩 addon 实例副本失败")
+	ErrListAddonMetris     = err("ErrListAddonMetris", "获取 addon 监控失败")
 )
 
 var (
