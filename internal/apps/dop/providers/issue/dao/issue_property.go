@@ -15,7 +15,10 @@
 package dao
 
 import (
+	"sort"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -62,7 +65,11 @@ func (client *DBClient) UpdateIssueProperty(property *IssueProperty) error {
 }
 
 func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]IssueProperty, error) {
+	if req.ScopeType == "" {
+		req.ScopeType = string(apistructs.ProjectScope)
+	}
 	var properties []IssueProperty
+	var propertiesProject []IssueProperty
 	db := client.Where(IssueProperty{}).Where("org_id = ?", req.OrgID)
 	if req.PropertyIssueType != "" {
 		db = db.Where("property_issue_type = ?", req.PropertyIssueType)
@@ -71,11 +78,48 @@ func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]Is
 	if req.PropertyName != "" {
 		db = db.Where("property_name LIKE ?", str)
 	}
-	if err := db.Order("index").Find(&properties).Error; err != nil {
+	if err := db.Where("scope_type = ?", string(apistructs.OrgScope)).Order("index").Find(&properties).Error; err != nil {
 		return nil, err
 	}
+	if req.ScopeType != string(apistructs.ProjectScope) {
+		return properties, nil
+	}
+
+	// propertiesProject 项目级 properties
+	db = db.Where("scope_type = ?", string(apistructs.ProjectScope))
+	if req.ScopeID != "" {
+		db = db.Where("scope_id = ?", req.ScopeID)
+	}
+	if err := db.Order("index").Find(&propertiesProject).Error; err != nil {
+		return nil, err
+	}
+	properties = append(properties, propertiesProject...)
+
+	if req.OnlyProject {
+		return propertiesProject, nil
+	}
+	// 优先级：项目 > 企业级，当有重复的字段时，项目覆盖企业的字段；
+	properties = NameConflict(properties, propertiesProject)
 
 	return properties, nil
+}
+
+// NameConflict 重名覆盖函数用于解决自定义事项不同类型，名称相同冲突问题，将lowProperties覆盖到highProperties上。优先级：app > project > org
+func NameConflict(highProperties, lowProperties []IssueProperty) []IssueProperty {
+	overlayIndex := make([]int, 0)
+	for i, highProperty := range highProperties {
+		for _, lowProperty := range lowProperties {
+			if lowProperty.PropertyName == highProperty.PropertyName && lowProperty.ScopeType != highProperty.ScopeType {
+				overlayIndex = append(overlayIndex, i)
+			}
+		}
+	}
+	sort.Ints(overlayIndex)
+	for i := len(overlayIndex) - 1; i >= 0; i-- {
+		index := overlayIndex[i]
+		highProperties = append(highProperties[:index], highProperties[index+1:]...)
+	}
+	return highProperties
 }
 
 func (client *DBClient) GetIssuePropertyByID(id int64) (*IssueProperty, error) {
@@ -103,10 +147,11 @@ func (client *DBClient) GetIssuePropertiesByRelation(ID int64) (*IssueProperty, 
 }
 
 // GetIssuePropertyByName 根据 name 获取 property 信息
-func (client *DBClient) GetIssuePropertyByName(orgID int64, Name string, PropertyIssueType string) (*IssueProperty, error) {
+func (client *DBClient) GetIssuePropertyByName(orgID int64, Name string, PropertyIssueType string, scopeType string, scopeID int64) (*IssueProperty, error) {
 	var property IssueProperty
 	if err := client.Table("dice_issue_property").Where("org_id = ?", orgID).
-		Where("property_name = ?", Name).Where("property_issue_type = ?", PropertyIssueType).First(&property).Error; err != nil {
+		Where("property_name = ?", Name).Where("property_issue_type = ?", PropertyIssueType).
+		Where("scope_type = ?", scopeType).Where("scope_id = ?", scopeID).First(&property).Error; err != nil {
 		return nil, err
 	}
 	return &property, nil
