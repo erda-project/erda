@@ -76,7 +76,7 @@ func (p *provider) doPipelineDatabaseGC(ctx context.Context, req *pb.PipelinePag
 			return rutil.ContinueWorkingAbort
 		}
 
-		req.EndIDLt = result.GetMinPipelineID()
+		req.StartIDGt = result.GetMaxPipelineID()
 		for _, pipeline := range pipelineResults {
 			if !pipeline.Status.CanDelete() {
 				continue
@@ -116,7 +116,13 @@ func (p *provider) doAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippetPi
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
-	req.IsNoSnapshotInDefinition = true
+	req.PipelineDefinitionRequest = &pb.PipelineDefinitionRequest{
+		SourceNotJoin:              true,
+		DefinitionJoinType:         "LEFT",
+		AllowDefinitionIdIsNull:    true,
+		IsNotSnapshotForDefinition: true,
+		NotNeedQueryDefinition:     true,
+	}
 
 	p.doPipelineDatabaseGC(ctx, &req)
 }
@@ -132,7 +138,13 @@ func (p *provider) doNotAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippe
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
-	req.IsNoSnapshotInDefinition = true
+	req.PipelineDefinitionRequest = &pb.PipelineDefinitionRequest{
+		SourceNotJoin:              true,
+		DefinitionJoinType:         "LEFT",
+		AllowDefinitionIdIsNull:    true,
+		IsNotSnapshotForDefinition: true,
+		NotNeedQueryDefinition:     true,
+	}
 
 	p.doPipelineDatabaseGC(ctx, &req)
 }
@@ -155,67 +167,6 @@ func (p *provider) doNotAnalyzedPipelineArchiveGC() {
 		p.Log.Errorf("failed to delete finished pipeline archive, err: %v", err)
 	}
 }
-
-// ListenDatabaseGC 监听需要 GC 的 pipeline database record.
-//func (p *provider) ListenDatabaseGC() {
-//	p.Log.Info("start watching gc pipelines")
-//	for {
-//		ctx := context.Background()
-//
-//		err := p.js.IncludeWatch().Watch(ctx, etcdDBGCWatchPrefix, true, false, false, apistructs.PipelineGCInfo{},
-//			func(key string, value interface{}, t storetypes.ChangeType) error {
-//
-//				// async handle, non-blocking, so we can watch subsequent incoming pipelines
-//				go func() {
-//
-//					p.Log.Infof("gc watched a key change, key: %s, changeType: %s", key, t.String())
-//					// only listen del op
-//					if t != storetypes.Del {
-//						return
-//					}
-//
-//					pipelineID, parseErr := getPipelineIDFromDBGCWatchedKey(key)
-//					if parseErr != nil {
-//						p.Log.Errorf("failed to get pipelineID from key, key: %s, err: %v", key, parseErr)
-//						return
-//					}
-//
-//					// acquire a dlock
-//					gcDBLockKey := makeDBGCDLockKey(pipelineID)
-//					lock, err := p.etcd.GetClient().Txn(context.Background()).
-//						If(v3.Compare(v3.Version(gcDBLockKey), "=", 0)).
-//						Then(v3.OpPut(gcDBLockKey, "")).
-//						Commit()
-//					defer func() {
-//						_, _ = p.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcDBLockKey)).Commit()
-//					}()
-//					if err != nil {
-//						return
-//					}
-//					if lock != nil && !lock.Succeeded {
-//						return
-//					}
-//
-//					gcOption, err := getGCOptionFromValue(value.(*apistructs.PipelineGCInfo).Data)
-//					if err != nil {
-//						p.Log.Errorf("failed to get gc option from value, pipelineID: %d, err: %v", pipelineID, err)
-//						return
-//					}
-//
-//					// gc logic
-//					if err := p.DoDBGC(pipelineID, gcOption); err != nil {
-//						p.Log.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipelineID, err)
-//						return
-//					}
-//				}()
-//				return nil
-//			},
-//		)
-//		if err != nil {
-//			p.Log.Errorf("failed to gc watch, err: %v", err)
-//		}
-//	}
-//}
 
 func (p *provider) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 	var err error

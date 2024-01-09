@@ -15,6 +15,8 @@
 package strutil_test
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/strutil"
@@ -137,10 +139,12 @@ func TestDistinctArrayInStructByFiled(t *testing.T) {
 		{Field: 1, Name: "1"},
 		{Field: 2, Name: "2"},
 		{Field: 1, Name: "3"},
+		{Field: 1, Name: "3"},
 	}
 	testIntWant := []TestIntStruct{
 		{Field: 1, Name: "1"},
 		{Field: 2, Name: "2"},
+		{Field: 1, Name: "3"},
 	}
 
 	testString := []TestStringStruct{
@@ -157,8 +161,9 @@ func TestDistinctArrayInStructByFiled(t *testing.T) {
 		{Name: "#", Field: "#"},
 	}
 
-	testIntResp := strutil.DistinctArrayInStructByFiled(testInt, func(t TestIntStruct) (int, bool) {
-		return t.Field, false
+	testIntResp := strutil.DistinctArrayInStructByFiled(testInt, func(t TestIntStruct) (string, bool) {
+		hash := sha256.Sum256([]byte(fmt.Sprintf("%s%d", t.Name, t.Field)))
+		return string(hash[:]), false
 	})
 	if len(testIntResp) != len(testIntWant) {
 		t.Error("length is not equal")
