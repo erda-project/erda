@@ -261,3 +261,21 @@ func (dbClient *DBClient) UpdateAfterLLMDirectorResponse(ctx context.Context, re
 	}
 	return c.ToProtobuf(), nil
 }
+
+func (dbClient *DBClient) SetFilterErrorAudit(ctx context.Context, req *pb.AuditUpdateRequestWhenFilterError) (*pb.Audit, error) {
+	c := &Audit{BaseModel: common.BaseModelWithID(req.AuditId)}
+	if err := dbClient.DB.Model(c).First(c).Error; err != nil {
+		return nil, err
+	}
+
+	var auditMetadata metadata.AuditMetadata
+	cputil.MustObjJSONTransfer(&c.Metadata, &auditMetadata)
+	auditMetadata.Public.FilterName = req.FilterName
+	auditMetadata.Public.FilterError = req.FilterError
+	cputil.MustObjJSONTransfer(&auditMetadata, &c.Metadata)
+
+	if err := dbClient.DB.Model(c).Updates(c).Error; err != nil {
+		return nil, err
+	}
+	return c.ToProtobuf(), nil
+}

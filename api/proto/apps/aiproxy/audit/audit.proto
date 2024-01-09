@@ -139,6 +139,12 @@ message AuditUpdateRequestAfterLLMDirectorResponse {
     string responseFunctionCallName = 5;
 }
 
+message AuditUpdateRequestWhenFilterError {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+    string filterName = 2;
+    string filterError = 3;
+}
+
 message AuditGetRequest {
     string auditId = 1 [(validate.rules).string = {len: 36}];
 }
