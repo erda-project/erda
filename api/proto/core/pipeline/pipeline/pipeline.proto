@@ -406,7 +406,12 @@ message PipelinePagingRequest {
   uint64 endIDLt = 40;
   PipelineDefinitionRequest pipelineDefinitionRequest = 41;
   string pipelineDefinition = 42;
-  bool IsNoSnapshotInDefinition = 43;
+  string definitionJoin = 43;
+  string sourceJoin = 44;
+  bool SourceNotJoin = 45;
+  bool AllowDefinitionIdIsNull = 46;
+  string joinCondition = 47
+//  bool IsNoSnapshotInDefinition = 43;
 }
 
 message PipelinePagingResponse {
