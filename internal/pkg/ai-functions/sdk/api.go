@@ -15,6 +15,7 @@
 package sdk
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"strings"
@@ -22,6 +23,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -51,4 +55,20 @@ func VerifyArguments(parameters, data json.RawMessage) (err error) {
 		ss = append(ss, item.String())
 	}
 	return errors.New(strings.Join(ss, "; "))
+}
+
+func GetUserInfo(ctx context.Context) (apistructs.UserInfo, error) {
+	bdl := bundle.New(bundle.WithErdaServer())
+	uerList, err := bdl.ListUsers(apistructs.UserListRequest{
+		UserIDs:   []string{apis.GetUserID(ctx)},
+		Plaintext: true,
+	})
+	if err != nil {
+		return apistructs.UserInfo{}, err
+	}
+	if len(uerList.Users) == 0 {
+		return apistructs.UserInfo{}, errors.Errorf("no user with id %s", apis.GetUserID(ctx))
+	}
+
+	return uerList.Users[0], nil
 }
