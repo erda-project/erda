@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -43,10 +42,10 @@ func (f *Filter) OnOriginalRequest(ctx context.Context, infor reverseproxy.HttpI
 	// user agent
 	createReq.UserAgent = httputil.GetUserAgent(infor.Header())
 	// x request id
-	createReq.XRequestId = getFromHeader(infor, vars.XRequestId)
+	createReq.XRequestId = vars.GetFromHeader(infor, vars.XRequestId)
 
 	// metadata
-	createReq.RequestContentType = getFromHeader(infor, httputil.HeaderKeyContentType)
+	createReq.RequestContentType = vars.GetFromHeader(infor, httputil.HeaderKeyContentType)
 	createReq.RequestHeader = func() string {
 		b, err := json.Marshal(infor.Header())
 		if err != nil {
@@ -55,17 +54,17 @@ func (f *Filter) OnOriginalRequest(ctx context.Context, infor reverseproxy.HttpI
 		return string(b)
 	}()
 
-	createReq.IdentityPhoneNumber = getFromHeader(infor, vars.XAIProxyPhone)
-	createReq.IdentityJobNumber = getFromHeader(infor, vars.XAIProxyJobNumber)
+	createReq.IdentityPhoneNumber = vars.GetFromHeader(infor, vars.XAIProxyPhone)
+	createReq.IdentityJobNumber = vars.GetFromHeader(infor, vars.XAIProxyJobNumber)
 
-	createReq.DingtalkStaffId = getFromHeader(infor, vars.XAIProxyDingTalkStaffID)
-	createReq.DingtalkChatType = getFromHeader(infor, vars.XAIProxyChatType)
-	createReq.DingtalkChatTitle = getFromHeader(infor, vars.XAIProxyChatTitle)
-	createReq.DingtalkChatId = getFromHeader(infor, vars.XAIProxyChatId)
+	createReq.DingtalkStaffId = vars.GetFromHeader(infor, vars.XAIProxyDingTalkStaffID)
+	createReq.DingtalkChatType = vars.GetFromHeader(infor, vars.XAIProxyChatType)
+	createReq.DingtalkChatTitle = vars.GetFromHeader(infor, vars.XAIProxyChatTitle)
+	createReq.DingtalkChatId = vars.GetFromHeader(infor, vars.XAIProxyChatId)
 
-	createReq.BizSource = getFromHeader(infor, vars.XAIProxySource)
-	createReq.Username = getFromHeader(infor, vars.XAIProxyUsername, vars.XAIProxyName)
-	createReq.Email = getFromHeader(infor, vars.XAIProxyEmail)
+	createReq.BizSource = vars.GetFromHeader(infor, vars.XAIProxySource)
+	createReq.Username = vars.GetFromHeader(infor, vars.XAIProxyUsername, vars.XAIProxyName)
+	createReq.Email = vars.GetFromHeader(infor, vars.XAIProxyEmail)
 
 	// insert audit into db
 	newAudit, err := ctxhelper.MustGetDBClient(ctx).AuditClient().CreateWhenReceived(ctx, &createReq)
@@ -89,30 +88,14 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 		return
 	}
 
-	var updateReq pb.AuditUpdateRequestAfterContextParsed
+	var updateReq pb.AuditUpdateRequestAfterSpecificContextParsed
 	updateReq.AuditId = auditRecID
 	// prompt
 	prompt, _ := ctxhelper.GetUserPrompt(ctx)
 	updateReq.Prompt = prompt
 
-	// client id
-	client, _ := ctxhelper.GetClient(ctx)
-	updateReq.ClientId = client.Id
-	// model id
-	model, _ := ctxhelper.GetModel(ctx)
-	updateReq.ModelId = model.Id
-	// session id
-	session, _ := ctxhelper.GetSession(ctx)
-	if session != nil {
-		updateReq.SessionId = session.Id
-	}
-
-	// biz source
-	updateReq.BizSource = getFromHeader(infor, vars.XAIProxySource)
-	// operation id
-	updateReq.OperationId = infor.Method() + " " + infor.URL().Path
-
 	// metadata, routing by model type
+	model, _ := ctxhelper.GetModel(ctx)
 	switch model.Type {
 	case modelpb.ModelType_text_generation:
 		var openaiReq openai.ChatCompletionRequest
@@ -164,44 +147,12 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 
 Next:
 
-	// set from client token
-	setUserInfoFromClientToken(ctx, infor, &updateReq)
-
 	// update audit into db
-	_, err = ctxhelper.MustGetDBClient(ctx).AuditClient().UpdateAfterContextParsed(ctx, &updateReq)
+	_, err = ctxhelper.MustGetDBClient(ctx).AuditClient().UpdateAfterSpecificContextParsed(ctx, &updateReq)
 	if err != nil {
 		// log it
 		l := ctxhelper.GetLogger(ctx)
 		l.Errorf("failed to update audit: %v", err)
 	}
 	return reverseproxy.Continue, nil
-}
-
-func getFromHeader(infor reverseproxy.HttpInfor, keys ...string) string {
-	for _, key := range keys {
-		if v := vars.TryUnwrapBase64(infor.Header().Get(key)); v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-func setUserInfoFromClientToken(ctx context.Context, infor reverseproxy.HttpInfor, updateReq *pb.AuditUpdateRequestAfterContextParsed) {
-	clientToken, ok := ctxhelper.GetClientToken(ctx)
-	if !ok || clientToken == nil {
-		return
-	}
-	meta := metadata.FromProtobuf(clientToken.Metadata)
-	metaCfg := metadata.Config{IgnoreCase: true}
-	updateReq.DingtalkStaffId = meta.MustGetValueByKey(vars.XAIProxyDingTalkStaffID, metaCfg)
-	updateReq.Email = meta.MustGetValueByKey(vars.XAIProxyEmail, metaCfg)
-	updateReq.IdentityJobNumber = meta.MustGetValueByKey(vars.XAIProxyJobNumber, metaCfg)
-	updateReq.Username = meta.MustGetValueByKey(vars.XAIProxyName, metaCfg)
-	updateReq.IdentityPhoneNumber = meta.MustGetValueByKey(vars.XAIProxyPhone, metaCfg)
-	if getFromHeader(infor, vars.XAIProxySource) == "" { // use token's client's name
-		client, ok := ctxhelper.GetClient(ctx)
-		if ok {
-			updateReq.BizSource = client.Name
-		}
-	}
 }

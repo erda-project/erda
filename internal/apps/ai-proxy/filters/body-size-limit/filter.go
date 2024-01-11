@@ -22,6 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -54,6 +56,12 @@ func New(config json.RawMessage) (reverseproxy.Filter, error) {
 }
 
 func (f *BodySizeLimit) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	// only check single-modal chat model
+	model, _ := ctxhelper.GetModel(ctx)
+	if model.Type != modelpb.ModelType_text_generation {
+		return reverseproxy.Continue, nil
+	}
+
 	var bodyBufferLen int
 	if infor.BodyBuffer() != nil {
 		bodyBufferLen = infor.BodyBuffer().Len()
