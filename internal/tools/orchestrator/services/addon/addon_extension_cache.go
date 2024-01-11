@@ -31,6 +31,10 @@ const (
 	DefaultSize = 500
 )
 
+const (
+	defaultVersionKey = "default"
+)
+
 type Cache struct {
 	gcache.Cache
 	bdl *bundle.Bundle
@@ -40,7 +44,7 @@ type Cache struct {
 type VersionMap map[string]apistructs.ExtensionVersion
 
 func (v *VersionMap) GetDefault() (apistructs.ExtensionVersion, bool) {
-	res, ok := (*v)["default"]
+	res, ok := (*v)[defaultVersionKey]
 	return res, ok
 }
 
@@ -90,11 +94,20 @@ func (a *Cache) initCache(ttl time.Duration, size int) {
 			logrus.Errorf("failed to query addon: %v", addonName)
 			return nil, err
 		}
-		versions := VersionMap{}
-		for _, addon := range addons {
+
+		versions := make(VersionMap)
+		switch len(addons) {
+		case 1:
+			// There's only one version, set it as the default version.
+			addon := addons[0]
 			versions[addon.Version] = addon
-			if addon.IsDefault {
-				versions["default"] = addon
+			versions[defaultVersionKey] = addon
+		default:
+			for _, addon := range addons {
+				versions[addon.Version] = addon
+				if addon.IsDefault {
+					versions[defaultVersionKey] = addon
+				}
 			}
 		}
 		return &versions, nil
