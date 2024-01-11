@@ -54,12 +54,10 @@ type GroupList struct {
 }
 
 func GenerateGroupsForRequirements(ctx context.Context, requirements []*apistructs.Issue, openaiURL *url.URL, xAIProxyModelId string) (requirementIdToGroups map[uint64][]string, err error) {
-	bdl := bundle.New(bundle.WithErdaServer())
-	userInfo, err := bdl.GetCurrentUser(apis.GetUserID(ctx))
+	userInfo, err := sdk.GetUserInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	userName := userInfo.Nick
 	if userName == "" {
 		userName = userInfo.Name
@@ -71,7 +69,7 @@ func GenerateGroupsForRequirements(ctx context.Context, requirements []*apistruc
 
 	for _, r := range requirements {
 		wg.Add(1)
-		go generateGroupsFromRequirement(ctx, &wg, userName, r, userInfo, openaiURL, xAIProxyModelId, &results)
+		go generateGroupsFromRequirement(ctx, &wg, userName, r, &userInfo, openaiURL, xAIProxyModelId, &results)
 	}
 	wg.Wait()
 
@@ -171,7 +169,7 @@ func generateGroupsFromRequirement(ctx context.Context, wg *sync.WaitGroup, user
 	// 在 request option 中添加认证信息: 以某组织下某用户身份调用 ai-proxy,
 	// ai-proxy 中的 filter erda-auth 会回调 erda.cloud 的 openai, 检查该企业和用户是否有权使用 AI 能力
 	ros := append(reqOpts, func(r *http.Request) {
-		r.Header.Set(vars.XAIProxySource, base64.StdEncoding.EncodeToString([]byte(os.Getenv(string(apistructs.DICE_CLUSTER_NAME)))))
+		r.Header.Set(vars.XAIProxySource, base64.StdEncoding.EncodeToString([]byte("testcase___"+os.Getenv(string(apistructs.DICE_CLUSTER_NAME)))))
 		r.Header.Set(vars.XAIProxyOrgId, base64.StdEncoding.EncodeToString([]byte(apis.GetOrgID(ctx))))
 		r.Header.Set(vars.XAIProxyUserId, base64.StdEncoding.EncodeToString([]byte(apis.GetUserID(ctx))))
 		r.Header.Set(vars.XAIProxyEmail, base64.StdEncoding.EncodeToString([]byte(userInfo.Email)))

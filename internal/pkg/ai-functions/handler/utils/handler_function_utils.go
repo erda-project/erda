@@ -28,11 +28,14 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/aifunction/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/functions"
 	"github.com/erda-project/erda/internal/pkg/ai-functions/sdk"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	FunctionNameTestCase = "create-test-case"
 )
 
 // getChatMessageFunctionCallArguments return result for AIFunction Server Call OpenAI
@@ -68,8 +71,7 @@ func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.
 		o(options)
 	}
 
-	bdl := bundle.New(bundle.WithErdaServer())
-	userInfo, err := bdl.GetCurrentUser(apis.GetUserID(ctx))
+	userInfo, err := sdk.GetUserInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +82,15 @@ func GetChatMessageFunctionCallArguments(ctx context.Context, factory functions.
 
 	// 在 request option 中添加认证信息: 以某组织下某用户身份调用 ai-proxy,
 	// ai-proxy 中的 filter erda-auth 会回调 erda.cloud 的 openai, 检查该企业和用户是否有权使用 AI 能力
+	source := ""
+	switch req.GetFunctionName() {
+	case FunctionNameTestCase:
+		source = "testcase___"
+	default:
+		source = "ai_function___"
+	}
 	ros := append(f.RequestOptions(), func(r *http.Request) {
-		r.Header.Set("X-Ai-Proxy-Source", base64.StdEncoding.EncodeToString([]byte(os.Getenv(string(apistructs.DICE_CLUSTER_NAME)))))
+		r.Header.Set("X-Ai-Proxy-Source", base64.StdEncoding.EncodeToString([]byte(source+os.Getenv(string(apistructs.DICE_CLUSTER_NAME)))))
 		r.Header.Set("X-Ai-Proxy-Org-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetOrgID(ctx))))
 		r.Header.Set("X-Ai-Proxy-User-Id", base64.StdEncoding.EncodeToString([]byte(apis.GetUserID(ctx))))
 		r.Header.Set("X-Ai-Proxy-Email", base64.StdEncoding.EncodeToString([]byte(userInfo.Email)))
