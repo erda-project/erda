@@ -25,6 +25,7 @@ import (
 
 	aiproxyclient "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 )
 
@@ -51,7 +52,7 @@ func getOpenAIClient(user *models.User, aiSessionID string) *openai.Client {
 	clientConfig := openai.DefaultConfig(aiproxyclient.Instance.Config().ClientAK)
 	clientConfig.BaseURL = strings.TrimSuffix(aiproxyclient.Instance.Config().URL, "/") + "/v1"
 	clientConfig.HTTPClient = http.DefaultClient
-	clientConfig.HTTPClient.Transport = &transport{RoundTripper: http.DefaultTransport, User: user, AISessionID: aiSessionID}
+	clientConfig.HTTPClient.Transport = &transport{RoundTripper: http.DefaultTransport, User: user, AISessionID: aiSessionID, ClusterName: conf.DiceCluster()}
 	client := openai.NewClientWithConfig(clientConfig)
 	return client
 }
@@ -59,12 +60,13 @@ func getOpenAIClient(user *models.User, aiSessionID string) *openai.Client {
 type transport struct {
 	User         *models.User
 	AISessionID  string
+	ClusterName  string
 	RoundTripper http.RoundTripper
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	m := map[string]string{
-		vars.XAIProxySource: "mr-cr",
+		vars.XAIProxySource: "mr-cr" + "___" + t.ClusterName,
 	}
 	if t.User != nil {
 		m[vars.XAIProxyUserId] = t.User.Id
