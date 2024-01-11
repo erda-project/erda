@@ -16,6 +16,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
@@ -41,6 +42,10 @@ func (i *IssueService) CreateIssueState(ctx context.Context, req *pb.CreateIssue
 	for _, v := range states {
 		if v.Index > maxIndex {
 			maxIndex = v.Index
+		}
+		if req.StateName == v.Name {
+			err = errors.New(i.translator.Text("common", apis.Language(ctx), "This status already exists"))
+			return nil, err
 		}
 	}
 	if err != nil {
