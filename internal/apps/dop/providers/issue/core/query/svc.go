@@ -160,7 +160,7 @@ func GetStateBelongIndex(t string) []string {
 	case pb.IssueTypeEnum_EPIC.String():
 		return index
 	case pb.IssueTypeEnum_BUG.String():
-		return []string{pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WONTFIX.String(), pb.IssueStateBelongEnum_REOPEN.String(), pb.IssueStateBelongEnum_RESOLVED.String(), pb.IssueStateBelongEnum_CLOSED.String()}
+		return []string{pb.IssueStateBelongEnum_OPEN.String(), pb.IssueStateBelongEnum_WORKING.String(), pb.IssueStateBelongEnum_WONTFIX.String(), pb.IssueStateBelongEnum_REOPEN.String(), pb.IssueStateBelongEnum_RESOLVED.String(), pb.IssueStateBelongEnum_CLOSED.String()}
 	default:
 		panic(fmt.Sprintf("invalid issue type: %s", t))
 	}
