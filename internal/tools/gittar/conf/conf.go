@@ -15,9 +15,11 @@
 package conf
 
 import (
+	"os"
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/envconf"
 )
@@ -211,4 +213,8 @@ func DiceProtocol() string {
 
 func RefreshPersonalContributorDuration() time.Duration {
 	return cfg.RefreshPersonalContributorDuration
+}
+
+func DiceCluster() string {
+	return os.Getenv(apistructs.DICE_CLUSTER_NAME.String())
 }
