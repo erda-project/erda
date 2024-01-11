@@ -1239,6 +1239,8 @@ func TestAddon2(t *testing.T) {
 }
 
 func TestGetAddonExtention(t *testing.T) {
+	defer monkey.UnpatchAll()
+
 	bdl := &bundle.Bundle{}
 	clusterSvc := &cluster.ClusterService{}
 	a := New(WithBundle(bdl), WithClusterSvc(clusterSvc))
