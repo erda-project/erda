@@ -87,6 +87,8 @@ func Test_GetDefault(t *testing.T) {
 		},
 	}
 
+	defer GetCache().Purge()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cacheMap, err := GetCache().Get(tt.args.name)
