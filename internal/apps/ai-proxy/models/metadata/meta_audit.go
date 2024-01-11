@@ -20,6 +20,9 @@ type (
 		Secret AuditMetadataSecret `json:"secret,omitempty"`
 	}
 	AuditMetadataPublic struct {
+		FilterName  string `json:"filter.name,omitempty"`
+		FilterError string `json:"filter.error,omitempty"`
+
 		RequestContentType      string `json:"request.content_type,omitempty"`
 		ActualRequestURL        string `json:"actual.request.url,omitempty"`
 		RequestFunctionCallName string `json:"request.function_call.name,omitempty"`

@@ -8,11 +8,11 @@ routes:
       - name: initialize
       - name: log-http
       - name: rate-limit
+      - name: context
       - name: body-size-limit
         config:
           maxSize: 102400
           message: { "messages": [ { "role": "ai-proxy", "content": "问题超长啦, 请重置会话", "name": "ai-proxy" } ] }
-      - name: context
       - name: context-chat
         config:
         #sysMsg: "background: Your name is Erda AI Assistant. You are trained by Erda."

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/sashabaranov/go-openai"
@@ -166,7 +167,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 		RequestedMessages:       requestedMessages,
 	}
 	ctxhelper.PutMessageGroup(ctx, messageGroup)
-	ctxhelper.PutUserPrompt(ctx, vars.UnwrapUserPrompt(requestedMessages[len(requestedMessages)-1].Content))
+	ctxhelper.PutUserPrompt(ctx, getPromptFromOpenAIMessage(chatCompletionRequest.Messages[len(chatCompletionRequest.Messages)-1]))
 	ctxhelper.PutIsStream(ctx, chatCompletionRequest.Stream)
 
 	return reverseproxy.Continue, nil
@@ -196,4 +197,18 @@ func getOrderedLimitedChatLogs(chatLogs []*sessionpb.ChatLog, limitIncluded int)
 		limitedChatLogMessages = limitedChatLogMessages[len(limitedChatLogMessages)-limitIncluded:]
 	}
 	return limitedChatLogMessages
+}
+
+func getPromptFromOpenAIMessage(msg openai.ChatCompletionMessage) string {
+	if len(msg.MultiContent) > 0 {
+		// combine multi-content, only record text information
+		var multiTexts []string
+		for _, content := range msg.MultiContent {
+			if content.Type == openai.ChatMessagePartTypeText && content.Text != "" {
+				multiTexts = append(multiTexts, vars.UnwrapUserPrompt(content.Text))
+			}
+		}
+		return strings.Join(multiTexts, "\n")
+	}
+	return vars.UnwrapUserPrompt(msg.Content)
 }

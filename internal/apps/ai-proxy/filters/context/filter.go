@@ -23,12 +23,14 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -200,7 +202,8 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	m.Store(vars.MapKeyPromptTemplate{}, prompt)
 	m.Store(vars.MapKeySession{}, session)
 
-	return reverseproxy.Continue, nil
+	// save to db
+	return f.saveContextToAudit(ctx, w, infor)
 }
 
 func getModelTypeByRequest(infor reverseproxy.HttpInfor) (modelpb.ModelType, bool) {
@@ -220,4 +223,63 @@ func getModelTypeByRequest(infor reverseproxy.HttpInfor) (modelpb.ModelType, boo
 		return modelpb.ModelType_text_moderation, true
 	}
 	return -1, false
+}
+
+func (f *Context) saveContextToAudit(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	auditRecID, ok := ctxhelper.GetAuditID(ctx)
+	if !ok || auditRecID == "" {
+		return
+	}
+
+	var updateReq pb.AuditUpdateRequestAfterBasicContextParsed
+	updateReq.AuditId = auditRecID
+
+	// client id
+	client, _ := ctxhelper.GetClient(ctx)
+	updateReq.ClientId = client.Id
+	// model id
+	model, _ := ctxhelper.GetModel(ctx)
+	updateReq.ModelId = model.Id
+	// session id
+	session, _ := ctxhelper.GetSession(ctx)
+	if session != nil {
+		updateReq.SessionId = session.Id
+	}
+
+	// biz source
+	updateReq.BizSource = vars.GetFromHeader(infor, vars.XAIProxySource)
+	// operation id
+	updateReq.OperationId = infor.Method() + " " + infor.URL().Path
+
+	// set from client token
+	setUserInfoFromClientToken(ctx, infor, &updateReq)
+
+	// update audit into db
+	_, err = ctxhelper.MustGetDBClient(ctx).AuditClient().UpdateAfterBasicContextParsed(ctx, &updateReq)
+	if err != nil {
+		// log it
+		l := ctxhelper.GetLogger(ctx)
+		l.Errorf("failed to update audit: %v", err)
+	}
+	return reverseproxy.Continue, nil
+}
+
+func setUserInfoFromClientToken(ctx context.Context, infor reverseproxy.HttpInfor, updateReq *pb.AuditUpdateRequestAfterBasicContextParsed) {
+	clientToken, ok := ctxhelper.GetClientToken(ctx)
+	if !ok || clientToken == nil {
+		return
+	}
+	meta := metadata.FromProtobuf(clientToken.Metadata)
+	metaCfg := metadata.Config{IgnoreCase: true}
+	updateReq.DingtalkStaffId = meta.MustGetValueByKey(vars.XAIProxyDingTalkStaffID, metaCfg)
+	updateReq.Email = meta.MustGetValueByKey(vars.XAIProxyEmail, metaCfg)
+	updateReq.IdentityJobNumber = meta.MustGetValueByKey(vars.XAIProxyJobNumber, metaCfg)
+	updateReq.Username = meta.MustGetValueByKey(vars.XAIProxyName, metaCfg)
+	updateReq.IdentityPhoneNumber = meta.MustGetValueByKey(vars.XAIProxyPhone, metaCfg)
+	if vars.GetFromHeader(infor, vars.XAIProxySource) == "" { // use token's client's name
+		client, ok := ctxhelper.GetClient(ctx)
+		if ok {
+			updateReq.BizSource = client.Name
+		}
+	}
 }
