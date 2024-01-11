@@ -19,8 +19,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
@@ -37,7 +35,7 @@ import (
 	This method is used to clean up and merge duplicate pipeline source/definition/definition_extra/cron/base records
 
 	Design Reason：
-		Due to previous issue (https://github.com/erda-project/erda/pull/6170) with the pipeline creation logic.
+		Due to previous issue (https://github.com/erda-project/erda/pull/6170) with the pipeline creation logic,
 		there are a large number of duplicate records in the db that stores pipeline records.
         After fixing the logic issues, it is necessary to clean up and merge these duplicate records.
 	Merge Principle：
@@ -61,13 +59,14 @@ import (
 	For more detail information, please refer to the code and comments.
 */
 
+const dryrunPrifix = "pipeline-definition-cleanup"
+
 // RepeatPipelineRecordCleanup
 func (p *provider) RepeatPipelineRecordCleanup(ctx context.Context) {
 	cronProcess := cron.New()
-	err := cronProcess.AddFunc(p.Cfg.PipelineCleanupCron, func() {
+	err := cronProcess.AddFunc(p.Cfg.CronExpr, func() {
 		p.cronCleanup(ctx)
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -77,9 +76,14 @@ func (p *provider) RepeatPipelineRecordCleanup(ctx context.Context) {
 func (p *provider) cronCleanup(ctx context.Context) {
 	uniqueSourceList, needCleanup, err := p.needCleanup()
 	if err != nil {
-		p.Log.Errorf("check need cleanup error : %s", err)
+		p.Log.Errorf("check need cleanup error: %s", err)
 		return
 	}
+
+	if p.Cfg.DryRun {
+		p.Log.Infof("\nget SourceList length is: %d, and needCleanup is %t", len(uniqueSourceList), needCleanup)
+	}
+
 	if !needCleanup {
 		return
 	}
@@ -88,19 +92,20 @@ func (p *provider) cronCleanup(ctx context.Context) {
 	return
 }
 
-func (p *provider) doCleanupRepeatRecords(ctx context.Context, uniqueSourceGroupList []sourcedb.PipelineSourceUniqueGroup) {
-	for _, group := range uniqueSourceGroupList {
+func (p *provider) doCleanupRepeatRecords(ctx context.Context, uniqueSourceGroupList []sourcedb.PipelineSourceUniqueGroupWithCount) {
+	for index, group := range uniqueSourceGroupList {
 		// if the uniqueSourceGroup.count is not equal 1, it means it has the repeat records, need merge and cleanup
 		// otherwise, skip the clean logic
 		if group.Count != 1 {
 			var err error
+			p.Log.Infof("Start this group cleanup index: %d", index+1)
 			err = retry.DoWithInterval(func() error {
 				err = p.MergePipeline(ctx, group)
 				return err
-			}, p.Cfg.PipelineCleanupRetryTimes, p.Cfg.PipelineCleanupRetryInterval)
+			}, p.Cfg.RetryTimes, p.Cfg.RetryInterval)
 
 			if err != nil {
-				logrus.Errorf("merge pipeline by source definition err : %s", err)
+				p.Log.Errorf("merge pipeline by source definition error: %s", err)
 				return
 			}
 
@@ -122,7 +127,7 @@ func (p *provider) doCleanupRepeatRecords(ctx context.Context, uniqueSourceGroup
 //     in this case, we directly iterate and perform a cleanup
 //  3. if they are equal, it is considered that there are no duplicate records
 //     so we skip the cleaning process this time
-func (p *provider) needCleanup() ([]sourcedb.PipelineSourceUniqueGroup, bool, error) {
+func (p *provider) needCleanup() ([]sourcedb.PipelineSourceUniqueGroupWithCount, bool, error) {
 	uniqueSourceList, err := p.sourceDbClient.GetUniqueSourceGroup()
 	if err != nil {
 		return nil, false, err
@@ -137,7 +142,11 @@ func (p *provider) needCleanup() ([]sourcedb.PipelineSourceUniqueGroup, bool, er
 }
 
 // MergePipeline
-func (p *provider) MergePipeline(ctx context.Context, uniqueGroup sourcedb.PipelineSourceUniqueGroup) (err error) {
+func (p *provider) MergePipeline(ctx context.Context, uniqueGroup sourcedb.PipelineSourceUniqueGroupWithCount) (err error) {
+	if p.Cfg.DryRun {
+		p.Log.Infof("[Current Cleanup Group]: \n %+v", uniqueGroup)
+	}
+
 	// start a transaction to do this task
 	tx := p.MySQL.NewSession()
 	defer tx.Close()
@@ -148,23 +157,29 @@ func (p *provider) MergePipeline(ctx context.Context, uniqueGroup sourcedb.Pipel
 	defer func() {
 		if err != nil {
 			rbErr := tx.Rollback()
+			if p.Cfg.DryRun {
+				p.Log.Infof("[Result]: current cleanup group:\n %+v rollback", uniqueGroup)
+			}
 			if rbErr != nil {
-				logrus.Errorf("failed to rollback mergePipeline failed,uniqueSourceGroup : %v , rollbackErr: %v", uniqueGroup, rbErr)
+				p.Log.Errorf("failed to rollback mergePipeline failed,uniqueSourceGroup: %v , rollbackErr: %v", uniqueGroup, rbErr)
 			}
 			return
 		}
 		cmErr := tx.Commit()
+		if p.Cfg.DryRun {
+			p.Log.Infof("[Result]: current cleanup group:\n %+v commit", uniqueGroup)
+		}
 		if cmErr != nil {
-			logrus.Errorf("failed to commit when mergePipeline success, uniqueSourceGroup: %v, commitErr: %v", uniqueGroup, cmErr)
+			p.Log.Errorf("failed to commit when mergePipeline success, uniqueSourceGroup: %v, commitErr: %v", uniqueGroup, cmErr)
 		}
 	}()
 
 	ops := mysqlxorm.WithSession(tx)
 
-	// 1. get repeat source list by unique
+	// 1. get repeated source list by unique
 	sourceList, err := p.GetSourceListByGroup(uniqueGroup, ops)
 	if err != nil {
-		p.Log.Errorf("get pipeline source err : %s", err)
+		p.Log.Errorf("get pipeline source err: %s", err)
 		return err
 	}
 
@@ -173,10 +188,24 @@ func (p *provider) MergePipeline(ctx context.Context, uniqueGroup sourcedb.Pipel
 		return s.ID
 	})
 
+	if p.Cfg.DryRun {
+		p.Log.Infof("[Get Source List By Group] (length : %d): \n sourceIds: %v", len(sourceIds), sourceIds)
+	}
+
 	// 2. get definition list by sourceIds order by created_at
 	definitionList, latestExecDefinition, err := p.GetLatestExecDefinitionBySourceIds(sourceIds, ops)
 	if err != nil {
-		p.Log.Errorf("get pipeline definition err : %s", err)
+		p.Log.Errorf("get pipeline definition err: %s", err)
+		return err
+	}
+
+	if len(definitionList) <= 0 {
+		p.Log.Errorf("definition is less 1")
+		// merge source directly
+		err = p.MergeSource(sourceList, latestExecDefinition, ops)
+		if err != nil {
+			p.Log.Errorf("merge source err: %s", err)
+		}
 		return err
 	}
 
@@ -188,35 +217,35 @@ func (p *provider) MergePipeline(ctx context.Context, uniqueGroup sourcedb.Pipel
 	// 3. get cron by definition id which enabled is false and delete it
 	_, latestExecDefinitionCron, err := p.MergeCronByDefinitionIds(ctx, definitionIds, latestExecDefinition, ops)
 	if err != nil {
-		p.Log.Errorf("merge pipeline cron err : %s", err)
+		p.Log.Errorf("merge pipeline cron err: %s", err)
 		return err
 	}
 
 	// 4. delete definition and definition_extra
 	err = p.MergeDefinition(definitionIds, ops)
 	if err != nil {
-		p.Log.Errorf("batch delete pipeline definition and extra err : %s", err)
+		p.Log.Errorf("batch delete pipeline definition and extra err: %s", err)
 		return err
 	}
 
 	// 5. merge pipeline base
 	err = p.MergePipelineBase(definitionIds, latestExecDefinition, latestExecDefinitionCron, dbclient.WithTxSession(tx.Session))
 	if err != nil {
-		p.Log.Errorf("merge pipeline base err : %s", err)
+		p.Log.Errorf("merge pipeline base err: %s", err)
 		return err
 	}
 
 	// 6. merge source in the latest step
 	err = p.MergeSource(sourceList, latestExecDefinition, ops)
 	if err != nil {
-		p.Log.Errorf("merge source err : %s", err)
+		p.Log.Errorf("merge source err: %s", err)
 		return err
 	}
 
 	return nil
 }
 
-func (p *provider) GetSourceListByGroup(uniqueGroup sourcedb.PipelineSourceUniqueGroup, ops ...mysqlxorm.SessionOption) (sourceList []sourcedb.PipelineSource, err error) {
+func (p *provider) GetSourceListByGroup(uniqueGroup sourcedb.PipelineSourceUniqueGroupWithCount, ops ...mysqlxorm.SessionOption) (sourceList []sourcedb.PipelineSource, err error) {
 	sourceList, err = p.sourceDbClient.GetPipelineSourceByUnique(&sourcedb.PipelineSourceUnique{
 		SourceType: uniqueGroup.SourceType,
 		Remote:     uniqueGroup.Remote,
@@ -245,6 +274,10 @@ func (p *provider) GetLatestExecDefinitionBySourceIds(sourceIds []string, ops ..
 		return nil, definitiondb.PipelineDefinition{}, err
 	}
 
+	if len(definitionList) <= 0 {
+		return nil, definitiondb.PipelineDefinition{}, nil
+	}
+
 	latestExecDefinition = definitionList[0]
 	latestStart := definitionList[0].StartedAt
 	latestIndex := 0
@@ -260,6 +293,14 @@ func (p *provider) GetLatestExecDefinitionBySourceIds(sourceIds []string, ops ..
 	}
 
 	definitionList = append(definitionList[:latestIndex], definitionList[latestIndex+1:]...)
+
+	if p.Cfg.DryRun {
+		p.Log.Infof("[Get Definition List By Source Besides LatestExecDefinition] definitionList (length : %d): \n", len(definitionList))
+		for _, d := range definitionList {
+			p.Log.Infof("definition: { id : %s, sourceId : %s, startAt: %v, timeCreate: %v }", d.ID, d.PipelineSourceId, d.StartedAt, d.TimeCreated)
+		}
+		p.Log.Infof("[LatestExecDefinition]\n { id: %s, sourceId: %s, startAt: %v, timeCreate: %v}", latestExecDefinition.ID, latestExecDefinition.PipelineSourceId, latestExecDefinition.StartedAt, latestExecDefinition.TimeCreated)
+	}
 
 	return
 }
@@ -277,6 +318,16 @@ func (p *provider) MergeCronByDefinitionIds(ctx context.Context, definitionIds [
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if p.Cfg.DryRun {
+		if len(cronList) > 0 {
+			p.Log.Infof("[Get Cron List By DefinitionIds] (length : %d) \n", len(cronList))
+		}
+		for _, c := range cronList {
+			p.Log.Infof("cron: { id: %d, timeUpdated: %v, DefinitionID: %s, ymlName: %s, timeCreated: %v, enable: %t }", c.ID, c.TimeUpdated, c.PipelineDefinitionID, c.PipelineYmlName, c.TimeCreated, *c.Enable)
+		}
+	}
+
 	if len(cronList) <= 0 {
 		return
 	}
@@ -301,27 +352,33 @@ func (p *provider) MergeCronByDefinitionIds(ctx context.Context, definitionIds [
 			// if it has the other cron has started, select the newestCron(sort by time_updated) as the latestExecDefinitionCron
 			bindingCron := cronStartList[0]
 			// update its binding definitionID
-			err = p.cronDbClient.UpdatePipelineCron(bindingCron.ID, &crondb.PipelineCron{
-				PipelineDefinitionID: latestExecDefinition.ID,
-			}, ops...)
+			if p.Cfg.DryRun {
+				p.Log.Infof("[Update Binding Cron]\n cron: { id : %d, timeCreated : %v, timeUpdated : %v, enable: %v, defID : %s, expr : %s }", bindingCron.ID, bindingCron.TimeUpdated, bindingCron.TimeUpdated, bindingCron.Enable, bindingCron.PipelineDefinitionID, bindingCron.CronExpr)
+			} else {
+				err = p.cronDbClient.UpdatePipelineCron(bindingCron.ID, &crondb.PipelineCron{
+					PipelineDefinitionID: latestExecDefinition.ID,
+				}, ops...)
 
-			if err != nil {
-				return nil, nil, err
+				if err != nil {
+					return nil, nil, err
+				}
 			}
 
 			bindingCron.PipelineDefinitionID = latestExecDefinition.ID
 			latestExecDefinitionCron = &bindingCron
-
 		}
 
 		for _, cron := range cronStartList {
 			if cron.ID == latestExecDefinitionCron.ID {
 				continue
 			}
+			if p.Cfg.DryRun {
+				p.Log.Infof("[Cron Stop] cronId : %d", cron.ID)
+				continue
+			}
 			_, err = p.CronService.CronStop(ctx, &cronpb.CronStopRequest{
 				CronID: cron.ID,
 			})
-
 			if err != nil {
 				return nil, nil, err
 			}
@@ -337,6 +394,16 @@ func (p *provider) MergeCronByDefinitionIds(ctx context.Context, definitionIds [
 		}
 	}
 
+	if p.Cfg.DryRun {
+		// dry run for delete cron
+		p.Log.Infof("[Batch Delete Pipeline Cron By ids] (length : %d) \n deleteCronIds: %+v", len(deleteCronIds), deleteCronIds)
+
+		if latestExecDefinitionCron != nil {
+			p.Log.Infof("[LatestExecDefinitionCron]: \n { id : %d, timeUpdate : %v, defID : %s, enable: %t }", latestExecDefinitionCron.ID, latestExecDefinitionCron.TimeUpdated, latestExecDefinitionCron.PipelineDefinitionID, *latestExecDefinitionCron.Enable)
+		}
+
+		return cronList, latestExecDefinitionCron, nil
+	}
 	err = p.cronDbClient.BatchDeletePipelineCron(deleteCronIds, ops...)
 	if err != nil {
 		return nil, nil, err
@@ -348,9 +415,17 @@ func (p *provider) MergeCronByDefinitionIds(ctx context.Context, definitionIds [
 // MergeDefinition delete definition and extra
 func (p *provider) MergeDefinition(definitionIds []string, ops ...mysqlxorm.SessionOption) (err error) {
 	// batch delete definition
-	err = p.definitionDbClient.BatchDeletePipelineDefinition(definitionIds, ops...)
-	if err != nil {
-		return err
+	if p.Cfg.DryRun {
+		p.Log.Infof("[Batch Delete Pipeline Definition and extra](length : %d):\n definitionids: %+v", len(definitionIds), definitionIds)
+	} else {
+		err = p.definitionDbClient.BatchDeletePipelineDefinition(definitionIds, ops...)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p.Cfg.DryRun {
+		return nil
 	}
 
 	// batch delete definition_extra
@@ -374,6 +449,7 @@ func (p *provider) MergePipelineBase(definitionIds []string, latestExecDefinitio
 		if err != nil {
 			return err
 		}
+
 		for _, base := range baseList {
 			base.PipelineDefinitionID = latestExecDefinition.ID
 
@@ -381,8 +457,16 @@ func (p *provider) MergePipelineBase(definitionIds []string, latestExecDefinitio
 				base.CronID = &latestExecDefinitionCron.ID
 			}
 
-			err = p.dbClient.UpdatePipelineBase(base.ID, &base, ops...)
+			if p.Cfg.DryRun {
+				if base.CronID == nil {
+					p.Log.Infof("[Update Base List When Cron exist]: base:\n { id: %d, cronID: nil, defID: %s }", base.ID, base.PipelineDefinitionID)
+				} else {
+					p.Log.Infof("[Update Base List When Cron exist]: base:\n { id %d, cronID %d, defID: %s }", base.ID, *base.CronID, base.PipelineDefinitionID)
+				}
+				continue
+			}
 
+			err = p.dbClient.UpdatePipelineBase(base.ID, &base, ops...)
 			if err != nil {
 				return err
 			}
@@ -391,8 +475,13 @@ func (p *provider) MergePipelineBase(definitionIds []string, latestExecDefinitio
 		return nil
 	}
 
-	err = p.dbClient.BatchUpdatePipelineBaseByDefinitionIDs(definitionIds, &spec.PipelineBase{
-		PipelineDefinitionID: latestExecDefinition.ID,
+	if p.Cfg.DryRun {
+		p.Log.Infof("[Update Base List By DefinitionIds When Cron not exist] (length : %d)\n definitionids : %+v", len(definitionIds), definitionIds)
+		return nil
+	}
+
+	err = p.dbClient.BatchUpdatePipelineBaseByDefinitionIDs(definitionIds, map[spec.Field]interface{}{
+		spec.PipelineDefinitionID: latestExecDefinition.ID,
 	}, ops...)
 
 	if err != nil {
@@ -405,15 +494,44 @@ func (p *provider) MergePipelineBase(definitionIds []string, latestExecDefinitio
 // MergeSource
 // save the source records which is associated latestExecDefinition record and soft delete the others
 func (p *provider) MergeSource(sourceList []sourcedb.PipelineSource, latestExecDefinition definitiondb.PipelineDefinition, ops ...mysqlxorm.SessionOption) error {
+	var savedSource *sourcedb.PipelineSource
+	if latestExecDefinition.ID == "" {
+		// if it has no definition
+		// sort by update_time
+		for _, source := range sourceList {
+			copySource := source
+			if savedSource == nil {
+				savedSource = &copySource
+				continue
+			}
+			if source.UpdatedAt.After(savedSource.UpdatedAt) {
+				savedSource = &copySource
+			}
+		}
+	}
+
 	for _, source := range sourceList {
-		if source.ID == latestExecDefinition.PipelineSourceId {
+		if savedSource == nil && source.ID == latestExecDefinition.PipelineSourceId {
+			continue
+		}
+		if savedSource != nil && source.ID == savedSource.ID {
 			continue
 		}
 		source.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
+
+		if p.Cfg.DryRun {
+			p.Log.Infof("[Merge Source By SourceIds]: source\n { id: %s, deleteAt: %d }", source.ID, source.SoftDeletedAt)
+			continue
+		}
+
 		err := p.sourceDbClient.DeletePipelineSource(source.ID, &source, ops...)
 		if err != nil {
 			return err
 		}
+	}
+
+	if p.Cfg.DryRun {
+		p.Log.Infof("[Merge Source Length] : %d", len(sourceList))
 	}
 
 	return nil

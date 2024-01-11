@@ -105,9 +105,9 @@ func DifferenceSet[T comparable](arr1, arr2 []T) []T {
 	return arr1
 }
 
-// StructArray2Map converts a struct array into a map after deduplication
+// StructArrayToMap converts a struct array into a map after deduplication
 // and you should offer a fn to get the key,value and ifSkip the kvs from the struct.
-func StructArray2Map[T any, Key comparable, Value comparable](arr []T, getKV func(T) (Key, Value, bool)) map[Key]Value {
+func StructArrayToMap[T any, Key comparable, Value comparable](arr []T, getKV func(T) (Key, Value, bool)) map[Key]Value {
 	arr2Map := make(map[Key]Value)
 
 	for _, item := range arr {
@@ -124,17 +124,17 @@ func StructArray2Map[T any, Key comparable, Value comparable](arr []T, getKV fun
 	return arr2Map
 }
 
-// Array2Map convert the deduplicated array into map
-func Array2Map[Key comparable](keys []Key) map[Key]struct{} {
-	arr2Map := make(map[Key]struct{})
+// ArrayToMap convert the deduplicated array into map
+func ArrayToMap[Key comparable](keys []Key) map[Key]struct{} {
+	arrToMap := make(map[Key]struct{})
 
 	for _, key := range keys {
-		if _, ok := arr2Map[key]; ok {
+		if _, ok := arrToMap[key]; ok {
 			continue
 		}
-		arr2Map[key] = struct{}{}
+		arrToMap[key] = struct{}{}
 	}
-	return arr2Map
+	return arrToMap
 }
 
 // GetFieldArrFromStruct

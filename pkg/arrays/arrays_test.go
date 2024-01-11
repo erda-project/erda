@@ -69,7 +69,7 @@ func TestArray2Map(t *testing.T) {
 		4: {},
 	}
 
-	result := Array2Map(arr)
+	result := ArrayToMap(arr)
 	assert.Equal(t, want, result)
 }
 
@@ -90,7 +90,7 @@ func TestStructArray2Map(t *testing.T) {
 		"this is key2": "this is value2",
 	}
 
-	array2Map := StructArray2Map(arr, func(item itemStruct) (key string, value string, skip bool) {
+	array2Map := StructArrayToMap(arr, func(item itemStruct) (key string, value string, skip bool) {
 		if item.Key == "" {
 			return "", "", true
 		}

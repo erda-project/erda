@@ -172,15 +172,6 @@ func (client *Client) GetPipelineBaseByFilter(filter *PipelineBaseFilter, ops ..
 	return baseList, err
 }
 
-func (client *Client) BatchUpdatePipelineBaseByID(ids []uint64, base *spec.PipelineBase, ops ...SessionOption) error {
-	session := client.NewSession(ops...)
-	defer session.Close()
-
-	_, err := session.Table(&spec.PipelineBase{}).In("id", ids).Update(base)
-
-	return err
-}
-
 func (client *Client) GetPipelineStatus(id uint64, ops ...SessionOption) (apistructs.PipelineStatus, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -204,11 +195,11 @@ func (client *Client) UpdatePipelineBaseStatus(id uint64, status apistructs.Pipe
 	return err
 }
 
-func (client *Client) BatchUpdatePipelineBaseByDefinitionIDs(ids []string, base *spec.PipelineBase, ops ...SessionOption) error {
+func (client *Client) BatchUpdatePipelineBaseByDefinitionIDs(ids []string, updateMap map[spec.Field]interface{}, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.Table(&spec.PipelineBase{}).In("pipeline_definition_id", ids).Update(base)
+	_, err := session.Table(&spec.PipelineBase{}).In("pipeline_definition_id", ids).Update(updateMap)
 
 	return err
 }

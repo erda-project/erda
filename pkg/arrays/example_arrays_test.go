@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/pkg/arrays"
 )
 
-func ExampleStructArray2Map() {
+func ExampleStructArrayToMap() {
 	type itemStruct struct {
 		Key   string
 		Value string
@@ -32,7 +32,7 @@ func ExampleStructArray2Map() {
 		{Key: "", Value: "", Other: ""},
 	}
 
-	array2Map := arrays.StructArray2Map(arr, func(item itemStruct) (key string, value string, skip bool) {
+	array2Map := arrays.StructArrayToMap(arr, func(item itemStruct) (key string, value string, skip bool) {
 		if item.Key == "" {
 			return "", "", true
 		}
@@ -44,10 +44,10 @@ func ExampleStructArray2Map() {
 	// Output: map[this is key1:this is value1 this is key2:this is value2]
 }
 
-func ExampleArray2Map() {
+func ExampleArrayToMap() {
 	arr := []int{1, 2, 3, 4, 3}
 
-	result := arrays.Array2Map(arr)
+	result := arrays.ArrayToMap(arr)
 	fmt.Println(result)
 
 	// Output: map[1:{} 2:{} 3:{} 4:{}]

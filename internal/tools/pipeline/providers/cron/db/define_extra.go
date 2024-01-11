@@ -199,9 +199,13 @@ func (client *Client) DeletePipelineCron(id interface{}, ops ...mysqlxorm.Sessio
 	return nil
 }
 
-func (client *Client) BatchDeletePipelineCron(ids interface{}, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) BatchDeletePipelineCron(ids []uint64, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
+
+	if len(ids) <= 0 {
+		return nil
+	}
 
 	if _, err := session.In("id", ids).Delete(&PipelineCron{}); err != nil {
 		return errors.Errorf("failed to delete pipeline cron, ids: %d, err: %v", ids, err)

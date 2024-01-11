@@ -16,9 +16,13 @@ package definition_cleanup
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
@@ -32,24 +36,28 @@ import (
 
 type config struct {
 	// ------ cleanup retry -----
-	// default 5
-	PipelineCleanupRetryTimes    int           `file:"pipeline_cleanup_retry_times" env:"PIPELINE_CLEANUP_RETRY_TIMES" default:"3"`
-	PipelineCleanupRetryInterval time.Duration `file:"pipeline_cleanup_retry_interval" env:"PIPELINE_CLEANUP_RETRY_INTERVAL" default:"5s"`
+	RetryTimes    int           `file:"retry_times" env:"PIPELINE_DEFINITION_CLEANUP_RETRY_TIMES" default:"3"`
+	RetryInterval time.Duration `file:"retry_interval" env:"PIPELINE_DEFINITION_CLEANUP_RETRY_INTERVAL" default:"5s"`
 
 	// ------- cleanup cronExpr ------
-	PipelineCleanupCron string `file:"pipeline_cleanup_cron" env:"PIPELINE_CLEANUP_CRON" default:"0 15 2 * * *"`
+	CronExpr string `file:"cron_expr" env:"PIPELINE_DEFINITION_CLEANUP_CRON_EXPR" default:"0 15 2 * * ?"`
+
+	// ------- dry run ---------
+	DryRun         bool   `file:"dry_run" env:"PIPELINE_DEFINITION_CLEANUP_DRY_RUN" default:"false"`
+	DryRunFilePath string `file:"file_path" env:"PIPELINE_DEFINITION_CLEANUP_DRY_RUN_FILEPATH" default:"/erda/dry-run"`
 }
 
 type provider struct {
-	Cfg                *config
-	Log                logs.Logger
+	Cfg         *config
+	Log         logs.Logger
+	MySQL       mysqlxorm.Interface
+	LW          leaderworker.Interface
+	CronService cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+
 	dbClient           *db.Client
 	sourceDbClient     *sourcedb.Client
 	definitionDbClient *definitiondb.Client
 	cronDbClient       *crondb.Client
-	MySQL              mysqlxorm.Interface
-	LW                 leaderworker.Interface
-	CronService        cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -57,6 +65,28 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.sourceDbClient = &sourcedb.Client{Interface: p.MySQL}
 	p.definitionDbClient = &definitiondb.Client{Interface: p.MySQL}
 	p.cronDbClient = &crondb.Client{Interface: p.MySQL}
+
+	if p.Cfg.DryRun {
+		// check if path exist
+		if _, err := os.Stat(p.Cfg.DryRunFilePath); os.IsNotExist(err) {
+			// dir is not exist
+			os.Mkdir(p.Cfg.DryRunFilePath, 0755)
+		}
+
+		filepath := p.Cfg.DryRunFilePath + fmt.Sprintf("/dry-run_%s.log", time.Now().Format("2006_01_02"))
+		// create file
+		file, err := os.Create(filepath)
+		if err != nil {
+			p.Log.Error("create dry run log file err: %s", err)
+		}
+
+		os.Chmod(filepath, 0666)
+
+		p.Log = logrusx.New()
+		p.Log = p.Log.Sub(dryrunPrifix)
+		p.Log.SetOutput(io.MultiWriter(os.Stdout, file))
+		p.Log.Infof("Start Cleanup Definition in %s", p.Cfg.CronExpr)
+	}
 
 	return nil
 }

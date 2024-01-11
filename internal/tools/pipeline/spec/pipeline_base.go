@@ -22,6 +22,30 @@ import (
 	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 )
 
+type Field string
+
+const (
+	ID                   Field = "id"
+	PipelineSource       Field = "pipeline_source"
+	PipelineYmlName      Field = "pipeline_yml_name"
+	ClusterName          Field = "cluster_name"
+	Status               Field = "status"
+	Type                 Field = "type"
+	TriggerMode          Field = "trigger_mode"
+	CronID               Field = "cron_id"
+	IsSnippet            Field = "is_snippet"
+	ParentPipelineID     Field = "parent_pipeline_id"
+	ParentTaskID         Field = "parent_task_id"
+	CostTimeSec          Field = "cost_time_sec"
+	TimeBegin            Field = "time_begin"
+	TimeEnd              Field = "time_end"
+	TimeCreated          Field = "time_created"
+	TimeUpdated          Field = "time_updated"
+	PipelineDefinitionID Field = "pipeline_definition_id"
+	IsEdge               Field = "is_edge"
+	EdgeReportStatus     Field = "edge_report_status"
+)
+
 // PipelineBase represents `pipeline_bases` table.
 type PipelineBase struct {
 	ID uint64 `json:"id" xorm:"pk autoincr"`

@@ -48,10 +48,9 @@ type PipelineSourceUnique struct {
 	Name        string   `json:"name"`
 	IDList      []string `json:"idList"`
 	VersionLock uint64   `json:"versionLock" xorm:"version_lock version"`
-	Deleted     bool     `json:"deleted"`
 }
 
-type PipelineSourceUniqueGroup struct {
+type PipelineSourceUniqueGroupWithCount struct {
 	SourceType string `json:"sourceType"`
 	Remote     string `json:"remote"`
 	Ref        string `json:"ref"`
@@ -120,16 +119,13 @@ func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, op
 		session.Where("version_lock = ?", unique.VersionLock)
 	}
 
-	if !unique.Deleted {
-		session.Where("soft_deleted_at = 0")
-	}
-
 	if err = session.
 		Where("source_type = ?", unique.SourceType).
 		Where("remote = ?", unique.Remote).
 		Where("ref = ?", unique.Ref).
 		Where("path = ?", unique.Path).
 		Where("name = ?", unique.Name).
+		Where("soft_deleted_at = 0").
 		OrderBy("created_at DESC").
 		Find(&pipelineSources); err != nil {
 		return nil, err
@@ -179,7 +175,7 @@ func (p *PipelineSource) Convert() *pb.PipelineSource {
 	}
 }
 
-func (client *Client) GetUniqueSourceGroup(ops ...mysqlxorm.SessionOption) (uniqueSourceGroup []PipelineSourceUniqueGroup, err error) {
+func (client *Client) GetUniqueSourceGroup(ops ...mysqlxorm.SessionOption) (uniqueSourceGroup []PipelineSourceUniqueGroupWithCount, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

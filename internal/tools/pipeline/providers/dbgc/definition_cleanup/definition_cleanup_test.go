@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"bou.ke/monkey"
+	"github.com/golang/mock/gomock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -88,14 +89,6 @@ func (m *MockCronService) CronUpdate(ctx context.Context, request *cronpb.CronUp
 	return nil, nil
 }
 
-type mockLogger struct {
-	mocklogger.MockLogger
-}
-
-func (m *mockLogger) Errorf(template string, args ...interface{}) {
-	return
-}
-
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
 	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName + "?mode=" + mode)
 	sqlite3Db.DB().SetMapper(core.GonicMapper{})
@@ -128,13 +121,15 @@ func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
 	return sqlite3Db
 }
 
-func newProvider(t *testing.T, dbSourceName string) *provider {
+func newProvider(t *testing.T, dbSourceName string, ctrl *gomock.Controller) *provider {
 	sqlite3Db := newSqlite3DB(dbSourceName)
 
+	logger := mocklogger.NewMockLogger(ctrl)
+	logger.EXPECT().Errorf(gomock.Any(), gomock.Any()).Return().AnyTimes()
 	p := &provider{
 		MySQL: sqlite3Db,
-		//Log:   mocklogger.NewMockLogger(gomock.NewController(t)),
-		Log: &mockLogger{},
+		Cfg:   &config{DryRun: false},
+		Log:   logger,
 	}
 
 	p.Init(nil)
@@ -152,6 +147,7 @@ func getInsertSourceRecords() []sourcedb.PipelineSource {
 			Path:        "path1",
 			Name:        "name.yaml",
 			PipelineYml: "",
+			UpdatedAt:   time.Now().Add(1 * time.Hour),
 		},
 		{
 			SourceType:  "erda",
@@ -329,8 +325,13 @@ func getDefaultBaseTemplate() []spec.PipelineBase {
 
 func insertSourceRecords(p *provider, insertSource []sourcedb.PipelineSource) error {
 	for index, item := range insertSource {
-		err := p.sourceDbClient.CreatePipelineSource(&item)
-		insertSource[index] = item
+		session := p.MySQL.NewSession()
+		// no auto update time
+		session.NoAutoTime()
+		ops := mysqlxorm.WithSession(session)
+		err := p.sourceDbClient.CreatePipelineSource(&item, ops)
+		copyItem := item
+		insertSource[index] = copyItem
 		if err != nil {
 			return err
 		}
@@ -341,7 +342,8 @@ func insertSourceRecords(p *provider, insertSource []sourcedb.PipelineSource) er
 func insertDefinitionRecords(p *provider, insertDefinition []definitiondb.PipelineDefinition) error {
 	for index, definition := range insertDefinition {
 		err := p.definitionDbClient.CreatePipelineDefinition(&definition)
-		insertDefinition[index] = definition
+		copyItem := definition
+		insertDefinition[index] = copyItem
 		if err != nil {
 			return err
 		}
@@ -351,8 +353,13 @@ func insertDefinitionRecords(p *provider, insertDefinition []definitiondb.Pipeli
 
 func insertCronRecords(p *provider, insertCron []crondb.PipelineCron) error {
 	for index, cron := range insertCron {
-		err := p.cronDbClient.CreatePipelineCron(&cron)
-		insertCron[index] = cron
+		session := p.MySQL.NewSession()
+		// no auto update time
+		session.NoAutoTime()
+		ops := mysqlxorm.WithSession(session)
+		err := p.cronDbClient.CreatePipelineCron(&cron, ops)
+		copyCron := cron
+		insertCron[index] = copyCron
 		if err != nil {
 			return err
 		}
@@ -363,7 +370,8 @@ func insertCronRecords(p *provider, insertCron []crondb.PipelineCron) error {
 func insertDefinitionExtraRecords(p *provider, insertDefinitionExtra []definitiondb.PipelineDefinitionExtra) error {
 	for index, extra := range insertDefinitionExtra {
 		err := p.definitionDbClient.CreatePipelineDefinitionExtra(&extra)
-		insertDefinitionExtra[index] = extra
+		copyExtra := extra
+		insertDefinitionExtra[index] = copyExtra
 		if err != nil {
 			return err
 		}
@@ -374,7 +382,8 @@ func insertDefinitionExtraRecords(p *provider, insertDefinitionExtra []definitio
 func insertBaseRecords(p *provider, insertBase []spec.PipelineBase) error {
 	for index, base := range insertBase {
 		err := p.dbClient.CreatePipelineBase(&base)
-		insertBase[index] = base
+		copyBase := base
+		insertBase[index] = copyBase
 		if err != nil {
 			return err
 		}
@@ -417,7 +426,10 @@ func TestNeedCleanup(t *testing.T) {
 		os.Remove(dbname)
 	}()
 
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	p := newProvider(t, dbname, ctrl)
 
 	insertSource := getInsertSourceRecords()
 
@@ -427,10 +439,10 @@ func TestNeedCleanup(t *testing.T) {
 	}
 
 	want := struct {
-		SourceGroupList []sourcedb.PipelineSourceUniqueGroup
+		SourceGroupList []sourcedb.PipelineSourceUniqueGroupWithCount
 		Flag            bool
 	}{
-		SourceGroupList: []sourcedb.PipelineSourceUniqueGroup{
+		SourceGroupList: []sourcedb.PipelineSourceUniqueGroupWithCount{
 			{
 				SourceType: "erda",
 				Remote:     "remote1",
@@ -510,8 +522,9 @@ func TestGetSourceListByGroup(t *testing.T) {
 	defer func() {
 		os.Remove(dbname)
 	}()
-
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := newProvider(t, dbname, ctrl)
 
 	insertSource := getInsertSourceRecords()
 
@@ -520,7 +533,7 @@ func TestGetSourceListByGroup(t *testing.T) {
 		t.Fatalf("insert source err : %s", err)
 	}
 
-	group := sourcedb.PipelineSourceUniqueGroup{
+	group := sourcedb.PipelineSourceUniqueGroupWithCount{
 		SourceType: insertSource[0].SourceType,
 		Remote:     insertSource[0].Remote,
 		Ref:        insertSource[0].Ref,
@@ -560,7 +573,9 @@ func TestGetLatestExecDefinitionBySourceIds(t *testing.T) {
 		os.Remove(dbname)
 	}()
 
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := newProvider(t, dbname, ctrl)
 
 	insertSource := getInsertSourceRecords()
 
@@ -626,7 +641,9 @@ func TestMergeCronByDefinitionIds(t *testing.T) {
 		os.Remove(dbname)
 	}()
 
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := newProvider(t, dbname, ctrl)
 
 	trueFlag := true
 	falseFlag := false
@@ -800,7 +817,7 @@ func TestMergeCronByDefinitionIds(t *testing.T) {
 			name: "test8: the cron associated with latest definition is exist and not started , the other is started(exceed 1) ",
 			insertPipelineCronList: []crondb.PipelineCron{
 				{ID: 1, PipelineDefinitionID: "1", Enable: &falseFlag},
-				{ID: 2, PipelineDefinitionID: "2", Enable: &trueFlag},
+				{ID: 2, PipelineDefinitionID: "2", Enable: &trueFlag, TimeUpdated: time.Now().Add(-1 * time.Hour)},
 				{ID: 3, PipelineDefinitionID: "3", Enable: &trueFlag, TimeUpdated: time.Now().Add(1 * time.Hour)},
 				{ID: 4, PipelineDefinitionID: "4", Enable: &falseFlag},
 				{ID: 5, PipelineDefinitionID: "5", Enable: &falseFlag},
@@ -854,16 +871,16 @@ func TestMergeCronByDefinitionIds(t *testing.T) {
 			cronStopIdList = append(cronStopIdList, cronInfo.ID)
 			return &cronpb.CronStopResponse{}, nil
 		})
-		defer func() {
-			monkey.UnpatchAll()
-			os.Remove(dbname)
-		}()
 
 		// check if the cron deleted
 		_, latestExecCron, err := p.MergeCronByDefinitionIds(context.Background(), test.definitionIds, test.latestExecDefinition)
 		if err != nil {
 			t.Fatalf("merge cron by definition error")
 		}
+
+		go func() {
+			monkey.UnpatchAll()
+		}()
 
 		if test.want.latestExecDefinitionCron != nil {
 			assert.Equal(t, test.want.latestExecDefinitionCron.ID, latestExecCron.ID)
@@ -904,7 +921,9 @@ func TestMergeDefinition(t *testing.T) {
 		os.Remove(dbname)
 	}()
 
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := newProvider(t, dbname, ctrl)
 
 	insertDefinition := getDefaultDefinitionTemplate()
 	insertDefinitionExtra := getDefaultDefinitionExtraTemplate()
@@ -945,7 +964,9 @@ func TestMergePipelineBase(t *testing.T) {
 		os.Remove(dbname)
 	}()
 
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := newProvider(t, dbname, ctrl)
 
 	insertDefinition := getDefaultDefinitionTemplate()
 	definitionIds := arrays.GetFieldArrFromStruct(insertDefinition, func(d definitiondb.PipelineDefinition) string {
@@ -1061,29 +1082,73 @@ func TestMergeSource(t *testing.T) {
 		os.Remove(dbname)
 	}()
 
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := newProvider(t, dbname, ctrl)
 
-	insertSourceList := getInsertSourceRecords()
-	err := insertSourceRecords(p, insertSourceList)
-	if err != nil {
-		t.Fatalf("insert source records err : %s", err)
-	}
-	insertSourceList = insertSourceList[:sourceDeletedIndex]
-	latestExecDefinition := definitiondb.PipelineDefinition{
-		PipelineSourceId: insertSourceList[0].ID,
-	}
-
-	err = p.MergeSource(insertSourceList, latestExecDefinition)
-	if err != nil {
-		t.Fatalf("merge source err : %s", err)
+	testCase := []struct {
+		name                 string
+		latestExecDefinition definitiondb.PipelineDefinition
+		saveSourceIndex      int
+	}{
+		{name: "latestExecDefinition is not null", latestExecDefinition: definitiondb.PipelineDefinition{ID: "1"}, saveSourceIndex: 1},
+		{name: "latestExecDefinition is null", latestExecDefinition: definitiondb.PipelineDefinition{ID: ""}, saveSourceIndex: 0},
 	}
 
-	savedPipelineSource := insertSourceList[0]
-	pipelineSourceList := []sourcedb.PipelineSource{}
-	p.MySQL.DB().Where("soft_deleted_at = 0").Find(&pipelineSourceList)
+	for _, test := range testCase {
+		err := deleteAllTable(p)
+		if err != nil {
+			t.Fatalf("delete all table err: %s", err)
+		}
 
-	assert.Equal(t, 1, len(pipelineSourceList))
-	assert.Equal(t, savedPipelineSource.ID, pipelineSourceList[0].ID)
+		insertSourceList := getInsertSourceRecords()
+		err = insertSourceRecords(p, insertSourceList)
+		if err != nil {
+			t.Fatalf("insert source records err: %s", err)
+		}
+		insertSourceList = insertSourceList[:sourceDeletedIndex]
+
+		test.latestExecDefinition.PipelineSourceId = insertSourceList[test.saveSourceIndex].ID
+
+		err = p.MergeSource(insertSourceList, test.latestExecDefinition)
+		if err != nil {
+			t.Fatalf("merge source err : %s", err)
+		}
+
+		savePipelineSourec := insertSourceList[test.saveSourceIndex]
+		pipelineSourceList := []sourcedb.PipelineSource{}
+		p.MySQL.DB().Where("soft_deleted_at = 0").Find(&pipelineSourceList)
+
+		assert.Equal(t, 1, len(pipelineSourceList))
+		assert.Equal(t, savePipelineSourec.ID, pipelineSourceList[0].ID)
+
+	}
+
+	//insertSourceList := getInsertSourceRecords()
+	//err := insertSourceRecords(p, insertSourceList)
+	//if err != nil {
+	//	t.Fatalf("insert source records err : %s", err)
+	//}
+	//insertSourceList = insertSourceList[:sourceDeletedIndex]
+	//
+	//// latestExecDefinition is not null
+	//latestExecDefinition := definitiondb.PipelineDefinition{
+	//	ID:               "1",
+	//	PipelineSourceId: insertSourceList[0].ID,
+	//}
+	//
+	//err = p.MergeSource(insertSourceList, latestExecDefinition)
+	//if err != nil {
+	//	t.Fatalf("merge source err : %s", err)
+	//}
+	//
+	//savedPipelineSource := insertSourceList[0]
+	//pipelineSourceList := []sourcedb.PipelineSource{}
+	//p.MySQL.DB().Where("soft_deleted_at = 0").Find(&pipelineSourceList)
+	//
+	//assert.Equal(t, 1, len(pipelineSourceList))
+	//assert.Equal(t, savedPipelineSource.ID, pipelineSourceList[0].ID)
+
 }
 
 func TestMergePipeline(t *testing.T) {
@@ -1092,7 +1157,9 @@ func TestMergePipeline(t *testing.T) {
 		os.Remove(dbname)
 	}()
 
-	p := newProvider(t, dbname)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	p := newProvider(t, dbname, ctrl)
 
 	trueFlag := true
 	//falseFlag := false
@@ -1117,7 +1184,7 @@ func TestMergePipeline(t *testing.T) {
 		insertCron            []crondb.PipelineCron
 		insertDefinitionExtra []definitiondb.PipelineDefinitionExtra
 		insertBase            []spec.PipelineBase
-		uniqueGroup           sourcedb.PipelineSourceUniqueGroup
+		uniqueGroup           sourcedb.PipelineSourceUniqueGroupWithCount
 		want                  Want
 	}{
 		{
@@ -1127,7 +1194,7 @@ func TestMergePipeline(t *testing.T) {
 			insertDefinitionExtra: getDefaultDefinitionExtraTemplate(),
 			insertCron:            getDefaultCronTemplate(),
 			insertBase:            getDefaultBaseTemplate(),
-			uniqueGroup: sourcedb.PipelineSourceUniqueGroup{
+			uniqueGroup: sourcedb.PipelineSourceUniqueGroupWithCount{
 				SourceType: getInsertSourceRecords()[0].SourceType,
 				Remote:     getInsertSourceRecords()[0].Remote,
 				Ref:        getInsertSourceRecords()[0].Ref,
@@ -1197,7 +1264,7 @@ func TestMergePipeline(t *testing.T) {
 			insertDefinitionExtra: getDefaultDefinitionExtraTemplate(),
 			insertCron:            getDefaultCronTemplate(),
 			insertBase:            getDefaultBaseTemplate(),
-			uniqueGroup: sourcedb.PipelineSourceUniqueGroup{
+			uniqueGroup: sourcedb.PipelineSourceUniqueGroupWithCount{
 				SourceType: getInsertSourceRecords()[0].SourceType,
 				Remote:     getInsertSourceRecords()[0].Remote,
 				Ref:        getInsertSourceRecords()[0].Ref,
@@ -1213,7 +1280,7 @@ func TestMergePipeline(t *testing.T) {
 			insertDefinitionExtra: getDefaultDefinitionExtraTemplate(),
 			insertCron:            getDefaultCronTemplate(),
 			insertBase:            getDefaultBaseTemplate(),
-			uniqueGroup: sourcedb.PipelineSourceUniqueGroup{
+			uniqueGroup: sourcedb.PipelineSourceUniqueGroupWithCount{
 				SourceType: getInsertSourceRecords()[0].SourceType,
 				Remote:     getInsertSourceRecords()[0].Remote,
 				Ref:        getInsertSourceRecords()[0].Ref,
