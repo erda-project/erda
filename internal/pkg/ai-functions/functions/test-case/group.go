@@ -54,12 +54,10 @@ type GroupList struct {
 }
 
 func GenerateGroupsForRequirements(ctx context.Context, requirements []*apistructs.Issue, openaiURL *url.URL, xAIProxyModelId string) (requirementIdToGroups map[uint64][]string, err error) {
-	bdl := bundle.New(bundle.WithErdaServer())
-	userInfo, err := bdl.GetCurrentUser(apis.GetUserID(ctx))
+	userInfo, err := sdk.GetUserInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	userName := userInfo.Nick
 	if userName == "" {
 		userName = userInfo.Name
@@ -71,7 +69,7 @@ func GenerateGroupsForRequirements(ctx context.Context, requirements []*apistruc
 
 	for _, r := range requirements {
 		wg.Add(1)
-		go generateGroupsFromRequirement(ctx, &wg, userName, r, userInfo, openaiURL, xAIProxyModelId, &results)
+		go generateGroupsFromRequirement(ctx, &wg, userName, r, &userInfo, openaiURL, xAIProxyModelId, &results)
 	}
 	wg.Wait()
 
@@ -103,6 +101,9 @@ func generateGroupsFromRequirement(ctx context.Context, wg *sync.WaitGroup, user
 		}
 	}
 
+	lang := apis.GetLang(ctx)
+	messByLang := adjustMessageByLanguage(lang, "")
+
 	// 从参考模板解析基础 messages
 	messages := make([]openai.ChatCompletionMessage, 0)
 	err = yaml.Unmarshal(GroupMessages, &messages)
@@ -122,20 +123,20 @@ func generateGroupsFromRequirement(ctx context.Context, wg *sync.WaitGroup, user
 	})
 
 	if len(tasks) > 0 {
-		taskContent := "需求和任务相关联，一个需求事项包含多个任务事项，这是我所有的任务标题:"
 		for idx, task := range tasks {
 			tasks[idx] = "\ntask name:" + task
 		}
-		taskContent = taskContent + strings.Join(tasks, ",")
+		taskContent := messByLang.TaskContent + strings.Join(tasks, ",")
 
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
 			Content: taskContent,
 		})
 	}
+
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
-		Content: "请根据需求标题、需求内容和任务标题，帮助我生成一系列高质量的测试用例功能分组。生成测试用例分组的规则参考我上面给出的案例。测试用例功能分组应该基于需求的主题和任务的关联性。并使用功能点对每个功能分组进行命名。不要出现含义相同或者重复的测试用例功能分组。",
+		Content: messByLang.GenerateGroup,
 	})
 
 	schema, err := strutil.YamlOrJsonToJson(GroupSchema)
@@ -168,7 +169,7 @@ func generateGroupsFromRequirement(ctx context.Context, wg *sync.WaitGroup, user
 	// 在 request option 中添加认证信息: 以某组织下某用户身份调用 ai-proxy,
 	// ai-proxy 中的 filter erda-auth 会回调 erda.cloud 的 openai, 检查该企业和用户是否有权使用 AI 能力
 	ros := append(reqOpts, func(r *http.Request) {
-		r.Header.Set(vars.XAIProxySource, base64.StdEncoding.EncodeToString([]byte(os.Getenv(string(apistructs.DICE_CLUSTER_NAME)))))
+		r.Header.Set(vars.XAIProxySource, base64.StdEncoding.EncodeToString([]byte("testcase___"+os.Getenv(string(apistructs.DICE_CLUSTER_NAME)))))
 		r.Header.Set(vars.XAIProxyOrgId, base64.StdEncoding.EncodeToString([]byte(apis.GetOrgID(ctx))))
 		r.Header.Set(vars.XAIProxyUserId, base64.StdEncoding.EncodeToString([]byte(apis.GetUserID(ctx))))
 		r.Header.Set(vars.XAIProxyEmail, base64.StdEncoding.EncodeToString([]byte(userInfo.Email)))

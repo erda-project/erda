@@ -12,15 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package models
+package mdutil
 
-const (
-	I18nKeyMrNoteCommentCannotBeEmpty        = "mr.note.comment.cannot.be.empty"
-	I18nKeyTemplateMrAICrTipForEachMaxLimit  = "template.mr.ai.cr.tip.reach.max.limit"
-	I18nKeyMrAICrTitle                       = "mr.ai.cr.title"
-	I18nKeyFile                              = "file"
-	I18nKeyCodeSnippet                       = "snippet"
-	I18nKeyMrAICrNoSuggestion                = "mr.ai.cr.no.suggestion"
-	I18nKeyTemplateMrAICrFileContentMaxLimit = "template.mr.ai.cr.file.content.max.limit"
-	I18nKeyMrAICrSessionTopic                = "mr.ai.cr.session.topic"
-)
+func WrapCodeBlock(code string, lang ...string) string {
+	if len(lang) == 0 {
+		return "```\n" + code + "\n```"
+	}
+	return "```" + lang[0] + "\n" + code + "\n```"
+}
+
+func MakeItalic(text string) string {
+	return "_" + text + "_"
+}
+
+func MakeBold(text string) string {
+	return "**" + text + "**"
+}
+
+func MakeRef(text string) string {
+	return "> " + text
+}

@@ -1008,7 +1008,32 @@ func TestDiceYmlInsertJobImage(t *testing.T) {
 	err = d.InsertImage(map[string]string{"job1": "image1"}, nil)
 	assert.Nil(t, err, "%v", err)
 	fmt.Printf("%+v\n", d.Obj().Jobs["job1"]) // debug print
+}
 
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name     string
+		yamlData []byte
+		wantErr  bool
+	}{
+		{
+			name:     "Valid YAML",
+			yamlData: []byte(testyml),
+			wantErr:  false,
+		},
+		{
+			name:     "Invalid YAML",
+			yamlData: []byte(""),
+			wantErr:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := New(tt.yamlData, true); (err != nil) != tt.wantErr {
+				t.Fatalf("New with validate error: %+v, wantErr: %v", err, tt.wantErr)
+			}
+		})
+	}
 }
 
 //func TestDiceYmlMergeValues(t *testing.T) {

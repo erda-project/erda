@@ -1,4 +1,6 @@
 en:
     monitor: "Monitor"
+    This status already exists: This status already exists
 zh:
     monitor: "监控"
+    This status already exists: 该状态已存在

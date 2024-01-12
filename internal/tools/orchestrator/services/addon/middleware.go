@@ -374,10 +374,6 @@ func (a *Addon) GetMiddlewareResource(instanceID string) ([]apistructs.Middlewar
 		return nil, err
 	}
 
-	if len(instanceList) == 0 {
-		return nil, errors.Errorf("not found instance: %s", instanceID)
-	}
-
 	middlewares := make([]apistructs.MiddlewareResourceFetchResponseData, 0, len(instanceList))
 	for _, v := range instanceList {
 		item := apistructs.MiddlewareResourceFetchResponseData{

@@ -79,35 +79,38 @@ message AuditCreateRequestWhenReceived {
     string bizSource = 17;
 }
 
-message AuditUpdateRequestAfterContextParsed {
+message AuditUpdateRequestAfterBasicContextParsed {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+    string clientId = 2 [(validate.rules).string = {len: 36}];
+    string modelId = 3 [(validate.rules).string = {len: 36}];
+    string sessionId = 4 [(validate.rules).string = {ignore_empty: true, len: 36}];
+    string bizSource = 5;
+    string operationId = 6;
+
+    // parsed from client token
+    string dingtalkStaffId = 7;
+    string email = 8;
+    string identityJobNumber = 9;
+    string username = 10;
+    string identityPhoneNumber = 11;
+}
+
+message AuditUpdateRequestAfterSpecificContextParsed {
     string auditId = 1 [(validate.rules).string = {len: 36}];
     string prompt = 2;
 
-    string clientId = 3 [(validate.rules).string = {len: 36}];
-    string modelId = 4 [(validate.rules).string = {len: 36}];
-    string sessionId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
-
-    string bizSource = 7;
-    string operationId = 8;
-
-    string requestFunctionCallName = 9;
-
-    // parsed from client token
-    string dingtalkStaffId = 10;
-    string email = 11;
-    string identityJobNumber = 12;
-    string username = 13;
-    string identityPhoneNumber = 14;
+    // chat info
+    string requestFunctionCallName = 3;
 
     // audio info parsed from multipart/form-data request body
-    string audioFileName = 15;
-    string audioFileSize = 16;
-    string audioFileHeaders = 17;
+    string audioFileName = 4;
+    string audioFileSize = 5;
+    string audioFileHeaders = 6;
 
     // image info
-    string imageQuality = 18;
-    string imageSize = 19;
-    string imageStyle = 20;
+    string imageQuality = 7;
+    string imageSize = 8;
+    string imageStyle = 9;
 }
 
 message AuditUpdateRequestAfterLLMDirectorInvoke {
@@ -134,6 +137,12 @@ message AuditUpdateRequestAfterLLMDirectorResponse {
     string responseBody = 3;
     string responseHeader = 4;
     string responseFunctionCallName = 5;
+}
+
+message AuditUpdateRequestWhenFilterError {
+    string auditId = 1 [(validate.rules).string = {len: 36}];
+    string filterName = 2;
+    string filterError = 3;
 }
 
 message AuditGetRequest {

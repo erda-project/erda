@@ -26,8 +26,10 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/aiutil"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/i18nutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 )
@@ -41,6 +43,7 @@ type CodeSnippet struct {
 	CodeLanguage string
 	SelectedCode string
 	Truncated    bool // if there are too many changes, we have to truncate the content according to the model context
+	UserLang     string
 
 	user *models.User
 }
@@ -48,14 +51,21 @@ type CodeSnippet struct {
 //go:embed prompt.yaml
 var promptYaml string
 
+//go:embed prompt-zh.yaml
+var promptZhYaml string
+
 type PromptStruct = struct {
 	Messages []openai.ChatCompletionMessage `yaml:"messages"`
 }
 
 var promptStruct PromptStruct
+var promptZhStruct PromptStruct
 
 func init() {
 	if err := yaml.Unmarshal([]byte(promptYaml), &promptStruct); err != nil {
+		panic(err)
+	}
+	if err := yaml.Unmarshal([]byte(promptZhYaml), &promptZhStruct); err != nil {
 		panic(err)
 	}
 	// register
@@ -82,16 +92,21 @@ func newSnippetCodeReviewer(codeLang, selectedCode string, truncated bool, user 
 	return cs
 }
 
-func (cs CodeSnippet) CodeReview() string {
-	// invoke ai
-	req := cs.constructAIRequest()
+func (cs CodeSnippet) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, aiSessionID string) string {
+	// construct AI request
+	req := cs.constructAIRequest(i18n, lang)
 
 	// invoke
-	return aiutil.InvokeAI(req, cs.user)
+	return aiutil.InvokeAI(req, cs.user, aiSessionID)
 }
 
-func (cs CodeSnippet) constructAIRequest() openai.ChatCompletionRequest {
-	msgs := deepcopy.Copy(promptStruct.Messages).([]openai.ChatCompletionMessage)
+func (cs CodeSnippet) constructAIRequest(i18n i18n.Translator, lang i18n.LanguageCodes) openai.ChatCompletionRequest {
+	cs.UserLang = i18nutil.GetUserLang(lang)
+	usedPromptStruct := promptStruct
+	if cs.UserLang == i18nutil.Chinese {
+		usedPromptStruct = promptZhStruct
+	}
+	msgs := deepcopy.Copy(usedPromptStruct.Messages).([]openai.ChatCompletionMessage)
 
 	// invoke ai
 	req := openai.ChatCompletionRequest{

@@ -17,6 +17,7 @@ package rate_limit
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -25,6 +26,8 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	auditpb "github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -93,8 +96,22 @@ func (f *RateLimiter) OnRequest(ctx context.Context, w http.ResponseWriter, info
 
 	limiter := tokenLimiter.GetLimiter(token)
 	if !limiter.Allow() {
-		l.Warnf("too many requests for token rate limit, token: %s", token)
+		err := fmt.Errorf("too many requests for token rate limit, token: %s", token)
+		l.Warn(err)
 		http.Error(w, "too many requests for token rate limit", http.StatusTooManyRequests)
+		// record to audit
+		auditID, ok := ctxhelper.GetAuditID(ctx)
+		if ok {
+			_, err := ctxhelper.MustGetDBClient(ctx).AuditClient().SetFilterErrorAudit(ctx, &auditpb.AuditUpdateRequestWhenFilterError{
+				AuditId:     auditID,
+				FilterName:  Name,
+				FilterError: err.Error(),
+			})
+			if err != nil {
+				l := ctxhelper.GetLogger(ctx)
+				l.Errorf("failed to update audit when rate limited, audit id: %s, err: %v", auditID, err)
+			}
+		}
 		return reverseproxy.Intercept, nil
 	}
 	l.Debugf("pass token rate limit, token: %s", token)

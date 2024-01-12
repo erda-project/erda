@@ -25,11 +25,12 @@ import (
 
 	aiproxyclient "github.com/erda-project/erda/internal/apps/ai-proxy/sdk/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/internal/tools/gittar/conf"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 )
 
-func InvokeAI(req openai.ChatCompletionRequest, user *models.User) string {
-	client := getOpenAIClient(user)
+func InvokeAI(req openai.ChatCompletionRequest, user *models.User, aiSessionID string) string {
+	client := getOpenAIClient(user, aiSessionID)
 	resp, err := client.CreateChatCompletion(context.Background(), req)
 	if err != nil {
 		logrus.Warnf("failed to invoke openai, err: %s", err)
@@ -46,24 +47,26 @@ func InvokeAI(req openai.ChatCompletionRequest, user *models.User) string {
 	return choice.Message.Content
 }
 
-func getOpenAIClient(user *models.User) *openai.Client {
+func getOpenAIClient(user *models.User, aiSessionID string) *openai.Client {
 	// config
 	clientConfig := openai.DefaultConfig(aiproxyclient.Instance.Config().ClientAK)
 	clientConfig.BaseURL = strings.TrimSuffix(aiproxyclient.Instance.Config().URL, "/") + "/v1"
 	clientConfig.HTTPClient = http.DefaultClient
-	clientConfig.HTTPClient.Transport = &transport{RoundTripper: http.DefaultTransport, User: user}
+	clientConfig.HTTPClient.Transport = &transport{RoundTripper: http.DefaultTransport, User: user, AISessionID: aiSessionID, ClusterName: conf.DiceCluster()}
 	client := openai.NewClientWithConfig(clientConfig)
 	return client
 }
 
 type transport struct {
 	User         *models.User
+	AISessionID  string
+	ClusterName  string
 	RoundTripper http.RoundTripper
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	m := map[string]string{
-		vars.XAIProxySource: "mr-cr",
+		vars.XAIProxySource: "mr-cr" + "___" + t.ClusterName,
 	}
 	if t.User != nil {
 		m[vars.XAIProxyUserId] = t.User.Id
@@ -82,5 +85,9 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.URL.RawQuery = query.Encode()
 	}
 	setAPIVersion("2023-07-01-preview")
+	// set session id
+	if t.AISessionID != "" {
+		req.Header.Add(vars.XAIProxySessionId, t.AISessionID)
+	}
 	return t.RoundTripper.RoundTrip(req)
 }

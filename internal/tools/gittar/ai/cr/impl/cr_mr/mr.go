@@ -15,14 +15,24 @@
 package cr_mr
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/impl/cr_mr_file"
+	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mdutil"
 	"github.com/erda-project/erda/internal/tools/gittar/ai/cr/util/mrutil"
 	"github.com/erda-project/erda/internal/tools/gittar/models"
 	"github.com/erda-project/erda/internal/tools/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
+)
+
+const (
+	MaxDiffFileNum = 5
 )
 
 type mrReviewer struct {
@@ -38,18 +48,24 @@ func init() {
 	})
 }
 
-func (r *mrReviewer) CodeReview() string {
+func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, aiSessionID string) string {
 	diff := mrutil.GetDiffFromMR(r.repo, r.mr)
 
 	// mr has many changed files, we will review only the first ten files one by one. Then, combine the file-level suggestions.
 
 	var changedFiles []models.FileCodeReviewer
+	var reachMaxDiffFileNumLimit bool
 	for _, diffFile := range diff.Files {
-		if len(changedFiles) >= 10 {
+		if len(changedFiles) >= MaxDiffFileNum {
+			reachMaxDiffFileNumLimit = true
 			break
 		}
 		if len(diffFile.Sections) > 0 {
-			fr := cr_mr_file.NewFileReviewer(diffFile, r.user, r.mr)
+			fr, err := cr_mr_file.NewFileReviewer(diffFile.Name, r.repo, r.mr, r.user)
+			if err != nil {
+				logrus.Warnf("failed to create file reviewer for file %s, err: %v", diffFile.Name, err)
+				continue
+			}
 			changedFiles = append(changedFiles, fr)
 		}
 	}
@@ -57,7 +73,7 @@ func (r *mrReviewer) CodeReview() string {
 	// parallel do file-level cr
 	var fileOrder []string
 	fileSuggestions := make(map[string]string)
-	wg := limit_sync_group.NewSemaphore(5) // parallel is 5
+	wg := limit_sync_group.NewSemaphore(MaxDiffFileNum) // parallel is 5
 	var mu sync.Mutex
 
 	wg.Add(len(changedFiles))
@@ -66,19 +82,33 @@ func (r *mrReviewer) CodeReview() string {
 		go func(file models.FileCodeReviewer) {
 			defer wg.Done()
 
+			fileSuggestion := file.CodeReview(i18n, lang, "")
+			if strings.TrimSpace(fileSuggestion) == "" {
+				fileSuggestion = i18n.Text(lang, models.I18nKeyMrAICrNoSuggestion)
+			}
 			mu.Lock()
-			fileSuggestions[file.GetFileName()] = file.CodeReview()
+			fileSuggestions[file.GetFileName()] = fileSuggestion
 			mu.Unlock()
 		}(file)
 	}
 	wg.Wait()
 
 	// combine result
-	var mrReviewResult string
-	mrReviewResult = "# AI Code Review\n"
+	var mrReviewResults []string
+	mrReviewResults = append(mrReviewResults, fmt.Sprintf("# %s", i18n.Text(lang, models.I18nKeyMrAICrTitle)))
+	if reachMaxDiffFileNumLimit {
+		tip := fmt.Sprintf(i18n.Text(lang, models.I18nKeyTemplateMrAICrTipForEachMaxLimit), MaxDiffFileNum)
+		tip = mdutil.MakeRef(mdutil.MakeItalic(tip))
+		mrReviewResults = append(mrReviewResults, tip)
+	}
+	mrReviewResults = append(mrReviewResults, "")
 	for _, fileName := range fileOrder {
-		mrReviewResult += "------\n## File: `" + fileName + "`\n\n" + fileSuggestions[fileName] + "\n"
+		mrReviewResults = append(mrReviewResults, "------")
+		mrReviewResults = append(mrReviewResults, fmt.Sprintf("## %s: `%s`", i18n.Text(lang, models.I18nKeyFile), fileName))
+		mrReviewResults = append(mrReviewResults, "")
+		mrReviewResults = append(mrReviewResults, fileSuggestions[fileName])
+		mrReviewResults = append(mrReviewResults, "")
 	}
 
-	return mrReviewResult
+	return strings.Join(mrReviewResults, "\n")
 }

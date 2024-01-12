@@ -31,9 +31,11 @@ func NewSemaphore(maxSize int) *limitSyncGroup {
 }
 func (s *limitSyncGroup) Add(delta int) {
 	s.wg.Add(delta)
-	for i := 0; i < delta; i++ {
-		s.c <- struct{}{}
-	}
+	go func() {
+		for i := 0; i < delta; i++ {
+			s.c <- struct{}{}
+		}
+	}()
 }
 func (s *limitSyncGroup) Done() {
 	<-s.c

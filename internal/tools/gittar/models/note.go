@@ -152,6 +152,19 @@ func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, 
 		note.Role = NoteRoleAI
 	}
 
+	// start AI session before AI code review (we need session id)
+	if req.StartAISession {
+		aiSessionID, err := svc.createAISession(note.MergeId, user)
+		if err != nil {
+			return err
+		}
+		note.DataResult.AISessionID = aiSessionID
+		// bypass note check
+		if strings.TrimSpace(note.Note) == "" {
+			note.Note = "AI Code Review Session Started"
+		}
+	}
+
 	// AI code review
 	if req.AICodeReviewType != "" {
 		note.DataResult.AICodeReviewType = req.AICodeReviewType
@@ -161,7 +174,6 @@ func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, 
 		switch req.AICodeReviewType {
 		case AICodeReviewTypeMR:
 		case AICodeReviewTypeMRFile:
-			crReq.FileRelated = &AICodeReviewRequestForFile{}
 		case AICodeReviewTypeMRCodeSnippet:
 			selectedCode, _ := mrutil.ConvertDiffLinesToSnippet(note.DataResult.DiffLines)
 			crReq.CodeSnippetRelated = &AICodeReviewRequestForCodeSnippet{SelectedCode: selectedCode}
@@ -170,22 +182,8 @@ func (svc *Service) handleAIRelatedNote(repo *gitmodule.Repository, user *User, 
 		if err != nil {
 			return fmt.Errorf("failed to create code reviewer err: %v", err)
 		}
-		suggestions := reviewer.CodeReview()
+		suggestions := reviewer.CodeReview(svc.i18nTran, svc.lang, note.DataResult.AISessionID)
 		note.Note = suggestions
-	}
-
-	// start AI session
-	// if `AICodeReviewType` specified, suggestions will be set as Session Topic
-	if req.StartAISession {
-		aiSessionID, err := svc.createAISession(*note, user)
-		if err != nil {
-			return err
-		}
-		note.DataResult.AISessionID = aiSessionID
-		// bypass note check
-		if strings.TrimSpace(note.Note) == "" {
-			note.Note = "AI Code Review Session Started"
-		}
 	}
 
 	return nil
@@ -329,16 +327,16 @@ func (svc *Service) QueryDiffNotes(repo *gitmodule.Repository, mergeId int64, ol
 	return notes, nil
 }
 
-func (svc *Service) createAISession(note Note, user *User) (string, error) {
+func (svc *Service) createAISession(mergeID int64, user *User) (string, error) {
 	if !aiproxyclient.Instance.AIEnabled() {
 		return "", aiproxyclient.ErrorAINotEnabled
 	}
-	sessionName := fmt.Sprintf("mr#%d-author#%s", note.MergeId, user.NickName)
+	sessionName := fmt.Sprintf("mr#%d-author#%s", mergeID, user.NickName)
 	req := sessionpb.SessionCreateRequest{
 		UserId:      user.Id,
 		Scene:       "ai-cr-session",
 		Name:        sessionName,
-		Topic:       "This is a code review session, please answer professionally. \nRelated Code And Review: \n" + note.Note,
+		Topic:       svc.I18n(I18nKeyMrAICrSessionTopic),
 		NumOfCtxMsg: 100,
 	}
 	aiSession, err := aiproxyclient.Instance.Session().Create(aiproxyclient.Instance.Context(), &req)

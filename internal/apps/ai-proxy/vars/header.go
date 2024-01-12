@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package models
+package vars
 
-const (
-	I18nKeyMrNoteCommentCannotBeEmpty        = "mr.note.comment.cannot.be.empty"
-	I18nKeyTemplateMrAICrTipForEachMaxLimit  = "template.mr.ai.cr.tip.reach.max.limit"
-	I18nKeyMrAICrTitle                       = "mr.ai.cr.title"
-	I18nKeyFile                              = "file"
-	I18nKeyCodeSnippet                       = "snippet"
-	I18nKeyMrAICrNoSuggestion                = "mr.ai.cr.no.suggestion"
-	I18nKeyTemplateMrAICrFileContentMaxLimit = "template.mr.ai.cr.file.content.max.limit"
-	I18nKeyMrAICrSessionTopic                = "mr.ai.cr.session.topic"
-)
+import "github.com/erda-project/erda/pkg/reverseproxy"
+
+func GetFromHeader(infor reverseproxy.HttpInfor, keys ...string) string {
+	for _, key := range keys {
+		if v := TryUnwrapBase64(infor.Header().Get(key)); v != "" {
+			return v
+		}
+	}
+	return ""
+}

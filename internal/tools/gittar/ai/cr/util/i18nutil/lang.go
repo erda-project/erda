@@ -12,15 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package models
+package i18nutil
+
+import (
+	"strings"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
+)
 
 const (
-	I18nKeyMrNoteCommentCannotBeEmpty        = "mr.note.comment.cannot.be.empty"
-	I18nKeyTemplateMrAICrTipForEachMaxLimit  = "template.mr.ai.cr.tip.reach.max.limit"
-	I18nKeyMrAICrTitle                       = "mr.ai.cr.title"
-	I18nKeyFile                              = "file"
-	I18nKeyCodeSnippet                       = "snippet"
-	I18nKeyMrAICrNoSuggestion                = "mr.ai.cr.no.suggestion"
-	I18nKeyTemplateMrAICrFileContentMaxLimit = "template.mr.ai.cr.file.content.max.limit"
-	I18nKeyMrAICrSessionTopic                = "mr.ai.cr.session.topic"
+	Chinese = "Chinese"
+	English = "English"
+
+	CodeZh = "zh"
+	CodeEn = "en"
 )
+
+func GetUserLang(langs i18n.LanguageCodes) string {
+	var code string
+	if len(langs) == 0 {
+		code = CodeZh
+	} else {
+		code = langs[0].RestrictedCode()
+	}
+	code = strings.ToLower(code)
+	switch code {
+	case CodeZh:
+		return Chinese
+	case CodeEn:
+		return English
+	default:
+		return Chinese
+	}
+}
