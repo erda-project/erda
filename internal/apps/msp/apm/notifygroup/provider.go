@@ -64,12 +64,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options(),
 			p.Perm.Check(
-				perm.Method(NotifyService.CreateNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, p.GetProjectID()),
-				perm.Method(NotifyService.QueryNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.GetProjectID()),
-				perm.Method(NotifyService.GetNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.GetProjectID()),
-				perm.Method(NotifyService.UpdateNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.GetProjectID()),
-				perm.Method(NotifyService.GetNotifyGroupDetail, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.GetProjectID()),
-				perm.Method(NotifyService.DeleteNotifyGroup, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionDelete, p.GetProjectID()),
+				perm.Method(NotifyService.CreateNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionCreate, p.GetProjectID()),
+				perm.Method(NotifyService.QueryNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionList, p.GetProjectID()),
+				perm.Method(NotifyService.GetNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionGet, p.GetProjectID()),
+				perm.Method(NotifyService.UpdateNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionUpdate, p.GetProjectID()),
+				perm.Method(NotifyService.GetNotifyGroupDetail, perm.ScopeProject, apistructs.NotifyResource, perm.ActionGet, p.GetProjectID()),
+				perm.Method(NotifyService.DeleteNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionDelete, p.GetProjectID()),
 			),
 			p.audit.Audit(
 				audit.Method(NotifyService.CreateNotifyGroup, audit.ProjectScope, string(apistructs.CreateServiceNotifyGroup),

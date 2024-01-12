@@ -22,6 +22,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"google.golang.org/grpc/metadata"
+
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -33,6 +36,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type notifyGroupService struct {
@@ -89,7 +93,8 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if utf8.RuneCountInString(request.Name) > 50 {
 		return nil, errors.NewInvalidParameterError(request.Name, "name is too long")
 	}
-	err = n.checkNotifyPermission(userIdStr, request.ScopeType, request.ScopeId, apistructs.CreateAction)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	err = n.checkNotifyPermission(ctx, userIdStr, request.ScopeType, request.ScopeId, apistructs.CreateAction)
 	if err != nil {
 		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.CreateAction, err.Error())
 	}
@@ -137,7 +142,8 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 	if request.PageSize < 1 {
 		request.PageSize = 10
 	}
-	err = n.checkNotifyPermission(userIdStr, request.ScopeType, request.ScopeId, apistructs.ListAction)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	err = n.checkNotifyPermission(ctx, userIdStr, request.ScopeType, request.ScopeId, apistructs.ListAction)
 	if err != nil {
 		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.ListAction, err.Error())
 	}
@@ -193,7 +199,8 @@ func (n *notifyGroupService) GetNotifyGroup(ctx context.Context, request *pb.Get
 		return nil, errors.NewInternalServerError(err)
 	}
 	userIdStr := apis.GetUserID(ctx)
-	err = n.checkNotifyPermission(userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.GetAction)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	err = n.checkNotifyPermission(ctx, userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.GetAction)
 	if err != nil {
 		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.GetAction, err.Error())
 	}
@@ -243,7 +250,8 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 	userIdStr := apis.GetUserID(ctx)
-	err = n.checkNotifyPermission(userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.UpdateAction)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	err = n.checkNotifyPermission(ctx, userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.UpdateAction)
 	if err != nil {
 		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.UpdateAction, err.Error())
 	}
@@ -293,7 +301,8 @@ func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *
 		return nil, errors.NewInternalServerError(err)
 	}
 	userIdStr := apis.GetUserID(ctx)
-	err = n.checkNotifyPermission(userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.GetAction)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	err = n.checkNotifyPermission(ctx, userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.GetAction)
 	if err != nil {
 		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.GetAction, err.Error())
 	}
@@ -330,7 +339,7 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 	userIdStr := apis.GetUserID(ctx)
-	err = n.checkNotifyPermission(userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.DeleteAction)
+	err = n.checkNotifyPermission(ctx, userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.DeleteAction)
 	if err != nil {
 		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.DeleteAction, err.Error())
 	}
@@ -355,11 +364,12 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	}, nil
 }
 
-func (n *notifyGroupService) checkNotifyPermission(userId, scopeType, scopeId, action string) error {
-	var scope apistructs.ScopeType
-	if scopeType == apistructs.MSPScope {
-		scope = apistructs.ProjectScope
+func (n *notifyGroupService) checkNotifyPermission(ctx context.Context, userId, scopeType, scopeId, action string) error {
+	identityInfo, err := n.getIdentityInfo(ctx)
+	if err == nil && identityInfo.IsInternalClient() {
+		return nil
 	}
+	var scope apistructs.ScopeType
 	if userId == "" {
 		return fmt.Errorf("failed to get permission(User-ID is empty)")
 	}
@@ -390,4 +400,21 @@ func (n *notifyGroupService) checkNotifyPermission(userId, scopeType, scopeId, a
 		return fmt.Errorf("no permission")
 	}
 	return nil
+}
+
+func (n *notifyGroupService) getIdentityInfo(ctx context.Context) (apistructs.IdentityInfo, error) {
+	userID := apis.GetUserID(ctx)
+	internalClient := apis.GetInternalClient(ctx)
+
+	// not login
+	if userID == "" && internalClient == "" {
+		return apistructs.IdentityInfo{}, fmt.Errorf("invalid identity info")
+	}
+
+	identity := apistructs.IdentityInfo{
+		UserID:         userID,
+		InternalClient: internalClient,
+	}
+
+	return identity, nil
 }
