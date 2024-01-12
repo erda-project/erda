@@ -267,9 +267,9 @@ services:
       COLLECTOR_ENABLE: "true"
     resources:
       cpu: ${request_cpu:0.5}
-      mem: ${request_mem:512}
+      mem: ${request_mem:1024}
       max_cpu: 1
-      max_mem: 1024
+      max_mem: 2048
       network:
         mode: "container"
     deployments:
