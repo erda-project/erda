@@ -356,13 +356,13 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 }
 
 func (n *notifyGroupService) checkNotifyPermission(userId, scopeType, scopeId, action string) error {
+	var scope apistructs.ScopeType
 	if scopeType == apistructs.MSPScope {
-		return nil
+		scope = apistructs.ProjectScope
 	}
 	if userId == "" {
 		return fmt.Errorf("failed to get permission(User-ID is empty)")
 	}
-	var scope apistructs.ScopeType
 	if scopeType == "org" {
 		scope = apistructs.OrgScope
 	}
