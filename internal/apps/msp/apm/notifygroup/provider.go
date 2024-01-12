@@ -60,7 +60,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.mspTenantDB = &db.MSPTenantDB{DB: p.DB}
 	p.monitorDB = &db2.MonitorDb{DB: p.DB}
 	if p.Register != nil {
-		type NotifyService = notifygroup.NotifyGroupServiceServer
+		type NotifyService = pb.NotifyGroupServiceServer
 
 		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options(),
 			p.Perm.Check(
