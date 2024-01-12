@@ -65,7 +65,10 @@ func getResourceAttributes() []attribute.KeyValue {
 	addEnvIfExist(semconv.K8SNamespaceNameKey, "POD_NAMESPACE", "DICE_NAMESPACE")
 	addEnvIfExist(semconv.K8SPodNameKey, "POD_NAME")
 	addEnvIfExist(semconv.K8SPodUIDKey, "POD_UUID")
+	addEnvIfExist("service_instance_id", "POD_UUID")
 	addEnvIfExist(attribute.Key("k8s.pod.ip"), "POD_IP")
+	addEnvIfExist("service_instance_ip", "POD_IP")
+	addEnvIfExist("service_ip", "POD_IP")
 	addEnvIfExist(semconv.K8SClusterNameKey, "DICE_CLUSTER_NAME")
 	addEnvIfExist(attribute.Key("host.ip"), "HOST_IP")
 
