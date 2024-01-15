@@ -127,15 +127,15 @@ func (s *domainService) ChangeInnerIngress(ctx context.Context, req *pb.ChangeIn
 func (s *domainService) getUintOrgId(ctx context.Context) (uint64, error) {
 	oId, err := apis.GetIntOrgID(ctx)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 	return uint64(oId), nil
 }
 
 func (s *domainService) preCheckPermission(userID string, services *bundle.GetRuntimeServicesResponseData) error {
 	var (
-		appId      = services.Extra.ApplicationId
-		resourceId = fmt.Sprintf("runtime-%s", s.getPermissionResourceSuffix(services))
+		appId        = services.Extra.ApplicationId
+		resourceType = s.getPermissionResource(services)
 	)
 
 	if userID == "" {
@@ -146,15 +146,15 @@ func (s *domainService) preCheckPermission(userID string, services *bundle.GetRu
 		Scope:    apistructs.AppScope,
 		ScopeID:  appId,
 		Action:   apistructs.GetAction,
-		Resource: resourceId,
+		Resource: resourceType,
 	}); err != nil || !access.Access {
 		return apierrors.ErrGetProject.AccessDenied()
 	}
 	return nil
 }
 
-func (s *domainService) getPermissionResourceSuffix(services *bundle.GetRuntimeServicesResponseData) string {
-	return strings.ToLower(services.Extra.Workspace)
+func (s *domainService) getPermissionResource(services *bundle.GetRuntimeServicesResponseData) string {
+	return "runtime-" + strings.ToLower(services.Extra.Workspace)
 }
 
 func (s *domainService) GetRuntimeDomains(ctx context.Context, req *pb.GetRuntimeDomainsRequest) (resp *pb.GetRuntimeDomainsResponse, err error) {
