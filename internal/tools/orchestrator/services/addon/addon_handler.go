@@ -103,9 +103,7 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	version := strings.Trim(v, " ")
 	emptyVersion := !ok || version == ""
 
-	if emptyVersion ||
-		params.AddonName == AddonConfigCenter ||
-		params.AddonName == AddonRegisterCenter {
+	if emptyVersion {
 		// If version is null, get the default version of addon
 		addon, hasVersion = addons.GetDefault()
 	} else {
