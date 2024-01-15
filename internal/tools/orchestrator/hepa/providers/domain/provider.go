@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/hepa/domain/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/domain/impl"
 	epI "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
@@ -41,7 +42,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.domainService = &domainService{p}
+	p.domainService = &domainService{p, bundle.New(bundle.WithErdaServer())}
 	err := impl.NewGatewayDomainServiceImpl()
 	if err != nil {
 		return err

@@ -16,12 +16,17 @@ package domain
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/domain/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
@@ -31,7 +36,8 @@ import (
 )
 
 type domainService struct {
-	p *provider
+	p   *provider
+	bdl *bundle.Bundle
 }
 
 func (s *domainService) GetOrgDomains(ctx context.Context, req *pb.GetOrgDomainsRequest) (resp *pb.GetOrgDomainsResponse, err error) {
@@ -117,9 +123,67 @@ func (s *domainService) ChangeInnerIngress(ctx context.Context, req *pb.ChangeIn
 	}
 	return
 }
+
+func (s *domainService) getUintOrgId(ctx context.Context) (uint64, error) {
+	oId, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return -1, err
+	}
+	return uint64(oId), nil
+}
+
+func (s *domainService) preCheckPermission(userID string, services *bundle.GetRuntimeServicesResponseData) error {
+	var (
+		appId      = services.Extra.ApplicationId
+		resourceId = fmt.Sprintf("runtime-%s", s.getPermissionResourceSuffix(services))
+	)
+
+	if userID == "" {
+		return fmt.Errorf("not login")
+	}
+	if access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.AppScope,
+		ScopeID:  appId,
+		Action:   apistructs.GetAction,
+		Resource: resourceId,
+	}); err != nil || !access.Access {
+		return apierrors.ErrGetProject.AccessDenied()
+	}
+	return nil
+}
+
+func (s *domainService) getPermissionResourceSuffix(services *bundle.GetRuntimeServicesResponseData) string {
+	return strings.ToLower(services.Extra.Workspace)
+}
+
 func (s *domainService) GetRuntimeDomains(ctx context.Context, req *pb.GetRuntimeDomainsRequest) (resp *pb.GetRuntimeDomainsResponse, err error) {
 	service := domain.Service.Clone(ctx)
-	result, err := service.GetRuntimeDomains(req.RuntimeId)
+	var (
+		orgId     uint64
+		runtimeId uint64
+		userID    = apis.GetUserID(ctx)
+	)
+	orgId, err = s.getUintOrgId(ctx)
+	if err != nil {
+		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
+	}
+
+	runtimeId, err = strconv.ParseUint(req.RuntimeId, 10, 64)
+	if err != nil {
+		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
+	}
+
+	runtimeServices, err := s.bdl.GetRuntimeServices(runtimeId, orgId, userID)
+	if err != nil {
+		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
+	}
+
+	if err = s.preCheckPermission(userID, runtimeServices); err != nil {
+		return
+	}
+
+	result, err := service.GetRuntimeDomains(req.RuntimeId, int64(orgId))
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
