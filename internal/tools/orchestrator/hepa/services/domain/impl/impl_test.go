@@ -195,8 +195,6 @@ func TestGatewayDomainServiceImpl(t *testing.T) {
 		}, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(*impl), "doesClusterSupportHttps", func(string) bool { return false })
-
 	monkey.PatchInstanceMethod(reflect.TypeOf(impl.domainDb), "SelectByOptions", func(svc *service.GatewayDomainServiceImpl, options []orm.SelectOption) ([]orm.GatewayDomain, error) {
 		return nil, nil
 	})
