@@ -124,14 +124,6 @@ func (s *domainService) ChangeInnerIngress(ctx context.Context, req *pb.ChangeIn
 	return
 }
 
-func (s *domainService) getUintOrgId(ctx context.Context) (uint64, error) {
-	oId, err := apis.GetIntOrgID(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return uint64(oId), nil
-}
-
 func (s *domainService) preCheckPermission(userID string, services *bundle.GetRuntimeServicesResponseData) error {
 	var (
 		appId        = services.Extra.ApplicationId
@@ -160,11 +152,11 @@ func (s *domainService) getPermissionResource(services *bundle.GetRuntimeService
 func (s *domainService) GetRuntimeDomains(ctx context.Context, req *pb.GetRuntimeDomainsRequest) (resp *pb.GetRuntimeDomainsResponse, err error) {
 	service := domain.Service.Clone(ctx)
 	var (
-		orgId     uint64
+		orgId     int64
 		runtimeId uint64
 		userID    = apis.GetUserID(ctx)
 	)
-	orgId, err = s.getUintOrgId(ctx)
+	orgId, err = apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 	}
@@ -174,7 +166,7 @@ func (s *domainService) GetRuntimeDomains(ctx context.Context, req *pb.GetRuntim
 		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 	}
 
-	runtimeServices, err := s.bdl.GetRuntimeServices(runtimeId, orgId, userID)
+	runtimeServices, err := s.bdl.GetRuntimeServices(runtimeId, uint64(orgId), userID)
 	if err != nil {
 		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 	}
@@ -183,7 +175,7 @@ func (s *domainService) GetRuntimeDomains(ctx context.Context, req *pb.GetRuntim
 		return
 	}
 
-	result, err := service.GetRuntimeDomains(req.RuntimeId, int64(orgId))
+	result, err := service.GetRuntimeDomains(req.RuntimeId, orgId)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
