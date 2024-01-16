@@ -16,7 +16,6 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -135,7 +134,7 @@ func (s *domainService) preCheckPermission(userID string, services *bundle.GetRu
 	)
 
 	if userID == "" {
-		return fmt.Errorf("not login")
+		return apierrors.ErrGetUser
 	}
 	if access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID,
