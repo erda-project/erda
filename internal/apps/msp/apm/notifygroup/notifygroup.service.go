@@ -21,16 +21,14 @@ import (
 	"strconv"
 
 	"github.com/jinzhu/gorm"
-	"google.golang.org/grpc/metadata"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
 	notifygroup "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/internal/pkg/audit"
-	"github.com/erda-project/erda/internal/tools/monitor/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type notifyGroupService struct {
@@ -84,8 +82,7 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	c := utils.NewContextWithHeader(ctx)
-	c = transport.WithHeader(c, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	c := apis.WithInternalClientContext(ctx, discover.MSP())
 	resp, err := n.p.NotifyGroup.CreateNotifyGroup(c, createReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -108,8 +105,7 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 }
 
 func (n *notifyGroupService) auditContextInfo(groupId int64, ctx context.Context) (string, string, string, uint64, error) {
-	c := utils.NewContextWithHeader(ctx)
-	c = transport.WithHeader(c, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	c := apis.WithInternalClientContext(ctx, discover.MSP())
 	notifyGroup, err := n.p.NotifyGroup.GetNotifyGroup(c, &notifygroup.GetNotifyGroupRequest{
 		GroupID: groupId,
 	})
@@ -161,8 +157,7 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 		ClusterName: request.ClusterName,
 		Name:        request.Name,
 	}
-	c := utils.NewContextWithHeader(ctx)
-	c = transport.WithHeader(c, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	c := apis.WithInternalClientContext(ctx, discover.MSP())
 	resp, err := n.p.NotifyGroup.QueryNotifyGroup(c, queryReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -186,8 +181,7 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 }
 
 func (n *notifyGroupService) GetNotifyGroup(ctx context.Context, request *pb.GetNotifyGroupRequest) (*pb.GetNotifyGroupResponse, error) {
-	c := utils.NewContextWithHeader(ctx)
-	c = transport.WithHeader(c, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	c := apis.WithInternalClientContext(ctx, discover.MSP())
 	resp, err := n.p.NotifyGroup.GetNotifyGroup(c, &notifygroup.GetNotifyGroupRequest{
 		GroupID: request.GroupID,
 	})
@@ -219,8 +213,7 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	c := utils.NewContextWithHeader(ctx)
-	c = transport.WithHeader(c, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	c := apis.WithInternalClientContext(ctx, discover.MSP())
 	resp, err := n.p.NotifyGroup.UpdateNotifyGroup(c, updateReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -240,8 +233,7 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 }
 
 func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *pb.GetNotifyGroupDetailRequest) (*pb.GetNotifyGroupDetailResponse, error) {
-	c := utils.NewContextWithHeader(ctx)
-	c = transport.WithHeader(c, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	c := apis.WithInternalClientContext(ctx, discover.MSP())
 	resp, err := n.p.NotifyGroup.GetNotifyGroupDetail(c, &notifygroup.GetNotifyGroupDetailRequest{
 		GroupID: request.GroupID,
 	})
@@ -267,8 +259,7 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	c := utils.NewContextWithHeader(ctx)
-	c = transport.WithHeader(c, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	c := apis.WithInternalClientContext(ctx, discover.MSP())
 	resp, err := n.p.NotifyGroup.DeleteNotifyGroup(c, &notifygroup.DeleteNotifyGroupRequest{
 		GroupID: request.GroupID,
 	})
