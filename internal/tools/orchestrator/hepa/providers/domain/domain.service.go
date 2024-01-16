@@ -125,6 +125,10 @@ func (s *domainService) ChangeInnerIngress(ctx context.Context, req *pb.ChangeIn
 }
 
 func (s *domainService) preCheckPermission(userID string, services *bundle.GetRuntimeServicesResponseData) error {
+	if services == nil || services.Extra == nil {
+		return errors.New("can't get runtime extra info")
+	}
+
 	var (
 		appId        = services.Extra.ApplicationId
 		resourceType = s.getPermissionResource(services)
