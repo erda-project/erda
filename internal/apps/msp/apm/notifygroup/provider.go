@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/internal/pkg/audit"
 	db2 "github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
 type config struct {
@@ -48,6 +49,7 @@ type provider struct {
 	audit              audit.Auditor
 	Tenant             tenantpb.TenantServiceServer         `autowired:"erda.msp.tenant.TenantService"`
 	NotifyGroup        notifygroup.NotifyGroupServiceServer `autowired:"erda.core.messenger.notifygroup.NotifyGroupService"`
+	Perm               perm.Interface                       `autowired:"permission"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -59,7 +61,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.monitorDB = &db2.MonitorDb{DB: p.DB}
 	if p.Register != nil {
 		type NotifyService = pb.NotifyGroupServiceServer
+
 		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options(),
+			p.Perm.Check(
+				perm.Method(NotifyService.CreateNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionCreate, p.GetProjectID()),
+				perm.Method(NotifyService.QueryNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionList, p.GetProjectID()),
+				perm.Method(NotifyService.GetNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionGet, p.GetProjectID()),
+				perm.Method(NotifyService.UpdateNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionUpdate, p.GetProjectID()),
+				perm.Method(NotifyService.GetNotifyGroupDetail, perm.ScopeProject, apistructs.NotifyResource, perm.ActionGet, p.GetProjectID()),
+				perm.Method(NotifyService.DeleteNotifyGroup, perm.ScopeProject, apistructs.NotifyResource, perm.ActionDelete, p.GetProjectID()),
+			),
 			p.audit.Audit(
 				audit.Method(NotifyService.CreateNotifyGroup, audit.ProjectScope, string(apistructs.CreateServiceNotifyGroup),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
@@ -83,6 +94,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		)
 	}
 	return nil
+}
+
+func (p *provider) GetProjectID() perm.ValueGetter {
+	scopeGetter := perm.FieldValue("ScopeId")
+	return func(ctx context.Context, req interface{}) (string, error) {
+		scope, _ := scopeGetter(ctx, req)
+		return p.notifyGroupService.GetProjectIdByScopeId(scope)
+	}
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
