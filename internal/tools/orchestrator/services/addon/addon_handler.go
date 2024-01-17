@@ -124,14 +124,13 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	}
 	// If there is no default value and no corresponding version, then a random version of addon is obtained for judgment.
 	if !hasVersion {
-		for _, val := range *addons {
-			addonSpec, err := a.getAddonSpec(addon)
-			if err != nil || addonSpec.Deprecated {
-				continue
-			}
-			addon = val
-			break
+		if emptyVersion {
+			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
+		} else {
+			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
 		}
+		logrus.Errorf(err.Error())
+		return nil, nil, err
 	}
 
 	addonSpec, err := a.getAddonSpec(addon)
@@ -149,20 +148,8 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 
 	if addonSpec.SubCategory == apistructs.BasicAddon {
 		// Ensure that basic components are not deployed in the production environment
-		if err = a.preCheck(params); err != nil {
+		if err = a.preCheck(params); err != nil && addonSpec.Category != apistructs.AddonCustomCategory {
 			err := errors.New(i18n.OrgSprintf(params.OrgID, AddonPlanIllegal, params.AddonName))
-			logrus.Errorf(err.Error())
-			return nil, nil, err
-		}
-
-		// If hasVersion is still false at the end of the loop, it means that the corresponding Addon version has not been found.
-		if !hasVersion {
-			var err error
-			if emptyVersion {
-				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
-			} else {
-				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
-			}
 			logrus.Errorf(err.Error())
 			return nil, nil, err
 		}
