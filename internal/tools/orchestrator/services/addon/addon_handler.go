@@ -67,7 +67,7 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 	return a.addonAttach(addonSpec, addonDice, params)
 }
 
-func (a *Addon) getAddonSpec(addon apistructs.ExtensionVersion) (apistructs.AddonExtension, error) {
+func (a *Addon) parseAddonSpec(addon apistructs.ExtensionVersion) (apistructs.AddonExtension, error) {
 	// spec.yml forced conversion to string type
 	addonSpecBytes, err := json.Marshal(addon.Spec)
 	if err != nil {
@@ -133,12 +133,10 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		return nil, nil, err
 	}
 
-	addonSpec, err := a.getAddonSpec(addon)
+	addonSpec, err := a.parseAddonSpec(addon)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	logrus.Infof("%s Deprecated =======> %v", params.AddonName, addonSpec.Deprecated)
 
 	if addonSpec.Deprecated {
 		err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDeprecated, params.AddonName, addon.Version))
