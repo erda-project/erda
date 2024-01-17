@@ -53,9 +53,7 @@ const (
 	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
 	AddonPlanIllegal               = "AddonPlanIllegal"
 	AddonPlanNotSupport            = "AddonPlanNotSupport"
-
-	AddonConfigCenter   = "config-center"
-	AddonRegisterCenter = "registercenter"
+	AddonDeprecated                = "AddonDeprecated"
 )
 
 // AttachAndCreate addon创建，runtime建立关系方法
@@ -67,6 +65,20 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 		return nil, err
 	}
 	return a.addonAttach(addonSpec, addonDice, params)
+}
+
+func (a *Addon) getAddonSpec(addon apistructs.ExtensionVersion) (apistructs.AddonExtension, error) {
+	// spec.yml forced conversion to string type
+	addonSpecBytes, err := json.Marshal(addon.Spec)
+	if err != nil {
+		return apistructs.AddonExtension{}, errors.Wrap(err, "failed to parse addon spec")
+	}
+	addonSpec := apistructs.AddonExtension{}
+	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
+	if specErr != nil {
+		return apistructs.AddonExtension{}, errors.Wrap(specErr, "failed to parse addon spec")
+	}
+	return addonSpec, nil
 }
 
 // GetAddonExtention 获取addon的spec，dice.yml信息
@@ -113,20 +125,26 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	// If there is no default value and no corresponding version, then a random version of addon is obtained for judgment.
 	if !hasVersion {
 		for _, val := range *addons {
+			addonSpec, err := a.getAddonSpec(addon)
+			if err != nil || addonSpec.Deprecated {
+				continue
+			}
 			addon = val
 			break
 		}
 	}
 
-	// spec.yml forced conversion to string type
-	addonSpecBytes, err := json.Marshal(addon.Spec)
+	addonSpec, err := a.getAddonSpec(addon)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse addon spec")
+		return nil, nil, err
 	}
-	addonSpec := apistructs.AddonExtension{}
-	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
-	if specErr != nil {
-		return nil, nil, errors.Wrap(specErr, "failed to parse addon spec")
+
+	logrus.Infof("%s Deprecated =======> %v", params.AddonName, addonSpec.Deprecated)
+
+	if addonSpec.Deprecated {
+		err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDeprecated, params.AddonName, addon.Version))
+		logrus.Errorf(err.Error())
+		return nil, nil, err
 	}
 
 	if addonSpec.SubCategory == apistructs.BasicAddon {
