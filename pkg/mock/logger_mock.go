@@ -19,6 +19,7 @@
 package mock
 
 import (
+	"io"
 	reflect "reflect"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
@@ -272,4 +273,16 @@ func (mr *MockLoggerMockRecorder) Warnf(template interface{}, args ...interface{
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{template}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warnf", reflect.TypeOf((*MockLogger)(nil).Warnf), varargs...)
+}
+
+// SetOutput mocks base method.
+func (m *MockLogger) SetOutput(output io.Writer)  {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetOutput", output)
+}
+
+// SetOutput indicates an expected call of SetOutput.
+func (mr *MockLoggerMockRecorder) SetOutput(output interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOutput", reflect.TypeOf((*MockLogger)(nil).SetOutput), output)
 }

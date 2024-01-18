@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric/query/metricq"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 func TestAdapt_newTicketAlertNotify(t *testing.T) {
@@ -179,7 +180,7 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	defer monkey.UnpatchAll()
-	logsss := NewMockLogger(ctrl)
+	logsss := mocklogger.NewMockLogger(ctrl)
 	logsss.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes().Do(fmt.Errorf("err"))
 
 	pdb := &gorm.DB{}

@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/event/pb"
 	"github.com/erda-project/erda/internal/tools/monitor/core/event"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 // -go:generate mockgen -destination=./mock_storage.go -package query -source=../storage/storage.go Storage
@@ -149,7 +150,7 @@ func Test_eventQueryService_GetEvents_WithNilTags_Should_Not_Throw(t *testing.T)
 
 func Test_eventQueryService_GetEvents_With_NilStorage_Should_Not_Return_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 	defer ctrl.Finish()
 	logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 	querySvc := &eventQueryService{

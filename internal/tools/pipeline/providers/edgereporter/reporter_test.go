@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/edgereporter/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 func Test_pipelineFilterIn(t *testing.T) {
@@ -91,7 +92,7 @@ func Test_pipelineFilterIn(t *testing.T) {
 func Test_provider_doTaskReporter(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 
 	logger.EXPECT().Infof("begin do task report, taskID: %d", uint64(1)).Return()
 
@@ -159,7 +160,7 @@ func Test_provider_doTaskReporter(t *testing.T) {
 func Test_provider_doPipelineReporter(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 
 	logger.EXPECT().Infof("begin do pipeline report, pipelineID: %d", uint64(1)).Return()
 

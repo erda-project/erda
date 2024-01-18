@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/instance/db/monitor"
 	"github.com/erda-project/erda/internal/apps/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 func Test_projectService_GetProjects(t *testing.T) {
@@ -451,7 +452,7 @@ func Test_projectService_GetProjectList(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 	logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 
 	for _, tt := range tests {
@@ -658,7 +659,7 @@ func Test_getProjectsStatistics(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 	//logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 
 	s := &projectService{

@@ -28,13 +28,14 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	db2 "github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/index/query/db"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 func TestReloadAllIndices_Should_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	//defer ctrl.Finish()
 
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 
 	logger.EXPECT().Infof(gomock.Any(), gomock.Any())
 	logger.EXPECT().Debug(gomock.Any())

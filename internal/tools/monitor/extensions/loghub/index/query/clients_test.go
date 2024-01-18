@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	db2 "github.com/erda-project/erda/internal/tools/monitor/extensions/loghub/index/query/db"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 func TestNewESClient(t *testing.T) {
@@ -55,7 +56,7 @@ func TestGetESClientsFromLogAnalyticsByCluster_Should_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := &provider{
-		L:     NewMockLogger(ctrl),
+		L:     mocklogger.NewMockLogger(ctrl),
 		C:     &config{},
 		mysql: &gorm.DB{},
 		db: &db2.DB{
@@ -112,7 +113,7 @@ func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := provider{
-		L:     NewMockLogger(ctrl),
+		L:     mocklogger.NewMockLogger(ctrl),
 		C:     &config{},
 		mysql: &gorm.DB{},
 		db: &db2.DB{

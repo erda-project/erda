@@ -22,6 +22,7 @@ import (
 	_ "google.golang.org/grpc"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 // //go:generate mockgen -destination=./adapter_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
@@ -29,7 +30,7 @@ import (
 func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 	//register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
@@ -59,7 +60,7 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 	//register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
