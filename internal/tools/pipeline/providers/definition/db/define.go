@@ -77,6 +77,14 @@ func (client *Client) DeletePipelineDefinition(id string, ops ...mysqlxorm.Sessi
 	return err
 }
 
+func (client *Client) BatchDeletePipelineDefinition(ids []string, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.Table(new(PipelineDefinition)).In("id", ids).Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
+	return err
+}
+
 func (client *Client) DeletePipelineDefinitionByRemote(remote string, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -132,6 +140,16 @@ func (client *Client) GetPipelineDefinitionBySourceID(sourceID string, ops ...my
 	}
 
 	return &pipelineDefinition, has, nil
+}
+
+func (client *Client) GetPipelineDefinitionListInSourceIDs(ids []string, ops ...mysqlxorm.SessionOption) ([]PipelineDefinition, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var definitions []PipelineDefinition
+	err := session.Table(PipelineDefinition{}.TableName()).In("pipeline_source_id", ids).Desc("created_at").Where("soft_deleted_at = 0").Find(&definitions)
+
+	return definitions, err
 }
 
 type PipelineDefinitionSource struct {

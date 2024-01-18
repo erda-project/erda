@@ -121,6 +121,15 @@ func (client *Client) GetPipelineCron(id interface{}, ops ...mysqlxorm.SessionOp
 	return cron, true, nil
 }
 
+func (client *Client) BatchGetPipelineCronByDefinitionID(definitionIDs []string, ops ...mysqlxorm.SessionOption) (cronList []PipelineCron, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	err = session.Table(&PipelineCron{}).In("pipeline_definition_id", definitionIDs).Desc("time_updated").Find(&cronList)
+
+	return cronList, err
+}
+
 func (client *Client) UpdatePipelineCron(id interface{}, cron *PipelineCron, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -186,6 +195,20 @@ func (client *Client) DeletePipelineCron(id interface{}, ops ...mysqlxorm.Sessio
 
 	if _, err := session.ID(id).Delete(&PipelineCron{}); err != nil {
 		return errors.Errorf("failed to delete pipeline cron, id: %d, err: %v", id, err)
+	}
+	return nil
+}
+
+func (client *Client) BatchDeletePipelineCron(ids []uint64, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	if len(ids) <= 0 {
+		return nil
+	}
+
+	if _, err := session.In("id", ids).Delete(&PipelineCron{}); err != nil {
+		return errors.Errorf("failed to delete pipeline cron, ids: %d, err: %v", ids, err)
 	}
 	return nil
 }

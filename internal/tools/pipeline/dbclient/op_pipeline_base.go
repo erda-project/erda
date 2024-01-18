@@ -16,6 +16,7 @@ package dbclient
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
@@ -23,6 +24,23 @@ import (
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
+
+type PipelineBaseFilter struct {
+	ID                   []uint64
+	PipelineSource       []apistructs.PipelineSource
+	PipelineYmName       []string
+	ClusterName          []string
+	Status               []apistructs.PipelineStatus
+	Type                 []apistructs.PipelineType
+	TriggerMode          []apistructs.PipelineTriggerMode
+	CronID               []uint64
+	IsSnippet            []uint64
+	StartTimeCreated     *time.Time
+	EndTimeCreated       *time.Time
+	StartTimeUpdated     *time.Time
+	EndTimeUpdated       *time.Time
+	PipelineDefinitionID []string
+}
 
 func (client *Client) ListPipelineBasesByIDs(pipelineIDs []uint64, ops ...SessionOption) (map[uint64]spec.PipelineBase, error) {
 	session := client.NewSession(ops...)
@@ -88,6 +106,72 @@ func (client *Client) GetPipelineBase(id uint64, ops ...SessionOption) (spec.Pip
 	return base, found, nil
 }
 
+func (client *Client) GetPipelineBaseByFilter(filter *PipelineBaseFilter, ops ...SessionOption) ([]spec.PipelineBase, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var baseList []spec.PipelineBase
+
+	if len(filter.ID) > 0 {
+		session.In(string(spec.FieldID), filter.ID)
+	}
+	if len(filter.PipelineSource) > 0 {
+		session.In(string(spec.FieldPipelineSource), filter.PipelineSource)
+	}
+
+	if len(filter.PipelineYmName) > 0 {
+		session.In(string(spec.FieldPipelineYmlName), filter.PipelineYmName)
+	}
+
+	if len(filter.ClusterName) > 0 {
+		session.In(string(spec.FieldClusterName), filter.ClusterName)
+	}
+
+	if len(filter.Status) > 0 {
+		session.In(string(spec.FieldStatus), filter.Status)
+	}
+
+	if len(filter.Type) > 0 {
+		session.In(string(spec.FieldType), filter.Type)
+	}
+
+	if len(filter.TriggerMode) > 0 {
+		session.In(string(spec.FieldTriggerMode), filter.TriggerMode)
+	}
+
+	if len(filter.CronID) > 0 {
+		session.In(string(spec.FieldCronID), filter.CronID)
+	}
+
+	if len(filter.IsSnippet) > 0 {
+		session.In(string(spec.FieldIsSnippet), filter.IsSnippet)
+	}
+
+	if filter.StartTimeCreated != nil {
+		session.Where(string(spec.FieldTimeCreated)+" >= ?", filter.StartTimeCreated)
+	}
+
+	if filter.EndTimeCreated != nil {
+		session.Where(string(spec.FieldTimeCreated)+" <= ?", filter.StartTimeCreated)
+	}
+
+	if filter.StartTimeUpdated != nil {
+		session.Where(string(spec.FieldTimeUpdated)+" >= ?", filter.StartTimeCreated)
+	}
+
+	if filter.EndTimeUpdated != nil {
+		session.Where(string(spec.FieldTimeUpdated)+" <= ?", filter.StartTimeCreated)
+	}
+
+	if len(filter.PipelineDefinitionID) > 0 {
+		session.In(string(spec.FieldPipelineDefinitionID), filter.PipelineDefinitionID)
+	}
+
+	err := session.Desc(string(spec.FieldTimeCreated)).Find(&baseList)
+
+	return baseList, err
+}
+
 func (client *Client) GetPipelineStatus(id uint64, ops ...SessionOption) (apistructs.PipelineStatus, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -108,5 +192,14 @@ func (client *Client) UpdatePipelineBaseStatus(id uint64, status apistructs.Pipe
 	defer session.Close()
 
 	_, err := session.ID(id).Cols("status").Update(&spec.PipelineBase{Status: status})
+	return err
+}
+
+func (client *Client) BatchUpdatePipelineBaseByDefinitionIDs(ids []string, updateMap map[spec.Field]interface{}, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.Table(&spec.PipelineBase{}).In(string(spec.FieldPipelineDefinitionID), ids).Update(updateMap)
+
 	return err
 }
