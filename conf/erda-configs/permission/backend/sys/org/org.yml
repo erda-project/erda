@@ -18,6 +18,10 @@
   scope: org
   resource: cluster
   action: LIST
+- role: Manager,Dev,Ops,Support,DataEngineer,Guest
+  scope: org
+  resource: cluster
+  action: GET
 - role: Manager,Ops
   scope: org
   resource: cluster
