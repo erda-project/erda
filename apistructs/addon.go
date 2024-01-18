@@ -1049,6 +1049,8 @@ type AddonExtension struct {
 	ShareScopes []string `json:"shareScope"`
 	// Similar 同类addon，如mysql对应rds
 	Similar []string `json:"similar"`
+	// Deprecated 用于标记该Addon是否被废弃
+	Deprecated bool `json:"deprecated,omitempty"`
 }
 
 // AddonPlanItem 规格信息详细描述
