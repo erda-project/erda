@@ -86,6 +86,7 @@ func IsArrayContained[T comparable](array []T, sub []T) (int, bool) {
 
 	return -1, true
 }
+
 func DifferenceSet[T comparable](arr1, arr2 []T) []T {
 	arr2Map := make(map[T]bool)
 	for _, v := range arr2 {
@@ -102,4 +103,46 @@ func DifferenceSet[T comparable](arr1, arr2 []T) []T {
 	}
 	arr1 = arr1[:j]
 	return arr1
+}
+
+// StructArrayToMap converts a struct array into a map after deduplication
+// and you should offer a fn to get the key,value and ifSkip the kvs from the struct.
+func StructArrayToMap[T any, Key comparable, Value comparable](arr []T, getKV func(T) (Key, Value, bool)) map[Key]Value {
+	arr2Map := make(map[Key]Value)
+
+	for _, item := range arr {
+		key, value, skip := getKV(item)
+		if skip {
+			continue
+		}
+		if _, ok := arr2Map[key]; ok {
+			continue
+		}
+		arr2Map[key] = value
+	}
+
+	return arr2Map
+}
+
+// ArrayToMap convert the deduplicated array into map
+func ArrayToMap[Key comparable](keys []Key) map[Key]struct{} {
+	arrToMap := make(map[Key]struct{})
+
+	for _, key := range keys {
+		if _, ok := arrToMap[key]; ok {
+			continue
+		}
+		arrToMap[key] = struct{}{}
+	}
+	return arrToMap
+}
+
+// GetFieldArrFromStruct
+// construct a elem array from the structs
+func GetFieldArrFromStruct[Struct any, Filed any](s []Struct, getField func(Struct) Filed) []Filed {
+	arr := make([]Filed, len(s))
+	for index, item := range s {
+		arr[index] = getField(item)
+	}
+	return arr
 }
