@@ -132,11 +132,13 @@ func (r *OneChangedFile) constructAIRequest(i18n i18n.Translator, lang i18n.Lang
 		FileName     string
 		FileContent  string
 		UserLang     string
+		Truncated    bool
 	}
 	tmplArgs.CodeLanguage = r.CodeLanguage
 	tmplArgs.FileName = r.FileName
 	tmplArgs.FileContent = r.FileContent
 	tmplArgs.UserLang = i18nutil.GetUserLang(lang)
+	tmplArgs.Truncated = r.Truncated
 
 	for i := range req.Messages {
 		t, _ := template.New("").Parse(req.Messages[i].Content)
