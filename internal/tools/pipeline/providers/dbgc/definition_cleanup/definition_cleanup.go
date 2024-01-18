@@ -481,7 +481,7 @@ func (p *provider) MergePipelineBase(definitionIds []string, latestExecDefinitio
 	}
 
 	err = p.dbClient.BatchUpdatePipelineBaseByDefinitionIDs(definitionIds, map[spec.Field]interface{}{
-		spec.PipelineDefinitionID: latestExecDefinition.ID,
+		spec.FieldPipelineDefinitionID: latestExecDefinition.ID,
 	}, ops...)
 
 	if err != nil {

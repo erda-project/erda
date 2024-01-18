@@ -113,61 +113,61 @@ func (client *Client) GetPipelineBaseByFilter(filter *PipelineBaseFilter, ops ..
 	var baseList []spec.PipelineBase
 
 	if len(filter.ID) > 0 {
-		session.In("id", filter.ID)
+		session.In(string(spec.FieldID), filter.ID)
 	}
 	if len(filter.PipelineSource) > 0 {
-		session.In("pipeline_source", filter.PipelineSource)
+		session.In(string(spec.FieldPipelineSource), filter.PipelineSource)
 	}
 
 	if len(filter.PipelineYmName) > 0 {
-		session.In("pipeline_yml_name", filter.PipelineYmName)
+		session.In(string(spec.FieldPipelineYmlName), filter.PipelineYmName)
 	}
 
 	if len(filter.ClusterName) > 0 {
-		session.In("cluster_name", filter.ClusterName)
+		session.In(string(spec.FieldClusterName), filter.ClusterName)
 	}
 
 	if len(filter.Status) > 0 {
-		session.In("status", filter.Status)
+		session.In(string(spec.FieldStatus), filter.Status)
 	}
 
 	if len(filter.Type) > 0 {
-		session.In("type", filter.Type)
+		session.In(string(spec.FieldType), filter.Type)
 	}
 
 	if len(filter.TriggerMode) > 0 {
-		session.In("trigger_mode", filter.TriggerMode)
+		session.In(string(spec.FieldTriggerMode), filter.TriggerMode)
 	}
 
 	if len(filter.CronID) > 0 {
-		session.In("cron_id", filter.CronID)
+		session.In(string(spec.FieldCronID), filter.CronID)
 	}
 
 	if len(filter.IsSnippet) > 0 {
-		session.In("is_snippet", filter.IsSnippet)
+		session.In(string(spec.FieldIsSnippet), filter.IsSnippet)
 	}
 
 	if filter.StartTimeCreated != nil {
-		session.Where("time_created >= ?", filter.StartTimeCreated)
+		session.Where(string(spec.FieldTimeCreated)+" >= ?", filter.StartTimeCreated)
 	}
 
 	if filter.EndTimeCreated != nil {
-		session.Where("time_created <= ?", filter.StartTimeCreated)
+		session.Where(string(spec.FieldTimeCreated)+" <= ?", filter.StartTimeCreated)
 	}
 
 	if filter.StartTimeUpdated != nil {
-		session.Where("time_updated >= ?", filter.StartTimeCreated)
+		session.Where(string(spec.FieldTimeUpdated)+" >= ?", filter.StartTimeCreated)
 	}
 
 	if filter.EndTimeUpdated != nil {
-		session.Where("time_updated <= ?", filter.StartTimeCreated)
+		session.Where(string(spec.FieldTimeUpdated)+" <= ?", filter.StartTimeCreated)
 	}
 
 	if len(filter.PipelineDefinitionID) > 0 {
-		session.In("pipeline_definition_id", filter.PipelineDefinitionID)
+		session.In(string(spec.FieldPipelineDefinitionID), filter.PipelineDefinitionID)
 	}
 
-	err := session.Desc("time_created").Find(&baseList)
+	err := session.Desc(string(spec.FieldTimeCreated)).Find(&baseList)
 
 	return baseList, err
 }
@@ -199,7 +199,7 @@ func (client *Client) BatchUpdatePipelineBaseByDefinitionIDs(ids []string, updat
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.Table(&spec.PipelineBase{}).In("pipeline_definition_id", ids).Update(updateMap)
+	_, err := session.Table(&spec.PipelineBase{}).In(string(spec.FieldPipelineDefinitionID), ids).Update(updateMap)
 
 	return err
 }
