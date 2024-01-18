@@ -17,6 +17,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -72,8 +73,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		type domainService = pb.DomainServiceServer
 		pb.RegisterDomainServiceImp(p.Register, p.domainService, apis.Options(), p.getCheckParam(), p.Perm.Check(
-			perm.Method(domainService.GetOrgDomains, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-			perm.Method(domainService.ChangeRuntimeDomains, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
+			perm.Method(domainService.GetOrgDomains, perm.ScopeOrg, "cluster", perm.ActionGet, perm.OrgIDValue()),
+			perm.Method(domainService.ChangeRuntimeDomains, perm.ScopeApp, p.resourceValue(), perm.ActionUpdate, p.appIdValue()),
 			perm.Method(domainService.GetRuntimeDomains, perm.ScopeApp, p.resourceValue(), perm.ActionGet, p.appIdValue()),
 			perm.Method(domainService.GetTenantDomains, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.NoPermMethod(domainService.ChangeInnerIngress),
@@ -85,13 +86,25 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) getCheckParam() transport.ServiceOption {
 	return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			runtimeService, err := p.getRuntimeService(ctx, req)
+			var runtimeID string
+			switch reflect.TypeOf(req) {
+			case reflect.TypeOf(&pb.GetRuntimeDomainsRequest{}):
+				runtimeID = req.(*pb.GetRuntimeDomainsRequest).RuntimeId
+			case reflect.TypeOf(&pb.ChangeRuntimeDomainsRequest{}):
+				runtimeID = req.(*pb.ChangeRuntimeDomainsRequest).RuntimeId
+			default:
+				return h(ctx, req)
+			}
+
+			runtimeService, err := p.getRuntimeService(ctx, runtimeID)
 			if err != nil {
 				return nil, err
 			}
+
 			if runtimeService == nil || runtimeService.Extra == nil {
 				return "", errors.New("can't get runtime extra info")
 			}
+			
 			ctx = context.WithValue(ctx, "appId", runtimeService.Extra.ApplicationId)
 			ctx = context.WithValue(ctx, "resource", fmt.Sprintf("runtime-%s", strings.ToLower(runtimeService.Extra.Workspace)))
 			return h(ctx, req)
@@ -111,17 +124,13 @@ func (p *provider) appIdValue() perm.ValueGetter {
 	}
 }
 
-func (p *provider) getRuntimeService(ctx context.Context, req interface{}) (*bundle.GetRuntimeServicesResponseData, error) {
+func (p *provider) getRuntimeService(ctx context.Context, runtimeID string) (*bundle.GetRuntimeServicesResponseData, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, err
 	}
 	userID := apis.GetUserID(ctx)
-	request, ok := req.(*pb.GetRuntimeDomainsRequest)
-	if !ok {
-		return nil, errors.New("req is not *pb.GetRuntimeDomainsRequest")
-	}
-	runtimeId, err := strconv.ParseUint(request.RuntimeId, 10, 64)
+	runtimeId, err := strconv.ParseUint(runtimeID, 10, 64)
 	if err != nil {
 		return nil, err
 	}

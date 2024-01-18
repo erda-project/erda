@@ -51,7 +51,7 @@ setup_single_module_env() {
     elif [ -d "build/dockerfiles/${APP_NAME}" ];then
         DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
     fi
-    DOCKER_IMAGE="${ARCH}/${APP_NAME}:${IMAGE_TAG}"
+    DOCKER_IMAGE="${APP_NAME}:${IMAGE_TAG}"
 }
 
 # setup envionment variables for build all
