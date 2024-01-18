@@ -575,8 +575,8 @@ github.com/erda-project/erda-sourcecov v0.1.0 h1:iLvoMsQ1xX81KNOW98BKr85Vs7sSazr
 github.com/erda-project/erda-sourcecov v0.1.0/go.mod h1:eOMWjU0sXF9sLFqh6MkPpzuo+FkdQW7UCQ0rj3h+sXw=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
-github.com/erda-project/pyroscope v0.0.0-20231213093728-4a370b8b7c27 h1:HsSBKYuGIpu2ndhaPvZUoVJer7qNFSGsqsCb7YTBv8Q=
-github.com/erda-project/pyroscope v0.0.0-20231213093728-4a370b8b7c27/go.mod h1:Biv8NEF9vQtYdUEVl1W8A0uRNccyfQLJvsJZHBGPJAo=
+github.com/erda-project/pyroscope v0.0.0-20240118052048-1ef79dfa24b3 h1:A2g0Yttkxq+tbzV+wcVykBFxzhu8ac/JgJ910G3tdeo=
+github.com/erda-project/pyroscope v0.0.0-20240118052048-1ef79dfa24b3/go.mod h1:Biv8NEF9vQtYdUEVl1W8A0uRNccyfQLJvsJZHBGPJAo=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23/go.mod h1:dbzn9NF1JWbGEHL6Q/1KG4KFROILiY/j6wmfF1Np3fk=
 github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23 h1:A2cod4X3yK1YIBbTIf7q1b8+/S6iLwyNVtQ/SOYflQo=
