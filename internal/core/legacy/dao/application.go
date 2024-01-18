@@ -131,7 +131,9 @@ func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, app
 		db = db.Order(fmt.Sprintf("%s", request.OrderBy))
 	}
 	if request.Query != "" {
-		db = db.Where("name LIKE ? OR display_name LIKE ?", strutil.Concat("%", request.Query, "%"), strutil.Concat("%", request.Query, "%"))
+		db = db.Where("name LIKE ? OR display_name LIKE ?", strutil.Concat("%", request.Query, "%"), strutil.Concat("%", request.Query, "%")).
+			Order(gorm.Expr("CHAR_LENGTH(display_name)")).
+			Order(gorm.Expr("INSTR(display_name,?)", request.Query))
 	}
 	if request.ProjectID != 0 {
 		db = db.Where("project_id = ?", request.ProjectID)
