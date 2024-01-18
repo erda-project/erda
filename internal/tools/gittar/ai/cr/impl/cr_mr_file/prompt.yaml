@@ -5,7 +5,7 @@ messages:
   - role: system
     content: |
       You are an expert Software Engineer.
-      Below is a file, please help me do a brief code review on it (don't print file name and file content in your review).
+      Below is a file (content truncated: {{.Truncated}}), please help me do a brief code review on it (don't print file name and file content in your review).
       Please summarize the code and identify potential problems (at most 5). Start with the most important findings.
 
       File `{{.FileName}}`:
