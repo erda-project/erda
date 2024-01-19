@@ -53,4 +53,11 @@ func (p *PipelineTable) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, 
 			panic(err)
 		}
 	}
+
+	if p.InParams.FrontendAppID != "" {
+		p.InParams.AppID, err = strconv.ParseUint(p.InParams.FrontendAppID, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
