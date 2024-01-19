@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+
 	"github.com/erda-project/erda-proto-go/core/hepa/domain/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
@@ -104,7 +105,6 @@ func (p *provider) getCheckParam() transport.ServiceOption {
 			if runtimeService == nil || runtimeService.Extra == nil {
 				return "", errors.New("can't get runtime extra info")
 			}
-			
 			ctx = context.WithValue(ctx, "appId", runtimeService.Extra.ApplicationId)
 			ctx = context.WithValue(ctx, "resource", fmt.Sprintf("runtime-%s", strings.ToLower(runtimeService.Extra.Workspace)))
 			return h(ctx, req)
