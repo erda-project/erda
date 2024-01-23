@@ -31,7 +31,7 @@ CREATE TABLE `ps_runtime_instances`
     PRIMARY KEY (`id`),
     KEY           `idx_service_id` (`service_id`),
     KEY           `idx_instance_id` (`instance_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='runtime对应instance信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='runtime对应instance信息';
 
 CREATE TABLE `ps_runtime_services`
 (
@@ -94,7 +94,7 @@ CREATE TABLE `ps_v2_domains`
     `use_https`     tinyint(1) DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `unique_domain_key` (`domain`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT DYNAMIC COMMENT='Dice 域名表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT DYNAMIC COMMENT='Dice 域名表';
 
 CREATE TABLE `ps_v2_pre_builds`
 (
@@ -142,7 +142,7 @@ CREATE TABLE `ps_v2_project_runtimes`
   `org_id` bigint(20) NOT NULL COMMENT '企业ID',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_unique_app_id_name` (`name`,`application_id`,`workspace`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='runtime信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='runtime信息';
 
 CREATE TABLE `tb_addon_instance_tenant`
 (

@@ -42,7 +42,7 @@ CREATE TABLE `erda_v2_runtime_vpa_rule`
     `applied`             varchar(1)   NOT NULL DEFAULT 'N' COMMENT '规则是否已使用',
     `soft_deleted_at`     bigint(20) NOT NULL DEFAULT 0 COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Runtime VPA Rule 信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Runtime VPA Rule 信息';
 
 CREATE TABLE `erda_v2_runtime_vpa_recommendation`
 (
@@ -74,4 +74,4 @@ CREATE TABLE `erda_v2_runtime_vpa_recommendation`
     `uncapped_memory_request`   decimal(10, 3) NOT NULL DEFAULT 0 COMMENT 'VPA 推荐无限制情况下 Memory 请求',
     `soft_deleted_at`     bigint(20) NOT NULL DEFAULT 0 COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Runtime VPA Container Recommendation 信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Runtime VPA Container Recommendation 信息';

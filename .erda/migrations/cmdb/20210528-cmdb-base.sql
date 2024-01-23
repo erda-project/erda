@@ -370,7 +370,7 @@ CREATE TABLE `dice_config_namespace_relation`
     PRIMARY KEY (`id`),
     UNIQUE KEY `namespace` (`namespace`),
     KEY                 `idx_default_namespace` (`default_namespace`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='配置项namespace关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='配置项namespace关联表';
 
 CREATE TABLE `dice_error_box`
 (
@@ -707,7 +707,7 @@ CREATE TABLE `dice_member`
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_unique_scope_type_id_user_id` (`scope_type`,`scope_id`,`user_id`),
     KEY                `idx_user_id_org_id` (`user_id`,`org_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='成员信息';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COMMENT='成员信息';
 
 
 INSERT INTO `dice_member` (`id`, `scope_type`, `scope_id`, `scope_name`, `parent_id`, `org_id`, `project_id`,
