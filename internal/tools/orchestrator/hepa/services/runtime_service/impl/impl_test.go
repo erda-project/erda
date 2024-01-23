@@ -34,7 +34,7 @@ func TestDemo(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter", func(*bundle.Bundle,
 		uint64, ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
 		return &apistructs.ProjectDTO{
-			Name: "fake-project",
+			Name: "Fake-project",
 		}, nil
 	})
 
