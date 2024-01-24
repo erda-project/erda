@@ -730,7 +730,6 @@ func (impl GatewayRuntimeServiceServiceImpl) GetServiceApiPrefix(req *gw.ApiPref
 
 func renderPlatformInfo(endpoints []diceyml.Endpoint, projectIdStr string) ([]diceyml.Endpoint, error) {
 	var (
-		projectName              string
 		left, right, platformTag = "${", "}", "platform."
 		rePlaceholder            = regexp.MustCompile("\\$\\{(.+?)\\}")
 	)
@@ -756,8 +755,7 @@ func renderPlatformInfo(endpoints []diceyml.Endpoint, projectIdStr string) ([]di
 				if err != nil {
 					return nil, fmt.Errorf("faield to get project, id: %d, err: %v", projectId, err)
 				}
-				projectName = strings.ToLower(project.Name)
-				endpoints[i].Domain = strings.ReplaceAll(endpoints[i].Domain, r, projectName)
+				endpoints[i].Domain = strings.ReplaceAll(endpoints[i].Domain, r, strings.ToLower(project.Name))
 			default:
 				return nil, fmt.Errorf("placeholder %s doesn't support", placeholder)
 			}
