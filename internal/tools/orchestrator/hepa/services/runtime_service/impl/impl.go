@@ -730,7 +730,6 @@ func (impl GatewayRuntimeServiceServiceImpl) GetServiceApiPrefix(req *gw.ApiPref
 
 func renderPlatformInfo(endpoints []diceyml.Endpoint, projectIdStr string) ([]diceyml.Endpoint, error) {
 	var (
-		projectName              *string
 		left, right, platformTag = "${", "}", "platform."
 		rePlaceholder            = regexp.MustCompile("\\$\\{(.+?)\\}")
 	)
@@ -748,18 +747,15 @@ func renderPlatformInfo(endpoints []diceyml.Endpoint, projectIdStr string) ([]di
 
 			switch strings.Trim(placeholder, platformTag) {
 			case "DICE_PROJECT_NAME":
-				if projectName == nil {
-					projectId, err := strconv.ParseUint(projectIdStr, 10, 64)
-					if err != nil {
-						return nil, fmt.Errorf("failed to parse project id %s, err: %v", projectIdStr, err)
-					}
-					project, err := bundle.Bundle.GetProject(projectId)
-					if err != nil {
-						return nil, fmt.Errorf("faield to get project, id: %d, err: %v", projectId, err)
-					}
-					projectName = &project.Name
+				projectId, err := strconv.ParseUint(projectIdStr, 10, 64)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse project id %s, err: %v", projectIdStr, err)
 				}
-				endpoints[i].Domain = strings.ReplaceAll(endpoints[i].Domain, r, *projectName)
+				project, err := bundle.Bundle.GetProject(projectId)
+				if err != nil {
+					return nil, fmt.Errorf("faield to get project, id: %d, err: %v", projectId, err)
+				}
+				endpoints[i].Domain = strings.ReplaceAll(endpoints[i].Domain, r, strings.ToLower(project.Name))
 			default:
 				return nil, fmt.Errorf("placeholder %s doesn't support", placeholder)
 			}
