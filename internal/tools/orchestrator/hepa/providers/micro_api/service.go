@@ -71,8 +71,11 @@ func (s *apiService) GetApis(ctx context.Context, req *pb.GetApisRequest) (resp 
 func (s *apiService) CreateApi(ctx context.Context, req *pb.CreateApiRequest) (resp *pb.CreateApiResponse, err error) {
 	service := micro_api.Service.Clone(ctx)
 	reqDto := &dto.ApiReqDto{
-		ApiDto:          dto.MakeApiDto(req.ApiRequest),
-		ApiReqOptionDto: &dto.ApiReqOptionDto{},
+		ApiDto: dto.MakeApiDto(req.ApiRequest),
+		ApiReqOptionDto: &dto.ApiReqOptionDto{
+			Policies:   req.ApiRequest.Policies,
+			ConsumerId: req.ApiRequest.ConsumerId,
+		},
 	}
 	apiId, err := service.CreateApi(ctx, reqDto)
 	if err != nil {
