@@ -16,6 +16,8 @@ package global
 
 import (
 	"context"
+	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -23,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global/impl"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -62,6 +65,13 @@ func (s *globalService) GetTenantGroup(ctx context.Context, req *pb.GetTenantGro
 }
 func (s *globalService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (resp *pb.CreateTenantResponse, err error) {
 	service := global.Service.Clone(ctx)
+	gatewayEndpoint := req.GatewayEndpoint
+	envDomain := os.Getenv(impl.EnvUnityPackageDomainPrefix + strings.ToUpper(req.Env))
+	if envDomain != "" {
+		// gatewayEndpoint 在 Unity 流量入口自定义的情况下，直接用自定义域名，后续存储到对应的 GatewayKongInfo 表 tb_gateway_kong_info 中
+		gatewayEndpoint = envDomain
+	}
+
 	result, err := service.CreateTenant(&dto.TenantDto{
 		Id:              req.Id,
 		TenantGroup:     req.TenantGroup,
@@ -70,7 +80,7 @@ func (s *globalService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 		ProjectId:       req.ProjectId,
 		ProjectName:     req.ProjectName,
 		AdminAddr:       req.AdminAddr,
-		GatewayEndpoint: req.GatewayEndpoint,
+		GatewayEndpoint: gatewayEndpoint,
 		InnerAddr:       req.InnerAddr,
 		ServiceName:     req.ServiceName,
 		InstanceId:      req.InstanceId,

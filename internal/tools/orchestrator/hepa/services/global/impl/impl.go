@@ -19,6 +19,7 @@ import (
 	"crypto/md5" // #nosec G501
 	"encoding/hex"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,6 +50,11 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global"
 	"github.com/erda-project/erda/pkg/http/httputil"
+)
+
+const (
+	// 定义 Unity 流量入口域名的环境变量的前缀, 支撑的环境变量为 DICE_UNITY_DOMAIN_PROD DICE_UNITY_DOMAIN_STAGING DICE_UNITY_DOMAIN_TEST  DICE_UNITY_DOMAIN_DEV
+	EnvUnityPackageDomainPrefix = "DICE_UNITY_DOMAIN_"
 )
 
 type GatewayGlobalServiceImpl struct {
@@ -318,13 +324,30 @@ func (impl *GatewayGlobalServiceImpl) GenerateEndpoint(info gw.DiceInfo, session
 	if err != nil {
 		return "", "", err
 	}
-	endpoint := kongInfo.Endpoint
-	inner := kong.InnerHost
-	if !strings.EqualFold(info.Env, ENV_TYPE_PROD) {
-		endpoint = strings.ToLower(info.Env + config.ServerConf.SubDomainSplit + endpoint)
-		inner = strings.ToLower(info.Env + "." + inner)
-	}
+	// kongInfo.Endpoint 取自 GatewayKongInfo 表 tb_gateway_kong_info
+	endpoint, inner := generateEndpoints(kongInfo.Endpoint, info.Env, config.ServerConf.SubDomainSplit)
 	return endpoint, inner, nil
+}
+
+func generateEndpoints(endpoint, env, subDomainSplit string) (string, string) {
+	newEndpoint := endpoint
+	newInner := kong.InnerHost
+	if !strings.EqualFold(env, ENV_TYPE_PROD) {
+		newInner = strings.ToLower(env + "." + newInner)
+	}
+
+	envDomain := os.Getenv(EnvUnityPackageDomainPrefix + strings.ToUpper(env))
+	// envDomain 不为空，表示 endpoint 已经是自定义 Unity 入口域名
+	if envDomain != "" {
+		newEndpoint = envDomain
+		return newEndpoint, newInner
+	}
+
+	if !strings.EqualFold(env, ENV_TYPE_PROD) {
+		newEndpoint = strings.ToLower(env + subDomainSplit + endpoint)
+	}
+
+	return newEndpoint, newInner
 }
 
 func (impl *GatewayGlobalServiceImpl) GetServiceAddr(env string) string {

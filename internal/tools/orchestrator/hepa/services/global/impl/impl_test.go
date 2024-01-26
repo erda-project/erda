@@ -16,9 +16,12 @@ package impl
 
 import (
 	"context"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/kong"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global"
@@ -77,6 +80,55 @@ func TestGatewayGlobalServiceImpl_Clone(t *testing.T) {
 			}
 			if got := impl.Clone(tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Clone() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_generateEndpoints(t *testing.T) {
+	type args struct {
+		endpoint       string
+		env            string
+		subDomainSplit string
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  string
+		want1 string
+	}{
+		{
+			name: "Test_01",
+			args: args{
+				endpoint:       "abc.test.com",
+				env:            "dev",
+				subDomainSplit: "-",
+			},
+			want:  "dev-abc.test.com",
+			want1: "dev." + kong.InnerHost,
+		},
+		{
+			name: "Test_02",
+			args: args{
+				endpoint:       "abc.test.com",
+				env:            "dev",
+				subDomainSplit: "-",
+			},
+			want:  "abc.test.com",
+			want1: "dev." + kong.InnerHost,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.name == "Test_02" {
+				os.Setenv(EnvUnityPackageDomainPrefix+strings.ToUpper(tt.args.env), tt.args.endpoint)
+			}
+			got, got1 := generateEndpoints(tt.args.endpoint, tt.args.env, tt.args.subDomainSplit)
+			if got != tt.want {
+				t.Errorf("generateEndpoints() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("generateEndpoints() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
