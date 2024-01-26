@@ -18,6 +18,7 @@ import (
 	"regexp"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -62,4 +63,22 @@ const (
 	ServiceAddon       = "ADDONS"
 	ServicePerNode     = "per_node"
 	ServiceJob         = "JOB"
+)
+
+type (
+	PatchStruct struct {
+		Spec Spec `json:"spec"`
+	}
+
+	Spec struct {
+		Template PodTemplateSpec `json:"template"`
+	}
+
+	PodTemplateSpec struct {
+		Spec PodSpec `json:"spec"`
+	}
+
+	PodSpec struct {
+		Containers []corev1.Container `json:"containers"`
+	}
 )

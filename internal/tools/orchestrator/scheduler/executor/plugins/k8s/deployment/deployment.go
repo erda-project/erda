@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
 
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 )
 
@@ -65,33 +66,15 @@ func WithClientSet(c kubernetes.Interface) Option {
 	}
 }
 
-type (
-	PatchStruct struct {
-		Spec Spec `json:"spec"`
-	}
-
-	Spec struct {
-		Template PodTemplateSpec `json:"template"`
-	}
-
-	PodTemplateSpec struct {
-		Spec PodSpec `json:"spec"`
-	}
-
-	PodSpec struct {
-		Containers []corev1.Container `json:"containers"`
-	}
-)
-
 // Patch  the k8s deployment object
 func (d *Deployment) Patch(namespace, deploymentName, containerName string, snippet corev1.Container) error {
 	// patch container with kubernetes snippet
 	snippet.Name = containerName
 
-	spec := PatchStruct{
-		Spec: Spec{
-			Template: PodTemplateSpec{
-				Spec: PodSpec{
+	spec := k8s.PatchStruct{
+		Spec: k8s.Spec{
+			Template: k8s.PodTemplateSpec{
+				Spec: k8s.PodSpec{
 					Containers: []corev1.Container{
 						snippet,
 					},
