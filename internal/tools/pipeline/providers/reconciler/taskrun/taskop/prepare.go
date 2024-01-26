@@ -49,6 +49,7 @@ import (
 	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type prepare taskrun.TaskRun
@@ -359,6 +360,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	edgePipelineEnvs := pre.EdgeRegister.GetEdgePipelineEnvs()
 	task.Extra.PublicEnvs[apistructs.EnvIsEdgePipeline] = strconv.FormatBool(pre.EdgeRegister.IsEdge())
 	task.Extra.PublicEnvs[apistructs.EnvEdgePipelineAddr] = edgePipelineEnvs.Get(apistructs.ClusterManagerDataKeyPipelineAddr)
+
+	// replace env expr
+	replaceByPublicEnvExpr(task.Extra.PrivateEnvs, task.Extra.PublicEnvs)
 
 	// 条件表达式存在
 	if jump := condition(task); jump {
@@ -769,4 +773,46 @@ func condition(task *spec.PipelineTask) bool {
 	}
 
 	return false
+}
+
+func replaceByPublicEnvExpr(privateEnv map[string]string, publicEnvs map[string]string) {
+	for k, _ := range privateEnv {
+		replaceElem(privateEnv, publicEnvs, k)
+	}
+}
+
+func replaceElem(privateEnvs map[string]string, publicEnvs map[string]string, elemKey string) string {
+	// if the env has prefix of ACTION_
+	elem, _ := privateEnvs[elemKey]
+
+	if !strings.HasPrefix(elemKey, actionagent.EnvActionParamPrefix) {
+		return elem
+	}
+
+	// check if is the env expr
+	// if true, replace with environment
+	replaced := strutil.ReplaceAllStringSubmatchFunc(expression.Re, elem, func(sub []string) string {
+		inner := sub[1]
+		inner = strings.Trim(inner, " ")
+
+		// ss[0] = env, ss[1] = variable
+		ss := strings.SplitN(inner, ".", 2)
+		if len(ss) == 1 {
+			return elem
+		}
+
+		if ss[0] != expression.ENV {
+			return elem
+		}
+
+		// parse it in public environment(private environment will replace in action-agent)
+		parsedEnv, ok := publicEnvs[ss[1]]
+		if !ok {
+			return elem
+		}
+
+		return parsedEnv
+	})
+	privateEnvs[elemKey] = replaced
+	return replaced
 }

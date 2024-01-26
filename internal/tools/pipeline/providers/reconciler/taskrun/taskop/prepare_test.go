@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/pipeline/actionagent"
+	"github.com/erda-project/erda/internal/tools/pipeline/pkg/env"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 	"github.com/erda-project/erda/pkg/metadata"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -202,4 +204,31 @@ func Test_contextVolumes(t *testing.T) {
 	}
 	fields := contextVolumes(taskContext)
 	assert.Equal(t, 2, len(fields))
+}
+
+func Test_ReplaceByPublicEnvExpr(t *testing.T) {
+	privateEnvs := map[string]string{
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "1"):              "${{ envs.App }}",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "234"):            "${{ envs.AccessToken }}",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "222"):            "this is ${{ envs.SecretToken }} !",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "DICE_WORKSPACE"): "${{ envs.Dev }}",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "cycle"):          "${{ envs.cycle }}",
+	}
+	publicEnvs := map[string]string{
+		"cycle":       "${{ envs.Action_CYCLE }}",
+		"Dev":         "${{ envs.dev }}",
+		"dev":         "dev",
+		"SecretToken": "123456",
+		"App":         "111",
+	}
+
+	want := map[string]string{
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "1"):              "111",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "234"):            "${{ envs.AccessToken }}",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "222"):            "this is 123456 !",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "DICE_WORKSPACE"): "${{ envs.dev }}",
+		env.GenEnvKeyWithPrefix(actionagent.EnvActionParamPrefix, "cycle"):          "${{ envs.Action_CYCLE }}",
+	}
+	replaceByPublicEnvExpr(privateEnvs, publicEnvs)
+	assert.Equal(t, want, privateEnvs)
 }
