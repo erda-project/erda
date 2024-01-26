@@ -33,8 +33,7 @@ import (
 )
 
 type Daemonset struct {
-	addr string
-	cs   kubernetes.Interface
+	cs kubernetes.Interface
 }
 
 type Option func(*Daemonset)
