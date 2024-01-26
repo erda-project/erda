@@ -16,12 +16,18 @@ package daemonset
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
@@ -31,6 +37,7 @@ import (
 type Daemonset struct {
 	addr   string
 	client *httpclient.HTTPClient
+	cs     kubernetes.Interface
 }
 
 type Option func(*Daemonset)
@@ -49,6 +56,13 @@ func New(options ...Option) *Daemonset {
 		op(ds)
 	}
 	return ds
+}
+
+// WithClientSet with kubernetes clientSet
+func WithClientSet(c kubernetes.Interface) Option {
+	return func(d *Daemonset) {
+		d.cs = c
+	}
 }
 
 func (d *Daemonset) Create(ds *appsv1.DaemonSet) error {
@@ -160,5 +174,52 @@ func (d *Daemonset) Delete(namespace, name string) error {
 		return fmt.Errorf("failed to delete daemonsets, %s/%s, statuscode: %v, body: %v",
 			namespace, name, resp.StatusCode(), b.String())
 	}
+	return nil
+}
+
+type (
+	PatchStruct struct {
+		Spec Spec `json:"spec"`
+	}
+
+	Spec struct {
+		Template PodTemplateSpec `json:"template"`
+	}
+
+	PodTemplateSpec struct {
+		Spec PodSpec `json:"spec"`
+	}
+
+	PodSpec struct {
+		Containers []corev1.Container `json:"containers"`
+	}
+)
+
+func (d *Daemonset) Patch(namespace string, daemonsetName string, containerName string, snippet corev1.Container) error {
+	// patch container with kubernetes snippet
+	snippet.Name = containerName
+
+	spec := PatchStruct{
+		Spec: Spec{
+			Template: PodTemplateSpec{
+				Spec: PodSpec{
+					Containers: []corev1.Container{
+						snippet,
+					},
+				},
+			},
+		},
+	}
+
+	pathData, err := json.Marshal(spec)
+	if err != nil {
+		return errors.Errorf("failed to marshal patch data, %v", err)
+	}
+
+	if _, err := d.cs.AppsV1().DaemonSets(namespace).Patch(context.Background(), daemonsetName,
+		types.StrategicMergePatchType, pathData, metav1.PatchOptions{}); err != nil {
+		return err
+	}
+
 	return nil
 }

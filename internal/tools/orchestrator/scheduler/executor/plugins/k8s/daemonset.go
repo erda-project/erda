@@ -38,8 +38,15 @@ func (k *Kubernetes) createDaemonSet(ctx context.Context, service *apistructs.Se
 	if err != nil {
 		return errors.Errorf("failed to generate daemonset struct, name: %s, (%v)", service.Name, err)
 	}
-
-	return k.ds.Create(daemonset)
+	err = k.ds.Create(daemonset)
+	if err != nil {
+		return errors.Errorf("failed to create daemonset, name: %s, (%v)", service.Name, err)
+	}
+	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
+		return nil
+	}
+	err = k.ds.Patch(daemonset.Namespace, daemonset.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
+	return err
 }
 
 func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daemonsets map[string]appsv1.DaemonSet) (apistructs.StatusDesc, error) {
