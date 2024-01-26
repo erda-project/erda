@@ -112,7 +112,7 @@ func (k *Kubernetes) getDaemonSet(namespace, name string) (*appsv1.DaemonSet, er
 }
 
 func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.DaemonSet, error) {
-	deployName := getDeployName(service)
+	daemonSetName := getDeployName(service)
 	enableServiceLinks := false
 	if _, ok := sg.Labels[EnableServiceLinks]; ok {
 		enableServiceLinks = true
@@ -123,7 +123,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deployName,
+			Name:      daemonSetName,
 			Namespace: service.Namespace,
 			Labels:    make(map[string]string),
 		},
@@ -133,7 +133,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:   deployName,
+					Name:   daemonSetName,
 					Labels: make(map[string]string),
 				},
 				Spec: corev1.PodSpec{
@@ -156,7 +156,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 
 	affinity := constraintbuilders.K8S(&sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
-		{PodLabels: map[string]string{"app": deployName}}}, k).Affinity
+		{PodLabels: map[string]string{"app": daemonSetName}}}, k).Affinity
 	daemonset.Spec.Template.Spec.Affinity = &affinity
 
 	imagePullSecrets, err := k.setImagePullSecrets(service.Namespace)
@@ -173,7 +173,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 
 	container := corev1.Container{
 		// TODO, container name e.g. redis-1528180634
-		Name:  deployName,
+		Name:  service.Name,
 		Image: service.Image,
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
@@ -307,7 +307,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 	k.AddSpotEmptyDir(&daemonset.Spec.Template.Spec, service.Resources.EmptyDirCapacity)
 
-	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", deployName, daemonset)
+	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", daemonSetName, daemonset)
 
 	return daemonset, nil
 }

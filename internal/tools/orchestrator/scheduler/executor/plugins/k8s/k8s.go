@@ -239,6 +239,13 @@ type Kubernetes struct {
 	istioEngine istioctl.IstioEngine
 }
 
+func getDeployName(service *apistructs.Service) string {
+	if service.ProjectServiceName != "" {
+		return service.ProjectServiceName
+	}
+	return service.Name
+}
+
 func (k *Kubernetes) SetCpuQuota(quota float64) {
 	k.cpuNumQuota = quota
 }
