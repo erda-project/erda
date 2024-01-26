@@ -412,6 +412,16 @@ func (k *Kubernetes) AddContainersEnv(containers []corev1.Container, service *ap
 		},
 	})
 
+	envs = append(envs, corev1.EnvVar{
+		Name: "NODE_NAME",
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "spec.nodeName",
+			},
+		},
+	})
+
 	// add SELF_URL、SELF_HOST、SELF_PORT
 	selfHost := strings.Join([]string{serviceName, service.Namespace, DefaultServiceDNSSuffix}, ".")
 	envs = append(envs, corev1.EnvVar{
@@ -1093,13 +1103,6 @@ func (k *Kubernetes) AddSpotEmptyDir(podSpec *corev1.PodSpec, emptySize int) {
 		Name:      "spot-emptydir",
 		MountPath: "/tmp",
 	})
-}
-
-func getDeployName(service *apistructs.Service) string {
-	if service.ProjectServiceName != "" {
-		return service.ProjectServiceName
-	}
-	return service.Name
 }
 
 func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment, sgID string) {
