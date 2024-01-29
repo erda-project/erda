@@ -56,8 +56,8 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 			Path(urlPath).
 			Header("Portal-SSE", "on").
 			Param("fieldSelector", "involvedObject.kind=Pod,"+
-				"involvedObject.Namespace!=default,"+
-				"involvedObject.Namespace!=kube-system").
+				"involvedObject.namespace!=default,"+
+				"involvedObject.namespace!=kube-system").
 			Do().
 			StreamBody()
 
@@ -97,7 +97,7 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 
 			paths := strings.Split(event.Object.Namespace, "--")
 			if len(paths) != 2 {
-				//logrus.Errorf("failed to parse k8s event Namespace: %s", event.Object.Namespace)
+				//logrus.Errorf("failed to parse k8s event namespace: %s", event.Object.Namespace)
 				continue
 			}
 
@@ -105,7 +105,7 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 			runtimeName := strutil.Concat(paths[0], "/", paths[1])
 			go k.InstanceEvent(event, runtimeName, notifier)
 
-			// For the case of multiple statefulsets in the middleware, multiple statefulsets share a Namespace, which is passed to the scheduler on the Namespace
+			// For the case of multiple statefulsets in the middleware, multiple statefulsets share a namespace, which is passed to the scheduler on the namespace
 			// The prefix group- is added, so in this case, the prefix group- needs to be removed to find the corresponding record in etcd
 			paths[0] = strings.TrimPrefix(paths[0], "group-")
 
@@ -116,7 +116,7 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 				continue
 			}
 			if _, err := k.Status(context.Background(), sg); err != nil {
-				logrus.Errorf("failed to get k8s servicegroup status in event, Namespace: %s, name: %s",
+				logrus.Errorf("failed to get k8s servicegroup status in event, namespace: %s, name: %s",
 					paths[0], paths[1])
 				continue
 			}
@@ -161,7 +161,7 @@ func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier eve
 
 	pod, err := k.pod.Get(event.Object.Namespace, event.Object.InvolvedObject.Name)
 	if err != nil {
-		logrus.Errorf("failed to get pod status, Namespace: %s, name: %s",
+		logrus.Errorf("failed to get pod status, namespace: %s, name: %s",
 			event.Object.Namespace, event.Object.InvolvedObject.Name)
 		return
 	}

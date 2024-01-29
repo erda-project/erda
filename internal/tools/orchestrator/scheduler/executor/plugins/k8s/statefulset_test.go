@@ -103,7 +103,7 @@ func TestStatefulset(t *testing.T) {
         "SERVICE_TYPE": "ADDONS"
     },
     "name": "myrocket",
-    "Namespace": "myaddon-rocketmq",
+    "namespace": "myaddon-rocketmq",
     "serviceDiscoveryKind": "VIP",
     "serviceDiscoveryMode": "GLOBAL",
     "services": [

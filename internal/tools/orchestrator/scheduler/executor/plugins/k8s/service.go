@@ -140,7 +140,7 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 	} else {
 		for k, v := range selectors {
 			if len(v) >= LabelValueMaxLength {
-				logrus.Warnf(" lable key=%s  value=%s  with too long value for service %s in Namespace %s, need len(value)< 63", k, v, service.Name, service.Namespace)
+				logrus.Warnf(" lable key=%s  value=%s  with too long value for service %s in namespace %s, need len(value)< 63", k, v, service.Name, service.Namespace)
 				continue
 			}
 			k8sService.Labels[k] = v
@@ -241,7 +241,7 @@ func getServiceName(service *apistructs.Service) string {
 func setServiceLabelSelector(k8sService *apiv1.Service, selectors map[string]string) {
 	for k, v := range selectors {
 		if len(v) >= LabelValueMaxLength {
-			logrus.Warnf(" lable selector key=%s  value=%s  with too long value for service %s in Namespace %s, need len(value)< 63", k, v, k8sService.Name, k8sService.Namespace)
+			logrus.Warnf(" lable selector key=%s  value=%s  with too long value for service %s in namespace %s, need len(value)< 63", k, v, k8sService.Name, k8sService.Namespace)
 			continue
 		}
 		if errs := validation.IsValidLabelValue(v); len(errs) == 0 {
@@ -302,7 +302,7 @@ func (k *Kubernetes) deleteProjectService(service *apistructs.Service) error {
 			}
 		}
 	}
-	logrus.Infof("delete the kubernetes service %s on Namespace %s successfully", service.ProjectServiceName, service.Namespace)
+	logrus.Infof("delete the kubernetes service %s on namespace %s successfully", service.ProjectServiceName, service.Namespace)
 	return nil
 }
 

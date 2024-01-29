@@ -77,7 +77,7 @@ func groupStatefulset(sg *apistructs.ServiceGroup) ([]*apistructs.ServiceGroup, 
 		serviceGroup.Dice.ID = k
 		serviceGroup.Dice.Type = sg.Dice.Type
 		serviceGroup.Dice.Services = v
-		// Record all service names under a group, e.g. redis has [redis-1, redis-2] under this GroupID
+		// Record all service names under a group, e.g. redis has [redis-1, redis-2] under this groupID
 		groupSrv := map[string]bool{}
 		for i := range v {
 			groupSrv[v[i].Name] = true
@@ -145,8 +145,8 @@ func groupStatefulset(sg *apistructs.ServiceGroup) ([]*apistructs.ServiceGroup, 
 	return groups, nil
 }
 
-// Initialize Annotations, the purpose of Annotations is to record the original service name corresponding to the number
-// Annotations not only need to record the number (NO, N1...) in a statefulset,
+// Initialize annotations, the purpose of annotations is to record the original service name corresponding to the number
+// annotations not only need to record the number (NO, N1...) in a statefulset,
 // Also record the group number of the group, because some environment variables will depend on cross-group
 // For example, 1 master 1 slave 3 sentinel redis runtime, 1 master 1 slave is a group (within a statefulset),
 // The three sentinels are a group, and sentinel has the dependency of the master and slave environment variables.
@@ -161,15 +161,15 @@ func initAnnotations(layers [][]*apistructs.Service, globalSeq int) map[string]s
 	for _, layer := range layers {
 		for j := range layer {
 			// Record the original service name corresponding to the number
-			// e.g. Annotations["G0_N1"]="redis-slave"
+			// e.g. annotations["G0_N1"]="redis-slave"
 			key := strutil.Concat("G", strconv.Itoa(globalSeq), "_N", strconv.Itoa(order))
 			annotations[key] = layer[j].Name
 
-			// e.g. Annotations["redis-slave"]="G0_N1"
+			// e.g. annotations["redis-slave"]="G0_N1"
 			annotations[layer[j].Name] = key
 
-			// e.g. Annotations["G0_ID"]="redis"
-			// Annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")] = layer[j].Labels[GroupID]
+			// e.g. annotations["G0_ID"]="redis"
+			// annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")] = layer[j].Labels[GroupID]
 			annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")], _ = getGroupID(layer[j])
 
 			// Record the PORT of each service
@@ -234,7 +234,7 @@ func parseSpecificEnv(val string, annotations map[string]string) (string, bool) 
 	}
 	replace := make(map[string]string)
 
-	logrus.Infof("in parsing specific env: %s, Annotations: %+v", val, annotations)
+	logrus.Infof("in parsing specific env: %s, annotations: %+v", val, annotations)
 
 	for _, str := range results {
 		if len(str) <= 3 {
@@ -251,8 +251,8 @@ func parseSpecificEnv(val string, annotations map[string]string) (string, bool) 
 			// The seq value "G0_N1" represents the 0th group (statefulset), the serial number in this group is 1
 			bigSeq, ok := annotations[name]
 			if !ok {
-				logrus.Errorf("failed to parse env as not found in Annotations,"+
-					" var: %s, name: %s, Annotations: %+v", key, name, annotations)
+				logrus.Errorf("failed to parse env as not found in annotations,"+
+					" var: %s, name: %s, annotations: %+v", key, name, annotations)
 				break
 			}
 			seqs := strings.Split(bigSeq, "_")
@@ -265,7 +265,7 @@ func parseSpecificEnv(val string, annotations map[string]string) (string, bool) 
 			// e.g. G0_ID, G1_ID, Group ID
 			id, ok := annotations[strutil.Concat(seqs[0], "_ID")]
 			if !ok {
-				logrus.Errorf("failed to get group id from Annotations, key: %s, groupseq: %s", key, seqs[0])
+				logrus.Errorf("failed to get group id from annotations, key: %s, groupseq: %s", key, seqs[0])
 			}
 
 			bracedKey := strutil.Concat("${", key, "}")
@@ -281,7 +281,7 @@ func parseSpecificEnv(val string, annotations map[string]string) (string, bool) 
 		} else if strings.Contains(key, "_PORT") {
 			port, ok := annotations[key]
 			if !ok {
-				logrus.Errorf("failed to parse env as not found in Annotations, key: %s, Annotations: %+v", key, annotations)
+				logrus.Errorf("failed to parse env as not found in annotations, key: %s, annotations: %+v", key, annotations)
 				break
 			}
 			bracedKey := strutil.Concat("${", key, "}")
@@ -308,7 +308,7 @@ func toServiceName(origin string) string {
 }
 
 // Create a statefulset service, each instance under statefulset has a corresponding dns domain name
-// Domain name rules for each instance：{podName}.{serviceName}.{Namespace}.svc.cluster.local
+// Domain name rules for each instance：{podName}.{serviceName}.{namespace}.svc.cluster.local
 // Not in use headless service
 func (k *Kubernetes) createStatefulService(sg *apistructs.ServiceGroup) error {
 	if len(sg.Services[0].Ports) == 0 {
@@ -344,7 +344,7 @@ func (k *Kubernetes) GetStatefulStatus(sg *apistructs.ServiceGroup) (apistructs.
 		statefulName = statefulName[:idx]
 	}
 
-	logrus.Infof("in getStatefulStatus, name: %s, Namespace: %s", statefulName, namespace)
+	logrus.Infof("in getStatefulStatus, name: %s, namespace: %s", statefulName, namespace)
 
 	// only one statefulset
 	if !strings.HasPrefix(namespace, "group-") {
@@ -371,7 +371,7 @@ func (k *Kubernetes) GetStatefulStatus(sg *apistructs.ServiceGroup) (apistructs.
 }
 
 func (k *Kubernetes) getOneStatus(namespace, name string) (apistructs.StatusDesc, error) {
-	logrus.Infof("in getOneStatus, name: %s, Namespace: %s", name, namespace)
+	logrus.Infof("in getOneStatus, name: %s, namespace: %s", name, namespace)
 	var status apistructs.StatusDesc
 	set, err := k.sts.Get(namespace, name)
 	if err != nil {
@@ -398,7 +398,7 @@ func (k *Kubernetes) getOneStatus(namespace, name string) (apistructs.StatusDesc
 
 	msgList, err := k.event.AnalyzePodEvents(namespace, name)
 	if err != nil {
-		logrus.Errorf("failed to analyze k8s events, Namespace: %s, name: %s, (%v)",
+		logrus.Errorf("failed to analyze k8s events, namespace: %s, name: %s, (%v)",
 			namespace, name, err)
 	}
 	if len(msgList) > 0 {
@@ -439,7 +439,7 @@ func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name stri
 		key := strutil.Concat("G", strconv.Itoa(groupNum), "_N", strconv.Itoa(i))
 		serviceName, ok := set.Annotations[key]
 		if !ok {
-			return nil, errors.Errorf("failed to get key from Annotations, podname: %s, key: %s, Annotations: %v",
+			return nil, errors.Errorf("failed to get key from annotations, podname: %s, key: %s, annotations: %v",
 				podName, key, set.Annotations)
 		}
 
@@ -452,7 +452,7 @@ func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name stri
 
 		msgList, err := k.event.AnalyzePodEvents(namespace, podName)
 		if err != nil {
-			logrus.Errorf("failed to analyze job events, Namespace: %s, name: %s, (%v)",
+			logrus.Errorf("failed to analyze job events, namespace: %s, name: %s, (%v)",
 				namespace, name, err)
 		}
 
@@ -493,13 +493,13 @@ func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name stri
 func (k *Kubernetes) inspectGroup(g *apistructs.ServiceGroup, namespace, name string) (*apistructs.ServiceGroup, error) {
 	mygroups, err := groupStatefulset(g)
 	if err != nil {
-		logrus.Errorf("failed to get groups sequence in inspectgroup, Namespace: %s, name: %s", g.Type, g.ID)
+		logrus.Errorf("failed to get groups sequence in inspectgroup, namespace: %s, name: %s", g.Type, g.ID)
 		return nil, err
 	}
 
 	var groupsInfo []*types.OneGroupInfo
 	for i, group := range mygroups {
-		// First find GroupNum
+		// First find groupNum
 		//for k, v := range
 		oneGroup, err := k.inspectOne(g, namespace, group.ID, i)
 		if err != nil {
@@ -510,7 +510,7 @@ func (k *Kubernetes) inspectGroup(g *apistructs.ServiceGroup, namespace, name st
 	logrus.Infof("debug: inspectGroup, groupsInfo: %+v, Extra: %+v", groupsInfo, g.Extra)
 
 	if len(groupsInfo) <= 1 {
-		return nil, errors.Errorf("failed to parse multi group, Namespace: %s, name: %s", namespace, name)
+		return nil, errors.Errorf("failed to parse multi group, namespace: %s, name: %s", namespace, name)
 	}
 	isReady := true
 	for i := range g.Services {

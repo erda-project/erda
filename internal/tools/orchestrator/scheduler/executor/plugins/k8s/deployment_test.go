@@ -748,7 +748,7 @@ func TestAddContainersEnv(t *testing.T) {
 				}
 
 				if env.Value != tt.want {
-					t.Errorf("AddContainersEnv() key = %v, Envs = %v, expected = %v", tt.args.key, env.Value, tt.want)
+					t.Errorf("AddContainersEnv() key = %v, envs = %v, expected = %v", tt.args.key, env.Value, tt.want)
 				}
 			}
 		})

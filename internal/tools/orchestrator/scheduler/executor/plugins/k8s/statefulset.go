@@ -215,7 +215,7 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 	for i := range set.Spec.Template.Spec.Containers {
 		setEnv(&set.Spec.Template.Spec.Containers[i], info.Envs, info.Sg, info.Namespace)
 	}
-	//setEnv(container, info.Envs, info.Sg, info.Namespace)
+	//setEnv(container, info.envs, info.sg, info.namespace)
 
 	if info.Namespace == "fake-test" {
 		return nil
@@ -432,7 +432,7 @@ func setEnv(container *apiv1.Container, allEnv map[string]string, sg *apistructs
 			Name:  "IS_K8S",
 			Value: "true",
 		})
-	// add Namespace label
+	// add namespace label
 	container.Env = append(container.Env,
 		apiv1.EnvVar{
 			Name:  "DICE_NAMESPACE",
@@ -536,7 +536,7 @@ func convertStatus(status apiv1.PodStatus) apistructs.StatusCode {
 func statefulsetName(sg *apistructs.ServiceGroup) string {
 	statefulName, ok := getGroupID(&sg.Services[0])
 	if !ok {
-		logrus.Errorf("failed to get GroupID from service labels, name: %s", sg.ID)
+		logrus.Errorf("failed to get groupID from service labels, name: %s", sg.ID)
 		return sg.ID
 	}
 	return statefulName
@@ -664,10 +664,10 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 		statefulSetName = sg.ID
 	}
 
-	logrus.Infof("scaleStatefulSet for name %s in Namespace: %s Sg.ID: %s Sg %#v", statefulSetName, ns, sg.ID, *sg)
+	logrus.Infof("scaleStatefulSet for name %s in namespace: %s sg.ID: %s sg %#v", statefulSetName, ns, sg.ID, *sg)
 	sts, err := k.sts.Get(ns, statefulSetName)
 	if err != nil {
-		getErr := fmt.Errorf("failed to get the statefulset %s in Namespace %s, err is: %s", statefulSetName, ns, err.Error())
+		getErr := fmt.Errorf("failed to get the statefulset %s in namespace %s, err is: %s", statefulSetName, ns, err.Error())
 		return getErr
 	}
 
@@ -716,7 +716,7 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 
 	err = k.sts.Put(sts)
 	if err != nil {
-		updateErr := fmt.Errorf("failed to update the statefulset %s in Namespace %s, err is: %s", sts.Name, sts.Namespace, err.Error())
+		updateErr := fmt.Errorf("failed to update the statefulset %s in namespace %s, err is: %s", sts.Name, sts.Namespace, err.Error())
 		return updateErr
 	}
 	return nil
@@ -734,10 +734,10 @@ func (k *Kubernetes) getStatefulSetAbstract(sg *apistructs.ServiceGroup) (*appsv
 		statefulSetName = sg.ID
 	}
 
-	logrus.Infof("scaleStatefulSet for name %s in Namespace: %s Sg.ID: %s Sg %#v", statefulSetName, ns, sg.ID, *sg)
+	logrus.Infof("scaleStatefulSet for name %s in namespace: %s sg.ID: %s sg %#v", statefulSetName, ns, sg.ID, *sg)
 	sts, err := k.sts.Get(ns, statefulSetName)
 	if err != nil {
-		getErr := fmt.Errorf("failed to get the statefulset %s in Namespace %s, err is: %s", statefulSetName, ns, err.Error())
+		getErr := fmt.Errorf("failed to get the statefulset %s in namespace %s, err is: %s", statefulSetName, ns, err.Error())
 		return nil, getErr
 	}
 	return sts, nil
