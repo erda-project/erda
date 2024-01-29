@@ -21,23 +21,24 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // MakeNamespace Generate a Namespace name
-// Each runtime corresponds to a k8s namespace on k8s,
+// Each runtime corresponds to a k8s Namespace on k8s,
 // format is ${runtimeNamespace}--${runtimeName}
 func MakeNamespace(sg *apistructs.ServiceGroup) string {
 	if IsGroupStateful(sg) {
-		// Create a new namespace for the servicegroup that needs to be split into multiple statefulsets, that is, add the group- prefix
-		if v, ok := sg.Labels[groupNum]; ok && v != "" && v != "1" {
+		// Create a new Namespace for the servicegroup that needs to be split into multiple statefulsets, that is, add the group- prefix
+		if v, ok := sg.Labels[types.GroupNum]; ok && v != "" && v != "1" {
 			return strutil.Concat("group-", sg.Type, "--", sg.ID)
 		}
 	}
 	return strutil.Concat(sg.Type, "--", sg.ID)
 }
 
-// CreateNamespace create namespace
+// CreateNamespace create Namespace
 func (k *Kubernetes) CreateNamespace(ns string, sg *apistructs.ServiceGroup) error {
 	notfound, err := k.NotfoundNamespace(ns)
 	if err != nil {
@@ -48,13 +49,13 @@ func (k *Kubernetes) CreateNamespace(ns string, sg *apistructs.ServiceGroup) err
 		registryInfos := k.composeRegistryInfos(sg)
 		err := k.UpdateImageSecret(ns, registryInfos)
 		if err != nil {
-			logrus.Errorf("failed to update secret %s on namespace %s, err: %v", conf.CustomRegCredSecret(), ns, err)
+			logrus.Errorf("failed to update secret %s on Namespace %s, err: %v", conf.CustomRegCredSecret(), ns, err)
 			return err
 		}
 		if sg.ProjectNamespace != "" {
 			return nil
 		}
-		return errors.Errorf("failed to create namespace, ns: %s, (namespace already exists)", ns)
+		return errors.Errorf("failed to create Namespace, ns: %s, (Namespace already exists)", ns)
 	}
 
 	labels := map[string]string{}
@@ -66,9 +67,9 @@ func (k *Kubernetes) CreateNamespace(ns string, sg *apistructs.ServiceGroup) err
 	if err = k.namespace.Create(ns, labels); err != nil {
 		return err
 	}
-	// Create imagePullSecret under this namespace
+	// Create imagePullSecret under this Namespace
 	if err = k.NewRuntimeImageSecret(ns, sg); err != nil {
-		logrus.Errorf("failed to create imagePullSecret, namespace: %s, (%v)", ns, err)
+		logrus.Errorf("failed to create imagePullSecret, Namespace: %s, (%v)", ns, err)
 	}
 	return nil
 }
@@ -92,7 +93,7 @@ func (k *Kubernetes) UpdateNamespace(ns string, sg *apistructs.ServiceGroup) err
 	return k.namespace.Update(ns, labels)
 }
 
-// NotfoundNamespace not found namespace
+// NotfoundNamespace not found Namespace
 func (k *Kubernetes) NotfoundNamespace(ns string) (bool, error) {
 	err := k.namespace.Exists(ns)
 	if err != nil {

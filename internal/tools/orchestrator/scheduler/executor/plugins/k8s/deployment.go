@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -50,7 +51,7 @@ const (
 	sidecarNamePrefix       = "sidecar-"
 	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
 
-	LabelKeyPrefix          = "annotations/"
+	LabelKeyPrefix          = "Annotations/"
 	ECIPodSidecarConfigPath = "/etc/sidecarconf"
 
 	// ECI Pod fluent-bit sidecar contianer configuration
@@ -96,7 +97,7 @@ func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, dep
 	// in version 1.10.3, the following two apis are equal
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6/status
-	deploymentName := getDeployName(service)
+	deploymentName := util.GetDeployName(service)
 
 	if deployment, ok := deployments[deploymentName]; ok {
 
@@ -199,7 +200,7 @@ func (k *Kubernetes) getDeploymentDeltaResource(ctx context.Context, deploy *app
 }
 
 func (k *Kubernetes) deleteDeployment(namespace, name string) error {
-	logrus.Debugf("delete deployment %s on namespace %s", name, namespace)
+	logrus.Debugf("delete deployment %s on Namespace %s", name, namespace)
 	return k.deploy.Delete(namespace, name)
 }
 
@@ -330,7 +331,7 @@ func (k *Kubernetes) AddContainersEnv(containers []corev1.Container, service *ap
 
 		if len(backendURLEnv.Name) > 0 {
 			envs = append(envs, backendURLEnv)
-			logrus.Debugf("got service BACKEND_URL, service: %s, namespace: %s, url: %s",
+			logrus.Debugf("got service BACKEND_URL, service: %s, Namespace: %s, url: %s",
 				serviceName, service.Namespace, backendURLEnv.Value)
 		}
 
@@ -359,7 +360,7 @@ func (k *Kubernetes) AddContainersEnv(containers []corev1.Container, service *ap
 		Value: clusterInfo["DICE_ROOT_DOMAIN"],
 	})
 
-	// add namespace label
+	// add Namespace label
 	envs = append(envs, corev1.EnvVar{
 		Name:  "DICE_NAMESPACE",
 		Value: ns,
@@ -513,7 +514,7 @@ func (k *Kubernetes) setDeploymentZeroReplica(deploy *appsv1.Deployment) {
 }
 
 func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *apistructs.ServiceGroup) (*appsv1.Deployment, error) {
-	deploymentName := getDeployName(service)
+	deploymentName := util.GetDeployName(service)
 	enableServiceLinks := false
 	if _, ok := serviceGroup.Labels[EnableServiceLinks]; ok {
 		enableServiceLinks = true
@@ -551,15 +552,15 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	deployment.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v == "false" &&
-		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
-			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
+		(strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
+			strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{Type: "Recreate"}
 	}
 
 	affinity := constraintbuilders.K8S(&serviceGroup.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{PodLabels: map[string]string{"app": service.Name}}}, k).Affinity
 
-	if v, ok := service.Env[DiceWorkSpace]; ok {
+	if v, ok := service.Env[types.DiceWorkSpace]; ok {
 		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
 			affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
 			k.composeDeploymentNodeAntiAffinityPreferred(v)...)
@@ -661,7 +662,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 
 	// TODO: Delete this logic
 	//Mobil temporary demand:
-	// Inject the secret under the "secret" namespace into the business container
+	// Inject the secret under the "secret" Namespace into the business container
 
 	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
 	if err != nil {
@@ -1020,7 +1021,7 @@ func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, pod
 		}
 
 		// stateless service with replicas > 1, only use sc support mounted by by multi-pods
-		if service.WorkLoad == ServicePerNode && !strings.Contains(sc, "-nfs-") && !strings.Contains(sc, "-nas-") {
+		if service.WorkLoad == types.ServicePerNode && !strings.Contains(sc, "-nfs-") && !strings.Contains(sc, "-nas-") {
 			// for daemonset
 			return errors.Errorf("failed to set volume for sevice %s: can not use storageclass %s create pvc for per_node service, please set volume type to 'NAS' or 'DICE-NAS'", service.Name, sc)
 		} else {
@@ -1136,10 +1137,10 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	}
 
 	scalingService := sg.Services[serviceIndex]
-	deploymentName := getDeployName(&scalingService)
+	deploymentName := util.GetDeployName(&scalingService)
 	deploy, err := k.getDeployment(ns, deploymentName)
 	if err != nil {
-		getErr := fmt.Errorf("failed to get the deployment %s in namespace %s, err is: %s", deploymentName, ns, err.Error())
+		getErr := fmt.Errorf("failed to get the deployment %s in Namespace %s, err is: %s", deploymentName, ns, err.Error())
 		return getErr
 	}
 
@@ -1214,7 +1215,7 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
+	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio
@@ -1300,7 +1301,7 @@ func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resour
 	return
 }
 
-// DereferenceEnvs dereferences envs if the placeholder ${env.PLACEHOLDER} in the env.
+// DereferenceEnvs dereferences Envs if the placeholder ${env.PLACEHOLDER} in the env.
 func DereferenceEnvs(podTempate *corev1.PodTemplateSpec) error {
 	var (
 		left, right = "${", "}"
@@ -1443,7 +1444,7 @@ func setPodLabelsFromService(hasHostPath bool, labels map[string]string, podLabe
 			continue
 		}
 
-		// labels begin with `annotations/` from service.Labels and service.DeploymentLabels used for
+		// labels begin with `Annotations/` from service.Labels and service.DeploymentLabels used for
 		// generating Pod Annotations, not for Labels
 		if strings.HasPrefix(key, LabelKeyPrefix) {
 			continue
@@ -1461,15 +1462,15 @@ func setPodLabelsFromService(hasHostPath bool, labels map[string]string, podLabe
 }
 
 // Set pod Annotations from service.Labels and service.DeploymentLabels
-// Now, these annotations used for AliCloud ECI Pod Annotations (https://www.alibabacloud.com/help/zh/doc-detail/144561.htm).
-// But, this can be used for setting any pod annotations as wished.
+// Now, these Annotations used for AliCloud ECI Pod Annotations (https://www.alibabacloud.com/help/zh/doc-detail/144561.htm).
+// But, this can be used for setting any pod Annotations as wished.
 func setPodAnnotationsFromLabels(service *apistructs.Service, podannotations map[string]string) {
 	if podannotations == nil {
 		return
 	}
 
 	for key, value := range service.Labels {
-		// labels begin with `annotations/` from service.Labels and service.DeploymentLabels used for
+		// labels begin with `Annotations/` from service.Labels and service.DeploymentLabels used for
 		// generating Pod Annotations, not for Labels
 		if strings.HasPrefix(key, LabelKeyPrefix) {
 			podannotations[strings.TrimPrefix(key, LabelKeyPrefix)] = value
@@ -1484,7 +1485,7 @@ func setPodAnnotationsFromLabels(service *apistructs.Service, podannotations map
 		}
 	}
 	for key, value := range service.DeploymentLabels {
-		// labels begin with `annotations/` from service.Labels and service.DeploymentLabels used for
+		// labels begin with `Annotations/` from service.Labels and service.DeploymentLabels used for
 		// generating Pod Annotations, not for Labels
 		if strings.HasPrefix(key, LabelKeyPrefix) {
 			podannotations[strings.TrimPrefix(key, LabelKeyPrefix)] = value
@@ -1690,10 +1691,10 @@ func (k *Kubernetes) getDeploymentAbstract(sg *apistructs.ServiceGroup, serviceI
 	}
 
 	scalingService := sg.Services[serviceIndex]
-	deploymentName := getDeployName(&scalingService)
+	deploymentName := util.GetDeployName(&scalingService)
 	deploy, err := k.getDeployment(ns, deploymentName)
 	if err != nil {
-		getErr := fmt.Errorf("failed to get the deployment %s in namespace %s, err is: %s", deploymentName, ns, err.Error())
+		getErr := fmt.Errorf("failed to get the deployment %s in Namespace %s, err is: %s", deploymentName, ns, err.Error())
 		return nil, getErr
 	}
 	return deploy, nil

@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -39,14 +40,14 @@ func ValidateRuntime(specObj interface{}, action string) (*apistructs.ServiceGro
 	}
 
 	if strutil.Contains(sg.Type, "--") {
-		return nil, errors.Errorf("failed to validate runtime, action: %s, name: %s, namespace: %s, (namespace cannot contain consecutive dash)",
+		return nil, errors.Errorf("failed to validate runtime, action: %s, name: %s, Namespace: %s, (Namespace cannot contain consecutive dash)",
 			action, sg.ID, sg.Type)
 	}
 	var ns = MakeNamespace(&sg)
 	if !IsGroupStateful(&sg) && sg.ProjectNamespace != "" {
 		ns = sg.ProjectNamespace
 	}
-	// init runtime.Services' namespace for later usage
+	// init runtime.Services' Namespace for later usage
 	for i := range sg.Services {
 		sg.Services[i].Namespace = ns
 	}
@@ -58,7 +59,7 @@ func (k *Kubernetes) createRuntime(ctx context.Context, sg *apistructs.ServiceGr
 	if sg.ProjectNamespace != "" && !IsGroupStateful(sg) {
 		ns = sg.ProjectNamespace
 	}
-	// return error if this namespace exists
+	// return error if this Namespace exists
 	if err := k.CreateNamespace(ns, sg); err != nil {
 		return err
 	}
@@ -78,8 +79,8 @@ func (k *Kubernetes) createRuntime(ctx context.Context, sg *apistructs.ServiceGr
 }
 
 func (k *Kubernetes) destroyRuntime(ns string) error {
-	// Deleting a namespace will cascade delete the resources under that namespace
-	logrus.Debugf("delete the kubernetes namespace %s", ns)
+	// Deleting a Namespace will cascade delete the resources under that Namespace
+	logrus.Debugf("delete the kubernetes Namespace %s", ns)
 	return k.DeleteNamespace(ns)
 }
 
@@ -91,9 +92,9 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		}
 
 		switch service.WorkLoad {
-		case ServicePerNode:
+		case types.ServicePerNode:
 			err = k.deleteDaemonSet(ns, service.ProjectServiceName)
-		case ServiceJob:
+		case types.ServiceJob:
 			err = k.deleteJob(ns, service.Name)
 		default:
 			err = k.deleteDeployment(ns, service.ProjectServiceName)
@@ -108,7 +109,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 
 		deploys, err := k.deploy.List(ns, labelSelector)
 		if err != nil {
-			return fmt.Errorf("list pod resource error: %v in the namespace %s", err, ns)
+			return fmt.Errorf("list pod resource error: %v in the Namespace %s", err, ns)
 		}
 
 		remainCount := 0
@@ -119,7 +120,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		}
 
 		if remainCount < 1 {
-			logrus.Debugf("delete the kubernetes service %s on namespace %s", service.Name, service.Namespace)
+			logrus.Debugf("delete the kubernetes service %s on Namespace %s", service.Name, service.Namespace)
 			err = k.service.Delete(ns, service.Name)
 			if err != nil {
 				return fmt.Errorf("delete service %s error: %v", service.Name, err)
@@ -130,7 +131,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 					return fmt.Errorf("delete istio resource error: %v", err)
 				}
 			}
-			logrus.Debugf("delete the kubernetes service %s on namespace %s finished", service.Name, service.Namespace)
+			logrus.Debugf("delete the kubernetes service %s on Namespace %s finished", service.Name, service.Namespace)
 		}
 	}
 	return nil
@@ -142,7 +143,7 @@ func (k *Kubernetes) updateRuntime(ctx context.Context, sg *apistructs.ServiceGr
 		ns = sg.ProjectNamespace
 	}
 	if err := k.UpdateNamespace(ns, sg); err != nil {
-		errMsg := fmt.Sprintf("update namespace err: %v", err)
+		errMsg := fmt.Sprintf("update Namespace err: %v", err)
 		logrus.Error(errMsg)
 		return fmt.Errorf(errMsg)
 	}
@@ -186,12 +187,12 @@ func (k *Kubernetes) createStatelessGroup(ctx context.Context, sg *apistructs.Se
 					delErr = k.destroyRuntimeByProjectNamespace(ns, sg)
 				}
 				if delErr == nil {
-					logrus.Infof("succeed to delete namespace, ns: %s", ns)
+					logrus.Infof("succeed to delete Namespace, ns: %s", ns)
 					return
 				}
 
 				if k8serror.NotFound(delErr) {
-					logrus.Infof("failed to destroy namespace, ns: %s, (namespace not found)", ns)
+					logrus.Infof("failed to destroy Namespace, ns: %s, (Namespace not found)", ns)
 					return
 				}
 				// There will be residual resources, requiring manual operation and maintenance
@@ -227,18 +228,18 @@ func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.Ser
 
 		annotations["RUNTIME_NAMESPACE"] = sg.Type
 		annotations["RUNTIME_NAME"] = sg.ID
-		//annotations["GROUP_ID"] = sg.Services[0].Labels[groupID]
+		//Annotations["GROUP_ID"] = Sg.Services[0].Labels[GroupID]
 		annotations["GROUP_ID"], _ = getGroupID(&sg.Services[0])
 		annotations["K8S_NAMESPACE"] = ns
 
 		allEnv := k.initGroupEnv(layers, annotations)
 
 		// The upper layer guarantees that the same group must be the same image
-		info := StatefulsetInfo{
-			sg:          sg,
-			namespace:   ns,
-			envs:        allEnv,
-			annotations: annotations,
+		info := types.StatefulsetInfo{
+			Sg:          sg,
+			Namespace:   ns,
+			Envs:        allEnv,
+			Annotations: annotations,
 		}
 		return k.createStatefulSet(ctx, info)
 	}
@@ -255,7 +256,7 @@ func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.Ser
 			return err
 		}
 		annotations := initAnnotations(groupLayers, i)
-		logrus.Infof("get group annotations, groupid: %s, anno: %+v", groups[i].ID, annotations)
+		logrus.Infof("get group Annotations, groupid: %s, anno: %+v", groups[i].ID, annotations)
 		for k, v := range annotations {
 			globalAnno[k] = v
 		}
@@ -284,11 +285,11 @@ func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.Ser
 		if err := k.createStatefulService(groups[i]); err != nil {
 			return err
 		}
-		info := StatefulsetInfo{
-			sg:          groups[i],
-			namespace:   ns,
-			envs:        groupEnv,
-			annotations: globalAnno,
+		info := types.StatefulsetInfo{
+			Sg:          groups[i],
+			Namespace:   ns,
+			Envs:        groupEnv,
+			Annotations: globalAnno,
 		}
 		if err := k.createStatefulSet(ctx, info); err != nil {
 			logrus.Errorf("failed to create one stateful group, name: %v, (%v)", groups[i].ID, err)
@@ -299,13 +300,13 @@ func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.Ser
 }
 
 // IsGroupStateful Determine whether it is a stateful service
-// the caller have to make sure sg is not nil
+// the caller have to make sure Sg is not nil
 // Generally speaking, those with "SERVICE_TYPE" set to "ADDONS" are stateful applications,
 // However, some of the ADDONS types still want to be deployed in a stateless manner, adding STATELESS_SERVICE
 // To distinguish whether the ADDONS type is stateful or stateless, the default is to execute according to state
 func IsGroupStateful(sg *apistructs.ServiceGroup) bool {
-	if sg.Labels[ServiceType] == ServiceAddon {
-		if sg.Labels[StatelessService] != IsStatelessService {
+	if sg.Labels[types.ServiceType] == types.ServiceAddon {
+		if sg.Labels[types.StatelessService] != types.IsStatelessService {
 			return true
 		}
 	}
@@ -349,7 +350,7 @@ func (k *Kubernetes) InspectStateful(sg *apistructs.ServiceGroup) (*apistructs.S
 		if err != nil {
 			return nil, err
 		}
-		return info.sg, nil
+		return info.Sg, nil
 	}
 	return k.inspectGroup(sg, namespace, name)
 }

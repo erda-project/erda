@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
@@ -84,7 +85,7 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 	affinity := constraintbuilders.K8S(&serviceGroup.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{PodLabels: map[string]string{"app": service.Name}}}, k).Affinity
 
-	if v, ok := service.Env[DiceWorkSpace]; ok {
+	if v, ok := service.Env[types.DiceWorkSpace]; ok {
 		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
 			affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
 			k.composeDeploymentNodeAntiAffinityPreferred(v)...)
@@ -159,7 +160,7 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 
 	// TODO: Delete this logic
 	//Mobil temporary demand:
-	// Inject the secret under the "secret" namespace into the business container
+	// Inject the secret under the "secret" Namespace into the business container
 
 	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
 	if err != nil {
@@ -199,7 +200,7 @@ func (k *Kubernetes) deleteJob(namespace, name string) error {
 	for _, job := range list.Items {
 		logrus.Errorf("job name for deleted: %+v\n", job.Name)
 		if err = k.job.Delete(namespace, job.Name); err != nil {
-			logrus.Errorf("failed to delete job %s in namespace %s: %+n", job.Name, namespace, err)
+			logrus.Errorf("failed to delete job %s in Namespace %s: %+n", job.Name, namespace, err)
 			return err
 		}
 	}
@@ -222,7 +223,7 @@ func (k *Kubernetes) deleteHistoryJob(namespace, name string) error {
 	for _, job := range list.Items[2:] {
 		logrus.Errorf("job name for deleted: %+v\n", job.Name)
 		if err = k.job.Delete(namespace, job.Name); err != nil {
-			logrus.Errorf("failed to delete job %s in namespace %s: %+n", job.Name, namespace, err)
+			logrus.Errorf("failed to delete job %s in Namespace %s: %+n", job.Name, namespace, err)
 			return err
 		}
 	}

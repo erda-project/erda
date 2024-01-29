@@ -33,10 +33,10 @@ import (
 )
 
 // NewImageSecret create new image pull secret
-// 1, create imagePullSecret of this namespace
-// 2, put this secret into serviceaccount of the namespace
+// 1, create imagePullSecret of this Namespace
+// 2, put this secret into serviceaccount of the Namespace
 func (k *Kubernetes) NewImageSecret(namespace string) error {
-	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default Namespace
 	s, err := k.secret.Get(conf.ErdaNamespace(), conf.CustomRegCredSecret())
 	if err != nil {
 		return errors.Errorf("failed to get default image secret, err: %v", err)
@@ -64,11 +64,11 @@ func (k *Kubernetes) NewImageSecret(namespace string) error {
 }
 
 // NewImageSecret create mew image pull secret
-// 1, create imagePullSecret of this namespace
-// 2, Add the secret of the image that needs to be authenticated to the secret of the namespace
-// 3, put this secret into serviceaccount of the namespace
+// 1, create imagePullSecret of this Namespace
+// 2, Add the secret of the image that needs to be authenticated to the secret of the Namespace
+// 3, put this secret into serviceaccount of the Namespace
 func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.ServiceGroup) error {
-	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default Namespace
 	s, err := k.secret.Get(conf.ErdaNamespace(), conf.CustomRegCredSecret())
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 
 func (k *Kubernetes) UpdateImageSecret(namespace string, infos []apistructs.RegistryInfo) error {
 	secretName := conf.CustomRegCredSecret()
-	logrus.Infof("start to update secret %s on namespace %s", secretName, namespace)
+	logrus.Infof("start to update secret %s on Namespace %s", secretName, namespace)
 	regCred, err := k.secret.Get(namespace, secretName)
 	// TODO: user k8serrors.IsNotFound() instead after rewrite with client-go.
 	if err != nil && err.Error() != "not found" {
@@ -137,7 +137,7 @@ func (k *Kubernetes) UpdateImageSecret(namespace string, infos []apistructs.Regi
 		return errors.Errorf("parse image secret, err: %v", err)
 	}
 
-	// secret doesn't exist in project namespace
+	// secret doesn't exist in project Namespace
 	if regCred == nil {
 		if err := k.secret.Create(nSecret); err != nil {
 			logrus.Errorf("create secret %s, err: %v", secretName, err)
@@ -152,7 +152,7 @@ func (k *Kubernetes) UpdateImageSecret(namespace string, infos []apistructs.Regi
 	return nil
 }
 
-// CopyErdaSecrets Copy the secret under orignns namespace to dstns
+// CopyErdaSecrets Copy the secret under orignns Namespace to dstns
 func (k *Kubernetes) CopyErdaSecrets(originns, dstns string) ([]apiv1.Secret, error) {
 	secrets, err := k.secret.List(originns)
 	if err != nil {

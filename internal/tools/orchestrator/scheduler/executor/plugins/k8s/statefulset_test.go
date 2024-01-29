@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -102,7 +103,7 @@ func TestStatefulset(t *testing.T) {
         "SERVICE_TYPE": "ADDONS"
     },
     "name": "myrocket",
-    "namespace": "myaddon-rocketmq",
+    "Namespace": "myaddon-rocketmq",
     "serviceDiscoveryKind": "VIP",
     "serviceDiscoveryMode": "GLOBAL",
     "services": [
@@ -273,7 +274,7 @@ func TestStatefulset(t *testing.T) {
 		sts:       statefulset.New(statefulset.WithCompleteParams("10.167.0.248:8080", httpclient.New())),
 	}
 
-	//_, err = kubernetes.Create(context.Background(), *sg)
+	//_, err = kubernetes.Create(context.Background(), *Sg)
 	//assert.Nil(t, err)
 
 	_, err = kubernetes.Inspect(context.Background(), *sg)
@@ -306,8 +307,8 @@ func TestCreateStatefulSet(t *testing.T) {
 		return &apiv1.Secret{Data: map[string][]byte{".dockerconfigjson": b}}, nil
 	})
 
-	info := StatefulsetInfo{
-		sg: &apistructs.ServiceGroup{
+	info := types.StatefulsetInfo{
+		Sg: &apistructs.ServiceGroup{
 			Dice: apistructs.Dice{
 				ID:     "fake-test-dice",
 				Type:   "addon",
@@ -358,9 +359,9 @@ func TestCreateStatefulSet(t *testing.T) {
 				ProjectNamespace:     "",
 			},
 		},
-		namespace:   "fake-test",
-		envs:        map[string]string{},
-		annotations: map[string]string{},
+		Namespace:   "fake-test",
+		Envs:        map[string]string{},
+		Annotations: map[string]string{},
 	}
 
 	err := kubernetes.createStatefulSet(context.Background(), info)

@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -53,7 +55,7 @@ func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daem
 	var (
 		statusDesc apistructs.StatusDesc
 	)
-	dsName := getDeployName(service)
+	dsName := util.GetDeployName(service)
 
 	if daemonSet, ok := daemonsets[dsName]; ok {
 		status := daemonSet.Status
@@ -73,7 +75,7 @@ func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daem
 }
 
 func (k *Kubernetes) deleteDaemonSet(namespace, name string) error {
-	logrus.Debugf("delete daemonset %s on namespace %s", name, namespace)
+	logrus.Debugf("delete daemonset %s on Namespace %s", name, namespace)
 	return k.ds.Delete(namespace, name)
 }
 
@@ -112,7 +114,7 @@ func (k *Kubernetes) getDaemonSet(namespace, name string) (*appsv1.DaemonSet, er
 }
 
 func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.DaemonSet, error) {
-	daemonSetName := getDeployName(service)
+	daemonSetName := util.GetDeployName(service)
 	enableServiceLinks := false
 	if _, ok := sg.Labels[EnableServiceLinks]; ok {
 		enableServiceLinks = true
@@ -150,8 +152,8 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v != "true" &&
-		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
-			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
+		(strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
+			strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
 		daemonset.Spec.UpdateStrategy = appsv1.DaemonSetUpdateStrategy{Type: appsv1.RollingUpdateDaemonSetStrategyType}
 	}
 
@@ -197,7 +199,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
+	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio

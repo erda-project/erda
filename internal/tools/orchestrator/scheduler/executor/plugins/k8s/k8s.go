@@ -70,6 +70,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/storageclass"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -237,13 +238,6 @@ type Kubernetes struct {
 	dbclient *instanceinfo.Client
 
 	istioEngine istioctl.IstioEngine
-}
-
-func getDeployName(service *apistructs.Service) string {
-	if service.ProjectServiceName != "" {
-		return service.ProjectServiceName
-	}
-	return service.Name
 }
 
 func (k *Kubernetes) SetCpuQuota(quota float64) {
@@ -480,7 +474,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 	if err != nil {
 		return nil, err
 	}
-	l := logrus.WithField("namespace/name", runtime.Type+"/"+runtime.ID)
+	l := logrus.WithField("Namespace/name", runtime.Type+"/"+runtime.ID)
 
 	if runtime.ProjectNamespace != "" {
 		k.setProjectServiceName(runtime)
@@ -510,7 +504,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 
 	l.Infof("not use operator, to create runtime normaly")
 	if err = k.createRuntime(ctx, runtime); err != nil {
-		l.Errorf("failed to create runtime, namespace: %s, name: %s, (%v)",
+		l.Errorf("failed to create runtime, Namespace: %s, name: %s, (%v)",
 			runtime.Type, runtime.ID, err)
 		return nil, err
 	}
@@ -568,23 +562,23 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 		k.setProjectServiceName(runtime)
 	}
 	if runtime.ProjectNamespace == "" {
-		logrus.Infof("delete runtime %s on namespace %s", runtime.ID, runtime.Type)
+		logrus.Infof("delete runtime %s on Namespace %s", runtime.ID, runtime.Type)
 		if err := k.destroyRuntime(ns); err != nil {
 			if k8serror.NotFound(err) {
-				logrus.Debugf("k8s namespace not found or already deleted, namespace: %s", ns)
+				logrus.Debugf("k8s Namespace not found or already deleted, Namespace: %s", ns)
 				return nil
 			}
 			return err
 		}
 		// Delete the local pv of the stateful service
 		if err := k.DeletePV(runtime); err != nil {
-			logrus.Errorf("failed to delete pv, namespace: %s, name: %s, (%v)", runtime.Type, runtime.ID, err)
+			logrus.Errorf("failed to delete pv, Namespace: %s, name: %s, (%v)", runtime.Type, runtime.ID, err)
 			return err
 		}
 		return nil
 	} else {
 		if value, ok := runtime.Labels[pstypes.ErdaPALabelKey]; ok && value == pstypes.ErdaHPALabelValueCancel {
-			logrus.Infof("delete pod autoscaler objects in runtime %s on namespace %s", runtime.ID, runtime.ProjectNamespace)
+			logrus.Infof("delete pod autoscaler objects in runtime %s on Namespace %s", runtime.ID, runtime.ProjectNamespace)
 			err = k.cancelErdaPARules(*runtime)
 			if err != nil {
 				logrus.Errorf("failed to delete runtime resource, delete runtime's pod autoscaler objects error: %v", err)
@@ -592,7 +586,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 			}
 		}
 
-		logrus.Infof("delete runtime %s on namespace %s", runtime.ID, runtime.ProjectNamespace)
+		logrus.Infof("delete runtime %s on Namespace %s", runtime.ID, runtime.ProjectNamespace)
 		err = k.destroyRuntimeByProjectNamespace(ns, runtime)
 		if err != nil {
 			logrus.Errorf("failed to delete runtime resource %v", err)
@@ -637,8 +631,8 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 		return nil, addon.Update(op, runtime)
 	}
 
-	// Update needs to distinguish between ordinary updates and updates that are "re-analyzed" after the system deletes the runtime (namespace) after the creation fails.
-	// This kind of update is actually to create a runtime, which is judged by whether the namespace exists
+	// Update needs to distinguish between ordinary updates and updates that are "re-analyzed" after the system deletes the runtime (Namespace) after the creation fails.
+	// This kind of update is actually to create a runtime, which is judged by whether the Namespace exists
 	var ns = MakeNamespace(runtime)
 	if !IsGroupStateful(runtime) && runtime.ProjectNamespace != "" {
 		ns = runtime.ProjectNamespace
@@ -647,19 +641,19 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 
 	notFound, err := k.NotfoundNamespace(ns)
 	if err != nil {
-		logrus.Errorf("failed to get whether namespace existed, ns: %s, (%v)", ns, err)
+		logrus.Errorf("failed to get whether Namespace existed, ns: %s, (%v)", ns, err)
 		return nil, err
 	}
-	// namespace does not exist, this update is equivalent to creating
+	// Namespace does not exist, this update is equivalent to creating
 	if notFound {
 		if err = k.createRuntime(ctx, runtime); err != nil {
 			return nil, err
 		}
 
-		logrus.Debugf("succeed to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
+		logrus.Debugf("succeed to create runtime, Namespace: %s, name: %s", runtime.Type, runtime.ID)
 		return nil, nil
 	}
-	// namespace exists, follow the normal update process
+	// Namespace exists, follow the normal update process
 	// Update provides two implementations
 	// 1, forceUpdate, Delete all and create again
 	// 2, updateOneByOne, Categorize the three types of services to be created, services to be updated, and services to be deleted, and deal with them one by one
@@ -794,9 +788,9 @@ func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service,
 	}
 	var err error
 	switch service.WorkLoad {
-	case ServicePerNode:
+	case types.ServicePerNode:
 		err = k.createDaemonSet(ctx, service, sg)
-	case ServiceJob:
+	case types.ServiceJob:
 		err = k.createJob(ctx, service, sg)
 	default:
 		// Step 2. Create related deployment
@@ -853,12 +847,12 @@ func (k *Kubernetes) tryDelete(namespace, name string) error {
 	wg.Wait()
 
 	if err1 != nil && !util.IsNotFound(err1) {
-		return errors.Errorf("failed to delete deployment, namespace: %s, name: %s, (%v)",
+		return errors.Errorf("failed to delete deployment, Namespace: %s, name: %s, (%v)",
 			namespace, name, err2)
 	}
 
 	if err2 != nil && !util.IsNotFound(err2) {
-		return errors.Errorf("failed to delete daemonset, namespace: %s, name: %s, (%v)",
+		return errors.Errorf("failed to delete daemonset, Namespace: %s, name: %s, (%v)",
 			namespace, name, err2)
 	}
 
@@ -900,7 +894,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 	if len(registryInfos) > 0 {
 		err = k.UpdateImageSecret(ns, registryInfos)
 		if err != nil {
-			errMsg := fmt.Sprintf("failed to update secret %s on namespace %s, err: %v", conf.CustomRegCredSecret(), ns, err)
+			errMsg := fmt.Sprintf("failed to update secret %s on Namespace %s, err: %v", conf.CustomRegCredSecret(), ns, err)
 			logrus.Errorf(errMsg)
 			return fmt.Errorf(errMsg)
 		}
@@ -908,7 +902,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 
 	for _, svc := range sg.Services {
 		svc.Namespace = ns
-		runtimeServiceName := getDeployName(&svc)
+		runtimeServiceName := util.GetDeployName(&svc)
 		// Existing in the old service collection, do the put operation
 		// The visited record has been updated service
 		if _, ok := runtimeServiceMap[runtimeServiceName]; ok {
@@ -921,7 +915,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 				return err
 			}
 			switch svc.WorkLoad {
-			case ServicePerNode:
+			case types.ServicePerNode:
 				desireDaemonSet, err := k.newDaemonSet(&svc, sg)
 				if err != nil {
 					return err
@@ -930,7 +924,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 					logrus.Debugf("failed to update daemonset in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}
-			case ServiceJob:
+			case types.ServiceJob:
 				err = k.createJob(ctx, &svc, sg)
 			default:
 				// then update the deployment
@@ -965,20 +959,20 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 		if operator == RuntimeServiceDelete {
 			if err := k.tryDelete(ns, svcName); err != nil {
 				if !util.IsNotFound(err) {
-					logrus.Errorf("failed to delete service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					logrus.Errorf("failed to delete service in update interface, Namespace: %s, name: %s, (%v)", ns, svcName, err)
 					return err
 				}
 			}
 			svc, err := k.service.Get(ns, svcName)
 			if err != nil {
 				if !util.IsNotFound(err) {
-					logrus.Errorf("failed to get k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					logrus.Errorf("failed to get k8s service in update interface, Namespace: %s, name: %s, (%v)", ns, svcName, err)
 					return err
 				}
 			}
 			if err = k.service.Delete(ns, svcName); err != nil {
 				if !util.IsNotFound(err) {
-					logrus.Errorf("failed to delete k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					logrus.Errorf("failed to delete k8s service in update interface, Namespace: %s, name: %s, (%v)", ns, svcName, err)
 					return err
 				}
 			}
@@ -1042,7 +1036,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		daemonsetExist := false
 
 		for _, svc := range sg.Services {
-			if svc.WorkLoad == ServicePerNode {
+			if svc.WorkLoad == types.ServicePerNode {
 				daemonsetExist = true
 				break
 			}
@@ -1089,9 +1083,9 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			err    error
 		)
 		switch sg.Services[i].WorkLoad {
-		case ServicePerNode:
+		case types.ServicePerNode:
 			status, err = k.getDaemonSetStatusFromMap(&sg.Services[i], dsMap)
-		case ServiceJob:
+		case types.ServiceJob:
 			status, err = k.getJobStatusFromMap(&sg.Services[i], ns)
 
 		default:
@@ -1109,21 +1103,21 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			}
 			notfound, err := k.NotfoundNamespace(ns)
 			if err != nil {
-				errMsg := fmt.Sprintf("failed to get namespace existed info, namespace:%s, (%v)", ns, err)
+				errMsg := fmt.Sprintf("failed to get Namespace existed info, Namespace:%s, (%v)", ns, err)
 				logrus.Errorf(errMsg)
 				status.LastMessage = errMsg
 				return status, err
 			}
 
-			// The namespace does not exist, indicating that there was an error during creation, and the runtime has been deleted by the scheduler
+			// The Namespace does not exist, indicating that there was an error during creation, and the runtime has been deleted by the scheduler
 			if notfound {
 				status.Status = apistructs.StatusErrorAndDeleted
-				status.LastMessage = fmt.Sprintf("namespace not found, probably deleted, namespace: %s", ns)
+				status.LastMessage = fmt.Sprintf("Namespace not found, probably deleted, Namespace: %s", ns)
 			} else {
-				// In theory, it will only appear in the process of deleting the namespace. A deployment has been deleted and the namespace is in terminating state and is about to be deleted.
+				// In theory, it will only appear in the process of deleting the Namespace. A deployment has been deleted and the Namespace is in terminating state and is about to be deleted.
 				status.Status = apistructs.StatusUnknown
-				status.LastMessage = fmt.Sprintf("found namespace exists but deployment not found,"+
-					" namespace: %s, deployment: %s", sg.Services[i].Namespace, getDeployName(&sg.Services[i]))
+				status.LastMessage = fmt.Sprintf("found Namespace exists but deployment not found,"+
+					" Namespace: %s, deployment: %s", sg.Services[i].Namespace, util.GetDeployName(&sg.Services[i]))
 			}
 
 			return status, err
@@ -1142,9 +1136,9 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			sg.Services[i].Status = apistructs.StatusProgressing
 			podstatuses, err := k.pod.GetNamespacedPodsStatus(pods.Items, sg.Services[i].Name)
 			if err != nil {
-				logrus.Errorf("failed to get pod unready reasons, namespace: %v, name: %s, %v",
+				logrus.Errorf("failed to get pod unready reasons, Namespace: %v, name: %s, %v",
 					sg.Services[i].Namespace,
-					getDeployName(&sg.Services[i]), err)
+					util.GetDeployName(&sg.Services[i]), err)
 			}
 			if len(podstatuses) != 0 {
 				sg.Services[i].LastMessage = podstatuses[0].Message
@@ -1439,7 +1433,7 @@ func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{},
 		}
 
 		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" || scaledObject.ScaleTargetRef.Name == "" {
-			return sg, errors.Errorf("apply hpa for serviceGroup service %s failed: [rule name: %s] or [namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
+			return sg, errors.Errorf("apply hpa for serviceGroup service %s failed: [rule name: %s] or [Namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
 		}
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
@@ -1460,7 +1454,7 @@ func (k *Kubernetes) applyErdaVPARules(sg apistructs.ServiceGroup) (interface{},
 		}
 
 		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" || scaledObject.ScaleTargetRef.Name == "" {
-			return sg, errors.Errorf("apply vpa for serviceGroup service %s failed: [rule name: %s] or [namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
+			return sg, errors.Errorf("apply vpa for serviceGroup service %s failed: [rule name: %s] or [Namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
 		}
 
 		scaledObj := convertToVPAObject(scaledObject)
@@ -1547,7 +1541,7 @@ func (k *Kubernetes) cancelErdaVPARules(sg apistructs.ServiceGroup) (interface{}
 		}
 
 		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("cancel vpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+			return sg, errors.Errorf("cancel vpa for Sg %#v service %s failed: [name: %s] or [Namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
 		}
 
 		_, err = k.scaledObject.GetVPA(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name)
@@ -1569,11 +1563,11 @@ func (k *Kubernetes) reApplyErdaVPARules(sg apistructs.ServiceGroup) (interface{
 		scaledObject := papb.RuntimeServiceVPAConfig{}
 		err := json.Unmarshal([]byte(sc), &scaledObject)
 		if err != nil {
-			return sg, errors.Errorf("re-apply vpa for sg %#v service %s failed: %v", sg, svc, err)
+			return sg, errors.Errorf("re-apply vpa for Sg %#v service %s failed: %v", sg, svc, err)
 		}
 
 		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("re-apply vpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+			return sg, errors.Errorf("re-apply vpa for Sg %#v service %s failed: [name: %s] or [Namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
 		}
 
 		scaledObj := convertToVPAObject(scaledObject)
@@ -1700,7 +1694,7 @@ func (k *Kubernetes) cancelErdaHPARules(sg apistructs.ServiceGroup) (interface{}
 		}
 
 		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("cancel hpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+			return sg, errors.Errorf("cancel hpa for Sg %#v service %s failed: [name: %s] or [Namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
 		}
 
 		_, err = k.scaledObject.Get(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name)
@@ -1761,11 +1755,11 @@ func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{
 		scaledObject := papb.ScaledConfig{}
 		err := json.Unmarshal([]byte(sc), &scaledObject)
 		if err != nil {
-			return sg, errors.Errorf("reapply hpa for sg %#v service %s failed: %v", sg, svc, err)
+			return sg, errors.Errorf("reapply hpa for Sg %#v service %s failed: %v", sg, svc, err)
 		}
 
 		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("reapply hpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
+			return sg, errors.Errorf("reapply hpa for Sg %#v service %s failed: [name: %s] or [Namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
 		}
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
@@ -1792,7 +1786,7 @@ func (k *Kubernetes) manualScale(ctx context.Context, spec interface{}) (interfa
 
 	// only support scale one service resources
 	if len(sg.Services) != 1 {
-		logrus.Infof("the scaling service count is not equal 1 for sg.Services: %#v", sg.Services)
+		logrus.Infof("the scaling service count is not equal 1 for Sg.Services: %#v", sg.Services)
 		//	return nil, fmt.Errorf("the scaling service count is not equal 1")
 	}
 
@@ -1826,9 +1820,9 @@ func (k *Kubernetes) manualScale(ctx context.Context, spec interface{}) (interfa
 		// stateless application
 		for index, svc := range sg.Services {
 			switch svc.WorkLoad {
-			case ServicePerNode:
-				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
-				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
+			case types.ServicePerNode:
+				logrus.Errorf("svc %s in Sg %+v is daemonset, can not scale", svc.Name, sg)
+				errs := fmt.Errorf("svc %s in Sg %+v is daemonset, can not scale", svc.Name, sg)
 				logrus.Error(errs)
 				return sg, errs
 			default:
@@ -1888,9 +1882,9 @@ func (k *Kubernetes) createErdaHPARules(spec interface{}) (interface{}, error) {
 		// stateless application
 		for index, svc := range sg.Services {
 			switch svc.WorkLoad {
-			case ServicePerNode:
-				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
-				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
+			case types.ServicePerNode:
+				logrus.Errorf("svc %s in Sg %+v is daemonset, can not scale", svc.Name, sg)
+				errs := fmt.Errorf("svc %s in Sg %+v is daemonset, can not scale", svc.Name, sg)
 				logrus.Error(errs)
 				return nil, errs
 			default:
@@ -2004,7 +1998,7 @@ func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectR
 			})
 	} else {
 		if !k8serror.NotFound(err) {
-			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", secretName, namespace, err)
+			return nil, fmt.Errorf("get secret %s in Namespace %s err: %v", secretName, namespace, err)
 		}
 	}
 	return secrets, nil

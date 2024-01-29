@@ -17,6 +17,8 @@ package k8s
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 )
 
 func newServiceAccount(name, namespace string, imageSecrets []string) *corev1.ServiceAccount {
@@ -45,9 +47,9 @@ func (k *Kubernetes) updateDefaultServiceAccountForImageSecret(namespace, secret
 
 	// Try to create first, then update after failure
 	// k8s will automatically create the default serviceaccount, but there will be a delay, resulting in failure to update the probability.
-	if err = k.sa.Create(newServiceAccount(defaultServiceAccountName, namespace, []string{secretName})); err != nil {
+	if err = k.sa.Create(newServiceAccount(types.DefaultServiceAccountName, namespace, []string{secretName})); err != nil {
 		for {
-			serviceaccount, err := k.sa.Get(namespace, defaultServiceAccountName)
+			serviceaccount, err := k.sa.Get(namespace, types.DefaultServiceAccountName)
 			if err != nil {
 				return err
 			}
