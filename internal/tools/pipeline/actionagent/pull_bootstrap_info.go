@@ -100,7 +100,7 @@ func (agent *Agent) pullBootstrapInfo() {
 }
 
 func (agent *Agent) replaceEnvExpr() {
-	for k, _ := range agent.Arg.PrivateEnvs {
+	for k := range agent.Arg.PrivateEnvs {
 		visited := make(map[string]struct{})
 		replaceEnvElem(agent.Arg.PrivateEnvs, k, visited)
 	}

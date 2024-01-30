@@ -27,8 +27,9 @@ func Test_replaceEnvExpr(t *testing.T) {
 		privateEnvs map[string]string
 	}
 	envs := map[string]string{
-		"DICE_MEMORY": "5MB",
-		"DICE_CORE":   "1",
+		"DICE_MEMORY":    "5MB",
+		"DICE_CORE":      "1",
+		"DICE_WORKSPACE": "dev",
 	}
 	patch := monkey.Patch(os.Getenv, func(s string) string {
 		return envs[s]
@@ -114,6 +115,17 @@ func Test_replaceEnvExpr(t *testing.T) {
 				"DICE_ENV":     "${{ envs.DICE_PARAM }}",
 				"DICE_A":       "${{ envs.ACTION_MEMORY }}",
 				"ACTION_A":     "${{ envs.ACTION_MEMORY }}",
+			},
+		},
+		{
+			name: "",
+			args: args{
+				privateEnvs: map[string]string{
+					"ACTION_COMMAND": "go build -o ${{ envs.DICE_WORKSPACE }} main.go",
+				},
+			},
+			want: map[string]string{
+				"ACTION_COMMAND": "go build -o dev main.go",
 			},
 		},
 	}
