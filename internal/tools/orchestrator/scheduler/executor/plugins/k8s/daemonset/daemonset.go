@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
-	types2 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	k8stypes "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 )
 
 type Daemonset struct {
@@ -116,10 +116,10 @@ func (d *Daemonset) Patch(namespace string, daemonsetName string, containerName 
 	// patch container with kubernetes snippet
 	snippet.Name = containerName
 
-	spec := types2.PatchStruct{
-		Spec: types2.Spec{
-			Template: types2.PodTemplateSpec{
-				Spec: types2.PodSpec{
+	spec := k8stypes.PatchStruct{
+		Spec: k8stypes.Spec{
+			Template: k8stypes.PodTemplateSpec{
+				Spec: k8stypes.PodSpec{
 					Containers: []corev1.Container{
 						snippet,
 					},
