@@ -93,6 +93,7 @@ func (p *provider) cronCleanup(ctx context.Context) {
 }
 
 func (p *provider) doCleanupRepeatRecords(ctx context.Context, uniqueSourceGroupList []sourcedb.PipelineSourceUniqueGroupWithCount) {
+	p.Log.Info("[Start Cleanup]")
 	for index, group := range uniqueSourceGroupList {
 		// if the uniqueSourceGroup.count is not equal 1, it means it has the repeat records, need merge and cleanup
 		// otherwise, skip the clean logic
@@ -317,6 +318,14 @@ func (p *provider) MergeCronByDefinitionIds(ctx context.Context, definitionIds [
 	cronList, err = p.cronDbClient.BatchGetPipelineCronByDefinitionID(definitionIds, ops...)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// due to the cron is directly deleted, this prints out all the fields of all the cron found in the search
+	if len(cronList) > 0 {
+		p.Log.Infof("[Batch Get Cron By Definition ID %d] (length : %d): \n", latestExecDefinition.ID, len(cronList))
+		for _, c := range cronList {
+			p.Log.Infof("cron is: %+v，enable: %t", c, *c.Enable)
+		}
 	}
 
 	if p.Cfg.DryRun {

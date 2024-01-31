@@ -126,6 +126,7 @@ func newProvider(t *testing.T, dbSourceName string, ctrl *gomock.Controller) *pr
 
 	logger := mocklogger.NewMockLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	logger.EXPECT().Infof(gomock.Any(), gomock.Any()).Return().AnyTimes()
 	p := &provider{
 		MySQL: sqlite3Db,
 		Cfg:   &config{DryRun: false},
