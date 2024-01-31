@@ -104,6 +104,15 @@ func (agent *Agent) replaceEnvExpr() {
 		visited := make(map[string]struct{})
 		replaceEnvElem(agent.Arg.PrivateEnvs, k, visited)
 	}
+
+	if agent.Arg.Commands != nil {
+		commands := agent.convertCustomCommands()
+		ifReplace := replaceCommandEnvExpr(commands, agent.Arg.PrivateEnvs)
+		if ifReplace {
+			agent.Arg.Commands = commands
+		}
+	}
+
 }
 
 // replaceEnvElem parse privateEnvs[elemKey]'s env_expr and returns the ture env and isLoopCall
@@ -159,4 +168,40 @@ func replaceEnvElem(privateEnvs map[string]string, elemKey string, visited map[s
 
 	privateEnvs[elemKey] = replaced
 	return replaced, isLoop
+}
+
+func replaceCommandEnvExpr(commands []string, privateEnvs map[string]string) bool {
+	ifReplace := false
+	for index, command := range commands {
+		replaced := strutil.ReplaceAllStringSubmatchFunc(expression.Re, command, func(sub []string) string {
+			ifReplace = true
+			inner := sub[1]
+			inner = strings.Trim(inner, " ")
+
+			// ss[0] = envs, ss[1] = variable
+			ss := strings.SplitN(inner, ".", 2)
+			if len(ss) == 1 {
+				return command
+			}
+
+			if ss[0] != expression.ENV {
+				return command
+			}
+
+			var env string
+			var ok bool
+			if privateEnvs != nil {
+				env, ok = privateEnvs[ss[1]]
+			}
+
+			if !ok {
+				env = os.Getenv(ss[1])
+			}
+
+			return env
+		})
+		commands[index] = replaced
+	}
+
+	return ifReplace
 }

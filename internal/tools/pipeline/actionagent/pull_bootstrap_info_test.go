@@ -142,3 +142,81 @@ func Test_replaceEnvExpr(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandReplaceEnv(t *testing.T) {
+	type args struct {
+		commands    interface{}
+		privateEnvs map[string]string
+	}
+
+	envs := map[string]string{
+		"DICE_MEMORY":    "5MB",
+		"DICE_CORE":      "1",
+		"DICE_WORKSPACE": "dev",
+	}
+	patch := monkey.Patch(os.Getenv, func(s string) string {
+		return envs[s]
+	})
+	defer patch.Unpatch()
+
+	testcase := []struct {
+		name string
+		args args
+		want interface{}
+	}{
+		{
+			name: "test string from env and privateEnvs is nil",
+			args: args{
+				commands: "echo ${{ envs.DICE_WORKSPACE }}",
+			},
+			want: []string{"echo dev"},
+		},
+		{
+			name: "test string from privateEnvs",
+			args: args{
+				privateEnvs: map[string]string{
+					"ACTION_COMMAND": "go build -o ${{ envs.DICE_WORKSPACE }} main",
+				},
+				commands: "echo ${{ envs.ACTION_COMMAND }}",
+			},
+			want: []string{"echo go build -o dev main"},
+		},
+		{
+			name: "test []string",
+			args: args{
+				privateEnvs: map[string]string{
+					"ACTION_COMMAND": "go build -o ${{ envs.DICE_WORKSPACE }} main",
+				},
+				commands: []string{"echo ${{ envs.ACTION_COMMAND }}", "echo ${{ envs.DICE_CORE }}"},
+			},
+			want: []string{"echo go build -o dev main", "echo 1"},
+		},
+		{
+			name: "test []interface{}",
+			args: args{
+				privateEnvs: map[string]string{
+					"ACTION_SERVICE": "The memory is ${{ envs.DICE_MEMORY }}",
+				},
+				commands: []interface{}{
+					"echo ${{ envs.ACTION_SERVICE }}",
+					"import ${{ envs.DICE_CORE }}",
+				},
+			},
+			want: []string{"echo The memory is 5MB", "import 1"},
+		},
+	}
+
+	for _, tt := range testcase {
+		t.Run(tt.name, func(t *testing.T) {
+			agent := &Agent{
+				Arg: &AgentArg{
+					PrivateEnvs: tt.args.privateEnvs,
+					Commands:    tt.args.commands,
+				},
+			}
+
+			agent.replaceEnvExpr()
+			assert.Equal(t, tt.want, agent.Arg.Commands)
+		})
+	}
+}
