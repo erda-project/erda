@@ -1714,6 +1714,11 @@ func (a *Addon) BuildCanalServiceItem(useOperator bool, params *apistructs.Addon
 					k = "admin.spring.datasource.username"
 				case "canal.instance.dbPassword":
 					k = "admin.spring.datasource.password"
+				case "admin.spring.datasource.database":
+					// Priority: User input > Automatic inference > Default.
+					if params.Options[k] != "" || v == "" {
+						continue
+					}
 				}
 				params.Options[k] = v
 			}
