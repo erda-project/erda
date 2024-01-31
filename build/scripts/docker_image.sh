@@ -53,6 +53,7 @@ setup_single_module_env() {
         DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
     fi
     DOCKER_IMAGE="${APP_NAME}:${IMAGE_TAG_WITH_ARCH}"
+    IMAGE_TAG="${IMAGE_TAG_WITH_ARCH}"
 }
 
 # setup envionment variables for build all
