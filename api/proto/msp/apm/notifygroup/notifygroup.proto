@@ -149,6 +149,7 @@ message UpdateNotifyGroupRequest {
   string                name    = 2;
   repeated NotifyTarget targets = 3;
   int64                 groupID = 4;
+  string                scopeId = 5;
 }
 
 message UpdateNotifyGroupResponse {
@@ -157,6 +158,7 @@ message UpdateNotifyGroupResponse {
 
 message GetNotifyGroupDetailRequest {
   int64 groupID = 1;
+  string scopeId = 2;
 }
 
 message GetNotifyGroupDetailResponse {
@@ -185,6 +187,7 @@ message NotifyUser {
 
 message DeleteNotifyGroupRequest {
   int64 groupID = 1;
+  string scopeId = 2;
 }
 
 message DeleteNotifyGroupResponse {
