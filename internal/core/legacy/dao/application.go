@@ -131,6 +131,9 @@ func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, app
 		db = db.Order(fmt.Sprintf("%s", request.OrderBy))
 	}
 	if request.Query != "" {
+		// this expr is not compatible with sqlite3 because it used a built-in function exclusive to MYSQL
+		// sqlite3 is not supported CHAR_LENGTH`, it uses `LENGTH` to instead it
+		// but `LENGTH` in mysql is used to count the byte length
 		db = db.Where("name LIKE ? OR display_name LIKE ?", strutil.Concat("%", request.Query, "%"), strutil.Concat("%", request.Query, "%")).
 			Order(gorm.Expr("CHAR_LENGTH(display_name)")).
 			Order(gorm.Expr("INSTR(display_name,?)", request.Query))
