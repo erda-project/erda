@@ -331,3 +331,12 @@ func (client *Client) ListExtensionVersions(names []string, all bool) (map[strin
 
 	return extensions, err
 }
+
+func (client *Client) IsExtensionPublicVersionExist(name string) (bool, error) {
+	var count int64
+	err := client.Model(&ExtensionVersion{}).
+		Where("name = ? ", name).
+		Where("public = ?", true).
+		Count(&count).Error
+	return count > 0, err
+}

@@ -311,11 +311,15 @@ func (s *provider) CreateExtensionVersionByRequest(req *pb.ExtensionVersionCreat
 		}
 		s.triggerPushEvent(specData, "update")
 		if req.All {
+			isPublic, err := s.isExtensionPublic(req.Name, req.Public)
+			if err != nil {
+				return nil, apierrors.ErrQueryExtension.InternalError(err)
+			}
 			extModel.Category = specData.Category
 			extModel.LogoUrl = specData.LogoUrl
 			extModel.DisplayName = specData.DisplayName
 			extModel.Desc = specData.Desc
-			extModel.Public = req.Public
+			extModel.Public = isPublic
 			extModel.Labels = labels
 			err = s.db.Save(&extModel).Error
 			if err != nil {
@@ -358,6 +362,15 @@ func (s *provider) CreateExtensionVersionByRequest(req *pb.ExtensionVersionCreat
 	default:
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
+}
+
+func (s *provider) isExtensionPublic(name string, isPublic bool) (bool, error) {
+	isExist, err := s.db.IsExtensionPublicVersionExist(name)
+	if err != nil {
+		return false, fmt.Errorf("query extension public version error, %v", err)
+	}
+
+	return isExist || isPublic, nil
 }
 
 func (s *provider) DeleteExtensionVersion(name, version string) error {
