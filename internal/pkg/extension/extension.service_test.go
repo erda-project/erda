@@ -95,16 +95,16 @@ func mockClient() *db.Client {
 		}
 		return res, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(client.DB), "Save", func(_ *gorm.DB, value interface{}) *gorm.DB {
-		return &gorm.DB{
-			Error: nil,
-		}
-	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(client.DB), "IsExtensionPublicVersionExist", func(_ *gorm.DB, name string) (bool, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(client), "IsExtensionPublicVersionExist", func(_ *db.Client, name string) (bool, error) {
 		if name == "deprecated-addon" {
 			return false, nil
 		}
 		return true, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(client.DB), "Save", func(_ *gorm.DB, value interface{}) *gorm.DB {
+		return &gorm.DB{
+			Error: nil,
+		}
 	})
 
 	return client
