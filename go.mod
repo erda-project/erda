@@ -49,7 +49,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/cloud-on-k8s/v2 v2.0.0-20221101080201-221fa719f43b
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v1.0.10-0.20240112020002-e4c6c25a3fcf
+	github.com/erda-project/erda-infra v1.0.10-0.20240118060147-12597556bdbe
 	github.com/erda-project/erda-infra/tools v0.0.0-20231213094429-67b1657b3593
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v1.4.0
