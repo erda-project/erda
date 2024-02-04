@@ -95,6 +95,12 @@ func mockClient() *db.Client {
 		}
 		return res, nil
 	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(client), "IsExtensionPublicVersionExist", func(_ *db.Client, name string) (bool, error) {
+		if name == "deprecated-addon" {
+			return false, nil
+		}
+		return true, nil
+	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(client.DB), "Save", func(_ *gorm.DB, value interface{}) *gorm.DB {
 		return &gorm.DB{
 			Error: nil,
@@ -639,6 +645,50 @@ func Test_extensionService_QueryExtensionVersions(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("extensionService.QueryExtensionVersions() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_isExtensionPublic(t *testing.T) {
+	p := &provider{
+		db: cli,
+	}
+
+	type args struct {
+		name     string
+		isPublic bool
+	}
+
+	tests := []struct {
+		name   string
+		args   args
+		expect bool
+	}{
+		{
+			name: "update processing extension is private",
+			args: args{
+				name:     "mysql",
+				isPublic: false,
+			},
+			expect: true,
+		},
+		{
+			name: "all private",
+			args: args{
+				name:     "deprecated-addon",
+				isPublic: false,
+			},
+			expect: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := p.isExtensionPublic(tt.args.name, tt.args.isPublic)
+			assert.NoError(t, err)
+			if got != tt.expect {
+				t.Fatalf("expect: %v, got: %v", tt.expect, got)
 			}
 		})
 	}
