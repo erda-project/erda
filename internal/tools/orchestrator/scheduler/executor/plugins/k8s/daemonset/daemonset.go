@@ -26,11 +26,11 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
-	k8stypes "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 )
 
 type Daemonset struct {
@@ -116,10 +116,10 @@ func (d *Daemonset) Patch(namespace string, daemonsetName string, containerName 
 	// patch container with kubernetes snippet
 	snippet.Name = containerName
 
-	spec := k8stypes.PatchStruct{
-		Spec: k8stypes.Spec{
-			Template: k8stypes.PodTemplateSpec{
-				Spec: k8stypes.PodSpec{
+	spec := types.PatchStruct{
+		Spec: types.Spec{
+			Template: types.PodTemplateSpec{
+				Spec: types.PodSpec{
 					Containers: []corev1.Container{
 						snippet,
 					},
@@ -134,7 +134,7 @@ func (d *Daemonset) Patch(namespace string, daemonsetName string, containerName 
 	}
 
 	if _, err := d.cs.AppsV1().DaemonSets(namespace).Patch(context.Background(), daemonsetName,
-		types.StrategicMergePatchType, pathData, metav1.PatchOptions{}); err != nil {
+		k8stypes.StrategicMergePatchType, pathData, metav1.PatchOptions{}); err != nil {
 		return err
 	}
 

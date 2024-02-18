@@ -30,14 +30,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
-	k8stypes "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 )
 
 // Deployment is the object to manipulate k8s api of deployment
@@ -71,10 +71,10 @@ func (d *Deployment) Patch(namespace, deploymentName, containerName string, snip
 	// patch container with kubernetes snippet
 	snippet.Name = containerName
 
-	spec := k8stypes.PatchStruct{
-		Spec: k8stypes.Spec{
-			Template: k8stypes.PodTemplateSpec{
-				Spec: k8stypes.PodSpec{
+	spec := types.PatchStruct{
+		Spec: types.Spec{
+			Template: types.PodTemplateSpec{
+				Spec: types.PodSpec{
 					Containers: []corev1.Container{
 						snippet,
 					},
@@ -89,7 +89,7 @@ func (d *Deployment) Patch(namespace, deploymentName, containerName string, snip
 	}
 
 	if _, err := d.cs.AppsV1().Deployments(namespace).Patch(context.Background(), deploymentName,
-		types.StrategicMergePatchType, pathData, metav1.PatchOptions{}); err != nil {
+		k8stypes.StrategicMergePatchType, pathData, metav1.PatchOptions{}); err != nil {
 		return err
 	}
 
