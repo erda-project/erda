@@ -472,7 +472,7 @@ func TestSelect(t *testing.T) {
 		{
 			name: "select max",
 			sql:  "select max(column) from table",
-			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\" FROM \"table\"",
+			want: "SELECT MAX(if(indexOf(number_field_keys,'column') == 0,null,number_field_values[indexOf(number_field_keys,'column')])) AS \"322cc30ad1d92b84\" FROM \"table\"",
 		},
 		{
 			name: "select min",
@@ -566,7 +566,7 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "time(),max(column)",
 			sql:  "select max(column) from table group by time()",
-			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'column')]) AS \"322cc30ad1d92b84\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY intDiv(toRelativeSecondNum(timestamp), 60)",
+			want: "SELECT MAX(if(indexOf(tag_keys,'column') == 0,null,tag_values[indexOf(tag_keys,'column')])) AS \"322cc30ad1d92b84\", MIN(\"timestamp\") AS \"bucket_timestamp\" FROM \"table\" GROUP BY intDiv(toRelativeSecondNum(timestamp), 60)",
 		},
 		{
 			name: "group_not_select_column",
@@ -591,12 +591,12 @@ func TestGroupBy(t *testing.T) {
 		{
 			name: "no group",
 			sql:  "select max(http_status_code::tag) from table",
-			want: "SELECT MAX(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"61421335fd474c8e\" FROM \"table\"",
+			want: "SELECT MAX(if(indexOf(tag_keys,'http_status_code') == 0,null,tag_values[indexOf(tag_keys,'http_status_code')])) AS \"61421335fd474c8e\" FROM \"table\"",
 		},
 		{
 			name: "group tostring function",
 			sql:  "select max(http_status_code::tag),tostring(timestamp) from table group by tostring(timestamp)",
-			want: "SELECT MAX(tag_values[indexOf(tag_keys,'http_status_code')]) AS \"61421335fd474c8e\", toNullable(timestamp) AS \"timestamp\" FROM \"table\" GROUP BY \"timestamp\", '', tostring(timestamp)",
+			want: "SELECT MAX(if(indexOf(tag_keys,'http_status_code') == 0,null,tag_values[indexOf(tag_keys,'http_status_code')])) AS \"61421335fd474c8e\", toNullable(timestamp) AS \"timestamp\" FROM \"table\" GROUP BY \"timestamp\", '', tostring(timestamp)",
 		},
 		{
 			name: "group sub function",
