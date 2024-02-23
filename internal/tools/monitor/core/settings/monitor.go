@@ -63,12 +63,11 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 	}
 	ttl = os.Getenv("LOG_TTL")
 	if len(ttl) > 0 {
-		sed, err := strconv.ParseInt(ttl, 10, 64)
+		duration, err := time.ParseDuration(ttl)
 		if err != nil {
 			s.p.Log.Errorf("fail to parse log ttl: %s", err)
 		} else {
-			const daySec = float64(24 * 60 * 60)
-			log.TTL = int64(math.Ceil(float64(sed) / daySec))
+			log.TTL = int64(math.Ceil(duration.Hours() / 24))
 		}
 	}
 	cd := &configDefine{
