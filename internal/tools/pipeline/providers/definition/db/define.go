@@ -252,16 +252,13 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	for _, v := range req.DescCols {
 		engine = engine.Desc("d." + v)
 	}
-	if err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).
-		Find(&pipelineDefinitionSources); err != nil {
+
+	var total int64
+	if total, err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).
+		FindAndCount(&pipelineDefinitionSources); err != nil {
 		return nil, 0, err
 	}
 
-	countEngine := engine.Select("COUNT(*)")
-	total, err := client.CountPipelineDefinition(countEngine)
-	if err != nil {
-		return nil, 0, err
-	}
 	return pipelineDefinitionSources, total, nil
 }
 
