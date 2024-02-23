@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/xormplus/core"
 	"github.com/xormplus/xorm"
+	xormlog "github.com/xormplus/xorm/log"
 )
 
 var Engine *xorm.Engine
@@ -62,9 +63,9 @@ func init() {
 
 	Engine.ShowSQL(false)
 
-	logLevel := core.LOG_INFO
+	logLevel := xormlog.LOG_INFO
 	if cfg.LogLevel == "DEBUG" {
-		logLevel = core.LOG_DEBUG
+		logLevel = xormlog.LOG_DEBUG
 	}
 	Engine.SetLogLevel(logLevel)
 

@@ -49,7 +49,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/cloud-on-k8s/v2 v2.0.0-20221101080201-221fa719f43b
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v1.0.10-0.20240118060147-12597556bdbe
+	github.com/erda-project/erda-infra v1.0.10-0.20240222084112-a1855460513d
 	github.com/erda-project/erda-infra/tools v0.0.0-20231213094429-67b1657b3593
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v1.4.0
@@ -149,9 +149,9 @@ require (
 	github.com/tealeg/xlsx/v3 v3.3.2
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xeipuuv/gojsonschema v1.2.0
-	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
-	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
-	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
+	github.com/xormplus/builder v0.0.0-20200331055651-240ff40009be
+	github.com/xormplus/core v0.0.0-20200308074340-f3bce19d5f31
+	github.com/xormplus/xorm v0.0.0-20210822100304-4e1d4fcc1e67
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.3.0
@@ -403,6 +403,7 @@ require (
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shabbyrobe/xmlwriter v0.0.0-20200208144257-9fca06d00ffa // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285 // indirect
 	github.com/tealeg/xlsx v1.0.5 // indirect
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/tidwall/gjson v1.14.1 // indirect

@@ -246,8 +246,6 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		}
 	}
 
-	countEngine := engine.Clone().Select("COUNT(*)")
-
 	for _, v := range req.AscCols {
 		engine = engine.Asc("d." + v)
 	}
@@ -259,6 +257,7 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		return nil, 0, err
 	}
 
+	countEngine := engine.Select("COUNT(*)")
 	total, err := client.CountPipelineDefinition(countEngine)
 	if err != nil {
 		return nil, 0, err
