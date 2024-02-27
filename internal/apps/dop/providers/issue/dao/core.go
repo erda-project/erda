@@ -161,6 +161,10 @@ func (client *DBClient) UpdateIssues(requirementID uint64, fields map[string]int
 		Updates(fields).Error
 }
 
+func (client *DBClient) BatchUpdateIssueIterationIDByIterationID(iterationID uint64, ID int64) error {
+	return client.Model(Issue{}).Where("deleted = 0").Where("iteration_id = ?", iterationID).Updates(map[string]interface{}{"iteration_id": ID}).Error
+}
+
 // UpdateIssueType 转换issueType
 func (client *DBClient) UpdateIssueType(issue *Issue) error {
 	return client.Model(Issue{}).Save(issue).Error
@@ -224,6 +228,19 @@ func (client *DBClient) DeleteIssue(id uint64) error {
 // BatchDeleteIssues 批量删除
 func (client *DBClient) BatchDeleteIssues(ids []uint64) error {
 	return client.Model(Issue{}).Where("id IN (?)", ids).Update("deleted", 1).Error
+}
+
+func (client *DBClient) BatchDeleteIssueByIterationID(iterationID uint64) error {
+	sql := fmt.Sprintf(`
+		UPDATE dice_issues AS dis
+		LEFT JOIN dice_issue_testcase_relations AS ditr ON ditr.issue_id = dis.id
+		LEFT JOIN dice_issue_relation AS dir ON dir.issue_id = dis.id
+		LEFT JOIN dice_issue_property_relation AS dipr ON dipr.issue_id = dis.id
+		LEFT JOIN erda_issue_state_transition AS eist ON eist.issue_id = dis.id
+		SET dis.deleted = 1
+		WHERE dis.iteration_id = ?;
+	`)
+	return client.Exec(sql, iterationID).Error
 }
 
 // DeleteIssuesByRequirement .
@@ -403,6 +420,15 @@ func (client *DBClient) GetIssueWithOutDelete(id int64) (Issue, error) {
 	var issue Issue
 	err := client.First(&issue, id).Error
 	return issue, err
+}
+
+func (client *DBClient) GetIssuesIDByIterationID(iterationID uint64) (ids []uint64, err error) {
+	var issues []Issue
+	err = client.Model(Issue{}).Where("deleted = 0").Where("iteration_id = ?", iterationID).Select("id").Find(&issues).Error
+	for _, v := range issues {
+		ids = append(ids, v.ID)
+	}
+	return ids, err
 }
 
 func (client *DBClient) ListIssueByIDs(issueIDs []int64) ([]Issue, error) {
