@@ -18,7 +18,6 @@ package iteration
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
@@ -159,27 +158,6 @@ func (itr *Iteration) GetByTitle(projectID uint64, title string) (*dao.Iteration
 
 // Delete 删除 iteration
 func (itr *Iteration) Delete(id uint64) error {
-	iteration, err := itr.db.GetIteration(id)
-	if err != nil {
-		return err
-	}
-
-	// 检查 iteration 下是否有需求/任务/bug; 若有，不可删除
-	issueReq := pb.PagingIssueRequest{
-		ProjectID:   iteration.ProjectID,
-		IterationID: int64(id),
-		External:    true,
-		PageNo:      1,
-		PageSize:    1,
-	}
-	issues, _, err := itr.issue.Paging(issueReq)
-	if err != nil {
-		return err
-	}
-	if len(issues) > 0 {
-		return apierrors.ErrDeleteIteration.InvalidParameter("该迭代下存在事件，请先删除事件后再删除迭代")
-	}
-
 	if err := itr.db.DeleteIteration(id); err != nil {
 		return apierrors.ErrDeleteIteration.InternalError(err)
 	}

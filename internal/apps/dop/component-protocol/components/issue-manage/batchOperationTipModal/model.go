@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
 )
 
 type BatchOperationTipModal struct {
@@ -30,7 +30,7 @@ type BatchOperationTipModal struct {
 	SDK        *cptype.SDK
 	CtxBdl     *bundle.Bundle
 	ctx        context.Context
-	issueSvc   pb.IssueCoreServiceServer
+	issueSvc   core.IssueService
 }
 
 type Props struct {
