@@ -96,3 +96,27 @@ func TestGetExpiryStatus(t *testing.T) {
 		})
 	}
 }
+func TestNameConflict(t *testing.T) {
+	highProperties := []IssueProperty{
+		{PropertyName: "A", ScopeType: "Type1"},
+		{PropertyName: "B", ScopeType: "Type1"},
+		{PropertyName: "B", ScopeType: "Type2"},
+		{PropertyName: "C", ScopeType: "Type1"},
+	}
+
+	lowProperties := []IssueProperty{
+		{PropertyName: "B", ScopeType: "Type2"},
+	}
+
+	expected := []IssueProperty{
+		{PropertyName: "A", ScopeType: "Type1"},
+		{PropertyName: "B", ScopeType: "Type2"},
+		{PropertyName: "C", ScopeType: "Type1"},
+	}
+
+	result := NameConflict(highProperties, lowProperties)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("NameConflict() = %v, want %v", result, expected)
+	}
+}

@@ -40,6 +40,9 @@ func (i *IssueService) CreateIssueProperty(ctx context.Context, req *pb.CreateIs
 
 	properties, err := i.db.GetIssueProperties(pb.GetIssuePropertyRequest{
 		OrgID:             req.OrgID,
+		ScopeID:           strconv.FormatInt(req.ScopeID, 10),
+		ScopeType:         req.ScopeType.String(),
+		OnlyProject:       req.OnlyProject,
 		PropertyIssueType: req.PropertyIssueType.String(),
 	})
 	var startIndex int64 = 0
@@ -78,7 +81,7 @@ func (i *IssueService) CreateIssueProperty(ctx context.Context, req *pb.CreateIs
 		return nil, apierrors.ErrCreateIssueProperty.InvalidParameter("PropertyName is longer than 100")
 	}
 	// 重名检测
-	propertyName, err := i.GetByName(req.OrgID, req.PropertyName, req.PropertyIssueType.String())
+	propertyName, err := i.GetByName(req.OrgID, req.PropertyName, req.PropertyIssueType.String(), req.ScopeType.String(), req.ScopeID)
 	if err != nil {
 		return nil, apierrors.ErrCreateIssueProperty.InternalError(err)
 	}
@@ -209,7 +212,7 @@ func (i *IssueService) UpdateIssueProperty(ctx context.Context, req *pb.UpdateIs
 		return nil, apierrors.ErrUpdateIssueProperty.InvalidParameter("非法的PropertyType改变")
 	}
 	// 重名检测
-	propertyName, err := i.GetByName(req.OrgID, req.PropertyName, req.PropertyIssueType.String())
+	propertyName, err := i.GetByName(req.OrgID, req.PropertyName, req.PropertyIssueType.String(), req.ScopeType.String(), req.ScopeID)
 	if err != nil {
 		return nil, apierrors.ErrUpdateIssueProperty.InternalError(err)
 	}
@@ -272,8 +275,8 @@ func (i *IssueService) GetIssueProperty(ctx context.Context, req *pb.GetIssuePro
 }
 
 // GetByName 根据 name 获取 property 详情
-func (i *IssueService) GetByName(orgID int64, name string, propertyIssueType string) (*dao.IssueProperty, error) {
-	property, err := i.db.GetIssuePropertyByName(orgID, name, propertyIssueType)
+func (i *IssueService) GetByName(orgID int64, name string, propertyIssueType string, scopeType string, scopeID int64) (*dao.IssueProperty, error) {
+	property, err := i.db.GetIssuePropertyByName(orgID, name, propertyIssueType, scopeType, scopeID)
 	if err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			return nil, err

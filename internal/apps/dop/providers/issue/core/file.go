@@ -290,7 +290,7 @@ func (i *IssueService) createDataForFulfillCommon(locale string, userID string, 
 		labelMapByName[v.Name] = v
 	}
 	// custom fields
-	customFieldMapByTypeName, err := sheet_customfield.RefreshDataCustomFields(orgID, i)
+	customFieldMapByTypeName, err := sheet_customfield.RefreshDataCustomFields(orgID, projectID, i)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get custom fields, err: %v", err)
 	}

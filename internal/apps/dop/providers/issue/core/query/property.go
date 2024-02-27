@@ -38,7 +38,10 @@ func (p *provider) GetProperties(req *pb.GetIssuePropertyRequest) ([]*pb.IssuePr
 	// 只有公用字段会被任务类型模版使用
 	if req.PropertyIssueType == pb.PropertyIssueTypeEnum_COMMON.String() {
 		allProperties, err := p.db.GetIssueProperties(pb.GetIssuePropertyRequest{
-			OrgID: req.OrgID,
+			OrgID:       req.OrgID,
+			ScopeType:   req.ScopeType,
+			ScopeID:     req.ScopeID,
+			OnlyProject: req.OnlyProject,
 		})
 		if err != nil {
 			return nil, err
@@ -313,6 +316,8 @@ func (p *provider) GetIssuePropertyInstance(req *pb.GetIssuePropertyInstanceRequ
 	properties, err := p.GetProperties(&pb.GetIssuePropertyRequest{
 		OrgID:             req.OrgID,
 		PropertyIssueType: req.PropertyIssueType,
+		ScopeType:         req.ScopeType,
+		ScopeID:           req.ScopeID,
 	})
 	if err != nil {
 		return nil, err

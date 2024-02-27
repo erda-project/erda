@@ -18,10 +18,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/common"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/sheets"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query/issueexcel/vars"
@@ -109,9 +111,8 @@ func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, customFiel
 	// 需要先创建 common，再进行具体类型的创建，关联 common id
 	for _, createCommon := range originalCommonCustomFieldsNeedCreate {
 		polishPropertyValueEnumeratesForCreate(createCommon.EnumeratedValues)
-		resp, err := data.ImportOnly.IssueCore.CreateIssueProperty(ctx, &pb.CreateIssuePropertyRequest{
+		createIssuePropertyRequest := &pb.CreateIssuePropertyRequest{
 			ScopeType:         createCommon.ScopeType,
-			ScopeID:           data.OrgID, // 企业级别
 			OrgID:             data.OrgID,
 			PropertyName:      createCommon.PropertyName,
 			DisplayName:       createCommon.DisplayName,
@@ -121,7 +122,14 @@ func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, customFiel
 			EnumeratedValues:  createCommon.EnumeratedValues,
 			Relation:          0, // 0 for common
 			IdentityInfo:      nil,
-		})
+		}
+		if createIssuePropertyRequest.ScopeType.String() == string(apistructs.ProjectScope) {
+			createIssuePropertyRequest.ScopeID = int64(data.ProjectID)
+		} else {
+			createIssuePropertyRequest.ScopeID = data.OrgID
+		}
+
+		resp, err := data.ImportOnly.IssueCore.CreateIssueProperty(ctx, createIssuePropertyRequest)
 		if err != nil {
 			return fmt.Errorf("failed to create custom field, type: %s, name: %s, err: %v",
 				pb.PropertyIssueTypeEnum_COMMON.String(), createCommon.PropertyName, err)
@@ -136,9 +144,8 @@ func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, customFiel
 			return fmt.Errorf("failed to find corresponding common custom field, type: %s, name: %s",
 				pb.PropertyIssueTypeEnum_COMMON.String(), createCf.PropertyName)
 		}
-		resp, err := data.ImportOnly.IssueCore.CreateIssueProperty(ctx, &pb.CreateIssuePropertyRequest{
+		createIssuePropertyRequest := &pb.CreateIssuePropertyRequest{
 			ScopeType:         createCf.ScopeType,
-			ScopeID:           data.OrgID, // 企业级别
 			OrgID:             data.OrgID,
 			PropertyName:      commonCf.PropertyName,
 			DisplayName:       commonCf.DisplayName,
@@ -148,7 +155,13 @@ func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, customFiel
 			EnumeratedValues:  commonCf.EnumeratedValues, // ref
 			Relation:          commonCf.PropertyID,       // ref
 			IdentityInfo:      nil,
-		})
+		}
+		if createIssuePropertyRequest.ScopeType.String() == string(apistructs.ProjectScope) {
+			createIssuePropertyRequest.ScopeID = int64(data.ProjectID)
+		} else {
+			createIssuePropertyRequest.ScopeID = data.OrgID
+		}
+		resp, err := data.ImportOnly.IssueCore.CreateIssueProperty(ctx, createIssuePropertyRequest)
 		if err != nil {
 			return fmt.Errorf("failed to create normal custom field, type: %s, name: %s, err: %v",
 				createCf.PropertyIssueType.String(), createCf.PropertyName, err)
@@ -161,7 +174,7 @@ func createCustomFieldIfNotExistsForImport(data *vars.DataForFulfill, customFiel
 	// 有两个原因导致要重新获取自定义字段
 	// 1. common 自定义字段的 enumeratesValues 是批量创建的，没有返回 value id
 	// 2. 具体类型的自定义字段，resp.Data 里没有 enumeratesValues
-	refreshed, err := RefreshDataCustomFields(data.OrgID, data.ImportOnly.IssueCore)
+	refreshed, err := RefreshDataCustomFields(data.OrgID, data.ProjectID, data.ImportOnly.IssueCore)
 	if err != nil {
 		return fmt.Errorf("failed to refresh custom fields, err: %v", err)
 	}
@@ -260,9 +273,9 @@ func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issueda
 	return nil
 }
 
-func RefreshDataCustomFields(orgID int64, i pb.IssueCoreServiceServer) (map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex, error) {
+func RefreshDataCustomFields(orgID int64, projectID uint64, i pb.IssueCoreServiceServer) (map[pb.PropertyIssueTypeEnum_PropertyIssueType]map[string]*pb.IssuePropertyIndex, error) {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
-	resp, err := i.GetIssueProperty(ctx, &pb.GetIssuePropertyRequest{OrgID: orgID})
+	resp, err := i.GetIssueProperty(ctx, &pb.GetIssuePropertyRequest{OrgID: orgID, ScopeID: strconv.FormatUint(projectID, 10)})
 	if err != nil {
 		return nil, fmt.Errorf("failed to batch get properties, err: %v", err)
 	}
@@ -284,6 +297,13 @@ func CheckCustomFieldValue(data *vars.DataForFulfill, issueType pb.IssueTypeEnum
 	}
 	property, ok := data.CustomFieldMapByTypeName[cfIssueType][cfName]
 	if !ok { // just ignore unknown custom field
+		for k, v := range data.ImportOnly.Sheets.Optional.CustomFieldInfo {
+			if v.PropertyIssueType == cfIssueType && (v.DisplayName == cfName || v.PropertyName == cfName) {
+				property = data.ImportOnly.Sheets.Optional.CustomFieldInfo[k]
+			}
+		}
+	}
+	if property == nil {
 		return fmt.Errorf("not found")
 	}
 	if common.IsOptions(property.PropertyType.String()) {

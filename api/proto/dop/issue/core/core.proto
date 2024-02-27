@@ -454,6 +454,8 @@ message GetIssuePropertyInstanceRequest {
   int64 issueID = 2;
   string propertyIssueType = 3;
   common.IdentityInfo identityInfo = 4 [json_name = "-"];
+  string scopeType = 5;
+  string scopeID = 6;
 }
 
 message GetIssuePropertyInstanceResponse {
@@ -472,6 +474,7 @@ message CreateIssuePropertyRequest {
   repeated Enumerate enumeratedValues = 9;
   int64 relation = 10;
   common.IdentityInfo identityInfo = 11 [json_name = "-"];
+  bool onlyProject = 12;
 }
 
 message CreateIssuePropertyResponse {
@@ -515,6 +518,9 @@ message GetIssuePropertyRequest {
   string propertyIssueType = 2;
   string propertyName = 3;
   common.IdentityInfo identityInfo = 4 [json_name = "-"];
+  string scopeType = 5;
+  string scopeID = 6;
+  bool onlyProject = 7;
 }
 
 message GetIssuePropertyResponse {
