@@ -34,9 +34,10 @@ const (
 )
 
 type PipelineCron struct {
-	ID          uint64    `json:"id" xorm:"pk autoincr"`
-	TimeCreated time.Time `json:"timeCreated" xorm:"created"` // 记录创建时间
-	TimeUpdated time.Time `json:"timeUpdated" xorm:"updated"` // 记录更新时间
+	ID            uint64    `json:"id" xorm:"pk autoincr"`
+	TimeCreated   time.Time `json:"timeCreated" xorm:"created"`   // 记录创建时间
+	TimeUpdated   time.Time `json:"timeUpdated" xorm:"updated"`   // 记录更新时间
+	SoftDeletedAt uint64    `json:"softDeletedAt" xorm:"deleted"` // 记录删除时间(时间戳形式)
 
 	PipelineSource  apistructs.PipelineSource `json:"pipelineSource"`
 	PipelineYmlName string                    `json:"pipelineYmlName"`
