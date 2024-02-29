@@ -115,7 +115,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		gcNum++
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipeline *spec.Pipeline, gcOption apistructs.PipelineGCDBOption) error {
 		assert.True(t, gcNum < 4, "DoDBGC times >= 4")
 		addCountNum()
 		return nil
@@ -221,8 +221,8 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		})
 		defer patch.Unpatch()
 
-		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
-			assert.Equal(t, pipelineID, uint64(1))
+		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipeline *spec.Pipeline, gcOption apistructs.PipelineGCDBOption) error {
+			assert.Equal(t, pipeline.PipelineID, uint64(1))
 			return fmt.Errorf("error")
 		})
 		defer patch1.Unpatch()

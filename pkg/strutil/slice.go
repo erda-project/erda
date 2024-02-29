@@ -60,3 +60,136 @@ func DedupAnySlice(s interface{}, uniq func(i int) interface{}) interface{} {
 	}
 	return out.Interface()
 }
+
+// DistinctArray is used to get unique elements from a slice with comparable type \
+func DistinctArray[T comparable](arr []T) []T {
+	dupMap := make(map[T]struct{})
+	unique := make([]T, 0)
+	for _, item := range arr {
+		// if not exist, add in the unique array
+		if _, ok := dupMap[item]; !ok {
+			dupMap[item] = struct{}{}
+			unique = append(unique, item)
+		}
+	}
+
+	return unique
+}
+
+// DistinctArrayInStructByFiled it is used to get unique elements from struct array filter by filed
+// you should offer a function to get the field from the struct
+// besides, the function you can set a skip condition, if skip is true, it will ignore the elem
+// it returns the array of Type T(the same as the array offered)
+//
+// For Example:
+//
+// 1. use multiple fields for deduplication
+//
+//	type TestIntStruct struct {
+//		Name  string
+//		Field int
+//	}
+//
+//	testInt := []TestIntStruct{
+//		{Field: 1, Name: "1"},
+//		{Field: 2, Name: "2"},
+//		{Field: 1, Name: "3"},
+//		{Field: 1, Name: "3"},
+//	}
+//
+//	testIntResp := DistinctArrayInStructByFiled(testInt, func(t TestIntStruct) (string, bool) {
+//		hash := sha256.Sum256([]byte(fmt.Sprintf("%s%d", t.Name, t.Field)))
+//		return string(hash[:]), false
+//	})
+//
+// Result:
+//
+//	testIntResp = []TestIntStruct{
+//		{Field: 1, Name: "1"},
+//		{Field: 2, Name: "2"},
+//		{Field: 1, Name: "3"},
+//	}
+//
+// 2. use only one fields for deduplication and skip the field equals xxx
+//
+//	type TestStringStruct struct {
+//		Name  string
+//		Field string
+//	}
+//
+//	testString := []TestStringStruct{
+//		{Name: "1", Field: "123"},
+//		{Name: "2", Field: "234"},
+//		{Name: "#", Field: "#"},
+//		{Name: "#2", Field: "#"},
+//		{Name: "#3", Field: "#"},
+//		{Name: "123", Field: "123"},
+//	}
+//
+//	testStringResp := DistinctArrayInStructByFiled(testString, func(t TestStringStruct) (string, bool) {
+//		if t.Field == "123" {
+//			return t.Field, true
+//		}
+//		return t.Field, false
+//	})
+//
+// Result:
+//
+//	testStringResp := []TestStringStruct{
+//		{Name: "2", Field: "234"},
+//		{Name: "#", Field: "#"},
+//	}
+func DistinctArrayInStructByFiled[T any, C comparable](arr []T, getField func(T) (value C, skip bool)) []T {
+	dupMap := make(map[C]struct{})
+	unique := make([]T, 0)
+	for _, item := range arr {
+		value, skip := getField(item)
+		if skip {
+			continue
+		}
+		if _, ok := dupMap[value]; !ok {
+			dupMap[value] = struct{}{}
+			unique = append(unique, item)
+		}
+	}
+	return unique
+}
+
+// DistinctArrayFiledInStruct it is used to get unique elements from struct
+// you should offer a function to get the field from the struct
+// besides, the function you can set a skip condition, if skip is true, it will ignore the elem
+// it returns the array of Type C(the field type)
+//
+// For Example：
+//
+//	type TestIntStruct struct {
+//		Name  string
+//		Field int
+//	}
+//	testInt := []TestIntStruct{
+//		{Field: 1, Name: "1"},
+//		{Field: 2, Name: "2"},
+//		{Field: 1, Name: "3"},
+//	}
+//	testIntResp := DistinctArrayFiledInStruct(testInt, func(t TestIntStruct) (int, bool) {
+//		return t.Field, false
+//	})
+//
+// Result：
+//
+//	testIntWant = []int{1, 2}
+func DistinctArrayFiledInStruct[T any, C comparable](arr []T, fn func(T) (target C, skip bool)) []C {
+	dupMap := make(map[C]struct{})
+	unique := make([]C, 0)
+	for _, item := range arr {
+		value, skip := fn(item)
+		if skip {
+			continue
+		}
+		if _, ok := dupMap[value]; !ok {
+			dupMap[value] = struct{}{}
+			unique = append(unique, value)
+		}
+	}
+	return unique
+}
