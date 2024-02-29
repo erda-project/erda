@@ -232,11 +232,6 @@ func (e *Endpoints) DeleteIteration(ctx context.Context, r *http.Request, vars m
 		}
 	}
 
-	// 删除 iteration
-	if err := e.iteration.Delete(iterationID); err != nil {
-		return errorresp.ErrResp(err)
-	}
-
 	itemIDs, err := e.issueService.DBClient().GetIssuesIDByIterationID(iterationID)
 	if err != nil {
 		return apierrors.ErrDeleteIteration.InternalError(err).ToResp(), nil
@@ -255,6 +250,11 @@ func (e *Endpoints) DeleteIteration(ctx context.Context, r *http.Request, vars m
 				return apierrors.ErrDeleteIteration.InternalError(err).ToResp(), nil
 			}
 		}
+	}
+
+	// 删除 iteration
+	if err := e.iteration.Delete(iterationID); err != nil {
+		return errorresp.ErrResp(err)
 	}
 	// delete relation labels
 	if err = e.db.DeleteLabelRelations(apistructs.LabelTypeIteration, strconv.FormatUint(iterationID, 10), nil); err != nil {
