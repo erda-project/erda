@@ -76,8 +76,8 @@ func (r *mrReviewer) CodeReview(i18n i18n.Translator, lang i18n.LanguageCodes, a
 	wg := limit_sync_group.NewSemaphore(MaxDiffFileNum) // parallel is 5
 	var mu sync.Mutex
 
-	wg.Add(len(changedFiles))
 	for _, file := range changedFiles {
+		wg.Add(1)
 		fileOrder = append(fileOrder, file.GetFileName())
 		go func(file models.FileCodeReviewer) {
 			defer wg.Done()

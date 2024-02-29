@@ -29,13 +29,13 @@ func NewSemaphore(maxSize int) *limitSyncGroup {
 		wg: new(sync.WaitGroup),
 	}
 }
+
+// Add each time Add (1), do not exceed the channel size
 func (s *limitSyncGroup) Add(delta int) {
 	s.wg.Add(delta)
-	go func() {
-		for i := 0; i < delta; i++ {
-			s.c <- struct{}{}
-		}
-	}()
+	for i := 0; i < delta; i++ {
+		s.c <- struct{}{}
+	}
 }
 func (s *limitSyncGroup) Done() {
 	<-s.c
