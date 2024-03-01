@@ -149,9 +149,9 @@ require (
 	github.com/tealeg/xlsx/v3 v3.3.2
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xeipuuv/gojsonschema v1.2.0
-	github.com/xormplus/builder v0.0.0-20200331055651-240ff40009be
-	github.com/xormplus/core v0.0.0-20200308074340-f3bce19d5f31
-	github.com/xormplus/xorm v0.0.0-20210822100304-4e1d4fcc1e67
+	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
+	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
+	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.3.0
@@ -201,6 +201,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.13.1
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.3.0
+	xorm.io/xorm v1.3.8
 )
 
 require (
@@ -301,6 +302,7 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
+	github.com/go-xorm/sqlfiddle v0.0.0-20180821085327-62ce714f951a // indirect
 	github.com/goccy/go-json v0.8.1 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -324,6 +326,7 @@ require (
 	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jcchavezs/porto v0.1.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -472,7 +475,6 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.10.17 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	xorm.io/builder v0.3.11-0.20220531020008-1bd24a7dc978 // indirect
-	xorm.io/xorm v1.3.8 // indirect
 )
 
 replace (

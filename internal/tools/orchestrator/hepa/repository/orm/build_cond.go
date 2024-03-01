@@ -27,10 +27,9 @@ import (
 	"github.com/xormplus/builder"
 	"github.com/xormplus/core"
 	"github.com/xormplus/xorm"
-	"github.com/xormplus/xorm/schemas"
 )
 
-func getFlagForColumn(m map[string]bool, col *schemas.Column) (val bool, has bool) {
+func getFlagForColumn(m map[string]bool, col *core.Column) (val bool, has bool) {
 	if len(m) == 0 {
 		return false, false
 	}
@@ -54,13 +53,10 @@ func BuildConds(ormEngine *OrmEngine, bean interface{}, mustColumnMap map[string
 	if gerr != nil {
 		return nil, errors.Wrap(gerr, "GetEngine failed")
 	}
-	table, err := engine.TableInfo(bean)
-	if err != nil {
-		return nil, errors.Wrap(err, "Get Table Info failed")
-	}
+	table := engine.TableInfo(bean).Table
 	var conds []builder.Cond
 	for _, col := range table.Columns() {
-		if engine.Dialect().URI().DBType == core.MSSQL && (col.SQLType.Name == core.Text || col.SQLType.IsBlob() || col.SQLType.Name == core.TimeStampz) {
+		if engine.Dialect().DBType() == core.MSSQL && (col.SQLType.Name == core.Text || col.SQLType.IsBlob() || col.SQLType.Name == core.TimeStampz) {
 			continue
 		}
 		if col.SQLType.IsJson() {
@@ -143,8 +139,8 @@ func BuildConds(ormEngine *OrmEngine, bean interface{}, mustColumnMap map[string
 			t := int64(fieldValue.Uint())
 			val = reflect.ValueOf(&t).Interface()
 		case reflect.Struct:
-			if fieldType.ConvertibleTo(schemas.TimeType) {
-				t := fieldValue.Convert(schemas.TimeType).Interface().(time.Time)
+			if fieldType.ConvertibleTo(core.TimeType) {
+				t := fieldValue.Convert(core.TimeType).Interface().(time.Time)
 				if !requiredField && (t.IsZero() || !fieldValue.IsValid()) {
 					continue
 				}
@@ -176,12 +172,8 @@ func BuildConds(ormEngine *OrmEngine, bean interface{}, mustColumnMap map[string
 						val = bytes
 					}
 				} else {
-					// use TableInfo to call `engine.tagParser.ParseWithCache`
-					table, err := engine.TableInfo(fieldValue.Interface())
-					if err != nil {
-						log.Error(err)
-						val = fieldValue.Interface()
-					} else {
+					engine.TableInfo(fieldValue.Interface())
+					if table, ok := engine.Tables[fieldValue.Type()]; ok {
 						if len(table.PrimaryKeys) == 1 {
 							pkField := reflect.Indirect(fieldValue).FieldByName(table.PKColumns()[0].FieldName)
 							// fix non-int pk issues
@@ -192,9 +184,11 @@ func BuildConds(ormEngine *OrmEngine, bean interface{}, mustColumnMap map[string
 								continue
 							}
 						} else {
-							// TODO: how to handler?
+							//TODO: how to handler?
 							return nil, fmt.Errorf("not supported %v as %v", fieldValue.Interface(), table.PrimaryKeys)
 						}
+					} else {
+						val = fieldValue.Interface()
 					}
 				}
 			}
@@ -246,7 +240,7 @@ func BuildConds(ormEngine *OrmEngine, bean interface{}, mustColumnMap map[string
 	return builder.And(conds...), nil
 }
 
-func formatColTime(engine *xorm.Engine, col *schemas.Column, t time.Time) (v interface{}) {
+func formatColTime(engine *xorm.Engine, col *core.Column, t time.Time) (v interface{}) {
 	if t.IsZero() {
 		if col.Nullable {
 			return nil
@@ -262,30 +256,24 @@ func formatColTime(engine *xorm.Engine, col *schemas.Column, t time.Time) (v int
 
 // formatTime format time as column type
 func formatTime(engine *xorm.Engine, sqlTypeName string, t time.Time) (v interface{}) {
-	if engine.Dialect().URI().DBType == schemas.ORACLE {
-		v = t
-
-		return
-	}
-
 	switch sqlTypeName {
-	case schemas.Time:
+	case core.Time:
 		s := t.Format("2006-01-02 15:04:05") //time.RFC3339
 		v = s[11:19]
-	case schemas.Date:
+	case core.Date:
 		v = t.Format("2006-01-02")
-	case schemas.DateTime, schemas.TimeStamp, schemas.Varchar:
+	case core.DateTime, core.TimeStamp:
 		v = t.Format("2006-01-02 15:04:05.999")
-		if engine.Dialect().URI().DBType == schemas.SQLITE {
+		if engine.Dialect().DBType() == "sqlite3" {
 			v = t.UTC().Format("2006-01-02 15:04:05.999")
 		}
-	case schemas.TimeStampz:
-		if engine.Dialect().URI().DBType == schemas.MSSQL {
+	case core.TimeStampz:
+		if engine.Dialect().DBType() == core.MSSQL {
 			v = t.Format("2006-01-02T15:04:05.9999999Z07:00")
 		} else {
 			v = t.Format(time.RFC3339Nano)
 		}
-	case schemas.BigInt, schemas.Int:
+	case core.BigInt, core.Int:
 		v = t.Unix()
 	default:
 		v = t
@@ -297,24 +285,7 @@ type zeroable interface {
 	IsZero() bool
 }
 
-var nilTime *time.Time
-
-const (
-	ZeroTime0 = "0000-00-00 00:00:00"
-	ZeroTime1 = "0001-01-01 00:00:00"
-)
-
-func IsTimeZero(t time.Time) bool {
-	return t.IsZero() || t.Format("2006-01-02 15:04:05") == ZeroTime0 ||
-		t.Format("2006-01-02 15:04:05") == ZeroTime1
-}
-
-// IsZero returns false if k is nil or has a zero value
 func isZero(k interface{}) bool {
-	if k == nil {
-		return true
-	}
-
 	switch k := k.(type) {
 	case int:
 		return k == 0
@@ -344,10 +315,6 @@ func isZero(k interface{}) bool {
 		return !k
 	case string:
 		return k == ""
-	case *time.Time:
-		return k == nilTime || IsTimeZero(*k)
-	case time.Time:
-		return IsTimeZero(k)
 	case zeroable:
 		return k.IsZero()
 	}
