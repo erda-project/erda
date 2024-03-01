@@ -16,7 +16,7 @@ package db
 
 import (
 	"github.com/pkg/errors"
-	"github.com/xormplus/xorm"
+	"xorm.io/xorm"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"

@@ -115,7 +115,8 @@ func (client *Client) GetPipelineDefinition(id string, ops ...mysqlxorm.SessionO
 	var pipelineDefinition PipelineDefinition
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+
+	if has, err = session.Where("id = ? and soft_deleted_at = 0", id).Get(&pipelineDefinition); err != nil {
 		return nil, err
 	}
 
@@ -135,7 +136,7 @@ func (client *Client) GetPipelineDefinitionBySourceID(sourceID string, ops ...my
 		has                bool
 		err                error
 	)
-	if has, _, err = session.Where("pipeline_source_id = ? and soft_deleted_at = 0", sourceID).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+	if has, err = session.Where("pipeline_source_id = ? and soft_deleted_at = 0", sourceID).Get(&pipelineDefinition); err != nil {
 		return nil, false, err
 	}
 

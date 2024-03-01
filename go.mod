@@ -67,7 +67,7 @@ require (
 	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/go-sql-driver/mysql v1.6.0
+	github.com/go-sql-driver/mysql v1.7.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gocql/gocql v0.0.0-20210707082121-9a3953d1826d
 	github.com/gofrs/flock v0.8.0
@@ -144,7 +144,7 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spotify/flink-on-k8s-operator v0.4.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx/v3 v3.3.2
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
@@ -161,9 +161,9 @@ require (
 	go.opentelemetry.io/proto/otlp v0.11.0
 	go.uber.org/automaxprocs v1.5.1
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.7.0
+	golang.org/x/net v0.10.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.7.0
+	golang.org/x/text v0.12.0
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
 	google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de
 	google.golang.org/grpc v1.48.0
@@ -197,7 +197,7 @@ require (
 	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
-	modernc.org/mathutil v1.0.0
+	modernc.org/mathutil v1.5.0
 	sigs.k8s.io/controller-runtime v0.13.1
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.3.0
@@ -301,6 +301,7 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
+	github.com/goccy/go-json v0.8.1 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -345,12 +346,12 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
-	github.com/lib/pq v1.10.1 // indirect
+	github.com/lib/pq v1.10.7 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/miekg/dns v1.1.43 // indirect
@@ -388,7 +389,7 @@ require (
 	github.com/rancher/norman v0.0.0-20210423002317-8e6ffc77a819 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/recallsong/unmarshal v1.0.0 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/richardlehane/mscfb v1.0.3 // indirect
 	github.com/richardlehane/msoleps v1.0.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
@@ -442,13 +443,13 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/mod v0.6.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/tools v0.2.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.96.0 // indirect
@@ -470,6 +471,8 @@ require (
 	sigs.k8s.io/kustomize/api v0.8.8 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.10.17 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+	xorm.io/builder v0.3.11-0.20220531020008-1bd24a7dc978 // indirect
+	xorm.io/xorm v1.3.8 // indirect
 )
 
 replace (
@@ -477,6 +480,7 @@ replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.4
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
+	github.com/erda-project/erda-infra => ../erda-infra
 	github.com/erda-project/erda-proto-go v1.4.0 => ./api/proto-go
 	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.49.0
 	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
