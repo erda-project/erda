@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xormplus/core"
+	"xorm.io/xorm/names"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm/sqlite3"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
@@ -40,7 +40,7 @@ func TestListPipelineDefinition(t *testing.T) {
 		os.Remove(dbname)
 	}()
 	sqlite3Db, err := sqlite3.NewSqlite3(dbname + "?mode=" + mode)
-	sqlite3Db.DB().SetMapper(core.GonicMapper{})
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 
 	// migrator db
 	err = sqlite3Db.DB().Sync2(&PipelineDefinition{})
@@ -107,3 +107,12 @@ func TestListPipelineDefinition(t *testing.T) {
 	t.Logf("%+v", ds)
 
 }
+
+//func TestGetPipelineDefinition(t *testing.T) {
+//	dbname := filepath.Join(os.TempDir(), dbSourceName)
+//	defer func() {
+//		os.Remove(dbname)
+//	}()
+//	sqlite3Db, err := sqlite3.NewSqlite3(dbname + "?mode=" + mode)
+//	sqlite3Db.DB().SetMapper(names.GonicMapper{})
+//}

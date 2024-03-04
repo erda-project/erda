@@ -17,7 +17,9 @@ package definition_cleanup
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -29,7 +31,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/xormplus/core"
+	"xorm.io/xorm/names"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm/sqlite3"
@@ -90,8 +92,20 @@ func (m *MockCronService) CronUpdate(ctx context.Context, request *cronpb.CronUp
 }
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
+	// show df -h
+	out, err := exec.Command("df", "-h").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Disk Usage: %s\n", string(out))
+
 	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName + "?mode=" + mode)
-	sqlite3Db.DB().SetMapper(core.GonicMapper{})
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
+	out, err = exec.Command("df", "-h").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Disk Usage: %s\n", string(out))
 	if err != nil {
 		panic(err)
 	}

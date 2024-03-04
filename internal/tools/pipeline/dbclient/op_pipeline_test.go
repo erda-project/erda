@@ -22,13 +22,25 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
-	"github.com/xormplus/xorm"
 	"google.golang.org/protobuf/types/known/structpb"
+	"xorm.io/xorm"
+	"xorm.io/xorm/names"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm/sqlite3"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
+
+func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
+
+	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName + "?mode=rwc")
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
+	if err != nil {
+
+	}
+
+	return sqlite3Db
+}
 
 func TestNotFoundBaseErrorIs(t *testing.T) {
 	e := fmt.Errorf("not found base")
@@ -37,6 +49,18 @@ func TestNotFoundBaseErrorIs(t *testing.T) {
 	ne := fmt.Errorf("other error")
 	assert.False(t, errors.Is(NotFoundBaseError, ne))
 }
+
+//func TestPageListPipelines2(t *testing.T) {
+//	dbname := filepath.Join(os.TempDir(), "op_pipeline_test.db")
+//	defer func() {
+//		os.Remove(dbname)
+//	}()
+//
+//	sqlite3Db := newSqlite3DB(dbname)
+//	client := &Client{Engine: sqlite3Db.DB()}
+//
+//	// insert
+//}
 
 func TestPageListPipelines(t *testing.T) {
 	sourceLabels := []interface{}{"s1", "s2"}
@@ -82,6 +106,7 @@ func TestPageListPipelines(t *testing.T) {
 			})
 			defer pm4.Unpatch()
 			pm5 := monkey.PatchInstanceMethod(reflect.TypeOf(dbSession), "Desc", func(_ *xorm.Session, colNames ...string) *xorm.Session {
+				t.Log(111)
 				return dbSession
 			})
 			defer pm5.Unpatch()

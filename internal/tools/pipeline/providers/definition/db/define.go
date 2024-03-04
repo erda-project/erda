@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/xormplus/builder"
-	"github.com/xormplus/xorm"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"xorm.io/builder"
+	"xorm.io/xorm"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"

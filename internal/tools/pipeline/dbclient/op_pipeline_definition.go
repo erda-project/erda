@@ -27,7 +27,7 @@ func (client *Client) GetPipelineDefinition(id string, ops ...SessionOption) (*d
 	var pipelineDefinition db.PipelineDefinition
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+	if has, err = session.Where("id = ? and soft_deleted_at = 0", id).Get(&pipelineDefinition); err != nil {
 		return nil, err
 	}
 
@@ -45,7 +45,7 @@ func (client *Client) GetPipelineDefinitionByPipelineID(pipelineID uint64, ops .
 	var pipelineDefinition db.PipelineDefinition
 	var has bool
 	var err error
-	if has, _, err = session.Where("pipeline_id = ? and soft_deleted_at = 0", pipelineID).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+	if has, err = session.Where("pipeline_id = ? and soft_deleted_at = 0", pipelineID).Get(&pipelineDefinition); err != nil {
 		return nil, false, err
 	}
 

@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/xormplus/xorm"
+	"xorm.io/xorm"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
