@@ -119,21 +119,7 @@ func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
 }
 
 func newProvider(t *testing.T, dbSourceName string, ctrl *gomock.Controller) *provider {
-	// show df -h
-	//out, err := exec.Command("df", "-h").Output()
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//t.Logf("Disk Usage: %s\n", string(out))
-
 	sqlite3Db := newSqlite3DB(dbSourceName)
-
-	//// show df -h
-	//out, err = exec.Command("df", "-h").Output()
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//t.Logf("After Disk Usage: %s\n", string(out))
 
 	logger := mocklogger.NewMockLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Any(), gomock.Any()).Return().AnyTimes()
@@ -141,13 +127,6 @@ func newProvider(t *testing.T, dbSourceName string, ctrl *gomock.Controller) *pr
 		MySQL: sqlite3Db,
 		Cfg:   &config{DryRun: false},
 		Log:   logger,
-	}
-
-	results, _ := sqlite3Db.DB().Query("PRAGMA journal_mode;")
-	for _, row := range results {
-		for key, value := range row {
-			t.Logf("Key: %s\t, Value:%s", key, string(value))
-		}
 	}
 
 	p.Init(nil)

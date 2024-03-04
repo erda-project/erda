@@ -17,7 +17,6 @@ package dbclient
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -367,10 +366,11 @@ func (client *Client) PageListPipelines(req *pipelinepb.PipelinePagingRequest, o
 			forceIndexes = append(forceIndexes, "`idx_id_source_cluster_status`")
 		}
 	}
+
 	// idx_id_source_cluster_status_timebegin_timeend
-	// 使用 alias 注入实现 xorm 插入 FORCE INDEX
-	if len(forceIndexes) > 0 {
-		baseSQL.Alias(fmt.Sprintf("`%s` USE INDEX (%s)", (&spec.PipelineBase{}).TableName(), strings.Join(forceIndexes, ",")))
+	for _, index := range forceIndexes {
+		// this method only support use in mysql
+		baseSQL.IndexHint("USE", "", index)
 	}
 
 	if req.PipelineDefinitionRequest != nil {
