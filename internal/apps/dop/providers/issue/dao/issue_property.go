@@ -15,8 +15,6 @@
 package dao
 
 import (
-	"sort"
-
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -65,12 +63,19 @@ func (client *DBClient) UpdateIssueProperty(property *IssueProperty) error {
 }
 
 func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]IssueProperty, error) {
-	if req.ScopeType == "" {
-		req.ScopeType = string(apistructs.ProjectScope)
-	}
+	// 不传递 ScopeType 就是返回组织级和项目级，传的话，只返回相应的类型
 	var properties []IssueProperty
-	var propertiesProject []IssueProperty
 	db := client.Where(IssueProperty{}).Where("org_id = ?", req.OrgID)
+	// 如果是打开事项 flag = 1, != "COMMON"
+	if req.OnlyIssue {
+		db = db.Where("property_issue_type != 'COMMON'")
+	}
+	if req.ScopeType != "" {
+		db = db.Where("scope_type = ?", req.ScopeType)
+	}
+	if req.ScopeID != "" {
+		db = db.Where("scope_id = ?", req.ScopeID)
+	}
 	if req.PropertyIssueType != "" {
 		db = db.Where("property_issue_type = ?", req.PropertyIssueType)
 	}
@@ -78,48 +83,34 @@ func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]Is
 	if req.PropertyName != "" {
 		db = db.Where("property_name LIKE ?", str)
 	}
-	if err := db.Where("scope_type = ?", string(apistructs.OrgScope)).Order("index").Find(&properties).Error; err != nil {
+	if err := db.Order("index").Find(&properties).Error; err != nil {
 		return nil, err
 	}
-	if req.ScopeType != string(apistructs.ProjectScope) {
-		return properties, nil
+	if req.ScopeType == "" {
+		// 优先级：项目 > 企业级，当有重复的字段时，项目覆盖企业的字段；
+		properties = NameConflict(properties)
 	}
-
-	// propertiesProject 项目级 properties
-	db = db.Where("scope_type = ?", string(apistructs.ProjectScope))
-	if req.ScopeID != "" {
-		db = db.Where("scope_id = ?", req.ScopeID)
-	}
-	if err := db.Order("index").Find(&propertiesProject).Error; err != nil {
-		return nil, err
-	}
-	properties = append(properties, propertiesProject...)
-
-	if req.OnlyProject {
-		return propertiesProject, nil
-	}
-	// 优先级：项目 > 企业级，当有重复的字段时，项目覆盖企业的字段；
-	properties = NameConflict(properties, propertiesProject)
 
 	return properties, nil
 }
 
-// NameConflict 重名覆盖函数用于解决自定义事项不同类型，名称相同冲突问题，将lowProperties覆盖到highProperties上。优先级：app > project > org
-func NameConflict(highProperties, lowProperties []IssueProperty) []IssueProperty {
-	overlayIndex := make([]int, 0)
-	for i, highProperty := range highProperties {
-		for _, lowProperty := range lowProperties {
-			if lowProperty.PropertyName == highProperty.PropertyName && lowProperty.ScopeType != highProperty.ScopeType {
-				overlayIndex = append(overlayIndex, i)
+// NameConflict 重名覆盖函数用于解决自定义事项不同组织下，同类型，同名称冲突问题，优先级：app > project > org
+func NameConflict(Properties []IssueProperty) []IssueProperty {
+	propertyMap := make(map[string]IssueProperty, 0)
+	for _, property := range Properties {
+		if _, ok := propertyMap[property.PropertyName+":"+property.PropertyIssueType]; ok {
+			if propertyMap[property.PropertyName+":"+property.PropertyIssueType].ScopeType != string(apistructs.ProjectScope) {
+				propertyMap[property.PropertyName+":"+property.PropertyIssueType] = property
 			}
+		} else {
+			propertyMap[property.PropertyName+":"+property.PropertyIssueType] = property
 		}
 	}
-	sort.Ints(overlayIndex)
-	for i := len(overlayIndex) - 1; i >= 0; i-- {
-		index := overlayIndex[i]
-		highProperties = append(highProperties[:index], highProperties[index+1:]...)
+	Properties = make([]IssueProperty, 0)
+	for _, v := range propertyMap {
+		Properties = append(Properties, v)
 	}
-	return highProperties
+	return Properties
 }
 
 func (client *DBClient) GetIssuePropertyByID(id int64) (*IssueProperty, error) {

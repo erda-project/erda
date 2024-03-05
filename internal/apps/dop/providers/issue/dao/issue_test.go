@@ -97,26 +97,20 @@ func TestGetExpiryStatus(t *testing.T) {
 	}
 }
 func TestNameConflict(t *testing.T) {
-	highProperties := []IssueProperty{
-		{PropertyName: "A", ScopeType: "Type1"},
-		{PropertyName: "B", ScopeType: "Type1"},
-		{PropertyName: "B", ScopeType: "Type2"},
-		{PropertyName: "C", ScopeType: "Type1"},
-	}
-
-	lowProperties := []IssueProperty{
-		{PropertyName: "B", ScopeType: "Type2"},
+	properties := []IssueProperty{
+		{PropertyName: "property1", PropertyType: "type1", ScopeType: "org"},
+		{PropertyName: "property2", PropertyType: "type2", ScopeType: "project"},
+		{PropertyName: "property2", PropertyType: "type2", ScopeType: "org"},
 	}
 
 	expected := []IssueProperty{
-		{PropertyName: "A", ScopeType: "Type1"},
-		{PropertyName: "B", ScopeType: "Type2"},
-		{PropertyName: "C", ScopeType: "Type1"},
+		{PropertyName: "property1", PropertyType: "type1", ScopeType: "org"},
+		{PropertyName: "property2", PropertyType: "type2", ScopeType: "project"},
 	}
 
-	result := NameConflict(highProperties, lowProperties)
+	result := NameConflict(properties)
 
 	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("NameConflict() = %v, want %v", result, expected)
+		t.Errorf("NameConflict returned unexpected result, got: %v, want: %v", result, expected)
 	}
 }

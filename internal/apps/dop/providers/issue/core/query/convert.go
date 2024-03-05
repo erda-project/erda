@@ -59,10 +59,9 @@ func (p *provider) Convert(model dao.Issue, identityInfo *commonpb.IdentityInfo)
 			return nil, err
 		}
 		propertyInstances, err := p.GetIssuePropertyInstance(&pb.GetIssuePropertyInstanceRequest{
-			IssueID:   issue.Id,
-			OrgID:     int64(orgID),
-			ScopeType: apistructs.ProjectScopeType,
-			ScopeID:   strconv.FormatUint(issue.ProjectID, 10),
+			IssueID: issue.Id,
+			OrgID:   int64(orgID),
+			//ScopeID: ,
 		})
 		if err != nil {
 			return nil, err
