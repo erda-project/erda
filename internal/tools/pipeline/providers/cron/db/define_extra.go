@@ -185,7 +185,7 @@ func (client *Client) CreatePipelineCron(cron *PipelineCron, ops ...mysqlxorm.Se
 	if cron.ID == 0 {
 		cron.ID = uuid.SnowFlakeIDUint64()
 	}
-	_, err := session.InsertOne(cron)
+	_, err := session.Insert(cron)
 	return errors.Wrapf(err, "failed to create pipeline cron, applicationID [%d], branch [%s], expr [%s], enable [%v]", cron.ApplicationID, cron.Branch, cron.CronExpr, cron.Enable)
 }
 
