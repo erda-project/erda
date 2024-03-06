@@ -21,8 +21,8 @@ import (
 	"github.com/caarlos0/env"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
-	"github.com/xormplus/core"
-	"github.com/xormplus/xorm"
+	"xorm.io/xorm"
+	"xorm.io/xorm/names"
 )
 
 type Client struct {
@@ -98,7 +98,7 @@ func New() (*Client, error) {
 		return nil, errors.Wrap(err, "failed to connect to mysql server")
 	}
 
-	engine.SetMapper(core.GonicMapper{})
+	engine.SetMapper(names.GonicMapper{})
 
 	engine.ShowSQL(cfg.ShowSQL)
 

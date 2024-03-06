@@ -29,7 +29,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/xormplus/core"
+	"xorm.io/xorm/names"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm/sqlite3"
@@ -91,10 +91,7 @@ func (m *MockCronService) CronUpdate(ctx context.Context, request *cronpb.CronUp
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
 	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName + "?mode=" + mode)
-	sqlite3Db.DB().SetMapper(core.GonicMapper{})
-	if err != nil {
-		panic(err)
-	}
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 
 	// migrator db
 	err = sqlite3Db.DB().Sync2(&definitiondb.PipelineDefinitionExtra{})

@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/xormplus/xorm"
+	"xorm.io/xorm"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/label/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"

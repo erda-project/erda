@@ -23,8 +23,6 @@ import (
 	. "github.com/sirupsen/logrus"
 	"github.com/xormplus/core"
 	"github.com/xormplus/xorm"
-	xormcache "github.com/xormplus/xorm/caches"
-	"github.com/xormplus/xorm/names"
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
@@ -32,7 +30,7 @@ import (
 
 type OrmEngineInterface interface {
 	xorm.EngineInterface
-	SetTableMapper(mapper names.Mapper)
+	SetTableMapper(core.IMapper)
 	RegisterSqlMap(xorm.SqlM, ...xorm.Cipher) error
 	SqlMapClient(string, ...interface{}) *xorm.Session
 }
@@ -88,7 +86,7 @@ func (wrapper SqlLogWrapper) SetLevel(l core.LogLevel) {
 var SqlLog SqlLogWrapper
 
 func SetGlobalCacher(engine OrmEngineInterface, expired time.Duration, size int) {
-	cacher := xormcache.NewLRUCacher2(xormcache.NewMemoryStore(), expired, size)
+	cacher := xorm.NewLRUCacher2(xorm.NewMemoryStore(), expired, size)
 	engine.SetDefaultCacher(cacher)
 }
 

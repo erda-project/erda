@@ -196,7 +196,7 @@ func TestDeleteCron(t *testing.T) {
 
 	// create cron
 	crons := []*PipelineCron{
-		{ID: 1},
+		{ID: 1, SoftDeletedAt: 0},
 		{ID: 2},
 		{ID: 3, SoftDeletedAt: 1234},
 		{ID: 4},

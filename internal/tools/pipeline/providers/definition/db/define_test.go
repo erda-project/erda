@@ -17,11 +17,12 @@ package db
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xormplus/core"
+	"xorm.io/xorm/names"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm/sqlite3"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
@@ -40,7 +41,7 @@ func TestListPipelineDefinition(t *testing.T) {
 		os.Remove(dbname)
 	}()
 	sqlite3Db, err := sqlite3.NewSqlite3(dbname + "?mode=" + mode)
-	sqlite3Db.DB().SetMapper(core.GonicMapper{})
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 
 	// migrator db
 	err = sqlite3Db.DB().Sync2(&PipelineDefinition{})
@@ -106,4 +107,54 @@ func TestListPipelineDefinition(t *testing.T) {
 	assert.Equal(t, "2", ds[1].ID)
 	t.Logf("%+v", ds)
 
+}
+
+func TestGetPipelineDefinition(t *testing.T) {
+	dbname := filepath.Join(os.TempDir(), dbSourceName)
+	defer func() {
+		os.Remove(dbname)
+	}()
+	sqlite3Db, err := sqlite3.NewSqlite3(dbname + "?mode=" + mode)
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
+	if err != nil {
+		panic(err)
+	}
+
+	// insert record
+	err = sqlite3Db.DB().Sync2(&PipelineDefinition{})
+	if err != nil {
+		panic(err)
+	}
+
+	client := &Client{
+		Interface: sqlite3Db,
+	}
+
+	// insert record
+	records := []PipelineDefinition{
+		{ID: "1", Name: "1", PipelineSourceId: "1", Location: "1"},
+		{ID: "2", Name: "2", PipelineSourceId: "2", Location: "1"},
+		{ID: "3", Name: "3", PipelineSourceId: "3", Location: "2"},
+		{ID: "4", Name: "4", PipelineSourceId: "1", SoftDeletedAt: uint64(time.Now().UnixNano()), Location: "1"},
+		{ID: "5", Name: "5", PipelineSourceId: "1", Location: "1"},
+	}
+
+	for _, r := range records {
+		err = client.CreatePipelineDefinition(&r)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// get record
+	d, err := client.GetPipelineDefinition("1")
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, "1", d.ID)
+
+	d, err = client.GetPipelineDefinition("4")
+
+	assert.Equal(t, true, reflect.ValueOf(d).IsNil())
 }
