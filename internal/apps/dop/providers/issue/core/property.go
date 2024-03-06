@@ -39,11 +39,11 @@ func (i *IssueService) CreateIssueProperty(ctx context.Context, req *pb.CreateIs
 	req.IdentityInfo = identityInfo
 
 	properties, err := i.db.GetIssueProperties(pb.GetIssuePropertyRequest{
-		OrgID:             req.OrgID,
-		ScopeID:           strconv.FormatInt(req.ScopeID, 10),
-		ScopeType:         req.ScopeType.String(),
-		OnlyProject:       req.OnlyProject,
-		PropertyIssueType: req.PropertyIssueType.String(),
+		OrgID:                req.OrgID,
+		ScopeID:              strconv.FormatInt(req.ScopeID, 10),
+		ScopeType:            req.ScopeType.String(),
+		OnlyCurrentScopeType: req.OnlyCurrentScopeType,
+		PropertyIssueType:    req.PropertyIssueType.String(),
 	})
 	var startIndex int64 = 0
 	for _, v := range properties {

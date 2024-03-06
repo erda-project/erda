@@ -91,33 +91,26 @@ func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]Is
 	if err := db.Order("index").Find(&propertiesProject).Error; err != nil {
 		return nil, err
 	}
-	//properties = append(properties, propertiesProject...)
 
-	if req.OnlyProject {
+	if req.OnlyCurrentScopeType == string(apistructs.ProjectScope) {
 		return propertiesProject, nil
 	}
 	// 优先级：项目 > 企业级，当有重复的字段时，项目覆盖企业的字段；
 	properties = NameConflict(properties, propertiesProject)
-
 	return properties, nil
 }
 
 // NameConflict 重名覆盖函数用于解决自定义事项名称相同冲突问题，优先级：app > project > org
 func NameConflict(properties ...[]IssueProperty) []IssueProperty {
 	propertyMap := make(map[string]IssueProperty, 0)
-	overlayIndex := make(map[string]int, 0)
-	for i, v := range properties[0] {
+	// 目前没有 app 级别，properties[0] 代表组织级别，properties[1] 代表项目级别
+	for _, v := range properties[0] {
 		// common requirement task bug
 		propertyMap[v.PropertyName+":"+v.PropertyIssueType] = v
-		overlayIndex[v.PropertyName+":"+v.PropertyIssueType] = i
 	}
 	for _, v := range properties[1] {
-		if _, ok := propertyMap[v.PropertyName+":"+v.PropertyIssueType]; ok {
-			// 组织级存在该项目级自定义字段
-			propertyMap[v.PropertyName+":"+v.PropertyIssueType] = v
-		} else {
-			propertyMap[v.PropertyName+":"+v.PropertyIssueType] = v
-		}
+		// 如果重名，并且 PropertyIssueType 一样，就项目级覆盖组织级别，不相同的话，就是把它加到 map，这样不会缺少数据
+		propertyMap[v.PropertyName+":"+v.PropertyIssueType] = v
 	}
 	property := make([]IssueProperty, 0)
 	for _, v := range propertyMap {
