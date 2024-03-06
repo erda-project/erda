@@ -233,8 +233,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	c.Data = map[string]interface{}{}
 	c.Data["list"] = l
 	var customProperties []*pb.IssuePropertyExtraProperty
-	if len(issues) > 0 {
-		customProperties = issues[0].PropertyInstances
+	for _, v := range issues {
+		if v.PropertyInstances != nil {
+			customProperties = v.PropertyInstances
+			break
+		}
 	}
 	c.Props = buildTableColumnProps(ctx, fixedIssueType, customProperties)
 	c.Operations = map[string]interface{}{
