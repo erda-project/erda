@@ -15,8 +15,6 @@
 package dao
 
 import (
-	"sort"
-
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -93,7 +91,7 @@ func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]Is
 	if err := db.Order("index").Find(&propertiesProject).Error; err != nil {
 		return nil, err
 	}
-	properties = append(properties, propertiesProject...)
+	//properties = append(properties, propertiesProject...)
 
 	if req.OnlyProject {
 		return propertiesProject, nil
@@ -104,22 +102,28 @@ func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]Is
 	return properties, nil
 }
 
-// NameConflict 重名覆盖函数用于解决自定义事项不同类型，名称相同冲突问题，将lowProperties覆盖到highProperties上。优先级：app > project > org
-func NameConflict(highProperties, lowProperties []IssueProperty) []IssueProperty {
-	overlayIndex := make([]int, 0)
-	for i, highProperty := range highProperties {
-		for _, lowProperty := range lowProperties {
-			if lowProperty.PropertyName == highProperty.PropertyName && lowProperty.ScopeType != highProperty.ScopeType {
-				overlayIndex = append(overlayIndex, i)
-			}
+// NameConflict 重名覆盖函数用于解决自定义事项名称相同冲突问题，优先级：app > project > org
+func NameConflict(properties ...[]IssueProperty) []IssueProperty {
+	propertyMap := make(map[string]IssueProperty, 0)
+	overlayIndex := make(map[string]int, 0)
+	for i, v := range properties[0] {
+		// common requirement task bug
+		propertyMap[v.PropertyName+":"+v.PropertyIssueType] = v
+		overlayIndex[v.PropertyName+":"+v.PropertyIssueType] = i
+	}
+	for _, v := range properties[1] {
+		if _, ok := propertyMap[v.PropertyName+":"+v.PropertyIssueType]; ok {
+			// 组织级存在该项目级自定义字段
+			propertyMap[v.PropertyName+":"+v.PropertyIssueType] = v
+		} else {
+			propertyMap[v.PropertyName+":"+v.PropertyIssueType] = v
 		}
 	}
-	sort.Ints(overlayIndex)
-	for i := len(overlayIndex) - 1; i >= 0; i-- {
-		index := overlayIndex[i]
-		highProperties = append(highProperties[:index], highProperties[index+1:]...)
+	property := make([]IssueProperty, 0)
+	for _, v := range propertyMap {
+		property = append(property, v)
 	}
-	return highProperties
+	return property
 }
 
 func (client *DBClient) GetIssuePropertyByID(id int64) (*IssueProperty, error) {
