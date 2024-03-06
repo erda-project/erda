@@ -76,7 +76,7 @@ func (client *Client) GetPipelineDefinitionExtra(id string, ops ...mysqlxorm.Ses
 	var pipelineDefinitionExtra PipelineDefinitionExtra
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ?", id).GetFirst(&pipelineDefinitionExtra).GetResult(); err != nil {
+	if has, err = session.Where("id = ?", id).Get(&pipelineDefinitionExtra); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func (client *Client) GetPipelineDefinitionExtraByDefinitionID(definitionID stri
 	var pipelineDefinitionExtra PipelineDefinitionExtra
 	var has bool
 	var err error
-	if has, _, err = session.Where("pipeline_definition_id = ?", definitionID).GetFirst(&pipelineDefinitionExtra).GetResult(); err != nil {
+	if has, err = session.Where("pipeline_definition_id = ?", definitionID).Get(&pipelineDefinitionExtra); err != nil {
 		return nil, err
 	}
 
