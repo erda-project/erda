@@ -474,7 +474,7 @@ message CreateIssuePropertyRequest {
   repeated Enumerate enumeratedValues = 9;
   int64 relation = 10;
   common.IdentityInfo identityInfo = 11 [json_name = "-"];
-  bool onlyProject = 12;
+  string onlyCurrentScopeType = 12;
 }
 
 message CreateIssuePropertyResponse {
@@ -520,7 +520,7 @@ message GetIssuePropertyRequest {
   common.IdentityInfo identityInfo = 4 [json_name = "-"];
   string scopeType = 5;
   string scopeID = 6;
-  bool onlyProject = 7;
+  string onlyCurrentScopeType = 7;
 }
 
 message GetIssuePropertyResponse {
