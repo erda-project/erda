@@ -67,6 +67,19 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 	return a.addonAttach(addonSpec, addonDice, params)
 }
 
+func (a *Addon) parseAddonDice(addon apistructs.ExtensionVersion) (diceyml.Object, error) {
+	var dice diceyml.Object
+	diceBytes, err := json.Marshal(addon.Dice)
+	if err != nil {
+		return diceyml.Object{}, err
+	}
+	err = json.Unmarshal(diceBytes, &dice)
+	if err != nil {
+		return diceyml.Object{}, err
+	}
+	return dice, nil
+}
+
 func (a *Addon) parseAddonSpec(addon apistructs.ExtensionVersion) (apistructs.AddonExtension, error) {
 	// spec.yml forced conversion to string type
 	addonSpecBytes, err := json.Marshal(addon.Spec)
