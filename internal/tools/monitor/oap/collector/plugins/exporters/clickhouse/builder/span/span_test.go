@@ -132,7 +132,7 @@ func (m *mockConn) QueryRow(ctx context.Context, query string, args ...interface
 	panic("implement me")
 }
 
-func (m *mockConn) PrepareBatch(ctx context.Context, query string) (driver.Batch, error) {
+func (m *mockConn) PrepareBatch(ctx context.Context, query string, opts ...driver.PrepareBatchOption) (driver.Batch, error) {
 	return &mockBatch{}, nil
 }
 
@@ -140,7 +140,7 @@ func (m *mockConn) Exec(ctx context.Context, query string, args ...interface{}) 
 	panic("implement me")
 }
 
-func (m *mockConn) AsyncInsert(ctx context.Context, query string, wait bool) error {
+func (m *mockConn) AsyncInsert(ctx context.Context, query string, wait bool, args ...any) error {
 	panic("implement me")
 }
 
@@ -176,3 +176,5 @@ func (m *mockBatch) Send() error { return nil }
 func (m *mockBatch) Flush() error { return nil }
 
 func (m *mockBatch) IsSent() bool { return true }
+
+func (m *mockBatch) Rows() int { return 0 }

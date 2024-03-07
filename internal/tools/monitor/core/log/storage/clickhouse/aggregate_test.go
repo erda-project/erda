@@ -132,7 +132,7 @@ func (m MockCkDriver) QueryRow(ctx context.Context, query string, args ...interf
 	panic("implement me")
 }
 
-func (m MockCkDriver) PrepareBatch(ctx context.Context, query string) (ckdriver.Batch, error) {
+func (m MockCkDriver) PrepareBatch(ctx context.Context, query string, opts ...ckdriver.PrepareBatchOption) (ckdriver.Batch, error) {
 	panic("implement me")
 }
 
@@ -140,7 +140,7 @@ func (m MockCkDriver) Exec(ctx context.Context, query string, args ...interface{
 	panic("implement me")
 }
 
-func (m MockCkDriver) AsyncInsert(ctx context.Context, query string, wait bool) error {
+func (m MockCkDriver) AsyncInsert(ctx context.Context, query string, wait bool, args ...any) error {
 	panic("implement me")
 }
 
