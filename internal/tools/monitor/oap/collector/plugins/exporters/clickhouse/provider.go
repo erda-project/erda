@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder"
 	externalmetric "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/external_metric"
+	logStore "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/log"
 	metricstore "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/metric"
 	profilebuilder "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/exporters/clickhouse/builder/span"
@@ -58,7 +59,10 @@ func (p *provider) ComponentClose() error {
 }
 
 func (p *provider) ExportRaw(items ...*odata.Raw) error { return nil }
-func (p *provider) ExportLog(items ...*log.Log) error   { return nil }
+func (p *provider) ExportLog(items ...*log.Log) error {
+	p.storage.WriteBatchAsync(items)
+	return nil
+}
 func (p *provider) ExportProfile(items ...*profile.Output) error {
 	p.storage.WriteBatchAsync(items)
 	return nil
@@ -90,6 +94,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	case odata.MetricType:
 	case odata.ProfileType:
 	case odata.ExternalMetricType:
+	case odata.LogType:
 	default:
 		return fmt.Errorf("invalid builder for data_type: %q", p.Cfg.BuilderCfg.DataType)
 	}
@@ -118,6 +123,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		tmp, err := externalmetric.NewBuilder(ctx, p.Log.Sub("external-metric-builder"), p.Cfg.BuilderCfg)
 		if err != nil {
 			return fmt.Errorf("external metrics build: %w", err)
+		}
+		batchBuilder = tmp
+	case odata.LogType:
+		tmp, err := logStore.NewBuilder(ctx, p.Log.Sub("log-builder"), p.Cfg.BuilderCfg)
+		if err != nil {
+			return fmt.Errorf("log build: %w", err)
 		}
 		batchBuilder = tmp
 	default:

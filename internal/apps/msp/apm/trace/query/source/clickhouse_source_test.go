@@ -421,7 +421,7 @@ func (m *mockconn) QueryRow(ctx context.Context, query string, args ...interface
 	return &mockRow{}
 }
 
-func (m *mockconn) PrepareBatch(ctx context.Context, query string) (driver.Batch, error) {
+func (m *mockconn) PrepareBatch(ctx context.Context, query string, opts ...driver.PrepareBatchOption) (driver.Batch, error) {
 	return nil, nil
 }
 
@@ -429,7 +429,7 @@ func (m *mockconn) Exec(ctx context.Context, query string, args ...interface{}) 
 	return nil
 }
 
-func (m *mockconn) AsyncInsert(ctx context.Context, query string, wait bool) error {
+func (m *mockconn) AsyncInsert(ctx context.Context, query string, wait bool, args ...any) error {
 	return nil
 }
 

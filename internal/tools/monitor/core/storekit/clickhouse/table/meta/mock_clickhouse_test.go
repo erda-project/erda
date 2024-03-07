@@ -67,7 +67,7 @@ func (m *mockClickhouseConn) QueryRow(ctx context.Context, query string, args ..
 	return nil
 }
 
-func (m *mockClickhouseConn) PrepareBatch(ctx context.Context, query string) (driver.Batch, error) {
+func (m *mockClickhouseConn) PrepareBatch(ctx context.Context, query string, opts ...driver.PrepareBatchOption) (driver.Batch, error) {
 	return nil, nil
 }
 
@@ -75,7 +75,7 @@ func (m *mockClickhouseConn) Exec(ctx context.Context, query string, args ...int
 	return nil
 }
 
-func (m *mockClickhouseConn) AsyncInsert(ctx context.Context, query string, wait bool) error {
+func (m *mockClickhouseConn) AsyncInsert(ctx context.Context, query string, wait bool, args ...any) error {
 	return nil
 }
 
