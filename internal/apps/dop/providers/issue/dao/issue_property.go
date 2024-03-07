@@ -15,8 +15,6 @@
 package dao
 
 import (
-	"sort"
-
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -93,33 +91,34 @@ func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]Is
 	if err := db.Order("index").Find(&propertiesProject).Error; err != nil {
 		return nil, err
 	}
-	properties = append(properties, propertiesProject...)
 
 	if req.OnlyProject {
 		return propertiesProject, nil
 	}
 	// 优先级：项目 > 企业级，当有重复的字段时，项目覆盖企业的字段；
-	properties = NameConflict(properties, propertiesProject)
-
+	properties = nameConflict(properties, propertiesProject)
 	return properties, nil
 }
 
-// NameConflict 重名覆盖函数用于解决自定义事项不同类型，名称相同冲突问题，将lowProperties覆盖到highProperties上。优先级：app > project > org
-func NameConflict(highProperties, lowProperties []IssueProperty) []IssueProperty {
-	overlayIndex := make([]int, 0)
-	for i, highProperty := range highProperties {
-		for _, lowProperty := range lowProperties {
-			if lowProperty.PropertyName == highProperty.PropertyName && lowProperty.ScopeType != highProperty.ScopeType {
-				overlayIndex = append(overlayIndex, i)
+// nameConflict 重名覆盖函数用于解决自定义事项名称相同冲突问题，后一个属性将覆盖前一个,没有则添加
+func nameConflict(properties ...[]IssueProperty) []IssueProperty {
+	allCustomFields := make([]IssueProperty, 0)
+	for _, props := range properties {
+		for _, v := range props {
+			found := false
+			for i, existing := range allCustomFields {
+				if existing.PropertyName == v.PropertyName && existing.PropertyIssueType == v.PropertyIssueType {
+					allCustomFields[i] = v
+					found = true
+					break
+				}
+			}
+			if !found {
+				allCustomFields = append(allCustomFields, v)
 			}
 		}
 	}
-	sort.Ints(overlayIndex)
-	for i := len(overlayIndex) - 1; i >= 0; i-- {
-		index := overlayIndex[i]
-		highProperties = append(highProperties[:index], highProperties[index+1:]...)
-	}
-	return highProperties
+	return allCustomFields
 }
 
 func (client *DBClient) GetIssuePropertyByID(id int64) (*IssueProperty, error) {
