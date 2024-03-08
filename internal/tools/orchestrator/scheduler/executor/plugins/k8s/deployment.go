@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -96,7 +97,7 @@ func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, dep
 	// in version 1.10.3, the following two apis are equal
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6/status
-	deploymentName := getDeployName(service)
+	deploymentName := util.GetDeployName(service)
 
 	if deployment, ok := deployments[deploymentName]; ok {
 
@@ -412,6 +413,16 @@ func (k *Kubernetes) AddContainersEnv(containers []corev1.Container, service *ap
 		},
 	})
 
+	envs = append(envs, corev1.EnvVar{
+		Name: "NODE_NAME",
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "spec.nodeName",
+			},
+		},
+	})
+
 	// add SELF_URL、SELF_HOST、SELF_PORT
 	selfHost := strings.Join([]string{serviceName, service.Namespace, DefaultServiceDNSSuffix}, ".")
 	envs = append(envs, corev1.EnvVar{
@@ -503,7 +514,7 @@ func (k *Kubernetes) setDeploymentZeroReplica(deploy *appsv1.Deployment) {
 }
 
 func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *apistructs.ServiceGroup) (*appsv1.Deployment, error) {
-	deploymentName := getDeployName(service)
+	deploymentName := util.GetDeployName(service)
 	enableServiceLinks := false
 	if _, ok := serviceGroup.Labels[EnableServiceLinks]; ok {
 		enableServiceLinks = true
@@ -541,15 +552,15 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	deployment.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v == "false" &&
-		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
-			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
+		(strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
+			strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{Type: "Recreate"}
 	}
 
 	affinity := constraintbuilders.K8S(&serviceGroup.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{PodLabels: map[string]string{"app": service.Name}}}, k).Affinity
 
-	if v, ok := service.Env[DiceWorkSpace]; ok {
+	if v, ok := service.Env[types.DiceWorkSpace]; ok {
 		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
 			affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
 			k.composeDeploymentNodeAntiAffinityPreferred(v)...)
@@ -1010,7 +1021,7 @@ func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, pod
 		}
 
 		// stateless service with replicas > 1, only use sc support mounted by by multi-pods
-		if service.WorkLoad == ServicePerNode && !strings.Contains(sc, "-nfs-") && !strings.Contains(sc, "-nas-") {
+		if service.WorkLoad == types.ServicePerNode && !strings.Contains(sc, "-nfs-") && !strings.Contains(sc, "-nas-") {
 			// for daemonset
 			return errors.Errorf("failed to set volume for sevice %s: can not use storageclass %s create pvc for per_node service, please set volume type to 'NAS' or 'DICE-NAS'", service.Name, sc)
 		} else {
@@ -1095,13 +1106,6 @@ func (k *Kubernetes) AddSpotEmptyDir(podSpec *corev1.PodSpec, emptySize int) {
 	})
 }
 
-func getDeployName(service *apistructs.Service) string {
-	if service.ProjectServiceName != "" {
-		return service.ProjectServiceName
-	}
-	return service.Name
-}
-
 func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment, sgID string) {
 	if service.ProjectServiceName != "" {
 		deployment.Spec.Selector.MatchLabels[LabelServiceGroupID] = sgID
@@ -1133,7 +1137,7 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	}
 
 	scalingService := sg.Services[serviceIndex]
-	deploymentName := getDeployName(&scalingService)
+	deploymentName := util.GetDeployName(&scalingService)
 	deploy, err := k.getDeployment(ns, deploymentName)
 	if err != nil {
 		getErr := fmt.Errorf("failed to get the deployment %s in namespace %s, err is: %s", deploymentName, ns, err.Error())
@@ -1211,7 +1215,7 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
+	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio
@@ -1687,7 +1691,7 @@ func (k *Kubernetes) getDeploymentAbstract(sg *apistructs.ServiceGroup, serviceI
 	}
 
 	scalingService := sg.Services[serviceIndex]
-	deploymentName := getDeployName(&scalingService)
+	deploymentName := util.GetDeployName(&scalingService)
 	deploy, err := k.getDeployment(ns, deploymentName)
 	if err != nil {
 		getErr := fmt.Errorf("failed to get the deployment %s in namespace %s, err is: %s", deploymentName, ns, err.Error())
