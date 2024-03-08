@@ -15,6 +15,7 @@
 package addon
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -112,4 +113,12 @@ func (a *Cache) initCache(ttl time.Duration, size int) {
 		}
 		return &versions, nil
 	}).Build()
+}
+
+func toVersionMap(cacheValue any) (*VersionMap, error) {
+	vm, ok := cacheValue.(*VersionMap)
+	if !ok {
+		return nil, errors.New("cache data type error")
+	}
+	return vm, nil
 }

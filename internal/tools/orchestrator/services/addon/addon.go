@@ -3093,9 +3093,9 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 			return errors.Wrapf(err, "can't get addon %v in cache", RegisterCenterAddon)
 		}
 
-		registers, ok := regMap.(*VersionMap)
-		if !ok {
-			return errors.New("cache data type error")
+		registers, err := toVersionMap(regMap)
+		if err != nil {
+			return err
 		}
 
 		version, ok := (*registers)[regVersion]
@@ -3149,14 +3149,6 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	return nil
 }
 
-func (a *Addon) toVersionMap(value any) (*VersionMap, error) {
-	vm, ok := value.(*VersionMap)
-	if !ok {
-		return nil, errors.New("cache data type error")
-	}
-	return vm, nil
-}
-
 func (a *Addon) nacosVersionReference(version string) (regVersion, confVersion string, err error) {
 	regMap, err := GetCache().Get(RegisterCenterAddon)
 	if err != nil {
@@ -3166,11 +3158,11 @@ func (a *Addon) nacosVersionReference(version string) (regVersion, confVersion s
 	if err != nil {
 		return "", "", err
 	}
-	registers, err := a.toVersionMap(regMap)
+	registers, err := toVersionMap(regMap)
 	if err != nil {
 		return "", "", err
 	}
-	configs, err := a.toVersionMap(confMap)
+	configs, err := toVersionMap(confMap)
 	if err != nil {
 		return "", "", err
 	}
