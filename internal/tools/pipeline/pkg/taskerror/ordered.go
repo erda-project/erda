@@ -21,6 +21,8 @@ import (
 	"time"
 )
 
+const TaskErrMergeIterationThreshold = 10
+
 type OrderedErrors []*Error
 
 func (o OrderedErrors) Len() int           { return len(o) }
@@ -61,15 +63,50 @@ func (o OrderedErrors) AppendError(errs ...*Error) OrderedErrors {
 	}
 	sort.Sort(newOrderedErrs)
 
+	return MergeOrderError(ordered, newOrderedErrs)
+}
+
+func MergeOrderError(ordered []*Error, newOrderErr []*Error) []*Error {
+	orderMap := make(map[string]*Error)
 	var lastErr *Error
+
 	if len(ordered) != 0 {
 		lastErr = ordered[len(ordered)-1]
 	}
 
-	for _, g := range newOrderedErrs {
+	for _, g := range newOrderErr {
 		if lastErr == nil {
 			ordered = append(ordered, g)
 			lastErr = g
+			continue
+		}
+
+		// if current number of errors has already exceeded a certain amount, subsequence errors will be merged into the previous which with the same msg
+		// to avoid the situation where cycle appending causes errors to be too large
+		if len(ordered) > TaskErrMergeIterationThreshold {
+			// store it in map to avoid redundant iteration
+			if len(orderMap) == 0 {
+				for _, o := range ordered {
+					// merge to the latest record
+					orderMap[strings.ToLower(o.Msg)] = o
+				}
+			}
+
+			// find g in map, if exists, add count and update time
+			// otherwise, append in orderMap and ordered
+			if o, exist := orderMap[strings.ToLower(g.Msg)]; exist {
+				if !g.Ctx.StartTime.IsZero() && g.Ctx.StartTime.Before(o.Ctx.StartTime) {
+					o.Ctx.StartTime = g.Ctx.StartTime
+				}
+				if g.Ctx.EndTime.After(o.Ctx.EndTime) {
+					o.Ctx.EndTime = g.Ctx.EndTime
+				}
+				o.Ctx.Count++
+				continue
+			}
+
+			ordered = append(ordered, g)
+			orderMap[strings.ToLower(g.Msg)] = g
 			continue
 		}
 
@@ -82,10 +119,11 @@ func (o OrderedErrors) AppendError(errs ...*Error) OrderedErrors {
 			}
 			lastErr.Ctx.Count++
 			continue
-		} else {
-			ordered = append(ordered, g)
-			lastErr = g
 		}
+
+		ordered = append(ordered, g)
+		lastErr = g
 	}
+
 	return ordered
 }

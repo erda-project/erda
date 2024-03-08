@@ -50,6 +50,15 @@ type PipelineSourceUnique struct {
 	VersionLock uint64   `json:"versionLock" xorm:"version_lock version"`
 }
 
+type PipelineSourceUniqueGroupWithCount struct {
+	SourceType string `json:"sourceType"`
+	Remote     string `json:"remote"`
+	Ref        string `json:"ref"`
+	Path       string `json:"path"`
+	Name       string `json:"name"`
+	Count      int    `json:"count"`
+}
+
 func (PipelineSource) TableName() string {
 	return "pipeline_source"
 }
@@ -85,8 +94,8 @@ func (client *Client) GetPipelineSource(id string, ops ...mysqlxorm.SessionOptio
 	var pipelineSource PipelineSource
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).
-		GetFirst(&pipelineSource).GetResult(); err != nil {
+	has, err = session.Where("id = ? and soft_deleted_at = 0", id).Get(&pipelineSource)
+	if err != nil {
 		return nil, err
 	}
 
@@ -164,4 +173,26 @@ func (p *PipelineSource) Convert() *pb.PipelineSource {
 		TimeCreated: timestamppb.New(p.CreatedAt),
 		TimeUpdated: timestamppb.New(p.UpdatedAt),
 	}
+}
+
+func (client *Client) GetUniqueSourceGroup(ops ...mysqlxorm.SessionOption) (uniqueSourceGroup []PipelineSourceUniqueGroupWithCount, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	err = session.Table(&PipelineSource{}).
+		Select("source_type, remote, ref, path, name, count(*) as count").
+		Where("soft_deleted_at = 0").
+		GroupBy("source_type, remote, ref, path, name").
+		Find(&uniqueSourceGroup)
+
+	return uniqueSourceGroup, err
+}
+
+func (client *Client) CountPipelineSource(ops ...mysqlxorm.SessionOption) (int64, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	count, err := session.Where("soft_deleted_at = 0").Count(&PipelineSource{})
+
+	return count, err
 }

@@ -61,6 +61,8 @@ type provider struct {
 
 type config struct {
 	RetryInterval time.Duration `file:"retry_interval" default:"5s"`
+
+	TaskErrAppendMaxLimit int `file:"task_err_append_max_limit" env:"TASK_ERR_APPEND_MAX_LIMIT" default:"20"`
 }
 
 func (r *provider) Init(ctx servicehub.Context) error {

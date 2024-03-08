@@ -609,7 +609,7 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 	case apistructs.AddonES:
 		// 6.8.9 or later version use operator.
 		if capacity.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
-			buildErr = a.BuildESOperatorServiceItem(params.Options, addonIns, addonDice, addonSpec.Version)
+			buildErr = a.BuildESOperatorServiceItem(params, addonSpec, addonIns, addonDice, addonSpec.Version)
 		} else {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
 			buildErr = a.BuildEsServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)

@@ -49,6 +49,7 @@ func TestIsArrayContained(t *testing.T) {
 	assert.Equal(t, index, 0)
 	assert.Equal(t, flag, false)
 }
+
 func TestDifferenceSet(t *testing.T) {
 	arr1 := []uint64{1, 2, 3, 4, 5}
 	arr2 := []uint64{2, 4}
@@ -57,4 +58,61 @@ func TestDifferenceSet(t *testing.T) {
 
 	expectedResult := []uint64{1, 3, 5}
 	assert.Equal(t, expectedResult, result)
+}
+
+func TestArray2Map(t *testing.T) {
+	arr := []int{1, 2, 3, 4, 3}
+	want := map[int]struct{}{
+		1: {},
+		2: {},
+		3: {},
+		4: {},
+	}
+
+	result := ArrayToMap(arr)
+	assert.Equal(t, want, result)
+}
+
+func TestStructArray2Map(t *testing.T) {
+	type itemStruct struct {
+		Key   string
+		Value string
+		Other interface{}
+	}
+	arr := []itemStruct{
+		{Key: "this is key1", Value: "this is value1", Other: ""},
+		{Key: "this is key2", Value: "this is value2", Other: ""},
+		{Key: "", Value: "", Other: ""},
+	}
+
+	want := map[string]string{
+		"this is key1": "this is value1",
+		"this is key2": "this is value2",
+	}
+
+	array2Map := StructArrayToMap(arr, func(item itemStruct) (key string, value string, skip bool) {
+		if item.Key == "" {
+			return "", "", true
+		}
+		return item.Key, item.Value, false
+	})
+
+	assert.Equal(t, want, array2Map)
+
+}
+
+func TestGetFieldArrFromStruct(t *testing.T) {
+	type itemStruct struct {
+		Field string
+	}
+	arr := []itemStruct{
+		{Field: "123"},
+		{Field: "5321"},
+		{Field: "45"},
+	}
+	want := []string{"123", "5321", "45"}
+	result := GetFieldArrFromStruct(arr, func(item itemStruct) string {
+		return item.Field
+	})
+	assert.Equal(t, want, result)
 }

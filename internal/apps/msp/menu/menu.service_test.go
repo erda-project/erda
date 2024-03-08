@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	mdb "github.com/erda-project/erda/internal/apps/msp/menu/db"
+	mocklogger "github.com/erda-project/erda/pkg/mock"
 )
 
 // //go:generate mockgen -destination=./menu_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
@@ -37,7 +38,7 @@ import (
 func Test_menuService_GetMenu(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 	register := NewMockRegister(ctrl)
 	defer monkey.UnpatchAll()
 	monkey.Patch((*menuService).composeMSPMenuParams, func(_ *menuService, _ *pb.GetMenuRequest) map[string]string {
@@ -119,7 +120,7 @@ func Test_menuService_GetMenu(t *testing.T) {
 func Test_menuService_GetSetting(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	logger := NewMockLogger(ctrl)
+	logger := mocklogger.NewMockLogger(ctrl)
 	register := NewMockRegister(ctrl)
 	defer monkey.UnpatchAll()
 	monkey.Patch((*menuService).getEngineConfigs, func(_ *menuService, _ string, _ string) (map[string]map[string]string, error) {

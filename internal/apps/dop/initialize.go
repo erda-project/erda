@@ -674,6 +674,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithNamespace(ns),
 		endpoints.WithEnvConfig(env),
 		endpoints.WithIssue(issue),
+		endpoints.WithIssueService(p.IssueCoreSvc),
 		endpoints.WithIssueState(issueState),
 		endpoints.WithIteration(itr),
 		endpoints.WithPublisher(pub),

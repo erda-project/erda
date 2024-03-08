@@ -41,6 +41,7 @@ import (
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/compensator"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/cron/daemon"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc"
+	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/definition_cleanup"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/definition"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/edgepipeline_register"
 	_ "github.com/erda-project/erda/internal/tools/pipeline/providers/graph"

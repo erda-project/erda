@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/xormplus/builder"
-	"github.com/xormplus/xorm"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"xorm.io/builder"
+	"xorm.io/xorm"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
@@ -77,6 +77,14 @@ func (client *Client) DeletePipelineDefinition(id string, ops ...mysqlxorm.Sessi
 	return err
 }
 
+func (client *Client) BatchDeletePipelineDefinition(ids []string, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.Table(new(PipelineDefinition)).In("id", ids).Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
+	return err
+}
+
 func (client *Client) DeletePipelineDefinitionByRemote(remote string, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -107,7 +115,8 @@ func (client *Client) GetPipelineDefinition(id string, ops ...mysqlxorm.SessionO
 	var pipelineDefinition PipelineDefinition
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+
+	if has, err = session.Where("id = ? and soft_deleted_at = 0", id).Get(&pipelineDefinition); err != nil {
 		return nil, err
 	}
 
@@ -127,11 +136,21 @@ func (client *Client) GetPipelineDefinitionBySourceID(sourceID string, ops ...my
 		has                bool
 		err                error
 	)
-	if has, _, err = session.Where("pipeline_source_id = ? and soft_deleted_at = 0", sourceID).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+	if has, err = session.Where("pipeline_source_id = ? and soft_deleted_at = 0", sourceID).Get(&pipelineDefinition); err != nil {
 		return nil, false, err
 	}
 
 	return &pipelineDefinition, has, nil
+}
+
+func (client *Client) GetPipelineDefinitionListInSourceIDs(ids []string, ops ...mysqlxorm.SessionOption) ([]PipelineDefinition, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var definitions []PipelineDefinition
+	err := session.Table(PipelineDefinition{}.TableName()).In("pipeline_source_id", ids).Desc("created_at").Where("soft_deleted_at = 0").Find(&definitions)
+
+	return definitions, err
 }
 
 type PipelineDefinitionSource struct {
@@ -228,23 +247,19 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		}
 	}
 
-	countEngine := engine.Clone().Select("COUNT(*)")
-
 	for _, v := range req.AscCols {
 		engine = engine.Asc("d." + v)
 	}
 	for _, v := range req.DescCols {
 		engine = engine.Desc("d." + v)
 	}
-	if err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).
-		Find(&pipelineDefinitionSources); err != nil {
+
+	var total int64
+	if total, err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).
+		FindAndCount(&pipelineDefinitionSources); err != nil {
 		return nil, 0, err
 	}
 
-	total, err := client.CountPipelineDefinition(countEngine)
-	if err != nil {
-		return nil, 0, err
-	}
 	return pipelineDefinitionSources, total, nil
 }
 

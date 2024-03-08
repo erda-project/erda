@@ -53,9 +53,7 @@ const (
 	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
 	AddonPlanIllegal               = "AddonPlanIllegal"
 	AddonPlanNotSupport            = "AddonPlanNotSupport"
-
-	AddonConfigCenter   = "config-center"
-	AddonRegisterCenter = "registercenter"
+	AddonDeprecated                = "AddonDeprecated"
 )
 
 // AttachAndCreate addon创建，runtime建立关系方法
@@ -67,6 +65,20 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 		return nil, err
 	}
 	return a.addonAttach(addonSpec, addonDice, params)
+}
+
+func (a *Addon) parseAddonSpec(addon apistructs.ExtensionVersion) (apistructs.AddonExtension, error) {
+	// spec.yml forced conversion to string type
+	addonSpecBytes, err := json.Marshal(addon.Spec)
+	if err != nil {
+		return apistructs.AddonExtension{}, errors.Wrap(err, "failed to parse addon spec")
+	}
+	addonSpec := apistructs.AddonExtension{}
+	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
+	if specErr != nil {
+		return apistructs.AddonExtension{}, errors.Wrap(specErr, "failed to parse addon spec")
+	}
+	return addonSpec, nil
 }
 
 // GetAddonExtention 获取addon的spec，dice.yml信息
@@ -103,9 +115,7 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	version := strings.Trim(v, " ")
 	emptyVersion := !ok || version == ""
 
-	if emptyVersion ||
-		params.AddonName == AddonConfigCenter ||
-		params.AddonName == AddonRegisterCenter {
+	if emptyVersion {
 		// If version is null, get the default version of addon
 		addon, hasVersion = addons.GetDefault()
 	} else {
@@ -114,39 +124,30 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 	}
 	// If there is no default value and no corresponding version, then a random version of addon is obtained for judgment.
 	if !hasVersion {
-		for _, val := range *addons {
-			addon = val
-			break
+		if emptyVersion {
+			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
+		} else {
+			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
 		}
+		logrus.Errorf(err.Error())
+		return nil, nil, err
 	}
 
-	// spec.yml forced conversion to string type
-	addonSpecBytes, err := json.Marshal(addon.Spec)
+	addonSpec, err := a.parseAddonSpec(addon)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse addon spec")
+		return nil, nil, err
 	}
-	addonSpec := apistructs.AddonExtension{}
-	specErr := json.Unmarshal(addonSpecBytes, &addonSpec)
-	if specErr != nil {
-		return nil, nil, errors.Wrap(specErr, "failed to parse addon spec")
+
+	if addonSpec.Deprecated {
+		err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDeprecated, params.AddonName, addon.Version))
+		logrus.Errorf(err.Error())
+		return nil, nil, err
 	}
 
 	if addonSpec.SubCategory == apistructs.BasicAddon {
 		// Ensure that basic components are not deployed in the production environment
-		if err = a.preCheck(params); err != nil {
+		if err = a.preCheck(params); err != nil && addonSpec.Category != apistructs.AddonCustomCategory {
 			err := errors.New(i18n.OrgSprintf(params.OrgID, AddonPlanIllegal, params.AddonName))
-			logrus.Errorf(err.Error())
-			return nil, nil, err
-		}
-
-		// If hasVersion is still false at the end of the loop, it means that the corresponding Addon version has not been found.
-		if !hasVersion {
-			var err error
-			if emptyVersion {
-				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
-			} else {
-				err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
-			}
 			logrus.Errorf(err.Error())
 			return nil, nil, err
 		}

@@ -72,7 +72,7 @@ func TestAggregationFunction(t *testing.T) {
 					},
 				},
 			},
-			want: "SELECT MAX(number_field_values[indexOf(number_field_keys,'com_delete')]) AS \"1af26e55a4a29af8\" FROM \"table\"",
+			want: "SELECT MAX(if(indexOf(number_field_keys,'com_delete') == 0,null,number_field_values[indexOf(number_field_keys,'com_delete')])) AS \"1af26e55a4a29af8\" FROM \"table\"",
 		},
 		{
 			name:     "test min",

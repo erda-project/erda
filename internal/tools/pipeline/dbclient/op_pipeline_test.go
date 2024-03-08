@@ -22,11 +22,10 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
-	"github.com/xormplus/xorm"
 	"google.golang.org/protobuf/types/known/structpb"
+	"xorm.io/xorm"
 
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
 )
 

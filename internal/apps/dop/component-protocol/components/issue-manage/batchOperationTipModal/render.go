@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
 )
 
 func init() {
@@ -90,7 +91,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			bot.ctx = ctx
 			cputil.MustObjJSONTransfer(&c.State, &bot.State)
 			bot.State.Visible = false
-			issueSvc := ctx.Value(types.IssueService).(pb.IssueCoreServiceServer)
+			issueSvc := ctx.Value(types.IssueService).(core.IssueService)
 			bot.issueSvc = issueSvc
 			_, err = bot.DeleteItems(bot.State.SelectedRowKeys, projectid)
 			if err != nil {

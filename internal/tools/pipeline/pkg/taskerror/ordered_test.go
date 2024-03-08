@@ -98,3 +98,83 @@ func TestOrderedResponses_ConvertErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeOrderError(t *testing.T) {
+	now := time.Now()
+	testcase := []struct {
+		name        string
+		ordered     []*Error
+		newOrderErr []*Error
+		want        []*Error
+	}{
+		{
+			name: "ordered is less 10",
+			ordered: []*Error{
+				{Code: "1", Msg: "This is error msg", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "2", Msg: "This is error msg 2", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "3", Msg: "This is error msg 3", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "4", Msg: "This is error msg 4", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 3}},
+				{Code: "5", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 4}},
+			},
+			newOrderErr: []*Error{
+				{Code: "6", Msg: "", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "7", Msg: "This is error msg 7", Ctx: ErrorContext{StartTime: now.Add(-1 * time.Hour), EndTime: now.Add(-1 * time.Hour), Count: 1}},
+				{Code: "8", Msg: "This is error msg 7", Ctx: ErrorContext{StartTime: now.Add(1 * time.Hour), EndTime: now.Add(1 * time.Hour), Count: 1}},
+				{Code: "9", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+			},
+			want: []*Error{
+				{Code: "1", Msg: "This is error msg", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "2", Msg: "This is error msg 2", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "3", Msg: "This is error msg 3", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "4", Msg: "This is error msg 4", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 3}},
+				{Code: "5", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 4}},
+				{Code: "6", Msg: "", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "7", Msg: "This is error msg 7", Ctx: ErrorContext{StartTime: now.Add(-1 * time.Hour), EndTime: now.Add(1 * time.Hour), Count: 2}},
+				{Code: "9", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+			},
+		},
+		{
+			name: "ordered is more than 10",
+			ordered: []*Error{
+				{Code: "1", Msg: "This is error msg", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "2", Msg: "This is error msg 2", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "3", Msg: "This is error msg 3", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "4", Msg: "This is error msg 4", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 3}},
+				{Code: "5", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 4}},
+				{Code: "6", Msg: "This is error msg 6", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "7", Msg: "This is error msg 7", Ctx: ErrorContext{StartTime: now.Add(-1 * time.Hour), EndTime: now.Add(-1 * time.Hour), Count: 1}},
+				{Code: "8", Msg: "This is error msg 8", Ctx: ErrorContext{StartTime: now.Add(1 * time.Hour), EndTime: now.Add(1 * time.Hour), Count: 1}},
+				{Code: "9", Msg: "This is error msg 4", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 2}},
+				{Code: "10", Msg: "This is error msg 10", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "11", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+			},
+			newOrderErr: []*Error{
+				{Code: "12", Msg: "This is error msg 4", Ctx: ErrorContext{StartTime: now.Add(-2 * time.Hour), EndTime: now.Add(1 * time.Hour), Count: 1}},
+				{Code: "13", Msg: "This is Error msg 7", Ctx: ErrorContext{StartTime: now.Add(-1 * time.Hour), EndTime: now.Add(-1 * time.Hour), Count: 1}},
+				{Code: "14", Msg: "this is error msg 7", Ctx: ErrorContext{StartTime: now.Add(1 * time.Hour), EndTime: now, Count: 1}},
+				{Code: "15", Msg: "This is error msg 15", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+			},
+			want: []*Error{
+				{Code: "1", Msg: "This is error msg", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "2", Msg: "This is error msg 2", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "3", Msg: "This is error msg 3", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "4", Msg: "This is error msg 4", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 3}},
+				{Code: "5", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 4}},
+				{Code: "6", Msg: "This is error msg 6", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "7", Msg: "This is error msg 7", Ctx: ErrorContext{StartTime: now.Add(-1 * time.Hour), EndTime: now, Count: 3}},
+				{Code: "8", Msg: "This is error msg 8", Ctx: ErrorContext{StartTime: now.Add(1 * time.Hour), EndTime: now.Add(1 * time.Hour), Count: 1}},
+				{Code: "9", Msg: "This is error msg 4", Ctx: ErrorContext{StartTime: now.Add(-2 * time.Hour), EndTime: now.Add(1 * time.Hour), Count: 3}},
+				{Code: "10", Msg: "This is error msg 10", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "11", Msg: "This is error msg 5", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+				{Code: "15", Msg: "This is error msg 15", Ctx: ErrorContext{StartTime: now, EndTime: now, Count: 1}},
+			},
+		},
+	}
+
+	for _, test := range testcase {
+		t.Run(test.name, func(t *testing.T) {
+			ordered := MergeOrderError(test.ordered, test.newOrderErr)
+			assert.Equal(t, test.want, ordered)
+		})
+	}
+}

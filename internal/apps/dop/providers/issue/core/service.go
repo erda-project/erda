@@ -42,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/internal/apps/dop/services/testplan"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -554,16 +555,10 @@ func (i *IssueService) DeleteIssue(ctx context.Context, req *pb.DeleteIssueReque
 // BatchDeleteIssues 批量删除
 func (i *IssueService) BatchDeleteIssues(ctx context.Context, req *pb.BatchDeleteIssueRequest) (*pb.BatchDeleteIssueResponse, error) {
 	numSlice := make([]uint64, len(req.Ids))
-	for i, str := range req.Ids {
-		num, err := strconv.ParseUint(str, 10, 64)
-		if err != nil {
-			return nil, apierrors.ErrBatchDeleteIssue.InvalidParameter(err)
-		}
-		numSlice[i] = num
-	}
 	ids := make([]int64, len(req.Ids))
-	for k, v := range numSlice {
-		ids[k] = int64(v)
+	for i, str := range req.Ids {
+		numSlice[i], _ = strconv.ParseUint(str, 10, 64)
+		ids[i] = int64(numSlice[i])
 	}
 
 	identityInfo := apis.GetIdentityInfo(ctx)
@@ -572,9 +567,13 @@ func (i *IssueService) BatchDeleteIssues(ctx context.Context, req *pb.BatchDelet
 	}
 
 	issues, _, err := i.query.Paging(pb.PagingIssueRequest{IDs: ids, ProjectID: req.ProjectID})
-
 	if err != nil {
 		return nil, err
+	}
+
+	tx := i.db.Begin()
+	client := &dao.DBClient{
+		DBEngine: &dbengine.DBEngine{DB: tx},
 	}
 
 	for k, issue := range issues {
@@ -615,26 +614,31 @@ func (i *IssueService) BatchDeleteIssues(ctx context.Context, req *pb.BatchDelet
 
 		// 删除测试计划用例关联
 		if issue.Type == pb.IssueTypeEnum_BUG {
-			if err := i.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{numSlice[k]}); err != nil {
+			if err := client.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{numSlice[k]}); err != nil {
+				tx.Rollback()
 				return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
 			}
 		}
 	}
 
-	if err := i.db.BatchCleanIssueRelation(numSlice); err != nil {
+	if err := client.BatchCleanIssueRelation(numSlice); err != nil {
+		tx.Rollback()
 		return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
 	}
 
-	if err := i.db.BatchDeletePropertyRelationByIssueID(ids); err != nil {
+	if err := client.BatchDeletePropertyRelationByIssueID(ids); err != nil {
+		tx.Rollback()
 		return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
 	}
 
 	// delete issue state transition
-	if err = i.db.BatchDeleteIssuesStateTransition(numSlice); err != nil {
+	if err = client.BatchDeleteIssuesStateTransition(numSlice); err != nil {
+		tx.Rollback()
 		return nil, apierrors.ErrBatchDeleteIssue.InternalError(err)
 	}
 
-	if err = i.db.BatchDeleteIssues(numSlice); err != nil {
+	if err = client.BatchDeleteIssues(numSlice); err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -646,8 +650,28 @@ func (i *IssueService) BatchDeleteIssues(ctx context.Context, req *pb.BatchDelet
 			logrus.Errorf("update project active time err: %v", err)
 		}
 	}
-
+	tx.Commit()
 	return &pb.BatchDeleteIssueResponse{Data: issues}, nil
+}
+
+// BatchDeleteIssueByIterationID 根据迭代 id 批量删除 issue
+func (i *IssueService) BatchDeleteIssueByIterationID(ctx context.Context, iterationID uint64) (err error) {
+	identityInfo := apis.GetIdentityInfo(ctx)
+	if identityInfo == nil {
+		return apierrors.ErrUpdateIssue.NotLogin()
+	}
+	err = i.db.BatchDeleteIssueByIterationID(iterationID)
+	return
+}
+
+// BatchUpdateIssueIterationIDByIterationID 根据迭代 id 批量更新 issue 的 iteration_id
+func (i *IssueService) BatchUpdateIssueIterationIDByIterationID(ctx context.Context, iterationID uint64, ID int64) (err error) {
+	identityInfo := apis.GetIdentityInfo(ctx)
+	if identityInfo == nil {
+		return apierrors.ErrUpdateIssue.NotLogin()
+	}
+	err = i.db.BatchUpdateIssueIterationIDByIterationID(iterationID, ID)
+	return
 }
 
 func (i *IssueService) GetTestPlanCaseRels(issueID uint64) ([]*pb.TestPlanCaseRel, error) {

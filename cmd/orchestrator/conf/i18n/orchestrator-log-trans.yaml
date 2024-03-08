@@ -19,6 +19,7 @@ zh:
   InvalidServiceName: "不合法的服务名称: %s"
   AddonPlanIllegal: "Addon %s 规格不合法, Basic 规格 Addon 无法在生产环境使用"
   AddonFormatIllegal: "Addon %s 格式不合法, 请检查 dice.yml 中 addon 部分是否正确"
+  AddonDeprecated: "Addon %s 当前版本：%v 已被废弃，请在dice.yml中重新配置"
 
 en:
   WaitingForAddonTimeOut: "Waiting for the addon (%s)(%s) to be healthy timeout (%d min)"
@@ -41,3 +42,4 @@ en:
   InvalidServiceName: "Invalid service name: %s"
   AddonPlanIllegal: "Addon %s plan is illegal, Basic plan addon cannot be used in production environment"
   AddonFormatIllegal: "Addon %s format is illegal, please check the dice.yml addon section"
+  AddonDeprecated: "Addon %s current version: %v deprecated, please reconfigure in dice.yml"

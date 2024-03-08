@@ -453,6 +453,12 @@ message PipelineDefinitionRequest {
   repeated string sourceRemotes = 3;
   string location = 4;
   string definitionID = 5;
+  string definitionJoinType = 6;
+  string sourceJoinType = 7;
+  bool sourceNotJoin = 8;
+  bool allowDefinitionIdIsNull = 9;
+  bool isNotSnapshotForDefinition = 10;
+  bool notNeedQueryDefinition = 11;
 }
 
 message PipelineTaskOperateRequest {

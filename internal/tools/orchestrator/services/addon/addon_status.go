@@ -1121,7 +1121,7 @@ func (a *Addon) deepCopy(dst, src interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, version string) error {
+func (a *Addon) BuildESOperatorServiceItem(params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, version string) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonESPasswordKey)
 	if err != nil {
@@ -1131,6 +1131,7 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 		"USE_OPERATOR": "elasticsearch",
 		"VERSION":      version,
 	}
+	addonDeployPlan := addonSpec.Plan[params.Plan]
 	//设置环境变量
 	for _, v := range addonDice.Services {
 		if len(v.Envs) == 0 {
@@ -1146,10 +1147,11 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 		if len(v.Labels) == 0 {
 			v.Labels = make(map[string]string)
 		}
-		SetlabelsFromOptions(options, v.Labels)
+		SetlabelsFromOptions(params.Options, v.Labels)
+		v.Deployments.Replicas = addonDeployPlan.Nodes
 
 		//  主要目的是传递 PVC 相关信息
-		vol01 := SetAddonVolumes(options, "/for-operator", false)
+		vol01 := SetAddonVolumes(params.Options, "/for-operator", false)
 		v.Volumes = diceyml.Volumes{vol01}
 	}
 	return nil
@@ -1714,6 +1716,11 @@ func (a *Addon) BuildCanalServiceItem(useOperator bool, params *apistructs.Addon
 					k = "admin.spring.datasource.username"
 				case "canal.instance.dbPassword":
 					k = "admin.spring.datasource.password"
+				case "admin.spring.datasource.database":
+					// Priority: User input > Automatic inference > Default.
+					if params.Options[k] != "" || v == "" {
+						continue
+					}
 				}
 				params.Options[k] = v
 			}
