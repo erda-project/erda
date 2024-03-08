@@ -76,9 +76,6 @@ func (a *Addon) parseAddonDice(addon apistructs.ExtensionVersion) (*diceyml.Obje
 	if err != nil {
 		return nil, err
 	}
-
-	logrus.Infof("dice =====> %+v", dice)
-	logrus.Infof("dice Obj =====> %+v", dice.Obj())
 	return dice.Obj(), nil
 }
 
