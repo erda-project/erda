@@ -3128,9 +3128,10 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 
 	for index, v := range deploys {
 		createItem := needDeployAddons[index]
-		if v.AddonName == RegisterCenterAddon {
+		switch v.AddonName {
+		case RegisterCenterAddon:
 			createItem.Options["version"] = regVersion
-		} else if v.AddonName == ConfigCenterAddon {
+		case ConfigCenterAddon:
 			createItem.Options["version"] = confVersion
 		}
 		instanceRes, err := a.AttachAndCreate(&createItem)
