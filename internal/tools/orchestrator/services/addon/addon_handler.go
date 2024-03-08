@@ -67,17 +67,19 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 	return a.addonAttach(addonSpec, addonDice, params)
 }
 
-func (a *Addon) parseAddonDice(addon apistructs.ExtensionVersion) (diceyml.Object, error) {
-	var dice diceyml.Object
+func (a *Addon) parseAddonDice(addon apistructs.ExtensionVersion) (*diceyml.Object, error) {
 	diceBytes, err := json.Marshal(addon.Dice)
 	if err != nil {
-		return diceyml.Object{}, err
+		return nil, err
 	}
-	err = json.Unmarshal(diceBytes, &dice)
+	dice, err := diceyml.New(diceBytes, false)
 	if err != nil {
-		return diceyml.Object{}, err
+		return nil, err
 	}
-	return dice, nil
+
+	logrus.Infof("dice =====> %+v", dice)
+	logrus.Infof("dice Obj =====> %+v", dice.Obj())
+	return dice.Obj(), nil
 }
 
 func (a *Addon) parseAddonSpec(addon apistructs.ExtensionVersion) (apistructs.AddonExtension, error) {

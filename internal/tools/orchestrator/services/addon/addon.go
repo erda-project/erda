@@ -3149,7 +3149,15 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	return nil
 }
 
-func (a *Addon) nacosVersionReference(version string) (reg, conf string, err error) {
+func (a *Addon) toVersionMap(value any) (*VersionMap, error) {
+	vm, ok := value.(*VersionMap)
+	if !ok {
+		return nil, errors.New("cache data type error")
+	}
+	return vm, nil
+}
+
+func (a *Addon) nacosVersionReference(version string) (regVersion, confVersion string, err error) {
 	regMap, err := GetCache().Get(RegisterCenterAddon)
 	if err != nil {
 		return "", "", err
@@ -3158,13 +3166,13 @@ func (a *Addon) nacosVersionReference(version string) (reg, conf string, err err
 	if err != nil {
 		return "", "", err
 	}
-	registers, ok := regMap.(*VersionMap)
-	if !ok {
-		return "", "", errors.New("cache data type error")
+	registers, err := a.toVersionMap(regMap)
+	if err != nil {
+		return "", "", err
 	}
-	configs, ok := confMap.(*VersionMap)
-	if !ok {
-		return "", "", errors.New("cache data type error")
+	configs, err := a.toVersionMap(confMap)
+	if err != nil {
+		return "", "", err
 	}
 	for _, r := range *registers {
 		dice, err := a.parseAddonDice(r)
@@ -3177,7 +3185,7 @@ func (a *Addon) nacosVersionReference(version string) (reg, conf string, err err
 				return "", "", err
 			}
 			if !spec.Deprecated {
-				reg = spec.Version
+				regVersion = spec.Version
 				break
 			}
 		}
@@ -3193,7 +3201,7 @@ func (a *Addon) nacosVersionReference(version string) (reg, conf string, err err
 				return "", "", err
 			}
 			if !spec.Deprecated {
-				conf = spec.Version
+				confVersion = spec.Version
 				break
 			}
 		}
