@@ -30,6 +30,10 @@
   role: Owner,Lead,Dev
 - scope: app
   resource: runtime-dev
+  action: UPDATE
+  role: Owner,Lead,Dev
+- scope: app
+  resource: runtime-dev
   action: CREATE
   role: Owner,Lead,Dev
 - scope: app
@@ -46,6 +50,10 @@
   role: Owner,Lead,QA
 - scope: app
   resource: runtime-test
+  action: UPDATE
+  role: Owner,Lead,QA
+- scope: app
+  resource: runtime-test
   action: CREATE
   role: Owner,Lead,QA
 - scope: app
@@ -62,6 +70,10 @@
   role: Owner,Lead
 - scope: app
   resource: runtime-staging
+  action: UPDATE
+  role: Owner,Lead
+- scope: app
+  resource: runtime-staging
   action: CREATE
   role: Owner,Lead
 - scope: app
@@ -75,6 +87,10 @@
 - scope: app
   resource: runtime-prod
   action: OPERATE
+  role: Owner,Lead
+- scope: app
+  resource: runtime-prod
+  action: UPDATE
   role: Owner,Lead
 - scope: app
   resource: runtime-prod
