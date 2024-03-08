@@ -23,9 +23,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/xormplus/xorm"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"xorm.io/xorm"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 

@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/xormplus/xorm"
+	"xorm.io/xorm"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"

@@ -25,12 +25,14 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/apps/msp/apm/trace"
+	"github.com/erda-project/erda/internal/tools/monitor/core/log"
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 	"github.com/erda-project/erda/internal/tools/monitor/core/profile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/core/model/odata"
 	kafkaInf "github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/kafka"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/oapspan"
+	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotlog"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotmetric"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotprofile"
 	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib/protoparser/spotspan"
@@ -44,6 +46,7 @@ const (
 	spotSpan     parserName = "spotspan"
 	spotMetric   parserName = "spotmetric"
 	spotProfile  parserName = "spotprofile"
+	spotLog      parserName = "spotlog"
 )
 
 type config struct {
@@ -116,6 +119,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		invokeFunc = p.parseOapSpanEvent()
 	case spotProfile:
 		invokeFunc = p.parseSpotProfile()
+	case spotLog:
+		invokeFunc = p.parseSpotLog()
 	default:
 		return fmt.Errorf("invalide parser: %q", p.parser)
 	}
@@ -176,6 +181,14 @@ func (p *provider) parseSpotProfile() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
 		return spotprofile.ParseSpotProfile(msg.Value, func(ingest *profile.ProfileIngest) error {
 			return p.consumeData(ingest)
+		})
+	}
+}
+
+func (p *provider) parseSpotLog() kafkaInf.ConsumerFuncV2 {
+	return func(msg *sarama.ConsumerMessage) error {
+		return spotlog.ParseSpotLog(msg.Value, func(log *log.Log) error {
+			return p.consumeData(log)
 		})
 	}
 }
