@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -944,7 +945,7 @@ func (impl GatewayDomainServiceImpl) doesClusterSupportHttps(clusterName string)
 	return false
 }
 
-func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string) (result gw.RuntimeDomainsDto, err error) {
+func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string, orgId int64) (result gw.RuntimeDomainsDto, err error) {
 	defer func() {
 		if err != nil {
 			log.Errorf("error happened, err:%+v", err)
@@ -1027,17 +1028,23 @@ func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string) (result
 		// 查找这些路由的域名
 		var redirectDomains []orm.GatewayDomain
 		if len(packageIDs) > 0 {
-			redirectDomains, err = impl.domainDb.SelectByOptions([]orm.SelectOption{{Column: "package_id", Type: orm.Contains, Value: packageIDs}})
+			redirectDomains, err = impl.domainDb.SelectByOptions([]orm.SelectOption{
+				{Column: "package_id", Type: orm.Contains, Value: packageIDs},
+				{Column: "org_id", Type: orm.Contains, Value: orgId},
+			})
 			if err != nil {
 				log.WithError(err).
 					WithField("package_id", packageIDs).
+					WithField("org_id", orgId).
 					Errorf("failed to domainDb.SelectByOptions")
 			}
 		}
 
 		domains, err = impl.domainDb.SelectByAny(&orm.GatewayDomain{
 			RuntimeServiceId: service.Id,
+			OrgId:            strconv.FormatInt(orgId, 10),
 		})
+
 		if err != nil {
 			return nil, err
 		}

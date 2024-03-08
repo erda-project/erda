@@ -117,9 +117,16 @@ func (s *domainService) ChangeInnerIngress(ctx context.Context, req *pb.ChangeIn
 	}
 	return
 }
+
 func (s *domainService) GetRuntimeDomains(ctx context.Context, req *pb.GetRuntimeDomainsRequest) (resp *pb.GetRuntimeDomainsResponse, err error) {
 	service := domain.Service.Clone(ctx)
-	result, err := service.GetRuntimeDomains(req.RuntimeId)
+
+	orgId, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
+	}
+
+	result, err := service.GetRuntimeDomains(req.RuntimeId, orgId)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
