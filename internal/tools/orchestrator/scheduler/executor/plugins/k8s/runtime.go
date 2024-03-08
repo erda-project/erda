@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -91,9 +92,9 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		}
 
 		switch service.WorkLoad {
-		case ServicePerNode:
+		case types.ServicePerNode:
 			err = k.deleteDaemonSet(ns, service.ProjectServiceName)
-		case ServiceJob:
+		case types.ServiceJob:
 			err = k.deleteJob(ns, service.Name)
 		default:
 			err = k.deleteDeployment(ns, service.ProjectServiceName)
@@ -234,11 +235,11 @@ func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.Ser
 		allEnv := k.initGroupEnv(layers, annotations)
 
 		// The upper layer guarantees that the same group must be the same image
-		info := StatefulsetInfo{
-			sg:          sg,
-			namespace:   ns,
-			envs:        allEnv,
-			annotations: annotations,
+		info := types.StatefulsetInfo{
+			Sg:          sg,
+			Namespace:   ns,
+			Envs:        allEnv,
+			Annotations: annotations,
 		}
 		return k.createStatefulSet(ctx, info)
 	}
@@ -284,11 +285,11 @@ func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.Ser
 		if err := k.createStatefulService(groups[i]); err != nil {
 			return err
 		}
-		info := StatefulsetInfo{
-			sg:          groups[i],
-			namespace:   ns,
-			envs:        groupEnv,
-			annotations: globalAnno,
+		info := types.StatefulsetInfo{
+			Sg:          groups[i],
+			Namespace:   ns,
+			Envs:        groupEnv,
+			Annotations: globalAnno,
 		}
 		if err := k.createStatefulSet(ctx, info); err != nil {
 			logrus.Errorf("failed to create one stateful group, name: %v, (%v)", groups[i].ID, err)
@@ -304,8 +305,8 @@ func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.Ser
 // However, some of the ADDONS types still want to be deployed in a stateless manner, adding STATELESS_SERVICE
 // To distinguish whether the ADDONS type is stateful or stateless, the default is to execute according to state
 func IsGroupStateful(sg *apistructs.ServiceGroup) bool {
-	if sg.Labels[ServiceType] == ServiceAddon {
-		if sg.Labels[StatelessService] != IsStatelessService {
+	if sg.Labels[types.ServiceType] == types.ServiceAddon {
+		if sg.Labels[types.StatelessService] != types.IsStatelessService {
 			return true
 		}
 	}
@@ -349,7 +350,7 @@ func (k *Kubernetes) InspectStateful(sg *apistructs.ServiceGroup) (*apistructs.S
 		if err != nil {
 			return nil, err
 		}
-		return info.sg, nil
+		return info.Sg, nil
 	}
 	return k.inspectGroup(sg, namespace, name)
 }

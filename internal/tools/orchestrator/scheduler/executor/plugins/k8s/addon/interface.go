@@ -63,7 +63,7 @@ type DaemonsetUtil interface {
 	Update(*appsv1.DaemonSet) error
 	Delete(namespace, name string) error
 	Get(namespace, name string) (*appsv1.DaemonSet, error)
-	List(namespace string, labelSelector map[string]string) (appsv1.DaemonSetList, error)
+	List(namespace string, labelSelector map[string]string) (*appsv1.DaemonSetList, error)
 }
 
 type ServiceUtil interface {

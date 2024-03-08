@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8s
+package types
 
 import (
 	"regexp"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -26,33 +27,33 @@ const (
 	// to be deprecated.
 	// ADDON_GROUPS -> SERVICE_GROUPS
 	// ADDON_GROUP_ID -> SERVICE_GROUP_ID
-	groupNum = "ADDON_GROUPS"
-	groupID  = "ADDON_GROUP_ID"
+	GroupNum = "ADDON_GROUPS"
+	GroupID  = "ADDON_GROUP_ID"
 
-	groupNum2 = "SERVICE_GROUPS"
-	groupID2  = "SERVICE_GROUP_ID"
+	GroupNum2 = "SERVICE_GROUPS"
+	GroupID2  = "SERVICE_GROUP_ID"
 
 	// local volume storageclass name
-	localStorage = "dice-local-volume"
+	LocalStorage = "dice-local-volume"
 
 	// default sa
-	defaultServiceAccountName = "default"
+	DefaultServiceAccountName = "default"
 	DiceWorkSpace             = "DICE_WORKSPACE"
 )
 
-var envReg = regexp.MustCompile(`\$\{([^}]+?)\}`)
+var EnvReg = regexp.MustCompile(`\$\{([^}]+?)\}`)
 
 type StatefulsetInfo struct {
-	sg          *apistructs.ServiceGroup
-	namespace   string
-	envs        map[string]string
-	annotations map[string]string
+	Sg          *apistructs.ServiceGroup
+	Namespace   string
+	Envs        map[string]string
+	Annotations map[string]string
 }
 
 // OneGroupInfo Returns information about the statefulset corresponding to the group
 type OneGroupInfo struct {
-	sg  *apistructs.ServiceGroup
-	sts *appsv1.StatefulSet
+	Sg  *apistructs.ServiceGroup
+	Sts *appsv1.StatefulSet
 }
 
 const (
@@ -62,4 +63,22 @@ const (
 	ServiceAddon       = "ADDONS"
 	ServicePerNode     = "per_node"
 	ServiceJob         = "JOB"
+)
+
+type (
+	PatchStruct struct {
+		Spec Spec `json:"spec"`
+	}
+
+	Spec struct {
+		Template PodTemplateSpec `json:"template"`
+	}
+
+	PodTemplateSpec struct {
+		Spec PodSpec `json:"spec"`
+	}
+
+	PodSpec struct {
+		Containers []corev1.Container `json:"containers"`
+	}
 )

@@ -362,3 +362,10 @@ func GetDiceWorkspaceFromEnvs(envs map[string]string) (apistructs.DiceWorkspace,
 		return "", errors.New("not found workspace env")
 	}
 }
+
+func GetDeployName(service *apistructs.Service) string {
+	if service.ProjectServiceName != "" {
+		return service.ProjectServiceName
+	}
+	return service.Name
+}

@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,15 +40,22 @@ func (k *Kubernetes) createDaemonSet(ctx context.Context, service *apistructs.Se
 	if err != nil {
 		return errors.Errorf("failed to generate daemonset struct, name: %s, (%v)", service.Name, err)
 	}
-
-	return k.ds.Create(daemonset)
+	err = k.ds.Create(daemonset)
+	if err != nil {
+		return errors.Errorf("failed to create daemonset, name: %s, (%v)", service.Name, err)
+	}
+	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
+		return nil
+	}
+	err = k.ds.Patch(daemonset.Namespace, daemonset.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
+	return err
 }
 
 func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daemonsets map[string]appsv1.DaemonSet) (apistructs.StatusDesc, error) {
 	var (
 		statusDesc apistructs.StatusDesc
 	)
-	dsName := getDeployName(service)
+	dsName := util.GetDeployName(service)
 
 	if daemonSet, ok := daemonsets[dsName]; ok {
 		status := daemonSet.Status
@@ -105,7 +114,7 @@ func (k *Kubernetes) getDaemonSet(namespace, name string) (*appsv1.DaemonSet, er
 }
 
 func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.DaemonSet, error) {
-	deployName := getDeployName(service)
+	daemonSetName := util.GetDeployName(service)
 	enableServiceLinks := false
 	if _, ok := sg.Labels[EnableServiceLinks]; ok {
 		enableServiceLinks = true
@@ -116,7 +125,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deployName,
+			Name:      daemonSetName,
 			Namespace: service.Namespace,
 			Labels:    make(map[string]string),
 		},
@@ -126,7 +135,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:   deployName,
+					Name:   daemonSetName,
 					Labels: make(map[string]string),
 				},
 				Spec: corev1.PodSpec{
@@ -143,13 +152,13 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v != "true" &&
-		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
-			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
+		(strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
+			strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
 		daemonset.Spec.UpdateStrategy = appsv1.DaemonSetUpdateStrategy{Type: appsv1.RollingUpdateDaemonSetStrategyType}
 	}
 
 	affinity := constraintbuilders.K8S(&sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
-		{PodLabels: map[string]string{"app": deployName}}}, k).Affinity
+		{PodLabels: map[string]string{"app": daemonSetName}}}, k).Affinity
 	daemonset.Spec.Template.Spec.Affinity = &affinity
 
 	imagePullSecrets, err := k.setImagePullSecrets(service.Namespace)
@@ -166,7 +175,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 
 	container := corev1.Container{
 		// TODO, container name e.g. redis-1528180634
-		Name:  deployName,
+		Name:  service.Name,
 		Image: service.Image,
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
@@ -190,7 +199,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
+	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio
@@ -300,7 +309,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 	k.AddSpotEmptyDir(&daemonset.Spec.Template.Spec, service.Resources.EmptyDirCapacity)
 
-	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", deployName, daemonset)
+	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", daemonSetName, daemonset)
 
 	return daemonset, nil
 }

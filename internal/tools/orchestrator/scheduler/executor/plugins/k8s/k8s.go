@@ -70,6 +70,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/storageclass"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -365,7 +366,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	deploy := deployment.New(deployment.WithClientSet(k8sClient.ClientSet))
 	job := job.New(job.WithCompleteParams(addr, client))
-	ds := ds.New(ds.WithCompleteParams(addr, client))
+	ds := ds.New(ds.WithClientSet(k8sClient.ClientSet))
 	ns := namespace.New(namespace.WithKubernetesClient(k8sClient.ClientSet))
 	svc := k8sservice.New(k8sservice.WithCompleteParams(addr, client))
 	pvc := persistentvolumeclaim.New(persistentvolumeclaim.WithCompleteParams(addr, client))
@@ -564,7 +565,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 		logrus.Infof("delete runtime %s on namespace %s", runtime.ID, runtime.Type)
 		if err := k.destroyRuntime(ns); err != nil {
 			if k8serror.NotFound(err) {
-				logrus.Debugf("k8s namespace not found or already deleted, namespace: %s", ns)
+				logrus.Debugf("k8s namespace not found or already deleted, Namespace: %s", ns)
 				return nil
 			}
 			return err
@@ -787,9 +788,9 @@ func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service,
 	}
 	var err error
 	switch service.WorkLoad {
-	case ServicePerNode:
+	case types.ServicePerNode:
 		err = k.createDaemonSet(ctx, service, sg)
-	case ServiceJob:
+	case types.ServiceJob:
 		err = k.createJob(ctx, service, sg)
 	default:
 		// Step 2. Create related deployment
@@ -901,7 +902,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 
 	for _, svc := range sg.Services {
 		svc.Namespace = ns
-		runtimeServiceName := getDeployName(&svc)
+		runtimeServiceName := util.GetDeployName(&svc)
 		// Existing in the old service collection, do the put operation
 		// The visited record has been updated service
 		if _, ok := runtimeServiceMap[runtimeServiceName]; ok {
@@ -914,7 +915,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 				return err
 			}
 			switch svc.WorkLoad {
-			case ServicePerNode:
+			case types.ServicePerNode:
 				desireDaemonSet, err := k.newDaemonSet(&svc, sg)
 				if err != nil {
 					return err
@@ -923,7 +924,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 					logrus.Debugf("failed to update daemonset in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}
-			case ServiceJob:
+			case types.ServiceJob:
 				err = k.createJob(ctx, &svc, sg)
 			default:
 				// then update the deployment
@@ -1035,7 +1036,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		daemonsetExist := false
 
 		for _, svc := range sg.Services {
-			if svc.WorkLoad == ServicePerNode {
+			if svc.WorkLoad == types.ServicePerNode {
 				daemonsetExist = true
 				break
 			}
@@ -1082,9 +1083,9 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			err    error
 		)
 		switch sg.Services[i].WorkLoad {
-		case ServicePerNode:
+		case types.ServicePerNode:
 			status, err = k.getDaemonSetStatusFromMap(&sg.Services[i], dsMap)
-		case ServiceJob:
+		case types.ServiceJob:
 			status, err = k.getJobStatusFromMap(&sg.Services[i], ns)
 
 		default:
@@ -1116,7 +1117,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 				// In theory, it will only appear in the process of deleting the namespace. A deployment has been deleted and the namespace is in terminating state and is about to be deleted.
 				status.Status = apistructs.StatusUnknown
 				status.LastMessage = fmt.Sprintf("found namespace exists but deployment not found,"+
-					" namespace: %s, deployment: %s", sg.Services[i].Namespace, getDeployName(&sg.Services[i]))
+					" namespace: %s, deployment: %s", sg.Services[i].Namespace, util.GetDeployName(&sg.Services[i]))
 			}
 
 			return status, err
@@ -1137,7 +1138,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			if err != nil {
 				logrus.Errorf("failed to get pod unready reasons, namespace: %v, name: %s, %v",
 					sg.Services[i].Namespace,
-					getDeployName(&sg.Services[i]), err)
+					util.GetDeployName(&sg.Services[i]), err)
 			}
 			if len(podstatuses) != 0 {
 				sg.Services[i].LastMessage = podstatuses[0].Message
@@ -1819,7 +1820,7 @@ func (k *Kubernetes) manualScale(ctx context.Context, spec interface{}) (interfa
 		// stateless application
 		for index, svc := range sg.Services {
 			switch svc.WorkLoad {
-			case ServicePerNode:
+			case types.ServicePerNode:
 				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
 				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
 				logrus.Error(errs)
@@ -1881,7 +1882,7 @@ func (k *Kubernetes) createErdaHPARules(spec interface{}) (interface{}, error) {
 		// stateless application
 		for index, svc := range sg.Services {
 			switch svc.WorkLoad {
-			case ServicePerNode:
+			case types.ServicePerNode:
 				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
 				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
 				logrus.Error(errs)
