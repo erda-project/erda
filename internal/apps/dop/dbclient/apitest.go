@@ -57,7 +57,7 @@ func CreateApiTest(at *ApiTest) (int64, error) {
 
 // UpdateApiTest 更新apiTest信息
 func UpdateApiTest(at *ApiTest) (int64, error) {
-	ID, err := cimysql.Engine.Id(at.ID).Update(at)
+	ID, err := cimysql.Engine.ID(at.ID).Update(at)
 	if err != nil {
 		return 0, errors.Errorf("failed to update api test info, ID:%d, (%+v)", at.ID, err)
 	}
@@ -67,7 +67,7 @@ func UpdateApiTest(at *ApiTest) (int64, error) {
 
 // UpdateApiTestResults 更新apiTest结果信息：status，api_response，assert_result
 func UpdateApiTestResults(at *ApiTest) (int64, error) {
-	ID, err := cimysql.Engine.Id(at.ID).Cols("status", "api_request", "api_response", "assert_result").Update(at)
+	ID, err := cimysql.Engine.ID(at.ID).Cols("status", "api_request", "api_response", "assert_result").Update(at)
 	if err != nil {
 		return 0, errors.Errorf("failed to update api test info, ID:%d, (%+v)", at.ID, err)
 	}

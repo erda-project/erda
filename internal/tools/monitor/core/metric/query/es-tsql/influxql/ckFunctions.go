@@ -45,7 +45,7 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 					return goqu.MAX(lit).As(id), nil
 				}
 
-				f, _ := p.ckGetKey(field, influxql.AnyField)
+				f := p.ckColumnByOnlyExistingColumn(field)
 				return goqu.MAX(goqu.L(f)).As(id), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, v interface{}) (interface{}, bool) {

@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/event"
+	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
 	issuequery "github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 	issuedao "github.com/erda-project/erda/internal/apps/dop/providers/issue/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/projectpipeline"
@@ -630,6 +631,7 @@ type Endpoints struct {
 	namespace       *namespace.Namespace
 	envConfig       *environment.EnvConfig
 	issue           *issue.Issue
+	issueService    core.IssueService
 	issueState      *issuestate.IssueState
 	workBench       *workbench.Workbench
 	iteration       *iteration.Iteration
@@ -892,6 +894,13 @@ func WithEnvConfig(envConfig *environment.EnvConfig) Option {
 func WithIssue(issue *issue.Issue) Option {
 	return func(e *Endpoints) {
 		e.issue = issue
+	}
+}
+
+// WithIssueService Configure issueService
+func WithIssueService(issueService *core.IssueService) Option {
+	return func(e *Endpoints) {
+		e.issueService = *issueService
 	}
 }
 

@@ -443,6 +443,9 @@ func IsPipelineDefinitionReqEmpty(definition *pipelinepb.PipelineDefinitionReque
 	if definition.Location != "" {
 		return false
 	}
+	if definition.IsNotSnapshotForDefinition {
+		return false
+	}
 	return true
 }
 

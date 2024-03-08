@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -205,6 +206,7 @@ func (e *Endpoints) DeleteIteration(ctx context.Context, r *http.Request, vars m
 	}
 
 	iterationID, err := strconv.ParseUint(vars["id"], 10, 64)
+	onlyIteration, err := strconv.ParseBool(r.URL.Query().Get("onlyIteration"))
 	if err != nil {
 		return apierrors.ErrDeleteIteration.InvalidParameter("id").ToResp(), nil
 	}
@@ -230,11 +232,30 @@ func (e *Endpoints) DeleteIteration(ctx context.Context, r *http.Request, vars m
 		}
 	}
 
+	itemIDs, err := e.issueService.DBClient().GetIssuesIDByIterationID(iterationID)
+	if err != nil {
+		return apierrors.ErrDeleteIteration.InternalError(err).ToResp(), nil
+	}
+
+	if len(itemIDs) > 0 {
+		ctx = apis.WithUserIDContext(ctx, identityInfo.UserID)
+		if onlyIteration {
+			err = e.issueService.BatchUpdateIssueIterationIDByIterationID(ctx, iterationID, -1)
+			if err != nil {
+				return apierrors.ErrDeleteIteration.InternalError(err).ToResp(), nil
+			}
+		} else {
+			err = e.issueService.BatchDeleteIssueByIterationID(ctx, iterationID)
+			if err != nil {
+				return apierrors.ErrDeleteIteration.InternalError(err).ToResp(), nil
+			}
+		}
+	}
+
 	// 删除 iteration
 	if err := e.iteration.Delete(iterationID); err != nil {
 		return errorresp.ErrResp(err)
 	}
-
 	// delete relation labels
 	if err = e.db.DeleteLabelRelations(apistructs.LabelTypeIteration, strconv.FormatUint(iterationID, 10), nil); err != nil {
 		return apierrors.ErrDeleteIteration.InternalError(err).ToResp(), nil

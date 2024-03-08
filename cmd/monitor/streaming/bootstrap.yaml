@@ -189,20 +189,6 @@ log-storage-elasticsearch:
   write_timeout: "1m"
   index_type: "logs"
 
-log-persist:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE|WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
-  input:
-    topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
-    group: "${LOG_GROUP_ID:erda-logs-dev}"
-    offsets:
-      initial: earliest
-  id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
-  read_timeout: "5s"
-  buffer_size: ${LOG_BATCH_SIZE:4096}
-  parallelism: ${LOG_PERSIST_PARALLELISM:6}
-  storage_writer_service: "${LOG_STORAGE_WRITER_SERVICE:log-storage-clickhouse-writer}"
-  print_invalid_log: false
-
 cassandra:
   _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"
@@ -583,6 +569,15 @@ erda.oap.collector.core:
         flush_interval: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_INTERVAL}
         flush_jitter: ${EXPORTER_CLICKHOUSE_METRIC_FLUSH_JITTER}
         _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+    logs:
+      - receivers:
+          - "erda.oap.collector.receiver.kafka@spotlog"
+        exporters:
+          - "erda.oap.collector.exporter.clickhouse@log"
+        batch_size: ${LOG_BATCH_SIZE:4096}
+        flush_interval: ${EXPORTER_CLICKHOUSE_LOG_FLUSH_INTERVAL}
+        flush_jitter: ${EXPORTER_CLICKHOUSE_LOG_FLUSH_JITTER}
+        _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
 
     external_metrics:
       - receivers:
@@ -631,6 +626,15 @@ erda.oap.collector.receiver.kafka@spotprofile:
     offsets:
       initial: earliest
 
+erda.oap.collector.receiver.kafka@spotlog:
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
+  proto_parser: spotlog
+  consumer:
+    topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
+    group: "${LOG_GROUP_ID:erda-logs-dev}"
+    offsets:
+      initial: earliest
+
 erda.oap.collector.processor.modifier@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   rules:
@@ -650,6 +654,13 @@ erda.oap.collector.exporter.clickhouse@span:
   builder:
     data_type: span
     tenant_id_key: terminus_key
+
+erda.oap.collector.exporter.clickhouse@log:
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
+  storage:
+    currency_num: ${EXPORTER_CH_LOG_CURRENCY_NUM:6}
+  builder:
+    data_type: log
 
 clickhouse.table.initializer@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}

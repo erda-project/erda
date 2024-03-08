@@ -17,7 +17,6 @@ package dbclient
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -246,6 +245,19 @@ func (p *PageListPipelinesResult) GetMinPipelineID() uint64 {
 	return minID
 }
 
+func (p *PageListPipelinesResult) GetMaxPipelineID() uint64 {
+	if len(p.PagingPipelineIDs) == 0 {
+		return 0
+	}
+	maxID := p.PagingPipelineIDs[0]
+	for _, id := range p.PagingPipelineIDs {
+		if id > maxID {
+			maxID = id
+		}
+	}
+	return maxID
+}
+
 func getLabels(source map[string]*structpb.Value) (map[string][]string, error) {
 	labels := make(map[string][]string)
 	for k, v := range source {
@@ -354,27 +366,48 @@ func (client *Client) PageListPipelines(req *pipelinepb.PipelinePagingRequest, o
 			forceIndexes = append(forceIndexes, "`idx_id_source_cluster_status`")
 		}
 	}
+
 	// idx_id_source_cluster_status_timebegin_timeend
-	// 使用 alias 注入实现 xorm 插入 FORCE INDEX
-	if len(forceIndexes) > 0 {
-		baseSQL.Alias(fmt.Sprintf("`%s` USE INDEX (%s)", (&spec.PipelineBase{}).TableName(), strings.Join(forceIndexes, ",")))
+	for _, index := range forceIndexes {
+		// this method only support use in mysql
+		baseSQL.IndexHint("USE", "", index)
 	}
 
 	if req.PipelineDefinitionRequest != nil {
 		var definitionReq = req.PipelineDefinitionRequest
-		needQueryDefinition = true
-		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
-		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " != '' ")
+		needQueryDefinition = !definitionReq.NotNeedQueryDefinition
+
+		if !definitionReq.AllowDefinitionIdIsNull {
+			baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
+			baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " != '' ")
+		}
+
 		if !apistructs.IsPipelineDefinitionReqEmpty(req.PipelineDefinitionRequest) {
-			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
-			baseSQL.Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
+			// default join type is inner
+			if definitionReq.DefinitionJoinType == "" {
+				definitionReq.DefinitionJoinType = "INNER"
+			}
+
+			baseSQL.Join(definitionReq.DefinitionJoinType, definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
+
+			if !definitionReq.SourceNotJoin {
+				if definitionReq.SourceJoinType == "" {
+					definitionReq.SourceJoinType = "INNER"
+				}
+				baseSQL.Join(definitionReq.SourceJoinType, sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
+			}
+
+			if definitionReq.IsNotSnapshotForDefinition {
+				baseSQL.Where(tableFieldName(definitiondb.PipelineDefinition{}.TableName(), "id") + " is null or " + fmt.Sprintf("%v.pipeline_id != %v.id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
+			}
+
 			if len(definitionReq.Name) > 0 {
 				baseSQL.Where(fmt.Sprintf("%v.name like ?", definitiondb.PipelineDefinition{}.TableName()), "%"+definitionReq.Name+"%")
 			}
 			if definitionReq.Location != "" {
 				baseSQL.Where(fmt.Sprintf("%s.location = ?", definitiondb.PipelineDefinition{}.TableName()), definitionReq.Location)
 			}
-			if len(definitionReq.SourceRemotes) > 0 {
+			if len(definitionReq.SourceRemotes) > 0 && !definitionReq.SourceNotJoin {
 				baseSQL.In(tableFieldName(sourcedb.PipelineSource{}.TableName(), "remote"), definitionReq.SourceRemotes)
 			}
 			if len(definitionReq.Creators) > 0 {

@@ -15,6 +15,8 @@
 package db
 
 import (
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -23,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm/sqlite3"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 )
@@ -162,4 +165,80 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 			assert.EqualValues(t, got, tt.want)
 		})
 	}
+}
+
+func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
+	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName + "?mode=rwc")
+	if err != nil {
+		panic(err)
+	}
+
+	// migrator db
+	err = sqlite3Db.DB().Sync2(PipelineCron{})
+	if err != nil {
+		panic(err)
+	}
+
+	return sqlite3Db
+}
+
+func TestDeleteCron(t *testing.T) {
+	dbname := filepath.Join(os.TempDir(), "test.db")
+	defer func() {
+		os.Remove(dbname)
+	}()
+
+	sqlite3Db := newSqlite3DB(dbname)
+
+	client := &Client{
+		Interface: sqlite3Db,
+	}
+
+	// create cron
+	crons := []*PipelineCron{
+		{ID: 1, SoftDeletedAt: 0},
+		{ID: 2},
+		{ID: 3, SoftDeletedAt: 1234},
+		{ID: 4},
+	}
+
+	// create cron
+	for _, cron := range crons {
+		err := client.CreatePipelineCron(cron)
+		if err != nil {
+			t.Errorf("Create pipeline cron error : %v", err)
+		}
+		if cron.SoftDeletedAt != 0 {
+			err = client.DeletePipelineCron(cron.ID)
+			if err != nil {
+				t.Errorf("Delete pipeline cron error : %v", err)
+			}
+		}
+	}
+
+	_, found, err := client.GetPipelineCron(3)
+	if err != nil {
+		t.Errorf("Get pipeline cron error : %v", err)
+	}
+
+	assert.Equal(t, false, found)
+
+	// delete all cron
+	deleteIds := []uint64{4, 1, 2}
+	for _, id := range deleteIds {
+		err = client.DeletePipelineCron(id)
+		if err != nil {
+			t.Errorf("Delete pipeline cron error : %v", err)
+		}
+	}
+
+	// check if delete
+	for _, id := range deleteIds {
+		_, found, err = client.GetPipelineCron(id)
+		if err != nil {
+			t.Errorf("Get pipeline cron error : %v", err)
+		}
+		assert.Equal(t, false, found)
+	}
+
 }

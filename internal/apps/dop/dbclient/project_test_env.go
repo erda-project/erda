@@ -53,7 +53,7 @@ func CreateTestEnv(env *APITestEnv) (int64, error) {
 
 // UpdateTestEnv 更新测试环境变量信息
 func UpdateTestEnv(env *APITestEnv) error {
-	_, err := cimysql.Engine.Id(env.ID).Update(env)
+	_, err := cimysql.Engine.ID(env.ID).Update(env)
 	if err != nil {
 		return errors.Errorf("failed to update project test env info, ID:%d, (%+v)", env.ID, err)
 	}

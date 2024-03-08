@@ -15,17 +15,16 @@
 package dbclient
 
 import (
-	"fmt"
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type recordsReader struct {
-	db         *dbengine.DBEngine
-	conditions []string
-	limit      int
-	offset     int
+	db     *dbengine.DBEngine
+	limit  int
+	offset int
 }
 
 type recordsWriter struct {
@@ -33,7 +32,7 @@ type recordsWriter struct {
 }
 
 func (c *DBClient) RecordsReader() *recordsReader {
-	return &recordsReader{db: c.DBEngine, conditions: []string{}, limit: 0, offset: -1}
+	return &recordsReader{db: c.DBEngine, limit: 0, offset: -1}
 }
 
 func (r *recordsReader) PageNum(n int) *recordsReader {
@@ -46,53 +45,49 @@ func (r *recordsReader) PageSize(n int) *recordsReader {
 	return r
 }
 
-func (r *recordsReader) ByIDs(ids ...string) *recordsReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("id in (%s)", strutil.Join(ids, ",")))
+func (r *recordsReader) updateDBEngine(db *gorm.DB) *recordsReader {
+	r.db = &dbengine.DBEngine{DB: db}
 	return r
 }
 
+func (r *recordsReader) ByIDs(ids ...string) *recordsReader {
+	return r.updateDBEngine(r.db.Where("id in (?)", ids))
+}
+
 func (r *recordsReader) ByPipelineIDs(ids ...string) *recordsReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("pipeline_id in (%s)", strutil.Join(ids, ",")))
-	return r
+	return r.updateDBEngine(r.db.Where("pipeline_id in (?)", ids))
 }
 
 func (r *recordsReader) ByRecordTypes(tps ...string) *recordsReader {
 	tpsStr := strutil.Map(tps, func(s string) string { return "\"" + s + "\"" })
-	r.conditions = append(r.conditions, fmt.Sprintf("record_type in (%s)", strutil.Join(tpsStr, ",")))
-	return r
+	return r.updateDBEngine(r.db.Where("record_type in (?)", tpsStr))
 }
 
 func (r *recordsReader) ByStatuses(statuses ...string) *recordsReader {
 	statusesStr := strutil.Map(statuses, func(s string) string { return "\"" + s + "\"" })
-	r.conditions = append(r.conditions, fmt.Sprintf("status in (%s)", strutil.Join(statusesStr, ",")))
-	return r
+	return r.updateDBEngine(r.db.Where("status in (?)", statusesStr))
 }
 
 func (r *recordsReader) ByOrgID(orgid string) *recordsReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("org_id = \"%s\"", orgid))
-	return r
+	return r.updateDBEngine(r.db.Where("org_id = ?", orgid))
 }
 
 func (r *recordsReader) ByClusterNames(clusternames ...string) *recordsReader {
 	clusternamesStr := strutil.Map(clusternames, func(s string) string { return "\"" + s + "\"" })
-	r.conditions = append(r.conditions, fmt.Sprintf("cluster_name in (%s) ", strutil.Join(clusternamesStr, ",")))
-	return r
+	return r.updateDBEngine(r.db.Where("cluster_name in (?)", clusternamesStr))
 }
 
 func (r *recordsReader) ByUserIDs(userids ...string) *recordsReader {
 	useridsStr := strutil.Map(userids, func(s string) string { return "\"" + s + "\"" })
-	r.conditions = append(r.conditions, fmt.Sprintf("user_id in (%s)", strutil.Join(useridsStr, ",")))
-	return r
+	return r.updateDBEngine(r.db.Where("user_id in (?)", useridsStr))
 }
 
 func (r *recordsReader) ByCreateTime(beforeNSecs int) *recordsReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("created_at > now() - interval %d second", beforeNSecs))
-	return r
+	return r.updateDBEngine(r.db.Where("created_at > now() - interval %d second", beforeNSecs))
 }
 
 func (r *recordsReader) ByUpdateTime(beforeNSecs int) *recordsReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("updated_at < now() - interval %d second", beforeNSecs))
-	return r
+	return r.updateDBEngine(r.db.Where("updated_at > now() - interval %d second", beforeNSecs))
 }
 
 func (r *recordsReader) Limit(n int) *recordsReader {
@@ -101,13 +96,13 @@ func (r *recordsReader) Limit(n int) *recordsReader {
 }
 func (r *recordsReader) Count() (int64, error) {
 	var count int64
-	err := r.db.Model(&Record{}).Where(strutil.Join(r.conditions, " AND ", true)).Count(&count).Error
+	err := r.db.Model(&Record{}).Count(&count).Error
 	return count, err
 }
 
 func (r *recordsReader) Do() ([]Record, error) {
 	records := []Record{}
-	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true)).Order("created_at desc")
+	expr := r.db.Order("created_at desc")
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
@@ -115,10 +110,8 @@ func (r *recordsReader) Do() ([]Record, error) {
 		expr = expr.Offset(r.offset)
 	}
 	if err := expr.Find(&records).Error; err != nil {
-		r.conditions = []string{}
 		return nil, err
 	}
-	r.conditions = []string{}
 	return records, nil
 }
 

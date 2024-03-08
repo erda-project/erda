@@ -12,35 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package limit_sync_group
+package pipelineTable
 
-import "sync"
+import (
+	"testing"
 
-// encapsulate sync.WaitGroup
-// realize a controllable number of WaitGroup
-type limitSyncGroup struct {
-	c  chan struct{}
-	wg *sync.WaitGroup
-}
+	"github.com/stretchr/testify/assert"
 
-func NewSemaphore(maxSize int) *limitSyncGroup {
-	return &limitSyncGroup{
-		c:  make(chan struct{}, maxSize),
-		wg: new(sync.WaitGroup),
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+)
+
+func TestDecodeToCustomInParams(t *testing.T) {
+	pipelineTable := &PipelineTable{
+		InParams: &InParams{
+			FrontendProjectID: "123",
+			FrontendAppID:     "456",
+		},
 	}
-}
 
-// Add each time Add (1), do not exceed the channel size
-func (s *limitSyncGroup) Add(delta int) {
-	s.wg.Add(delta)
-	for i := 0; i < delta; i++ {
-		s.c <- struct{}{}
-	}
-}
-func (s *limitSyncGroup) Done() {
-	<-s.c
-	s.wg.Done()
-}
-func (s *limitSyncGroup) Wait() {
-	s.wg.Wait()
+	stdInParams := &cptype.ExtraMap{}
+	pipelineTable.DecodeToCustomInParams(stdInParams, nil)
+
+	assert.Equal(t, uint64(123), pipelineTable.InParams.ProjectID)
+	assert.Equal(t, uint64(456), pipelineTable.InParams.AppID)
 }

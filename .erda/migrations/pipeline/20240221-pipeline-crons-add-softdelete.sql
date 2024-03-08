@@ -1,0 +1,1 @@
+ALTER TABLE `pipeline_crons` ADD COLUMN `soft_deleted_at` bigint(20) NOT NULL DEFAULT '0' COMMENT '软删除' AFTER `cluster_name`;

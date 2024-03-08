@@ -195,6 +195,17 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	}
 
 	filter := p.gsHelper.GetGlobalTableFilter()
+
+	// if it has the app in inParam, it means it is the application-pipeline
+	if p.InParams.AppID != 0 {
+		// get the app name
+		app, err := p.bdl.GetApp(p.InParams.AppID)
+		if err != nil {
+			panic(fmt.Errorf("failed to get app, err: %s", err.Error()))
+		}
+		filter.App = []string{app.Name}
+	}
+
 	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName: func() []string {
