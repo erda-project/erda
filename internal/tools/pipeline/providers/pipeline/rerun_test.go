@@ -92,7 +92,7 @@ func TestPipelineSvc_Rerun(t *testing.T) {
 			s := &pipelineService{}
 
 			var dbClient dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipeline", func(dbClient *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipeline", func(dbClient *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
 				return spec.Pipeline{}, nil
 			})
 			defer patch.Unpatch()

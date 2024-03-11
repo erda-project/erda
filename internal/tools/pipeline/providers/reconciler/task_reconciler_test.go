@@ -29,7 +29,7 @@ import (
 
 func Test_overwriteTaskWithLatest(t *testing.T) {
 	client := &dbclient.Client{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineTask", func(_ *dbclient.Client, id uint64) (spec.PipelineTask, error) {
 		return spec.PipelineTask{
 			ID: 1,
 			Result: &taskresult.Result{
