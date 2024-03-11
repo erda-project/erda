@@ -36,7 +36,7 @@ func (client *Client) CreatePipelineStage(ps *spec.PipelineStage, ops ...Session
 	return err
 }
 
-func (client *Client) GetPipelineStage(id interface{}, ops ...SessionOption) (spec.PipelineStage, error) {
+func (client *Client) GetPipelineStage(id uint64, ops ...SessionOption) (spec.PipelineStage, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 	var stage spec.PipelineStage
@@ -50,7 +50,7 @@ func (client *Client) GetPipelineStage(id interface{}, ops ...SessionOption) (sp
 	return stage, nil
 }
 
-func (client *Client) GetPipelineStageWithPreStatus(id interface{}, ops ...SessionOption) (spec.PipelineStage, error) {
+func (client *Client) GetPipelineStageWithPreStatus(id uint64, ops ...SessionOption) (spec.PipelineStage, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 	stage, err := client.GetPipelineStage(id, ops...)
@@ -67,7 +67,7 @@ func (client *Client) GetPipelineStageWithPreStatus(id interface{}, ops ...Sessi
 	return stage, nil
 }
 
-func (client *Client) UpdatePipelineStage(id interface{}, stage *spec.PipelineStage) error {
+func (client *Client) UpdatePipelineStage(id uint64, stage *spec.PipelineStage) error {
 	if _, err := client.ID(id).AllCols().Update(stage); err != nil {
 		return errors.Wrapf(err, "failed to update stage, id [%v]", id)
 	}

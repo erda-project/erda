@@ -82,7 +82,7 @@ func (p *provider) resetTask(task *spec.PipelineTask, statuses ...apistructs.Pip
 	}
 	pipeline := statusPipelines[0]
 
-	beforeSuccessTask, err := p.dbClient.GetPipelineTask(pipeline.ParentTaskID)
+	beforeSuccessTask, err := p.dbClient.GetPipelineTask(*pipeline.ParentTaskID)
 	if err != nil {
 		return err
 	}

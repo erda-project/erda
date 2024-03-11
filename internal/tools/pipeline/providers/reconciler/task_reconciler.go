@@ -164,7 +164,7 @@ func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *sp
 	// generate corresponding snippet pipeline
 	var snippetPipeline *spec.Pipeline
 	if task.SnippetPipelineID != nil && *task.SnippetPipelineID > 0 {
-		snippetPipelineValue, err := tr.dbClient.GetPipeline(task.SnippetPipelineID)
+		snippetPipelineValue, err := tr.dbClient.GetPipeline(*task.SnippetPipelineID)
 		if err != nil {
 			return err
 		}
