@@ -40,7 +40,7 @@ func TestListPipelineDefinition(t *testing.T) {
 	defer func() {
 		os.Remove(dbname)
 	}()
-	sqlite3Db, err := sqlite3.NewSqlite3(dbname + "?mode=" + mode)
+	sqlite3Db, err := sqlite3.NewSqlite3(dbname+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
 	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 
 	// migrator db
@@ -114,7 +114,7 @@ func TestGetPipelineDefinition(t *testing.T) {
 	defer func() {
 		os.Remove(dbname)
 	}()
-	sqlite3Db, err := sqlite3.NewSqlite3(dbname + "?mode=" + mode)
+	sqlite3Db, err := sqlite3.NewSqlite3(dbname+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
 	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 	if err != nil {
 		panic(err)

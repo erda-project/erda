@@ -90,7 +90,7 @@ func (m *MockCronService) CronUpdate(ctx context.Context, request *cronpb.CronUp
 }
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
-	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName + "?mode=" + mode)
+	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
 	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 
 	// migrator db
