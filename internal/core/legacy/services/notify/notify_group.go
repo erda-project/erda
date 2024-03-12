@@ -214,6 +214,7 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 	result.Targets = group.Targets
 	result.DingdingList = uniqueTargetList(result.DingdingList)
 	result.DingdingWorkNoticeList = uniqueTargetList(result.DingdingWorkNoticeList)
+	result.Label = group.Label
 	return result, nil
 }
 
