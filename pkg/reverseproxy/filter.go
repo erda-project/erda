@@ -92,6 +92,7 @@ type HttpInfor interface {
 	// Body only for getting request body and only on request stage.
 	Body() io.ReadCloser
 	SetBody(body io.ReadCloser, size int64)
+	SetBody2(body interface{})
 	// BodyBuffer only for getting request body and only on request stage.
 	BodyBuffer(all ...bool) *bytes.Buffer
 	// Request only on request stage.
@@ -368,6 +369,21 @@ func (r *infor[R]) SetBody(body io.ReadCloser, size int64) {
 		req.ContentLength = size
 		req.Header.Set(httputil.HeaderKeyContentLength, strconv.FormatUint(uint64(size), 10))
 	}
+}
+
+func (r *infor[R]) SetBody2(body interface{}) {
+	var bodyBytes []byte
+	switch body.(type) {
+	case []byte, string:
+		bodyBytes = body.([]byte)
+	default:
+		b, err := json.Marshal(body)
+		if err != nil {
+			panic(err)
+		}
+		bodyBytes = b
+	}
+	r.SetBody(io.NopCloser(bytes.NewBuffer(bodyBytes)), int64(len(bodyBytes)))
 }
 
 func (r *infor[R]) Request() *http.Request {

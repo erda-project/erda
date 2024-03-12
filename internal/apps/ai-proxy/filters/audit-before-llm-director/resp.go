@@ -43,7 +43,7 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 	// routing by model type
 	model, _ := ctxhelper.GetModel(ctx)
 	switch model.Type {
-	case modelpb.ModelType_text_generation, modelpb.ModelType_multimodal__vision:
+	case modelpb.ModelType_text_generation, modelpb.ModelType_multimodal:
 		if ctxhelper.GetIsStream(ctx) {
 			completion, responseFunctionCallName = ExtractEventStreamCompletionAndFcName(respBuffer.String())
 		} else {

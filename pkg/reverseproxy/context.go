@@ -19,6 +19,7 @@ type (
 	LoggerCtxKey      struct{ LoggerCtxKey any }
 	MutexCtxKey       struct{ MutexCtxKey any }
 	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
+	CtxKeyPath        struct{ CtxKeyPath any }
 
 	MapKeyDirectors struct{ CtxKeyDirectors any }
 

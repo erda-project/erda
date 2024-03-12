@@ -235,6 +235,25 @@ func (f *OpenaiDirector) AddContextMessages(ctx context.Context) error {
 	return nil
 }
 
+func (f *OpenaiDirector) AddHeaders(ctx context.Context) error {
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		headerKVs := strings.TrimSpace(f.processorArgs["AddHeaders"])
+		// split by comma: a=b,c=d
+		kvs := strings.Split(headerKVs, ",")
+		for _, kv := range kvs {
+			// split by =
+			parts := strings.Split(kv, "=")
+			if len(parts) != 2 {
+				continue
+			}
+			// trim space
+			key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+			req.Header.Set(key, value)
+		}
+	})
+	return nil
+}
+
 func (f *OpenaiDirector) AllDirectors() map[string]func(ctx context.Context) error {
 	if len(f.funcs) > 0 {
 		return f.funcs

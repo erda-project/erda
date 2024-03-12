@@ -1,0 +1,385 @@
+routes:
+  - path: /v1/assistants
+    method: POST
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-assistant
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/assistants")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+      - name: audit-after-llm-director
+      - name: finalize
+
+  - path: /v1/files
+    method: POST
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-file
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/files")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+      - name: audit-after-llm-director
+      - name: finalize
+
+  - path: /v1/assistants
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/assistants")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/assistants/{assistant_id}
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/assistants/${ path.assistant_id }")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/assistants/{assistant_id}/files
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/assistants/${ path.assistant_id }/files")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/threads
+    method: POST
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-assistant
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+      - name: audit-after-llm-director
+      - name: finalize
+
+  - path: /v1/threads/{thread_id}/messages
+    method: POST
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-assistant
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/messages")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+      - name: audit-after-llm-director
+      - name: finalize
+
+  - path: /v1/threads/{thread_id}/messages
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/messages")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/threads/{thread_id}/messages/{message_id}
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/messages/${ path.message_id }")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/threads/{thread_id}/runs
+    method: POST
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-assistant
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/runs")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+      - name: audit-after-llm-director
+      - name: finalize
+
+  - path: /v1/threads/runs
+    method: POST
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-assistant
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/runs")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+      - name: audit-after-llm-director
+      - name: finalize
+
+  - path: /v1/threads/{thread_id}/runs
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/runs")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/threads/{thread_id}/runs/{run_id}
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/threads/{thread_id}/runs/{run_id}/steps
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }/steps")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/threads/{thread_id}/runs/{run_id}/steps/{step_id}
+    method: GET
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }/steps/${ path.step_id }")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)
+
+  - path: /v1/threads/{thread_id}/runs/{run_id}/submit_tool_outputs
+    method: POST
+    filters:
+      - name: context
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }/submit_tool_outputs")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+            - AddModelInRequestBody
+            - AddHeaders(OpenAI-Beta=assistants=v1)

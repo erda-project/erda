@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
-	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -94,10 +94,9 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 	prompt, _ := ctxhelper.GetUserPrompt(ctx)
 	updateReq.Prompt = prompt
 
-	// metadata, routing by model type
-	model, _ := ctxhelper.GetModel(ctx)
-	switch model.Type {
-	case modelpb.ModelType_text_generation:
+	// metadata, routing by request path
+	switch common.GetRequestRoutePath(ctx) {
+	case common.RequestPathPrefixV1ChatCompletions, common.RequestPathPrefixV1Completions:
 		var openaiReq openai.ChatCompletionRequest
 		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&openaiReq); err != nil {
 			goto Next
@@ -119,7 +118,7 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 				return fmt.Sprintf("%v", openaiReq.FunctionCall)
 			}
 		}()
-	case modelpb.ModelType_audio:
+	case common.RequestPathPrefixV1Audio:
 		audioInfo, ok := ctxhelper.GetAudioInfo(ctx)
 		if !ok {
 			goto Next
@@ -133,7 +132,7 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 			}
 			return string(b)
 		}()
-	case modelpb.ModelType_image:
+	case common.RequestPathPrefixV1Images:
 		imageInfo, ok := ctxhelper.GetImageInfo(ctx)
 		if !ok {
 			goto Next
@@ -141,6 +140,8 @@ func (f *Filter) OnRequestBeforeLLMDirector(ctx context.Context, w http.Response
 		updateReq.ImageQuality = imageInfo.ImageQuality
 		updateReq.ImageSize = imageInfo.ImageSize
 		updateReq.ImageStyle = imageInfo.ImageStyle
+	case common.RequestPathPrefixV1Assistants:
+
 	default:
 		// do nothing
 	}
