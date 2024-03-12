@@ -30,6 +30,7 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
@@ -108,6 +109,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 
 	// find model
 	var model *modelpb.Model
+	var modelProvider *modelproviderpb.ModelProvider
 	var session *sessionpb.Session
 	// get from session if exists
 	headerSessionId := infor.Header().Get(vars.XAIProxySessionId)
@@ -153,15 +155,15 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			return reverseproxy.Intercept, err
 		}
 		// judge by model type
-		modelType, ok := getModelTypeByRequest(infor)
+		modelType, ok := getModelTypeByRequest(common.GetRequestRoutePath(ctx))
 		if !ok {
-			l.Errorf("failed to judge model type by request path")
-			http.Error(w, "ModelType is invalid", http.StatusBadRequest)
+			l.Errorf("failed to judge model type by request path: %s", infor.URL().Path)
+			http.Error(w, fmt.Sprintf("please add http header `X-AI-Proxy-Model-ID` explicitly for path: %s", infor.URL().Path), http.StatusBadRequest)
 			return reverseproxy.Intercept, err
 		}
 		defaultModelId, ok := clientMeta.Public.GetDefaultModelIdByModelType(modelType)
 		if !ok {
-			l.Errorf("failed to get client's default model")
+			l.Errorf("failed to get client's default model, modelType: %s", modelType.String())
 			http.Error(w, "Client's default model is invalid", http.StatusBadRequest)
 			return reverseproxy.Intercept, err
 		}
@@ -175,7 +177,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	}
 
 	// find provider
-	modelProvider, err := q.ModelProviderClient().Get(ctx, &modelproviderpb.ModelProviderGetRequest{Id: model.ProviderId})
+	modelProvider, err = q.ModelProviderClient().Get(ctx, &modelproviderpb.ModelProviderGetRequest{Id: model.ProviderId})
 	if err != nil {
 		l.Errorf("failed to get model provider, id: %s, err: %v", model.ProviderId, err)
 		http.Error(w, "ModelProviderId is invalid", http.StatusBadRequest)
@@ -206,21 +208,24 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	return f.saveContextToAudit(ctx, w, infor)
 }
 
-func getModelTypeByRequest(infor reverseproxy.HttpInfor) (modelpb.ModelType, bool) {
-	if strutil.HasPrefixes(infor.URL().Path, "/v1/chat/completions", "/v1/completions") {
+func getModelTypeByRequest(routerPath string) (modelpb.ModelType, bool) {
+	if strutil.HasPrefixes(routerPath, common.RequestPathPrefixV1ChatCompletions, common.RequestPathPrefixV1Completions) {
 		return modelpb.ModelType_text_generation, true
 	}
-	if strutil.HasPrefixes(infor.URL().Path, "/v1/images") {
+	if strutil.HasPrefixes(routerPath, common.RequestPathPrefixV1Images) {
 		return modelpb.ModelType_image, true
 	}
-	if strutil.HasPrefixes(infor.URL().Path, "/v1/audio") {
+	if strutil.HasPrefixes(routerPath, common.RequestPathPrefixV1Audio) {
 		return modelpb.ModelType_audio, true
 	}
-	if strutil.HasPrefixes(infor.URL().Path, "/v1/embeddings") {
+	if strutil.HasPrefixes(routerPath, common.RequestPathPrefixV1Embeddings) {
 		return modelpb.ModelType_embedding, true
 	}
-	if strutil.HasPrefixes(infor.URL().Path, "/v1/moderations") {
+	if strutil.HasPrefixes(routerPath, common.RequestPathPrefixV1Moderations) {
 		return modelpb.ModelType_text_moderation, true
+	}
+	if strutil.HasPrefixes(routerPath, common.RequestPathPrefixV1Assistants, common.RequestPathPrefixV1Threads) {
+		return modelpb.ModelType_assistant, true
 	}
 	return -1, false
 }

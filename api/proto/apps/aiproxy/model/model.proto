@@ -62,9 +62,8 @@ enum ModelType {
     audio = 3;
     embedding = 4;
     text_moderation = 5;
-    multimodal__vision = 6;
-    multimodal__audio = 7;
-    multimodal__vision_audio = 8;
+    multimodal = 6;
+    assistant = 7;
 }
 
 message ModelCreateRequest {
