@@ -293,7 +293,11 @@ func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *
 		return nil, errors.NewInternalServerError(err)
 	}
 	userIdStr := apis.GetUserID(ctx)
-	err = n.checkNotifyPermission(ctx, userIdStr, notifyGroup.ScopeType, notifyGroup.ScopeID, apistructs.GetAction)
+	scopeType, scopeID := notifyGroup.ScopeType, notifyGroup.ScopeID
+	if scopeType == apistructs.MSPScope {
+		scopeID, scopeType = notifyGroup.GetScopeDetail()
+	}
+	err = n.checkNotifyPermission(ctx, userIdStr, scopeType, scopeID, apistructs.GetAction)
 	if err != nil {
 		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.GetAction, err.Error())
 	}
