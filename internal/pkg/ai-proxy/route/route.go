@@ -93,6 +93,7 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 
 	// set route path vars to context
 	ctx = context.WithValue(ctx, reverseproxy.CtxKeyPathMatcher{}, r.PathMatcher)
+	ctx = context.WithValue(ctx, reverseproxy.CtxKeyPath{}, r.Path)
 
 	// set default logger to context
 	var l = logrusx.New(logrusx.WithName(reflect.TypeOf(r).String()))
