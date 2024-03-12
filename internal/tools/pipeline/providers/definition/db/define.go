@@ -254,7 +254,7 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		engine = engine.Desc("d." + v)
 	}
 
-	if req.PageSize != 0 {
+	if req.PageSize > 0 {
 		engine = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize))
 	}
 
