@@ -110,6 +110,7 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name"}},
 											{Kind: &structpb.Value_StringValue{StringValue: "jdk 1.2.3"}},
 											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+											{Kind: &structpb.Value_StringValue{StringValue: "erda"}},
 										},
 									},
 									{
@@ -118,6 +119,7 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name2"}},
 											{Kind: &structpb.Value_StringValue{StringValue: "py 1.2.3"}},
 											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+											{Kind: &structpb.Value_StringValue{StringValue: "erda"}},
 										},
 									},
 									{
@@ -126,6 +128,7 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name3"}},
 											{Kind: &structpb.Value_StringValue{StringValue: "golang 1.2.3"}},
 											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+											{Kind: &structpb.Value_StringValue{StringValue: "erda"}},
 										},
 									},
 									{
@@ -134,6 +137,7 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name4"}},
 											{Kind: &structpb.Value_StringValue{StringValue: "nodejs 1.2.3"}},
 											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+											{Kind: &structpb.Value_StringValue{StringValue: "erda"}},
 										},
 									},
 								}},
