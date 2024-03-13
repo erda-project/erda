@@ -17,10 +17,6 @@ package definition_cleanup
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	"io"
-	"os"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
@@ -67,32 +63,10 @@ const dryrunPrifix = "pipeline-definition-cleanup"
 
 // RepeatPipelineRecordCleanup
 func (p *provider) RepeatPipelineRecordCleanup(ctx context.Context) {
-	if p.Cfg.DryRun {
-		// check if path exist
-		if _, err := os.Stat(p.Cfg.DryRunFilePath); os.IsNotExist(err) {
-			// dir is not exist
-			os.Mkdir(p.Cfg.DryRunFilePath, 0755)
-		}
-
-		filepath := p.Cfg.DryRunFilePath + fmt.Sprintf("/dry-run_%s.log", time.Now().Format("2006_01_02"))
-		// create file
-		file, err := os.Create(filepath)
-		if err != nil {
-			p.Log.Error("create dry run log file err: %s", err)
-		}
-
-		os.Chmod(filepath, 0666)
-
-		p.Log = logrusx.New()
-		p.Log = p.Log.Sub(dryrunPrifix)
-		p.Log.SetOutput(io.MultiWriter(os.Stdout, file))
-		p.Log.Infof("Start Cleanup Definition in %s", p.Cfg.CronExpr)
-	}
-
 	cronProcess := cron.New()
 	err := cronProcess.AddFunc(p.Cfg.CronExpr, func() {
 		p.cronCleanup(ctx)
-	}, dryrunPrifix)
+	})
 	if err != nil {
 		panic(err)
 	}

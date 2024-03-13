@@ -922,7 +922,9 @@ func (b *Bundle) GetArchive(userID string, req apistructs.GittarArchiveRequest, 
 	}
 	hc := b.hc
 
-	path := fmt.Sprintf("/%s/dop/%s/%s/archive/%s.zip", req.Org, req.Project, req.Application, req.Ref)
+	ref := EncodeBranch(req.Ref)
+
+	path := fmt.Sprintf("/%s/dop/%s/%s/archive/%s.zip", req.Org, req.Project, req.Application, ref)
 	resp, err := hc.Get(host).Path(path).
 		Header(httputil.UserHeader, userID).
 		Do().RAW()
