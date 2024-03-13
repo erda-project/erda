@@ -15,11 +15,14 @@
 package dbclient
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"xorm.io/xorm/names"
 
@@ -53,6 +56,12 @@ const (
 
 func TestUpdatePipelineTaskTime(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
+
+	dir, file := filepath.Split(dbname)
+	name := strings.TrimSuffix(file, filepath.Ext(file))
+	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
+	dbname = filepath.Join(dir, randomName)
+
 	defer func() {
 		os.Remove(dbname)
 	}()

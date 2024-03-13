@@ -17,8 +17,6 @@ package taskpolicy
 import (
 	"reflect"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
@@ -85,8 +83,9 @@ func (p *provider) resetTask(task *spec.PipelineTask, statuses ...apistructs.Pip
 	pipeline := statusPipelines[0]
 
 	if pipeline.ParentTaskID == nil {
-		return errors.New("Parent Task ID is null")
+		return nil
 	}
+
 	beforeSuccessTask, err := p.dbClient.GetPipelineTask(*pipeline.ParentTaskID)
 	if err != nil {
 		return err
