@@ -70,6 +70,7 @@ func NewAggregator(ctx context.Context, bdl *bundle.Bundle, clusterSvc clusterpb
 }
 
 func (a *Aggregator) loadFunc(key any) (any, error) {
+	logrus.Infof("load cluster: %s", key.(string))
 	ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	cluster, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: key.(string)})
 	if err != nil {
@@ -230,7 +231,7 @@ func (a *Aggregator) prepareSteveServer(clusterInfo *clusterpb.ClusterInfo) {
 	if err := a.createPredefinedResource(clusterInfo.Name); err != nil {
 		logrus.Infof("failed to create predefined resource for cluster %s, %v. Skip starting steve server",
 			clusterInfo.Name, err)
-		a.server.Remove(clusterInfo.Name)
+		//a.server.Remove(clusterInfo.Name)
 		return
 	}
 	logrus.Infof("starting steve server for cluster %s", clusterInfo.Name)
