@@ -57,14 +57,14 @@ type Aggregator struct {
 }
 
 // NewAggregator new an aggregator with steve servers for all current clusters
-func NewAggregator(ctx context.Context, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer) *Aggregator {
+func NewAggregator(ctx context.Context, bdl *bundle.Bundle, clusterSvc clusterpb.ClusterServiceServer, ttl time.Duration, size int) *Aggregator {
 	a := &Aggregator{
 		Ctx:        ctx,
 		Bdl:        bdl,
 		clusterSvc: clusterSvc,
 	}
 
-	a.server = gcache.New(128).LoaderFunc(a.loadFunc).LRU().Build()
+	a.server = gcache.New(size).Expiration(ttl).LoaderFunc(a.loadFunc).LRU().Build()
 	go a.watchClusters(ctx)
 	return a
 }
