@@ -21,11 +21,13 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -90,6 +92,11 @@ func (m *MockCronService) CronUpdate(ctx context.Context, request *cronpb.CronUp
 }
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
+	dir, file := filepath.Split(dbSourceName)
+	name := strings.TrimSuffix(file, filepath.Ext(file))
+	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
+	dbSourceName = filepath.Join(dir, randomName)
+
 	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
 	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 

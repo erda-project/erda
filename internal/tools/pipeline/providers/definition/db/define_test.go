@@ -38,11 +38,17 @@ const (
 )
 
 func TestListPipelineDefinition(t *testing.T) {
-
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
+
+	dir, file := filepath.Split(dbname)
+	name := strings.TrimSuffix(file, filepath.Ext(file))
+	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
+	dbname = filepath.Join(dir, randomName)
+
 	defer func() {
 		os.Remove(dbname)
 	}()
+
 	sqlite3Db, err := sqlite3.NewSqlite3(dbname+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
 	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 
@@ -108,12 +114,16 @@ func TestListPipelineDefinition(t *testing.T) {
 	assert.Equal(t, 2, len(ds))
 	assert.Equal(t, "1", ds[0].ID)
 	assert.Equal(t, "2", ds[1].ID)
-	t.Logf("%+v", ds)
-
 }
 
 func TestGetPipelineDefinition(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
+
+	dir, file := filepath.Split(dbname)
+	name := strings.TrimSuffix(file, filepath.Ext(file))
+	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
+	dbname = filepath.Join(dir, randomName)
+
 	defer func() {
 		os.Remove(dbname)
 	}()

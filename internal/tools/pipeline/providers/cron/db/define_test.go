@@ -15,12 +15,15 @@
 package db
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -168,6 +171,11 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 }
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
+	dir, file := filepath.Split(dbSourceName)
+	name := strings.TrimSuffix(file, filepath.Ext(file))
+	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
+	dbSourceName = filepath.Join(dir, randomName)
+
 	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode=rwc", sqlite3.WithJournalMode(sqlite3.MEMORY))
 	if err != nil {
 		panic(err)
