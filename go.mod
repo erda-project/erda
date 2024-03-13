@@ -52,7 +52,6 @@ require (
 	github.com/erda-project/erda-infra v1.0.10-0.20240307075217-aba9d7b8ce20
 	github.com/erda-project/erda-infra/tools v0.0.0-20231213094429-67b1657b3593
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
-	github.com/erda-project/erda-proto-go v1.4.0
 	github.com/erda-project/erda-sourcecov v0.1.0
 	github.com/fatih/color v1.13.0
 	github.com/fntlnz/mountinfo v0.0.0-20171106231217-40cb42681fad
@@ -167,7 +166,7 @@ require (
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
 	google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de
 	google.golang.org/grpc v1.58.3
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/igm/sockjs-go.v2 v2.0.0
@@ -276,7 +275,6 @@ require (
 	github.com/elastic/go-sysinfo v1.7.1 // indirect
 	github.com/elastic/go-ucfg v0.8.6 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
-	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
