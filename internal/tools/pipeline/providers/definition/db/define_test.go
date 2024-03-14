@@ -15,12 +15,15 @@
 package db
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"xorm.io/xorm/names"
 
@@ -157,4 +160,143 @@ func TestGetPipelineDefinition(t *testing.T) {
 	d, err = client.GetPipelineDefinition("4")
 
 	assert.Equal(t, true, reflect.ValueOf(d).IsNil())
+}
+
+func TestLimit(t *testing.T) {
+	dbname := filepath.Join(os.TempDir(), dbSourceName)
+
+	dir, file := filepath.Split(dbname)
+	name := strings.TrimSuffix(file, filepath.Ext(file))
+	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
+	dbname = filepath.Join(dir, randomName)
+
+	defer func() {
+		os.Remove(dbname)
+	}()
+	sqlite3Db, err := sqlite3.NewSqlite3(dbname+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
+	if err != nil {
+		panic(err)
+	}
+
+	// migrator db
+	err = sqlite3Db.DB().Sync2(&PipelineDefinition{})
+	if err != nil {
+		panic(err)
+	}
+
+	err = sqlite3Db.DB().Sync2(&sourcedb.PipelineSource{})
+	if err != nil {
+		panic(err)
+	}
+
+	client := &Client{
+		Interface: sqlite3Db,
+	}
+
+	sourceClient := &sourcedb.Client{
+		Interface: sqlite3Db,
+	}
+
+	// insert definition
+	definitions := []*PipelineDefinition{
+		{ID: "1", Name: "1", PipelineSourceId: "1", Location: "1"},
+		{ID: "2", Name: "2", PipelineSourceId: "2", Location: "1"},
+		{ID: "3", Name: "3", PipelineSourceId: "3", Location: "2"},
+		{ID: "4", Name: "4", PipelineSourceId: "1", SoftDeletedAt: uint64(time.Now().UnixNano()), Location: "1"},
+		{ID: "5", Name: "5", PipelineSourceId: "1", Location: "1"},
+	}
+
+	sources := []*sourcedb.PipelineSource{
+		{ID: "1"},
+		{ID: "2"},
+		{ID: "3"},
+	}
+
+	for _, d := range definitions {
+		err = client.CreatePipelineDefinition(d)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	for _, s := range sources {
+		err = sourceClient.CreatePipelineSource(s)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	type Want struct {
+		Err   bool
+		count int64
+	}
+
+	testCase := []struct {
+		Desc     string
+		pageSize int64
+		pageNo   int64
+		location string
+		want     Want
+	}{
+		{
+			Desc:     "pageSize is 0",
+			pageSize: 0,
+			pageNo:   1,
+			location: "1",
+			want: Want{
+				Err:   false,
+				count: 3,
+			},
+		},
+		{
+			Desc:     "pageSize is less 0",
+			pageSize: -1,
+			pageNo:   1,
+			location: "1",
+			want: Want{
+				Err:   false,
+				count: 3,
+			},
+		},
+		{
+			Desc:     "pageNo is 0，offset will be ignored",
+			pageSize: 1,
+			pageNo:   0,
+			location: "1",
+			want: Want{
+				Err:   false,
+				count: 3,
+			},
+		},
+		{
+			Desc:     "pageNo is less 0, offset will be ignored",
+			pageSize: 1,
+			pageNo:   -1,
+			location: "1",
+			want: Want{
+				Err:   false,
+				count: 3,
+			},
+		},
+	}
+
+	for _, tt := range testCase {
+		t.Log(tt.Desc)
+		_, count, err := client.ListPipelineDefinition(&definitionpb.PipelineDefinitionListRequest{
+			PageSize: int64(0),
+			PageNo:   int64(1),
+			Location: "1",
+		})
+		if err != nil {
+			t.Error(err)
+		}
+
+		if tt.want.Err {
+			assert.NotNil(t, err)
+		}
+		assert.Equal(t, tt.want.count, count)
+
+	}
+
 }
