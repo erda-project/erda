@@ -85,7 +85,7 @@ func (a *Aggregator) loadFunc(key any) (any, error) {
 func (a *Aggregator) GetAllClusters() []string {
 	var clustersNames []string
 	servers := a.server.GetALL(false)
-	for key, _ := range servers {
+	for key := range servers {
 		if clusterName, ok := key.(string); ok {
 			clustersNames = append(clustersNames, clusterName)
 		}
