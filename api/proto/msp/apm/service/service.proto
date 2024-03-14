@@ -162,6 +162,7 @@ message Service {
   erda.common.Language language        = 3;
   string               lastHeartbeat   = 4;
   AggregateMetric      aggregateMetric = 5;
+  string               appName         = 6;
 }
 
 message AggregateMetric {
