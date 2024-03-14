@@ -67,7 +67,7 @@ func (e dbError) Is(target error) bool { return target != nil && target.Error() 
 var NotFoundBaseError = dbError{msg: "not found base"}
 
 // GetPipeline: base + extra + labels
-func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pipeline, error) {
+func (client *Client) GetPipeline(id uint64, ops ...SessionOption) (spec.Pipeline, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -111,7 +111,7 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 }
 
 // GetPipelineWithExistInfo 当 id 对应的流水线记录不存在时，error = nil, found = false
-func (client *Client) GetPipelineWithExistInfo(id interface{}, ops ...SessionOption) (spec.Pipeline, bool, error) {
+func (client *Client) GetPipelineWithExistInfo(id uint64, ops ...SessionOption) (spec.Pipeline, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

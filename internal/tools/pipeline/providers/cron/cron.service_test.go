@@ -285,7 +285,7 @@ func Test_provider_InsertOrUpdatePipelineCron(t *testing.T) {
 			})
 			defer patch2.Unpatch()
 
-			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCron", func(dbClient *db.Client, id interface{}, cron *db.PipelineCron, ops ...mysqlxorm.SessionOption) error {
+			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCron", func(dbClient *db.Client, id uint64, cron *db.PipelineCron, ops ...mysqlxorm.SessionOption) error {
 				assert.Equal(t, id, uint64(1))
 				return nil
 			})
@@ -364,7 +364,7 @@ func Test_provider_disable(t *testing.T) {
 			})
 			defer patch2.Unpatch()
 
-			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCronWillUseDefault", func(dbClient *db.Client, id interface{}, cron *db.PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
+			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCronWillUseDefault", func(dbClient *db.Client, id uint64, cron *db.PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
 				assert.Equal(t, id, uint64(1))
 				return nil
 			})
@@ -428,7 +428,7 @@ func Test_provider_operate(t *testing.T) {
 			s := &provider{}
 
 			var dbClient db.Client
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id uint64, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
 				assert.Equal(t, id, tt.args.cronID)
 				return tt.result.cron, tt.result.bool, tt.result.err
 			})
@@ -486,7 +486,7 @@ func Test_provider_CronGet(t *testing.T) {
 			s := &provider{}
 
 			var dbClient db.Client
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id uint64, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
 				assert.Equal(t, id, tt.args.req.CronID)
 				return tt.result.cron, tt.result.bool, tt.result.err
 			})
@@ -544,7 +544,7 @@ func Test_provider_CronUpdate(t *testing.T) {
 			s := &provider{}
 
 			var dbClient db.Client
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id uint64, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
 				assert.Equal(t, id, tt.args.req.CronID)
 				return tt.result.cron, tt.result.bool, tt.result.err
 			})
@@ -588,13 +588,13 @@ func Test_provider_cronDelete(t *testing.T) {
 			s := &provider{}
 
 			var dbClient db.Client
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "GetPipelineCron", func(dbClient *db.Client, id uint64, ops ...mysqlxorm.SessionOption) (cron db.PipelineCron, bool bool, err error) {
 				cron.ID = tt.args.req.CronID
 				return cron, true, nil
 			})
 			defer patch2.Unpatch()
 
-			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "DeletePipelineCron", func(dbClient *db.Client, id interface{}, ops ...mysqlxorm.SessionOption) error {
+			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "DeletePipelineCron", func(dbClient *db.Client, id uint64, ops ...mysqlxorm.SessionOption) error {
 				return nil
 			})
 			defer patch3.Unpatch()
@@ -645,7 +645,7 @@ func Test_provider_update(t *testing.T) {
 			s := &provider{}
 
 			var dbClient db.Client
-			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCronWillUseDefault", func(dbClient *db.Client, id interface{}, cron *db.PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(&dbClient), "UpdatePipelineCronWillUseDefault", func(dbClient *db.Client, id uint64, cron *db.PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
 				enable := false
 				cron.Enable = &enable
 				return nil
