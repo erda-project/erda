@@ -78,7 +78,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			}
 			ops.Meta.Type = "delete"
 			bot.Operations["onOk"] = ops
-			bot.Props.Content = bot.getContent(bot.SDK.I18n("Delete following items"), selectRowKeys)
+			bot.Props.Content = bot.SDK.I18n("Deletion operation is irreversible")
 		}
 	case IssueDoshboardBatchSubmit:
 		bot.State.Visible = false
