@@ -99,7 +99,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	start, end := TimeRange("-24h")
 
 	// get services list
-	statement := fmt.Sprintf("SELECT service_id::tag,service_name::tag,service_agent_platform::tag,max(timestamp) FROM application_service_node "+
+	statement := fmt.Sprintf("SELECT service_id::tag,service_name::tag,service_agent_platform::tag,max(timestamp),application_name::tag FROM application_service_node "+
 		"WHERE $condition GROUP BY service_id::tag ORDER BY max(timestamp) DESC LIMIT %v OFFSET %v", req.PageSize, (req.PageNo-1)*req.PageSize)
 	condition := " terminus_key::tag=$terminus_key "
 	queryParams := map[string]*structpb.Value{
@@ -143,6 +143,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		service.Name = row.Values[1].GetStringValue()
 		service.Language = parseLanguage(row.Values[2].GetStringValue())
 		service.LastHeartbeat = time.Unix(0, int64(row.Values[3].GetNumberValue())).Format("2006-01-02 15:04:05")
+		service.AppName = row.Values[4].GetStringValue()
 		service.AggregateMetric = &pb.AggregateMetric{}
 		services = append(services, service)
 	}
