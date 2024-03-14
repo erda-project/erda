@@ -127,7 +127,12 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		if emptyVersion {
 			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
 		} else {
-			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version))
+			def, ok := addons.GetDefault()
+			var recommendVersion = "-"
+			if ok {
+				recommendVersion = def.Version
+			}
+			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version, recommendVersion))
 		}
 		logrus.Errorf(err.Error())
 		return nil, nil, err
