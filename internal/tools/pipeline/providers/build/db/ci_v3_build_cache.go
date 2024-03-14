@@ -56,7 +56,7 @@ func (client *Client) GetBuildCache(clusterName, imageName string, ops ...mysqlx
 	return cache, nil
 }
 
-func (client *Client) DeleteBuildCache(id interface{}, ops ...mysqlxorm.SessionOption) (err error) {
+func (client *Client) DeleteBuildCache(id int64, ops ...mysqlxorm.SessionOption) (err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

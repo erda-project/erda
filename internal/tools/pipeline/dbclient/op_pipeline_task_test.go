@@ -14,14 +14,27 @@
 
 package dbclient
 
-//import (
-//	"fmt"
-//	"testing"
-//
-//	"github.com/stretchr/testify/require"
-//
-//	"github.com/erda-project/erda/apistructs"
-//)
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"xorm.io/xorm/names"
+
+	"github.com/erda-project/erda-infra/providers/mysqlxorm/sqlite3"
+	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+)
+
+const (
+	dbSourceName = "test.db"
+	mode         = "rwc"
+)
+
 //
 //func TestClient_UpdatePipelineTask(t *testing.T) {
 //	task, err := client.GetPipelineTask(1)
@@ -40,3 +53,110 @@ package dbclient
 //	require.True(t, task.QueueTimeSec == 20)
 //	require.True(t, task.Extra.Namespace == "xxx-xxx")
 //}
+
+func TestUpdatePipelineTaskTime(t *testing.T) {
+	dbname := filepath.Join(os.TempDir(), dbSourceName)
+
+	dir, file := filepath.Split(dbname)
+	name := strings.TrimSuffix(file, filepath.Ext(file))
+	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
+	dbname = filepath.Join(dir, randomName)
+
+	defer func() {
+		os.Remove(dbname)
+	}()
+	sqlite3Db, err := sqlite3.NewSqlite3(dbname+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
+	if err != nil {
+		panic(err)
+	}
+
+	err = sqlite3Db.DB().Sync2(&spec.PipelineTask{})
+	if err != nil {
+		panic(err)
+	}
+
+	client := Client{
+		Engine: sqlite3Db.DB(),
+	}
+
+	curDate := time.Date(2024, 3, 12, 17, 25, 0, 0, time.Now().Location())
+
+	// insert task
+	tasks := []*spec.PipelineTask{
+		{ID: 1, PipelineID: 1, CostTimeSec: 10, TimeBegin: curDate, TimeEnd: curDate},
+		{ID: 2, PipelineID: 2, CostTimeSec: 10, TimeBegin: curDate, TimeEnd: curDate},
+		{ID: 3, PipelineID: 3, CostTimeSec: 10, TimeBegin: curDate, TimeEnd: curDate},
+	}
+
+	for _, task := range tasks {
+		err = client.CreatePipelineTask(task)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	type Want struct {
+		Err          bool
+		pipelineTask *spec.PipelineTask
+	}
+
+	addTime := curDate.Add(time.Hour)
+	one := uint64(1)
+
+	testCase := []struct {
+		desc     string
+		pipeline *spec.Pipeline
+		want     Want
+	}{
+		{
+			desc: "parent task id is null",
+			pipeline: &spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
+					TimeBegin:    &curDate,
+					TimeEnd:      &curDate,
+					CostTimeSec:  20,
+					ParentTaskID: nil,
+				},
+			},
+			want: Want{
+				Err: true,
+			},
+		},
+		{
+			desc: "normal",
+			pipeline: &spec.Pipeline{
+				PipelineBase: spec.PipelineBase{
+					TimeBegin:    &addTime,
+					TimeEnd:      &addTime,
+					CostTimeSec:  20,
+					ParentTaskID: &one,
+				},
+			},
+			want: Want{
+				Err: false,
+				pipelineTask: &spec.PipelineTask{
+					ID:          1,
+					TimeBegin:   addTime,
+					TimeEnd:     addTime,
+					CostTimeSec: 20,
+				},
+			},
+		},
+	}
+
+	for _, tt := range testCase {
+		t.Log(tt.desc)
+		err = client.UpdatePipelineTaskTime(tt.pipeline)
+		if tt.want.Err {
+			assert.NotNil(t, err)
+			continue
+		}
+
+		task, _ := client.GetPipelineTask(tt.want.pipelineTask.ID)
+		assert.Equal(t, tt.want.pipelineTask.ID, task.ID)
+		assert.Equal(t, tt.want.pipelineTask.TimeBegin, task.TimeBegin)
+		assert.Equal(t, tt.want.pipelineTask.TimeEnd, task.TimeEnd)
+		assert.Equal(t, tt.want.pipelineTask.CostTimeSec, task.CostTimeSec)
+	}
+}

@@ -238,7 +238,7 @@ func TestPipelineSvc_OperateTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineStage", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.PipelineStage, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineStage", func(client *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.PipelineStage, error) {
 				return *tt.args.stage, tt.args.searchStageError
 			})
 			s := &pipelineService{

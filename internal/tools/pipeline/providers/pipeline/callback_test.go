@@ -62,12 +62,12 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 func TestDealPipelineCallbackOfAction(t *testing.T) {
 	db := &dbclient.Client{}
 
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineTask", func(_ *dbclient.Client, id uint64) (spec.PipelineTask, error) {
 		return spec.PipelineTask{PipelineID: 1}, nil
 	})
 	defer m1.Unpatch()
 
-	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipeline", func(_ *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipeline", func(_ *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
 		return spec.Pipeline{PipelineBase: spec.PipelineBase{ID: 1}}, nil
 	})
 	defer m2.Unpatch()

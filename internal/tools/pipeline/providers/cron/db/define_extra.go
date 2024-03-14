@@ -103,7 +103,7 @@ func (client *Client) PagingPipelineCron(req *pb.CronPagingRequest, ops ...mysql
 	return result, total, nil
 }
 
-func (client *Client) GetPipelineCron(id interface{}, ops ...mysqlxorm.SessionOption) (cron PipelineCron, bool bool, err error) {
+func (client *Client) GetPipelineCron(id uint64, ops ...mysqlxorm.SessionOption) (cron PipelineCron, bool bool, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -130,7 +130,7 @@ func (client *Client) BatchGetPipelineCronByDefinitionID(definitionIDs []string,
 	return cronList, err
 }
 
-func (client *Client) UpdatePipelineCron(id interface{}, cron *PipelineCron, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) UpdatePipelineCron(id uint64, cron *PipelineCron, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -189,7 +189,7 @@ func (client *Client) CreatePipelineCron(cron *PipelineCron, ops ...mysqlxorm.Se
 	return errors.Wrapf(err, "failed to create pipeline cron, applicationID [%d], branch [%s], expr [%s], enable [%v]", cron.ApplicationID, cron.Branch, cron.CronExpr, cron.Enable)
 }
 
-func (client *Client) DeletePipelineCron(id interface{}, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) DeletePipelineCron(id uint64, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -213,7 +213,7 @@ func (client *Client) BatchDeletePipelineCron(ids []uint64, ops ...mysqlxorm.Ses
 	return nil
 }
 
-func (client *Client) UpdatePipelineCronWillUseDefault(id interface{}, cron *PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) UpdatePipelineCronWillUseDefault(id uint64, cron *PipelineCron, columns []string, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

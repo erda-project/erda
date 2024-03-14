@@ -118,7 +118,7 @@ func Test_getOrSetPipelineRerunSuccessTasksFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
 				return spec.Pipeline{}, nil
 			})
 
@@ -172,7 +172,7 @@ func Test_getOrSetPipelineYmlFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var client *dbclient.Client
-			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipeline", func(client *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
 				var pipeline = spec.Pipeline{
 					PipelineExtra: spec.PipelineExtra{
 						PipelineYml: tt.args.yml,
