@@ -32,6 +32,8 @@ type (
 		DefaultModelIdOfAudio          string `json:"default_model_id_of_audio,omitempty"`
 		DefaultModelIdOfEmbedding      string `json:"default_model_id_of_embedding,omitempty"`
 		DefaultModelIdOfTextModeration string `json:"default_model_id_of_text_moderation,omitempty"`
+		DefaultModelIdOfMultimodal     string `json:"default_model_id_of_multimodal,omitempty"`
+		DefaultModelIdOfAssistant      string `json:"default_model_id_of_assistant,omitempty"`
 	}
 	ClientMetaSecret struct {
 	}

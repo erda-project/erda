@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -30,7 +31,7 @@ import (
 func MakeNamespace(sg *apistructs.ServiceGroup) string {
 	if IsGroupStateful(sg) {
 		// Create a new namespace for the servicegroup that needs to be split into multiple statefulsets, that is, add the group- prefix
-		if v, ok := sg.Labels[groupNum]; ok && v != "" && v != "1" {
+		if v, ok := sg.Labels[types.GroupNum]; ok && v != "" && v != "1" {
 			return strutil.Concat("group-", sg.Type, "--", sg.ID)
 		}
 	}

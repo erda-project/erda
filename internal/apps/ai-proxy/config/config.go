@@ -34,8 +34,8 @@ type Config struct {
 
 	Exporter configPromExporter
 
-	RoutesRef string       `file:"routes_ref"`
-	Routes    route.Routes `json:"-" yaml:"-"`
+	RoutesRefs []string     `file:"routes_refs"`
+	Routes     route.Routes `json:"-" yaml:"-"`
 }
 
 type configPromExporter struct {
@@ -46,9 +46,13 @@ type configPromExporter struct {
 
 // DoPost do some post process after config loaded
 func (cfg *Config) DoPost() error {
-	// parse routes ref
-	if err := parseFileConfig(cfg.RoutesRef, "routes", &cfg.Routes); err != nil {
-		return fmt.Errorf("failed to parse routes ref: %v", err)
+	// parse routes refs
+	for _, routeRef := range cfg.RoutesRefs {
+		var routes route.Routes
+		if err := parseFileConfig(routeRef, "routes", &routes); err != nil {
+			return fmt.Errorf("failed to parse routes ref: %v", err)
+		}
+		cfg.Routes = append(cfg.Routes, routes...)
 	}
 	if err := cfg.Routes.Validate(); err != nil {
 		return fmt.Errorf("failed to validate routes: %v", err)

@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/ingress"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -168,7 +169,7 @@ func initAnnotations(layers [][]*apistructs.Service, globalSeq int) map[string]s
 			annotations[layer[j].Name] = key
 
 			// e.g. annotations["G0_ID"]="redis"
-			// annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")] = layer[j].Labels[groupID]
+			// annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")] = layer[j].Labels[GroupID]
 			annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")], _ = getGroupID(layer[j])
 
 			// Record the PORT of each service
@@ -227,7 +228,7 @@ func (k *Kubernetes) initGroupEnv(layers [][]*apistructs.Service, annotations ma
 
 // Resolve the environment variables with variables in the middleware, such as TERMINUS_ZOOKEEPER_1_HOST=${terminus-zookeeper-1}
 func parseSpecificEnv(val string, annotations map[string]string) (string, bool) {
-	results := envReg.FindAllString(val, -1)
+	results := types.EnvReg.FindAllString(val, -1)
 	if len(results) == 0 {
 		return "", false
 	}
@@ -407,7 +408,7 @@ func (k *Kubernetes) getOneStatus(namespace, name string) (apistructs.StatusDesc
 	return status, nil
 }
 
-func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name string, groupNum int) (*OneGroupInfo, error) {
+func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name string, groupNum int) (*types.OneGroupInfo, error) {
 	set, err := k.sts.Get(namespace, name)
 	if err != nil {
 		return nil, err
@@ -481,9 +482,9 @@ func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name stri
 			break
 		}
 	}
-	groupInfo := &OneGroupInfo{
-		sg:  sg,
-		sts: set,
+	groupInfo := &types.OneGroupInfo{
+		Sg:  sg,
+		Sts: set,
 	}
 	return groupInfo, nil
 }
@@ -496,7 +497,7 @@ func (k *Kubernetes) inspectGroup(g *apistructs.ServiceGroup, namespace, name st
 		return nil, err
 	}
 
-	var groupsInfo []*OneGroupInfo
+	var groupsInfo []*types.OneGroupInfo
 	for i, group := range mygroups {
 		// First find groupNum
 		//for k, v := range
@@ -514,11 +515,11 @@ func (k *Kubernetes) inspectGroup(g *apistructs.ServiceGroup, namespace, name st
 	isReady := true
 	for i := range g.Services {
 		for j := range groupsInfo {
-			for k := range groupsInfo[j].sg.Services {
-				if groupsInfo[j].sg.Services[k].Name != g.Services[i].Name {
+			for k := range groupsInfo[j].Sg.Services {
+				if groupsInfo[j].Sg.Services[k].Name != g.Services[i].Name {
 					continue
 				}
-				g.Services[i] = groupsInfo[j].sg.Services[k]
+				g.Services[i] = groupsInfo[j].Sg.Services[k]
 				if g.Services[i].Status != apistructs.StatusReady {
 					isReady = false
 				}
@@ -543,17 +544,17 @@ func existedInSlice(array []string, elem string) bool {
 
 // todo: Compatible with old labels
 func getGroupNum(sg *apistructs.ServiceGroup) (string, bool) {
-	if group, ok := sg.Labels[groupNum]; ok {
+	if group, ok := sg.Labels[types.GroupNum]; ok {
 		return group, ok
 	}
-	group, ok := sg.Labels[groupNum2]
+	group, ok := sg.Labels[types.GroupNum2]
 	return group, ok
 }
 
 func getGroupID(svc *apistructs.Service) (string, bool) {
-	if id, ok := svc.Labels[groupID]; ok {
+	if id, ok := svc.Labels[types.GroupID]; ok {
 		return id, ok
 	}
-	id, ok := svc.Labels[groupID2]
+	id, ok := svc.Labels[types.GroupID2]
 	return id, ok
 }

@@ -20,9 +20,12 @@ import (
 	"sort"
 	"testing"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway/dto"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/orm"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 )
 
 func Test_sortPackage(t *testing.T) {
@@ -145,4 +148,64 @@ func TestRuntimeData_checkValid(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGatewayDomainServiceImpl(t *testing.T) {
+	impl := &GatewayDomainServiceImpl{
+		runtimeDb:    &service.GatewayRuntimeServiceServiceImpl{},
+		azDb:         &service.GatewayAzInfoServiceImpl{},
+		kongDb:       &service.GatewayKongInfoServiceImpl{},
+		packageAPIDB: &service.GatewayPackageApiServiceImpl{},
+		domainDb:     &service.GatewayDomainServiceImpl{},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(impl.runtimeDb), "SelectByAny", func(*service.GatewayRuntimeServiceServiceImpl, *orm.GatewayRuntimeService) ([]orm.GatewayRuntimeService, error) {
+		return []orm.GatewayRuntimeService{
+			{
+				ProjectId:    "8888",
+				InnerAddress: "test.test",
+				RuntimeId:    "22222",
+				BaseRow: orm.BaseRow{
+					Id: "22222",
+				},
+			},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(impl.azDb), "GetAzInfoByClusterName", func(svc *service.GatewayAzInfoServiceImpl, name string) (*orm.GatewayAzInfo, *service.ClusterInfoDto, error) {
+		return &orm.GatewayAzInfo{
+			Az:        "jicheng",
+			OrgId:     "632",
+			ProjectId: "8888",
+		}, nil, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(impl.kongDb), "GetKongInfo", func(*service.GatewayKongInfoServiceImpl, *orm.GatewayKongInfo) (*orm.GatewayKongInfo, error) {
+		return nil, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(impl.packageAPIDB), "SelectByOptions", func(svc *service.GatewayPackageApiServiceImpl, options []orm.SelectOption) ([]orm.GatewayPackageApi, error) {
+		return []orm.GatewayPackageApi{
+			{
+				PackageId:        "1111",
+				Method:           "GET",
+				RedirectType:     "service",
+				RedirectAddr:     "test.test",
+				RuntimeServiceId: "22222",
+			},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(impl.domainDb), "SelectByOptions", func(svc *service.GatewayDomainServiceImpl, options []orm.SelectOption) ([]orm.GatewayDomain, error) {
+		return nil, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(impl.domainDb), "SelectByAny", func(*service.GatewayDomainServiceImpl, *orm.GatewayDomain) ([]orm.GatewayDomain, error) {
+		return nil, nil
+	})
+
+	result, err := impl.GetRuntimeDomains("19986", 632)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(result)
 }

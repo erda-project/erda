@@ -18,6 +18,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"time"
@@ -132,6 +133,18 @@ type NotifyGroupDetail struct {
 	DingdingList           []Target       `json:"dingdingList"`
 	DingdingWorkNoticeList []Target       `json:"dingdingWorknoticeList"`
 	WebHookList            []string       `json:"webhookList"`
+	Label                  string         `json:"-"`
+}
+
+func (n *NotifyGroupDetail) GetScopeDetail() (scopeID, scopeType string) {
+	label := make(map[string]string)
+	err := json.Unmarshal([]byte(n.Label), &label)
+	if err != nil {
+		return
+	}
+	scopeID = label[MSPMemberScopeId]
+	scopeType = label[MSPMemberScope]
+	return
 }
 
 // CreateNotifyGroupRequest 创建通知组请求

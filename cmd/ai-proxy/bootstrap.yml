@@ -5,7 +5,9 @@ grpc-server@ai:
   addr: ":8082"
 
 erda.app.ai-proxy:
-  routes_ref: conf/routes.yml
+  routes_refs:
+    - conf/routes/routes.yml
+    - conf/routes/assistant.yml
   log_level: ${LOG_LEVEL:info}
   open_on_erda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
 

@@ -168,7 +168,7 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 }
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
-	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName + "?mode=rwc")
+	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode=rwc", sqlite3.WithJournalMode(sqlite3.MEMORY))
 	if err != nil {
 		panic(err)
 	}

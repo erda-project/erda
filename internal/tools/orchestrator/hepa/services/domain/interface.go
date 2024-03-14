@@ -31,7 +31,7 @@ var Service GatewayDomainService
 type GatewayDomainService interface {
 	GetOrgDomainInfo(*dto.ManageDomainReq) (common.NewPageQuery, error)
 	GetTenantDomains(projectId, env string) ([]string, error)
-	GetRuntimeDomains(runtimeId string) (dto.RuntimeDomainsDto, error)
+	GetRuntimeDomains(runtimeId string, orgId int64) (dto.RuntimeDomainsDto, error)
 	UpdateRuntimeServiceDomain(orgId, runtimeId, serviceName string, reqDto *dto.ServiceDomainReqDto) (bool, string, error)
 	CreateOrUpdateComponentIngress(apistructs.ComponentIngressUpdateRequest) (bool, error)
 	Clone(context.Context) GatewayDomainService

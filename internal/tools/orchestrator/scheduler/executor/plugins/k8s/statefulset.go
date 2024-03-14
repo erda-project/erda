@@ -34,15 +34,16 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo) error {
+func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.StatefulsetInfo) error {
 
-	statefulName := statefulsetName(info.sg)
+	statefulName := statefulsetName(info.Sg)
 
 	set := &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -51,32 +52,32 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        statefulName,
-			Namespace:   info.namespace,
+			Namespace:   info.Namespace,
 			Labels:      make(map[string]string),
 			Annotations: make(map[string]string),
 		},
 	}
 
 	// Associate the original service name with the instance name under statefulset
-	for k, v := range info.annotations {
+	for k, v := range info.Annotations {
 		set.Annotations[k] = v
 	}
 
 	set.Spec = appsv1.StatefulSetSpec{
 		RevisionHistoryLimit: func(i int32) *int32 { return &i }(int32(3)),
-		Replicas:             func(i int32) *int32 { return &i }(int32(len(info.sg.Services))),
+		Replicas:             func(i int32) *int32 { return &i }(int32(len(info.Sg.Services))),
 		ServiceName:          statefulName,
 	}
 
 	set.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			"app":      statefulName,
-			"addon_id": info.sg.Dice.ID,
+			"addon_id": info.Sg.Dice.ID,
 		},
 	}
 
 	// Take one of the services
-	service := &info.sg.Services[0]
+	service := &info.Sg.Services[0]
 
 	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
 	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
@@ -84,12 +85,12 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	maxCpu := fmt.Sprintf("%.fm", service.Resources.MaxCPU*1000)
 	maxMem := fmt.Sprintf("%.fMi", service.Resources.MaxMem)
 
-	affinity := constraintbuilders.K8S(&info.sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
+	affinity := constraintbuilders.K8S(&info.Sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{
-			PodLabels: map[string]string{"addon_id": info.sg.Dice.ID},
+			PodLabels: map[string]string{"addon_id": info.Sg.Dice.ID},
 		}}, k).Affinity
 
-	if v, ok := service.Env[DiceWorkSpace]; ok {
+	if v, ok := service.Env[types.DiceWorkSpace]; ok {
 		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
 			affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
 			k.composeStatefulSetNodeAntiAffinityPreferred(v)...)
@@ -97,10 +98,10 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 
 	set.Spec.Template = apiv1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: info.namespace,
+			Namespace: info.Namespace,
 			Labels: map[string]string{
 				"app":      statefulName,
-				"addon_id": info.sg.Dice.ID,
+				"addon_id": info.Sg.Dice.ID,
 			},
 			Annotations: map[string]string{},
 		},
@@ -174,7 +175,7 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	// Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
+	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio
@@ -187,7 +188,7 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	}
 
 	// Set fine-grained CPU based on the oversold ratio
-	if err := k.SetFineGrainedCPU(container, info.sg.Extra, cpuSubscribeRatio); err != nil {
+	if err := k.SetFineGrainedCPU(container, info.Sg.Extra, cpuSubscribeRatio); err != nil {
 		return err
 	}
 	if err := k.SetOverCommitMem(container, memSubscribeRatio); err != nil {
@@ -212,11 +213,11 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 
 	// Set the statefulset environment variable
 	for i := range set.Spec.Template.Spec.Containers {
-		setEnv(&set.Spec.Template.Spec.Containers[i], info.envs, info.sg, info.namespace)
+		setEnv(&set.Spec.Template.Spec.Containers[i], info.Envs, info.Sg, info.Namespace)
 	}
 	//setEnv(container, info.envs, info.sg, info.namespace)
 
-	if info.namespace == "fake-test" {
+	if info.Namespace == "fake-test" {
 		return nil
 	}
 
@@ -331,7 +332,7 @@ func (k *Kubernetes) setVolume(set *appsv1.StatefulSet, container *apiv1.Contain
 func (k *Kubernetes) requestLocalVolume(set *appsv1.StatefulSet, container *apiv1.Container, bind apistructs.ServiceBind) {
 	logrus.Infof("in requestLocalVolume, statefulset name: %s, hostPath: %s", set.Name, bind.HostPath)
 
-	sc := localStorage
+	sc := types.LocalStorage
 	capacity := "20Gi"
 	if bind.SCVolume.Capacity >= 20 {
 		capacity = fmt.Sprintf("%dGi", bind.SCVolume.Capacity)
@@ -572,7 +573,7 @@ func (k *Kubernetes) setStatefulSetServiceVolumes(set *appsv1.StatefulSet, conta
 	}
 
 	//step 2: set pvc volume if service.Volumes not empty
-	sc := localStorage
+	sc := types.LocalStorage
 	capacity := "20Gi"
 	for _, vol := range service.Volumes {
 		if vol.ContainerPath == "" {
@@ -656,7 +657,7 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 	}
 
 	scalingService := sg.Services[0]
-	//statefulSetName := statefulsetName(sg)
+	//statefulSetName := statefulsetName(Sg)
 
 	statefulSetName, ok := getGroupID(&sg.Services[0])
 	if !ok {
