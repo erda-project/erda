@@ -44,6 +44,14 @@ var (
 	RepoNotExist = errors.New("repo not exist.")
 )
 
+func EncodeBranch(branch string) string {
+	parts := strings.Split(branch, "/")
+	for i, part := range parts {
+		parts[i] = url.PathEscape(part)
+	}
+	return strings.Join(parts, "/")
+}
+
 // DeleteGitRepo 从gittar删除应用gitRepo
 func (b *Bundle) DeleteGitRepo(gitRepo string) error {
 	host, err := b.urls.Gittar()
@@ -138,6 +146,8 @@ func (b *Bundle) GetGittarLines(lines *GittarLines, userName, passWord string) (
 		return nil, apierrors.ErrInvoke.InvalidState("nil gittar repo")
 	}
 
+	lines.Path = EncodeBranch(lines.Path)
+
 	URL, err := url.Parse(lines.Repo)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InvalidState(
@@ -179,6 +189,8 @@ func (b *Bundle) GetGittarFile(repoUrl, ref, filePath, userName, passWord, userI
 	if filePath == "" {
 		return "", apierrors.ErrInvoke.InvalidState("nil file path")
 	}
+
+	ref = EncodeBranch(ref)
 
 	URL, err := url.Parse(repoUrl)
 	if err != nil {
@@ -298,6 +310,8 @@ func (b *Bundle) GetGittarCommit(repo, ref, userID string) (*apistructs.Commit, 
 		return nil, err
 	}
 
+	ref = EncodeBranch(ref)
+
 	resp, err := hc.Get(host).
 		Path("/"+repo+"/commits/"+ref).
 		Header(httputil.UserHeader, userID).
@@ -328,6 +342,8 @@ func (b *Bundle) ListGittarCommit(repo, ref, userID string, orgID string) (*apis
 	if err != nil {
 		return nil, err
 	}
+
+	ref = EncodeBranch(ref)
 
 	resp, err := hc.Get(host).
 		Path(repo+"/commits/"+ref).
@@ -425,6 +441,8 @@ func (b *Bundle) GetGittarBranchDetail(repo, orgID, branch, userID string) (*api
 		return nil, err
 	}
 
+	branch = EncodeBranch(branch)
+
 	resp, err := hc.Get(host).
 		Path(repo+"/branches/"+branch).
 		Header("Org-ID", orgID).
@@ -450,6 +468,8 @@ func (b *Bundle) DeleteGittarBranch(repo, orgID, branch, userID string) error {
 	if err != nil {
 		return err
 	}
+
+	branch = EncodeBranch(branch)
 
 	resp, err := hc.Delete(host).
 		Path(repo+"/branches/"+branch).
@@ -507,10 +527,12 @@ func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool, userI
 		return nil, err
 	}
 
+	encodePath := EncodeBranch(repo)
+
 	resp, err := hc.Get(host).
 		Header("Org-ID", orgID).
 		Header(httputil.UserHeader, userID).
-		Path(repo).
+		Path(encodePath).
 		Param("simple", strconv.FormatBool(simple)).
 		Do().JSON(&treeResp)
 	if err != nil {
@@ -536,10 +558,13 @@ func (b *Bundle) GetGittarBlobNode(repo, orgID, userID string) (string, error) {
 		return "", err
 	}
 
+	// encode the path
+	encodePath := EncodeBranch(repo)
+
 	resp, err := hc.Get(host).
 		Header("Org-ID", orgID).
 		Header(httputil.UserHeader, userID).
-		Path(repo).
+		Path(encodePath).
 		Do().JSON(&blobResp)
 	if err != nil {
 		return "", apierrors.ErrInvoke.InternalError(err)
@@ -561,10 +586,13 @@ func (b *Bundle) GetGittarTree(repo, orgID, userID string) (*apistructs.GittarTr
 		return nil, err
 	}
 
+	// encode the path
+	encodePath := EncodeBranch(repo)
+
 	resp, err := hc.Get(host).
 		Header("Org-ID", orgID).
 		Header(httputil.UserHeader, userID).
-		Path(repo).
+		Path(encodePath).
 		Do().JSON(&treeResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -894,7 +922,9 @@ func (b *Bundle) GetArchive(userID string, req apistructs.GittarArchiveRequest, 
 	}
 	hc := b.hc
 
-	path := fmt.Sprintf("/%s/dop/%s/%s/archive/%s.zip", req.Org, req.Project, req.Application, req.Ref)
+	ref := EncodeBranch(req.Ref)
+
+	path := fmt.Sprintf("/%s/dop/%s/%s/archive/%s.zip", req.Org, req.Project, req.Application, ref)
 	resp, err := hc.Get(host).Path(path).
 		Header(httputil.UserHeader, userID).
 		Do().RAW()
