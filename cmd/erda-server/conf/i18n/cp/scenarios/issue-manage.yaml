@@ -3,8 +3,10 @@ zh:
   Delete: 删除
   Delete following items: 删除以下事项：
   Items deleted successfully: 事项删除成功
+  Deletion operation is irreversible: 删除操作不可逆，请确认
 en:
   progress: Progress
   Delete: Delete
   Delete following items: Delete following items：
   Items deleted successfully: Items deleted successfully
+  Deletion operation is irreversible: Deletion operation is irreversible
