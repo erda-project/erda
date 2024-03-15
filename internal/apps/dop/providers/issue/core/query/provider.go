@@ -71,7 +71,7 @@ type Interface interface {
 	BatchGetProperties(orgID int64, issuesType []string) ([]*pb.IssuePropertyIndex, error)
 	CreatePropertyRelation(req *pb.CreateIssuePropertyInstanceRequest) error
 	GetIssuePropertyInstance(req *pb.GetIssuePropertyInstanceRequest) (*pb.IssueAndPropertyAndValue, error)
-	BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*pb.IssueAndPropertyAndValue, error)
+	BatchGetIssuePropertyInstances(orgID int64, projectID uint64, issueType string, issueIDs []uint64) (map[uint64]*pb.IssueAndPropertyAndValue, error)
 	GetIssueStage(req *pb.IssueStageRequest) ([]*pb.IssueStage, error)
 	GetIssueRelationsByIssueIDs(issueID uint64, relationType []string) ([]uint64, []uint64, error)
 	GetIssuesByIssueIDs(issueIDs []uint64) ([]*pb.Issue, error)

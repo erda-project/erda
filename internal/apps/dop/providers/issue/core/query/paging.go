@@ -110,7 +110,7 @@ func (p *provider) Paging(req pb.PagingIssueRequest) ([]*pb.Issue, uint64, error
 		for _, issue := range issues {
 			issueIDs = append(issueIDs, uint64(issue.Id))
 		}
-		issueInstancesMap, err := p.BatchGetIssuePropertyInstances(req.OrgID, req.Type[0], issueIDs)
+		issueInstancesMap, err := p.BatchGetIssuePropertyInstances(req.OrgID, req.ProjectID, req.Type[0], issueIDs)
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
