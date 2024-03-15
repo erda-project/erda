@@ -15,14 +15,11 @@
 package dbclient
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"xorm.io/xorm/names"
 
@@ -31,7 +28,7 @@ import (
 )
 
 const (
-	dbSourceName = "test.db"
+	dbSourceName = "test-*.db"
 	mode         = "rwc"
 )
 
@@ -57,20 +54,17 @@ const (
 func TestUpdatePipelineTaskTime(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
 
-	dir, file := filepath.Split(dbname)
-	name := strings.TrimSuffix(file, filepath.Ext(file))
-	randomName := fmt.Sprintf("%s-%s%s", name, strings.ReplaceAll(uuid.New().String(), "-", ""), filepath.Ext(file))
-	dbname = filepath.Join(dir, randomName)
-
+	sqlite3Db, err := sqlite3.NewSqlite3(dbname+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY), sqlite3.WithRandomName(true))
 	defer func() {
-		os.Remove(dbname)
+		if sqlite3Db != nil {
+			defer sqlite3Db.Close()
+		}
 	}()
-	sqlite3Db, err := sqlite3.NewSqlite3(dbname+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
-	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 	if err != nil {
 		panic(err)
 	}
 
+	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 	err = sqlite3Db.DB().Sync2(&spec.PipelineTask{})
 	if err != nil {
 		panic(err)
