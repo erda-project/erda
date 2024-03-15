@@ -168,7 +168,8 @@ func TestPipelineCron_Convert2DTO(t *testing.T) {
 }
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
-	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode=rwc", sqlite3.WithJournalMode(sqlite3.MEMORY))
+
+	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode=rwc", sqlite3.WithJournalMode(sqlite3.MEMORY), sqlite3.WithRandomName(true))
 	if err != nil {
 		panic(err)
 	}
@@ -183,12 +184,10 @@ func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
 }
 
 func TestDeleteCron(t *testing.T) {
-	dbname := filepath.Join(os.TempDir(), "test.db")
-	defer func() {
-		os.Remove(dbname)
-	}()
+	dbname := filepath.Join(os.TempDir(), "test-*.db")
 
 	sqlite3Db := newSqlite3DB(dbname)
+	defer sqlite3Db.Close()
 
 	client := &Client{
 		Interface: sqlite3Db,

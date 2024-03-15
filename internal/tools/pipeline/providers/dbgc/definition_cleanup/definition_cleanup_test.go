@@ -45,7 +45,7 @@ import (
 
 // if add insert template, you should update these index
 const (
-	dbSourceName              = "test.db"
+	dbSourceName              = "test-*.db"
 	mode                      = "rwc"
 	sourceDeletedIndex        = 6
 	sourceRepeatIndex         = 0
@@ -90,7 +90,12 @@ func (m *MockCronService) CronUpdate(ctx context.Context, request *cronpb.CronUp
 }
 
 func newSqlite3DB(dbSourceName string) *sqlite3.Sqlite3 {
-	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY))
+
+	sqlite3Db, err := sqlite3.NewSqlite3(dbSourceName+"?mode="+mode, sqlite3.WithJournalMode(sqlite3.MEMORY), sqlite3.WithRandomName(true))
+	if err != nil {
+		panic(err)
+	}
+
 	sqlite3Db.DB().SetMapper(names.GonicMapper{})
 
 	// migrator db
@@ -419,14 +424,12 @@ func deleteAllTable(p *provider) error {
 
 func TestNeedCleanup(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	insertSource := getInsertSourceRecords()
 
@@ -516,12 +519,11 @@ func TestNeedCleanup(t *testing.T) {
 
 func TestGetSourceListByGroup(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	insertSource := getInsertSourceRecords()
 
@@ -566,13 +568,11 @@ func TestGetSourceListByGroup(t *testing.T) {
 
 func TestGetLatestExecDefinitionBySourceIds(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	insertSource := getInsertSourceRecords()
 
@@ -634,13 +634,11 @@ func TestGetLatestExecDefinitionBySourceIds(t *testing.T) {
 
 func TestMergeCronByDefinitionIds(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	trueFlag := true
 	falseFlag := false
@@ -914,13 +912,11 @@ func TestMergeCronByDefinitionIds(t *testing.T) {
 
 func TestMergeDefinition(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	insertDefinition := getDefaultDefinitionTemplate()
 	insertDefinitionExtra := getDefaultDefinitionExtraTemplate()
@@ -957,13 +953,11 @@ func TestMergeDefinition(t *testing.T) {
 
 func TestMergePipelineBase(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	insertDefinition := getDefaultDefinitionTemplate()
 	definitionIds := arrays.GetFieldArrFromStruct(insertDefinition, func(d definitiondb.PipelineDefinition) string {
@@ -1075,13 +1069,11 @@ func TestMergePipelineBase(t *testing.T) {
 
 func TestMergeSource(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	testCase := []struct {
 		name                 string
@@ -1121,45 +1113,17 @@ func TestMergeSource(t *testing.T) {
 
 	}
 
-	//insertSourceList := getInsertSourceRecords()
-	//err := insertSourceRecords(p, insertSourceList)
-	//if err != nil {
-	//	t.Fatalf("insert source records err : %s", err)
-	//}
-	//insertSourceList = insertSourceList[:sourceDeletedIndex]
-	//
-	//// latestExecDefinition is not null
-	//latestExecDefinition := definitiondb.PipelineDefinition{
-	//	ID:               "1",
-	//	PipelineSourceId: insertSourceList[0].ID,
-	//}
-	//
-	//err = p.MergeSource(insertSourceList, latestExecDefinition)
-	//if err != nil {
-	//	t.Fatalf("merge source err : %s", err)
-	//}
-	//
-	//savedPipelineSource := insertSourceList[0]
-	//pipelineSourceList := []sourcedb.PipelineSource{}
-	//p.MySQL.DB().Where("soft_deleted_at = 0").Find(&pipelineSourceList)
-	//
-	//assert.Equal(t, 1, len(pipelineSourceList))
-	//assert.Equal(t, savedPipelineSource.ID, pipelineSourceList[0].ID)
-
 }
 
 func TestMergePipeline(t *testing.T) {
 	dbname := filepath.Join(os.TempDir(), dbSourceName)
-	defer func() {
-		os.Remove(dbname)
-	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	p := newProvider(t, dbname, ctrl)
+	defer p.MySQL.Close()
 
 	trueFlag := true
-	//falseFlag := false
 
 	var cronOne uint64 = 1
 	//var cronTwo uint64 = 2
