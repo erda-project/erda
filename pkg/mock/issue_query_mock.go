@@ -19,23 +19,23 @@ import (
 // MockIssueQuery is a mock of Interface interface.
 type MockIssueQuery struct {
 	ctrl     *gomock.Controller
-	recorder *MockIssueQueryMockRecIssorder
+	recorder *MockIssueQueryMockRecorder
 }
 
-// MockIssueQueryMockRecIssorder is the mock recorder for MockIssueQuery.
-type MockIssueQueryMockRecIssorder struct {
+// MockIssueQueryMockRecorder is the mock recorder for MockIssueQuery.
+type MockIssueQueryMockRecorder struct {
 	mock *MockIssueQuery
 }
 
 // NewMockIssueQuery creates a new mock instance.
 func NewMockIssueQuery(ctrl *gomock.Controller) *MockIssueQuery {
 	mock := &MockIssueQuery{ctrl: ctrl}
-	mock.recorder = &MockIssueQueryMockRecIssorder{mock}
+	mock.recorder = &MockIssueQueryMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockIssueQuery) EXPECT() *MockIssueQueryMockRecIssorder {
+func (m *MockIssueQuery) EXPECT() *MockIssueQueryMockRecorder {
 	return m.recorder
 }
 
@@ -48,7 +48,7 @@ func (m *MockIssueQuery) AfterIssueAppRelationCreate(issueIDs []int64) error {
 }
 
 // AfterIssueAppRelationCreate indicates an expected call of AfterIssueAppRelationCreate.
-func (mr *MockIssueQueryMockRecIssorder) AfterIssueAppRelationCreate(issueIDs interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) AfterIssueAppRelationCreate(issueIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AfterIssueAppRelationCreate", reflect.TypeOf((*MockIssueQuery)(nil).AfterIssueAppRelationCreate), issueIDs)
 }
@@ -62,7 +62,7 @@ func (m *MockIssueQuery) AfterIssueInclusionRelationChange(id uint64) error {
 }
 
 // AfterIssueInclusionRelationChange indicates an expected call of AfterIssueInclusionRelationChange.
-func (mr *MockIssueQueryMockRecIssorder) AfterIssueInclusionRelationChange(id interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) AfterIssueInclusionRelationChange(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AfterIssueInclusionRelationChange", reflect.TypeOf((*MockIssueQuery)(nil).AfterIssueInclusionRelationChange), id)
 }
@@ -76,39 +76,24 @@ func (m *MockIssueQuery) AfterIssueUpdate(u *query.IssueUpdated) error {
 }
 
 // AfterIssueUpdate indicates an expected call of AfterIssueUpdate.
-func (mr *MockIssueQueryMockRecIssorder) AfterIssueUpdate(u interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) AfterIssueUpdate(u interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AfterIssueUpdate", reflect.TypeOf((*MockIssueQuery)(nil).AfterIssueUpdate), u)
 }
 
-// BatchGetIssue mocks base method.
-func (m *MockIssueQuery) BatchGetIssue(id []int64, identityInfo *pb.IdentityInfo) ([]*pb0.Issue, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BatchGetIssue", id, identityInfo)
-	ret0, _ := ret[0].([]*pb0.Issue)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// BatchGetIssue indicates an expected call of BatchGetIssue.
-func (mr *MockIssueQueryMockRecIssorder) BatchGetIssue(id, identityInfo interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchGetIssue", reflect.TypeOf((*MockIssueQuery)(nil).BatchGetIssue), id, identityInfo)
-}
-
 // BatchGetIssuePropertyInstances mocks base method.
-func (m *MockIssueQuery) BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*pb0.IssueAndPropertyAndValue, error) {
+func (m *MockIssueQuery) BatchGetIssuePropertyInstances(orgID int64, projectID uint64, issueType string, issueIDs []uint64) (map[uint64]*pb0.IssueAndPropertyAndValue, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BatchGetIssuePropertyInstances", orgID, issueType, issueIDs)
+	ret := m.ctrl.Call(m, "BatchGetIssuePropertyInstances", orgID, projectID, issueType, issueIDs)
 	ret0, _ := ret[0].(map[uint64]*pb0.IssueAndPropertyAndValue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // BatchGetIssuePropertyInstances indicates an expected call of BatchGetIssuePropertyInstances.
-func (mr *MockIssueQueryMockRecIssorder) BatchGetIssuePropertyInstances(orgID, issueType, issueIDs interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) BatchGetIssuePropertyInstances(orgID, projectID, issueType, issueIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchGetIssuePropertyInstances", reflect.TypeOf((*MockIssueQuery)(nil).BatchGetIssuePropertyInstances), orgID, issueType, issueIDs)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchGetIssuePropertyInstances", reflect.TypeOf((*MockIssueQuery)(nil).BatchGetIssuePropertyInstances), orgID, projectID, issueType, issueIDs)
 }
 
 // BatchGetProperties mocks base method.
@@ -121,7 +106,7 @@ func (m *MockIssueQuery) BatchGetProperties(orgID int64, issuesType []string) ([
 }
 
 // BatchGetProperties indicates an expected call of BatchGetProperties.
-func (mr *MockIssueQueryMockRecIssorder) BatchGetProperties(orgID, issuesType interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) BatchGetProperties(orgID, issuesType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchGetProperties", reflect.TypeOf((*MockIssueQuery)(nil).BatchGetProperties), orgID, issuesType)
 }
@@ -135,7 +120,7 @@ func (m *MockIssueQuery) BatchUpdateIssue(req *pb0.BatchUpdateIssueRequest) erro
 }
 
 // BatchUpdateIssue indicates an expected call of BatchUpdateIssue.
-func (mr *MockIssueQueryMockRecIssorder) BatchUpdateIssue(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) BatchUpdateIssue(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchUpdateIssue", reflect.TypeOf((*MockIssueQuery)(nil).BatchUpdateIssue), req)
 }
@@ -149,7 +134,7 @@ func (m *MockIssueQuery) CreatePropertyRelation(req *pb0.CreateIssuePropertyInst
 }
 
 // CreatePropertyRelation indicates an expected call of CreatePropertyRelation.
-func (mr *MockIssueQueryMockRecIssorder) CreatePropertyRelation(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) CreatePropertyRelation(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePropertyRelation", reflect.TypeOf((*MockIssueQuery)(nil).CreatePropertyRelation), req)
 }
@@ -164,7 +149,7 @@ func (m *MockIssueQuery) GetAllIssuesByProject(req pb0.IssueListRequest) ([]dao.
 }
 
 // GetAllIssuesByProject indicates an expected call of GetAllIssuesByProject.
-func (mr *MockIssueQueryMockRecIssorder) GetAllIssuesByProject(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetAllIssuesByProject(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllIssuesByProject", reflect.TypeOf((*MockIssueQuery)(nil).GetAllIssuesByProject), req)
 }
@@ -179,7 +164,7 @@ func (m *MockIssueQuery) GetIssue(id int64, identityInfo *pb.IdentityInfo) (*pb0
 }
 
 // GetIssue indicates an expected call of GetIssue.
-func (mr *MockIssueQueryMockRecIssorder) GetIssue(id, identityInfo interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssue(id, identityInfo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssue", reflect.TypeOf((*MockIssueQuery)(nil).GetIssue), id, identityInfo)
 }
@@ -195,7 +180,7 @@ func (m *MockIssueQuery) GetIssueChildren(id uint64, req pb0.PagingIssueRequest)
 }
 
 // GetIssueChildren indicates an expected call of GetIssueChildren.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueChildren(id, req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueChildren(id, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueChildren", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueChildren), id, req)
 }
@@ -210,7 +195,7 @@ func (m *MockIssueQuery) GetIssueItem(id uint64) (*dao.IssueItem, error) {
 }
 
 // GetIssueItem indicates an expected call of GetIssueItem.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueItem(id interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueItem(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueItem", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueItem), id)
 }
@@ -225,7 +210,7 @@ func (m *MockIssueQuery) GetIssueLabelsByProjectID(projectID uint64) ([]dao.Issu
 }
 
 // GetIssueLabelsByProjectID indicates an expected call of GetIssueLabelsByProjectID.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueLabelsByProjectID(projectID interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueLabelsByProjectID(projectID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueLabelsByProjectID", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueLabelsByProjectID), projectID)
 }
@@ -240,7 +225,7 @@ func (m *MockIssueQuery) GetIssueParents(issueID uint64, relationType []string) 
 }
 
 // GetIssueParents indicates an expected call of GetIssueParents.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueParents(issueID, relationType interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueParents(issueID, relationType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueParents", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueParents), issueID, relationType)
 }
@@ -255,7 +240,7 @@ func (m *MockIssueQuery) GetIssuePropertyInstance(req *pb0.GetIssuePropertyInsta
 }
 
 // GetIssuePropertyInstance indicates an expected call of GetIssuePropertyInstance.
-func (mr *MockIssueQueryMockRecIssorder) GetIssuePropertyInstance(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssuePropertyInstance(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssuePropertyInstance", reflect.TypeOf((*MockIssueQuery)(nil).GetIssuePropertyInstance), req)
 }
@@ -271,7 +256,7 @@ func (m *MockIssueQuery) GetIssueRelationsByIssueIDs(issueID uint64, relationTyp
 }
 
 // GetIssueRelationsByIssueIDs indicates an expected call of GetIssueRelationsByIssueIDs.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueRelationsByIssueIDs(issueID, relationType interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueRelationsByIssueIDs(issueID, relationType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueRelationsByIssueIDs", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueRelationsByIssueIDs), issueID, relationType)
 }
@@ -286,7 +271,7 @@ func (m *MockIssueQuery) GetIssueStage(req *pb0.IssueStageRequest) ([]*pb0.Issue
 }
 
 // GetIssueStage indicates an expected call of GetIssueStage.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueStage(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueStage(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueStage", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueStage), req)
 }
@@ -301,7 +286,7 @@ func (m *MockIssueQuery) GetIssueStateIDs(req *pb0.GetIssueStatesRequest) ([]int
 }
 
 // GetIssueStateIDs indicates an expected call of GetIssueStateIDs.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueStateIDs(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueStateIDs(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueStateIDs", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueStateIDs), req)
 }
@@ -316,7 +301,7 @@ func (m *MockIssueQuery) GetIssueStateIDsByTypes(req *apistructs.IssueStatesRequ
 }
 
 // GetIssueStateIDsByTypes indicates an expected call of GetIssueStateIDsByTypes.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueStateIDsByTypes(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueStateIDsByTypes(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueStateIDsByTypes", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueStateIDsByTypes), req)
 }
@@ -331,7 +316,7 @@ func (m *MockIssueQuery) GetIssueStatesBelong(req *pb0.GetIssueStateRelationRequ
 }
 
 // GetIssueStatesBelong indicates an expected call of GetIssueStatesBelong.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueStatesBelong(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueStatesBelong(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueStatesBelong", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueStatesBelong), req)
 }
@@ -346,7 +331,7 @@ func (m *MockIssueQuery) GetIssueStatesMap(req *pb0.GetIssueStatesRequest) (map[
 }
 
 // GetIssueStatesMap indicates an expected call of GetIssueStatesMap.
-func (mr *MockIssueQueryMockRecIssorder) GetIssueStatesMap(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssueStatesMap(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssueStatesMap", reflect.TypeOf((*MockIssueQuery)(nil).GetIssueStatesMap), req)
 }
@@ -361,7 +346,7 @@ func (m *MockIssueQuery) GetIssuesByIssueIDs(issueIDs []uint64) ([]*pb0.Issue, e
 }
 
 // GetIssuesByIssueIDs indicates an expected call of GetIssuesByIssueIDs.
-func (mr *MockIssueQueryMockRecIssorder) GetIssuesByIssueIDs(issueIDs interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssuesByIssueIDs(issueIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssuesByIssueIDs", reflect.TypeOf((*MockIssueQuery)(nil).GetIssuesByIssueIDs), issueIDs)
 }
@@ -376,7 +361,7 @@ func (m *MockIssueQuery) GetIssuesStatesByProjectID(projectID uint64, issueType 
 }
 
 // GetIssuesStatesByProjectID indicates an expected call of GetIssuesStatesByProjectID.
-func (mr *MockIssueQueryMockRecIssorder) GetIssuesStatesByProjectID(projectID, issueType interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetIssuesStatesByProjectID(projectID, issueType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIssuesStatesByProjectID", reflect.TypeOf((*MockIssueQuery)(nil).GetIssuesStatesByProjectID), projectID, issueType)
 }
@@ -391,7 +376,7 @@ func (m *MockIssueQuery) GetProperties(req *pb0.GetIssuePropertyRequest) ([]*pb0
 }
 
 // GetProperties indicates an expected call of GetProperties.
-func (mr *MockIssueQueryMockRecIssorder) GetProperties(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) GetProperties(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProperties", reflect.TypeOf((*MockIssueQuery)(nil).GetProperties), req)
 }
@@ -406,7 +391,7 @@ func (m *MockIssueQuery) ListStatesTransByProjectID(projectID uint64) ([]dao.Iss
 }
 
 // ListStatesTransByProjectID indicates an expected call of ListStatesTransByProjectID.
-func (mr *MockIssueQueryMockRecIssorder) ListStatesTransByProjectID(projectID interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) ListStatesTransByProjectID(projectID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStatesTransByProjectID", reflect.TypeOf((*MockIssueQuery)(nil).ListStatesTransByProjectID), projectID)
 }
@@ -422,7 +407,7 @@ func (m *MockIssueQuery) Paging(req pb0.PagingIssueRequest) ([]*pb0.Issue, uint6
 }
 
 // Paging indicates an expected call of Paging.
-func (mr *MockIssueQueryMockRecIssorder) Paging(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) Paging(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Paging", reflect.TypeOf((*MockIssueQuery)(nil).Paging), req)
 }
@@ -436,7 +421,7 @@ func (m *MockIssueQuery) SyncIssueChildrenIteration(issue *pb0.Issue, iterationI
 }
 
 // SyncIssueChildrenIteration indicates an expected call of SyncIssueChildrenIteration.
-func (mr *MockIssueQueryMockRecIssorder) SyncIssueChildrenIteration(issue, iterationID interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) SyncIssueChildrenIteration(issue, iterationID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncIssueChildrenIteration", reflect.TypeOf((*MockIssueQuery)(nil).SyncIssueChildrenIteration), issue, iterationID)
 }
@@ -450,7 +435,7 @@ func (m *MockIssueQuery) SyncLabels(value *pb1.Value, issueIDs []uint64) error {
 }
 
 // SyncLabels indicates an expected call of SyncLabels.
-func (mr *MockIssueQueryMockRecIssorder) SyncLabels(value, issueIDs interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) SyncLabels(value, issueIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncLabels", reflect.TypeOf((*MockIssueQuery)(nil).SyncLabels), value, issueIDs)
 }
@@ -464,7 +449,7 @@ func (m *MockIssueQuery) UpdateIssue(req *pb0.UpdateIssueRequest) error {
 }
 
 // UpdateIssue indicates an expected call of UpdateIssue.
-func (mr *MockIssueQueryMockRecIssorder) UpdateIssue(req interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) UpdateIssue(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIssue", reflect.TypeOf((*MockIssueQuery)(nil).UpdateIssue), req)
 }
@@ -478,7 +463,7 @@ func (m *MockIssueQuery) UpdateLabels(id, projectID uint64, labelNames []string)
 }
 
 // UpdateLabels indicates an expected call of UpdateLabels.
-func (mr *MockIssueQueryMockRecIssorder) UpdateLabels(id, projectID, labelNames interface{}) *gomock.Call {
+func (mr *MockIssueQueryMockRecorder) UpdateLabels(id, projectID, labelNames interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLabels", reflect.TypeOf((*MockIssueQuery)(nil).UpdateLabels), id, projectID, labelNames)
 }

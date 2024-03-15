@@ -38,10 +38,10 @@ func (p *provider) GetProperties(req *pb.GetIssuePropertyRequest) ([]*pb.IssuePr
 	// 只有公用字段会被任务类型模版使用
 	if req.PropertyIssueType == pb.PropertyIssueTypeEnum_COMMON.String() {
 		allProperties, err := p.db.GetIssueProperties(pb.GetIssuePropertyRequest{
-			OrgID:       req.OrgID,
-			ScopeType:   req.ScopeType,
-			ScopeID:     req.ScopeID,
-			OnlyProject: req.OnlyProject,
+			OrgID:                req.OrgID,
+			ScopeType:            req.ScopeType,
+			ScopeID:              req.ScopeID,
+			OnlyCurrentScopeType: req.OnlyCurrentScopeType,
 		})
 		if err != nil {
 			return nil, err
@@ -234,7 +234,7 @@ func (p *provider) BatchGetProperties(orgID int64, issuesTypes []string) ([]*pb.
 //
 //	@map[int64][]*dao.IssuePropertyRelation: key is issueID
 //	@err: error
-func (p *provider) BatchGetIssuePropertyInstances(orgID int64, issueType string, issueIDs []uint64) (map[uint64]*pb.IssueAndPropertyAndValue, error) {
+func (p *provider) BatchGetIssuePropertyInstances(orgID int64, projectID uint64, issueType string, issueIDs []uint64) (map[uint64]*pb.IssueAndPropertyAndValue, error) {
 	issueInstancesMap := make(map[uint64]*pb.IssueAndPropertyAndValue)
 	// 获取该事件类型配置的全部自定义字段
 	if len(issueType) == 0 {
@@ -242,6 +242,7 @@ func (p *provider) BatchGetIssuePropertyInstances(orgID int64, issueType string,
 	}
 	properties, err := p.GetProperties(&pb.GetIssuePropertyRequest{
 		OrgID:             orgID,
+		ScopeID:           strconv.FormatUint(projectID, 10),
 		PropertyIssueType: issueType,
 	})
 	if err != nil {
@@ -253,6 +254,9 @@ func (p *provider) BatchGetIssuePropertyInstances(orgID int64, issueType string,
 	if err != nil {
 		return nil, apierrors.ErrGetIssuePropertyInstance.InternalError(err)
 	}
+	// If there are properties in the relationships that are not included, then delete this relationship
+	properties, relations = deleteExcessRelation(properties, relations)
+
 	issueRelationsMap := make(map[int64][]*dao.IssuePropertyRelation)
 	for _, relation := range relations {
 		issueRelationsMap[relation.IssueID] = append(issueRelationsMap[relation.IssueID], relation)
@@ -267,6 +271,21 @@ func (p *provider) BatchGetIssuePropertyInstances(orgID int64, issueType string,
 	}
 
 	return issueInstancesMap, nil
+}
+
+func deleteExcessRelation(properties []*pb.IssuePropertyIndex, relations []*dao.IssuePropertyRelation) ([]*pb.IssuePropertyIndex, []*dao.IssuePropertyRelation) {
+	// If there are properties in the relationships that are not included, then delete this relationship
+	propertiesIDMap := make(map[int64]bool, len(properties))
+	for _, v := range properties {
+		propertiesIDMap[v.PropertyID] = true
+	}
+	for i := len(relations) - 1; i >= 0; i-- {
+		if _, ok := propertiesIDMap[relations[i].PropertyID]; !ok {
+			// If the property does not exist, delete the relationship
+			relations = append(relations[:i], relations[i+1:]...)
+		}
+	}
+	return properties, relations
 }
 
 func (p *provider) getIssuePropertyInstance(issueID int64, properties []*pb.IssuePropertyIndex, relations []*dao.IssuePropertyRelation) (*pb.IssueAndPropertyAndValue, error) {
@@ -326,6 +345,9 @@ func (p *provider) GetIssuePropertyInstance(req *pb.GetIssuePropertyInstanceRequ
 	if err != nil {
 		return nil, err
 	}
+	// If there are properties in the relationships that are not included, then delete this relationship
+	properties, relations = deleteExcessRelation(properties, relations)
+
 	return p.getIssuePropertyInstance(req.IssueID, properties, relations)
 }
 

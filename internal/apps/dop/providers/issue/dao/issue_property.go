@@ -15,6 +15,8 @@
 package dao
 
 import (
+	"strconv"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -62,6 +64,129 @@ func (client *DBClient) UpdateIssueProperty(property *IssueProperty) error {
 	return client.Save(property).Error
 }
 
+func (client *DBClient) MigrateOrgCustomFileds(orgID int64, propertyNames []string) error {
+	tx := client.Begin()
+	var properties []IssueProperty
+	// Obtain all custom fields of COMMON type that need to be migrated
+	tx.Table("dice_issue_property").Where("org_id = ?", orgID).Where("scope_id = ?", orgID).Where("property_issue_type = 'COMMON'").Where("property_name IN (?)", propertyNames).
+		Find(&properties)
+	if tx.Error != nil {
+		tx.Rollback()
+		return tx.Error
+	}
+	for _, commonProperty := range properties {
+		var threeTypeProperties []IssueProperty
+		// Starting from the first one, obtain data on the three types of properties that can be associated with each commonProperty (EQUIREMENT, TASK, BUG), which may be 0-3
+		tx.Table("dice_issue_property").Where("property_name = ?", commonProperty.PropertyName).
+			Where("org_id = ?", orgID).Where("scope_id = ?", orgID).Where("property_issue_type != 'COMMON' ").Find(&threeTypeProperties)
+		if tx.Error != nil {
+			tx.Rollback()
+			return tx.Error
+		}
+		// Obtain the project ID of the issue associated with the relationship
+		var projectIDs []IssuePropertyRelation
+		// Is the map record common created? If it is, do not create it
+		existCommon := make(map[string]IssueProperty, 0)
+		for _, relationshipType := range threeTypeProperties {
+			// Obtain all project IDs that reference this type
+			tx.Table("dice_issue_property_relation").Where("property_id = ?", relationshipType.ID).Group("project_id").Find(&projectIDs)
+			if tx.Error != nil {
+				tx.Rollback()
+				return tx.Error
+			}
+			// create
+			for _, commonAndThree := range projectIDs {
+				// Create a map, don't repeat it anymore
+				var resultCommon IssueProperty
+				existCommonKey := relationshipType.PropertyName + ":" + "project" + ":" + strconv.FormatInt(commonAndThree.ProjectID, 10)
+				if v, ok := existCommon[existCommonKey]; ok {
+					resultCommon = v
+				} else {
+					// If the common does not exist, create a new common
+					creatCommon := IssueProperty{
+						ScopeType:         "project",
+						ScopeID:           commonAndThree.ProjectID,
+						OrgID:             commonProperty.OrgID,
+						Required:          commonProperty.Required,
+						PropertyType:      commonProperty.PropertyType,
+						PropertyName:      commonProperty.PropertyName,
+						DisplayName:       commonProperty.DisplayName,
+						PropertyIssueType: commonProperty.PropertyIssueType,
+						Relation:          commonProperty.Relation,
+						Index:             commonProperty.Index,
+					}
+					tx.Table("dice_issue_property").Create(&creatCommon).Scan(&resultCommon)
+					if tx.Error != nil {
+						tx.Rollback()
+						return tx.Error
+					}
+					existCommon[existCommonKey] = resultCommon
+				}
+
+				// Create this relationship under each project
+				creatResultRelationshipType := IssueProperty{
+					ScopeType:         "project",
+					ScopeID:           commonAndThree.ProjectID,
+					OrgID:             commonProperty.OrgID,
+					Required:          commonProperty.Required,
+					PropertyType:      commonProperty.PropertyType,
+					PropertyName:      commonProperty.PropertyName,
+					DisplayName:       commonProperty.DisplayName,
+					PropertyIssueType: relationshipType.PropertyIssueType,
+					Relation:          int64(resultCommon.ID),
+					Index:             commonProperty.Index,
+				}
+				var resultRelationshipType IssueProperty
+				tx.Table("dice_issue_property").Create(&creatResultRelationshipType).Scan(&resultRelationshipType)
+				if tx.Error != nil {
+					tx.Rollback()
+					return tx.Error
+				}
+				// Update Relationship ID
+				tx.Table("dice_issue_property_relation").Where("org_id = ?", resultRelationshipType.OrgID).Where("project_id = ?", commonAndThree.ProjectID).
+					Where("property_id = ?", relationshipType.ID).Updates(IssuePropertyRelation{PropertyID: int64(resultRelationshipType.ID)})
+				if tx.Error != nil {
+					tx.Rollback()
+					return tx.Error
+				}
+				// Because the property_id of the value connection is from the organizational level to the project level, there is a new property_id, so a new value needs to be created
+				if commonProperty.PropertyType == pb.PropertyTypeEnum_Select.String() || commonProperty.PropertyType == pb.PropertyTypeEnum_MultiSelect.String() {
+					// First, obtain the current organizational level information, which is the original value information
+					var beforePropertyValue []IssuePropertyValue
+					tx.Table("dice_issue_property_value").Where("property_id = ?", commonProperty.ID).Find(&beforePropertyValue)
+					if tx.Error != nil {
+						tx.Rollback()
+						return tx.Error
+					}
+					for _, v := range beforePropertyValue {
+						creatPropertyValue := IssuePropertyValue{
+							PropertyID: int64(resultCommon.ID),
+							Value:      v.Value,
+							Name:       v.Name,
+						}
+						// Create a new one and modify a relation relationship
+						var currentValue IssuePropertyValue
+						tx.Table("dice_issue_property_value").Create(&creatPropertyValue).Scan(&currentValue)
+						if tx.Error != nil {
+							tx.Rollback()
+							return tx.Error
+						}
+						// The old one called before is found. If it is found, it will be updated to the new value_id. If it cannot be found, it will be ignored
+						tx.Table("dice_issue_property_relation").Where("org_id = ?", commonAndThree.OrgID).Where("project_id = ?", commonAndThree.ProjectID).
+							Where("property_value_id = ?", v.ID).Updates(IssuePropertyRelation{PropertyValueID: int64(currentValue.ID)})
+						if tx.Error != nil {
+							tx.Rollback()
+							return tx.Error
+						}
+					}
+				}
+			}
+		}
+	}
+	tx.Commit()
+	return nil
+}
+
 func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]IssueProperty, error) {
 	if req.ScopeType == "" {
 		req.ScopeType = string(apistructs.ProjectScope)
@@ -92,7 +217,7 @@ func (client *DBClient) GetIssueProperties(req pb.GetIssuePropertyRequest) ([]Is
 		return nil, err
 	}
 
-	if req.OnlyProject {
+	if req.OnlyCurrentScopeType && req.ScopeType == string(apistructs.ProjectScope) {
 		return propertiesProject, nil
 	}
 	// 优先级：项目 > 企业级，当有重复的字段时，项目覆盖企业的字段；
