@@ -127,9 +127,8 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		if emptyVersion {
 			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDefaultVersionDoseNoExist, params.AddonName))
 		} else {
-			def, ok := addons.GetDefault()
 			var recommendVersion = "-"
-			if ok {
+			if def, ok := addons.GetDefault(); ok {
 				recommendVersion = def.Version
 			}
 			err = errors.New(i18n.OrgSprintf(params.OrgID, AddonVersionDoseNoExist, params.AddonName, version, recommendVersion))
