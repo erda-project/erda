@@ -38,6 +38,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	apierrors2 "github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/internal/apps/cmp/steve/predefined"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
@@ -65,14 +67,18 @@ func NewAggregator(ctx context.Context, bdl *bundle.Bundle, clusterSvc clusterpb
 	}
 
 	a.server = gcache.New(size).Expiration(ttl).LoaderFunc(a.loadFunc).LRU().Build()
+	a.init()
 	go a.watchClusters(ctx)
 	return a
 }
 
 func (a *Aggregator) loadFunc(key any) (any, error) {
-	logrus.Infof("load cluster: %s", key.(string))
-	ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
-	cluster, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: key.(string)})
+	ctx := apis.WithInternalClientContext(a.Ctx, discover.SvcCMP)
+	clusterName, ok := key.(string)
+	if !ok {
+		return nil, errors.Errorf("key can't convert to string")
+	}
+	cluster, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +124,6 @@ func (a *Aggregator) IsServerReady(clusterName string) bool {
 
 // HasAccess set schemas for apiOp and check access for user in apiOp
 func (a *Aggregator) HasAccess(clusterName string, apiOp *types.APIRequest, verb string) (bool, error) {
-	//g, ok := a.servers.Load(clusterName)
 	item, err := a.server.Get(clusterName)
 	if err != nil {
 		return false, errors.Errorf("steve server not found for cluster %s", clusterName)
@@ -206,6 +211,22 @@ func (a *Aggregator) listClusterByType(types ...string) ([]*clusterpb.ClusterInf
 	return result, nil
 }
 
+func (a *Aggregator) init() {
+	clusters, err := a.listClusterByType("k8s", "edas")
+	if err != nil {
+		logrus.Errorf("failed to list clusters, %v", err)
+		return
+	}
+
+	for i := range clusters {
+		if clusters[i].ManageConfig == nil {
+			logrus.Infof("manage config for cluster %s is nil, skip it", clusters[i].Name)
+			continue
+		}
+		a.Add(clusters[i])
+	}
+}
+
 // Add starts a steve server for k8s cluster with clusterName and add it into aggregator
 func (a *Aggregator) Add(clusterInfo *clusterpb.ClusterInfo) {
 	if clusterInfo.Type != "k8s" && clusterInfo.Type != "edas" {
@@ -227,11 +248,13 @@ func (a *Aggregator) Add(clusterInfo *clusterpb.ClusterInfo) {
 
 // prepareSteveServer creates steve server for a cluster.
 func (a *Aggregator) prepareSteveServer(clusterInfo *clusterpb.ClusterInfo) {
+	if clusterInfo == nil {
+		return
+	}
 	logrus.Infof("creating predefined resource for cluster %s", clusterInfo.Name)
 	if err := a.createPredefinedResource(clusterInfo.Name); err != nil {
 		logrus.Infof("failed to create predefined resource for cluster %s, %v. Skip starting steve server",
 			clusterInfo.Name, err)
-		//a.server.Remove(clusterInfo.Name)
 		return
 	}
 	logrus.Infof("starting steve server for cluster %s", clusterInfo.Name)
@@ -349,7 +372,6 @@ func (a *Aggregator) Delete(clusterName string) {
 		group.cancel()
 	}
 	a.server.Remove(clusterName)
-	//a.servers.Delete(clusterName)
 	logrus.Infof("steve server for cluster %s stopped", clusterName)
 }
 
@@ -365,7 +387,6 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	s, err := a.server.Get(clusterName)
-	//s, ok := a.servers.Load(clusterName)
 	if s == nil || err != nil {
 		ctx := transport.WithHeader(a.Ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 		resp, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
