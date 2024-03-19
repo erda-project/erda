@@ -369,8 +369,8 @@ erda.dop.rule.action.dingtalkworknotice: { }
 
 ########### cmp
 cmp:
-  cache_ttl: "10m"
-  cache_size: 64
+  cache_ttl: ${CMP_STEVE_CACHE_TTL:10m}
+  cache_size: ${CMP_STEVE_CACHE_SIZE:64}
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
   block: false
