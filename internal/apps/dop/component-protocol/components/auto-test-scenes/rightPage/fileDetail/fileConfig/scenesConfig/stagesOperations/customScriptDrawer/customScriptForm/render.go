@@ -38,7 +38,8 @@ const (
 )
 
 const (
-	defaultPythonImage       = "registry.erda.cloud/erda-actions/cdp-python:20210913-9f7576f9ef09e8bed32e2da4298f077328e532ea"
+	defaultPythonImage       = "registry.cn-beijing.aliyuncs.com/go_jingzhi/erda:0.1"
+	cdpPythonImage           = "registry.erda.cloud/erda-actions/cdp-python:20210913-9f7576f9ef09e8bed32e2da4298f077328e532ea"
 	defaultCustomScriptImage = "registry.erda.cloud/erda-actions/custom-script-action:20210519-01d2811"
 )
 
@@ -94,7 +95,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		value.Image = data.CustomImage
 		value.Commands = data.Commands
 		if value.LanguageType == languagePython {
-			value.Commands = []string{data.Command}
+			value.Commands = []string{"echo '" + data.Command + "' >> test.py && python3 test.py"}
 			value.Image = data.PythonImage
 		}
 		valueByte, err := json.Marshal(value)
@@ -195,7 +196,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 				},
 				{
 					"label":     ca.sdk.I18n("image"),
-					"component": "input",
+					"component": "select",
 					"required":  true,
 					"key":       pythonImageKey,
 					"removeWhen": []interface{}{
@@ -208,10 +209,22 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 						},
 					},
 					"defaultValue": defaultPythonImage,
+					"componentProps": map[string]interface{}{
+						"options": []map[string]interface{}{
+							{
+								"name":  defaultPythonImage,
+								"value": defaultPythonImage,
+							},
+							{
+								"name":  cdpPythonImage,
+								"value": cdpPythonImage,
+							},
+						},
+					},
 				},
 				{
 					"label":     ca.sdk.I18n("image"),
-					"component": "input",
+					"component": "select",
 					"required":  true,
 					"key":       customImageKey,
 					"removeWhen": []interface{}{
@@ -224,6 +237,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 						},
 					},
 					"defaultValue": defaultCustomScriptImage,
+					"componentProps": map[string]interface{}{
+						"options": []map[string]interface{}{
+							{
+								"name":  defaultCustomScriptImage,
+								"value": defaultCustomScriptImage,
+							},
+						},
+					},
 				},
 				{
 					"label":     ca.sdk.I18n("command"),
