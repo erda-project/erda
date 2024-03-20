@@ -23,6 +23,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -55,21 +56,32 @@ func New(configJSON json.RawMessage) (reverseproxy.Filter, error) {
 }
 
 func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+	// upload file
+	if common.GetRequestRoutePath(ctx) == common.RequestPathPrefixV1Files && infor.Request().Method == http.MethodPost {
+		if err := onUploadFile(ctx, infor); err != nil {
+			return reverseproxy.Intercept, err
+		}
+	}
+
+	return reverseproxy.Continue, nil
+}
+
+func onUploadFile(ctx context.Context, infor reverseproxy.HttpInfor) error {
 	originBody := infor.BodyBuffer(true)
 	defer infor.SetBody(io.NopCloser(originBody), int64(originBody.Len()))
 
 	// parse multiform/data
 	_, fileHeader, err := infor.Request().FormFile("file")
 	if err != nil {
-		return reverseproxy.Intercept, fmt.Errorf("failed to parse file field, err: %v", err)
+		return fmt.Errorf("failed to parse file field, err: %v", err)
 	}
 	purpose := infor.Request().FormValue("purpose")
 	if purpose == "" {
-		return reverseproxy.Intercept, fmt.Errorf("purpose is required")
+		return fmt.Errorf("purpose is required")
 	}
 	// use purpose as prompt
 	prompt := fmt.Sprintf("filename: %s, purpose: %s", fileHeader.Filename, purpose)
 	ctxhelper.PutUserPrompt(ctx, prompt)
 
-	return reverseproxy.Continue, nil
+	return nil
 }
