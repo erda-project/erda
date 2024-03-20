@@ -33,9 +33,9 @@ type config struct {
 	// default 2h
 	PipelineDBGCDuration time.Duration `file:"pipeline_dbgc_duration" env:"PIPELINE_DBGC_DURATION" default:"2h"`
 	// default 1 day
-	AnalyzedPipelineArchiveDefaultRetainHour time.Duration `file:"analyzed_pipeline_archive_default_retain_hour" default:"24h"`
+	AnalyzedPipelineArchiveDefaultRetainHour time.Duration `file:"analyzed_pipeline_archive_default_retain_hour" env:"ANALYZED_PIPELINE_ARCHIVE_RETAIN_HOUR" default:"24h"`
 	// default 30 day
-	FinishedPipelineArchiveDefaultRetainHour time.Duration `file:"finished_pipeline_archive_default_retain_hour" default:"720h"`
+	FinishedPipelineArchiveDefaultRetainHour time.Duration `file:"finished_pipeline_archive_default_retain_hour" env:"FINISHED_PIPELINE_ARCHIVE_RETAIN_HOUR" default:"720h"`
 }
 
 type provider struct {
