@@ -164,6 +164,11 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 		}
 	}
 
+	err = k.mergeDeployLabels(deployment)
+	if err != nil {
+		return errors.Errorf("failed to merge deployment labels, name: %s, (%v)", service.Name, err)
+	}
+
 	err = k.deploy.Put(deployment)
 	if err != nil {
 		return errors.Errorf("failed to update deployment, name: %s, (%v)", service.Name, err)
@@ -174,6 +179,27 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
+	}
+	return nil
+}
+
+func (k *Kubernetes) mergeDeployLabels(deployment *appsv1.Deployment) error {
+	oldDeploy, err := k.deploy.Get(deployment.Namespace, deployment.Name)
+	if err != nil {
+		return err
+	}
+	for key, value := range oldDeploy.Labels {
+		if _, ok := deployment.Labels[key]; ok {
+			continue
+		}
+		deployment.Labels[key] = value
+	}
+
+	for key, value := range oldDeploy.Spec.Template.Labels {
+		if _, ok := deployment.Spec.Template.Labels[key]; ok {
+			continue
+		}
+		deployment.Labels[key] = value
 	}
 	return nil
 }
@@ -617,11 +643,11 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	podAnnotations(service, deployment.Spec.Template.Annotations)
 
 	// inherit Labels from service.Labels and service.DeploymentLabels
-	err = inheritDeploymentLabels(service, deployment)
-	if err != nil {
-		logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
-		return nil, err
-	}
+	//err = inheritDeploymentLabels(service, deployment)
+	//if err != nil {
+	//	logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
+	//	return nil, err
+	//}
 
 	// set pod Annotations from service.Labels and service.DeploymentLabels
 	setPodAnnotationsFromLabels(service, deployment.Spec.Template.Annotations)
@@ -660,11 +686,12 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 
 	SetPodAnnotationsBaseContainerEnvs(deployment.Spec.Template.Spec.Containers[0], deployment.Spec.Template.Annotations)
 
-	err = setPodCoreErdaLabels(serviceGroup, service, deployment.Labels)
+	logrus.Infof("new deploy ======> ")
+	err = setCoreErdaLabels(serviceGroup, service, deployment.Labels)
 	if err != nil {
 		return nil, err
 	}
-	err = setPodCoreErdaLabels(serviceGroup, service, deployment.Spec.Template.Labels)
+	err = setCoreErdaLabels(serviceGroup, service, deployment.Spec.Template.Labels)
 	if err != nil {
 		return nil, err
 	}
@@ -700,26 +727,33 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	return deployment, nil
 }
 
-func setPodCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
-	labels["core.erda.cloud/cluster-name"] = service.Labels["DICE_CLUSTER_NAME"]
-	labels["core.erda.cloud/org-id"] = service.Labels["DICE_ORG_ID"]
-	labels["core.erda.cloud/org-name"] = service.Labels["DICE_ORG_NAME"]
-	labels["core.erda.cloud/app-id"] = service.Labels["DICE_APPLICATION_ID"]
-	labels["core.erda.cloud/app-name"] = service.Labels["DICE_APPLICATION_NAME"]
-	labels["core.erda.cloud/project-id"] = service.Labels["DICE_PROJECT_ID"]
-	labels["core.erda.cloud/project-name"] = service.Labels["DICE_PROJECT_NAME"]
-	labels["core.erda.cloud/runtime-id"] = service.Labels["DICE_RUNTIME_ID"]
-	labels["core.erda.cloud/service-name"] = service.Labels["DICE_SERVICE_NAME"]
-	labels["core.erda.cloud/workspace"] = service.Labels["DICE_WORKSPACE"]
-	labels["core.erda.cloud/service-type"] = service.Labels["SERVICE_TYPE"]
-	labels["core.erda.cloud/servicegroup-id"] = sg.ID
-
-	publicHost := make(map[string]string)
-	err := json.Unmarshal([]byte(service.Env["PUBLIC_HOST"]), &publicHost)
-	if err != nil {
-		return err
+func setCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
+	if labels == nil {
+		return nil
 	}
-	labels["monitor.erda.cloud/tenant-id"] = publicHost["tenantId"]
+	if service != nil {
+		labels["core.erda.cloud/cluster-name"] = service.Labels["DICE_CLUSTER_NAME"]
+		labels["core.erda.cloud/org-id"] = service.Labels["DICE_ORG_ID"]
+		labels["core.erda.cloud/org-name"] = service.Labels["DICE_ORG_NAME"]
+		labels["core.erda.cloud/app-id"] = service.Labels["DICE_APPLICATION_ID"]
+		labels["core.erda.cloud/app-name"] = service.Labels["DICE_APPLICATION_NAME"]
+		labels["core.erda.cloud/project-id"] = service.Labels["DICE_PROJECT_ID"]
+		labels["core.erda.cloud/project-name"] = service.Labels["DICE_PROJECT_NAME"]
+		labels["core.erda.cloud/runtime-id"] = service.Labels["DICE_RUNTIME_ID"]
+		labels["core.erda.cloud/service-name"] = service.Labels["DICE_SERVICE_NAME"]
+		labels["core.erda.cloud/workspace"] = service.Labels["DICE_WORKSPACE"]
+		labels["core.erda.cloud/service-type"] = service.Labels["SERVICE_TYPE"]
+		publicHost := make(map[string]string)
+		err := json.Unmarshal([]byte(service.Env["PUBLIC_HOST"]), &publicHost)
+		if err != nil {
+			return err
+		}
+		labels["monitor.erda.cloud/tenant-id"] = publicHost["terminusKey"]
+	}
+
+	if sg != nil {
+		labels["core.erda.cloud/servicegroup-id"] = sg.ID
+	}
 	return nil
 }
 

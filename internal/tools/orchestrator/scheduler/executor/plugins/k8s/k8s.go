@@ -617,6 +617,8 @@ func (k *Kubernetes) Remove(ctx context.Context, specObj interface{}) error {
 // Update implements updating servicegroup based on k8s api
 // Does not support updating cloud disk (pvc)
 func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface{}, error) {
+
+	logrus.Infof("Update K8s ======> ")
 	runtime, err := ValidateRuntime(specObj, "Update")
 	if err != nil {
 		return nil, err
