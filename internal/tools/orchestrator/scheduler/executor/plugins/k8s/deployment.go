@@ -660,6 +660,15 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 
 	SetPodAnnotationsBaseContainerEnvs(deployment.Spec.Template.Spec.Containers[0], deployment.Spec.Template.Annotations)
 
+	err = setPodCoreErdaLabels(serviceGroup, service, deployment.Labels)
+	if err != nil {
+		return nil, err
+	}
+	err = setPodCoreErdaLabels(serviceGroup, service, deployment.Spec.Template.Labels)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO: Delete this logic
 	//Mobil temporary demand:
 	// Inject the secret under the "secret" namespace into the business container
@@ -689,6 +698,29 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 	logrus.Debugf("show k8s deployment, name: %s, deployment: %+v", deploymentName, deployment)
 	return deployment, nil
+}
+
+func setPodCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
+	labels["core.erda.cloud/cluster-name"] = service.Labels["DICE_CLUSTER_NAME"]
+	labels["core.erda.cloud/org-id"] = service.Labels["DICE_ORG_ID"]
+	labels["core.erda.cloud/org-name"] = service.Labels["DICE_ORG_NAME"]
+	labels["core.erda.cloud/app-id"] = service.Labels["DICE_APPLICATION_ID"]
+	labels["core.erda.cloud/app-name"] = service.Labels["DICE_APPLICATION_NAME"]
+	labels["core.erda.cloud/project-id"] = service.Labels["DICE_PROJECT_ID"]
+	labels["core.erda.cloud/project-name"] = service.Labels["DICE_PROJECT_NAME"]
+	labels["core.erda.cloud/runtime-id"] = service.Labels["DICE_RUNTIME_ID"]
+	labels["core.erda.cloud/service-name"] = service.Labels["DICE_SERVICE_NAME"]
+	labels["core.erda.cloud/workspace"] = service.Labels["DICE_WORKSPACE"]
+	labels["core.erda.cloud/service-type"] = service.Labels["SERVICE_TYPE"]
+	labels["core.erda.cloud/servicegroup-id"] = sg.ID
+
+	publicHost := make(map[string]string)
+	err := json.Unmarshal([]byte(service.Env["PUBLIC_HOST"]), &publicHost)
+	if err != nil {
+		return err
+	}
+	labels["monitor.erda.cloud/tenant-id"] = publicHost["tenantId"]
+	return nil
 }
 
 func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.InitContainer) []corev1.Container {
