@@ -20,12 +20,17 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func (s *pipelineService) PipelineCancel(ctx context.Context, req *pb.PipelineCancelRequest) (*pb.PipelineCancelResponse, error) {
 	p, err := s.Get(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrCancelPipeline.NotFound()
+	}
+	identityInfo := apis.GetIdentityInfo(ctx)
+	if len(req.UserID) == 0 && identityInfo != nil {
+		req.UserID = identityInfo.UserID
 	}
 	if s.edgeRegister.IsCenter() && p.IsEdge {
 		s.p.Log.Infof("proxy cancel pipeline to edge, pipelineID: %d", p.ID)
