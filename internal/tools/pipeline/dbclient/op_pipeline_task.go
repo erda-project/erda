@@ -100,7 +100,7 @@ func (client *Client) FindCauseFailedPipelineTasks(pipelineID uint64) (spec.Reru
 	}, nil
 }
 
-func (client *Client) GetPipelineTask(id interface{}) (spec.PipelineTask, error) {
+func (client *Client) GetPipelineTask(id uint64) (spec.PipelineTask, error) {
 	var pa spec.PipelineTask
 	exist, err := client.ID(id).Get(&pa)
 	if err != nil {
@@ -215,7 +215,11 @@ func (client *Client) UpdatePipelineTaskTime(p *spec.Pipeline, ops ...SessionOpt
 	if costTimeSec == -1 {
 		costTimeSec = int64(timeEnd.Sub(timeBegin).Seconds())
 	}
-	_, err := session.ID(p.ParentTaskID).Cols("cost_time_sec", "time_begin", "time_end").
+
+	if p.ParentTaskID == nil {
+		return errors.New("ParentTaskID is null")
+	}
+	_, err := session.ID(*p.ParentTaskID).Cols("cost_time_sec", "time_begin", "time_end").
 		Update(&spec.PipelineTask{CostTimeSec: costTimeSec, TimeBegin: timeBegin, TimeEnd: timeEnd})
 	return err
 }

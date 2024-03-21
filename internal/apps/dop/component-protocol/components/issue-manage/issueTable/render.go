@@ -134,6 +134,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			}
 		}
 		cond.PageSize = uint64(c.State["pageSize"].(float64))
+		if _, ok := (*gs)["OperationKey"]; ok {
+			(*gs)["OperationKey"] = ""
+		}
 	} else if event.Operation == cptype.OperationKey(apistructs.InitializeOperation) {
 		cond.PageNo = 1
 		if urlquery, ok := sdk.InParams["issueTable__urlQuery"]; ok {
@@ -155,9 +158,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	} else if event.Operation == cptype.OperationKey(apistructs.RenderingOperation) {
 		cond.PageNo = 1
 		c.State["selectedRowKeys"] = []string{}
-	}
-
-	if event.Operation.String() == "delete" {
+	} else if event.Operation.String() == "delete" {
 		cputil.MustObjJSONTransfer(&c.State, &ca.state)
 		(*gs)["OperationKey"] = "delete"
 		(*gs)["SelectedRowKeys"] = ca.state.SelectedRowKeys
@@ -233,8 +234,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	c.Data = map[string]interface{}{}
 	c.Data["list"] = l
 	var customProperties []*pb.IssuePropertyExtraProperty
-	if len(issues) > 0 {
-		customProperties = issues[0].PropertyInstances
+	for _, v := range issues {
+		if v.PropertyInstances != nil {
+			customProperties = v.PropertyInstances
+			break
+		}
 	}
 	c.Props = buildTableColumnProps(ctx, fixedIssueType, customProperties)
 	c.Operations = map[string]interface{}{

@@ -39,11 +39,11 @@ func (i *IssueService) CreateIssueProperty(ctx context.Context, req *pb.CreateIs
 	req.IdentityInfo = identityInfo
 
 	properties, err := i.db.GetIssueProperties(pb.GetIssuePropertyRequest{
-		OrgID:             req.OrgID,
-		ScopeID:           strconv.FormatInt(req.ScopeID, 10),
-		ScopeType:         req.ScopeType.String(),
-		OnlyProject:       req.OnlyProject,
-		PropertyIssueType: req.PropertyIssueType.String(),
+		OrgID:                req.OrgID,
+		ScopeID:              strconv.FormatInt(req.ScopeID, 10),
+		ScopeType:            req.ScopeType.String(),
+		OnlyCurrentScopeType: req.OnlyCurrentScopeType,
+		PropertyIssueType:    req.PropertyIssueType.String(),
 	})
 	var startIndex int64 = 0
 	for _, v := range properties {
@@ -451,4 +451,12 @@ func GetArb(i *pb.IssuePropertyInstance) string {
 		return strconv.Itoa(int(s))
 	}
 	return i.ArbitraryValue.GetStringValue()
+}
+
+func (i *IssueService) MigrateOrgCustomFileds(ctx context.Context, req *pb.MigrateOrgCustomFiledsRequest) error {
+	identityInfo := apis.GetIdentityInfo(ctx)
+	if identityInfo == nil {
+		return apierrors.ErrGetIssueProperty.NotLogin()
+	}
+	return i.db.MigrateOrgCustomFileds(req.OrgID, req.PropertyNames)
 }

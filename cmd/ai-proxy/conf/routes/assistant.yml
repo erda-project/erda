@@ -28,32 +28,6 @@ routes:
       - name: audit-after-llm-director
       - name: finalize
 
-  - path: /v1/files
-    method: POST
-    filters:
-      - name: initialize
-      - name: log-http
-      - name: rate-limit
-      - name: context
-      - name: context-file
-      - name: audit-before-llm-director
-      - name: azure-director
-        config:
-          directors:
-            - TransAuthorization
-            - DefaultQueries("api-version=2024-02-15-preview")
-            - RewriteScheme
-            - RewriteHost
-            - RewritePath("/openai/files")
-      - name: openai-director
-        config:
-          directors:
-            - TransAuthorization
-            - RewriteScheme
-            - RewriteHost
-      - name: audit-after-llm-director
-      - name: finalize
-
   - path: /v1/assistants
     method: GET
     filters:

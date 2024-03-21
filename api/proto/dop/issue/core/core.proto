@@ -462,6 +462,11 @@ message GetIssuePropertyInstanceResponse {
   IssueAndPropertyAndValue data = 1;
 }
 
+message MigrateOrgCustomFiledsRequest {
+  int64 orgID = 1;
+  repeated string propertyNames = 2;
+}
+
 message CreateIssuePropertyRequest {
   int64 scopeID = 1;
   ScopeTypeEnum.ScopeType scopeType = 2;
@@ -474,7 +479,7 @@ message CreateIssuePropertyRequest {
   repeated Enumerate enumeratedValues = 9;
   int64 relation = 10;
   common.IdentityInfo identityInfo = 11 [json_name = "-"];
-  bool onlyProject = 12;
+  bool onlyCurrentScopeType = 12;
 }
 
 message CreateIssuePropertyResponse {
@@ -520,7 +525,7 @@ message GetIssuePropertyRequest {
   common.IdentityInfo identityInfo = 4 [json_name = "-"];
   string scopeType = 5;
   string scopeID = 6;
-  bool onlyProject = 7;
+  bool onlyCurrentScopeType = 7;
 }
 
 message GetIssuePropertyResponse {
