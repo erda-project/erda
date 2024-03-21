@@ -150,7 +150,7 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		return nil, nil, err
 	}
 
-	if addonSpec.Deprecated {
+	if addonSpec.Deprecated && addonSpec.SubCategory != apistructs.MicroAddon {
 		err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDeprecated, params.AddonName, addon.Version))
 		logrus.Errorf(err.Error())
 		return nil, nil, err
