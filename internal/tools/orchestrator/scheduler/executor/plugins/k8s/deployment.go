@@ -199,7 +199,7 @@ func (k *Kubernetes) mergeDeployLabels(deployment *appsv1.Deployment) error {
 		if _, ok := deployment.Spec.Template.Labels[key]; ok {
 			continue
 		}
-		deployment.Labels[key] = value
+		deployment.Spec.Template.Labels[key] = value
 	}
 	return nil
 }
@@ -642,13 +642,6 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 	podAnnotations(service, deployment.Spec.Template.Annotations)
 
-	// inherit Labels from service.Labels and service.DeploymentLabels
-	//err = inheritDeploymentLabels(service, deployment)
-	//if err != nil {
-	//	logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
-	//	return nil, err
-	//}
-
 	// set pod Annotations from service.Labels and service.DeploymentLabels
 	setPodAnnotationsFromLabels(service, deployment.Spec.Template.Annotations)
 
@@ -686,13 +679,14 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 
 	SetPodAnnotationsBaseContainerEnvs(deployment.Spec.Template.Spec.Containers[0], deployment.Spec.Template.Annotations)
 
-	logrus.Infof("new deploy ======> ")
 	err = setCoreErdaLabels(serviceGroup, service, deployment.Labels)
 	if err != nil {
+		logrus.Errorf("deployment can't set core/erda labels, err: %v", err)
 		return nil, err
 	}
 	err = setCoreErdaLabels(serviceGroup, service, deployment.Spec.Template.Labels)
 	if err != nil {
+		logrus.Errorf("deployment template can't set core/erda labels, err: %v", err)
 		return nil, err
 	}
 

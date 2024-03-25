@@ -93,7 +93,33 @@ func (k *Kubernetes) updateDaemonSet(ctx context.Context, ds *appsv1.DaemonSet, 
 			return errors.New(reason)
 		}
 	}
+	err = k.mergeDaemonLabels(ds)
+	if err != nil {
+		logrus.Errorf("failed to merge daemonset labels, name: %s, (%v)", service.Name, err)
+		return errors.Errorf("failed to merge daemonset labels, name: %s, (%v)", service.Name, err)
+	}
 	return k.ds.Update(ds)
+}
+
+func (k *Kubernetes) mergeDaemonLabels(ds *appsv1.DaemonSet) error {
+	oldDaemon, err := k.getDaemonSet(ds.Namespace, ds.Name)
+	if err != nil {
+		return err
+	}
+	for key, value := range oldDaemon.Labels {
+		if _, ok := ds.Labels[key]; ok {
+			continue
+		}
+		ds.Labels[key] = value
+	}
+
+	for key, value := range oldDaemon.Spec.Template.Labels {
+		if _, ok := ds.Spec.Template.Labels[key]; ok {
+			continue
+		}
+		ds.Spec.Template.Labels[key] = value
+	}
+	return nil
 }
 
 func (k *Kubernetes) getDaemonSetDeltaResource(ctx context.Context, ds *appsv1.DaemonSet) (deltaCPU, deltaMemory int64, err error) {
@@ -244,13 +270,6 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 	podAnnotations(service, daemonset.Spec.Template.Annotations)
 
-	// inherit Labels from service.Labels and service.DeploymentLabels
-	err = inheritDaemonsetLabels(service, daemonset)
-	if err != nil {
-		logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
-		return nil, err
-	}
-
 	// set pod Annotations from service.Labels and service.DeploymentLabels
 	setPodAnnotationsFromLabels(service, daemonset.Spec.Template.Annotations)
 
@@ -288,6 +307,17 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 
 	SetPodAnnotationsBaseContainerEnvs(daemonset.Spec.Template.Spec.Containers[0], daemonset.Spec.Template.Annotations)
+
+	err = setCoreErdaLabels(sg, service, daemonset.Labels)
+	if err != nil {
+		logrus.Errorf("daemonset can't set core/erda labels, err: %v", err)
+		return nil, err
+	}
+	err = setCoreErdaLabels(sg, service, daemonset.Spec.Template.Labels)
+	if err != nil {
+		logrus.Errorf("daemonset template can't set core/erda labels, err: %v", err)
+		return nil, err
+	}
 
 	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
 	if err != nil {
