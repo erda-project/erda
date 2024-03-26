@@ -112,7 +112,6 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 	if len(service.Ports) == 0 {
 		return nil
 	}
-	logrus.Infof("new Service =====>")
 	k8sService := &apiv1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -347,7 +346,6 @@ func (k *Kubernetes) UpdateK8sService(k8sService *apiv1.Service, service *apistr
 
 	setServiceLabelSelector(k8sService, selectors)
 	k8sService.Spec.Ports = newPorts
-	logrus.Infof("Update service =====> ")
 	err := setCoreErdaLabels(nil, service, k8sService.Labels)
 	if err != nil {
 		return fmt.Errorf("can't set erda labels")
