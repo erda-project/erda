@@ -22,8 +22,8 @@ import (
 )
 
 var AGENT_REMOVE_LICENSE_POST = apis.ApiSpec{
-	Path:         "/api/licenses/actions/remove",
-	BackendPath:  "/api/licenses/actions/remove",
+	Path:         "/api/licenses",
+	BackendPath:  "/api/licenses",
 	Host:         "license-agent.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:       "http",
 	Method:       http.MethodDelete,
