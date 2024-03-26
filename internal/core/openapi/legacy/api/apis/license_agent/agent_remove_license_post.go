@@ -12,21 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs
+package license_agent
 
-type RegisterLicenseRequest struct {
-	Scope   int64  `json:"scope"`
-	License string `json:"license"`
-}
+import (
+	"net/http"
 
-type RegisterLicenseResponse struct {
-	Id int64 `json:"id"`
-}
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
+)
 
-type RemoveLicenseRequest struct {
-	Scope int64 `json:"scope"`
-}
-
-type RemoveLicenseResponse struct {
-	Msg string `json:"msg"`
+var AGENT_REMOVE_LICENSE_POST = apis.ApiSpec{
+	Path:         "/api/licenses/actions/remove",
+	BackendPath:  "/api/licenses/actions/remove",
+	Host:         "license-agent.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:       "http",
+	Method:       http.MethodPost,
+	IsOpenAPI:    true,
+	CheckLogin:   true,
+	CheckToken:   true,
+	RequestType:  apistructs.RemoveLicenseRequest{},
+	ResponseType: apistructs.RemoveLicenseResponse{},
 }
