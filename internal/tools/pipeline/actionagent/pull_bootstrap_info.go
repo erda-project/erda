@@ -24,7 +24,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/retry"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const EncryptedValueMinLen = "ACTIONAGENT_ENCRYPTED_VAlUE_MIN_LEN"
@@ -81,6 +83,9 @@ func (agent *Agent) pullBootstrapInfo() {
 		}
 	}
 
+	// use env to instead of ${{ envs.xxx }}
+	agent.replaceEnvExpr()
+
 	// set envs to current process, so `run` and other scripts can inherit
 	for k, v := range agent.Arg.PrivateEnvs {
 		if err = os.Setenv(k, v); err != nil {
@@ -92,4 +97,111 @@ func (agent *Agent) pullBootstrapInfo() {
 			agent.EasyUse.OpenAPIToken = v
 		}
 	}
+}
+
+func (agent *Agent) replaceEnvExpr() {
+	for k := range agent.Arg.PrivateEnvs {
+		visited := make(map[string]struct{})
+		replaceEnvElem(agent.Arg.PrivateEnvs, k, visited)
+	}
+
+	if agent.Arg.Commands != nil {
+		commands := agent.convertCustomCommands()
+		ifReplace := replaceCommandEnvExpr(commands, agent.Arg.PrivateEnvs)
+		if ifReplace {
+			agent.Arg.Commands = commands
+		}
+	}
+
+}
+
+// replaceEnvElem parse privateEnvs[elemKey]'s env_expr and returns the ture env and isLoopCall
+func replaceEnvElem(privateEnvs map[string]string, elemKey string, visited map[string]struct{}) (string, bool) {
+	elem := privateEnvs[elemKey]
+	if !strings.HasPrefix(elemKey, EnvActionParamPrefix) {
+		return elem, false
+	}
+
+	// avoid recursive infinite loop caused by circular reference，such as:
+	// ACTION_A: ${{ ACTION_B }}
+	// ACTION_B: ${{ ACTION_A }}
+	// if it is loop call, return the origin value
+	if _, ok := visited[elemKey]; ok {
+		return elem, true
+	}
+
+	visited[elemKey] = struct{}{}
+
+	isLoop := false
+
+	replaced := strutil.ReplaceAllStringSubmatchFunc(expression.Re, elem, func(sub []string) string {
+		inner := sub[1]
+		inner = strings.Trim(inner, " ")
+
+		// ss[0] = envs, ss[1] = variable
+		ss := strings.SplitN(inner, ".", 2)
+		if len(ss) == 1 {
+			return elem
+		}
+
+		if ss[0] != expression.ENV {
+			return elem
+		}
+
+		env, ok := privateEnvs[ss[1]]
+		if !ok {
+			env = os.Getenv(ss[1])
+		}
+
+		// check if the parsed environment is still an env_expr
+		if expression.Re.MatchString(env) {
+			env, isLoop = replaceEnvElem(privateEnvs, ss[1], visited)
+			// if the upcoming recursion is a loop invocation
+			// do not parse it and returns the current value instead
+			if isLoop {
+				return elem
+			}
+		}
+
+		return env
+	})
+
+	privateEnvs[elemKey] = replaced
+	return replaced, isLoop
+}
+
+func replaceCommandEnvExpr(commands []string, privateEnvs map[string]string) bool {
+	ifReplace := false
+	for index, command := range commands {
+		replaced := strutil.ReplaceAllStringSubmatchFunc(expression.Re, command, func(sub []string) string {
+			ifReplace = true
+			inner := sub[1]
+			inner = strings.Trim(inner, " ")
+
+			// ss[0] = envs, ss[1] = variable
+			ss := strings.SplitN(inner, ".", 2)
+			if len(ss) == 1 {
+				return command
+			}
+
+			if ss[0] != expression.ENV {
+				return command
+			}
+
+			var env string
+			var ok bool
+			if privateEnvs != nil {
+				env, ok = privateEnvs[ss[1]]
+			}
+
+			if !ok {
+				env = os.Getenv(ss[1])
+			}
+
+			return env
+		})
+		commands[index] = replaced
+	}
+
+	return ifReplace
 }
