@@ -17,6 +17,7 @@ package addon
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
@@ -1367,4 +1369,57 @@ func TestListByRuntime(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestDeploy(t *testing.T) {
+	addon := &Addon{db: &dbclient.DBClient{DBEngine: &dbengine.DBEngine{}}}
+	monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon.db), "FindTmcInstanceByNameAndCLuster", func(db *dbclient.DBClient, name, cluster string) ([]dbclient.TmcInstance, error) {
+		return []dbclient.TmcInstance{{
+			ID:      "1234",
+			Engine:  "nacos",
+			Version: "2.2.0",
+		}}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon.db), "UpdatePrebuild", func(db *dbclient.DBClient, addonPrebuild *dbclient.AddonPrebuild) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon), "NacosVersionReference", func(a *Addon, version string) (regVersion, confVersion string, err error) {
+		return "3.0.0", "3.0.0", nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon), "AttachAndCreate", func(a *Addon, params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonInstanceRes, error) {
+		return &apistructs.AddonInstanceRes{}, nil
+	})
+
+	fmt.Println(addon.db == nil)
+	AddonInfos.Store(RegisterCenterAddon, "")
+	AddonInfos.Store(ConfigCenterAddon, "")
+	_ = addon.deployAddons(&apistructs.AddonCreateRequest{
+		ClusterName:   RegisterCenterAddon,
+		OrgID:         232,
+		ProjectID:     212,
+		ApplicationID: 12321,
+		RuntimeID:     23123,
+	}, []dbclient.AddonPrebuild{
+		{
+			AddonName:         RegisterCenterAddon,
+			InstanceName:      RegisterCenterAddon,
+			Env:               "DEV",
+			RuntimeID:         "100001",
+			RoutingInstanceID: "100001",
+			InstanceID:        "100001",
+			Plan:              "basic",
+			Options:           `{"version": "3.0.0"}`,
+		}, {
+			AddonName:         ConfigCenterAddon,
+			InstanceName:      ConfigCenterAddon,
+			Env:               "DEV",
+			RuntimeID:         "100001",
+			RoutingInstanceID: "100001",
+			InstanceID:        "100001",
+			Plan:              "basic",
+		},
+	})
 }
