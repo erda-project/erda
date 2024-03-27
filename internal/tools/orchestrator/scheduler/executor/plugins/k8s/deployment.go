@@ -44,6 +44,40 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+// k8s labels
+const (
+	LabelCoreErdaCloudClusterName    = "core.erda.cloud/cluster-name"
+	LabelCoreErdaCloudOrgId          = "core.erda.cloud/org-id"
+	LabelCoreErdaCloudOrgName        = "core.erda.cloud/org-name"
+	LabelCoreErdaCloudAppId          = "core.erda.cloud/app-id"
+	LabelCoreErdaCloudAppName        = "core.erda.cloud/app-name"
+	LabelCoreErdaCloudProjectId      = "core.erda.cloud/project-id"
+	LabelCoreErdaCloudProjectName    = "core.erda.cloud/project-name"
+	LabelCoreErdaCloudRuntimeId      = "core.erda.cloud/runtime-id"
+	LabelCoreErdaCloudServiceName    = "core.erda.cloud/service-name"
+	LabelCoreErdaCloudWorkSpace      = "core.erda.cloud/workspace"
+	LabelCoreErdaCloudServiceType    = "core.erda.cloud/service-type"
+	LabelCoreErdaCloudServiceGroupId = "core.erda.cloud/servicegroup-id"
+
+	LabelErdaCloudTenantId = "monitor.erda.cloud/tenant-id"
+
+	LabelDiceClusterName = "DICE_CLUSTER_NAME"
+	LabelDiceOrgId       = "DICE_ORG_ID"
+	LabelDiceOrgName     = "DICE_ORG_NAME"
+	LabelDiceAppId       = "DICE_APPLICATION_ID"
+	LabelDiceAppName     = "DICE_APPLICATION_NAME"
+	LabelDiceProjectId   = "DICE_PROJECT_ID"
+	LabelDiceProjectName = "DICE_PROJECT_NAME"
+	LabelDiceRuntimeId   = "DICE_RUNTIME_ID"
+	LabelDiceServiceName = "DICE_SERVICE_NAME"
+	LabelDiceWorkSpace   = "DICE_WORKSPACE"
+	LabelDiceServiceType = "SERVICE_TYPE"
+
+	ServiceEnvPublicHost = "PUBLIC_HOST"
+
+	PublicHostTerminusKey = "terminusKey"
+)
+
 const (
 	// DefaultServiceDNSSuffix k8s service dns fixed suffix
 	DefaultServiceDNSSuffix = "svc.cluster.local"
@@ -163,6 +197,15 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 			return errors.New(reason)
 		}
 	}
+
+	oldDeploy, err := k.deploy.Get(deployment.Namespace, deployment.Name)
+	if err != nil {
+		return errors.Errorf("failed to merge deployment labels, name: %s, (%v)", service.Name, err)
+	}
+	// merge Deployment labels
+	k.mergeLabels(deployment.Labels, oldDeploy.Labels)
+	// merge Pod labels
+	k.mergeLabels(deployment.Spec.Template.Labels, oldDeploy.Spec.Template.Labels)
 
 	err = k.deploy.Put(deployment)
 	if err != nil {
@@ -616,13 +659,6 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 	podAnnotations(service, deployment.Spec.Template.Annotations)
 
-	// inherit Labels from service.Labels and service.DeploymentLabels
-	err = inheritDeploymentLabels(service, deployment)
-	if err != nil {
-		logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
-		return nil, err
-	}
-
 	// set pod Annotations from service.Labels and service.DeploymentLabels
 	setPodAnnotationsFromLabels(service, deployment.Spec.Template.Annotations)
 
@@ -660,6 +696,17 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 
 	SetPodAnnotationsBaseContainerEnvs(deployment.Spec.Template.Spec.Containers[0], deployment.Spec.Template.Annotations)
 
+	err = setCoreErdaLabels(serviceGroup, service, deployment.Labels)
+	if err != nil {
+		logrus.Errorf("deployment can't set core/erda labels, err: %v", err)
+		return nil, err
+	}
+	err = setCoreErdaLabels(serviceGroup, service, deployment.Spec.Template.Labels)
+	if err != nil {
+		logrus.Errorf("deployment template can't set core/erda labels, err: %v", err)
+		return nil, err
+	}
+
 	// TODO: Delete this logic
 	//Mobil temporary demand:
 	// Inject the secret under the "secret" namespace into the business container
@@ -689,6 +736,36 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 	logrus.Debugf("show k8s deployment, name: %s, deployment: %+v", deploymentName, deployment)
 	return deployment, nil
+}
+
+func setCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
+	if labels == nil {
+		return nil
+	}
+	if service != nil {
+		labels[LabelCoreErdaCloudClusterName] = service.Labels[LabelDiceClusterName]
+		labels[LabelCoreErdaCloudOrgId] = service.Labels[LabelDiceOrgId]
+		labels[LabelCoreErdaCloudOrgName] = service.Labels[LabelDiceOrgName]
+		labels[LabelCoreErdaCloudAppId] = service.Labels[LabelDiceAppId]
+		labels[LabelCoreErdaCloudAppName] = service.Labels[LabelDiceAppName]
+		labels[LabelCoreErdaCloudProjectId] = service.Labels[LabelDiceProjectId]
+		labels[LabelCoreErdaCloudProjectName] = service.Labels[LabelDiceProjectName]
+		labels[LabelCoreErdaCloudRuntimeId] = service.Labels[LabelDiceRuntimeId]
+		labels[LabelCoreErdaCloudServiceName] = service.Labels[LabelDiceServiceName]
+		labels[LabelCoreErdaCloudWorkSpace] = service.Labels[LabelDiceWorkSpace]
+		labels[LabelCoreErdaCloudServiceType] = service.Labels[LabelDiceServiceType]
+		publicHost := make(map[string]string)
+		err := json.Unmarshal([]byte(service.Env[ServiceEnvPublicHost]), &publicHost)
+		if err != nil {
+			return err
+		}
+		labels[LabelErdaCloudTenantId] = publicHost[PublicHostTerminusKey]
+	}
+
+	if sg != nil {
+		labels[LabelCoreErdaCloudServiceGroupId] = sg.ID
+	}
+	return nil
 }
 
 func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.InitContainer) []corev1.Container {

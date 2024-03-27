@@ -24,7 +24,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
@@ -90,18 +89,23 @@ func Test_newService(t *testing.T) {
 					Name:      "fake-service",
 					Namespace: apiv1.NamespaceDefault,
 					Labels: map[string]string{
-						"app": "fake-service",
-						"svc": "fake-service.default.svc.cluster.local",
+						"app":                          "fake-service",
+						"svc":                          "fake-service.default.svc.cluster.local",
+						"core.erda.cloud/app-id":       "",
+						"core.erda.cloud/app-name":     "",
+						"core.erda.cloud/cluster-name": "",
+						"core.erda.cloud/org-id":       "",
+						"core.erda.cloud/org-name":     "",
+						"core.erda.cloud/project-id":   "",
+						"core.erda.cloud/project-name": "",
+						"core.erda.cloud/runtime-id":   "",
+						"core.erda.cloud/service-name": "",
+						"core.erda.cloud/service-type": "",
+						"core.erda.cloud/workspace":    "",
 					},
 				},
 				Spec: v1.ServiceSpec{
-					Ports: []v1.ServicePort{
-						{
-							Name:       "tcp-0",
-							Port:       80,
-							TargetPort: intstr.FromInt(80),
-						},
-					},
+					Ports: nil,
 					Selector: map[string]string{
 						"app": "fake-service",
 						"svc": "fake-service.default.svc.cluster.local",
