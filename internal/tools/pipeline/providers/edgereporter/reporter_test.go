@@ -105,7 +105,7 @@ func Test_provider_doTaskReporter(t *testing.T) {
 			return nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetPipelineTask",
-		func(_ *dbclient.Client, _ interface{}) (spec.PipelineTask, error) {
+		func(_ *dbclient.Client, _ uint64) (spec.PipelineTask, error) {
 			return spec.PipelineTask{ID: 1}, nil
 		})
 	defer monkey.UnpatchAll()
@@ -174,7 +174,7 @@ func Test_provider_doPipelineReporter(t *testing.T) {
 			return nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "GetPipeline",
-		func(_ *dbclient.Client, _ interface{}, _ ...dbclient.SessionOption) (spec.Pipeline, error) {
+		func(_ *dbclient.Client, _ uint64, _ ...dbclient.SessionOption) (spec.Pipeline, error) {
 			return spec.Pipeline{}, nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "ListPipelineStageByPipelineID",

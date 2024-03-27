@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
-	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core"
 )
 
 func init() {
@@ -78,7 +77,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			}
 			ops.Meta.Type = "delete"
 			bot.Operations["onOk"] = ops
-			bot.Props.Content = bot.getContent(bot.SDK.I18n("Delete following items"), selectRowKeys)
+			bot.Props.Content = bot.SDK.I18n("Deletion operation is irreversible")
 		}
 	case IssueDoshboardBatchSubmit:
 		bot.State.Visible = false
@@ -91,7 +90,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			bot.ctx = ctx
 			cputil.MustObjJSONTransfer(&c.State, &bot.State)
 			bot.State.Visible = false
-			issueSvc := ctx.Value(types.IssueService).(core.IssueService)
+			issueSvc := ctx.Value(types.IssueService).(pb.IssueCoreServiceServer)
 			bot.issueSvc = issueSvc
 			_, err = bot.DeleteItems(bot.State.SelectedRowKeys, projectid)
 			if err != nil {

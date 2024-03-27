@@ -14,6 +14,12 @@
 
 package bundle
 
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
 //import (
 //	"os"
 //	"testing"
@@ -80,3 +86,29 @@ package bundle
 //	assert.NoError(t, err)
 //	spew.Dump(commit)
 //}
+
+func TestEncodeBranch(t *testing.T) {
+	testCase := []struct {
+		desc     string
+		branch   string
+		expected string
+	}{
+		{
+			desc:     "normal branch name",
+			branch:   "feature/gittar",
+			expected: "feature/gittar",
+		},
+		{
+			desc:     "# in the branch",
+			branch:   "feature/#123",
+			expected: "feature/%23123",
+		},
+	}
+
+	for _, tt := range testCase {
+		t.Run(tt.desc, func(t *testing.T) {
+			encodeBranch := EncodeBranch(tt.branch)
+			assert.Equal(t, tt.expected, encodeBranch)
+		})
+	}
+}
