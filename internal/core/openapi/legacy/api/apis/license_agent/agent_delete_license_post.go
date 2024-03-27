@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
 )
 
-var AGENT_REMOVE_LICENSE_POST = apis.ApiSpec{
+var AGENT_DELETE_LICENSE_POST = apis.ApiSpec{
 	Path:         "/api/licenses",
 	BackendPath:  "/api/licenses",
 	Host:         "license-agent.marathon.l4lb.thisdcos.directory:8080",
@@ -30,6 +30,6 @@ var AGENT_REMOVE_LICENSE_POST = apis.ApiSpec{
 	IsOpenAPI:    true,
 	CheckLogin:   true,
 	CheckToken:   true,
-	RequestType:  apistructs.RemoveLicenseRequest{},
-	ResponseType: apistructs.RemoveLicenseResponse{},
+	RequestType:  apistructs.DeleteLicenseRequest{},
+	ResponseType: apistructs.DeleteLicenseResponse{},
 }

@@ -23,10 +23,10 @@ type RegisterLicenseResponse struct {
 	Id int64 `json:"id"`
 }
 
-type RemoveLicenseRequest struct {
+type DeleteLicenseRequest struct {
 	Scope int64 `json:"scope"`
 }
 
-type RemoveLicenseResponse struct {
+type DeleteLicenseResponse struct {
 	Msg string `json:"msg"`
 }
