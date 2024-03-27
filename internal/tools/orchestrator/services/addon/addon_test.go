@@ -1351,11 +1351,45 @@ func TestDeploy(t *testing.T) {
 			Version: "2.2.0",
 		}}, nil
 	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon.db), "UpdatePrebuild", func(db *dbclient.DBClient, addonPrebuild *dbclient.AddonPrebuild) error {
+		return nil
+	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(addon), "NacosVersionReference", func(a *Addon, version string) (regVersion, confVersion string, err error) {
 		return "3.0.0", "3.0.0", nil
 	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon), "AttachAndCreate", func(a *Addon, params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonInstanceRes, error) {
+		return &apistructs.AddonInstanceRes{}, nil
+	})
+
 	fmt.Println(addon.db == nil)
+	AddonInfos.Store(RegisterCenterAddon, "")
+	AddonInfos.Store(ConfigCenterAddon, "")
 	_ = addon.deployAddons(&apistructs.AddonCreateRequest{
-		ClusterName: RegisterCenterAddon,
-	}, make([]dbclient.AddonPrebuild, 0))
+		ClusterName:   RegisterCenterAddon,
+		OrgID:         232,
+		ProjectID:     212,
+		ApplicationID: 12321,
+		RuntimeID:     23123,
+	}, []dbclient.AddonPrebuild{
+		{
+			AddonName:         RegisterCenterAddon,
+			InstanceName:      RegisterCenterAddon,
+			Env:               "DEV",
+			RuntimeID:         "100001",
+			RoutingInstanceID: "100001",
+			InstanceID:        "100001",
+			Plan:              "basic",
+			Options:           `{"version": "3.0.0"}`,
+		}, {
+			AddonName:         ConfigCenterAddon,
+			InstanceName:      ConfigCenterAddon,
+			Env:               "DEV",
+			RuntimeID:         "100001",
+			RoutingInstanceID: "100001",
+			InstanceID:        "100001",
+			Plan:              "basic",
+		},
+	})
 }
