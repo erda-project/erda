@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"net/http"
+	"time"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
@@ -62,10 +63,16 @@ type Endpoints struct {
 	ClusterSvc      clusterpb.ClusterServiceServer
 	PipelineSvc     pipelinepb.PipelineServiceServer
 
-	reportTable *resource.ReportTable
-	CronService cronpb.CronServiceServer
-	org         org.Interface
-	registry    registry.Interface
+	reportTable      *resource.ReportTable
+	CronService      cronpb.CronServiceServer
+	org              org.Interface
+	registry         registry.Interface
+	SteveCacheConfig *steveCacheConfig
+}
+
+type steveCacheConfig struct {
+	TTL  time.Duration
+	Size int
 }
 
 type Option func(*Endpoints)
@@ -88,13 +95,22 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.metrics = ctx.Value("metrics").(*metrics.Metric)
 	e.Resource = ctx.Value("resource").(*resource.Resource)
 	e.CachedJS = cachedJS
-	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl, e.ClusterSvc)
+	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl, e.ClusterSvc, e.SteveCacheConfig.TTL, e.SteveCacheConfig.Size)
 	e.registry = registry.New(e.ClusterSvc)
 	return e
 }
 
 func (e *Endpoints) GetCluster() *clusters.Clusters {
 	return e.clusters
+}
+
+func WithSteveCacheConfig(ttl time.Duration, size int) Option {
+	return func(e *Endpoints) {
+		e.SteveCacheConfig = &steveCacheConfig{
+			TTL:  ttl,
+			Size: size,
+		}
+	}
 }
 
 // WithBundle With bundle
