@@ -74,6 +74,7 @@ erda.oap.collector.receiver.prometheus-remote-write@external_metrics:
 erda.oap.collector.receiver.jaeger:
 
 erda.oap.collector.receiver.opentelemetry:
+  metadata_key_of_topic: "KAFKA-TOPIC"
 
 erda.oap.collector.receiver.collector:
   metadata_key_of_topic: "KAFKA-TOPIC"
