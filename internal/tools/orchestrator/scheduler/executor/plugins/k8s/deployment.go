@@ -44,6 +44,40 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+// k8s labels
+const (
+	LabelCoreErdaCloudClusterName    = "core.erda.cloud/cluster-name"
+	LabelCoreErdaCloudOrgId          = "core.erda.cloud/org-id"
+	LabelCoreErdaCloudOrgName        = "core.erda.cloud/org-name"
+	LabelCoreErdaCloudAppId          = "core.erda.cloud/app-id"
+	LabelCoreErdaCloudAppName        = "core.erda.cloud/app-name"
+	LabelCoreErdaCloudProjectId      = "core.erda.cloud/project-id"
+	LabelCoreErdaCloudProjectName    = "core.erda.cloud/project-name"
+	LabelCoreErdaCloudRuntimeId      = "core.erda.cloud/runtime-id"
+	LabelCoreErdaCloudServiceName    = "core.erda.cloud/service-name"
+	LabelCoreErdaCloudWorkSpace      = "core.erda.cloud/workspace"
+	LabelCoreErdaCloudServiceType    = "core.erda.cloud/service-type"
+	LabelCoreErdaCloudServiceGroupId = "core.erda.cloud/servicegroup-id"
+
+	LabelErdaCloudTenantId = "monitor.erda.cloud/tenant-id"
+
+	LabelDiceClusterName = "DICE_CLUSTER_NAME"
+	LabelDiceOrgId       = "DICE_ORG_ID"
+	LabelDiceOrgName     = "DICE_ORG_NAME"
+	LabelDiceAppId       = "DICE_APPLICATION_ID"
+	LabelDiceAppName     = "DICE_APPLICATION_NAME"
+	LabelDiceProjectId   = "DICE_PROJECT_ID"
+	LabelDiceProjectName = "DICE_PROJECT_NAME"
+	LabelDiceRuntimeId   = "DICE_RUNTIME_ID"
+	LabelDiceServiceName = "DICE_SERVICE_NAME"
+	LabelDiceWorkSpace   = "DICE_WORKSPACE"
+	LabelDiceServiceType = "SERVICE_TYPE"
+
+	ServiceEnvPublicHost = "PUBLIC_HOST"
+
+	PublicHostTerminusKey = "terminusKey"
+)
+
 const (
 	// DefaultServiceDNSSuffix k8s service dns fixed suffix
 	DefaultServiceDNSSuffix = "svc.cluster.local"
@@ -726,27 +760,27 @@ func setCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service,
 		return nil
 	}
 	if service != nil {
-		labels["core.erda.cloud/cluster-name"] = service.Labels["DICE_CLUSTER_NAME"]
-		labels["core.erda.cloud/org-id"] = service.Labels["DICE_ORG_ID"]
-		labels["core.erda.cloud/org-name"] = service.Labels["DICE_ORG_NAME"]
-		labels["core.erda.cloud/app-id"] = service.Labels["DICE_APPLICATION_ID"]
-		labels["core.erda.cloud/app-name"] = service.Labels["DICE_APPLICATION_NAME"]
-		labels["core.erda.cloud/project-id"] = service.Labels["DICE_PROJECT_ID"]
-		labels["core.erda.cloud/project-name"] = service.Labels["DICE_PROJECT_NAME"]
-		labels["core.erda.cloud/runtime-id"] = service.Labels["DICE_RUNTIME_ID"]
-		labels["core.erda.cloud/service-name"] = service.Labels["DICE_SERVICE_NAME"]
-		labels["core.erda.cloud/workspace"] = service.Labels["DICE_WORKSPACE"]
-		labels["core.erda.cloud/service-type"] = service.Labels["SERVICE_TYPE"]
+		labels[LabelCoreErdaCloudClusterName] = service.Labels[LabelDiceClusterName]
+		labels[LabelCoreErdaCloudOrgId] = service.Labels[LabelDiceOrgId]
+		labels[LabelCoreErdaCloudOrgName] = service.Labels[LabelDiceOrgName]
+		labels[LabelCoreErdaCloudAppId] = service.Labels[LabelDiceAppId]
+		labels[LabelCoreErdaCloudAppName] = service.Labels[LabelDiceAppName]
+		labels[LabelCoreErdaCloudProjectId] = service.Labels[LabelDiceProjectId]
+		labels[LabelCoreErdaCloudProjectName] = service.Labels[LabelDiceProjectName]
+		labels[LabelCoreErdaCloudRuntimeId] = service.Labels[LabelDiceRuntimeId]
+		labels[LabelCoreErdaCloudServiceName] = service.Labels[LabelDiceServiceName]
+		labels[LabelCoreErdaCloudWorkSpace] = service.Labels[LabelDiceWorkSpace]
+		labels[LabelCoreErdaCloudServiceType] = service.Labels[LabelDiceServiceType]
 		publicHost := make(map[string]string)
-		err := json.Unmarshal([]byte(service.Env["PUBLIC_HOST"]), &publicHost)
+		err := json.Unmarshal([]byte(service.Env[ServiceEnvPublicHost]), &publicHost)
 		if err != nil {
 			return err
 		}
-		labels["monitor.erda.cloud/tenant-id"] = publicHost["terminusKey"]
+		labels[LabelErdaCloudTenantId] = publicHost[PublicHostTerminusKey]
 	}
 
 	if sg != nil {
-		labels["core.erda.cloud/servicegroup-id"] = sg.ID
+		labels[LabelCoreErdaCloudServiceGroupId] = sg.ID
 	}
 	return nil
 }
