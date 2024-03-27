@@ -198,10 +198,14 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 		}
 	}
 
-	err = k.mergeDeployLabels(deployment)
+	oldDeploy, err := k.deploy.Get(deployment.Namespace, deployment.Name)
 	if err != nil {
 		return errors.Errorf("failed to merge deployment labels, name: %s, (%v)", service.Name, err)
 	}
+	// merge Deployment labels
+	k.mergeLabels(deployment.Labels, oldDeploy.Labels)
+	// merge Pod labels
+	k.mergeLabels(deployment.Spec.Template.Labels, oldDeploy.Spec.Template.Labels)
 
 	err = k.deploy.Put(deployment)
 	if err != nil {
@@ -213,27 +217,6 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
-	}
-	return nil
-}
-
-func (k *Kubernetes) mergeDeployLabels(deployment *appsv1.Deployment) error {
-	oldDeploy, err := k.deploy.Get(deployment.Namespace, deployment.Name)
-	if err != nil {
-		return err
-	}
-	for key, value := range oldDeploy.Labels {
-		if _, ok := deployment.Labels[key]; ok {
-			continue
-		}
-		deployment.Labels[key] = value
-	}
-
-	for key, value := range oldDeploy.Spec.Template.Labels {
-		if _, ok := deployment.Spec.Template.Labels[key]; ok {
-			continue
-		}
-		deployment.Spec.Template.Labels[key] = value
 	}
 	return nil
 }

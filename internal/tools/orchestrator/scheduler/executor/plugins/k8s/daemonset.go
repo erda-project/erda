@@ -93,33 +93,25 @@ func (k *Kubernetes) updateDaemonSet(ctx context.Context, ds *appsv1.DaemonSet, 
 			return errors.New(reason)
 		}
 	}
-	err = k.mergeDaemonLabels(ds)
+	oldDaemon, err := k.getDaemonSet(ds.Namespace, ds.Name)
 	if err != nil {
-		logrus.Errorf("failed to merge daemonset labels, name: %s, (%v)", service.Name, err)
 		return errors.Errorf("failed to merge daemonset labels, name: %s, (%v)", service.Name, err)
 	}
+	// merge DaemonSet labels
+	k.mergeLabels(ds.Labels, oldDaemon.Labels)
+	// merge Pod labels
+	k.mergeLabels(ds.Spec.Template.Labels, oldDaemon.Spec.Template.Labels)
+
 	return k.ds.Update(ds)
 }
 
-func (k *Kubernetes) mergeDaemonLabels(ds *appsv1.DaemonSet) error {
-	oldDaemon, err := k.getDaemonSet(ds.Namespace, ds.Name)
-	if err != nil {
-		return err
-	}
-	for key, value := range oldDaemon.Labels {
-		if _, ok := ds.Labels[key]; ok {
+func (k *Kubernetes) mergeLabels(newLabels map[string]string, oldLabels map[string]string) {
+	for key, value := range oldLabels {
+		if _, ok := newLabels[key]; ok {
 			continue
 		}
-		ds.Labels[key] = value
+		newLabels[key] = value
 	}
-
-	for key, value := range oldDaemon.Spec.Template.Labels {
-		if _, ok := ds.Spec.Template.Labels[key]; ok {
-			continue
-		}
-		ds.Spec.Template.Labels[key] = value
-	}
-	return nil
 }
 
 func (k *Kubernetes) getDaemonSetDeltaResource(ctx context.Context, ds *appsv1.DaemonSet) (deltaCPU, deltaMemory int64, err error) {
