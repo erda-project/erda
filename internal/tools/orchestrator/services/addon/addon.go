@@ -3074,7 +3074,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		return err
 	}
 	if len(nacos) > 0 {
-		reg, config, err := a.nacosVersionReference(nacos[0].Version)
+		reg, config, err := a.NacosVersionReference(nacos[0].Version)
 		if err != nil {
 			return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos[0].Version)
 		}
@@ -3109,7 +3109,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		}
 
 		if nacos, ok := dice.AddOns[NacosAddon]; ok {
-			reg, config, err := a.nacosVersionReference(nacos.Options["version"])
+			reg, config, err := a.NacosVersionReference(nacos.Options["version"])
 			if err != nil {
 				return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos.Options["version"])
 			}
@@ -3149,7 +3149,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	return nil
 }
 
-func (a *Addon) nacosVersionReference(version string) (regVersion, confVersion string, err error) {
+func (a *Addon) NacosVersionReference(version string) (regVersion, confVersion string, err error) {
 	regMap, err := GetCache().Get(RegisterCenterAddon)
 	if err != nil {
 		return "", "", err
