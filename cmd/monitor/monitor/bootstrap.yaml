@@ -125,7 +125,7 @@ elasticsearch.index.loader@log:
         - "<org>-{number}"
         - "<org>.<key>-{number}"
 storage-retention-strategy@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
+  _enable: true
   default_ttl: "${LOG_TTL:168h}"
   load_from_database: true
   ttl_reload_interval: "3m"
@@ -251,7 +251,7 @@ elasticsearch.index.loader@metric:
         - "<metric>-<namespace>.<key>"
         - "<metric>-<namespace>"
 storage-retention-strategy@metric:
-  _enable: ${QUERY_METRIC_FROM_ES_ENABLE:false}
+  _enable: true
   default_ttl: "${METRIC_TTL:168h}"
   load_from_database: true
   ttl_reload_interval: "3m"
@@ -423,6 +423,8 @@ org-apis:
   offline_sleep: "${DASHBOARD_OFFLINE_SLEEP:3m}"
 runtime-apis:
 project-apis:
+etcd-election@monitor-config-creator:
+  root_path: "/erda/component-leader/monitor/action/sync-config"
 erda.core.monitor.settings:
 erda.core.monitor.dataview:
 dataview-v1:
