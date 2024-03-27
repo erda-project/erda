@@ -15,6 +15,7 @@
 package k8s
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -102,6 +103,9 @@ func TestNewDeployment(t *testing.T) {
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(k.ClusterInfo), "Get", func(clusterInfo *clusterinfo.ClusterInfo) (map[string]string, error) {
 		return nil, nil
+	})
+	monkey.Patch(json.Unmarshal, func(data []byte, v any) error {
+		return nil
 	})
 	deploy, err := k.newDeployment(service, servicegroup)
 	assert.Equal(t, err, nil)
