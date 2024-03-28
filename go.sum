@@ -547,8 +547,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0 h1:EQciDnbrYxy13PgWoY8AqoxGiPrp
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
-github.com/erda-project/erda-infra v1.0.10-0.20240315012612-91d72a7488c6 h1:Un63r2yvwrDT3eI1Xu2rWRYgA4+fxKv07MvYLKgs7bE=
-github.com/erda-project/erda-infra v1.0.10-0.20240315012612-91d72a7488c6/go.mod h1:jJ3KFuZtY2iRcQhCeEb5GpuO4KNJofCUf9aGsanycRs=
+github.com/erda-project/erda-infra v1.0.10-0.20240327085753-f3a249292aeb h1:2Iq5CdRV+FIkg3Cnz8fSSahAqpvoZoDRvVsi6dRze+c=
+github.com/erda-project/erda-infra v1.0.10-0.20240327085753-f3a249292aeb/go.mod h1:pA8o8S/wTkKHSajuEfTC13pYqTfqa/8VVjtJdRo97U0=
 github.com/erda-project/erda-infra/tools v0.0.0-20231213094429-67b1657b3593 h1:yqny9kVbick5hUsDQJU4yp9rpZBteNf2FKkUxce/2GU=
 github.com/erda-project/erda-infra/tools v0.0.0-20231213094429-67b1657b3593/go.mod h1:F+j8QqEq1dFwrKMK1Ab2+b21ZVTfmMwl16az1+EMmVM=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
@@ -1879,6 +1879,8 @@ github.com/tidwall/tinyqueue v0.0.0-20180302190814-1e39f5511563/go.mod h1:mLqSmt
 github.com/tikv/pd v1.0.8/go.mod h1:v6C/D7ONC49SgjI4jbGnooSizvijaO/bdIm62DVR4tI=
 github.com/tikv/pd v1.1.0-beta.0.20200907080620-6830f5bb92a2 h1:cC5v/gn9NdcmAlpBrWI5x3MiYmQcW2k7EHccg8837p4=
 github.com/tikv/pd v1.1.0-beta.0.20200907080620-6830f5bb92a2/go.mod h1:6OYi62ks7nFIBtWWpOjnngr5LNos4Hvi1BzArCWAlBc=
+github.com/timandy/routine v1.1.2 h1:xoMuS4C/OuqXU9GgZvIan0+e7kWe/CixAmf3A/Y/2NE=
+github.com/timandy/routine v1.1.2/go.mod h1:Kkz3k5wSyvtGVR/9vKz2hKnNBPCWIkakAeON0MwWH4s=
 github.com/tjfoc/gmsm v1.3.2 h1:7JVkAn5bvUJ7HtU08iW6UiD+UTmJTIToHCfeFzkcCxM=
 github.com/tjfoc/gmsm v1.3.2/go.mod h1:HaUcFuY0auTiaHB9MHFGCPx5IaLhTUd2atbCFBQXn9w=
 github.com/tklauser/go-sysconf v0.3.12 h1:0QaGUFOdQaIVdPgfITYzaTegZvdCjmYO52cSFAEVmqU=
