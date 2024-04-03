@@ -56,10 +56,6 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		return nil
 	}
 
-	if ctx.SDK.Pipeline.Snapshot.Secrets == nil {
-		return nil
-	}
-
 	// report cookieJar
 	var pbMeta, err = ctx.SDK.Report.MakePBMeta(map[string]interface{}{
 		apitestsv2.HeaderSetCookie: setCookieJSON,
