@@ -77,6 +77,30 @@ func (db *MSPTenantDB) QueryTenantByProjectID(projectID string) ([]*MSPTenant, e
 	return tenants, nil
 }
 
+func (db *MSPTenantDB) QueryTenantHaveTMC(projectID string) ([]*MSPTenant, error) {
+	var tenants []*MSPTenant
+	err := db.Raw(`select msp.id as id,
+    msp.type as type,
+    msp.related_project_id as related_project_id,
+    msp.created_at as created_at,
+    msp.updated_at as updated_at,
+    msp.is_deleted as is_deleted
+from msp_tenant as msp
+    left join tb_tmc_instance_tenant as tmc on msp.id = tmc.tenant_group
+where msp.is_deleted = 0
+    and msp.related_project_id = ?
+    and tmc.is_deleted = 'N'
+    and tmc.az != ''
+group by msp.id`, projectID).Find(&tenants).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return tenants, nil
+}
+
 func (db *MSPTenantDB) DeleteTenantByTenantID(tenantId string) (*MSPTenant, error) {
 	tenant, err := db.QueryTenant(tenantId)
 	if err != nil {

@@ -167,7 +167,7 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 		if project == nil {
 			continue
 		}
-		if project.Relationship == nil || len(project.Relationship) == 0 {
+		if len(project.Relationship) == 0 {
 			continue
 		}
 
@@ -325,7 +325,7 @@ func (s *projectService) GetProjectInfo(lang i18n.LanguageCodes, id string) (*pb
 		return nil, nil
 	}
 	project := s.convertToProject(projectDB)
-	tenants, err := s.MSPTenantDB.QueryTenantByProjectID(id)
+	tenants, err := s.MSPTenantDB.QueryTenantHaveTMC(id)
 	if err != nil {
 		return nil, err
 	}
