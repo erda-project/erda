@@ -14,6 +14,22 @@
 
 package config
 
+import "github.com/erda-project/erda/pkg/envconf"
+
+type Conf struct {
+	APIProxyPolicyHostPassThrough bool `file:"api_proxy_policy_host_pass_through" default:"true"`
+}
+
+var cfg Conf
+
+func Load() {
+	envconf.MustLoad(&cfg)
+}
+
+func APIProxyPolicyHostPassThrough() bool {
+	return cfg.APIProxyPolicyHostPassThrough
+}
+
 var ServerConf *ServerConfig
 var LogConf *LogConfig
 

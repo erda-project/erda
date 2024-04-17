@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/apipolicy"
 	annotationscommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/common"
+	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/config"
 	gatewayproviders "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers"
 	providerDto "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/dto"
 	mseCommon "github.com/erda-project/erda/internal/tools/orchestrator/hepa/gateway-providers/mse/common"
@@ -42,7 +43,7 @@ func (policy Policy) CreateDefaultConfig(gatewayProvider string, ctx map[string]
 		ClientRespTimeout: 60,
 		ProxyReqTimeout:   60,
 		ProxyRespTimeout:  60,
-		HostPassthrough:   false,
+		HostPassthrough:   config.APIProxyPolicyHostPassThrough(),
 		SSLRedirect:       true,
 	}
 	dto.Switch = false
