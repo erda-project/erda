@@ -51,6 +51,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	config.Load()
 	config.ServerConf = &p.Cfg.Server
 	config.LogConf = &p.Cfg.Log
 	common.InitLogger()
@@ -58,6 +59,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	logrus.Info(version.String())
 	logrus.Infof("server conf: %+v", config.ServerConf)
 	logrus.Infof("log conf: %+v", config.LogConf)
+	logrus.Infof("default api proxy policy host pass through: %v", config.APIProxyPolicyHostPassThrough())
 	orgCache.CacheInit(p.Org)
 	p.HttpServer.GET("/api/gateway/openapi/metrics/*", func(resp http.ResponseWriter, req *http.Request) {
 		path := strings.Replace(req.URL.Path, "/api/gateway/openapi/metrics/charts", "/api/metrics", 1)
