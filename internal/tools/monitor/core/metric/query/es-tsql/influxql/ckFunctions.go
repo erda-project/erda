@@ -210,6 +210,11 @@ var CkAggFunctions = map[string]*SQlAggFuncDefine{
 							}
 							seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
 							nextValue := nextV[id].(float64)
+							// diffps return value should not be negative
+							// erda issue: https://erda.cloud/erda/dop/projects/387/issues/all?id=581160&iterationID=12783&tab=BUG&type=BUG
+							if nextValue < currentV {
+								return 0, true
+							}
 							return (nextValue - currentV) / seconds, true
 						}
 					}
