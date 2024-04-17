@@ -32,7 +32,6 @@ import (
 
 var (
 	defaultBranch = "master"
-	targetBranch  = []string{"master", "Master", "main", "Main", "dev", "Dev", "develop", "Develop", "release", "Release"}
 )
 
 var (
@@ -101,7 +100,7 @@ func NewPersonalMetric(author *gitmodule.Signature, repo *models.Repo) *Personal
 }
 
 func IsValidBranch(s string, prefixes ...string) bool {
-	if !strutil.HasPrefixes(s, prefixes...) {
+	if !strutil.HasPrefixes(strutil.ToLower(s), prefixes...) {
 		return false
 	}
 	return true
@@ -181,7 +180,7 @@ func (c *Collector) IterateRepos(req apistructs.GittarListRepoRequest) ([]*Perso
 		}
 		var allSourceCommit []*gitmodule.Commit
 		for _, branch := range branches {
-			if !IsValidBranch(branch, targetBranch...) {
+			if !IsValidBranch(branch, conf.MetricTargetBranches()...) {
 				continue
 			}
 			SourceCommit, err := gitRepository.GetBranchCommit(branch)

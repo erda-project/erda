@@ -61,6 +61,7 @@ type Conf struct {
 
 	// metrics
 	RefreshPersonalContributorDuration time.Duration `default:"12h" env:"REFRESH_PERSONAL_CONTRIBUTOR_DURATION"`
+	MetricTargetBranches               []string      `env:"METRIC_TARGET_BRANCHES" default:"[\"master\",\"main\",\"dev\",\"develop\",\"release\",\"feature/develop\"]"`
 
 	// AI
 	AIProxyURL      string `env:"AI_PROXY_URL"`
@@ -213,6 +214,10 @@ func DiceProtocol() string {
 
 func RefreshPersonalContributorDuration() time.Duration {
 	return cfg.RefreshPersonalContributorDuration
+}
+
+func MetricTargetBranches() []string {
+	return cfg.MetricTargetBranches
 }
 
 func DiceCluster() string {
