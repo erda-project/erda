@@ -82,6 +82,7 @@ func (db *MSPTenantDB) QueryTenantHaveTMC(projectID string) ([]*MSPTenant, error
 	err := db.Raw(`select msp.id as id,
     msp.type as type,
     msp.related_project_id as related_project_id,
+    msp.related_workspace as related_workspace,
     msp.created_at as created_at,
     msp.updated_at as updated_at,
     msp.is_deleted as is_deleted
