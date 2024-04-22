@@ -230,7 +230,10 @@ jobs:
           rm -fr ./coverage/proto-go
           rm -fr ./coverage/pure-coverage
       - name: Upload coverage to Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
+          echo ${#CODECOV_TOKEN}
           curl -s https://codecov.io/bash | bash -s - -s ./coverage/
       - name: Upload combined coverage reports to artifact
         uses: actions/upload-artifact@v3
