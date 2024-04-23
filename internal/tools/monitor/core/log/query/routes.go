@@ -136,7 +136,7 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 			if req.IsFallBack {
 				sel.Options[storage.IsFallBack] = true
 			}
-			p.logQueryService.tryFillQueryMeta(r.Context(), sel, r.Header.Get("org"))
+			p.logQueryService.tryFillQueryMeta(r.Context(), sel, r.Header.Get("org"), "erda")
 			return sel, nil
 		},
 		func(item *pb.LogItem) error {

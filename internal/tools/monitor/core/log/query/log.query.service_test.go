@@ -130,7 +130,7 @@ func Test_toQuerySelector(t *testing.T) {
 					},
 				},
 				Meta: storage.QueryMeta{
-					OrgNames:              []string{"erda"},
+					OrgNames:              []string{"erda", "erda"},
 					PreferredBufferSize:   10,
 					PreferredIterateStyle: storage.Scroll,
 				},
