@@ -129,10 +129,14 @@ func (c *Collector) RefreshPersonalContributions() error {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
-	contributions, err := c.IterateRepos(apistructs.GittarListRepoRequest{
+	req := apistructs.GittarListRepoRequest{
 		Start: &start,
 		End:   &end,
-	})
+	}
+	if len(conf.PersonalContributionOrgIDWhiteList()) > 0 {
+		req.OrgIDs = conf.PersonalContributionOrgIDWhiteList()
+	}
+	contributions, err := c.IterateRepos(req)
 	if err != nil {
 		return err
 	}
