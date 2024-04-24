@@ -211,7 +211,6 @@ func (c *Client) loadClusterInfo(ctx context.Context) (*KubernetesClusterInfo, e
 	var secret *corev1.Secret
 	if len(serviceAccount.Secrets) != 0 {
 		secretName := serviceAccount.Secrets[0].Name
-		logrus.Infof("Loading auth info from secret %s", secretName)
 		secret, err = k.ClientSet.CoreV1().Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
