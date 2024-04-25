@@ -16,14 +16,13 @@ package browser
 
 import (
 	"bytes"
-	"errors"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/varstr/uaparser"
 
 	"github.com/erda-project/erda/internal/apps/msp/apm/browser/timing"
@@ -32,16 +31,12 @@ import (
 
 var (
 	other = "其他"
-	json  = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 const defaultLocation = "局域网" // LAN
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) (err error) {
-	parts := strings.SplitN(string(value), ",", 6)
-	if len(parts) < 5 {
-		return errors.New("invalid analytics event")
-	}
+	parts := strings.Split(string(value), ",")
 	metric := &metrics.Metric{
 		Tags:   map[string]string{},
 		Fields: map[string]interface{}{},
@@ -57,6 +52,17 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		return fmt.Errorf("analytics event error : invalid date %v", err)
 	}
 
+	// Set parsed attributes as tags in the `metric`.
+	if len(parts) > 6 && len(parts[6]) > 0 {
+		attributes, err := url.ParseQuery(parts[6])
+		if err != nil {
+			return fmt.Errorf("analytics query attributes error: %v", err)
+		}
+		for k, v := range attributes {
+			metric.Tags[k] = v[0]
+		}
+	}
+
 	metric.Timestamp = t * int64(time.Millisecond)
 	metric.Tags["_meta"] = "true"
 	metric.Tags["_metric_scope"] = "micro_service"
@@ -65,8 +71,11 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	metric.Tags["cid"] = parts[1]
 	metric.Tags["uid"] = parts[2]
 	metric.Tags["ip"] = parts[3]
-	if len(parts) > 5 {
-		metric.Tags["ai"] = parts[5]
+	if aiVal := parts[5]; len(parts) > 5 {
+		ai, err := base64.StdEncoding.DecodeString(aiVal)
+		if err == nil {
+			metric.Tags["ai"] = string(ai)
+		}
 	}
 	dh := data.Get("dh")
 	if len(dh) > 0 {

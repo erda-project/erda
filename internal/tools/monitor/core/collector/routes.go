@@ -16,6 +16,7 @@ package collector
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"hash/adler32"
 	"io"
@@ -127,6 +128,14 @@ func (p *provider) collectAnalytics(ctx echo.Context) error {
 		ip = ctx.RealIP()
 	}
 
+	attributes := make(url.Values)
+	if val := params.Get("attribute"); len(val) > 0 {
+		attributes, err = url.ParseQuery(val)
+		if err != nil {
+			return ctx.NoContent(http.StatusBadRequest)
+		}
+	}
+
 	// Data from Client
 	for _, v := range params["data"] {
 		qs, err := url.ParseQuery(v)
@@ -140,28 +149,14 @@ func (p *provider) collectAnalytics(ctx echo.Context) error {
 			qs.Set("ua", ua)
 		}
 
-		// parse attributes
-		for _, attributes := range params["attribute"] {
-			attributeQs, err := url.ParseQuery(attributes)
-			if err != nil {
-				return ctx.NoContent(http.StatusBadRequest)
-			}
-			for k, attribute := range attributeQs {
-				if len(attribute) != 0 {
-					qs.Add(k, attribute[0])
-				}
-			}
+		var aiEncoded string
+		if len(ai) > 0 {
+			aiEncoded = base64.StdEncoding.EncodeToString([]byte(ai))
 		}
 
-		var message string
-		if len(ai) > 0 {
-			message = fmt.Sprintf(`%s,%s,%s,%s,%s,%s`,
-				ak, cid, uid, ip, qs.Encode(), ai)
-		} else {
-			message = fmt.Sprintf(`%s,%s,%s,%s,%s`,
-				ak, cid, uid, ip, qs.Encode())
-		}
-		_ = p.send("analytics", []byte(message))
+		_ = p.send("analytics", []byte(strings.Join([]string{
+			ak, cid, uid, ip, qs.Encode(), aiEncoded, attributes.Encode(),
+		}, ",")))
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
