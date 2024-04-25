@@ -139,6 +139,20 @@ func (p *provider) collectAnalytics(ctx echo.Context) error {
 			ua := ctx.Request().Header.Get("User-Agent")
 			qs.Set("ua", ua)
 		}
+
+		// parse attributes
+		for _, attributes := range params["attribute"] {
+			attributeQs, err := url.ParseQuery(attributes)
+			if err != nil {
+				return ctx.NoContent(http.StatusBadRequest)
+			}
+			for k, attribute := range attributeQs {
+				if len(attribute) != 0 {
+					qs.Add(k, attribute[0])
+				}
+			}
+		}
+
 		var message string
 		if len(ai) > 0 {
 			message = fmt.Sprintf(`%s,%s,%s,%s,%s,%s`,
