@@ -35,6 +35,14 @@ var (
 
 const defaultLocation = "局域网" // LAN
 
+// invoke
+// Fixed parts:
+//   - parts[0-4]: tk, cid, uid, ip, data
+//
+// Optional parts:
+//   - parts[5] ai: To ensure backward compatibility of the outdated field 'ai',
+//     it is base64 encoded, as per the previous code logic, which might include commas.
+//   - parts[6] attribute
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) (err error) {
 	parts := strings.Split(string(value), ",")
 	metric := &metrics.Metric{
