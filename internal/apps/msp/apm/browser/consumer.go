@@ -71,8 +71,8 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	metric.Tags["cid"] = parts[1]
 	metric.Tags["uid"] = parts[2]
 	metric.Tags["ip"] = parts[3]
-	if aiVal := parts[5]; len(parts) > 5 {
-		ai, err := base64.StdEncoding.DecodeString(aiVal)
+	if len(parts) > 5 && len(parts[5]) > 0 {
+		ai, err := base64.StdEncoding.DecodeString(parts[5])
 		if err == nil {
 			metric.Tags["ai"] = string(ai)
 		}
