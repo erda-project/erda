@@ -46,7 +46,7 @@ type config struct {
 	CookieHTTPOnly    bool          `file:"cookie_http_only" default:"false" desc:"indicates if CSRF cookie is HTTP only. optional."`
 
 	// CookieSameSite default set to 2, which is `lax`, more options see https://github.com/golang/go/blob/619b419a4b1506bde1aa7e833898f2f67fd0e83e/src/net/http/cookie.go#L52-L57
-	CookieSameSite http.SameSite `file:"cookie_same_site" default:"2" desc:"indicates if CSRF cookie is SameSite. optional."`
+	CookieSameSite int `file:"cookie_same_site" default:"2" desc:"indicates if CSRF cookie is SameSite. optional."`
 }
 
 type (
@@ -253,7 +253,7 @@ func (p *provider) setCSRFCookie(rw http.ResponseWriter, r *http.Request, token 
 	cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
 	cookie.Secure = p.getScheme(r) == "https"
 	cookie.HttpOnly = p.Cfg.CookieHTTPOnly
-	cookie.SameSite = p.Cfg.CookieSameSite
+	cookie.SameSite = http.SameSite(p.Cfg.CookieSameSite)
 	http.SetCookie(rw, cookie)
 	return token
 }
