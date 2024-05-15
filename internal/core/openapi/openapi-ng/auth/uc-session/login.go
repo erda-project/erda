@@ -65,14 +65,19 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
-
-	http.SetCookie(rw, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     p.Cfg.SessionCookieName,
 		Value:    sessionID,
 		Domain:   p.getSessionDomain(r.Host),
 		HttpOnly: true,
 		Secure:   scheme == "https",
-	})
+		SameSite: http.SameSite(p.Cfg.CookieSameSite),
+	}
+	if p.Cfg.CookieMaxAge > 0 {
+		cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
+	}
+
+	http.SetCookie(rw, cookie)
 	http.Redirect(rw, r, referer, http.StatusFound)
 }
 
