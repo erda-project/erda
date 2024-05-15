@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis"
 
@@ -29,13 +30,16 @@ import (
 )
 
 type config struct {
-	Weight               int64    `file:"weight" default:"100"`
-	RedirectAfterLogin   string   `file:"redirect_after_login"`
-	ClientID             string   `file:"client_id"`
-	UCAddr               string   `file:"uc_addr"`
-	UCRedirectAddrs      []string `file:"uc_redirect_addrs"`
-	SessionCookieName    string   `file:"session_cookie_name"`
-	SessionCookieDomains []string `file:"session_cookie_domain"`
+	Weight               int64         `file:"weight" default:"100"`
+	RedirectAfterLogin   string        `file:"redirect_after_login"`
+	ClientID             string        `file:"client_id"`
+	UCAddr               string        `file:"uc_addr"`
+	UCRedirectAddrs      []string      `file:"uc_redirect_addrs"`
+	SessionCookieName    string        `file:"session_cookie_name"`
+	SessionCookieDomains []string      `file:"session_cookie_domain"`
+	CookieMaxAge         time.Duration `file:"cookie_max_age" default:"24h" desc:"max age of the cookie. optional."`
+	// CookieSameSite default set to 2, which is `lax`, more options see https://github.com/golang/go/blob/619b419a4b1506bde1aa7e833898f2f67fd0e83e/src/net/http/cookie.go#L52-L57
+	CookieSameSite int `file:"cookie_same_site" default:"2" desc:"indicates if cookie is SameSite. optional."`
 }
 
 // +provider
