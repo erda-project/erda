@@ -59,15 +59,16 @@ func (agent *Agent) Execute(r io.Reader) {
 		return
 	}
 
+	defer func() {
+		// defer write flag end line for tail
+		agent.writeEndFlagLine()
+	}()
+
 	// 2. prepare
 	agent.prepare()
 	if len(agent.Errs) > 0 {
 		return
 	}
-	defer func() {
-		// defer write flag end line for tail
-		agent.writeEndFlagLine()
-	}()
 
 	// 3. restore / store
 	agent.restore()
