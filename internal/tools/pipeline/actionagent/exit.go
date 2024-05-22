@@ -46,11 +46,15 @@ func (agent *Agent) Exit() {
 }
 
 func (agent *Agent) writeEndFlagLine() {
-	if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStdout, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
-		logrus.Println("stdout append flag err:", err)
+	if agent.EasyUse.RunMultiStdout != nil {
+		if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStdout, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
+			logrus.Println("stdout append flag err:", err)
+		}
 	}
-	if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStderr, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
-		logrus.Println("stderr append flag err:", err)
+	if agent.EasyUse.RunMultiStderr != nil {
+		if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStderr, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
+			logrus.Println("stderr append flag err:", err)
+		}
 	}
 }
 
