@@ -15,21 +15,21 @@
 package config
 
 type Config struct {
-	Debug                  bool   `default:"false" desc:"enable debug logging"`
-	CollectClusterInfo     bool   `default:"true" desc:"enable collect cluster info"`
-	CollectSource          string `default:"secret" desc:"collect source, secret or file"`
-	ServiceAccountName     string `default:"cluster-agent" desc:"component service account name"`
-	LeaderElection         bool   `default:"true" desc:"leader election"`
-	LeaderElectionID       string `default:"cluster-agent.erda.cloud" desc:"leader election id"`
-	LeasesResourceLockType string `default:"leases" desc:"leases resource lock type"`
-	LeaseDuration          int    `desc:"lease duration"`
-	RenewDeadline          int    `desc:"renew deadline"`
-	RetryPeriod            int    `desc:"retry period"`
-	ConRetryInterval       int    `desc:"agent connection retry interval"`
-	ClusterManagerEndpoint string `desc:"cluster manager endpoint"`
-	ClusterKey             string `desc:"cluster key"`
-	ErdaNamespace          string `desc:"erda namespace"`
-	ClusterAccessKey       string `desc:"cluster access key, if specified will doesn't start watcher"`
-	K8SApiServerAddr       string `desc:"kube-apiserver address in cluster"`
-	TokenExpirationSeconds string `desc:"token expiration seconds"`
+	Debug                     bool   `default:"false" desc:"enable debug logging"`
+	CollectClusterInfo        bool   `default:"true" desc:"enable collect cluster info"`
+	ServiceAccount            string `default:"cluster-agent" desc:"component service account name"`
+	ServiceAccountTokenSecret string `default:"erda-cluster-agent-token" desc:"erda cluster agent token"`
+	LeaderElection            bool   `default:"true" desc:"leader election"`
+	LeaderElectionID          string `default:"cluster-agent.erda.cloud" desc:"leader election id"`
+	LeasesResourceLockType    string `default:"leases" desc:"leases resource lock type"`
+	LeaseDuration             int    `desc:"lease duration"`
+	RenewDeadline             int    `desc:"renew deadline"`
+	RetryPeriod               int    `desc:"retry period"`
+	ConRetryInterval          int    `desc:"agent connection retry interval"`
+	ClusterManagerEndpoint    string `desc:"cluster manager endpoint"`
+	ClusterKey                string `desc:"cluster key"`
+	ErdaNamespace             string `desc:"erda namespace"`
+	ClusterAccessKey          string `desc:"cluster access key, if specified will doesn't start watcher"`
+	K8SApiServerAddr          string `desc:"kube-apiserver address in cluster"`
+	TokenExpirationSeconds    string `desc:"token expiration seconds"`
 }

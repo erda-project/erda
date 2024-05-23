@@ -15,6 +15,7 @@
 package client
 
 import (
+	"context"
 	"testing"
 
 	"bou.ke/monkey"
@@ -57,9 +58,8 @@ func Test_getClusterInfo(t *testing.T) {
 	)
 	c := New(WithConfig(&config.Config{
 		CollectClusterInfo: true,
-		CollectSource:      collectSourceSecret,
-		ServiceAccountName: fakeSa,
+		ServiceAccount:     fakeSa,
 	}))
-	_, err := c.getClusterInfo()
+	_, err := c.loadClusterInfo(context.Background())
 	assert.NoError(t, err)
 }

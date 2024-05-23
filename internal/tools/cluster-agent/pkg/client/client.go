@@ -19,11 +19,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,9 +29,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
-	authenticationv1 "k8s.io/api/authentication/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/cluster-agent/config"
@@ -42,19 +42,24 @@ import (
 )
 
 const (
-	collectSourceSecret = "secret"
-	collectSourceFile   = "file"
-)
-
-const (
 	caCrtKey    = "ca.crt"
 	tokenSecKey = "token"
 )
 
-const (
-	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-)
+var ServiceAccountTokenNotReady = errors.New("service account token not ready")
+
+var defaultRetry = wait.Backoff{
+	Steps:    5,
+	Duration: 200 * time.Millisecond,
+	Factor:   2.0,
+	Jitter:   0.1,
+}
+
+type KubernetesClusterInfo struct {
+	Address string `json:"address"`
+	Token   string `json:"token"`
+	CACert  string `json:"caCert"`
+}
 
 type Option func(*Client)
 
@@ -95,7 +100,7 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 
 	if c.cfg.CollectClusterInfo {
-		clusterInfo, err := c.getClusterInfo()
+		clusterInfo, err := c.loadClusterInfo(ctx)
 		if err != nil {
 			return err
 		}
@@ -182,84 +187,91 @@ func (c *Client) IsConnected() bool {
 	return c.connected
 }
 
-func (c *Client) getClusterInfo() (map[string]interface{}, error) {
-	var (
-		caData, token []byte
-		err           error
-	)
-
-	switch c.cfg.CollectSource {
-	case collectSourceFile:
-		caData, err = ioutil.ReadFile(rootCAFile)
-		if err != nil {
-			return nil, errors.Wrapf(err, "reading %s", rootCAFile)
-		}
-
-		token, err = ioutil.ReadFile(tokenFile)
-		if err != nil {
-			return nil, errors.Wrapf(err, "reading %s", tokenFile)
-		}
-	case collectSourceSecret:
-		k, err := k8sclient.NewForInCluster()
-		if err != nil {
-			return nil, err
-		}
-		sa, err := k.ClientSet.CoreV1().ServiceAccounts(c.cfg.ErdaNamespace).Get(context.Background(),
-			c.cfg.ServiceAccountName, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		if len(sa.Secrets) == 0 {
-			expirationSeconds := int64(999999 * time.Hour / time.Second)
-
-			if c.cfg.TokenExpirationSeconds != "" {
-				expirationSeconds, err = strconv.ParseInt(c.cfg.TokenExpirationSeconds, 10, 64)
-				if err != nil {
-					return nil, errors.Wrapf(err, "illegal expiration seconds %s",
-						c.cfg.TokenExpirationSeconds)
-				}
-			}
-
-			resp, err := k.ClientSet.CoreV1().ServiceAccounts(c.cfg.ErdaNamespace).CreateToken(context.Background(),
-				c.cfg.ServiceAccountName, &authenticationv1.TokenRequest{
-					Spec: authenticationv1.TokenRequestSpec{
-						ExpirationSeconds: pointer.Int64(expirationSeconds),
-					},
-				}, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-
-			logrus.Debugf("create token for serviceaccount %s, token: %s", c.cfg.ServiceAccountName, resp.Status.Token)
-
-			token = []byte(resp.Status.Token)
-			caData, err = ioutil.ReadFile(rootCAFile)
-			if err != nil {
-				return nil, errors.Wrapf(err, "reading %s", rootCAFile)
-			}
-		} else {
-			saSecret, err := k.ClientSet.CoreV1().Secrets(c.cfg.ErdaNamespace).Get(context.Background(),
-				sa.Secrets[0].Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
-			}
-
-			caData = saSecret.Data[caCrtKey]
-			token = saSecret.Data[tokenSecKey]
-		}
-	default:
-		return nil, errors.Errorf("collector source %s is illegal", c.cfg.CollectSource)
+func (c *Client) loadClusterInfo(ctx context.Context) (*KubernetesClusterInfo, error) {
+	clusterInfo := &KubernetesClusterInfo{
+		Address: c.cfg.K8SApiServerAddr,
 	}
 
-	logrus.Debugf("load cluster info, apiserver addr: %s, token: %s, cacert: %s", c.cfg.K8SApiServerAddr,
-		string(token), base64.StdEncoding.EncodeToString(caData))
+	k, err := k8sclient.NewForInCluster()
+	if err != nil {
+		return nil, err
+	}
 
-	return map[string]interface{}{
-		"address": c.cfg.K8SApiServerAddr,
-		"token":   strings.TrimSpace(string(token)),
-		"caCert":  base64.StdEncoding.EncodeToString(caData),
-	}, nil
+	ns := c.cfg.ErdaNamespace
+	serviceAccountName := c.cfg.ServiceAccount
+	tokenSecretName := c.cfg.ServiceAccountTokenSecret
+
+	// Retrieve the service account
+	serviceAccount, err := k.ClientSet.CoreV1().ServiceAccounts(ns).Get(ctx, serviceAccountName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine which secret to use based on available secrets in the service account
+	var secret *corev1.Secret
+	if len(serviceAccount.Secrets) != 0 {
+		secretName := serviceAccount.Secrets[0].Name
+		secret, err = k.ClientSet.CoreV1().Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Create or retrieve the service account token secret
+		secret, err = k.ClientSet.CoreV1().Secrets(ns).Get(ctx, tokenSecretName, metav1.GetOptions{})
+		if err != nil {
+			if !k8serrors.IsNotFound(err) {
+				return nil, err
+			}
+			// Create the token secret if it does not exist
+			_, err = k.ClientSet.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: tokenSecretName,
+					Annotations: map[string]string{
+						corev1.ServiceAccountNameKey: serviceAccountName,
+					},
+				},
+				Type: corev1.SecretTypeServiceAccountToken,
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+
+			if err = retry.OnError(defaultRetry, func(err error) bool {
+				return errors.Is(err, ServiceAccountTokenNotReady)
+			}, func() error {
+				gotSecret, err := k.ClientSet.CoreV1().Secrets(ns).Get(ctx, tokenSecretName, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				if len(gotSecret.Data) != 0 {
+					secret = gotSecret
+					return nil
+				}
+				return ServiceAccountTokenNotReady
+			}); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	logrus.Infof("gonna to load data from secret %s", secret.Name)
+
+	// Retrieve and process CA certificate
+	caData, ok := secret.Data[caCrtKey]
+	if !ok {
+		return nil, fmt.Errorf("failed to load CA data from secret %s", secret.Name)
+	}
+	clusterInfo.CACert = base64.StdEncoding.EncodeToString(caData)
+
+	// Retrieve and process token
+	token, ok := secret.Data[tokenSecKey]
+	if !ok {
+		return nil, fmt.Errorf("failed to load token from secret %s", secret.Name)
+	}
+	clusterInfo.Token = strings.TrimSpace(string(token))
+
+	logrus.Debugf("loaded cluster info: %#+v", clusterInfo)
+	return clusterInfo, nil
 }
 
 func parseDialerEndpoint(endpoint string) (string, error) {

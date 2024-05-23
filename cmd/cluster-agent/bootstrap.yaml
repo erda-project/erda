@@ -1,7 +1,7 @@
 cluster-agent:
   debug: ${DEBUG:false}
-  collectSource: "${COLLECT_SOURCE:secret}"
-  serviceAccountName: "${SERVICE_ACCOUNT_NAME:cluster-agent}"
+  serviceAccount: "${SERVICE_ACCOUNT:cluster-agent}"
+  serviceAccountTokenSecret: "${SERVICE_ACCOUNT_TOKEN_SECRET:erda-cluster-agent-token}"
   leaderElection: "${LEADER_ELECTION:true}"
   leaderElectionID: "${LEADER_ELECTION_ID:cluster-agent.erda.cloud}"
   leasesResourceLockType: "${LEASES_RESOURCE_LOCK_TYPE:leases}"
