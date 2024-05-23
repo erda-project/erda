@@ -107,6 +107,7 @@ var (
 	filterOperatorRel = map[string]string{
 		"any":      OperatorTypeNone,
 		"eq":       OperatorTypeOne,
+		"ieq":      OperatorTypeOne,
 		"false":    OperatorTypeNone,
 		"in":       OperatorTypeMore,
 		"notIn":    OperatorTypeMore,

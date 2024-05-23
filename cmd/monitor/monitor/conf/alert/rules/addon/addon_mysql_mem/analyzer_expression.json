@@ -8,6 +8,11 @@
         "value":"$org_name"
       },
       {
+        "operator":"ieq",
+        "tag":"workspace",
+        "value":"$workspace"
+      },
+      {
         "operator":"in",
         "tag":"addon_type",
         "value":[
