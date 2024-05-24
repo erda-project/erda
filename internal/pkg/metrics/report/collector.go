@@ -70,7 +70,7 @@ func (c *ReportClient) Send(in []*Metric) error {
 		}
 		requestBuffer, err := c.serialize(group)
 		if err != nil {
-			continue
+			return fmt.Errorf("failed to serialize metrics, name: %s, error: %v", group.Name, err)
 		}
 		for i := 0; i < c.CFG.ReportConfig.Collector.Retry; i++ {
 			if err = c.write(group.Name, requestBuffer); err == nil {
