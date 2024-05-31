@@ -34,34 +34,50 @@ const (
 	LabelDiceServiceName = "DICE_SERVICE_NAME"
 	LabelDiceWorkSpace   = "DICE_WORKSPACE"
 	LabelDiceServiceType = "SERVICE_TYPE"
+	LabelServiceGroupId  = "servicegroup-id"
 
 	ServiceEnvPublicHost = "PUBLIC_HOST"
 
 	PublicHostTerminusKey = "terminusKey"
 )
 
+var labelMappings = map[string]string{
+	LabelCoreErdaCloudClusterName: LabelDiceClusterName,
+	LabelCoreErdaCloudOrgId:       LabelDiceOrgId,
+	LabelCoreErdaCloudOrgName:     LabelDiceOrgName,
+	LabelCoreErdaCloudAppId:       LabelDiceAppId,
+	LabelCoreErdaCloudAppName:     LabelDiceAppName,
+	LabelCoreErdaCloudProjectId:   LabelDiceProjectId,
+	LabelCoreErdaCloudProjectName: LabelDiceProjectName,
+	LabelCoreErdaCloudRuntimeId:   LabelDiceRuntimeId,
+	LabelCoreErdaCloudServiceName: LabelDiceServiceName,
+	LabelCoreErdaCloudWorkSpace:   LabelDiceWorkSpace,
+	LabelCoreErdaCloudServiceType: LabelDiceServiceType,
+}
+
 func SetCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
 	if labels == nil {
 		return nil
 	}
 	if service != nil {
-		labels[LabelCoreErdaCloudClusterName] = service.Labels[LabelDiceClusterName]
-		labels[LabelCoreErdaCloudOrgId] = service.Labels[LabelDiceOrgId]
-		labels[LabelCoreErdaCloudOrgName] = service.Labels[LabelDiceOrgName]
-		labels[LabelCoreErdaCloudAppId] = service.Labels[LabelDiceAppId]
-		labels[LabelCoreErdaCloudAppName] = service.Labels[LabelDiceAppName]
-		labels[LabelCoreErdaCloudProjectId] = service.Labels[LabelDiceProjectId]
-		labels[LabelCoreErdaCloudProjectName] = service.Labels[LabelDiceProjectName]
-		labels[LabelCoreErdaCloudRuntimeId] = service.Labels[LabelDiceRuntimeId]
-		labels[LabelCoreErdaCloudServiceName] = service.Labels[LabelDiceServiceName]
-		labels[LabelCoreErdaCloudWorkSpace] = service.Labels[LabelDiceWorkSpace]
-		labels[LabelCoreErdaCloudServiceType] = service.Labels[LabelDiceServiceType]
-		publicHost := make(map[string]string)
-		err := json.Unmarshal([]byte(service.Env[ServiceEnvPublicHost]), &publicHost)
-		if err != nil {
-			return err
+		for coreLabel, diceLabel := range labelMappings {
+			if value, exists := service.Labels[diceLabel]; exists {
+				labels[coreLabel] = value
+			}
 		}
-		labels[LabelErdaCloudTenantId] = publicHost[PublicHostTerminusKey]
+		if publicHost, exists := service.Env[ServiceEnvPublicHost]; exists {
+			var publicHostMap map[string]string
+			if err := json.Unmarshal([]byte(publicHost), &publicHostMap); err != nil {
+				return err
+			}
+			if terminusKey, exists := publicHostMap[PublicHostTerminusKey]; exists {
+				labels[LabelErdaCloudTenantId] = terminusKey
+			}
+		}
+	}
+
+	if sgId, exists := labels[LabelServiceGroupId]; exists {
+		labels[LabelCoreErdaCloudServiceGroupId] = sgId
 	}
 
 	if sg != nil {
