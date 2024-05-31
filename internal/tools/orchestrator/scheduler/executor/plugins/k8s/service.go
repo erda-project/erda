@@ -30,6 +30,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/labels"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -152,7 +153,7 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 		}
 	}
 
-	err := setCoreErdaLabels(nil, service, k8sService.Labels)
+	err := labels.SetCoreErdaLabels(nil, service, k8sService.Labels)
 	if err != nil {
 		logrus.Error(err)
 		return k8sService
@@ -346,7 +347,7 @@ func (k *Kubernetes) UpdateK8sService(k8sService *apiv1.Service, service *apistr
 
 	setServiceLabelSelector(k8sService, selectors)
 	k8sService.Spec.Ports = newPorts
-	err := setCoreErdaLabels(nil, service, k8sService.Labels)
+	err := labels.SetCoreErdaLabels(nil, service, k8sService.Labels)
 	if err != nil {
 		return fmt.Errorf("can't set erda labels")
 	}

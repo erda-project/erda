@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/labels"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
@@ -300,12 +301,12 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 
 	SetPodAnnotationsBaseContainerEnvs(daemonset.Spec.Template.Spec.Containers[0], daemonset.Spec.Template.Annotations)
 
-	err = setCoreErdaLabels(sg, service, daemonset.Labels)
+	err = labels.SetCoreErdaLabels(sg, service, daemonset.Labels)
 	if err != nil {
 		logrus.Errorf("daemonset can't set core/erda labels, err: %v", err)
 		return nil, err
 	}
-	err = setCoreErdaLabels(sg, service, daemonset.Spec.Template.Labels)
+	err = labels.SetCoreErdaLabels(sg, service, daemonset.Spec.Template.Labels)
 	if err != nil {
 		logrus.Errorf("daemonset template can't set core/erda labels, err: %v", err)
 		return nil, err
