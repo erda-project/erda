@@ -49,7 +49,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/cloud-on-k8s/v2 v2.0.0-20221101080201-221fa719f43b
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v1.0.10-0.20240315012612-91d72a7488c6
+	github.com/erda-project/erda-infra v1.0.10-0.20240527061950-2e7f5ff8062d
 	github.com/erda-project/erda-infra/tools v0.0.0-20231213094429-67b1657b3593
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v1.4.0
@@ -416,6 +416,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tikv/pd v1.1.0-beta.0.20200907080620-6830f5bb92a2 // indirect
+	github.com/timandy/routine v1.1.2 // indirect
 	github.com/tjfoc/gmsm v1.3.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect

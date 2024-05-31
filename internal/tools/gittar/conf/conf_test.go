@@ -12,21 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs
+package conf
 
-type RegisterLicenseRequest struct {
-	Scope   int64  `json:"scope"`
-	License string `json:"license"`
-}
+import (
+	"testing"
 
-type RegisterLicenseResponse struct {
-	Id int64 `json:"id"`
-}
+	"github.com/stretchr/testify/assert"
+)
 
-type DeleteLicenseRequest struct {
-	Scope int64 `json:"scope"`
-}
-
-type DeleteLicenseResponse struct {
-	Msg string `json:"msg"`
+func TestLoad(t *testing.T) {
+	Load()
+	branches := MetricTargetBranches()
+	assert.Equal(t, 6, len(branches))
+	assert.Equal(t, "master", branches[0])
+	assert.Equal(t, "feature/develop", branches[5])
 }
