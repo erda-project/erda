@@ -1,6 +1,12 @@
-#FROM --platform=$TARGETPLATFORM golang:1.19-bullseye
+FROM bitnami/git:latest AS git-from
+
 FROM --platform=$TARGETPLATFORM golang:1.19-bookworm
 ARG TARGETPLATFORM
+
+# fetch latest git (which is not available in debian stable repo now) at first for later use
+RUN apt remove -yq git
+COPY --from=git-from /opt/bitnami/git /opt/bitnami/git
+ENV PATH="/opt/bitnami/git/bin:${PATH}"
 
 # set timezone to CST
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
