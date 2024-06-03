@@ -13,7 +13,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t ${image} -f Dockerfile
 archs=(amd64 arm64)
 for arch in ${archs[@]}; do
     # generate Software Bill Of Materials (SBOM)
-    docker sbom ${image} --platform linux/${arch} --output sbom-${arch}.txt
+    docker scout sbom ${image} --format list --platform linux/${arch} --output sbom-${arch}.txt
 done
 
 echo "action meta: erda-base=$image"
