@@ -3171,7 +3171,6 @@ func (a *Addon) NacosVersionReference(version string) (regVersion, confVersion s
 		if err != nil {
 			return "", "", err
 		}
-		fmt.Printf("addon %s,%s", dice.AddOns[NacosAddon].Options["version"], version)
 		if addOn, ok := dice.AddOns[NacosAddon]; ok && addOn.Options["version"] == version {
 			spec, err := a.parseAddonSpec(r)
 			if err != nil {
