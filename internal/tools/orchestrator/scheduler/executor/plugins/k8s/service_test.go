@@ -15,7 +15,6 @@
 package k8s
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -146,10 +145,6 @@ func Test_newService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := newService(tt.args.service, tt.args.labels)
 			if d := cmp.Diff(got, tt.want); d != "" {
-				gotBytes, _ := json.Marshal(got)
-				wantBytes, _ := json.Marshal(tt.want)
-				t.Logf("%s\n", string(gotBytes))
-				t.Logf("%s\n", string(wantBytes))
 				t.Errorf("newService() mismatch (-want +got):\n%s", d)
 			}
 		})
