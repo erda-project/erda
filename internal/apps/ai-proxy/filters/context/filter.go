@@ -32,6 +32,7 @@ import (
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	openai_v1_models "github.com/erda-project/erda/internal/apps/ai-proxy/filters/openai-v1-models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -114,6 +115,8 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	// get from session if exists
 	headerSessionId := infor.Header().Get(vars.XAIProxySessionId)
 	headerModelId := infor.Header().Get(vars.XAIProxyModelId)
+	var allModelIDsByPriority []string
+	allModelIDsByPriority = append(allModelIDsByPriority, headerModelId)
 	if headerSessionId != "" && headerSessionId != vars.UIValueUndefined {
 		_session, err := q.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: headerSessionId})
 		if err != nil {
@@ -123,27 +126,39 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		}
 		session = _session
 		if session.ModelId != "" {
-			sessionModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: session.ModelId})
-			if err != nil {
-				l.Errorf("failed to get model, id: %s, err: %v", session.ModelId, err)
-				http.Error(w, "ModelId is invalid", http.StatusBadRequest)
-				return reverseproxy.Intercept, err
+			allModelIDsByPriority = append(allModelIDsByPriority, session.ModelId)
+		}
+	}
+	allModelIDsByPriority = strutil.DedupSlice(allModelIDsByPriority, true)
+	// if no model id found, respect 'model' field in request body
+	if len(allModelIDsByPriority) == 0 {
+		type Model struct {
+			ModelID string `json:"model"`
+		}
+		var m Model
+		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&m); err == nil {
+			if m.ModelID != "" {
+				// parse truly model uuid, which is generated at api `/v1/models`/, see: internal/apps/ai-proxy/filters/openai-v1-models/filter.go#generateModelDisplayName
+				uuid := openai_v1_models.ParseModelUUIDFromDisplayName(m.ModelID)
+				if uuid != "" {
+					allModelIDsByPriority = append(allModelIDsByPriority, uuid)
+				}
 			}
-			model = sessionModel
 		}
-	} else if headerModelId != "" {
-		// get from model header
-		if headerModelId == "" {
-			http.Error(w, fmt.Sprintf("header %s is required", vars.XAIProxyModelId), http.StatusBadRequest)
-			return reverseproxy.Intercept, nil
+	}
+	for _, modelID := range allModelIDsByPriority {
+		if modelID == "" {
+			continue
 		}
-		headerModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: headerModelId})
+		_model, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: modelID})
+		// do not skip error, because modelId must be valid or be empty
 		if err != nil {
-			l.Errorf("failed to get model, id: %s, err: %v", headerModelId, err)
-			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
+			l.Errorf("failed to get model, id: %s, err: %v", modelID, err)
+			http.Error(w, fmt.Sprintf("ModelId %s is invalid", modelID), http.StatusBadRequest)
 			return reverseproxy.Intercept, err
 		}
-		model = headerModel
+		model = _model
+		break
 	}
 	if model == nil {
 		// get client default model

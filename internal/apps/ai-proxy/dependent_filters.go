@@ -32,6 +32,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/initialize"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/log-http"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/openai-director"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/openai-v1-models"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/prometheus-collector"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/rate-limit"
 )
