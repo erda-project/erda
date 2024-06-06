@@ -428,14 +428,6 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *pipelinepb.PipelineCreateRequest) (*
 		return nil, apierrors.ErrGetProject.InternalError(apiErr)
 	}
 
-	// bind queue
-	queue, err := p.queueService.IdempotentGetProjectLevelQueue(workspace, pj)
-	if err != nil {
-		logrus.Errorf("failed get project level queue error: %v", err)
-		return nil, err
-	}
-	pv2.Labels[apistructs.LabelBindPipelineQueueID] = strconv.FormatUint(queue.ID, 10)
-	pv2.Labels[apistructs.LabelBindPipelineQueueEnqueueCondition] = apistructs.EnqueueConditionSkipAlreadyRunningLimit.String()
 	for ws, clusterName := range pj.ClusterConfig {
 		if strutil.Equal(ws, workspace, true) {
 			if err := p.setClusterName(clusterName, pv2); err != nil {
@@ -444,6 +436,16 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *pipelinepb.PipelineCreateRequest) (*
 			break
 		}
 	}
+	// bind queue
+	pj.ClusterConfig[strings.ToUpper(workspace)] = pv2.ClusterName
+	queue, err := p.queueService.IdempotentGetProjectLevelQueue(workspace, pj)
+	if err != nil {
+		logrus.Errorf("failed get project level queue error: %v", err)
+		return nil, err
+	}
+	pv2.Labels[apistructs.LabelBindPipelineQueueID] = strconv.FormatUint(queue.ID, 10)
+	pv2.Labels[apistructs.LabelBindPipelineQueueEnqueueCondition] = apistructs.EnqueueConditionSkipAlreadyRunningLimit.String()
+
 	pv2.Secrets = utils.GetGittarSecrets(pv2.ClusterName, pv1.Branch, &common.CommitDetail{
 		CommitID: detail.CommitID,
 		Repo:     detail.Repo,
