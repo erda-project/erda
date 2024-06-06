@@ -56,14 +56,39 @@ func (util *AKUtil) AkToClient(ak string) (*clientpb.Client, error) {
 	return pagingResp.List[0], nil
 }
 
-func (util *AKUtil) GetAkFromHeader(ctx context.Context) (string, bool) {
+func (util *AKUtil) GetAkFromHeader(ctx context.Context, req any) (string, bool) {
+	// get from HTTP
+	v, ok := util.GetAkFromHTTPHeader(req)
+	if ok {
+		return v, true
+	}
+	// get from GRPC
+	v, ok = util.GetAkFromGRPCHeader(ctx)
+	if ok {
+		return v, true
+	}
+	return "", false
+}
+
+func (util *AKUtil) GetAkFromGRPCHeader(ctx context.Context) (string, bool) {
 	v := apis.GetHeader(ctx, httputil.HeaderKeyAuthorization)
 	v = vars.TrimBearer(v)
 	return v, v != ""
 }
 
+func (util *AKUtil) GetAkFromHTTPHeader(req any) (string, bool) {
+	var v string
+	if req != nil {
+		if r, ok := req.(*http.Request); ok {
+			v = r.Header.Get(httputil.HeaderKeyAuthorization)
+		}
+	}
+	v = vars.TrimBearer(v)
+	return v, v != ""
+}
+
 func CheckAkOrToken(ctx context.Context, req any, dao dao.DAO) (*clientpb.Client, error) {
-	ak, ok := New(dao).GetAkFromHeader(ctx)
+	ak, ok := New(dao).GetAkFromHeader(ctx, req)
 	if !ok {
 		return nil, handlers.ErrAkNotFound
 	}

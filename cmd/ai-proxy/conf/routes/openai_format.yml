@@ -1,0 +1,5 @@
+routes:
+  - path: /v1/models
+    method: GET
+    filters:
+      - name: openai-v1-models
