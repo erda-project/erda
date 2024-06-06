@@ -17,6 +17,7 @@ package handler_rich_client
 import (
 	"context"
 	"fmt"
+
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
