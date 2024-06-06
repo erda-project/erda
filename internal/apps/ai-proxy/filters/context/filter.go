@@ -67,6 +67,15 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		q = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
 		m = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
 	)
+
+	// check body
+	body := infor.BodyBuffer()
+	if body == nil {
+		err = fmt.Errorf("missing body")
+		l.Error(err)
+		return reverseproxy.Intercept, err
+	}
+
 	// find client
 	var client *clientpb.Client
 	ak := vars.TrimBearer(infor.Header().Get(httputil.HeaderKeyAuthorization))
@@ -136,7 +145,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			ModelID string `json:"model"`
 		}
 		var m Model
-		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&m); err == nil {
+		if err := json.NewDecoder(body).Decode(&m); err == nil {
 			if m.ModelID != "" {
 				// parse truly model uuid, which is generated at api `/v1/models`/, see: internal/apps/ai-proxy/filters/openai-v1-models/filter.go#generateModelDisplayName
 				uuid := openai_v1_models.ParseModelUUIDFromDisplayName(m.ModelID)
