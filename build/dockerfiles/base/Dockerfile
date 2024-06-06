@@ -7,6 +7,9 @@ ARG TARGETPLATFORM
 RUN apt remove -yq git
 COPY --from=git-from /opt/bitnami/git /opt/bitnami/git
 ENV PATH="/opt/bitnami/git/bin:${PATH}"
+# Set dev environment as safe git directory to prevent "dubious ownership" errors
+# see: https://github.com/moby/moby/pull/44946
+RUN git config --global --add safe.directory '*'
 
 # set timezone to CST
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
