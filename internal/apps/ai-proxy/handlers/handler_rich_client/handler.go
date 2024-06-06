@@ -22,7 +22,6 @@ import (
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
-	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -109,22 +108,4 @@ func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClien
 	}
 
 	return richClient, nil
-}
-
-func (h *ClientHandler) ListModelsInOpenAIFormat(ctx context.Context, _ *commonpb.VoidRequest) (*pb.ListModelsInOpenAIFormatResponse, error) {
-	richClient, err := h.GetByAccessKeyId(context.Background(), &pb.GetByClientAccessKeyIdRequest{AccessKeyId: auth.GetClient(ctx).AccessKeyId}) // inject using trySetAuth
-	if err != nil {
-		return nil, err
-	}
-	// convert to openai /v1/models response, see: https://platform.openai.com/docs/api-reference/models/list
-	var resp pb.ListModelsInOpenAIFormatResponse
-	for _, m := range richClient.Models {
-		resp.Data = append(resp.Data, &pb.OpenAIModel{
-			Id:      m.Model.Name,
-			Created: uint64(m.Model.CreatedAt.Seconds), // seconds
-			Object:  "model",                           // always "model"
-			OwnedBy: m.Provider.Name,
-		})
-	}
-	return &resp, nil
 }
