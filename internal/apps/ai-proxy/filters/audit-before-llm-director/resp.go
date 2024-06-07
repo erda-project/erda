@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/decompress"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
@@ -70,7 +71,7 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 	updateReq := pb.AuditUpdateRequestAfterLLMDirectorResponse{
 		AuditId:      auditRecID,
 		Completion:   completion,
-		ResponseBody: respBuffer.String(),
+		ResponseBody: string(decompress.TryDecompressBody(infor.Header(), respBuffer)),
 		ResponseHeader: func() string {
 			b, err := json.Marshal(infor.Header())
 			if err != nil {

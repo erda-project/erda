@@ -12,33 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ctxhelper
+package dashscope_director
 
 import (
-	"context"
-	"sync"
-
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
 
-func GetModelProvider(ctx context.Context) (*modelproviderpb.ModelProvider, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
-	if !ok || value == nil {
-		return nil, false
-	}
-	prov, ok := value.(*modelproviderpb.ModelProvider)
-	if !ok {
-		return nil, false
-	}
-	return prov, true
+func getProviderMeta(p *modelproviderpb.ModelProvider) metadata.ModelProviderMeta {
+	var meta metadata.ModelProviderMeta
+	cputil.MustObjJSONTransfer(&p.Metadata, &meta)
+	return meta
 }
 
-func MustGetModelProvider(ctx context.Context) *modelproviderpb.ModelProvider {
-	prov, ok := GetModelProvider(ctx)
-	if !ok {
-		panic("model provider not found in context")
-	}
-	return prov
+func getModelMeta(m *modelpb.Model) metadata.AliyunDashScopeModelMeta {
+	var meta metadata.AliyunDashScopeModelMeta
+	cputil.MustObjJSONTransfer(&m.Metadata, &meta)
+	return meta
 }
