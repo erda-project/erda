@@ -1,6 +1,6 @@
 module github.com/erda-project/erda
 
-go 1.19
+go 1.22
 
 require (
 	bou.ke/monkey v1.0.2
@@ -60,7 +60,6 @@ require (
 	github.com/getkin/kin-openapi v0.76.0
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-echarts/go-echarts/v2 v2.2.4
-	github.com/go-eden/routine v1.0.1
 	github.com/go-errors/errors v1.0.1
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
@@ -84,6 +83,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/grafana/pyroscope-go v1.1.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hpcloud/tail v1.0.0
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
@@ -118,7 +118,6 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v2.3.2+incompatible
-	github.com/pyroscope-io/client v0.6.1-0.20230130114945-a64d920d2fba
 	github.com/pyroscope-io/pyroscope v0.37.2
 	github.com/rakyll/statik v0.1.7
 	github.com/rancher/apiserver v0.0.0-20210922180056-297b6df8d714
@@ -147,6 +146,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx/v3 v3.3.2
+	github.com/timandy/routine v1.1.2
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
@@ -314,6 +314,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.6 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
@@ -387,7 +388,6 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/pyroscope-io/godeltaprof v0.1.0 // indirect
 	github.com/pyroscope-io/jfr-parser v0.6.0 // indirect
 	github.com/rancher/lasso v0.0.0-20210616224652-fc3ebd901c08 // indirect
 	github.com/rancher/norman v0.0.0-20210423002317-8e6ffc77a819 // indirect
@@ -416,7 +416,6 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tikv/pd v1.1.0-beta.0.20200907080620-6830f5bb92a2 // indirect
-	github.com/timandy/routine v1.1.2 // indirect
 	github.com/tjfoc/gmsm v1.3.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -493,7 +492,9 @@ replace (
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/pingcap/pd/v4 => github.com/tikv/pd v1.0.8
-	github.com/pyroscope-io/pyroscope => github.com/erda-project/pyroscope v0.0.0-20240118052048-1ef79dfa24b3
+	github.com/pyroscope-io/client v0.6.1-0.20230130114945-a64d920d2fba => github.com/grafana/pyroscope-go v1.1.1
+	github.com/pyroscope-io/godeltaprof v0.1.0 => github.com/grafana/pyroscope-go/godeltaprof v0.1.3
+	github.com/pyroscope-io/pyroscope => github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e
 	github.com/rancher/apiserver => github.com/rancher/apiserver v0.0.0-20210519053359-f943376c4b42
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	github.com/rancher/steve => github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
