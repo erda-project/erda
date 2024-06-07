@@ -160,6 +160,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) ServeAIProxy() {
+	for _, r := range p.Config.Routes {
+		p.L.Infof("handle route %s %s", r.Path, r.Method)
+	}
 	var f http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
 		p.Config.Routes.FindRoute(r).HandlerWith(
 			context.Background(),

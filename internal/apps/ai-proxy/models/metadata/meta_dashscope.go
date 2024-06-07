@@ -17,7 +17,9 @@ package metadata
 type AliyunDashScopeModelName string
 
 const (
-	AliyunDashScopeModelNameQwenLong AliyunDashScopeModelName = "qwen-long"
+	AliyunDashScopeModelNameQwenLong   AliyunDashScopeModelName = "qwen-long"
+	AliyunDashScopeModelNameQwenVLPlus AliyunDashScopeModelName = "qwen-vl-plus"
+	AliyunDashScopeModelNameQwenVLMax  AliyunDashScopeModelName = "qwen-vl-max"
 )
 
 type (

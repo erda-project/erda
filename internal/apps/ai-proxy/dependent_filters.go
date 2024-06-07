@@ -15,6 +15,7 @@
 package ai_proxy
 
 import (
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/assets"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit-after-llm-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit-before-llm-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
