@@ -113,27 +113,9 @@ func SetlabelsFromOptions(options, labels map[string]string) {
 // k8s labels
 const (
 	LabelCoreErdaCloudClusterName = "core.erda.cloud/cluster-name"
-	LabelCoreErdaCloudOrgId       = "core.erda.cloud/org-id"
-	LabelCoreErdaCloudOrgName     = "core.erda.cloud/org-name"
-	LabelCoreErdaCloudAppId       = "core.erda.cloud/app-id"
-	LabelCoreErdaCloudAppName     = "core.erda.cloud/app-name"
-	LabelCoreErdaCloudProjectId   = "core.erda.cloud/project-id"
-	LabelCoreErdaCloudProjectName = "core.erda.cloud/project-name"
-	LabelCoreErdaCloudRuntimeId   = "core.erda.cloud/runtime-id"
-	LabelCoreErdaCloudServiceName = "core.erda.cloud/service-name"
-	LabelCoreErdaCloudWorkSpace   = "core.erda.cloud/workspace"
 	LabelCoreErdaCloudServiceType = "core.erda.cloud/service-type"
 
 	LabelDiceClusterName = "DICE_CLUSTER_NAME"
-	LabelDiceOrgId       = "DICE_ORG_ID"
-	LabelDiceOrgName     = "DICE_ORG_NAME"
-	LabelDiceAppId       = "DICE_APPLICATION_ID"
-	LabelDiceAppName     = "DICE_APPLICATION_NAME"
-	LabelDiceProjectId   = "DICE_PROJECT_ID"
-	LabelDiceProjectName = "DICE_PROJECT_NAME"
-	LabelDiceRuntimeId   = "DICE_RUNTIME_ID"
-	LabelDiceServiceName = "DICE_SERVICE_NAME"
-	LabelDiceWorkSpace   = "DICE_WORKSPACE"
 	LabelDiceServiceType = "SERVICE_TYPE"
 )
 
@@ -145,15 +127,6 @@ const (
 
 var labelMappings = map[string]string{
 	LabelCoreErdaCloudClusterName: LabelDiceClusterName,
-	LabelCoreErdaCloudOrgId:       LabelDiceOrgId,
-	LabelCoreErdaCloudOrgName:     LabelDiceOrgName,
-	LabelCoreErdaCloudAppId:       LabelDiceAppId,
-	LabelCoreErdaCloudAppName:     LabelDiceAppName,
-	LabelCoreErdaCloudProjectId:   LabelDiceProjectId,
-	LabelCoreErdaCloudProjectName: LabelDiceProjectName,
-	LabelCoreErdaCloudRuntimeId:   LabelDiceRuntimeId,
-	LabelCoreErdaCloudServiceName: LabelDiceServiceName,
-	LabelCoreErdaCloudWorkSpace:   LabelDiceWorkSpace,
 	LabelCoreErdaCloudServiceType: LabelDiceServiceType,
 }
 
