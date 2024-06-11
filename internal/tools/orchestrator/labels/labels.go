@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 )
 
 // k8s labels
@@ -55,6 +56,12 @@ const (
 	PublicHostTerminusKey = "terminusKey"
 )
 
+const (
+	LabelAddonErdaCloudId    = "addon.erda.cloud/id"
+	LabelAddonErdaCloudScope = "addon.erda.cloud/scope"
+	LabelAddonErdaCloudName  = "addon.erda.cloud/name"
+)
+
 var labelMappings = map[string]string{
 	LabelCoreErdaCloudClusterName: LabelDiceClusterName,
 	LabelCoreErdaCloudOrgId:       LabelDiceOrgId,
@@ -67,6 +74,20 @@ var labelMappings = map[string]string{
 	LabelCoreErdaCloudServiceName: LabelDiceServiceName,
 	LabelCoreErdaCloudWorkSpace:   LabelDiceWorkSpace,
 	LabelCoreErdaCloudServiceType: LabelDiceServiceType,
+}
+
+func MergeAddonCoreErdaLabels(target map[string]string, source map[string]string) {
+	for core, dice := range labelMappings {
+		if v, exist := source[dice]; exist {
+			target[core] = v
+		}
+	}
+}
+
+func SetAddonErdaLabels(labels map[string]string, ins *dbclient.AddonInstance) {
+	labels[LabelAddonErdaCloudId] = ins.ID
+	labels[LabelAddonErdaCloudScope] = ins.ShareScope
+	labels[LabelAddonErdaCloudName] = ins.AddonName
 }
 
 func SetCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
@@ -94,7 +115,7 @@ func SetCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service,
 		labels[LabelCoreErdaCloudServiceGroupId] = sgId
 	}
 
-	if sg != nil {
+	if sg != nil && sg.ID != "" {
 		labels[LabelCoreErdaCloudServiceGroupId] = sg.ID
 	}
 	return nil
