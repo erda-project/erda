@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/labels"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
@@ -112,8 +113,14 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 		},
 	}
 
+	logrus.Infof("set core erda labels")
+	err := labels.SetCoreErdaLabels(info.Sg, service, set.Labels)
+	if err != nil {
+		return errors.Errorf("StatefulSet can't set core/erda labels, err: %v", err)
+	}
+
 	hasHostPath := serviceHasHostpath(service)
-	err := setPodLabelsFromService(hasHostPath, service.Labels, set.Labels)
+	err = setPodLabelsFromService(hasHostPath, service.Labels, set.Labels)
 	if err != nil {
 		return errors.Errorf("error in service.Labels: %v for statefulset %v in namesapce %v", err, set.Name, set.Namespace)
 	}
