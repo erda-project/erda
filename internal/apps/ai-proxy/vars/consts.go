@@ -14,10 +14,6 @@
 
 package vars
 
-import (
-	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
-)
-
 const (
 	XAIProxyHeaderPrefix       = "X-AI-Proxy-"
 	XAIProxyChatType           = "X-AI-Proxy-ChatType"
@@ -54,7 +50,9 @@ type (
 	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
 	CtxKeyIsAdmin     struct{ CtxKeyIsAdmin bool }
 	CtxKeyClientId    struct{ CtxKeyClientId string }
-	CtxKeyClient      struct{ CtxKeyClient *clientpb.Client }
+	CtxKeyClient      struct{ CtxKeyClient any }
+
+	CtxKeyRichClientHandler struct{ CtxKeyRichClientHandler any }
 
 	MapKeyClient         struct{ MapKeyClient any }
 	MapKeyModel          struct{ MapKeyModel any }
