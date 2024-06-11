@@ -76,12 +76,13 @@ var labelMappings = map[string]string{
 	LabelCoreErdaCloudServiceType: LabelDiceServiceType,
 }
 
-func MergeAddonCoreErdaLabels(target map[string]string, source map[string]string) {
+func MergeAddonCoreErdaLabels(target map[string]string, source map[string]string, params *apistructs.AddonHandlerCreateItem) {
 	for core, dice := range labelMappings {
 		if v, exist := source[dice]; exist {
 			target[core] = v
 		}
 	}
+	target[LabelErdaCloudTenantId] = params.TenantId
 }
 
 func SetAddonErdaLabels(labels map[string]string, ins *dbclient.AddonInstance) {
