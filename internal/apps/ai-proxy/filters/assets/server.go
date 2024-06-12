@@ -31,7 +31,7 @@ import (
 
 const (
 	Name         = "assets"
-	AssetFileDir = "/tmp/ai-proxy/assets" // auto clean by system when container restart
+	AssetFileDir = "/tmp/ai-proxy/assets/" // auto clean by system when container restart
 )
 
 var (
@@ -43,6 +43,9 @@ var lock = sync.Mutex{}
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
+	if err := os.MkdirAll(AssetFileDir, 0755); err != nil {
+		panic(fmt.Sprintf("failed to create assets dir: %v", err))
+	}
 }
 
 type Filter struct {
