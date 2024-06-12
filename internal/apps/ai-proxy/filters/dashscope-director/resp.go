@@ -79,8 +79,8 @@ func (f *DashScopeDirector) dsHandleResponseStreamChunk(ctx context.Context, w r
 	if signal == reverseproxy.Intercept || lastCompleteDeltaResp == nil {
 		return signal, nil
 	}
-	// convert qwenVL response to openai response
-	openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(*lastCompleteDeltaResp, string(modelName))
+	// convert ds response to openai response
+	openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(*lastCompleteDeltaResp, modelName)
 	if err != nil {
 		return reverseproxy.Intercept, fmt.Errorf("failed to convert qwenVL response to openai response, err: %v", err)
 	}
@@ -225,7 +225,7 @@ func (f *DashScopeDirector) OnResponseEOF(ctx context.Context, _ reverseproxy.Ht
 		if err := json.Unmarshal(f.DefaultResponseFilter.Buffer.Bytes(), &dsChunk); err != nil {
 			return fmt.Errorf("failed to unmarshal dashscope stream chunk: %s, err: %v", string(chunk), err)
 		}
-		openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(dsChunk, string(modelName))
+		openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(dsChunk, modelName)
 		if err != nil {
 			return fmt.Errorf("failed to convert dashscope chunk to openai format, err: %v", err)
 		}
