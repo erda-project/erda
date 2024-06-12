@@ -14,13 +14,39 @@
 
 package metadata
 
+import "fmt"
+
 type AliyunDashScopeModelName string
 
 const (
-	AliyunDashScopeModelNameQwenLong   AliyunDashScopeModelName = "qwen-long"
-	AliyunDashScopeModelNameQwenVLPlus AliyunDashScopeModelName = "qwen-vl-plus"
-	AliyunDashScopeModelNameQwenVLMax  AliyunDashScopeModelName = "qwen-vl-max"
+	AliyunDashScopeModelNameQwenLong        AliyunDashScopeModelName = "qwen-long"
+	AliyunDashScopeModelNameQwenVLPlus      AliyunDashScopeModelName = "qwen-vl-plus"
+	AliyunDashScopeModelNameQwenVLMax       AliyunDashScopeModelName = "qwen-vl-max"
+	AliyunDashScopeModelNameQwenV2_72B      AliyunDashScopeModelName = "qwen2-72b-instruct"
+	AliyunDashScopeModelNameMoonshotV1_128K AliyunDashScopeModelName = "moonshot-v1-128k"
 )
+
+type AliyunDashScopeRequestType string
+
+const (
+	AliyunDashScopeRequestTypeOpenAI AliyunDashScopeRequestType = "openai"
+	AliyunDashScopeRequestTypeDs     AliyunDashScopeRequestType = "ds"
+)
+
+func (t AliyunDashScopeRequestType) String() string {
+	return string(t)
+}
+func (t AliyunDashScopeRequestType) Valid() (bool, error) {
+	if t.String() == "" {
+		return false, fmt.Errorf("empty request_type")
+	}
+	switch t {
+	case AliyunDashScopeRequestTypeOpenAI, AliyunDashScopeRequestTypeDs:
+		return true, nil
+	default:
+		return false, fmt.Errorf("unknown request_type: %s", t)
+	}
+}
 
 type (
 	AliyunDashScopeModelMeta struct {
@@ -28,7 +54,9 @@ type (
 		Secret AliyunDashScopeModelMetaSecret `json:"secret,omitempty"`
 	}
 	AliyunDashScopeModelMetaPublic struct {
-		ModelName AliyunDashScopeModelName `json:"model_name,omitempty"`
+		ModelName   AliyunDashScopeModelName   `json:"model_name,omitempty"`
+		RequestType AliyunDashScopeRequestType `json:"request_type,omitempty"`
+		CustomURL   string                     `json:"custom_url"` // e.g., https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
 	}
 	AliyunDashScopeModelMetaSecret struct {
 	}

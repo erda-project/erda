@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dashscope_director
+package image
 
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
+
+	"github.com/sashabaranov/go-openai"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/assets"
 	"github.com/erda-project/erda/pkg/numeral"
-	"github.com/sashabaranov/go-openai"
-	"strings"
 )
 
-func handleChatImage(req *openai.ChatCompletionRequest) error {
+func HandleChatImage(req *openai.ChatCompletionRequest) error {
 	if req == nil {
 		return nil
 	}
