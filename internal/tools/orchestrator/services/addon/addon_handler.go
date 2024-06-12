@@ -16,6 +16,8 @@ package addon
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -268,6 +270,21 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 	return nil
 }
 
+func generateTenantID(projectID string, tenantType, workspace string) string {
+	md5H := md5.New()
+	hStr := fmt.Sprintf("%v-%s-%s", projectID, tenantType, workspace)
+	md5H.Write([]byte(hStr))
+	return hex.EncodeToString(md5H.Sum(nil))
+}
+
+func (a *Addon) getTenantId(projectID string, tenantType, workspace string) string {
+	tenant, err := a.db.QueryTenantByProjectIDAndWorkspace(projectID, workspace)
+	if err != nil {
+		return generateTenantID(projectID, tenantType, workspace)
+	}
+	return tenant.Id
+}
+
 func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) (string, error) {
 	if len(req.Addons) != 1 {
 		return "", fmt.Errorf("len(req.Addons) != 1")
@@ -298,6 +315,7 @@ func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) (string, er
 		InsideAddon:   "N",
 		ShareScope:    req.ShareScope,
 		Options:       baseAddons[0].Options,
+		TenantId:      a.getTenantId(strconv.FormatUint(req.ProjectID, 10), pb.Type_DOP.String(), req.Workspace),
 	}
 	addonSpec, addonDice, err := a.GetAddonExtention(&addonItem)
 	if err != nil {

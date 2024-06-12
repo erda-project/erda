@@ -82,7 +82,9 @@ func MergeAddonCoreErdaLabels(target map[string]string, source map[string]string
 			target[core] = v
 		}
 	}
-	target[LabelErdaCloudTenantId] = params.TenantId
+	if params.TenantId != "" {
+		target[LabelErdaCloudTenantId] = params.TenantId
+	}
 }
 
 func SetAddonErdaLabels(labels map[string]string, ins *dbclient.AddonInstance) {
