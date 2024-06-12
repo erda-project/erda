@@ -16,18 +16,35 @@ package assets
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
+
+const (
+	envKeyPublicURL      = "SELF_PUBLIC_URL"
+	assetDownloadAPIPath = "/api/ai-proxy/assets/"
+)
+
+var (
+	publicURL = strings.TrimSuffix(os.Getenv(envKeyPublicURL), "/")
+)
+
+func Available() bool {
+	return publicURL != ""
+}
 
 // Upload return public download url for LLM use.
 func Upload(fileName string, data []byte) (string, error) {
+	if !Available() {
+		return "", fmt.Errorf("public url is not available")
+	}
 	fileUUID, fileStorePath := genFileStorePath(fileName)
-	l.Lock()
+	lock.Lock()
 	assetsMap[fileUUID] = fileStorePath
-	l.Unlock()
+	lock.Unlock()
 	// store file
 	targetFile, err := os.OpenFile(fileStorePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
@@ -37,7 +54,7 @@ func Upload(fileName string, data []byte) (string, error) {
 	if _, err := targetFile.Write(data); err != nil {
 		return "", fmt.Errorf("failed to write file: %v", err)
 	}
-	return os.Getenv("SELF_PUBLIC_URL") + "/api/ai-proxy/assets/" + fileUUID, nil
+	return publicURL + assetDownloadAPIPath + fileUUID, nil
 }
 
 func genFileStorePath(fileName string) (string, string) {

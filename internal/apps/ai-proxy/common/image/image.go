@@ -29,6 +29,9 @@ func HandleChatImage(req *openai.ChatCompletionRequest) error {
 	if req == nil {
 		return nil
 	}
+	if !assets.Available() {
+		return fmt.Errorf("assets service is not available")
+	}
 	for i, msg := range req.Messages {
 		for j, part := range msg.MultiContent {
 			if part.Type != openai.ChatMessagePartTypeImageURL || part.ImageURL == nil {

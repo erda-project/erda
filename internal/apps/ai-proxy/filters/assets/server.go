@@ -18,19 +18,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
-	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"sync"
+
+	"github.com/erda-project/erda/internal/pkg/ai-proxy/route"
+	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
 	Name         = "assets"
-	AssetFileDir = "/tmp/ai-proxy/assets"
+	AssetFileDir = "/tmp/ai-proxy/assets" // auto clean by system when container restart
 )
 
 var (
@@ -38,15 +39,10 @@ var (
 )
 
 var assetsMap = map[string]string{} // k: uuid, v: filepath
-var l = sync.Mutex{}
+var lock = sync.Mutex{}
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
-
-	// test data
-	l.Lock()
-	assetsMap["1234"] = "/tmp/ai-proxy/assets/init.png"
-	l.Unlock()
 }
 
 type Filter struct {
@@ -65,9 +61,9 @@ func (f *Filter) OnRequest(ctx context.Context, w http.ResponseWriter, infor rev
 	}
 
 	// find in memory
-	l.Lock()
+	lock.Lock()
 	assetFilePath, ok := assetsMap[uuid]
-	l.Unlock()
+	lock.Unlock()
 	if !ok {
 		return reverseproxy.Intercept, fmt.Errorf("asset not found")
 	}
@@ -81,8 +77,8 @@ func (f *Filter) OnRequest(ctx context.Context, w http.ResponseWriter, infor rev
 		return reverseproxy.Intercept, fmt.Errorf("failed to get asset file info: %v", err)
 	}
 	// write response for asset download
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", getFileDisplayName(assetFilePath)))
+	w.Header().Set(httputil.HeaderKeyContentType, "application/octet-stream")
+	w.Header().Set(httputil.HeaderKeyContentDisposition, fmt.Sprintf("attachment; filename=%s", getFileDisplayName(assetFilePath)))
 	// must set, or we will get "Missing Content-Length of multimodal url" error
 	w.Header().Set(httputil.HeaderKeyContentLength, strconv.FormatInt(assetFileInfo.Size(), 10))
 	// copy file to response
