@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/coreos/etcd/pkg/transport"
 	"github.com/pkg/errors"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/pkg/jsonstore/stm"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
@@ -170,6 +170,8 @@ func (s *Store) retry(do func(cli *clientv3.Client) (interface{}, error)) (inter
 		respC1 <- resp
 	}()
 
+	var secondClient *clientv3.Client
+
 	select {
 	case err := <-errC1:
 		return nil, err
@@ -177,7 +179,7 @@ func (s *Store) retry(do func(cli *clientv3.Client) (interface{}, error)) (inter
 		return resp, nil
 	case <-time.After(firstTryEtcdRequestTimeout):
 		// 超时后，就换一个 client 实例
-		cli = s.getClient()
+		secondClient = s.getClient()
 	}
 
 	// 超时重试第二次, 注意上面的 goroutine 可能还在运行
@@ -185,7 +187,7 @@ func (s *Store) retry(do func(cli *clientv3.Client) (interface{}, error)) (inter
 	respC2 := make(chan interface{}, 1)
 
 	go func() {
-		resp, err := do(cli)
+		resp, err := do(secondClient)
 		if err != nil {
 			errC2 <- err
 			return

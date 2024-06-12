@@ -27,8 +27,8 @@ import (
 	"github.com/rancher/steve/pkg/accesscontrol"
 	"github.com/rancher/steve/pkg/attributes"
 	"github.com/rancher/steve/pkg/stores/proxy"
-	"github.com/rancher/wrangler/pkg/data"
 	"github.com/rancher/wrangler/pkg/schemas/validation"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -101,7 +101,7 @@ func toAPI(schema *types.APISchema, obj runtime.Object) types.APIObject {
 }
 
 func (s *Store) byID(apiOp *types.APIRequest, schema *types.APISchema, id string) (*unstructured.Unstructured, error) {
-	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, apiOp.Namespace)
+	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, apiOp.Namespace, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func tableToObjects(obj map[string]interface{}) []unstructured.Unstructured {
 }
 
 func (s *Store) ByNames(apiOp *types.APIRequest, schema *types.APISchema, names sets.String) (types.APIObjectList, error) {
-	adminClient, err := s.clientGetter.TableAdminClient(apiOp, schema, apiOp.Namespace)
+	adminClient, err := s.clientGetter.TableAdminClient(apiOp, schema, apiOp.Namespace, nil)
 	if err != nil {
 		return types.APIObjectList{}, err
 	}
@@ -220,7 +220,7 @@ func (s *Store) ByNames(apiOp *types.APIRequest, schema *types.APISchema, names 
 }
 
 func (s *Store) List(apiOp *types.APIRequest, schema *types.APISchema) (types.APIObjectList, error) {
-	client, err := s.clientGetter.TableClient(apiOp, schema, apiOp.Namespace)
+	client, err := s.clientGetter.TableClient(apiOp, schema, apiOp.Namespace, nil)
 	if err != nil {
 		return types.APIObjectList{}, err
 	}
@@ -314,7 +314,7 @@ func (s *Store) listAndWatch(apiOp *types.APIRequest, k8sClient dynamic.Resource
 }
 
 func (s *Store) WatchNames(apiOp *types.APIRequest, schema *types.APISchema, w types.WatchRequest, names sets.String) (chan types.APIEvent, error) {
-	adminClient, err := s.clientGetter.TableAdminClientForWatch(apiOp, schema, apiOp.Namespace)
+	adminClient, err := s.clientGetter.TableAdminClientForWatch(apiOp, schema, apiOp.Namespace, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +337,7 @@ func (s *Store) WatchNames(apiOp *types.APIRequest, schema *types.APISchema, w t
 }
 
 func (s *Store) Watch(apiOp *types.APIRequest, schema *types.APISchema, w types.WatchRequest) (chan types.APIEvent, error) {
-	client, err := s.clientGetter.TableClientForWatch(apiOp, schema, apiOp.Namespace)
+	client, err := s.clientGetter.TableClientForWatch(apiOp, schema, apiOp.Namespace, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ func (s *Store) Create(apiOp *types.APIRequest, schema *types.APISchema, params 
 	gvk := attributes.GVK(schema)
 	input["apiVersion"], input["kind"] = gvk.ToAPIVersionAndKind()
 
-	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, ns)
+	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, ns, nil)
 	if err != nil {
 		return types.APIObject{}, err
 	}
@@ -427,7 +427,7 @@ func (s *Store) Update(apiOp *types.APIRequest, schema *types.APISchema, params 
 	)
 
 	ns := types.Namespace(input)
-	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, ns)
+	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, ns, nil)
 	if err != nil {
 		return types.APIObject{}, err
 	}
@@ -493,7 +493,7 @@ func (s *Store) Delete(apiOp *types.APIRequest, schema *types.APISchema, id stri
 		return types.APIObject{}, nil
 	}
 
-	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, apiOp.Namespace)
+	k8sClient, err := s.clientGetter.TableClient(apiOp, schema, apiOp.Namespace, nil)
 	if err != nil {
 		return types.APIObject{}, err
 	}

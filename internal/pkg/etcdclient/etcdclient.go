@@ -27,9 +27,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/pkg/transport"
 	"github.com/pkg/errors"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (

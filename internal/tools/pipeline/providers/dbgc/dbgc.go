@@ -22,12 +22,11 @@ import (
 	"strconv"
 	"time"
 
-	v3 "github.com/coreos/etcd/clientv3"
+	v3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"

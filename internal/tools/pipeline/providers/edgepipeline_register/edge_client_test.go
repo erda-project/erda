@@ -16,6 +16,7 @@ package edgepipeline_register
 
 import (
 	"context"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,14 +28,12 @@ func TestRegisterEventHandler(t *testing.T) {
 	p := &provider{}
 	p.eventHandlers = make([]EventHandler, 0)
 	p.edgeClients = make(map[string]apistructs.ClusterManagerClientDetail)
-
-	p.RegisterEventHandler(func(ctx context.Context, eventDetail apistructs.ClusterManagerClientDetail) {
-		t.Log("event handler called")
+	t.Run("event handler", func(t *testing.T) {
+		p.RegisterEventHandler(func(ctx context.Context, eventDetail apistructs.ClusterManagerClientDetail) {
+			log.Println("event handler called")
+		})
+		p.emitClientEvent(context.Background(), apistructs.ClusterManagerClientDetail{})
 	})
-	p.RegisterEventHandler(func(ctx context.Context, eventDetail apistructs.ClusterManagerClientDetail) {
-		t.Log("event handler called")
-	})
-	p.emitClientEvent(context.Background(), apistructs.ClusterManagerClientDetail{})
 }
 
 func Test_updateClientByEvent(t *testing.T) {
