@@ -24,7 +24,9 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/dashscope-director/sdk"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -33,71 +35,52 @@ import (
 func (f *DashScopeDirector) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
 	model := ctxhelper.MustGetModel(ctx)
 	modelMeta := getModelMeta(model)
+	requestType := modelMeta.Public.RequestType
+	responseType := modelMeta.Public.ResponseType
+	if responseType == "" {
+		responseType = metadata.AliyunDashScopeResponseType(requestType.String())
+	}
 
-	// switch by model name
-	switch modelMeta.Public.ModelName {
-	case metadata.AliyunDashScopeModelNameQwenLong:
-		return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk)
-	case metadata.AliyunDashScopeModelNameQwenVLPlus, metadata.AliyunDashScopeModelNameQwenVLMax:
-		return f.qwenVLOnResponseChunk(ctx, infor, w, chunk)
+	if ok, err := responseType.Valid(); !ok {
+		return reverseproxy.Intercept, fmt.Errorf("metadata.public.response_type is invalid, err: %v", err)
+	}
+
+	// switch by request type
+	switch responseType {
+	case metadata.AliyunDashScopeResponseTypeOpenAI:
+		return f.DefaultResponseFilter.OnResponseChunk(ctx, infor, w, chunk) // return directly
+	case metadata.AliyunDashScopeResponseTypeDs:
+		return f.dsOnResponseChunk(ctx, infor, w, chunk)
 	default:
-		return reverseproxy.Intercept, fmt.Errorf("unsupported model: %s", model.Name)
+		return reverseproxy.Intercept, fmt.Errorf("unsupported response type: %s", responseType)
 	}
 }
 
-func (f *DashScopeDirector) qwenVLOnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
+func (f *DashScopeDirector) dsOnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
 	if !ctxhelper.GetIsStream(ctx) {
 		f.DefaultResponseFilter.Buffer.Write(chunk)
 		return reverseproxy.Continue, nil
 	}
 	// handle chunk
-	return f.qwenVLHandleResponseStreamChunk(ctx, w, chunk)
+	f.DefaultResponseFilter.Buffer.Write(chunk) // write to buffer, so we can get allChunks later
+	return f.dsHandleResponseStreamChunk(ctx, w, chunk)
 }
 
-type (
-	QwenVLRespStreamChunk struct {
-		Output    QwenVLRespStreamChunkOutput `json:"output"`
-		RequestID string                      `json:"request_id"`
-	}
-	QwenVLRespStreamChunkOutput struct {
-		Choices []QwenVLRespStreamChunkOutputChoice `json:"choices"`
-	}
-	QwenVLRespStreamChunkOutputChoice struct {
-		Message      QwenVLRespStreamChunkOutputChoiceMessage `json:"message"`
-		FinishReason string                                   `json:"finish_reason"`
-	}
-	QwenVLRespStreamChunkOutputChoiceMessage struct {
-		Content []QwenVLRespStreamChunkOutputChoiceMessageContent `json:"content"`
-		Role    string                                            `json:"role"`
-	}
-	QwenVLRespStreamChunkOutputChoiceMessageContent struct {
-		Text string `json:"text"`
-	}
-)
-
-// vl resp stream format
-// id:1
-// event:result
-// :HTTP_STATUS/200
-// data:{"output":{"choices":[{"message":{"content":[{"text":"Hello"}],"role":"assistant"},"finish_reason":"null"}]},"usage":{"input_tokens":92,"output_tokens":1},"request_id":"e2edfd5d-f5c3-958b-b058-f8341b31af05"}
-//
-// id:5
-// event:result
-// :HTTP_STATUS/200
-// data:{"output":{"choices":[{"message":{"content":[{"text":"Hello! How can I assist you today?"}],"role":"assistant"},"finish_reason":"stop"}]},"usage":{"input_tokens":92,"output_tokens":10},"request_id":"e2edfd5d-f5c3-958b-b058-f8341b31af05"}
-func (f *DashScopeDirector) qwenVLHandleResponseStreamChunk(ctx context.Context, w reverseproxy.Writer, qwenVLChunk []byte) (reverseproxy.Signal, error) {
+// dsHandleResponseStreamChunk
+// example see ./resp_example.md
+func (f *DashScopeDirector) dsHandleResponseStreamChunk(ctx context.Context, w reverseproxy.Writer, _ []byte) (reverseproxy.Signal, error) {
 	model := ctxhelper.MustGetModel(ctx)
 	modelMeta := getModelMeta(model)
 	modelName := modelMeta.Public.ModelName
 
-	// 因为 qwen 目前 stream 不是真 chunk，每个 data line 的 text 都是在之前的基础上进行 append，所以需要主动计算增量值，模拟真 chunk 形式返回
+	// 因为 DashScope stream 不是真 chunk，每个 data line 的 text 都是在之前的基础上进行 append，所以需要主动计算增量值，模拟真 chunk 形式返回
 	// 所以，只需要找到 chunk 里最后一个 data line，然后计算增量值，转换为一个 OpenAI Chunk 即可
-	signal, lastCompleteDeltaResp := f.getDeltaTextFromStreamChunk(qwenVLChunk)
+	signal, lastCompleteDeltaResp := f.getDeltaTextFromStreamChunk(f.DefaultResponseFilter.Buffer.Bytes())
 	if signal == reverseproxy.Intercept || lastCompleteDeltaResp == nil {
 		return signal, nil
 	}
 	// convert qwenVL response to openai response
-	openaiChunk, err := convertToOpenAIStreamChunk(*lastCompleteDeltaResp, string(modelName))
+	openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(*lastCompleteDeltaResp, string(modelName))
 	if err != nil {
 		return reverseproxy.Intercept, fmt.Errorf("failed to convert qwenVL response to openai response, err: %v", err)
 	}
@@ -112,10 +95,7 @@ func (f *DashScopeDirector) qwenVLHandleResponseStreamChunk(ctx context.Context,
 	return reverseproxy.Continue, nil
 }
 
-// vl resp non-stream format
-// {"output":{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":[{"text":"Hello! How can I assist you today?"}]}}]},"usage":{"output_tokens":10,"input_tokens":92},"request_id":"cc7bcb16-0a9d-9ca4-ae78-b792393eb840"}
-
-func (f *DashScopeDirector) getDeltaTextFromStreamChunk(allChunks []byte) (reverseproxy.Signal, *QwenVLRespStreamChunk) {
+func (f *DashScopeDirector) getDeltaTextFromStreamChunk(allChunks []byte) (reverseproxy.Signal, *sdk.DsRespStreamChunk) {
 	// 按行解析，保留 `data:` 开头的行
 	var allDataLines []string
 	scanner := bufio.NewScanner(bytes.NewReader(allChunks))
@@ -124,34 +104,12 @@ func (f *DashScopeDirector) getDeltaTextFromStreamChunk(allChunks []byte) (rever
 		if !strings.HasPrefix(line, "data:") {
 			continue
 		}
-		//// remove prefix `data:`
-		//line = strings.TrimPrefix(line, "data:")
 		allDataLines = append(allDataLines, line)
 	}
 	// try to get the last complete data line
-	var lastCompleteDataLine QwenVLRespStreamChunk
-	var lastChoice QwenVLRespStreamChunkOutputChoice
-	var lastCompleteDataLineText string
-	var lastContentItem QwenVLRespStreamChunkOutputChoiceMessageContent
-	for i := len(allDataLines) - 1; i >= 0; i-- {
-		if i < f.lastCompletionDataLineIndex {
-			break
-		}
-		if err := json.Unmarshal(TrimChunkDataPrefix([]byte(allDataLines[i])), &lastCompleteDataLine); err == nil {
-			f.lastCompletionDataLineIndex = i
-			if len(lastCompleteDataLine.Output.Choices) == 0 {
-				continue
-			}
-			// get last choice
-			lastChoice = lastCompleteDataLine.Output.Choices[len(lastCompleteDataLine.Output.Choices)-1]
-			// get last content text
-			lastContentItem = lastChoice.Message.Content[len(lastChoice.Message.Content)-1]
-			if lastContentItem.Text == "" {
-				continue
-			}
-			lastCompleteDataLineText = lastContentItem.Text
-			break
-		}
+	lastChunk, lastCompleteDataLineText, err := f.getLastChunk(allDataLines)
+	if err != nil {
+		return reverseproxy.Intercept, nil
 	}
 	if lastCompleteDataLineText == "" {
 		return reverseproxy.Continue, nil
@@ -162,11 +120,52 @@ func (f *DashScopeDirector) getDeltaTextFromStreamChunk(allChunks []byte) (rever
 		return reverseproxy.Continue, nil
 	}
 	f.lastCompletionDataLineText = lastCompleteDataLineText
-	// 更新 lastCompleteDataLine
-	lastContentItem.Text = delta
-	lastChoice.Message = QwenVLRespStreamChunkOutputChoiceMessage{Content: []QwenVLRespStreamChunkOutputChoiceMessageContent{lastContentItem}}
-	lastCompleteDataLine.Output.Choices = []QwenVLRespStreamChunkOutputChoice{lastChoice}
-	return reverseproxy.Continue, &lastCompleteDataLine
+	// construct new chunk
+	newChunk := sdk.DsRespStreamChunk{
+		Output: sdk.DsRespStreamChunkOutput{
+			Choices: []sdk.DsRespStreamChunkOutputChoice{{Message: sdk.DsRespStreamChunkOutputChoiceMessage{Content: delta, Role: openai.ChatMessageRoleAssistant}}},
+		},
+		RequestID: lastChunk.RequestID,
+	}
+	return reverseproxy.Continue, &newChunk
+}
+
+func (f *DashScopeDirector) getLastChunk(allDataLines []string) (lastChunk *sdk.DsRespStreamChunk, content string, err error) {
+	lastLine := allDataLines[len(allDataLines)-1]
+	i := len(allDataLines) - 1
+	if i < f.lastCompletionDataLineIndex {
+		return
+	}
+	if err = json.Unmarshal(TrimChunkDataPrefix([]byte(lastLine)), &lastChunk); err != nil {
+		return
+	}
+	f.lastCompletionDataLineIndex = i
+	outputText := lastChunk.Output.Text
+	if len(lastChunk.Output.Choices) == 0 && outputText == "" {
+		return
+	}
+	// get text first
+	if outputText != "" {
+		content = outputText
+		return
+	}
+	// get last choice
+	lastChoice := &lastChunk.Output.Choices[len(lastChunk.Output.Choices)-1]
+	// get last content text
+	var lastContent string
+	switch lastChoice.Message.Content.(type) {
+	case string:
+		lastContent = lastChoice.Message.Content.(string)
+	case []any:
+		var lastContentItems []sdk.DsRespStreamChunkOutputChoiceMessagePart
+		cputil.MustObjJSONTransfer(lastChoice.Message.Content, &lastContentItems)
+		lastContent = lastContentItems[len(lastContentItems)-1].Text
+	default:
+		err = fmt.Errorf("unsupported message content type: %T", lastChoice.Message.Content)
+		return
+	}
+	content = handleOddContentStrIsJsonArray(lastContent)
+	return
 }
 
 func TrimChunkDataPrefix(v []byte) []byte {
@@ -175,28 +174,45 @@ func TrimChunkDataPrefix(v []byte) []byte {
 	return []byte(s)
 }
 
-func convertToOpenAIStreamChunk(qwenVLResp QwenVLRespStreamChunk, modelName string) (*openai.ChatCompletionStreamResponse, error) {
-	var ocs []openai.ChatCompletionStreamChoice
-	for _, qwc := range qwenVLResp.Output.Choices {
-		oc := openai.ChatCompletionStreamChoice{
-			Index: 0,
-			Delta: openai.ChatCompletionStreamChoiceDelta{
-				Content: qwc.Message.Content[0].Text,
-				Role:    qwc.Message.Role,
-			},
-			FinishReason: openai.FinishReason(qwc.FinishReason),
+// handleOddContentStrIsJsonArray 处理 DashScope Kimi choice.message.content 是一个 string，但是 string 的内容是一个 json 数组字符串的情况
+func handleOddContentStrIsJsonArray(lastContent string) string {
+	hasPrefix := false
+	strFlagToCheck := `[{"text":`
+	// lastContent 为 strFlagToCheck 里的一部分，则等待
+	if len(lastContent) <= len(strFlagToCheck) {
+		if strings.HasPrefix(strFlagToCheck, lastContent) {
+			// need wait
+			return ""
 		}
-		ocs = append(ocs, oc)
 	}
-	openaiChunk := openai.ChatCompletionStreamResponse{
-		ID:      qwenVLResp.RequestID,
-		Object:  "chat.completion.chunk",
-		Model:   modelName,
-		Choices: ocs,
+	if strings.HasPrefix(lastContent, strFlagToCheck) {
+		hasPrefix = true
+		// remove prefix
+		lastContent = strings.TrimPrefix(lastContent, strFlagToCheck)
+		// find first `"`
+		idx := strings.Index(lastContent, `"`)
+		if idx < 0 {
+			return lastContent
+		}
+		quotedContent := strings.TrimSpace(lastContent[idx+1:])
+		lastContent = quotedContent
 	}
-	return &openaiChunk, nil
+	strSuccessNeedWait := []string{`"`, `"]`, `"]`}
+	for _, suffix := range strSuccessNeedWait {
+		if strings.HasSuffix(lastContent, suffix) {
+			// need wait
+			return ""
+		}
+	}
+	// remove suffix
+	if hasPrefix {
+		lastContent = strings.TrimSuffix(lastContent, `"}]`)
+	}
+	return lastContent
 }
 
+// OnResponseEOF
+// example see ./resp_example.md
 func (f *DashScopeDirector) OnResponseEOF(ctx context.Context, _ reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (err error) {
 	model := ctxhelper.MustGetModel(ctx)
 	modelMeta := getModelMeta(model)
@@ -205,24 +221,24 @@ func (f *DashScopeDirector) OnResponseEOF(ctx context.Context, _ reverseproxy.Ht
 	// only stream style need append [DONE] chunk
 	if !ctxhelper.GetIsStream(ctx) {
 		// convert all at once
-		var qwVLChunk QwenVLRespStreamChunk
-		if err := json.Unmarshal(f.DefaultResponseFilter.Buffer.Bytes(), &qwVLChunk); err != nil {
-			return fmt.Errorf("failed to unmarshal qwen-vl response, chunk: %s, err: %v", string(chunk), err)
+		var dsChunk sdk.DsRespStreamChunk
+		if err := json.Unmarshal(f.DefaultResponseFilter.Buffer.Bytes(), &dsChunk); err != nil {
+			return fmt.Errorf("failed to unmarshal dashscope stream chunk: %s, err: %v", string(chunk), err)
 		}
-		openaiResp, err := convertToOpenAIStreamChunk(qwVLChunk, string(modelName))
+		openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(dsChunk, string(modelName))
 		if err != nil {
-			return fmt.Errorf("failed to convert qwen-vl response to openai response, err: %v", err)
+			return fmt.Errorf("failed to convert dashscope chunk to openai format, err: %v", err)
 		}
-		b, err := json.Marshal(openaiResp)
+		b, err := json.Marshal(openaiChunk)
 		if err != nil {
-			return fmt.Errorf("failed to marshal openai response, err: %v", err)
+			return fmt.Errorf("failed to marshal openai chunk, err: %v", err)
 		}
 		return f.DefaultResponseFilter.OnResponseEOF(ctx, nil, w, b)
 	}
 	// append [DONE] chunk
 	doneChunk := vars.ConcatChunkDataPrefix([]byte("[DONE]"))
 	if _, err := w.Write(doneChunk); err != nil {
-		return fmt.Errorf("failed to write openai response, err: %v", err)
+		return fmt.Errorf("failed to write openai chunk, err: %v", err)
 	}
 	return nil
 }

@@ -48,15 +48,38 @@ func (t AliyunDashScopeRequestType) Valid() (bool, error) {
 	}
 }
 
+type AliyunDashScopeResponseType string
+
+const (
+	AliyunDashScopeResponseTypeOpenAI AliyunDashScopeResponseType = "openai"
+	AliyunDashScopeResponseTypeDs     AliyunDashScopeResponseType = "ds"
+)
+
+func (t AliyunDashScopeResponseType) String() string {
+	return string(t)
+}
+func (t AliyunDashScopeResponseType) Valid() (bool, error) {
+	if t.String() == "" {
+		return false, fmt.Errorf("empty request_type")
+	}
+	switch t {
+	case AliyunDashScopeResponseTypeOpenAI, AliyunDashScopeResponseTypeDs:
+		return true, nil
+	default:
+		return false, fmt.Errorf("unknown request_type: %s", t)
+	}
+}
+
 type (
 	AliyunDashScopeModelMeta struct {
 		Public AliyunDashScopeModelMetaPublic `json:"public,omitempty"`
 		Secret AliyunDashScopeModelMetaSecret `json:"secret,omitempty"`
 	}
 	AliyunDashScopeModelMetaPublic struct {
-		ModelName   AliyunDashScopeModelName   `json:"model_name,omitempty"`
-		RequestType AliyunDashScopeRequestType `json:"request_type,omitempty"`
-		CustomURL   string                     `json:"custom_url"` // e.g., https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+		ModelName    AliyunDashScopeModelName    `json:"model_name,omitempty"`
+		RequestType  AliyunDashScopeRequestType  `json:"request_type,omitempty"`
+		ResponseType AliyunDashScopeResponseType `json:"response_type,omitempty"`
+		CustomURL    string                      `json:"custom_url"` // e.g., https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
 	}
 	AliyunDashScopeModelMetaSecret struct {
 	}

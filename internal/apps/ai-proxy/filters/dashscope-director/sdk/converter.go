@@ -76,3 +76,25 @@ func ConvertOpenAIChatRequestToDsRequest(oreq openai.ChatCompletionRequest, targ
 	}
 	return dsReq, nil
 }
+
+func ConvertDsStreamChunkToOpenAIFormat(dsChunk DsRespStreamChunk, modelName string) (*openai.ChatCompletionStreamResponse, error) {
+	var ocs []openai.ChatCompletionStreamChoice
+	for _, dsc := range dsChunk.Output.Choices {
+		oc := openai.ChatCompletionStreamChoice{
+			Index: 0,
+			Delta: openai.ChatCompletionStreamChoiceDelta{
+				Content: dsc.Message.Content.(string),
+				Role:    dsc.Message.Role,
+			},
+			FinishReason: openai.FinishReason(dsc.FinishReason),
+		}
+		ocs = append(ocs, oc)
+	}
+	openaiChunk := openai.ChatCompletionStreamResponse{
+		ID:      dsChunk.RequestID,
+		Object:  "chat.completion.chunk", // fixed
+		Model:   modelName,
+		Choices: ocs,
+	}
+	return &openaiChunk, nil
+}
