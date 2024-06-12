@@ -24,12 +24,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/image"
-
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/image"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/dashscope-director/sdk"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
