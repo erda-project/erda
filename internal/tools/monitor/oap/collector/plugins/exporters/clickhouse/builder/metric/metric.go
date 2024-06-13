@@ -100,7 +100,7 @@ func NewBuilder(ctx servicehub.Context, logger logs.Logger, cfg *builder.Builder
 }
 
 func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]driver.Batch, error) {
-	metaBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+bu.Loader.Database()+".metrics_meta")
+	metaBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+bu.Loader.Database()+".metrics_meta", driver.WithReleaseConnection())
 	if err != nil {
 		return nil, fmt.Errorf("prepare metrics_meta batch: %w", err)
 	}
@@ -113,7 +113,7 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 
 		if _, ok := tableBatch[table]; !ok {
 			// nolint
-			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table)
+			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table, driver.WithReleaseConnection())
 			if err != nil {
 				return nil, err
 			}

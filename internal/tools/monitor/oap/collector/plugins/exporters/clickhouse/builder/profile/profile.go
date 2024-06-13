@@ -95,15 +95,15 @@ func (bu *Builder) BuildBatch(ctx context.Context, sourceBatch interface{}) ([]d
 }
 
 func (bu *Builder) buildBatches(ctx context.Context, items []*profile.Output) ([]driver.Batch, error) {
-	treeBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+treeTable)
+	treeBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+treeTable, driver.WithReleaseConnection())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tree table: %v", err)
 	}
-	segmentBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+segmentTable)
+	segmentBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+segmentTable, driver.WithReleaseConnection())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get segment table: %v", err)
 	}
-	dictBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+dictTable)
+	dictBatch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+dictTable, driver.WithReleaseConnection())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dict table: %v", err)
 	}
