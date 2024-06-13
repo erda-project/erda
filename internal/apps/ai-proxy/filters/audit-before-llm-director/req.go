@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/excerptor"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -38,7 +39,7 @@ func (f *Filter) OnOriginalRequest(ctx context.Context, infor reverseproxy.HttpI
 	createReq.RequestAt = timestamppb.New(time.Now())
 	createReq.AuthKey = vars.TrimBearer(infor.Header().Get(vars.TrimBearer(httputil.HeaderKeyAuthorization)))
 	// request body
-	createReq.RequestBody = infor.BodyBuffer().String()
+	createReq.RequestBody = excerptor.ExcerptActualRequestBody(infor.BodyBuffer().String())
 	// user agent
 	createReq.UserAgent = httputil.GetUserAgent(infor.Header())
 	// x request id

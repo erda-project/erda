@@ -36,6 +36,7 @@ routes:
             - AddModelInRequestBody
             - AddContextMessages
       - name: bailian-director
+      - name: dashscope-director
       - name: openai-director
       - name: audit-after-llm-director
       - name: finalize
