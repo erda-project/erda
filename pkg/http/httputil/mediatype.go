@@ -36,6 +36,7 @@ var (
 	HeaderKeyAcceptEncoding           = textproto.CanonicalMIMEHeaderKey("Accept-Encoding")
 	HeaderKeyUserAgent                = textproto.CanonicalMIMEHeaderKey("User-Agent")
 	HeaderKeyContentDisposition       = textproto.CanonicalMIMEHeaderKey("Content-Disposition")
+	HeaderKeyContentEncoding          = textproto.CanonicalMIMEHeaderKey("Content-Encoding")
 )
 
 var (

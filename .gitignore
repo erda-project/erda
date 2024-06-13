@@ -94,3 +94,6 @@ api/proto-go
 
 # gittar
 cmd/gittar/repository*
+
+# testdata
+testdata/

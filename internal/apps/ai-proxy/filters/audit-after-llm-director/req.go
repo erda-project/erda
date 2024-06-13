@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/excerptor"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -41,7 +42,7 @@ func (f *Filter) OnActualRequest(ctx context.Context, infor reverseproxy.HttpInf
 	// collect actual llm request info
 	updateReq := pb.AuditUpdateRequestAfterLLMDirectorInvoke{
 		AuditId:           auditRecID,
-		ActualRequestBody: infor.BodyBuffer().String(),
+		ActualRequestBody: excerptor.ExcerptActualRequestBody(infor.BodyBuffer().String()),
 		ActualRequestURL:  infor.URL().String(),
 		ActualRequestHeader: func() string {
 			b, err := json.Marshal(infor.Header())

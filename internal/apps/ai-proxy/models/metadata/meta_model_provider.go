@@ -26,12 +26,13 @@ type (
 	}
 	ModelProviderMetaPublic struct {
 		Scheme   string `json:"scheme,omitempty"`
+		Endpoint string `json:"endpoint,omitempty"`
 		Host     string `json:"host,omitempty"`
 		Location string `json:"location,omitempty"`
 		Region   string `json:"region,omitempty"`
 	}
 	ModelProviderMetaSecret struct {
-		APIKey string `json:"apiKey,omitempty"`
+		AnotherAPIKey string `json:"anotherApiKey,omitempty"`
 	}
 )
 
