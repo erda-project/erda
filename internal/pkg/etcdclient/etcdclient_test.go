@@ -25,7 +25,7 @@ import (
 //	"sync"
 //	"testing"
 //
-//	"github.com/coreos/etcd/clientv3"
+//	clientv3 "go.etcd.io/etcd/client/v3"
 //)
 //
 //func TestSingleInstance(t *testing.T) {

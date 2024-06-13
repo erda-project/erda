@@ -19,8 +19,8 @@ import (
 	"context"
 	"time"
 
-	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/sirupsen/logrus"
+	v3 "go.etcd.io/etcd/client/v3"
 )
 
 // ImageGCCron Execute once every day at 00:00:00, Release recycles the entrance

@@ -434,9 +434,8 @@ func Test_copyService(t *testing.T) {
 						APIVersion: "v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:        "dice-test-2-api-d777be56b33944ff8d22db0cf136ce24-bfdc2e",
-						Namespace:   "project-2-test",
-						ClusterName: "test",
+						Name:      "dice-test-2-api-d777be56b33944ff8d22db0cf136ce24-bfdc2e",
+						Namespace: "project-2-test",
 					},
 					Spec: corev1.ServiceSpec{
 						ExternalName: "demo.project-1.svc.cluster.local",

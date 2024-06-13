@@ -228,7 +228,7 @@ func getHealthProbe(port int) *corev1.Probe {
 		PeriodSeconds:    15,
 		SuccessThreshold: 1,
 		TimeoutSeconds:   10,
-		Handler: corev1.Handler{
+		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path:   "/health",
 				Port:   intstr.FromInt(port),

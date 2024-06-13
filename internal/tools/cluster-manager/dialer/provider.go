@@ -17,9 +17,9 @@ package dialer
 import (
 	"context"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"

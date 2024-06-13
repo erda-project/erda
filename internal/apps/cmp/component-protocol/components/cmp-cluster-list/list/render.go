@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/apimachinery/pkg/api/resource"

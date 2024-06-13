@@ -306,7 +306,7 @@ func (r *RocketMQOperator) convertNameSrv(svc apistructs.Service, affinity *core
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
 				StorageClassName: &scname,
-				Resources: corev1.ResourceRequirements{
+				Resources: corev1.VolumeResourceRequirements{
 					Requests: corev1.ResourceList{
 						"storage": resource.MustParse(capacity),
 					},
@@ -355,7 +355,7 @@ func (r *RocketMQOperator) convertBroker(svc apistructs.Service, affinity *corev
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
 				StorageClassName: &scname,
-				Resources: corev1.ResourceRequirements{
+				Resources: corev1.VolumeResourceRequirements{
 					Requests: corev1.ResourceList{
 						"storage": resource.MustParse(capacity),
 					},

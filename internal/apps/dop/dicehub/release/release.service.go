@@ -27,9 +27,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 

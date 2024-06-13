@@ -181,7 +181,7 @@ func (d *DockerJob) Start(ctx context.Context, task *spec.PipelineTask) (data in
 	if len(job.Volumes) > 0 {
 		mounts := d.GenerateDockerVolumes(&job)
 		for _, mt := range mounts {
-			_, err := d.client.VolumeCreate(ctx, volume.VolumeCreateBody{
+			_, err := d.client.VolumeCreate(ctx, volume.CreateOptions{
 				Name:   mt.Source,
 				Driver: "local",
 			})
@@ -302,10 +302,10 @@ func (d *DockerJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apist
 	return apistructs.TaskInspect{Desc: string(inspectDesc)}, nil
 }
 
-func (d *DockerJob) createContainerByJob(ctx context.Context, job *apistructs.JobFromUser) (container.ContainerCreateCreatedBody, error) {
+func (d *DockerJob) createContainerByJob(ctx context.Context, job *apistructs.JobFromUser) (container.CreateResponse, error) {
 	jobImage, err := d.client.ImagePull(ctx, job.Image, dockertypes.ImagePullOptions{})
 	if err != nil {
-		return container.ContainerCreateCreatedBody{}, errors.Errorf("failed to pull image, err: %v", err)
+		return container.CreateResponse{}, errors.Errorf("failed to pull image, err: %v", err)
 	}
 	defer jobImage.Close()
 	cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(job.CPU*1000)), "m"))
@@ -320,7 +320,7 @@ func (d *DockerJob) createContainerByJob(ctx context.Context, job *apistructs.Jo
 	}
 	memoryInt64, ok := memory.AsInt64()
 	if !ok {
-		return container.ContainerCreateCreatedBody{}, errors.Errorf("failed to convert memory to int64")
+		return container.CreateResponse{}, errors.Errorf("failed to convert memory to int64")
 	}
 	hostCfg := container.HostConfig{
 		Resources: container.Resources{
@@ -342,23 +342,23 @@ func (d *DockerJob) createContainerByJob(ctx context.Context, job *apistructs.Jo
 	}
 	con, err := d.client.ContainerCreate(ctx, &cfg, &hostCfg, nil, nil, d.makeJobName(job.Namespace, job.Name))
 	if err != nil {
-		return container.ContainerCreateCreatedBody{}, err
+		return container.CreateResponse{}, err
 	}
 	return con, nil
 }
 
-func (d *DockerJob) generatePreFetcherContainer(ctx context.Context, job *apistructs.JobFromUser) (container.ContainerCreateCreatedBody, error) {
+func (d *DockerJob) generatePreFetcherContainer(ctx context.Context, job *apistructs.JobFromUser) (container.CreateResponse, error) {
 	jobImage, err := d.client.ImagePull(ctx, job.PreFetcher.FileFromImage, dockertypes.ImagePullOptions{})
 	if err != nil {
-		return container.ContainerCreateCreatedBody{}, errors.Errorf("failed to pull image, err: %v", err)
+		return container.CreateResponse{}, errors.Errorf("failed to pull image, err: %v", err)
 	}
 	defer jobImage.Close()
-	preFetcherVolume, err := d.client.VolumeCreate(context.Background(), volume.VolumeCreateBody{
+	preFetcherVolume, err := d.client.VolumeCreate(context.Background(), volume.CreateOptions{
 		Name:   d.makePreFetcherVolumeName(job),
 		Driver: "local",
 	})
 	if err != nil {
-		return container.ContainerCreateCreatedBody{}, err
+		return container.CreateResponse{}, err
 	}
 	cfg := container.Config{
 		Image: job.PreFetcher.FileFromImage,
@@ -371,7 +371,7 @@ func (d *DockerJob) generatePreFetcherContainer(ctx context.Context, job *apistr
 	}
 	preFetcherContainer, err := d.client.ContainerCreate(context.Background(), &cfg, &hostCfg, nil, nil, d.makePreFetcherJobName(job))
 	if err != nil {
-		return container.ContainerCreateCreatedBody{}, err
+		return container.CreateResponse{}, err
 	}
 	return preFetcherContainer, nil
 }

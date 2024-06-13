@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"gopkg.in/square/go-jose.v2/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"

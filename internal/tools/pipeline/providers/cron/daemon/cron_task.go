@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"

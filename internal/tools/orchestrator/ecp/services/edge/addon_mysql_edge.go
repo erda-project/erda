@@ -134,7 +134,7 @@ func (e *Edge) CreateEdgeMysql(ctx context.Context, req *apistructs.EdgeAppCreat
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes:      []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
 			StorageClassName: &scName,
-			Resources: v1.ResourceRequirements{
+			Resources: v1.VolumeResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceStorage: resource.MustParse("10G"),
 				},

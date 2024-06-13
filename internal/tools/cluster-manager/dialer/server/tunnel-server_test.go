@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/coreos/etcd/clientv3"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/bundle"
 	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"

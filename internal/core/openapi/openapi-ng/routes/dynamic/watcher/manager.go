@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/coreos/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/internal/core/openapi/openapi-ng/routes"
 	httpapi "github.com/erda-project/erda/pkg/common/httpapi"

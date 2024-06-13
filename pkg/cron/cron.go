@@ -24,9 +24,9 @@ import (
 	"sync"
 	"time"
 
-	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
+	v3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/internal/pkg/etcdclient"
 )

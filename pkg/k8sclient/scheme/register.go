@@ -16,8 +16,8 @@ package scheme
 
 import (
 	rocketmqv1alpha1 "erda.cloud/rocketmq/api/v1alpha1"
-	sparkoperatorv1beta2 "github.com/GoogleCloudPlatform/spark-on-k8s-operator/pkg/apis/sparkoperator.k8s.io/v1beta2"
 	elasticsearchv1 "github.com/elastic/cloud-on-k8s/v2/pkg/apis/elasticsearch/v1"
+	sparkoperatorv1beta2 "github.com/kubeflow/spark-operator/pkg/apis/sparkoperator.k8s.io/v1beta2"
 	flinkoperatoryv1beta1 "github.com/spotify/flink-on-k8s-operator/apis/flinkcluster/v1beta1"
 	istioconfigv1alpha2 "istio.io/client-go/pkg/apis/config/v1alpha2"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"

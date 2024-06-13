@@ -25,10 +25,10 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"

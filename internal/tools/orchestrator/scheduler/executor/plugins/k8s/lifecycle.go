@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	DefaultProdLifecyclePreStopHandler = &corev1.Handler{
+	DefaultProdLifecyclePreStopHandler = &corev1.LifecycleHandler{
 		Exec: &corev1.ExecAction{
 			Command: []string{"sh", "-c", "sleep 10"},
 		},

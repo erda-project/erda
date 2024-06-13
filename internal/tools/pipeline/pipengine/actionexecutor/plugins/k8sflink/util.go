@@ -285,7 +285,7 @@ func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistruct
 		statusDesc.Status = apistructs.StatusStoppedByKilled
 		return statusDesc
 	}
-	switch status.Components.TaskManagerStatefulSet.State {
+	switch status.Components.TaskManager.State {
 	case flinkoperatorv1beta1.ComponentStateReady,
 		flinkoperatorv1beta1.ComponentStateNotReady,
 		flinkoperatorv1beta1.ComponentStateUpdating:

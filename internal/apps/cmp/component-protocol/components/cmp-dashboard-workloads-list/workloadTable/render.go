@@ -26,7 +26,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

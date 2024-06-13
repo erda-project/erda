@@ -31,7 +31,7 @@ import (
 // streams.
 type connection struct {
 	conn             *spdystream.Connection
-	streams          []httpstream.Stream
+	streams          map[uint32]httpstream.Stream
 	streamLock       sync.Mutex
 	newStreamHandler httpstream.NewStreamHandler
 }
@@ -64,7 +64,7 @@ func NewServerConnection(conn net.Conn, newStreamHandler httpstream.NewStreamHan
 // will be invoked when the server receives a newly created stream from the
 // client.
 func newConnection(conn *spdystream.Connection, newStreamHandler httpstream.NewStreamHandler) httpstream.Connection {
-	c := &connection{conn: conn, newStreamHandler: newStreamHandler}
+	c := &connection{conn: conn, newStreamHandler: newStreamHandler, streams: make(map[uint32]httpstream.Stream)}
 	go conn.Serve(c.newSpdyStream)
 	return c
 }
@@ -81,7 +81,7 @@ func (c *connection) Close() error {
 		// calling Reset instead of Close ensures that all streams are fully torn down
 		s.Reset()
 	}
-	c.streams = make([]httpstream.Stream, 0)
+	c.streams = make(map[uint32]httpstream.Stream)
 	c.streamLock.Unlock()
 
 	// now that all streams are fully torn down, it's safe to call close on the underlying connection,
@@ -105,11 +105,24 @@ func (c *connection) CreateStream(headers http.Header) (httpstream.Stream, error
 	return stream, nil
 }
 
+// RemoveStreams can be used to remove a set of streams from the Connection.
+func (c *connection) RemoveStreams(streams ...httpstream.Stream) {
+	c.streamLock.Lock()
+	defer c.streamLock.Unlock()
+	for _, stream := range streams {
+		conn := c.conn.FindStream(stream.Identifier())
+		if conn == nil {
+			conn.Close()
+		}
+		delete(c.streams, stream.Identifier())
+	}
+}
+
 // registerStream adds the stream s to the connection's list of streams that
 // it owns.
 func (c *connection) registerStream(s httpstream.Stream) {
 	c.streamLock.Lock()
-	c.streams = append(c.streams, s)
+	c.streams[s.Identifier()] = s
 	c.streamLock.Unlock()
 }
 

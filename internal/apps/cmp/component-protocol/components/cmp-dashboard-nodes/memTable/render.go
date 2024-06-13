@@ -17,7 +17,7 @@ package memTable
 import (
 	"strings"
 
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"

@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/coreos/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

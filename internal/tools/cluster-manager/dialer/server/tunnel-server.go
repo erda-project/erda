@@ -30,11 +30,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"

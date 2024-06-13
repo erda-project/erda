@@ -17,16 +17,16 @@ package steve
 import (
 	"context"
 
-	"github.com/rancher/wrangler/pkg/generated/controllers/apiextensions.k8s.io"
-	apiextensionsv1 "github.com/rancher/wrangler/pkg/generated/controllers/apiextensions.k8s.io/v1"
-	"github.com/rancher/wrangler/pkg/generated/controllers/apiregistration.k8s.io"
-	apiregistrationv1 "github.com/rancher/wrangler/pkg/generated/controllers/apiregistration.k8s.io/v1"
-	"github.com/rancher/wrangler/pkg/generated/controllers/core"
-	corev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	"github.com/rancher/wrangler/pkg/generated/controllers/rbac"
-	rbacv1 "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
-	"github.com/rancher/wrangler/pkg/generic"
-	"github.com/rancher/wrangler/pkg/start"
+	"github.com/rancher/wrangler/v2/pkg/generated/controllers/apiextensions.k8s.io"
+	apiextensionsv1 "github.com/rancher/wrangler/v2/pkg/generated/controllers/apiextensions.k8s.io/v1"
+	"github.com/rancher/wrangler/v2/pkg/generated/controllers/apiregistration.k8s.io"
+	apiregistrationv1 "github.com/rancher/wrangler/v2/pkg/generated/controllers/apiregistration.k8s.io/v1"
+	"github.com/rancher/wrangler/v2/pkg/generated/controllers/core"
+	corev1 "github.com/rancher/wrangler/v2/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/v2/pkg/generated/controllers/rbac"
+	rbacv1 "github.com/rancher/wrangler/v2/pkg/generated/controllers/rbac/v1"
+	"github.com/rancher/wrangler/v2/pkg/generic"
+	"github.com/rancher/wrangler/v2/pkg/start"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -54,11 +54,11 @@ func NewController(cfg *rest.Config, opts *generic.FactoryOptions) (*Controllers
 	}
 	c.starters = append(c.starters, core)
 
-	rbac, err := rbac.NewFactoryFromConfigWithOptions(cfg, opts)
+	rbacCtr, err := rbac.NewFactoryFromConfigWithOptions(cfg, opts)
 	if err != nil {
 		return nil, err
 	}
-	c.starters = append(c.starters, rbac)
+	c.starters = append(c.starters, rbacCtr)
 
 	api, err := apiregistration.NewFactoryFromConfigWithOptions(cfg, opts)
 	if err != nil {
@@ -77,7 +77,7 @@ func NewController(cfg *rest.Config, opts *generic.FactoryOptions) (*Controllers
 		return nil, err
 	}
 	c.Core = core.Core().V1()
-	c.RBAC = rbac.Rbac().V1()
+	c.RBAC = rbacCtr.Rbac().V1()
 	c.API = api.Apiregistration().V1()
 	c.CRD = crd.Apiextensions().V1()
 	c.RESTConfig = cfg

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	v3 "github.com/coreos/etcd/clientv3"
+	v3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pipengine/actionexecutor"
