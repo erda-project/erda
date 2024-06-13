@@ -18,8 +18,8 @@ package stm
 import (
 	"encoding/json"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/clientv3/concurrency"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/concurrency"
 )
 
 // JSONStoreSTMOP 包括了在 STM 中能使用的 API

@@ -16,7 +16,9 @@ package report
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"testing"
 )
 
@@ -82,7 +84,8 @@ func Test_reportClient_serialize(t *testing.T) {
 				t.Errorf("serialize() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			fmt.Println(got)
+			io.Copy(os.Stdout, got)
+			//fmt.Println(got)
 		})
 	}
 }

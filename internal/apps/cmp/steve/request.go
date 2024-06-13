@@ -32,7 +32,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/api/policy/v1beta1"

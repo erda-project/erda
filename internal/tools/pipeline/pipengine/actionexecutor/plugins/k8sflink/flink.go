@@ -213,7 +213,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		statusDesc.Status = apistructs.StatusError
 		statusDesc.Reason = err.Error()
 		statusDesc.LastMessage = err.Error()
-		return nil, fmt.Errorf("create flink cluster %s err: %s", flinkCluster.ClusterName, err.Error())
+		return nil, fmt.Errorf("create flink cluster %s err: %s", flinkCluster.Name, err.Error())
 	}
 	return apistructs.Job{
 		JobFromUser: job,

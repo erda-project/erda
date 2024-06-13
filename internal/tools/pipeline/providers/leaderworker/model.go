@@ -17,7 +17,7 @@ package leaderworker
 import (
 	"context"
 
-	"github.com/coreos/etcd/mvcc/mvccpb"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
 )
