@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"github.com/erda-project/erda-infra/base/logs"
 )
