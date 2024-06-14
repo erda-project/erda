@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 )
