@@ -39,7 +39,6 @@ require (
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/cespare/xxhash v1.1.0
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dlclark/regexp2 v1.4.0
 	github.com/docker/docker v25.0.3+incompatible
@@ -125,7 +124,6 @@ require (
 	github.com/rancher/remotedialer v0.3.2
 	github.com/rancher/steve v0.0.0-20221031182508-a10fe811f58f
 	github.com/rancher/wrangler v0.8.11-0.20211214201934-f5aa5d9f2e81
-	github.com/rancher/wrangler/v2 v2.2.0-rc6
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
@@ -157,10 +155,6 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.14
 	go.etcd.io/etcd/client/v3 v3.5.14
 	go.opentelemetry.io/otel v1.27.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.27.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.27.0
-	go.opentelemetry.io/otel/sdk v1.27.0
-	go.opentelemetry.io/otel/trace v1.27.0
 	go.opentelemetry.io/proto/otlp v1.2.0
 	go.uber.org/automaxprocs v1.5.1
 	go.uber.org/ratelimit v0.2.0
@@ -169,7 +163,6 @@ require (
 	golang.org/x/text v0.15.0
 	golang.org/x/time v0.5.0
 	google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
@@ -189,6 +182,19 @@ require (
 	howett.net/plist v1.0.0
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
+	modernc.org/mathutil v1.6.0
+	xorm.io/builder v0.3.11-0.20220531020008-1bd24a7dc978
+	xorm.io/xorm v1.3.8
+)
+
+require (
+	github.com/coreos/etcd v3.3.15+incompatible
+	github.com/rancher/wrangler/v2 v2.2.0-rc6
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.27.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.27.0
+	go.opentelemetry.io/otel/sdk v1.27.0
+	go.opentelemetry.io/otel/trace v1.27.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5
 	k8s.io/api v0.30.1
 	k8s.io/apiextensions-apiserver v0.30.0
 	k8s.io/apimachinery v0.30.1
@@ -201,12 +207,9 @@ require (
 	k8s.io/kubectl v0.30.0
 	k8s.io/kubernetes v1.29.3
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
-	modernc.org/mathutil v1.6.0
 	sigs.k8s.io/controller-runtime v0.17.2
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.4.0
-	xorm.io/builder v0.3.11-0.20220531020008-1bd24a7dc978
-	xorm.io/xorm v1.3.8
 )
 
 require (
