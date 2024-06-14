@@ -704,7 +704,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 		}
 		if meta := byExpressionRequest.GetQueryMeta(); meta != nil {
 			sel.Meta = storage.QueryMeta{
-				OrgNames:              []string{meta.GetOrgName(), "erda"},
+				OrgNames:              []string{meta.GetOrgName()},
 				MspEnvIds:             meta.GetMspEnvIds(),
 				Highlight:             meta.GetHighlight(),
 				PreferredBufferSize:   int(meta.GetPreferredBufferSize()),
