@@ -25,6 +25,7 @@ import (
 
 	// processors
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/aggregator"
+	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/dropper"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/k8s-tagger"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/modifier"
 	_ "github.com/erda-project/erda/internal/tools/monitor/oap/collector/plugins/processors/profile"
