@@ -94,6 +94,34 @@ func (m *mockAsyncProducer) Errors() <-chan *sarama.ProducerError {
 	return m.errorsC
 }
 
+func (m *mockAsyncProducer) IsTransactional() bool {
+	return false
+}
+
+func (m *mockAsyncProducer) TxnStatus() sarama.ProducerTxnStatusFlag {
+	panic("implement me")
+}
+
+func (m *mockAsyncProducer) BeginTxn() error {
+	panic("implement me")
+}
+
+func (m *mockAsyncProducer) CommitTxn() error {
+	panic("implement me")
+}
+
+func (m *mockAsyncProducer) AbortTxn() error {
+	panic("implement me")
+}
+
+func (m *mockAsyncProducer) AddOffsetsToTxn(offsets map[string][]*sarama.PartitionOffsetMetadata, groupId string) error {
+	panic("implement me")
+}
+
+func (m *mockAsyncProducer) AddMessageToTxn(msg *sarama.ConsumerMessage, groupId string, metadata *string) error {
+	panic("implement me")
+}
+
 func pointerString(s string) *string {
 	var ps string
 	ps = s

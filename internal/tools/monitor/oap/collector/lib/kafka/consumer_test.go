@@ -75,3 +75,19 @@ func (m *mockConsumerGroup) Errors() <-chan error {
 func (m *mockConsumerGroup) Close() error {
 	return nil
 }
+
+func (m *mockConsumerGroup) Pause(partitions map[string][]int32) {
+	return
+}
+
+func (m *mockConsumerGroup) Resume(partitions map[string][]int32) {
+	return
+}
+
+func (m *mockConsumerGroup) PauseAll() {
+	return
+}
+
+func (m *mockConsumerGroup) ResumeAll() {
+	return
+}
