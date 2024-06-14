@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"github.com/recallsong/go-utils/reflectx"
 	otlpv11 "go.opentelemetry.io/proto/otlp/common/v1"
 	otlpv1 "go.opentelemetry.io/proto/otlp/trace/v1"

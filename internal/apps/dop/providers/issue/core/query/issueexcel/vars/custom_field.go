@@ -17,8 +17,6 @@ package vars
 import (
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
-
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 )

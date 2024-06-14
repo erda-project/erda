@@ -73,7 +73,6 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/golang/protobuf v1.5.4
 	github.com/golang/snappy v0.0.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-jsonnet v0.18.0
@@ -124,6 +123,7 @@ require (
 	github.com/rancher/remotedialer v0.3.2
 	github.com/rancher/steve v0.0.0-20221031182508-a10fe811f58f
 	github.com/rancher/wrangler v0.8.11-0.20211214201934-f5aa5d9f2e81
+	github.com/rancher/wrangler/v2 v2.2.0-rc6
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
@@ -151,10 +151,14 @@ require (
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
-	go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489
 	go.etcd.io/etcd/api/v3 v3.5.14
+	go.etcd.io/etcd/client/pkg/v3 v3.5.14
 	go.etcd.io/etcd/client/v3 v3.5.14
 	go.opentelemetry.io/otel v1.27.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.27.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.27.0
+	go.opentelemetry.io/otel/sdk v1.27.0
+	go.opentelemetry.io/otel/trace v1.27.0
 	go.opentelemetry.io/proto/otlp v1.2.0
 	go.uber.org/automaxprocs v1.5.1
 	go.uber.org/ratelimit v0.2.0
@@ -163,8 +167,9 @@ require (
 	golang.org/x/text v0.15.0
 	golang.org/x/time v0.5.0
 	google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5
 	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/igm/sockjs-go.v2 v2.0.0
@@ -182,19 +187,6 @@ require (
 	howett.net/plist v1.0.0
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
-	modernc.org/mathutil v1.6.0
-	xorm.io/builder v0.3.11-0.20220531020008-1bd24a7dc978
-	xorm.io/xorm v1.3.8
-)
-
-require (
-	github.com/coreos/etcd v3.3.15+incompatible
-	github.com/rancher/wrangler/v2 v2.2.0-rc6
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.27.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.27.0
-	go.opentelemetry.io/otel/sdk v1.27.0
-	go.opentelemetry.io/otel/trace v1.27.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5
 	k8s.io/api v0.30.1
 	k8s.io/apiextensions-apiserver v0.30.0
 	k8s.io/apimachinery v0.30.1
@@ -207,9 +199,12 @@ require (
 	k8s.io/kubectl v0.30.0
 	k8s.io/kubernetes v1.29.3
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
+	modernc.org/mathutil v1.6.0
 	sigs.k8s.io/controller-runtime v0.17.2
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.4.0
+	xorm.io/builder v0.3.11-0.20220531020008-1bd24a7dc978
+	xorm.io/xorm v1.3.8
 )
 
 require (
@@ -259,7 +254,6 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
-	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/danjacques/gofslock v0.0.0-20191023191349-0a45f885bc37 // indirect
@@ -319,6 +313,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/gnostic-models v0.6.9-0.20230804172637-c7be7c783f49 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
@@ -442,7 +437,7 @@ require (
 	go.elastic.co/apm/module/apmzap/v2 v2.1.0 // indirect
 	go.elastic.co/apm/v2 v2.1.0 // indirect
 	go.elastic.co/fastjson v1.1.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.14 // indirect
+	go.etcd.io/etcd v0.5.0-alpha.5.0.20191023171146-3cf2f69b5738 // indirect
 	go.mongodb.org/mongo-driver v1.11.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0 // indirect
@@ -487,7 +482,6 @@ require (
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.4
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
 	github.com/erda-project/erda-proto-go v1.4.0 => ./api/proto-go
 	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.49.0
@@ -503,7 +497,6 @@ replace (
 	github.com/rancher/steve => github.com/rancher/steve v0.0.0-20240605141712-7a84620e8bc1
 	github.com/rancher/wrangler/v2 => github.com/rancher/wrangler/v2 v2.2.0-rc6
 	github.com/tealeg/xlsx/v3 => github.com/sfwn/xlsx/v3 v3.0.0-20231016172135-b3d7083b7ab3
-	go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
 	go.opentelemetry.io/proto/otlp v0.11.0 => github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5
 	k8s.io/api => k8s.io/api v0.29.0
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.29.0
