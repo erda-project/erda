@@ -17,11 +17,13 @@ package vars
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
 )
 
-func FormatTimeFromTimestamp(timestamp *timestamp.Timestamp) string {
+func FormatTimeFromTimestamp(timestamp *timestamppb.Timestamp) string {
 	return timestamp.AsTime().In(time.Local).Format("2006-01-02 15:04:05")
 }
 
