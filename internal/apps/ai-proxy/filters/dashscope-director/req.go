@@ -104,11 +104,11 @@ func oneDirector(ctx context.Context, w http.ResponseWriter, infor reverseproxy.
 	case metadata.AliyunDashScopeRequestTypeOpenAI:
 		bodyObj = oreq
 	case metadata.AliyunDashScopeRequestTypeDs:
-		qwreq, err := sdk.ConvertOpenAIChatRequestToDsRequest(oreq, model.Type)
+		dsreq, err := sdk.ConvertOpenAIChatRequestToDsRequest(oreq, model.Type)
 		if err != nil {
 			return reverseproxy.Intercept, fmt.Errorf("failed to convert openai chat request to dashscope request, err: %v", err)
 		}
-		bodyObj = qwreq
+		bodyObj = dsreq
 	default:
 		return reverseproxy.Intercept, fmt.Errorf("unsupported metadata.public.request_type: %s", modelMeta.Public.RequestType)
 	}
