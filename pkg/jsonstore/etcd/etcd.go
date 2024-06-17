@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/pkg/transport"
 	"github.com/pkg/errors"
 	"go.etcd.io/etcd/api/v3/mvccpb"
+	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/pkg/jsonstore/stm"
