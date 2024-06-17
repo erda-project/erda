@@ -32,9 +32,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/pkg/transport"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 )

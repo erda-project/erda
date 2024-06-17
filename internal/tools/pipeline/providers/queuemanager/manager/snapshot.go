@@ -17,8 +17,8 @@ package manager
 import (
 	"encoding/json"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/proto"
 )
 
 type SnapshotObj struct {

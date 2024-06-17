@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/core/pb"
 	"github.com/erda-project/erda/internal/apps/dop/providers/issue/core/query"
@@ -238,11 +238,11 @@ func getStructFieldExcelTag(structField reflect.StructField) string {
 
 func getStringCellValue(structField reflect.StructField, fieldValue reflect.Value) string {
 	switch structField.Type {
-	case reflect.TypeOf(&timestamp.Timestamp{}):
+	case reflect.TypeOf(&timestamppb.Timestamp{}):
 		if fieldValue.IsNil() {
 			return ""
 		}
-		t := pbutil.GetTimeInLocal(fieldValue.Interface().(*timestamp.Timestamp))
+		t := pbutil.GetTimeInLocal(fieldValue.Interface().(*timestamppb.Timestamp))
 		if t.IsZero() {
 			return ""
 		}

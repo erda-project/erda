@@ -24,10 +24,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/recallsong/go-utils/reflectx"
 	otlpv11 "go.opentelemetry.io/proto/otlp/common/v1"
 	otlpv1 "go.opentelemetry.io/proto/otlp/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	tracepb "github.com/erda-project/erda-proto-go/oap/trace/pb"
