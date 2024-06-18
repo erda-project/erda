@@ -7,6 +7,12 @@ health:
 
 erda.oap.collector.core:
   pipelines:
+    raws:
+      - receivers: [ "erda.oap.collector.receiver.collector" ]
+        processors:
+          - "erda.oap.collector.processor.dropper@application-agent"
+        exporters: [ "erda.oap.collector.exporter.collector@metrics" ]
+
     metrics:
       - receivers:
           #- "erda.oap.collector.receiver.dummy"
@@ -23,11 +29,6 @@ erda.oap.collector.core:
           #- "erda.oap.collector.exporter.stdout"
           - "erda.oap.collector.exporter.collector@metrics"
         batch_size: ${METRIC_PROMETHEUS_BATCH_SIZE:1024}
-
-      - receivers: [ "erda.oap.collector.receiver.collector" ]
-        processors:
-          - "erda.oap.collector.processor.dropper@application-agent"
-        exporters: [ "erda.oap.collector.exporter.collector@metrics" ]
 
     external_metrics:
       - receivers:
@@ -50,6 +51,13 @@ erda.oap.collector.core:
 #  metric_sample: '{"name":"kubelet_cadvisor","timeUnixNano":1640936985459000000,"relations":null,"attributes":{"container":"manager","host_ip":"10.118.177.94","id":"/kubepods/burstable/pod164ec226-8106-4904-9bcb-0218a9b2b793/8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","image":"sha256:6cd7bc0e0855164e7ff495c6ec9a37cf8657f8170fe97055ffba2c63343bcedd","instance":"virtual-kubelet-cn-hangzhou-k","name":"8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","namespace":"default","pod":"elasticsearch-operator-776689d978-mjdzq","pod_name":"elasticsearch-operator-776689d978-mjdzq"},"dataPoints":{"container_cpu_usage_seconds_total":13995.161470334,"container_memory_max_usage_bytes":273977344}}'
 
 erda.oap.collector.receiver.prometheus-remote-write@default:
+
+grpc-client@erda.core.token:
+  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
+erda.core.token-client:
+
+erda.oap.collector.authentication:
+  sync_interval: ${COLLECTOR_AUTHENTICATION_AK_SYNC_INTERVAL:2m}
 
 erda.oap.collector.receiver.collector:
   auth:
