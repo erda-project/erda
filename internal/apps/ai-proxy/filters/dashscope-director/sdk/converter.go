@@ -15,16 +15,17 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
-func ConvertOpenAIChatRequestToDsRequest(oreq openai.ChatCompletionRequest, targetModelType pb.ModelType) (DsRequest, error) {
+func ConvertOpenAIChatRequestToDsRequest(ctx context.Context, oreq openai.ChatCompletionRequest, targetModelType pb.ModelType) (DsRequest, error) {
 	var dsReq DsRequest
 	dsReq.Model = oreq.Model
 	for _, om := range oreq.Messages {
@@ -63,7 +64,7 @@ func ConvertOpenAIChatRequestToDsRequest(oreq openai.ChatCompletionRequest, targ
 					case openai.ChatMessagePartTypeImageURL:
 						parts = append(parts, DsRequestContentPart{Image: omc.ImageURL.URL})
 					default:
-						logrus.Warnf("unsupported message part type: %s", omc.Type)
+						ctxhelper.GetLogger(ctx).Warnf("unsupported message part type: %s", omc.Type)
 					}
 				}
 			}

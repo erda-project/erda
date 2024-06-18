@@ -28,7 +28,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sashabaranov/go-openai"
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -368,13 +367,13 @@ func (f *AzureDirector) AddContextMessages(ctx context.Context) error {
 		infor := reverseproxy.NewInfor(ctx, req)
 		var openaiReq openai.ChatCompletionRequest
 		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&openaiReq); err != nil && err != io.EOF {
-			logrus.Errorf("failed to decode request body, err: %v", err)
+			ctxhelper.GetLogger(ctx).Errorf("failed to decode request body, err: %v", err)
 			return
 		}
 		openaiReq.Messages = messageGroup.AllMessages
 		b, err := json.Marshal(&openaiReq)
 		if err != nil {
-			logrus.Errorf("failed to marshal request body, err: %v", err)
+			ctxhelper.GetLogger(ctx).Errorf("failed to marshal request body, err: %v", err)
 			return
 		}
 		infor.SetBody(io.NopCloser(strings.NewReader(string(b))), int64(len(b)))

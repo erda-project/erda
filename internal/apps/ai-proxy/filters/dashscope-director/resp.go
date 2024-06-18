@@ -82,7 +82,7 @@ func (f *DashScopeDirector) dsHandleResponseStreamChunk(ctx context.Context, w r
 	// convert ds response to openai response
 	openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(*lastCompleteDeltaResp, modelName)
 	if err != nil {
-		return reverseproxy.Intercept, fmt.Errorf("failed to convert qwenVL response to openai response, err: %v", err)
+		return reverseproxy.Intercept, fmt.Errorf("failed to convert dashscope response to openai response, err: %v", err)
 	}
 	b, err := json.Marshal(&openaiChunk)
 	if err != nil {
