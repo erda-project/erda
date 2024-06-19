@@ -38,8 +38,9 @@ var (
 )
 
 var TransactionTableSortFieldSqlMap = map[string]string{
-	columnReqCount.Key:   "sum(elapsed_count::field)",
-	columnErrorCount.Key: "sum(if(eq(error::tag, 'true'),elapsed_count::field,0))",
+	columnReqCount.Key:    "sum(elapsed_count::field)",
+	columnErrorCount.Key:  "sum(if(eq(error::tag, 'true'),elapsed_count::field,0))",
+	columnAvgDuration.Key: "avg(elapsed_sum::field)",
 }
 
 type TransactionTableRow struct {
@@ -122,7 +123,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"%s,"+
 		"sum(elapsed_count::field),"+
 		"sum(if(eq(error::tag, 'true'),elapsed_count::field,0)),"+
-		"sum(elapsed_sum::field)/sum(elapsed_count::field) "+
+		"avg(elapsed_sum::field) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
