@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -93,10 +92,10 @@ func RunExtensionsPull(ctx *command.Context, extension string, dir string) error
 }
 
 func saveExtension(workDir string, extVersion apistructs.ExtensionVersion) {
-	ioutil.WriteFile(path.Join(workDir, "dice.yml"), []byte(extVersion.Dice.(string)), 0755)
-	ioutil.WriteFile(path.Join(workDir, "spec.yml"), []byte(extVersion.Spec.(string)), 0755)
-	ioutil.WriteFile(path.Join(workDir, "swagger.yml"), []byte(extVersion.Swagger.(string)), 0755)
-	ioutil.WriteFile(path.Join(workDir, "README.md"), []byte(extVersion.Readme), 0755)
+	os.WriteFile(path.Join(workDir, "dice.yml"), []byte(extVersion.Dice.(string)), 0755)
+	os.WriteFile(path.Join(workDir, "spec.yml"), []byte(extVersion.Spec.(string)), 0755)
+	os.WriteFile(path.Join(workDir, "swagger.yml"), []byte(extVersion.Swagger.(string)), 0755)
+	os.WriteFile(path.Join(workDir, "README.md"), []byte(extVersion.Readme), 0755)
 }
 
 func replaceDiceRegistry(diceBytes []byte, typ string, registry string) ([]byte, map[string]string, error) {

@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -146,9 +146,9 @@ func readBody(req *http.Request) ([]byte, error) {
 		defer func() {
 			_ = r.Close()
 		}()
-		return ioutil.ReadAll(r)
+		return io.ReadAll(r)
 	}
-	return ioutil.ReadAll(req.Body)
+	return io.ReadAll(req.Body)
 }
 
 func getStringValue(value *otlpv11.AnyValue) string {

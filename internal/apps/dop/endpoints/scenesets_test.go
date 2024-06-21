@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -47,7 +47,7 @@ func TestExportAutoSceneSet(t *testing.T) {
 		SpaceID:  1,
 	}
 	bodyDat, _ := json.Marshal(body)
-	r := &http.Request{Body: ioutil.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
+	r := &http.Request{Body: io.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
 	autotestSvc := atv2.New()
 	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(autotestSvc), "GetSpace", func(svc *atv2.Service, id uint64) (*apistructs.AutoTestSpace, error) {
 		return nil, fmt.Errorf("not found")
@@ -79,7 +79,7 @@ func TestImportAutoSceneSet(t *testing.T) {
 		FileType: apistructs.TestSceneSetFileTypeExcel,
 	}
 	bodyDat, _ := json.Marshal(body)
-	r := &http.Request{Body: ioutil.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
+	r := &http.Request{Body: io.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
 	url, err := url.Parse("https://unit.test/api/autotests/scenesets/actions/import?projectID=1&spaceID=1&fileType=excel")
 	if err != nil {
 		t.Error(err)

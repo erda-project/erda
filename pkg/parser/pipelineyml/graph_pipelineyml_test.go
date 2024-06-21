@@ -17,7 +17,7 @@ package pipelineyml
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -27,7 +27,7 @@ import (
 )
 
 func TestConvertGraphPipelineYml(t *testing.T) {
-	fb, err := ioutil.ReadFile("./samples/graph_pipelineyml.yaml")
+	fb, err := os.ReadFile("./samples/graph_pipelineyml.yaml")
 	assert.NoError(t, err)
 	b, err := ConvertGraphPipelineYmlContent(fb)
 	assert.NoError(t, err)
@@ -35,7 +35,7 @@ func TestConvertGraphPipelineYml(t *testing.T) {
 }
 
 func TestConvertToGraphPipelineYml(t *testing.T) {
-	fb, err := ioutil.ReadFile("./samples/pipeline_cicd.yml")
+	fb, err := os.ReadFile("./samples/pipeline_cicd.yml")
 	assert.NoError(t, err)
 	graph, err := ConvertToGraphPipelineYml(fb)
 	assert.NoError(t, err)
@@ -97,7 +97,7 @@ func Test_cronCompensatorReset(t *testing.T) {
 }
 
 func TestTest(t *testing.T) {
-	b, err := ioutil.ReadFile("./samples/trigger.yml")
+	b, err := os.ReadFile("./samples/trigger.yml")
 	assert.NoError(t, err)
 	newYml, err := ConvertToGraphPipelineYml(b)
 	assert.NoError(t, err)

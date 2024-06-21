@@ -15,7 +15,7 @@
 package log_service
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/jinzhu/gorm"
 	"gopkg.in/yaml.v3"
@@ -68,7 +68,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	if len(p.Cfg.IndexFieldSettings.File) > 0 {
-		f, err := ioutil.ReadFile(p.Cfg.IndexFieldSettings.File)
+		f, err := os.ReadFile(p.Cfg.IndexFieldSettings.File)
 		if err != nil {
 			return err
 		}

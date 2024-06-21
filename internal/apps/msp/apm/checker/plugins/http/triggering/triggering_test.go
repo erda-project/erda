@@ -16,7 +16,7 @@ package triggering
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"testing"
@@ -70,14 +70,14 @@ func TestTriggering_HttpCodeStrategy(t *testing.T) {
 }
 
 func TestTriggering_BodyStrategy(t *testing.T) {
-	body1 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
-	body2 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
-	body3 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
-	body4 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
-	body5 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
-	body6 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
-	body7 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
-	body8 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body1 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body2 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body3 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body4 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body5 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body6 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body7 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body8 := io.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
 	type fields struct {
 		Key     string
 		Operate string

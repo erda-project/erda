@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -78,7 +78,7 @@ func (s *fileService) UploadFile(req filetypes.FileUploadRequest) (*pb.File, err
 
 	// 加密存储（信封加密）
 	if req.Encrypt {
-		fileBytes, err := ioutil.ReadAll(req.FileReader)
+		fileBytes, err := io.ReadAll(req.FileReader)
 		if err != nil {
 			return nil, apierrors.ErrUploadFileEncrypt.InternalError(err)
 		}
@@ -101,7 +101,7 @@ func (s *fileService) UploadFile(req filetypes.FileUploadRequest) (*pb.File, err
 		if err != nil {
 			return nil, apierrors.ErrUploadFileEncrypt.InternalError(err)
 		}
-		fileReader = ioutil.NopCloser(bytes.NewBuffer(ciphertext))
+		fileReader = io.NopCloser(bytes.NewBuffer(ciphertext))
 	}
 
 	if err := storager.Write(handledPath, fileReader); err != nil {

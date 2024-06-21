@@ -16,7 +16,7 @@ package code_coverage
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"time"
@@ -225,7 +225,7 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		}
 		defer f.Close()
 
-		tempAddr, err := ioutil.TempDir("", "jacoco_xml_tar_gz")
+		tempAddr, err := os.MkdirTemp("", "jacoco_xml_tar_gz")
 		if err != nil {
 			return err
 		}
@@ -236,12 +236,12 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 			return err
 		}
 
-		fileBytes, err := ioutil.ReadAll(f)
+		fileBytes, err := io.ReadAll(f)
 		if err != nil {
 			return err
 		}
 
-		err = ioutil.WriteFile(fmt.Sprintf("%v/%v", tempAddr, xmlTarFileName), fileBytes, 0777)
+		err = os.WriteFile(fmt.Sprintf("%v/%v", tempAddr, xmlTarFileName), fileBytes, 0777)
 		if err != nil {
 			return err
 		}
@@ -256,7 +256,7 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 			return err
 		}
 
-		all, err := ioutil.ReadAll(file)
+		all, err := io.ReadAll(file)
 		if err != nil {
 			return err
 		}

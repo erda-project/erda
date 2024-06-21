@@ -17,7 +17,7 @@ package dingding
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/url"
 	"time"
@@ -232,7 +232,7 @@ func (d *DDSubscriber) DINGDINGSend(u string, m *DDMessage) error {
 		logrus.Error(err)
 		return errors.Wrap(DINGDINGSendErr, err.Error())
 	}
-	body, err := ioutil.ReadAll(&buf)
+	body, err := io.ReadAll(&buf)
 	if err != nil {
 		err = errors.Errorf("DingDing publish: %v, err: %v", u, err)
 		logrus.Error(err)

@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -181,7 +181,7 @@ func (e *Endpoints) CreateRedis(ctx context.Context, r *http.Request, vars map[s
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		err := fmt.Errorf("failed to unmarshal create redis request: %v", err)
-		content, _ := ioutil.ReadAll(r.Body)
+		content, _ := io.ReadAll(r.Body)
 		logrus.Errorf("%s, request:%v", err.Error(), content)
 		return mkResponse(apistructs.CreateCloudResourceRedisResponse{
 			Header: apistructs.Header{

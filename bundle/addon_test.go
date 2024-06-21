@@ -16,7 +16,7 @@ package bundle
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"reflect"
@@ -72,7 +72,7 @@ func TestBundle_GetRuntimeAddonConfig(t *testing.T) {
   ]
 }
 `
-		resp.Body = ioutil.NopCloser(bytes.NewReader([]byte(raw)))
+		resp.Body = io.NopCloser(bytes.NewReader([]byte(raw)))
 		return resp, nil
 	})
 

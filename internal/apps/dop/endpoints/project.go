@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -62,7 +62,7 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	if r.Body == nil {
 		return apierrors.ErrCreateProject.MissingParameter("body").ToResp(), nil
 	}
-	bodyData, err := ioutil.ReadAll(r.Body)
+	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to read request body")
 		return apierrors.ErrCreateProject.InvalidParameter(err).ToResp(), nil

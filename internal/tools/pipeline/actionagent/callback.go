@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -68,7 +67,7 @@ func (agent *Agent) Callback() {
 		agent.AppendError(err)
 		return
 	}
-	mb, err := ioutil.ReadAll(r)
+	mb, err := io.ReadAll(r)
 	if err != nil {
 		if err == io.EOF {
 			return

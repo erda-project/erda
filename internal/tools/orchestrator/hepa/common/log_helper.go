@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -95,7 +94,7 @@ func AccessLogWrap(log *logrus.Logger) transport.ServiceOption {
 			recorder.Code = 502
 			path := httpReq.URL.RequestURI()
 			start := time.Now()
-			reqBody, err := ioutil.ReadAll(httpReq.Body)
+			reqBody, err := io.ReadAll(httpReq.Body)
 			if err != nil {
 				return
 			}

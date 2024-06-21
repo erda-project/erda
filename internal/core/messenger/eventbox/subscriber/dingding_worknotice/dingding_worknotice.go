@@ -17,7 +17,7 @@ package dingding_worknotice
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"strings"
 
@@ -141,7 +141,7 @@ func (s WorkNoticeSubscriber) worknoticeSend(u, agentID string, userIDList []str
 		logrus.Error(err)
 		return errors.Wrap(ErrSend, err.Error())
 	}
-	bodybuf, err := ioutil.ReadAll(&buf)
+	bodybuf, err := io.ReadAll(&buf)
 	if err != nil {
 		err = errors.Errorf("WorkNotice publish: %v, err: %v", u, err)
 		logrus.Error(err)

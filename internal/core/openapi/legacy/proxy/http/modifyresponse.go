@@ -17,7 +17,6 @@ package http
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -82,11 +81,11 @@ func getModifyResponse(rw http.ResponseWriter) func(*http.Response) error {
 			beginTime := request.Context().Value("beginTime").(time.Time)
 			cache := request.Context().Value("cache").(*sync.Map)
 			request.Body = reqBody
-			resBody, err := ioutil.ReadAll(res.Body)
+			resBody, err := io.ReadAll(res.Body)
 			if err != nil {
 				return err
 			}
-			res.Body = ioutil.NopCloser(bytes.NewReader(resBody))
+			res.Body = io.NopCloser(bytes.NewReader(resBody))
 			orgIDStr := request.Header.Get("Org-ID")
 			orgID, _ := strconv.ParseInt(orgIDStr, 10, 64)
 			auditContext := &apispec.AuditContext{
@@ -110,7 +109,7 @@ func getModifyResponse(rw http.ResponseWriter) func(*http.Response) error {
 						logrus.Errorf("audit panic url:%s , err:%s", request.RequestURI, err)
 					}
 				}()
-				auditContext.Response.Body = ioutil.NopCloser(bytes.NewReader(resBody))
+				auditContext.Response.Body = io.NopCloser(bytes.NewReader(resBody))
 				err := spec.Audit(auditContext)
 				if err != nil {
 					logrus.Errorf("audit failed url:%s , err:%s", request.RequestURI, err)

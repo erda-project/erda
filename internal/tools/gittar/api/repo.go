@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"sort"
@@ -526,7 +525,7 @@ func GetRepoBlobRange(context *webcontext.Context) {
 	since := context.GetQueryInt32("since", 1)
 	to := context.GetQueryInt32("to", 10)
 	if isTextFile {
-		d, err := ioutil.ReadAll(dataRc)
+		d, err := io.ReadAll(dataRc)
 		if err != nil {
 			context.Abort(err)
 			return
@@ -606,7 +605,7 @@ func GetRepoBlob(context *webcontext.Context) {
 		since := context.GetQueryInt32("since", 1)
 		to := context.GetQueryInt32("to", 10)
 		if isTextFile {
-			d, _ := ioutil.ReadAll(dataRc)
+			d, _ := io.ReadAll(dataRc)
 			buf = append(buf, d...)
 			line := fmt.Sprintf("%s,%s", strconv.Itoa(since), strconv.Itoa(to))
 			matchLine := fmt.Sprintf("@@ %s+%s @@", line, line)
@@ -666,7 +665,7 @@ func GetRepoBlob(context *webcontext.Context) {
 			Size:    treeEntry.Size(),
 		}
 		if isTextFile {
-			d, _ := ioutil.ReadAll(dataRc)
+			d, _ := io.ReadAll(dataRc)
 			buf = append(buf, d...)
 
 			blobData.Content = string(buf)

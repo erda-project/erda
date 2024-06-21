@@ -17,7 +17,7 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -59,7 +59,7 @@ func (b *Bundle) GetSteveResource(req *apistructs.SteveRequest) (data.Object, er
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -101,7 +101,7 @@ func (b *Bundle) ListSteveResource(req *apistructs.SteveRequest) (data.Object, e
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -145,7 +145,7 @@ func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (data.Object,
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -189,7 +189,7 @@ func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (data.Object,
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -230,7 +230,7 @@ func (b *Bundle) DeleteSteveResource(req *apistructs.SteveRequest) error {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}

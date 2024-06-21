@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 
@@ -88,7 +87,7 @@ func (agent *Agent) Execute(r io.Reader) {
 
 func (agent *Agent) parseArg(r io.Reader) {
 	// base64 decode
-	encodedArg, err := ioutil.ReadAll(r)
+	encodedArg, err := io.ReadAll(r)
 	if err != nil {
 		agent.AppendError(err)
 		return

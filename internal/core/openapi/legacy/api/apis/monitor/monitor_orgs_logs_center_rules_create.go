@@ -16,7 +16,7 @@ package monitor
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/openapi/legacy/api/apis"
@@ -38,7 +38,7 @@ var MONITOR_ORG_LOGS_RULES_CREATE = apis.ApiSpec{
 func auditOrgOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
 	return func(ctx *spec.AuditContext) error {
 		reqBody := apistructs.LogMetricConfig{}
-		body, err := ioutil.ReadAll(ctx.Request.Body)
+		body, err := io.ReadAll(ctx.Request.Body)
 		if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func auditOrgOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditCont
 				return err
 			}
 		}
-		body, err = ioutil.ReadAll(ctx.Response.Body)
+		body, err = io.ReadAll(ctx.Response.Body)
 		if err != nil {
 			return err
 		}

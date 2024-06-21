@@ -17,7 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -47,7 +47,7 @@ func (e *Endpoints) CreateProjectWorkSpace(ctx context.Context, r *http.Request,
 	if r.Body == nil {
 		return apierrors.ErrCreateProjectWorkspaceAbilities.MissingParameter("body").ToResp(), nil
 	}
-	bodyData, err := ioutil.ReadAll(r.Body)
+	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to read request body")
 		return apierrors.ErrCreateProjectWorkspaceAbilities.InvalidParameter(err).ToResp(), nil
@@ -155,7 +155,7 @@ func (e *Endpoints) UpdateProjectWorkSpace(ctx context.Context, r *http.Request,
 	if r.Body == nil {
 		return apierrors.ErrUpdateProjectWorkspaceAbilities.MissingParameter("body").ToResp(), nil
 	}
-	bodyData, err := ioutil.ReadAll(r.Body)
+	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to read request body")
 		return apierrors.ErrUpdateProjectWorkspaceAbilities.InvalidParameter(err).ToResp(), nil
