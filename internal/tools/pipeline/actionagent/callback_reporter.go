@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"time"
 
@@ -157,7 +157,7 @@ func (cr *CenterCallbackReporter) GetCmsFile(uuid string, absPath string) error 
 			uuid, err)
 	}
 	if !resp.IsOK() {
-		bodyBytes, _ := ioutil.ReadAll(respBody)
+		bodyBytes, _ := io.ReadAll(respBody)
 		return errors.Errorf("failed to download cms file, uuid: %s, err: %v",
 			uuid, string(bodyBytes))
 	}

@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strconv"
 	"time"
 
@@ -46,7 +45,7 @@ func (b *Bundle) DownloadDiceFile(uuid string) (io.ReadCloser, error) {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() {
-		bodyBytes, _ := ioutil.ReadAll(respBody)
+		bodyBytes, _ := io.ReadAll(respBody)
 		var downloadResp commonpb.ResponseHeader
 		if err := json.Unmarshal(bodyBytes, &downloadResp); err == nil {
 			return nil, toPbAPIError(resp.StatusCode(), downloadResp.Error)
@@ -71,7 +70,7 @@ func (b *Bundle) DeleteDiceFile(uuid string) error {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() {
-		bodyBytes, _ := ioutil.ReadAll(respBody)
+		bodyBytes, _ := io.ReadAll(respBody)
 		var downloadResp commonpb.ResponseHeader
 		if err := json.Unmarshal(bodyBytes, &downloadResp); err == nil {
 			return toPbAPIError(resp.StatusCode(), downloadResp.Error)

@@ -16,7 +16,6 @@ package testcase
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -136,7 +135,7 @@ func (svc *Service) ExportTestCases(req *apistructs.TestCaseExportRequest, sheet
 		}
 	}
 
-	f, err := ioutil.TempFile("", "export.*")
+	f, err := os.CreateTemp("", "export.*")
 	if err != nil {
 		return "", apierrors.ErrExportTestCases.InternalError(err)
 	}

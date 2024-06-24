@@ -17,7 +17,7 @@ package oas3_test
 // timeout
 //import (
 //	"bytes"
-//	"io/ioutil"
+//	"os"
 //	"testing"
 //
 //	"github.com/erda-project/erda/pkg/swagger/oas3"
@@ -28,7 +28,7 @@ package oas3_test
 //// 测试 MarshalYaml 序列化结果的一致性
 //// 重复执行序列化 100 次, 如果发生两次结果值不一致, 则测试失败
 //func TestMarshalYamlConsistency(t *testing.T) {
-//	data, err := ioutil.ReadFile(petstore)
+//	data, err := os.ReadFile(petstore)
 //	if err != nil {
 //		t.Fatalf("failed to ReadFile: %v", err)
 //	}

@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -805,7 +804,7 @@ func (i *IssueService) ExportExcel2(data [][]string, sheetName string) (string, 
 	diceFile, err := i.bdl.UploadFile(filetypes.FileUploadRequest{
 		FileNameWithExt: sheetName + ".xlsx",
 		ByteSize:        int64(buff.Len()),
-		FileReader:      ioutil.NopCloser(&buff),
+		FileReader:      io.NopCloser(&buff),
 		From:            "issue",
 		IsPublic:        true,
 		Encrypt:         false,

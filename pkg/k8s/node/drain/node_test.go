@@ -17,7 +17,7 @@ package drain
 //import (
 //	"context"
 //	"encoding/json"
-//	"io/ioutil"
+//	"os"
 //	"testing"
 //
 //	"sigs.k8s.io/yaml"
@@ -151,7 +151,7 @@ package drain
 //	}
 //
 //	// get deployment yaml file
-//	content, err := ioutil.ReadFile(path)
+//	content, err := os.ReadFile(path)
 //	if err != nil {
 //		return
 //	}
@@ -171,7 +171,7 @@ package drain
 //
 //func getPodSpec(path string) (pod *corev1.Pod, err error) {
 //	// get pod yaml file
-//	content, err := ioutil.ReadFile(path)
+//	content, err := os.ReadFile(path)
 //	if err != nil {
 //		return
 //	}
