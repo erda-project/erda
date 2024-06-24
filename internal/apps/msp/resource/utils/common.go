@@ -120,9 +120,10 @@ const (
 )
 
 const (
-	LabelAddonErdaCloudId    = "addon.erda.cloud/id"
-	LabelAddonErdaCloudScope = "addon.erda.cloud/scope"
-	LabelAddonErdaCloudName  = "addon.erda.cloud/name"
+	LabelAddonErdaCloudId      = "addon.erda.cloud/id"
+	LabelAddonErdaCloudScope   = "addon.erda.cloud/scope"
+	LabelAddonErdaCloudType    = "addon.erda.cloud/type"
+	LabelAddonErdaCloudVersion = "addon.erda.cloud/version"
 )
 
 var labelMappings = map[string]string{
@@ -146,5 +147,6 @@ func setCoreErdaLabels(labels map[string]string, req apistructs.ServiceGroupCrea
 func SetAddonErdaLabels(labels map[string]string, req apistructs.ServiceGroupCreateV2Request, spec *apistructs.AddonExtension) {
 	labels[LabelAddonErdaCloudId] = req.ID
 	labels[LabelAddonErdaCloudScope] = spec.SubCategory
-	labels[LabelAddonErdaCloudName] = spec.Name
+	labels[LabelAddonErdaCloudType] = spec.Name
+	labels[LabelAddonErdaCloudVersion] = spec.Version
 }

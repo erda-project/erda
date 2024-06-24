@@ -57,9 +57,10 @@ const (
 )
 
 const (
-	LabelAddonErdaCloudId    = "addon.erda.cloud/id"
-	LabelAddonErdaCloudScope = "addon.erda.cloud/scope"
-	LabelAddonErdaCloudName  = "addon.erda.cloud/name"
+	LabelAddonErdaCloudId      = "addon.erda.cloud/id"
+	LabelAddonErdaCloudScope   = "addon.erda.cloud/scope"
+	LabelAddonErdaCloudType    = "addon.erda.cloud/type"
+	LabelAddonErdaCloudVersion = "addon.erda.cloud/version"
 )
 
 var labelMappings = map[string]string{
@@ -90,7 +91,8 @@ func MergeAddonCoreErdaLabels(target map[string]string, source map[string]string
 func SetAddonErdaLabels(labels map[string]string, ins *dbclient.AddonInstance) {
 	labels[LabelAddonErdaCloudId] = ins.ID
 	labels[LabelAddonErdaCloudScope] = ins.ShareScope
-	labels[LabelAddonErdaCloudName] = ins.AddonName
+	labels[LabelAddonErdaCloudType] = ins.AddonName
+	labels[LabelAddonErdaCloudVersion] = ins.Version
 }
 
 func SetCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
