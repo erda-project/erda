@@ -15,7 +15,6 @@
 package extension
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -157,7 +156,7 @@ func (s *provider) RunExtensionsPush(dir string, extensionVersionMap, extensionT
 }
 
 func NewVersion(dirname string) (*Version, error) {
-	fileInfos, err := ioutil.ReadDir(dirname)
+	entries, err := os.ReadDir(dirname)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ReadDir")
 	}
@@ -172,31 +171,35 @@ func NewVersion(dirname string) (*Version, error) {
 		SwaggerContent: nil,
 	}
 	updateTime := baseTime
-	for _, fileInfo := range fileInfos {
-		fileInfo.ModTime()
-		if fileInfo.IsDir() {
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get file info")
+		}
+
+		if entry.IsDir() {
 			continue
 		}
-		updateTime = latestTime(updateTime, fileInfo.ModTime())
+		updateTime = latestTime(updateTime, info.ModTime())
 		switch {
-		case strings.EqualFold(fileInfo.Name(), "spec.yml") || strings.EqualFold(fileInfo.Name(), "spec.yaml"):
-			version.SpecContent, err = ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
+		case strings.EqualFold(entry.Name(), "spec.yml") || strings.EqualFold(entry.Name(), "spec.yaml"):
+			version.SpecContent, err = os.ReadFile(filepath.Join(dirname, entry.Name()))
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to ReadFile")
 			}
 			if err = yaml.Unmarshal(version.SpecContent, version.Spec); err != nil {
-				return nil, errors.Wrap(err, "failed to parse "+fileInfo.Name())
+				return nil, errors.Wrap(err, "failed to parse "+entry.Name())
 			}
 
-		case strings.EqualFold(fileInfo.Name(), "dice.yml") || strings.EqualFold(fileInfo.Name(), "dice.yaml"):
-			version.DiceContent, _ = ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
+		case strings.EqualFold(entry.Name(), "dice.yml") || strings.EqualFold(entry.Name(), "dice.yaml"):
+			version.DiceContent, _ = os.ReadFile(filepath.Join(dirname, entry.Name()))
 
-		case strings.EqualFold(fileInfo.Name(), "readme.md") || strings.EqualFold(fileInfo.Name(), "readme.markdown"):
-			version.ReadmeContent, _ = ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
+		case strings.EqualFold(entry.Name(), "readme.md") || strings.EqualFold(entry.Name(), "readme.markdown"):
+			version.ReadmeContent, _ = os.ReadFile(filepath.Join(dirname, entry.Name()))
 
-		case strings.EqualFold(fileInfo.Name(), "swagger.json") || strings.EqualFold(fileInfo.Name(), "swagger.yml") ||
-			strings.EqualFold(fileInfo.Name(), "swagger.yaml"):
-			version.SwaggerContent, _ = ioutil.ReadFile(filepath.Join(dirname, fileInfo.Name()))
+		case strings.EqualFold(entry.Name(), "swagger.json") || strings.EqualFold(entry.Name(), "swagger.yml") ||
+			strings.EqualFold(entry.Name(), "swagger.yaml"):
+			version.SwaggerContent, _ = os.ReadFile(filepath.Join(dirname, entry.Name()))
 		}
 	}
 
@@ -237,16 +240,20 @@ func (repo *Repo) locate(dirname string, deep int) {
 // isThereSpecFile  check is there have spec.yml
 func isThereSpecFile(dirname string) ([]os.FileInfo, bool) {
 	var dirs []os.FileInfo
-	infos, err := ioutil.ReadDir(dirname)
+	entries, err := os.ReadDir(dirname)
 	if err != nil {
 		return nil, false
 	}
-	for _, file := range infos {
-		if file.IsDir() {
-			dirs = append(dirs, file)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			info, err := entry.Info()
+			if err != nil {
+				return nil, false
+			}
+			dirs = append(dirs, info)
 			continue
 		}
-		if strings.EqualFold(file.Name(), "spec.yml") || strings.EqualFold(file.Name(), "spec.yaml") {
+		if strings.EqualFold(entry.Name(), "spec.yml") || strings.EqualFold(entry.Name(), "spec.yaml") {
 			return nil, true
 		}
 	}

@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -239,7 +239,7 @@ func createV2(url string) (result benchmarkPipelineCreateRes) {
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		result.err = err
 		return
@@ -350,7 +350,7 @@ func createFDPPipelineAutoRun(idx int, url string) (result benchmarkPipelineCrea
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		result.err = err
 		return
@@ -393,7 +393,7 @@ func createQueue(idx int, url string) (result benchmarkQueueCreateRes) {
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		result.err = err
 		return

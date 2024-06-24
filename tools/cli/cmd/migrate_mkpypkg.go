@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -79,7 +79,7 @@ func RunMigrateMkPyPkg(ctx *command.Context, host string, port int, username, pa
 		data: nil,
 	}
 
-	developerScript.data, err = ioutil.ReadFile(filename)
+	developerScript.data, err = os.ReadFile(filename)
 	if err != nil {
 		return errors.Wrap(err, "failed to read file")
 	}
@@ -99,7 +99,7 @@ func RunMigrateMkPyPkg(ctx *command.Context, host string, port int, username, pa
 		Commit: commit,
 	}
 
-	p.Requirements, err = ioutil.ReadFile(requirements)
+	p.Requirements, err = os.ReadFile(requirements)
 	if err != nil {
 		logrus.WithError(err).Warnln("failed to read requirements.txt, use default")
 		p.Requirements = []byte(pygrator.BaseRequirements)

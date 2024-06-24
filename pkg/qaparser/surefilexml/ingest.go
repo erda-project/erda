@@ -15,7 +15,6 @@
 package surefilexml
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -71,7 +70,7 @@ func IngestFiles(filenames []string) ([]*pb.TestSuite, error) {
 // IngestFile will parse the given XML file and return a slice of all contained
 // JUnit test suite definitions.
 func IngestFile(filename string) ([]*pb.TestSuite, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

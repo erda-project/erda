@@ -17,7 +17,7 @@ package apis
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -119,7 +119,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 	}
 	p.alertConditions = make([]*AlertConditions, 0)
-	f, err := ioutil.ReadFile(p.C.AlertConditions)
+	f, err := os.ReadFile(p.C.AlertConditions)
 	if err != nil {
 		return err
 	}

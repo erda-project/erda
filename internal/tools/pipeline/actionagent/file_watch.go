@@ -17,7 +17,6 @@ package actionagent
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -69,7 +68,7 @@ func (agent *Agent) stop() {
 func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 	return func(r io.ReadCloser) error {
 		// 一次性读取
-		b, err := ioutil.ReadAll(r)
+		b, err := io.ReadAll(r)
 		if err != nil {
 			return err
 		}

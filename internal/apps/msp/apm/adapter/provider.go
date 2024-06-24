@@ -15,7 +15,7 @@
 package adapter
 
 import (
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 
@@ -46,7 +46,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.libraries = make([]*InstrumentationLibrary, 0)
 	p.templates = make(map[string]*InstrumentationLibraryTemplate)
 	for _, file := range p.Cfg.LibraryFiles {
-		f, err := ioutil.ReadFile(file)
+		f, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.libraries = append(p.libraries, libs...)
 	}
 	for _, file := range p.Cfg.ConfigFiles {
-		f, err := ioutil.ReadFile(file)
+		f, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}

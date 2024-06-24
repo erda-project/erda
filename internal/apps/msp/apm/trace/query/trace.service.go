@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sort"
 	"strconv"
@@ -449,7 +448,7 @@ func (s *TraceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		return nil, errors.NewInternalServerError(err)
 	}
 	responseCode := response.StatusCode
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -516,7 +515,7 @@ func composeTraceRequestHistory(req *pb.CreateTraceDebugRequest) (*db.TraceReque
 
 func (s *TraceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugRequest) (*http.Response, error) {
 	client := &http.Client{}
-	params := ioutil.NopCloser(strings.NewReader(req.Body))
+	params := io.NopCloser(strings.NewReader(req.Body))
 	request, err := http.NewRequest(req.Method, req.Url, params)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)

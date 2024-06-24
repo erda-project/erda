@@ -15,7 +15,7 @@
 package openapi
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -46,7 +46,7 @@ func getOpenAPIDocContent() []byte {
 		if err != nil {
 			logrus.Errorf("getOpenAPIDoc: %v", err)
 		}
-		content, err := ioutil.ReadAll(f)
+		content, err := io.ReadAll(f)
 		if err != nil {
 			logrus.Errorf("getOpenAPIDoc: %v", err)
 		}

@@ -101,7 +101,7 @@ func downloadExcelFile(w http.ResponseWriter, data interface{}) interface{} {
 // 		ql = "influxql"
 // 	}
 // 	if len(q) == 0 {
-// 		byts, err := ioutil.ReadAll(r.Body)
+// 		byts, err := io.ReadAll(r.Body)
 // 		if err == nil {
 // 			q = string(byts)
 // 		}

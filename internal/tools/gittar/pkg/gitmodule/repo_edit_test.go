@@ -15,7 +15,6 @@
 package gitmodule
 
 import (
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -64,7 +63,7 @@ func cleanupTestRepo(t *testing.T, r *git.Repository) {
 
 func createTestRepo(t *testing.T, path, f string) (*git.Repository, string) {
 	// figure out where we can create the test repo
-	rootPath, err := ioutil.TempDir("", "repo")
+	rootPath, err := os.MkdirTemp("", "repo")
 	checkFatal(t, err)
 	repo, err := git.InitRepository(rootPath, false)
 	checkFatal(t, err)
@@ -79,7 +78,7 @@ func createTestRepo(t *testing.T, path, f string) (*git.Repository, string) {
 	}
 
 	rootPath = rootPath + "/" + f
-	err = ioutil.WriteFile(rootPath, []byte("foo\n"), 0644)
+	err = os.WriteFile(rootPath, []byte("foo\n"), 0644)
 
 	checkFatal(t, err)
 

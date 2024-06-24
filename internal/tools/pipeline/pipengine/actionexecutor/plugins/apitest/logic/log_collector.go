@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"sync"
 	"time"
 
@@ -71,7 +71,7 @@ func newLogger() *logrus.Logger {
 			DisableLevelTruncation: true,
 		},
 	})
-	l.SetOutput(ioutil.Discard)
+	l.SetOutput(io.Discard)
 	l.AddHook(&CollectorHook{})
 	return l
 }

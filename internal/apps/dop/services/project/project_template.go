@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -109,7 +108,7 @@ func (t *TemplateDataDirector) GenAndUploadZipPackage() (string, error) {
 		t.errs = append(t.errs, err)
 		return "", err
 	}
-	zipTmpFile, err := ioutil.TempFile("", tempPrefix)
+	zipTmpFile, err := os.CreateTemp("", tempPrefix)
 	if err != nil {
 		t.errs = append(t.errs, err)
 		return "", err

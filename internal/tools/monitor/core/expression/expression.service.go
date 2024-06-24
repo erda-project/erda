@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -125,7 +124,7 @@ func (e *expressionService) readMetricRule(root string) error {
 				f = append(f, dir...)
 				return nil
 			}
-			f, err := ioutil.ReadFile(path)
+			f, err := os.ReadFile(path)
 			expression := &pb.Expression{}
 			err = json.Unmarshal(f, expression)
 			if err != nil {
@@ -165,7 +164,7 @@ func (e *expressionService) readAlertRule(root string) error {
 				f = append(f, dir...)
 				return nil
 			}
-			f, err := ioutil.ReadFile(path)
+			f, err := os.ReadFile(path)
 			allRoute := strings.Split(path, "/")
 			alertIndex := allRoute[len(allRoute)-2]
 			alertType := allRoute[len(allRoute)-3]

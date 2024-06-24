@@ -17,7 +17,6 @@ package actionagent
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"testing"
@@ -127,7 +126,7 @@ func TestCheckForBreakpointOnFailure(t *testing.T) {
 				},
 			}
 
-			tmpFile, err := ioutil.TempFile("", "breakpoint")
+			tmpFile, err := os.CreateTemp("", "breakpoint")
 			assert.NoError(t, err)
 			fileName := tmpFile.Name()
 			defer os.Remove(fileName)

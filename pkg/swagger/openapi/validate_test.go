@@ -16,7 +16,7 @@ package openapi_test
 
 //import (
 //	"context"
-//	"io/ioutil"
+//	"os"
 //	"testing"
 //
 //	"github.com/getkin/kin-openapi/openapi2"
@@ -29,7 +29,7 @@ package openapi_test
 //
 //// go test -v -run TestValidateOAS3
 //func TestValidateOAS3(t *testing.T) {
-//	data, err := ioutil.ReadFile(testFile)
+//	data, err := os.ReadFile(testFile)
 //	if err != nil {
 //		t.Errorf("failed to ReadFile, err: %v", err)
 //	}

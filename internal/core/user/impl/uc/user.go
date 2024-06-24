@@ -19,7 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -248,7 +248,7 @@ func (a *UCUserAuth) GetCurrentUser(headers http.Header) (common.UserInfo, error
 	var info CurrentUser
 	d := json.NewDecoder(&me)
 	if err := d.Decode(&info); err != nil {
-		buffered, _ := ioutil.ReadAll(d.Buffered())
+		buffered, _ := io.ReadAll(d.Buffered())
 		err := errors.Wrapf(err, "GetCurrentUser: decode fail: %v", string(buffered))
 		return common.UserInfo{}, err
 	}

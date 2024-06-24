@@ -16,7 +16,7 @@ package oas3_test
 
 //import (
 //	"context"
-//	"io/ioutil"
+//	"os"
 //	"testing"
 //
 //	"github.com/erda-project/erda/pkg/swagger"
@@ -31,7 +31,7 @@ package oas3_test
 //
 //// go test -v -run TestValidateOAS3
 //func TestValidateOAS3(t *testing.T) {
-//	data, err := ioutil.ReadFile(testFile2)
+//	data, err := os.ReadFile(testFile2)
 //	if err != nil {
 //		t.Errorf("failed to ReadFile, err: %v", err)
 //	}

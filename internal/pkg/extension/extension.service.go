@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -785,7 +785,7 @@ func (s *provider) GetExtensionByGit(name, d string, file ...string) (*pb.Extens
 func getGitFileContents(d string, file ...string) ([]string, error) {
 	var resp []string
 	// dirName is a random string
-	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	dir, err := os.MkdirTemp(os.TempDir(), "*")
 	if err != nil {
 		return nil, err
 	}
@@ -842,7 +842,7 @@ func getGitFileContents(d string, file ...string) ([]string, error) {
 			resp = append(resp, "")
 			continue
 		}
-		str, err := ioutil.ReadAll(f)
+		str, err := io.ReadAll(f)
 		if err != nil {
 			return nil, err
 		}

@@ -15,7 +15,7 @@
 package triggering
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -65,7 +65,7 @@ func (condition *Triggering) Executor(resp *http.Response) bool {
 func (condition *Triggering) BodyStrategy(resp *http.Response) bool {
 	var body string
 	if resp.Body != nil {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return false
 		}

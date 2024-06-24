@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -104,7 +104,7 @@ func RunGwCreate(ctx *command.Context, scene string, orgName string, projectID i
 		return err
 	}
 	defer func() {
-		data, err := ioutil.ReadAll(response.Body)
+		data, err := io.ReadAll(response.Body)
 		if err != nil {
 			ctx.Error("failed to ReadAll: %v", err)
 			return

@@ -17,7 +17,6 @@ package project
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -466,7 +465,7 @@ func (p *Project) ExportProjectPackage(record *dao.TestFileRecord) {
 		return
 	}
 
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "*")
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
 	if err != nil {
 		logrus.Error(apierrors.ErrExportProjectPackage.InternalError(err))
 		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: err}); err != nil {

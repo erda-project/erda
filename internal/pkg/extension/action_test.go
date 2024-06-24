@@ -15,7 +15,6 @@
 package extension
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -25,7 +24,7 @@ import (
 )
 
 func Test_action_isThereSpecFile(t *testing.T) {
-	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	dir, err := os.MkdirTemp(os.TempDir(), "*")
 	defer os.RemoveAll(dir)
 	assert.NoError(t, err)
 

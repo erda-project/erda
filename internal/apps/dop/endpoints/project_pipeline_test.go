@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -164,7 +164,7 @@ stages:
 				t.Error(err)
 			}
 			reader := bytes.NewReader([]byte(dat))
-			body := ioutil.NopCloser(reader)
+			body := io.NopCloser(reader)
 			r := &http.Request{
 				Header: http.Header{
 					"Internal-Client": []string{"pipeline"},

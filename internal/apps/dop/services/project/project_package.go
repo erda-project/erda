@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -156,7 +155,7 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 	projectPackage := t.Creator.GetProjectPackage()
 	tempDir := t.Creator.GetTempDir()
 
-	zipTmpFile, err := ioutil.TempFile("", packageProjectTempPrefix)
+	zipTmpFile, err := os.CreateTemp("", packageProjectTempPrefix)
 	if err != nil {
 		return "", err
 	}

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
@@ -101,7 +100,7 @@ func Test_netportal(t *testing.T) {
 		t.Errorf("status:%d expect:200", resp.StatusCode)
 		return
 	}
-	respBody, _ := ioutil.ReadAll(resp.Body)
+	respBody, _ := io.ReadAll(resp.Body)
 	if string(respBody) != "Hello, world!" {
 		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
 		return

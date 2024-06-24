@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
@@ -55,7 +55,7 @@ func (b *Bundle) PatchNode(req *apistructs.SteveRequest) error {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}

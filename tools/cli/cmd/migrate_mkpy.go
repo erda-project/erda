@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,7 +66,7 @@ var MigratePy = command.Command{
 }
 
 func RunMigrateMkPy(ctx *command.Context, workdir, module, name string, tables []string) error {
-	moduleInfos, err := ioutil.ReadDir(workdir)
+	moduleInfos, err := os.ReadDir(workdir)
 	if err != nil {
 		return err
 	}
@@ -85,9 +84,9 @@ func RunMigrateMkPy(ctx *command.Context, workdir, module, name string, tables [
 		if moduleInfo.Name() == module {
 			validModule = true
 		}
-		fileInfos, err := ioutil.ReadDir(moduleInfo.Name())
+		fileInfos, err := os.ReadDir(moduleInfo.Name())
 		if err != nil {
-			return errors.Wrap(err, "failed to ReadDir, directory name: %s")
+			return errors.Wrapf(err, "failed to ReadDir, directory name: %s", moduleInfo.Name())
 		}
 		for _, fileInfo := range fileInfos {
 			if fileInfo.IsDir() {
@@ -113,7 +112,7 @@ func RunMigrateMkPy(ctx *command.Context, workdir, module, name string, tables [
 	}
 
 	if !requirementsExists {
-		if err = ioutil.WriteFile(filepath.Join(workdir, module, pygrator.RequirementsFilename),
+		if err = os.WriteFile(filepath.Join(workdir, module, pygrator.RequirementsFilename),
 			[]byte(pygrator.BaseRequirements), 0644); err != nil {
 			return errors.Wrap(err, "failed to generate requirements.txt")
 		}

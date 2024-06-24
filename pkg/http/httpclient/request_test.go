@@ -155,7 +155,7 @@ import (
 ////		Header("User-ID", "2").
 ////		MultipartFormDataBody(map[string]MultipartItem{
 ////			"file":  {Reader: f, Filename: "xxx.xxx"},
-////			"other": {Reader: ioutil.NopCloser(strings.NewReader("hello world!"))},
+////			"other": {Reader: io.NopCloser(strings.NewReader("hello world!"))},
 ////		}).Do().Body(&body)
 ////	assert.NoError(t, err)
 ////	fmt.Println(body.String())

@@ -16,7 +16,6 @@ package actionagent
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -102,7 +101,7 @@ func (agent *Agent) restoreCache(tarFile, tarExecPath string) (err error) {
 		return fmt.Errorf("untar file: %s size: %d bytes exceed limit size: %d bytes", tarFile, tarFileSize.Bytes(),
 			agent.MaxCacheFileSizeMB.Bytes())
 	}
-	tmpDir, err := ioutil.TempDir(cacheTempDir, cacheTempPrefix)
+	tmpDir, err := os.MkdirTemp(cacheTempDir, cacheTempPrefix)
 	if err != nil {
 		return err
 	}

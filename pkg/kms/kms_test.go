@@ -18,7 +18,7 @@ package kms
 //	"context"
 //	"encoding/base64"
 //	"fmt"
-//	"io/ioutil"
+//	"os"
 //	"testing"
 //
 //	"github.com/davecgh/go-spew/spew"
@@ -165,11 +165,11 @@ package kms
 //	// 本地使用 DEK 加密一个数据
 //	// 加密 /etc/hosts
 //	const etcHosts = "/etc/hosts"
-//	hosts, err := ioutil.ReadFile(etcHosts)
+//	hosts, err := os.ReadFile(etcHosts)
 //	assert.NoError(t, err)
 //	additionalData := []byte(etcHosts)
 //	ciphertext, err := kmscrypto.AesGcmEncrypt(dek, hosts, additionalData)
-//	ioutil.WriteFile("/tmp/hosts_decrypted", ciphertext, 0644)
+//	os.WriteFile("/tmp/hosts_decrypted", ciphertext, 0644)
 //	assert.NoError(t, err)
 //	// 内存中清除明文 dek
 //	dek = nil

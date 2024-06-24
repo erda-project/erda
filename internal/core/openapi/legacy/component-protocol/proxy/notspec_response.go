@@ -17,7 +17,7 @@ package proxy
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -68,13 +68,13 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 		resp.Header.Set("Content-Type", "application/json")
 		return
 	}
-	content, err := ioutil.ReadAll(resp.Body)
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+			resp.Body = io.NopCloser(bytes.NewReader(content))
 			wErr = fmt.Errorf("err: %v, responseBody: %s", r, string(content))
 		}
 		resp.Header.Set("Content-Type", "application/json")
@@ -88,38 +88,38 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 	renderResponse, ok := erdaResp.Data.(map[string]interface{})
 	if !ok {
 		logrus.Infof("data in response is not map[string]interface{}, skip inject user info")
-		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		resp.Body = io.NopCloser(bytes.NewReader(content))
 		return nil
 	}
 	protocol, ok := renderResponse["protocol"]
 	if !ok {
 		logrus.Infof("protocol is nil in response, skip inject user info")
-		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		resp.Body = io.NopCloser(bytes.NewReader(content))
 		return nil
 	}
 	obj, ok := protocol.(map[string]interface{})
 	if !ok {
 		logrus.Infof("protocol in response is not map[string]interface{}, skip inject user info")
-		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		resp.Body = io.NopCloser(bytes.NewReader(content))
 		return nil
 	}
 	globalState, ok := obj["state"]
 	if !ok {
 		logrus.Infof("globalState is nil in response, skip inject user info")
-		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		resp.Body = io.NopCloser(bytes.NewReader(content))
 		return nil
 	}
 	obj, ok = globalState.(map[string]interface{})
 	if !ok {
 		logrus.Infof("globalState is response is not map[string]interface{}, skip inject user info")
-		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		resp.Body = io.NopCloser(bytes.NewReader(content))
 		return nil
 	}
 
 	userIDsValue, ok := obj[cptype.GlobalInnerKeyUserIDs.String()]
 	if !ok {
 		logrus.Infof("userIDsValue is nil, skip inject user info")
-		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		resp.Body = io.NopCloser(bytes.NewReader(content))
 		return nil
 	}
 
@@ -136,7 +136,7 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 	if err != nil {
 		panic(err)
 	}
-	resp.Body = ioutil.NopCloser(bytes.NewReader(newErdaBody))
+	resp.Body = io.NopCloser(bytes.NewReader(newErdaBody))
 	resp.Header.Set("Content-Length", fmt.Sprint(len(newErdaBody)))
 
 	return nil

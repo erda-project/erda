@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -54,7 +53,7 @@ func RunExtensionsPush(ctx *command.Context, force bool, all bool, dir, registry
 		workDir = dir
 	}
 
-	specBytes, err := ioutil.ReadFile(path.Join(workDir, "spec.yml"))
+	specBytes, err := os.ReadFile(path.Join(workDir, "spec.yml"))
 	if err != nil {
 		return err
 	}
@@ -72,7 +71,7 @@ func RunExtensionsPush(ctx *command.Context, force bool, all bool, dir, registry
 	request.All = all
 	request.IsDefault = specData.IsDefault
 
-	diceBytes, err := ioutil.ReadFile(path.Join(workDir, "dice.yml"))
+	diceBytes, err := os.ReadFile(path.Join(workDir, "dice.yml"))
 
 	if registry != "" && err == nil {
 		diceBytes, _, err = replaceDiceRegistry(diceBytes, specData.Type, registry)
@@ -85,11 +84,11 @@ func RunExtensionsPush(ctx *command.Context, force bool, all bool, dir, registry
 		request.DiceYml = string(diceBytes)
 	}
 
-	readmeBytes, err := ioutil.ReadFile(path.Join(workDir, "README.md"))
+	readmeBytes, err := os.ReadFile(path.Join(workDir, "README.md"))
 	if err == nil {
 		request.Readme = string(readmeBytes)
 	}
-	swaggerBytes, err := ioutil.ReadFile(path.Join(workDir, "swagger.yml"))
+	swaggerBytes, err := os.ReadFile(path.Join(workDir, "swagger.yml"))
 	if err == nil {
 		request.SwaggerYml = string(swaggerBytes)
 	}

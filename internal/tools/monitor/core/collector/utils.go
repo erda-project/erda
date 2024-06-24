@@ -20,7 +20,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
@@ -38,7 +37,7 @@ func ReadGzip(body io.ReadCloser) ([]byte, error) {
 		return []byte{}, err
 	}
 	defer gzipReader.Close()
-	return ioutil.ReadAll(gzipReader)
+	return io.ReadAll(gzipReader)
 }
 
 // ReadRequestBody .
@@ -57,7 +56,7 @@ func ReadRequestBody(req *http.Request) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	res, err := ioutil.ReadAll(reader)
+	res, err := io.ReadAll(reader)
 	return res, err
 }
 

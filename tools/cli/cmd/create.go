@@ -18,7 +18,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -69,7 +68,7 @@ func ProjectCreate(ctx *command.Context, org, project, desc, pkg string, envs []
 			if err != nil {
 				return err
 			}
-			zipTmpFile, err := ioutil.TempFile("", "project-package-*.zip")
+			zipTmpFile, err := os.CreateTemp("", "project-package-*.zip")
 			if err != nil {
 				return err
 			}

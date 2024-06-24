@@ -23,7 +23,7 @@ import (
 //import (
 //	"encoding/json"
 //	"fmt"
-//	"io/ioutil"
+//	"os"
 //	"testing"
 //
 //	"github.com/sirupsen/logrus"
@@ -41,7 +41,7 @@ import (
 //}
 //
 //func TestIngest(t *testing.T) {
-//	bs, err := ioutil.ReadFile("../testdata/testng-results.xml")
+//	bs, err := os.ReadFile("../testdata/testng-results.xml")
 //	assert.Nil(t, err)
 //
 //	ng, err := Ingest(bs)

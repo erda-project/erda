@@ -16,7 +16,6 @@ package query
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -123,7 +122,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				if err != nil {
 					return nil
 				}
-				f, err := ioutil.ReadFile(p)
+				f, err := os.ReadFile(p)
 				var model model.Model
 				err = yaml.Unmarshal(f, &model)
 				if err != nil {

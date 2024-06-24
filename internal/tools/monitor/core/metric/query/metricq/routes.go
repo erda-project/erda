@@ -17,7 +17,7 @@ package metricq
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -75,7 +75,7 @@ func (p *provider) queryMetrics(r *http.Request) interface{} {
 		ql = "influxql"
 	}
 	if len(q) == 0 {
-		byts, err := ioutil.ReadAll(r.Body)
+		byts, err := io.ReadAll(r.Body)
 		if err == nil {
 			q = string(byts)
 		}
@@ -115,7 +115,7 @@ func (p *provider) queryExternalMetrics(r *http.Request) interface{} {
 		ql = "influxql"
 	}
 	if len(q) == 0 {
-		byts, err := ioutil.ReadAll(r.Body)
+		byts, err := io.ReadAll(r.Body)
 		if err == nil {
 			q = string(byts)
 		}

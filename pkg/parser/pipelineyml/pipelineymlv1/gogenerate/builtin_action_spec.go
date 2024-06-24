@@ -20,7 +20,6 @@ package main
 //	"encoding/json"
 //	"fmt"
 //	"io"
-//	"io/ioutil"
 //	"os"
 //	"path"
 //
@@ -50,13 +49,13 @@ package main
 //
 //	actionDir := "../../../../cmd/actions"
 //
-//	fs, err := ioutil.ReadDir(actionDir)
+//	fs, err := os.ReadDir(actionDir)
 //	if err != nil {
 //		panic(err)
 //	}
 //	actionJson := "["
 //	for _, f := range fs {
-//		b, err := ioutil.ReadFile(path.Join(actionDir, f.Name(), "spec.yml"))
+//		b, err := os.ReadFile(path.Join(actionDir, f.Name(), "spec.yml"))
 //		if err != nil {
 //			panic(err)
 //		}

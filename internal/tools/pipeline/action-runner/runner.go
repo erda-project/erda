@@ -15,7 +15,6 @@
 package actionrunner
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -74,13 +73,18 @@ func (r *Runner) runStartUpCommands() error {
 func (r *Runner) cleanBuildDir() {
 	interval := 15 * time.Minute
 	for {
-		fileInfoList, err := ioutil.ReadDir(r.Conf.BuildPath)
+		fileInfoList, err := os.ReadDir(r.Conf.BuildPath)
 		if err != nil {
 			logrus.Errorf("failed to read build dir %s err:%s", r.Conf.BuildPath, err)
 		} else {
 			for _, info := range fileInfoList {
 				if info.IsDir() && strings.HasPrefix(info.Name(), "pipeline-task") {
-					if info.ModTime().Add(time.Hour*time.Duration(r.Conf.FailedTaskKeepHours)).Unix() < time.Now().Unix() {
+					infoDetails, err := info.Info()
+					if err != nil {
+						logrus.Errorf("failed to get info details for %s err:%s", info.Name(), err)
+						continue
+					}
+					if infoDetails.ModTime().Add(time.Hour*time.Duration(r.Conf.FailedTaskKeepHours)).Unix() < time.Now().Unix() {
 						buildDir := path.Join(r.Conf.BuildPath, info.Name())
 						logrus.Infof("remove build dir %s", buildDir)
 						os.RemoveAll(buildDir)

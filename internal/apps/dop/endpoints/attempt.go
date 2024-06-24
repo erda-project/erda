@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -69,7 +69,7 @@ func (e *Endpoints) ExecuteAttemptTest(ctx context.Context, r *http.Request, var
 	}
 
 	var body apistructs.APITestReq
-	bodyData, err := ioutil.ReadAll(r.Body)
+	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		return apierrors.AttemptExecuteAPITest.InvalidParameter("invalid body").ToResp(), nil
 	}
@@ -208,9 +208,9 @@ func (e *Endpoints) ExecuteAttemptTest(ctx context.Context, r *http.Request, var
 	}
 
 	if request.Body != nil {
-		if data, err := ioutil.ReadAll(request.Body); err == nil {
+		if data, err := io.ReadAll(request.Body); err == nil {
 			logrus.Infof("requesting body: %s", string(data))
-			request.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+			request.Body = io.NopCloser(bytes.NewBuffer(data))
 		}
 	}
 	logrus.Infof("requesting: %+v", *request)
@@ -224,7 +224,7 @@ func (e *Endpoints) ExecuteAttemptTest(ctx context.Context, r *http.Request, var
 		logrus.Errorf("failed Do request, request: %+v, err: %v", *request, err)
 		return apierrors.AttemptExecuteAPITest.InternalError(errors.Wrap(err, "请求失败")).ToResp(), nil
 	}
-	content, err := ioutil.ReadAll(response.Body)
+	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		return apierrors.AttemptExecuteAPITest.InternalError(errors.Wrap(err, "读取响应失败")).ToResp(), nil
 	}

@@ -17,7 +17,7 @@ package autotestv2
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strconv"
 	"time"
 
@@ -231,7 +231,7 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileName,
 		ByteSize:        int64(w.Len()),
-		FileReader:      ioutil.NopCloser(&w),
+		FileReader:      io.NopCloser(&w),
 		From:            "Autotest space",
 		IsPublic:        true,
 		ExpiredAt:       nil,
@@ -325,7 +325,7 @@ func (svc *Service) ExportSceneSetFile(record *dao.TestFileRecord) {
 	uploadReq := filetypes.FileUploadRequest{
 		FileNameWithExt: fileName,
 		ByteSize:        int64(w.Len()),
-		FileReader:      ioutil.NopCloser(&w),
+		FileReader:      io.NopCloser(&w),
 		From:            "Autotest Scene Set",
 		IsPublic:        true,
 		ExpiredAt:       nil,

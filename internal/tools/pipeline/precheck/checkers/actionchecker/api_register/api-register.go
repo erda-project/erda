@@ -86,7 +86,7 @@ func (b *apiRegister) Check(ctx context.Context, data interface{}, itemsForCheck
 	// if actualAction.Params != nil {
 	// 	swagger, ok := actualAction.Params["swagger_path"]
 	// 	if ok {
-	// 		sjson, err := ioutil.ReadFile(swagger.(string))
+	// 		sjson, err := os.ReadFile(swagger.(string))
 	// 		if err != nil {
 	// 			abort = false
 	// 			//messages = append(messages, fmt.Sprintf("invalid param 'swagger_json', value: %s", swagger))

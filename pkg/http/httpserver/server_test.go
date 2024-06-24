@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -40,7 +40,7 @@ func TestServer_Base64EncodeRequestBody(t *testing.T) {
 				Path:   "/base64-test",
 				Method: http.MethodPost,
 				Handler: func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-					b, err := ioutil.ReadAll(r.Body)
+					b, err := io.ReadAll(r.Body)
 					if err != nil {
 						return nil, err
 					}

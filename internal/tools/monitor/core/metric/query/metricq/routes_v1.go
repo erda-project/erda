@@ -17,7 +17,7 @@ package metricq
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -108,7 +108,7 @@ func getQueryStatement(name, agg string, r *http.Request) string {
 	if r.Method == http.MethodGet {
 		return fmt.Sprintf("%s?%s", path, r.URL.RawQuery)
 	}
-	body, _ := ioutil.ReadAll(r.Body)
+	body, _ := io.ReadAll(r.Body)
 	return fmt.Sprintf("%s?%s", path, bytes.NewBuffer(body).String())
 }
 

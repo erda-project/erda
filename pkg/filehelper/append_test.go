@@ -15,7 +15,7 @@
 package filehelper
 
 //import (
-//	"io/ioutil"
+//	"io"
 //	"os"
 //	"testing"
 //
@@ -24,7 +24,7 @@ package filehelper
 //
 //func TestAppend(t *testing.T) {
 //	tmpDir := os.TempDir()
-//	f, err := ioutil.TempFile(tmpDir, "")
+//	f, err := os.CreateTemp(tmpDir, "")
 //	assert.NoError(t, err)
 //	defer func() {
 //		f.Close()
@@ -32,7 +32,7 @@ package filehelper
 //	}()
 //	assert.NoError(t, Append(f.Name(), "action meta: hello=world\n"))
 //	assert.NoError(t, Append(f.Name(), "action meta: key=value\n"))
-//	b, err := ioutil.ReadAll(f)
+//	b, err := io.ReadAll(f)
 //	assert.NoError(t, err)
 //	t.Log("write: ", string(b))
 //}

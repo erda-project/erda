@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"testing"
@@ -44,7 +44,7 @@ func TestCopyAutoTestSpaceV2(t *testing.T) {
 		ID: 1,
 	}
 	bodyDat, _ := json.Marshal(body)
-	r := &http.Request{Body: ioutil.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
+	r := &http.Request{Body: io.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
 
 	autotestSvc := atv2.New()
 	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(autotestSvc), "GetSpace", func(svc *atv2.Service, id uint64) (*apistructs.AutoTestSpace, error) {
@@ -74,7 +74,7 @@ func TestExportAutoTestSpace(t *testing.T) {
 		ID: 1,
 	}
 	bodyDat, _ := json.Marshal(body)
-	r := &http.Request{Body: ioutil.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
+	r := &http.Request{Body: io.NopCloser(bytes.NewReader(bodyDat)), ContentLength: 100}
 
 	autotestSvc := atv2.New()
 	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(autotestSvc), "GetSpace", func(svc *atv2.Service, id uint64) (*apistructs.AutoTestSpace, error) {

@@ -17,7 +17,7 @@ package bundle
 //import (
 //	"bytes"
 //	"encoding/json"
-//	"io/ioutil"
+//	"io"
 //	"net/http"
 //	"os"
 //	"reflect"
@@ -62,7 +62,7 @@ package bundle
 //			Header:     make(http.Header, 0),
 //		}
 //		resp.Header.Set("Content-Type", "application/x-yaml; charset=utf-8")
-//		resp.Body = ioutil.NopCloser(bytes.NewReader([]byte(raw)))
+//		resp.Body = io.NopCloser(bytes.NewReader([]byte(raw)))
 //		return resp, nil
 //	})
 //
@@ -98,13 +98,13 @@ package bundle
 //		// check method
 //		assert.Equal(t, "PUT", req.Method)
 //		// check body
-//		body, _ := ioutil.ReadAll(req.Body)
+//		body, _ := io.ReadAll(req.Body)
 //		var reqBody apistructs.ReleaseReferenceUpdateRequest
 //		json.Unmarshal(body, &reqBody)
 //		steps = append(steps, reqBody.Increase)
 //
 //		resp.Header.Set("Content-Type", "application/json; charset=utf-8")
-//		resp.Body = ioutil.NopCloser(bytes.NewReader([]byte(`{"success":true}`)))
+//		resp.Body = io.NopCloser(bytes.NewReader([]byte(`{"success":true}`)))
 //		return resp, nil
 //	})
 //

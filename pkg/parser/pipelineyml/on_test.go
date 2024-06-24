@@ -16,14 +16,14 @@ package pipelineyml
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOn(t *testing.T) {
-	b, err := ioutil.ReadFile("./samples/on.yml")
+	b, err := os.ReadFile("./samples/on.yml")
 	assert.NoError(t, err)
 	newYml, err := ConvertToGraphPipelineYml(b)
 	assert.NoError(t, err)

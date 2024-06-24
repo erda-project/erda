@@ -17,7 +17,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"os"
 	"strconv"
 
@@ -43,7 +42,7 @@ func main() {
 func readConfig(path string) *actionrunner.Conf {
 	var conf actionrunner.Conf
 	if len(path) > 0 {
-		byts, err := ioutil.ReadFile(path)
+		byts, err := os.ReadFile(path)
 		if err != nil {
 			logrus.Error(err)
 			os.Exit(-1)

@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -312,7 +311,7 @@ func (p *provider) ExportTask(id string) {
 	request := filetypes.FileUploadRequest{
 		FileNameWithExt: filename,
 		ByteSize:        int64(reader.Len()),
-		FileReader:      ioutil.NopCloser(reader),
+		FileReader:      io.NopCloser(reader),
 		From:            "Custom Dashboard",
 		IsPublic:        true,
 		ExpiredAt:       nil,

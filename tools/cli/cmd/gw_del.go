@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -97,7 +97,7 @@ func RunGwDel(ctx *command.Context, pkgID, input, orgName string) error {
 			return errors.Wrap(err, "failed to do Delete")
 		}
 		if response.StatusCode >= 300 || response.StatusCode < 200 {
-			data, _ := ioutil.ReadAll(response.Body)
+			data, _ := io.ReadAll(response.Body)
 			_ = response.Body.Close()
 			ctx.Error("failed to Delete [%v] %s %s %s\n", i, request.GetUrl(), response.Status, string(data))
 		}

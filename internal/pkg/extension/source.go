@@ -17,7 +17,6 @@ package extension
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -80,7 +79,7 @@ func (g *GitExtensionSource) match(addr string) bool {
 func (g *GitExtensionSource) add(addr string) error {
 	_, ok := g.GitCloneAddr.Load(addr)
 	if !ok {
-		dir, err := ioutil.TempDir(os.TempDir(), "*")
+		dir, err := os.MkdirTemp(os.TempDir(), "*")
 		if err != nil {
 			logrus.Errorf("gitExtensionSource tempDir error %v", err)
 			return err
@@ -94,7 +93,7 @@ func (g *GitExtensionSource) add(addr string) error {
 			return err
 		}
 
-		fileInfoList, err := ioutil.ReadDir(dir)
+		fileInfoList, err := os.ReadDir(dir)
 		if err != nil {
 			return err
 		}

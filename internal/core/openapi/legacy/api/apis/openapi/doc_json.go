@@ -15,7 +15,7 @@
 package openapi
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -45,7 +45,7 @@ func getSwaggerJSON() []byte {
 		if err != nil {
 			logrus.Errorf("getSwaggerJSON: %v", err)
 		}
-		content, err := ioutil.ReadAll(f)
+		content, err := io.ReadAll(f)
 		if err != nil {
 			logrus.Errorf("getSwaggerJSON: %v", err)
 		}

@@ -22,7 +22,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -226,7 +226,7 @@ func parseIpaFile(plistFile *zip.File) (*IosAppInfo, error) {
 	}
 	defer rc.Close()
 
-	buf, err := ioutil.ReadAll(rc)
+	buf, err := io.ReadAll(rc)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func getAppStoreURL(bundleID string) string {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("get app store url err: %v", err)
 		return ""
