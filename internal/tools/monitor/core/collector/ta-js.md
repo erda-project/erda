@@ -19,6 +19,12 @@
 
 ## ChangeLog
 
+### 2024-06-25
+
+- Add interval logic for start.
+- Add hackFetch.
+- Delete mq length judge.
+
 ### 2024-06-21
 
 - Fix(server): add local watch.
