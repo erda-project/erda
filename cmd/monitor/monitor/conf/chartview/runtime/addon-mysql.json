@@ -66,13 +66,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typecGuHgPDX",
             "expr": "time()"
           }, {
             "alias": "typex2sP9qbZ",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuelLnjsyoi",
             "expr": "max(threads_connected::field)"
@@ -145,13 +145,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typeSUwAjjtU",
             "expr": "time()"
           }, {
             "alias": "typedYkXDW8a",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuePHwj3IlY",
             "expr": "diffps(slow_queries::field)"
@@ -223,13 +223,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "type1eNcqxkm",
             "expr": "time()"
           }, {
             "alias": "typeRP6Z4rQ4",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valueiQzTllJV",
             "expr": "diffps(queries::field)"
@@ -301,13 +301,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typeDEVwPt93",
             "expr": "time()"
           }, {
             "alias": "typeUG0Ab5Gj",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuel3XyepFD",
             "expr": "diffps(com_delete::field)+diffps(com_insert::field)+diffps(com_select::field)+diffps(com_update::field)"
@@ -379,13 +379,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typemRmQOhBa",
             "expr": "time()"
           }, {
             "alias": "typedUtiGq4q",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuenfG7vyLk",
             "expr": "diffps(com_commit::field)+diffps(com_rollback::field)"
@@ -461,13 +461,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typevCl87EAT",
             "expr": "time()"
           }, {
             "alias": "typeDKO2PmNT",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuel7mqB4aI",
             "expr": "diffps(bytes_received::field)"
@@ -543,13 +543,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typeUQph6gnY",
             "expr": "time()"
           }, {
             "alias": "typelSa3hpt0",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valueSZaBwcTv",
             "expr": "diffps(bytes_sent::field)"
@@ -621,13 +621,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typehgE1nC10",
             "expr": "time()"
           }, {
             "alias": "typeSG3RmpcU",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuebQZdZW5I",
             "expr": "max(open_tables::field)"
@@ -699,13 +699,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "type0UfChg6u",
             "expr": "time()"
           }, {
             "alias": "typevzXb1ICY",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valueqXkS8udi",
             "expr": "max(threads_running::field)"
@@ -781,13 +781,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typehboNbi7L",
             "expr": "time()"
           }, {
             "alias": "typeC0EJEC7X",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuenEDyrXL5",
             "expr": "diffps(innodb_rows_deleted::field)"
@@ -863,13 +863,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "type4EV3Fhbs",
             "expr": "time()"
           }, {
             "alias": "typehdfweHGz",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valueh7gYoJ3m",
             "expr": "diffps(innodb_rows_inserted::field)"
@@ -945,13 +945,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typexkFO75Tl",
             "expr": "time()"
           }, {
             "alias": "type96qOKYrJ",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valued3V5ZNHH",
             "expr": "diffps(innodb_rows_updated::field)"
@@ -1027,13 +1027,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typeWtoAZ0Dn",
             "expr": "time()"
           }, {
             "alias": "typeAptixUn7",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "value2F4UJ0uI",
             "expr": "diffps(innodb_rows_read::field)"
@@ -1106,13 +1106,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typeENVnc1XF",
             "expr": "time()"
           }, {
             "alias": "typevbwt0PfQ",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "value0p63Twua",
             "expr": "diffps(innodb_data_read::field)"
@@ -1185,13 +1185,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typek7VhH56n",
             "expr": "time()"
           }, {
             "alias": "typevTlTHnWu",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "valuepKc9YRcZ",
             "expr": "diffps(innodb_data_written::field)"
@@ -1260,13 +1260,13 @@
       "api": {
         "body": {
           "from": ["mysql"],
-          "groupby": ["time()", "server::tag"],
+          "groupby": ["time()", "instance::tag"],
           "select": [{
             "alias": "typepSbZOtQZ",
             "expr": "time()"
           }, {
             "alias": "typePAnMCbHh",
-            "expr": "server::tag"
+            "expr": "instance::tag"
           }, {
             "alias": "value2zn53n0Z",
             "expr": "diffps(table_locks_waited::field)"
