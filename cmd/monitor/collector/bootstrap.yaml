@@ -283,7 +283,7 @@ erda.oap.collector.processor.modifier@mysql:
     name: [ "mysql" ]
   rules:
     - action: rename
-      key: tags.pod_ip
+      key: tags.pod
       value: tags.server
 
     - action: rename
@@ -348,10 +348,6 @@ erda.oap.collector.processor.modifier@redis:
   keypass:
     name: [ "redis" ]
   rules:
-    - action: rename
-      key: tags.redis_server
-      value: tags.redis-server
-
     - action: rename
       key: fields.redis_connected_clients
       value: fields.clients

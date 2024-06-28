@@ -312,10 +312,6 @@ erda.oap.collector.processor.modifier@redis:
     name: [ "redis" ]
   rules:
     - action: rename
-      key: tags.redis_server
-      value: tags.redis-server
-
-    - action: rename
       key: fields.redis_connected_clients
       value: fields.clients
     - action: rename
