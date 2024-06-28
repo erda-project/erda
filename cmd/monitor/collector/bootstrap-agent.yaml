@@ -247,7 +247,7 @@ erda.oap.collector.processor.modifier@mysql:
     name: [ "mysql" ]
   rules:
     - action: rename
-      key: tags.pod_ip
+      key: tags.pod
       value: tags.server
 
     - action: rename
