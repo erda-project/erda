@@ -33,6 +33,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier"
           - "erda.oap.collector.processor.modifier@addmeta"
           - "erda.oap.collector.processor.modifier@docker_container_summary"
+          - "erda.oap.collector.processor.modifier@mysql"
           - "erda.oap.collector.processor.modifier@redis"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
