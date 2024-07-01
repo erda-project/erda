@@ -187,10 +187,10 @@ require (
 	howett.net/plist v1.0.0
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
-	k8s.io/api v0.30.1
+	k8s.io/api v0.30.2
 	k8s.io/apiextensions-apiserver v0.30.0
-	k8s.io/apimachinery v0.30.1
-	k8s.io/apiserver v0.30.1
+	k8s.io/apimachinery v0.30.2
+	k8s.io/apiserver v0.30.2
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.1.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
@@ -467,7 +467,7 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a // indirect
 	k8s.io/cli-runtime v0.30.0 // indirect
-	k8s.io/component-base v0.30.0 // indirect
+	k8s.io/component-base v0.30.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20240403164606-bc84c2ddaf99 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 	oras.land/oras-go v1.2.4 // indirect
@@ -512,6 +512,8 @@ replace (
 	k8s.io/controller-manager => k8s.io/controller-manager v0.29.0
 	k8s.io/cri-api => k8s.io/cri-api v0.29.0
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.29.0
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.30.2
+	k8s.io/endpointslice => k8s.io/endpointslice v0.30.2
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.29.0
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.29.0
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.29.0
@@ -521,6 +523,7 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.29.0
 	k8s.io/metrics => k8s.io/metrics v0.29.0
 	k8s.io/mount-utils => k8s.io/mount-utils v0.29.0
+	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.30.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.29.0
 	oras.land/oras-go => oras.land/oras-go v1.2.5
 	sourcegraph.com/sourcegraph/appdash-data => github.com/sourcegraph/appdash-data v0.0.0-20151005221446-73f23eafcf67
