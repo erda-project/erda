@@ -3004,7 +3004,11 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		TenantType: tenantpb.Type_DOP.String(),
 		Workspace:  req.Workspace,
 	})
-	tenantId := tenantResp.Data.Id
+
+	var tenantId string
+	if tenantResp != nil && tenantResp.Data != nil {
+		tenantId = tenantResp.Data.Id
+	}
 
 	if err != nil {
 		return errors.Errorf("can't get tenant id from tenant service , %v", err.Error())
