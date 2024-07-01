@@ -16,8 +16,6 @@ package addon
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -270,17 +268,10 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 	return nil
 }
 
-func generateTenantID(projectID string, tenantType, workspace string) string {
-	md5H := md5.New()
-	hStr := fmt.Sprintf("%v-%s-%s", projectID, tenantType, workspace)
-	md5H.Write([]byte(hStr))
-	return hex.EncodeToString(md5H.Sum(nil))
-}
-
 func (a *Addon) getTenantId(projectID string, tenantType, workspace string) string {
 	tenant, err := a.db.QueryTenantByProjectIDAndWorkspace(projectID, workspace)
 	if err != nil {
-		return generateTenantID(projectID, tenantType, workspace)
+		return utils.GenerateTenantID(projectID, tenantType, workspace)
 	}
 	return tenant.Id
 }
