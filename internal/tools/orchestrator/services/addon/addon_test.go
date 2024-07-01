@@ -980,6 +980,9 @@ func TestAddon2(t *testing.T) {
 			return nil, nil, errors.New("error")
 		},
 	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "QueryTenantByProjectIDAndWorkspace", func(db *dbclient.DBClient, projectId, workSpace string) (*dbclient.MSPTenant, error) {
+		return nil, errors.New("error")
+	})
 	a.AddonCreate(apistructs.AddonDirectCreateRequest{
 		Addons: diceyml.AddOns{
 			"mysql": &diceyml.AddOn{
