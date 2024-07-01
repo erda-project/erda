@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/labels"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -75,10 +76,19 @@ func Test_newService(t *testing.T) {
 					},
 				},
 				labels: map[string]string{
-					"app": "fake-service",
-					"svc": "fake-service.default.svc.cluster.local",
-					// invalid label, value must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z])
-					"invalid": "manager.addon-idxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.erda.cloud",
+					"app":                                "fake-service",
+					"svc":                                "fake-service.default.svc.cluster.local",
+					labels.LabelCoreErdaCloudAppId:       "11972",
+					labels.LabelCoreErdaCloudAppName:     "fake-service",
+					labels.LabelCoreErdaCloudClusterName: "erda-jicheng",
+					labels.LabelCoreErdaCloudOrgId:       "100060",
+					labels.LabelCoreErdaCloudOrgName:     "erda",
+					labels.LabelCoreErdaCloudProjectId:   "387",
+					labels.LabelCoreErdaCloudProjectName: "erda-project",
+					labels.LabelCoreErdaCloudRuntimeId:   "25160",
+					labels.LabelCoreErdaCloudServiceName: "fake-server",
+					labels.LabelCoreErdaCloudServiceType: "STATELESS",
+					labels.LabelCoreErdaCloudWorkSpace:   "test",
 				},
 			},
 			want: &v1.Service{
@@ -90,21 +100,37 @@ func Test_newService(t *testing.T) {
 					Name:      "fake-service",
 					Namespace: apiv1.NamespaceDefault,
 					Labels: map[string]string{
-						"app": "fake-service",
-						"svc": "fake-service.default.svc.cluster.local",
+						"app":                                "fake-service",
+						"svc":                                "fake-service.default.svc.cluster.local",
+						labels.LabelCoreErdaCloudAppId:       "11972",
+						labels.LabelCoreErdaCloudAppName:     "fake-service",
+						labels.LabelCoreErdaCloudClusterName: "erda-jicheng",
+						labels.LabelCoreErdaCloudOrgId:       "100060",
+						labels.LabelCoreErdaCloudOrgName:     "erda",
+						labels.LabelCoreErdaCloudProjectId:   "387",
+						labels.LabelCoreErdaCloudProjectName: "erda-project",
+						labels.LabelCoreErdaCloudRuntimeId:   "25160",
+						labels.LabelCoreErdaCloudServiceName: "fake-server",
+						labels.LabelCoreErdaCloudServiceType: "STATELESS",
+						labels.LabelCoreErdaCloudWorkSpace:   "test",
 					},
 				},
 				Spec: v1.ServiceSpec{
-					Ports: []v1.ServicePort{
-						{
-							Name:       "tcp-0",
-							Port:       80,
-							TargetPort: intstr.FromInt(80),
-						},
-					},
+					Ports: []v1.ServicePort{{Name: "tcp-0", Port: 80, TargetPort: intstr.IntOrString{IntVal: 80}}},
 					Selector: map[string]string{
-						"app": "fake-service",
-						"svc": "fake-service.default.svc.cluster.local",
+						"app":                                "fake-service",
+						"svc":                                "fake-service.default.svc.cluster.local",
+						labels.LabelCoreErdaCloudAppId:       "11972",
+						labels.LabelCoreErdaCloudAppName:     "fake-service",
+						labels.LabelCoreErdaCloudClusterName: "erda-jicheng",
+						labels.LabelCoreErdaCloudOrgId:       "100060",
+						labels.LabelCoreErdaCloudOrgName:     "erda",
+						labels.LabelCoreErdaCloudProjectId:   "387",
+						labels.LabelCoreErdaCloudProjectName: "erda-project",
+						labels.LabelCoreErdaCloudRuntimeId:   "25160",
+						labels.LabelCoreErdaCloudServiceName: "fake-server",
+						labels.LabelCoreErdaCloudServiceType: "STATELESS",
+						labels.LabelCoreErdaCloudWorkSpace:   "test",
 					},
 				},
 			},
