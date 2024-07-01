@@ -89,11 +89,6 @@ func Test_newService(t *testing.T) {
 					labels.LabelCoreErdaCloudServiceName: "fake-server",
 					labels.LabelCoreErdaCloudServiceType: "STATELESS",
 					labels.LabelCoreErdaCloudWorkSpace:   "test",
-					//"app": "fake-service",
-					//"svc": "fake-service.default.svc.cluster.local",
-					//// invalid label, value must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z])
-					////"invalid": "manager.addon-idxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.erda.cloud",
-					//"invalid": "manager.addon-id.erda.cloud",
 				},
 			},
 			want: &v1.Service{

@@ -113,7 +113,6 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 		},
 	}
 
-	logrus.Infof("set core erda labels")
 	err := labels.SetCoreErdaLabels(info.Sg, service, set.Labels)
 	if err != nil {
 		return errors.Errorf("StatefulSet can't set core/erda labels, err: %v", err)
