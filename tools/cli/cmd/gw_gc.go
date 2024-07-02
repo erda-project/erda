@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -119,7 +118,7 @@ func RunGwGc(context *command.Context, input, output, cluster, kongAdmin string,
 	defer out.Close()
 
 	// read from file
-	in, err := ioutil.ReadFile(input)
+	in, err := os.ReadFile(input)
 	if err != nil {
 		return err
 	}
@@ -213,7 +212,7 @@ func deleteItem(ctx command.Context, w io.Writer, item InvalidEndpointsItem, kon
 			return nil
 		}
 		ctx.Warn("failed to delete")
-		if data, err := ioutil.ReadAll(response.Body); err == nil {
+		if data, err := io.ReadAll(response.Body); err == nil {
 			defer response.Body.Close()
 			_, _ = fmt.Fprint(w, string(data))
 		}

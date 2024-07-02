@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -216,11 +216,11 @@ func (p *provider) checkOrgByClusters(ctx httpserver.Context, clusters []*resour
 
 func (p *provider) getOrgIDNameFromBody(ctx httpserver.Context) (string, error) {
 	req := ctx.Request()
-	byts, err := ioutil.ReadAll(req.Body)
+	byts, err := io.ReadAll(req.Body)
 	if err != nil {
 		return "", err
 	}
-	req.Body = ioutil.NopCloser(bytes.NewReader(byts))
+	req.Body = io.NopCloser(bytes.NewReader(byts))
 	var body struct {
 		OrgName string `json:"org_name"`
 	}

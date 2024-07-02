@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -72,19 +72,19 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 		})
 		start := time.Now()
 		if !spec.ChunkAPI && spec.Audit != nil {
-			reqBody, err := ioutil.ReadAll(req.Body)
+			reqBody, err := io.ReadAll(req.Body)
 			errStr := fmt.Sprintf("read body failed: %v", err)
 			if err != nil {
 				logrus.Error(errStr)
 				http.Error(rw, errStr, http.StatusBadRequest)
 				return
 			}
-			c := context.WithValue(req.Context(), "reqBody", ioutil.NopCloser(bytes.NewReader(reqBody)))
+			c := context.WithValue(req.Context(), "reqBody", io.NopCloser(bytes.NewReader(reqBody)))
 			c = context.WithValue(c, "bundle", r.bundle)
 			c = context.WithValue(c, "beginTime", time.Now())
 			c = context.WithValue(c, "cache", r.cache)
 			req = req.WithContext(c)
-			req.Body = ioutil.NopCloser(bytes.NewReader(reqBody))
+			req.Body = io.NopCloser(bytes.NewReader(reqBody))
 			r.httpProxy.ServeHTTP(rw, req)
 		} else {
 			r.httpProxy.ServeHTTP(rw, req)

@@ -57,7 +57,7 @@ func (r *RESTClientGetterImpl) ToRESTMapper() (meta.RESTMapper, error) {
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(dc)
 
-	return restmapper.NewShortcutExpander(mapper, dc), nil
+	return restmapper.NewShortcutExpander(mapper, dc, nil), nil
 }
 
 func (r *RESTClientGetterImpl) ToRawKubeConfigLoader() clientcmd.ClientConfig {

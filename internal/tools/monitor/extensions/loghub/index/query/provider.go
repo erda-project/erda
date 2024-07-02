@@ -15,7 +15,7 @@
 package query
 
 import (
-	"io/ioutil"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -85,7 +85,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.db = db.New(p.mysql)
 
 	if len(p.C.IndexFieldSettings.File) > 0 {
-		f, err := ioutil.ReadFile(p.C.IndexFieldSettings.File)
+		f, err := os.ReadFile(p.C.IndexFieldSettings.File)
 		if err != nil {
 			return err
 		}

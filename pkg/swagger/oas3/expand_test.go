@@ -35,7 +35,7 @@ func TestToYaml(t *testing.T) {
 //// go test -v -run TestExpandBigSwagger
 //func TestExpandBigSwagger(t *testing.T) {
 //
-//	data, err := ioutil.ReadFile("./testdata/gaia-oas3.json")
+//	data, err := os.ReadFile("./testdata/gaia-oas3.json")
 //	if err != nil {
 //		t.Fatalf("failed to ReadFile, err: %v", err)
 //	}
@@ -89,7 +89,7 @@ func TestToYaml(t *testing.T) {
 //}
 
 //func TestOAS2To3(t *testing.T) {
-//	data, err := ioutil.ReadFile("./testdata/swagger_all.json")
+//	data, err := os.ReadFile("./testdata/swagger_all.json")
 //	if err != nil {
 //		t.Error(err)
 //	}

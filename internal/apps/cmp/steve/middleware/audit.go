@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"reflect"
@@ -84,9 +84,9 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 			ctx  map[string]interface{}
 		)
 		if req.Body != nil {
-			body, _ = ioutil.ReadAll(req.Body)
+			body, _ = io.ReadAll(req.Body)
 		}
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		req.Body = io.NopCloser(bytes.NewBuffer(body))
 
 		clusterName := vars["clusterName"]
 		typ := vars["type"]

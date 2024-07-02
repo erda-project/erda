@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -1309,7 +1309,7 @@ func (svc *Service) readSpec(ctx context.Context, req *apistructs.APIAssetVersio
 		if err != nil {
 			return fmt.Errorf("failed to get spec from file: %v", err)
 		}
-		fileBytes, err := ioutil.ReadAll(fr)
+		fileBytes, err := io.ReadAll(fr)
 		if err != nil {
 			return fmt.Errorf("failed to read from file: %v", err)
 		}

@@ -18,15 +18,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/coreos/etcd/clientv3"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/bundle"
 	clientconfig "github.com/erda-project/erda/internal/tools/cluster-agent/config"
@@ -101,7 +100,7 @@ func Test_netportal(t *testing.T) {
 		t.Errorf("status:%d expect:200", resp.StatusCode)
 		return
 	}
-	respBody, _ := ioutil.ReadAll(resp.Body)
+	respBody, _ := io.ReadAll(resp.Body)
 	if string(respBody) != "Hello, world!" {
 		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
 		return

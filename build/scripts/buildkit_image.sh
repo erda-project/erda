@@ -4,7 +4,7 @@ set -o errexit -o pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-BASE_DOCKER_IMAGE=registry.erda.cloud/erda/erda-base:20230811
+BASE_DOCKER_IMAGE=registry.erda.cloud/erda/erda-base:20240606
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE=./build/dockerfiles
 

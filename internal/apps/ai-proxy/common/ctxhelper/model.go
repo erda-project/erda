@@ -34,3 +34,11 @@ func GetModel(ctx context.Context) (*modelpb.Model, bool) {
 	}
 	return model, true
 }
+
+func MustGetModel(ctx context.Context) *modelpb.Model {
+	model, ok := GetModel(ctx)
+	if !ok {
+		panic("model not found in context")
+	}
+	return model
+}

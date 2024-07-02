@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -153,7 +153,7 @@ func (k *Kubernetes) Terminal(namespace, podname, containername string, upperCon
 				return nil, err
 			}
 			logrus.Debugf("connect to %s request info: %+v", execURL.String(), resp.Request)
-			respBody, _ := ioutil.ReadAll(resp.Body)
+			respBody, _ := io.ReadAll(resp.Body)
 			logrus.Debugf("connect to %s response body: %s", execURL.String(), string(respBody))
 			return nil, err
 		}

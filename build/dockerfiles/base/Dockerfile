@@ -1,6 +1,15 @@
-#FROM --platform=$TARGETPLATFORM golang:1.19-bullseye
-FROM --platform=$TARGETPLATFORM golang:1.19-bookworm
+FROM bitnami/git:latest AS git-from
+
+FROM --platform=$TARGETPLATFORM golang:1.22-bookworm
 ARG TARGETPLATFORM
+
+# fetch latest git (which is not available in debian stable repo now) at first for later use
+RUN apt remove -yq git
+COPY --from=git-from /opt/bitnami/git /opt/bitnami/git
+ENV PATH="/opt/bitnami/git/bin:${PATH}"
+# Set safe.directory to prevent "dubious ownership" errors, see: https://github.com/actions/runner-images/issues/6775#issuecomment-1410270956
+# use `--system` instead of `--global` to make it work for all users
+RUN mkdir -p /opt/bitnami/git/etc && touch /opt/bitnami/git/etc/gitconfig && git config --system --add safe.directory '*'
 
 # set timezone to CST
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime

@@ -116,6 +116,8 @@ type provider struct {
 	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
 	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
 	ErdaOpenapis   map[string]*url.URL
+
+	richClientHandler *handler_rich_client.ClientHandler
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -133,7 +135,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
 	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
 	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
-	richclientpb.RegisterRichClientServiceImp(p, &handler_rich_client.ClientHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm)
+	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
+	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
@@ -157,6 +160,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) ServeAIProxy() {
+	for _, r := range p.Config.Routes {
+		p.L.Infof("handle route %s %s", r.Path, r.Method)
+	}
 	var f http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
 		p.Config.Routes.FindRoute(r).HandlerWith(
 			context.Background(),
@@ -166,6 +172,7 @@ func (p *provider) ServeAIProxy() {
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
 			vars.CtxKeyDAO{}, p.Dao,
 			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,
+			vars.CtxKeyRichClientHandler{}, p.richClientHandler,
 		).ServeHTTP(w, r)
 	}
 	p.HTTP.HandlePrefix("/", "*", f, mux.SetXRequestId, mux.CORS)

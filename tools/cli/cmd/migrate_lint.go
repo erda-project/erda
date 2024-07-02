@@ -16,8 +16,8 @@ package cmd
 
 import (
 	"bytes"
-	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -116,7 +116,7 @@ func (w *walk) filenames() []string {
 }
 
 func (w *walk) walk(input, suffix string) *walk {
-	infos, err := ioutil.ReadDir(input)
+	infos, err := os.ReadDir(input)
 	if err != nil {
 		w.files = append(w.files, input)
 		return w

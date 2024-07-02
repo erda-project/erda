@@ -25,7 +25,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	v1 "k8s.io/api/core/v1"

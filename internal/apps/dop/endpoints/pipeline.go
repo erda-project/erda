@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -506,7 +506,7 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 	}
 
 	var rerunReq pipelinepb.PipelineRerunRequest
-	reqBody, err := ioutil.ReadAll(r.Body)
+	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		return apierrors.ErrRerunPipeline.InvalidParameter(err).ToResp(), nil
 	}
@@ -557,7 +557,7 @@ func (e *Endpoints) pipelineRerunFailed(ctx context.Context, r *http.Request, va
 	}
 
 	var rerunFailedReq pipelinepb.PipelineRerunFailedRequest
-	reqBody, err := ioutil.ReadAll(r.Body)
+	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		return apierrors.ErrRerunPipeline.InvalidParameter(err).ToResp(), nil
 	}

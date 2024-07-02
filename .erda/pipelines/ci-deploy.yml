@@ -46,7 +46,7 @@ stages:
   - stage:
       - custom-script:
           alias: erda
-          image: registry.erda.cloud/erda/gohub:1.0.9.alpha.1
+          image: registry.erda.cloud/erda/gohub:1.0.9
           commands:
             - cp -a ${{ dirs.raw-erda }}/. .
             - make proto-go-in-local
@@ -60,7 +60,7 @@ stages:
   - stage:
       - custom-script:
           alias: build-erda
-          image: registry.erda.cloud/erda/erda-base:20230811
+          image: registry.erda.cloud/erda/erda-base:20240607
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions
@@ -83,7 +83,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli
-          image: registry.erda.cloud/erda/erda-base:20230811
+          image: registry.erda.cloud/erda/erda-base:20240607
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -101,7 +101,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-agent
-          image: registry.erda.cloud/erda/erda-base:20230811
+          image: registry.erda.cloud/erda/erda-base:20240607
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -138,7 +138,7 @@ stages:
             mem: 1024
       - custom-script:
           alias: build-erda-cli-linux
-          image: registry.erda.cloud/erda/erda-base:20230811
+          image: registry.erda.cloud/erda/erda-base:20240607
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
@@ -156,7 +156,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli-mac
-          image: registry.erda.cloud/erda/erda-base:20230811
+          image: registry.erda.cloud/erda/erda-base:20240607
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)

@@ -17,7 +17,7 @@ package conf
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -101,7 +101,7 @@ func initAuditTemplate() {
 }
 
 func genTempFromFiles(fileName string) apistructs.AuditTemplateMap {
-	templateJSON, err := ioutil.ReadFile(fileName)
+	templateJSON, err := os.ReadFile(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -119,17 +119,16 @@ func genTempFromFiles(fileName string) apistructs.AuditTemplateMap {
 }
 
 func getAllFiles(pathname string, perms []model.RolePermission) []model.RolePermission {
-	rd, err := ioutil.ReadDir(pathname)
+	entries, err := os.ReadDir(pathname)
 	if err != nil {
 		panic(err)
 	}
-	for _, fi := range rd {
-		if fi.IsDir() {
-			fullDir := pathname + "/" + fi.Name()
-			perms = getAllFiles(fullDir, perms)
+	for _, entry := range entries {
+		fullPath := filepath.Join(pathname, entry.Name())
+		if entry.IsDir() {
+			perms = getAllFiles(fullPath, perms)
 		} else {
-			fullName := pathname + "/" + fi.Name()
-			yamlFile, err := ioutil.ReadFile(fullName)
+			yamlFile, err := os.ReadFile(fullPath)
 			if err != nil {
 				panic(err)
 			}

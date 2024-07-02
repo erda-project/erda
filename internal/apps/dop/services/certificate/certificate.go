@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 
@@ -122,7 +122,7 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 			}
 
 			// 上传文件
-			fileByte, err := ioutil.ReadFile("/tmp/debug.keystore")
+			fileByte, err := os.ReadFile("/tmp/debug.keystore")
 			if err != nil {
 				return nil, errors.Errorf("failed to read debug.keystore file, (%+v)", err)
 			}
@@ -131,7 +131,7 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 				FileNameWithExt: "debug.keystore",
 				Creator:         userID,
 				ByteSize:        int64(len(fileByte)),
-				FileReader:      ioutil.NopCloser(bytes.NewReader(fileByte)),
+				FileReader:      io.NopCloser(bytes.NewReader(fileByte)),
 			}
 
 			debugFileInfo, err := c.bdl.UploadFile(uploadFileReq)
@@ -154,14 +154,14 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 			}
 
 			// 上传文件
-			fileByte, err = ioutil.ReadFile("/tmp/release.keystore")
+			fileByte, err = os.ReadFile("/tmp/release.keystore")
 			if err != nil {
 				return nil, errors.Errorf("failed to read release.keystore file, (%+v)", err)
 			}
 
 			uploadFileReq.FileNameWithExt = "release.keystore"
 			uploadFileReq.ByteSize = int64(len(fileByte))
-			uploadFileReq.FileReader = ioutil.NopCloser(bytes.NewReader(fileByte))
+			uploadFileReq.FileReader = io.NopCloser(bytes.NewReader(fileByte))
 			releaseFileInfo, err := c.bdl.UploadFile(uploadFileReq)
 			if err != nil {
 				return nil, errors.Errorf("failed to read upload release.keystore file, (%+v)", err)

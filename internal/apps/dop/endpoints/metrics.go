@@ -17,7 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -61,6 +61,6 @@ func InternalReverseHandler(handler func(context.Context, *http.Request, map[str
 func handleRequest(r *http.Request) {
 	// base64 decode request body if declared in header
 	if strutil.Equal(r.Header.Get(httpserver.Base64EncodedRequestBody), "true", true) {
-		r.Body = ioutil.NopCloser(base64.NewDecoder(base64.StdEncoding, r.Body))
+		r.Body = io.NopCloser(base64.NewDecoder(base64.StdEncoding, r.Body))
 	}
 }

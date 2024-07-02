@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -109,7 +109,7 @@ func (e *Endpoints) DoRemoteAction(ctx context.Context, w http.ResponseWriter, r
 		}
 	}
 	w.WriteHeader(response.StatusCode)
-	respBody, err := ioutil.ReadAll(response.Body)
+	respBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		logrus.Errorf("read body falied, err:%+v", err)
 	}

@@ -139,9 +139,10 @@ openapi-interceptor-csrf:
   cookie_name: "OPENAPI-CSRF-TOKEN"
   cookie_domain: "${CSRF_COOKIE_DOMAIN}"
   cookie_path: "/"
-  cookie_max_age: "12h"
+  cookie_max_age: "${COOKIE_MAX_AGE:12h}"
   token_lookup: "header:OPENAPI-CSRF-TOKEN"
   cookie_http_only: true
+  cookie_same_site: "${COOKIE_SAME_SITE:2}"
 openapi-interceptor-filter-client-header:
   order: 11
 openapi-interceptor-auth-session-compatibility:
@@ -168,6 +169,8 @@ openapi-auth-uc:
   uc_redirect_addrs: "${SELF_PUBLIC_ADDR}"
   session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
   session_cookie_domain: "${COOKIE_DOMAIN}"
+  cookie_max_age: "${UC_COOKIE_MAX_AGE:168h}"
+  cookie_same_site: "${UC_COOKIE_SAME_SITE:2}"
 openapi-auth-password:
   _enable: ${UC_ENABLED:true}
   weight: 50

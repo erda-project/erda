@@ -21,8 +21,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -80,17 +80,21 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 	}
 
 	var v = &structpb.Value{}
+	marshaler := protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}
+
 	switch i := results.(type) {
 	case string:
-		if err := jsonpb.UnmarshalString(i, v); err != nil {
+		if err := marshaler.Unmarshal([]byte(i), v); err != nil {
 			return nil, err
 		}
 	case []byte:
-		if err := jsonpb.UnmarshalString(string(i), v); err != nil {
+		if err := marshaler.Unmarshal(i, v); err != nil {
 			return nil, err
 		}
 	case json.RawMessage:
-		if err := jsonpb.UnmarshalString(string(i), v); err != nil {
+		if err := marshaler.Unmarshal(i, v); err != nil {
 			return nil, err
 		}
 	default:
@@ -98,7 +102,7 @@ func (h *AIFunction) Apply(ctx context.Context, req *pb.ApplyRequest) (pbValue *
 		if err := json.NewEncoder(&buf).Encode(results); err != nil {
 			return nil, err
 		}
-		if err := jsonpb.Unmarshal(&buf, v); err != nil {
+		if err := marshaler.Unmarshal(buf.Bytes(), v); err != nil {
 			return nil, err
 		}
 	}
@@ -125,7 +129,10 @@ func (h *AIFunction) GetSystemPrompt(ctx context.Context, req *pb.GetSystemPromp
 	}
 
 	var v = &structpb.Value{}
-	if err := jsonpb.UnmarshalString(string(result), v); err != nil {
+	marshaler := protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}
+	if err := marshaler.Unmarshal(result, v); err != nil {
 		return nil, err
 	}
 	return v, nil

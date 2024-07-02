@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -115,7 +115,7 @@ func (h *HTTPEndpoints) LabelList(ctx context.Context, r *http.Request, vars map
 func (h *HTTPEndpoints) SetNodeLabels(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	//h.metric.TotalCounter.WithLabelValues(metric.LableTotal).Add(1)
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		errstr := "Invalid request body"
 		logrus.Error(errstr)

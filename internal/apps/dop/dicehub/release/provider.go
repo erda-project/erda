@@ -17,15 +17,15 @@ package release
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	gormV2 "gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -183,7 +183,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 						var body []byte
 						if r.Body != nil {
-							body, _ = ioutil.ReadAll(r.Body)
+							body, _ = io.ReadAll(r.Body)
 						} else {
 							return nil
 						}
@@ -195,7 +195,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						isProjectRelease, ok := m["isProjectRelease"].(bool)
 						if !ok || !isProjectRelease {
 							logrus.Debugf("Decoder of ReleaseCreateRequest: not a project release, skip")
-							r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+							r.Body = io.NopCloser(bytes.NewBuffer(body))
 							break
 						}
 
@@ -216,7 +216,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 						var body []byte
 						if r.Body != nil {
-							body, _ = ioutil.ReadAll(r.Body)
+							body, _ = io.ReadAll(r.Body)
 						} else {
 							return nil
 						}
@@ -228,7 +228,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						modes, ok := m["modes"].(map[string]interface{})
 						if !ok {
 							logrus.Debugf("Decoder of ReleaseUpdateRequest: not a project release, skip")
-							r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+							r.Body = io.NopCloser(bytes.NewBuffer(body))
 							break
 						}
 

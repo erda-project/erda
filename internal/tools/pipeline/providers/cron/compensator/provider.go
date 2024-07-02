@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"time"
 
-	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
+	v3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 

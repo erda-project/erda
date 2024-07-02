@@ -16,7 +16,6 @@ package extension
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -37,7 +36,7 @@ func TestAddSyncExtension(t *testing.T) {
 	})
 	defer patch1.Unpatch()
 
-	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	dir, err := os.MkdirTemp(os.TempDir(), "*")
 	assert.NoError(t, err)
 
 	err = AddSyncExtension(dir)
@@ -54,7 +53,7 @@ func TestFileExtensionSource_add(t *testing.T) {
 	})
 	defer patch1.Unpatch()
 
-	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	dir, err := os.MkdirTemp(os.TempDir(), "*")
 	assert.NoError(t, err)
 
 	err = file.add(dir)
@@ -62,12 +61,12 @@ func TestFileExtensionSource_add(t *testing.T) {
 }
 
 func Test_isDir(t *testing.T) {
-	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	dir, err := os.MkdirTemp(os.TempDir(), "*")
 	assert.NoError(t, err)
 	got := isDir(dir)
 	assert.True(t, got)
 
-	file, err := ioutil.TempFile(os.TempDir(), "*")
+	file, err := os.CreateTemp(os.TempDir(), "*")
 	assert.NoError(t, err)
 	got = isDir(file.Name())
 	assert.True(t, !got)

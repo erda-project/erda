@@ -17,7 +17,7 @@ package nacos
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -187,7 +187,7 @@ func (a *Adapter) EnableHTTPService(namespace string, service *pb.EnableHTTPServ
 	if err != nil {
 		return nil, err
 	}
-	byts, err = ioutil.ReadAll(resp.Body)
+	byts, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

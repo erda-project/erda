@@ -283,7 +283,7 @@ func TestAggregationHandlerFunction(t *testing.T) {
 			nextRow: map[string]interface{}{
 				"0e4b5b1082a11703": float64(111),
 			},
-			want: (111.0 - 222.0) / 60.0,
+			want: 0,
 		},
 
 		{

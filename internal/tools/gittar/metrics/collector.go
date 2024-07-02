@@ -32,7 +32,6 @@ import (
 
 var (
 	defaultBranch = "master"
-	targetBranch  = []string{"master", "Master", "main", "Main", "dev", "Dev", "develop", "Develop", "release", "Release"}
 )
 
 var (
@@ -101,7 +100,7 @@ func NewPersonalMetric(author *gitmodule.Signature, repo *models.Repo) *Personal
 }
 
 func IsValidBranch(s string, prefixes ...string) bool {
-	if !strutil.HasPrefixes(s, prefixes...) {
+	if !strutil.HasPrefixes(strutil.ToLower(s), prefixes...) {
 		return false
 	}
 	return true
@@ -130,10 +129,14 @@ func (c *Collector) RefreshPersonalContributions() error {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	end := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
-	contributions, err := c.IterateRepos(apistructs.GittarListRepoRequest{
+	req := apistructs.GittarListRepoRequest{
 		Start: &start,
 		End:   &end,
-	})
+	}
+	if len(conf.PersonalContributionOrgIDWhiteList()) > 0 {
+		req.OrgIDs = conf.PersonalContributionOrgIDWhiteList()
+	}
+	contributions, err := c.IterateRepos(req)
 	if err != nil {
 		return err
 	}
@@ -181,7 +184,7 @@ func (c *Collector) IterateRepos(req apistructs.GittarListRepoRequest) ([]*Perso
 		}
 		var allSourceCommit []*gitmodule.Commit
 		for _, branch := range branches {
-			if !IsValidBranch(branch, targetBranch...) {
+			if !IsValidBranch(branch, conf.MetricTargetBranches()...) {
 				continue
 			}
 			SourceCommit, err := gitRepository.GetBranchCommit(branch)

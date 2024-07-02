@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 
@@ -59,15 +58,16 @@ func (agent *Agent) Execute(r io.Reader) {
 		return
 	}
 
+	defer func() {
+		// defer write flag end line for tail
+		agent.writeEndFlagLine()
+	}()
+
 	// 2. prepare
 	agent.prepare()
 	if len(agent.Errs) > 0 {
 		return
 	}
-	defer func() {
-		// defer write flag end line for tail
-		agent.writeEndFlagLine()
-	}()
 
 	// 3. restore / store
 	agent.restore()
@@ -87,7 +87,7 @@ func (agent *Agent) Execute(r io.Reader) {
 
 func (agent *Agent) parseArg(r io.Reader) {
 	// base64 decode
-	encodedArg, err := ioutil.ReadAll(r)
+	encodedArg, err := io.ReadAll(r)
 	if err != nil {
 		agent.AppendError(err)
 		return

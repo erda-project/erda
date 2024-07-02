@@ -9,6 +9,8 @@ erda.app.ai-proxy:
     - conf/routes/routes.yml
     - conf/routes/assistant.yml
     - conf/routes/file.yml
+    - conf/routes/openai_format.yml
+    - conf/routes/internal_apis.yml
   log_level: ${LOG_LEVEL:info}
   open_on_erda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
 

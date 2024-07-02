@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/http/pprof"
@@ -258,7 +257,7 @@ func (s *Server) internalReverseHandler(handler func(context.Context, *http.Requ
 func handleRequest(r *http.Request) {
 	// base64 decode request body if declared in header
 	if strutil.Equal(r.Header.Get(Base64EncodedRequestBody), "true", true) {
-		r.Body = ioutil.NopCloser(base64.NewDecoder(base64.StdEncoding, r.Body))
+		r.Body = io.NopCloser(base64.NewDecoder(base64.StdEncoding, r.Body))
 	}
 }
 
