@@ -369,10 +369,12 @@ erda.dop.rule.action.dingtalkworknotice: { }
 
 ########### cmp
 cmp:
+  # steve cache time to live, default 10 min
   cache_ttl: ${CMP_STEVE_CACHE_TTL:10m}
+  # steve cache total size (MB), default 64MB
   cache_size: ${CMP_STEVE_CACHE_SIZE:64}
 grpc-client@erda.core.monitor.metric:
-  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"xwxxx
   block: false
 erda.core.monitor.metric-client: { }
 grpc-client@erda.core.monitor.alert:
