@@ -61,6 +61,12 @@ import (
 // ErdaEncryptedValue encrypted value
 const ErdaEncryptedValue string = "ERDA_ENCRYPTED"
 
+const (
+	ConfigCenterAddon   = "config-center"
+	RegisterCenterAddon = "registercenter"
+	NacosAddon          = "nacos"
+)
+
 var (
 	// AddonInfos 市场addon全集 key: addonName, value: apistructs.Extension
 	AddonInfos sync.Map
@@ -2998,6 +3004,7 @@ func (a *Addon) checkCreateParams(req *apistructs.AddonCreateRequest) error {
 // deployAddons addons 部署
 func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbclient.AddonPrebuild) error {
 	needDeployAddons := []apistructs.AddonHandlerCreateItem{}
+	var regVersion, confVersion string
 	for _, v := range deploys {
 		if _, ok := AddonInfos.Load(v.AddonName); !ok {
 			errStr := i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), "AddonTypeDoseNoExist", v.AddonName)
@@ -3052,11 +3059,81 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 				}
 			}
 		}
+		// When deploying Config-Center and Register Center at the same time, Register Center needs to be deployed first.
+		switch v.AddonName {
+		case RegisterCenterAddon:
+			regVersion = createItem.Options["version"]
+		case ConfigCenterAddon:
+			confVersion = createItem.Options["version"]
+		}
 		needDeployAddons = append(needDeployAddons, *createItem)
+	}
+
+	nacos, err := a.db.FindTmcInstanceByNameAndCLuster(NacosAddon, req.ClusterName)
+	if err != nil {
+		return err
+	}
+	if len(nacos) > 0 {
+		reg, config, err := a.NacosVersionReference(nacos[0].Version)
+		if err != nil {
+			return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos[0].Version)
+		}
+		if reg != "" && config != "" {
+			logrus.Infof("ConfigCenter [%v->%v] and RegisterCenter [%v->%v] to correlate with the corresponding nacos version [%v]",
+				confVersion, config,
+				regVersion, reg,
+				nacos[0].Version,
+			)
+			regVersion = reg
+			confVersion = config
+		}
+	} else if regVersion != "" {
+		regMap, err := GetCache().Get(RegisterCenterAddon)
+		if err != nil {
+			return errors.Wrapf(err, "can't get addon %v in cache", RegisterCenterAddon)
+		}
+
+		registers, err := toVersionMap(regMap)
+		if err != nil {
+			return err
+		}
+
+		version, ok := (*registers)[regVersion]
+		if !ok {
+			return fmt.Errorf("can't find %v version %v", RegisterCenterAddon, regVersion)
+		}
+
+		dice, err := a.parseAddonDice(version)
+		if err != nil {
+			return errors.Wrapf(err, "%v %v can't parse addon dice", RegisterCenterAddon, regVersion)
+		}
+
+		if nacos, ok := dice.AddOns[NacosAddon]; ok {
+			reg, config, err := a.NacosVersionReference(nacos.Options["version"])
+			if err != nil {
+				return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos.Options["version"])
+			}
+			if reg != "" && config != "" {
+				logrus.Infof("ConfigCenter [%v->%v] and RegisterCenter [%v->%v] to correlate with the corresponding nacos version [%v]",
+					confVersion, config,
+					regVersion, reg,
+					nacos.Options["version"],
+				)
+				regVersion = reg
+				confVersion = config
+			}
+		}
+
 	}
 
 	for index, v := range deploys {
 		createItem := needDeployAddons[index]
+		switch v.AddonName {
+		case RegisterCenterAddon:
+			createItem.Options["version"] = regVersion
+		case ConfigCenterAddon:
+			createItem.Options["version"] = confVersion
+		}
 		instanceRes, err := a.AttachAndCreate(&createItem)
 		if err != nil {
 			return err
@@ -3070,6 +3147,58 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	}
 
 	return nil
+}
+
+func (a *Addon) NacosVersionReference(version string) (regVersion, confVersion string, err error) {
+	regMap, err := GetCache().Get(RegisterCenterAddon)
+	if err != nil {
+		return "", "", err
+	}
+	confMap, err := GetCache().Get(ConfigCenterAddon)
+	if err != nil {
+		return "", "", err
+	}
+	registers, err := toVersionMap(regMap)
+	if err != nil {
+		return "", "", err
+	}
+	configs, err := toVersionMap(confMap)
+	if err != nil {
+		return "", "", err
+	}
+	for _, r := range *registers {
+		dice, err := a.parseAddonDice(r)
+		if err != nil {
+			return "", "", err
+		}
+		if addOn, ok := dice.AddOns[NacosAddon]; ok && addOn.Options["version"] == version {
+			spec, err := a.parseAddonSpec(r)
+			if err != nil {
+				return "", "", err
+			}
+			if !spec.Deprecated {
+				regVersion = spec.Version
+				break
+			}
+		}
+	}
+	for _, c := range *configs {
+		dice, err := a.parseAddonDice(c)
+		if err != nil {
+			return "", "", err
+		}
+		if addOn, ok := dice.AddOns[NacosAddon]; ok && addOn.Options["version"] == version {
+			spec, err := a.parseAddonSpec(c)
+			if err != nil {
+				return "", "", err
+			}
+			if !spec.Deprecated {
+				confVersion = spec.Version
+				break
+			}
+		}
+	}
+	return
 }
 
 // PrepareCheckProjectLastResource 计算项目预留资源，是否满足发布徐局
