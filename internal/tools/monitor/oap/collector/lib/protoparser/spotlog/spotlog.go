@@ -45,8 +45,8 @@ var (
 	logTerminusKeyTag = "terminus_log_key"
 )
 
-func ParseSpotLog(buf []byte, callback func(m *log.Log) error) error {
-	uw := newUnmarshalWork(buf, callback)
+func ParseSpotLog(buf []byte, offset int64, partition int32, callback func(m *log.Log) error) error {
+	uw := newUnmarshalWork(buf, offset, partition, callback)
 	uw.wg.Add(1)
 	unmarshalwork.Schedule(uw)
 	uw.wg.Wait()
@@ -57,14 +57,16 @@ func ParseSpotLog(buf []byte, callback func(m *log.Log) error) error {
 }
 
 type unmarshalWork struct {
-	buf      []byte
-	err      error
-	wg       sync.WaitGroup
-	callback func(m *log.Log) error
+	buf       []byte
+	partition int32
+	offset    int64
+	err       error
+	wg        sync.WaitGroup
+	callback  func(m *log.Log) error
 }
 
-func newUnmarshalWork(buf []byte, callback func(m *log.Log) error) *unmarshalWork {
-	return &unmarshalWork{buf: buf, callback: callback}
+func newUnmarshalWork(buf []byte, offset int64, partition int32, callback func(m *log.Log) error) *unmarshalWork {
+	return &unmarshalWork{buf: buf, offset: offset, partition: partition, callback: callback}
 }
 
 func (uw *unmarshalWork) Unmarshal() {
@@ -79,6 +81,9 @@ func (uw *unmarshalWork) Unmarshal() {
 		uw.err = err
 		return
 	}
+	data.Offset = uw.offset
+	// set partition as group id
+	data.GroupId = fmt.Sprintf("%d", uw.partition)
 
 	if err := uw.callback(&data.Log); err != nil {
 		uw.err = err
