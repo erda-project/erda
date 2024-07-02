@@ -76,7 +76,7 @@ func (a *Aggregator) loadFunc(key any) (any, error) {
 	ctx := apis.WithInternalClientContext(a.Ctx, discover.SvcCMP)
 	clusterName, ok := key.(string)
 	if !ok {
-		return nil, errors.Errorf("key can't convert to string")
+		return nil, errors.Errorf("key:[%v] can't convert to string", key)
 	}
 	cluster, err := a.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
 	if err != nil {
@@ -116,6 +116,7 @@ func (a *Aggregator) ListClusters() (ready, unready []string) {
 func (a *Aggregator) IsServerReady(clusterName string) bool {
 	s, err := a.server.Get(clusterName)
 	if err != nil {
+		logrus.Errorf("fail to get server by clusterName , %s", err)
 		return false
 	}
 	g := s.(*group)
@@ -126,7 +127,8 @@ func (a *Aggregator) IsServerReady(clusterName string) bool {
 func (a *Aggregator) HasAccess(clusterName string, apiOp *types.APIRequest, verb string) (bool, error) {
 	item, err := a.server.Get(clusterName)
 	if err != nil {
-		return false, errors.Errorf("steve server not found for cluster %s", clusterName)
+		logrus.Errorf("fail to get server by clusterName , %s", err)
+		return false, errors.Errorf(" can't found steve server for cluster %s", clusterName)
 	}
 
 	server := item.(*group).server
