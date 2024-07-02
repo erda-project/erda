@@ -445,6 +445,7 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 		logrus.Infof("steve for cluster %s not exist, starting a new server", clusterInfo.Name)
 		a.Add(clusterInfo)
 		if s, err = a.server.Get(clusterInfo.Name); err != nil {
+			logrus.Errorf("load cluster server error: %v", err)
 			return apierrors2.ErrInvoke.InternalError(errors.Errorf("failed to start steve server for cluster %s", clusterInfo.Name))
 		}
 	}
