@@ -67,6 +67,12 @@ type provider struct {
 	Tran            i18n.Translator `translator:"common"`
 	SteveAggregator *steve.Aggregator
 	Org             org.Interface
+	Cfg             *config
+}
+
+type config struct {
+	SteveCacheTTL  time.Duration `file:"cache_ttl" default:"10m"`
+	SteveCacheSize int           `file:"cache_size" default:"5000"`
 }
 
 // Run Run the provider
