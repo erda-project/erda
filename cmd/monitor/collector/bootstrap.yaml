@@ -494,6 +494,7 @@ erda.oap.collector.exporter.stdout:
 
 erda.oap.collector.exporter.kafka@collector:
   metadata_key_of_topic: "KAFKA-TOPIC"
+  produce_raw_with_key: ${COLLECTOR_KAFKA_PRODUCE_RAW_WITH_KEY:false}
 
 erda.oap.collector.exporter.kafka@spot-metrics:
   topic: "spot-metrics"
