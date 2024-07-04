@@ -9,7 +9,7 @@ CREATE TABLE `sp_account` (
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='主动监控存储用户账号表,已废弃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储用户账号表,已废弃';
 
 CREATE TABLE `sp_authentication` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -20,7 +20,7 @@ CREATE TABLE `sp_authentication` (
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='主动监控存储用户认证的表,已废弃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储用户认证的表,已废弃';
 
 CREATE TABLE `sp_chart_meta` (
   `id` int(10) NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -50,7 +50,7 @@ CREATE TABLE `sp_history` (
   PRIMARY KEY (`id`),
   KEY `metricId` (`metric_id`),
   KEY `statusId` (`status_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='主动监控存储历史记录项的表,已废弃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储历史记录项的表,已废弃';
 
 CREATE TABLE `sp_log_deployment` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
@@ -98,7 +98,7 @@ CREATE TABLE `sp_maintenance` (
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `project_id` (`project_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='主动监控存储配置项的表,已废弃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储配置项的表,已废弃';
 
 CREATE TABLE `sp_metric` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -117,7 +117,7 @@ CREATE TABLE `sp_metric` (
   PRIMARY KEY (`id`),
   KEY `projectId` (`project_id`),
   KEY `serviceId` (`service_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='主动监控存储配置项的表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储配置项的表';
 
 CREATE TABLE `sp_monitor` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -164,7 +164,7 @@ CREATE TABLE `sp_project` (
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`),
   KEY `identity` (`identity`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='主动监控存储项目映射的表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储项目映射的表';
 
 CREATE TABLE `sp_report_settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -206,7 +206,7 @@ CREATE TABLE `sp_service` (
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='主动监控存储服务项的表,已废弃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储服务项的表,已废弃';
 
 CREATE TABLE `sp_stage` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -214,7 +214,7 @@ CREATE TABLE `sp_stage` (
   `color` varchar(255) DEFAULT NULL COMMENT '颜色',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniqName` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COMMENT='告警状态颜色枚举表';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='告警状态颜色枚举表';
 
 
 INSERT INTO `sp_stage` (`id`, `name`, `color`) VALUES (1,'Investigating','#EA5746'),(2,'Identified','#ee8600'),(3,'Monitoring','#068FD6'),(4,'Resolved','#666');
@@ -226,7 +226,7 @@ CREATE TABLE `sp_status` (
   `level` int(10) unsigned zerofill NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniqName` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COMMENT='主动监控状态枚举表';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='主动监控状态枚举表';
 
 
 INSERT INTO `sp_status` (`id`, `name`, `color`, `level`) VALUES (1,'Operational','#2fcc66',0000000000),(2,'Major Outage','#e74c3c',0000000003),(3,'Partial Outage','#e67e22',0000000002),(4,'Degraded Performance','#f1c40f',0000000001);
@@ -257,7 +257,7 @@ CREATE TABLE `sp_user` (
   `created_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniqName` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COMMENT='主动监控存储用户的表,已废弃';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COMMENT='主动监控存储用户的表,已废弃';
 
 
 INSERT INTO `sp_user` (`id`, `username`, `salt`, `password`, `created_at`) VALUES (3,'admin','1536227528641690966','54cf26baae342201e50ddb4391b44f1f','2018-09-06 01:52:09'),(5,'purchase','1538099181623594327','f6c212584ca861b507234529c4a70fb1','2018-09-28 01:46:22');
@@ -272,7 +272,7 @@ CREATE TABLE `tb_tmc` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8 COMMENT='微服务组件元信息';
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COMMENT='微服务组件元信息';
 
 
 INSERT INTO `tb_tmc` (`id`, `name`, `engine`, `service_type`, `deploy_mode`, `create_time`, `update_time`, `is_deleted`) VALUES (1,'微服务治理','micro-service','MICRO_SERVICE','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(2,'配置中心','config-center','MICRO_SERVICE','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(3,'应用监控','monitor','MICRO_SERVICE','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(4,'注册中心','registercenter','MICRO_SERVICE','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(5,'API网关','api-gateway','MICRO_SERVICE','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(6,'Nacos','nacos','ADDON','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(7,'MySQL','mysql','ADDON','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(8,'ZooKeeper','zookeeper','ADDON','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(9,'ETCD','etcd','ADDON','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(10,'ZKProxy','zkproxy','ADDON','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(11,'PostgreSQL','postgresql','ADDON','SAAS','2021-05-28 11:30:25','2021-05-28 11:54:58','N'),(12,'权限中心','acl','GENERAL_ABILITY','PAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(13,'日志分析','log-analytics','ADDON','SAAS','2021-05-28 11:30:25','2021-05-28 11:54:54','N'),(14,'Trantor','trantor','GENERAL_ABILITY','PAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(15,'通知中心','notice-center','GENERAL_ABILITY','SAAS','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(16,'服务治理','service-mesh','MICRO_SERVICE','SAAS','2021-05-28 11:54:53','2021-05-28 11:54:53','N'),(17,'监控Zookeeper','monitor-zk','ADDON','SAAS','2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(18,'监控Kafka','monitor-kafka','ADDON','SAAS','2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(19,'监控Collector','monitor-collector','ADDON','SAAS','2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(20,'日志导出','log-exporter','ADDON','PAAS','2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(21,'日志elasticsearch','log-es','ADDON','SAAS','2021-05-28 11:54:54','2021-05-28 11:54:54','N');
@@ -287,7 +287,7 @@ CREATE TABLE `tb_tmc_ini` (
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`),
   KEY `idx_ini_name` (`ini_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='微服务控制平台的配置信息';
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COMMENT='微服务控制平台的配置信息';
 
 
 INSERT INTO `tb_tmc_ini` (`id`, `ini_name`, `ini_desc`, `ini_value`, `create_time`, `update_time`, `is_deleted`) VALUES (1,'MS_MENU','微服务治理菜单列表','[{\"key\":\"ServiceGovernance\",\"cnName\":\"微服务治理\",\"enName\":\"MicroService\",\"children\":[{\"key\":\"Overview\",\"cnName\":\"全局拓扑\",\"enName\":\"Overview\",\"exists\":true,\"mustExists\":true}],\"exists\":true,\"mustExists\":true},{\"key\":\"AppMonitor\",\"cnName\":\"应用监控\",\"enName\":\"AppMonitor\",\"children\":[{\"key\":\"MonitorIntro\",\"href\":\"/manual/microservice/use-apm-monitor-app.html\",\"cnName\":\"使用引导\",\"enName\":\"MonitorIntro\",\"exists\":true},{\"key\":\"ServiceList\",\"cnName\":\"服务列表\",\"enName\":\"ServiceList\",\"exists\":false},{\"key\":\"BrowserInsight\",\"cnName\":\"浏览性能\",\"enName\":\"BrowserInsight\",\"exists\":false},{\"key\":\"AppInsight\",\"cnName\":\"APP性能\",\"enName\":\"AppInsight\",\"exists\":false},{\"key\":\"ErrorInsight\",\"cnName\":\"错误分析\",\"enName\":\"ErrorInsight\",\"exists\":false},{\"key\":\"Transaction\",\"cnName\":\"链路追踪\",\"enName\":\"Transaction\",\"exists\":false},{\"key\":\"StatusPage\",\"cnName\":\"主动监控\",\"enName\":\"StatusPage\",\"exists\":false},{\"key\":\"Alarm\",\"cnName\":\"告警通知\",\"enName\":\"Alarm\",\"exists\":false},{\"key\":\"CustomAlarm\",\"cnName\":\"自定义告警\",\"enName\":\"CustomAlarm\",\"exists\":false},{\"key\":\"AlarmRecord\",\"cnName\":\"告警记录\",\"enName\":\"AlarmRecord\",\"exists\":false},{\"key\":\"CustomDashboard\",\"cnName\":\"运维大盘\",\"enName\":\"O & M dashboard\",\"exists\":false}],\"exists\":true,\"mustExists\":true},{\"key\":\"LogAnalyze\",\"cnName\":\"日志分析\",\"enName\":\"LogAnalyze\",\"exists\":true,\"children\":[{\"cnName\":\"日志查询\",\"enName\":\"LogQuery\",\"key\":\"LogQuery\",\"exists\":false},{\"cnName\":\"分析规则\",\"enName\":\"AnalyzeRule\",\"key\":\"AnalyzeRule\",\"exists\":false}]},{\"key\":\"APIGateway\",\"cnName\":\"API网关\",\"enName\":\"APIGateway\",\"children\":[{\"key\":\"GatewayIntro\",\"cnName\":\"使用引导\",\"enName\":\"GatewayIntro\",\"href\":\"/manual/microservice/api-gateway.html\",\"exists\":true},{\"key\":\"Endpoints\",\"cnName\":\"流量入口管理\",\"enName\":\"Endpoints\",\"exists\":false,\"onlyK8S\":true},{\"key\":\"APIs\",\"cnName\":\"微服务API管理\",\"enName\":\"APIs\",\"exists\":false},{\"key\":\"ConsumerACL\",\"cnName\":\"调用方管理\",\"enName\":\"ConsumerACL\",\"exists\":false,\"onlyK8S\":true},{\"key\":\"OldPolicies\",\"cnName\":\"API策略\",\"enName\":\"Policies\",\"exists\":false,\"onlyNotK8S\":true},{\"key\":\"OldConsumerACL\",\"cnName\":\"调用者授权\",\"enName\":\"ConsumerACL\",\"exists\":false,\"onlyNotK8S\":true}],\"exists\":true,\"mustExists\":true},{\"key\":\"RegisterCenter\",\"cnName\":\"注册中心\",\"enName\":\"RegisterCenter\",\"children\":[{\"key\":\"RegisterIntro\",\"cnName\":\"使用引导\",\"enName\":\"RegisterIntro\",\"href\":\"/manual/microservice/dubbo.html\",\"exists\":true},{\"key\":\"Services\",\"cnName\":\"服务注册列表\",\"enName\":\"Services\",\"exists\":false}],\"exists\":true,\"mustExists\":true},{\"key\":\"ConfigCenter\",\"cnName\":\"配置中心\",\"enName\":\"ConfigCenter\",\"children\":[{\"key\":\"ConfigIntro\",\"cnName\":\"使用引导\",\"href\":\"/manual/deploy/config-center.html\",\"enName\":\"ConfigIntro\",\"exists\":true},{\"key\":\"Configs\",\"cnName\":\"配置管理\",\"enName\":\"Configs\",\"exists\":false}],\"exists\":true,\"mustExists\":true},{\"key\":\"ComponentInfo\",\"cnName\":\"组件信息\",\"enName\":\"ComponentInfo\",\"children\":[],\"exists\":true,\"mustExists\":true}]','2021-05-28 11:30:25','2021-05-28 13:53:56','N'),(2,'MK_config-center','','ConfigCenter','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(3,'MK_JUMP_config-center','','Configs','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(4,'MK_monitor','','AppMonitor','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(5,'MK_JUMP_monitor','','Overview','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(6,'MK_registercenter','','RegisterCenter','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(7,'MK_JUMP_registercenter','','Services','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(8,'MK_api-gateway','','APIGateway','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(9,'MK_JUMP_api-gateway','','APIs','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(10,'MK_JUMP_micro-service','','Overview','2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(11,'MK_log-analytics','','LogAnalyze','2020-11-14 22:44:55','2020-11-14 22:44:55','N');
@@ -306,7 +306,7 @@ CREATE TABLE `tb_tmc_instance` (
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   `is_custom` varchar(1) NOT NULL DEFAULT 'N' COMMENT '是否为第三方',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='微服务组件部署实例信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='微服务组件部署实例信息';
 
 CREATE TABLE `tb_tmc_instance_tenant` (
   `id` varchar(64) NOT NULL COMMENT '租户唯一id',
@@ -320,7 +320,7 @@ CREATE TABLE `tb_tmc_instance_tenant` (
   `engine` varchar(128) DEFAULT NULL COMMENT '内核',
   `az` varchar(128) DEFAULT NULL COMMENT '集群',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='微服务组件租户信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='微服务组件租户信息';
 
 CREATE TABLE `tb_tmc_request_relation` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id',
@@ -330,7 +330,7 @@ CREATE TABLE `tb_tmc_request_relation` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='微服务组件部署过程依赖关系';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='微服务组件部署过程依赖关系';
 
 CREATE TABLE `tb_tmc_version` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id',
@@ -341,7 +341,7 @@ CREATE TABLE `tb_tmc_version` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_deleted` varchar(1) NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COMMENT='微服务组件版本元信息';
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COMMENT='微服务组件版本元信息';
 
 
 INSERT INTO `tb_tmc_version` (`id`, `engine`, `version`, `release_id`, `create_time`, `update_time`, `is_deleted`) VALUES (1,'micro-service','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(2,'config-center','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(3,'monitor','3.6',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(4,'registercenter','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(5,'api-gateway','3.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 13:53:54','N'),(6,'nacos','1.1.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(7,'mysql','5.7.23',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(8,'zookeeper','3.4.10',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(9,'etcd','3.3.12',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(10,'zkproxy','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(11,'postgresql','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(12,'log-analytics','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(13,'acl','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(14,'acl','1.0.1',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(15,'trantor','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(16,'notice-center','1.0.0',NULL,'2021-05-28 11:30:25','2021-05-28 11:30:25','N'),(17,'service-mesh','1.0.0',NULL,'2021-05-28 11:54:53','2021-05-28 11:54:53','N'),(18,'registercenter','2.0.0',NULL,'2021-05-28 11:54:53','2021-05-28 11:54:53','N'),(19,'monitor-zk','3.4.10',NULL,'2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(20,'monitor-kafka','2.0.0',NULL,'2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(21,'monitor-collector','1.0.0',NULL,'2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(22,'log-exporter','1.0.0',NULL,'2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(23,'log-es','1.0.0',NULL,'2021-05-28 11:54:54','2021-05-28 11:54:54','N'),(24,'log-analytics','2.0.0',NULL,'2021-05-28 11:54:54','2021-05-28 11:54:54','N');

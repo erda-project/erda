@@ -42,7 +42,7 @@ CREATE TABLE `erda_v2_runtime_hpa`
     `applied`             varchar(1)   NOT NULL DEFAULT 'N' COMMENT '规则是否已使用',
     `soft_deleted_at`     bigint(20) NOT NULL DEFAULT 0 COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Runtime HPA信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Runtime HPA信息';
 
 /*
 CREATE TABLE `erda_v2_runtime_hpa_events`
@@ -57,5 +57,5 @@ CREATE TABLE `erda_v2_runtime_hpa_events`
     `event`               text NOT NULL COMMENT 'hpa event 摘要 json 缓存',
     `soft_deleted_at`     bigint(20) NOT NULL DEFAULT 0 COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Runtime HPA Event 信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Runtime HPA Event 信息';
 */
