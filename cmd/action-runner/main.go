@@ -57,7 +57,7 @@ func readConfig(path string) *actionrunner.Conf {
 	if len(conf.BuildPath) <= 0 {
 		conf.BuildPath = os.TempDir()
 	}
-	conf.OpenAPI = getEnv("OPENAPI_UEL", conf.OpenAPI)
+	conf.OpenAPI = getEnv("OPENAPI_URL", conf.OpenAPI)
 	conf.Token = getEnv("TOKEN", conf.Token)
 	if conf.MaxTask < 1 {
 		conf.MaxTask = 1
