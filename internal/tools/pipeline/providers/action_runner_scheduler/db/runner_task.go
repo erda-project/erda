@@ -102,15 +102,7 @@ func (db *DBClient) GetFirstPendingTask(orgIDs []int64) (*RunnerTask, error) {
 		Where("status = ?", apistructs.RunnerTaskStatusPending)
 	// handle org id
 	if len(orgIDs) > 0 {
-		var polishedOrgIDs []int64
-		for _, orgID := range orgIDs {
-			if orgID > 0 {
-				polishedOrgIDs = append(polishedOrgIDs, orgID)
-			}
-		}
-		if len(polishedOrgIDs) > 0 {
-			sql = sql.Where("org_id in (?)", orgIDs)
-		}
+		sql = sql.Where("org_id in (?)", orgIDs)
 	}
 	// order, oldest first
 	sql = sql.Order("id ASC")

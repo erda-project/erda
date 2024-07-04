@@ -100,7 +100,7 @@ message RunnerTaskQueryResponse {
 }
 
 message RunnerTaskFetchRequest {
-  repeated int64 org_id = 1 [(validate.rules).repeated.min_items = 1];
+  repeated int64 org_id = 1 [(validate.rules).repeated.min_items = 1, (validate.rules).repeated.items.int64.gt = 0];
 }
 
 message RunnerTaskFetchResponse {
