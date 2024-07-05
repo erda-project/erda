@@ -18,7 +18,7 @@ type (
 	DsRespStreamChunk struct {
 		Output    DsRespStreamChunkOutput `json:"output,omitempty"`
 		RequestID string                  `json:"request_id,omitempty"`
-		Usage     DsRespStreamUsage       `json:"usage,omitempty"`
+		Usage     *DsRespStreamUsage      `json:"usage,omitempty"`
 	}
 	DsRespStreamChunkOutput struct {
 		Choices []DsRespStreamChunkOutputChoice `json:"choices,omitempty"`
