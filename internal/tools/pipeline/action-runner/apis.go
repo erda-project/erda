@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/file/pb"
+	runnerpb "github.com/erda-project/erda-proto-go/core/pipeline/action_runner_scheduler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -42,7 +43,7 @@ func (r *Runner) fetchTasks() []*Task {
 		Header("Content-Type", "application/json").
 		Header("Authorization", r.Conf.Token)
 	var resp TaskListResponse
-	httpResp, err := request.Do().JSON(&resp)
+	httpResp, err := request.JSONBody(&runnerpb.RunnerTaskFetchRequest{OrgId: r.Conf.OrgIDs}).Do().JSON(&resp)
 	if err != nil {
 		logrus.Errorf("fail to fetch task: %s", err)
 		return nil
