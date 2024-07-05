@@ -145,8 +145,10 @@ func setCoreErdaLabels(labels map[string]string, req apistructs.ServiceGroupCrea
 }
 
 func SetAddonErdaLabels(labels map[string]string, req apistructs.ServiceGroupCreateV2Request, spec *apistructs.AddonExtension) {
+	if spec.ShareScopes != nil && len(spec.ShareScopes) > 0 {
+		labels[LabelAddonErdaCloudScope] = spec.ShareScopes[0]
+	}
 	labels[LabelAddonErdaCloudId] = req.ID
-	labels[LabelAddonErdaCloudScope] = spec.SubCategory
 	labels[LabelAddonErdaCloudType] = spec.Name
 	labels[LabelAddonErdaCloudVersion] = spec.Version
 }
