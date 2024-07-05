@@ -43,7 +43,7 @@ func (r *Runner) fetchTasks() []*Task {
 		Header("Content-Type", "application/json").
 		Header("Authorization", r.Conf.Token)
 	var resp TaskListResponse
-	httpResp, err := request.JSONBody(&runnerpb.RunnerTaskFetchRequest{OrgIDs: r.Conf.OrgIDs}).Do().JSON(&resp)
+	httpResp, err := request.JSONBody(&runnerpb.RunnerTaskFetchRequest{OrgId: r.Conf.OrgIDs}).Do().JSON(&resp)
 	if err != nil {
 		logrus.Errorf("fail to fetch task: %s", err)
 		return nil
