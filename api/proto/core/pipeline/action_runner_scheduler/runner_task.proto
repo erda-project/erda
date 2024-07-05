@@ -5,6 +5,7 @@ package erda.core.pipeline.action_runner_scheduler;
 import "google/api/annotations.proto";
 import "common/identity.proto";
 import "common/openapi.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/action_runner_scheduler/pb";
 
@@ -87,6 +88,7 @@ message RunnerTask {
   repeated string commands = 7;
   repeated string targets = 8;
   string workdir = 9;
+  int64 orgID = 10 [json_name = "org_id"];
 }
 
 message RunnerTaskQueryRequest {
@@ -97,7 +99,9 @@ message RunnerTaskQueryResponse {
   RunnerTask data = 1;
 }
 
-message RunnerTaskFetchRequest {}
+message RunnerTaskFetchRequest {
+  repeated int64 org_id = 1 [(validate.rules).repeated.min_items = 1, (validate.rules).repeated.items.int64.gt = 0];
+}
 
 message RunnerTaskFetchResponse {
   repeated RunnerTask data = 1;
@@ -109,6 +113,7 @@ message RunnerTaskCreateRequest {
   repeated string commands = 3;
   repeated string targets = 4;
   string workdir = 5;
+  int64 orgID = 6 [json_name = "org_id", (validate.rules).int64.gt = 0];
 }
 
 message RunnerTaskCreateResponse {

@@ -16,6 +16,7 @@ package actionrunner
 
 // Conf .
 type Conf struct {
+	OrgIDs                 []int64           `json:"org_ids"`
 	BuildPath              string            `json:"build_path"`
 	OpenAPI                string            `json:"open_api"`
 	Token                  string            `json:"token"`

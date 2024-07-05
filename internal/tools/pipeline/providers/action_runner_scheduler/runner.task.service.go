@@ -66,7 +66,7 @@ func (s *runnerTaskService) GetRunnerTask(ctx context.Context, req *pb.RunnerTas
 }
 
 func (s *runnerTaskService) FetchRunnerTask(ctx context.Context, req *pb.RunnerTaskFetchRequest) (*pb.RunnerTaskFetchResponse, error) {
-	task, err := s.dbClient.GetFirstPendingTask()
+	task, err := s.dbClient.GetFirstPendingTask(req.OrgId)
 	if err != nil {
 		return nil, apierrors.ErrFetchRunnerTask.InternalError(err)
 	}

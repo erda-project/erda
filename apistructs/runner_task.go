@@ -25,6 +25,7 @@ const (
 type RunnerTask struct {
 	ID             uint64   `json:"id"`
 	JobID          string   `json:"job_id"`
+	OrgID          int64    `json:"org_id"`
 	Status         string   `json:"status"` // pending running success failed
 	ContextDataUrl string   `json:"context_data_url"`
 	OpenApiToken   string   `json:"openapi_token"`
@@ -45,6 +46,7 @@ type QueryRunnerTaskResponse struct {
 
 type CreateRunnerTaskRequest struct {
 	JobID          string   `json:"job_id"`
+	OrgID          int64    `json:"org_id"`
 	ContextDataUrl string   `json:"context_data_url"`
 	Commands       []string `json:"commands"`
 	Targets        []string `json:"targets"`
