@@ -96,6 +96,11 @@ func ConvertDsStreamChunkToOpenAIFormat(dsChunk DsRespStreamChunk, modelName str
 		Object:  "chat.completion.chunk", // fixed
 		Model:   modelName,
 		Choices: ocs,
+		Usage: &openai.Usage{
+			PromptTokens:     int(dsChunk.Usage.InputTokens),
+			CompletionTokens: int(dsChunk.Usage.OutputTokens),
+			TotalTokens:      int(dsChunk.Usage.TotalTokens),
+		},
 	}
 	return &openaiChunk, nil
 }
