@@ -234,16 +234,7 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 		fsm.pushLog(errMsg)
 		return err
 	}
-	if len(fsm.Deployment.ReleaseId) > 0 {
-		fsm.pushLog("increasing release reference...")
-		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
-		if _, err := fsm.releaseSvc.UpdateReleaseReference(ctx, &pb.ReleaseReferenceUpdateRequest{
-			ReleaseID: fsm.Deployment.ReleaseId,
-			Increase:  true,
-		}); err != nil {
-			return fsm.failDeploy(err)
-		}
-	}
+
 	// emit runtime deploy status changed event
 	event := events.RuntimeEvent{
 		EventName:  events.RuntimeDeployStatusChanged,
@@ -684,6 +675,17 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 	if fsm.Deployment.Status != apistructs.DeploymentStatusDeploying ||
 		fsm.Deployment.Phase != apistructs.DeploymentPhaseCompleted {
 		return nil
+	}
+
+	if len(fsm.Deployment.ReleaseId) > 0 {
+		fsm.pushLog("increasing release reference...")
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		if _, err := fsm.releaseSvc.UpdateReleaseReference(ctx, &pb.ReleaseReferenceUpdateRequest{
+			ReleaseID: fsm.Deployment.ReleaseId,
+			Increase:  true,
+		}); err != nil {
+			return fsm.failDeploy(err)
+		}
 	}
 
 	// 部署runtime之后，orchestrator需要将服务域名信息通过此接口提交给hepa
