@@ -1,3 +1,4 @@
+# syntax = registry.erda.cloud/retag/dockerfile:latest
 FROM bitnami/git:latest AS git-from
 
 FROM --platform=$TARGETPLATFORM golang:1.22-bookworm
