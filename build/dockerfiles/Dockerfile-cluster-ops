@@ -1,6 +1,6 @@
 ### This Dockerfile not used yet @iutx
 
-# syntax = docker/dockerfile:1.2
+# syntax = registry.erda.cloud/retag/dockerfile:latest
 FROM registry.erda.cloud/erda/golang-base:210416 as build
 
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
