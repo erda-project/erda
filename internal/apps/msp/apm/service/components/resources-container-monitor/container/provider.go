@@ -92,7 +92,7 @@ func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64
 }
 
 func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime int64, instanceId string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(avg(container_spec_memory_limit_bytes::field), 2),round_float(avg(mem_usage::field), 2) " +
+	statement := fmt.Sprintf("SELECT min(mem_limit::field),max(mem_usage::field) " +
 		"FROM docker_container_summary " +
 		"WHERE pod_uid::tag=$pod_uid " +
 		"GROUP BY time()")
