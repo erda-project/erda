@@ -1137,6 +1137,9 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 	}
 	logrus.Infof("sending addon creating request, request body: %+v", *addonCreateReq)
 
+	_, ok := addonCreateReq.DiceYml.Meta["USE_OPERATOR"]
+	a.pushLog(fmt.Sprintf("use operator: %v", ok), params)
+
 	// 请求调度器
 	_, err = a.serviceGroupImpl.Create(*addonCreateReq)
 	if err != nil {
