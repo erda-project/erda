@@ -49,7 +49,9 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/migration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -679,7 +681,7 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 
 	if len(fsm.Deployment.ReleaseId) > 0 {
 		fsm.pushLog("increasing release reference...")
-		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		ctx := apis.WithInternalClientContext(context.Background(), discover.SvcOrchestrator)
 		if _, err := fsm.releaseSvc.UpdateReleaseReference(ctx, &pb.ReleaseReferenceUpdateRequest{
 			ReleaseID: fsm.Deployment.ReleaseId,
 			Increase:  true,
