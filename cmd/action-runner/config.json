@@ -1,4 +1,5 @@
 {
+  "org_ids": [2, 3, 4],
   "build_path": "/tmp/xxx",
   "failed_task_keep_hours": 3,
   "open_api": "",

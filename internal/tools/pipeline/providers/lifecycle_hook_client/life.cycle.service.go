@@ -95,7 +95,7 @@ func (s *LifeCycleService) PostLifecycleHookHttpClient(source string, req interf
 	}
 
 	var httpClient = httpclient.New(
-		httpclient.WithTimeout(time.Second, time.Second*5),
+		httpclient.WithTimeout(time.Second, time.Second*30),
 	)
 	var buffer bytes.Buffer
 	r, err := httpClient.Post(client.Host).

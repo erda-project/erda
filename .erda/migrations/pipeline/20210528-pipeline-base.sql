@@ -27,7 +27,7 @@ CREATE TABLE `ci_v3_build_caches`
     PRIMARY KEY (`id`),
     KEY            `idx_name` (`name`),
     KEY            `idx_cluster_name` (`cluster_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='buildpack action 使用的构建缓存';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='buildpack action 使用的构建缓存';
 
 CREATE TABLE `dice_pipeline_cms_configs`
 (

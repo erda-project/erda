@@ -187,7 +187,7 @@ func (p *provider) parseSpotProfile() kafkaInf.ConsumerFuncV2 {
 
 func (p *provider) parseSpotLog() kafkaInf.ConsumerFuncV2 {
 	return func(msg *sarama.ConsumerMessage) error {
-		return spotlog.ParseSpotLog(msg.Value, func(log *log.Log) error {
+		return spotlog.ParseSpotLog(msg.Value, msg.Offset, msg.Partition, func(log *log.Log) error {
 			return p.consumeData(log)
 		})
 	}
