@@ -107,7 +107,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register("cmp", &servicehub.Spec{
-		Services:    append([]string{"cmp"}, pb2.ServiceNames()...),
+		Services: append([]string{"cmp"}, pb2.ServiceNames()...),
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
 		Description: "Core components of multi-cloud management platform.",
 		Creator:     func() servicehub.Provider { return &provider{} },
 	})
