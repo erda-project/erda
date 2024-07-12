@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -57,8 +59,15 @@ func TestGenLastValueWhereSql(t *testing.T) {
 		"AND tag_values[indexOf(tag_keys,'iteration_id')] IN ('10','20','30') " +
 		"AND (tag_values[indexOf(tag_keys,'project_name')] like '%example%' or tag_values[indexOf(tag_keys,'project_display_name')] like '%example%') " +
 		"AND tag_values[indexOf(tag_keys,'status')] = 'done' "
+	p := &provider{
+		DB: &gorm.DB{
+			Config: &gorm.Config{
+				Dialector: &mysql.Dialector{},
+			},
+		},
+	}
 
-	result := genLastValueWhereSql(req)
+	result := p.genLastValueWhereSql(req)
 	assert.Equal(t, expectedSQL, result)
 }
 
@@ -78,9 +87,16 @@ func TestGenBasicWhereSql(t *testing.T) {
 		},
 	}
 
-	expectedSQL := "AND requirementTotal >= 100.000000 AND bugCount < 10.000000 "
+	expectedSQL := "AND 'requirementTotal' >= 100.000000 AND 'bugCount' < 10.000000 "
 
-	result := genBasicWhereSql(req)
+	p := &provider{
+		DB: &gorm.DB{
+			Config: &gorm.Config{
+				Dialector: &mysql.Dialector{},
+			},
+		},
+	}
+	result := p.genBasicWhereSql(req)
 	assert.Equal(t, expectedSQL, result)
 }
 

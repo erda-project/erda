@@ -366,10 +366,10 @@ ORDER BY
                 if(tag_values[indexOf(tag_keys,'iteration_assignees')] != '', splitByString(',',tag_values[indexOf(tag_keys,'iteration_assignees')]), []) as iteration_assignees
             FROM monitor.external_metrics_all
             WHERE
-                metric_group='%s' 
-                AND timestamp >= '%s' 
-                AND timestamp <= '%s' 
-                AND tag_values[indexOf(tag_keys,'org_id')] = '%d'`
+                metric_group= ? 
+                AND timestamp >= ? 
+                AND timestamp <= ? 
+                AND tag_values[indexOf(tag_keys,'org_id')] = '?'`
 
 	dataSourceOrderBy = `
             ORDER BY
@@ -429,14 +429,14 @@ func (p *provider) queryProjectReport(rw http.ResponseWriter, r *http.Request) {
 		httpserver.WriteData(rw, []*ProjectReportRow{})
 		return
 	}
-	dataSourceBasic := fmt.Sprintf(dataSourceSql, metricGroup, req.Start, req.End, req.OrgID)
-	lastValueWhereSql := genLastValueWhereSql(req)
+	dataSourceBasic := p.DB.Explain(dataSourceSql, metricGroup, req.Start, req.End, req.OrgID)
+	lastValueWhereSql := p.genLastValueWhereSql(req)
 	if lastValueWhereSql != "" {
 		dataSourceBasic += " " + lastValueWhereSql
 	}
 	lastValueBasic := fmt.Sprintf(lastValueBasicSql, dataSourceBasic+dataSourceOrderBy)
 	basic := fmt.Sprintf(basicSql, lastValueBasic)
-	basicWhereSql := genBasicWhereSql(req)
+	basicWhereSql := p.genBasicWhereSql(req)
 	if basicWhereSql != " " {
 		basic += basicWhereSql
 	}
@@ -492,7 +492,7 @@ func (p *provider) checkPermission(req *apistructs.ProjectReportRequest, identit
 	return nil
 }
 
-func genLastValueWhereSql(req *apistructs.ProjectReportRequest) string {
+func (p *provider) genLastValueWhereSql(req *apistructs.ProjectReportRequest) string {
 	var projectIDSql, iterationIDSql, labelQuerySql string
 	if len(req.ProjectIDs) > 0 {
 		projectIDSql = fmt.Sprintf("AND tag_values[indexOf(tag_keys,'project_id')] IN (%s)", strings.Join(strutil.ToStrSlice(req.ProjectIDs, true), ","))
@@ -502,22 +502,22 @@ func genLastValueWhereSql(req *apistructs.ProjectReportRequest) string {
 	}
 	for _, query := range req.LabelQuerys {
 		if query.Key == labelProjectName {
-			labelQuerySql += fmt.Sprintf("AND (tag_values[indexOf(tag_keys,'%s')] like '%%%s%%' or tag_values[indexOf(tag_keys,'%s')] like '%%%s%%') ", labelProjectName, query.Val, labelProjectDisplayName, query.Val)
+			labelQuerySql += p.DB.Explain("AND (tag_values[indexOf(tag_keys,?)] like ? or tag_values[indexOf(tag_keys,?)] like ?) ", labelProjectName, fmt.Sprintf("%%%s%%", query.Val), labelProjectDisplayName, fmt.Sprintf("%%%s%%", query.Val))
 			continue
 		}
 		if query.Operation == "like" {
-			labelQuerySql += fmt.Sprintf("AND tag_values[indexOf(tag_keys,'%s')] %s '%%%s%%' ", query.Key, query.Operation, query.Val)
+			labelQuerySql += p.DB.Explain("AND tag_values[indexOf(tag_keys,?)] like ? ", query.Key, fmt.Sprintf("%%%s%%", query.Val))
 			continue
 		}
-		labelQuerySql += fmt.Sprintf("AND tag_values[indexOf(tag_keys,'%s')] %s '%s' ", query.Key, query.Operation, query.Val)
+		labelQuerySql += p.DB.Explain(fmt.Sprintf("AND tag_values[indexOf(tag_keys,?)] %s ? ", query.Operation), query.Key, query.Val)
 	}
 	return projectIDSql + " " + iterationIDSql + " " + labelQuerySql
 }
 
-func genBasicWhereSql(req *apistructs.ProjectReportRequest) string {
+func (p *provider) genBasicWhereSql(req *apistructs.ProjectReportRequest) string {
 	var sql string
 	for _, operation := range req.Operations {
-		sql += fmt.Sprintf("AND %s %s %f ", operation.Key, operation.Operation, operation.Val)
+		sql += p.DB.Explain(fmt.Sprintf("AND ? %s %f ", operation.Operation, operation.Val), operation.Key)
 	}
 	return sql
 }
