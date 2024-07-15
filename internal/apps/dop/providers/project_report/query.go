@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
@@ -89,7 +90,53 @@ type ProjectReportRow struct {
 }
 
 var (
-	metricGroup = "project_report"
+	metricGroup       = "project_report"
+	validLabelQueries = sets.NewString("project_display_name", "project_id", "project_name",
+		"iteration_id", "emp_project_code", "org_id", "org_name")
+	validValueQueries = sets.NewString("requirementTotal",
+		"bugTotal",
+		"taskTotal",
+		"responsibleFuncPointsTotal",
+		"requirementFuncPointsTotal",
+		"devFuncPointsTotal",
+		"demandFuncPointsTotal",
+		"testFuncPointsTotal",
+		"budgetMandayTotal",
+		"taskEstimatedMinute",
+		"taskEstimatedManday",
+		"actualMandayTotal",
+		"taskDoneTotal",
+		"taskDoneRate",
+		"taskEstimatedDayGtOneTotal",
+		"taskEstimatedDayGtTwoTotal",
+		"taskEstimatedDayGtThreeTotal",
+		"requirementDoneRate",
+		"unfinishedAssigneeTotal",
+		"requirementDoneTotal",
+		"requirementAssociatedTotal",
+		"requirementAssociatedRate",
+		"requirementUnassignedTotal",
+		"requirementUnassignedRate",
+		"taskUnassignedTotal",
+		"bugUndoneTotal",
+		"bugDoneRate",
+		"bugSeriousTotal",
+		"bugSeriousRate",
+		"bugDemandDesignTotal",
+		"bugDemandDesignRate",
+		"bugOnlineTotal",
+		"bugOnlineRate",
+		"bugReopenTotal",
+		"bugReopenRate",
+		"taskAssociatedTotal",
+		"taskAssociatedRate",
+		"bugLowLevelTotal",
+		"bugLowLevelRate",
+		"iterationCompletedRate",
+		"taskWorkingTotal",
+		"bugWontfixTotal",
+		"iterationAssigneeTotal",
+		"iterationEstimatedDayTotal")
 )
 
 var (
@@ -526,20 +573,26 @@ func checkQueryRequest(req *apistructs.ProjectReportRequest) error {
 	if req.OrgID == 0 {
 		return fmt.Errorf("orgID required")
 	}
-	if req.Start == "" {
-		return fmt.Errorf("startTime required")
+	if _, err := time.Parse(time.DateTime, req.Start); err != nil {
+		return fmt.Errorf("invalid startTime, err: %v", err)
 	}
-	if req.End == "" {
-		return fmt.Errorf("endTime required")
+	if _, err := time.Parse(time.DateTime, req.End); err != nil {
+		return fmt.Errorf("invalid endTime")
 	}
 	for _, operation := range req.Operations {
 		if !apistructs.IsValidOperator(operation.Operation) {
 			return fmt.Errorf("invalid operation %s", operation.Operation)
 		}
+		if !validValueQueries.Has(operation.Key) {
+			return fmt.Errorf("invalid query key: %s", operation.Key)
+		}
 	}
 	for _, query := range req.LabelQuerys {
 		if !apistructs.IsValidLabelOperator(query.Operation) {
 			return fmt.Errorf("invalid operation %s", query.Operation)
+		}
+		if !validLabelQueries.Has(query.Key) {
+			return fmt.Errorf("invalid query key: %s", query.Key)
 		}
 	}
 	return nil
