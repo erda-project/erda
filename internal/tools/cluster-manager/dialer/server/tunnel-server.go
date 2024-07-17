@@ -35,16 +35,14 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"google.golang.org/grpc/metadata"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/config"
-	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 var (
@@ -74,7 +72,7 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 	registerFunc := func(clusterKey string, clusterInfo cluster) {
 		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
 		defer cancel()
-		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cluster-manager"}))
+		ctx = apis.WithInternalClientContext(ctx, "cluster-manager")
 		for {
 			select {
 			case <-ctx.Done():
@@ -189,7 +187,15 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 				return
 			}
 			// TODO: register action after authed better.
-			go registerFunc(clusterKey, clusterInfo)
+
+			regFunc := func(next remotedialer.HandlerFunc) remotedialer.HandlerFunc {
+				return func(ctx *remotedialer.Context) {
+					go registerFunc(clusterKey, clusterInfo)
+					next(ctx)
+				}
+			}
+
+			server.WithMiddleFuncs(regFunc)
 		}
 	default:
 		clientDataStr := req.Header.Get(apistructs.ClusterManagerHeaderKeyClientDetail.String())
