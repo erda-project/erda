@@ -779,7 +779,6 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.3.2 h1:o7IhLm0Msx3BaB+n3Ag7L8EVlByGnpq14C4YWiu/gL8=
 github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/CeerDecy/remotedialer v0.0.0-20240717031308-7cfe7afbcc82/go.mod h1:dbzn9NF1JWbGEHL6Q/1KG4KFROILiY/j6wmfF1Np3fk=
 github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 h1:Etfj2lhXyrYemgmWzEtEQQb1kezeEXc8jVjkQUyJnWI=
 github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6/go.mod h1:YzuYAe2hrrwKXkM9kqjbkTLlkbA+/xw2MA46f1+ENxc=
 github.com/ClickHouse/ch-go v0.61.3 h1:MmBwUhXrAOBZK7n/sWBzq6FdIQ01cuF2SaaO8KlDRzI=
@@ -1255,6 +1254,8 @@ github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e h1:04gD21EY
 github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e/go.mod h1:oKtFRQJCxy228zqyG5fwPGzo3Fbbj0g+3PVT0C4JJqo=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23/go.mod h1:dbzn9NF1JWbGEHL6Q/1KG4KFROILiY/j6wmfF1Np3fk=
+github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1 h1:CLdzGplB9VRtYXFleMrPka71u4xjMw8Ayd+8WTwZjDI=
+github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1/go.mod h1:dbzn9NF1JWbGEHL6Q/1KG4KFROILiY/j6wmfF1Np3fk=
 github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23 h1:A2cod4X3yK1YIBbTIf7q1b8+/S6iLwyNVtQ/SOYflQo=
 github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23/go.mod h1:NOglgj931lh7myfNFa00hb3UIiRlxhbMjCv/Ek5RJA8=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 h1:Yzb9+7DPaBjB8zlTR87/ElzFsnQfuHnVUVqpZZIcV5Y=
