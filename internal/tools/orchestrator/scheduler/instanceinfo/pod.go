@@ -146,8 +146,14 @@ func (r *PodReader) Limit(n int) *PodReader {
 	r.limit = n
 	return r
 }
+
 func (r *PodReader) Do() ([]PodInfo, error) {
-	podinfo := []PodInfo{}
+	defer func() {
+		r.conditions = make([]string, 0)
+		r.values = make([]any, 0)
+	}()
+
+	podsInfo := make([]PodInfo, 0)
 	expr := r.db.Order("started_at desc")
 	for k := range r.conditions {
 		expr = expr.Where(r.conditions[k], r.values[k])
@@ -155,12 +161,11 @@ func (r *PodReader) Do() ([]PodInfo, error) {
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
-	if err := expr.Find(&podinfo).Error; err != nil {
-		r.conditions = []string{}
+
+	if err := expr.Find(&podsInfo).Error; err != nil {
 		return nil, err
 	}
-	r.conditions = []string{}
-	return podinfo, nil
+	return podsInfo, nil
 }
 
 func (c *Client) PodWriter() *podWriter {
@@ -174,4 +179,8 @@ func (w *podWriter) Update(s PodInfo) error {
 }
 func (w *podWriter) Delete(ids ...uint64) error {
 	return w.db.Delete(PodInfo{}, "id in (?)", ids).Error
+}
+
+func (w *podWriter) DeleteByPodUid(cluster string, uuid string) error {
+	return w.db.Delete(PodInfo{}, "cluster = ? and uid = ?", cluster, uuid).Error
 }
