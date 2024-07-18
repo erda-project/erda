@@ -3074,7 +3074,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		return err
 	}
 	if len(nacos) > 0 {
-		reg, config, err := a.NacosVersionReference(nacos[0].Version)
+		reg, config, err := a.genClusterAddonVersionByNacos(nacos[0].Version, req.ClusterName)
 		if err != nil {
 			return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos[0].Version)
 		}
@@ -3109,7 +3109,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		}
 
 		if nacos, ok := dice.AddOns[NacosAddon]; ok {
-			reg, config, err := a.NacosVersionReference(nacos.Options["version"])
+			reg, config, err := a.genClusterAddonVersionByNacos(nacos.Options["version"], req.ClusterName)
 			if err != nil {
 				return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos.Options["version"])
 			}
@@ -3149,54 +3149,50 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	return nil
 }
 
-func (a *Addon) NacosVersionReference(version string) (regVersion, confVersion string, err error) {
-	regMap, err := GetCache().Get(RegisterCenterAddon)
+func (a *Addon) nacosVersionReference(nacosVersion, addonName, cluster string) (version string, err error) {
+	addonMap, err := GetCache().Get(addonName)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	confMap, err := GetCache().Get(ConfigCenterAddon)
+	addons, err := toVersionMap(addonMap)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	registers, err := toVersionMap(regMap)
-	if err != nil {
-		return "", "", err
-	}
-	configs, err := toVersionMap(confMap)
-	if err != nil {
-		return "", "", err
-	}
-	for _, r := range *registers {
-		dice, err := a.parseAddonDice(r)
-		if err != nil {
-			return "", "", err
+
+	if ins, err := a.db.FindTmcInstanceByNameAndCLuster(RegisterCenterAddon, cluster); err == nil && ins != nil {
+		for _, in := range ins {
+			version = in.Version
+			break
 		}
-		if addOn, ok := dice.AddOns[NacosAddon]; ok && addOn.Options["version"] == version {
-			spec, err := a.parseAddonSpec(r)
+	} else {
+		for _, r := range *addons {
+			dice, err := a.parseAddonDice(r)
 			if err != nil {
-				return "", "", err
+				return "", err
 			}
-			if !spec.Deprecated {
-				regVersion = spec.Version
-				break
+			if addOn, ok := dice.AddOns[NacosAddon]; ok && addOn.Options["version"] == nacosVersion {
+				spec, err := a.parseAddonSpec(r)
+				if err != nil {
+					return "", err
+				}
+				if !spec.Deprecated {
+					version = spec.Version
+					break
+				}
 			}
 		}
 	}
-	for _, c := range *configs {
-		dice, err := a.parseAddonDice(c)
-		if err != nil {
-			return "", "", err
-		}
-		if addOn, ok := dice.AddOns[NacosAddon]; ok && addOn.Options["version"] == version {
-			spec, err := a.parseAddonSpec(c)
-			if err != nil {
-				return "", "", err
-			}
-			if !spec.Deprecated {
-				confVersion = spec.Version
-				break
-			}
-		}
+	return
+}
+
+func (a *Addon) genClusterAddonVersionByNacos(nacosVersion, cluster string) (regVersion, confVersion string, err error) {
+	regVersion, err = a.nacosVersionReference(nacosVersion, RegisterCenterAddon, cluster)
+	if err != nil {
+		return "", "", err
+	}
+	confVersion, err = a.nacosVersionReference(nacosVersion, ConfigCenterAddon, cluster)
+	if err != nil {
+		return "", "", err
 	}
 	return
 }
