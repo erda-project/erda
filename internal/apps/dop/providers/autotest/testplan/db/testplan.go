@@ -15,6 +15,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 )
@@ -35,6 +37,11 @@ func (db *TestPlanDB) UpdateTestPlanV2(testPlanID uint64, fields map[string]inte
 // CreateAutoTestExecHistory .
 func (db *TestPlanDB) CreateAutoTestExecHistory(execHistory *AutoTestExecHistory) error {
 	return db.Create(execHistory).Error
+}
+
+// DeleteAutoTestExecHistory .
+func (db *TestPlanDB) DeleteAutoTestExecHistory(endTimeCreated time.Time) error {
+	return db.Where("created_at < ?", endTimeCreated).Delete(&AutoTestExecHistory{}).Error
 }
 
 // BatchCreateAutoTestExecHistory .

@@ -415,6 +415,8 @@ etcd-election@project-management-report:
   root_path: "/project-management-report-election"
 etcd-election@efficiency-measure:
   root_path: "/efficiency-measure-election"
+etcd-election@autotest-testplan-provider:
+  root_path: "/autotest-testplan-election"
 cassandra:
   _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"

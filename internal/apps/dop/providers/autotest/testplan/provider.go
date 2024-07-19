@@ -16,22 +16,27 @@ package testplan
 
 import (
 	"context"
+	"time"
 
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dao"
 	"github.com/erda-project/erda/internal/apps/dop/providers/autotest/testplan/db"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type config struct {
+	ExecHistoryDBGCDuration time.Duration `file:"exec_history_dbgc_duration" env:"EXEC_HISTORY_DBGC_DURATION" default:"12h"`
+	ExecHistoryRetainHour   time.Duration `file:"exec_history_retain_hour" env:"EXEC_HISTORY_RETAIN_HOUR" default:"720h"`
 }
 
 // +provider
@@ -45,6 +50,7 @@ type provider struct {
 	TestPlanService *TestPlanService
 	Org             org.Interface
 	RouterManager   httpserver.RouterManager
+	Election        election.Interface `autowired:"etcd-election@autotest-testplan-provider"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -66,6 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		pb.RegisterTestPlanServiceImp(p.Register, p.TestPlanService)
 	}
+	p.Election.OnLeader(p.ExecHistoryGC)
 	return nil
 }
 
@@ -75,6 +82,14 @@ func (p *provider) Run(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (p *provider) ExecHistoryGC(ctx context.Context) {
+	p.Log.Infof("start exec history gc")
+	rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
+		p.TestPlanService.doExecHistoryGC()
+		return rutil.ContinueWorkingWithDefaultInterval
+	}, rutil.WithContinueWorkingDefaultRetryInterval(p.Cfg.ExecHistoryDBGCDuration))
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
