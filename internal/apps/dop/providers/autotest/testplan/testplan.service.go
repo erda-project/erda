@@ -451,6 +451,15 @@ func (s *TestPlanService) getSceneIDsIncludeRef(setRefMap map[uint64]uint64, set
 	return
 }
 
+func (s *TestPlanService) doExecHistoryGC() error {
+	endTimeCreated := time.Now().Add(-s.p.Cfg.ExecHistoryRetainHour)
+	if err := s.db.DeleteAutoTestExecHistory(endTimeCreated); err != nil {
+		logrus.Errorf("failed to delete exec history, err: %v", err)
+		return err
+	}
+	return nil
+}
+
 func calcRate(num, totalNum int64) float64 {
 	if totalNum == 0 {
 		return 0
