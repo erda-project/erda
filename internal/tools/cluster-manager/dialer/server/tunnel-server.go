@@ -43,6 +43,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/config"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -72,7 +73,7 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 	registerFunc := func(clusterKey string, clusterInfo cluster) {
 		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
 		defer cancel()
-		ctx = apis.WithInternalClientContext(ctx, "cluster-manager")
+		ctx = apis.WithInternalClientContext(ctx, discover.SvcClusterManager)
 		for {
 			select {
 			case <-ctx.Done():
