@@ -3159,7 +3159,7 @@ func (a *Addon) nacosVersionReference(nacosVersion, addonName, cluster string) (
 		return "", err
 	}
 
-	if ins, err := a.db.FindTmcInstanceByNameAndCLuster(RegisterCenterAddon, cluster); err == nil && ins != nil {
+	if ins, err := a.db.FindTmcInstanceByNameAndCLuster(addonName, cluster); err == nil && ins != nil {
 		for _, in := range ins {
 			version = in.Version
 			break
