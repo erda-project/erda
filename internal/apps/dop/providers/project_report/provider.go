@@ -24,6 +24,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -66,6 +67,7 @@ type provider struct {
 	Election election.Interface `autowired:"etcd-election@project-management-report"`
 	Js       jsonstore.JsonStore
 	Register transport.Register
+	DB       *gorm.DB `autowired:"mysql-gorm.v2-client"`
 
 	orgSet       *orgCache
 	projectSet   *projectCache

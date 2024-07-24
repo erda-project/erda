@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -57,8 +59,15 @@ func TestGenLastValueWhereSql(t *testing.T) {
 		"AND tag_values[indexOf(tag_keys,'iteration_id')] IN ('10','20','30') " +
 		"AND (tag_values[indexOf(tag_keys,'project_name')] like '%example%' or tag_values[indexOf(tag_keys,'project_display_name')] like '%example%') " +
 		"AND tag_values[indexOf(tag_keys,'status')] = 'done' "
+	p := &provider{
+		DB: &gorm.DB{
+			Config: &gorm.Config{
+				Dialector: &mysql.Dialector{},
+			},
+		},
+	}
 
-	result := genLastValueWhereSql(req)
+	result := p.genLastValueWhereSql(req)
 	assert.Equal(t, expectedSQL, result)
 }
 
@@ -78,9 +87,16 @@ func TestGenBasicWhereSql(t *testing.T) {
 		},
 	}
 
-	expectedSQL := "AND requirementTotal >= 100.000000 AND bugCount < 10.000000 "
+	expectedSQL := "AND 'requirementTotal' >= 100.000000 AND 'bugCount' < 10.000000 "
 
-	result := genBasicWhereSql(req)
+	p := &provider{
+		DB: &gorm.DB{
+			Config: &gorm.Config{
+				Dialector: &mysql.Dialector{},
+			},
+		},
+	}
+	result := p.genBasicWhereSql(req)
 	assert.Equal(t, expectedSQL, result)
 }
 
@@ -93,8 +109,8 @@ func Test_checkQueryRequest(t *testing.T) {
 		{
 			name: "missing org id",
 			arg: &apistructs.ProjectReportRequest{
-				Start: "now-1h",
-				End:   "now",
+				Start: "2024-01-01 00:00:00",
+				End:   "2024-01-02 00:00:00",
 			},
 			wantErr: true,
 		},
@@ -102,7 +118,24 @@ func Test_checkQueryRequest(t *testing.T) {
 			name: "missing start",
 			arg: &apistructs.ProjectReportRequest{
 				OrgID: 1,
-				End:   "now",
+				End:   "2024-01-02 00:00:00",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid start sql injection",
+			arg: &apistructs.ProjectReportRequest{
+				OrgID: 1,
+				Start: "2024-06-13 00:00:00' and substring（（select currentDatabase （），1,1）='1'-- -",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid end sql injection",
+			arg: &apistructs.ProjectReportRequest{
+				OrgID: 1,
+				Start: "2024-01-01 00:00:00",
+				End:   "2024-06-13 00:00:00' and substring（（select currentDatabase （），1,1）='1'-- -",
 			},
 			wantErr: true,
 		},
@@ -110,7 +143,7 @@ func Test_checkQueryRequest(t *testing.T) {
 			name: "missing end",
 			arg: &apistructs.ProjectReportRequest{
 				OrgID: 1,
-				Start: "now-1h",
+				Start: "2024-01-01 00:00:00",
 			},
 			wantErr: true,
 		},
@@ -118,8 +151,8 @@ func Test_checkQueryRequest(t *testing.T) {
 			name: "invalid operation",
 			arg: &apistructs.ProjectReportRequest{
 				OrgID: 1,
-				Start: "now-1h",
-				End:   "now",
+				Start: "2024-01-01 00:00:00",
+				End:   "2024-01-02 00:00:00",
 				Operations: []apistructs.ReportFilterOperation{
 					{
 						Key:       "requirementTotal",
@@ -134,8 +167,8 @@ func Test_checkQueryRequest(t *testing.T) {
 			name: "valid query",
 			arg: &apistructs.ProjectReportRequest{
 				OrgID: 1,
-				Start: "now-1h",
-				End:   "now",
+				Start: "2024-01-01 00:00:00",
+				End:   "2024-01-02 00:00:00",
 				Operations: []apistructs.ReportFilterOperation{
 					{
 						Key:       "requirementTotal",
@@ -149,13 +182,45 @@ func Test_checkQueryRequest(t *testing.T) {
 			name: "invalid label operation",
 			arg: &apistructs.ProjectReportRequest{
 				OrgID: 1,
-				Start: "now-1h",
-				End:   "now",
+				Start: "2024-01-01 00:00:00",
+				End:   "2024-01-02 00:00:00",
 				LabelQuerys: []apistructs.ReportLabelOperation{
 					{
 						Key:       "project_name",
 						Val:       "100",
 						Operation: ">=",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid label query injection",
+			arg: &apistructs.ProjectReportRequest{
+				OrgID: 1,
+				Start: "2024-01-01 00:00:00",
+				End:   "2024-01-02 00:00:00",
+				LabelQuerys: []apistructs.ReportLabelOperation{
+					{
+						Key:       "substring（（select currentDatabase （），1,1）='1'-- -",
+						Val:       "100",
+						Operation: "=",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid operation key injection",
+			arg: &apistructs.ProjectReportRequest{
+				OrgID: 1,
+				Start: "2024-01-01 00:00:00",
+				End:   "2024-01-02 00:00:00",
+				Operations: []apistructs.ReportFilterOperation{
+					{
+						Key:       "substring（（select currentDatabase （），1,1）='1'-- -",
+						Val:       100,
+						Operation: "=",
 					},
 				},
 			},
