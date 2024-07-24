@@ -3159,14 +3159,13 @@ func (a *Addon) nacosVersionReference(nacosVersion, addonName, cluster string) (
 		return "", err
 	}
 
-	if ins, err := a.db.FindTmcInstanceByNameAndCLuster(addonName, cluster); err == nil && ins != nil {
-		for _, in := range ins {
-			version = in.Version
-			break
-		}
-	} else if err != nil {
+	if ins, err := a.db.FindTmcInstanceByNameAndCLuster(addonName, cluster); err != nil {
 		return "", err
 	} else {
+		for _, in := range ins {
+			version = in.Version
+			return
+		}
 		for _, r := range *addons {
 			dice, err := a.parseAddonDice(r)
 			if err != nil {
