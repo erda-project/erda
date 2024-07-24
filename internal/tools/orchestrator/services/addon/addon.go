@@ -3163,8 +3163,7 @@ func (a *Addon) nacosVersionReference(nacosVersion, addonName, cluster string) (
 		return "", err
 	} else {
 		for _, in := range ins {
-			version = in.Version
-			return
+			return in.Version, nil
 		}
 		for _, r := range *addons {
 			dice, err := a.parseAddonDice(r)
