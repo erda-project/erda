@@ -55,7 +55,7 @@ func (db *DBClient) FindTmcInstanceByNameAndCLuster(name, cluster string) ([]Tmc
 		Where("is_deleted = 'N'").
 		Find(&res).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil
+			return res, nil
 		}
 		return nil, err
 	}
