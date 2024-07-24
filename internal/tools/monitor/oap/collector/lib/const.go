@@ -15,5 +15,7 @@
 package lib
 
 const (
-	OrgNameKey = "org_name"
+	OrgNameKey     = "org_name"
+	DiceOrgNameKey = "dice_org_name"
+	DiceWorkspace  = "dice_workspace"
 )

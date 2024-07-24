@@ -15,6 +15,7 @@
 package settings
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -25,23 +26,31 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/tools/monitor/core/settings/retention-strategy"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-type config struct{}
+type config struct {
+	SyncMonitorTypes []string `file:"sync_monitor_types" default:"logs,metrics"`
+}
 
 // +provider
 type provider struct {
 	Cfg             *config
 	Log             logs.Logger
-	Register        transport.Register `autowired:"service-register" optional:"true"`
-	DB              *gorm.DB           `autowired:"mysql-client"`
-	Trans           i18n.Translator    `autowired:"i18n" translator:"settings"`
+	Register        transport.Register  `autowired:"service-register" optional:"true"`
+	DB              *gorm.DB            `autowired:"mysql-client"`
+	Trans           i18n.Translator     `autowired:"i18n" translator:"settings"`
+	Election        election.Interface  `autowired:"etcd-election@monitor-config-creator"`
+	LogRetention    retention.Interface `autowired:"storage-retention-strategy@log"`
+	MetricRetention retention.Interface `autowired:"storage-retention-strategy@metric"`
 	settingsService *settingsService
 	Org             org.ClientInterface
 }
@@ -109,6 +118,18 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 		return p.settingsService
 	}
 	return p
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	p.Election.OnLeader(func(ctx context.Context) {
+		rutil.ContinueWorking(ctx, p.Log, func(ctx context.Context) rutil.WaitDuration {
+			if err := p.syncCreateOrgMonitorConfig(); err != nil {
+				p.Log.Errorf("failed to syncCreateOrgMonitorConfig: %v", err)
+			}
+			return rutil.ContinueWorkingWithCustomInterval(time.Minute * 10)
+		})
+	})
+	return nil
 }
 
 func init() {
