@@ -486,10 +486,10 @@ replace (
 	github.com/erda-project/erda-proto-go v1.4.0 => ./api/proto-go
 	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.49.0
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
+	github.com/grafana/pyroscope-go v1.1.1 => github.com/grafana/pyroscope-go v1.0.3
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/pingcap/pd/v4 => github.com/tikv/pd v1.0.8
-	github.com/pyroscope-io/client v0.6.1-0.20230130114945-a64d920d2fba => github.com/grafana/pyroscope-go v1.1.1
 	github.com/pyroscope-io/godeltaprof v0.1.0 => github.com/grafana/pyroscope-go/godeltaprof v0.1.3
 	github.com/pyroscope-io/pyroscope => github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e
 	github.com/rancher/apiserver => github.com/rancher/apiserver v0.0.0-20240503193545-2e1b0ddd9791
