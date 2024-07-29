@@ -283,7 +283,10 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 			expr := it.sqlClause.
 				Where(func() (exprs []exp.Expression) {
 					idExpr := goqu.C("_id")
-					if len(it.lastID) > 0 {
+					if len(it.lastID) == 0 {
+						return
+					}
+					if reverse {
 						exprs = append(exprs, idExpr.Lt(it.lastID))
 					} else {
 						exprs = append(exprs, idExpr.Gt(it.lastID))
