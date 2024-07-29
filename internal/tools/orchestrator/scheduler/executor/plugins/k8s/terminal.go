@@ -28,13 +28,12 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
-
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 )
 
