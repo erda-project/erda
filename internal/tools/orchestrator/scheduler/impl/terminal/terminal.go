@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
@@ -67,6 +68,35 @@ type ContainerInfoArg struct {
 	Host      string `json:"host"`
 	Port      int    `json:"port"`
 	Container string `json:"container"`
+}
+
+type Auditor struct {
+	bdl *bundle.Bundle
+
+	userID        string
+	orgID         uint64
+	podName       string
+	containerName string
+}
+
+func (a *Auditor) AuditCommand(command string) error {
+	return a.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+		Audit: apistructs.Audit{
+			UserID:    a.userID,
+			ScopeType: apistructs.OrgScope,
+			ScopeID:   a.orgID,
+			OrgID:     a.orgID,
+			Context: map[string]interface{}{
+				"pod":       a.podName,
+				"container": a.containerName,
+				"command":   command,
+			},
+			TemplateName: apistructs.ExecuteTerminalCommand,
+			Result:       "success",
+			StartTime:    strconv.FormatInt(time.Now().Unix(), 10),
+			EndTime:      strconv.FormatInt(time.Now().Unix(), 10),
+		},
+	})
 }
 
 func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, r *http.Request) {
@@ -177,7 +207,16 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 		return
 	}
 
-	K8STerminal(clustername, k8snamespace, k8spodname, k8scontainername, conn)
+	orgID, _ := strconv.Atoi(instance.OrgID)
+	auditor := &Auditor{
+		userID:        r.Header.Get("User-ID"),
+		orgID:         uint64(orgID),
+		bdl:           bundle.New(bundle.WithErdaServer()),
+		podName:       k8spodname,
+		containerName: k8scontainername,
+	}
+
+	K8STerminal(clustername, k8snamespace, k8spodname, k8scontainername, conn, auditor)
 }
 
 // SoldierTerminal proxy of soldier
@@ -250,7 +289,7 @@ func SoldierTerminal(clusterSvc clusterpb.ClusterServiceServer, r *http.Request,
 	wait.Wait()
 }
 
-func K8STerminal(clustername, namespace, podname, containername string, upperConn *websocket.Conn) {
+func K8STerminal(clustername, namespace, podname, containername string, upperConn *websocket.Conn, auditor *Auditor) {
 	executorname := clusterutil.GenerateExecutorByClusterName(clustername)
 	logrus.Infof("terminal get executor name %s", executorname)
 	if strings.Contains(executorname, "EDAS") {
@@ -266,5 +305,5 @@ func K8STerminal(clustername, namespace, podname, containername string, upperCon
 		logrus.Errorf("executor(%s) not impl executortypes.TerminalExecutor", executorname)
 		return
 	}
-	terminalExecutor.Terminal(namespace, podname, containername, upperConn)
+	terminalExecutor.Terminal(namespace, podname, containername, upperConn, auditor)
 }
