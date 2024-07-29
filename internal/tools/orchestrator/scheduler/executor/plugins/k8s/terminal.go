@@ -16,6 +16,7 @@ package k8s
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -32,6 +33,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 )
 
@@ -66,7 +68,7 @@ func hidePassEnv(b []byte) []byte {
 	})
 }
 
-func (k *Kubernetes) Terminal(namespace, podname, containername string, upperConn *websocket.Conn) {
+func (k *Kubernetes) Terminal(namespace, podname, containername string, upperConn *websocket.Conn, auditor executortypes.TerminalCommandAuditor) {
 	f := func(cols, rows uint16) (*websocket.Conn, error) {
 		path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/exec", namespace, podname)
 		s := `stty cols %d rows %d; s=/bin/sh; if [ -f /bin/bash ]; then s=/bin/bash; fi; `
@@ -165,7 +167,30 @@ func (k *Kubernetes) Terminal(namespace, podname, containername string, upperCon
 	waitConn.Add(1)
 	var setsizeOnce sync.Once
 	var wait sync.WaitGroup
+	commandChan := make(chan string, 100)
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 	wait.Add(2)
+	go func() {
+		buf := bytes.NewBufferString("")
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case command := <-commandChan:
+				buf.WriteString(command)
+				var writeCommand bool
+				if command[len(command)-1] == '\r' {
+					command = buf.String()
+					writeCommand = true
+					buf.Reset()
+				}
+				if writeCommand && auditor != nil {
+					auditor.AuditCommand(command)
+				}
+			}
+		}
+	}()
 	go func() {
 		defer func() {
 			wait.Done()
@@ -214,6 +239,7 @@ func (k *Kubernetes) Terminal(namespace, podname, containername string, upperCon
 				if err := conn.WriteMessage(tp, m); err != nil {
 					return
 				}
+				commandChan <- string(m[1:])
 			case SetSize:
 				var err error
 				setsizeOnce.Do(func() {

@@ -100,8 +100,12 @@ type Executor interface {
 	KillPod(podname string) error
 }
 
+type TerminalCommandAuditor interface {
+	AuditCommand(command string) error
+}
+
 type TerminalExecutor interface {
-	Terminal(namespace, podname, containername string, conn *websocket.Conn)
+	Terminal(namespace, podname, containername string, conn *websocket.Conn, auditor TerminalCommandAuditor)
 }
 
 type StopEventsChans struct {
