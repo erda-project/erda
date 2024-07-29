@@ -26,6 +26,7 @@ import (
 	cksdk "github.com/ClickHouse/clickhouse-go/v2"
 	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/clickhouse"
@@ -278,21 +279,35 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 		fetchingRemote := false
 		if it.lastResp == nil {
 			fetchingRemote = true
-			expr := it.sqlClause
 
-			if reverse {
-				if len(it.lastID) > 0 {
-					expr = expr.Where(goqu.C("_id").Lt(it.lastID))
-				}
-				expr = expr.Order(goqu.C("org_name").Desc(), goqu.C("tenant_id").Desc(), goqu.C("group_id").Desc(), goqu.C("timestamp").Desc())
-			} else {
-				if len(it.lastID) > 0 {
-					expr = expr.Where(goqu.C("_id").Gt(it.lastID))
-				}
-				expr = expr.Order(goqu.C("org_name").Asc(), goqu.C("tenant_id").Asc(), goqu.C("group_id").Asc(), goqu.C("timestamp").Asc())
-			}
-
-			expr = expr.Offset(uint(it.fromOffset)).Limit(uint(it.pageSize))
+			expr := it.sqlClause.
+				Where(func() (exprs []exp.Expression) {
+					idExpr := goqu.C("_id")
+					if len(it.lastID) > 0 {
+						exprs = append(exprs, idExpr.Lt(it.lastID))
+					} else {
+						exprs = append(exprs, idExpr.Gt(it.lastID))
+					}
+					return
+				}()...).
+				Order(func() (exprs []exp.OrderedExpression) {
+					identExprs := []exp.IdentifierExpression{
+						goqu.C("timestamp"),
+						goqu.C("org_name"),
+						goqu.C("tenant_id"),
+						goqu.C("group_id"),
+					}
+					for _, ie := range identExprs {
+						if reverse {
+							exprs = append(exprs, ie.Desc())
+						} else {
+							exprs = append(exprs, ie.Asc())
+						}
+					}
+					return
+				}()...).
+				Offset(uint(it.fromOffset)).
+				Limit(uint(it.pageSize))
 
 			switch it.returnFieldMode {
 			case storage.ExcludeTagsField:
