@@ -78,7 +78,7 @@ func ConvertOpenAIChatRequestToDsRequest(ctx context.Context, oreq openai.ChatCo
 	return dsReq, nil
 }
 
-func ConvertDsStreamChunkToOpenAIFormat(dsChunk DsRespStreamChunk, modelName string) (*openai.ChatCompletionStreamResponse, error) {
+func ConvertDsStreamChunkToOpenAIStreamFormat(dsChunk DsRespStreamChunk, modelName string) (*openai.ChatCompletionStreamResponse, error) {
 	var ocs []openai.ChatCompletionStreamChoice
 	for _, dsc := range dsChunk.Output.Choices {
 		oc := openai.ChatCompletionStreamChoice{
@@ -105,4 +105,33 @@ func ConvertDsStreamChunkToOpenAIFormat(dsChunk DsRespStreamChunk, modelName str
 		}
 	}
 	return &openaiChunk, nil
+}
+
+func ConvertDsResponseToOpenAIFormat(dsResp DsResponse, modelName string) (*openai.ChatCompletionResponse, error) {
+	var ocs []openai.ChatCompletionChoice
+	for i, dsc := range dsResp.Output.Choices {
+		oc := openai.ChatCompletionChoice{
+			Index: i,
+			Message: openai.ChatCompletionMessage{
+				Role:    dsc.Message.Role,
+				Content: dsc.Message.Content.(string),
+			},
+			FinishReason: openai.FinishReason(dsc.FinishReason),
+		}
+		ocs = append(ocs, oc)
+	}
+	resp := openai.ChatCompletionResponse{
+		ID:      dsResp.RequestID,
+		Object:  "chat.completion",
+		Model:   modelName,
+		Choices: ocs,
+	}
+	if dsResp.Usage != nil {
+		resp.Usage = openai.Usage{
+			PromptTokens:     int(dsResp.Usage.InputTokens),
+			CompletionTokens: int(dsResp.Usage.OutputTokens),
+			TotalTokens:      int(dsResp.Usage.TotalTokens),
+		}
+	}
+	return &resp, nil
 }

@@ -15,6 +15,7 @@
 package sdk
 
 type (
+	DsResponse        DsRespStreamChunk
 	DsRespStreamChunk struct {
 		Output    DsRespStreamChunkOutput `json:"output,omitempty"`
 		RequestID string                  `json:"request_id,omitempty"`

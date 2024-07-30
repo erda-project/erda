@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/assets"
 	"github.com/erda-project/erda/pkg/numeral"
@@ -30,7 +31,7 @@ func HandleChatImage(req *openai.ChatCompletionRequest) error {
 		return nil
 	}
 	if !assets.Available() {
-		return fmt.Errorf("assets service is not available")
+		logrus.Warnf("assets service is not available")
 	}
 	for i, msg := range req.Messages {
 		for j, part := range msg.MultiContent {
