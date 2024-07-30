@@ -12,29 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package strutil
 
 import (
-	"net/http"
-	"strings"
+	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
-// On .
-type On struct {
-	Key      string `json:"key" yaml:"key"`
-	Operator string `json:"operator" yaml:"operator"`
-	Value    string `json:"value" yaml:"value"`
-}
-
-func (on *On) On(header http.Header) (bool, error) {
-	switch {
-	case strings.EqualFold(on.Operator, "exist"):
-		return header.Get(on.Key) != "", nil
-	case strings.EqualFold(on.Operator, "="):
-		return header.Get(on.Key) == on.Value, nil
-	default:
-		return false, errors.Errorf("invalid operator: %s", on.Operator)
+func TestTryGetJsonStr(t *testing.T) {
+	type args struct {
+		v any
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "valid",
+			args: args{v: map[string]interface{}{"a": 1}},
+			want: `{"a":1}`,
+		},
+		{
+			name: "invalid",
+			args: args{v: make(chan int)},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, TryGetJsonStr(tt.args.v), "TryGetJsonStr(%v)", tt.args.v)
+		})
 	}
 }

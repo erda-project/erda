@@ -230,8 +230,12 @@ jobs:
           rm -fr ./coverage/proto-go
           rm -fr ./coverage/pure-coverage
       - name: Upload coverage to Codecov
-        run: |
-          curl -s https://codecov.io/bash | bash -s - -s ./coverage/
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/
+          fail_ci_if_error: true
+          flags: by-github-actions
       - name: Upload combined coverage reports to artifact
         uses: actions/upload-artifact@v3
         with:
