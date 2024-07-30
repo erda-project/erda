@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// On .
 type On struct {
 	Key      string `json:"key" yaml:"key"`
 	Operator string `json:"operator" yaml:"operator"`
