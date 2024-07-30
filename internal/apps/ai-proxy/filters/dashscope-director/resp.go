@@ -80,7 +80,7 @@ func (f *DashScopeDirector) dsHandleResponseStreamChunk(ctx context.Context, w r
 		return signal, nil
 	}
 	// convert ds response to openai response
-	openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(*lastCompleteDeltaResp, modelName)
+	openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIStreamFormat(*lastCompleteDeltaResp, modelName)
 	if err != nil {
 		return reverseproxy.Intercept, fmt.Errorf("failed to convert dashscope response to openai response, err: %v", err)
 	}
@@ -221,17 +221,17 @@ func (f *DashScopeDirector) OnResponseEOF(ctx context.Context, _ reverseproxy.Ht
 	// only stream style need append [DONE] chunk
 	if !ctxhelper.GetIsStream(ctx) {
 		// convert all at once
-		var dsChunk sdk.DsRespStreamChunk
-		if err := json.Unmarshal(f.DefaultResponseFilter.Buffer.Bytes(), &dsChunk); err != nil {
+		var dsResp sdk.DsResponse
+		if err := json.Unmarshal(f.DefaultResponseFilter.Buffer.Bytes(), &dsResp); err != nil {
 			return fmt.Errorf("failed to unmarshal dashscope stream chunk: %s, err: %v", string(chunk), err)
 		}
-		openaiChunk, err := sdk.ConvertDsStreamChunkToOpenAIFormat(dsChunk, modelName)
+		openaiResp, err := sdk.ConvertDsResponseToOpenAIFormat(dsResp, modelName)
 		if err != nil {
 			return fmt.Errorf("failed to convert dashscope chunk to openai format, err: %v", err)
 		}
-		b, err := json.Marshal(openaiChunk)
+		b, err := json.Marshal(openaiResp)
 		if err != nil {
-			return fmt.Errorf("failed to marshal openai chunk, err: %v", err)
+			return fmt.Errorf("failed to marshal openai resp, err: %v", err)
 		}
 		return f.DefaultResponseFilter.OnResponseEOF(ctx, nil, w, b)
 	}
