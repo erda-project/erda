@@ -134,9 +134,9 @@ full-test:
 		bash -c 'cd /go/src/output && build/scripts/test_in_container.sh'
 
 # docker image
-build-image: prepare
+build-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
-build-multi-arch: prepare
+build-multi-arch-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build-multi-arch
 
 push-image:
