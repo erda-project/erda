@@ -116,6 +116,7 @@ clickhouse.table.initializer@profile:
 clickhouse.table.creator@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/logs_ddl_create_tenant_tables.sql"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_write_table: "logs"
   table_prefix: "logs"
 
@@ -682,6 +683,7 @@ clickhouse.table.loader@span:
 
 clickhouse.table.creator@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_write_table: "spans"
   table_prefix: "spans"
 
@@ -763,12 +765,14 @@ clickhouse.table.initializer@metric:
 clickhouse.table.creator@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/metrics/ddl_create_tenant_tables.sql.tpl"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_write_table: "metrics"
   table_prefix: "metrics"
 
 clickhouse.table.creator@external_metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/external_metrics/ddl_create_tenant_tables.sql.tpl"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_write_table: "external_metrics"
   table_prefix: "external_metrics"
 
@@ -805,6 +809,7 @@ clickhouse.table.initializer@event:
 clickhouse.table.creator@event:
   _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/events_ddl_create_tenant_tables.sql"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_write_table: "events"
   table_prefix: "events"
 
@@ -846,6 +851,7 @@ clickhouse.table.initializer@entity:
 clickhouse.table.creator@entity:
   _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
   ddl_template: "conf/clickhouse/entities_ddl_create_tenant_tables.sql"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_write_table: "entities"
   table_prefix: "entities"
 
