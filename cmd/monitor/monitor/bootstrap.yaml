@@ -94,6 +94,7 @@ log-storage-clickhouse:
 
 metric-storage-clickhouse:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
+  external_default_database: "${CLICKHOUSE_DATABASE:monitor}"
   query_timeout: "${QUERY_METRIC_FROM_CLICKHOUSE_TIMEOUT:1m}"
   query_max_threads: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_THREADS:0}"
   query_max_memory: "${QUERY_METRIC_FROM_CLICKHOUSE_MAX_MEMORY:0}"
