@@ -13,7 +13,6 @@ usage() {
     echo "    module path relative to cmd/"
     echo "ACTION: "
     echo "    build       build docker image. this is default action."
-    echo "    push        push docker image, and build image if image not exist."
     echo "    build-push  build and push docker image."
     echo "Environment Variables: "
     echo '    DOCKER_REGISTRY format like "docker.io/<repository>". '
@@ -31,14 +30,15 @@ ACTION=$2
 cd $(git rev-parse --show-toplevel)
 
 # image version and url
-ARCH="${ARCH:-$(go env GOARCH)}"
+CURRENT_ARCH="$(go env GOARCH)"
+TARGET_ARCH="${ARCH}"
 VERSION="$(build/scripts/make-version.sh)"
 IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 BASE_DOCKER_IMAGE="registry.erda.cloud/erda/erda-base:20240607"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
 
-# setup single module envionment variables
+# setup single module environment variables
 setup_single_module_env() {
     MAKE_BUILD_CMD="build-one"
 
@@ -51,7 +51,6 @@ setup_single_module_env() {
     elif [ -d "build/dockerfiles/${APP_NAME}" ];then
         DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
     fi
-    IMAGE_TAG="${IMAGE_TAG}-${ARCH}"
     DOCKER_IMAGE="${APP_NAME}:${IMAGE_TAG}"
 }
 
@@ -86,8 +85,8 @@ print_details() {
     echo "Dockerfile     : ${DOCKERFILE}"
     echo "Docker Image   : ${DOCKER_IMAGE}"
     echo "Build Command  : ${MAKE_BUILD_CMD}"
-    echo "Arch           : ${ARCH}"
-    echo "Docker Platform: linux/${ARCH}"
+    echo "Current Arch   : ${CURRENT_ARCH}"
+    echo "Target Arch    : ${TARGET_ARCH}"
 }
 print_details
 
@@ -100,7 +99,34 @@ docker_login() {
 
 # build docker image
 build_image()  {
-    DOCKER_BUILDKIT=1 docker build --pull --platform "linux/${ARCH}" --progress=plain -t "${DOCKER_IMAGE}" \
+    args=("$@")
+
+    # if TARGET_ARCH exists, set `--platform linux/${TARGET_ARCH}`
+    if [ "${MULTI_ARCH}" == "true" ]; then
+        args+=("--platform" "linux/amd64,linux/arm64")
+        args+=("--push") # multi-arch only support push mode
+        DOCKER_IMAGE="${DOCKER_IMAGE}-multiarch"
+    else
+      if [ -z "${TARGET_ARCH}" ]; then TARGET_ARCH="${CURRENT_ARCH}"; fi
+      args+=("--platform" "linux/${TARGET_ARCH}")
+      args+=("--build-arg" "ARCH=${TARGET_ARCH}")
+      DOCKER_IMAGE="${DOCKER_IMAGE}-${TARGET_ARCH}"
+    fi
+    echo "DOCKER_IMAGE: ${DOCKER_IMAGE}"
+
+    # check push mode
+    PUSH=false
+    for arg in "${args[@]}"; do
+        if [ "${arg}" == "--push" ]; then
+            PUSH=true
+            break
+        fi
+    done
+    if [ "${PUSH}" == "false" ]; then
+        args+=("--load")
+    fi
+
+    DOCKER_BUILDKIT=1 docker buildx build --pull -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
@@ -111,58 +137,26 @@ build_image()  {
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
         --build-arg "GOPROXY=${GOPROXY}" \
-        --build-arg "ARCH=${ARCH}" \
-        -f "${DOCKERFILE}" .
+        -f "${DOCKERFILE}" . \
+        "${args[@]}"
+    echo "action meta: image=${DOCKER_IMAGE}"
+    echo "action meta: tag=${IMAGE_TAG}"
 }
 
 build_multi_arch() {
-    DOCKER_IMAGE="${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
-    DOCKER_BUILDKIT=1 docker buildx build \
-      --platform linux/amd64 \
-      --platform linux/arm64 \
-      --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
-      --label "commit=$(git rev-parse HEAD)" \
-      --label "build-time=$(date '+%Y-%m-%d %T%z')" \
-      --build-arg "MODULE_PATH=${MODULE_PATH}" \
-      --build-arg "APP_NAME=${APP_NAME}" \
-      --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
-      --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
-      --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
-      --build-arg "GO_BUILD_OPTIONS=${GO_BUILD_OPTIONS}" \
-      --build-arg "GOPROXY=${GOPROXY}" \
-      -f "${DOCKERFILE}" \
-      -t "${DOCKER_IMAGE}" \
-      --push .
-    echo "action meta: image=${DOCKER_IMAGE}"
-}
-
-# push docker image
-push_image() {
-    if [ -z "${DOCKER_REGISTRY}" ]; then
-       echo "fail to push docker image, DOCKER_REGISTRY is empty !"
-       exit 1
-    fi
-    IMAGE_ID="$(docker images ${DOCKER_IMAGE} -q)"
-    if [ -z "${IMAGE_ID}" ]; then
-        build_image
-    fi
-    docker push "${DOCKER_IMAGE}"
+    unset TARGET_ARCH
+    MULTI_ARCH=true
+    build_image
 }
 
 # build and push
 build_push_image() {
-    build_image
-    push_image
-    echo "action meta: image=${DOCKER_IMAGE}"
-    echo "action meta: tag=${IMAGE_TAG}"
+    build_image --push
 }
 
 case "${ACTION}" in
     "build")
         docker_login && build_image
-        ;;
-    "push")
-        docker_login && push_image
         ;;
     "build-push")
         docker_login && build_push_image
