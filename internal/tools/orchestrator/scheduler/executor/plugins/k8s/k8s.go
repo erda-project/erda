@@ -28,7 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1583,7 +1583,7 @@ func (k *Kubernetes) reApplyErdaVPARules(sg apistructs.ServiceGroup) (interface{
 
 func convertToKedaScaledObject(scaledObject papb.ScaledConfig) *kedav1alpha1.ScaledObject {
 	var stabilizationWindowSeconds int32 = 300
-	selectPolicy := autoscalingv2beta2.MaxPolicySelect
+	selectPolicy := autoscalingv2.MaxChangePolicySelect
 
 	orgID := fmt.Sprintf("%d", scaledObject.OrgID)
 	triggers := make([]kedav1alpha1.ScaleTriggers, 0)
@@ -1637,34 +1637,34 @@ func convertToKedaScaledObject(scaledObject papb.ScaledConfig) *kedav1alpha1.Sca
 			Advanced: &kedav1alpha1.AdvancedConfig{
 				// +optional
 				HorizontalPodAutoscalerConfig: &kedav1alpha1.HorizontalPodAutoscalerConfig{
-					Behavior: &autoscalingv2beta2.HorizontalPodAutoscalerBehavior{
-						ScaleUp: &autoscalingv2beta2.HPAScalingRules{
+					Behavior: &autoscalingv2.HorizontalPodAutoscalerBehavior{
+						ScaleUp: &autoscalingv2.HPAScalingRules{
 							StabilizationWindowSeconds: &stabilizationWindowSeconds,
 							SelectPolicy:               &selectPolicy,
-							Policies: []autoscalingv2beta2.HPAScalingPolicy{
+							Policies: []autoscalingv2.HPAScalingPolicy{
 								{
-									Type:          autoscalingv2beta2.PodsScalingPolicy,
+									Type:          autoscalingv2.PodsScalingPolicy,
 									Value:         2,
 									PeriodSeconds: 30,
 								},
 								{
-									Type:          autoscalingv2beta2.PercentScalingPolicy,
+									Type:          autoscalingv2.PercentScalingPolicy,
 									Value:         50,
 									PeriodSeconds: 30,
 								},
 							},
 						},
-						ScaleDown: &autoscalingv2beta2.HPAScalingRules{
+						ScaleDown: &autoscalingv2.HPAScalingRules{
 							StabilizationWindowSeconds: &stabilizationWindowSeconds,
 							SelectPolicy:               &selectPolicy,
-							Policies: []autoscalingv2beta2.HPAScalingPolicy{
+							Policies: []autoscalingv2.HPAScalingPolicy{
 								{
-									Type:          autoscalingv2beta2.PodsScalingPolicy,
+									Type:          autoscalingv2.PodsScalingPolicy,
 									Value:         2,
 									PeriodSeconds: 30,
 								},
 								{
-									Type:          autoscalingv2beta2.PercentScalingPolicy,
+									Type:          autoscalingv2.PercentScalingPolicy,
 									Value:         50,
 									PeriodSeconds: 30,
 								},
