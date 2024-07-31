@@ -299,7 +299,7 @@ gorm.v2:
   password: "${MYSQL_PASSWORD}"
   database: "${MYSQL_DATABASE}"
 
-erda.core.monitor.profile.render: {}
+erda.core.monitor.profile.render: { }
 
 metric-query-example:
   _enable: ${METRIC_QUERY_EXAMPLE_ENABLE:false}
@@ -353,6 +353,7 @@ clickhouse.table.loader@entity:
 clickhouse.meta.loader@metric:
   _enable: ${QUERY_METRIC_FROM_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_META_MODE:LoadWithCache}"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   table: "metrics_meta_all"
   cache_key_prefix: "clickhouse-meta-load-metric"
   meta_start_time: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_META_START_TIME:-1h}"
@@ -497,7 +498,7 @@ erda.core.pipeline.cron-client:
 
 grpc-client@erda.core.clustermanager.cluster:
   addr: "${CLUSTER_MANAGER_GRPC_ADDR:cluster-manager:9095}"
-erda.core.clustermanager.cluster-client: {}
+erda.core.clustermanager.cluster-client: { }
 
 grpc-client@erda.core.messenger.notifygroup:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
@@ -512,5 +513,5 @@ metric-storage-elasticsearch:
 
 grpc-client@erda.core.org:
   addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
-erda.core.org-client: {}
-erda.core.org: {}
+erda.core.org-client: { }
+erda.core.org: { }

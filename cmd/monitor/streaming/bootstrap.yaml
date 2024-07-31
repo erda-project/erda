@@ -86,6 +86,7 @@ storage-retention-strategy@span:
 
 clickhouse.table.initializer@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   table_prefix: "logs"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_LOG_TTL_SYNC_INTERVAL:1h}"
   cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
@@ -105,7 +106,7 @@ clickhouse.table.initializer@profile:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   ttl_sync_interval: "${CLICKHOUSE_TABLE_LOG_TTL_SYNC_INTERVAL:1h}"
   cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
-  database: "pyroscope"
+  database: "${CLICKHOUSE_PROFILE_DATABASE:pyroscope}"
   default_ddl_files:
     - path: "conf/clickhouse/profiles_ddl_create_db.sql"
       ignore_err: "false"
@@ -124,6 +125,7 @@ clickhouse.table.loader@log:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_LOG_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "logs"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_search_table: "logs_all"
   cache_key_prefix: "clickhouse-table-log"
 
@@ -131,6 +133,7 @@ clickhouse.table.loader@profile:
   _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_LOG_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "main"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_search_table: "main"
   cache_key_prefix: "clickhouse-table-profile"
 
@@ -452,7 +455,7 @@ browser-analytics:
     topic: "${METRIC_TOPICS:spot-metrics}"
     parallelism: ${KAFKA_PARALLELISM:3}
     batch:
-      size:  ${KAFKA_BATCH_SIZE:50}
+      size: ${KAFKA_BATCH_SIZE:50}
       timeout: "10s"
   ipdb: "conf/ipdata.dat"
 
@@ -487,7 +490,7 @@ trace-storage:
       topic: "${SPOT_TRACE_TOPICS:spot-trace}"
       parallelism: ${KAFKA_PARALLELISM:3}
       batch:
-        size:  ${KAFKA_BATCH_SIZE:50}
+        size: ${KAFKA_BATCH_SIZE:50}
         timeout: "10s"
 
 # entity
@@ -646,7 +649,7 @@ erda.oap.collector.processor.modifier@span:
     - action: drop
       key: tags.http_wrote_bytes
 
-erda.oap.collector.processor.profile: {}
+erda.oap.collector.processor.profile: { }
 
 erda.oap.collector.exporter.clickhouse@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
@@ -665,6 +668,7 @@ erda.oap.collector.exporter.clickhouse@log:
 
 clickhouse.table.initializer@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   table_prefix: "spans"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
@@ -678,6 +682,7 @@ clickhouse.table.loader@span:
   _enable: ${WRITE_SPAN_TO_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "spans"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_search_table: "spans_all"
   cache_key_prefix: "clickhouse-table-span"
 
@@ -732,6 +737,7 @@ erda.oap.collector.exporter.clickhouse@external_metric:
 
 clickhouse.table.initializer@external_metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   table_prefix: "external_metrics"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_METRIC_TTL_SYNC_INTERVAL:12h}"
   cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
@@ -750,6 +756,7 @@ erda.oap.collector.exporter.clickhouse@profile:
 
 clickhouse.table.initializer@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   table_prefix: "metrics"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_METRIC_TTL_SYNC_INTERVAL:1h}"
   cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
@@ -780,6 +787,7 @@ clickhouse.table.loader@metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "metrics"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_search_table: "metrics_all"
   cache_key_prefix: "clickhouse-table-metric"
 
@@ -787,6 +795,7 @@ clickhouse.table.loader@external_metric:
   _enable: ${WRITE_METRIC_TO_CLICKHOUSE_ENABLE:true}
   load_mode: "${QUERY_EXTERNAL_METRIC_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}"
   table_prefix: "external_metrics"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_search_table: "external_metrics_all"
   cache_key_prefix: "clickhouse-table-external-metric"
 # --- metric to clickhouse block ---
@@ -794,6 +803,7 @@ clickhouse.table.loader@external_metric:
 # --- event to clickhouse block ---
 clickhouse.table.initializer@event:
   _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   table_prefix: "events"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
@@ -817,6 +827,7 @@ clickhouse.table.loader@event:
   _enable: ${WRITE_EVENT_TO_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_EVENT_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "events"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_search_table: "events_all"
   cache_key_prefix: "clickhouse-table-event"
 
@@ -836,6 +847,7 @@ event-storage-clickhouse:
 # --- entity to clickhouse block ---
 clickhouse.table.initializer@entity:
   _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   table_prefix: "entities"
   ttl_sync_interval: "${CLICKHOUSE_TABLE_TTL_SYNC_INTERVAL:24h}"
   cold_hot_enable: "${CLICKHOUSE_COLD_HOT_ENABLE:false}"
@@ -859,6 +871,7 @@ clickhouse.table.loader@entity:
   _enable: ${WRITE_ENTITY_TO_CLICKHOUSE_ENABLE:true}
   load_mode: ${QUERY_ENTITY_FROM_CLICKHOUSE_LOAD_MODE:LoadFromClickhouseOnly}
   table_prefix: "entities"
+  database: "${CLICKHOUSE_DATABASE:monitor}"
   default_search_table: "entities_all"
   cache_key_prefix: "clickhouse-table-entity"
 storage-retention-strategy@entity:
