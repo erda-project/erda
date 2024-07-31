@@ -178,6 +178,9 @@ func (k *Kubernetes) Terminal(namespace, podname, containername string, upperCon
 			case <-ctx.Done():
 				return
 			case command := <-commandChan:
+				if len(command) == 0 {
+					continue
+				}
 				buf.WriteString(command)
 				var writeCommand bool
 				if command[len(command)-1] == '\r' {
