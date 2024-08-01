@@ -35,13 +35,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/vm"
 	"strconv"
 	"strings"
 
-	//"github.com/expr-lang/expr"
-	//"github.com/expr-lang/expr/vm"
+	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/vm"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
@@ -53,7 +51,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	//metricscollector "github.com/erda-project/erda/pkg/k8sclient/apis/keda/v1alpha1/pkg/metricscollector/webhook"
 )
 
 var scaledobjectlog = logf.Log.WithName("scaledobject-validation-webhook")
