@@ -2081,11 +2081,22 @@ func (r *Runtime) fullGCForSingleRuntime(runtimeID uint64, keep int) {
 		return
 	}
 	oldestID := top[len(top)-1].ID
+	var hasSuccess bool
+	for _, deployment := range top {
+		if deployment.Status == apistructs.DeploymentStatusOK {
+			hasSuccess = true
+			break
+		}
+	}
 	if deployments, err := r.db.FindNotOutdatedOlderThan(runtimeID, oldestID); err != nil {
 		logrus.Errorf("[alert] failed to set outdated, runtimeID: %v, maxID: %v, (%v)",
 			runtimeID, oldestID, err)
 	} else {
 		for i := range deployments {
+			if !hasSuccess && deployments[i].Status == apistructs.DeploymentStatusOK {
+				hasSuccess = true
+				continue
+			}
 			r.markOutdated(&deployments[i])
 		}
 	}

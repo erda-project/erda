@@ -36,7 +36,7 @@ type SlowDurationDistributionChart struct {
 }
 
 func (avgDuration *SlowDurationDistributionChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
-	statement := fmt.Sprintf("SELECT sum(elapsed_sum::field)/sum(elapsed_count::field), sum(elapsed_count::field) "+
+	statement := fmt.Sprintf("SELECT avg(elapsed_mean::field), sum(elapsed_count::field) "+
 		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+

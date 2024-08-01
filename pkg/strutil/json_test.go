@@ -12,10 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lib
+package strutil
 
-const (
-	OrgNameKey     = "org_name"
-	DiceOrgNameKey = "dice_org_name"
-	DiceWorkspace  = "dice_workspace"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+func TestTryGetJsonStr(t *testing.T) {
+	type args struct {
+		v any
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "valid",
+			args: args{v: map[string]interface{}{"a": 1}},
+			want: `{"a":1}`,
+		},
+		{
+			name: "invalid",
+			args: args{v: make(chan int)},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, TryGetJsonStr(tt.args.v), "TryGetJsonStr(%v)", tt.args.v)
+		})
+	}
+}

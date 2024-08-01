@@ -1980,5 +1980,12 @@
       "zh": "在 [@projectName](project) 项目中, 更新了测试空间 [@spaceName] 的状态, 由 [@from] 变成 [@to] ",
       "en": "Update auto test space [@spaceName] archiveStatus from [@from] to [@to] in project [@projectName](project)"
     }
+  },
+  "executeTerminalCommand": {
+    "desc": "执行控制台命令",
+    "success": {
+      "zh": "在 [@pod](pod)/[@container](container) 中, 执行了控制台命令 [@command]",
+      "en": "Execute terminal command [@command] in [@pod](pod)/[@container](container)"
+    }
   }
 }
