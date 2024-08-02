@@ -737,7 +737,7 @@ func condition(task *spec.PipelineTask) bool {
 
 	sign := expression.Reconcile(task.Extra.Action.If)
 	if sign.Err != nil {
-		task.Status = apistructs.PipelineStatusFailed
+		task.Status = apistructs.PipelineStatusAnalyzeFailed
 		if sign.Err != nil {
 			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
 				Msg: sign.Err.Error(),
