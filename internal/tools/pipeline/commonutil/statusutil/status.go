@@ -31,7 +31,8 @@ func CalculatePipelineStatusV2(tasks []*spec.PipelineTask) apistructs.PipelineSt
 
 	for _, task := range tasks {
 		// treat as success
-		if task.Status.IsSuccessStatus() || (task.Status.IsFailedStatus() && task.Extra.AllowFailure) || task.Status == apistructs.PipelineStatusDisabled {
+		if task.Status.IsSuccessStatus() || (task.Status.IsFailedStatus() && task.Extra.AllowFailure) ||
+			task.Status == apistructs.PipelineStatusDisabled || task.Status == apistructs.PipelineStatusNoNeedBySystem {
 			successNum++
 			continue
 		}
