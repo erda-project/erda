@@ -66,11 +66,30 @@ type SignType int
 type ExpressionExecSign struct {
 	Sign      SignType
 	Msg       string
-	Err       error
+	Err       *ErrorInfo
 	Condition string
 }
 
-func Reconcile(condition string) (sign ExpressionExecSign) {
+type ErrorInfo struct {
+	Code string // SyntaxError, ExecError, ResultFalse
+	Msg  string
+}
+
+func newExpressionSyntaxError(err error) *ErrorInfo {
+	return &ErrorInfo{
+		Code: "Expression Syntax Error",
+		Msg:  err.Error(),
+	}
+}
+
+func newExpressionExecError(err error) *ErrorInfo {
+	return &ErrorInfo{
+		Code: "Expression Exec Error",
+		Msg:  err.Error(),
+	}
+}
+
+func Execute(condition string) (sign ExpressionExecSign) {
 
 	// panic handler
 	defer func() {
@@ -78,7 +97,7 @@ func Reconcile(condition string) (sign ExpressionExecSign) {
 			logrus.Errorf("pkg.expression: invalid condition: %s, panic: %v", condition, r)
 			sign = ExpressionExecSign{
 				Sign: TaskJumpOver,
-				Err:  fmt.Errorf("expression %q exec failed, action skip", condition),
+				Err:  newExpressionExecError(fmt.Errorf("%v", r)),
 			}
 		}
 	}()
@@ -97,7 +116,7 @@ func Reconcile(condition string) (sign ExpressionExecSign) {
 	if err != nil {
 		return ExpressionExecSign{
 			Sign: TaskJumpOver,
-			Err:  fmt.Errorf("new expression %s error %v, action skip", condition, err),
+			Err:  newExpressionSyntaxError(err),
 		}
 	}
 
@@ -105,7 +124,7 @@ func Reconcile(condition string) (sign ExpressionExecSign) {
 	if err != nil {
 		return ExpressionExecSign{
 			Sign: TaskJumpOver,
-			Err:  fmt.Errorf("expression %s exec error %v, action skip", condition, err),
+			Err:  newExpressionExecError(err),
 		}
 	}
 
@@ -113,7 +132,6 @@ func Reconcile(condition string) (sign ExpressionExecSign) {
 	if !done {
 		return ExpressionExecSign{
 			Sign: TaskJumpOver,
-			Msg:  fmt.Sprintf("run %s expression fail, action skip", condition),
 		}
 	}
 

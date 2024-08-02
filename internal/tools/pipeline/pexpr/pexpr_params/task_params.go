@@ -102,7 +102,7 @@ func generateOutputs(tasks []*spec.PipelineTask) map[string]string {
 	}
 	outputs := make(map[string]string)
 	for _, task := range tasks {
-		for _, meta := range task.GetMetadata() {
+		for _, meta := range task.MergeMetadata() {
 			outputs[makePhKeyFunc(task.Name, meta.Name)] = meta.Value
 		}
 	}

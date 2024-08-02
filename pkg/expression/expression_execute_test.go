@@ -83,8 +83,8 @@ func TestReconcile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotSign := Reconcile(tt.args.condition); gotSign.Sign != tt.wantSign {
-				t.Errorf("Reconcile() = %v, want %v", gotSign, tt.wantSign)
+			if gotSign := Execute(tt.args.condition); gotSign.Sign != tt.wantSign {
+				t.Errorf("Execute() = %v, want %v", gotSign, tt.wantSign)
 			}
 		})
 	}

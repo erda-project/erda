@@ -15,6 +15,7 @@
 package taskop
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -202,4 +203,13 @@ func Test_contextVolumes(t *testing.T) {
 	}
 	fields := contextVolumes(taskContext)
 	assert.Equal(t, 2, len(fields))
+}
+
+func Test_addSkipTaskMeta(t *testing.T) {
+	aTask := &spec.PipelineTask{}
+	addSkipTaskMeta(aTask, true)
+	aTaskMeta := aTask.Inspect.Metadata
+	assert.Equal(t, 1, len(aTaskMeta))
+	assert.Equal(t, "skip task", aTaskMeta[0].Name)
+	assert.Equal(t, strconv.FormatBool(true), aTaskMeta[0].Value)
 }

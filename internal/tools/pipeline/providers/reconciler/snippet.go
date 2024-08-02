@@ -166,7 +166,7 @@ func (tr *defaultTaskReconciler) calculateAndUpdatePipelineOutputValues(p *spec.
 	// 所有任务的输出
 	allTaskOutputs := make(map[string]map[string]interface{})
 	for _, task := range tasks {
-		for _, meta := range task.GetMetadata() {
+		for _, meta := range task.MergeMetadata() {
 			if allTaskOutputs[task.Name] == nil {
 				allTaskOutputs[task.Name] = make(map[string]interface{})
 			}
