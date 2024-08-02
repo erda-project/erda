@@ -15,6 +15,7 @@
 package taskop
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -209,5 +210,6 @@ func Test_addSkipTaskMeta(t *testing.T) {
 	addSkipTaskMeta(aTask, true)
 	aTaskMeta := aTask.Inspect.Metadata
 	assert.Equal(t, 1, len(aTaskMeta))
-	assert.Equal(t, "true", aTaskMeta[0].Name)
+	assert.Equal(t, "skip task", aTaskMeta[0].Name)
+	assert.Equal(t, strconv.FormatBool(true), aTaskMeta[0].Value)
 }
