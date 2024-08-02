@@ -735,38 +735,46 @@ func condition(task *spec.PipelineTask) bool {
 		return false
 	}
 
-	sign := expression.Reconcile(task.Extra.Action.If)
-	if sign.Err != nil {
-		task.Status = apistructs.PipelineStatusFailed
-		if sign.Err != nil {
-			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
-				Msg: sign.Err.Error(),
-			})
-		}
+	// add final expression to metadata
+	task.Inspect.Metadata = append(task.Inspect.Metadata,
+		metadata.MetadataField{
+			Name:  "if expression",
+			Value: task.Extra.Action.If,
+		},
+	)
 
-		if sign.Msg != "" {
-			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
-				Msg: sign.Msg,
-			})
-		}
+	sign := expression.Execute(task.Extra.Action.If)
+
+	if sign.Err != nil {
+		task.Status = apistructs.PipelineStatusAnalyzeFailed
+		task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
+			Code: sign.Err.Code,
+			Msg:  sign.Err.Msg,
+		})
+		addSkipTaskMeta(task, true)
 		return true
 	}
 
 	if sign.Sign == expression.TaskJumpOver {
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
-		if sign.Err != nil {
-			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
-				Msg: sign.Err.Error(),
-			})
-		}
-
-		if sign.Msg != "" {
-			task.Inspect.Errors = task.Inspect.Errors.AppendError(&taskerror.Error{
-				Msg: sign.Msg,
-			})
-		}
+		task.Inspect.Metadata = append(task.Inspect.Metadata,
+			metadata.MetadataField{
+				Name:  "if expression eval result",
+				Value: "false",
+			},
+		)
+		addSkipTaskMeta(task, true)
 		return true
 	}
 
 	return false
+}
+
+func addSkipTaskMeta(task *spec.PipelineTask, skip bool) {
+	task.Inspect.Metadata = append(task.Inspect.Metadata,
+		metadata.MetadataField{
+			Name:  "skip task",
+			Value: strconv.FormatBool(skip),
+		},
+	)
 }

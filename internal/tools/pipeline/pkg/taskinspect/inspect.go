@@ -17,6 +17,7 @@ package taskinspect
 import (
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
+	"github.com/erda-project/erda/pkg/metadata"
 )
 
 const (
@@ -31,6 +32,9 @@ type Inspect struct {
 	// Errors stores from pipeline internal, not callback(like action-agent).
 	// For external errors, use taskresult.Result.Errors.
 	Errors taskerror.OrderedErrors `json:"errors,omitempty"`
+
+	// Metadata for internal use
+	Metadata metadata.Metadata `json:"metadata,omitempty"`
 }
 
 func (t *Inspect) GetPBMachineStat() *basepb.PipelineTaskMachineStat {

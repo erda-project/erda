@@ -124,6 +124,57 @@ func TestCalculatePipelineStatusV2(t *testing.T) {
 			expectStatus: apistructs.PipelineStatusStopByUser,
 			desc:         "all done, at least one stopByUser -> stopByUser",
 		},
+		{
+			tasks: []*spec.PipelineTask{
+				{
+					Status: apistructs.PipelineStatusSuccess,
+				},
+				{
+					Status: apistructs.PipelineStatusNoNeedBySystem,
+				},
+				{
+					Status: apistructs.PipelineStatusSuccess,
+				},
+			},
+			expectStatus: apistructs.PipelineStatusSuccess,
+			desc:         "all done, at least one noNeedBySystem -> success",
+		},
+		{
+			tasks: []*spec.PipelineTask{
+				{
+					Status: apistructs.PipelineStatusSuccess,
+				},
+				{
+					Status: apistructs.PipelineStatusAnalyzeFailed,
+				},
+			},
+			expectStatus: apistructs.PipelineStatusFailed,
+			desc:         "if expression write error, should be failed",
+		},
+		{
+			tasks: []*spec.PipelineTask{
+				{
+					Status: apistructs.PipelineStatusSuccess,
+				},
+				{
+					Status: apistructs.PipelineStatusNoNeedBySystem,
+				},
+			},
+			expectStatus: apistructs.PipelineStatusSuccess,
+			desc:         "if expression write correctly, but judge as false, should be success",
+		},
+		{
+			tasks: []*spec.PipelineTask{
+				{
+					Status: apistructs.PipelineStatusNoNeedBySystem,
+				},
+				{
+					Status: apistructs.PipelineStatusNoNeedBySystem,
+				},
+			},
+			expectStatus: apistructs.PipelineStatusSuccess,
+			desc:         "all noNeedBySystem, treat as success",
+		},
 	}
 
 	for index, v := range datas {
