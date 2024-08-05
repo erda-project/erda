@@ -37,10 +37,6 @@ ENV MODULE_PATH=${MODULE_PATH}
 
 ARG TARGETARCH
 
-# use for ops
-RUN curl -o /usr/bin/orgalorg https://erda-project.oss-cn-hangzhou.aliyuncs.com/k4s/$TARGETARCH/orgalorg && \
-    chmod 755 /usr/bin/orgalorg
-
 RUN \
     npm i -g jackson-converter@1.0.10 --registry=https://registry.npmmirror.com && \
     pip3 install dicttoxml xmindparser -i https://pypi.tuna.tsinghua.edu.cn/simple --break-system-packages
