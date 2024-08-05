@@ -218,7 +218,7 @@ func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js,
 		endpoints.WithClusterServiceServer(p.ClusterSvc),
 		endpoints.WithOrg(p.Org),
 		endpoints.WithPipelineSvc(p.PipelineSvc),
-		endpoints.WithSteveCacheConfig(p.Cfg.SteveCacheTTL, p.Cfg.SteveCacheSize),
+		endpoints.WithSteveCacheConfig(p.Cfg.SteveCacheSize),
 	)
 
 	// Sync org resource task status

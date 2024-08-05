@@ -71,8 +71,7 @@ type provider struct {
 }
 
 type config struct {
-	SteveCacheTTL  time.Duration `file:"cache_ttl" default:"10m"`
-	SteveCacheSize int           `file:"cache_size" default:"5000"`
+	SteveCacheSize int `file:"cache_size" default:"5000"`
 }
 
 // Run Run the provider
