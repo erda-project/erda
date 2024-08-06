@@ -378,6 +378,19 @@ func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 
 		IsSnippet: pt.IsSnippet,
 	}
+	// handle time
+	if task.TimeEnd != nil && !task.TimeEnd.AsTime().IsZero() {
+		if task.TimeBegin == nil {
+			earlierTime := pt.TimeUpdated // use earlier time as timeBegin as much as possible
+			if pt.TimeEnd.Before(pt.TimeUpdated) {
+				earlierTime = pt.TimeEnd
+			}
+			task.TimeBegin = timestamppb.New(earlierTime) // for some scenarios, timeBegin is not set
+		}
+		if task.CostTimeSec < 0 {
+			task.CostTimeSec = int64(task.TimeEnd.AsTime().Sub(task.TimeBegin.AsTime()).Seconds())
+		}
+	}
 	if pt.SnippetPipelineID != nil {
 		task.SnippetPipelineID = pt.SnippetPipelineID
 	}
