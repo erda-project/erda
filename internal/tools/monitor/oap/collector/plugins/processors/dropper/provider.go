@@ -60,7 +60,16 @@ func (p *provider) ProcessLog(item *log.Log) (*log.Log, error) { return item, ni
 
 func (p *provider) ProcessSpan(item *trace.Span) (*trace.Span, error) { return item, nil }
 
-func (p *provider) ProcessRaw(item *odata.Raw) (*odata.Raw, error) { return item, nil }
+func (p *provider) ProcessRaw(item *odata.Raw) (*odata.Raw, error) {
+	if len(p.Cfg.MetricPrefix) == 0 {
+		return item, nil
+	}
+	name := item.GetName()
+	if len(name) > 0 && strings.HasPrefix(name, p.Cfg.MetricPrefix) {
+		return nil, nil
+	}
+	return item, nil
+}
 
 func (p *provider) ProcessProfile(*profile.ProfileIngest) (*profile.Output, error) {
 	return &profile.Output{}, nil
