@@ -136,8 +136,7 @@ func (r *PodReader) ByUid(uid string) *PodReader {
 }
 func (r *PodReader) ByUpdatedTime(beforeNSecs int) *PodReader {
 	// Use scheduler time query to avoid the inconsistency between sceduler and database time and cause the instance to GC by mistake
-	now := time.Now().Format("2006-01-02 15:04:05")
-	r.conditions = append(r.conditions, "updated_at < '"+now+"' - interval ? second")
+	r.conditions = append(r.conditions, "updated_at < now() - interval ? second")
 	r.values = append(r.values, beforeNSecs)
 	return r
 }
