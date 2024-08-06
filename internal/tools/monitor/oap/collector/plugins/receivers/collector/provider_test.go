@@ -34,7 +34,9 @@ func Test_provider_Init(t *testing.T) {
 
 	p := &provider{
 		Router: &mockRouter{t: t},
+		Cfg:    &config{},
 	}
+	p.Cfg.Auth.Skip = true
 	assert.Nil(t, p.Init(nil))
 }
 

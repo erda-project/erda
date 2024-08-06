@@ -18,6 +18,8 @@ erda.oap.collector.core:
   pipelines:
     raws:
       - receivers: [ "erda.oap.collector.receiver.collector" ]
+        processors:
+          - "erda.oap.collector.processor.dropper@application-agent"
         exporters: [ "erda.oap.collector.exporter.kafka@collector" ]
 
       - receivers:
@@ -486,6 +488,8 @@ erda.oap.collector.processor.aggregator@mem-percent:
       target_key: "mem_usage_percent"
 
 # ************* processors *************
+erda.oap.collector.processor.dropper@application-agent:
+  metric_prefix: ${APPLICATION_AGENT_DROP_PREFIX}
 
 # ************* processors *************
 

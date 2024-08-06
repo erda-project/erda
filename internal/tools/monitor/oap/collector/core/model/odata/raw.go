@@ -14,6 +14,8 @@
 
 package odata
 
+import "encoding/json"
+
 var _ ObservableData = &Raw{}
 
 // bytes representation of ObservableData for performance
@@ -32,4 +34,16 @@ func NewRaw(data []byte) *Raw {
 
 func (r *Raw) GetTags() map[string]string {
 	return map[string]string{}
+}
+
+type nameField struct {
+	Name string `json:"name"`
+}
+
+func (r *Raw) GetName() string {
+	var name nameField
+	if err := json.Unmarshal(r.Data, &name); err != nil {
+		return ""
+	}
+	return name.Name
 }
