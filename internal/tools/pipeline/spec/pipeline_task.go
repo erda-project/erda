@@ -350,10 +350,27 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	return &task
 }
 
+func (pt *PipelineTask) handleTime() {
+	// handle time
+	if !pt.TimeEnd.IsZero() {
+		if pt.TimeBegin.IsZero() {
+			earlierTime := pt.TimeUpdated // use earlier time as timeBegin as much as possible
+			if pt.TimeEnd.Before(pt.TimeUpdated) {
+				earlierTime = pt.TimeEnd
+			}
+			pt.TimeBegin = earlierTime // for some scenarios, timeBegin is not set
+		}
+		if pt.CostTimeSec < 0 {
+			pt.CostTimeSec = int64(pt.TimeEnd.Sub(pt.TimeBegin).Seconds())
+		}
+	}
+}
+
 func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 	if pt == nil {
 		return nil
 	}
+	pt.handleTime()
 	task := basepb.PipelineTaskDTO{
 		ID:         pt.ID,
 		PipelineID: pt.PipelineID,
@@ -377,19 +394,6 @@ func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 		TimeUpdated:  timestamppb.New(pt.TimeUpdated),
 
 		IsSnippet: pt.IsSnippet,
-	}
-	// handle time
-	if task.TimeEnd != nil && !task.TimeEnd.AsTime().IsZero() {
-		if task.TimeBegin == nil {
-			earlierTime := pt.TimeUpdated // use earlier time as timeBegin as much as possible
-			if pt.TimeEnd.Before(pt.TimeUpdated) {
-				earlierTime = pt.TimeEnd
-			}
-			task.TimeBegin = timestamppb.New(earlierTime) // for some scenarios, timeBegin is not set
-		}
-		if task.CostTimeSec < 0 {
-			task.CostTimeSec = int64(task.TimeEnd.AsTime().Sub(task.TimeBegin.AsTime()).Seconds())
-		}
 	}
 	if pt.SnippetPipelineID != nil {
 		task.SnippetPipelineID = pt.SnippetPipelineID
