@@ -66,7 +66,7 @@ func (p *provider) RepeatPipelineRecordCleanup(ctx context.Context) {
 	cronProcess := cron.New()
 	err := cronProcess.AddFunc(p.Cfg.CronExpr, func() {
 		p.cronCleanup(ctx)
-	})
+	}, dryrunPrifix)
 	if err != nil {
 		panic(err)
 	}
