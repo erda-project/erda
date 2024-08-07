@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
+	papb "github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/events/eventtypes"
@@ -573,4 +574,32 @@ func Test_runtimeIDMatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_ConvertToKedaScaledObject(t *testing.T) {
+	scaled := papb.ScaledConfig{
+		OrgID:    1234,
+		RuleName: "test-rule",
+		RuleID:   "",
+		ScaleTargetRef: &papb.ScaleTargetRef{
+			Name:       "test-target",
+			Kind:       "test-kind",
+			ApiVersion: "v2",
+		},
+		Advanced: &papb.HPAAdvanced{
+			RestoreToOriginalReplicaCount: false,
+		},
+		Fallback: &papb.FallBack{
+			Replicas: 3,
+		},
+		Triggers: []*papb.ScaleTriggers{
+			{
+				Type:     "Test-Type",
+				Metadata: make(map[string]string),
+			},
+		},
+	}
+
+	object := convertToKedaScaledObject(scaled)
+	t.Logf("%v", object)
 }
