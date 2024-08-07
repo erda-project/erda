@@ -141,6 +141,11 @@ func (w *wait) WhenTimeout() error {
 
 	w.QuitWaitTimeout = true
 	w.Task.Status = apistructs.PipelineStatusTimeout
+	// TimeBegin should be set at queue op, but for some scenarios such as pipeline component panic,
+	// it may skip queue op and directly enter wait op, so TimeBegin is not set.
+	if w.Task.TimeBegin.IsZero() {
+		w.Task.TimeBegin = w.Task.TimeUpdated // use last updated time as TimeBegin
+	}
 	w.Task.TimeEnd = time.Now()
 	w.Task.CostTimeSec = int64(w.Task.TimeEnd.Sub(w.Task.TimeBegin).Seconds())
 	_, err = w.Executor.Cancel(w.Ctx, w.Task)
