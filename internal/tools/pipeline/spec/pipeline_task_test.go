@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magiconair/properties/assert"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/pkg/taskerror"
@@ -315,4 +315,33 @@ func TestMergeTaskParamDetailToDisplay(t *testing.T) {
 	assert.Equal(t, len(params), 3)
 	assert.Equal(t, params[1].Values[apistructs.MergedTaskParamSource.String()], EncryptedValueDisplay)
 	assert.Equal(t, params[2].Values[apistructs.MergedTaskParamSource.String()], EncryptedValueDisplay)
+}
+
+func TestPipelineTask_handleTime(t *testing.T) {
+	now := time.Now()
+	timeEnd := now
+	timeUpdatedBeforeTimeEnd := now.Add(-time.Minute)
+	timeUpdatedAfterTimeEnd := now.Add(time.Minute)
+
+	// timeUpdated < timeEnd
+	task := PipelineTask{
+		TimeBegin:   time.Time{},
+		TimeEnd:     timeEnd,
+		TimeUpdated: timeUpdatedBeforeTimeEnd,
+		CostTimeSec: -1,
+	}
+	task.handleTime()
+	assert.Equal(t, task.TimeBegin, timeUpdatedBeforeTimeEnd)
+	assert.Equal(t, float64(task.CostTimeSec), timeEnd.Sub(timeUpdatedBeforeTimeEnd).Seconds())
+
+	// timeUpdated > timeEnd
+	task = PipelineTask{
+		TimeBegin:   time.Time{},
+		TimeEnd:     timeEnd,
+		TimeUpdated: timeUpdatedAfterTimeEnd,
+		CostTimeSec: -1,
+	}
+	task.handleTime()
+	assert.Equal(t, task.TimeBegin, timeEnd)
+	assert.Equal(t, float64(task.CostTimeSec), timeEnd.Sub(timeEnd).Seconds())
 }

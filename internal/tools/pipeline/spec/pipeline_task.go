@@ -350,10 +350,27 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	return &task
 }
 
+func (pt *PipelineTask) handleTime() {
+	// handle time
+	if !pt.TimeEnd.IsZero() {
+		if pt.TimeBegin.IsZero() {
+			earlierTime := pt.TimeUpdated // use earlier time as timeBegin as much as possible
+			if pt.TimeEnd.Before(pt.TimeUpdated) {
+				earlierTime = pt.TimeEnd
+			}
+			pt.TimeBegin = earlierTime // for some scenarios, timeBegin is not set
+		}
+		if pt.CostTimeSec < 0 {
+			pt.CostTimeSec = int64(pt.TimeEnd.Sub(pt.TimeBegin).Seconds())
+		}
+	}
+}
+
 func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 	if pt == nil {
 		return nil
 	}
+	pt.handleTime()
 	task := basepb.PipelineTaskDTO{
 		ID:         pt.ID,
 		PipelineID: pt.PipelineID,
