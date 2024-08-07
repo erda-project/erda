@@ -1842,7 +1842,7 @@ func (a *Addon) BuildCanalServiceItem(useOperator bool, params *apistructs.Addon
 		SetlabelsFromOptions(params.Options, serviceItem.Labels)
 
 		server := params.Options["server"]
-		if server == "" && strings.ToLower(params.Workspace) != "prod" { //共享
+		if server == "" && strings.ToLower(params.Workspace) != "prod" && params.ShareScope != apistructs.ApplicationShareScope { //共享
 			server = "canal-" + params.ProjectID + "-" + strings.ToLower(params.Workspace)
 		}
 		destination := params.Options["destination"]
