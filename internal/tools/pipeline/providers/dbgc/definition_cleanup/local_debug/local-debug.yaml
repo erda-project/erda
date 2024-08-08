@@ -1,0 +1,37 @@
+definition-cleanup:
+  dry_run: false
+  cron_expr: "* * * * *"
+  log_dir: "./"
+
+erda.core.pipeline.cron:
+grpc-server:
+  addr: "${PIPELINE_LISTEN_GRPC_ADDR::30810}"
+
+
+mysql-xorm:
+  host: "${MYSQL_HOST:localhost}"
+  port: "${MYSQL_PORT:3306}"
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:test}"
+  show_sql: true
+
+leader-worker:
+  leader:
+    etcd_key_prefix_with_slash: "${LW_LEADER_ETCD_KEY_PREFIX_WITH_SLASH:/devops/pipeline/v2/leader-worker/leader/}"
+  worker:
+    etcd_key_prefix_with_slash: "${LW_WORKER_ETCD_KEY_PREFIX_WITH_SLASH:/devops/pipeline/v2/leader-worker/worker/}"
+
+etcd-election@leader-worker:
+  root_path: "${LW_ETCD_ELECTION_ROOT_PATH:erda/component-leader/pipeline/leader-worker}"
+
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+
+service-register:
+
+local-debug:

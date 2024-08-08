@@ -17,12 +17,10 @@ package definition_cleanup
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
@@ -43,8 +41,9 @@ type config struct {
 	CronExpr string `file:"cron_expr" env:"PIPELINE_DEFINITION_CLEANUP_CRON_EXPR" default:"0 15 2 * * ?"`
 
 	// ------- dry run ---------
-	DryRun         bool   `file:"dry_run" env:"PIPELINE_DEFINITION_CLEANUP_DRY_RUN" default:"false"`
-	DryRunFilePath string `file:"file_path" env:"PIPELINE_DEFINITION_CLEANUP_DRY_RUN_FILEPATH" default:"/erda/dry-run"`
+	DryRun  bool   `file:"dry_run" env:"PIPELINE_DEFINITION_CLEANUP_DRY_RUN" default:"false"`
+	LogDir  string `file:"log_dir" env:"PIPELINE_DEFINITION_CLEANUP_LOG_DIR" default:"/erda/logs/pipeline-definition-cleanup"`
+	Verbose bool   `file:"verbose" env:"PIPELINE_DEFINITION_CLEANUP_VERBOSE" default:"true"`
 }
 
 type provider struct {
@@ -60,32 +59,27 @@ type provider struct {
 	cronDbClient       *crondb.Client
 }
 
+func (p *provider) handleLogDir() error {
+	// check if path exist
+	_, err := os.Stat(p.Cfg.LogDir)
+	if err == nil {
+		return nil
+	}
+	if !os.IsNotExist(err) {
+		return err
+	}
+	// dir is not exist
+	return os.Mkdir(p.Cfg.LogDir, 0755)
+}
+
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.dbClient = &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}}
 	p.sourceDbClient = &sourcedb.Client{Interface: p.MySQL}
 	p.definitionDbClient = &definitiondb.Client{Interface: p.MySQL}
 	p.cronDbClient = &crondb.Client{Interface: p.MySQL}
 
-	if p.Cfg.DryRun {
-		// check if path exist
-		if _, err := os.Stat(p.Cfg.DryRunFilePath); os.IsNotExist(err) {
-			// dir is not exist
-			os.Mkdir(p.Cfg.DryRunFilePath, 0755)
-		}
-
-		filepath := p.Cfg.DryRunFilePath + fmt.Sprintf("/dry-run_%s.log", time.Now().Format("2006_01_02"))
-		// create file
-		file, err := os.Create(filepath)
-		if err != nil {
-			p.Log.Error("create dry run log file err: %s", err)
-		}
-
-		os.Chmod(filepath, 0666)
-
-		p.Log = logrusx.New()
-		p.Log = p.Log.Sub(dryrunPrifix)
-		p.Log.SetOutput(io.MultiWriter(os.Stdout, file))
-		p.Log.Infof("Start Cleanup Definition in %s", p.Cfg.CronExpr)
+	if err := p.handleLogDir(); err != nil {
+		return fmt.Errorf("failed to handle log dir, err: %v", err)
 	}
 
 	return nil
