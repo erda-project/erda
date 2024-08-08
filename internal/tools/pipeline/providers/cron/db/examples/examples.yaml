@@ -1,0 +1,6 @@
+mysql-xorm:
+    ping_when_init: true
+    ping_timeout_sec: 5
+    show_sql: true
+
+example:
