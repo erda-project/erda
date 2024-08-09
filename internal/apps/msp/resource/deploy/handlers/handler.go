@@ -61,6 +61,8 @@ const (
 	ResourceMonitorZk        = "monitor-zk"
 	ResourceServiceMesh      = "service-mesh"
 	ResourceLogService       = "log-service"
+	// ResourceMSENacos external nacos from mse, deploy by [external provider]
+	ResourceMSENacos = "mse-nacos"
 )
 
 const (
@@ -127,6 +129,7 @@ type ResourceDeployHandler interface {
 	UnDeploy(tmcInstance *db.Instance) error
 	GetRelationResourceIds(parentId string) []string
 	DeleteRequestRelation(parentId string, childId string) error
+	ResetAddons(info *ResourceInfo, config map[string]string)
 }
 
 type DefaultDeployHandler struct {
@@ -139,6 +142,8 @@ type DefaultDeployHandler struct {
 	Bdl                  *bundle.Bundle
 	Log                  logs.Logger
 }
+
+func (h *DefaultDeployHandler) ResetAddons(info *ResourceInfo, config map[string]string) {}
 
 func (h *DefaultDeployHandler) DeleteRequestRelation(parentId string, childId string) error {
 	err := h.TmcRequestRelationDb.DeleteRequestRelation(parentId, childId)

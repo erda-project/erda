@@ -17,6 +17,7 @@ package coordinator
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
@@ -34,7 +35,8 @@ type Interface interface {
 }
 
 func (p *provider) findHandler(tmc *db.Tmc) handlers.ResourceDeployHandler {
-	for _, handler := range p.handlers {
+	for name, handler := range p.handlers {
+		logrus.Infof("%v match====> %v", name, tmc.Engine)
 		if handler.IsMatch(tmc) {
 			return handler
 		}
@@ -131,6 +133,9 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 					handler.DeleteRequestRelation(req.Uuid, subResult.ID)
 				}
 			}()
+
+			// if use mse or other, it will reset addons to mse-nacos
+			handler.ResetAddons(resourceInfo, clusterConfig)
 
 			for name, addon := range resourceInfo.Dice.AddOns {
 				if !isNeedDeployGatewayDependedAddon(resourceInfo.Spec.Type, resourceInfo.Spec.Name, clusterConfig) {

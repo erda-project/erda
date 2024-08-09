@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package registercenter
+package externalprovider
 
 import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
-)
-
-const (
-	MseNacosHost = "MS_NACOS_HOST"
-	MseNacosPort = "MS_NACOS_PORT"
 )
 
 type config struct {
@@ -34,9 +29,10 @@ type config struct {
 // +provider
 type provider struct {
 	*handlers.DefaultDeployHandler
-	Cfg *config
-	Log logs.Logger
-	DB  *gorm.DB `autowired:"mysql-client"`
+	Cfg         *config
+	Log         logs.Logger
+	DB          *gorm.DB                         `autowired:"mysql-client"`
+	PipelineSvc pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -45,11 +41,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func init() {
-	servicehub.Register("erda.msp.resource.deploy.handlers.registercenter", &servicehub.Spec{
+	servicehub.Register("erda.msp.resource.deploy.handlers.externalprovider", &servicehub.Spec{
 		Services: []string{
-			"erda.msp.resource.deploy.handlers.registercenter",
+			"erda.msp.resource.deploy.handlers.externalprovider",
 		},
-		Description: "erda.msp.resource.deploy.handlers.registercenter",
+		Description: "erda.msp.resource.deploy.handlers.externalprovider",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},
@@ -57,23 +53,4 @@ func init() {
 			return &provider{}
 		},
 	})
-}
-
-func (p *provider) ResetAddons(info *handlers.ResourceInfo, clusterConfig map[string]string) {
-
-	if _, ok := clusterConfig[MseNacosHost]; !ok {
-		return
-	}
-	if _, ok := clusterConfig[MseNacosPort]; !ok {
-		return
-	}
-	info.Dice.AddOns = make(diceyml.AddOns)
-	info.Dice.AddOns[handlers.ResourceMSENacos] = &diceyml.AddOn{
-		Plan: "mse-nacos:basic",
-		Options: map[string]string{
-			"version":    "1.0.0",
-			MseNacosHost: clusterConfig[MseNacosHost],
-			MseNacosPort: clusterConfig[MseNacosPort],
-		},
-	}
 }
