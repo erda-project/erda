@@ -34,7 +34,7 @@ type Interface interface {
 }
 
 func (p *provider) findHandler(tmc *db.Tmc) handlers.ResourceDeployHandler {
-	for name, handler := range p.handlers {
+	for _, handler := range p.handlers {
 		if handler.IsMatch(tmc) {
 			return handler
 		}
