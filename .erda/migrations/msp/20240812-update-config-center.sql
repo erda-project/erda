@@ -1,0 +1,1 @@
+UPDATE `tb_tmc_version` SET version = '2.0.0' where engine = 'config-center' and version = '1.0.0'
