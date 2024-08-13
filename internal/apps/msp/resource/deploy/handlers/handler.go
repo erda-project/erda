@@ -71,6 +71,10 @@ const (
 )
 
 const (
+	PlanBasicMseNacos = "mse-nacos:basic"
+)
+
+const (
 	GatewayProviderVendorKey = "GATEWAY_PROVIDER"
 	GatewayEndpoint          = "PROVIDER_GATEWAY_ENDPOINT"
 	// Aliyun MSE Gateway

@@ -19,7 +19,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 )
 
@@ -29,10 +28,9 @@ type config struct {
 // +provider
 type provider struct {
 	*handlers.DefaultDeployHandler
-	Cfg         *config
-	Log         logs.Logger
-	DB          *gorm.DB                         `autowired:"mysql-client"`
-	PipelineSvc pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
+	Cfg *config
+	Log logs.Logger
+	DB  *gorm.DB `autowired:"mysql-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

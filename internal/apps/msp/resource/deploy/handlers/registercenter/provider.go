@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 type config struct {
@@ -52,23 +51,4 @@ func init() {
 			return &provider{}
 		},
 	})
-}
-
-func (p *provider) ResetAddons(info *handlers.ResourceInfo, clusterConfig map[string]string) {
-
-	if _, ok := clusterConfig[handlers.MseNacosHost]; !ok {
-		return
-	}
-	if _, ok := clusterConfig[handlers.MseNacosPort]; !ok {
-		return
-	}
-	info.Dice.AddOns = make(diceyml.AddOns)
-	info.Dice.AddOns[handlers.ResourceMSENacos] = &diceyml.AddOn{
-		Plan: "mse-nacos:basic",
-		Options: map[string]string{
-			"version":             "1.0.0",
-			handlers.MseNacosHost: clusterConfig[handlers.MseNacosHost],
-			handlers.MseNacosPort: clusterConfig[handlers.MseNacosPort],
-		},
-	}
 }

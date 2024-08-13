@@ -118,7 +118,7 @@ func (p *provider) ResetAddons(info *handlers.ResourceInfo, clusterConfig map[st
 	}
 	info.Dice.AddOns = make(diceyml.AddOns)
 	info.Dice.AddOns[handlers.ResourceMSENacos] = &diceyml.AddOn{
-		Plan: "mse-nacos:basic",
+		Plan: handlers.PlanBasicMseNacos,
 		Options: map[string]string{
 			"version":             "1.0.0",
 			handlers.MseNacosHost: clusterConfig[handlers.MseNacosHost],
