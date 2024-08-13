@@ -143,13 +143,6 @@ const (
 	PodIdentityProviderAws           PodIdentityProvider = "aws"
 )
 
-// PodIdentityAnnotationEKS specifies aws role arn for aws-eks Identity Provider
-// PodIdentityAnnotationKiam specifies aws role arn for aws-iam Identity Provider
-const (
-	PodIdentityAnnotationEKS  = "eks.amazonaws.com/role-arn"
-	PodIdentityAnnotationKiam = "iam.amazonaws.com/role"
-)
-
 // AuthPodIdentity allows users to select the platform native identity
 // mechanism
 type AuthPodIdentity struct {
@@ -175,34 +168,6 @@ type AuthPodIdentity struct {
 	// +optional
 	// IdentityOwner configures which identity has to be used during auto discovery, keda or the scaled workload. Mutually exclusive with roleArn
 	IdentityOwner *string `json:"identityOwner"`
-}
-
-func (a *AuthPodIdentity) GetIdentityID() string {
-	if a.IdentityID == nil {
-		return ""
-	}
-	return *a.IdentityID
-}
-
-func (a *AuthPodIdentity) GetIdentityTenantID() string {
-	if a.IdentityTenantID == nil {
-		return ""
-	}
-	return *a.IdentityTenantID
-}
-
-func (a *AuthPodIdentity) GetIdentityAuthorityHost() string {
-	if a.IdentityAuthorityHost == nil {
-		return ""
-	}
-	return *a.IdentityAuthorityHost
-}
-
-func (a *AuthPodIdentity) IsWorkloadIdentityOwner() bool {
-	if a.IdentityOwner == nil {
-		return false
-	}
-	return *a.IdentityOwner == workloadString
 }
 
 // AuthConfigMapTargetRef is used to authenticate using a reference to a config map
@@ -259,22 +224,8 @@ type Credential struct {
 // VaultAuthentication contains the list of Hashicorp Vault authentication methods
 type VaultAuthentication string
 
-// Client authenticating to Vault
-const (
-	VaultAuthenticationToken      VaultAuthentication = "token"
-	VaultAuthenticationKubernetes VaultAuthentication = "kubernetes"
-	// VaultAuthenticationAWS                            = "aws"
-)
-
 // VaultSecretType defines the type of vault secret
 type VaultSecretType string
-
-const (
-	VaultSecretTypeGeneric  VaultSecretType = ""
-	VaultSecretTypeSecretV2 VaultSecretType = "secretV2"
-	VaultSecretTypeSecret   VaultSecretType = "secret"
-	VaultSecretTypePki      VaultSecretType = "pki"
-)
 
 type VaultPkiData struct {
 	CommonName string `json:"commonName,omitempty"`

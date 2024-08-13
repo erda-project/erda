@@ -94,44 +94,6 @@ type Condition struct {
 // Conditions an array representation to store multiple Conditions
 type Conditions []Condition
 
-// AreInitialized performs check all Conditions are initialized
-// return true if Conditions are initialized
-// return false if Conditions are not initialized
-func (c *Conditions) AreInitialized() bool {
-	foundReady := false
-	foundActive := false
-	foundFallback := false
-	foundPaused := false
-	if *c != nil {
-		for _, condition := range *c {
-			if condition.Type == ConditionReady {
-				foundReady = true
-				break
-			}
-		}
-		for _, condition := range *c {
-			if condition.Type == ConditionActive {
-				foundActive = true
-				break
-			}
-		}
-		for _, condition := range *c {
-			if condition.Type == ConditionFallback {
-				foundFallback = true
-				break
-			}
-		}
-		for _, condition := range *c {
-			if condition.Type == ConditionPaused {
-				foundPaused = true
-				break
-			}
-		}
-	}
-
-	return foundReady && foundActive && foundFallback && foundPaused
-}
-
 // GetInitializedConditions returns Conditions initialized to the default -> Status: Unknown
 func GetInitializedConditions() *Conditions {
 	return &Conditions{{Type: ConditionReady, Status: metav1.ConditionUnknown}, {Type: ConditionActive, Status: metav1.ConditionUnknown}, {Type: ConditionFallback, Status: metav1.ConditionUnknown}, {Type: ConditionPaused, Status: metav1.ConditionUnknown}}
