@@ -1,1 +1,1 @@
-UPDATE `tb_tmc_version` SET version = '2.0.0' where engine = 'config-center' and version = '1.0.0'
+INSERT INTO `tb_tmc_version` VALUES(32,'config-center','2.0.0',NULL,'2024-08-12 14:30:00','2024-08-12 14:30:00','N')
