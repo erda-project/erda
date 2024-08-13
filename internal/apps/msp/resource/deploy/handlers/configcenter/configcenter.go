@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
@@ -105,4 +106,23 @@ func (p *provider) saveDefaultConfigToNacos(clusterName string, addr string, use
 func (p *provider) deleteDefaultConfigFromNacos(clusterName, addr, user, pwd, namespaceId, groupName string) {
 	nacosClient := utils.NewNacosClient(clusterName, addr, user, pwd)
 	nacosClient.DeleteConfig(namespaceId, groupName)
+}
+
+func (p *provider) ResetAddons(info *handlers.ResourceInfo, clusterConfig map[string]string) {
+
+	if _, ok := clusterConfig[handlers.MseNacosHost]; !ok {
+		return
+	}
+	if _, ok := clusterConfig[handlers.MseNacosPort]; !ok {
+		return
+	}
+	info.Dice.AddOns = make(diceyml.AddOns)
+	info.Dice.AddOns[handlers.ResourceMSENacos] = &diceyml.AddOn{
+		Plan: "mse-nacos:basic",
+		Options: map[string]string{
+			"version":             "1.0.0",
+			handlers.MseNacosHost: clusterConfig[handlers.MseNacosHost],
+			handlers.MseNacosPort: clusterConfig[handlers.MseNacosPort],
+		},
+	}
 }

@@ -23,11 +23,6 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
-const (
-	MseNacosHost = "MS_NACOS_HOST"
-	MseNacosPort = "MS_NACOS_PORT"
-)
-
 type config struct {
 }
 
@@ -61,19 +56,19 @@ func init() {
 
 func (p *provider) ResetAddons(info *handlers.ResourceInfo, clusterConfig map[string]string) {
 
-	if _, ok := clusterConfig[MseNacosHost]; !ok {
+	if _, ok := clusterConfig[handlers.MseNacosHost]; !ok {
 		return
 	}
-	if _, ok := clusterConfig[MseNacosPort]; !ok {
+	if _, ok := clusterConfig[handlers.MseNacosPort]; !ok {
 		return
 	}
 	info.Dice.AddOns = make(diceyml.AddOns)
 	info.Dice.AddOns[handlers.ResourceMSENacos] = &diceyml.AddOn{
 		Plan: "mse-nacos:basic",
 		Options: map[string]string{
-			"version":    "1.0.0",
-			MseNacosHost: clusterConfig[MseNacosHost],
-			MseNacosPort: clusterConfig[MseNacosPort],
+			"version":             "1.0.0",
+			handlers.MseNacosHost: clusterConfig[handlers.MseNacosHost],
+			handlers.MseNacosPort: clusterConfig[handlers.MseNacosPort],
 		},
 	}
 }

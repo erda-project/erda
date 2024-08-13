@@ -66,6 +66,11 @@ const (
 )
 
 const (
+	MseNacosHost = "MS_NACOS_HOST"
+	MseNacosPort = "MS_NACOS_PORT"
+)
+
+const (
 	GatewayProviderVendorKey = "GATEWAY_PROVIDER"
 	GatewayEndpoint          = "PROVIDER_GATEWAY_ENDPOINT"
 	// Aliyun MSE Gateway
