@@ -48,10 +48,8 @@ func (p *provider) CheckIfHasCustomConfig(clusterConfig map[string]string) (map[
 	}
 
 	return map[string]string{
-		"NACOS_HOST":     nacosHost,
-		"NACOS_PORT":     nacosPort,
-		"NACOS_ADDRESS":  nacosHost + ":" + nacosPort,
-		"NACOS_USER":     "nacos",
-		"NACOS_PASSWORD": "nacos",
+		"NACOS_HOST":    nacosHost,
+		"NACOS_PORT":    nacosPort,
+		"NACOS_ADDRESS": nacosHost + ":" + nacosPort,
 	}, true
 }
