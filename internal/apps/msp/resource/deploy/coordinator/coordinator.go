@@ -17,7 +17,6 @@ package coordinator
 import (
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
@@ -36,7 +35,6 @@ type Interface interface {
 
 func (p *provider) findHandler(tmc *db.Tmc) handlers.ResourceDeployHandler {
 	for name, handler := range p.handlers {
-		logrus.Infof("%v match====> %v", name, tmc.Engine)
 		if handler.IsMatch(tmc) {
 			return handler
 		}
