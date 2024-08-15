@@ -17,6 +17,7 @@ package addon
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/jinzhu/gorm"
@@ -258,5 +259,204 @@ func Test_getKafkaExporterImage(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expect, getKafkaExporterImage(tc.serviceItem))
 		})
+	}
+}
+
+func TestBuildCanalServiceItem(t *testing.T) {
+	a := &Addon{}
+	ins := &dbclient.AddonInstance{
+		ID:                  "a40d0fd095bd1428ba3e2193d38b01a09",
+		Name:                "canal",
+		AddonID:             "",
+		AddonName:           "canal",
+		Category:            "database",
+		Namespace:           "",
+		ScheduleName:        "",
+		Plan:                "basic",
+		Version:             "1.1.5",
+		Options:             `{"applicationId":"7234","applicationName":"ttt-apm-demo","clusterName":"erda-jicheng","deploymentId":"26348","env":"TEST","logSource":"deploy","orgId":"633","orgName":"erda-development","projectId":"1904","projectName":"erda-development","runtimeId":"16070","runtimeName":"develop","tenantGroup":"5030d0d1a505db773fecf5049f679628","version":"1.1.5","workspace":"TEST"}`,
+		Config:              `{"CANAL_HOST":"canal-1904-test-x.project-1904-test.svc.cluster.local","CANAL_PORT":"11111"}`,
+		Label:               "DETACHED",
+		Status:              "",
+		ShareScope:          "PROJECT",
+		OrgID:               "633",
+		Cluster:             "erda-jicheng",
+		ProjectID:           "1904",
+		ApplicationID:       "7234",
+		AppID:               "0",
+		Workspace:           "TEST",
+		Deleted:             "N",
+		PlatformServiceType: 0,
+		KmsKey:              "",
+		CreatedAt:           time.Date(2023, 4, 27, 14, 56, 14, 0, time.UTC),
+		UpdatedAt:           time.Date(2023, 6, 25, 10, 40, 33, 0, time.UTC),
+		CpuRequest:          0,
+		CpuLimit:            0,
+		MemRequest:          0,
+		MemLimit:            0,
+	}
+	spec := &apistructs.AddonExtension{
+		Type:        "addon",
+		Name:        "canal",
+		Desc:        "${{ i18n.desc }}",
+		DisplayName: "Canal",
+		Category:    "database",
+		LogoUrl:     "//terminus-dice.oss-cn-hangzhou.aliyuncs.com/addon/ui/logo/canal.png",
+		ImageURLs: []string{
+			"//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2019/06/28/c4973926-9ba5-4e7a-b51c-3439ac4736a7.png",
+			"//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2019/06/28/a849135f-9d6e-4641-9e0a-d9ab54f7d03b.png",
+			"//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2019/06/28/09094324-f16b-4159-b66e-5a132e5e6da8.png",
+		},
+		Strategy: map[string]interface{}{
+			"supportClusterType": 5,
+		},
+		Version:     "1.1.6",
+		SubCategory: "middleware",
+		Domain:      "http://middleware.terminus.io",
+		Requires: []string{
+			"many_per_app",
+			"attachable",
+			"plan_change",
+		},
+		ConfigVars: []string{
+			"CANAL_HOST",
+			"CANAL_PORT",
+		},
+		Envs: []string{
+			"canal.admin.manager",
+			"canal.instance.master.address",
+			"canal.instance.dbUsername",
+			"canal.instance.dbPassword",
+			"admin.spring.datasource.address",
+			"admin.spring.datasource.username",
+			"admin.spring.datasource.password",
+			"admin.spring.datasource.database",
+		},
+		Plan: map[string]apistructs.AddonPlanItem{
+			"basic": {
+				CPU:   1,
+				Mem:   2048,
+				Nodes: 1,
+				Offerings: []string{
+					"${{ i18n.plan.basic.offerings-0 }}",
+				},
+			},
+			"professional": {
+				CPU:   2,
+				Mem:   4096,
+				Nodes: 1,
+				Offerings: []string{
+					"${{ i18n.plan.professional.offerings-0 }}",
+				},
+			},
+			"ultimate": {
+				CPU:   2,
+				Mem:   4096,
+				Nodes: 2,
+				Offerings: []string{
+					"${{ i18n.plan.ultimate.offerings-0 }}",
+				},
+			},
+		},
+		ShareScopes: []string{
+			"PROJECT",
+			"ORG",
+		},
+		Similar:    []string{},
+		Deprecated: false,
+	}
+	object := &diceyml.Object{
+		Version: "2.0",
+		Meta:    map[string]string{},
+		Envs:    diceyml.EnvMap{},
+		Services: diceyml.Services{
+			"canal": &diceyml.Service{
+				Image: "registry.erda.cloud/erda-addons/canal:1.1.6",
+				Resources: diceyml.Resources{
+					CPU: 1,
+					Mem: 2048,
+				},
+				Deployments: diceyml.Deployments{
+					Replicas: 1,
+				},
+				Ports: []diceyml.ServicePort{{Port: 8089}, {Port: 11110}},
+				Envs: map[string]string{
+					"ADDON_GROUP_ID": "canal",
+					"ADDON_TYPE":     "canal",
+				},
+			},
+		},
+		Jobs:         diceyml.Jobs{},
+		Environments: diceyml.EnvObjects{},
+		Values:       diceyml.ValueObjects{},
+	}
+
+	config := map[string]string{
+		"CANAL_HOST": "canal-1904-test-x.project-1904-test.svc.cluster.local",
+		"CANAL_PORT": "11111",
+	}
+
+	options := map[string]string{
+		"applicationId":                 "7234",
+		"applicationName":               "ttt-apm-demo",
+		"clusterName":                   "erda-jicheng",
+		"deploymentId":                  "26348",
+		"env":                           "TEST",
+		"logSource":                     "deploy",
+		"orgId":                         "633",
+		"orgName":                       "erda-development",
+		"projectId":                     "1904",
+		"projectName":                   "erda-development",
+		"runtimeId":                     "16070",
+		"runtimeName":                   "develop",
+		"tenantGroup":                   "5030d0d1a505db773fecf5049f679628",
+		"version":                       "1.1.5",
+		"workspace":                     "TEST",
+		"canal.instance.master.address": "canal",
+		"canal.instance.dbUsername":     "mysql",
+		"canal.instance.dbPassword":     "pwd",
+	}
+
+	test := []*apistructs.AddonHandlerCreateItem{
+		{InstanceName: "canal",
+			AddonName:     "canal",
+			Plan:          "basic",
+			Tag:           "DETACHED",
+			ClusterName:   "erda-jicheng",
+			Workspace:     "TEST",
+			OrgID:         "633",
+			ProjectID:     "1904",
+			ApplicationID: "7234",
+			OperatorID:    "", // 无法从addonInstance中获取
+			Config:        config,
+			Options:       options,
+			RuntimeID:     "16070",
+			RuntimeName:   "develop",
+			InsideAddon:   "", // 无法从addonInstance中获取
+			ShareScope:    "PROJECT"},
+
+		{InstanceName: "canal",
+			AddonName:     "canal",
+			Plan:          "basic",
+			Tag:           "DETACHED",
+			ClusterName:   "erda-jicheng",
+			Workspace:     "TEST",
+			OrgID:         "633",
+			ProjectID:     "1904",
+			ApplicationID: "7234",
+			OperatorID:    "", // 无法从addonInstance中获取
+			Config:        config,
+			Options:       options,
+			RuntimeID:     "16070",
+			RuntimeName:   "develop",
+			InsideAddon:   "", // 无法从addonInstance中获取
+			ShareScope:    "APPLICATION"},
+	}
+
+	for _, tt := range test {
+		err := a.BuildCanalServiceItem(true, tt, ins, spec, object)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
