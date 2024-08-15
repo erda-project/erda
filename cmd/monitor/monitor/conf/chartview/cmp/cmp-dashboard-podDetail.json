@@ -99,8 +99,8 @@
                   "zh": "容器镜像",
                   "en": "Container Image"
                 },
-                "field": "docker_container_summary-container_image::tag",
-                "key": "typehJiC05qr",
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typeIUHhn2d",
                 "resultType": "string",
                 "type": "field"
               }
@@ -143,7 +143,8 @@
             ],
             "groupby": [
               "time()",
-              "container_image::tag"
+              "pod_uid::tag",
+              "pod_name::tag"
             ],
             "select": [
               {
@@ -152,7 +153,10 @@
               },
               {
                 "alias": "typehJiC05qr",
-                "expr": "container_image::tag"
+                "expr": "pod_uid::tag"
+              },{
+                "alias": "typeIUHhn2d",
+                "expr": "pod_name::tag"
               },
               {
                 "alias": "valuezgzhW6F4",
@@ -274,8 +278,8 @@
                   "zh": "容器镜像",
                   "en": "Container Image"
                 },
-                "field": "docker_container_summary-container_image::tag",
-                "key": "typegGZO0x3T",
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typeudn3BUsf",
                 "resultType": "string",
                 "type": "field"
               }
@@ -314,7 +318,8 @@
             ],
             "groupby": [
               "time()",
-              "container_image::tag"
+              "pod_uid::tag",
+              "pod_name::tag"
             ],
             "select": [
               {
@@ -322,8 +327,12 @@
                 "expr": "time()"
               },
               {
+                "alias": "typeudn3BUsf",
+                "expr": "pod_name::tag"
+              },
+              {
                 "alias": "typegGZO0x3T",
-                "expr": "container_image::tag"
+                "expr": "pod_uid::tag"
               },
               {
                 "alias": "valuenSjy6RH4",
@@ -448,8 +457,8 @@
                   "zh": "容器镜像",
                   "en": "Container Image"
                 },
-                "field": "docker_container_summary-container_image::tag",
-                "key": "typelJJkl69u",
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typeJnud3mjs",
                 "resultType": "string",
                 "type": "field"
               }
@@ -513,7 +522,8 @@
             ],
             "groupby": [
               "time()",
-              "container_image::tag"
+              "pod_uid::tag",
+              "pod_name::tag"
             ],
             "select": [
               {
@@ -521,8 +531,12 @@
                 "expr": "time()"
               },
               {
+                "alias": "typeJnud3mjs",
+                "expr": "pod_name::tag"
+              },
+              {
                 "alias": "typelJJkl69u",
-                "expr": "container_image::tag"
+                "expr": "pod_uid::tag"
               },
               {
                 "alias": "valueCq0Ce85A",
@@ -650,8 +664,8 @@
                   "zh": "容器镜像",
                   "en": "Container Image"
                 },
-                "field": "docker_container_summary-container_image::tag",
-                "key": "typefoS6a2vT",
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typeNdhdf7de",
                 "resultType": "string",
                 "type": "field"
               }
@@ -660,8 +674,10 @@
               {
                 "alias": "网络接收速率",
                 "i18n": {
-                  "zh": "网络接收速率",
-                  "en": "Network Receive Rate"
+                  "alias": {
+                    "zh": "网络接收速率",
+                    "en": "Network Receive Rate"
+                  }
                 },
                 "expr": "diffps(rx_bytes)",
                 "key": "valuebam6F5zp",
@@ -674,8 +690,10 @@
               {
                 "alias": "网络传输速率",
                 "i18n": {
-                  "zh": "网络发送速率",
-                  "en": "Network Send Rate"
+                  "alias": {
+                    "zh": "网络发送速率",
+                    "en": "Network Send Rate"
+                  }
                 },
                 "expr": "diffps(tx_bytes)",
                 "key": "valueHD4wKjny",
@@ -711,7 +729,8 @@
             ],
             "groupby": [
               "time()",
-              "container_image::tag"
+              "pod_uid::tag",
+              "pod_name::tag"
             ],
             "select": [
               {
@@ -719,8 +738,12 @@
                 "expr": "time()"
               },
               {
+                "alias": "typeNdhdf7de",
+                "expr": "pod_name::tag"
+              },
+              {
                 "alias": "typefoS6a2vT",
-                "expr": "container_image::tag"
+                "expr": "pod_uid::tag"
               },
               {
                 "alias": "valuebam6F5zp",
