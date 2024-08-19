@@ -109,8 +109,10 @@
               {
                 "alias": "CPU Usage Rate",
                 "i18n": {
-                  "zh": "CPU 使用率",
-                  "en": "CPU Usage Rate"
+                  "alias": {
+                    "zh": "CPU 使用率",
+                    "en": "CPU Usage Rate"
+                  }
                 },
                 "field": "max(cpu_usage_percent::field)",
                 "key": "valuezgzhW6F4",
@@ -286,7 +288,13 @@
             ],
             "valueDimensions": [
               {
-                "alias": "Mem Usage Percent",
+                "alias": "内存使用率",
+                "i18n": {
+                  "alias": {
+                    "zh": "内存使用率",
+                    "en": "Memory Usage"
+                  }
+                },
                 "field": "max(mem_usage_percent::field)",
                 "key": "valuenSjy6RH4",
                 "resultType": "number",
