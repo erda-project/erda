@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync"
 
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,8 +33,10 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	vpatypes "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	vpa_clientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	papb "github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -79,7 +82,6 @@ import (
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/k8sclient"
-	kedav1alpha1 "github.com/erda-project/erda/pkg/k8sclient/apis/keda/v1alpha1"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
@@ -1437,7 +1439,7 @@ func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{},
 		}
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
-		if err = k.scaledObject.Create(scaledObj); err != nil {
+		if err = k.k8sClient.CRClient.Create(context.Background(), scaledObj); err != nil {
 			return sg, err
 		}
 	}
@@ -1764,7 +1766,36 @@ func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
 
-		err = k.scaledObject.Patch(scaledObj.Namespace, scaledObj.Name, scaledObj)
+		old := &kedav1alpha1.ScaledObject{}
+
+		err = k.k8sClient.CRClient.Get(context.Background(), client.ObjectKey{
+			Namespace: scaledObj.Namespace,
+			Name:      scaledObj.Name,
+		}, old)
+
+		if err != nil {
+			return nil, err
+		}
+
+		spec := types.ScaledPatchStruct{}
+
+		spec.Spec.ScaleTargetRef = scaledObj.Spec.ScaleTargetRef
+		if *scaledObj.Spec.MinReplicaCount > 0 && *scaledObj.Spec.MaxReplicaCount > 0 && *scaledObj.Spec.MinReplicaCount < *scaledObj.Spec.MaxReplicaCount {
+			spec.Spec.MinReplicaCount = scaledObj.Spec.MinReplicaCount
+			spec.Spec.MaxReplicaCount = scaledObj.Spec.MaxReplicaCount
+		}
+
+		if len(scaledObj.Spec.Triggers) > 0 {
+			spec.Spec.Triggers = scaledObj.Spec.Triggers
+		}
+
+		marshal, err := json.Marshal(spec)
+		if err != nil {
+
+		}
+		patch := client.RawPatch(apitypes.MergePatchType, marshal)
+
+		err = k.k8sClient.CRClient.Patch(context.Background(), old, patch)
 		if err != nil {
 			return sg, err
 		}
