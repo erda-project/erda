@@ -596,6 +596,7 @@ erda.msp.resource.deploy.handlers.apigateway:
     http_port: "${DICE_HTTP_PORT}"
     https_port: "${DICE_HTTPS_PORT}"
 erda.msp.resource.deploy.handlers.configcenter:
+erda.msp.resource.deploy.handlers.externalprovider:
 erda.msp.resource.deploy.handlers.etcd:
 erda.msp.resource.deploy.handlers.jvmprofiler:
 erda.msp.resource.deploy.handlers.loganalytics:
