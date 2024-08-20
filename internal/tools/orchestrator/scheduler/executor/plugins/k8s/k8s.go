@@ -1789,11 +1789,11 @@ func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{
 			spec.Spec.Triggers = scaledObj.Spec.Triggers
 		}
 
-		marshal, err := json.Marshal(spec)
+		patchBytes, err := json.Marshal(spec)
 		if err != nil {
-
+			return nil, err
 		}
-		patch := client.RawPatch(apitypes.MergePatchType, marshal)
+		patch := client.RawPatch(apitypes.MergePatchType, patchBytes)
 
 		err = k.k8sClient.CRClient.Patch(context.Background(), old, patch)
 		if err != nil {
