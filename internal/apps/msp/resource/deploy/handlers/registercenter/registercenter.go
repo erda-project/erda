@@ -96,3 +96,22 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 	resultConfig["PUBLIC_HOST"] = str
 	return resultConfig, nil
 }
+
+func (p *provider) ResetAddons(info *handlers.ResourceInfo, clusterConfig map[string]string) {
+
+	if _, ok := clusterConfig[handlers.MseNacosHost]; !ok {
+		return
+	}
+	if _, ok := clusterConfig[handlers.MseNacosPort]; !ok {
+		return
+	}
+	info.Dice.AddOns = make(diceyml.AddOns)
+	info.Dice.AddOns[handlers.ResourceMSENacos] = &diceyml.AddOn{
+		Plan: handlers.PlanBasicMseNacos,
+		Options: map[string]string{
+			"version":             "1.0.0",
+			handlers.MseNacosHost: clusterConfig[handlers.MseNacosHost],
+			handlers.MseNacosPort: clusterConfig[handlers.MseNacosPort],
+		},
+	}
+}

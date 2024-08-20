@@ -11,6 +11,7 @@ zh:
     如果已创建, 请检查制品文件中 addonName 是否未匹配
 
   AddonTypeDoseNoExist: "不存在该类型 addon: %s, 请检查 dice.yml 中 addon 部分是否正确"
+  NoRegisterCenterFound: "没有找到已部署的注册中心或dice.yaml中的注册中心版本，请先部署或者在dice.yaml中配置好注册中心"
   AddonVersionDoseNoExist: "不存在该版本 addon: %s 版本: %s, 推荐使用 %s 版本"
   AddonDefaultVersionDoseNoExist: "不存在默认版本 addon: %s, 请声明addon具体版本"
   AddonPlanNotSupport: "addon %s 不支持当前的部署规格: %s, 请检查 dice.yml 中 addon 部分是否正确"
@@ -34,6 +35,7 @@ en:
     If the addon has been created, please check the addonName in your release file
 
   AddonTypeDoseNoExist: "The addon type %s dose not exist, please check it in your release file"
+  NoRegisterCenterFound: "No deployed register-center found or no register-center version specified in 'dice.yaml'. Please deploy a register-center first or configure it in 'dice.yaml'."
   AddonVersionDoseNoExist: "The addon %s version %s dose not exist, The recommended version is: %s"
   AddonDefaultVersionDoseNoExist: "Default version of addon %s does not exist, please declare a specific version of addon"
   AddonPlanNotSupport: "addon %s is not supported by the current deployment plan: %s, please check it in your release file"

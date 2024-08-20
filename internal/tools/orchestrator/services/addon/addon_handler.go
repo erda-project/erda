@@ -49,6 +49,7 @@ import (
 
 const (
 	AddonTypeDoseNoExist           = "AddonTypeDoseNoExist"
+	NoRegisterCenterFound          = "NoRegisterCenterFound"
 	AddonVersionDoseNoExist        = "AddonVersionDoseNoExist"
 	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
 	AddonPlanIllegal               = "AddonPlanIllegal"

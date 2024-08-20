@@ -319,6 +319,28 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 	for _, v := range *existBuilds {
 		existBuildMap[strutil.Concat(v.RuntimeID, v.AddonName, v.InstanceName)] = v
 	}
+
+	var hasRegister, hasConfig bool
+	for _, addon := range req.Addons {
+		if addon.Type == RegisterCenterAddon {
+			hasRegister = true
+		}
+		if addon.Type == ConfigCenterAddon {
+			hasConfig = true
+		}
+	}
+
+	if hasRegister && !hasConfig {
+		err = a.appendAddon(req, ConfigCenterAddon, apistructs.AddonBasic)
+	} else if !hasRegister && hasConfig {
+		err = a.appendAddon(req, RegisterCenterAddon, apistructs.AddonBasic)
+	}
+
+	if err != nil {
+		logrus.Errorf("append addon error: %s", err)
+		return err
+	}
+
 	// 找出新增 addons，添加至 prebuild
 	addonPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons)) // 新增 addons
 	newPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons))   // 新 addons 列表
@@ -395,6 +417,34 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 	if err := a.deployAddons(req, deploys); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (a *Addon) appendAddon(req *apistructs.AddonCreateRequest, addonName, plan string) error {
+	versionMap, err := GetCache().Get(addonName)
+	if err != nil {
+		return fmt.Errorf("can't get addon [%s] from cache, %v", addonName, err)
+	}
+	addons, ok := versionMap.(*VersionMap)
+	if !ok {
+		return fmt.Errorf("can't convert to VersionMap")
+	}
+	defaultAddon, ok := addons.GetDefault()
+	if !ok {
+		return fmt.Errorf("there are no default addons [%s]", addonName)
+	}
+
+	req.Addons = append(req.Addons, apistructs.AddonCreateItem{
+		Name:    defaultAddon.Name,
+		Type:    addonName,
+		Plan:    plan,
+		Configs: make(map[string]string),
+		Options: map[string]string{
+			"version": defaultAddon.Version,
+		},
+		Actions: make(map[string]string),
+	})
+
 	return nil
 }
 
@@ -3069,61 +3119,22 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		needDeployAddons = append(needDeployAddons, *createItem)
 	}
 
-	nacos, err := a.db.FindTmcInstanceByNameAndCLuster(NacosAddon, req.ClusterName)
+	if regVersion != "" {
+		confVersion = a.mappingConfigCenterVersion(regVersion)
+	}
+
+	registerInstance, err := a.db.GetAddonInstanceByNameAndCluster(RegisterCenterAddon, req.ClusterName)
 	if err != nil {
+		logrus.Errorf("can't find register-center instance : %v", err)
 		return err
 	}
-	if len(nacos) > 0 {
-		reg, config, err := a.genClusterAddonVersionByNacos(nacos[0].Version, req.ClusterName)
-		if err != nil {
-			return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos[0].Version)
-		}
-		if reg != "" && config != "" {
-			logrus.Infof("ConfigCenter [%v->%v] and RegisterCenter [%v->%v] to correlate with the corresponding nacos version [%v]",
-				confVersion, config,
-				regVersion, reg,
-				nacos[0].Version,
-			)
-			regVersion = reg
-			confVersion = config
-		}
-	} else if regVersion != "" {
-		regMap, err := GetCache().Get(RegisterCenterAddon)
-		if err != nil {
-			return errors.Wrapf(err, "can't get addon %v in cache", RegisterCenterAddon)
-		}
-
-		registers, err := toVersionMap(regMap)
-		if err != nil {
-			return err
-		}
-
-		version, ok := (*registers)[regVersion]
-		if !ok {
-			return fmt.Errorf("can't find %v version %v", RegisterCenterAddon, regVersion)
-		}
-
-		dice, err := a.parseAddonDice(version)
-		if err != nil {
-			return errors.Wrapf(err, "%v %v can't parse addon dice", RegisterCenterAddon, regVersion)
-		}
-
-		if nacos, ok := dice.AddOns[NacosAddon]; ok {
-			reg, config, err := a.genClusterAddonVersionByNacos(nacos.Options["version"], req.ClusterName)
-			if err != nil {
-				return errors.Wrapf(err, "unable to find the ConfigCenter and RegisterCenter corresponding to the current nacos version [%v].", nacos.Options["version"])
-			}
-			if reg != "" && config != "" {
-				logrus.Infof("ConfigCenter [%v->%v] and RegisterCenter [%v->%v] to correlate with the corresponding nacos version [%v]",
-					confVersion, config,
-					regVersion, reg,
-					nacos.Options["version"],
-				)
-				regVersion = reg
-				confVersion = config
-			}
-		}
-
+	if registerInstance != nil {
+		regVersion = registerInstance.Version
+		confVersion = a.mappingConfigCenterVersion(registerInstance.Version)
+	} else if confVersion != "" && regVersion == "" {
+		err := errors.New(i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), NoRegisterCenterFound))
+		logrus.Errorf("%v", err)
+		return err
 	}
 
 	for index, v := range deploys {
@@ -3149,52 +3160,9 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	return nil
 }
 
-func (a *Addon) nacosVersionReference(nacosVersion, addonName, cluster string) (version string, err error) {
-	addonMap, err := GetCache().Get(addonName)
-	if err != nil {
-		return "", err
-	}
-	addons, err := toVersionMap(addonMap)
-	if err != nil {
-		return "", err
-	}
-
-	if ins, err := a.db.FindTmcInstanceByNameAndCLuster(addonName, cluster); err != nil {
-		return "", err
-	} else {
-		for _, in := range ins {
-			return in.Version, nil
-		}
-		for _, r := range *addons {
-			dice, err := a.parseAddonDice(r)
-			if err != nil {
-				return "", err
-			}
-			if addOn, ok := dice.AddOns[NacosAddon]; ok && addOn.Options["version"] == nacosVersion {
-				spec, err := a.parseAddonSpec(r)
-				if err != nil {
-					return "", err
-				}
-				if !spec.Deprecated {
-					version = spec.Version
-					break
-				}
-			}
-		}
-	}
-	return
-}
-
-func (a *Addon) genClusterAddonVersionByNacos(nacosVersion, cluster string) (regVersion, confVersion string, err error) {
-	regVersion, err = a.nacosVersionReference(nacosVersion, RegisterCenterAddon, cluster)
-	if err != nil {
-		return "", "", err
-	}
-	confVersion, err = a.nacosVersionReference(nacosVersion, ConfigCenterAddon, cluster)
-	if err != nil {
-		return "", "", err
-	}
-	return
+// one-to-one correspondence
+func (a *Addon) mappingConfigCenterVersion(registerVersion string) string {
+	return registerVersion
 }
 
 // PrepareCheckProjectLastResource 计算项目预留资源，是否满足发布徐局

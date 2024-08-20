@@ -1,0 +1,1 @@
+INSERT INTO `tb_tmc_version` (`id`, `engine`, `version`, `release_id`, `create_time`, `update_time`, `is_deleted`) VALUES(32,'config-center','2.0.0',NULL,'2024-08-12 14:30:00','2024-08-12 14:30:00','N')

@@ -132,6 +132,9 @@ func (p *provider) deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 				}
 			}()
 
+			// if use mse or other, it will reset addons to mse-nacos
+			handler.ResetAddons(resourceInfo, clusterConfig)
+
 			for name, addon := range resourceInfo.Dice.AddOns {
 				if !isNeedDeployGatewayDependedAddon(resourceInfo.Spec.Type, resourceInfo.Spec.Name, clusterConfig) {
 					// 部署的是 api-gateway 且网关用 MSE， 则无需部署 网关 api-gateway 对应的 dice.yml 中依赖的 addons (postgresql)

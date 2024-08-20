@@ -114,6 +114,20 @@ func (db *DBClient) GetAddonInstance(id string) (*AddonInstance, error) {
 	return &instance, nil
 }
 
+func (db *DBClient) GetAddonInstanceByNameAndCluster(addonName, cluster string) (*AddonInstance, error) {
+	var instance AddonInstance
+	if err := db.Where("name = ?", addonName).
+		Where("az = ?", cluster).
+		Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		First(&instance).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &instance, nil
+}
+
 // GetInstancesByIDs 根据 ID 查询实例
 func (db *DBClient) GetInstancesByIDs(ids []string) (*[]AddonInstance, error) {
 	var instances []AddonInstance
