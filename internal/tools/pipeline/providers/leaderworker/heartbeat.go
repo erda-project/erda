@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
+
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/worker"
@@ -53,6 +55,9 @@ func (p *provider) workerOnceReportHeartbeat(ctx context.Context, w worker.Worke
 	// update lastProbeAt
 	nowSec := time.Now().Round(0).Unix()
 	if _, err := p.EtcdClient.Put(hctx, p.makeEtcdWorkerHeartbeatKey(w.GetID()), strutil.String(nowSec)); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			panic(fmt.Errorf("failed to update last heartbeat time into etcd, workerID: %s, err: %v", w.GetID(), err))
+		}
 		return fmt.Errorf("failed to update last heartbeat time into etcd, workerID: %s, err: %v", w.GetID(), err)
 	}
 	p.Log.Debugf("worker heartbeat reported, workerID: %s", w.GetID())

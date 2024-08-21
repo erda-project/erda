@@ -16,8 +16,10 @@ package leaderworker
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker/lwctx"
@@ -150,6 +152,10 @@ func (p *provider) workerIntervalCleanupOnDelete(ctx context.Context, ev Event) 
 			_, err := p.EtcdClient.Delete(ctx, p.makeEtcdWorkerHeartbeatKey(ev.WorkerID))
 			if err == nil {
 				return
+			}
+			// actively panic exit
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				panic(fmt.Errorf("actively panic exit, maybe the etcd server has been shut down, err: %v", err))
 			}
 			p.Log.Errorf("failed to do worker interval cleanup on delete(auto retry), step: delete heartbeat key, workerID: %s, err: %v", ev.WorkerID, err)
 			time.Sleep(p.Cfg.Worker.RetryInterval)
