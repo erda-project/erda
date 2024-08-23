@@ -3054,7 +3054,24 @@ func (a *Addon) checkCreateParams(req *apistructs.AddonCreateRequest) error {
 // deployAddons addons 部署
 func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbclient.AddonPrebuild) error {
 	needDeployAddons := []apistructs.AddonHandlerCreateItem{}
+	//terminusKey
+	tenantResp, err := a.tenantSvc.GetTenant(context.Background(), &tenantpb.GetTenantRequest{
+		ProjectID:  fmt.Sprintf("%v", req.ProjectID),
+		TenantType: tenantpb.Type_DOP.String(),
+		Workspace:  req.Workspace,
+	})
+
+	var tenantId string
+	if tenantResp != nil && tenantResp.Data != nil {
+		tenantId = tenantResp.Data.Id
+	}
+
+	if err != nil {
+		return errors.Errorf("can't get tenant id from tenant service , %v", err.Error())
+	}
+
 	var regVersion, confVersion string
+
 	for _, v := range deploys {
 		if _, ok := AddonInfos.Load(v.AddonName); !ok {
 			errStr := i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), "AddonTypeDoseNoExist", v.AddonName)
@@ -3077,6 +3094,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 			RuntimeID:     strconv.FormatUint(req.RuntimeID, 10),
 			RuntimeName:   req.RuntimeName,
 			OperatorID:    req.Operator,
+			TenantId:      tenantId,
 		}
 		if len(createItem.Options) == 0 {
 			createItem.Options = map[string]string{}
