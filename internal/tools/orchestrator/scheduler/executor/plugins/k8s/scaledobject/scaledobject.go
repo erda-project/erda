@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -33,7 +34,6 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	kedav1alpha1 "github.com/erda-project/erda/pkg/k8sclient/apis/keda/v1alpha1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

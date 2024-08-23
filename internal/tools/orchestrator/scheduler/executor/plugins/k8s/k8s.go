@@ -23,17 +23,20 @@ import (
 	"strings"
 	"sync"
 
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	vpatypes "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	vpa_clientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	papb "github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -79,7 +82,6 @@ import (
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/k8sclient"
-	kedav1alpha1 "github.com/erda-project/erda/pkg/k8sclient/apis/keda/v1alpha1"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
@@ -1437,7 +1439,7 @@ func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{},
 		}
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
-		if err = k.scaledObject.Create(scaledObj); err != nil {
+		if err = k.k8sClient.CRClient.Create(context.Background(), scaledObj); err != nil {
 			return sg, err
 		}
 	}
@@ -1583,7 +1585,7 @@ func (k *Kubernetes) reApplyErdaVPARules(sg apistructs.ServiceGroup) (interface{
 
 func convertToKedaScaledObject(scaledObject papb.ScaledConfig) *kedav1alpha1.ScaledObject {
 	var stabilizationWindowSeconds int32 = 300
-	selectPolicy := autoscalingv2beta2.MaxPolicySelect
+	selectPolicy := autoscalingv2.MaxChangePolicySelect
 
 	orgID := fmt.Sprintf("%d", scaledObject.OrgID)
 	triggers := make([]kedav1alpha1.ScaleTriggers, 0)
@@ -1637,34 +1639,34 @@ func convertToKedaScaledObject(scaledObject papb.ScaledConfig) *kedav1alpha1.Sca
 			Advanced: &kedav1alpha1.AdvancedConfig{
 				// +optional
 				HorizontalPodAutoscalerConfig: &kedav1alpha1.HorizontalPodAutoscalerConfig{
-					Behavior: &autoscalingv2beta2.HorizontalPodAutoscalerBehavior{
-						ScaleUp: &autoscalingv2beta2.HPAScalingRules{
+					Behavior: &autoscalingv2.HorizontalPodAutoscalerBehavior{
+						ScaleUp: &autoscalingv2.HPAScalingRules{
 							StabilizationWindowSeconds: &stabilizationWindowSeconds,
 							SelectPolicy:               &selectPolicy,
-							Policies: []autoscalingv2beta2.HPAScalingPolicy{
+							Policies: []autoscalingv2.HPAScalingPolicy{
 								{
-									Type:          autoscalingv2beta2.PodsScalingPolicy,
+									Type:          autoscalingv2.PodsScalingPolicy,
 									Value:         2,
 									PeriodSeconds: 30,
 								},
 								{
-									Type:          autoscalingv2beta2.PercentScalingPolicy,
+									Type:          autoscalingv2.PercentScalingPolicy,
 									Value:         50,
 									PeriodSeconds: 30,
 								},
 							},
 						},
-						ScaleDown: &autoscalingv2beta2.HPAScalingRules{
+						ScaleDown: &autoscalingv2.HPAScalingRules{
 							StabilizationWindowSeconds: &stabilizationWindowSeconds,
 							SelectPolicy:               &selectPolicy,
-							Policies: []autoscalingv2beta2.HPAScalingPolicy{
+							Policies: []autoscalingv2.HPAScalingPolicy{
 								{
-									Type:          autoscalingv2beta2.PodsScalingPolicy,
+									Type:          autoscalingv2.PodsScalingPolicy,
 									Value:         2,
 									PeriodSeconds: 30,
 								},
 								{
-									Type:          autoscalingv2beta2.PercentScalingPolicy,
+									Type:          autoscalingv2.PercentScalingPolicy,
 									Value:         50,
 									PeriodSeconds: 30,
 								},
@@ -1764,7 +1766,46 @@ func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
 
-		err = k.scaledObject.Patch(scaledObj.Namespace, scaledObj.Name, scaledObj)
+		if scaledObj == nil {
+			return nil, errors.New("keda scaled object is nil")
+		}
+
+		old := &kedav1alpha1.ScaledObject{}
+
+		err = k.k8sClient.CRClient.Get(context.Background(), client.ObjectKey{
+			Namespace: scaledObj.Namespace,
+			Name:      scaledObj.Name,
+		}, old)
+
+		if err != nil {
+			return nil, err
+		}
+
+		spec := types.ScaledPatchStruct{}
+
+		spec.Spec.ScaleTargetRef = scaledObj.Spec.ScaleTargetRef
+		if scaledObj.Spec.MinReplicaCount != nil && scaledObj.Spec.MaxReplicaCount != nil {
+
+			var minCount = *scaledObj.Spec.MinReplicaCount
+			var maxCount = *scaledObj.Spec.MaxReplicaCount
+
+			if minCount > 0 && maxCount > 0 && minCount < maxCount {
+				spec.Spec.MinReplicaCount = scaledObj.Spec.MinReplicaCount
+				spec.Spec.MaxReplicaCount = scaledObj.Spec.MaxReplicaCount
+			}
+		}
+
+		if len(scaledObj.Spec.Triggers) > 0 {
+			spec.Spec.Triggers = scaledObj.Spec.Triggers
+		}
+
+		patchBytes, err := json.Marshal(spec)
+		if err != nil {
+			return nil, err
+		}
+		patch := client.RawPatch(apitypes.MergePatchType, patchBytes)
+
+		err = k.k8sClient.CRClient.Patch(context.Background(), old, patch)
 		if err != nil {
 			return sg, err
 		}

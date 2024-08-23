@@ -17,6 +17,7 @@ package types
 import (
 	"regexp"
 
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
@@ -82,3 +83,7 @@ type (
 		Containers []corev1.Container `json:"containers"`
 	}
 )
+
+type ScaledPatchStruct struct {
+	Spec kedav1alpha1.ScaledObjectSpec `json:"spec"`
+}
