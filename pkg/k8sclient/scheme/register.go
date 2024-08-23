@@ -17,6 +17,7 @@ package scheme
 import (
 	rocketmqv1alpha1 "erda.cloud/rocketmq/api/v1alpha1"
 	elasticsearchv1 "github.com/elastic/cloud-on-k8s/v2/pkg/apis/elasticsearch/v1"
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	sparkoperatorv1beta2 "github.com/kubeflow/spark-operator/pkg/apis/sparkoperator.k8s.io/v1beta2"
 	flinkoperatoryv1beta1 "github.com/spotify/flink-on-k8s-operator/apis/flinkcluster/v1beta1"
 	istioconfigv1alpha2 "istio.io/client-go/pkg/apis/config/v1alpha2"
@@ -45,4 +46,5 @@ var LocalSchemeBuilder = runtime.SchemeBuilder{
 	flinkoperatoryv1beta1.AddToScheme,
 	apiextensions.AddToScheme,
 	rocketmqv1alpha1.AddToScheme,
+	kedav1alpha1.AddToScheme,
 }
