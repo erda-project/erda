@@ -441,6 +441,7 @@ erda.oap.collector.exporter.collector@external_metrics:
 
 erda.oap.collector.processor.dropper@application-agent:
   metric_prefix: ${APPLICATION_AGENT_DROP_PREFIX}
+  white_list: ${APPLICATION_AGENT_WHITE_LIST}
 
 # ************* exporters *************
 
