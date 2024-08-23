@@ -1766,6 +1766,10 @@ func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{
 
 		scaledObj := convertToKedaScaledObject(scaledObject)
 
+		if scaledObj == nil {
+			return nil, errors.New("keda scaled object is nil")
+		}
+
 		old := &kedav1alpha1.ScaledObject{}
 
 		err = k.k8sClient.CRClient.Get(context.Background(), client.ObjectKey{
@@ -1780,9 +1784,15 @@ func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{
 		spec := types.ScaledPatchStruct{}
 
 		spec.Spec.ScaleTargetRef = scaledObj.Spec.ScaleTargetRef
-		if *scaledObj.Spec.MinReplicaCount > 0 && *scaledObj.Spec.MaxReplicaCount > 0 && *scaledObj.Spec.MinReplicaCount < *scaledObj.Spec.MaxReplicaCount {
-			spec.Spec.MinReplicaCount = scaledObj.Spec.MinReplicaCount
-			spec.Spec.MaxReplicaCount = scaledObj.Spec.MaxReplicaCount
+		if scaledObj.Spec.MinReplicaCount != nil && scaledObj.Spec.MaxReplicaCount != nil {
+
+			var minCount = *scaledObj.Spec.MinReplicaCount
+			var maxCount = *scaledObj.Spec.MaxReplicaCount
+
+			if minCount > 0 && maxCount > 0 && minCount < maxCount {
+				spec.Spec.MinReplicaCount = scaledObj.Spec.MinReplicaCount
+				spec.Spec.MaxReplicaCount = scaledObj.Spec.MaxReplicaCount
+			}
 		}
 
 		if len(scaledObj.Spec.Triggers) > 0 {
