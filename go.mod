@@ -474,15 +474,12 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
-)
-
-require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/expr-lang/expr v1.16.9 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
-	github.com/kedacore/keda/v2 v2.15.1
-	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
-	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653 // indirect
+    github.com/expr-lang/expr v1.16.9 // indirect
+   	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+   	github.com/kedacore/keda/v2 v2.15.1
+   	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
+   	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653 // indirect
 )
 
 replace (
