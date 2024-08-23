@@ -372,9 +372,7 @@ erda.dop.rule.action.dingtalkworknotice: { }
 
 ########### cmp
 cmp:
-  # steve cache time to live, default 10 min
-  cache_ttl: ${CMP_STEVE_CACHE_TTL:10m}
-  # steve cache total size (MB), default 64MB
+  # steve cache total size , default 64
   cache_size: ${CMP_STEVE_CACHE_SIZE:64}
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
@@ -598,6 +596,7 @@ erda.msp.resource.deploy.handlers.apigateway:
     http_port: "${DICE_HTTP_PORT}"
     https_port: "${DICE_HTTPS_PORT}"
 erda.msp.resource.deploy.handlers.configcenter:
+erda.msp.resource.deploy.handlers.externalprovider:
 erda.msp.resource.deploy.handlers.etcd:
 erda.msp.resource.deploy.handlers.jvmprofiler:
 erda.msp.resource.deploy.handlers.loganalytics:

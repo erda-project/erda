@@ -68,7 +68,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 			MachineStat:      task.Inspect.MachineStat,
 			Meta: func() map[string]string {
 				result := make(map[string]string)
-				for _, meta := range task.GetMetadata() {
+				for _, meta := range task.MergeMetadata() {
 					result[meta.Name] = meta.Value
 				}
 				return result

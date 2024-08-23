@@ -47,7 +47,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/cloud-on-k8s/v2 v2.0.0-20221101080201-221fa719f43b
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v1.0.10-0.20240613021434-6a57addb81b3
+	github.com/erda-project/erda-infra v1.0.10-0.20240731020040-45091257939a
 	github.com/erda-project/erda-infra/tools v0.0.0-20240613021434-6a57addb81b3
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v1.4.0
@@ -499,7 +499,7 @@ replace (
 	github.com/pyroscope-io/godeltaprof v0.1.0 => github.com/grafana/pyroscope-go/godeltaprof v0.1.3
 	github.com/pyroscope-io/pyroscope => github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e
 	github.com/rancher/apiserver => github.com/rancher/apiserver v0.0.0-20240503193545-2e1b0ddd9791
-	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
+	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1
 	github.com/rancher/steve => github.com/rancher/steve v0.0.0-20240605141712-7a84620e8bc1
 	github.com/rancher/wrangler/v2 => github.com/rancher/wrangler/v2 v2.2.0-rc6
 	github.com/tealeg/xlsx/v3 => github.com/sfwn/xlsx/v3 v3.0.0-20231016172135-b3d7083b7ab3

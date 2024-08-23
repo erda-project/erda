@@ -1249,8 +1249,8 @@ github.com/envoyproxy/protoc-gen-validate v1.0.4 h1:gVPz/FMfvh57HdSJQyvBtF00j8JU
 github.com/envoyproxy/protoc-gen-validate v1.0.4/go.mod h1:qys6tmnRsYrQqIhm2bvKZH4Blx/1gTIZ2UKVY1M+Yew=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
-github.com/erda-project/erda-infra v1.0.10-0.20240613021434-6a57addb81b3 h1:gAiiwPmHWATlc9uCxNG62Lp9VKRnZqfR5ZtqGS46PXc=
-github.com/erda-project/erda-infra v1.0.10-0.20240613021434-6a57addb81b3/go.mod h1:R0y4IDOlt+Lw4MLjQmTVZermz/4ExuHrFONo+9ud4Jo=
+github.com/erda-project/erda-infra v1.0.10-0.20240731020040-45091257939a h1:8m6MT2DCVgBupDQFTsSzjwbOmT9k1CdF61c/+acHRvA=
+github.com/erda-project/erda-infra v1.0.10-0.20240731020040-45091257939a/go.mod h1:R0y4IDOlt+Lw4MLjQmTVZermz/4ExuHrFONo+9ud4Jo=
 github.com/erda-project/erda-infra/tools v0.0.0-20240613021434-6a57addb81b3 h1:PP/xS8+3kOWoTgtPrgweMWLYg28fMrLY1ymqd+EFwO8=
 github.com/erda-project/erda-infra/tools v0.0.0-20240613021434-6a57addb81b3/go.mod h1:pBTZ26w6QAOc6IHSY48Q8SeIghu3knfCZXa1Xgd1FJM=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
@@ -1263,6 +1263,8 @@ github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e h1:04gD21EY
 github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e/go.mod h1:oKtFRQJCxy228zqyG5fwPGzo3Fbbj0g+3PVT0C4JJqo=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23/go.mod h1:dbzn9NF1JWbGEHL6Q/1KG4KFROILiY/j6wmfF1Np3fk=
+github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1 h1:CLdzGplB9VRtYXFleMrPka71u4xjMw8Ayd+8WTwZjDI=
+github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1/go.mod h1:dbzn9NF1JWbGEHL6Q/1KG4KFROILiY/j6wmfF1Np3fk=
 github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23 h1:A2cod4X3yK1YIBbTIf7q1b8+/S6iLwyNVtQ/SOYflQo=
 github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23/go.mod h1:NOglgj931lh7myfNFa00hb3UIiRlxhbMjCv/Ek5RJA8=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 h1:Yzb9+7DPaBjB8zlTR87/ElzFsnQfuHnVUVqpZZIcV5Y=

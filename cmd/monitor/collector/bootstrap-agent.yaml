@@ -54,19 +54,12 @@ erda.oap.collector.core:
 
 erda.oap.collector.receiver.prometheus-remote-write@default:
 
-grpc-client@erda.core.token:
-  addr: "${ERDA_SERVER_GRPC_ADDR:erda-server:8096}"
-erda.core.token-client:
-
-erda.oap.collector.authentication:
-  sync_interval: ${COLLECTOR_AUTHENTICATION_AK_SYNC_INTERVAL:2m}
-
 erda.oap.collector.receiver.collector:
   auth:
     username: "${COLLECTOR_AUTH_USERNAME:collector}"
     password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
     force: ${COLLECTOR_AUTH_FORCE:false}
-    skip: ${COLLECTOR_AUTH_SKIP:false}
+    skip: ${COLLECTOR_AUTH_SKIP:true}
 
 erda.oap.collector.receiver.prometheus-remote-write@external_metrics:
   remote_write_url: "${EXTERNAL_METRIC_REMOTE_WRITE_URL:/api/v1/external-prometheus-remote-write}"

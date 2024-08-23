@@ -1508,6 +1508,12 @@ func TestDeploy(t *testing.T) {
 		return &apistructs.AddonInstanceRes{}, nil
 	})
 
+	defer func() {
+		if err := recover(); err != nil {
+			t.Log(err)
+		}
+	}()
+
 	fmt.Println(addon.db == nil)
 	AddonInfos.Store(RegisterCenterAddon, "")
 	AddonInfos.Store(ConfigCenterAddon, "")

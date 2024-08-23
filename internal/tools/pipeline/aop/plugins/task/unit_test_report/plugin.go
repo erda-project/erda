@@ -43,7 +43,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		return nil
 	}
 
-	metadata := ctx.SDK.Task.GetMetadata()
+	metadata := ctx.SDK.Task.MergeMetadata()
 	if len(metadata) == 0 {
 		return nil
 	}

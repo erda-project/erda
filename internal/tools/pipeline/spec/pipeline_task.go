@@ -327,7 +327,7 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		SnippetPipelineID:     pt.SnippetPipelineID,
 		SnippetPipelineDetail: pt.SnippetPipelineDetail,
 	}
-	task.Result.Metadata = pt.GetMetadata()
+	task.Result.Metadata = pt.MergeMetadata()
 	task.Result.MachineStat = pt.Inspect.MachineStat
 	task.Result.Inspect = pt.Inspect.Inspect
 	task.Result.Events = pt.Inspect.Events
@@ -350,10 +350,27 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	return &task
 }
 
+func (pt *PipelineTask) handleTime() {
+	// handle time
+	if !pt.TimeEnd.IsZero() {
+		if pt.TimeBegin.IsZero() {
+			earlierTime := pt.TimeUpdated // use earlier time as timeBegin as much as possible
+			if pt.TimeEnd.Before(pt.TimeUpdated) {
+				earlierTime = pt.TimeEnd
+			}
+			pt.TimeBegin = earlierTime // for some scenarios, timeBegin is not set
+		}
+		if pt.CostTimeSec < 0 {
+			pt.CostTimeSec = int64(pt.TimeEnd.Sub(pt.TimeBegin).Seconds())
+		}
+	}
+}
+
 func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 	if pt == nil {
 		return nil
 	}
+	pt.handleTime()
 	task := basepb.PipelineTaskDTO{
 		ID:         pt.ID,
 		PipelineID: pt.PipelineID,
@@ -387,7 +404,7 @@ func (pt *PipelineTask) Convert2PB() *basepb.PipelineTaskDTO {
 	if task.Result == nil {
 		task.Result = &basepb.PipelineTaskResult{}
 	}
-	task.Result.Metadata = pt.GetPBMetadata()
+	task.Result.Metadata = pt.MergePBMetadata()
 	task.Result.MachineStat = pt.Inspect.GetPBMachineStat()
 	task.Result.Inspect = pt.Inspect.Inspect
 	task.Result.Events = pt.Inspect.Events
@@ -493,7 +510,7 @@ func (pt *PipelineTask) filterSecretParam(source apistructs.TaskParamSource, par
 }
 
 func (pt *PipelineTask) RuntimeID() string {
-	for _, meta := range pt.GetMetadata() {
+	for _, meta := range pt.MergeMetadata() {
 		if meta.Type == apistructs.ActionCallbackTypeLink &&
 			meta.Name == apistructs.ActionCallbackRuntimeID {
 			return meta.Value
@@ -503,7 +520,7 @@ func (pt *PipelineTask) RuntimeID() string {
 }
 
 func (pt *PipelineTask) ReleaseID() string {
-	for _, meta := range pt.GetMetadata() {
+	for _, meta := range pt.MergeMetadata() {
 		if meta.Type == apistructs.ActionCallbackTypeLink &&
 			meta.Name == apistructs.ActionCallbackReleaseID {
 			return meta.Value
@@ -512,29 +529,31 @@ func (pt *PipelineTask) ReleaseID() string {
 	return ""
 }
 
-func (pt *PipelineTask) GetMetadata() metadata.Metadata {
-	if pt.Result == nil {
-		return metadata.Metadata{}
+func (pt *PipelineTask) MergeMetadata() metadata.Metadata {
+	var meta metadata.Metadata
+	// get from inspect firstly
+	meta = append(meta, pt.Inspect.Metadata...)
+	// external result's metadata can override internal inspect's metadata
+	if pt.Result != nil {
+		meta = append(meta, pt.Result.Metadata...)
 	}
-	return pt.Result.Metadata
+	return meta
 }
 
-func (pt *PipelineTask) GetPBMetadata() []*commonpb.MetadataField {
-	if pt.Result == nil || len(pt.Result.Metadata) == 0 {
-		return []*commonpb.MetadataField{}
-	}
-	metas := make([]*commonpb.MetadataField, 0)
-	for _, meta := range pt.Result.Metadata {
-		metas = append(metas, &commonpb.MetadataField{
-			Name:     meta.Name,
-			Value:    meta.Value,
-			Type:     meta.Type,
-			Optional: meta.Optional,
-			Labels:   meta.Labels,
-			Level:    string(meta.Level),
+func (pt *PipelineTask) MergePBMetadata() []*commonpb.MetadataField {
+	meta := pt.MergeMetadata()
+	pbMeta := make([]*commonpb.MetadataField, 0)
+	for _, datum := range meta {
+		pbMeta = append(pbMeta, &commonpb.MetadataField{
+			Name:     datum.Name,
+			Value:    datum.Value,
+			Type:     datum.Type,
+			Optional: datum.Optional,
+			Labels:   datum.Labels,
+			Level:    string(datum.Level),
 		})
 	}
-	return metas
+	return pbMeta
 }
 
 func (pt *PipelineTask) MergeErrors() taskerror.OrderedErrors {

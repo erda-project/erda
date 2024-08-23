@@ -49,6 +49,7 @@ import (
 
 const (
 	AddonTypeDoseNoExist           = "AddonTypeDoseNoExist"
+	NoRegisterCenterFound          = "NoRegisterCenterFound"
 	AddonVersionDoseNoExist        = "AddonVersionDoseNoExist"
 	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
 	AddonPlanIllegal               = "AddonPlanIllegal"
@@ -698,11 +699,6 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 		return nil, err
 	}
 	logrus.Infof("after buildRealCreate, param:  %+v", *params)
-
-	// canal不需要走策略，canal就是要一个给一个
-	if params.AddonName == apistructs.AddonCanal {
-		return nil, nil
-	}
 
 	// 根据tag查询addon实例信息
 	shareRoutingIns, err := a.getTagInstance(addonSpec, params)
