@@ -69,7 +69,7 @@ func (p *provider) handleLogDir() error {
 		return err
 	}
 	// dir is not exist
-	return os.Mkdir(p.Cfg.LogDir, 0755)
+	return os.MkdirAll(p.Cfg.LogDir, 0755)
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
