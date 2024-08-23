@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -42,17 +42,22 @@ type config struct {
 	Keyexclude []string            `file:"keyexclude"`
 
 	MetadataKeyOfTopic string `file:"metadata_key_of_topic" desc:"note: only for raw data type"`
-	Topic              string `file:"topic"`
+	// produce raw data with key for same partition in kafka detail: https://erda.cloud/erda/dop/projects/387/issues/all?id=611023&iterationID=12783&tab=BUG&type=BUG
+	ProduceRawWithKey bool   `file:"produce_raw_with_key" default:"false"`
+	Topic             string `file:"topic"`
 }
 
 var _ model.Exporter = (*provider)(nil)
 
+type produceRawFunc func(item *odata.Raw) *sarama.ProducerMessage
+
 // +provider
 type provider struct {
-	Cfg    *config
-	Log    logs.Logger
-	Kafka  kafka.Interface `autowired:"kafkago"`
-	writer writer.Writer
+	Cfg     *config
+	Log     logs.Logger
+	Kafka   kafka.Interface `autowired:"kafkago"`
+	writer  writer.Writer
+	rawFunc produceRawFunc
 }
 
 func (p *provider) ComponentClose() error {
@@ -83,23 +88,42 @@ func (p *provider) ExportSpan(items ...*trace.Span) error        { return nil }
 func (p *provider) ExportProfile(items ...*profile.Output) error { return nil }
 func (p *provider) ExportRaw(items ...*odata.Raw) error {
 	for _, item := range items {
-		topic := p.Cfg.Topic
-		if p.Cfg.MetadataKeyOfTopic != "" {
-			tmp, ok := item.Meta[p.Cfg.MetadataKeyOfTopic]
-			if ok {
-				topic = tmp
-			}
-		}
+		msg := p.rawFunc(item)
 
-		if err := p.writer.Write(&sarama.ProducerMessage{
-			Topic: topic,
-			Value: sarama.ByteEncoder(item.Data),
-		}); err != nil {
-			p.Log.Errorf("write data to topic %s err: %s", topic, err)
+		if err := p.writer.Write(msg); err != nil {
+			p.Log.Errorf("write data to topic %s err: %s", msg.Topic, err)
 		}
 
 	}
 	return nil
+}
+
+func (p *provider) produceRawMessage(item *odata.Raw) *sarama.ProducerMessage {
+	topic := p.Cfg.Topic
+	if p.Cfg.MetadataKeyOfTopic != "" {
+		tmp, ok := item.Meta[p.Cfg.MetadataKeyOfTopic]
+		if ok {
+			topic = tmp
+		}
+	}
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(item.Data),
+	}
+	return msg
+}
+
+type key struct {
+	ID string `json:"id"`
+}
+
+func (p *provider) produceRawMessageWithKey(item *odata.Raw) *sarama.ProducerMessage {
+	msg := p.produceRawMessage(item)
+	var k key
+	if err := json.Unmarshal(item.Data, &k); err == nil && len(k.ID) > 0 {
+		msg.Key = sarama.ByteEncoder(k.ID)
+	}
+	return msg
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -120,6 +144,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return err
 	}
 	p.writer = producer
+	p.rawFunc = p.produceRawMessage
+	if p.Cfg.ProduceRawWithKey {
+		p.rawFunc = p.produceRawMessageWithKey
+	}
 	return nil
 }
 

@@ -22,10 +22,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"

@@ -61,6 +61,12 @@ import (
 // ErdaEncryptedValue encrypted value
 const ErdaEncryptedValue string = "ERDA_ENCRYPTED"
 
+const (
+	ConfigCenterAddon   = "config-center"
+	RegisterCenterAddon = "registercenter"
+	NacosAddon          = "nacos"
+)
+
 var (
 	// AddonInfos 市场addon全集 key: addonName, value: apistructs.Extension
 	AddonInfos sync.Map
@@ -313,6 +319,28 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 	for _, v := range *existBuilds {
 		existBuildMap[strutil.Concat(v.RuntimeID, v.AddonName, v.InstanceName)] = v
 	}
+
+	var hasRegister, hasConfig bool
+	for _, addon := range req.Addons {
+		if addon.Type == RegisterCenterAddon {
+			hasRegister = true
+		}
+		if addon.Type == ConfigCenterAddon {
+			hasConfig = true
+		}
+	}
+
+	if hasRegister && !hasConfig {
+		err = a.appendAddon(req, ConfigCenterAddon, apistructs.AddonBasic)
+	} else if !hasRegister && hasConfig {
+		err = a.appendAddon(req, RegisterCenterAddon, apistructs.AddonBasic)
+	}
+
+	if err != nil {
+		logrus.Errorf("append addon error: %s", err)
+		return err
+	}
+
 	// 找出新增 addons，添加至 prebuild
 	addonPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons)) // 新增 addons
 	newPrebuildList := make([]dbclient.AddonPrebuild, 0, len(req.Addons))   // 新 addons 列表
@@ -389,6 +417,34 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 	if err := a.deployAddons(req, deploys); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (a *Addon) appendAddon(req *apistructs.AddonCreateRequest, addonName, plan string) error {
+	versionMap, err := GetCache().Get(addonName)
+	if err != nil {
+		return fmt.Errorf("can't get addon [%s] from cache, %v", addonName, err)
+	}
+	addons, ok := versionMap.(*VersionMap)
+	if !ok {
+		return fmt.Errorf("can't convert to VersionMap")
+	}
+	defaultAddon, ok := addons.GetDefault()
+	if !ok {
+		return fmt.Errorf("there are no default addons [%s]", addonName)
+	}
+
+	req.Addons = append(req.Addons, apistructs.AddonCreateItem{
+		Name:    defaultAddon.Name,
+		Type:    addonName,
+		Plan:    plan,
+		Configs: make(map[string]string),
+		Options: map[string]string{
+			"version": defaultAddon.Version,
+		},
+		Actions: make(map[string]string),
+	})
+
 	return nil
 }
 
@@ -2998,21 +3054,7 @@ func (a *Addon) checkCreateParams(req *apistructs.AddonCreateRequest) error {
 // deployAddons addons 部署
 func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbclient.AddonPrebuild) error {
 	needDeployAddons := []apistructs.AddonHandlerCreateItem{}
-	//terminusKey
-	tenantResp, err := a.tenantSvc.GetTenant(context.Background(), &tenantpb.GetTenantRequest{
-		ProjectID:  fmt.Sprintf("%v", req.ProjectID),
-		TenantType: tenantpb.Type_DOP.String(),
-		Workspace:  req.Workspace,
-	})
-
-	var tenantId string
-	if tenantResp != nil && tenantResp.Data != nil {
-		tenantId = tenantResp.Data.Id
-	}
-
-	if err != nil {
-		return errors.Errorf("can't get tenant id from tenant service , %v", err.Error())
-	}
+	var regVersion, confVersion string
 	for _, v := range deploys {
 		if _, ok := AddonInfos.Load(v.AddonName); !ok {
 			errStr := i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), "AddonTypeDoseNoExist", v.AddonName)
@@ -3035,7 +3077,6 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 			RuntimeID:     strconv.FormatUint(req.RuntimeID, 10),
 			RuntimeName:   req.RuntimeName,
 			OperatorID:    req.Operator,
-			TenantId:      tenantId,
 		}
 		if len(createItem.Options) == 0 {
 			createItem.Options = map[string]string{}
@@ -3068,11 +3109,42 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 				}
 			}
 		}
+		// When deploying Config-Center and Register Center at the same time, Register Center needs to be deployed first.
+		switch v.AddonName {
+		case RegisterCenterAddon:
+			regVersion = createItem.Options["version"]
+		case ConfigCenterAddon:
+			confVersion = createItem.Options["version"]
+		}
 		needDeployAddons = append(needDeployAddons, *createItem)
+	}
+
+	if regVersion != "" {
+		confVersion = a.mappingConfigCenterVersion(regVersion)
+	}
+
+	registerInstance, err := a.db.GetAddonInstanceByNameAndCluster(RegisterCenterAddon, req.ClusterName)
+	if err != nil {
+		logrus.Errorf("can't find register-center instance : %v", err)
+		return err
+	}
+	if registerInstance != nil {
+		regVersion = registerInstance.Version
+		confVersion = a.mappingConfigCenterVersion(registerInstance.Version)
+	} else if confVersion != "" && regVersion == "" {
+		err := errors.New(i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), NoRegisterCenterFound))
+		logrus.Errorf("%v", err)
+		return err
 	}
 
 	for index, v := range deploys {
 		createItem := needDeployAddons[index]
+		switch v.AddonName {
+		case RegisterCenterAddon:
+			createItem.Options["version"] = regVersion
+		case ConfigCenterAddon:
+			createItem.Options["version"] = confVersion
+		}
 		instanceRes, err := a.AttachAndCreate(&createItem)
 		if err != nil {
 			return err
@@ -3086,6 +3158,11 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	}
 
 	return nil
+}
+
+// one-to-one correspondence
+func (a *Addon) mappingConfigCenterVersion(registerVersion string) string {
+	return registerVersion
 }
 
 // PrepareCheckProjectLastResource 计算项目预留资源，是否满足发布徐局

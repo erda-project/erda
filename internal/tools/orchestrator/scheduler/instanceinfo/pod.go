@@ -15,11 +15,9 @@
 package instanceinfo
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/pkg/database/dbengine"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type PodReader struct {
@@ -37,19 +35,23 @@ func (c *Client) PodReader() *PodReader {
 	return &PodReader{db: c.db, conditions: []string{}, limit: 0}
 }
 func (r *PodReader) ByCluster(clustername string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("cluster = \"%s\"", clustername))
+	r.conditions = append(r.conditions, "cluster = ?")
+	r.values = append(r.values, clustername)
 	return r
 }
 func (r *PodReader) ByNamespace(ns string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("namespace = \"%s\"", ns))
+	r.conditions = append(r.conditions, "namespace = ?")
+	r.values = append(r.values, ns)
 	return r
 }
 func (r *PodReader) ByName(name string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("name = \"%s\"", name))
+	r.conditions = append(r.conditions, "name = ?")
+	r.values = append(r.values, name)
 	return r
 }
 func (r *PodReader) ByOrgName(name string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("org_name = \"%s\"", name))
+	r.conditions = append(r.conditions, "org_name = ?")
+	r.values = append(r.values, name)
 	return r
 }
 func (r *PodReader) ByOrgID(id string) *PodReader {
@@ -58,15 +60,18 @@ func (r *PodReader) ByOrgID(id string) *PodReader {
 	return r
 }
 func (r *PodReader) ByProjectName(name string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("project_name = \"%s\"", name))
+	r.conditions = append(r.conditions, "project_name = ?")
+	r.values = append(r.values, name)
 	return r
 }
 func (r *PodReader) ByProjectID(id string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("project_id = \"%s\"", id))
+	r.conditions = append(r.conditions, "project_id = ?")
+	r.values = append(r.values, id)
 	return r
 }
 func (r *PodReader) ByApplicationName(name string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("application_name = \"%s\"", name))
+	r.conditions = append(r.conditions, "application_name = ?")
+	r.values = append(r.values, name)
 	return r
 }
 func (r *PodReader) ByApplicationID(id string) *PodReader {
@@ -75,54 +80,64 @@ func (r *PodReader) ByApplicationID(id string) *PodReader {
 	return r
 }
 func (r *PodReader) ByRuntimeName(name string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("runtime_name = \"%s\"", name))
+	r.conditions = append(r.conditions, "runtime_name = ?")
+	r.values = append(r.values, name)
 	return r
 }
 func (r *PodReader) ByRuntimeID(id string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("runtime_id = \"%s\"", id))
+	r.conditions = append(r.conditions, "runtime_id = ?")
+	r.values = append(r.values, id)
 	return r
 }
 func (r *PodReader) ByService(name string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("service_name = \"%s\"", name))
+	r.conditions = append(r.conditions, "service_name = ?")
+	r.values = append(r.values, name)
 	return r
 }
 func (r *PodReader) ByServiceType(tp string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("service_type = \"%s\"", tp))
+	r.conditions = append(r.conditions, "service_type = ?")
+	r.values = append(r.values, tp)
 	return r
 }
 func (r *PodReader) ByAddonID(id string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("addon_id = \"%s\"", id))
+	r.conditions = append(r.conditions, "addon_id = ?")
+	r.values = append(r.values, id)
 	return r
 }
 func (r *PodReader) ByWorkspace(ws string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("workspace = \"%s\"", ws))
+	r.conditions = append(r.conditions, "workspace = ?")
+	r.values = append(r.values, ws)
 	return r
 }
 func (r *PodReader) ByPhase(phase string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("phase = \"%s\"", phase))
+	r.conditions = append(r.conditions, "phase = ?")
+	r.values = append(r.values, phase)
 	return r
 }
 func (r *PodReader) ByPhases(phases ...string) *PodReader {
-	phasesStr := strutil.Map(phases, func(s string) string { return "\"" + s + "\"" })
-	r.conditions = append(r.conditions, fmt.Sprintf("phase in (%s)", strutil.Join(phasesStr, ",")))
+	r.conditions = append(r.conditions, "phase in (?)")
+	r.values = append(r.values, phases)
 	return r
 }
 func (r *PodReader) ByK8SNamespace(namespace string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("k8s_namespace = \"%s\"", namespace))
+	r.conditions = append(r.conditions, "k8s_namespace = ?")
+	r.values = append(r.values, namespace)
 	return r
 }
 func (r *PodReader) ByPodName(podname string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("pod_name = \"%s\"", podname))
+	r.conditions = append(r.conditions, "pod_name = ?")
+	r.values = append(r.values, podname)
 	return r
 }
 func (r *PodReader) ByUid(uid string) *PodReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("uid = \"%s\"", uid))
+	r.conditions = append(r.conditions, "uid = ?")
+	r.values = append(r.values, uid)
 	return r
 }
 func (r *PodReader) ByUpdatedTime(beforeNSecs int) *PodReader {
 	// Use scheduler time query to avoid the inconsistency between sceduler and database time and cause the instance to GC by mistake
-	now := time.Now().Format("2006-01-02 15:04:05")
-	r.conditions = append(r.conditions, fmt.Sprintf("updated_at < '%s' - interval %d second", now, beforeNSecs))
+	r.conditions = append(r.conditions, "updated_at < now() - interval ? second")
+	r.values = append(r.values, beforeNSecs)
 	return r
 }
 
@@ -130,18 +145,26 @@ func (r *PodReader) Limit(n int) *PodReader {
 	r.limit = n
 	return r
 }
+
 func (r *PodReader) Do() ([]PodInfo, error) {
-	podinfo := []PodInfo{}
-	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true), r.values...).Order("started_at desc")
+	defer func() {
+		r.conditions = make([]string, 0)
+		r.values = make([]any, 0)
+	}()
+
+	podsInfo := make([]PodInfo, 0)
+	expr := r.db.Order("started_at desc")
+	for k := range r.conditions {
+		expr = expr.Where(r.conditions[k], r.values[k])
+	}
 	if r.limit != 0 {
 		expr = expr.Limit(r.limit)
 	}
-	if err := expr.Find(&podinfo).Error; err != nil {
-		r.conditions = []string{}
+
+	if err := expr.Find(&podsInfo).Error; err != nil {
 		return nil, err
 	}
-	r.conditions = []string{}
-	return podinfo, nil
+	return podsInfo, nil
 }
 
 func (c *Client) PodWriter() *podWriter {
@@ -155,4 +178,8 @@ func (w *podWriter) Update(s PodInfo) error {
 }
 func (w *podWriter) Delete(ids ...uint64) error {
 	return w.db.Delete(PodInfo{}, "id in (?)", ids).Error
+}
+
+func (w *podWriter) DeleteByPodUid(cluster string, uuid string) error {
+	return w.db.Delete(PodInfo{}, "cluster = ? and uid = ?", cluster, uuid).Error
 }

@@ -16,7 +16,7 @@ package monitor
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -39,7 +39,7 @@ var MSP_ADDON_LOGS_RULES_CREATE = apis.ApiSpec{
 func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
 	return func(ctx *spec.AuditContext) error {
 		reqBody := apistructs.LogMetricConfig{}
-		body, err := ioutil.ReadAll(ctx.Request.Body)
+		body, err := io.ReadAll(ctx.Request.Body)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext
 		if project == nil {
 			return nil
 		}
-		body, err = ioutil.ReadAll(ctx.Response.Body)
+		body, err = io.ReadAll(ctx.Response.Body)
 		if err != nil {
 			return err
 		}

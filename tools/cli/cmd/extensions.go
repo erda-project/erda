@@ -20,7 +20,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -101,13 +100,13 @@ func getRegistryAuths() (map[string]DockerAuth, error) {
 		}
 	}
 	if _, err := os.Stat(dockerConfigFilePath); os.IsNotExist(err) {
-		err = ioutil.WriteFile(dockerConfigFilePath, []byte("{}"), 0755)
+		err = os.WriteFile(dockerConfigFilePath, []byte("{}"), 0755)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	fileBytes, err := ioutil.ReadFile(dockerConfigFilePath)
+	fileBytes, err := os.ReadFile(dockerConfigFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +153,7 @@ func saveRegistryAuth(auths map[string]DockerAuth) error {
 	dockerConfigFilePath := path.Join(dockerConfigPath, "config.json")
 	var config map[string]interface{}
 
-	fileBytes, err := ioutil.ReadFile(dockerConfigFilePath)
+	fileBytes, err := os.ReadFile(dockerConfigFilePath)
 	if err != nil {
 		return err
 	}
@@ -165,7 +164,7 @@ func saveRegistryAuth(auths map[string]DockerAuth) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(dockerConfigFilePath, resultBytes, 0755)
+	return os.WriteFile(dockerConfigFilePath, resultBytes, 0755)
 }
 
 func getImageRegistry(image string) string {

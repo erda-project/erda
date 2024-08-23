@@ -196,6 +196,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/apigateway"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/configcenter"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/etcd"
+	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/externalprovider"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/jvmprofiler"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/loganalytics"
 	_ "github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers/loges"

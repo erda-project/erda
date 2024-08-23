@@ -34,3 +34,11 @@ func GetModelProvider(ctx context.Context) (*modelproviderpb.ModelProvider, bool
 	}
 	return prov, true
 }
+
+func MustGetModelProvider(ctx context.Context) *modelproviderpb.ModelProvider {
+	prov, ok := GetModelProvider(ctx)
+	if !ok {
+		panic("model provider not found in context")
+	}
+	return prov
+}

@@ -16,7 +16,7 @@ package pipelineymlv1
 
 //import (
 //	"fmt"
-//	"io/ioutil"
+//	"os"
 //	"testing"
 //
 //	"github.com/stretchr/testify/require"
@@ -25,7 +25,7 @@ package pipelineymlv1
 //)
 //
 //func TestPipelineYml_Unmarshal(t *testing.T) {
-//	b, err := ioutil.ReadFile("../pipeline-anchor.yml")
+//	b, err := os.ReadFile("../pipeline-anchor.yml")
 //	require.NoError(t, err)
 //	y := New(b)
 //	err = y.Parse()
@@ -33,7 +33,7 @@ package pipelineymlv1
 //}
 //
 //func TestPipelineYml_Parse(t *testing.T) {
-//	b, err := ioutil.ReadFile("../pipeline-get-put.yml")
+//	b, err := os.ReadFile("../pipeline-get-put.yml")
 //	require.NoError(t, err)
 //	y := New(b)
 //	err = y.Parse()
@@ -53,7 +53,7 @@ package pipelineymlv1
 //}
 //
 //func TestPipelineYml_Triggers(t *testing.T) {
-//	b, err := ioutil.ReadFile("../pipeline-trigger.yml")
+//	b, err := os.ReadFile("../pipeline-trigger.yml")
 //	require.NoError(t, err)
 //
 //	y := New(b)
@@ -63,7 +63,7 @@ package pipelineymlv1
 //}
 //
 //func TestPipelinYmlDuplicate(t *testing.T) {
-//	b, err := ioutil.ReadFile("../pipeline-duplicate.yml")
+//	b, err := os.ReadFile("../pipeline-duplicate.yml")
 //	require.NoError(t, err)
 //
 //	y := New(b)
@@ -74,7 +74,7 @@ package pipelineymlv1
 //}
 //
 //func TestPipelinYmlErrTasktype(t *testing.T) {
-//	b, err := ioutil.ReadFile("../pipeline-err-tasktype.yml")
+//	b, err := os.ReadFile("../pipeline-err-tasktype.yml")
 //	require.NoError(t, err)
 //
 //	y := New(b)
@@ -85,7 +85,7 @@ package pipelineymlv1
 //}
 //
 //func TestPipelineYml_ValidateSingleTaskConfig(t *testing.T) {
-//	b, err := ioutil.ReadFile("../pipeline-decode.yml")
+//	b, err := os.ReadFile("../pipeline-decode.yml")
 //	require.NoError(t, err)
 //
 //	y := New(b)

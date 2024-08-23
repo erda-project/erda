@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func (p *provider) leaderSideContinueCleanup(ctx context.Context) {

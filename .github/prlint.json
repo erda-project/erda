@@ -1,7 +1,7 @@
 {
   "title": [
     {
-      "pattern": "(^(build|ci|docs|feat|fix|perf|refactor|style|test|chore|revert)(\\([a-zA-Z,-]+\\))?:\\s)|(^Automated cherry pick of #[0-9]+: .+$)",
+      "pattern": "(^(build|ci|docs|feat|fix|perf|refactor|style|test|chore|revert)(\\([a-zA-Z,-.]+\\))?:\\s)|(^Automated cherry pick of #[0-9]+: .+$)",
       "message": "Your title needs to be prefixed with a topic"
     }
   ],

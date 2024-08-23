@@ -20,14 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/recallsong/go-utils/reflectx"
 	otlpv11 "go.opentelemetry.io/proto/otlp/common/v1"
 	otlpv1 "go.opentelemetry.io/proto/otlp/trace/v1"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	tracepb "github.com/erda-project/erda-proto-go/oap/trace/pb"
@@ -76,8 +76,8 @@ func convertSpans(tracesData *otlpv1.TracesData) []*tracepb.Span {
 	spans := make([]*tracepb.Span, 0)
 	if tracesData.ResourceSpans != nil && len(tracesData.ResourceSpans) > 0 {
 		for _, resource := range tracesData.ResourceSpans {
-			if resource.InstrumentationLibrarySpans != nil && len(resource.InstrumentationLibrarySpans) > 0 {
-				for _, instrumentation := range resource.InstrumentationLibrarySpans {
+			if resource.ScopeSpans != nil && len(resource.ScopeSpans) > 0 {
+				for _, instrumentation := range resource.ScopeSpans {
 					if instrumentation.Spans != nil && len(instrumentation.Spans) > 0 {
 						for _, otlpSpan := range instrumentation.Spans {
 							attributes := make(map[string]string)
@@ -86,8 +86,8 @@ func convertSpans(tracesData *otlpv1.TracesData) []*tracepb.Span {
 									attributes[attr.Key] = getStringValue(attr.Value)
 								}
 							}
-							attributes[interceptor.TAG_INSTRUMENT] = instrumentation.InstrumentationLibrary.Name
-							attributes[interceptor.TAG_INSTRUMENT_VERSION] = instrumentation.InstrumentationLibrary.Version
+							attributes[interceptor.TAG_INSTRUMENT] = instrumentation.Scope.Name
+							attributes[interceptor.TAG_INSTRUMENT_VERSION] = instrumentation.Scope.Version
 							attributes[interceptor.TAG_SPAN_KIND] = SpanKind_Name[int32(otlpSpan.Kind)]
 							if resource.Resource != nil && resource.Resource.Attributes != nil {
 								for _, attr := range resource.Resource.Attributes {
@@ -146,9 +146,9 @@ func readBody(req *http.Request) ([]byte, error) {
 		defer func() {
 			_ = r.Close()
 		}()
-		return ioutil.ReadAll(r)
+		return io.ReadAll(r)
 	}
-	return ioutil.ReadAll(req.Body)
+	return io.ReadAll(req.Body)
 }
 
 func getStringValue(value *otlpv11.AnyValue) string {

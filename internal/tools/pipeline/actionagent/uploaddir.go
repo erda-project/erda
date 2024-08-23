@@ -15,7 +15,6 @@
 package actionagent
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -49,7 +48,7 @@ func (agent *Agent) uploadDir() {
 	}
 
 	// 遍历目录
-	files, err := ioutil.ReadDir(agent.EasyUse.ContainerUploadDir)
+	files, err := os.ReadDir(agent.EasyUse.ContainerUploadDir)
 	if err != nil {
 		agent.AppendError(err)
 		return

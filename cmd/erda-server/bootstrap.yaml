@@ -371,7 +371,9 @@ erda.dop.rule.action.dingtalkworknotice: { }
 #erda.core.org: {}
 
 ########### cmp
-cmp: { }
+cmp:
+  # steve cache total size , default 64
+  cache_size: ${CMP_STEVE_CACHE_SIZE:64}
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
   block: false
@@ -411,6 +413,8 @@ etcd-election@project-management-report:
   root_path: "/project-management-report-election"
 etcd-election@efficiency-measure:
   root_path: "/efficiency-measure-election"
+etcd-election@autotest-testplan-provider:
+  root_path: "/autotest-testplan-election"
 cassandra:
   _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"
@@ -592,6 +596,7 @@ erda.msp.resource.deploy.handlers.apigateway:
     http_port: "${DICE_HTTP_PORT}"
     https_port: "${DICE_HTTPS_PORT}"
 erda.msp.resource.deploy.handlers.configcenter:
+erda.msp.resource.deploy.handlers.externalprovider:
 erda.msp.resource.deploy.handlers.etcd:
 erda.msp.resource.deploy.handlers.jvmprofiler:
 erda.msp.resource.deploy.handlers.loganalytics:

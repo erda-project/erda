@@ -856,7 +856,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *cor
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.ResourceRequirements{
+					Resources: corev1.VolumeResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceStorage: resource.MustParse("10Gi"),
 						},
@@ -1055,7 +1055,7 @@ func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, pod
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
 				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-				Resources: corev1.ResourceRequirements{
+				Resources: corev1.VolumeResourceRequirements{
 					Requests: corev1.ResourceList{
 						corev1.ResourceStorage: resource.MustParse(capacity),
 					},
@@ -1579,7 +1579,7 @@ func SetPodContainerLifecycleAndSharedVolumes(podSpec *corev1.PodSpec) {
 		})
 		lifecyclePostStartExecCmd := fmt.Sprintf("mkdir -p /erda/containers/%s && cp /proc/self/cpuset /erda/containers/%s/cpuset", podSpec.Containers[i].Name, podSpec.Containers[i].Name)
 		podSpec.Containers[i].Lifecycle = &corev1.Lifecycle{
-			PostStart: &corev1.Handler{
+			PostStart: &corev1.LifecycleHandler{
 				Exec: &corev1.ExecAction{
 					Command: []string{"sh", "-c", lifecyclePostStartExecCmd},
 				},

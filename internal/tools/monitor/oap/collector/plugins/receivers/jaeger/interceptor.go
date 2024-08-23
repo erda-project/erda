@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -45,7 +45,7 @@ func ThriftDecoder(r *http.Request, entity interface{}) error {
 		return errors.New(fmt.Sprintf("Unsupported content type: %v", html.EscapeString(contentType)))
 	}
 	if spansRequest, ok := entity.(*jaegerpb.PostSpansRequest); ok {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return err
 		}

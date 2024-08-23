@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -662,7 +661,7 @@ func (s *PublishItemService) CreateOffLineVersion(param apistructs.CreateOffLine
 			return "", err
 		}
 		plistFile := "/tmp/" + t + "/install.plist"
-		if err = ioutil.WriteFile(plistFile, []byte(installPlistContent), os.ModePerm); err != nil {
+		if err = os.WriteFile(plistFile, []byte(installPlistContent), os.ModePerm); err != nil {
 			return "", err
 		}
 		defer func() {

@@ -107,7 +107,7 @@ jobs:
     needs: CHECK-CHANGED-FILES
     if: ${{ needs.CHECK-CHANGED-FILES.outputs.have-dbmigration == 'true' }}
     container:
-      image: registry.erda.cloud/erda/gohub:1.0.9.alpha.1
+      image: registry.erda.cloud/erda/gohub:1.0.9
     steps:
       - name: Clone repo
         uses: actions/checkout@v3
@@ -153,7 +153,7 @@ jobs:
           name: pure-coverage
           path: ./coverage/
           search_artifacts: true
-      - name: very quick codecov
+      - name: Generate new codecov.yml
         shell: bash
         run: |
           rm codecov.yml
@@ -164,4 +164,12 @@ jobs:
               patch: off
           EOF
           cat codecov.yml
-          curl -s https://codecov.io/bash | bash -s - -s ./coverage/
+      - name: Verify new codecov.yml
+        run: cat codecov.yml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/
+          fail_ci_if_error: true
+          flags: by-github-actions

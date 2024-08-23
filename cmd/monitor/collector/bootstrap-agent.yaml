@@ -7,6 +7,12 @@ health:
 
 erda.oap.collector.core:
   pipelines:
+    raws:
+      - receivers: [ "erda.oap.collector.receiver.collector" ]
+        processors:
+          - "erda.oap.collector.processor.dropper@application-agent"
+        exporters: [ "erda.oap.collector.exporter.collector@metrics" ]
+
     metrics:
       - receivers:
           #- "erda.oap.collector.receiver.dummy"
@@ -17,6 +23,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@addmeta"
           - "erda.oap.collector.processor.modifier@docker_container_summary"
           - "erda.oap.collector.processor.modifier@mysql"
+          - "erda.oap.collector.processor.modifier@redis"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
         exporters:
@@ -33,6 +40,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@addmeta"
           - "erda.oap.collector.processor.modifier@docker_container_summary"
           - "erda.oap.collector.processor.modifier@mysql"
+          - "erda.oap.collector.processor.modifier@redis"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
         exporters:
@@ -45,6 +53,13 @@ erda.oap.collector.core:
 #  metric_sample: '{"name":"kubelet_cadvisor","timeUnixNano":1640936985459000000,"relations":null,"attributes":{"container":"manager","host_ip":"10.118.177.94","id":"/kubepods/burstable/pod164ec226-8106-4904-9bcb-0218a9b2b793/8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","image":"sha256:6cd7bc0e0855164e7ff495c6ec9a37cf8657f8170fe97055ffba2c63343bcedd","instance":"virtual-kubelet-cn-hangzhou-k","name":"8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","namespace":"default","pod":"elasticsearch-operator-776689d978-mjdzq","pod_name":"elasticsearch-operator-776689d978-mjdzq"},"dataPoints":{"container_cpu_usage_seconds_total":13995.161470334,"container_memory_max_usage_bytes":273977344}}'
 
 erda.oap.collector.receiver.prometheus-remote-write@default:
+
+erda.oap.collector.receiver.collector:
+  auth:
+    username: "${COLLECTOR_AUTH_USERNAME:collector}"
+    password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
+    force: ${COLLECTOR_AUTH_FORCE:false}
+    skip: ${COLLECTOR_AUTH_SKIP:true}
 
 erda.oap.collector.receiver.prometheus-remote-write@external_metrics:
   remote_write_url: "${EXTERNAL_METRIC_REMOTE_WRITE_URL:/api/v1/external-prometheus-remote-write}"
@@ -245,7 +260,7 @@ erda.oap.collector.processor.modifier@mysql:
     name: [ "mysql" ]
   rules:
     - action: rename
-      key: tags.service
+      key: tags.pod
       value: tags.server
 
     - action: rename
@@ -305,6 +320,57 @@ erda.oap.collector.processor.modifier@mysql:
     - action: rename
       key: fields.mysql_global_status_table_locks_waited
       value: fields.table_locks_waite
+
+erda.oap.collector.processor.modifier@redis:
+  keypass:
+    name: [ "redis" ]
+  rules:
+    - action: rename
+      key: fields.redis_connected_clients
+      value: fields.clients
+    - action: rename
+      key: fields.redis_commands_duration_seconds_total
+      value: fields.instantaneous_ops_per_sec
+    - action: rename
+      key: fields.redis_pubsub_channels
+      value: fields.pubsub_channels
+    - action: rename
+      key: fields.redis_pubsub_patterns
+      value: fields.pubsub_patterns
+    - action: rename
+      key: fields.redis_connected_slaves
+      value: fields.connected_slaves
+    - action: rename
+      key: fields.redis_blocked_clients
+      value: fields.blocked_clients
+    - action: rename
+      key: fields.redis_mem_fragmentation_ratio
+      value: fields.mem_fragmentation_ratio
+    - action: rename
+      key: fields.redis_memory_used_bytes
+      value: fields.used_memory
+    - action: rename
+      key: fields.redis_memory_used_peak_bytes
+      value: fields.used_memory_peak
+    - action: rename
+      key: fields.redis_memory_used_rss_bytes
+      value: fields.used_memory_rss
+    - action: rename
+      key: fields.redis_memory_used_lua_bytes
+      value: fields.used_memory_lua
+    - action: rename
+      key: fields.redis_cpu_sys_seconds_total
+      value: fields.used_cpu_sys
+    - action: rename
+      key: fields.redis_cpu_user_seconds_total
+      value: fields.used_cpu_user
+    - action: rename
+      key: fields.redis_cpu_sys_children_seconds_total
+      value: fields.used_cpu_sys_children
+    - action: rename
+      key: fields.redis_cpu_user_children_seconds_total
+      value: fields.used_cpu_user_children
+
 
 erda.oap.collector.processor.aggregator@cpu-usage:
   keypass:
@@ -372,6 +438,9 @@ erda.oap.collector.exporter.collector@external_metrics:
     content-type: "application/json; charset=UTF-8"
     content-encoding: "gzip"
     x-erda-cluster-key: ${DICE_CLUSTER_NAME}
+
+erda.oap.collector.processor.dropper@application-agent:
+  metric_prefix: ${APPLICATION_AGENT_DROP_PREFIX}
 
 # ************* exporters *************
 

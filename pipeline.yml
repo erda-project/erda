@@ -48,7 +48,7 @@ stages:
   - stage:
       - custom-script:
           alias: erda
-          image: registry.erda.cloud/erda/gohub:1.0.9.alpha.1
+          image: registry.erda.cloud/erda/gohub:1.0.9
           commands:
             - cp -a ${{ dirs.raw-erda }}/. .
             - make proto-go-in-local
@@ -62,7 +62,7 @@ stages:
   - stage:
       - custom-script:
           alias: build-erda
-          image: registry.erda.cloud/erda-actions/custom-script:2.0
+          image: registry.erda.cloud/erda-actions/custom-script:2.1
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions
@@ -86,7 +86,7 @@ stages:
           timeout: 14400
       - custom-script:
           alias: build-erda-cli
-          image: registry.erda.cloud/erda-actions/custom-script:2.0
+          image: registry.erda.cloud/erda-actions/custom-script:2.1
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -105,7 +105,7 @@ stages:
           timeout: 7200
       - custom-script:
           alias: build-cluster-agent
-          image: registry.erda.cloud/erda-actions/custom-script:2.0
+          image: registry.erda.cloud/erda-actions/custom-script:2.1
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -122,7 +122,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-monitor-injector
-          image: registry.erda.cloud/erda-actions/custom-script:2.0
+          image: registry.erda.cloud/erda-actions/custom-script:2.1
           commands:
             - cd ${{ dirs.erda-java-extensions }}
             - mkdir -p /root/.m2 && cp maven-settings-template.xml /root/.m2/settings.xml
@@ -135,7 +135,7 @@ stages:
             mem: 1024
       - custom-script:
           alias: build-diagnotor-agent
-          image: registry.erda.cloud/erda-actions/custom-script:2.0
+          image: registry.erda.cloud/erda-actions/custom-script:2.1
           commands:
             - cd ${{ dirs.erda }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
@@ -146,7 +146,7 @@ stages:
           disable: true
       - custom-script:
           alias: build-erda-cli-linux
-          image: registry.erda.cloud/erda/erda-base:20240606
+          image: registry.erda.cloud/erda/erda-base:20240607
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)
@@ -164,7 +164,7 @@ stages:
             mem: 2048
       - custom-script:
           alias: build-erda-cli-mac
-          image: registry.erda.cloud/erda/erda-base:20240606
+          image: registry.erda.cloud/erda/erda-base:20240607
           description: 运行自定义命令
           commands:
             - workDir=$(pwd)

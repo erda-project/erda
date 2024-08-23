@@ -17,7 +17,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"os"
 	"strconv"
 
@@ -43,7 +42,7 @@ func main() {
 func readConfig(path string) *actionrunner.Conf {
 	var conf actionrunner.Conf
 	if len(path) > 0 {
-		byts, err := ioutil.ReadFile(path)
+		byts, err := os.ReadFile(path)
 		if err != nil {
 			logrus.Error(err)
 			os.Exit(-1)
@@ -54,11 +53,16 @@ func readConfig(path string) *actionrunner.Conf {
 			os.Exit(-1)
 		}
 	}
+	// check org ids
+	if len(conf.OrgIDs) == 0 {
+		logrus.Error("org_ids could not be empty in config.json, format: [1, 2]")
+		os.Exit(-1)
+	}
 	conf.BuildPath = getEnv("BUILD_ROOT_PATH", conf.BuildPath)
 	if len(conf.BuildPath) <= 0 {
 		conf.BuildPath = os.TempDir()
 	}
-	conf.OpenAPI = getEnv("OPENAPI_UEL", conf.OpenAPI)
+	conf.OpenAPI = getEnv("OPENAPI_URL", conf.OpenAPI)
 	conf.Token = getEnv("TOKEN", conf.Token)
 	if conf.MaxTask < 1 {
 		conf.MaxTask = 1

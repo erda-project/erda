@@ -25,7 +25,7 @@ stages:
       - custom-script:
           alias: erda
           description: 运行自定义命令
-          image: registry.erda.cloud/erda/gohub:1.0.9.alpha.1
+          image: registry.erda.cloud/erda/gohub:1.0.9
           commands:
             - cp -a ${{ dirs.raw-erda }}/. .
             - make proto-go-in-local
@@ -42,7 +42,7 @@ stages:
       - custom-script:
           alias: build-erda
           description: 运行自定义命令
-          image: registry.erda.cloud/erda/erda-base:20240606
+          image: registry.erda.cloud/erda/erda-base:20240607
           commands:
             - cd ${{ dirs.erda }}
             - mkdir -p extensions

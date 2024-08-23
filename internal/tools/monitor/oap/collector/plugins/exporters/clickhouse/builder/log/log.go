@@ -94,7 +94,7 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*log.Log) ([]driver
 			return nil, fmt.Errorf("cannot get tenant table: %w", err)
 		}
 		if _, ok := tableBatch[table]; !ok {
-			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table)
+			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table, driver.WithReleaseConnection())
 			if err != nil {
 				return nil, err
 			}

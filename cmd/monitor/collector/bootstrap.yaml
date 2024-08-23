@@ -18,6 +18,8 @@ erda.oap.collector.core:
   pipelines:
     raws:
       - receivers: [ "erda.oap.collector.receiver.collector" ]
+        processors:
+          - "erda.oap.collector.processor.dropper@application-agent"
         exporters: [ "erda.oap.collector.exporter.kafka@collector" ]
 
       - receivers:
@@ -37,6 +39,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@addmeta"
           - "erda.oap.collector.processor.modifier@docker_container_summary"
           - "erda.oap.collector.processor.modifier@mysql"
+          - "erda.oap.collector.processor.modifier@redis"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
           - "erda.oap.collector.processor.aggregator@rx_bytes_usage"
@@ -55,6 +58,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@addmeta"
           - "erda.oap.collector.processor.modifier@docker_container_summary"
           - "erda.oap.collector.processor.modifier@mysql"
+          - "erda.oap.collector.processor.modifier@redis"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
         exporters:
@@ -281,7 +285,7 @@ erda.oap.collector.processor.modifier@mysql:
     name: [ "mysql" ]
   rules:
     - action: rename
-      key: tags.service
+      key: tags.pod
       value: tags.server
 
     - action: rename
@@ -341,6 +345,56 @@ erda.oap.collector.processor.modifier@mysql:
     - action: rename
       key: fields.mysql_global_status_table_locks_waited
       value: fields.table_locks_waited
+
+erda.oap.collector.processor.modifier@redis:
+  keypass:
+    name: [ "redis" ]
+  rules:
+    - action: rename
+      key: fields.redis_connected_clients
+      value: fields.clients
+    - action: rename
+      key: fields.redis_commands_duration_seconds_total
+      value: fields.instantaneous_ops_per_sec
+    - action: rename
+      key: fields.redis_pubsub_channels
+      value: fields.pubsub_channels
+    - action: rename
+      key: fields.redis_pubsub_patterns
+      value: fields.pubsub_patterns
+    - action: rename
+      key: fields.redis_connected_slaves
+      value: fields.connected_slaves
+    - action: rename
+      key: fields.redis_blocked_clients
+      value: fields.blocked_clients
+    - action: rename
+      key: fields.redis_mem_fragmentation_ratio
+      value: fields.mem_fragmentation_ratio
+    - action: rename
+      key: fields.redis_memory_used_bytes
+      value: fields.used_memory
+    - action: rename
+      key: fields.redis_memory_used_peak_bytes
+      value: fields.used_memory_peak
+    - action: rename
+      key: fields.redis_memory_used_rss_bytes
+      value: fields.used_memory_rss
+    - action: rename
+      key: fields.redis_memory_used_lua_bytes
+      value: fields.used_memory_lua
+    - action: rename
+      key: fields.redis_cpu_sys_seconds_total
+      value: fields.used_cpu_sys
+    - action: rename
+      key: fields.redis_cpu_user_seconds_total
+      value: fields.used_cpu_user
+    - action: rename
+      key: fields.redis_cpu_sys_children_seconds_total
+      value: fields.used_cpu_sys_children
+    - action: rename
+      key: fields.redis_cpu_user_children_seconds_total
+      value: fields.used_cpu_user_children
 
 
 erda.oap.collector.processor.aggregator@cpu-usage:
@@ -434,6 +488,8 @@ erda.oap.collector.processor.aggregator@mem-percent:
       target_key: "mem_usage_percent"
 
 # ************* processors *************
+erda.oap.collector.processor.dropper@application-agent:
+  metric_prefix: ${APPLICATION_AGENT_DROP_PREFIX}
 
 # ************* processors *************
 
@@ -442,6 +498,7 @@ erda.oap.collector.exporter.stdout:
 
 erda.oap.collector.exporter.kafka@collector:
   metadata_key_of_topic: "KAFKA-TOPIC"
+  produce_raw_with_key: ${COLLECTOR_KAFKA_PRODUCE_RAW_WITH_KEY:false}
 
 erda.oap.collector.exporter.kafka@spot-metrics:
   topic: "spot-metrics"

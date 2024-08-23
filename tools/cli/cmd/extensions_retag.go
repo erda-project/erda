@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -87,7 +86,7 @@ func RunExtensionsReTag(ctx *command.Context, dir string, registry string, outpu
 			}
 		}
 	}
-	err := ioutil.WriteFile(output, []byte(outTxt), os.ModePerm)
+	err := os.WriteFile(output, []byte(outTxt), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -118,7 +117,7 @@ func GetExtMetas(dir string) []ExtensionInfo {
 				Path: relPath,
 			}
 			if checkPath(specFile) == nil {
-				specBytes, err := ioutil.ReadFile(specFile)
+				specBytes, err := os.ReadFile(specFile)
 				if err != nil {
 					ext.SpecErr = err
 				}
@@ -130,7 +129,7 @@ func GetExtMetas(dir string) []ExtensionInfo {
 				ext.Spec = spec
 
 				if checkPath(diceFile) == nil {
-					diceBytes, err := ioutil.ReadFile(diceFile)
+					diceBytes, err := os.ReadFile(diceFile)
 					if err != nil {
 						ext.DiceErr = errors.Wrap(err, "failed to read dice "+diceFile)
 					}

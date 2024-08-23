@@ -17,7 +17,7 @@ package endpoints
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -82,7 +82,7 @@ func (e *Endpoints) UploadImage(ctx context.Context, r *http.Request, vars map[s
 	}
 
 	// 上传文件至网盘
-	fileBytes, err := ioutil.ReadAll(file)
+	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		return apierrors.ErrUploadImage.InternalError(err).ToResp(), nil
 	}
@@ -109,7 +109,7 @@ func GetImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	filename := strutil.Concat("/", avatarPrefix, "/", vars["imageName"])
-	fileBytes, err := ioutil.ReadFile(filename)
+	fileBytes, err := os.ReadFile(filename)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return

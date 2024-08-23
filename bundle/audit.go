@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 
 	"github.com/erda-project/erda-proto-go/core/file/pb"
@@ -131,7 +130,7 @@ func (b *Bundle) ExportAuditExcel(orgID, userID, lang string, params url.Values)
 		return nil, nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() {
-		bodyBytes, _ := ioutil.ReadAll(respBody)
+		bodyBytes, _ := io.ReadAll(respBody)
 		var downloadResp pb.FileDownloadFailResponse
 		if err := json.Unmarshal(bodyBytes, &downloadResp); err == nil {
 			return nil, nil, toPbAPIError(resp.StatusCode(), downloadResp.Error)

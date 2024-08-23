@@ -17,7 +17,7 @@ package query
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -133,11 +133,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						}
 					}
 					if statement != nil {
-						body, err := ioutil.ReadAll(r.Body)
+						body, err := io.ReadAll(r.Body)
 						if err != nil {
 							return errors.NewInvalidParameterError("statement", err.Error())
 						}
-						r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+						r.Body = io.NopCloser(bytes.NewBuffer(body))
 						*statement = string(body)
 						if len(*statement) > 0 {
 							if _, ok := data.(*pb.QueryWithTableFormatRequest); ok {

@@ -25,7 +25,7 @@
   attr                                   1:2.5.1-4                       deb      
   audit                                  1:3.0.9-1                       deb      
   balanced-match                         1.0.2                           npm      
-  base-files                             12.4+deb12u1                    deb      
+  base-files                             12.4+deb12u5                    deb      
   base-passwd                            3.6.1                           deb      
   bash                                   5.2.15-2+b2                     deb      
   bin-links                              4.0.3                           npm      
@@ -35,7 +35,7 @@
   binutils-common                        2.40-2                          deb      
   brace-expansion                        2.0.1                           npm      
   brotli                                 1.0.9-2                         deb      
-  bsdutils                               1:2.38.1-5+b1                   deb      
+  bsdutils                               1:2.38.1-5+deb12u1              deb      
   buildid                                (devel)                         golang   
   builtins                               5.1.0                           npm      
   bundle                                 2.3.1                           npm      
@@ -64,6 +64,7 @@
   core                                   1.1.0                           npm      
   corepack                               0.28.1                          npm      
   coreutils                              9.1-1                           deb      
+  covdata                                (devel)                         golang   
   cover                                  (devel)                         golang   
   cpp                                    4:12.2.0-3                      deb      
   cpp-12                                 12.2.0-14                       deb      
@@ -76,13 +77,12 @@
   dav1d                                  1.0.0-2+deb12u1                 deb      
   db5.3                                  5.3.28+dfsg2-1                  deb      
   debconf                                1.5.82                          deb      
-  debian-archive-keyring                 2023.3                          deb      
-  debianutils                            5.7-0.4                         deb      
+  debian-archive-keyring                 2023.3+deb12u1                  deb      
+  debianutils                            5.7-0.5~deb12u1                 deb      
   debug                                  4.3.4                           npm      
   diff                                   5.2.0                           npm      
   diffutils                              1:3.8-4                         deb      
   dirmngr                                2.2.40-1.1                      deb      
-  dist                                   (devel)                         golang   
   doc                                    (devel)                         golang   
   docker-ce                              5:26.1.4-1~debian.12~bookworm   deb      
   docker-ce-cli                          5:26.1.4-1~debian.12~bookworm   deb      
@@ -90,8 +90,8 @@
   e2fsprogs                              1.47.0-2                        deb      
   eastasianwidth                         0.2.0                           npm      
   elfutils                               0.188-2.1                       deb      
-  emoji-regex                            8.0.0                           npm      
   emoji-regex                            9.2.2                           npm      
+  emoji-regex                            8.0.0                           npm      
   encoding                               0.1.13                          npm      
   env-paths                              2.2.1                           npm      
   err-code                               2.0.3                           npm      
@@ -107,8 +107,8 @@
   foreground-child                       3.1.1                           npm      
   freetype                               2.12.1+dfsg-5                   deb      
   fs                                     3.1.0                           npm      
-  fs-minipass                            2.1.0                           npm      
   fs-minipass                            3.0.3                           npm      
+  fs-minipass                            2.1.0                           npm      
   function-bind                          1.1.2                           npm      
   g++                                    4:12.2.0-3                      deb      
   g++-12                                 12.2.0-14                       deb      
@@ -119,17 +119,17 @@
   gdbm                                   1.23-3                          deb      
   geoip                                  1.6.12-10                       deb      
   git                                    1:2.39.2-1.1                    deb      
-  git                                    5.0.6                           npm      
   git                                    2.45.2-0                        bitnami  
+  git                                    5.0.6                           npm      
   git-man                                1:2.39.2-1.1                    deb      
-  glibc                                  2.36-9+deb12u1                  deb      
+  glibc                                  2.36-9+deb12u7                  deb      
   glob                                   10.3.12                         npm      
   gmp                                    2:6.2.1+dfsg1-1.1               deb      
   gnupg                                  2.2.40-1.1                      deb      
   gnupg-l10n                             2.2.40-1.1                      deb      
   gnupg-utils                            2.2.40-1.1                      deb      
   gnupg2                                 2.2.40-1.1                      deb      
-  gnutls28                               3.7.9-2                         deb      
+  gnutls28                               3.7.9-2+deb12u2                 deb      
   go                                     (devel)                         golang   
   gofmt                                  (devel)                         golang   
   gpg                                    2.2.40-1.1                      deb      
@@ -168,7 +168,7 @@
   is-lambda                              1.0.1                           npm      
   isexe                                  2.0.0                           npm      
   isexe                                  3.1.1                           npm      
-  isl                                    0.25-1                          deb      
+  isl                                    0.25-1.1                        deb      
   jackspeak                              2.3.6                           npm      
   jansson                                2.14-2                          deb      
   jbigkit                                2.1-6.1                         deb      
@@ -180,7 +180,7 @@
   just-diff                              6.0.2                           npm      
   just-diff-apply                        5.5.0                           npm      
   keyutils                               1.6.3-2                         deb      
-  krb5                                   1.20.1-2                        deb      
+  krb5                                   1.20.1-2+deb12u1                deb      
   lerc                                   4.0.0+ds-2                      deb      
   libabsl20220623                        20220623.1-1                    deb      
   libacl1                                2.3.1-3                         deb      
@@ -200,17 +200,17 @@
   libavif                                0.11.1-1                        deb      
   libavif15                              0.11.1-1                        deb      
   libbinutils                            2.40-2                          deb      
-  libblkid1                              2.38.1-5+b1                     deb      
+  libblkid1                              2.38.1-5+deb12u1                deb      
   libbpf                                 1.1.0-1                         deb      
   libbpf1                                1:1.1.0-1                       deb      
   libbrotli1                             1.0.9-2+b6                      deb      
   libbsd                                 0.11.7-2                        deb      
   libbsd0                                0.11.7-2                        deb      
   libbz2-1.0                             1.0.8-5+b1                      deb      
-  libc-bin                               2.36-9+deb12u1                  deb      
-  libc-dev-bin                           2.36-9+deb12u1                  deb      
-  libc6                                  2.36-9+deb12u1                  deb      
-  libc6-dev                              2.36-9+deb12u1                  deb      
+  libc-bin                               2.36-9+deb12u7                  deb      
+  libc-dev-bin                           2.36-9+deb12u7                  deb      
+  libc6                                  2.36-9+deb12u7                  deb      
+  libc6-dev                              2.36-9+deb12u7                  deb      
   libcap-ng                              0.8.3-1                         deb      
   libcap-ng0                             0.8.3-1+b3                      deb      
   libcap2                                1:2.66-4                        deb      
@@ -256,13 +256,13 @@
   libgeoip1                              1.6.12-10                       deb      
   libgit2                                1.3.2                           npm      
   libgmp10                               2:6.2.1+dfsg1-1.1               deb      
-  libgnutls30                            3.7.9-2                         deb      
+  libgnutls30                            3.7.9-2+deb12u2                 deb      
   libgomp1                               12.2.0-14                       deb      
   libgpg-error                           1.46-1                          deb      
   libgpg-error0                          1.46-1                          deb      
   libgpm2                                1.20.7-10+b1                    deb      
   libgprofng0                            2.40-2                          deb      
-  libgssapi-krb5-2                       1.20.1-2                        deb      
+  libgssapi-krb5-2                       1.20.1-2+deb12u1                deb      
   libheif                                1.15.1-1                        deb      
   libheif1                               1.15.1-1                        deb      
   libhogweed6                            3.8.1-2                         deb      
@@ -270,7 +270,7 @@
   libicu72                               72.1-3                          deb      
   libidn2                                2.3.3-1                         deb      
   libidn2-0                              2.3.3-1+b1                      deb      
-  libisl23                               0.25-1                          deb      
+  libisl23                               0.25-1.1                        deb      
   libitm1                                12.2.0-14                       deb      
   libjansson4                            2.14-2                          deb      
   libjbig0                               2.1-6.1                         deb      
@@ -279,10 +279,10 @@
   libjq1                                 1.6-2.1                         deb      
   libjsoncpp                             1.9.5-4                         deb      
   libjsoncpp25                           1.9.5-4                         deb      
-  libk5crypto3                           1.20.1-2                        deb      
+  libk5crypto3                           1.20.1-2+deb12u1                deb      
   libkeyutils1                           1.6.3-2                         deb      
-  libkrb5-3                              1.20.1-2                        deb      
-  libkrb5support0                        1.20.1-2                        deb      
+  libkrb5-3                              1.20.1-2+deb12u1                deb      
+  libkrb5support0                        1.20.1-2+deb12u1                deb      
   libksba                                1.6.3-2                         deb      
   libksba8                               1.6.3-2                         deb      
   libldap-2.5-0                          2.5.13+dfsg-5                   deb      
@@ -298,12 +298,12 @@
   libmd0                                 1.0.4-2                         deb      
   libmnl                                 1.0.4-3                         deb      
   libmnl0                                1.0.4-3                         deb      
-  libmount1                              2.38.1-5+b1                     deb      
+  libmount1                              2.38.1-5+deb12u1                deb      
   libmpc3                                1.3.1-1                         deb      
   libmpfr6                               4.2.0-1                         deb      
   libncursesw6                           6.4-4                           deb      
   libnettle8                             3.8.1-2                         deb      
-  libnghttp2-14                          1.52.0-1                        deb      
+  libnghttp2-14                          1.52.0-1+deb12u1                deb      
   libnginx-mod-http-auth-pam             1:1.5.3-3                       deb      
   libnginx-mod-http-cache-purge          1:2.3-4                         deb      
   libnginx-mod-http-dav-ext              1:3.0.0-3                       deb      
@@ -344,13 +344,13 @@
   libonig                                6.9.8-1                         deb      
   libonig5                               6.9.8-1                         deb      
   libp11-kit0                            0.24.1-2                        deb      
-  libpam-modules                         1.5.2-6                         deb      
-  libpam-modules-bin                     1.5.2-6                         deb      
-  libpam-runtime                         1.5.2-6                         deb      
-  libpam0g                               1.5.2-6                         deb      
+  libpam-modules                         1.5.2-6+deb12u1                 deb      
+  libpam-modules-bin                     1.5.2-6+deb12u1                 deb      
+  libpam-runtime                         1.5.2-6+deb12u1                 deb      
+  libpam0g                               1.5.2-6+deb12u1                 deb      
   libpcre2-8-0                           10.42-1                         deb      
   libpcre3                               2:8.39-15                       deb      
-  libperl5.36                            5.36.0-7                        deb      
+  libperl5.36                            5.36.0-7+deb12u1                deb      
   libpkgconf3                            1.8.1-1                         deb      
   libpng1.6                              1.6.39-2                        deb      
   libpng16-16                            1.6.39-2                        deb      
@@ -380,7 +380,7 @@
   libsepol                               3.4-2.1                         deb      
   libsepol2                              3.4-2.1                         deb      
   libserf-1-1                            1.3.9-11                        deb      
-  libsmartcols1                          2.38.1-5+b1                     deb      
+  libsmartcols1                          2.38.1-5+deb12u1                deb      
   libsodium                              1.0.18-1                        deb      
   libsodium23                            1.0.18-1                        deb      
   libsqlite3-0                           3.40.1-2                        deb      
@@ -393,7 +393,7 @@
   libstdc++6                             12.2.0-14                       deb      
   libsvn1                                1.14.2-4+b2                     deb      
   libsvtav1enc1                          1.4.1+dfsg-1                    deb      
-  libsystemd0                            252.12-1~deb12u1                deb      
+  libsystemd0                            252.22-1~deb12u1                deb      
   libtasn1-6                             4.19.0-2                        deb      
   libtiff6                               4.5.0-6+deb12u1                 deb      
   libtinfo6                              6.4-4                           deb      
@@ -403,11 +403,11 @@
   libtirpc3                              1.3.3+ds-1                      deb      
   libtsan2                               12.2.0-14                       deb      
   libubsan1                              12.2.0-14                       deb      
-  libudev1                               252.12-1~deb12u1                deb      
+  libudev1                               252.22-1~deb12u1                deb      
   libunistring                           1.0-2                           deb      
   libunistring2                          1.0-2                           deb      
   libutf8proc2                           2.8.0-1                         deb      
-  libuuid1                               2.38.1-5+b1                     deb      
+  libuuid1                               2.38.1-5+deb12u1                deb      
   libuv1                                 1.44.2-1+deb12u1                deb      
   libwebp                                1.2.4-0.2+deb12u1               deb      
   libwebp7                               1.2.4-0.2+deb12u1               deb      
@@ -434,8 +434,8 @@
   libzstd                                1.5.4+dfsg2-5                   deb      
   libzstd1                               1.5.4+dfsg2-5                   deb      
   link                                   (devel)                         golang   
-  linux                                  6.1.38-4                        deb      
-  linux-libc-dev                         6.1.38-4                        deb      
+  linux                                  6.1.90-1                        deb      
+  linux-libc-dev                         6.1.90-1                        deb      
   login                                  1:4.13+dfsg1-1+b1               deb      
   logsave                                1.47.0-2                        deb      
   lru-cache                              10.2.2                          npm      
@@ -457,9 +457,9 @@
   mercurial-common                       6.3.2-1                         deb      
   metavuln-calculator                    7.1.0                           npm      
   minimatch                              9.0.4                           npm      
+  minipass                               7.0.4                           npm      
   minipass                               5.0.0                           npm      
   minipass                               3.3.6                           npm      
-  minipass                               7.0.4                           npm      
   minipass-collect                       2.0.1                           npm      
   minipass-fetch                         3.0.4                           npm      
   minipass-flush                         1.0.5                           npm      
@@ -469,7 +469,7 @@
   minizlib                               2.1.2                           npm      
   mkdirp                                 1.0.4                           npm      
   models                                 2.0.0                           npm      
-  mount                                  2.38.1-5+b1                     deb      
+  mount                                  2.38.1-5+deb12u1                deb      
   mpclib3                                1.3.1-1                         deb      
   mpfr4                                  4.2.0-1                         deb      
   ms                                     2.1.2                           npm      
@@ -483,7 +483,7 @@
   net-tools                              2.10-0.1                        deb      
   netbase                                6.4                             deb      
   nettle                                 3.8.1-2                         deb      
-  nghttp2                                1.52.0-1                        deb      
+  nghttp2                                1.52.0-1+deb12u1                deb      
   nginx                                  1.22.1-9                        deb      
   nginx-common                           1.22.1-9                        deb      
   nginx-extras                           1.22.1-9                        deb      
@@ -509,15 +509,15 @@
   numactl                                2.0.16-1                        deb      
   objdump                                (devel)                         golang   
   openldap                               2.5.13+dfsg-5                   deb      
-  openssh                                1:9.2p1-2                       deb      
-  openssh-client                         1:9.2p1-2                       deb      
+  openssh                                1:9.2p1-2+deb12u2               deb      
+  openssh-client                         1:9.2p1-2+deb12u2               deb      
   openssl                                3.0.11-1~deb12u2                deb      
   p-map                                  4.0.0                           npm      
   p11-kit                                0.24.1-2                        deb      
   pack                                   (devel)                         golang   
   package-json                           5.1.0                           npm      
   pacote                                 18.0.3                          npm      
-  pam                                    1.5.2-6                         deb      
+  pam                                    1.5.2-6+deb12u1                 deb      
   parse-conflict-json                    3.0.1                           npm      
   parseargs                              0.11.0                          npm      
   passwd                                 1:4.13+dfsg1-1+b1               deb      
@@ -525,9 +525,9 @@
   path-scurry                            1.10.2                          npm      
   pcre2                                  10.42-1                         deb      
   pcre3                                  2:8.39-15                       deb      
-  perl                                   5.36.0-7                        deb      
-  perl-base                              5.36.0-7                        deb      
-  perl-modules-5.36                      5.36.0-7                        deb      
+  perl                                   5.36.0-7+deb12u1                deb      
+  perl-base                              5.36.0-7+deb12u1                deb      
+  perl-modules-5.36                      5.36.0-7+deb12u1                deb      
   pinentry                               1.2.1-1                         deb      
   pinentry-curses                        1.2.1-1                         deb      
   pip                                    23.0.1                          pypi     
@@ -536,8 +536,8 @@
   pkgconf-bin                            1.8.1-1                         deb      
   postcss-selector-parser                6.0.16                          npm      
   pprof                                  (devel)                         golang   
-  proc-log                               4.2.0                           npm      
   proc-log                               3.0.0                           npm      
+  proc-log                               4.2.0                           npm      
   procps                                 2:4.0.2-3                       deb      
   proggy                                 2.0.0                           npm      
   promise-all-reject-late                1.0.1                           npm      
@@ -600,24 +600,24 @@
   sq                                     0.27.0-2+b1                     deb      
   sqlite3                                3.40.1-2                        deb      
   ssri                                   10.0.5                          npm      
-  stdlib                                 1.21.11                         golang   
+  stdlib                                 1.22.4                          golang   
   stdlib                                 go1.21.11                       golang   
-  stdlib                                 1.19.13                         golang   
-  stdlib                                 go1.19.13                       golang   
+  stdlib                                 go1.22.4                        golang   
+  stdlib                                 1.21.11                         golang   
   string-locale-compare                  1.1.0                           npm      
   string-width                           4.2.3                           npm      
   string-width                           5.1.2                           npm      
-  strip-ansi                             7.1.0                           npm      
   strip-ansi                             6.0.1                           npm      
+  strip-ansi                             7.1.0                           npm      
   subversion                             1.14.2-4+b2                     deb      
   subversion                             1.14.2-4                        deb      
   supports-color                         9.4.0                           npm      
   svt-av1                                1.4.1+dfsg-1                    deb      
-  systemd                                252.12-1~deb12u1                deb      
+  systemd                                252.22-1~deb12u1                deb      
   sysvinit                               3.06-4                          deb      
   sysvinit-utils                         3.06-4                          deb      
-  tar                                    1.34+dfsg-1.2                   deb      
   tar                                    6.2.1                           npm      
+  tar                                    1.34+dfsg-1.2+deb12u1           deb      
   test2json                              (devel)                         golang   
   text-table                             0.2.0                           npm      
   tiff                                   4.5.0-6+deb12u1                 deb      
@@ -626,17 +626,16 @@
   treeverse                              3.0.0                           npm      
   tuf                                    2.3.2                           npm      
   tuf-js                                 2.2.0                           npm      
-  tzdata                                 2023c-5                         deb      
+  tzdata                                 2024a-0+deb12u1                 deb      
   ucf                                    3.0043+nmu1                     deb      
   unique-filename                        3.0.0                           npm      
   unique-slug                            4.0.0                           npm      
-  usr-is-merged                          35                              deb      
-  usrmerge                               35                              deb      
+  usr-is-merged                          37~deb12u1                      deb      
+  usrmerge                               37~deb12u1                      deb      
   utf8proc                               2.8.0-1                         deb      
   util-deprecate                         1.0.2                           npm      
-  util-linux                             2.38.1-5+b1                     deb      
-  util-linux                             2.38.1-5                        deb      
-  util-linux-extra                       2.38.1-5+b1                     deb      
+  util-linux                             2.38.1-5+deb12u1                deb      
+  util-linux-extra                       2.38.1-5+deb12u1                deb      
   validate-npm-package-license           3.0.4                           npm      
   validate-npm-package-name              5.0.0                           npm      
   verify                                 1.2.0                           npm      

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azure_director
+package openai_director
 
 import (
 	"context"
@@ -25,7 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sashabaranov/go-openai"
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -198,13 +197,13 @@ func (f *OpenaiDirector) AddModelInRequestBody(ctx context.Context) error {
 		// read body to json, then add a `model` field, then write back to body
 		var body map[string]interface{}
 		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&body); err != nil && err != io.EOF {
-			logrus.Errorf("failed to decode request body, err: %v", err)
+			ctxhelper.GetLogger(ctx).Errorf("failed to decode request body, err: %v", err)
 			return
 		}
 		body["model"] = model.Name
 		b, err := json.Marshal(body)
 		if err != nil {
-			logrus.Errorf("failed to marshal request body, err: %v", err)
+			ctxhelper.GetLogger(ctx).Errorf("failed to marshal request body, err: %v", err)
 			return
 		}
 		infor.SetBody(io.NopCloser(strings.NewReader(string(b))), int64(len(b)))
@@ -221,13 +220,13 @@ func (f *OpenaiDirector) AddContextMessages(ctx context.Context) error {
 		infor := reverseproxy.NewInfor(ctx, req)
 		var openaiReq openai.ChatCompletionRequest
 		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&openaiReq); err != nil && err != io.EOF {
-			logrus.Errorf("failed to decode request body, err: %v", err)
+			ctxhelper.GetLogger(ctx).Errorf("failed to decode request body, err: %v", err)
 			return
 		}
 		openaiReq.Messages = messageGroup.AllMessages
 		b, err := json.Marshal(&openaiReq)
 		if err != nil {
-			logrus.Errorf("failed to marshal request body, err: %v", err)
+			ctxhelper.GetLogger(ctx).Errorf("failed to marshal request body, err: %v", err)
 			return
 		}
 		infor.SetBody(io.NopCloser(strings.NewReader(string(b))), int64(len(b)))

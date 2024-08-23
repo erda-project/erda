@@ -19,7 +19,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"time"
 	"unsafe"
@@ -104,7 +103,7 @@ func gzipContent(content string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(reader)
+	return io.ReadAll(reader)
 }
 
 func compressWithPipe(reader io.Reader) (io.Reader, error) {
@@ -128,7 +127,7 @@ func gzipContentV2(content string, reusedWriter *gzip.Writer) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(reader)
+	return io.ReadAll(reader)
 }
 
 func compressWithPipeV2(reader io.Reader, reusedWriter *gzip.Writer) (io.Reader, error) {

@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.2
+# syntax = registry.erda.cloud/retag/dockerfile:latest
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE} as build
 

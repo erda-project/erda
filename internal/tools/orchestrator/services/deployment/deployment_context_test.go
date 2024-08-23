@@ -15,7 +15,6 @@
 package deployment
 
 import (
-	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
@@ -364,7 +363,7 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 		d: &log.DeployLogHelper{},
 	}
 	if len(specPath) > 0 {
-		b, err := ioutil.ReadFile(specPath[0])
+		b, err := os.ReadFile(specPath[0])
 		if err != nil {
 			panic(err)
 		}

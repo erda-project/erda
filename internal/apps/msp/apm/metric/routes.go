@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -171,8 +171,8 @@ func (p *provider) getMetricFromSQL(r *http.Request) (metric string) {
 		return strings.TrimSpace(getMetricFromSQL(q))
 	} else {
 		if params.Get("ql") == "influxql:ast" {
-			byts, err := ioutil.ReadAll(r.Body)
-			r.Body = ioutil.NopCloser(bytes.NewReader(byts))
+			byts, err := io.ReadAll(r.Body)
+			r.Body = io.NopCloser(bytes.NewReader(byts))
 			if err == nil {
 				var body struct {
 					From []string `json:"from"`

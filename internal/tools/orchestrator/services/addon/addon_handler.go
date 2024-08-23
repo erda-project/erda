@@ -49,6 +49,7 @@ import (
 
 const (
 	AddonTypeDoseNoExist           = "AddonTypeDoseNoExist"
+	NoRegisterCenterFound          = "NoRegisterCenterFound"
 	AddonVersionDoseNoExist        = "AddonVersionDoseNoExist"
 	AddonDefaultVersionDoseNoExist = "AddonDefaultVersionDoseNoExist"
 	AddonPlanIllegal               = "AddonPlanIllegal"
@@ -65,6 +66,18 @@ func (a *Addon) AttachAndCreate(params *apistructs.AddonHandlerCreateItem) (*api
 		return nil, err
 	}
 	return a.addonAttach(addonSpec, addonDice, params)
+}
+
+func (a *Addon) parseAddonDice(addon apistructs.ExtensionVersion) (*diceyml.Object, error) {
+	diceBytes, err := json.Marshal(addon.Dice)
+	if err != nil {
+		return nil, err
+	}
+	dice, err := diceyml.New(diceBytes, false)
+	if err != nil {
+		return nil, err
+	}
+	return dice.Obj(), nil
 }
 
 func (a *Addon) parseAddonSpec(addon apistructs.ExtensionVersion) (apistructs.AddonExtension, error) {
@@ -142,7 +155,7 @@ func (a *Addon) GetAddonExtention(params *apistructs.AddonHandlerCreateItem) (*a
 		return nil, nil, err
 	}
 
-	if addonSpec.Deprecated {
+	if addonSpec.Deprecated && addonSpec.SubCategory != apistructs.MicroAddon {
 		err = errors.New(i18n.OrgSprintf(params.OrgID, AddonDeprecated, params.AddonName, addon.Version))
 		logrus.Errorf(err.Error())
 		return nil, nil, err
@@ -696,11 +709,6 @@ func (a *Addon) strategyAddon(params *apistructs.AddonHandlerCreateItem,
 	}
 	logrus.Infof("after buildRealCreate, param:  %+v", *params)
 
-	// canal不需要走策略，canal就是要一个给一个
-	if params.AddonName == apistructs.AddonCanal {
-		return nil, nil
-	}
-
 	// 根据tag查询addon实例信息
 	shareRoutingIns, err := a.getTagInstance(addonSpec, params)
 	if err != nil {
@@ -1145,6 +1153,9 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 		return err
 	}
 	logrus.Infof("sending addon creating request, request body: %+v", *addonCreateReq)
+
+	_, ok := addonCreateReq.DiceYml.Meta["USE_OPERATOR"]
+	a.pushLog(fmt.Sprintf("addon [%s:%s] will be deployed, use operator: %v", addonSpec.Name, addonSpec.Version, ok), params)
 
 	// 请求调度器
 	_, err = a.serviceGroupImpl.Create(*addonCreateReq)

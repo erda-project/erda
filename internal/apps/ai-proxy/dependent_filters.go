@@ -15,6 +15,7 @@
 package ai_proxy
 
 import (
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/assets"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit-after-llm-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/audit-before-llm-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
@@ -27,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-embedding"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-file"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-image"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/dashscope-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/erda-auth"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/finalize"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/initialize"

@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -120,7 +119,7 @@ func (s *fileService) DownloadFile(w io.Writer, file db.File) (headers map[strin
 			return nil, apierrors.ErrDownloadFileDecrypt.InternalError(err)
 		}
 		// 获取文件内容
-		fileBytes, err := ioutil.ReadAll(reader)
+		fileBytes, err := io.ReadAll(reader)
 		if err != nil {
 			return nil, apierrors.ErrDownloadFileDecrypt.InternalError(err)
 		}

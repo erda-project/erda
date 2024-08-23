@@ -677,7 +677,7 @@ func (client *Client) GetPipelineOutputs(pipelineID uint64) (map[string]map[stri
 	outputs := make(map[string]map[string]string)
 
 	for _, task := range tasks {
-		for _, metadatum := range task.GetMetadata() {
+		for _, metadatum := range task.MergeMetadata() {
 			if outputs[task.Name] == nil {
 				outputs[task.Name] = make(map[string]string)
 			}

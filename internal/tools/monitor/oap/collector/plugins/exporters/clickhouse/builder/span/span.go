@@ -88,7 +88,7 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*trace.Span) ([]dri
 		}
 		if _, ok := tablebatch[table]; !ok {
 			// nolint
-			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table)
+			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table, driver.WithReleaseConnection())
 			if err != nil {
 				return nil, err
 			}

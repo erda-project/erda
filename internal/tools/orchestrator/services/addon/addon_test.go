@@ -17,6 +17,7 @@ package addon
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
@@ -1370,4 +1372,178 @@ func TestListByRuntime(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestDeploy(t *testing.T) {
+	addon := &Addon{db: &dbclient.DBClient{DBEngine: &dbengine.DBEngine{}}}
+	monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon.db), "FindTmcInstanceByNameAndCLuster", func(db *dbclient.DBClient, name, cluster string) ([]dbclient.TmcInstance, error) {
+		return []dbclient.TmcInstance{{
+			ID:      "1234",
+			Engine:  "nacos",
+			Version: "2.2",
+		}}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon.db), "UpdatePrebuild", func(db *dbclient.DBClient, addonPrebuild *dbclient.AddonPrebuild) error {
+		return nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bundle.New()), "QueryExtensionVersions", func(b *bundle.Bundle, req apistructs.ExtensionVersionQueryRequest) ([]apistructs.ExtensionVersion, error) {
+		switch req.Name {
+		case RegisterCenterAddon:
+			addonExtension := apistructs.AddonExtension{
+				Type:        "addon",
+				Name:        "registercenter",
+				Desc:        "${{ i18n.desc }}",
+				DisplayName: "${{ i18n.displayName }}",
+				Category:    "distributed_cooperation",
+				LogoUrl:     "//terminus-dice.oss-cn-hangzhou.aliyuncs.com/addon/ui/logo/terminus-roost.png",
+				ImageURLs: []string{
+					"//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2019/06/27/3f052a37-3f35-4738-bdeb-50ee5d9fe2d7.png",
+					"//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2019/06/27/6ba281ea-f96c-4388-be6c-d60cfa88bc89.png",
+				},
+				Strategy:    map[string]interface{}{"parsingAddons": false},
+				Version:     "3.0.0",
+				SubCategory: "microservice",
+				Domain:      "tmc.marathon.l4lb.thisdcos.directory:8050",
+				Requires:    []string{},
+				ConfigVars:  []string{"NACOS_ADDRESS", "NACOS_GRPC_ADDRESS", "NACOS_TENANT_ID", "ELASTICJOB_HOST"},
+				Envs:        []string{},
+				Plan:        map[string]apistructs.AddonPlanItem{},
+				ShareScopes: []string{"PROJECT"},
+				Similar:     []string{},
+				Deprecated:  false,
+			}
+
+			// Object data
+			object := &diceyml.Object{
+				Version:  "2.0",
+				Meta:     map[string]string{},
+				Envs:     diceyml.EnvMap{},
+				Services: diceyml.Services{},
+				Jobs:     diceyml.Jobs{},
+				AddOns: diceyml.AddOns{
+					"zookeeper": {
+						Plan: "zookeeper:basic",
+					},
+					"nacos": {
+						Plan: "nacos:basic",
+						Options: map[string]string{
+							"version": "2.2",
+						},
+					},
+				},
+				Environments: diceyml.EnvObjects{},
+				Values:       diceyml.ValueObjects{},
+			}
+			return []apistructs.ExtensionVersion{
+				{Version: "3.0.0",
+					Name:      RegisterCenterAddon,
+					Type:      addonExtension.Type,
+					Spec:      addonExtension,
+					Dice:      object,
+					Swagger:   nil,
+					Readme:    "",
+					IsDefault: true,
+					Public:    true},
+			}, nil
+		case ConfigCenterAddon:
+			addonExtension := apistructs.AddonExtension{
+				Type:        "addon",
+				Name:        "config-center",
+				Desc:        "${{ i18n.desc }}",
+				DisplayName: "${{ i18n.displayName }}",
+				Category:    "content_management",
+				LogoUrl:     "//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2019/10/15/63628afc-b340-40d6-9e25-2c72568e2d42.png",
+				ImageURLs:   []string{},
+				Strategy:    map[string]interface{}{"parsingAddons": false},
+				Version:     "3.0.0",
+				SubCategory: "microservice",
+				Domain:      "tmc.marathon.l4lb.thisdcos.directory:8050",
+				Requires:    []string{},
+				ConfigVars: []string{
+					"CONFIGCENTER_ADDRESS",
+					"CONFIGCENTER_GRPC_ADDRESS",
+					"CONFIGCENTER_TENANT_ID",
+					"CONFIGCENTER_TENANT_NAME",
+					"CONFIGCENTER_GROUP_NAME",
+				},
+				Envs:        []string{},
+				Plan:        map[string]apistructs.AddonPlanItem{},
+				ShareScopes: []string{"APPLICATION"},
+				Similar:     []string{},
+				Deprecated:  false,
+			}
+			object := diceyml.Object{
+				Version:  "2.0",
+				Meta:     map[string]string{},
+				Envs:     diceyml.EnvMap{},
+				Services: diceyml.Services{},
+				Jobs:     diceyml.Jobs{},
+				AddOns: diceyml.AddOns{
+					"nacos": {
+						Plan: "nacos:basic",
+						Options: map[string]string{
+							"version": "2.2",
+						},
+					},
+				},
+				Environments: diceyml.EnvObjects{},
+				Values:       diceyml.ValueObjects{},
+			}
+			return []apistructs.ExtensionVersion{
+				{Name: addonExtension.Name,
+					Version:   addonExtension.Version,
+					Type:      addonExtension.Type,
+					Spec:      addonExtension,
+					Dice:      object,
+					Swagger:   nil,
+					Readme:    "",
+					IsDefault: true,
+					Public:    true},
+			}, nil
+		}
+		return nil, errors.New("no such addon")
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(addon), "AttachAndCreate", func(a *Addon, params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonInstanceRes, error) {
+		return &apistructs.AddonInstanceRes{}, nil
+	})
+
+	defer func() {
+		if err := recover(); err != nil {
+			t.Log(err)
+		}
+	}()
+
+	fmt.Println(addon.db == nil)
+	AddonInfos.Store(RegisterCenterAddon, "")
+	AddonInfos.Store(ConfigCenterAddon, "")
+	_ = addon.deployAddons(&apistructs.AddonCreateRequest{
+		ClusterName:   RegisterCenterAddon,
+		OrgID:         232,
+		ProjectID:     212,
+		ApplicationID: 12321,
+		RuntimeID:     23123,
+	}, []dbclient.AddonPrebuild{
+		{
+			AddonName:         RegisterCenterAddon,
+			InstanceName:      RegisterCenterAddon,
+			Env:               "DEV",
+			RuntimeID:         "100001",
+			RoutingInstanceID: "100001",
+			InstanceID:        "100001",
+			Plan:              "basic",
+			Options:           `{"version": "2.0.0"}`,
+		}, {
+			AddonName:         ConfigCenterAddon,
+			InstanceName:      ConfigCenterAddon,
+			Env:               "DEV",
+			RuntimeID:         "100001",
+			RoutingInstanceID: "100001",
+			InstanceID:        "100001",
+			Plan:              "basic",
+		},
+	})
 }

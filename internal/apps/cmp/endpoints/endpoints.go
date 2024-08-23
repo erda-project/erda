@@ -62,10 +62,15 @@ type Endpoints struct {
 	ClusterSvc      clusterpb.ClusterServiceServer
 	PipelineSvc     pipelinepb.PipelineServiceServer
 
-	reportTable *resource.ReportTable
-	CronService cronpb.CronServiceServer
-	org         org.Interface
-	registry    registry.Interface
+	reportTable      *resource.ReportTable
+	CronService      cronpb.CronServiceServer
+	org              org.Interface
+	registry         registry.Interface
+	SteveCacheConfig *steveCacheConfig
+}
+
+type steveCacheConfig struct {
+	Size int
 }
 
 type Option func(*Endpoints)
@@ -88,13 +93,21 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.metrics = ctx.Value("metrics").(*metrics.Metric)
 	e.Resource = ctx.Value("resource").(*resource.Resource)
 	e.CachedJS = cachedJS
-	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl, e.ClusterSvc)
+	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl, e.ClusterSvc, e.SteveCacheConfig.Size)
 	e.registry = registry.New(e.ClusterSvc)
 	return e
 }
 
 func (e *Endpoints) GetCluster() *clusters.Clusters {
 	return e.clusters
+}
+
+func WithSteveCacheConfig(size int) Option {
+	return func(e *Endpoints) {
+		e.SteveCacheConfig = &steveCacheConfig{
+			Size: size,
+		}
+	}
 }
 
 // WithBundle With bundle

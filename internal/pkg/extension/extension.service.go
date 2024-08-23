@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,11 +28,11 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"go.etcd.io/etcd/version"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-infra/base/version"
 	gallerypb "github.com/erda-project/erda-proto-go/apps/gallery/pb"
 	"github.com/erda-project/erda-proto-go/core/extension/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -785,7 +785,7 @@ func (s *provider) GetExtensionByGit(name, d string, file ...string) (*pb.Extens
 func getGitFileContents(d string, file ...string) ([]string, error) {
 	var resp []string
 	// dirName is a random string
-	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	dir, err := os.MkdirTemp(os.TempDir(), "*")
 	if err != nil {
 		return nil, err
 	}
@@ -842,7 +842,7 @@ func getGitFileContents(d string, file ...string) ([]string, error) {
 			resp = append(resp, "")
 			continue
 		}
-		str, err := ioutil.ReadAll(f)
+		str, err := io.ReadAll(f)
 		if err != nil {
 			return nil, err
 		}

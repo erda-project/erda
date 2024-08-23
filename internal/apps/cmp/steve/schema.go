@@ -37,7 +37,7 @@ import (
 )
 
 func DefaultSchemas(baseSchema *types.APISchemas) {
-	subscribe.Register(baseSchema)
+	subscribe.Register(baseSchema, subscribe.DefaultGetter, "v1")
 	apiroot.Register(baseSchema, []string{"v1"}, "proxy:/apis")
 }
 

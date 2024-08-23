@@ -17,7 +17,7 @@ package component_protocol
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 
@@ -78,7 +78,7 @@ func InitDefaultCompProtocols(path string) {
 			panic(err)
 		}
 	}()
-	rd, err := ioutil.ReadDir(path)
+	rd, err := os.ReadDir(path)
 	if err != nil {
 		return
 	}
@@ -88,7 +88,7 @@ func InitDefaultCompProtocols(path string) {
 			InitDefaultCompProtocols(fullDir)
 		} else {
 			fullName := path + "/" + fi.Name()
-			yamlFile, er := ioutil.ReadFile(fullName)
+			yamlFile, er := os.ReadFile(fullName)
 			if er != nil {
 				err = er
 				return

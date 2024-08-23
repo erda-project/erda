@@ -99,9 +99,43 @@ func (p *provider) ExportMetric(items ...*metric.Metric) error {
 	return nil
 }
 
-func (p *provider) ExportLog(items ...*log.Log) error            { return nil }
-func (p *provider) ExportSpan(items ...*trace.Span) error        { return nil }
-func (p *provider) ExportRaw(items ...*odata.Raw) error          { return nil }
+func (p *provider) ExportLog(items ...*log.Log) error     { return nil }
+func (p *provider) ExportSpan(items ...*trace.Span) error { return nil }
+func (p *provider) ExportRaw(items ...*odata.Raw) error {
+	data := make([]*metric.Metric, 0, len(items))
+	for _, item := range items {
+		m := metric.Metric{}
+		if err := json.Unmarshal(item.Data, &m); err != nil {
+			return fmt.Errorf("unmarshal data err: %w", err)
+		}
+		data = append(data, &m)
+	}
+	objs := map[string][]*metric.Metric{
+		"metrics": data,
+	}
+	buf, err := json.Marshal(&objs)
+	if err != nil {
+		return fmt.Errorf("serialize err: %w", err)
+	}
+	buf, err = p.cp.Compress(buf)
+	if err != nil {
+		return fmt.Errorf("compress err: %w", err)
+	}
+	req, err := http.NewRequest(http.MethodPost, p.Cfg.URL, bytes.NewReader(buf))
+	if err != nil {
+		return fmt.Errorf("create request err: %w", err)
+	}
+	setHeaders(req, p.Cfg.Headers)
+	p.au.Secure(req)
+	code, err := doRequest(p.client, req)
+	if err != nil {
+		return fmt.Errorf("do request err: %w", err)
+	}
+	if code < 200 || code >= 300 {
+		return fmt.Errorf("response status code %d is not success", code)
+	}
+	return nil
+}
 func (p *provider) ExportProfile(items ...*profile.Output) error { return nil }
 
 func (p *provider) ComponentConfig() interface{} {

@@ -25,6 +25,7 @@ import (
 type RunnerTask struct {
 	dbengine.BaseModel
 	JobID          string `json:"job_id"`
+	OrgID          int64  `json:"org_id"`
 	Status         string `json:"status"` // pending running success failed
 	OpenApiToken   string `json:"openapi_token"`
 	ContextDataUrl string `json:"context_data_url"`
@@ -43,6 +44,7 @@ func (task RunnerTask) ToApiData() *apistructs.RunnerTask {
 	result := &apistructs.RunnerTask{
 		ID:             task.ID,
 		JobID:          task.JobID,
+		OrgID:          task.OrgID,
 		Status:         task.Status,
 		ContextDataUrl: task.ContextDataUrl,
 		OpenApiToken:   task.OpenApiToken,
@@ -60,6 +62,7 @@ func (task RunnerTask) ToPbData() *pb.RunnerTask {
 	result := &pb.RunnerTask{
 		ID:             task.ID,
 		JobID:          task.JobID,
+		OrgID:          task.OrgID,
 		Status:         task.Status,
 		ContextDataUrl: task.ContextDataUrl,
 		OpenApiToken:   task.OpenApiToken,
@@ -78,6 +81,7 @@ func (db *DBClient) CreateRunnerTask(request *pb.RunnerTaskCreateRequest) (uint6
 	targets, _ := json.Marshal(request.Targets)
 	task := &RunnerTask{
 		JobID:          request.JobID,
+		OrgID:          request.OrgID,
 		Status:         apistructs.RunnerTaskStatusPending,
 		ContextDataUrl: request.ContextDataUrl,
 		ResultDataUrl:  "",
@@ -92,11 +96,17 @@ func (db *DBClient) CreateRunnerTask(request *pb.RunnerTaskCreateRequest) (uint6
 	return task.ID, nil
 }
 
-func (db *DBClient) GetFirstPendingTask() (*RunnerTask, error) {
+func (db *DBClient) GetFirstPendingTask(orgIDs []int64) (*RunnerTask, error) {
 	var list []RunnerTask
-	err := db.Model(&RunnerTask{}).
-		Where("status =?", apistructs.RunnerTaskStatusPending).
-		Limit(1).Find(&list).Error
+	sql := db.Model(&RunnerTask{}).
+		Where("status = ?", apistructs.RunnerTaskStatusPending)
+	// handle org id
+	if len(orgIDs) > 0 {
+		sql = sql.Where("org_id in (?)", orgIDs)
+	}
+	// order, oldest first
+	sql = sql.Order("id ASC")
+	err := sql.Limit(1).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}

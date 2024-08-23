@@ -30,21 +30,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/metadata"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/auth"
 	"github.com/erda-project/erda/internal/tools/cluster-manager/dialer/config"
-	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
@@ -74,7 +73,7 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 	registerFunc := func(clusterKey string, clusterInfo cluster) {
 		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
 		defer cancel()
-		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cluster-manager"}))
+		ctx = apis.WithInternalClientContext(ctx, discover.SvcClusterManager)
 		for {
 			select {
 			case <-ctx.Done():
@@ -189,7 +188,15 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 				return
 			}
 			// TODO: register action after authed better.
-			go registerFunc(clusterKey, clusterInfo)
+
+			regFunc := func(next remotedialer.HandlerFunc) remotedialer.HandlerFunc {
+				return func(ctx *remotedialer.Context) {
+					go registerFunc(clusterKey, clusterInfo)
+					next(ctx)
+				}
+			}
+
+			server.WithMiddleFuncs(regFunc)
 		}
 	default:
 		clientDataStr := req.Header.Get(apistructs.ClusterManagerHeaderKeyClientDetail.String())

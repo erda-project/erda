@@ -18,17 +18,16 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda/bundle"
@@ -133,7 +132,7 @@ func Test_DialerContext(t *testing.T) {
 		t.Errorf("status:%d expect:200", resp.StatusCode)
 		return
 	}
-	respBody, _ := ioutil.ReadAll(resp.Body)
+	respBody, _ := io.ReadAll(resp.Body)
 	if string(respBody) != "Hello, world!" {
 		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
 		return

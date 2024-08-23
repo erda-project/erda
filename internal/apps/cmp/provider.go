@@ -67,6 +67,11 @@ type provider struct {
 	Tran            i18n.Translator `translator:"common"`
 	SteveAggregator *steve.Aggregator
 	Org             org.Interface
+	Cfg             *config
+}
+
+type config struct {
+	SteveCacheSize int `file:"cache_size" default:"5000"`
 }
 
 // Run Run the provider
@@ -101,7 +106,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register("cmp", &servicehub.Spec{
-		Services:    append([]string{"cmp"}, pb2.ServiceNames()...),
+		Services: append([]string{"cmp"}, pb2.ServiceNames()...),
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
 		Description: "Core components of multi-cloud management platform.",
 		Creator:     func() servicehub.Provider { return &provider{} },
 	})

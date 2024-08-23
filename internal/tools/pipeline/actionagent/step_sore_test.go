@@ -15,7 +15,6 @@
 package actionagent
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -29,7 +28,7 @@ import (
 func TestStoreAndRestore(t *testing.T) {
 	tmpCacheDir := "/tmp"
 	tmpCachePrefix := "tmp"
-	tmpDir, err := ioutil.TempDir(tmpCacheDir, tmpCachePrefix)
+	tmpDir, err := os.MkdirTemp(tmpCacheDir, tmpCachePrefix)
 	assert.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 	agent := Agent{MaxCacheFileSizeMB: 1 * datasize.MB}

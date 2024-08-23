@@ -99,7 +99,7 @@ func (bu *Builder) buildBatches(ctx context.Context, items []*metric.Metric) ([]
 
 		if _, ok := tableBatch[table]; !ok {
 			// nolint
-			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table)
+			batch, err := bu.client.PrepareBatch(ctx, "INSERT INTO "+table, driver.WithReleaseConnection())
 			if err != nil {
 				return nil, err
 			}
