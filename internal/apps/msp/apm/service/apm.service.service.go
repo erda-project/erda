@@ -70,9 +70,6 @@ func (s *apmServiceService) GetServiceLanguage(ctx context.Context, req *pb.GetS
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
-		if err != nil {
-			return nil, err
-		}
 		count := response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 		if count == 1 {
 			return &pb.GetServiceLanguageResponse{Language: language}, err
