@@ -113,6 +113,8 @@ func Test_newService(t *testing.T) {
 						labels.LabelCoreErdaCloudServiceName: "fake-server",
 						labels.LabelCoreErdaCloudServiceType: "STATELESS",
 						labels.LabelCoreErdaCloudWorkSpace:   "test",
+						labels.LabelMonitorErdaCloudExporter: "true",
+						labels.LabelMonitorErdaCloudEnabled:  "true",
 					},
 				},
 				Spec: v1.ServiceSpec{
