@@ -16,9 +16,11 @@ package labels
 
 import (
 	"encoding/json"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
-	"github.com/sirupsen/logrus"
 )
 
 // k8s labels
