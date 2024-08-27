@@ -663,16 +663,13 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 
 	SetPodAnnotationsBaseContainerEnvs(deployment.Spec.Template.Spec.Containers[0], deployment.Spec.Template.Annotations)
 
-	err = labels.SetCoreErdaLabels(serviceGroup, service, deployment.Labels)
-	if err != nil {
-		logrus.Errorf("deployment can't set core/erda labels, err: %v", err)
-		return nil, err
-	}
-	err = labels.SetCoreErdaLabels(serviceGroup, service, deployment.Spec.Template.Labels)
-	if err != nil {
-		logrus.Errorf("deployment template can't set core/erda labels, err: %v", err)
-		return nil, err
-	}
+	labels.NewRuntimeLabelSetter(service, serviceGroup, deployment.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
+
+	labels.NewRuntimeLabelSetter(service, serviceGroup, deployment.Spec.Template.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 
 	// TODO: Delete this logic
 	//Mobil temporary demand:

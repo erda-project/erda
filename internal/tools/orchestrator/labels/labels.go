@@ -16,9 +16,9 @@ package labels
 
 import (
 	"encoding/json"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/sirupsen/logrus"
 )
 
 // k8s labels
@@ -36,7 +36,9 @@ const (
 	LabelCoreErdaCloudServiceType    = "core.erda.cloud/service-type"
 	LabelCoreErdaCloudServiceGroupId = "core.erda.cloud/servicegroup-id"
 
-	LabelErdaCloudTenantId = "monitor.erda.cloud/tenant-id"
+	LabelMonitorErdaCloudTenantId = "monitor.erda.cloud/tenant-id"
+	LabelMonitorErdaCloudEnabled  = "monitor.erda.cloud/enabled"
+	LabelMonitorErdaCloudExporter = "monitor.erda.cloud/exporter"
 
 	LabelDiceClusterName = "DICE_CLUSTER_NAME"
 	LabelDiceOrgId       = "DICE_ORG_ID"
@@ -77,51 +79,106 @@ var labelMappings = map[string]string{
 	LabelCoreErdaCloudServiceType: LabelDiceServiceType,
 }
 
-func MergeAddonCoreErdaLabels(target map[string]string, source map[string]string, params *apistructs.AddonHandlerCreateItem) {
+// AddonLabelSetter Set labels for addon
+type AddonLabelSetter struct {
+	target   map[string]string
+	source   map[string]string
+	instance *dbclient.AddonInstance
+	params   *apistructs.AddonHandlerCreateItem
+}
+
+func NewAddonLabelSetter(target map[string]string, source map[string]string, ins *dbclient.AddonInstance, params *apistructs.AddonHandlerCreateItem) *AddonLabelSetter {
+	return &AddonLabelSetter{target: target, source: source, instance: ins, params: params}
+}
+
+func (a *AddonLabelSetter) SetCoreErdaLabels() *AddonLabelSetter {
+	if a.source == nil || a.target == nil {
+		return a
+	}
 	for core, dice := range labelMappings {
-		if v, exist := source[dice]; exist {
-			target[core] = v
+		if v, exist := a.source[dice]; exist {
+			a.target[core] = v
 		}
 	}
-	if params.TenantId != "" {
-		target[LabelErdaCloudTenantId] = params.TenantId
-	}
+	return a
 }
 
-func SetAddonErdaLabels(labels map[string]string, ins *dbclient.AddonInstance) {
-	labels[LabelAddonErdaCloudId] = ins.ID
-	labels[LabelAddonErdaCloudScope] = ins.ShareScope
-	labels[LabelAddonErdaCloudType] = ins.AddonName
-	labels[LabelAddonErdaCloudVersion] = ins.Version
+func (a *AddonLabelSetter) SetAddonErdaLabels() *AddonLabelSetter {
+	if a.instance == nil || a.target == nil {
+		return a
+	}
+	a.target[LabelAddonErdaCloudId] = a.instance.ID
+	a.target[LabelAddonErdaCloudScope] = a.instance.ShareScope
+	a.target[LabelAddonErdaCloudType] = a.instance.AddonName
+	a.target[LabelAddonErdaCloudVersion] = a.instance.Version
+	return a
 }
 
-func SetCoreErdaLabels(sg *apistructs.ServiceGroup, service *apistructs.Service, labels map[string]string) error {
-	if labels == nil {
-		return nil
+func (a *AddonLabelSetter) SetMonitorErdaCloudLabels() *AddonLabelSetter {
+	if a.target == nil {
+		return a
 	}
-	if service != nil {
-		for coreLabel, diceLabel := range labelMappings {
-			if value, exists := service.Labels[diceLabel]; exists {
-				labels[coreLabel] = value
-			}
-		}
-		if publicHost, exists := service.Env[ServiceEnvPublicHost]; exists {
-			var publicHostMap map[string]string
-			if err := json.Unmarshal([]byte(publicHost), &publicHostMap); err != nil {
-				return err
-			}
-			if terminusKey, exists := publicHostMap[PublicHostTerminusKey]; exists {
-				labels[LabelErdaCloudTenantId] = terminusKey
-			}
-		}
+	if a.params != nil && a.params.TenantId != "" {
+		a.target[LabelMonitorErdaCloudTenantId] = a.params.TenantId
 	}
-
-	if sgId, exists := labels[LabelServiceGroupId]; exists {
-		labels[LabelCoreErdaCloudServiceGroupId] = sgId
-	}
-
-	if sg != nil && sg.ID != "" {
-		labels[LabelCoreErdaCloudServiceGroupId] = sg.ID
-	}
+	a.target[LabelMonitorErdaCloudEnabled] = "true"
+	a.target[LabelMonitorErdaCloudExporter] = "true"
 	return nil
+}
+
+// RuntimeLabelSetter  Set labels for runtime
+type RuntimeLabelSetter struct {
+	service *apistructs.Service
+	sg      *apistructs.ServiceGroup
+	labels  map[string]string
+}
+
+func NewRuntimeLabelSetter(service *apistructs.Service, sg *apistructs.ServiceGroup, labels map[string]string) *RuntimeLabelSetter {
+	return &RuntimeLabelSetter{service: service, sg: sg, labels: labels}
+}
+
+func (r *RuntimeLabelSetter) SetMonitorErdaCloudLabels() *RuntimeLabelSetter {
+	if r.labels == nil {
+		r.labels = make(map[string]string)
+	}
+	r.labels[LabelMonitorErdaCloudEnabled] = "true"
+	r.labels[LabelMonitorErdaCloudExporter] = "true"
+
+	if r.service == nil {
+		return r
+	}
+
+	if publicHost, exists := r.service.Env[ServiceEnvPublicHost]; exists {
+		var publicHostMap map[string]string
+		if err := json.Unmarshal([]byte(publicHost), &publicHostMap); err != nil {
+			logrus.Errorf("failed to unmarshal public host map for service: %v, err: %v", r.service.Name, err)
+		}
+		if terminusKey, exists := publicHostMap[PublicHostTerminusKey]; exists {
+			r.labels[LabelMonitorErdaCloudTenantId] = terminusKey
+		}
+	}
+	return r
+}
+
+func (r *RuntimeLabelSetter) SetCoreErdaLabels() *RuntimeLabelSetter {
+	if r.labels == nil {
+		r.labels = make(map[string]string)
+	}
+	if r.service != nil {
+		for coreLabel, diceLabel := range labelMappings {
+			if value, exists := r.service.Labels[diceLabel]; exists {
+				r.labels[coreLabel] = value
+			}
+		}
+	}
+
+	if sgId, exists := r.labels[LabelServiceGroupId]; exists {
+		r.labels[LabelCoreErdaCloudServiceGroupId] = sgId
+	}
+
+	if r.sg != nil && r.sg.ID != "" {
+		r.labels[LabelCoreErdaCloudServiceGroupId] = r.sg.ID
+	}
+
+	return r
 }

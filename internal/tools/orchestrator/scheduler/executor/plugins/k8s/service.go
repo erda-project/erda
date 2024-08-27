@@ -153,11 +153,9 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 		}
 	}
 
-	err := labels.SetCoreErdaLabels(nil, service, k8sService.Labels)
-	if err != nil {
-		logrus.Error(err)
-		return k8sService
-	}
+	labels.NewRuntimeLabelSetter(service, nil, k8sService.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 
 	for i, port := range service.Ports {
 		k8sService.Spec.Ports = append(k8sService.Spec.Ports, apiv1.ServicePort{
@@ -347,10 +345,9 @@ func (k *Kubernetes) UpdateK8sService(k8sService *apiv1.Service, service *apistr
 
 	setServiceLabelSelector(k8sService, selectors)
 	k8sService.Spec.Ports = newPorts
-	err := labels.SetCoreErdaLabels(nil, service, k8sService.Labels)
-	if err != nil {
-		return fmt.Errorf("can't set erda labels")
-	}
+	labels.NewRuntimeLabelSetter(service, nil, k8sService.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 	if err := k.PutService(k8sService); err != nil {
 		errMsg := fmt.Sprintf("update service err %v", err)
 		logrus.Error(errMsg)

@@ -676,8 +676,10 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 	}
 
 	for _, svc := range addonDice.Services {
-		labels.MergeAddonCoreErdaLabels(svc.Labels, addonDeployGroup.GroupLabels, params)
-		labels.SetAddonErdaLabels(svc.Labels, addonIns)
+		labels.NewAddonLabelSetter(svc.Labels, addonDeployGroup.GroupLabels, addonIns, params).
+			SetCoreErdaLabels().
+			SetAddonErdaLabels().
+			SetMonitorErdaCloudLabels()
 	}
 
 	addonDeployGroup.DiceYml = *addonDice

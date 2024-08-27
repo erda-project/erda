@@ -110,7 +110,7 @@ func SetlabelsFromOptions(options, labels map[string]string) {
 	}
 }
 
-// k8s labels
+// k8s labels for cluster addons
 const (
 	LabelCoreErdaCloudClusterName = "core.erda.cloud/cluster-name"
 	LabelCoreErdaCloudServiceType = "core.erda.cloud/service-type"
@@ -131,20 +131,23 @@ var labelMappings = map[string]string{
 	LabelCoreErdaCloudServiceType: LabelDiceServiceType,
 }
 
-func MergeAddonCoreErdaLabels(target map[string]string, source map[string]string, req apistructs.ServiceGroupCreateV2Request) {
+func SetCoreErdaLabels(target map[string]string, source map[string]string, req apistructs.ServiceGroupCreateV2Request) {
+	if target == nil || source == nil {
+		return
+	}
 	for core, dice := range labelMappings {
 		if v, exist := source[dice]; exist {
 			target[core] = v
 		}
 	}
-	setCoreErdaLabels(target, req)
-}
 
-func setCoreErdaLabels(labels map[string]string, req apistructs.ServiceGroupCreateV2Request) {
-	labels[LabelCoreErdaCloudClusterName] = req.ClusterName
+	target[LabelCoreErdaCloudClusterName] = req.ClusterName
 }
 
 func SetAddonErdaLabels(labels map[string]string, req apistructs.ServiceGroupCreateV2Request, spec *apistructs.AddonExtension) {
+	if labels == nil && spec == nil {
+		return
+	}
 	if spec.ShareScopes != nil && len(spec.ShareScopes) > 0 {
 		labels[LabelAddonErdaCloudScope] = spec.ShareScopes[0]
 	}

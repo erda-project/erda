@@ -113,13 +113,16 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 		},
 	}
 
-	err := labels.SetCoreErdaLabels(info.Sg, service, set.Labels)
-	if err != nil {
-		return errors.Errorf("StatefulSet can't set core/erda labels, err: %v", err)
-	}
+	labels.NewRuntimeLabelSetter(service, info.Sg, set.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
+
+	labels.NewRuntimeLabelSetter(service, info.Sg, set.Spec.Template.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 
 	hasHostPath := serviceHasHostpath(service)
-	err = setPodLabelsFromService(hasHostPath, service.Labels, set.Labels)
+	err := setPodLabelsFromService(hasHostPath, service.Labels, set.Labels)
 	if err != nil {
 		return errors.Errorf("error in service.Labels: %v for statefulset %v in namesapce %v", err, set.Name, set.Namespace)
 	}

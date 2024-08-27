@@ -301,16 +301,13 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 
 	SetPodAnnotationsBaseContainerEnvs(daemonset.Spec.Template.Spec.Containers[0], daemonset.Spec.Template.Annotations)
 
-	err = labels.SetCoreErdaLabels(sg, service, daemonset.Labels)
-	if err != nil {
-		logrus.Errorf("daemonset can't set core/erda labels, err: %v", err)
-		return nil, err
-	}
-	err = labels.SetCoreErdaLabels(sg, service, daemonset.Spec.Template.Labels)
-	if err != nil {
-		logrus.Errorf("daemonset template can't set core/erda labels, err: %v", err)
-		return nil, err
-	}
+	labels.NewRuntimeLabelSetter(service, sg, daemonset.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
+
+	labels.NewRuntimeLabelSetter(service, sg, daemonset.Spec.Template.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 
 	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
 	if err != nil {

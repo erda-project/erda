@@ -602,7 +602,7 @@ func (h *DefaultDeployHandler) BuildServiceGroupRequest(resourceInfo *ResourceIn
 			service.Labels = make(map[string]string)
 		}
 		utils.SetlabelsFromOptions(options, service.Labels)
-		utils.MergeAddonCoreErdaLabels(service.Labels, labels, req)
+		utils.SetCoreErdaLabels(service.Labels, labels, req)
 		utils.SetAddonErdaLabels(service.Labels, req, resourceInfo.Spec)
 	}
 
