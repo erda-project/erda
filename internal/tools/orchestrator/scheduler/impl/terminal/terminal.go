@@ -240,9 +240,6 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 		containerName: k8scontainername,
 	}
 
-	logrus.Infof("terminal params ======> ")
-	logrus.Infof("cluster name ======> %v", clustername)
-
 	K8STerminal(clustername, k8snamespace, k8spodname, k8scontainername, conn, auditor)
 }
 
