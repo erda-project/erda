@@ -303,8 +303,6 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 		return currPods, errors.Errorf("get runtimeId %d service %s current pods failed: no pods found in sg.Extra for service", runtimeId, serviceName)
 	}
 
-	logrus.Infof("pods ====> %v", sg.Extra[serviceName])
-
 	var k8sPods []corev1.Pod
 	err = json.Unmarshal([]byte(sg.Extra[serviceName]), &k8sPods)
 	if err != nil {
@@ -344,7 +342,6 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 			containerResource := apistructs.ContainerResource{}
 			nameToIndex := make(map[string]int)
 			for idx, container := range pod.Spec.Containers {
-				logrus.Infof("get cluster-name from env =======> %v", clusterName)
 				requestmem, _ := container.Resources.Requests.Memory().AsInt64()
 				limitmem, _ := container.Resources.Limits.Memory().AsInt64()
 				containerResource = apistructs.ContainerResource{
