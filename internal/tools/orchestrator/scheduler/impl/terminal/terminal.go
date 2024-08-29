@@ -58,16 +58,19 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type ContainerInfo struct {
+type PodInfo struct {
 	Env  []string        `json:"env"`
 	Name string          `json:"name"`
 	Args json.RawMessage `json:"args"`
 }
 
-type ContainerInfoArg struct {
-	Host      string `json:"host"`
-	Port      int    `json:"port"`
-	Container string `json:"container"`
+type PodInfoArg struct {
+	Host          string `json:"host"`
+	Port          int    `json:"port"`
+	ContainerId   string `json:"container"`
+	PodName       string `json:"podName,omitempty"`
+	Namespace     string `json:"namespace,omitempty"`
+	ContainerName string `json:"containerName,omitempty"`
 }
 
 type Auditor struct {
@@ -116,7 +119,7 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 	if t != websocket.TextMessage {
 		return
 	}
-	containerinfo := ContainerInfo{}
+	containerinfo := PodInfo{}
 	if err := json.Unmarshal(message, &containerinfo); err != nil {
 		logrus.Errorf("failed to unmarshal containerinfo: %v, content: %s", err, string(message))
 		return
@@ -126,88 +129,109 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 		SoldierTerminal(clusterSvc, r, message, conn)
 		return
 	}
-	var args ContainerInfoArg
+	var args PodInfoArg
 	if err := json.Unmarshal(containerinfo.Args, &args); err != nil {
 		logrus.Errorf("failed to unmarshal containerinfoArgs: %v", err)
 		return
 	}
 
-	// 2. Query the containerid in the instance list
-	instances, err := instanceinfo.New(dbengine.MustOpen()).InstanceReader().ByContainerID(args.Container).Do()
-	if err != nil {
-		logrus.Errorf("failed to get instance by containerid: %v", err)
-		return
-	}
+	var (
+		k8snamespace     string
+		k8spodname       string
+		k8scontainername string
+		clustername      string
+		orgID            int
+	)
 
-	if len(instances) == 0 {
-		logrus.Errorf("no instances found: containerid: %v", args.Container)
-		return
-	}
-	if len(instances) > 1 {
-		logrus.Errorf("more than one instance found: containerid: %v", args.Container)
-		return
-	}
-	instance := instances[0]
+	clustername = r.URL.Query().Get("clusterName")
 
-	// 3. Check permissions
-	access := false
-	if instance.OrgID != "" {
-		orgid, err := strconv.ParseUint(instance.OrgID, 10, 64)
+	if args.PodName != "" && args.Namespace != "" && args.ContainerName != "" {
+		logrus.Infof("get termial connect param from args")
+		orgID, _ = strconv.Atoi(r.Header.Get("org-id"))
+		k8snamespace = args.Namespace
+		k8scontainername = args.ContainerName
+		k8spodname = args.PodName
+	} else {
+		logrus.Infof("get termial connect param from database")
+		// 2. Query the containerid in the instance list
+		instances, err := instanceinfo.New(dbengine.MustOpen()).InstanceReader().ByContainerID(args.ContainerId).Do()
 		if err != nil {
-			logrus.Errorf("failed to parse orgid for instance: %v, %v", instance.ContainerID, err)
+			logrus.Errorf("failed to get instance by containerid: %v", err)
 			return
 		}
-		p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   r.Header.Get("User-ID"),
-			Scope:    apistructs.OrgScope,
-			ScopeID:  orgid,
-			Resource: "terminal",
-			Action:   "OPERATE",
-		})
-		if err != nil {
-			logrus.Errorf("failed to check permissions for terminal: %v", err)
+
+		if len(instances) == 0 {
+			logrus.Errorf("no instances found: containerid: %v", args.ContainerId)
 			return
 		}
-		if p.Access {
-			access = true
-		}
-	}
-	if !access && instance.ApplicationID != "" {
-		appid, err := strconv.ParseUint(instance.ApplicationID, 10, 64)
-		if err != nil {
-			logrus.Errorf("failed to parse applicationid for instance: %v, %v", instance.ContainerID, err)
+		if len(instances) > 1 {
+			logrus.Errorf("more than one instance found: containerid: %v", args.ContainerId)
 			return
 		}
-		p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   r.Header.Get("User-ID"),
-			Scope:    apistructs.AppScope,
-			ScopeID:  appid,
-			Resource: "terminal",
-			Action:   "OPERATE",
-		})
-		if err != nil {
-			logrus.Errorf("failed to check permissions for terminal: %v", err)
+		instance := instances[0]
+
+		// 3. Check permissions
+		access := false
+		if instance.OrgID != "" {
+			orgid, err := strconv.ParseUint(instance.OrgID, 10, 64)
+			if err != nil {
+				logrus.Errorf("failed to parse orgid for instance: %v, %v", instance.ContainerID, err)
+				return
+			}
+			p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
+				UserID:   r.Header.Get("User-ID"),
+				Scope:    apistructs.OrgScope,
+				ScopeID:  orgid,
+				Resource: "terminal",
+				Action:   "OPERATE",
+			})
+			if err != nil {
+				logrus.Errorf("failed to check permissions for terminal: %v", err)
+				return
+			}
+			if p.Access {
+				access = true
+			}
+		}
+		if !access && instance.ApplicationID != "" {
+			appid, err := strconv.ParseUint(instance.ApplicationID, 10, 64)
+			if err != nil {
+				logrus.Errorf("failed to parse applicationid for instance: %v, %v", instance.ContainerID, err)
+				return
+			}
+			p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
+				UserID:   r.Header.Get("User-ID"),
+				Scope:    apistructs.AppScope,
+				ScopeID:  appid,
+				Resource: "terminal",
+				Action:   "OPERATE",
+			})
+			if err != nil {
+				logrus.Errorf("failed to check permissions for terminal: %v", err)
+				return
+			}
+			if !p.Access {
+				logrus.Errorf("permission denied for terminal, userid: %v, appid: %d", r.Header.Get("User-ID"), appid)
+				return
+			}
+		}
+
+		// 4. Determine whether it is a dcos path
+		k8sNamespace, ok1 := instance.Metadata("k8snamespace")
+		k8sPodName, ok2 := instance.Metadata("k8spodname")
+		k8sContainerName, ok3 := instance.Metadata("k8scontainername")
+
+		if !ok1 || !ok2 || !ok3 {
+			// If there is no corresponding namespace, name, containername in the meta, it is considered to be the dcos path, and the original soldier is taken
+			logrus.Errorf("get terminial info failed, namespace %v, pod name %v, container name %v", ok1, ok2, ok3)
 			return
 		}
-		if !p.Access {
-			logrus.Errorf("permission denied for terminal, userid: %v, appid: %d", r.Header.Get("User-ID"), appid)
-			return
-		}
+		orgID, _ = strconv.Atoi(instance.OrgID)
+		k8snamespace = k8sNamespace
+		k8spodname = k8sPodName
+		k8scontainername = k8sContainerName
 	}
 
-	// 4. Determine whether it is a dcos path
-	k8snamespace, ok1 := instance.Metadata("k8snamespace")
-	k8spodname, ok2 := instance.Metadata("k8spodname")
-	k8scontainername, ok3 := instance.Metadata("k8scontainername")
-	clustername := instance.Cluster
-
-	if !ok1 || !ok2 || !ok3 {
-		// If there is no corresponding namespace, name, containername in the meta, it is considered to be the dcos path, and the original soldier is taken
-		logrus.Errorf("get terminial info failed, namespace %v, pod name %v, container name %v", ok1, ok2, ok3)
-		return
-	}
-
-	orgID, _ := strconv.Atoi(instance.OrgID)
 	auditor := &Auditor{
 		userID:        r.Header.Get("User-ID"),
 		orgID:         uint64(orgID),
@@ -215,6 +239,9 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 		podName:       k8spodname,
 		containerName: k8scontainername,
 	}
+
+	logrus.Infof("terminal params ======> ")
+	logrus.Infof("cluster name ======> %v", clustername)
 
 	K8STerminal(clustername, k8snamespace, k8spodname, k8scontainername, conn, auditor)
 }
