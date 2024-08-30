@@ -17,12 +17,12 @@ package coordinator
 import (
 	"context"
 	"fmt"
-	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
