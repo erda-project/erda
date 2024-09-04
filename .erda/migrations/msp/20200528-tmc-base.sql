@@ -251,7 +251,7 @@ CREATE TABLE `sp_trace_request_history` (
 
 CREATE TABLE `sp_user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `username` varchar(255) DEFAULT NULL,
+  `username` varchar(191) DEFAULT NULL,
   `salt` varchar(255) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
