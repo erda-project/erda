@@ -162,6 +162,7 @@ openapi-auth-ory-kratos:
   ory_kratos_addr: "${ORY_KRATOS_ADDR:kratos-public}"
 openapi-auth-uc:
   _enable: ${UC_ENABLED:true}
+  platform_protocol: "${DICE_PROTOCOL:https}"
   weight: 100
   redirect_after_login: "${UI_PUBLIC_ADDR}"
   client_id: "${UC_CLIENT_ID:dice}"
