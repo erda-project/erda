@@ -124,7 +124,7 @@ func (p *provider) getScheme(r *http.Request) string {
 	if len(proto) > 0 {
 		return proto
 	}
-	return "https"
+	return p.Cfg.PlatformProtocol
 }
 
 func firstNonEmpty(ss ...string) string {
@@ -163,8 +163,11 @@ func (p *provider) getSessionDomain(host string) string {
 func (p *provider) getUCRedirectHost(referer, host string) string {
 	for _, addr := range p.Cfg.UCRedirectAddrs {
 		domain := addr
-		if h, _, err := net.SplitHostPort(host); err == nil {
-			domain = h
+		// ignore service port
+		for _, v := range []string{addr, host} {
+			if h, _, err := net.SplitHostPort(v); err == nil {
+				domain = h
+			}
 		}
 		domains := strings.SplitN(domain, ".", -1)
 		l := len(domains)

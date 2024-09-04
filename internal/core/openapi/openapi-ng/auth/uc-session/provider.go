@@ -31,6 +31,7 @@ import (
 
 type config struct {
 	Weight               int64         `file:"weight" default:"100"`
+	PlatformProtocol     string        `file:"platform_protocol" default:"https"`
 	RedirectAfterLogin   string        `file:"redirect_after_login"`
 	ClientID             string        `file:"client_id"`
 	UCAddr               string        `file:"uc_addr"`
