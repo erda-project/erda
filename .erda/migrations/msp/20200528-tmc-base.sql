@@ -153,7 +153,7 @@ CREATE TABLE `sp_monitor` (
 
 CREATE TABLE `sp_project` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `identity` varchar(255) NOT NULL,
+  `identity` varchar(191) NOT NULL,
   `name` varchar(255) DEFAULT NULL,
   `description` varchar(255) DEFAULT NULL,
   `ats` varchar(255) NOT NULL,
@@ -210,7 +210,7 @@ CREATE TABLE `sp_service` (
 
 CREATE TABLE `sp_stage` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `name` varchar(255) DEFAULT NULL COMMENT '名称',
+  `name` varchar(191) DEFAULT NULL COMMENT '名称',
   `color` varchar(255) DEFAULT NULL COMMENT '颜色',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniqName` (`name`)
@@ -221,7 +221,7 @@ INSERT INTO `sp_stage` (`id`, `name`, `color`) VALUES (1,'Investigating','#EA574
 
 CREATE TABLE `sp_status` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) DEFAULT NULL,
+  `name` varchar(191) DEFAULT NULL,
   `color` varchar(255) DEFAULT NULL,
   `level` int(10) unsigned zerofill NOT NULL,
   PRIMARY KEY (`id`),

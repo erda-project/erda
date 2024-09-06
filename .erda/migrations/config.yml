@@ -1143,8 +1143,6 @@
       checksum: 1497eed91ec3a7068b67858debc63b7d25966721a4e87471c9d4d4f504603185
     - scriptName: 20220401-01-erda_dashboard_history.sql
       checksum: dcbe49aff201e4d5556f2c9e1be6cdee30fab22e92fcb5e4ed6f3ee2144e9f46
-    - scriptName: 20220331-label-relation.sql
-      checksum: de7a1086369ab35c1d8e5a66def8d56ee4cdb50e9ce48e2e021a5b3b7ff5815b
     - scriptName: 20220412-modes-env.sql
       checksum: 6fd03904d2c2c2dbcb1d42ae206006717882a4e4f44b2099a303578bc100d11b
     - scriptName: 20220412-guide-add-pipelineymls.sql
