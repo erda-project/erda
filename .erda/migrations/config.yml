@@ -664,7 +664,7 @@
     - scriptName: 20210528-gittar-base.sql
       checksum: 9f7f5352958aa35c3175a8b593417b8456f455ad59f4cdb33e8d091cbbdf2dd3
     - scriptName: 20200528-tmc-base.sql
-      checksum: 02f5e47ebfd287cd3a52569b741e146e89efefb0dd9adb24dc65e207f759c006
+      checksum: 996b3424c3bbd052d8b1f22d955545d5e89df65916e6cd130a7074b2aa82ae60
     - scriptName: 20210713-menu.sql
       checksum: eeed1a5714bc6e15e23127fe5ef228a42c70dea43966932aad4e992676183476
     - scriptName: 20210728-project.sql
@@ -688,7 +688,7 @@
     - scriptName: 20210528-dashboard-base.sql
       checksum: d4e3d53da5a744349310498a47e5139c5f9b2b9375b6fa7a6deef043f46ded96
     - scriptName: 20210528-monitor-base.sql
-      checksum: afceddf1c5af0580ccbe8e95c36e83ae048f1c0d06b874c93d7cb45a524009b5
+      checksum: 2b1090e7df2092dea8835823051fa6a9f201294ef3cb2e99f1f4990916e54822
     - scriptName: 20210528-spot-dashboard-base.sql
       checksum: bee47ee31c30ec4b037cbb3fa124e873e408061e0a7503d186afa1716dc1d506
     - scriptName: 20210531-01-monitor-base.sql
@@ -722,11 +722,11 @@
     - scriptName: 20210528-addon-platform-base.sql
       checksum: b9cc3c85abfe1bcf509167b58ad7f27685862bbe4dbc62f84dded8ba86aea032
     - scriptName: 20210528-orchestrator-base.sql
-      checksum: 099cb0719b1b1d0566511ce56d0f235beadba2ac217fea8893da03f6099fdeeb
+      checksum: 4fd3320d8a99d4d02805ab3f840ff813965f5472c0c9e79f865d0e81e19f5510
     - scriptName: 20210604-orchestrator-base.sql
       checksum: 71f1cf7089f0344e9b78f4caca46e03fad2cd05c79f79121f9646c8c42244cf8
     - scriptName: 20210528-pipeline-base.sql
-      checksum: 9dea1f2ebc31ed9e5515c41bab748e9277c51c88ca6d8ded00c0859a913bffb9
+      checksum: 277ec1a5d0461794acc219ab691b67a3c9ef222fcdbb70865462b30ecbd2ccaf
     - scriptName: 20210528-runner-scheduler-base.sql
       checksum: a95cbff74fb97fce771c4c3403902350639af36666787a6815da43ff79ed7940
     - scriptName: 20210707-update-snippet-client-config.sql
@@ -734,7 +734,7 @@
     - scriptName: 20210714-update-report-meta-type.sql
       checksum: 7dd1b507fb6d1f2767e8d9dc52677b8ffa99e3ee4825ef47982870d1032c4c5a
     - scriptName: 20210528-cmdb-base.sql
-      checksum: 6368a2c7300ebaba32b3aa555e39c2b37370e5ab9fc297d386c5b88ac101f785
+      checksum: 89c7d2703d831a4dc3b6ca6caba2b1af4b2ee59e62ef343ac7add2a83868cbf4
     - scriptName: 20210610-addIssueSubscriber.sql
       checksum: c5bfeed8273576b913edc7a94c1d10b7b4a4c37cb8555b7375a08294cd2edbc5
     - scriptName: 20210702-updateMbox.sql
