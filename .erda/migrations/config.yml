@@ -734,7 +734,7 @@
     - scriptName: 20210714-update-report-meta-type.sql
       checksum: 7dd1b507fb6d1f2767e8d9dc52677b8ffa99e3ee4825ef47982870d1032c4c5a
     - scriptName: 20210528-cmdb-base.sql
-      checksum: 7d4d6e204fb3456ed67f2d8930975c45c32bb5fa7359898b75e6453e0b77c0a5
+      checksum: 2a95650465d03300627f8f60e0e65666eb3a7da299597823a38f043510e3f74c
     - scriptName: 20210610-addIssueSubscriber.sql
       checksum: c5bfeed8273576b913edc7a94c1d10b7b4a4c37cb8555b7375a08294cd2edbc5
     - scriptName: 20210702-updateMbox.sql
