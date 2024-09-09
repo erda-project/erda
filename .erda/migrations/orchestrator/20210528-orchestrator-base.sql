@@ -20,7 +20,7 @@ CREATE TABLE `dice_db_migration_log`
 CREATE TABLE `ps_runtime_instances`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
-    `instance_id` varchar(255) NOT NULL DEFAULT '' COMMENT '实例Id',
+    `instance_id` varchar(191) NOT NULL DEFAULT '' COMMENT '实例Id',
     `runtime_id`  bigint(20) NOT NULL COMMENT 'runtime ID',
     `service_id`  bigint(20) NOT NULL COMMENT '服务 ID',
     `ip`          varchar(50)           DEFAULT NULL COMMENT '实例IP',
@@ -117,9 +117,9 @@ CREATE TABLE `ps_v2_project_runtimes`
     `id`                  bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `created_at`          timestamp NULL DEFAULT NULL,
     `updated_at`          timestamp NULL DEFAULT NULL,
-    `name`                varchar(255) NOT NULL,
+    `name`                varchar(191) NOT NULL,
     `application_id`      bigint(20) unsigned NOT NULL,
-    `workspace`           varchar(255) NOT NULL,
+    `workspace`           varchar(191) NOT NULL,
     `git_branch`          varchar(255) DEFAULT NULL,
     `project_id`          bigint(20) unsigned NOT NULL,
     `env`                 varchar(255) DEFAULT NULL,

@@ -17,3 +17,8 @@ ALTER TABLE `tb_tmc_instance` CONVERT TO CHARACTER SET utf8mb4;
 ALTER TABLE `tb_tmc_instance_tenant` CONVERT TO CHARACTER SET utf8mb4;
 ALTER TABLE `tb_tmc_request_relation` CONVERT TO CHARACTER SET utf8mb4;
 ALTER TABLE `tb_tmc_version` CONVERT TO CHARACTER SET utf8mb4;
+
+ALTER TABLE `sp_user` MODIFY COLUMN `username` varchar (191) DEFAULT NULL;
+ALTER TABLE `sp_stage` MODIFY COLUMN `name` varchar (191) DEFAULT NULL;
+ALTER TABLE `sp_status` MODIFY COLUMN `name` varchar (191) DEFAULT NULL;
+ALTER TABLE `sp_project` MODIFY COLUMN `identity` varchar (191) DEFAULT NULL;
