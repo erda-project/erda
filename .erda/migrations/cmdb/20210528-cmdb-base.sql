@@ -86,7 +86,7 @@ CREATE TABLE `cm_hosts`
     `memory_usage`   bigint(20) DEFAULT NULL,
     `disk`           bigint(20) DEFAULT NULL,
     `disk_usage`     bigint(20) DEFAULT NULL,
-    `load5`          double     DEFAULT NULL,
+    `load5`          double       DEFAULT NULL,
     `labels`         varchar(255) DEFAULT NULL,
     `os`             varchar(255) DEFAULT NULL,
     `kernel_version` varchar(255) DEFAULT NULL,
