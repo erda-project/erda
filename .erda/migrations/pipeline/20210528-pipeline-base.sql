@@ -18,8 +18,8 @@ CREATE TABLE `ci_v3_build_artifacts`
 CREATE TABLE `ci_v3_build_caches`
 (
     `id`           bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `name`         varchar(200) DEFAULT NULL COMMENT '缓存名',
-    `cluster_name` varchar(200) DEFAULT NULL COMMENT '集群名',
+    `name`         varchar(191) DEFAULT NULL COMMENT '缓存名',
+    `cluster_name` varchar(191) DEFAULT NULL COMMENT '集群名',
     `last_pull_at` datetime     DEFAULT NULL COMMENT '缓存最近一次被拉取的时间',
     `created_at`   datetime     DEFAULT NULL COMMENT '创建时间',
     `updated_at`   datetime     DEFAULT NULL COMMENT '更新时间',

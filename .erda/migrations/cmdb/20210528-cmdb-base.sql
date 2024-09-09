@@ -362,8 +362,8 @@ CREATE TABLE `dice_config_namespace`
 CREATE TABLE `dice_config_namespace_relation`
 (
     `id`                int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增主键',
-    `namespace`         varchar(255) NOT NULL COMMENT '配置命名空间名称',
-    `default_namespace` varchar(255) NOT NULL COMMENT '默认配置命名空间名称',
+    `namespace`         varchar(191) NOT NULL COMMENT '配置命名空间名称',
+    `default_namespace` varchar(191) NOT NULL COMMENT '默认配置命名空间名称',
     `create_time`       datetime     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '创建时间',
     `update_time`       datetime     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '修改时间',
     `is_deleted`        varchar(1)   NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
@@ -593,8 +593,8 @@ CREATE TABLE `dice_label_relations`
     `created_at` datetime DEFAULT NULL COMMENT '表记录创建时间',
     `updated_at` datetime DEFAULT NULL COMMENT '表记录更新时间',
     `label_id`   bigint(20) NOT NULL,
-    `ref_type`   varchar(40) NOT NULL COMMENT '标签作用类型, 与 dice_labels type 相同, eg: issue',
-    `ref_id`     bigint(20) NOT NULL COMMENT '标签关联目标 id, eg: issue_id',
+    `ref_type`   varchar(40)  NOT NULL COMMENT '标签作用类型, 与 dice_labels type 相同, eg: issue',
+    `ref_id`     varchar(191) NOT NULL COMMENT '标签关联目标 id, eg: issue_id',
     PRIMARY KEY (`id`),
     KEY          `idx_label_id` (`label_id`),
     KEY          `idx_ref_id` (`ref_type`,`ref_id`)
