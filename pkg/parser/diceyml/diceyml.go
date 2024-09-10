@@ -18,11 +18,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"strings"
-
 	"github.com/pkg/errors"
+	"regexp"
 	"sigs.k8s.io/yaml"
+	"strings"
 
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -248,6 +247,7 @@ func (d *DiceYaml) getDefaultValueData() ([]byte, error) {
 var matchRegex = regexp.MustCompile(`\$\{[\w-]+(:[^\}]*)?\}`)
 var keyRegex = regexp.MustCompile(`[\w-]+`)
 var valueRegex = regexp.MustCompile(`:[^\}]*`)
+var specialValueRegex = regexp.MustCompile(`^[\*&]`)
 var reservedExpressionPrefix = []string{"env."}
 
 func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
@@ -280,7 +280,12 @@ func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 		} else {
 			value = findValue
 		}
-		return []byte(strings.TrimSpace(string(value)))
+		value = []byte(strings.TrimSpace(string(value)))
+		if specialValueRegex.Match(value) {
+			value = append(value, '\'')
+			value = append([]byte{'\''}, value...)
+		}
+		return value
 	}), nil
 
 }
