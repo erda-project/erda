@@ -248,6 +248,7 @@ func (d *DiceYaml) getDefaultValueData() ([]byte, error) {
 var matchRegex = regexp.MustCompile(`\$\{[\w-]+(:[^\}]*)?\}`)
 var keyRegex = regexp.MustCompile(`[\w-]+`)
 var valueRegex = regexp.MustCompile(`:[^\}]*`)
+var specialValueRegex = regexp.MustCompile(`^[\*&]`)
 var reservedExpressionPrefix = []string{"env."}
 
 func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
@@ -280,7 +281,11 @@ func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 		} else {
 			value = findValue
 		}
-		return []byte(strings.TrimSpace(string(value)))
+		value = []byte(strings.TrimSpace(string(value)))
+		if specialValueRegex.Match(value) {
+			value = []byte(fmt.Sprintf("'%s'", value))
+		}
+		return value
 	}), nil
 
 }
