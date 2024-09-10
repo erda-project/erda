@@ -283,8 +283,7 @@ func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 		}
 		value = []byte(strings.TrimSpace(string(value)))
 		if specialValueRegex.Match(value) {
-			value = append(value, '\'')
-			value = append([]byte{'\''}, value...)
+			value = []byte(fmt.Sprintf("'%s'", value))
 		}
 		return value
 	}), nil
