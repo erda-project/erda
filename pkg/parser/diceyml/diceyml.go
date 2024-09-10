@@ -18,10 +18,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"regexp"
-	"sigs.k8s.io/yaml"
 	"strings"
+
+	"github.com/pkg/errors"
+	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/pkg/strutil"
 )
