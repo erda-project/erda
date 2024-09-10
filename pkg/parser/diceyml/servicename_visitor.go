@@ -24,7 +24,7 @@ var serviceNameRegex = regexp.MustCompile("^((([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z
 
 // var serviceNameMaxLen = 14 // service name 最长长度
 
-var envNameRegex = regexp.MustCompile("^([A-Za-z_][A-Za-z0-9_]*)$")
+var envNameRegex = regexp.MustCompile(`^([-._a-zA-Z][-._a-zA-Z0-9]*)$`)
 
 type ServiceNameVisitor struct {
 	DefaultVisitor
@@ -39,27 +39,32 @@ func NewServiceNameVisitor() DiceYmlVisitor {
 
 func (o *ServiceNameVisitor) VisitService(v DiceYmlVisitor, obj *Service) {
 	if !serviceNameRegex.MatchString(o.currentService) {
-		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{"services"}, o.currentService)] = fmt.Errorf(
-			"service name[%s] not match regex:\n %s, \n e.g: aa.bb-cc.dd-ee", o.currentService, serviceNameRegex)
+		header := yamlHeaderRegexWithUpperHeader([]string{"services"}, o.currentService)
+		err := fmt.Errorf(
+			"service name[%s] does not match regex: %s, e.g: aa.bb-cc.dd-ee", o.currentService, serviceNameRegex)
+		o.collectErrors[header] = err
 	}
 
-	for k := range obj.Envs {
-		if !envNameRegex.MatchString(k) {
-			o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{"services", o.currentService, "envs"}, k)] = fmt.Errorf("env name [%s] not match regex:\n %s", k, envNameRegex)
-		}
-	}
+	o.checkEnvNames([]string{"services", o.currentService, "envs"}, obj.Envs)
 }
 
 func (o *ServiceNameVisitor) VisitObject(v DiceYmlVisitor, obj *Object) {
-	for k := range obj.Envs {
-		if !envNameRegex.MatchString(k) {
-			o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{"envs"}, k)] = fmt.Errorf("env name [%s] not match regex:\n %s", k, envNameRegex)
-		}
-	}
+	o.checkEnvNames([]string{"envs"}, obj.Envs)
 }
 
 func ServiceNameCheck(obj *Object) ValidateError {
 	visitor := NewServiceNameVisitor()
 	obj.Accept(visitor)
 	return visitor.(*ServiceNameVisitor).collectErrors
+}
+
+func (o *ServiceNameVisitor) checkEnvNames(prefix []string, envs map[string]string) {
+	for k := range envs {
+		if !envNameRegex.MatchString(k) {
+			header := yamlHeaderRegexWithUpperHeader(prefix, k)
+			err := fmt.Errorf(
+				"env name [%s] not match regex: %s, e.g. 'my.env-name', or 'MY_ENV.NAME'", k, envNameRegex)
+			o.collectErrors[header] = err
+		}
+	}
 }

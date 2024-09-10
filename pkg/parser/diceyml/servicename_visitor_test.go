@@ -15,7 +15,9 @@
 package diceyml
 
 import (
+	"bytes"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -73,4 +75,109 @@ func TestServiceNameUnderline(t *testing.T) {
 	assert.Nil(t, err)
 	es := ServiceNameCheck(d.Obj())
 	assert.Equal(t, 1, len(es), "%v", es)
+}
+
+func TestEnvValidate(t *testing.T) {
+	const baseYmlTemplate = `
+envs:
+{{- range $key, $value := .Envs }}
+  {{ $key }}: '{{ $value }}'
+{{- end }}
+services:
+  go-demo:
+    deployments:
+      replicas: 1
+    image: go-demo-1725860282590763654
+    ports:
+    - 8080
+    resources:
+      cpu: 0.1
+      mem: 128
+{{- if .ServiceEnvs }}
+    envs:
+{{- range $key, $value := .ServiceEnvs }}
+      {{ $key }}: '{{ $value }}'
+{{- end }}
+{{- end }}
+version: "2.0"
+`
+	testCases := []struct {
+		name        string
+		envs        map[string]string
+		serviceEnvs map[string]string
+		expectErr   bool
+	}{
+		{
+			name: "valid env with dot and dash",
+			envs: map[string]string{
+				"spring.cloud.compatibility-verifier.enabled": "false",
+			},
+			serviceEnvs: nil,
+			expectErr:   false,
+		},
+		{
+			name: "valid env with service level envs",
+			envs: map[string]string{
+				"spring.cloud.compatibility-verifier.enabled": "false",
+			},
+			serviceEnvs: map[string]string{
+				"MY_SERVICE_ENV": "true",
+			},
+			expectErr: false,
+		},
+		{
+			name: "invalid service level env with special characters",
+			envs: map[string]string{
+				"spring.cloud.compatibility-verifier.enabled": "false",
+			},
+			serviceEnvs: map[string]string{
+				"my!service@env": "false",
+			},
+			expectErr: true,
+		},
+		{
+			name: "valid service level env with numbers and dots",
+			envs: map[string]string{
+				"spring.cloud.compatibility-verifier.enabled": "false",
+			},
+			serviceEnvs: map[string]string{
+				"service.env.123": "test",
+			},
+			expectErr: false,
+		},
+		{
+			name: "valid start with number",
+			envs: map[string]string{
+				"8080port": "http",
+			},
+			expectErr: true,
+		},
+	}
+
+	tmpl, err := template.New("yml").Parse(baseYmlTemplate)
+	if err != nil {
+		t.Fatalf("failed to parse template: %v", err)
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var renderedYml bytes.Buffer
+
+			err := tmpl.Execute(&renderedYml, map[string]interface{}{
+				"Envs":        tc.envs,
+				"ServiceEnvs": tc.serviceEnvs,
+			})
+			if err != nil {
+				t.Fatalf("failed to render template: %v", err)
+			}
+
+			_, err = New(renderedYml.Bytes(), true)
+
+			if tc.expectErr {
+				assert.Error(t, err, "expected an error, but got none")
+			} else {
+				assert.NoError(t, err, "did not expect an error, but got one")
+			}
+		})
+	}
 }
