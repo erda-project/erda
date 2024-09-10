@@ -25,6 +25,15 @@ envs:
   TERMINUS_APP_NAME: PMP
   TERMINUS_TRACE_ENABLE: true
   TRACE_SAMPLE: 1
+  GOGOGO: ${GOGOGO}
+
+values:
+  development:
+    GOGOGO: '*'
+  staging:
+    GOGOGO: '*'
+  test:
+    GOGOGO: '*'
 
 services:
   pmp-ui:
