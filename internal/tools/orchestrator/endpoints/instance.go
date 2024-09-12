@@ -322,7 +322,7 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 				break
 			}
 			for _, env := range container.Env {
-				if env.Name == "DICE_CLUSTER_NAME" {
+				if env.Name == apistructs.DICE_CLUSTER_NAME.String() {
 					clusterName = env.Value
 					break
 				}
