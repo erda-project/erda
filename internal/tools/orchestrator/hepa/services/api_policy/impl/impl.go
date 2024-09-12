@@ -896,7 +896,9 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 			if err != nil {
 				return "", err
 			}
-			zones = append(zones, *zone)
+			if zone != nil {
+				zones = append(zones, *zone)
+			}
 		}
 	}
 	policyEngine, err := apipolicy.GetPolicyEngine(category)

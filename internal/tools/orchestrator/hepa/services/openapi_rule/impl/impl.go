@@ -263,7 +263,7 @@ func (impl GatewayOpenapiRuleServiceImpl) setPackageApiKongPolicies(basePriority
 		if err != nil {
 			return false, err
 		}
-		if len(zoneInfo.KongPolicies) > 0 {
+		if zoneInfo != nil && len(zoneInfo.KongPolicies) > 0 {
 			// clear
 			err = (*impl.zoneBiz).SetZoneKongPoliciesWithoutDomainPolicy(packageApi.ZoneId, nil, helper)
 			if err != nil {
@@ -812,11 +812,13 @@ func (impl GatewayOpenapiRuleServiceImpl) pluginReq(gatewayProvider string, dto 
 		}
 
 		if gatewayProvider == mseCommon.MseProviderName && api.ZoneId != "" {
-			zone, err := (*impl.zoneBiz).GetZone(api.ZoneId)
+			z, err := (*impl.zoneBiz).GetZone(api.ZoneId)
 			if err != nil {
 				return nil, err
 			}
-			reqDto.ZoneName = strings.ToLower(zone.Name)
+			if z != nil {
+				reqDto.ZoneName = strings.ToLower(z.Name)
+			}
 		}
 	}
 	return reqDto, nil
