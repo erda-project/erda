@@ -147,7 +147,7 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 
 	if args.PodName != "" && args.Namespace != "" && args.ContainerName != "" {
 		logrus.Infof("get termial connect param from args")
-		orgID, _ = strconv.Atoi(r.Header.Get("org-id"))
+		orgID, _ = strconv.Atoi(r.Header.Get(httputil.OrgHeader))
 		k8snamespace = args.Namespace
 		k8scontainername = args.ContainerName
 		k8spodname = args.PodName
@@ -179,7 +179,7 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 				return
 			}
 			p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
-				UserID:   r.Header.Get("User-ID"),
+				UserID:   r.Header.Get(httputil.UserHeader),
 				Scope:    apistructs.OrgScope,
 				ScopeID:  orgid,
 				Resource: "terminal",
@@ -200,7 +200,7 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 				return
 			}
 			p, err := bundle.New(bundle.WithErdaServer()).CheckPermission(&apistructs.PermissionCheckRequest{
-				UserID:   r.Header.Get("User-ID"),
+				UserID:   r.Header.Get(httputil.UserHeader),
 				Scope:    apistructs.AppScope,
 				ScopeID:  appid,
 				Resource: "terminal",
@@ -233,7 +233,7 @@ func Terminal(clusterSvc clusterpb.ClusterServiceServer, w http.ResponseWriter, 
 	}
 
 	auditor := &Auditor{
-		userID:        r.Header.Get("User-ID"),
+		userID:        r.Header.Get(httputil.UserHeader),
 		orgID:         uint64(orgID),
 		bdl:           bundle.New(bundle.WithErdaServer()),
 		podName:       k8spodname,
