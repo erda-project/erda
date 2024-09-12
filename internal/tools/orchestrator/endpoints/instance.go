@@ -315,9 +315,18 @@ func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistr
 			continue
 		}
 
+		// TODO change `DICE_CLUSTER_NAME` to  `core.erda.cloud/cluster-name`
 		clusterName := ""
-		if _, ok := pod.Labels["DICE_CLUSTER_NAME"]; ok {
-			clusterName = pod.Labels["DICE_CLUSTER_NAME"]
+		for _, container := range pod.Spec.Containers {
+			if clusterName != "" {
+				break
+			}
+			for _, env := range container.Env {
+				if env.Name == apistructs.DICE_CLUSTER_NAME.String() {
+					clusterName = env.Value
+					break
+				}
+			}
 		}
 		message := PodDefaultMessage
 		if pod.Status.Message != "" {

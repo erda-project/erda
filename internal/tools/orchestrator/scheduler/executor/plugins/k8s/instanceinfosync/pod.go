@@ -453,6 +453,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		mainContainer := getMainContainerStatus(pod.Status.ContainerStatuses, container.Name)
 		terminatedContainer := mainContainer.LastTerminationState.Terminated
 		if terminatedContainer != nil {
+			logrus.Infof("get [prevContainerID] from terminatedContainer")
 			if len(strings.Split(terminatedContainer.ContainerID, "://")) == 2 {
 				runtimeAndId := strings.Split(terminatedContainer.ContainerID, "://")
 				prevContainerID = runtimeAndId[1]
@@ -475,6 +476,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		}
 		currentContainer := mainContainer.State.Running
 		if currentContainer != nil {
+			logrus.Infof("get [currentContainerID] from currentContainer")
 			if len(strings.Split(mainContainer.ContainerID, "://")) == 2 {
 				runtimeAndId := strings.Split(mainContainer.ContainerID, "://")
 				currentContainerID = runtimeAndId[1]
@@ -498,6 +500,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				}
 			}
 		} else {
+			logrus.Infof("get [currentContainerID] from mainContainer")
 			currentTerminatedContainer := mainContainer.State.Terminated
 			if currentTerminatedContainer != nil {
 				if len(strings.Split(mainContainer.ContainerID, "://")) == 2 {
@@ -609,7 +612,10 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 						return orgs, err
 					}
 				}
+				logrus.Infof("latest instance id %v , others cleared by [prevContainerID]", instances[0].ID)
 			}
+		} else {
+			logrus.Infof("[prevContainerID] is empty, skip create or update")
 		}
 		if currentContainerID != "" {
 			instances, err := r.ByContainerID(currentContainerID).ByRuntimeID(runtimeID).ByApplicationID(applicationID).Do()
@@ -683,7 +689,10 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 						return orgs, err
 					}
 				}
+				logrus.Infof("latest instance id %v, others cleared by [currentContainerID]", instances[0].ID)
 			}
+		} else {
+			logrus.Infof("[currentContainerID] is empty, skip create or update")
 		}
 	}
 	return orgs, nil
