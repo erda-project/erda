@@ -1009,7 +1009,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.Pa
 			return
 		}
 		//老类型兼容
-		if z.Type == db.ZONE_TYPE_PACKAGE {
+		if z != nil && z.Type == db.ZONE_TYPE_PACKAGE {
 			_, err = (*impl.zoneBiz).UpdateZoneRoute(dao.ZoneId, zone.ZoneRoute{
 				zone.RouteConfig{
 					Hosts: domains,
@@ -2116,9 +2116,11 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 			if err != nil {
 				return "", err
 			}
-			externalSvc, err = impl.createOrUpdateService(k8sAdapter, info, *z)
-			if err != nil {
-				return "", err
+			if z != nil {
+				externalSvc, err = impl.createOrUpdateService(k8sAdapter, info, *z)
+				if err != nil {
+					return "", err
+				}
 			}
 		}
 	}
@@ -2133,9 +2135,11 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info endpoint_api.Pack
 		if err != nil {
 			return "", err
 		}
-		err = (*impl.policyBiz).RefreshZoneIngress(*z, *az, runtimeService.ProjectNamespace, useKong)
-		if err != nil {
-			return "", err
+		if z != nil {
+			err = (*impl.policyBiz).RefreshZoneIngress(*z, *az, runtimeService.ProjectNamespace, useKong)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 	return info.ZoneId, nil
@@ -2900,14 +2904,16 @@ func (impl GatewayOpenapiServiceImpl) deleteMSEApi(dao *orm.GatewayPackageApi, p
 		if err != nil {
 			return err
 		}
-		var k8sAdapter k8s.K8SAdapter
-		k8sAdapter, err = k8s.NewAdapter(pack.DiceClusterName)
-		if err != nil {
-			return err
-		}
-		err = k8sAdapter.DeleteService(ingressNamespace, strings.ToLower(zone.Name))
-		if err != nil {
-			return err
+		if zone != nil {
+			var k8sAdapter k8s.K8SAdapter
+			k8sAdapter, err = k8s.NewAdapter(pack.DiceClusterName)
+			if err != nil {
+				return err
+			}
+			err = k8sAdapter.DeleteService(ingressNamespace, strings.ToLower(zone.Name))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
