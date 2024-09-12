@@ -500,7 +500,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				}
 			}
 		} else {
-			logrus.Infof("get [currentContainerID] from mainContainer,")
+			logrus.Infof("get [currentContainerID] from mainContainer")
 			currentTerminatedContainer := mainContainer.State.Terminated
 			if currentTerminatedContainer != nil {
 				if len(strings.Split(mainContainer.ContainerID, "://")) == 2 {
@@ -612,7 +612,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 						return orgs, err
 					}
 				}
-				logrus.Infof("lastest instance id %v , others cleared by [prevContainerID]", instances[0].ID)
+				logrus.Infof("latest instance id %v , others cleared by [prevContainerID]", instances[0].ID)
 			}
 		} else {
 			logrus.Infof("[prevContainerID] is empty, skip create or update")
@@ -689,7 +689,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 						return orgs, err
 					}
 				}
-				logrus.Infof("lastest instance id %v, others cleared by [currentContainerID]", instances[0].ID)
+				logrus.Infof("latest instance id %v, others cleared by [currentContainerID]", instances[0].ID)
 			}
 		} else {
 			logrus.Infof("[currentContainerID] is empty, skip create or update")
