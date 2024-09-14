@@ -50,13 +50,13 @@ func (t AliyunDashScopeResponseType) String() string {
 }
 func (t AliyunDashScopeResponseType) Valid() (bool, error) {
 	if t.String() == "" {
-		return false, fmt.Errorf("empty request_type")
+		return false, fmt.Errorf("empty response_type")
 	}
 	switch t {
 	case AliyunDashScopeResponseTypeOpenAI, AliyunDashScopeResponseTypeDs:
 		return true, nil
 	default:
-		return false, fmt.Errorf("unknown request_type: %s", t)
+		return false, fmt.Errorf("unknown response_type: %s", t)
 	}
 }
 

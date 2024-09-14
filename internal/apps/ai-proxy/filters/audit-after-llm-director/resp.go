@@ -45,7 +45,7 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 		AuditId:            auditRecID,
 		ResponseAt:         timestamppb.New(f.firstResponseAt),
 		Status:             int32(infor.StatusCode()),
-		ActualResponseBody: string(decompress.TryDecompressBody(infor.Header(), infor.BodyBuffer())),
+		ActualResponseBody: string(decompress.TryDecompressBody(infor.Header(), f.DefaultResponseFilter.Buffer)),
 		ActualResponseHeader: func() string {
 			if actualHeader, err := json.Marshal(infor.Header()); err != nil {
 				return err.Error()

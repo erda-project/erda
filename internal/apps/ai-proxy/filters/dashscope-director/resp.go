@@ -35,15 +35,7 @@ import (
 func (f *DashScopeDirector) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
 	model := ctxhelper.MustGetModel(ctx)
 	modelMeta := getModelMeta(model)
-	requestType := modelMeta.Public.RequestType
-	responseType := modelMeta.Public.ResponseType
-	if responseType == "" {
-		responseType = metadata.AliyunDashScopeResponseType(requestType.String())
-	}
-
-	if ok, err := responseType.Valid(); !ok {
-		return reverseproxy.Intercept, fmt.Errorf("metadata.public.response_type is invalid, err: %v", err)
-	}
+	responseType := mustGetResponseType(modelMeta)
 
 	// switch by request type
 	switch responseType {
@@ -220,6 +212,10 @@ func (f *DashScopeDirector) OnResponseEOF(ctx context.Context, _ reverseproxy.Ht
 
 	// only stream style need append [DONE] chunk
 	if !ctxhelper.GetIsStream(ctx) {
+		responseType := mustGetResponseType(modelMeta)
+		if responseType == metadata.AliyunDashScopeResponseTypeOpenAI {
+			return f.DefaultResponseFilter.OnResponseEOF(ctx, nil, w, chunk) // return directly
+		}
 		// convert all at once
 		var dsResp sdk.DsResponse
 		if err := json.Unmarshal(f.DefaultResponseFilter.Buffer.Bytes(), &dsResp); err != nil {
