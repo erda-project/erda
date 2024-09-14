@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
@@ -293,6 +294,13 @@ func (p *provider) UnDeploy(resourceId string) error {
 	return nil
 }
 
+const (
+	ResourceRegisterCenter = "registercenter"
+	ResourceConfigCenter   = "config-center"
+
+	RegisterAndConfigMutexKey = "ConfigLoveRegister"
+)
+
 // mutexDeploy wraps a global distributed lock around the function deploy to ensure that only one instance of an addon of a certain type of engine is being
 // deployed within a cluster, to prevent duplicate instances from being pulled up.
 // deploy is the main logic for deployment.
@@ -302,7 +310,14 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*12)
 	defer cancel()
 
-	mu, err := p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
+	var err error
+	var mu mutex.Mutex
+
+	if req.Engine == ResourceRegisterCenter || req.Engine == ResourceConfigCenter {
+		mu, err = p.Mutex.New(ctx, strings.Join([]string{RegisterAndConfigMutexKey, req.Az}, "/"))
+	} else {
+		mu, err = p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
+	}
 	if err != nil {
 		p.Log.Errorf("[%s/%s] failed to New a global distributed lock (ETCD Mutex) before deploying: %v\n", req.Engine, req.Az, err)
 		return nil, errors.Wrapf(err, "failed to New ETCD Mutex for %s/%s", req.Engine, req.Az)
