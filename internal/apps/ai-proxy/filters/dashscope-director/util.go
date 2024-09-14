@@ -15,6 +15,8 @@
 package dashscope_director
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
@@ -31,4 +33,18 @@ func getModelMeta(m *modelpb.Model) metadata.AliyunDashScopeModelMeta {
 	var meta metadata.AliyunDashScopeModelMeta
 	cputil.MustObjJSONTransfer(&m.Metadata, &meta)
 	return meta
+}
+
+func mustGetResponseType(modelMeta metadata.AliyunDashScopeModelMeta) metadata.AliyunDashScopeResponseType {
+	requestType := modelMeta.Public.RequestType
+	responseType := modelMeta.Public.ResponseType
+	if responseType == "" {
+		responseType = metadata.AliyunDashScopeResponseType(requestType.String())
+	}
+
+	if ok, err := responseType.Valid(); !ok {
+		panic(fmt.Errorf("metadata.public.response_type is invalid, err: %v", err))
+	}
+
+	return responseType
 }
