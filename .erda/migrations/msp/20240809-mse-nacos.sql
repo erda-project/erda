@@ -1,3 +1,3 @@
-INSERT INTO `tb_tmc` (`id`, `name`, `engine`, `service_type`, `deploy_mode`, `create_time`, `update_time`, `is_deleted`) VALUES (23,'MSE-Nacos','mse-nacos','ADDON','SAAS','2024-07-09 17:00:00','2024-07-09 17:00:00','N');
+INSERT INTO `tb_tmc` (`name`, `engine`, `service_type`, `deploy_mode`, `is_deleted`) VALUES ('MSE-Nacos','mse-nacos','ADDON','SAAS','N');
 
-INSERT INTO `tb_tmc_version` (`id`, `engine`, `version`, `release_id`, `create_time`, `update_time`, `is_deleted`) VALUES (31,'mse-nacos','1.0.0',NULL,'2024-07-09 17:00:00','2024-07-09 17:00:00','N');
+INSERT INTO `tb_tmc_version` (`engine`, `version`, `release_id`, `is_deleted`) VALUES ('mse-nacos','1.0.0',NULL,'N');
