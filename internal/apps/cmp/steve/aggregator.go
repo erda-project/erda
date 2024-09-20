@@ -257,6 +257,7 @@ func (a *Aggregator) prepareSteveServer(clusterInfo *clusterpb.ClusterInfo) {
 	if err := a.createPredefinedResource(clusterInfo.Name); err != nil {
 		logrus.Infof("failed to create predefined resource for cluster %s, %v. Skip starting steve server",
 			clusterInfo.Name, err)
+		a.server.Remove(clusterInfo.Name)
 		return
 	}
 	logrus.Infof("starting steve server for cluster %s", clusterInfo.Name)
