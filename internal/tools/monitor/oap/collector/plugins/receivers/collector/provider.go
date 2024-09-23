@@ -48,12 +48,6 @@ type provider struct {
 	consumer model.ObservableDataConsumerFunc
 }
 
-type skipValidator struct{}
-
-func (skipValidator) Validate(scope string, scopeId string, token string) bool {
-	return true
-}
-
 func (p *provider) ComponentClose() error {
 	return nil
 }
