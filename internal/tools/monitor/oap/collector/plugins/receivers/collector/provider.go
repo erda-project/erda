@@ -15,6 +15,8 @@
 package collector
 
 import (
+	"strings"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -97,7 +99,7 @@ func init() {
 		Description: "here is description of erda.oap.collector.receiver.collector",
 		DependenciesFunc: func(hub *servicehub.Hub) (list []string) {
 			hub.ForeachServices(func(service string) bool {
-				if service == "erda.oap.collector.authentication.Validator" {
+				if strings.HasPrefix(service, "erda.oap.collector.authentication.") {
 					list = append(list, service)
 				}
 				return true
