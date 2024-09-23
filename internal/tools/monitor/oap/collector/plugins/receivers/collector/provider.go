@@ -41,8 +41,8 @@ var _ model.Receiver = (*provider)(nil)
 type provider struct {
 	Cfg       *config
 	Log       logs.Logger
-	Router    httpserver.Router `autowired:"http-router"`
-	Validator authentication.Validator
+	Router    httpserver.Router        `autowired:"http-router"`
+	Validator authentication.Validator `autowired:"erda.oap.collector.authentication.Validator"`
 
 	auth     *Authenticator
 	consumer model.ObservableDataConsumerFunc
@@ -68,11 +68,6 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	if p.Cfg.Auth.Skip {
-		p.Validator = skipValidator{}
-	} else {
-		p.Validator = ctx.Service("erda.oap.collector.authentication.Validator").(authentication.Validator)
-	}
 	p.auth = NewAuthenticator(
 		WithLogger(p.Log),
 		WithValidator(p.Validator),
