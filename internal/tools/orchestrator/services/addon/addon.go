@@ -321,9 +321,13 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 	}
 
 	var hasRegister, hasConfig bool
-	for _, addon := range req.Addons {
+	for i, addon := range req.Addons {
 		if addon.Type == RegisterCenterAddon {
 			hasRegister = true
+			err = a.injectVersion(&req.Addons[i])
+			if err != nil {
+				return errors.Wrapf(err, "inject version to [%s] error ", addon.Type)
+			}
 		}
 		if addon.Type == ConfigCenterAddon {
 			hasConfig = true
@@ -3879,4 +3883,29 @@ func (a *Addon) CheckDeployCondition(addonName, addonPlan, workspace string) (bo
 	//	}
 	//}
 	return true, nil
+}
+
+func (a *Addon) injectVersion(addon *apistructs.AddonCreateItem) error {
+	if addon.Options == nil {
+		addon.Options = make(map[string]string)
+	}
+	if v, ok := addon.Options["Version"]; ok && v != "" {
+		return nil
+	}
+
+	versionMap, err := GetCache().Get(addon.Type)
+	if err != nil {
+		return fmt.Errorf("can't get addon [%s] from cache, %v", addon.Type, err)
+	}
+	addons, ok := versionMap.(*VersionMap)
+	if !ok {
+		return fmt.Errorf("can't convert to VersionMap")
+	}
+	defaultAddon, ok := addons.GetDefault()
+	if !ok {
+		return fmt.Errorf("there are no default addons [%s]", addon.Type)
+	}
+
+	addon.Options["Version"] = defaultAddon.Version
+	return nil
 }

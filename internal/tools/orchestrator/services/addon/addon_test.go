@@ -1544,3 +1544,58 @@ func TestDeploy(t *testing.T) {
 		},
 	})
 }
+
+func TestInjectVersion(t *testing.T) {
+	defer monkey.UnpatchAll()
+
+	InitCache(DefaultTtl, DefaultSize)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(cache.bdl), "QueryExtensionVersions", func(_ *bundle.Bundle,
+		req apistructs.ExtensionVersionQueryRequest) ([]apistructs.ExtensionVersion, error) {
+		switch req.Name {
+		case "registercenter":
+			return []apistructs.ExtensionVersion{
+				{Name: "registercenter", Version: "3.0.0", IsDefault: true},
+				{Name: "registercenter", Version: "2.0.0"},
+			}, nil
+		case "config-center":
+			return []apistructs.ExtensionVersion{
+				{Name: "config-center", Version: "3.0.0", IsDefault: true},
+				{Name: "config-center", Version: "2.0.0"},
+			}, nil
+		default:
+			return []apistructs.ExtensionVersion{}, errors.New("not found")
+		}
+	})
+
+	addon := &Addon{db: &dbclient.DBClient{DBEngine: &dbengine.DBEngine{}}}
+
+	tests := []struct {
+		Name    string
+		Type    string
+		Options map[string]string
+	}{
+		{
+			Name:    "config-center",
+			Type:    "config-center",
+			Options: nil,
+		},
+		{
+			Name: "register-center",
+			Type: "registercenter",
+			Options: map[string]string{
+				"Version": "2.0.0",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		err := addon.injectVersion(&apistructs.AddonCreateItem{
+			Name:    tt.Name,
+			Type:    tt.Type,
+			Options: tt.Options,
+		})
+		assert.NoError(t, err, "Expected no error, but got ", err)
+	}
+
+}
