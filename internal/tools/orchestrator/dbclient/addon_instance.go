@@ -116,7 +116,7 @@ func (db *DBClient) GetAddonInstance(id string) (*AddonInstance, error) {
 
 func (db *DBClient) GetAddonInstanceByNameAndCluster(addonName, cluster string) (*AddonInstance, error) {
 	var instance AddonInstance
-	if err := db.Where("name = ?", addonName).
+	if err := db.Where("addon_name = ?", addonName).
 		Where("az = ?", cluster).
 		Where("is_deleted = ?", apistructs.AddonNotDeleted).
 		First(&instance).Error; err != nil {
