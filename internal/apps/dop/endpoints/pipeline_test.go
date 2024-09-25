@@ -182,3 +182,19 @@ func Test_pipelineList(t *testing.T) {
 	_, err = e.pipelineList(context.Background(), r, nil)
 	assert.NoError(t, err)
 }
+
+func Test_makeProjectDefaultLevelCmsNs(t *testing.T) {
+	projectNamespace1 := makeProjectDefaultLevelCmsNs(1)
+	assert.Equal(t, "project-1-default", projectNamespace1[0])
+
+	projectNamespace2 := makeProjectDefaultLevelCmsNs(2)
+	assert.Equal(t, "project-2-default", projectNamespace2[0])
+}
+
+func Test_makeOrgDefaultLevelCmsNs(t *testing.T) {
+	orgNamespace1 := makeOrgDefaultLevelCmsNs(1)
+	assert.Equal(t, "org-1-default", orgNamespace1[0])
+
+	orgNamespace2 := makeOrgDefaultLevelCmsNs(2)
+	assert.Equal(t, "org-2-default", orgNamespace2[0])
+}
