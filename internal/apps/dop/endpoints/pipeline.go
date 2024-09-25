@@ -97,8 +97,10 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	}
 
 	// also add project/org default config namespace
-	reqPipeline.ConfigManageNamespaces = append(reqPipeline.ConfigManageNamespaces, makeOrgDefaultLevelCmsNs(app.OrgID)...)
-	reqPipeline.ConfigManageNamespaces = append(reqPipeline.ConfigManageNamespaces, makeProjectDefaultLevelCmsNs(app.ProjectID)...)
+	// priority: org->project->app->user
+	reqPipeline.ConfigManageNamespaces = append(append(makeOrgDefaultLevelCmsNs(app.OrgID),
+		makeProjectDefaultLevelCmsNs(app.ProjectID)...),
+		reqPipeline.ConfigManageNamespaces...)
 
 	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
 	if err != nil {
