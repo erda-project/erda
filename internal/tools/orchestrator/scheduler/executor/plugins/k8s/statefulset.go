@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/labels"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
@@ -111,6 +112,14 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 			Tolerations:           toleration.GenTolerations(),
 		},
 	}
+
+	labels.NewRuntimeLabelSetter(service, info.Sg, set.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
+
+	labels.NewRuntimeLabelSetter(service, info.Sg, set.Spec.Template.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 
 	hasHostPath := serviceHasHostpath(service)
 	err := setPodLabelsFromService(hasHostPath, service.Labels, set.Labels)

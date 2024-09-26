@@ -109,3 +109,49 @@ func SetlabelsFromOptions(options, labels map[string]string) {
 		labels[apistructs.AlibabaECILabel] = options[apistructs.AlibabaECILabel]
 	}
 }
+
+// k8s labels for cluster addons
+const (
+	LabelCoreErdaCloudClusterName = "core.erda.cloud/cluster-name"
+	LabelCoreErdaCloudServiceType = "core.erda.cloud/service-type"
+
+	LabelDiceClusterName = "DICE_CLUSTER_NAME"
+	LabelDiceServiceType = "SERVICE_TYPE"
+)
+
+const (
+	LabelAddonErdaCloudId      = "addon.erda.cloud/id"
+	LabelAddonErdaCloudScope   = "addon.erda.cloud/scope"
+	LabelAddonErdaCloudType    = "addon.erda.cloud/type"
+	LabelAddonErdaCloudVersion = "addon.erda.cloud/version"
+)
+
+var labelMappings = map[string]string{
+	LabelCoreErdaCloudClusterName: LabelDiceClusterName,
+	LabelCoreErdaCloudServiceType: LabelDiceServiceType,
+}
+
+func SetCoreErdaLabels(target map[string]string, source map[string]string, req apistructs.ServiceGroupCreateV2Request) {
+	if target == nil || source == nil {
+		return
+	}
+	for core, dice := range labelMappings {
+		if v, exist := source[dice]; exist {
+			target[core] = v
+		}
+	}
+
+	target[LabelCoreErdaCloudClusterName] = req.ClusterName
+}
+
+func SetAddonErdaLabels(labels map[string]string, req apistructs.ServiceGroupCreateV2Request, spec *apistructs.AddonExtension) {
+	if labels == nil && spec == nil {
+		return
+	}
+	if spec.ShareScopes != nil && len(spec.ShareScopes) > 0 {
+		labels[LabelAddonErdaCloudScope] = spec.ShareScopes[0]
+	}
+	labels[LabelAddonErdaCloudId] = req.ID
+	labels[LabelAddonErdaCloudType] = spec.Name
+	labels[LabelAddonErdaCloudVersion] = spec.Version
+}
