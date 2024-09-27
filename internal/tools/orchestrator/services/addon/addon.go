@@ -3535,17 +3535,6 @@ func sortPrebuild(prebuilds []dbclient.AddonPrebuild) []dbclient.AddonPrebuild {
 	return append(others, canalPrebuilds...)
 }
 
-func (a *Addon) GetClusterAddonRouting(addonName, clusterName string) (*dbclient.AddonInstanceRouting, error) {
-	addons, err := a.db.GetInstanceRoutingByClusterAndName(addonName, clusterName)
-	if err != nil || addons == nil {
-		return nil, err
-	}
-	if len(addons) > 0 {
-		return &addons[0], nil
-	}
-	return nil, nil
-}
-
 // ListInstanceRoutingByRuntime 根据 runtimeID 获取已创建 addon 实例列表
 func (a *Addon) ListInstanceRoutingByRuntime(runtimeID uint64) (*[]dbclient.AddonInstanceRouting, error) {
 	attachments, err := a.db.GetAttachMentsByRuntimeID(runtimeID)

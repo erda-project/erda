@@ -91,20 +91,6 @@ func (db *DBClient) GetInstanceRouting(id string) (*AddonInstanceRouting, error)
 	return &instanceRouting, nil
 }
 
-func (db *DBClient) GetInstanceRoutingByClusterAndName(addonName, clusterName string) ([]AddonInstanceRouting, error) {
-	var instanceRouting []AddonInstanceRouting
-	if err := db.Where("addon_name = ?", addonName).
-		Where("az = ?", clusterName).
-		Where("is_deleted = ?", apistructs.AddonNotDeleted).
-		Find(&instanceRouting).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return instanceRouting, nil
-}
-
 // GetInstanceRoutingByRealInstance 通过真实例Id查找routing信息
 func (db *DBClient) GetInstanceRoutingByRealInstance(realIns string) (*[]AddonInstanceRouting, error) {
 	var instanceRouting []AddonInstanceRouting

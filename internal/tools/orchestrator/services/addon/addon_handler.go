@@ -348,13 +348,13 @@ func (a *Addon) checkAddonDeployable(addon apistructs.AddonHandlerCreateItem, sp
 			return fmt.Errorf("[project(%s)/workspace(%s)] 已存在 microservice(%s), 无法再新建",
 				addon.ProjectID, addon.Workspace, addon.AddonName)
 		}
-		routing, err := a.GetClusterAddonRouting(addon.AddonName, addon.ClusterName)
+		instance, err := a.db.GetAddonInstanceByNameAndCluster(addon.AddonName, addon.ClusterName)
 		if err != nil {
 			logrus.Errorf("%v", err)
-			return errors.New("failed to get addon routing from database")
+			return errors.New("failed to get addon instance from database")
 		}
-		if routing != nil && (addon.Options == nil || routing.Version != addon.Options["version"]) {
-			return errors.New(i18n.OrgSprintf(addon.OrgID, I18nClusterAddonRedeploy, addon.AddonName, routing.Version))
+		if instance != nil && (addon.Options == nil || instance.Version != addon.Options["version"]) {
+			return errors.New(i18n.OrgSprintf(addon.OrgID, I18nClusterAddonRedeploy, addon.AddonName, instance.Version))
 		}
 	}
 
