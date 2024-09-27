@@ -3145,8 +3145,10 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		createItem := needDeployAddons[index]
 		switch v.AddonName {
 		case RegisterCenterAddon:
+			logrus.Infof("register-center version: [%s]->[%s]", createItem.Options["version"], regVersion)
 			createItem.Options["version"] = regVersion
 		case ConfigCenterAddon:
+			logrus.Infof("config-center version: [%s]->[%s]", createItem.Options["version"], confVersion)
 			createItem.Options["version"] = confVersion
 		}
 		instanceRes, err := a.AttachAndCreate(&createItem)
