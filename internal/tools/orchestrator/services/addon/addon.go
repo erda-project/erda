@@ -2633,13 +2633,32 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 	basic := locale.Get("basicPlan")
 	professional := locale.Get("professionalPlan")
 
-	createableAddons := []string{"api-gateway", "mysql", "canal", "monitor"}
-	createableAddonVersion := map[string]string{"api-gateway": "3.0.0", "mysql": "5.7.29", "canal": "1.1.0", "monitor": "3.6"}
+	createableAddons := []string{
+		apistructs.AddonApiGateway,
+		apistructs.AddonMySQL,
+		apistructs.AddonMonitor,
+		apistructs.AddonRegisterCenter,
+		apistructs.AddonNewConfigCenter,
+	}
+	// if these addon-type is `custom` and they can't be deployed by user, skip it!
+	unCreateAbleAddons := []string{
+		apistructs.AddonMSENacos, // mse-nacos only can be deployed by `config-center` or `register-center`
+	}
+	createableAddonVersion := map[string]string{
+		apistructs.AddonApiGateway:      "3.0.0",
+		apistructs.AddonMySQL:           "5.7.29",
+		apistructs.AddonCanal:           "1.1.0",
+		apistructs.AddonMonitor:         "3.6",
+		apistructs.AddonRegisterCenter:  "3.0.0",
+		apistructs.AddonNewConfigCenter: "3.0.0",
+	}
 	createableAddonPlan := map[string][]map[string]string{
-		"api-gateway": {{"label": basic, "value": "api-gateway:basic"}},
-		"mysql":       {{"label": basic, "value": "mysql:basic"}},
-		"canal":       {{"label": basic, "value": "canal:basic"}},
-		"monitor":     {{"label": professional, "value": "monitor:professional"}},
+		apistructs.AddonApiGateway:      {{"label": basic, "value": "api-gateway:basic"}},
+		apistructs.AddonMySQL:           {{"label": basic, "value": "mysql:basic"}},
+		apistructs.AddonCanal:           {{"label": basic, "value": "canal:basic"}},
+		apistructs.AddonMonitor:         {{"label": professional, "value": "monitor:professional"}},
+		apistructs.AddonRegisterCenter:  {{"label": basic, "value": "registercenter:basic"}},
+		apistructs.AddonNewConfigCenter: {{"label": basic, "value": "config-center:basic"}},
 	}
 
 	// 构建请求参数，请求extension
@@ -2653,7 +2672,7 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 	}
 	extensionResult := make([]map[string]interface{}, 0, len(extensions))
 	for _, item := range extensions {
-		if item.Category != apistructs.AddonCustomCategory && !strutil.Exist(createableAddons, item.Name) {
+		if (item.Category != apistructs.AddonCustomCategory && !strutil.Exist(createableAddons, item.Name)) || strutil.Exist(unCreateAbleAddons, item.Name) {
 			continue
 		}
 		version := createableAddonVersion[item.Name]
@@ -2697,7 +2716,6 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		case "custom":
 			addonMap["vars"] = []string{}
 		}
-		addonMap["version"] = version
 		addonMap["plan"] = createableAddonPlan[item.Name]
 		// TODO: disable tenant support, we shall refactor later
 		//switch item.Name {
@@ -2707,6 +2725,21 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		//default:
 		//	addonMap["supportTenant"] = false
 		//}
+
+		versions := make([]string, 0, 1)
+		exts, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
+			Name: item.Name,
+			All:  true,
+		})
+		if err != nil {
+			versions = append(versions, version)
+		} else {
+			for _, e := range exts {
+				versions = append(versions, e.Version)
+			}
+		}
+		addonMap["versions"] = versions
+
 		extensionResult = append(extensionResult, addonMap)
 	}
 	return &extensionResult, nil
@@ -3499,6 +3532,17 @@ func sortPrebuild(prebuilds []dbclient.AddonPrebuild) []dbclient.AddonPrebuild {
 		}
 	}
 	return append(others, canalPrebuilds...)
+}
+
+func (a *Addon) GetClusterAddonRouting(addonName, clusterName string) (*dbclient.AddonInstanceRouting, error) {
+	addons, err := a.db.GetInstanceRoutingByClusterAndName(addonName, clusterName)
+	if err != nil || addons == nil {
+		return nil, err
+	}
+	if len(addons) > 0 {
+		return &addons[0], nil
+	}
+	return nil, nil
 }
 
 // ListInstanceRoutingByRuntime 根据 runtimeID 获取已创建 addon 实例列表
