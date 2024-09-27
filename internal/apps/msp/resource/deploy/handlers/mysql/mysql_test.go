@@ -15,7 +15,11 @@
 package mysql
 
 import (
+	"bou.ke/monkey"
 	"encoding/json"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
+	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
+	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
@@ -58,4 +62,36 @@ func TestParseResp2MySQLDtoMap(t *testing.T) {
 	if mysql.Options["MYSQL_ROOT_PASSWORD"] != "this-is-a-mocked-password" {
 		t.Fatal("failed to parse")
 	}
+}
+
+func TestCheckIfNeedTmcInstance(t *testing.T) {
+	p := &provider{
+		DefaultDeployHandler: &handlers.DefaultDeployHandler{
+			InstanceDb: &db.InstanceDB{},
+		},
+	}
+	req := &handlers.ResourceDeployRequest{
+		Engine: "mysql",
+		Uuid:   utils.GetRandomId(),
+		Az:     "test-cluster",
+	}
+	info := &handlers.ResourceInfo{
+		Tmc: &db.Tmc{},
+		TmcVersion: &db.TmcVersion{
+			Engine: "mysql",
+		},
+	}
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(p.InstanceDb), "First", func(DB *db.InstanceDB, where map[string]any) (*db.Instance, bool, error) {
+		return &db.Instance{
+			Engine:    "mysql",
+			Version:   "9.0",
+			ReleaseID: "i am release id!",
+			Status:    "RUNNING",
+			Az:        "test-cluster",
+			Config:    "",
+		}, false, nil
+	})
+
+	_, _, _ = p.CheckIfNeedTmcInstance(req, info)
 }
