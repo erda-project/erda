@@ -2732,6 +2732,7 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 			All:  true,
 		})
 		if err != nil {
+			logrus.Errorf("query error: %v", err)
 			versions = append(versions, version)
 		} else {
 			for _, e := range exts {
