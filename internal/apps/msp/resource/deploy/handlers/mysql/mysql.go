@@ -22,8 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/strutil"
-
 	"github.com/erda-project/erda/apistructs"
 	conf "github.com/erda-project/erda/cmd/erda-server/conf/msp"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
@@ -33,6 +31,7 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
