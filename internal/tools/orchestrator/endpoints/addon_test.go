@@ -15,8 +15,11 @@
 package endpoints
 
 import (
+	"context"
 	"math/rand"
+	"net/http"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -211,4 +214,67 @@ func TestConcurrentReadWriteProjectInfos(t *testing.T) {
 		_, ok := addon.ProjectInfos.Load(v)
 		assert.Equal(t, true, ok)
 	}
+}
+
+func TestCreateAddonDirectly(t *testing.T) {
+	e := Endpoints{}
+
+	for _, test := range []struct {
+		payload string
+		orgid   string
+		userid  string
+	}{
+		{
+			payload: `{
+    "addons": {
+        "registercenter": {
+            "plan": "registercenter:basic",
+            "options": {
+                "version": "2.0.0"
+            }
+        }
+    },
+    "workspace": "TEST",
+    "shareScope": "PROJECT",
+    "projectId": 88888,
+    "clusterName": "test"
+}`,
+			orgid:  "666",
+			userid: "666",
+		},
+
+		{
+			payload: `{
+    "addons": {
+        "config-center": {
+            "plan": "config-center:basic",
+            "options": {
+                "version": "2.0.0"
+            }
+        }
+    },
+    "workspace": "TEST",
+    "shareScope": "PROJECT",
+    "projectId": 88888,
+    "clusterName": "test"
+}`,
+			orgid:  "666",
+			userid: "666",
+		},
+	} {
+		payload := strings.NewReader(test.payload)
+		req, err := http.NewRequest("", "", payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Add("org-id", test.orgid)
+		req.Header.Add("USER-ID", test.userid)
+
+		monkey.PatchInstanceMethod(reflect.TypeOf(e.addon), "AddonCreate", func(a *addon.Addon, req apistructs.AddonDirectCreateRequest) ([]string, error) {
+			return []string{"test success!"}, nil
+		})
+
+		_, _ = e.CreateAddonDirectly(context.Background(), req, nil)
+	}
+
 }

@@ -71,6 +71,39 @@ func (e *Endpoints) CreateAddonDirectly(ctx context.Context, r *http.Request, va
 	// 		return apierrors.ErrCreateAddon.AccessDenied().ToResp(), nil
 	// 	}
 	// }
+	var hasRegister, hasConfig bool
+	var targetVersion string
+	for _, on := range addonCreateReq.Addons {
+		if strings.Contains(on.Plan, apistructs.AddonRegisterCenter) {
+			hasRegister = true
+			if on.Options != nil {
+				targetVersion = on.Options["version"]
+			}
+		}
+		if strings.Contains(on.Plan, apistructs.AddonNewConfigCenter) {
+			hasConfig = true
+			if on.Options != nil && targetVersion == "" {
+				targetVersion = on.Options["version"]
+			}
+		}
+	}
+
+	if hasRegister && !hasConfig {
+		addonCreateReq.Addons["config-center"] = &diceyml.AddOn{
+			Plan: fmt.Sprintf("%s:%s", apistructs.AddonNewConfigCenter, "basic"),
+			Options: map[string]string{
+				"version": targetVersion,
+			},
+		}
+	} else if !hasRegister && hasConfig {
+		addonCreateReq.Addons["register-center"] = &diceyml.AddOn{
+			Plan: fmt.Sprintf("%s:%s", apistructs.AddonRegisterCenter, "basic"),
+			Options: map[string]string{
+				"version": targetVersion,
+			},
+		}
+	}
+
 	addonid, err := e.addon.AddonCreate(addonCreateReq)
 	if err != nil {
 		return apierrors.ErrCreateAddon.InternalError(err).ToResp(), nil
