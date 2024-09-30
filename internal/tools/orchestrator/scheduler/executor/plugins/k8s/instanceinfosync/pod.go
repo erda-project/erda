@@ -206,26 +206,31 @@ func extractEnvs(pod corev1.Pod) (
 	edgeApplicationName,
 	edgeSites string) {
 	envsuffixmap := map[string]*string{
-		"ADDON_ID":                   &addonID,
 		"PIPELINE_ID":                &pipelineID,
-		"DICE_CLUSTER_NAME":          &cluster,
-		"DICE_ORG_NAME":              &orgName,
-		"DICE_ORG_ID":                &orgID,
-		"DICE_PROJECT_NAME":          &projectName,
-		"DICE_PROJECT_ID":            &projectID,
-		"DICE_APPLICATION_NAME":      &applicationName,
 		"DICE_EDGE_APPLICATION_NAME": &edgeApplicationName,
 		"DICE_EDGE_SITE":             &edgeSites,
-		"DICE_APPLICATION_ID":        &applicationID,
 		"DICE_RUNTIME_NAME":          &runtimeName,
-		"DICE_RUNTIME_ID":            &runtimeID,
-		"DICE_SERVICE_NAME":          &serviceName,
-		"DICE_WORKSPACE":             &workspace,
-		"DICE_ADDON_NAME":            &addonName,
 		"DICE_CPU_ORIGIN":            &cpuOriginStr,
 		"DICE_MEM_ORIGIN":            &memOriginStr,
 		"DICE_COMPONENT":             &diceComponent,
 	}
+
+	// TODO use const value in `labels` package for the key (wait new labels merge)
+	labelSuffixMap := map[string]*string{
+		"addon.erda.cloud/id":          &addonID,
+		"core.erda.cloud/cluster-name": &cluster,
+		"core.erda.cloud/org-name":     &orgName,
+		"core.erda.cloud/org-id":       &orgID,
+		"core.erda.cloud/project-name": &projectName,
+		"core.erda.cloud/project-id":   &projectID,
+		"core.erda.cloud/app-name":     &applicationName,
+		"core.erda.cloud/app-id":       &applicationID,
+		"core.erda.cloud/runtime-id":   &runtimeID,
+		"core.erda.cloud/service-name": &serviceName,
+		"core.erda.cloud/workspace":    &workspace,
+		"addon.erda.cloud/type":        &addonName,
+	}
+
 	for _, container := range pod.Spec.Containers {
 		for _, env := range container.Env {
 			for k, v := range envsuffixmap {
@@ -235,6 +240,11 @@ func extractEnvs(pod corev1.Pod) (
 			}
 		}
 	}
+
+	for k, v := range labelSuffixMap {
+		*v = pod.Labels[k]
+	}
+
 	return
 }
 
