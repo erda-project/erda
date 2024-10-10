@@ -734,7 +734,7 @@
     - scriptName: 20210714-update-report-meta-type.sql
       checksum: 7dd1b507fb6d1f2767e8d9dc52677b8ffa99e3ee4825ef47982870d1032c4c5a
     - scriptName: 20210528-cmdb-base.sql
-      checksum: 2a95650465d03300627f8f60e0e65666eb3a7da299597823a38f043510e3f74c
+      checksum: 91e82fb0b124f37a7ac0aff618bd911493d45c54e17b9bab237daa81624ef67d
     - scriptName: 20210610-addIssueSubscriber.sql
       checksum: c5bfeed8273576b913edc7a94c1d10b7b4a4c37cb8555b7375a08294cd2edbc5
     - scriptName: 20210702-updateMbox.sql
@@ -955,8 +955,6 @@
       checksum: ce3231c5afb76c8f254ddf880ce00a8eca98c063699d26f3005393514e9b5e05
     - scriptName: 20211222-dice-member-character.sql
       checksum: 07582b3282207fd93998058586025df3bb8e4b2d0ca8b86f29544b62fecadbcf
-    - scriptName: 20211221-dice-member-userID-varchar.sql
-      checksum: af49cd080c5cc801d1c6e4c11667e348ad77ed6979be1a0515ab105c44ff6a34
     - scriptName: 20211228-sp_metric_expression.sql
       checksum: ce53e43f08bfdde4af92d931b509cbd8fc718845c6ed531b665bba6bdc13b3af
     - scriptName: 21211228-project-home.sql
