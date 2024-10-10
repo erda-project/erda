@@ -694,7 +694,7 @@ CREATE TABLE `dice_member`
     `application_id`   bigint(20) DEFAULT NULL COMMENT '应用Id',
     `application_name` varchar(64)           DEFAULT NULL COMMENT '应用名称',
     `role`             varchar(20)  NOT NULL DEFAULT '' COMMENT '角色: Manager/Developer/Tester/Guest',
-    `user_id`          varchar(255) NOT NULL DEFAULT '' COMMENT '用户Id',
+    `user_id`          varchar(191) NOT NULL DEFAULT '' COMMENT '用户Id',
     `email`            varchar(255)          DEFAULT NULL COMMENT '用户邮箱',
     `mobile`           varchar(40)           DEFAULT NULL,
     `nick`             varchar(128)          DEFAULT NULL COMMENT '用户昵称',
