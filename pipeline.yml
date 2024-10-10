@@ -225,7 +225,7 @@ stages:
           alias: dryrun-on-mysql56
           version: 1.0-56
           params:
-            database: erda
+            database: ${{ configs.legacy_migration_mysql_database }}
             lint_config: .erda/migrations/config.yml
             migrationdir: .erda/migrations
             mysql_host: ${{ configs.legacy_migration_mysql_host }}
