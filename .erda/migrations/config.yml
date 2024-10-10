@@ -955,8 +955,6 @@
       checksum: ce3231c5afb76c8f254ddf880ce00a8eca98c063699d26f3005393514e9b5e05
     - scriptName: 20211222-dice-member-character.sql
       checksum: 07582b3282207fd93998058586025df3bb8e4b2d0ca8b86f29544b62fecadbcf
-    - scriptName: 20211221-dice-member-userID-varchar.sql
-      checksum: af49cd080c5cc801d1c6e4c11667e348ad77ed6979be1a0515ab105c44ff6a34
     - scriptName: 20211228-sp_metric_expression.sql
       checksum: ce53e43f08bfdde4af92d931b509cbd8fc718845c6ed531b665bba6bdc13b3af
     - scriptName: 21211228-project-home.sql
