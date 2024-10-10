@@ -209,7 +209,7 @@ stages:
           version: 1.0-80
           disable: true
           params:
-            database: erda
+            database: ${{ configs.legacy_migration_mysql_database }}
             lint_config: .erda/migrations/config.yml
             migrationdir: .erda/migrations
             mysql_host: ${{ configs.legacy_migration_mysql_host }}
