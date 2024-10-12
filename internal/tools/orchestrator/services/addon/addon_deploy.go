@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/i18n"
+	"github.com/erda-project/erda/internal/tools/orchestrator/labels"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -673,6 +674,14 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			ser.Envs[k] = v
 		}
 	}
+
+	for _, svc := range addonDice.Services {
+		labels.NewAddonLabelSetter(svc.Labels, addonDeployGroup.GroupLabels, addonIns, params).
+			SetCoreErdaLabels().
+			SetAddonErdaLabels().
+			SetMonitorErdaCloudLabels()
+	}
+
 	addonDeployGroup.DiceYml = *addonDice
 
 	return &addonDeployGroup, nil

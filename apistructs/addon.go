@@ -1019,6 +1019,8 @@ type AddonHandlerCreateItem struct {
 	InsideAddon string `json:"insideAddon"`
 	// ShareScope 是否为内部依赖addon，N:否，Y:是
 	ShareScope string `json:"shareScope"`
+	// TenantId 租户Id
+	TenantId string `json:"tenantId,omitempty"`
 }
 
 // AddonExtension addon extension对象信息

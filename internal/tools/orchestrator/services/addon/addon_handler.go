@@ -281,6 +281,14 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 	return nil
 }
 
+func (a *Addon) getTenantId(projectID string, tenantType, workspace string) string {
+	tenant, err := a.db.QueryTenantByProjectIDAndWorkspace(projectID, workspace)
+	if err != nil {
+		return utils.GenerateTenantID(projectID, tenantType, workspace)
+	}
+	return tenant.Id
+}
+
 func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) (string, error) {
 	if len(req.Addons) != 1 {
 		return "", fmt.Errorf("len(req.Addons) != 1")
@@ -311,6 +319,7 @@ func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) (string, er
 		InsideAddon:   "N",
 		ShareScope:    req.ShareScope,
 		Options:       baseAddons[0].Options,
+		TenantId:      a.getTenantId(strconv.FormatUint(req.ProjectID, 10), pb.Type_DOP.String(), req.Workspace),
 	}
 	addonSpec, addonDice, err := a.GetAddonExtention(&addonItem)
 	if err != nil {

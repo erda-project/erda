@@ -33,6 +33,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/labels"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
@@ -163,6 +164,15 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 			return errors.New(reason)
 		}
 	}
+
+	oldDeploy, err := k.deploy.Get(deployment.Namespace, deployment.Name)
+	if err != nil {
+		return errors.Errorf("failed to merge deployment labels, name: %s, (%v)", service.Name, err)
+	}
+	// merge Deployment labels
+	k.mergeLabels(deployment.Labels, oldDeploy.Labels)
+	// merge Pod labels
+	k.mergeLabels(deployment.Spec.Template.Labels, oldDeploy.Spec.Template.Labels)
 
 	err = k.deploy.Put(deployment)
 	if err != nil {
@@ -616,13 +626,6 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 	podAnnotations(service, deployment.Spec.Template.Annotations)
 
-	// inherit Labels from service.Labels and service.DeploymentLabels
-	err = inheritDeploymentLabels(service, deployment)
-	if err != nil {
-		logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
-		return nil, err
-	}
-
 	// set pod Annotations from service.Labels and service.DeploymentLabels
 	setPodAnnotationsFromLabels(service, deployment.Spec.Template.Annotations)
 
@@ -659,6 +662,14 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 
 	SetPodAnnotationsBaseContainerEnvs(deployment.Spec.Template.Spec.Containers[0], deployment.Spec.Template.Annotations)
+
+	labels.NewRuntimeLabelSetter(service, serviceGroup, deployment.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
+
+	labels.NewRuntimeLabelSetter(service, serviceGroup, deployment.Spec.Template.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 
 	// TODO: Delete this logic
 	//Mobil temporary demand:

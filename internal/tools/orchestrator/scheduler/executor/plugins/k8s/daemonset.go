@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/labels"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
@@ -93,7 +94,25 @@ func (k *Kubernetes) updateDaemonSet(ctx context.Context, ds *appsv1.DaemonSet, 
 			return errors.New(reason)
 		}
 	}
+	oldDaemon, err := k.getDaemonSet(ds.Namespace, ds.Name)
+	if err != nil {
+		return errors.Errorf("failed to merge daemonset labels, name: %s, (%v)", service.Name, err)
+	}
+	// merge DaemonSet labels
+	k.mergeLabels(ds.Labels, oldDaemon.Labels)
+	// merge Pod labels
+	k.mergeLabels(ds.Spec.Template.Labels, oldDaemon.Spec.Template.Labels)
+
 	return k.ds.Update(ds)
+}
+
+func (k *Kubernetes) mergeLabels(newLabels map[string]string, oldLabels map[string]string) {
+	for key, value := range oldLabels {
+		if _, ok := newLabels[key]; ok {
+			continue
+		}
+		newLabels[key] = value
+	}
 }
 
 func (k *Kubernetes) getDaemonSetDeltaResource(ctx context.Context, ds *appsv1.DaemonSet) (deltaCPU, deltaMemory int64, err error) {
@@ -244,13 +263,6 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 	podAnnotations(service, daemonset.Spec.Template.Annotations)
 
-	// inherit Labels from service.Labels and service.DeploymentLabels
-	err = inheritDaemonsetLabels(service, daemonset)
-	if err != nil {
-		logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
-		return nil, err
-	}
-
 	// set pod Annotations from service.Labels and service.DeploymentLabels
 	setPodAnnotationsFromLabels(service, daemonset.Spec.Template.Annotations)
 
@@ -288,6 +300,14 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 
 	SetPodAnnotationsBaseContainerEnvs(daemonset.Spec.Template.Spec.Containers[0], daemonset.Spec.Template.Annotations)
+
+	labels.NewRuntimeLabelSetter(service, sg, daemonset.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
+
+	labels.NewRuntimeLabelSetter(service, sg, daemonset.Spec.Template.Labels).
+		SetCoreErdaLabels().
+		SetMonitorErdaCloudLabels()
 
 	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
 	if err != nil {
