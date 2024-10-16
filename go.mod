@@ -208,6 +208,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 // indirect
@@ -281,12 +282,14 @@ require (
 	github.com/evanphx/json-patch v5.9.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
+	github.com/expr-lang/expr v1.16.9 // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/frankban/quicktest v1.14.6 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
@@ -347,6 +350,7 @@ require (
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
+	github.com/kedacore/keda/v2 v2.15.1
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -457,6 +461,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
+	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -466,6 +471,7 @@ require (
 	k8s.io/cli-runtime v0.30.0 // indirect
 	k8s.io/component-base v0.30.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20240403164606-bc84c2ddaf99 // indirect
+	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 	oras.land/oras-go v1.2.4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.29.0 // indirect
@@ -474,13 +480,9 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
-	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/expr-lang/expr v1.16.9 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
-	github.com/kedacore/keda/v2 v2.15.1
-	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
-	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653 // indirect
 )
+
+require github.com/sykesm/zap-logfmt v0.0.4 // indirect
 
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
