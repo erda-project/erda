@@ -18,16 +18,41 @@ import (
 	"os"
 	"time"
 
+	zaplogfmt "github.com/sykesm/zap-logfmt"
+	uzap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 )
+
+func init() {
+	leveler := uzap.LevelEnablerFunc(func(level zapcore.Level) bool {
+		// Set the level fairly high since it's so verbose
+		return level >= zapcore.DPanicLevel
+	})
+	stackTraceLeveler := uzap.LevelEnablerFunc(func(level zapcore.Level) bool {
+		// Attempt to suppress the stack traces in the logs since they are so verbose.
+		// The controller runtime seems to ignore this since the stack is still always printed.
+		return false
+	})
+	logfmtEncoder := zaplogfmt.NewEncoder(uzap.NewProductionEncoderConfig())
+	logger := zap.New(
+		zap.Level(leveler),
+		zap.StacktraceLevel(stackTraceLeveler),
+		zap.UseDevMode(false),
+		zap.WriteTo(os.Stdout),
+		zap.Encoder(logfmtEncoder))
+	log.SetLogger(logger)
+}
 
 type K8sClient struct {
 	// custom options
