@@ -24,6 +24,7 @@ erda.oap.collector.core:
           - "erda.oap.collector.processor.modifier@docker_container_summary"
           - "erda.oap.collector.processor.modifier@mysql"
           - "erda.oap.collector.processor.modifier@redis"
+          - "erda.oap.collector.processor.aggregator@redis"
           - "erda.oap.collector.processor.aggregator@cpu-usage"
           - "erda.oap.collector.processor.aggregator@mem-percent"
         exporters:
@@ -358,18 +359,36 @@ erda.oap.collector.processor.modifier@redis:
     - action: rename
       key: fields.redis_memory_used_lua_bytes
       value: fields.used_memory_lua
-    - action: rename
-      key: fields.redis_cpu_sys_seconds_total
-      value: fields.used_cpu_sys
-    - action: rename
-      key: fields.redis_cpu_user_seconds_total
-      value: fields.used_cpu_user
-    - action: rename
-      key: fields.redis_cpu_sys_children_seconds_total
-      value: fields.used_cpu_sys_children
-    - action: rename
-      key: fields.redis_cpu_user_children_seconds_total
-      value: fields.used_cpu_user_children
+
+erda.oap.collector.processor.aggregator@redis:
+  keypass:
+    name: [ "redis" ]
+
+  rules:
+    - func: "rate"
+      args: [ "redis_cpu_sys_seconds_total" ]
+      target_key: "used_cpu_sys"
+    - func: "*"
+      args: [ "used_cpu_sys", 100 ]
+      target_key: "used_cpu_sys"
+    - func: "rate"
+      args: [ "redis_cpu_user_seconds_total" ]
+      target_key: "used_cpu_user"
+    - func: "*"
+      args: [ "used_cpu_user", 100 ]
+      target_key: "used_cpu_user"
+    - func: "rate"
+      args: [ "redis_cpu_sys_children_seconds_total" ]
+      target_key: "used_cpu_sys_children"
+    - func: "*"
+      args: [ "used_cpu_sys_children", 100 ]
+      target_key: "used_cpu_sys_children"
+    - func: "rate"
+      args: [ "redis_cpu_user_children_seconds_total" ]
+      target_key: "used_cpu_user_children"
+    - func: "*"
+      args: [ "used_cpu_user_children", 100 ]
+      target_key: "used_cpu_user_children"
 
 
 erda.oap.collector.processor.aggregator@cpu-usage:
