@@ -22,8 +22,11 @@ type (
 		Usage     *DsRespStreamUsage      `json:"usage,omitempty"`
 	}
 	DsRespStreamChunkOutput struct {
+		// Stream fields
 		Choices []DsRespStreamChunkOutputChoice `json:"choices,omitempty"`
-		Text    string                          `json:"text,omitempty"`
+		// Non-Stream fields
+		Text         string `json:"text,omitempty"`
+		FinishReason string `json:"finish_reason,omitempty"`
 	}
 	DsRespStreamChunkOutputChoice struct {
 		Message      DsRespStreamChunkOutputChoiceMessage `json:"message,omitempty"`

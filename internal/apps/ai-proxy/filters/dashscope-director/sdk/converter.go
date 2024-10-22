@@ -120,6 +120,17 @@ func ConvertDsResponseToOpenAIFormat(dsResp DsResponse, modelName string) (*open
 		}
 		ocs = append(ocs, oc)
 	}
+	if dsResp.Output.Text != "" {
+		oc := openai.ChatCompletionChoice{
+			Index: len(ocs),
+			Message: openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: dsResp.Output.Text,
+			},
+			FinishReason: openai.FinishReason(dsResp.Output.FinishReason),
+		}
+		ocs = append(ocs, oc)
+	}
 	resp := openai.ChatCompletionResponse{
 		ID:      dsResp.RequestID,
 		Object:  "chat.completion",
