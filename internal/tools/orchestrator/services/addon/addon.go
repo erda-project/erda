@@ -2705,7 +2705,7 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		addonMap["addonName"] = item.Name
 		addonMap["vars"] = addonSpec.ConfigVars
 		switch item.Name {
-		case "mysql", "api-gateway", "monitor":
+		case "mysql", "api-gateway", "monitor", apistructs.AddonRegisterCenter, apistructs.AddonNewConfigCenter:
 			addonMap["vars"] = nil
 		case "canal":
 			addonMap["vars"] = []string{

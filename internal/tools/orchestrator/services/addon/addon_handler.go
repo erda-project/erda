@@ -284,10 +284,7 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 }
 
 func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) ([]string, error) {
-	if len(req.Addons) != 1 {
-		return nil, fmt.Errorf("len(req.Addons) != 1")
-	}
-	baseAddons := []apistructs.AddonCreateItem{}
+	var baseAddons []apistructs.AddonCreateItem
 	for name, a := range req.Addons {
 		plan := strings.SplitN(a.Plan, ":", 2)
 		if len(plan) != 2 {
@@ -354,7 +351,7 @@ func (a *Addon) checkAddonDeployable(addon apistructs.AddonHandlerCreateItem, sp
 			return errors.New("failed to get addon instance from database")
 		}
 		if instance != nil && (addon.Options == nil || instance.Version != addon.Options["version"]) {
-			return errors.New(i18n.OrgSprintf(addon.OrgID, I18nClusterAddonRedeploy, addon.AddonName, instance.Version))
+			return errors.New(i18n.OrgSprintf(addon.OrgID, I18nClusterAddonRedeploy, addon.AddonName, instance.Version, addon.Options["version"]))
 		}
 	}
 

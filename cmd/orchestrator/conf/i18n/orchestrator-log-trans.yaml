@@ -21,7 +21,7 @@ zh:
   AddonPlanIllegal: "Addon %s 规格不合法, Basic 规格 Addon 无法在生产环境使用"
   AddonFormatIllegal: "Addon %s 格式不合法, 请检查 dice.yml 中 addon 部分是否正确"
   AddonDeprecated: "Addon %s 当前版本：%v 已被废弃，请在dice.yml中重新配置"
-  ClusterAddonRedeploy: "Addon %s 在集群中存在，请选择部署 %v 版本，来进行关联"
+  ClusterAddonRedeploy: "Addon %s 在集群中存在，请选择部署 %v 版本，来进行关联，您当前部署的版本为：%v"
 
 en:
   WaitingForAddonTimeOut: "Waiting for the addon (%s)(%s) to be healthy timeout (%d min)"
@@ -46,4 +46,4 @@ en:
   AddonPlanIllegal: "Addon %s plan is illegal, Basic plan addon cannot be used in production environment"
   AddonFormatIllegal: "Addon %s format is illegal, please check the dice.yml addon section"
   AddonDeprecated: "Addon %s current version: %v deprecated, please reconfigure in dice.yml"
-  ClusterAddonRedeploy: "Addon %s is existing，please select version: %v to link"
+  ClusterAddonRedeploy: "Addon %s is existing, please select version: %v to link, your deploy version is %v"
