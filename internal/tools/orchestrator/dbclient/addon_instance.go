@@ -119,6 +119,7 @@ func (db *DBClient) GetAddonInstanceByNameAndCluster(addonName, cluster string) 
 	if err := db.Where("addon_name = ?", addonName).
 		Where("az = ?", cluster).
 		Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("status = ?", apistructs.AddonAttached).
 		First(&instance).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
