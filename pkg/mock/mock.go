@@ -86,7 +86,7 @@ func randMobile() string {
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	rs := make([]string, 8)
+	rs := make([]string, 0, 8)
 	for start := 0; start < 8; start++ {
 		rs = append(rs, strconv.Itoa(rand.Intn(10)))
 	}
