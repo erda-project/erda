@@ -498,7 +498,6 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				}
 			}
 		} else {
-			logrus.Infof("get [currentContainerID] from mainContainer")
 			currentTerminatedContainer := mainContainer.State.Terminated
 			if currentTerminatedContainer != nil {
 				if len(strings.Split(mainContainer.ContainerID, "://")) == 2 {
