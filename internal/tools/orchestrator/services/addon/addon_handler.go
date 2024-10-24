@@ -322,7 +322,7 @@ func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) ([]string, 
 		}
 
 		if err := a.checkAddonDeployable(addonItem, addonSpec); err != nil {
-			logrus.Error(err)
+			logrus.Errorf("%s", err)
 			return nil, err
 		}
 
@@ -354,6 +354,7 @@ func (a *Addon) checkAddonDeployable(addon apistructs.AddonHandlerCreateItem, sp
 		if instance != nil && (addon.Options == nil || instance.Version != addon.Options["version"]) {
 			return errors.New(i18n.OrgSprintf(addon.OrgID, I18nClusterAddonRedeploy, addon.AddonName, instance.Version, addon.Options["version"]))
 		}
+		logrus.Infof("no deployed %s addon found", addon.AddonName)
 	}
 
 	switch strutil.ToLower(addon.AddonName) {
