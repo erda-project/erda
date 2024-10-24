@@ -334,6 +334,8 @@ const (
 	AddonRegisterCenter = "registercenter"
 	// mse-nacos
 	AddonMSENacos = "mse-nacos"
+	// custom
+	AddonCustom = "custom"
 )
 
 // AddonRes addon信息

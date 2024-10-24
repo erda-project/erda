@@ -2707,13 +2707,13 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		switch item.Name {
 		case apistructs.AddonMySQL, apistructs.AddonApiGateway, apistructs.AddonMonitor, apistructs.AddonRegisterCenter, apistructs.AddonNewConfigCenter:
 			addonMap["vars"] = nil
-		case "canal":
+		case apistructs.AddonCanal:
 			addonMap["vars"] = []string{
 				"canal.instance.master.address",
 				"canal.instance.dbUsername",
 				"canal.instance.dbPassword",
 				"mysql"}
-		case "custom":
+		case apistructs.AddonCustom:
 			addonMap["vars"] = []string{}
 		}
 		addonMap["plan"] = createableAddonPlan[item.Name]
