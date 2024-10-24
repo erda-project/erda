@@ -322,6 +322,7 @@ func (a *Addon) AddonCreate(req apistructs.AddonDirectCreateRequest) ([]string, 
 		}
 
 		if err := a.checkAddonDeployable(addonItem, addonSpec); err != nil {
+			logrus.Error(err)
 			return nil, err
 		}
 
