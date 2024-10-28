@@ -19,12 +19,12 @@ import (
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
 	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
-
-	"bou.ke/monkey"
 )
 
 func TestTryReadFile(t *testing.T) {
