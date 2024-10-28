@@ -146,7 +146,7 @@ func (h *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, r
 		"engine":     resourceInfo.TmcVersion.Engine,
 		"az":         req.Az,
 		"status":     handlers.TmcInstanceStatusRunning,
-		"is_deleted": "N",
+		"is_deleted": apistructs.AddonNotDeleted,
 	}
 	instance, ok, err := h.InstanceDb.First(where)
 	if err != nil {
