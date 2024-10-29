@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/rancher/apiserver/pkg/types"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 
