@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"

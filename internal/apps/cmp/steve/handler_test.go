@@ -24,7 +24,7 @@ import (
 	"github.com/rancher/apiserver/pkg/server"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/schema"
-	"github.com/rancher/wrangler/pkg/schemas"
+	"github.com/rancher/wrangler/v2/pkg/schemas"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"
 )
