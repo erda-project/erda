@@ -33,9 +33,8 @@ func createIfNotExist(impl *WebHookImpl, req *CreateHookRequest) error {
 	if err != nil {
 		return err
 	}
-	hooks := []apistructs.Hook(resp)
-	for i := range hooks {
-		if hooks[i].Name == req.Name {
+	for i := range resp {
+		if resp[i].Name == req.Name {
 			return nil
 		}
 	}
