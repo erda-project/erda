@@ -2637,20 +2637,13 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		apistructs.AddonApiGateway,
 		apistructs.AddonMySQL,
 		apistructs.AddonMonitor,
+		apistructs.AddonCanal,
 		apistructs.AddonRegisterCenter,
 		apistructs.AddonNewConfigCenter,
 	}
 	// if these addon-type is `custom` and they can't be deployed by user, skip it!
 	unCreateAbleAddons := []string{
 		apistructs.AddonMSENacos, // mse-nacos only can be deployed by `config-center` or `register-center`
-	}
-	createableAddonVersion := map[string]string{
-		apistructs.AddonApiGateway:      "3.0.0",
-		apistructs.AddonMySQL:           "5.7.29",
-		apistructs.AddonCanal:           "1.1.0",
-		apistructs.AddonMonitor:         "3.6",
-		apistructs.AddonRegisterCenter:  "3.0.0",
-		apistructs.AddonNewConfigCenter: "3.0.0",
 	}
 	createableAddonPlan := map[string][]map[string]string{
 		apistructs.AddonApiGateway:      {{"label": basic, "value": "api-gateway:basic"}},
@@ -2675,20 +2668,22 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		if (item.Category != apistructs.AddonCustomCategory && !strutil.Exist(createableAddons, item.Name)) || strutil.Exist(unCreateAbleAddons, item.Name) {
 			continue
 		}
-		version := createableAddonVersion[item.Name]
-		if version == "" {
-			version = "1.0.0"
-		}
-		itemSpecResult, err := a.bdl.GetExtensionVersion(apistructs.ExtensionVersionGetRequest{
-			Name:    item.Name,
-			Version: version,
-		})
+
+		versionMap, err := GetCache().Get(item.Name)
 		if err != nil {
-			logrus.Errorf("custom request fail, addon name: %v", item.Name)
-			continue
+			return nil, fmt.Errorf("can't get addon [%s] from cache, %v", item.Name, err)
 		}
+		addons, ok := versionMap.(*VersionMap)
+		if !ok {
+			return nil, fmt.Errorf("can't convert to VersionMap")
+		}
+		defaultAddon, ok := addons.GetDefault()
+		if !ok {
+			return nil, fmt.Errorf("there are no default addons [%s]", item.Name)
+		}
+
 		// spec.yml强制转换为string类型
-		addonSpecBytes, err := json.Marshal(itemSpecResult.Spec)
+		addonSpecBytes, err := json.Marshal(defaultAddon.Spec)
 		if err != nil {
 			logrus.Error("failed to parse addon spec")
 			continue
@@ -2726,19 +2721,12 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		//	addonMap["supportTenant"] = false
 		//}
 
-		versions := make([]string, 0, 1)
-		exts, err := a.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
-			Name: item.Name,
-			All:  true,
-		})
-		if err != nil {
-			logrus.Errorf("query error: %v", err)
-			versions = append(versions, version)
-		} else {
-			for _, e := range exts {
-				versions = append(versions, e.Version)
-			}
+		versions := make([]string, 0, len(*addons))
+
+		for _, e := range addons.List() {
+			versions = append(versions, e.Version)
 		}
+
 		addonMap["versions"] = versions
 
 		extensionResult = append(extensionResult, addonMap)
