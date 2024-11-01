@@ -71,6 +71,8 @@ func (e *Endpoints) CreateAddonDirectly(ctx context.Context, r *http.Request, va
 	// 		return apierrors.ErrCreateAddon.AccessDenied().ToResp(), nil
 	// 	}
 	// }
+	e.bindingDeploy(&addonCreateReq)
+
 	addonid, err := e.addon.AddonCreate(addonCreateReq)
 	if err != nil {
 		return apierrors.ErrCreateAddon.InternalError(err).ToResp(), nil

@@ -17,8 +17,10 @@ package endpoints
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -27,6 +29,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
@@ -44,6 +47,7 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -505,5 +509,35 @@ func (e *Endpoints) FullGCLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
+	}
+}
+
+func (e *Endpoints) inspectAddonVersions(addOns diceyml.AddOns) (versions map[string]string) {
+	versions = make(map[string]string)
+	for _, addOn := range addOns {
+		addonInfo := strings.SplitN(addOn.Plan, ":", 2)
+		versions[addonInfo[0]] = addOn.Options["version"]
+	}
+	return
+}
+
+func (e *Endpoints) bindingDeploy(req *apistructs.AddonDirectCreateRequest) {
+	versions := e.inspectAddonVersions(req.Addons)
+	registerVersion, hasR := versions[apistructs.AddonRegisterCenter]
+	configVersion, hasC := versions[apistructs.AddonNewConfigCenter]
+	if hasR && !hasC {
+		e.appendAddon(req, apistructs.AddonNewConfigCenter, registerVersion)
+	} else if !hasR && hasC {
+		e.appendAddon(req, apistructs.AddonRegisterCenter, configVersion)
+	}
+}
+
+func (e *Endpoints) appendAddon(req *apistructs.AddonDirectCreateRequest, addonType string, version string) {
+	name := addonType + strutil.RandStr(5)
+	req.Addons[name] = &diceyml.AddOn{
+		Plan: fmt.Sprintf("%s:%s", addonType, apistructs.AddonBasic),
+		Options: map[string]string{
+			"version": version,
+		},
 	}
 }
