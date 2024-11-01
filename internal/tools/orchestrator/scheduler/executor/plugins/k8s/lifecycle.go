@@ -35,19 +35,23 @@ var (
 )
 
 func (k *Kubernetes) AddLifeCycle(service *apistructs.Service, podSpec *corev1.PodSpec) {
-	if podSpec == nil {
+	if podSpec == nil || len(podSpec.Containers) == 0 {
 		return
 	}
 
 	workspace, _ := util.GetDiceWorkspaceFromEnvs(service.Env)
 	if workspace.Equal(apistructs.ProdWorkspace) {
-		if len(podSpec.Containers) == 0 {
-			return
-		}
-
 		podSpec.TerminationGracePeriodSeconds = pointer.Int64(DefaultProdTerminationGracePeriodSeconds)
-		podSpec.Containers[0].Lifecycle = &corev1.Lifecycle{
+		setPreStopHandler(&podSpec.Containers[0])
+	}
+}
+
+func setPreStopHandler(container *corev1.Container) {
+	if container.Lifecycle == nil {
+		container.Lifecycle = &corev1.Lifecycle{
 			PreStop: DefaultProdLifecyclePreStopHandler,
 		}
+		return
 	}
+	container.Lifecycle.PreStop = DefaultProdLifecyclePreStopHandler
 }
