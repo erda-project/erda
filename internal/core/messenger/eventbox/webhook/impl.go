@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/constant"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -62,31 +63,31 @@ func hookCheckOrg(h Hook, orgID string) bool {
 }
 
 // ListHooks 列出符合 location 的 hook 列表。
-func (w *WebHookImpl) ListHooks(location HookLocation) (ListHooksResponse, error) {
+func (w *WebHookImpl) ListHooks(location HookLocation) ([]*pb.Hook, error) {
 	dir := mkLocationDir(location)
 
+	var r []*pb.Hook
 	ids := []string{}
 	keys, err := w.js.ListKeys(context.Background(), dir)
 	if err != nil {
-		return ListHooksResponse{}, errors.Wrap(InternalServerErr, fmt.Sprintf("list hooks fail: %v", err))
+		return r, errors.Wrap(InternalServerErr, fmt.Sprintf("list hooks fail: %v", err))
 	}
 	for _, k := range keys {
 		parts := strings.Split(k, "/")
 		if len(parts) == 0 {
-			return ListHooksResponse{},
+			return r,
 				errors.Wrap(InternalServerErr, fmt.Sprintf("list hooks fail: bad hook index format: %v", k))
 		}
 		ids = append(ids, parts[len(parts)-1])
 	}
-	r := ListHooksResponse{}
 	for _, id := range ids {
-		h := Hook{}
-		if err := w.js.Get(context.Background(), mkHookEtcdName(id), &h); err != nil {
+		h := &pb.Hook{}
+		if err := w.js.Get(context.Background(), mkHookEtcdName(id), h); err != nil {
 			if err == jsonstore.NotFoundErr {
 				// 如果有索引但没找到数据，则忽略这个webhook
 				continue
 			}
-			return ListHooksResponse{},
+			return r,
 				errors.Wrap(InternalServerErr, fmt.Sprintf("list hooks fail: get hook: %v", mkHookEtcdName(id)))
 		}
 		if envSatisfy(location.Env, h.Env) {
@@ -256,12 +257,12 @@ func (w *WebHookImpl) DeleteHook(realOrg, id string) error {
 }
 
 /* search hooks which include 'event' and is 'active' */
-func (w *WebHookImpl) SearchHooks(location HookLocation, event string) []Hook {
+func (w *WebHookImpl) SearchHooks(location HookLocation, event string) []*pb.Hook {
 	hs, err := w.ListHooks(location)
 	if err != nil {
 		return nil
 	}
-	r := []Hook{}
+	r := []*pb.Hook{}
 	for _, h := range hs {
 		for _, e := range h.Events {
 			if e == event && h.Active {

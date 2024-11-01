@@ -24,6 +24,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/constant"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher/errors"
@@ -115,28 +116,23 @@ func TestWebhookFilter(t *testing.T) {
 		whi = &webhook.WebHookImpl{}
 	)
 
-	hook := webhook.Hook{
-		ID: "1",
-		CreateHookRequest: apistructs.CreateHookRequest{
-			Name:   "test-event",
-			Events: []string{"event1", "event2"},
-			URL:    "https://localhost:8080/hook",
-			Active: true,
-			HookLocation: apistructs.HookLocation{
-				Org:         "-1",
-				Project:     "-1",
-				Application: "-1",
-				Env:         make([]string, 0),
-			},
-		},
+	hook := &pb.Hook{
+		Id:            "1",
+		Name:          "test-event",
+		Events:        []string{"event1", "event2"},
+		Url:           "https://localhost:8080/hook",
+		Active:        true,
+		OrgID:         "-1",
+		ProjectID:     "-1",
+		ApplicationID: "-1",
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(whi), "SearchHooks", func(whi *webhook.WebHookImpl, location webhook.HookLocation, event string) []webhook.Hook {
-		return []webhook.Hook{hook}
+	monkey.PatchInstanceMethod(reflect.TypeOf(whi), "SearchHooks", func(whi *webhook.WebHookImpl, location webhook.HookLocation, event string) []*pb.Hook {
+		return []*pb.Hook{hook}
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(whi), "ListHooks", func(whi *webhook.WebHookImpl, location webhook.HookLocation) (webhook.ListHooksResponse, error) {
-		return []webhook.Hook{hook}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(whi), "ListHooks", func(whi *webhook.WebHookImpl, location webhook.HookLocation) ([]*pb.Hook, error) {
+		return []*pb.Hook{hook}, nil
 	})
 
 	defer monkey.UnpatchAll()

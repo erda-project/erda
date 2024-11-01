@@ -21,6 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/constant"
 	"github.com/erda-project/erda/internal/core/messenger/eventbox/dispatcher/errors"
@@ -61,7 +62,7 @@ func (w *WebhookFilter) Filter(m *types.Message) *errors.DispatchError {
 		Org: "-1",
 	}, eventLabel.Event)
 
-	var hs []apistructs.Hook
+	var hs []*pb.Hook
 	if eventLabel.OrgID != "-1" {
 		hs = w.impl.SearchHooks(apistructs.HookLocation{
 			Org:         eventLabel.OrgID,
@@ -78,10 +79,10 @@ func (w *WebhookFilter) Filter(m *types.Message) *errors.DispatchError {
 
 	urls := []string{}
 	for _, h := range hs {
-		urls = append(urls, h.URL)
+		urls = append(urls, h.Url)
 	}
 	for _, h := range internalHs {
-		urls = append(urls, h.URL)
+		urls = append(urls, h.Url)
 	}
 
 	if err := replaceLabel(m, urls); err != nil {
