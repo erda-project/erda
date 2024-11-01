@@ -17,6 +17,10 @@ package efficiency_measure
 import "context"
 
 func (p *provider) refreshBasicInfo() error {
+	if len(p.Cfg.OrgWhiteList) == 0 {
+		return nil
+	}
+	
 	userProjects, err := p.projDB.GetAllUserJoinedProjects(p.Cfg.OrgWhiteList)
 	if err != nil {
 		p.Log.Errorf("failed to get all user joined projects, err: %v", err)
