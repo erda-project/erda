@@ -21,6 +21,7 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
@@ -113,10 +114,25 @@ func ConvertDsResponseToOpenAIFormat(dsResp DsResponse, modelName string) (*open
 		oc := openai.ChatCompletionChoice{
 			Index: i,
 			Message: openai.ChatCompletionMessage{
-				Role:    dsc.Message.Role,
-				Content: dsc.Message.Content.(string),
+				Role: dsc.Message.Role,
 			},
 			FinishReason: openai.FinishReason(dsc.FinishReason),
+		}
+		// parse json.RawMessage content
+		switch dsc.Message.Content.(type) {
+		case string:
+			oc.Message.Content = dsc.Message.Content.(string)
+		case []any:
+			var parts []DsRespStreamChunkOutputChoiceMessagePart
+			cputil.MustObjJSONTransfer(dsc.Message.Content, &parts)
+			// tips: Message.MultiContent is for request usage, not for response
+			var texts []string
+			for _, part := range parts {
+				if part.Text != "" {
+					texts = append(texts, part.Text)
+				}
+			}
+			oc.Message.Content = strings.Join(texts, "\n")
 		}
 		ocs = append(ocs, oc)
 	}
