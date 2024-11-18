@@ -144,7 +144,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx/v3 v3.3.2
-	github.com/timandy/routine v1.1.2
+	github.com/timandy/routine v1.1.4
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f

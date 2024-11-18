@@ -1076,8 +1076,6 @@ github.com/cockroachdb/datadriven v1.0.2/go.mod h1:a9RdTaap04u637JoCzcUoIcDmvwSU
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
 github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0/go.mod h1:4Zcjuz89kmFXt9morQgcfYZAYZ5n8WHjt81YYWIwtTM=
 github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27/go.mod h1:VQx0hjo2oUeQkQUET7wRwradO6f+fN5jzXgB/zROxxE=
-github.com/confluentinc/confluent-kafka-go v1.5.2 h1:l+qt+a0Okmq0Bdr1P55IX4fiwFJyg0lZQmfHkAFkv7E=
-github.com/confluentinc/confluent-kafka-go v1.5.2/go.mod h1:u2zNLny2xq+5rWeTQjFHbDzzNuba4P1vo31r9r4uAdg=
 github.com/confluentinc/confluent-kafka-go v1.9.2 h1:gV/GxhMBUb03tFWkN+7kdhg+zf+QUM+wVkI9zwh770Q=
 github.com/confluentinc/confluent-kafka-go v1.9.2/go.mod h1:ptXNqsuDfYbAE/LBW6pnwWZElUoWxHoV8E43DCrliyo=
 github.com/containerd/cgroups v1.1.0 h1:v8rEWFl6EoqHB+swVNjVoCJE8o3jX7e8nqBGPLaDFBM=
@@ -2626,8 +2624,8 @@ github.com/tidwall/tinyqueue v0.0.0-20180302190814-1e39f5511563/go.mod h1:mLqSmt
 github.com/tikv/pd v1.0.8/go.mod h1:v6C/D7ONC49SgjI4jbGnooSizvijaO/bdIm62DVR4tI=
 github.com/tikv/pd v1.1.0-beta.0.20200907080620-6830f5bb92a2 h1:cC5v/gn9NdcmAlpBrWI5x3MiYmQcW2k7EHccg8837p4=
 github.com/tikv/pd v1.1.0-beta.0.20200907080620-6830f5bb92a2/go.mod h1:6OYi62ks7nFIBtWWpOjnngr5LNos4Hvi1BzArCWAlBc=
-github.com/timandy/routine v1.1.2 h1:xoMuS4C/OuqXU9GgZvIan0+e7kWe/CixAmf3A/Y/2NE=
-github.com/timandy/routine v1.1.2/go.mod h1:Kkz3k5wSyvtGVR/9vKz2hKnNBPCWIkakAeON0MwWH4s=
+github.com/timandy/routine v1.1.4 h1:L9eAli/ROJcW6LhmwZcusYQcdAqxAXGOQhEXLQSNWOA=
+github.com/timandy/routine v1.1.4/go.mod h1:siBcl8iIsGmhLCajRGRcy7Y7FVcicNXkr97JODdt9fc=
 github.com/tjfoc/gmsm v1.3.2 h1:7JVkAn5bvUJ7HtU08iW6UiD+UTmJTIToHCfeFzkcCxM=
 github.com/tjfoc/gmsm v1.3.2/go.mod h1:HaUcFuY0auTiaHB9MHFGCPx5IaLhTUd2atbCFBQXn9w=
 github.com/tklauser/go-sysconf v0.3.12 h1:0QaGUFOdQaIVdPgfITYzaTegZvdCjmYO52cSFAEVmqU=
