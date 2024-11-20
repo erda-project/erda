@@ -11,6 +11,7 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/Masterminds/semver v1.5.0
 	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
+	github.com/agiledragon/gomonkey/v2 v2.12.0
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alibabacloud-go/bailian-20230601 v1.0.0
@@ -481,8 +482,6 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
-
-require github.com/agiledragon/gomonkey v2.0.2+incompatible
 
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
