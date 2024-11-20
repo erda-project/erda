@@ -482,6 +482,11 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
+require (
+	github.com/agiledragon/gomonkey v2.0.2+incompatible // indirect
+	github.com/agiledragon/gomonkey/v2 v2.12.0 // indirect
+)
+
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.4

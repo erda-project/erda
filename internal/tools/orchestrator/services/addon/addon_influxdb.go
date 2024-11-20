@@ -113,12 +113,14 @@ func (a *Addon) InfluxDBDeployStatus(addonIns *dbclient.AddonInstance, serviceGr
 	}
 
 	configMap := map[string]string{}
-	for _, value := range serviceGroup.Services {
-		configMap[InfluxDBConfHost] = fmt.Sprintf("http://%s:%s", value.Vip, InfluxDBServicePort)
-		configMap[InfluxDBConfUser] = InfluxDBInitUserName
-		configMap[InfluxDBConfORG] = genInfluxDBOrg(addonIns)
-		configMap[InfluxDBConfPassword] = password.Value
+	if len(serviceGroup.Services) == 0 {
+		return nil, errors.New("service group is empty")
 	}
+	influxDBService := serviceGroup.Services[0]
+	configMap[InfluxDBConfHost] = fmt.Sprintf("http://%s:%s", influxDBService.Vip, InfluxDBServicePort)
+	configMap[InfluxDBConfUser] = InfluxDBInitUserName
+	configMap[InfluxDBConfORG] = genInfluxDBOrg(addonIns)
+	configMap[InfluxDBConfPassword] = password.Value
 
 	return configMap, nil
 }
