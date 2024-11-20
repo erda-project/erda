@@ -286,3 +286,33 @@ func (client *ReleaseConfigDB) GetReleasesByBranch(projectID, appID int64, gitBr
 	}
 	return releases, nil
 }
+
+// GetGroupRelease list release group by project_id and application_id
+func (client *ReleaseConfigDB) GetGroupRelease() ([]Release, error) {
+	var releases []Release
+	if err := client.Select([]string{"project_id", "application_id"}).Where("version != ''").Group("project_id").Group("application_id").
+		Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+// ListExpireReleaseWithVersion list release that has not been referenced before a given point in time and version is not empty
+func (client *ReleaseConfigDB) ListExpireReleaseWithVersion(projectID int64, applicationID int64, before time.Time) ([]Release, error) {
+	var releases []Release
+	if err := client.Select([]string{"release_id", "cluster_name", "version"}).Where("reference <= ?", 0).Where("updated_at < ?", before).Where("version != ''").
+		Where("project_id = ?", projectID).Where("application_id = ?", applicationID).
+		Order("updated_at ASC").Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+// ListReleaseByAppAndProject list release by application_id and project_id, version is not empty
+func (client *ReleaseConfigDB) ListReleaseByAppAndProject(projectID int64, appID int64) ([]Release, error) {
+	var releases []Release
+	if err := client.Select([]string{"release_id", "cluster_name", "version"}).Where("application_id = ? AND project_id =? AND version != ''", appID, projectID).Order("updated_at ASC").Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
