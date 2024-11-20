@@ -327,6 +327,8 @@ const (
 	AddonCloudGateway = "alicloud-gateway"
 	// sourcecov code coverage agent
 	AddonSourcecov = "sourcecov"
+	// influxdb
+	AddonInfluxDB = "influxdb"
 
 	OriginalReplicas = "original_replicas"
 
