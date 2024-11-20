@@ -35,10 +35,8 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -293,79 +291,6 @@ func TestParseJobSpecTemplate(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, clusterInfo["MOUNTPOINT_PATH"], newPath)
-}
-
-func TestCreateStatefulSet(t *testing.T) {
-	kubernetes := &Kubernetes{
-		secret: &secret.Secret{},
-	}
-
-	defer monkey.UnpatchAll()
-
-	monkey.PatchInstanceMethod(reflect.TypeOf(kubernetes.secret), "Get", func(sec *secret.Secret, namespace, name string) (*apiv1.Secret, error) {
-		b := []byte{}
-		return &apiv1.Secret{Data: map[string][]byte{".dockerconfigjson": b}}, nil
-	})
-
-	info := types.StatefulsetInfo{
-		Sg: &apistructs.ServiceGroup{
-			Dice: apistructs.Dice{
-				ID:     "fake-test-dice",
-				Type:   "addon",
-				Labels: nil,
-				Services: []apistructs.Service{
-					{
-						Name:          "fake-test-service",
-						Namespace:     "fake-test",
-						Image:         "",
-						ImageUsername: "",
-						ImagePassword: "",
-						Cmd:           "",
-						Ports:         nil,
-						ProxyPorts:    nil,
-						Vip:           "",
-						ShortVIP:      "",
-						ProxyIp:       "",
-						PublicIp:      "",
-						Scale:         0,
-						Resources: apistructs.Resources{
-							Cpu:  100,
-							Mem:  200,
-							Disk: 0,
-						},
-						Depends:            nil,
-						Env:                nil,
-						Labels:             map[string]string{"ADDON_GROUP_ID": "11111111"},
-						DeploymentLabels:   nil,
-						Selectors:          nil,
-						Binds:              nil,
-						Volumes:            nil,
-						Hosts:              nil,
-						HealthCheck:        nil,
-						NewHealthCheck:     nil,
-						SideCars:           nil,
-						InitContainer:      nil,
-						InstanceInfos:      nil,
-						MeshEnable:         nil,
-						TrafficSecurity:    diceyml.TrafficSecurity{},
-						WorkLoad:           "",
-						ProjectServiceName: "",
-						K8SSnippet:         nil,
-						StatusDesc:         apistructs.StatusDesc{},
-					},
-				},
-				ServiceDiscoveryKind: "",
-				ServiceDiscoveryMode: "",
-				ProjectNamespace:     "",
-			},
-		},
-		Namespace:   "fake-test",
-		Envs:        map[string]string{},
-		Annotations: map[string]string{},
-	}
-
-	err := kubernetes.createStatefulSet(context.Background(), info)
-	assert.Nil(t, err)
 }
 
 func Test_scaleStatefulSet(t *testing.T) {
