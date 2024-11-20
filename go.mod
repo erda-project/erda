@@ -11,6 +11,7 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/Masterminds/semver v1.5.0
 	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
+	github.com/agiledragon/gomonkey/v2 v2.12.0
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alibabacloud-go/bailian-20230601 v1.0.0

@@ -217,10 +217,6 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 	}
 	//setEnv(container, info.envs, info.sg, info.namespace)
 
-	if info.Namespace == "fake-test" {
-		return nil
-	}
-
 	SetPodAnnotationsBaseContainerEnvs(set.Spec.Template.Spec.Containers[0], set.Spec.Template.Annotations)
 
 	return k.sts.Create(set)
