@@ -301,7 +301,7 @@ func (client *ReleaseConfigDB) GetGroupRelease() ([]Release, error) {
 func (client *ReleaseConfigDB) ListExpireReleaseWithVersion(projectID int64, applicationID int64, before time.Time) ([]Release, error) {
 	var releases []Release
 	if err := client.Select([]string{"release_id", "cluster_name", "version"}).Where("reference <= ?", 0).Where("updated_at < ?", before).Where("version != ''").
-		Where("project_id = ?", projectID).Where("application_id = ?", applicationID).
+		Where("project_id = ?", projectID).Where("application_id = ?", applicationID).Where("is_project_release = 0 And is_formal=0").
 		Order("updated_at ASC").Find(&releases).Error; err != nil {
 		return nil, err
 	}
