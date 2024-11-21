@@ -1084,7 +1084,7 @@ func (s *ReleaseService) FindExpiredReleaseBefore(now time.Time) ([]db.Release, 
 
 		if releaseCount <= 10 {
 			// If the quantity of release is less than 10, there is no need to delete
-			break
+			continue
 		} else if releaseCount < 30 {
 			// delete releases utils the quantity of release is 10
 			if releaseCount-expiredCount < 10 {

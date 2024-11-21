@@ -17,14 +17,13 @@ package release
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"testing"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/mock"
+	"reflect"
+	"testing"
 )
 
 func Test_releaseService_CreateRelease(t *testing.T) {

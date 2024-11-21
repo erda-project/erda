@@ -290,7 +290,7 @@ func (client *ReleaseConfigDB) GetReleasesByBranch(projectID, appID int64, gitBr
 // GetGroupRelease list release group by project_id and application_id
 func (client *ReleaseConfigDB) GetGroupRelease() ([]Release, error) {
 	var releases []Release
-	if err := client.Select([]string{"project_id", "application_id"}).Where("version != ''").Group("project_id").Group("application_id").
+	if err := client.Select([]string{"project_id", "application_id"}).Group("project_id, application_id").
 		Find(&releases).Error; err != nil {
 		return nil, err
 	}
