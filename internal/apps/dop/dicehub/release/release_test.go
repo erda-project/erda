@@ -578,12 +578,14 @@ version: "2.0"
 func TestReleaseServiceGC(t *testing.T) {
 	testCase := []struct {
 		name     string
+		dbDir    string
 		dbPath   string
 		dbEngine string
 		releases []db.Release
 	}{
 		{
 			name:     "baseTest",
+			dbDir:    "./testdata",
 			dbPath:   "./testdata/test.db",
 			dbEngine: "sqlite3",
 			releases: []db.Release{
@@ -620,11 +622,13 @@ func TestReleaseServiceGC(t *testing.T) {
 	}
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
+			if _, err := os.Stat(tt.dbDir); os.IsNotExist(err) {
+				err = os.Mkdir(tt.dbDir, 0755)
+				assert.NoError(t, err)
+			}
 			if _, err := os.Stat(tt.dbPath); os.IsNotExist(err) {
 				_, err = os.Create(tt.dbPath)
-				if err != nil {
-					t.Fatal(err)
-				}
+				assert.NoError(t, err)
 			}
 			dbClient, err := gorm.Open("sqlite3", "./testdata/test.db")
 			if err != nil {
@@ -647,10 +651,9 @@ func TestReleaseServiceGC(t *testing.T) {
 			err = rs.RemoveDeprecatedsReleases(now)
 			assert.NoError(t, err)
 			dbClient.Exec("delete from dice_release")
-			err = os.Remove(tt.dbPath)
-			if err != nil {
-				t.Fatal(err)
-			}
+			// delete db dir
+			err = os.RemoveAll(tt.dbDir)
+			assert.NoError(t, err)
 		})
 	}
 }
