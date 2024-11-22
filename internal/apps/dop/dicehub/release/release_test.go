@@ -17,7 +17,6 @@ package release
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/stretchr/testify.v1/assert"
 	"io"
 	"os"
 	"reflect"
@@ -29,6 +28,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"gopkg.in/stretchr/testify.v1/assert"
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
