@@ -1584,7 +1584,7 @@ func TestInjectVersion(t *testing.T) {
 			Name: "register-center",
 			Type: "registercenter",
 			Options: map[string]string{
-				"Version": "2.0.0",
+				"version": "2.0.0",
 			},
 		},
 	}
