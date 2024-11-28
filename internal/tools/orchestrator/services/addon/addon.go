@@ -3911,7 +3911,7 @@ func (a *Addon) injectVersion(addon *apistructs.AddonCreateItem) error {
 	if addon.Options == nil {
 		addon.Options = make(map[string]string)
 	}
-	if v, ok := addon.Options["Version"]; ok && v != "" {
+	if v, ok := addon.Options["version"]; ok && v != "" {
 		return nil
 	}
 
@@ -3928,6 +3928,6 @@ func (a *Addon) injectVersion(addon *apistructs.AddonCreateItem) error {
 		return fmt.Errorf("there are no default addons [%s]", addon.Type)
 	}
 
-	addon.Options["Version"] = defaultAddon.Version
+	addon.Options["version"] = defaultAddon.Version
 	return nil
 }
