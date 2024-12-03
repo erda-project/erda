@@ -1526,6 +1526,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 				sync.RWMutex
 				m map[uint64]*apistructs.RuntimeSummaryDTO
 			}, deployment *dbclient.Deployment, runtimeHPARules []dbclient.RuntimeHPA, runtimeVPARules []dbclient.RuntimeVPA) {
+				defer wg.Done()
 				d := apistructs.RuntimeSummaryDTO{}
 				sg, err := r.serviceGroupImpl.InspectServiceGroupWithTimeout(rt.ScheduleName.Namespace, rt.ScheduleName.Name)
 				if err != nil {
@@ -1545,7 +1546,6 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 				servicesMap.Lock()
 				servicesMap.m[rt.ID] = &d
 				servicesMap.Unlock()
-				wg.Done()
 			}(runtime, &wg, &servicesMap, deployment, runtimeHPARules, runtimeVPARules)
 		}
 	}
