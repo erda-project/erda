@@ -92,6 +92,8 @@ func (p *provider) doPipelineDatabaseGC(ctx context.Context, req *pb.PipelinePag
 }
 
 func needArchive(p spec.Pipeline) bool {
+	// ensure gc filed is not none
+	p.EnsureGC()
 	if p.Status == apistructs.PipelineStatusAnalyzed {
 		if *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != false {
 			return *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
@@ -203,6 +205,12 @@ func (p *provider) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 }
 
 func (p *provider) DoDBGC(pipeline *spec.Pipeline, gcOption apistructs.PipelineGCDBOption) error {
+	defer func() {
+		r := recover()
+		if r != nil {
+			p.Log.Errorf("dbgc recover from panic, pipeline_id: %d, err: %v", pipeline.PipelineID, r)
+		}
+	}()
 	if gcOption.NeedArchive {
 		// 归档
 		_, err := p.dbClient.ArchivePipeline(pipeline.ID)
