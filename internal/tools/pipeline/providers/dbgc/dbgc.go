@@ -93,7 +93,9 @@ func (p *provider) doPipelineDatabaseGC(ctx context.Context, req *pb.PipelinePag
 
 func needArchive(p spec.Pipeline) bool {
 	// ensure gc filed is not none
-	p.EnsureGC()
+	if p.Extra.GC.DatabaseGC == nil {
+		return true
+	}
 	if p.Status == apistructs.PipelineStatusAnalyzed {
 		if *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != false {
 			return *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
