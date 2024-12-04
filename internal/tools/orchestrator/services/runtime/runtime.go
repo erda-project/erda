@@ -30,6 +30,7 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
@@ -1491,7 +1492,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 		sync.RWMutex
 		m map[uint64]*apistructs.RuntimeSummaryDTO
 	}{m: make(map[uint64]*apistructs.RuntimeSummaryDTO)}
-	wg := sync.WaitGroup{}
+	group := &errgroup.Group{}
 	for i := 0; i < len(runtimes); i++ {
 		runtime := runtimes[i]
 		deployment, err := r.db.FindLastDeployment(runtime.ID)
@@ -1521,35 +1522,40 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 			}
 		}
 		if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
-			wg.Add(1)
-			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap *struct {
-				sync.RWMutex
-				m map[uint64]*apistructs.RuntimeSummaryDTO
-			}, deployment *dbclient.Deployment, runtimeHPARules []dbclient.RuntimeHPA, runtimeVPARules []dbclient.RuntimeVPA) {
-				defer wg.Done()
-				d := apistructs.RuntimeSummaryDTO{}
-				sg, err := r.serviceGroupImpl.InspectServiceGroupWithTimeout(rt.ScheduleName.Namespace, rt.ScheduleName.Name)
-				if err != nil {
-					l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
-						rt.ScheduleName.Namespace, rt.ScheduleName.Name)
-				} else if sg.Status == "Ready" || sg.Status == "Healthy" {
-					d.Status = apistructs.RuntimeStatusHealthy
-				}
-				var dice diceyml.Object
-				if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
-					logrus.Error(apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error())))
-					return
-				}
-				d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
-				fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, dice.Jobs, sg, nil, string(deployment.Status))
-				updatePARuleEnabledStatusToDisplay(runtimeHPARules, runtimeVPARules, &d.RuntimeInspectDTO)
-				servicesMap.Lock()
-				servicesMap.m[rt.ID] = &d
-				servicesMap.Unlock()
-			}(runtime, &wg, &servicesMap, deployment, runtimeHPARules, runtimeVPARules)
+			group.Go(func() error {
+				return func(rt dbclient.Runtime, servicesMap *struct {
+					sync.RWMutex
+					m map[uint64]*apistructs.RuntimeSummaryDTO
+				}, deployment *dbclient.Deployment, runtimeHPARules []dbclient.RuntimeHPA, runtimeVPARules []dbclient.RuntimeVPA) error {
+					d := apistructs.RuntimeSummaryDTO{}
+					sg, err := r.serviceGroupImpl.InspectServiceGroupWithTimeout(rt.ScheduleName.Namespace, rt.ScheduleName.Name)
+					if err != nil {
+						l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
+							rt.ScheduleName.Namespace, rt.ScheduleName.Name)
+					} else if sg.Status == "Ready" || sg.Status == "Healthy" {
+						d.Status = apistructs.RuntimeStatusHealthy
+					}
+					var dice diceyml.Object
+					if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
+						err := apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
+						logrus.Error(err)
+						return err
+					}
+					d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
+					fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, dice.Jobs, sg, nil, string(deployment.Status))
+					updatePARuleEnabledStatusToDisplay(runtimeHPARules, runtimeVPARules, &d.RuntimeInspectDTO)
+					servicesMap.Lock()
+					servicesMap.m[rt.ID] = &d
+					servicesMap.Unlock()
+					return nil
+				}(runtime, &servicesMap, deployment, runtimeHPARules, runtimeVPARules)
+			})
+
 		}
 	}
-	wg.Wait()
+	if err = group.Wait(); err != nil {
+		return nil, err
+	}
 	logrus.Debug("get services finished")
 	return servicesMap.m, nil
 
