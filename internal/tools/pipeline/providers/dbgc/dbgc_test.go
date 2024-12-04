@@ -34,7 +34,6 @@ import (
 )
 
 func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
-
 	var pipelines = []spec.Pipeline{
 		{
 			PipelineBase: spec.PipelineBase{ID: 1, Status: apistructs.PipelineStatusAnalyzed},
@@ -234,5 +233,14 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		defer patch1.Unpatch()
 
 		r.doPipelineDatabaseGC(context.Background(), &pipelinepb.PipelinePagingRequest{PageNum: 1})
+	})
+}
+
+func TestDoDBGC(t *testing.T) {
+	p := provider{}
+	pipeline := &spec.Pipeline{}
+	needArchive := true
+	assert.Panics(t, func() {
+		p.DoDBGC(pipeline, apistructs.PipelineGCDBOption{NeedArchive: needArchive})
 	})
 }
