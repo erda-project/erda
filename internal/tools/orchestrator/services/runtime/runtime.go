@@ -1532,15 +1532,23 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 					if err != nil {
 						l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
 							rt.ScheduleName.Namespace, rt.ScheduleName.Name)
-					} else if sg.Status == "Ready" || sg.Status == "Healthy" {
+					} else if sg.Status == apistructs.StatusReady || sg.Status == apistructs.RuntimeStatusHealthy {
 						d.Status = apistructs.RuntimeStatusHealthy
 					}
-					var dice diceyml.Object
-					if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
-						err := apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
+
+					var dice *diceyml.Object
+					diceYaml, err := diceyml.New([]byte(deployment.Dice), false)
+					if err != nil {
+						err = apierrors.ErrGetRuntime.InvalidState(strutil.Concat("can't convert to DiceYaml: ", err.Error()))
 						logrus.Error(err)
 						return err
 					}
+					if diceYaml.Obj() == nil {
+						err = apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice object is nil"))
+						logrus.Error(err)
+						return err
+					}
+					dice = diceYaml.Obj()
 					d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
 					fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, dice.Jobs, sg, nil, string(deployment.Status))
 					updatePARuleEnabledStatusToDisplay(runtimeHPARules, runtimeVPARules, &d.RuntimeInspectDTO)
