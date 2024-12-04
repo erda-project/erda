@@ -54,6 +54,12 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 			}},
 		},
 		{
+			PipelineBase: spec.PipelineBase{ID: 1, Status: apistructs.PipelineStatusAnalyzed},
+			PipelineExtra: spec.PipelineExtra{Extra: spec.PipelineExtraInfo{
+				GC: basepb.PipelineGC{},
+			}},
+		},
+		{
 			PipelineBase: spec.PipelineBase{ID: 2, Status: apistructs.PipelineStatusAnalyzed},
 			PipelineExtra: spec.PipelineExtra{Extra: spec.PipelineExtraInfo{
 				GC: basepb.PipelineGC{
