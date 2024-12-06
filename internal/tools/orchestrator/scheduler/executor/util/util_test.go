@@ -17,13 +17,13 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParsePreserveProjects(t *testing.T) {
