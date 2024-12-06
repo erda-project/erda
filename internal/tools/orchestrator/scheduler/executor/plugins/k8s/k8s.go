@@ -2077,6 +2077,5 @@ func (k *Kubernetes) runAsDefaultUser(service *apistructs.Service) error {
 		"RunAsGroup": &types.DefaultContainerGroupId,
 	}
 	util.MergeStructValue(service, values, "K8SSnippet", "Container", "SecurityContext")
-	logrus.Infof("after merge ======> %v", service.K8SSnippet.Container)
 	return nil
 }
