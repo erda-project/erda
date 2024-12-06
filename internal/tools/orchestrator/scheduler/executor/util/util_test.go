@@ -212,7 +212,8 @@ func Test_ParseAnnotationFromEnv(t *testing.T) {
 	}
 }
 
-func TestMerge(t *testing.T) {
+func TestMergeStructValue(t *testing.T) {
+	want := `{"container":{"securityContext":{"runAsUser":0,"runAsGroup":0}}}`
 	snippet := diceyml.K8SSnippet{}
 	values := map[string]any{
 		"RunAsUser":  new(int64),
@@ -220,5 +221,5 @@ func TestMerge(t *testing.T) {
 	}
 	MergeStructValue(&snippet, values, "K8SSnippet", "Container", "SecurityContext")
 	marshal, _ := json.Marshal(snippet)
-	fmt.Println(string(marshal))
+	assert.Equal(t, want, string(marshal))
 }
