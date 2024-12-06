@@ -17,6 +17,8 @@ package util
 import (
 	"encoding/base64"
 	"fmt"
+	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -368,4 +370,68 @@ func GetDeployName(service *apistructs.Service) string {
 		return service.ProjectServiceName
 	}
 	return service.Name
+}
+
+// MergeStructValue
+// values is the data to be merged, format { field-name: field-value }
+// needMerges is all the name of the `field` in every struct to be merged
+func MergeStructValue(target any, values map[string]any, needMerges ...string) {
+	typ := reflect.TypeOf(target)
+	if typ.Kind() != reflect.Ptr {
+		return
+	}
+	typ = typ.Elem()
+
+	if IsBaseType(typ) {
+		return
+	}
+
+	val := reflect.ValueOf(target)
+	if val.Kind() != reflect.Ptr {
+		return
+	}
+	val = val.Elem()
+	for i := 0; i < typ.NumField(); i++ {
+		if typ.Field(i).Type.Kind() == reflect.Ptr && val.Field(i).IsNil() {
+			value, ok := values[typ.Field(i).Name]
+			if ok {
+				val.Field(i).Set(reflect.ValueOf(value))
+				continue
+			}
+
+			newType := val.Field(i).Type()
+			if newType.Kind() != reflect.Ptr {
+				continue
+			}
+			newType = newType.Elem()
+			if slices.Index(needMerges, typ.Field(i).Name) < 0 {
+				continue
+			}
+			val.Field(i).Set(reflect.New(newType))
+		}
+		MergeStructValue(val.Field(i).Interface(), values, needMerges...)
+	}
+}
+
+func IsBaseType(typ reflect.Type) bool {
+	switch typ.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return true
+	case reflect.Float32, reflect.Float64:
+		return true
+	case reflect.Bool:
+		return true
+	case reflect.String:
+		return true
+	case reflect.Slice, reflect.Array:
+		return true
+	case reflect.Map:
+		return true
+	case reflect.Chan:
+		return true
+	default:
+		return false
+	}
 }

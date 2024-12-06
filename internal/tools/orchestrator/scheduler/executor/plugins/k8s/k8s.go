@@ -789,6 +789,11 @@ func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service,
 		}
 	}
 	var err error
+
+	if err = k.runAsDefaultUser(service); err != nil {
+		return err
+	}
+
 	switch service.WorkLoad {
 	case types.ServicePerNode:
 		err = k.createDaemonSet(ctx, service, sg)
@@ -903,6 +908,12 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 	}
 
 	for _, svc := range sg.Services {
+		svc := svc
+
+		if err := k.runAsDefaultUser(&svc); err != nil {
+			return err
+		}
+
 		svc.Namespace = ns
 		runtimeServiceName := util.GetDeployName(&svc)
 		// Existing in the old service collection, do the put operation
@@ -2057,4 +2068,15 @@ func (k *Kubernetes) DeployInEdgeCluster() bool {
 	}
 
 	return true
+}
+
+// run as default user
+func (k *Kubernetes) runAsDefaultUser(service *apistructs.Service) error {
+	values := map[string]any{
+		"RunAsUser":  &types.DefaultContainerUserId,
+		"RunAsGroup": &types.DefaultContainerGroupId,
+	}
+	util.MergeStructValue(service, values, "K8SSnippet", "Container", "SecurityContext")
+	logrus.Infof("after merge ======> %v", service.K8SSnippet.Container)
+	return nil
 }

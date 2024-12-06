@@ -42,6 +42,11 @@ const (
 	DiceWorkSpace             = "DICE_WORKSPACE"
 )
 
+var (
+	DefaultContainerUserId  int64 = 1000 // `dice` user
+	DefaultContainerGroupId int64 = 1000 // `dice` group
+)
+
 var EnvReg = regexp.MustCompile(`\$\{([^}]+?)\}`)
 
 type StatefulsetInfo struct {
