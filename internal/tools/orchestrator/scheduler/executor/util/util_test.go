@@ -15,7 +15,9 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"strings"
 	"testing"
 
@@ -208,4 +210,15 @@ func Test_ParseAnnotationFromEnv(t *testing.T) {
 			assert.Equal(t, got, test.want)
 		})
 	}
+}
+
+func TestMerge(t *testing.T) {
+	snippet := diceyml.K8SSnippet{}
+	values := map[string]any{
+		"RunAsUser":  new(int64),
+		"RunAsGroup": new(int64),
+	}
+	MergeStructValue(&snippet, values, "K8SSnippet", "Container", "SecurityContext")
+	marshal, _ := json.Marshal(snippet)
+	fmt.Println(string(marshal))
 }
