@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"strconv"
 	"strings"
 	"sync"
@@ -793,6 +794,8 @@ func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service,
 	if err = k.runAsDefaultUser(service); err != nil {
 		return err
 	}
+
+	logrus.Infof("after %v", service.K8SSnippet.Container.SecurityContext)
 
 	switch service.WorkLoad {
 	case types.ServicePerNode:
@@ -2072,10 +2075,19 @@ func (k *Kubernetes) DeployInEdgeCluster() bool {
 
 // run as default user
 func (k *Kubernetes) runAsDefaultUser(service *apistructs.Service) error {
-	values := map[string]any{
-		"RunAsUser":  &types.DefaultContainerUserId,
-		"RunAsGroup": &types.DefaultContainerGroupId,
+	snippet := diceyml.K8SSnippet{
+		Container: &diceyml.ContainerSnippet{
+			SecurityContext: &apiv1.SecurityContext{
+				RunAsUser:  &types.DefaultContainerUserId,
+				RunAsGroup: &types.DefaultContainerGroupId,
+			},
+		},
 	}
-	util.MergeStructValue(service, values, "K8SSnippet", "Container", "SecurityContext")
-	return nil
+
+	if service.K8SSnippet == nil {
+		service.K8SSnippet = &snippet
+		return nil
+	}
+
+	return util.MergeStruct(service.K8SSnippet, &snippet)
 }

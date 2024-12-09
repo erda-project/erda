@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"reflect"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -372,48 +371,78 @@ func GetDeployName(service *apistructs.Service) string {
 	return service.Name
 }
 
-// MergeStructValue
-// values is the data to be merged, format { field-name: field-value }
-// needMerges is all the name of the `field` in every struct to be merged
-func MergeStructValue(target any, values map[string]any, needMerges ...string) {
-	typ := reflect.TypeOf(target)
-	if typ.Kind() != reflect.Ptr {
-		return
-	}
-	typ = typ.Elem()
+var (
+	ErrorNotPointer  = errors.New("must be a pointer")
+	ErrorNotSameType = errors.New("dst and src are not same type")
+	ErrorValueIsNil  = errors.New("value is nil")
+)
 
-	if IsBaseType(typ) {
-		return
+func MergeStruct(dst, src any) error {
+	dstTpy := reflect.TypeOf(dst)
+	if dstTpy.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	dstTpy = dstTpy.Elem()
+
+	srcTpy := reflect.TypeOf(src)
+	if srcTpy.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	srcTpy = srcTpy.Elem()
+
+	if srcTpy != dstTpy {
+		return ErrorNotSameType
 	}
 
-	val := reflect.ValueOf(target)
-	if val.Kind() != reflect.Ptr {
-		return
+	if isBaseType(srcTpy) {
+		return nil
 	}
-	val = val.Elem()
-	for i := 0; i < typ.NumField(); i++ {
-		if typ.Field(i).Type.Kind() == reflect.Ptr && val.Field(i).IsNil() {
-			value, ok := values[typ.Field(i).Name]
-			if ok {
-				val.Field(i).Set(reflect.ValueOf(value))
+
+	dstVal := reflect.ValueOf(dst)
+	if dstVal.IsNil() {
+		return ErrorValueIsNil
+	}
+	if dstVal.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	dstVal = dstVal.Elem()
+
+	srcVal := reflect.ValueOf(src)
+	if srcVal.IsNil() {
+		return ErrorValueIsNil
+	}
+	if srcVal.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	srcVal = srcVal.Elem()
+
+	for i := 0; i < dstTpy.NumField(); i++ {
+		if dstTpy.Field(i).Type.Kind() == reflect.Ptr {
+			// source data is nil, skip merge
+			if srcVal.Field(i).IsNil() {
 				continue
 			}
 
-			newType := val.Field(i).Type()
-			if newType.Kind() != reflect.Ptr {
+			// dst and src are not nil, continue recursively
+			if !dstVal.Field(i).IsNil() && !srcVal.Field(i).IsNil() {
+				if err := MergeStruct(dstVal.Field(i).Interface(), srcVal.Field(i).Interface()); err != nil {
+					return err
+				}
 				continue
 			}
-			newType = newType.Elem()
-			if slices.Index(needMerges, typ.Field(i).Name) < 0 {
+
+			// dst is nil and src is not nil, set value directly
+			if dstVal.Field(i).IsNil() && !srcVal.Field(i).IsNil() {
+				dstVal.Field(i).Set(srcVal.Field(i))
 				continue
 			}
-			val.Field(i).Set(reflect.New(newType))
+
 		}
-		MergeStructValue(val.Field(i).Interface(), values, needMerges...)
 	}
+	return nil
 }
 
-func IsBaseType(typ reflect.Type) bool {
+func isBaseType(typ reflect.Type) bool {
 	switch typ.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return true

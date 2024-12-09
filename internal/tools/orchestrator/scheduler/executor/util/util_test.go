@@ -17,6 +17,8 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	apiv1 "k8s.io/api/core/v1"
 	"strings"
 	"testing"
 
@@ -213,13 +215,33 @@ func Test_ParseAnnotationFromEnv(t *testing.T) {
 }
 
 func TestMergeStructValue(t *testing.T) {
-	want := `{"container":{"securityContext":{"runAsUser":0,"runAsGroup":0}}}`
-	snippet := diceyml.K8SSnippet{}
-	values := map[string]any{
-		"RunAsUser":  new(int64),
-		"RunAsGroup": new(int64),
+
+	dstRunAsUser := int64(0)
+	want := `{"container":{"securityContext":{"runAsUser":0,"runAsGroup":1000}}}`
+	dst := apistructs.Service{
+		K8SSnippet: &diceyml.K8SSnippet{
+			Container: &diceyml.ContainerSnippet{
+				SecurityContext: &apiv1.SecurityContext{
+					RunAsUser: &dstRunAsUser,
+				},
+			},
+		},
 	}
-	MergeStructValue(&snippet, values, "K8SSnippet", "Container", "SecurityContext")
-	marshal, _ := json.Marshal(snippet)
+
+	src := apistructs.Service{
+		K8SSnippet: &diceyml.K8SSnippet{
+			Container: &diceyml.ContainerSnippet{
+				SecurityContext: &apiv1.SecurityContext{
+					RunAsUser:  &types.DefaultContainerUserId,
+					RunAsGroup: &types.DefaultContainerGroupId,
+				},
+			},
+		},
+	}
+	err := MergeStruct(&dst, &src)
+	assert.NoError(t, err)
+
+	marshal, _ := json.Marshal(dst.K8SSnippet)
+	fmt.Println(string(marshal))
 	assert.Equal(t, want, string(marshal))
 }
