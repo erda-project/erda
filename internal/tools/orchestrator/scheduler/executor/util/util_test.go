@@ -17,14 +17,14 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
-	apiv1 "k8s.io/api/core/v1"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
