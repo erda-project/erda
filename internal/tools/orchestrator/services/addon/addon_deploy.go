@@ -95,6 +95,8 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 			case apistructs.AddonSourcecov:
 				asm := &SourcecovAddonManagement{bdl: a.bdl, org: a.org}
 				configMap, err = asm.DeployStatus(addonIns, &serviceGroup)
+			case apistructs.AddonInfluxDB:
+				configMap, err = a.InfluxDBDeployStatus(addonIns, &serviceGroup)
 			default:
 				// 非基础addon，走通用的处理逻辑
 				configMap, err = a.CommonDeployStatus(addonIns, &serviceGroup, addonDice, addonSpec)
@@ -638,6 +640,8 @@ func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 		sam := &SourcecovAddonManagement{bdl: a.bdl, org: a.org}
 		buildErr = sam.BuildSourceCovServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
+	case apistructs.AddonInfluxDB:
+		buildErr = a.BuildInfluxDBServiceItem(params, addonIns, addonSpec, addonDice)
 	default: //default case
 		buildErr = a.BuildCommonServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 	}

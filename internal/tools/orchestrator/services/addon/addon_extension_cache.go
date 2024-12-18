@@ -49,6 +49,17 @@ func (v *VersionMap) GetDefault() (apistructs.ExtensionVersion, bool) {
 	return res, ok
 }
 
+func (v *VersionMap) List() []apistructs.ExtensionVersion {
+	res := make([]apistructs.ExtensionVersion, 0, len(*v))
+	for key, ext := range *v {
+		if key == defaultVersionKey {
+			continue
+		}
+		res = append(res, ext)
+	}
+	return res
+}
+
 var (
 	cache *Cache
 	mutex = &sync.Mutex{}

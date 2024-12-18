@@ -23,7 +23,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v2/pkg/data"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"

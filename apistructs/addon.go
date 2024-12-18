@@ -306,7 +306,7 @@ const (
 	// AddonConfigCenterAlias terminus-configcenter alias name
 	AddonConfigCenterAlias = "configcenter"
 	// AddonNewConfigCenter configcenter
-	AddonNewConfigCenter = "configcenter"
+	AddonNewConfigCenter = "config-center"
 	//AddonTerminusRoost 注册中心
 	AddonTerminusRoost = "terminus-roost"
 	// AddonMicroService micro-service
@@ -327,8 +327,17 @@ const (
 	AddonCloudGateway = "alicloud-gateway"
 	// sourcecov code coverage agent
 	AddonSourcecov = "sourcecov"
+	// influxdb
+	AddonInfluxDB = "influxdb"
 
 	OriginalReplicas = "original_replicas"
+
+	// registercenter
+	AddonRegisterCenter = "registercenter"
+	// mse-nacos
+	AddonMSENacos = "mse-nacos"
+	// custom
+	AddonCustom = "custom"
 )
 
 // AddonRes addon信息

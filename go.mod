@@ -11,6 +11,7 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/Masterminds/semver v1.5.0
 	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
+	github.com/agiledragon/gomonkey/v2 v2.12.0
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alibabacloud-go/bailian-20230601 v1.0.0
@@ -122,7 +123,6 @@ require (
 	github.com/rancher/dynamiclistener v0.5.0-rc6
 	github.com/rancher/remotedialer v0.3.2
 	github.com/rancher/steve v0.0.0-20221031182508-a10fe811f58f
-	github.com/rancher/wrangler v0.8.11-0.20211214201934-f5aa5d9f2e81
 	github.com/rancher/wrangler/v2 v2.2.0-rc6
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
@@ -145,7 +145,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx/v3 v3.3.2
-	github.com/timandy/routine v1.1.2
+	github.com/timandy/routine v1.1.4
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
@@ -247,7 +247,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/clbanning/mxj/v2 v2.5.5 // indirect
-	github.com/confluentinc/confluent-kafka-go v1.5.2 // indirect
+	github.com/confluentinc/confluent-kafka-go v1.9.2 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/containerd/containerd v1.7.12 // indirect
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
@@ -416,6 +416,7 @@ require (
 	github.com/shabbyrobe/xmlwriter v0.0.0-20200208144257-9fca06d00ffa // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/sykesm/zap-logfmt v0.0.4
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285 // indirect
 	github.com/tealeg/xlsx v1.0.5 // indirect
 	github.com/tebeka/strftime v0.1.5 // indirect
@@ -449,7 +450,7 @@ require (
 	go.starlark.net v0.0.0-20231121155337-90ade8b19d09 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
+	go.uber.org/zap v1.27.0
 	golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
@@ -480,7 +481,6 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
-	github.com/sykesm/zap-logfmt v0.0.4 // indirect
 )
 
 replace (

@@ -75,25 +75,14 @@ func (w *WebHookHTTP) ListHooks(ctx context.Context, req *pb.ListHooksRequest, v
 	if location.Org == "" {
 		return nil, fmt.Errorf("not provide org")
 	}
+
 	r, err := w.impl.ListHooks(location)
 	if err != nil {
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
-	}
-	data, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-	hooks := make([]*pb.Hook, 0)
-	err = json.Unmarshal(data, &hooks)
-	if err != nil {
-		return nil, err
-	}
 	return &pb.ListHooksResponse{
-		Data: hooks,
+		Data: r,
 	}, nil
 }
 

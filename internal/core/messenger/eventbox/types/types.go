@@ -15,6 +15,7 @@
 package types
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
@@ -47,6 +48,12 @@ func (m *Message) OriginContent() interface{} {
 // SetOriginContent set `Message.originContent'
 func (m *Message) SetOriginContent(content interface{}) {
 	m.originContent = content
+}
+
+// String used for log
+func (m *Message) String() string {
+	b, _ := json.Marshal(m)
+	return string(b)
 }
 
 // HasPrefix 格式化 labelkey & `s' 之后，判断是否有 `s' 前缀

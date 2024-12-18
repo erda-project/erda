@@ -87,7 +87,7 @@ func throttlePublish(m *types.Message, pool *goroutinepool.GoroutinePool, sub su
 		}
 		errs := sub.Publish(string(labelV_), string(content_), m.Time, m)
 		if len(errs) > 0 {
-			logrus.Errorf("publish message: %v, err: %v", m, errs)
+			logrus.Errorf("failed to publish message: %s, err: %v", m, errs)
 			errsCh <- errs
 		} else {
 			errsCh <- []error{}

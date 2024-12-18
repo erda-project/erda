@@ -2633,13 +2633,25 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 	basic := locale.Get("basicPlan")
 	professional := locale.Get("professionalPlan")
 
-	createableAddons := []string{"api-gateway", "mysql", "canal", "monitor"}
-	createableAddonVersion := map[string]string{"api-gateway": "3.0.0", "mysql": "5.7.29", "canal": "1.1.0", "monitor": "3.6"}
+	createableAddons := []string{
+		apistructs.AddonApiGateway,
+		apistructs.AddonMySQL,
+		apistructs.AddonMonitor,
+		apistructs.AddonCanal,
+		apistructs.AddonRegisterCenter,
+		apistructs.AddonNewConfigCenter,
+	}
+	// if these addon-type is `custom` and they can't be deployed by user, skip it!
+	unCreateAbleAddons := []string{
+		apistructs.AddonMSENacos, // mse-nacos only can be deployed by `config-center` or `register-center`
+	}
 	createableAddonPlan := map[string][]map[string]string{
-		"api-gateway": {{"label": basic, "value": "api-gateway:basic"}},
-		"mysql":       {{"label": basic, "value": "mysql:basic"}},
-		"canal":       {{"label": basic, "value": "canal:basic"}},
-		"monitor":     {{"label": professional, "value": "monitor:professional"}},
+		apistructs.AddonApiGateway:      {{"label": basic, "value": "api-gateway:basic"}},
+		apistructs.AddonMySQL:           {{"label": basic, "value": "mysql:basic"}},
+		apistructs.AddonCanal:           {{"label": basic, "value": "canal:basic"}},
+		apistructs.AddonMonitor:         {{"label": professional, "value": "monitor:professional"}},
+		apistructs.AddonRegisterCenter:  {{"label": basic, "value": "registercenter:basic"}},
+		apistructs.AddonNewConfigCenter: {{"label": basic, "value": "config-center:basic"}},
 	}
 
 	// 构建请求参数，请求extension
@@ -2653,23 +2665,25 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 	}
 	extensionResult := make([]map[string]interface{}, 0, len(extensions))
 	for _, item := range extensions {
-		if item.Category != apistructs.AddonCustomCategory && !strutil.Exist(createableAddons, item.Name) {
+		if (item.Category != apistructs.AddonCustomCategory && !strutil.Exist(createableAddons, item.Name)) || strutil.Exist(unCreateAbleAddons, item.Name) {
 			continue
 		}
-		version := createableAddonVersion[item.Name]
-		if version == "" {
-			version = "1.0.0"
-		}
-		itemSpecResult, err := a.bdl.GetExtensionVersion(apistructs.ExtensionVersionGetRequest{
-			Name:    item.Name,
-			Version: version,
-		})
+
+		versionMap, err := GetCache().Get(item.Name)
 		if err != nil {
-			logrus.Errorf("custom request fail, addon name: %v", item.Name)
-			continue
+			return nil, fmt.Errorf("can't get addon [%s] from cache, %v", item.Name, err)
 		}
+		addons, ok := versionMap.(*VersionMap)
+		if !ok {
+			return nil, fmt.Errorf("can't convert to VersionMap")
+		}
+		defaultAddon, ok := addons.GetDefault()
+		if !ok {
+			return nil, fmt.Errorf("there are no default addons [%s]", item.Name)
+		}
+
 		// spec.yml强制转换为string类型
-		addonSpecBytes, err := json.Marshal(itemSpecResult.Spec)
+		addonSpecBytes, err := json.Marshal(defaultAddon.Spec)
 		if err != nil {
 			logrus.Error("failed to parse addon spec")
 			continue
@@ -2686,18 +2700,17 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		addonMap["addonName"] = item.Name
 		addonMap["vars"] = addonSpec.ConfigVars
 		switch item.Name {
-		case "mysql", "api-gateway", "monitor":
+		case apistructs.AddonMySQL, apistructs.AddonApiGateway, apistructs.AddonMonitor, apistructs.AddonRegisterCenter, apistructs.AddonNewConfigCenter:
 			addonMap["vars"] = nil
-		case "canal":
+		case apistructs.AddonCanal:
 			addonMap["vars"] = []string{
 				"canal.instance.master.address",
 				"canal.instance.dbUsername",
 				"canal.instance.dbPassword",
 				"mysql"}
-		case "custom":
+		case apistructs.AddonCustom:
 			addonMap["vars"] = []string{}
 		}
-		addonMap["version"] = version
 		addonMap["plan"] = createableAddonPlan[item.Name]
 		// TODO: disable tenant support, we shall refactor later
 		//switch item.Name {
@@ -2707,6 +2720,15 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		//default:
 		//	addonMap["supportTenant"] = false
 		//}
+
+		versions := make([]string, 0, len(*addons))
+
+		for _, e := range addons.List() {
+			versions = append(versions, e.Version)
+		}
+
+		addonMap["versions"] = versions
+
 		extensionResult = append(extensionResult, addonMap)
 	}
 	return &extensionResult, nil
@@ -3891,7 +3913,7 @@ func (a *Addon) injectVersion(addon *apistructs.AddonCreateItem) error {
 	if addon.Options == nil {
 		addon.Options = make(map[string]string)
 	}
-	if v, ok := addon.Options["Version"]; ok && v != "" {
+	if v, ok := addon.Options["version"]; ok && v != "" {
 		return nil
 	}
 
@@ -3908,6 +3930,6 @@ func (a *Addon) injectVersion(addon *apistructs.AddonCreateItem) error {
 		return fmt.Errorf("there are no default addons [%s]", addon.Type)
 	}
 
-	addon.Options["Version"] = defaultAddon.Version
+	addon.Options["version"] = defaultAddon.Version
 	return nil
 }
