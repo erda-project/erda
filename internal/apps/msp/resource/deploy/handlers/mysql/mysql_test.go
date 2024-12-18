@@ -19,7 +19,8 @@ import (
 	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
@@ -83,7 +84,7 @@ func TestCheckIfNeedTmcInstance(t *testing.T) {
 		},
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(p.InstanceDb), "First", func(DB *db.InstanceDB, where map[string]any) (*db.Instance, bool, error) {
+	applyFunc := gomonkey.ApplyMethod(reflect.TypeOf(p.InstanceDb), "First", func(DB *db.InstanceDB, where map[string]any) (*db.Instance, bool, error) {
 		return &db.Instance{
 			Engine:    "mysql",
 			Version:   "9.0",
@@ -93,6 +94,8 @@ func TestCheckIfNeedTmcInstance(t *testing.T) {
 			Config:    "",
 		}, false, nil
 	})
+	defer applyFunc.Reset()
 
-	_, _, _ = p.CheckIfNeedTmcInstance(req, info)
+	_, _, err := p.CheckIfNeedTmcInstance(req, info)
+	assert.NoError(t, err)
 }
