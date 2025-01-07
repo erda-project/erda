@@ -22,8 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/strutil"
-
 	"github.com/erda-project/erda/apistructs"
 	conf "github.com/erda-project/erda/cmd/erda-server/conf/msp"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
@@ -33,6 +31,7 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
@@ -139,6 +138,21 @@ func (h *provider) DoDeploy(serviceGroupDeployRequest interface{}, resourceInfo 
 	}
 
 	return h.DefaultDeployHandler.DoDeploy(serviceGroupDeployRequest, resourceInfo, tmcInstance, clusterConfig)
+}
+
+func (h *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, resourceInfo *handlers.ResourceInfo) (*db.Instance, bool, error) {
+	// mysql remove the `version` condition. because in the old cluster nacos[1.1.0] depend on mysql[5.7] but now depend on mysql[8.0]
+	var where = map[string]any{
+		"engine":     resourceInfo.TmcVersion.Engine,
+		"az":         req.Az,
+		"status":     handlers.TmcInstanceStatusRunning,
+		"is_deleted": apistructs.AddonNotDeleted,
+	}
+	instance, ok, err := h.InstanceDb.First(where)
+	if err != nil {
+		return nil, false, err
+	}
+	return instance, !ok, nil
 }
 
 func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployResult interface{}, clusterConfig map[string]string) (map[string]string, error) {
