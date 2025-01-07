@@ -67,7 +67,6 @@ func NewAggregator(ctx context.Context, bdl *bundle.Bundle, clusterSvc clusterpb
 	}
 
 	a.server = gcache.New(size).LoaderFunc(a.loadFunc).LRU().Build()
-	a.init()
 	go a.watchClusters(ctx)
 	return a
 }
@@ -174,10 +173,6 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 					continue
 				}
 				exists[cluster.Name] = struct{}{}
-				if g, err := a.server.Get(cluster.Name); err == nil && g != nil {
-					continue
-				}
-				a.Add(cluster)
 			}
 
 			var readyCluster []string
@@ -190,7 +185,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 				}
 
 				if _, ok := exists[name.(string)]; ok {
-					return
+					continue
 				}
 				a.Delete(name.(string))
 			}
