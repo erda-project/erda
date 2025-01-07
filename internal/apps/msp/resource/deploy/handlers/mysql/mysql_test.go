@@ -16,10 +16,16 @@ package mysql
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/apps/msp/instance/db"
+	"github.com/erda-project/erda/internal/apps/msp/resource/deploy/handlers"
+	"github.com/erda-project/erda/internal/apps/msp/resource/utils"
 )
 
 func TestTryReadFile(t *testing.T) {
@@ -58,4 +64,38 @@ func TestParseResp2MySQLDtoMap(t *testing.T) {
 	if mysql.Options["MYSQL_ROOT_PASSWORD"] != "this-is-a-mocked-password" {
 		t.Fatal("failed to parse")
 	}
+}
+
+func TestCheckIfNeedTmcInstance(t *testing.T) {
+	p := &provider{
+		DefaultDeployHandler: &handlers.DefaultDeployHandler{
+			InstanceDb: &db.InstanceDB{},
+		},
+	}
+	req := &handlers.ResourceDeployRequest{
+		Engine: "mysql",
+		Uuid:   utils.GetRandomId(),
+		Az:     "test-cluster",
+	}
+	info := &handlers.ResourceInfo{
+		Tmc: &db.Tmc{},
+		TmcVersion: &db.TmcVersion{
+			Engine: "mysql",
+		},
+	}
+
+	applyFunc := gomonkey.ApplyMethod(reflect.TypeOf(p.InstanceDb), "First", func(DB *db.InstanceDB, where map[string]any) (*db.Instance, bool, error) {
+		return &db.Instance{
+			Engine:    "mysql",
+			Version:   "9.0",
+			ReleaseID: "i am release id!",
+			Status:    "RUNNING",
+			Az:        "test-cluster",
+			Config:    "",
+		}, false, nil
+	})
+	defer applyFunc.Reset()
+
+	_, _, err := p.CheckIfNeedTmcInstance(req, info)
+	assert.NoError(t, err)
 }
