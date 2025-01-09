@@ -102,4 +102,7 @@ type PVCUtil interface {
 type OvercommitUtil interface {
 	CPUOvercommit(limit float64) float64
 	MemoryOvercommit(limit int) int
+	// ToResourceRequirements
+	// cpu,memory field type source: apistructs/service.go.Resources
+	ResourceOvercommit(resources apistructs.Resources) corev1.ResourceRequirements
 }

@@ -25,7 +25,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
@@ -33,15 +32,15 @@ import (
 	canalv1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/canal/v1"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type CanalOperator struct {
-	k8s    addon.K8SUtil
-	ns     addon.NamespaceUtil
-	secret addon.SecretUtil
-	pvc    addon.PVCUtil
-	client *httpclient.HTTPClient
+	k8s        addon.K8SUtil
+	ns         addon.NamespaceUtil
+	overcommit addon.OvercommitUtil
+	secret     addon.SecretUtil
+	pvc        addon.PVCUtil
+	client     *httpclient.HTTPClient
 }
 
 func (c *CanalOperator) Name(sg *apistructs.ServiceGroup) string {
@@ -58,13 +57,15 @@ func (c *CanalOperator) NamespacedName(sg *apistructs.ServiceGroup) string {
 	return c.Namespace(sg) + "/" + c.Name(sg)
 }
 
-func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *CanalOperator {
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, overcommit addon.OvercommitUtil,
+	secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *CanalOperator {
 	return &CanalOperator{
-		k8s:    k8s,
-		ns:     ns,
-		secret: secret,
-		pvc:    pvc,
-		client: client,
+		k8s:        k8s,
+		ns:         ns,
+		overcommit: overcommit,
+		secret:     secret,
+		pvc:        pvc,
+		client:     client,
 	}
 }
 
@@ -138,47 +139,6 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity
 
-	resources := corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{},
-		Limits:   corev1.ResourceList{},
-	}
-	adminResources := corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{},
-		Limits:   corev1.ResourceList{},
-	}
-	if canal.Resources.Cpu != 0 {
-		cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Cpu*1000)), "m"))
-		resources.Requests[corev1.ResourceCPU] = cpu
-
-		// 1/4
-		cpu = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Cpu*1000/4)), "m"))
-		adminResources.Requests[corev1.ResourceCPU] = cpu
-	}
-	if canal.Resources.MaxCPU != 0 {
-		maxCpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxCPU*1000)), "m"))
-		resources.Limits[corev1.ResourceCPU] = maxCpu
-
-		// 1/2
-		maxCpu = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxCPU*1000/2)), "m"))
-		adminResources.Limits[corev1.ResourceCPU] = maxCpu
-	}
-	if canal.Resources.Mem != 0 {
-		mem := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Mem)), "Mi"))
-		resources.Requests[corev1.ResourceMemory] = mem
-
-		// 1/3
-		mem = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.Mem/3)), "Mi"))
-		adminResources.Requests[corev1.ResourceMemory] = mem
-	}
-	if canal.Resources.MaxMem != 0 {
-		maxMem := resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxMem)), "Mi"))
-		resources.Limits[corev1.ResourceMemory] = maxMem
-
-		// 2/3
-		maxMem = resource.MustParse(strutil.Concat(strconv.Itoa(int(canal.Resources.MaxMem*2/3)), "Mi"))
-		adminResources.Limits[corev1.ResourceMemory] = maxMem
-	}
-
 	v := "v1.1.5"
 	if canal.Env["CANAL_VERSION"] != "" {
 		v = canal.Env["CANAL_VERSION"]
@@ -220,12 +180,15 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 			Replicas: canal.Scale,
 
-			Affinity:       &affinity,
-			Resources:      resources,
-			AdminResources: adminResources,
-			Labels:         make(map[string]string),
-			CanalOptions:   canalOptions,
-			AdminOptions:   adminOptions,
+			Affinity:  &affinity,
+			Resources: c.overcommit.ResourceOvercommit(canal.Resources),
+			AdminResources: c.overcommit.ResourceOvercommit(apistructs.Resources{
+				Cpu: canal.Resources.Cpu / 3,
+				Mem: canal.Resources.Mem * 2 / 3,
+			}),
+			Labels:       make(map[string]string),
+			CanalOptions: canalOptions,
+			AdminOptions: adminOptions,
 			Annotations: map[string]string{
 				"_destination": canal.Env["CANAL_DESTINATION"],
 				"_props":       props,

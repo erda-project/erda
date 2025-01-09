@@ -377,20 +377,7 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.A
 	settings.Affinity = affinity
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
-	settings.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*ro.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", ro.overcommit.MemoryOvercommit(int(svc.Resources.Mem)))),
-		},
-		Limits: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-		},
-	}
+	settings.Resources = ro.overcommit.ResourceOvercommit(svc.Resources)
 	settings.Exporter = RedisExporter{
 		Enabled: true,
 		Image:   redisExporterImage,

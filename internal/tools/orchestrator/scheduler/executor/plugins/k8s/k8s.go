@@ -61,6 +61,7 @@ import (
 	erdahpa "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/hpa"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/instanceinfosync"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/job"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
@@ -458,9 +459,9 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	k.elasticsearchoperator = elasticsearchoperator
 	redisoperator := redis.New(k, deploy, sts, svc, ns, k, k8ssecret, client)
 	k.redisoperator = redisoperator
-	mysqloperator := mysql.New(k, ns, k8ssecret, pvc, client)
+	mysqloperator := mysql.New(k, ns, k, k8ssecret, pvc, client)
 	k.mysqloperator = mysqloperator
-	canaloperator := canal.New(k, ns, k8ssecret, pvc, client)
+	canaloperator := canal.New(k, ns, k, k8ssecret, pvc, client)
 	k.canaloperator = canaloperator
 	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
 	k.daemonsetoperator = daemonsetoperator
@@ -1362,6 +1363,20 @@ func (k *Kubernetes) CPUOvercommit(limit float64) float64 {
 
 func (k *Kubernetes) MemoryOvercommit(limit int) int {
 	return int(float64(limit) / k.memSubscribeRatio)
+}
+
+func (k *Kubernetes) ResourceOvercommit(r apistructs.Resources) apiv1.ResourceRequirements {
+	return apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * k.CPUOvercommit(r.Cpu))),
+			apiv1.ResourceMemory:           util.ResourceMemoryFormatter(k.MemoryOvercommit(int(r.Mem))),
+			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
+		},
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * r.Cpu)),
+			apiv1.ResourceMemory:           util.ResourceMemoryFormatter(int(r.Mem)),
+			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit)},
+	}
 }
 
 func GenTolerations() []apiv1.Toleration {
