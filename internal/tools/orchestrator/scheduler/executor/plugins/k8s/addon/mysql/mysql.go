@@ -19,11 +19,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -34,15 +32,15 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type MysqlOperator struct {
-	k8s    addon.K8SUtil
-	ns     addon.NamespaceUtil
-	secret addon.SecretUtil
-	pvc    addon.PVCUtil
-	client *httpclient.HTTPClient
+	k8s        addon.K8SUtil
+	ns         addon.NamespaceUtil
+	overcommit addon.OvercommitUtil
+	secret     addon.SecretUtil
+	pvc        addon.PVCUtil
+	client     *httpclient.HTTPClient
 }
 
 func (my *MysqlOperator) Name(sg *apistructs.ServiceGroup) string {
@@ -61,13 +59,15 @@ func (my *MysqlOperator) NamespacedName(sg *apistructs.ServiceGroup) string {
 	return my.Namespace(sg) + "/" + my.Name(sg)
 }
 
-func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *MysqlOperator {
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, overcommit addon.OvercommitUtil,
+	secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *MysqlOperator {
 	return &MysqlOperator{
-		k8s:    k8s,
-		ns:     ns,
-		secret: secret,
-		pvc:    pvc,
-		client: client,
+		k8s:        k8s,
+		ns:         ns,
+		overcommit: overcommit,
+		secret:     secret,
+		pvc:        pvc,
+		client:     client,
 	}
 }
 
@@ -132,27 +132,6 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity
 
-	resources := corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{},
-		Limits:   corev1.ResourceList{},
-	}
-	if mysql.Resources.Cpu != 0 {
-		cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.Cpu*1000)), "m"))
-		resources.Requests[corev1.ResourceCPU] = cpu
-	}
-	if mysql.Resources.MaxCPU != 0 {
-		maxCpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.MaxCPU*1000)), "m"))
-		resources.Limits[corev1.ResourceCPU] = maxCpu
-	}
-	if mysql.Resources.Mem != 0 {
-		mem := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.Mem)), "Mi"))
-		resources.Requests[corev1.ResourceMemory] = mem
-	}
-	if mysql.Resources.MaxMem != 0 {
-		maxMem := resource.MustParse(strutil.Concat(strconv.Itoa(int(mysql.Resources.MaxMem)), "Mi"))
-		resources.Limits[corev1.ResourceMemory] = maxMem
-	}
-
 	replicas := mysql.Scale - 1
 	if replicas < 0 {
 		replicas = 0
@@ -191,7 +170,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			StorageSize:      resource.MustParse(capacity),
 
 			Affinity:    &affinity,
-			Resources:   resources,
+			Resources:   my.overcommit.ResourceOvercommit(mysql.Resources),
 			Labels:      make(map[string]string),
 			Annotations: make(map[string]string),
 		},

@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -36,10 +37,11 @@ import (
 )
 
 type SourcecovOperator struct {
-	k8s    addon.K8SUtil
-	client *httpclient.HTTPClient
-	oc     addon.OvercommitUtil
-	ns     addon.NamespaceUtil
+	k8s        addon.K8SUtil
+	client     *httpclient.HTTPClient
+	oc         addon.OvercommitUtil
+	ns         addon.NamespaceUtil
+	overcommit addon.OvercommitUtil
 }
 
 var APIPrefix = "/apis/" + scv1.GroupVersion.String()
@@ -129,20 +131,9 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			StorageClassName: scname,
 			StorageSize:      resource.MustParse(capacity),
 			Affinity:         &affinity,
-			Resources: &v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					"cpu": resource.MustParse(
-						fmt.Sprintf("%dm", int(1000*s.oc.CPUOvercommit(svc.Resources.Cpu)))),
-					"memory": resource.MustParse(
-						fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-				},
-				Limits: v1.ResourceList{
-					"cpu": resource.MustParse(
-						fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-					"memory": resource.MustParse(
-						fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-				},
-			},
+			Resources: util.ResourceRequirementsPtr(
+				s.overcommit.ResourceOvercommit(svc.Resources),
+			),
 		},
 	}
 

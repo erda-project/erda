@@ -22,9 +22,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -368,4 +371,16 @@ func GetDeployName(service *apistructs.Service) string {
 		return service.ProjectServiceName
 	}
 	return service.Name
+}
+
+func ResourceCPUFormatter[T int | float64](value T) resource.Quantity {
+	return resource.MustParse(fmt.Sprintf("%v%s", value, types.CPUUnitMilli))
+}
+
+func ResourceMemoryFormatter[T int | float64](value T) resource.Quantity {
+	return resource.MustParse(fmt.Sprintf("%v%s", value, types.MemUnitMi))
+}
+
+func ResourceRequirementsPtr(r corev1.ResourceRequirements) *corev1.ResourceRequirements {
+	return &r
 }

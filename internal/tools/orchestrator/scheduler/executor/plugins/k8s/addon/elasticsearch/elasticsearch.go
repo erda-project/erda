@@ -360,22 +360,9 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 				},
 				Containers: []corev1.Container{
 					{
-						Name: "elasticsearch",
-						Env:  envs(svc.Env),
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								"cpu": resource.MustParse(
-									fmt.Sprintf("%dm", int(1000*eo.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-								"memory": resource.MustParse(
-									fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-							},
-							Limits: corev1.ResourceList{
-								"cpu": resource.MustParse(
-									fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-								"memory": resource.MustParse(
-									fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-							},
-						},
+						Name:      "elasticsearch",
+						Env:       envs(svc.Env),
+						Resources: eo.overcommit.ResourceOvercommit(svc.Resources),
 					}, {
 						Name:    "es-exporter",
 						Image:   esExporterImage,

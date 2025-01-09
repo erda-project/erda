@@ -277,20 +277,7 @@ func (r *RocketMQOperator) convertNameSrv(svc apistructs.Service, affinity *core
 	nameSrvSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
 	nameSrvSpec.Size = int32(svc.Scale)
 	nameSrvSpec.StorageMode = scStorageMode
-	nameSrvSpec.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*r.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", r.overcommit.MemoryOvercommit(int(svc.Resources.Mem)))),
-		},
-		Limits: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-		},
-	}
+	nameSrvSpec.Resources = r.overcommit.ResourceOvercommit(svc.Resources)
 	scname, capacity := getStorageCapacity(svc)
 	nameSrvSpec.Env = convertEnvs(svc.Env)
 	nameSrvSpec.Labels = svc.Labels
@@ -327,20 +314,7 @@ func (r *RocketMQOperator) convertBroker(svc apistructs.Service, affinity *corev
 	brokerSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
 	brokerSpec.Size = int32(svc.Scale)
 	brokerSpec.StorageMode = scStorageMode
-	brokerSpec.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*r.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", r.overcommit.MemoryOvercommit(int(svc.Resources.Mem)))),
-		},
-		Limits: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-		},
-	}
+	brokerSpec.Resources = r.overcommit.ResourceOvercommit(svc.Resources)
 	scname, capacity := getStorageCapacity(svc)
 	brokerSpec.Env = convertEnvs(svc.Env)
 	brokerSpec.Labels = svc.Labels
@@ -374,20 +348,7 @@ func (r *RocketMQOperator) convertConsole(svc apistructs.Service, affinity *core
 	consoleSpec.Name = svc.Name
 	consoleSpec.Image = svc.Image
 	consoleSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
-	consoleSpec.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*r.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", r.overcommit.MemoryOvercommit(int(svc.Resources.Mem)))),
-		},
-		Limits: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-		},
-	}
+	consoleSpec.Resources = r.overcommit.ResourceOvercommit(svc.Resources)
 	return consoleSpec
 }
 
