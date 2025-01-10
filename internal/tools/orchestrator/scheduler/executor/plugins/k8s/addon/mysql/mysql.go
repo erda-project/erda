@@ -37,7 +37,7 @@ import (
 type MysqlOperator struct {
 	k8s        addon.K8SUtil
 	ns         addon.NamespaceUtil
-	overcommit addon.OvercommitUtil
+	overcommit addon.OverCommitUtil
 	secret     addon.SecretUtil
 	pvc        addon.PVCUtil
 	client     *httpclient.HTTPClient
@@ -59,7 +59,7 @@ func (my *MysqlOperator) NamespacedName(sg *apistructs.ServiceGroup) string {
 	return my.Namespace(sg) + "/" + my.Name(sg)
 }
 
-func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, overcommit addon.OvercommitUtil,
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, overcommit addon.OverCommitUtil,
 	secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *MysqlOperator {
 	return &MysqlOperator{
 		k8s:        k8s,
@@ -170,7 +170,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			StorageSize:      resource.MustParse(capacity),
 
 			Affinity:    &affinity,
-			Resources:   my.overcommit.ResourceOvercommit(mysql.Resources),
+			Resources:   my.overcommit.ResourceOverCommit(mysql.Resources),
 			Labels:      make(map[string]string),
 			Annotations: make(map[string]string),
 		},

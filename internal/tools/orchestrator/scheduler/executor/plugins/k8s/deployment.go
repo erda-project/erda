@@ -697,7 +697,7 @@ func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.Ini
 		return containers
 	}
 	for name, initcontainer := range initcontainers {
-		reqCPU := fmt.Sprintf("%.fm", k.CPUOvercommit(initcontainer.Resources.CPU)*1000)
+		reqCPU := fmt.Sprintf("%.fm", k.CPUOverCommit(initcontainer.Resources.CPU)*1000)
 		limitCPU := fmt.Sprintf("%.fm", initcontainer.Resources.CPU*1000)
 		memory := fmt.Sprintf("%.dMi", initcontainer.Resources.Mem)
 
@@ -745,7 +745,7 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 	}
 
 	for name, sidecar := range sidecars {
-		reqCPU := fmt.Sprintf("%.fm", k.CPUOvercommit(sidecar.Resources.CPU)*1000)
+		reqCPU := fmt.Sprintf("%.fm", k.CPUOverCommit(sidecar.Resources.CPU)*1000)
 		limitCPU := fmt.Sprintf("%.fm", sidecar.Resources.CPU*1000)
 		memory := fmt.Sprintf("%.dMi", sidecar.Resources.Mem)
 

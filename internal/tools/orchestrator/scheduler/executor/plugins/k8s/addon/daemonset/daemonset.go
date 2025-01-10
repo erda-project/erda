@@ -36,12 +36,12 @@ type DaemonsetOperator struct {
 	imageSecret addon.ImageSecretUtil
 	healthcheck addon.HealthcheckUtil
 	daemonset   addon.DaemonsetUtil
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 }
 
 func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, imageSecret addon.ImageSecretUtil,
 	healthcheck addon.HealthcheckUtil, daemonset addon.DaemonsetUtil,
-	overcommit addon.OvercommitUtil) *DaemonsetOperator {
+	overcommit addon.OverCommitUtil) *DaemonsetOperator {
 	return &DaemonsetOperator{
 		k8s:         k8s,
 		ns:          ns,
@@ -78,7 +78,7 @@ func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	container := corev1.Container{
 		Name:           service.Name,
 		Image:          service.Image,
-		Resources:      d.overcommit.ResourceOvercommit(service.Resources),
+		Resources:      d.overcommit.ResourceOverCommit(service.Resources),
 		Command:        []string{"sh", "-c", service.Cmd},
 		Env:            envs(service.Env),
 		LivenessProbe:  probe,

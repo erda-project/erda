@@ -37,7 +37,7 @@ import (
 type CanalOperator struct {
 	k8s        addon.K8SUtil
 	ns         addon.NamespaceUtil
-	overcommit addon.OvercommitUtil
+	overcommit addon.OverCommitUtil
 	secret     addon.SecretUtil
 	pvc        addon.PVCUtil
 	client     *httpclient.HTTPClient
@@ -57,7 +57,7 @@ func (c *CanalOperator) NamespacedName(sg *apistructs.ServiceGroup) string {
 	return c.Namespace(sg) + "/" + c.Name(sg)
 }
 
-func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, overcommit addon.OvercommitUtil,
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, overcommit addon.OverCommitUtil,
 	secret addon.SecretUtil, pvc addon.PVCUtil, client *httpclient.HTTPClient) *CanalOperator {
 	return &CanalOperator{
 		k8s:        k8s,
@@ -181,8 +181,8 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			Replicas: canal.Scale,
 
 			Affinity:  &affinity,
-			Resources: c.overcommit.ResourceOvercommit(canal.Resources),
-			AdminResources: c.overcommit.ResourceOvercommit(apistructs.Resources{
+			Resources: c.overcommit.ResourceOverCommit(canal.Resources),
+			AdminResources: c.overcommit.ResourceOverCommit(apistructs.Resources{
 				Cpu: canal.Resources.Cpu / 3,
 				Mem: canal.Resources.Mem * 2 / 3,
 			}),

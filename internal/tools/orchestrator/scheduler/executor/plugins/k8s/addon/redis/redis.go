@@ -43,7 +43,7 @@ type RedisOperator struct {
 	statefulset addon.StatefulsetUtil
 	ns          addon.NamespaceUtil
 	service     addon.ServiceUtil
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 	secret      addon.SecretUtil
 	client      *httpclient.HTTPClient
 }
@@ -53,7 +53,7 @@ func NewRedisOperator(k8sutil addon.K8SUtil,
 	sts addon.StatefulsetUtil,
 	service addon.ServiceUtil,
 	ns addon.NamespaceUtil,
-	overcommit addon.OvercommitUtil,
+	overcommit addon.OverCommitUtil,
 	secret addon.SecretUtil,
 	client *httpclient.HTTPClient) *RedisOperator {
 	return &RedisOperator{
@@ -377,7 +377,7 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.A
 	settings.Affinity = affinity
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
-	settings.Resources = ro.overcommit.ResourceOvercommit(svc.Resources)
+	settings.Resources = ro.overcommit.ResourceOverCommit(svc.Resources)
 	settings.Exporter = RedisExporter{
 		Enabled: true,
 		Image:   redisExporterImage,
