@@ -39,9 +39,9 @@ import (
 type SourcecovOperator struct {
 	k8s        addon.K8SUtil
 	client     *httpclient.HTTPClient
-	oc         addon.OvercommitUtil
+	oc         addon.OverCommitUtil
 	ns         addon.NamespaceUtil
-	overcommit addon.OvercommitUtil
+	overcommit addon.OverCommitUtil
 }
 
 var APIPrefix = "/apis/" + scv1.GroupVersion.String()
@@ -132,7 +132,7 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			StorageSize:      resource.MustParse(capacity),
 			Affinity:         &affinity,
 			Resources: util.ResourceRequirementsPtr(
-				s.overcommit.ResourceOvercommit(svc.Resources),
+				s.overcommit.ResourceOverCommit(svc.Resources),
 			),
 		},
 	}
@@ -279,7 +279,7 @@ func (s *SourcecovOperator) Update(i interface{}) error {
 	return nil
 }
 
-func New(k8s addon.K8SUtil, client *httpclient.HTTPClient, oc addon.OvercommitUtil, ns addon.NamespaceUtil) *SourcecovOperator {
+func New(k8s addon.K8SUtil, client *httpclient.HTTPClient, oc addon.OverCommitUtil, ns addon.NamespaceUtil) *SourcecovOperator {
 	return &SourcecovOperator{
 		k8s:    k8s,
 		client: client,

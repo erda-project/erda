@@ -22,6 +22,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
+//go:generate mockgen -source=interface.go -destination=./mock/interface_mock.go -package=mock
+
 type AddonOperator interface {
 	// Determine whether this cluster supports addon operator
 	IsSupported() bool
@@ -99,10 +101,11 @@ type HealthcheckUtil interface {
 type PVCUtil interface {
 	Create(pvc *corev1.PersistentVolumeClaim) error
 }
-type OvercommitUtil interface {
-	CPUOvercommit(limit float64) float64
-	MemoryOvercommit(limit int) int
-	// ToResourceRequirements
+
+type OverCommitUtil interface {
+	CPUOverCommit(limit float64) float64
+	MemoryOverCommit(limit float64) float64
+	// ResourceOverCommit
 	// cpu,memory field type source: apistructs/service.go.Resources
-	ResourceOvercommit(resources apistructs.Resources) corev1.ResourceRequirements
+	ResourceOverCommit(resources apistructs.Resources) corev1.ResourceRequirements
 }

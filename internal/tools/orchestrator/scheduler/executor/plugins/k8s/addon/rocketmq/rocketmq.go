@@ -49,11 +49,11 @@ type RocketMQOperator struct {
 	k8s         addon.K8SUtil
 	ns          addon.NamespaceUtil
 	client      *httpclient.HTTPClient
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 	statefulset addon.StatefulsetUtil
 }
 
-func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, client *httpclient.HTTPClient, overcommit addon.OvercommitUtil, sts addon.StatefulsetUtil) *RocketMQOperator {
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, client *httpclient.HTTPClient, overcommit addon.OverCommitUtil, sts addon.StatefulsetUtil) *RocketMQOperator {
 	return &RocketMQOperator{
 		k8s:         k8s,
 		ns:          ns,
@@ -277,7 +277,7 @@ func (r *RocketMQOperator) convertNameSrv(svc apistructs.Service, affinity *core
 	nameSrvSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
 	nameSrvSpec.Size = int32(svc.Scale)
 	nameSrvSpec.StorageMode = scStorageMode
-	nameSrvSpec.Resources = r.overcommit.ResourceOvercommit(svc.Resources)
+	nameSrvSpec.Resources = r.overcommit.ResourceOverCommit(svc.Resources)
 	scname, capacity := getStorageCapacity(svc)
 	nameSrvSpec.Env = convertEnvs(svc.Env)
 	nameSrvSpec.Labels = svc.Labels
@@ -314,7 +314,7 @@ func (r *RocketMQOperator) convertBroker(svc apistructs.Service, affinity *corev
 	brokerSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
 	brokerSpec.Size = int32(svc.Scale)
 	brokerSpec.StorageMode = scStorageMode
-	brokerSpec.Resources = r.overcommit.ResourceOvercommit(svc.Resources)
+	brokerSpec.Resources = r.overcommit.ResourceOverCommit(svc.Resources)
 	scname, capacity := getStorageCapacity(svc)
 	brokerSpec.Env = convertEnvs(svc.Env)
 	brokerSpec.Labels = svc.Labels
@@ -348,7 +348,7 @@ func (r *RocketMQOperator) convertConsole(svc apistructs.Service, affinity *core
 	consoleSpec.Name = svc.Name
 	consoleSpec.Image = svc.Image
 	consoleSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
-	consoleSpec.Resources = r.overcommit.ResourceOvercommit(svc.Resources)
+	consoleSpec.Resources = r.overcommit.ResourceOverCommit(svc.Resources)
 	return consoleSpec
 }
 

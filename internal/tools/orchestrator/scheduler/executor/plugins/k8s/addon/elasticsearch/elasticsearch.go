@@ -50,7 +50,7 @@ type ElasticsearchOperator struct {
 	statefulset addon.StatefulsetUtil
 	ns          addon.NamespaceUtil
 	service     addon.ServiceUtil
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 	secret      addon.SecretUtil
 	imageSecret addon.ImageSecretUtil
 	client      *httpclient.HTTPClient
@@ -60,7 +60,7 @@ func New(k8s addon.K8SUtil,
 	sts addon.StatefulsetUtil,
 	ns addon.NamespaceUtil,
 	service addon.ServiceUtil,
-	overcommit addon.OvercommitUtil,
+	overcommit addon.OverCommitUtil,
 	secret addon.SecretUtil,
 	imageSecret addon.ImageSecretUtil,
 	client *httpclient.HTTPClient) *ElasticsearchOperator {
@@ -362,7 +362,7 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 					{
 						Name:      "elasticsearch",
 						Env:       envs(svc.Env),
-						Resources: eo.overcommit.ResourceOvercommit(svc.Resources),
+						Resources: eo.overcommit.ResourceOverCommit(svc.Resources),
 					}, {
 						Name:    "es-exporter",
 						Image:   esExporterImage,

@@ -1357,19 +1357,19 @@ func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error)
 	return nil, fmt.Errorf("not found")
 }
 
-func (k *Kubernetes) CPUOvercommit(limit float64) float64 {
+func (k *Kubernetes) CPUOverCommit(limit float64) float64 {
 	return limit / k.cpuSubscribeRatio
 }
 
-func (k *Kubernetes) MemoryOvercommit(limit int) int {
-	return int(float64(limit) / k.memSubscribeRatio)
+func (k *Kubernetes) MemoryOverCommit(limit float64) float64 {
+	return limit / k.memSubscribeRatio
 }
 
-func (k *Kubernetes) ResourceOvercommit(r apistructs.Resources) apiv1.ResourceRequirements {
+func (k *Kubernetes) ResourceOverCommit(r apistructs.Resources) apiv1.ResourceRequirements {
 	return apiv1.ResourceRequirements{
 		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * k.CPUOvercommit(r.Cpu))),
-			apiv1.ResourceMemory:           util.ResourceMemoryFormatter(k.MemoryOvercommit(int(r.Mem))),
+			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * k.CPUOverCommit(r.Cpu))),
+			apiv1.ResourceMemory:           util.ResourceMemoryFormatter(int(k.MemoryOverCommit(r.Mem))),
 			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 		},
 		Limits: apiv1.ResourceList{

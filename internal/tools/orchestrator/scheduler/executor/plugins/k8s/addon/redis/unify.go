@@ -32,7 +32,7 @@ func New(k8sutil addon.K8SUtil,
 	sts addon.StatefulsetUtil,
 	service addon.ServiceUtil,
 	ns addon.NamespaceUtil,
-	overcommit addon.OvercommitUtil,
+	overcommit addon.OverCommitUtil,
 	secret addon.SecretUtil,
 	client *httpclient.HTTPClient) *UnifiedRedisOperator {
 	return &UnifiedRedisOperator{

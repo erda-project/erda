@@ -37,7 +37,7 @@ type RedisOperator struct {
 	statefulset addon.StatefulsetUtil
 	ns          addon.NamespaceUtil
 	service     addon.ServiceUtil
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 	client      *httpclient.HTTPClient
 }
 
@@ -46,7 +46,7 @@ func New(k8sutil addon.K8SUtil,
 	sts addon.StatefulsetUtil,
 	service addon.ServiceUtil,
 	ns addon.NamespaceUtil,
-	overcommit addon.OvercommitUtil,
+	overcommit addon.OverCommitUtil,
 	client *httpclient.HTTPClient) *RedisOperator {
 	return &RedisOperator{
 		k8s:         k8sutil,
@@ -339,8 +339,8 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service) RedisSettings {
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = RedisFailoverResources{
 		Requests: CPUAndMem{
-			CPU:    fmt.Sprintf("%dm", int(1000*ro.overcommit.CPUOvercommit(svc.Resources.Cpu))),
-			Memory: fmt.Sprintf("%dMi", ro.overcommit.MemoryOvercommit(int(svc.Resources.Mem))),
+			CPU:    fmt.Sprintf("%dm", int(1000*ro.overcommit.CPUOverCommit(svc.Resources.Cpu))),
+			Memory: fmt.Sprintf("%dMi", int(ro.overcommit.MemoryOverCommit(svc.Resources.Mem))),
 		},
 		Limits: CPUAndMem{
 			CPU:    fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu)),
