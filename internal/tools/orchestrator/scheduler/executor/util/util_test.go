@@ -15,13 +15,17 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func TestParsePreserveProjects(t *testing.T) {
@@ -208,4 +212,36 @@ func Test_ParseAnnotationFromEnv(t *testing.T) {
 			assert.Equal(t, got, test.want)
 		})
 	}
+}
+
+func TestMergeStructValue(t *testing.T) {
+
+	dstRunAsUser := int64(0)
+	want := `{"container":{"securityContext":{"runAsUser":0,"runAsGroup":1000}}}`
+	dst := apistructs.Service{
+		K8SSnippet: &diceyml.K8SSnippet{
+			Container: &diceyml.ContainerSnippet{
+				SecurityContext: &apiv1.SecurityContext{
+					RunAsUser: &dstRunAsUser,
+				},
+			},
+		},
+	}
+
+	src := apistructs.Service{
+		K8SSnippet: &diceyml.K8SSnippet{
+			Container: &diceyml.ContainerSnippet{
+				SecurityContext: &apiv1.SecurityContext{
+					RunAsUser:  &types.DefaultContainerUserId,
+					RunAsGroup: &types.DefaultContainerGroupId,
+				},
+			},
+		},
+	}
+	err := MergeStruct(&dst, &src)
+	assert.NoError(t, err)
+
+	marshal, _ := json.Marshal(dst.K8SSnippet)
+	fmt.Println(string(marshal))
+	assert.Equal(t, want, string(marshal))
 }

@@ -17,6 +17,7 @@ package util
 import (
 	"encoding/base64"
 	"fmt"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -368,4 +369,98 @@ func GetDeployName(service *apistructs.Service) string {
 		return service.ProjectServiceName
 	}
 	return service.Name
+}
+
+var (
+	ErrorNotPointer  = errors.New("must be a pointer")
+	ErrorNotSameType = errors.New("dst and src are not same type")
+	ErrorValueIsNil  = errors.New("value is nil")
+)
+
+func MergeStruct(dst, src any) error {
+	dstTpy := reflect.TypeOf(dst)
+	if dstTpy.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	dstTpy = dstTpy.Elem()
+
+	srcTpy := reflect.TypeOf(src)
+	if srcTpy.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	srcTpy = srcTpy.Elem()
+
+	if srcTpy != dstTpy {
+		return ErrorNotSameType
+	}
+
+	if isBaseType(srcTpy) {
+		return nil
+	}
+
+	dstVal := reflect.ValueOf(dst)
+	if dstVal.IsNil() {
+		return ErrorValueIsNil
+	}
+	if dstVal.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	dstVal = dstVal.Elem()
+
+	srcVal := reflect.ValueOf(src)
+	if srcVal.IsNil() {
+		return ErrorValueIsNil
+	}
+	if srcVal.Kind() != reflect.Ptr {
+		return ErrorNotPointer
+	}
+	srcVal = srcVal.Elem()
+
+	for i := 0; i < dstTpy.NumField(); i++ {
+		if dstTpy.Field(i).Type.Kind() == reflect.Ptr {
+			// source data is nil, skip merge
+			if srcVal.Field(i).IsNil() {
+				continue
+			}
+
+			// dst and src are not nil, continue recursively
+			if !dstVal.Field(i).IsNil() && !srcVal.Field(i).IsNil() {
+				if err := MergeStruct(dstVal.Field(i).Interface(), srcVal.Field(i).Interface()); err != nil {
+					return err
+				}
+				continue
+			}
+
+			// dst is nil and src is not nil, set value directly
+			if dstVal.Field(i).IsNil() && !srcVal.Field(i).IsNil() {
+				dstVal.Field(i).Set(srcVal.Field(i))
+				continue
+			}
+
+		}
+	}
+	return nil
+}
+
+func isBaseType(typ reflect.Type) bool {
+	switch typ.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return true
+	case reflect.Float32, reflect.Float64:
+		return true
+	case reflect.Bool:
+		return true
+	case reflect.String:
+		return true
+	case reflect.Slice, reflect.Array:
+		return true
+	case reflect.Map:
+		return true
+	case reflect.Chan:
+		return true
+	default:
+		return false
+	}
 }

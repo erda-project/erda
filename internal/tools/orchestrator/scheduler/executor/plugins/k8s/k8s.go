@@ -84,6 +84,7 @@ import (
 	"github.com/erda-project/erda/pkg/k8sclient"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -789,6 +790,13 @@ func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service,
 		}
 	}
 	var err error
+
+	if err = k.runAsDefaultUser(service); err != nil {
+		return err
+	}
+
+	logrus.Infof("after %v", service.K8SSnippet.Container.SecurityContext)
+
 	switch service.WorkLoad {
 	case types.ServicePerNode:
 		err = k.createDaemonSet(ctx, service, sg)
@@ -903,6 +911,12 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 	}
 
 	for _, svc := range sg.Services {
+		svc := svc
+
+		if err := k.runAsDefaultUser(&svc); err != nil {
+			return err
+		}
+
 		svc.Namespace = ns
 		runtimeServiceName := util.GetDeployName(&svc)
 		// Existing in the old service collection, do the put operation
@@ -2057,4 +2071,23 @@ func (k *Kubernetes) DeployInEdgeCluster() bool {
 	}
 
 	return true
+}
+
+// run as default user
+func (k *Kubernetes) runAsDefaultUser(service *apistructs.Service) error {
+	snippet := diceyml.K8SSnippet{
+		Container: &diceyml.ContainerSnippet{
+			SecurityContext: &apiv1.SecurityContext{
+				RunAsUser:  &types.DefaultContainerUserId,
+				RunAsGroup: &types.DefaultContainerGroupId,
+			},
+		},
+	}
+
+	if service.K8SSnippet == nil {
+		service.K8SSnippet = &snippet
+		return nil
+	}
+
+	return util.MergeStruct(service.K8SSnippet, &snippet)
 }
