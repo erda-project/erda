@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -599,16 +598,15 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	if err != nil {
 		return nil, err
 	}
-
-	// Generate initcontainer configuration
-	initcontainers := k.generateInitContainer(service.InitContainer)
-
-	containers := []corev1.Container{container}
-	containers = append(containers, sidecars...)
+	containers := append(sidecars, container)
 	deployment.Spec.Template.Spec.Containers = containers
-	if len(initcontainers) > 0 {
-		deployment.Spec.Template.Spec.InitContainers = initcontainers
+
+	// Generate init container configuration
+	initContainers := k.generateInitContainer(service.InitContainer)
+	if len(initContainers) > 0 {
+		deployment.Spec.Template.Spec.InitContainers = initContainers
 	}
+
 	//for k, v := range service.Labels {
 	// TODO: temporary modifications
 	//if k != "HAPROXY_0_VHOST" {
@@ -744,12 +742,16 @@ func (k *Kubernetes) generateSidecarContainers(workspace apistructs.DiceWorkspac
 	}
 
 	for name, sidecar := range sidecars {
-		var sidecarResources apistructs.Resources
-		if err := copier.Copy(&sidecarResources, sidecar.Resources); err != nil {
-			return nil, fmt.Errorf("failed to copy sidecar resources: %v", err)
-		}
-
-		containerResource, err := k.ResourceOverCommit(workspace, sidecarResources)
+		containerResource, err := k.ResourceOverCommit(workspace, apistructs.Resources{
+			Cpu:                      sidecar.Resources.CPU,
+			Mem:                      float64(sidecar.Resources.Mem),
+			MaxCPU:                   sidecar.Resources.MaxCPU,
+			MaxMem:                   float64(sidecar.Resources.MaxMem),
+			Disk:                     float64(sidecar.Resources.Disk),
+			EmptyDirCapacity:         sidecar.Resources.EmptyDirCapacity,
+			EphemeralStorageCapacity: sidecar.Resources.EphemeralStorageCapacity,
+			Network:                  sidecar.Resources.Network,
+		})
 		if err != nil {
 			return nil, err
 		}
