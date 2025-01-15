@@ -131,10 +131,8 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 	set.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 	// get workspace from env
-	workspace, err := util.GetDiceWorkspaceFromEnvs(service.Env)
-	if err != nil {
-		return err
-	}
+	// Sts addon may cluster addon, ignore none workspace.
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(service.Env)
 
 	// set container resource with over commit
 	resources, err := k.ResourceOverCommit(workspace, service.Resources)
@@ -664,7 +662,7 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 			return setContainerErr
 		}
 		container.Resources = resources
-		
+
 		k.UpdateContainerResourceEnv(scalingService.Resources, &container)
 
 		sts.Spec.Template.Spec.Containers[index] = container

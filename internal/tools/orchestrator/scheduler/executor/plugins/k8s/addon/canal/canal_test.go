@@ -42,6 +42,7 @@ var sg = &apistructs.ServiceGroup{
 				},
 				Scale: 2,
 				Env: map[string]string{
+					apistructs.DiceWorkspaceEnvKey:  apistructs.WORKSPACE_DEV,
 					"CANAL_DESTINATION":             "example",
 					"canal.instance.master.address": "mock-mysql.svc.cluster.local:3306",
 					"canal.instance.dbUsername":     "erda",
@@ -67,10 +68,11 @@ var sgCanalAdmin = &apistructs.ServiceGroup{
 				},
 				Scale: 2,
 				Env: map[string]string{
-					"canal.admin.manager":        "127.0.0.1:8089",
-					"spring.datasource.address":  "mock-mysql.svc.cluster.local:3306",
-					"spring.datasource.username": "erda",
-					"spring.datasource.password": "",
+					apistructs.DiceWorkspaceEnvKey: apistructs.WORKSPACE_DEV,
+					"canal.admin.manager":          "127.0.0.1:8089",
+					"spring.datasource.address":    "mock-mysql.svc.cluster.local:3306",
+					"spring.datasource.username":   "erda",
+					"spring.datasource.password":   "",
 				},
 			},
 		},
@@ -106,10 +108,10 @@ func TestCanalOperator(t *testing.T) {
 	// Create mock
 	namespaceUtil := mock.NewMockNamespaceUtil(ctrl)
 	overCommitUtil := mock.NewMockOverCommitUtil(ctrl)
-	overCommitUtil.EXPECT().ResourceOverCommit(sg.Services[0].Resources).
-		Return(mockResourceRequirements).AnyTimes()
-	overCommitUtil.EXPECT().ResourceOverCommit(sgCanalAdmin.Services[0].Resources).
-		Return(mockAdminResourceRequirements).AnyTimes()
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, sg.Services[0].Resources).
+		Return(mockResourceRequirements, nil).AnyTimes()
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, sgCanalAdmin.Services[0].Resources).
+		Return(mockAdminResourceRequirements, nil).AnyTimes()
 
 	k8sUtil := mock.NewMockK8SUtil(ctrl)
 	k8sUtil.EXPECT().GetK8SAddr().Return("mock-k8s-addr").AnyTimes()
@@ -130,7 +132,8 @@ func TestCanalOperator(t *testing.T) {
 	})
 
 	t.Run("Test Convert", func(t *testing.T) {
-		assert.NotPanics(t, func() { mo.Convert(sg) })
+		_, err := mo.Convert(sg)
+		assert.NoError(t, err)
 	})
 
 	t.Run("Test CRUD Operations", func(t *testing.T) {
@@ -148,10 +151,10 @@ func TestCanalOperatorAdmin(t *testing.T) {
 	// Create mock
 	namespaceUtil := mock.NewMockNamespaceUtil(ctrl)
 	overCommitUtil := mock.NewMockOverCommitUtil(ctrl)
-	overCommitUtil.EXPECT().ResourceOverCommit(sg.Services[0].Resources).
-		Return(mockResourceRequirements).AnyTimes()
-	overCommitUtil.EXPECT().ResourceOverCommit(sgCanalAdmin.Services[0].Resources).
-		Return(mockAdminResourceRequirements).AnyTimes()
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, sg.Services[0].Resources).
+		Return(mockResourceRequirements, nil).AnyTimes()
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, sgCanalAdmin.Services[0].Resources).
+		Return(mockAdminResourceRequirements, nil).AnyTimes()
 
 	k8sUtil := mock.NewMockK8SUtil(ctrl)
 	k8sUtil.EXPECT().GetK8SAddr().Return("mock-k8s-addr").AnyTimes()

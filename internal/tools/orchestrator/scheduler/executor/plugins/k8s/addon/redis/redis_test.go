@@ -32,7 +32,8 @@ func Test_convertRedis(t *testing.T) {
 
 	svc := apistructs.Service{
 		Env: map[string]string{
-			"DICE_ORG_ID": "1",
+			apistructs.DiceWorkspaceEnvKey: apistructs.WORKSPACE_DEV,
+			"DICE_ORG_ID":                  "1",
 		},
 		Image: "redis:6.2.10",
 		Resources: apistructs.Resources{
@@ -46,23 +47,25 @@ func Test_convertRedis(t *testing.T) {
 		NodeAffinity: &corev1.NodeAffinity{},
 	}
 
+	containerResource := corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("0.1"),
+			corev1.ResourceMemory: resource.MustParse("1024Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("0.1"),
+			corev1.ResourceMemory: resource.MustParse("1024Mi"),
+		},
+	}
+
 	overCommitUtil := mock.NewMockOverCommitUtil(ctrl)
-	overCommitUtil.EXPECT().ResourceOverCommit(svc.Resources).
-		Return(corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("0.1"),
-				corev1.ResourceMemory: resource.MustParse("1024Mi"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("0.1"),
-				corev1.ResourceMemory: resource.MustParse("1024Mi"),
-			},
-		}).AnyTimes()
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, svc.Resources).
+		Return(containerResource, nil).AnyTimes()
 
 	ro := &RedisOperator{
 		overcommit: overCommitUtil,
 	}
-	redis := ro.convertRedis(svc, affinity)
+	redis := ro.convertRedis(svc, affinity, containerResource)
 	assert.Equal(t, redisExporterImage, redis.Exporter.Image)
 	assert.Equal(t, "ignore-warnings ARM64-COW-BUG", redis.CustomConfig[0])
 }
