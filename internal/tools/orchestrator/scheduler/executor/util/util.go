@@ -381,6 +381,10 @@ func ResourceMemoryFormatter[T int | float64](value T) resource.Quantity {
 	return resource.MustParse(fmt.Sprintf("%v%s", value, types.MemUnitMi))
 }
 
+func ResourceEphemeralStorageCapacityFormatter(value int) resource.Quantity {
+	return resource.MustParse(fmt.Sprintf("%d%s", value, types.StorageUnitMi))
+}
+
 func ResourceRequirementsPtr(r corev1.ResourceRequirements) *corev1.ResourceRequirements {
 	return &r
 }

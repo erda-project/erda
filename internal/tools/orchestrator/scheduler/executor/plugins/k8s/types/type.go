@@ -45,8 +45,9 @@ const (
 type ResourceUnitType string
 
 const (
-	CPUUnitMilli ResourceUnitType = "m"
-	MemUnitMi    ResourceUnitType = "Mi"
+	CPUUnitMilli  ResourceUnitType = "m"
+	MemUnitMi     ResourceUnitType = "Mi"
+	StorageUnitMi ResourceUnitType = "Gi"
 )
 
 var EnvReg = regexp.MustCompile(`\$\{([^}]+?)\}`)

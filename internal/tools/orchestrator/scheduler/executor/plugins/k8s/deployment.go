@@ -519,6 +519,13 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	if _, ok := serviceGroup.Labels[EnableServiceLinks]; ok {
 		enableServiceLinks = true
 	}
+
+	// get workspace from env
+	workspace, err := util.GetDiceWorkspaceFromEnvs(service.Env)
+	if err != nil {
+		return nil, err
+	}
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        deploymentName,
@@ -576,12 +583,14 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		Image: service.Image,
 	}
 
-	err = k.setContainerResources(*service, &container)
+	// set container resource with over commit
+	resources, err := k.ResourceOverCommit(workspace, service.Resources)
 	if err != nil {
 		errMsg := fmt.Sprintf("set container resource err: %v", err)
 		logrus.Errorf(errMsg)
 		return nil, fmt.Errorf(errMsg)
 	}
+	container.Resources = resources
 
 	logrus.Debugf("container name: %s, container resource spec: %+v", container.Name, container.Resources)
 
@@ -1149,6 +1158,8 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 		}
 	}
 
+	_, projectID, workspace, runtimeID := extractContainerEnvs(deploy.Spec.Template.Spec.Containers)
+
 	oldCPU, oldMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
 	if deploy.Spec.Replicas != nil {
 		oldCPU *= int64(*deploy.Spec.Replicas)
@@ -1161,11 +1172,12 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 		// only support one container on Erda currently
 		container := deploy.Spec.Template.Spec.Containers[index]
 
-		err = k.setContainerResources(scalingService, &container)
+		resources, err := k.ResourceOverCommit(apistructs.DiceWorkspace(workspace), scalingService.Resources)
 		if err != nil {
 			setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
 			return setContainerErr
 		}
+		container.Resources = resources
 
 		k.UpdateContainerResourceEnv(scalingService.Resources, &container)
 
@@ -1176,7 +1188,6 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	newCPU *= int64(*deploy.Spec.Replicas)
 	newMem *= int64(*deploy.Spec.Replicas)
 
-	_, projectID, workspace, runtimeID := extractContainerEnvs(deploy.Spec.Template.Spec.Containers)
 	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, newCPU-oldCPU, newMem-oldMem, "scale", scalingService.Name)
 	if err != nil {
 		return err
@@ -1190,51 +1201,6 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 		updateErr := fmt.Errorf("failed to update the deployment, err is: %s", err.Error())
 		return updateErr
 	}
-	return nil
-}
-
-func (k *Kubernetes) setContainerResources(svc apistructs.Service, container *corev1.Container) error {
-	//cpu := fmt.Sprintf("%dm", int(service.Resources.Cpu*1000))
-	//memory := fmt.Sprintf("%dMi", int(service.Resources.Mem))
-	//
-	//maxCpu := fmt.Sprintf("%dm", int(service.Resources.MaxCPU*1000))
-	//maxMem := fmt.Sprintf("%dMi", int(service.Resources.MaxMem))
-	//
-	//container.Resources = corev1.ResourceRequirements{
-	//	Requests: corev1.ResourceList{
-	//		corev1.ResourceCPU:              resource.MustParse(cpu),
-	//		corev1.ResourceMemory:           resource.MustParse(memory),
-	//		corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
-	//	},
-	//	Limits: corev1.ResourceList{
-	//		corev1.ResourceCPU:              resource.MustParse(maxCpu),
-	//		corev1.ResourceMemory:           resource.MustParse(maxMem),
-	//		corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
-	//	},
-	//}
-
-	// get workspace from service envs
-	workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
-
-	// get actual resource subscribe ration
-	cpuSubscribeRatio, memSubscribeRatio := k.getSubscribeRationsByWorkspace(workspace)
-
-	if svc.Resources.EphemeralStorageCapacity > 1 {
-		maxEphemeral := fmt.Sprintf("%dGi", svc.Resources.EphemeralStorageCapacity)
-		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
-	}
-
-	if err := k.SetFineGrainedCPU(container, map[string]string{}, cpuSubscribeRatio); err != nil {
-		logrus.Errorf("set cpu resource failed, container name: %s, error: %v", container.Name, err)
-		return err
-	}
-	if err := k.SetOverCommitMem(container, memSubscribeRatio); err != nil {
-		logrus.Errorf("set mem resource failed, container name: %s, error: %v", container.Name, err)
-		return err
-	}
-
-	logrus.Debugf("container name: %s, resource: %+v", container.Name, container.Resources)
-
 	return nil
 }
 

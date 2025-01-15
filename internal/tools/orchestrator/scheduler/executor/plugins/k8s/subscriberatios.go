@@ -15,18 +15,15 @@
 package k8s
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
-	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 )
 
 const (
@@ -65,52 +62,52 @@ func getWorkspaceRatio(options map[string]string, workspace string, t string, va
 	f(workspace + "_" + t + SUBSCRIBE_RATIO_SUFFIX)
 }
 
-// SetFineGrainedCPU Set proper cpu ratio & quota
-func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[string]string, cpuSubscribeRatio float64) error {
-	// 1, Processing request cpu value
-	requestCPU := float64(container.Resources.Requests.Cpu().MilliValue()) / 1000
-	maxCPU := float64(container.Resources.Limits.Cpu().MilliValue()) / 1000
-
-	// 2, Dealing with cpu oversold
-	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
-
-	actualCPU, maxCPU, err := k.calcFineGrainedCPU(requestCPU, maxCPU, ratio)
-	if err != nil {
-		return err
-	}
-
-	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(actualCPU*1000)))
-
-	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
-	quota := k.cpuNumQuota
-
-	// Set the maximum cpu according to the requested cpu
-	if k.cpuNumQuota == -1.0 {
-		quota = cpupolicy.AdjustCPUSize(requestCPU)
-	}
-
-	if quota >= requestCPU {
-		container.Resources.Limits[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(maxCPU*1000)))
-	}
-
-	logrus.Infof("set container cpu: name: %s, request cpu: %v, actual cpu: %vm, max cpu: %vm, subscribe ratio: %v, cpu quota: %v",
-		container.Name, requestCPU, container.Resources.Requests.Cpu().MilliValue(), container.Resources.Limits.Cpu().MilliValue(), ratio, quota)
-	return nil
-}
-
-func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
-	requestMem := float64(container.Resources.Requests.Memory().Value() / 1024 / 1024)
-	maxMem := float64(container.Resources.Limits.Memory().Value() / 1024 / 1024)
-
-	requestMem, maxMem, err := k.calcFineGrainedMemory(requestMem, maxMem, memSubscribeRatio)
-	if err != nil {
-		return err
-	}
-	container.Resources.Requests[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(requestMem)))
-	container.Resources.Limits[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(maxMem)))
-
-	return nil
-}
+//// SetFineGrainedCPU Set proper cpu ratio & quota
+//func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[string]string, cpuSubscribeRatio float64) error {
+//	// 1, Processing request cpu value
+//	requestCPU := float64(container.Resources.Requests.Cpu().MilliValue()) / 1000
+//	maxCPU := float64(container.Resources.Limits.Cpu().MilliValue()) / 1000
+//
+//	// 2, Dealing with cpu oversold
+//	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
+//
+//	actualCPU, maxCPU, err := k.calcFineGrainedCPU(requestCPU, maxCPU, ratio)
+//	if err != nil {
+//		return err
+//	}
+//
+//	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(actualCPU*1000)))
+//
+//	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
+//	quota := k.cpuNumQuota
+//
+//	// Set the maximum cpu according to the requested cpu
+//	if k.cpuNumQuota == -1.0 {
+//		quota = cpupolicy.AdjustCPUSize(requestCPU)
+//	}
+//
+//	if quota >= requestCPU {
+//		container.Resources.Limits[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(maxCPU*1000)))
+//	}
+//
+//	logrus.Infof("set container cpu: name: %s, request cpu: %v, actual cpu: %vm, max cpu: %vm, subscribe ratio: %v, cpu quota: %v",
+//		container.Name, requestCPU, container.Resources.Requests.Cpu().MilliValue(), container.Resources.Limits.Cpu().MilliValue(), ratio, quota)
+//	return nil
+//}
+//
+//func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
+//	requestMem := float64(container.Resources.Requests.Memory().Value() / 1024 / 1024)
+//	maxMem := float64(container.Resources.Limits.Memory().Value() / 1024 / 1024)
+//
+//	requestMem, maxMem, err := k.calcFineGrainedMemory(requestMem, maxMem, memSubscribeRatio)
+//	if err != nil {
+//		return err
+//	}
+//	container.Resources.Requests[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(requestMem)))
+//	container.Resources.Limits[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(maxMem)))
+//
+//	return nil
+//}
 
 func (k *Kubernetes) calcFineGrainedCPU(requestCPU, maxCPU, ratio float64) (float64, float64, error) {
 	// 1, Processing request cpu value
@@ -206,6 +203,11 @@ func (k *Kubernetes) ResourceOverCommit(workspace apistructs.DiceWorkspace, r ap
 		return apiv1.ResourceRequirements{}, err
 	}
 
+	maxEphemeral := resource.MustParse(k8sapi.EphemeralStorageSizeLimit)
+	if r.EphemeralStorageCapacity > 1 {
+		maxEphemeral = util.ResourceEphemeralStorageCapacityFormatter(r.EphemeralStorageCapacity)
+	}
+
 	return apiv1.ResourceRequirements{
 		Requests: apiv1.ResourceList{
 			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * requestCPU)),
@@ -215,7 +217,7 @@ func (k *Kubernetes) ResourceOverCommit(workspace apistructs.DiceWorkspace, r ap
 		Limits: apiv1.ResourceList{
 			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * limitCPU)),
 			apiv1.ResourceMemory:           util.ResourceMemoryFormatter(int(limitMem)),
-			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
+			apiv1.ResourceEphemeralStorage: maxEphemeral,
 		},
 	}, nil
 }
