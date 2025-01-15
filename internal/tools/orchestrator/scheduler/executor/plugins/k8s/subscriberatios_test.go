@@ -388,6 +388,32 @@ func TestResourceOverCommit(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:      "cause zero resources large over commit, resource set min",
+			workspace: apistructs.DevWorkspace,
+			getSubscribeRation: func() *Kubernetes {
+				return &Kubernetes{
+					devCpuSubscribeRatio: 10,
+					devMemSubscribeRatio: 20,
+				}
+			},
+			serviceResource: apistructs.Resources{
+				Cpu: 0.1,
+				Mem: 10,
+			},
+			expectedResourceRequirements: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:              resource.MustParse("10m"),
+					corev1.ResourceMemory:           resource.MustParse("10Mi"),
+					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:              resource.MustParse("100m"),
+					corev1.ResourceMemory:           resource.MustParse("10Mi"),
+					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

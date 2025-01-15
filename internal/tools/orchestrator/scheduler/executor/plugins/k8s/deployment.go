@@ -559,8 +559,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	deployment.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v == "false" &&
-		(strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
-			strutil.ToUpper(service.Env[types.DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
+		(workspace == apistructs.DevWorkspace || workspace == apistructs.TestWorkspace) {
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{Type: "Recreate"}
 	}
 
