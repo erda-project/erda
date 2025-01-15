@@ -209,7 +209,10 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	container.Resources = resources
 
 	// Generate sidecars container configuration
-	sidecars := k.generateSidecarContainers(service.SideCars)
+	sidecars, err := k.generateSidecarContainers(workspace, service.SideCars)
+	if err != nil {
+		return nil, err
+	}
 
 	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)
