@@ -53,8 +53,10 @@ func TestNewDeployment(t *testing.T) {
 			Cpu: 0.1,
 			Mem: 512,
 		},
-		Depends:            nil,
-		Env:                nil,
+		Depends: nil,
+		Env: map[string]string{
+			apistructs.DiceWorkspaceEnvKey: apistructs.WORKSPACE_DEV,
+		},
 		Labels:             nil,
 		DeploymentLabels:   nil,
 		Selectors:          nil,
@@ -104,7 +106,9 @@ func TestNewDeployment(t *testing.T) {
 		return nil, nil
 	})
 	deploy, err := k.newDeployment(service, servicegroup)
-	assert.Equal(t, err, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	k.setDeploymentZeroReplica(deploy)
 	assert.Equal(t, *deploy.Spec.Replicas, int32(0))
 }
@@ -524,14 +528,14 @@ func TestKubernetes_setStatelessServiceVolumes(t *testing.T) {
 
 	service.Volumes = append(service.Volumes, apistructs.Volume{
 		ContainerPath: "/opt/data/xxx02",
-		SCVolume:      apistructs.SCVolume{
+		SCVolume: apistructs.SCVolume{
 			//SourcePath: "/opt/test",
 		},
 	})
 
 	service.Volumes = append(service.Volumes, apistructs.Volume{
 		ContainerPath: "/opt/data/xxx03",
-		SCVolume:      apistructs.SCVolume{
+		SCVolume: apistructs.SCVolume{
 			//SourcePath: "test/data",
 		},
 	})
