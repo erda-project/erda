@@ -69,8 +69,8 @@ var mockResourceRequirements = corev1.ResourceRequirements{
 		corev1.ResourceMemory: resource.MustParse("4096Mi"),
 	},
 	Requests: corev1.ResourceList{
-		corev1.ResourceCPU:    resource.MustParse("1"),
-		corev1.ResourceMemory: resource.MustParse("2048Mi"),
+		corev1.ResourceCPU:    resource.MustParse("0.2"),
+		corev1.ResourceMemory: resource.MustParse("4096Mi"),
 	},
 }
 

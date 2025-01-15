@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
@@ -126,7 +127,7 @@ type redisFailoverAndSecret struct {
 	corev1.Secret
 }
 
-func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	svc0 := sg.Services[0]
 	svc1 := sg.Services[1]
 	var redis RedisSettings
@@ -141,14 +142,24 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 	switch svc0.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc0, &affinity)
+		workspace, _ := util.GetDiceWorkspaceFromEnvs(svc0.Env)
+		containerResources, err := ro.overcommit.ResourceOverCommit(workspace, svc0.Resources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cacl container resources: %v", err)
+		}
+		redis = ro.convertRedis(svc0, &affinity, containerResources)
 		redisService = svc0
 	case svcNameSentinel:
 		sentinel = convertSentinel(svc0, &affinity)
 	}
 	switch svc1.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc1, &affinity)
+		workspace, _ := util.GetDiceWorkspaceFromEnvs(svc0.Env)
+		containerResources, err := ro.overcommit.ResourceOverCommit(workspace, svc0.Resources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cacl container resources: %v", err)
+		}
+		redis = ro.convertRedis(svc1, &affinity, containerResources)
 		redisService = svc1
 	case svcNameSentinel:
 		sentinel = convertSentinel(svc1, &affinity)
@@ -185,7 +196,7 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			"password": []byte(redisService.Env["requirepass"]),
 		},
 	}
-	return redisFailoverAndSecret{RedisFailover: rf, Secret: secret}
+	return redisFailoverAndSecret{RedisFailover: rf, Secret: secret}, nil
 
 }
 
@@ -372,12 +383,12 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 	return nil
 }
 
-func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.Affinity) RedisSettings {
+func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.Affinity, resources corev1.ResourceRequirements) RedisSettings {
 	settings := RedisSettings{}
 	settings.Affinity = affinity
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
-	settings.Resources = ro.overcommit.ResourceOverCommit(svc.Resources)
+	settings.Resources = resources
 	settings.Exporter = RedisExporter{
 		Enabled: true,
 		Image:   redisExporterImage,

@@ -586,13 +586,13 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	logrus.Debugf("container name: %s, container resource spec: %+v", container.Name, container.Resources)
 
 	// Generate sidecars container configuration
-	sidecars := k.generateSidecarContainers(service.SideCars)
+	//sidecars := k.generateSidecarContainers(service.SideCars)
 
 	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)
 
 	containers := []corev1.Container{container}
-	containers = append(containers, sidecars...)
+	//containers = append(containers, sidecars...)
 	deployment.Spec.Template.Spec.Containers = containers
 	if len(initcontainers) > 0 {
 		deployment.Spec.Template.Spec.InitContainers = initcontainers
@@ -691,38 +691,25 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	return deployment, nil
 }
 
-func (k *Kubernetes) generateInitContainer(initcontainers map[string]diceyml.InitContainer) []corev1.Container {
-	containers := []corev1.Container{}
-	if initcontainers == nil {
+func (k *Kubernetes) generateInitContainer(initContainers map[string]diceyml.InitContainer) []corev1.Container {
+	containers := make([]corev1.Container, 0, len(initContainers))
+	if initContainers == nil {
 		return containers
 	}
-	for name, initcontainer := range initcontainers {
-		reqCPU := fmt.Sprintf("%.fm", k.CPUOverCommit(initcontainer.Resources.CPU)*1000)
-		limitCPU := fmt.Sprintf("%.fm", initcontainer.Resources.CPU*1000)
-		memory := fmt.Sprintf("%.dMi", initcontainer.Resources.Mem)
 
+	for name, container := range initContainers {
 		sc := corev1.Container{
 			Name:  name,
-			Image: initcontainer.Image,
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:              resource.MustParse(reqCPU),
-					corev1.ResourceMemory:           resource.MustParse(memory),
-					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
-				},
-				Limits: corev1.ResourceList{
-					corev1.ResourceCPU:              resource.MustParse(limitCPU),
-					corev1.ResourceMemory:           resource.MustParse(memory),
-					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
-				},
-			},
-			Command: []string{"sh", "-c", initcontainer.Cmd},
+			Image: container.Image,
+			// Init containers are short-lived containers and do not have resource limitations applied.
+			//Resources: {}
+			Command: []string{"sh", "-c", container.Cmd},
 		}
-		if initcontainer.Resources.EphemeralStorageCapacity > 1 {
-			maxEphemeral := fmt.Sprintf("%dGi", initcontainer.Resources.EphemeralStorageCapacity)
+		if container.Resources.EphemeralStorageCapacity > 1 {
+			maxEphemeral := fmt.Sprintf("%dGi", container.Resources.EphemeralStorageCapacity)
 			sc.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 		}
-		for i, dir := range initcontainer.SharedDirs {
+		for i, dir := range container.SharedDirs {
 			emptyDirVolumeName := fmt.Sprintf("%s-%d", name, i)
 			dstMount := corev1.VolumeMount{
 				Name:      emptyDirVolumeName,
@@ -745,7 +732,7 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 	}
 
 	for name, sidecar := range sidecars {
-		reqCPU := fmt.Sprintf("%.fm", k.CPUOverCommit(sidecar.Resources.CPU)*1000)
+		//reqCPU := fmt.Sprintf("%.fm", k.CPUOverCommit(sidecar.Resources.CPU)*1000)
 		limitCPU := fmt.Sprintf("%.fm", sidecar.Resources.CPU*1000)
 		memory := fmt.Sprintf("%.dMi", sidecar.Resources.Mem)
 
@@ -754,7 +741,7 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 			Image: sidecar.Image,
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:              resource.MustParse(reqCPU),
+					//corev1.ResourceCPU:              resource.MustParse(reqCPU),
 					corev1.ResourceMemory:           resource.MustParse(memory),
 					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 				},
@@ -1206,54 +1193,34 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	return nil
 }
 
-func (k *Kubernetes) setContainerResources(service apistructs.Service, container *corev1.Container) error {
-	if service.Resources.Cpu < MIN_CPU_SIZE {
-		return errors.Errorf("invalid cpu, value: %v, (which is lower than min cpu(%v))",
-			service.Resources.Cpu, MIN_CPU_SIZE)
-	}
+func (k *Kubernetes) setContainerResources(svc apistructs.Service, container *corev1.Container) error {
+	//cpu := fmt.Sprintf("%dm", int(service.Resources.Cpu*1000))
+	//memory := fmt.Sprintf("%dMi", int(service.Resources.Mem))
+	//
+	//maxCpu := fmt.Sprintf("%dm", int(service.Resources.MaxCPU*1000))
+	//maxMem := fmt.Sprintf("%dMi", int(service.Resources.MaxMem))
+	//
+	//container.Resources = corev1.ResourceRequirements{
+	//	Requests: corev1.ResourceList{
+	//		corev1.ResourceCPU:              resource.MustParse(cpu),
+	//		corev1.ResourceMemory:           resource.MustParse(memory),
+	//		corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
+	//	},
+	//	Limits: corev1.ResourceList{
+	//		corev1.ResourceCPU:              resource.MustParse(maxCpu),
+	//		corev1.ResourceMemory:           resource.MustParse(maxMem),
+	//		corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
+	//	},
+	//}
 
-	//Set the over-score ratio according to the environment
-	cpuSubscribeRatio := k.cpuSubscribeRatio
-	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
-	case "DEV":
-		cpuSubscribeRatio = k.devCpuSubscribeRatio
-		memSubscribeRatio = k.devMemSubscribeRatio
-	case "TEST":
-		cpuSubscribeRatio = k.testCpuSubscribeRatio
-		memSubscribeRatio = k.testMemSubscribeRatio
-	case "STAGING":
-		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
-		memSubscribeRatio = k.stagingMemSubscribeRatio
-	}
-	if cpuSubscribeRatio < 1.0 {
-		cpuSubscribeRatio = 1.0
-	}
-	if memSubscribeRatio < 1.0 {
-		memSubscribeRatio = 1.0
-	}
+	// get workspace from service envs
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
 
-	cpu := fmt.Sprintf("%dm", int(service.Resources.Cpu*1000))
-	memory := fmt.Sprintf("%dMi", int(service.Resources.Mem))
+	// get actual resource subscribe ration
+	cpuSubscribeRatio, memSubscribeRatio := k.getSubscribeRationsByWorkspace(workspace)
 
-	maxCpu := fmt.Sprintf("%dm", int(service.Resources.MaxCPU*1000))
-	maxMem := fmt.Sprintf("%dMi", int(service.Resources.MaxMem))
-
-	container.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			corev1.ResourceCPU:              resource.MustParse(cpu),
-			corev1.ResourceMemory:           resource.MustParse(memory),
-			corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
-		},
-		Limits: corev1.ResourceList{
-			corev1.ResourceCPU:              resource.MustParse(maxCpu),
-			corev1.ResourceMemory:           resource.MustParse(maxMem),
-			corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
-		},
-	}
-
-	if service.Resources.EphemeralStorageCapacity > 1 {
-		maxEphemeral := fmt.Sprintf("%dGi", service.Resources.EphemeralStorageCapacity)
+	if svc.Resources.EphemeralStorageCapacity > 1 {
+		maxEphemeral := fmt.Sprintf("%dGi", svc.Resources.EphemeralStorageCapacity)
 		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 	}
 

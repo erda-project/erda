@@ -60,12 +60,13 @@ func (ro *UnifiedRedisOperator) Validate(sg *apistructs.ServiceGroup) error {
 	}
 	return ro.redisoperator.Validate(sg)
 }
-func (ro *UnifiedRedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (ro *UnifiedRedisOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	if ro.useLegacy {
 		return ro.legacyRedisoperator.Convert(sg)
 	}
 	return ro.redisoperator.Convert(sg)
 }
+
 func (ro *UnifiedRedisOperator) Create(k8syml interface{}) error {
 	if ro.useLegacy {
 		return ro.legacyRedisoperator.Create(k8syml)

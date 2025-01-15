@@ -88,7 +88,7 @@ func (s *SourcecovOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	svc := sg.Services[0]
 	var envs []v1.EnvVar
 
@@ -116,6 +116,13 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			scname = svc.Volumes[0].SCVolume.StorageClassName
 		}
 	}
+
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
+	containerResources, err := s.overcommit.ResourceOverCommit(workspace, svc.Resources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cacl container resources: %v", err)
+	}
+
 	spec := scv1.Agent{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Agent",
@@ -131,9 +138,7 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			StorageClassName: scname,
 			StorageSize:      resource.MustParse(capacity),
 			Affinity:         &affinity,
-			Resources: util.ResourceRequirementsPtr(
-				s.overcommit.ResourceOverCommit(svc.Resources),
-			),
+			Resources:        &containerResources,
 		},
 	}
 
@@ -163,7 +168,7 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		}
 	}
 
-	return &spec
+	return &spec, nil
 }
 
 func (s *SourcecovOperator) CreateNsIfNotExists(ns string) error {

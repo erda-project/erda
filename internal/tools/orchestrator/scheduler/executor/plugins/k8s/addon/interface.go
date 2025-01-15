@@ -30,7 +30,7 @@ type AddonOperator interface {
 	// Verify the legality of sg converted from diceyml
 	Validate(*apistructs.ServiceGroup) error
 	// Convert sg to cr. Because of the different definitions of cr, use interface() here
-	Convert(*apistructs.ServiceGroup) interface{}
+	Convert(*apistructs.ServiceGroup) (any, error)
 	// the cr converted by Convert in k8s deploying
 	Create(interface{}) error
 	// Check running status
@@ -103,9 +103,7 @@ type PVCUtil interface {
 }
 
 type OverCommitUtil interface {
-	CPUOverCommit(limit float64) float64
-	MemoryOverCommit(limit float64) float64
 	// ResourceOverCommit
 	// cpu,memory field type source: apistructs/service.go.Resources
-	ResourceOverCommit(resources apistructs.Resources) corev1.ResourceRequirements
+	ResourceOverCommit(workspace apistructs.DiceWorkspace, resources apistructs.Resources) (corev1.ResourceRequirements, error)
 }

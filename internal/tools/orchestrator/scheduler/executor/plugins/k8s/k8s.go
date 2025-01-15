@@ -61,7 +61,6 @@ import (
 	erdahpa "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/hpa"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/instanceinfosync"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/job"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
@@ -85,7 +84,6 @@ import (
 	"github.com/erda-project/erda/pkg/k8sclient"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
-	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -272,21 +270,6 @@ func (k *Kubernetes) Addr() string {
 	return k.addr
 }
 
-func getWorkspaceRatio(options map[string]string, workspace string, t string, value *float64) {
-	var subscribeRatioKey string
-	if workspace == "PROD" {
-		subscribeRatioKey = t + SUBSCRIBE_RATIO_SUFFIX
-	} else {
-		subscribeRatioKey = workspace + "_" + t + SUBSCRIBE_RATIO_SUFFIX
-	}
-	*value = 1.0
-	if ratioValue, ok := options[subscribeRatioKey]; ok && len(ratioValue) > 0 {
-		if ratio, err := strconv.ParseFloat(ratioValue, 64); err == nil && ratio >= 1.0 {
-			*value = ratio
-		}
-	}
-}
-
 func getIstioEngine(clusterName string, info apistructs.ClusterInfoData) (istioctl.IstioEngine, error) {
 	istioInfo := info.GetIstioInfo()
 	if !istioInfo.Installed {
@@ -340,8 +323,13 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	//Get the value of the super-scoring ratio for different environments
 	var (
+		// Global SubscribeRatio
+		// 1. If the SubscribeRatio isn't configured in the non-production workspace, we'll go with the global settings.
+		//	  Otherwise, we'll stick to the workspace-specific configuration.
+		// 2. Also affects in the production workspace.
 		memSubscribeRatio,
 		cpuSubscribeRatio,
+		// SubscribeRatio for different non-production workspace
 		devMemSubscribeRatio,
 		devCpuSubscribeRatio,
 		testMemSubscribeRatio,
@@ -731,23 +719,6 @@ func (k *Kubernetes) CapacityInfo() apistructs.CapacityInfoData {
 	r.SourcecovOperator = k.sourcecovoperator.IsSupported()
 	r.RocketMQOperator = k.rocketmqoperator.IsSupported()
 	return r
-}
-
-func (k *Kubernetes) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoData, error) {
-	r, err := k.resourceInfo.Get(brief)
-	if err != nil {
-		return r, err
-	}
-	r.ProdCPUOverCommit = k.cpuSubscribeRatio
-	r.DevCPUOverCommit = k.devCpuSubscribeRatio
-	r.TestCPUOverCommit = k.testCpuSubscribeRatio
-	r.StagingCPUOverCommit = k.stagingCpuSubscribeRatio
-	r.ProdMEMOverCommit = k.memSubscribeRatio
-	r.DevMEMOverCommit = k.devMemSubscribeRatio
-	r.TestMEMOverCommit = k.testMemSubscribeRatio
-	r.StagingMEMOverCommit = k.stagingMemSubscribeRatio
-
-	return r, nil
 }
 
 func (*Kubernetes) JobVolumeCreate(ctx context.Context, spec interface{}) (string, error) {
@@ -1266,77 +1237,6 @@ func runtimeIDMatch(podRuntimeID string, pod apiv1.Pod) bool {
 	return false
 }
 
-func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
-	requestMem := float64(container.Resources.Requests.Memory().Value() / 1024 / 1024)
-	maxMem := float64(container.Resources.Limits.Memory().Value() / 1024 / 1024)
-
-	if requestMem < MIN_MEM_SIZE {
-		return errors.Errorf("invalid request mem, value: %v, (which is lower than min mem(%vMi))",
-			requestMem, MIN_MEM_SIZE)
-	}
-
-	// max_mem set but smaller than request mem
-	if maxMem != 0 && maxMem < requestMem {
-		return errors.Errorf("invalid max mem, value: %v, (which is lower than request mem(%v))", maxMem, requestMem)
-	}
-
-	// if max_mem not set, use [mem/ratio, mem]; else use [mem, max_mem]
-	if maxMem == 0 {
-		maxMem = requestMem
-		requestMem = requestMem / memSubscribeRatio
-	}
-
-	container.Resources.Requests[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(requestMem)))
-	container.Resources.Limits[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(maxMem)))
-
-	return nil
-}
-
-// SetFineGrainedCPU Set proper cpu ratio & quota
-func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[string]string, cpuSubscribeRatio float64) error {
-	// 1, Processing request cpu value
-	requestCPU := float64(container.Resources.Requests.Cpu().MilliValue()) / 1000
-	maxCPU := float64(container.Resources.Limits.Cpu().MilliValue()) / 1000
-	actualCPU := requestCPU
-
-	if requestCPU < MIN_CPU_SIZE {
-		return errors.Errorf("invalid request cpu, value: %v, (which is lower than min cpu(%v))",
-			requestCPU, MIN_CPU_SIZE)
-	}
-
-	// max_cpu set but smaller than request cpu
-	if maxCPU != 0 && maxCPU < requestCPU {
-		return errors.Errorf("invalid max cpu, value: %v, (which is lower than request cpu(%v))", maxCPU, requestCPU)
-	}
-
-	// 2, Dealing with cpu oversold
-	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
-
-	// if max_cpu not set, use [cpu/ratio, cpu]; else use [cpu, max_cpu]
-	if maxCPU == 0 {
-		maxCPU = requestCPU
-		actualCPU = requestCPU / ratio
-	}
-
-	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(actualCPU*1000)))
-
-	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
-	quota := k.cpuNumQuota
-
-	// Set the maximum cpu according to the requested cpu
-	if k.cpuNumQuota == -1.0 {
-		quota = cpupolicy.AdjustCPUSize(requestCPU)
-	}
-
-	if quota >= requestCPU {
-		container.Resources.Limits[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(maxCPU*1000)))
-	}
-
-	logrus.Infof("set container cpu: name: %s, request cpu: %v, actual cpu: %vm, max cpu: %vm, subscribe ratio: %v, cpu quota: %v",
-		container.Name, requestCPU, container.Resources.Requests.Cpu().MilliValue(), container.Resources.Limits.Cpu().MilliValue(), ratio, quota)
-	return nil
-}
-
 func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error) {
 	switch operator {
 	case "elasticsearch":
@@ -1355,28 +1255,6 @@ func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error)
 		return k.rocketmqoperator, nil
 	}
 	return nil, fmt.Errorf("not found")
-}
-
-func (k *Kubernetes) CPUOverCommit(limit float64) float64 {
-	return limit / k.cpuSubscribeRatio
-}
-
-func (k *Kubernetes) MemoryOverCommit(limit float64) float64 {
-	return limit / k.memSubscribeRatio
-}
-
-func (k *Kubernetes) ResourceOverCommit(r apistructs.Resources) apiv1.ResourceRequirements {
-	return apiv1.ResourceRequirements{
-		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * k.CPUOverCommit(r.Cpu))),
-			apiv1.ResourceMemory:           util.ResourceMemoryFormatter(int(k.MemoryOverCommit(r.Mem))),
-			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
-		},
-		Limits: apiv1.ResourceList{
-			apiv1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * r.Cpu)),
-			apiv1.ResourceMemory:           util.ResourceMemoryFormatter(int(r.Mem)),
-			apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit)},
-	}
 }
 
 func GenTolerations() []apiv1.Toleration {

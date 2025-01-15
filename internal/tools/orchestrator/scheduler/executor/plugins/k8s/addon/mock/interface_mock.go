@@ -37,11 +37,12 @@ func (m *MockAddonOperator) EXPECT() *MockAddonOperatorMockRecorder {
 }
 
 // Convert mocks base method.
-func (m *MockAddonOperator) Convert(arg0 *apistructs.ServiceGroup) interface{} {
+func (m *MockAddonOperator) Convert(arg0 *apistructs.ServiceGroup) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Convert", arg0)
-	ret0, _ := ret[0].(interface{})
-	return ret0
+	ret0, _ := ret[0].(any)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Convert indicates an expected call of Convert.
@@ -808,44 +809,17 @@ func (m *MockOverCommitUtil) EXPECT() *MockOverCommitUtilMockRecorder {
 	return m.recorder
 }
 
-// CPUOverCommit mocks base method.
-func (m *MockOverCommitUtil) CPUOverCommit(limit float64) float64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CPUOverCommit", limit)
-	ret0, _ := ret[0].(float64)
-	return ret0
-}
-
-// CPUOverCommit indicates an expected call of CPUOverCommit.
-func (mr *MockOverCommitUtilMockRecorder) CPUOverCommit(limit interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CPUOverCommit", reflect.TypeOf((*MockOverCommitUtil)(nil).CPUOverCommit), limit)
-}
-
-// MemoryOverCommit mocks base method.
-func (m *MockOverCommitUtil) MemoryOverCommit(limit float64) float64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MemoryOverCommit", limit)
-	ret0, _ := ret[0].(float64)
-	return ret0
-}
-
-// MemoryOverCommit indicates an expected call of MemoryOverCommit.
-func (mr *MockOverCommitUtilMockRecorder) MemoryOverCommit(limit interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MemoryOverCommit", reflect.TypeOf((*MockOverCommitUtil)(nil).MemoryOverCommit), limit)
-}
-
 // ResourceOverCommit mocks base method.
-func (m *MockOverCommitUtil) ResourceOverCommit(resources apistructs.Resources) v10.ResourceRequirements {
+func (m *MockOverCommitUtil) ResourceOverCommit(workspace apistructs.DiceWorkspace, resources apistructs.Resources) (v10.ResourceRequirements, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceOverCommit", resources)
+	ret := m.ctrl.Call(m, "ResourceOverCommit", workspace, resources)
 	ret0, _ := ret[0].(v10.ResourceRequirements)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ResourceOverCommit indicates an expected call of ResourceOverCommit.
-func (mr *MockOverCommitUtilMockRecorder) ResourceOverCommit(resources interface{}) *gomock.Call {
+func (mr *MockOverCommitUtilMockRecorder) ResourceOverCommit(workspace, resources interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceOverCommit", reflect.TypeOf((*MockOverCommitUtil)(nil).ResourceOverCommit), resources)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceOverCommit", reflect.TypeOf((*MockOverCommitUtil)(nil).ResourceOverCommit), workspace, resources)
 }

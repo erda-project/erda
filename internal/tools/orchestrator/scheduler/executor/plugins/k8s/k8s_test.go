@@ -603,3 +603,6 @@ func Test_ConvertToKedaScaledObject(t *testing.T) {
 	object := convertToKedaScaledObject(scaled)
 	t.Logf("%v", object)
 }
+
+func TestResourceOverCommit(t *testing.T) {
+}

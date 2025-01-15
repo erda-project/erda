@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	canalv1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/canal/v1"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 )
@@ -132,7 +133,7 @@ func (c *CanalOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	canal := sg.Services[0]
 
 	scheinfo := sg.ScheduleInfo2
@@ -166,6 +167,19 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		}
 	}
 
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(canal.Env)
+	containerResources, err := c.overcommit.ResourceOverCommit(workspace, canal.Resources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calc container resources, err: %v", err)
+	}
+	adminContainerResources, err := c.overcommit.ResourceOverCommit(workspace, apistructs.Resources{
+		Cpu: canal.Resources.Cpu / 3,
+		Mem: canal.Resources.Mem * 2 / 3,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to calc admin container resources, err: %v", err)
+	}
+
 	obj := &canalv1.Canal{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "database.erda.cloud/v1",
@@ -180,15 +194,12 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 			Replicas: canal.Scale,
 
-			Affinity:  &affinity,
-			Resources: c.overcommit.ResourceOverCommit(canal.Resources),
-			AdminResources: c.overcommit.ResourceOverCommit(apistructs.Resources{
-				Cpu: canal.Resources.Cpu / 3,
-				Mem: canal.Resources.Mem * 2 / 3,
-			}),
-			Labels:       make(map[string]string),
-			CanalOptions: canalOptions,
-			AdminOptions: adminOptions,
+			Affinity:       &affinity,
+			Resources:      containerResources,
+			AdminResources: adminContainerResources,
+			Labels:         make(map[string]string),
+			CanalOptions:   canalOptions,
+			AdminOptions:   adminOptions,
 			Annotations: map[string]string{
 				"_destination": canal.Env["CANAL_DESTINATION"],
 				"_props":       props,
@@ -198,7 +209,7 @@ func (c *CanalOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 	addon.SetAddonLabelsAndAnnotations(canal, obj.Spec.Labels, obj.Spec.Annotations)
 
-	return obj
+	return obj, nil
 }
 
 func (c *CanalOperator) Create(k8syml interface{}) error {
