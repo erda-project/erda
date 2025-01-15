@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -594,13 +595,16 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	logrus.Debugf("container name: %s, container resource spec: %+v", container.Name, container.Resources)
 
 	// Generate sidecars container configuration
-	//sidecars := k.generateSidecarContainers(service.SideCars)
+	sidecars, err := k.generateSidecarContainers(workspace, service.SideCars)
+	if err != nil {
+		return nil, err
+	}
 
 	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)
 
 	containers := []corev1.Container{container}
-	//containers = append(containers, sidecars...)
+	containers = append(containers, sidecars...)
 	deployment.Spec.Template.Spec.Containers = containers
 	if len(initcontainers) > 0 {
 		deployment.Spec.Template.Spec.InitContainers = initcontainers
@@ -732,33 +736,28 @@ func (k *Kubernetes) generateInitContainer(initContainers map[string]diceyml.Ini
 	return containers
 }
 
-func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.SideCar) []corev1.Container {
+func (k *Kubernetes) generateSidecarContainers(workspace apistructs.DiceWorkspace, sidecars map[string]*diceyml.SideCar) ([]corev1.Container, error) {
 	var containers []corev1.Container
 
 	if len(sidecars) == 0 {
-		return nil
+		return containers, nil
 	}
 
 	for name, sidecar := range sidecars {
-		//reqCPU := fmt.Sprintf("%.fm", k.CPUOverCommit(sidecar.Resources.CPU)*1000)
-		limitCPU := fmt.Sprintf("%.fm", sidecar.Resources.CPU*1000)
-		memory := fmt.Sprintf("%.dMi", sidecar.Resources.Mem)
+		var sidecarResources apistructs.Resources
+		if err := copier.Copy(&sidecarResources, sidecar.Resources); err != nil {
+			return nil, fmt.Errorf("failed to copy sidecar resources: %v", err)
+		}
+
+		containerResource, err := k.ResourceOverCommit(workspace, sidecarResources)
+		if err != nil {
+			return nil, err
+		}
 
 		sc := corev1.Container{
-			Name:  strutil.Concat(sidecarNamePrefix, name),
-			Image: sidecar.Image,
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					//corev1.ResourceCPU:              resource.MustParse(reqCPU),
-					corev1.ResourceMemory:           resource.MustParse(memory),
-					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
-				},
-				Limits: corev1.ResourceList{
-					corev1.ResourceCPU:              resource.MustParse(limitCPU),
-					corev1.ResourceMemory:           resource.MustParse(memory),
-					corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
-				},
-			},
+			Name:      strutil.Concat(sidecarNamePrefix, name),
+			Image:     sidecar.Image,
+			Resources: containerResource,
 		}
 		if sidecar.Resources.EphemeralStorageCapacity > 1 {
 			maxEphemeral := fmt.Sprintf("%dGi", sidecar.Resources.EphemeralStorageCapacity)
@@ -786,7 +785,7 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 		containers = append(containers, sc)
 	}
 
-	return containers
+	return containers, nil
 }
 
 func makeEnvVariableName(str string) string {
