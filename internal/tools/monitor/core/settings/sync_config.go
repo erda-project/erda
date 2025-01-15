@@ -51,17 +51,29 @@ func (p *provider) syncCreateOrgMonitorConfig() error {
 			p.Log.Errorf("failed to get monitor config register by type: log, err: %v", err)
 			return err
 		}
-		registers = make([]db.SpMonitorConfigRegister, 0, len(logRegisters)+len(monitorRegisters))
+
+		generalRegisters, err := client.MonitorConfigRegister.ListRegisterWithFilter(map[string]any{
+			"scope":     "org",
+			"scope_id":  "",
+			"namespace": "",
+		})
+		registers = make([]db.SpMonitorConfigRegister, 0, len(logRegisters)+len(monitorRegisters)+len(generalRegisters))
 		registers = append(registers, monitorRegisters...)
 		registers = append(registers, logRegisters...)
+		registers = append(registers, generalRegisters...)
 
 		for _, register := range registers {
 			if !p.isEmptyConfig(&register, org) {
 				continue
 			}
 
-			nsConfig := defaultConfig[register.Namespace]
-			defConfig := nsConfig["monitor"]
+			var nsConfig map[string]map[string]*pb.ConfigItem
+			if register.Namespace == "" {
+				nsConfig = defaultConfig["general"]
+			} else {
+				nsConfig = defaultConfig[register.Namespace]
+			}
+			monitorConfig := nsConfig["monitor"]
 
 			req := &pb.PutSettingsWithTypeRequest{
 				OrgID: int64(org.ID),
@@ -78,20 +90,20 @@ func (p *provider) syncCreateOrgMonitorConfig() error {
 
 			switch register.Type {
 			case "log":
-				ttlItem = defConfig[LogsTTLKey]
-				hotTTLItem = defConfig[LogsHotTTLKey]
+				ttlItem = monitorConfig[LogsTTLKey]
+				hotTTLItem = monitorConfig[LogsHotTTLKey]
 			case "metric":
-				ttlItem = defConfig[MetricsTTLKey]
-				hotTTLItem = defConfig[MetricsHotTTLKey]
+				ttlItem = monitorConfig[MetricsTTLKey]
+				hotTTLItem = monitorConfig[MetricsHotTTLKey]
 			}
 
 			if ttlItem == nil {
-				err = fmt.Errorf("ttl item is nil, monitor type: %s", register.Type)
+				err = fmt.Errorf("ttl item is nil, monitor type: %v", register)
 				p.Log.Error(err)
 				return err
 			}
 			if hotTTLItem == nil {
-				err = fmt.Errorf("hot_ttl item is nil, monitor type: %s", register.Type)
+				err = fmt.Errorf("hot_ttl item is nil, monitor type: %v", register)
 				p.Log.Error(err)
 				return err
 			}

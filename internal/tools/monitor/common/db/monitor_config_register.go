@@ -16,6 +16,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 )
@@ -42,6 +43,23 @@ func (m *MonitorConfigRegisterDB) ListRegisterByOrgId(orgId string) ([]SpMonitor
 func (m *MonitorConfigRegisterDB) ListRegisterByType(tpy string) ([]SpMonitorConfigRegister, error) {
 	var res = make([]SpMonitorConfigRegister, 0)
 	if err := m.Model(&SpMonitorConfigRegister{}).Where("type = ?", tpy).Find(&res).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return make([]SpMonitorConfigRegister, 0), nil
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (m *MonitorConfigRegisterDB) ListRegisterWithFilter(filters map[string]any) ([]SpMonitorConfigRegister, error) {
+	var res = make([]SpMonitorConfigRegister, 0)
+	tx := m.Model(&SpMonitorConfigRegister{})
+	for k, v := range filters {
+		key := k
+		value := v
+		tx = tx.Where(fmt.Sprintf("`%s` = ?", key), value)
+	}
+	if err := tx.Find(&res).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return make([]SpMonitorConfigRegister, 0), nil
 		}

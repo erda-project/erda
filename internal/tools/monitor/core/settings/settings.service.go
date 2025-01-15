@@ -65,6 +65,9 @@ type settingsService struct {
 }
 
 func (s *settingsService) PutSettingsWithType(ctx context.Context, req *pb.PutSettingsWithTypeRequest) (*pb.PutSettingsWithTypeResponse, error) {
+	if req.Namespace == "general" {
+		req.Namespace = ""
+	}
 	orgName, err := s.getOrgName(req.OrgID)
 	if err != nil {
 		return nil, err
