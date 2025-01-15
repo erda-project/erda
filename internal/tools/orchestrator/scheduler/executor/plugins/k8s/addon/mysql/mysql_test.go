@@ -53,10 +53,11 @@ var sg = &apistructs.ServiceGroup{
 				},
 				Scale: 2,
 				Env: map[string]string{
-					"MYSQL_ROOT_PASSWORD": "123",
-					"ADDON_ID":            "addonxxx",
-					"DICE_CLUSTER_NAME":   "erda",
-					"DICE_ORG_NAME":       "erda",
+					apistructs.DiceWorkspaceEnvKey: apistructs.WORKSPACE_DEV,
+					"MYSQL_ROOT_PASSWORD":          "123",
+					"ADDON_ID":                     "addonxxx",
+					"DICE_CLUSTER_NAME":            "erda",
+					"DICE_ORG_NAME":                "erda",
 				},
 			},
 		},
@@ -81,8 +82,8 @@ func TestMysqlOperator(t *testing.T) {
 	// Create mock
 	namespaceUtil := mock.NewMockNamespaceUtil(ctrl)
 	overCommitUtil := mock.NewMockOverCommitUtil(ctrl)
-	overCommitUtil.EXPECT().ResourceOverCommit(sg.Services[0].Resources).
-		Return(mockResourceRequirements).AnyTimes()
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, sg.Services[0].Resources).
+		Return(mockResourceRequirements, nil).AnyTimes()
 
 	k8sUtil := mock.NewMockK8SUtil(ctrl)
 	k8sUtil.EXPECT().GetK8SAddr().Return("mock-k8s-addr").AnyTimes()
@@ -119,12 +120,13 @@ func TestConvert(t *testing.T) {
 	defer ctrl.Finish()
 
 	overCommitUtil := mock.NewMockOverCommitUtil(ctrl)
-	overCommitUtil.EXPECT().ResourceOverCommit(sg.Services[0].Resources).
-		Return(mockResourceRequirements).AnyTimes()
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, sg.Services[0].Resources).
+		Return(mockResourceRequirements, nil).AnyTimes()
 
 	op := &MysqlOperator{overcommit: overCommitUtil}
 
-	got := op.Convert(sg)
+	got, err := op.Convert(sg)
+	assert.NoError(t, err)
 	mysql, ok := got.(*mysqlv1.Mysql)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, "erda", mysql.Spec.Labels["DICE_CLUSTER_NAME"])

@@ -148,6 +148,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 		}
 	}
 
+	// MySQL may deploy as cluster addon, ignore none workspace.
 	workspace, _ := util.GetDiceWorkspaceFromEnvs(mysql.Env)
 	containerResources, err := my.overcommit.ResourceOverCommit(workspace, mysql.Resources)
 	if err != nil {
