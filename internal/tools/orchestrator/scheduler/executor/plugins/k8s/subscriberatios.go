@@ -161,10 +161,23 @@ func (k *Kubernetes) ResourceOverCommit(workspace apistructs.DiceWorkspace, r ap
 		maxEphemeral = util.ResourceEphemeralStorageCapacityFormatter(r.EphemeralStorageCapacity)
 	}
 
+	// If calculated over commit resource is zero, set platform min resources.
+	var (
+		actualRequestCPU = int(1000 * requestCPU)
+		actualRequestMem = int(requestMem)
+	)
+
+	if actualRequestCPU == 0 {
+		actualRequestCPU = int(1000 * MIN_CPU_SIZE)
+	}
+	if actualRequestMem == 0 {
+		actualRequestMem = MIN_MEM_SIZE
+	}
+
 	return corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
-			corev1.ResourceCPU:              util.ResourceCPUFormatter(int(1000 * requestCPU)),
-			corev1.ResourceMemory:           util.ResourceMemoryFormatter(int(requestMem)),
+			corev1.ResourceCPU:              util.ResourceCPUFormatter(actualRequestCPU),
+			corev1.ResourceMemory:           util.ResourceMemoryFormatter(actualRequestMem),
 			corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
 		},
 		Limits: corev1.ResourceList{
