@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	mysqlv1 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/mysql/v1"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -107,7 +108,7 @@ func (my *MysqlOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	mysql := sg.Services[0]
 
 	scname := "dice-local-volume"
@@ -147,6 +148,12 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		}
 	}
 
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(mysql.Env)
+	containerResources, err := my.overcommit.ResourceOverCommit(workspace, mysql.Resources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cacl container resources, err: %v", err)
+	}
+
 	obj := &mysqlv1.Mysql{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "database.erda.cloud/v1",
@@ -170,7 +177,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			StorageSize:      resource.MustParse(capacity),
 
 			Affinity:    &affinity,
-			Resources:   my.overcommit.ResourceOverCommit(mysql.Resources),
+			Resources:   containerResources,
 			Labels:      make(map[string]string),
 			Annotations: make(map[string]string),
 		},
@@ -186,7 +193,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		obj.Spec.Labels[apistructs.DICE_CLUSTER_NAME.String()] = clusterName
 	}
 
-	return obj
+	return obj, nil
 }
 
 func (my *MysqlOperator) Create(k8syml interface{}) error {

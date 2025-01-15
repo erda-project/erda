@@ -196,8 +196,8 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 	}
 
 	set.Spec.Template.Spec.Containers = []apiv1.Container{*container}
-	sidecars := k.generateSidecarContainers(service.SideCars)
-	set.Spec.Template.Spec.Containers = append(set.Spec.Template.Spec.Containers, sidecars...)
+	//sidecars := k.generateSidecarContainers(service.SideCars)
+	//set.Spec.Template.Spec.Containers = append(set.Spec.Template.Spec.Containers, sidecars...)
 
 	// ECI Pod inject fluent-bit sidecar container
 	useECI := UseECI(set.Labels, set.Spec.Template.Labels)

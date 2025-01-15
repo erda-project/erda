@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -112,7 +113,7 @@ func (eo *ElasticsearchOperator) Validate(sg *apistructs.ServiceGroup) error {
 }
 
 // Convert sg to cr, which is kubernetes yaml
-func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	svc0 := sg.Services[0]
 	scname := "dice-local-volume"
 	// 官方建议，将堆内和堆外各设置一半, Xmx 和 Xms 设置的是堆内
@@ -126,7 +127,10 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity.NodeAffinity
 
-	nodeSets := eo.NodeSetsConvert(sg, scname, affinity)
+	nodeSets, err := eo.NodeSetsConvert(sg, scname, affinity)
+	if err != nil {
+		return nil, err
+	}
 	es := elasticsearchv1.Elasticsearch{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
@@ -167,7 +171,7 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{
 		},
 	}
 
-	return ElasticsearchAndSecret{Elasticsearch: es, Secret: secret}
+	return ElasticsearchAndSecret{Elasticsearch: es, Secret: secret}, nil
 }
 
 func (eo *ElasticsearchOperator) Create(k8syml interface{}) error {
@@ -319,7 +323,7 @@ func genK8SNamespace(namespace, name string) string {
 	return strutil.Concat(namespace, "--", name)
 }
 
-func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, scname string, affinity *corev1.NodeAffinity) elasticsearchv1.NodeSet {
+func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, scname string, affinity *corev1.NodeAffinity) (elasticsearchv1.NodeSet, error) {
 	// 默认 volume size
 	capacity := "20Gi"
 	// ES 只有一个 pvc，所以只取第一个 volume 的设置
@@ -341,6 +345,13 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 
 	esUri := fmt.Sprintf("--es.uri=http://%s:%s@localhost:9200", esUsername, svc.Env["requirepass"])
 	config, _ := convertJsontToMap(svc.Env["config"])
+
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
+	containerResources, err := eo.overcommit.ResourceOverCommit(workspace, svc.Resources)
+	if err != nil {
+		return elasticsearchv1.NodeSet{}, fmt.Errorf("failed to calc container resources, err: %v", err)
+	}
+
 	nodeSets := elasticsearchv1.NodeSet{
 		Name:   "addon",
 		Count:  int32(svc.Scale),
@@ -362,7 +373,7 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 					{
 						Name:      "elasticsearch",
 						Env:       envs(svc.Env),
-						Resources: eo.overcommit.ResourceOverCommit(svc.Resources),
+						Resources: containerResources,
 					}, {
 						Name:    "es-exporter",
 						Image:   esExporterImage,
@@ -423,7 +434,7 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 		}
 	}
 
-	return nodeSets
+	return nodeSets, nil
 }
 
 func envs(envs map[string]string) []corev1.EnvVar {

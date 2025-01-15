@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -71,14 +72,21 @@ func (d *DaemonsetOperator) Validate(sg *apistructs.ServiceGroup) error {
 }
 
 // TODO: volume support
-func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	service := sg.Services[0]
 	affinity := constraintbuilders.K8S(&sg.ScheduleInfo2, &service, nil, nil).Affinity
 	probe := d.healthcheck.NewHealthcheckProbe(&service)
+
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(service.Env)
+	containerResources, err := d.overcommit.ResourceOverCommit(workspace, service.Resources)
+	if err != nil {
+		return nil, err
+	}
+
 	container := corev1.Container{
 		Name:           service.Name,
 		Image:          service.Image,
-		Resources:      d.overcommit.ResourceOverCommit(service.Resources),
+		Resources:      containerResources,
 		Command:        []string{"sh", "-c", service.Cmd},
 		Env:            envs(service.Env),
 		LivenessProbe:  probe,
@@ -177,7 +185,7 @@ func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 func (d *DaemonsetOperator) Create(k8syml interface{}) error {
