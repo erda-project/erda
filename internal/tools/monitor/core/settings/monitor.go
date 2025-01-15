@@ -76,6 +76,24 @@ func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 
 	if ns == "general" {
 		cd.defaults = map[string]func(langs i18n.LanguageCodes) *pb.ConfigItem{
+			"logs_ttl": func(langs i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
+					Key:   "logs_ttl",
+					Name:  s.t.Text(langs, "base") + " " + s.t.Text(langs, "logs_ttl"),
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(log.TTL)),
+					Unit:  s.t.Text(langs, "days"),
+				}
+			},
+			"logs_hot_ttl": func(langs i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
+					Key:   "logs_hot_ttl",
+					Name:  s.t.Text(langs, "base") + " " + s.t.Text(langs, "logs_hot_ttl"),
+					Type:  "number",
+					Value: structpb.NewNumberValue(float64(log.HotTTL)),
+					Unit:  s.t.Text(langs, "days"),
+				}
+			},
 			"metrics_ttl": func(langs i18n.LanguageCodes) *pb.ConfigItem {
 				return &pb.ConfigItem{
 					Key:   "metrics_ttl",
@@ -185,12 +203,19 @@ type monitorConfigRegister struct {
 	Hash       string    `json:"hash" gorm:"column:hash"`
 }
 
+func (s *settingsService) generateKey(orgID, ns string) string {
+	if ns != "" {
+		return md5x.SumString(orgID + "/" + ns).String16()
+	}
+	return md5x.SumString(orgID).String16()
+}
+
 func (s *settingsService) updateMonitorConfig(tx *gorm.DB, orgid int64, orgName, ns, group string, keys map[string]interface{}) error {
 	if ns == "general" {
 		ns = ""
 	}
 	orgID := strconv.FormatInt(orgid, 10)
-	key := md5x.SumString(orgID + "/" + ns).String16()
+	key := s.generateKey(orgID, ns)
 
 	ttl := ttl{}
 

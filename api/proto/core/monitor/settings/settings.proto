@@ -16,7 +16,7 @@ service SettingsService {
       check_token: true,
     }
   };
-  
+
   rpc GetSettings (GetSettingsRequest) returns (GetSettingsResponse)  {
     option (google.api.http) = {
       get: "/api/global/settings?org_id={orgID}"
@@ -36,6 +36,13 @@ service SettingsService {
     };
   }
 
+  rpc PutSettingsWithType(PutSettingsWithTypeRequest) returns (PutSettingsWithTypeResponse) {
+    option (google.api.http) = {
+      put: "/api/global/settings/{monitorType}?org_id={orgID}&namespace={namespace}",
+      body: "data"
+    };
+  }
+
   rpc RegisterMonitorConfig (RegisterMonitorConfigRequest) returns (RegisterMonitorConfigResponse)  {
     option (google.api.http) = {
       put: "/api/config/register",
@@ -49,7 +56,7 @@ message GetSettingsRequest {
   int64 orgID = 1 [(validate.rules).int64.gt = 0];
   string workspace = 2;
 }
-  
+
 message GetSettingsResponse {
   map<string, ConfigGroups> data = 1;
 }
@@ -59,8 +66,19 @@ message PutSettingsRequest {
   map<string, ConfigGroups> data = 1;
   int64 orgID = 2 [(validate.rules).int64.gt = 0];
 }
-  
+
 message PutSettingsResponse {
+  string data = 1;
+}
+
+message PutSettingsWithTypeRequest {
+  ConfigGroup data = 1;
+  int64 orgID = 2 [(validate.rules).int64.gt = 0];
+  string namespace = 3;
+  string monitorType = 4;
+}
+
+message PutSettingsWithTypeResponse {
   string data = 1;
 }
 
@@ -80,7 +98,7 @@ message MonitorConfig {
   bool enable = 7;
   string desc = 8;
 }
-  
+
 message RegisterMonitorConfigResponse {
   string data = 1;
 }
