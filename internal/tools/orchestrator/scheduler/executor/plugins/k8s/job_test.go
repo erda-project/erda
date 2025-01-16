@@ -42,7 +42,9 @@ func TestNewJob(t *testing.T) {
 			Cpu: 0.1,
 			Mem: 512,
 		},
-		Env:                nil,
+		Env: map[string]string{
+			apistructs.DiceWorkspaceEnvKey: apistructs.WORKSPACE_DEV,
+		},
 		Labels:             nil,
 		DeploymentLabels:   nil,
 		Selectors:          nil,
