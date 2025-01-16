@@ -120,7 +120,7 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
 	containerResources, err := s.overcommit.ResourceOverCommit(workspace, svc.Resources)
 	if err != nil {
-		return nil, fmt.Errorf("failed to cacl container resources: %v", err)
+		return nil, fmt.Errorf("failed to calculate container resources: %v", err)
 	}
 
 	spec := scv1.Agent{

@@ -347,7 +347,7 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service) (RedisSettings, er
 	workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
 	containerResources, err := ro.overcommit.ResourceOverCommit(workspace, svc.Resources)
 	if err != nil {
-		return RedisSettings{}, fmt.Errorf("failed to cacl container resources: %v", err)
+		return RedisSettings{}, fmt.Errorf("failed to calculate container resources: %v", err)
 	}
 
 	settings := RedisSettings{}

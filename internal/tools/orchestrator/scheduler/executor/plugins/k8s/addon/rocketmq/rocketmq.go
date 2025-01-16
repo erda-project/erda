@@ -112,7 +112,7 @@ func (r *RocketMQOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 		workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
 		containerResources, err := r.overcommit.ResourceOverCommit(workspace, svc.Resources)
 		if err != nil {
-			return nil, fmt.Errorf("failed to cacl service %s container resources, err: %v", svc.Name, err)
+			return nil, fmt.Errorf("failed to calculate service %s container resources, err: %v", svc.Name, err)
 		}
 
 		switch svc.Name {
