@@ -528,14 +528,14 @@ func TestKubernetes_setStatelessServiceVolumes(t *testing.T) {
 
 	service.Volumes = append(service.Volumes, apistructs.Volume{
 		ContainerPath: "/opt/data/xxx02",
-		SCVolume: apistructs.SCVolume{
+		SCVolume:      apistructs.SCVolume{
 			//SourcePath: "/opt/test",
 		},
 	})
 
 	service.Volumes = append(service.Volumes, apistructs.Volume{
 		ContainerPath: "/opt/data/xxx03",
-		SCVolume: apistructs.SCVolume{
+		SCVolume:      apistructs.SCVolume{
 			//SourcePath: "test/data",
 		},
 	})
