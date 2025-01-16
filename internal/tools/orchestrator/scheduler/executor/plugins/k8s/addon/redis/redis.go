@@ -145,7 +145,7 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 		workspace, _ := util.GetDiceWorkspaceFromEnvs(svc0.Env)
 		containerResources, err := ro.overcommit.ResourceOverCommit(workspace, svc0.Resources)
 		if err != nil {
-			return nil, fmt.Errorf("failed to cacl container resources: %v", err)
+			return nil, fmt.Errorf("failed to calculate container resources: %v", err)
 		}
 		redis = ro.convertRedis(svc0, &affinity, containerResources)
 		redisService = svc0
@@ -157,7 +157,7 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 		workspace, _ := util.GetDiceWorkspaceFromEnvs(svc0.Env)
 		containerResources, err := ro.overcommit.ResourceOverCommit(workspace, svc0.Resources)
 		if err != nil {
-			return nil, fmt.Errorf("failed to cacl container resources: %v", err)
+			return nil, fmt.Errorf("failed to calculate container resources: %v", err)
 		}
 		redis = ro.convertRedis(svc1, &affinity, containerResources)
 		redisService = svc1

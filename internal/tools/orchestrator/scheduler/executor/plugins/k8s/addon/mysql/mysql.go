@@ -152,7 +152,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	workspace, _ := util.GetDiceWorkspaceFromEnvs(mysql.Env)
 	containerResources, err := my.overcommit.ResourceOverCommit(workspace, mysql.Resources)
 	if err != nil {
-		return nil, fmt.Errorf("failed to cacl container resources, err: %v", err)
+		return nil, fmt.Errorf("failed to calculate container resources, err: %v", err)
 	}
 
 	obj := &mysqlv1.Mysql{

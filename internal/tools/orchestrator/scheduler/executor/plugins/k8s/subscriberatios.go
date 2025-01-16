@@ -82,6 +82,18 @@ func (k *Kubernetes) calcFineGrainedCPU(requestCPU, maxCPU, ratio float64) (floa
 		actualCPU = requestCPU / ratio
 	}
 
+	// Deprecated:
+	// Reference:https://erda.cloud/terminus/dop/projects/70/apps/178/repo/tree/release/3.21/scripts/cpu_policy/policy.org
+	// Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is,
+	// the value corresponding to cpu.cfs_quota_us under the cgroup is -1
+	//quota := k.cpuNumQuota
+	//if k.cpuNumQuota == -1.0 {
+	//	quota = cpupolicy.AdjustCPUSize(requestCPU)
+	//}
+	//
+	//if quota >= requestCPU {
+	//}
+
 	return actualCPU, maxCPU, nil
 }
 
