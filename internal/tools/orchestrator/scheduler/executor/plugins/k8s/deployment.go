@@ -1172,12 +1172,15 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 		// only support one container on Erda currently
 		container := deploy.Spec.Template.Spec.Containers[index]
 
-		resources, err := k.ResourceOverCommit(apistructs.DiceWorkspace(workspace), scalingService.Resources)
+		containerResources, err := k.ResourceOverCommit(
+			apistructs.DiceWorkspace(strings.ToUpper(workspace)),
+			scalingService.Resources,
+		)
 		if err != nil {
 			setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
 			return setContainerErr
 		}
-		container.Resources = resources
+		container.Resources = containerResources
 
 		k.UpdateContainerResourceEnv(scalingService.Resources, &container)
 

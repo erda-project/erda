@@ -656,7 +656,10 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 	for index := range sts.Spec.Template.Spec.Containers {
 		container := sts.Spec.Template.Spec.Containers[index]
 
-		resources, err := k.ResourceOverCommit(apistructs.DiceWorkspace(workspace), scalingService.Resources)
+		resources, err := k.ResourceOverCommit(
+			apistructs.DiceWorkspace(strings.ToUpper(workspace)),
+			scalingService.Resources,
+		)
 		if err != nil {
 			setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
 			return setContainerErr
