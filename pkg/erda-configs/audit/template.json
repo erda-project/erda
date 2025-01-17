@@ -1804,8 +1804,8 @@
   "createDeploymentOrder": {
     "desc": "创建部署请求",
     "success": {
-        "zh": "在项目 [@projectName](project) 中, 创建了部署请求 [@deploymentOrderName]",
-        "en": "Create deployment requests [@deploymentOrderName] in project [@projectName]"
+      "zh": "在项目 [@projectName](project) 中, 创建了部署请求 [@deploymentOrderName]",
+      "en": "Create deployment requests [@deploymentOrderName] in project [@projectName]"
     }
   },
   "executeDeploymentOrder": {
@@ -1871,6 +1871,17 @@
     "success": {
       "zh": "应用 [@appName](app) 中, 对 [@serviceName] 进行了扩缩容, [@scaleMessageZH]",
       "en": "in app [@appName](app), changed the scale of service [@serviceName], [@scaleMessageEN]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "killPod": {
+    "desc": "删除 Pod",
+    "success": {
+      "zh": "在 [@workspace] 环境的应用 [@projectName](project) / [@appName](app) 中，成功删除了运行时 [@runtime] 的 Pod 实例 [@podName]",
+      "en": "Successfully deleted the Pod instance [@podName] of runtime [@runtime] in the [@projectName](project) / [@appName](app) app under the [@workspace] environment"
     },
     "fail": {
       "zh": "",

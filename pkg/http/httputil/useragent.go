@@ -14,15 +14,16 @@
 
 package httputil
 
-import "net/textproto"
+import (
+	"net/http"
 
-type ContentType string
-
-const (
-	ApplicationJson    ContentType = "application/json"
-	URLEncodedFormMime ContentType = "application/x-www-form-urlencoded"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
-var (
-	HeaderKeyUserAgent = textproto.CanonicalMIMEHeaderKey("User-Agent")
-)
+func GetUserAgent(header http.Header) string {
+	return strutil.FirstNoneEmpty(
+		header.Get(HeaderKeyUserAgent),
+		header.Get("X-User-Agent"),
+		header.Get("X-Device-User-Agent"),
+	)
+}

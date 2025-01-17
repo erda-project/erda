@@ -182,6 +182,7 @@ const (
 	RedeployRuntimeTemplate TemplateName = "redeployRuntime"
 	RollbackRuntimeTemplate TemplateName = "rollbackRuntime"
 	DeployRuntimeTemplate   TemplateName = "deployRuntime"
+	KillPodTemplate         TemplateName = "killPod"
 
 	// =====================NotifyGroup============================
 	UpdateNotifyGroup        TemplateName = "updateNotifyGroup"
