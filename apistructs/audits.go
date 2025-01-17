@@ -182,6 +182,7 @@ const (
 	RedeployRuntimeTemplate TemplateName = "redeployRuntime"
 	RollbackRuntimeTemplate TemplateName = "rollbackRuntime"
 	DeployRuntimeTemplate   TemplateName = "deployRuntime"
+	KillPodTemplate         TemplateName = "killPod"
 	CreateAndApplyHPARule   TemplateName = "createAndApplyHPARule"
 	ApplyOrCancelHPARule    TemplateName = "applyOrCancelHPARule"
 	UpdateHPARule           TemplateName = "updateHPARule"
