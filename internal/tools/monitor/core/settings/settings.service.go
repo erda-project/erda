@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
+	"github.com/recallsong/go-utils/conv"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -61,6 +62,44 @@ type settingsService struct {
 	cfgMap map[string]map[string]*configDefine
 	bundle *bundle.Bundle
 	t      i18n.Translator
+}
+
+func (s *settingsService) PutSettingsWithType(ctx context.Context, req *pb.PutSettingsWithTypeRequest) (*pb.PutSettingsWithTypeResponse, error) {
+	orgName, err := s.getOrgName(req.OrgID)
+	if err != nil {
+		return nil, err
+	}
+	tx := s.db.Begin()
+	ttl := ttl{}
+	for _, item := range req.Data.Items {
+		if item.Key == LogsTTLKey || item.Key == MetricsTTLKey {
+			ttl.TTL = conv.ToInt64(item.Value.AsInterface(), 1)
+		}
+		if item.Key == LogsHotTTLKey || item.Key == MetricsHotTTLKey {
+			ttl.HotTTL = conv.ToInt64(item.Value.AsInterface(), 1)
+		}
+
+		val := item.Value.AsInterface()
+		byts, _ := json.Marshal(val)
+
+		err := tx.Exec(globalSettingInsertUpdate, req.OrgID, orgName, req.Namespace, req.Data.Key, item.Key, item.Type, string(byts), item.Unit).Error
+		if err != nil {
+			tx.Rollback()
+			return nil, errors.NewDatabaseError(err)
+		}
+
+	}
+	orgID := strconv.FormatInt(req.OrgID, 10)
+	key := s.generateKey(orgID, req.Namespace)
+
+	if err = s.updateMonitor(req.MonitorType, ttl, tx, req.OrgID, orgID, orgName, req.Namespace, key); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	return &pb.PutSettingsWithTypeResponse{Data: "success"}, nil
 }
 
 func (s *settingsService) GetSettings(ctx context.Context, req *pb.GetSettingsRequest) (*pb.GetSettingsResponse, error) {

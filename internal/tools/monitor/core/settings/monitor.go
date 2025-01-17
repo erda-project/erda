@@ -185,6 +185,10 @@ type monitorConfigRegister struct {
 	Hash       string    `json:"hash" gorm:"column:hash"`
 }
 
+func (s *settingsService) generateKey(orgID, ns string) string {
+	return md5x.SumString(orgID + "/" + ns).String16()
+}
+
 func (s *settingsService) updateMonitorConfig(tx *gorm.DB, orgid int64, orgName, ns, group string, keys map[string]interface{}) error {
 	if ns == "general" {
 		ns = ""
