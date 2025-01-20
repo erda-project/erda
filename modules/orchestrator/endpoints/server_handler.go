@@ -160,6 +160,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 		Workspace:     rsc.Workspace,
 		Name:          rsc.Name,
 	}
+	serviceManualScale := false
 	logrus.Errorf("process runtime scale for runtime %#v", uniqueId)
 
 	pre, err := s.db.FindPreDeployment(uniqueId)
@@ -262,6 +263,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 
 		// 未设置 action，则需要自行判断用于执行 scale 操作之后的 runtime 状态更新
 		if action == "" {
+			serviceManualScale = true
 			// 如果所有的 serice 的副本数都调整为0，则是停止操作，Runtime 状态应该为 Stopped，否则不是停止操作，Runtime 状态应该为 Healthy
 			action = apistructs.ScaleActionDown
 			for _, svc := range sg.Services {
@@ -281,7 +283,7 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 			return apistructs.PreDiceDTO{}, err, errMsg
 		}
 
-		if action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp {
+		if (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && !serviceManualScale {
 			addons, err := s.db.GetUnDeletableAttachMentsByRuntimeID(runtime.ID)
 			if err != nil {
 				logrus.Warnf("process runtime scale successed, but update runtime referenced addon attact_count for runtime %#v failed, err: %v", uniqueId, err)
