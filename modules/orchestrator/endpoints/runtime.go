@@ -652,7 +652,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 func (e *Endpoints) KillPod(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	userID, err := user.GetUserID(r)
 	if err != nil {
-		return apierrors.ErrGetAppWorkspaceReleases.NotLogin().ToResp(), nil
+		return apierrors.ErrKillPod.NotLogin().ToResp(), nil
 	}
 
 	var req apistructs.RuntimeKillPodRequest
