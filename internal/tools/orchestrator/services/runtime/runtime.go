@@ -1869,16 +1869,38 @@ func (r *Runtime) GetSpec(userID user.ID, orgID uint64, runtimeID uint64) (*apis
 	return r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
 }
 
-func (r *Runtime) KillPod(runtimeID uint64, podname string) error {
+func (r *Runtime) KillPod(runtimeID uint64, podName string, audit *apistructs.Audit) error {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return err
 	}
 
-	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || podname == "" {
-		return errors.New("empty namespace or name or podname")
+	app, err := r.bdl.GetApp(runtime.ApplicationID)
+	if err != nil {
+		return err
 	}
-	return r.serviceGroupImpl.KillPod(context.Background(), runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, podname)
+
+	defer func() {
+		audit.OrgID = runtime.OrgID
+		audit.TemplateName = apistructs.KillPodTemplate
+		audit.ScopeType = apistructs.AppScope
+		audit.ScopeID = runtime.ApplicationID
+		audit.AppID = runtime.ApplicationID
+		audit.ProjectID = runtime.ProjectID
+		audit.Context = map[string]interface{}{
+			"workspace":   runtime.Workspace,
+			"runtime":     runtime.Name,
+			"podName":     podName,
+			"projectName": app.ProjectName,
+			"appName":     app.Name,
+		}
+		audit.EndTime = strconv.FormatInt(time.Now().Unix(), 10)
+	}()
+
+	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || podName == "" {
+		return errors.New("empty namespace or name or pod name")
+	}
+	return r.serviceGroupImpl.KillPod(context.Background(), runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, podName)
 }
 
 func (r *Runtime) GetRuntimeServiceCurrentPods(runtimeID uint64, serviceName string) (*apistructs.ServiceGroup, error) {
