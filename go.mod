@@ -383,6 +383,7 @@ require (
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc6 // indirect
+	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/peterbourgon/diskv/v3 v3.0.1 // indirect
@@ -497,7 +498,7 @@ replace (
 	github.com/pyroscope-io/godeltaprof v0.1.0 => github.com/grafana/pyroscope-go/godeltaprof v0.1.3
 	github.com/pyroscope-io/pyroscope => github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e
 	github.com/rancher/apiserver => github.com/rancher/apiserver v0.0.0-20240503193545-2e1b0ddd9791
-	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1
+	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20250107054043-004305a8e459
 	github.com/rancher/steve => github.com/rancher/steve v0.0.0-20240605141712-7a84620e8bc1
 	github.com/rancher/wrangler/v2 => github.com/rancher/wrangler/v2 v2.2.0-rc6
 	github.com/tealeg/xlsx/v3 => github.com/sfwn/xlsx/v3 v3.0.0-20231016172135-b3d7083b7ab3
