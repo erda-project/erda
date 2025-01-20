@@ -15,7 +15,10 @@
 package release
 
 type releaseConfig struct {
-	MaxTimeReserved string
+	MaxTimeReserved         string
+	MaxReleaseLimit         int32 // Versioned release limit
+	MinReleaseLimit         int32
+	MaxTimeVersionedRelease string // Versioned release limit
 }
 
 // ResourceType Release type

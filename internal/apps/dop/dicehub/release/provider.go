@@ -53,8 +53,11 @@ import (
 )
 
 type config struct {
-	MaxTimeReserved string `file:"max_time_reserved" env:"RELEASE_MAX_TIME_RESERVED"`
-	GCSwitch        bool   `file:"gc_switch" env:"RELEASE_GC_SWITCH"`
+	MaxTimeReserved         string `file:"max_time_reserved" env:"RELEASE_MAX_TIME_RESERVED"`
+	GCSwitch                bool   `file:"gc_switch" env:"RELEASE_GC_SWITCH"`
+	MinReleaseLimit         int32  `file:"min_release_limit" env:"RELEASE_MIN_RELEASE_LIMIT" default:"10"`                    // 10
+	MaxReleaseLimit         int32  `file:"max_release_limit" env:"RELEASE_MAX_RELEASE_LIMIT" default:"30"`                    // 30
+	MaxTimeVersionedRelease string `file:"max_time_versioned_release" env:"RELEASE_MAX_TIME_VERSIONED_RELEASE" default:"168"` // 7 days = 168 h
 }
 
 // +provider
@@ -87,7 +90,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bdl:             p.bdl,
 		Etcd:            p.Etcd,
 		Config: &releaseConfig{
-			MaxTimeReserved: p.Cfg.MaxTimeReserved,
+			MaxTimeReserved:         p.Cfg.MaxTimeReserved,
+			MaxReleaseLimit:         p.Cfg.MaxReleaseLimit,
+			MinReleaseLimit:         p.Cfg.MinReleaseLimit,
+			MaxTimeVersionedRelease: p.Cfg.MaxTimeVersionedRelease,
 		},
 		ReleaseRule: release_rule.New(release_rule.WithDBClient(&dbclient.DBClient{
 			DBEngine: &dbengine.DBEngine{DB: p.DB},
