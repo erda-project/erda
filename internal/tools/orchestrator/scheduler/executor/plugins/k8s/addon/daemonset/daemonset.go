@@ -26,7 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -37,12 +37,12 @@ type DaemonsetOperator struct {
 	imageSecret addon.ImageSecretUtil
 	healthcheck addon.HealthcheckUtil
 	daemonset   addon.DaemonsetUtil
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 }
 
 func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, imageSecret addon.ImageSecretUtil,
 	healthcheck addon.HealthcheckUtil, daemonset addon.DaemonsetUtil,
-	overcommit addon.OvercommitUtil) *DaemonsetOperator {
+	overcommit addon.OverCommitUtil) *DaemonsetOperator {
 	return &DaemonsetOperator{
 		k8s:         k8s,
 		ns:          ns,
@@ -72,27 +72,21 @@ func (d *DaemonsetOperator) Validate(sg *apistructs.ServiceGroup) error {
 }
 
 // TODO: volume support
-func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	service := sg.Services[0]
 	affinity := constraintbuilders.K8S(&sg.ScheduleInfo2, &service, nil, nil).Affinity
 	probe := d.healthcheck.NewHealthcheckProbe(&service)
+
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(service.Env)
+	containerResources, err := d.overcommit.ResourceOverCommit(workspace, service.Resources)
+	if err != nil {
+		return nil, err
+	}
+
 	container := corev1.Container{
-		Name:  service.Name,
-		Image: service.Image,
-		Resources: corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:              resource.MustParse(fmt.Sprintf("%.fm", service.Resources.Cpu*1000)),
-				corev1.ResourceMemory:           resource.MustParse(fmt.Sprintf("%.fMi", service.Resources.Mem)),
-				corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU: resource.MustParse(
-					fmt.Sprintf("%.fm", d.overcommit.CPUOvercommit(service.Resources.Cpu*1000))),
-				corev1.ResourceMemory: resource.MustParse(
-					fmt.Sprintf("%.dMi", d.overcommit.MemoryOvercommit(int(service.Resources.Mem)))),
-				corev1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
-			},
-		},
+		Name:           service.Name,
+		Image:          service.Image,
+		Resources:      containerResources,
 		Command:        []string{"sh", "-c", service.Cmd},
 		Env:            envs(service.Env),
 		LivenessProbe:  probe,
@@ -191,7 +185,7 @@ func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 func (d *DaemonsetOperator) Create(k8syml interface{}) error {

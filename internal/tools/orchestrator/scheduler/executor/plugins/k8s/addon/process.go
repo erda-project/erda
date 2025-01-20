@@ -26,7 +26,10 @@ func Create(op AddonOperator, sg *apistructs.ServiceGroup) error {
 	if err := op.Validate(sg); err != nil {
 		return err
 	}
-	k8syml := op.Convert(sg)
+	k8syml, err := op.Convert(sg)
+	if err != nil {
+		return err
+	}
 
 	return op.Create(k8syml)
 }
@@ -46,7 +49,10 @@ func Update(op AddonOperator, sg *apistructs.ServiceGroup) error {
 	if err := op.Validate(sg); err != nil {
 		return err
 	}
-	k8syml := op.Convert(sg)
+	k8syml, err := op.Convert(sg)
+	if err != nil {
+		return err
+	}
 
 	return op.Update(k8syml)
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -49,11 +50,11 @@ type RocketMQOperator struct {
 	k8s         addon.K8SUtil
 	ns          addon.NamespaceUtil
 	client      *httpclient.HTTPClient
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 	statefulset addon.StatefulsetUtil
 }
 
-func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, client *httpclient.HTTPClient, overcommit addon.OvercommitUtil, sts addon.StatefulsetUtil) *RocketMQOperator {
+func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, client *httpclient.HTTPClient, overcommit addon.OverCommitUtil, sts addon.StatefulsetUtil) *RocketMQOperator {
 	return &RocketMQOperator{
 		k8s:         k8s,
 		ns:          ns,
@@ -97,7 +98,7 @@ func (r *RocketMQOperator) Validate(sg *apistructs.ServiceGroup) error {
 }
 
 // Convert sg to cr, which is kubernetes yaml
-func (r *RocketMQOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (r *RocketMQOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	var nameSrvSpec rocketmqv1alpha1.NameServiceSpec
 	var brokerSpec rocketmqv1alpha1.BrokerSpec
 	var consoleSpec rocketmqv1alpha1.ConsoleSpec
@@ -107,13 +108,20 @@ func (r *RocketMQOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity.NodeAffinity
 
 	for i := range sg.Services {
-		switch sg.Services[i].Name {
+		svc := sg.Services[i]
+		workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
+		containerResources, err := r.overcommit.ResourceOverCommit(workspace, svc.Resources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate service %s container resources, err: %v", svc.Name, err)
+		}
+
+		switch svc.Name {
 		case svcNameSrv:
-			nameSrvSpec = r.convertNameSrv(sg.Services[i], affinity)
+			nameSrvSpec = r.convertNameSrv(svc, affinity, containerResources)
 		case svcBroker:
-			brokerSpec = r.convertBroker(sg.Services[i], affinity)
+			brokerSpec = r.convertBroker(svc, affinity, containerResources)
 		case svcConsole:
-			consoleSpec = r.convertConsole(sg.Services[i], affinity)
+			consoleSpec = r.convertConsole(svc, affinity, containerResources)
 		}
 	}
 	rocketMQ := rocketmqv1alpha1.RocketMQ{
@@ -131,7 +139,8 @@ func (r *RocketMQOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			ConsoleSpec:     consoleSpec,
 		},
 	}
-	return rocketMQ
+	return rocketMQ, nil
+
 }
 
 func (r *RocketMQOperator) Create(k8syml interface{}) error {
@@ -270,27 +279,14 @@ func (r *RocketMQOperator) getRocketMQ(namespace, name string) (*rocketmqv1alpha
 	return &rocketMQ, nil
 }
 
-func (r *RocketMQOperator) convertNameSrv(svc apistructs.Service, affinity *corev1.NodeAffinity) rocketmqv1alpha1.NameServiceSpec {
+func (r *RocketMQOperator) convertNameSrv(svc apistructs.Service, affinity *corev1.NodeAffinity, resources corev1.ResourceRequirements) rocketmqv1alpha1.NameServiceSpec {
 	var nameSrvSpec rocketmqv1alpha1.NameServiceSpec
 	nameSrvSpec.Name = svc.Name
 	nameSrvSpec.Image = svc.Image
 	nameSrvSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
 	nameSrvSpec.Size = int32(svc.Scale)
 	nameSrvSpec.StorageMode = scStorageMode
-	nameSrvSpec.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*r.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", r.overcommit.MemoryOvercommit(int(svc.Resources.Mem)))),
-		},
-		Limits: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-		},
-	}
+	nameSrvSpec.Resources = resources
 	scname, capacity := getStorageCapacity(svc)
 	nameSrvSpec.Env = convertEnvs(svc.Env)
 	nameSrvSpec.Labels = svc.Labels
@@ -320,27 +316,14 @@ func (r *RocketMQOperator) convertNameSrv(svc apistructs.Service, affinity *core
 	return nameSrvSpec
 }
 
-func (r *RocketMQOperator) convertBroker(svc apistructs.Service, affinity *corev1.NodeAffinity) rocketmqv1alpha1.BrokerSpec {
+func (r *RocketMQOperator) convertBroker(svc apistructs.Service, affinity *corev1.NodeAffinity, resources corev1.ResourceRequirements) rocketmqv1alpha1.BrokerSpec {
 	var brokerSpec rocketmqv1alpha1.BrokerSpec
 	brokerSpec.Name = svc.Name
 	brokerSpec.Image = svc.Image
 	brokerSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
 	brokerSpec.Size = int32(svc.Scale)
 	brokerSpec.StorageMode = scStorageMode
-	brokerSpec.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*r.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", r.overcommit.MemoryOvercommit(int(svc.Resources.Mem)))),
-		},
-		Limits: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-		},
-	}
+	brokerSpec.Resources = resources
 	scname, capacity := getStorageCapacity(svc)
 	brokerSpec.Env = convertEnvs(svc.Env)
 	brokerSpec.Labels = svc.Labels
@@ -369,25 +352,12 @@ func (r *RocketMQOperator) convertBroker(svc apistructs.Service, affinity *corev
 	return brokerSpec
 }
 
-func (r *RocketMQOperator) convertConsole(svc apistructs.Service, affinity *corev1.NodeAffinity) rocketmqv1alpha1.ConsoleSpec {
+func (r *RocketMQOperator) convertConsole(svc apistructs.Service, affinity *corev1.NodeAffinity, resources corev1.ResourceRequirements) rocketmqv1alpha1.ConsoleSpec {
 	var consoleSpec rocketmqv1alpha1.ConsoleSpec
 	consoleSpec.Name = svc.Name
 	consoleSpec.Image = svc.Image
 	consoleSpec.Affinity = &corev1.Affinity{NodeAffinity: affinity}
-	consoleSpec.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*r.overcommit.CPUOvercommit(svc.Resources.Cpu)))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", r.overcommit.MemoryOvercommit(int(svc.Resources.Mem)))),
-		},
-		Limits: corev1.ResourceList{
-			"cpu": resource.MustParse(
-				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
-			"memory": resource.MustParse(
-				fmt.Sprintf("%dMi", int(svc.Resources.Mem))),
-		},
-	}
+	consoleSpec.Resources = resources
 	return consoleSpec
 }
 
