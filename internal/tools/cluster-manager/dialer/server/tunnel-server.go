@@ -196,7 +196,7 @@ func clusterRegister(ctx context.Context, server *remotedialer.Server, rw http.R
 				}
 			}
 
-			server.WithMiddleFuncs(regFunc)
+			server.WithMiddleFuncs(req, regFunc)
 		}
 	default:
 		clientDataStr := req.Header.Get(apistructs.ClusterManagerHeaderKeyClientDetail.String())
