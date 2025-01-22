@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 	vpa_clientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 
 	"github.com/erda-project/erda/apistructs"
@@ -59,6 +60,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/storageclass"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -637,5 +639,26 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 		return k.reApplyErdaVPARules(sg)
 	default:
 		return nil, errors.Errorf("unknown task scale action")
+	}
+}
+
+// run as default user
+func (k *Kubernetes) runAsDefaultUser(spec *apiv1.PodSpec) {
+	if spec == nil || spec.Containers == nil {
+		logrus.WithField("PodSpec", spec).Info("Invalid PodSpec, skip configure run as default user")
+		return
+	}
+	for i := range spec.Containers {
+		if spec.Containers[i].SecurityContext == nil {
+			spec.Containers[i].SecurityContext = &apiv1.SecurityContext{}
+		}
+
+		if spec.Containers[i].SecurityContext.RunAsUser == nil {
+			spec.Containers[i].SecurityContext.RunAsUser = &types.DefaultContainerUserId
+		}
+
+		if spec.Containers[i].SecurityContext.RunAsGroup == nil {
+			spec.Containers[i].SecurityContext.RunAsGroup = &types.DefaultContainerGroupId
+		}
 	}
 }

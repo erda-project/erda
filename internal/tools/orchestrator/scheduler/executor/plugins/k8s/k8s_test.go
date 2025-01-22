@@ -519,3 +519,12 @@ func Test_ConvertToKedaScaledObject(t *testing.T) {
 	object := convertToKedaScaledObject(scaled)
 	t.Logf("%v", object)
 }
+
+func TestRunAsUser(t *testing.T) {
+	kubernetes := Kubernetes{}
+	kubernetes.runAsDefaultUser(&apiv1.PodSpec{
+		Containers: []apiv1.Container{
+			{Name: "test_container"},
+		},
+	})
+}

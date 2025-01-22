@@ -93,7 +93,18 @@ func (k *Kubernetes) updateDaemonSet(ctx context.Context, ds *appsv1.DaemonSet, 
 			return errors.New(reason)
 		}
 	}
-	return k.ds.Update(ds)
+	if err = k.ds.Update(ds); err != nil {
+		logrus.Errorf("failed to update daemonset, name: %s, (%v)", ds.Name, err)
+		return err
+	}
+	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
+		return nil
+	}
+	if err = k.ds.Patch(ds.Namespace, ds.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container)); err != nil {
+		logrus.Errorf("failed to patch daemonset, name: %s, (%v)", ds.Name, err)
+		return err
+	}
+	return nil
 }
 
 func (k *Kubernetes) getDaemonSetDeltaResource(ctx context.Context, ds *appsv1.DaemonSet) (deltaCPU, deltaMemory int64, err error) {
@@ -301,6 +312,8 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	k.AddSpotEmptyDir(&daemonset.Spec.Template.Spec, service.Resources.EmptyDirCapacity)
 
 	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", daemonSetName, daemonset)
+
+	k.runAsDefaultUser(&daemonset.Spec.Template.Spec)
 
 	return daemonset, nil
 }
