@@ -17,6 +17,7 @@ package azure_director
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -262,7 +263,7 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 
 	rewrite, err := strconv.Unquote(f.processorArgs["RewritePath"])
 	if err != nil {
-		return errors.Errorf("failed to get RewritePath args, err: %v", err)
+		return fmt.Errorf("failed to get RewritePath args, err: %v", err)
 	}
 	if rewrite == "" {
 		return nil
