@@ -30,6 +30,8 @@ type (
 		Host     string `json:"host,omitempty"`
 		Location string `json:"location,omitempty"`
 		Region   string `json:"region,omitempty"`
+
+		RewritePath string `json:"rewritePath,omitempty"`
 	}
 	ModelProviderMetaSecret struct {
 		AnotherAPIKey string `json:"anotherApiKey,omitempty"`
