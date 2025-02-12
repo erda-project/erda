@@ -281,10 +281,6 @@ func (p *List) getData() *list.Data {
 			return data
 		}
 		appIds = append(appIds, appId)
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
 
 		apps, err := p.Bdl.GetMyApps(p.Sdk.Identity.UserID, oid)
 		if err != nil {
