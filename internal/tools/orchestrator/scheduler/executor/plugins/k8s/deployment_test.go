@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/oversubscriberatio"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/storageclass"
@@ -89,7 +90,8 @@ func TestNewDeployment(t *testing.T) {
 	}
 
 	k := &Kubernetes{
-		secret: &secret.Secret{},
+		secret:             &secret.Secret{},
+		overSubscribeRatio: oversubscriberatio.New(map[string]string{}),
 	}
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(k.secret), "Get", func(sec *secret.Secret, namespace, name string) (*corev1.Secret, error) {
