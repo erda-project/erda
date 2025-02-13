@@ -1294,66 +1294,6 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 	}
 }
 
-func (k *Kubernetes) composeNodeAntiAffinityPreferredWithWorkspace(workspace string) []apiv1.PreferredSchedulingTerm {
-	var (
-		workspaceKeys           = []string{"dev", "test", "staging", "prod"}
-		weightMap               = map[string]int32{"dev": 60, "test": 60, "staging": 80, "prod": 100}
-		preferredSchedulerTerms = make([]apiv1.PreferredSchedulingTerm, 0, len(workspaceKeys))
-	)
-
-	for index, key := range workspaceKeys {
-		if strings.ToLower(workspace) == key {
-			workspaceKeys = append(workspaceKeys[:index], workspaceKeys[index+1:]...)
-			break
-		}
-	}
-
-	for _, key := range workspaceKeys {
-		preferredSchedulerTerms = append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
-			Weight: weightMap[key],
-			Preference: apiv1.NodeSelectorTerm{
-				MatchExpressions: []apiv1.NodeSelectorRequirement{
-					{
-						Key:      fmt.Sprintf("dice/workspace-%s", key),
-						Operator: apiv1.NodeSelectorOpDoesNotExist,
-					},
-				},
-			},
-		})
-	}
-	return preferredSchedulerTerms
-}
-
-func (k *Kubernetes) composeDeploymentNodeAntiAffinityPreferred(workspace string) []apiv1.PreferredSchedulingTerm {
-	preferredSchedulerTerms := k.composeNodeAntiAffinityPreferredWithWorkspace(workspace)
-	return append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
-		Weight: 100,
-		Preference: apiv1.NodeSelectorTerm{
-			MatchExpressions: []apiv1.NodeSelectorRequirement{
-				{
-					Key:      "dice/stateful-service",
-					Operator: apiv1.NodeSelectorOpDoesNotExist,
-				},
-			},
-		},
-	})
-}
-
-func (k *Kubernetes) composeStatefulSetNodeAntiAffinityPreferred(workspace string) []apiv1.PreferredSchedulingTerm {
-	preferredSchedulerTerms := k.composeNodeAntiAffinityPreferredWithWorkspace(workspace)
-	return append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
-		Weight: 100,
-		Preference: apiv1.NodeSelectorTerm{
-			MatchExpressions: []apiv1.NodeSelectorRequirement{
-				{
-					Key:      "dice/stateless-service",
-					Operator: apiv1.NodeSelectorOpDoesNotExist,
-				},
-			},
-		},
-	})
-}
-
 func (k *Kubernetes) composeRegistryInfos(sg *apistructs.ServiceGroup) []apistructs.RegistryInfo {
 	registryInfos := []apistructs.RegistryInfo{}
 
