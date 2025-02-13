@@ -1247,22 +1247,6 @@ func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error)
 	}
 	return nil, fmt.Errorf("not found")
 }
-
-func GenTolerations() []apiv1.Toleration {
-	return []apiv1.Toleration{
-		{
-			Key:      "node-role.kubernetes.io/lb",
-			Operator: "Exists",
-			Effect:   "NoSchedule",
-		},
-		{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: "Exists",
-			Effect:   "NoSchedule",
-		},
-	}
-}
-
 func (k *Kubernetes) setProjectServiceName(sg *apistructs.ServiceGroup) {
 	for index, service := range sg.Services {
 		service.ProjectServiceName = k.composeNewKey([]string{service.Name, "-", sg.ID})
