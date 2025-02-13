@@ -1241,8 +1241,6 @@ github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6Ni
 github.com/envoyproxy/protoc-gen-validate v0.10.1/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
 github.com/envoyproxy/protoc-gen-validate v1.0.1/go.mod h1:0vj8bNkYbSTNS2PIyH87KZaeN4x9zpL9Qt8fQC7d+vs=
 github.com/envoyproxy/protoc-gen-validate v1.0.2/go.mod h1:GpiZQP3dDbg4JouG/NNS7QWXpgx6x8QiMKdmN72jogE=
-github.com/envoyproxy/protoc-gen-validate v1.0.4 h1:gVPz/FMfvh57HdSJQyvBtF00j8JU4zdyUgIUNhlgg0A=
-github.com/envoyproxy/protoc-gen-validate v1.0.4/go.mod h1:qys6tmnRsYrQqIhm2bvKZH4Blx/1gTIZ2UKVY1M+Yew=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
 github.com/erda-project/erda-infra v1.0.10-0.20240731020040-45091257939a h1:8m6MT2DCVgBupDQFTsSzjwbOmT9k1CdF61c/+acHRvA=
@@ -3904,8 +3902,8 @@ k8s.io/kube-openapi v0.0.0-20240403164606-bc84c2ddaf99 h1:w6nThEmGo9zcL+xH1Tu6pj
 k8s.io/kube-openapi v0.0.0-20240403164606-bc84c2ddaf99/go.mod h1:yD4MZYeKMBwQKVht279WycxKyM84kkAx2DPrTXaeb98=
 k8s.io/kubectl v0.29.0 h1:Oqi48gXjikDhrBF67AYuZRTcJV4lg2l42GmvsP7FmYI=
 k8s.io/kubectl v0.29.0/go.mod h1:0jMjGWIcMIQzmUaMgAzhSELv5WtHo2a8pq67DtviAJs=
-k8s.io/kubernetes v1.29.3 h1:EuOAKN4zpiP+kBx/0e9yS5iBkPSyLml19juOqZxBtDw=
-k8s.io/kubernetes v1.29.3/go.mod h1:CP+Z+S9haxyB7J+nV6ywYry4dqlphArPXjcc0CsBVXc=
+k8s.io/kubernetes v1.29.14 h1:mbk5M/WaJr/AX7p3p2/7eJjrtI+I3AKu7IEjI8+Ny/U=
+k8s.io/kubernetes v1.29.14/go.mod h1:L6/pfKQZ6Tv2O8gyT4OxhGZp+nNsjV54xtNodRoup9k=
 k8s.io/utils v0.0.0-20210527160623-6fdb442a123b/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 k8s.io/utils v0.0.0-20210802155522-efc7438f0176/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 k8s.io/utils v0.0.0-20230726121419-3b25d923346b/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
