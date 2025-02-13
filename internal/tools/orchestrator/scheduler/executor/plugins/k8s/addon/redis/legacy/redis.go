@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -37,7 +38,7 @@ type RedisOperator struct {
 	statefulset addon.StatefulsetUtil
 	ns          addon.NamespaceUtil
 	service     addon.ServiceUtil
-	overcommit  addon.OvercommitUtil
+	overcommit  addon.OverCommitUtil
 	client      *httpclient.HTTPClient
 }
 
@@ -46,7 +47,7 @@ func New(k8sutil addon.K8SUtil,
 	sts addon.StatefulsetUtil,
 	service addon.ServiceUtil,
 	ns addon.NamespaceUtil,
-	overcommit addon.OvercommitUtil,
+	overcommit addon.OverCommitUtil,
 	client *httpclient.HTTPClient) *RedisOperator {
 	return &RedisOperator{
 		k8s:         k8sutil,
@@ -112,20 +113,30 @@ func (ro *RedisOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
+func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	svc0 := sg.Services[0]
 	svc1 := sg.Services[1]
-	var redis RedisSettings
-	var sentinel SentinelSettings
+	var (
+		redis    RedisSettings
+		err      error
+		sentinel SentinelSettings
+	)
+
 	switch svc0.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc0)
+		redis, err = ro.convertRedis(svc0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calc container resources, err: %v", err)
+		}
 	case svcNameSentinel:
 		sentinel = convertSentinel(svc0)
 	}
 	switch svc1.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc1)
+		redis, err = ro.convertRedis(svc1)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calc container resources, err: %v", err)
+		}
 	case svcNameSentinel:
 		sentinel = convertSentinel(svc1)
 	}
@@ -154,7 +165,7 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			Sentinel:     sentinel,
 			NodeAffinity: affinity,
 		},
-	}
+	}, nil
 }
 
 func (ro *RedisOperator) Create(k8syml interface{}) error {
@@ -332,23 +343,29 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 	return nil
 }
 
-func (ro *RedisOperator) convertRedis(svc apistructs.Service) RedisSettings {
+func (ro *RedisOperator) convertRedis(svc apistructs.Service) (RedisSettings, error) {
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(svc.Env)
+	containerResources, err := ro.overcommit.ResourceOverCommit(workspace, svc.Resources)
+	if err != nil {
+		return RedisSettings{}, fmt.Errorf("failed to calculate container resources: %v", err)
+	}
+
 	settings := RedisSettings{}
 	settings.Version = svc.Env["version"]
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = RedisFailoverResources{
 		Requests: CPUAndMem{
-			CPU:    fmt.Sprintf("%dm", int(1000*ro.overcommit.CPUOvercommit(svc.Resources.Cpu))),
-			Memory: fmt.Sprintf("%dMi", ro.overcommit.MemoryOvercommit(int(svc.Resources.Mem))),
+			CPU:    containerResources.Requests.Cpu().String(),
+			Memory: containerResources.Requests.Memory().String(),
 		},
 		Limits: CPUAndMem{
-			CPU:    fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu)),
-			Memory: fmt.Sprintf("%dMi", int(svc.Resources.Mem)),
+			CPU:    containerResources.Limits.Cpu().String(),
+			Memory: containerResources.Limits.Memory().String(),
 		},
 	}
 	settings.Image = svc.Image
-	return settings
+	return settings, nil
 }
 
 func convertSentinel(svc apistructs.Service) SentinelSettings {
