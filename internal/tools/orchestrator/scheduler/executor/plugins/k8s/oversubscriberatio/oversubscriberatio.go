@@ -69,10 +69,6 @@ type provider struct {
 	cpuNumQuota float64
 }
 
-func (p *provider) GetOverSubscribeRatios() *OverSubscribeRatios {
-	return p.overSubscribeRatios
-}
-
 func New(options map[string]string) Interface {
 	p := &provider{}
 	//Get the value of the super-scoring ratio for different environments
@@ -276,4 +272,8 @@ func (p *provider) ResourceOverCommit(workspace apistructs.DiceWorkspace, r apis
 			corev1.ResourceEphemeralStorage: maxEphemeral,
 		},
 	}, nil
+}
+
+func (p *provider) GetOverSubscribeRatios() *OverSubscribeRatios {
+	return p.overSubscribeRatios
 }
