@@ -207,23 +207,25 @@ func TestGetWorkspaceRatio(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var value float64
-			p.getWorkspaceRatio(tt.options, tt.workspace, "CPU", &value)
+			p.getSubscribeRatioByWorkspace(tt.options, tt.workspace, "CPU", &value)
 			assert.Equal(t, tt.expectedValue, value)
 		})
 	}
 }
 
 func TestGetSubscribeRatiosByWorkspace(t *testing.T) {
-	p := &provider{
-		devCpuSubscribeRatio:     10,
-		devMemSubscribeRatio:     2,
-		testCpuSubscribeRatio:    3,
-		testMemSubscribeRatio:    5,
-		stagingCpuSubscribeRatio: 20,
-		stagingMemSubscribeRatio: 10,
-		cpuSubscribeRatio:        10,
-		memSubscribeRatio:        1,
-	}
+	p := New(
+		map[string]string{
+			"CPU_SUBSCRIBE_RATIO":         "10",
+			"MEM_SUBSCRIBE_RATIO":         "1",
+			"DEV_CPU_SUBSCRIBE_RATIO":     "10",
+			"DEV_MEM_SUBSCRIBE_RATIO":     "2",
+			"TEST_CPU_SUBSCRIBE_RATIO":    "3",
+			"TEST_MEM_SUBSCRIBE_RATIO":    "5",
+			"STAGING_CPU_SUBSCRIBE_RATIO": "20",
+			"STAGING_MEM_SUBSCRIBE_RATIO": "10",
+		},
+	).(*provider)
 
 	tests := []struct {
 		workspace        apistructs.DiceWorkspace
@@ -259,7 +261,7 @@ func TestGetSubscribeRatiosByWorkspace(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.workspace), func(t *testing.T) {
-			cpuRatio, memRatio := p.getSubscribeRationsByWorkspace(tt.workspace)
+			cpuRatio, memRatio := p.getOverSubscribeRationsByWorkspace(tt.workspace)
 			assert.Equal(t, tt.expectedCPURatio, cpuRatio)
 			assert.Equal(t, tt.expectedMemRatio, memRatio)
 		})

@@ -111,14 +111,16 @@ func (k *Kubernetes) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoDat
 	if err != nil {
 		return r, err
 	}
-	r.ProdCPUOverCommit = k.cpuSubscribeRatio
-	r.DevCPUOverCommit = k.devCpuSubscribeRatio
-	r.TestCPUOverCommit = k.testCpuSubscribeRatio
-	r.StagingCPUOverCommit = k.stagingCpuSubscribeRatio
-	r.ProdMEMOverCommit = k.memSubscribeRatio
-	r.DevMEMOverCommit = k.devMemSubscribeRatio
-	r.TestMEMOverCommit = k.testMemSubscribeRatio
-	r.StagingMEMOverCommit = k.stagingMemSubscribeRatio
+
+	osr := k.overSubscribeRatio.GetOverSubscribeRatios()
+	r.ProdCPUOverCommit = osr.SubscribeRatio.CPURatio
+	r.DevCPUOverCommit = osr.DevSubscribeRatio.CPURatio
+	r.TestCPUOverCommit = osr.TestSubscribeRatio.CPURatio
+	r.StagingCPUOverCommit = osr.StagingSubscribeRatio.CPURatio
+	r.ProdMEMOverCommit = osr.SubscribeRatio.MemRatio
+	r.DevMEMOverCommit = osr.DevSubscribeRatio.MemRatio
+	r.TestMEMOverCommit = osr.TestSubscribeRatio.MemRatio
+	r.StagingMEMOverCommit = osr.StagingSubscribeRatio.MemRatio
 
 	return r, nil
 }

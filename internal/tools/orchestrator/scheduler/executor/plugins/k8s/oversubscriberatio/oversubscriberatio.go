@@ -46,39 +46,44 @@ type Interface interface {
 	// ResourceOverCommit
 	// cpu,memory field type source: apistructs/service.go.Resources
 	ResourceOverCommit(workspace apistructs.DiceWorkspace, resources apistructs.Resources) (corev1.ResourceRequirements, error)
+	GetOverSubscribeRatios() *OverSubscribeRatios
 }
 
 type OverSubscribeRatios struct {
+	DevSubscribeRatio     *OverSubscribeRatio
+	TestSubscribeRatio    *OverSubscribeRatio
+	StagingSubscribeRatio *OverSubscribeRatio
+	SubscribeRatio        *OverSubscribeRatio
+}
+
+type OverSubscribeRatio struct {
 	CPURatio float64
 	MemRatio float64
 }
 
 type provider struct {
 	// Divide the CPU actually set by the upper layer by a ratio and pass it to the cluster scheduling, the default is 1
-	cpuSubscribeRatio        float64
-	memSubscribeRatio        float64
-	devCpuSubscribeRatio     float64
-	devMemSubscribeRatio     float64
-	testCpuSubscribeRatio    float64
-	testMemSubscribeRatio    float64
-	stagingCpuSubscribeRatio float64
-	stagingMemSubscribeRatio float64
+	overSubscribeRatios *OverSubscribeRatios
 	// Set the cpu quota value to cpuNumQuota cpu quota, the default is 0, that is, the cpu quota is not limited
 	// When the value is -1, it means that the actual number of cpus is used to set the cpu quota (quota may also be modified by other parameters, such as the number of cpus that pop up)
 	cpuNumQuota float64
+}
+
+func (p *provider) GetOverSubscribeRatios() *OverSubscribeRatios {
+	return &OverSubscribeRatios{}
 }
 
 func New(options map[string]string) Interface {
 	p := &provider{}
 	//Get the value of the super-scoring ratio for different environments
 	var (
-		// Global SubscribeRatio
-		// 1. If the SubscribeRatio isn't configured in the non-production workspace, we'll go with the global settings.
+		// Global OverSubscribeRatio
+		// 1. If the OverSubscribeRatio isn't configured in the non-production workspace, we'll go with the global settings.
 		//	  Otherwise, we'll stick to the workspace-specific configuration.
 		// 2. Also affects in the production workspace.
 		memSubscribeRatio,
 		cpuSubscribeRatio,
-		// SubscribeRatio for different non-production workspace
+		// OverSubscribeRatio for different non-production workspace
 		devMemSubscribeRatio,
 		devCpuSubscribeRatio,
 		testMemSubscribeRatio,
@@ -87,14 +92,14 @@ func New(options map[string]string) Interface {
 		stagingCpuSubscribeRatio float64
 	)
 
-	p.getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
-	p.getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
-	p.getWorkspaceRatio(options, "DEV", "MEM", &devMemSubscribeRatio)
-	p.getWorkspaceRatio(options, "DEV", "CPU", &devCpuSubscribeRatio)
-	p.getWorkspaceRatio(options, "TEST", "MEM", &testMemSubscribeRatio)
-	p.getWorkspaceRatio(options, "TEST", "CPU", &testCpuSubscribeRatio)
-	p.getWorkspaceRatio(options, "STAGING", "MEM", &stagingMemSubscribeRatio)
-	p.getWorkspaceRatio(options, "STAGING", "CPU", &stagingCpuSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "PROD", "MEM", &memSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "PROD", "CPU", &cpuSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "DEV", "MEM", &devMemSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "DEV", "CPU", &devCpuSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "TEST", "MEM", &testMemSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "TEST", "CPU", &testCpuSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "STAGING", "MEM", &stagingMemSubscribeRatio)
+	p.getSubscribeRatioByWorkspace(options, "STAGING", "CPU", &stagingCpuSubscribeRatio)
 
 	cpuNumQuota := float64(0)
 	if cpuNumQuotaValue, ok := options[CPU_NUM_QUOTA]; ok && len(cpuNumQuotaValue) > 0 {
@@ -104,19 +109,29 @@ func New(options map[string]string) Interface {
 		}
 	}
 	return &provider{
-		cpuSubscribeRatio:        cpuSubscribeRatio,
-		memSubscribeRatio:        memSubscribeRatio,
-		devCpuSubscribeRatio:     devCpuSubscribeRatio,
-		devMemSubscribeRatio:     devMemSubscribeRatio,
-		testCpuSubscribeRatio:    testCpuSubscribeRatio,
-		testMemSubscribeRatio:    testMemSubscribeRatio,
-		stagingCpuSubscribeRatio: stagingCpuSubscribeRatio,
-		stagingMemSubscribeRatio: stagingMemSubscribeRatio,
+		overSubscribeRatios: &OverSubscribeRatios{
+			SubscribeRatio: &OverSubscribeRatio{
+				CPURatio: cpuSubscribeRatio,
+				MemRatio: memSubscribeRatio,
+			},
+			DevSubscribeRatio: &OverSubscribeRatio{
+				CPURatio: devCpuSubscribeRatio,
+				MemRatio: devMemSubscribeRatio,
+			},
+			TestSubscribeRatio: &OverSubscribeRatio{
+				CPURatio: testCpuSubscribeRatio,
+				MemRatio: testMemSubscribeRatio,
+			},
+			StagingSubscribeRatio: &OverSubscribeRatio{
+				CPURatio: stagingCpuSubscribeRatio,
+				MemRatio: stagingMemSubscribeRatio,
+			},
+		},
 	}
 }
 
-// getWorkspaceRatio
-func (p *provider) getWorkspaceRatio(options map[string]string, workspace string, t string, value *float64) {
+// getSubscribeRatioByWorkspace
+func (p *provider) getSubscribeRatioByWorkspace(options map[string]string, workspace string, t string, value *float64) {
 	// Default subscribe ratio
 	*value = DefaultRatio
 
@@ -197,15 +212,15 @@ func (p *provider) calcFineGrainedMemory(requestMem, maxMem, memSubscribeRatio f
 	return requestMem, maxMem, nil
 }
 
-// getSubscribeRationsByWorkspace
+// getOverSubscribeRationsByWorkspace
 // Args: workspace
 // Return: cpu subscribe ratio, memory subscribe ratio
-func (p *provider) getSubscribeRationsByWorkspace(workspace apistructs.DiceWorkspace) (float64, float64) {
-	subscribeRatios := map[apistructs.DiceWorkspace]OverSubscribeRatios{
-		apistructs.DevWorkspace:     {CPURatio: p.devCpuSubscribeRatio, MemRatio: p.devMemSubscribeRatio},
-		apistructs.TestWorkspace:    {CPURatio: p.testCpuSubscribeRatio, MemRatio: p.testMemSubscribeRatio},
-		apistructs.StagingWorkspace: {CPURatio: p.stagingCpuSubscribeRatio, MemRatio: p.stagingMemSubscribeRatio},
-		apistructs.ProdWorkspace:    {CPURatio: p.cpuSubscribeRatio, MemRatio: p.memSubscribeRatio},
+func (p *provider) getOverSubscribeRationsByWorkspace(workspace apistructs.DiceWorkspace) (float64, float64) {
+	subscribeRatios := map[apistructs.DiceWorkspace]*OverSubscribeRatio{
+		apistructs.DevWorkspace:     p.overSubscribeRatios.DevSubscribeRatio,
+		apistructs.TestWorkspace:    p.overSubscribeRatios.TestSubscribeRatio,
+		apistructs.StagingWorkspace: p.overSubscribeRatios.StagingSubscribeRatio,
+		apistructs.ProdWorkspace:    p.overSubscribeRatios.SubscribeRatio,
 	}
 
 	subscribeRatio, ok := subscribeRatios[workspace]
@@ -219,7 +234,7 @@ func (p *provider) getSubscribeRationsByWorkspace(workspace apistructs.DiceWorks
 func (p *provider) ResourceOverCommit(workspace apistructs.DiceWorkspace, r apistructs.Resources) (corev1.ResourceRequirements, error) {
 	// If workspace is "", use default ratio -> 1;
 	// Get subscribe ratios by workspace
-	cpuRatio, memRatio := p.getSubscribeRationsByWorkspace(workspace)
+	cpuRatio, memRatio := p.getOverSubscribeRationsByWorkspace(workspace)
 
 	requestCPU, limitCPU, err := p.calcFineGrainedCPU(r.Cpu, r.MaxCPU, cpuRatio)
 	if err != nil {

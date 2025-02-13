@@ -110,20 +110,22 @@ func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.Service
 	}
 	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
 
+	osr := k.overSubscribeRatio.GetOverSubscribeRatios()
+
 	_, projectID, runtimeId, workspace := extractServicesEnvs(runtime)
 	switch strings.ToLower(workspace) {
 	case "dev":
-		cpuTotal /= k.devCpuSubscribeRatio
-		memTotal /= k.devMemSubscribeRatio
+		cpuTotal /= osr.DevSubscribeRatio.CPURatio
+		memTotal /= osr.DevSubscribeRatio.MemRatio
 	case "test":
-		cpuTotal /= k.testCpuSubscribeRatio
-		memTotal /= k.testMemSubscribeRatio
+		cpuTotal /= osr.TestSubscribeRatio.CPURatio
+		memTotal /= osr.TestSubscribeRatio.MemRatio
 	case "staging":
-		cpuTotal /= k.stagingCpuSubscribeRatio
-		memTotal /= k.stagingMemSubscribeRatio
+		cpuTotal /= osr.StagingSubscribeRatio.CPURatio
+		memTotal /= osr.StagingSubscribeRatio.MemRatio
 	default:
-		cpuTotal /= k.cpuSubscribeRatio
-		memTotal /= k.memSubscribeRatio
+		cpuTotal /= osr.SubscribeRatio.CPURatio
+		memTotal /= osr.SubscribeRatio.MemRatio
 	}
 
 	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
