@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/mohae/deepcopy"
@@ -1194,37 +1193,4 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 	default:
 		return nil, errors.Errorf("unknown task scale action")
 	}
-}
-
-func (k *Kubernetes) composeRegistryInfos(sg *apistructs.ServiceGroup) []apistructs.RegistryInfo {
-	registryInfos := []apistructs.RegistryInfo{}
-
-	for _, service := range sg.Services {
-		if service.ImageUsername != "" {
-			registryInfo := apistructs.RegistryInfo{}
-			registryInfo.Host = strings.Split(service.Image, "/")[0]
-			registryInfo.UserName = service.ImageUsername
-			registryInfo.Password = service.ImagePassword
-			registryInfos = append(registryInfos, registryInfo)
-		}
-	}
-	return registryInfos
-}
-
-func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectReference, error) {
-	secrets := make([]apiv1.LocalObjectReference, 0, 1)
-	secretName := conf.CustomRegCredSecret()
-
-	_, err := k.secret.Get(namespace, secretName)
-	if err == nil {
-		secrets = append(secrets,
-			apiv1.LocalObjectReference{
-				Name: secretName,
-			})
-	} else {
-		if !k8serror.NotFound(err) {
-			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", secretName, namespace, err)
-		}
-	}
-	return secrets, nil
 }
