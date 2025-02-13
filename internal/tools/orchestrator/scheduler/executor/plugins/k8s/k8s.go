@@ -232,10 +232,6 @@ type Kubernetes struct {
 	istioEngine istioctl.IstioEngine
 }
 
-func (k *Kubernetes) SetCpuQuota(quota float64) {
-	k.cpuNumQuota = quota
-}
-
 func (k *Kubernetes) GetK8SAddr() string {
 	return k.addr
 }
@@ -491,33 +487,6 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		return nil, err
 	}
 	return nil, nil
-}
-
-func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.ServiceGroup) (bool, string, error) {
-	var cpuTotal, memTotal float64
-	for _, svc := range runtime.Services {
-		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
-		memTotal += svc.Resources.Mem * float64(svc.Scale<<20)
-	}
-	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
-
-	_, projectID, runtimeId, workspace := extractServicesEnvs(runtime)
-	switch strings.ToLower(workspace) {
-	case "dev":
-		cpuTotal /= k.devCpuSubscribeRatio
-		memTotal /= k.devMemSubscribeRatio
-	case "test":
-		cpuTotal /= k.testCpuSubscribeRatio
-		memTotal /= k.testMemSubscribeRatio
-	case "staging":
-		cpuTotal /= k.stagingCpuSubscribeRatio
-		memTotal /= k.stagingMemSubscribeRatio
-	default:
-		cpuTotal /= k.cpuSubscribeRatio
-		memTotal /= k.memSubscribeRatio
-	}
-
-	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
 }
 
 // Destroy implements deleting servicegroup based on k8s api
