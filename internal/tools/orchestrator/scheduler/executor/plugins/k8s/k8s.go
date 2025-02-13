@@ -245,11 +245,6 @@ func (k *Kubernetes) CleanUpBeforeDelete() {
 	}
 }
 
-// Addr return kubernetes addr
-func (k *Kubernetes) Addr() string {
-	return k.addr
-}
-
 // New new kubernetes executor struct
 func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
 	// get cluster from cluster manager
