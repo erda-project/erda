@@ -135,7 +135,7 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 	workspace, _ := util.GetDiceWorkspaceFromEnvs(service.Env)
 
 	// set container resource with over commit
-	resources, err := k.ResourceOverCommit(workspace, service.Resources)
+	resources, err := k.overSubscribeRatio.ResourceOverCommit(workspace, service.Resources)
 	if err != nil {
 		errMsg := fmt.Sprintf("set container resource err: %v", err)
 		logrus.Errorf(errMsg)
@@ -656,7 +656,7 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 	for index := range sts.Spec.Template.Spec.Containers {
 		container := sts.Spec.Template.Spec.Containers[index]
 
-		resources, err := k.ResourceOverCommit(
+		resources, err := k.overSubscribeRatio.ResourceOverCommit(
 			apistructs.DiceWorkspace(strings.ToUpper(workspace)),
 			scalingService.Resources,
 		)

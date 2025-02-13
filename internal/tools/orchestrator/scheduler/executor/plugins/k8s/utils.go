@@ -105,3 +105,20 @@ func (k *Kubernetes) setProjectServiceName(sg *apistructs.ServiceGroup) {
 		sg.Services[index] = service
 	}
 }
+
+func (k *Kubernetes) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoData, error) {
+	r, err := k.resourceInfo.Get(brief)
+	if err != nil {
+		return r, err
+	}
+	r.ProdCPUOverCommit = k.cpuSubscribeRatio
+	r.DevCPUOverCommit = k.devCpuSubscribeRatio
+	r.TestCPUOverCommit = k.testCpuSubscribeRatio
+	r.StagingCPUOverCommit = k.stagingCpuSubscribeRatio
+	r.ProdMEMOverCommit = k.memSubscribeRatio
+	r.DevMEMOverCommit = k.devMemSubscribeRatio
+	r.TestMEMOverCommit = k.testMemSubscribeRatio
+	r.StagingMEMOverCommit = k.stagingMemSubscribeRatio
+
+	return r, nil
+}

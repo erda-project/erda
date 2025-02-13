@@ -202,7 +202,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		return nil, err
 	}
 
-	resources, err := k.ResourceOverCommit(workspace, service.Resources)
+	resources, err := k.overSubscribeRatio.ResourceOverCommit(workspace, service.Resources)
 	if err != nil {
 		return nil, err
 	}

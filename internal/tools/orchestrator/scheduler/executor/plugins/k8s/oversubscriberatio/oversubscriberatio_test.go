@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8s
+package oversubscriberatio
 
 import (
 	"reflect"
@@ -27,7 +27,7 @@ import (
 )
 
 func Test_CalcFineGrainedCPU(t *testing.T) {
-	k := &Kubernetes{}
+	p := &provider{}
 
 	tests := []struct {
 		name               string
@@ -76,7 +76,7 @@ func Test_CalcFineGrainedCPU(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualCPU, actualMaxCPU, err := k.calcFineGrainedCPU(tt.requestCPU, tt.maxCPU, tt.ratio)
+			actualCPU, actualMaxCPU, err := p.calcFineGrainedCPU(tt.requestCPU, tt.maxCPU, tt.ratio)
 			if err != nil {
 				if tt.expectedError {
 					t.Logf("want error, got %v", err)
@@ -141,10 +141,10 @@ func TestCalcFineGrainedMemory(t *testing.T) {
 		},
 	}
 
+	p := &provider{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := &Kubernetes{}
-			reqMem, maxMem, err := k.calcFineGrainedMemory(tt.requestMem, tt.maxMem, tt.memSubscribeRatio)
+			reqMem, maxMem, err := p.calcFineGrainedMemory(tt.requestMem, tt.maxMem, tt.memSubscribeRatio)
 			if err != nil {
 				if tt.expectedError {
 					t.Logf("want error, got %v", err)
@@ -203,17 +203,18 @@ func TestGetWorkspaceRatio(t *testing.T) {
 		},
 	}
 
+	p := &provider{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var value float64
-			getWorkspaceRatio(tt.options, tt.workspace, "CPU", &value)
+			p.getWorkspaceRatio(tt.options, tt.workspace, "CPU", &value)
 			assert.Equal(t, tt.expectedValue, value)
 		})
 	}
 }
 
-func TestGetSubscribeRationsByWorkspace(t *testing.T) {
-	k8s := &Kubernetes{
+func TestGetSubscribeRatiosByWorkspace(t *testing.T) {
+	p := &provider{
 		devCpuSubscribeRatio:     10,
 		devMemSubscribeRatio:     2,
 		testCpuSubscribeRatio:    3,
@@ -258,7 +259,7 @@ func TestGetSubscribeRationsByWorkspace(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.workspace), func(t *testing.T) {
-			cpuRatio, memRatio := k8s.getSubscribeRationsByWorkspace(tt.workspace)
+			cpuRatio, memRatio := p.getSubscribeRationsByWorkspace(tt.workspace)
 			assert.Equal(t, tt.expectedCPURatio, cpuRatio)
 			assert.Equal(t, tt.expectedMemRatio, memRatio)
 		})
@@ -269,20 +270,20 @@ func TestResourceOverCommit(t *testing.T) {
 	var tests = []struct {
 		name                         string
 		workspace                    apistructs.DiceWorkspace
-		getSubscribeRation           func() *Kubernetes
+		getSubscribeRatios           func() Interface
 		serviceResource              apistructs.Resources
 		expectedResourceRequirements corev1.ResourceRequirements
 	}{
 		{
 			name:      "dev workspace with resource over commit",
 			workspace: apistructs.DevWorkspace,
-			getSubscribeRation: func() *Kubernetes {
-				return &Kubernetes{
-					devCpuSubscribeRatio: 10,
-					devMemSubscribeRatio: 1,
-					cpuSubscribeRatio:    20,
-					memSubscribeRatio:    1,
-				}
+			getSubscribeRatios: func() Interface {
+				return New(map[string]string{
+					"DEV_CPU_SUBSCRIBE_RATIO": "10",
+					"DEV_MEM_SUBSCRIBE_RATIO": "1",
+					"CPU_SUBSCRIBE_RATIO":     "1",
+					"MEM_SUBSCRIBE_RATIO":     "20",
+				})
 			},
 			serviceResource: apistructs.Resources{
 				Cpu: 0.1,
@@ -301,21 +302,14 @@ func TestResourceOverCommit(t *testing.T) {
 				},
 			},
 		},
-		// OVer commit setting:
-		// CPUSubscribeRatio: 10, DEVCPUSubscribeRatio not set
-		// DEVCPUSubscribeRatio -> 10, test cases in TestGetWorkspaceRatio
-		//{
-		//	name:      "dev workspace use default resource over commit",
-		//	workspace: apistructs.DevWorkspace,
-		//},
 		{
 			name:      "prod workspace use default resource over commit",
 			workspace: apistructs.ProdWorkspace,
-			getSubscribeRation: func() *Kubernetes {
-				return &Kubernetes{
-					cpuSubscribeRatio: 10,
-					memSubscribeRatio: 10,
-				}
+			getSubscribeRatios: func() Interface {
+				return New(map[string]string{
+					"CPU_SUBSCRIBE_RATIO": "10",
+					"MEM_SUBSCRIBE_RATIO": "10",
+				})
 			},
 			serviceResource: apistructs.Resources{
 				Cpu: 0.1,
@@ -337,11 +331,11 @@ func TestResourceOverCommit(t *testing.T) {
 		{
 			name:      "none resource over commit",
 			workspace: apistructs.DevWorkspace,
-			getSubscribeRation: func() *Kubernetes {
-				return &Kubernetes{
-					cpuSubscribeRatio: 10,
-					memSubscribeRatio: 10,
-				}
+			getSubscribeRatios: func() Interface {
+				return New(map[string]string{
+					"CPU_SUBSCRIBE_RATIO": "10",
+					"MEM_SUBSCRIBE_RATIO": "10",
+				})
 			},
 			serviceResource: apistructs.Resources{
 				Cpu:    0.1,
@@ -365,8 +359,8 @@ func TestResourceOverCommit(t *testing.T) {
 		{
 			name:      "ephemeral storage size limit over commit",
 			workspace: apistructs.ProdWorkspace,
-			getSubscribeRation: func() *Kubernetes {
-				return &Kubernetes{}
+			getSubscribeRatios: func() Interface {
+				return New(map[string]string{})
 			},
 			serviceResource: apistructs.Resources{
 				Cpu:                      0.1,
@@ -391,11 +385,11 @@ func TestResourceOverCommit(t *testing.T) {
 		{
 			name:      "cause zero resources large over commit, resource set min",
 			workspace: apistructs.DevWorkspace,
-			getSubscribeRation: func() *Kubernetes {
-				return &Kubernetes{
-					devCpuSubscribeRatio: 10,
-					devMemSubscribeRatio: 20,
-				}
+			getSubscribeRatios: func() Interface {
+				return New(map[string]string{
+					"DEV_CPU_SUBSCRIBE_RATIO": "10",
+					"DEV_MEM_SUBSCRIBE_RATIO": "20",
+				})
 			},
 			serviceResource: apistructs.Resources{
 				Cpu: 0.1,
@@ -418,8 +412,8 @@ func TestResourceOverCommit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := tt.getSubscribeRation()
-			resourceRequirements, err := k.ResourceOverCommit(tt.workspace, tt.serviceResource)
+			p := tt.getSubscribeRatios()
+			resourceRequirements, err := p.ResourceOverCommit(tt.workspace, tt.serviceResource)
 			assert.NoError(t, err)
 
 			if !reflect.DeepEqual(tt.expectedResourceRequirements, resourceRequirements) {

@@ -583,7 +583,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 
 	// set container resource with over commit
-	resources, err := k.ResourceOverCommit(workspace, service.Resources)
+	resources, err := k.overSubscribeRatio.ResourceOverCommit(workspace, service.Resources)
 	if err != nil {
 		errMsg := fmt.Sprintf("set container resource err: %v", err)
 		logrus.Errorf(errMsg)
@@ -742,7 +742,7 @@ func (k *Kubernetes) generateSidecarContainers(workspace apistructs.DiceWorkspac
 	}
 
 	for name, sidecar := range sidecars {
-		containerResource, err := k.ResourceOverCommit(workspace, apistructs.Resources{
+		containerResource, err := k.overSubscribeRatio.ResourceOverCommit(workspace, apistructs.Resources{
 			Cpu:                      sidecar.Resources.CPU,
 			Mem:                      float64(sidecar.Resources.Mem),
 			MaxCPU:                   sidecar.Resources.MaxCPU,
@@ -1172,7 +1172,7 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 		// only support one container on Erda currently
 		container := deploy.Spec.Template.Spec.Containers[index]
 
-		containerResources, err := k.ResourceOverCommit(
+		containerResources, err := k.overSubscribeRatio.ResourceOverCommit(
 			apistructs.DiceWorkspace(strings.ToUpper(workspace)),
 			scalingService.Resources,
 		)

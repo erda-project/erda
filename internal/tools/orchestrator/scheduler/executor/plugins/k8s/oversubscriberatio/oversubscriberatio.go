@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8s
+package oversubscriberatio
 
 import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -28,15 +29,94 @@ import (
 
 const (
 	DefaultRatio = 1.0
+	// SUBSCRIBE_RATIO_SUFFIX the key suffix of the super ratio
+	SUBSCRIBE_RATIO_SUFFIX = "_SUBSCRIBE_RATIO"
+	// CPU_NUM_QUOTA cpu limit key
+	CPU_NUM_QUOTA = "CPU_NUM_QUOTA"
+	// CPU_CFS_PERIOD_US 100000  /sys/fs/cgroup/cpu/cpu.cfs_period_us default value
+	CPU_CFS_PERIOD_US int = 100000
+	// MIN_CPU_SIZE Minimum application cpu value
+	MIN_CPU_SIZE = 0.1
+
+	// MIN_MEM_SIZE Minimum application mem value
+	MIN_MEM_SIZE = 10
 )
+
+type Interface interface {
+	// ResourceOverCommit
+	// cpu,memory field type source: apistructs/service.go.Resources
+	ResourceOverCommit(workspace apistructs.DiceWorkspace, resources apistructs.Resources) (corev1.ResourceRequirements, error)
+}
 
 type OverSubscribeRatios struct {
 	CPURatio float64
 	MemRatio float64
 }
 
+type provider struct {
+	// Divide the CPU actually set by the upper layer by a ratio and pass it to the cluster scheduling, the default is 1
+	cpuSubscribeRatio        float64
+	memSubscribeRatio        float64
+	devCpuSubscribeRatio     float64
+	devMemSubscribeRatio     float64
+	testCpuSubscribeRatio    float64
+	testMemSubscribeRatio    float64
+	stagingCpuSubscribeRatio float64
+	stagingMemSubscribeRatio float64
+	// Set the cpu quota value to cpuNumQuota cpu quota, the default is 0, that is, the cpu quota is not limited
+	// When the value is -1, it means that the actual number of cpus is used to set the cpu quota (quota may also be modified by other parameters, such as the number of cpus that pop up)
+	cpuNumQuota float64
+}
+
+func New(options map[string]string) Interface {
+	p := &provider{}
+	//Get the value of the super-scoring ratio for different environments
+	var (
+		// Global SubscribeRatio
+		// 1. If the SubscribeRatio isn't configured in the non-production workspace, we'll go with the global settings.
+		//	  Otherwise, we'll stick to the workspace-specific configuration.
+		// 2. Also affects in the production workspace.
+		memSubscribeRatio,
+		cpuSubscribeRatio,
+		// SubscribeRatio for different non-production workspace
+		devMemSubscribeRatio,
+		devCpuSubscribeRatio,
+		testMemSubscribeRatio,
+		testCpuSubscribeRatio,
+		stagingMemSubscribeRatio,
+		stagingCpuSubscribeRatio float64
+	)
+
+	p.getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
+	p.getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
+	p.getWorkspaceRatio(options, "DEV", "MEM", &devMemSubscribeRatio)
+	p.getWorkspaceRatio(options, "DEV", "CPU", &devCpuSubscribeRatio)
+	p.getWorkspaceRatio(options, "TEST", "MEM", &testMemSubscribeRatio)
+	p.getWorkspaceRatio(options, "TEST", "CPU", &testCpuSubscribeRatio)
+	p.getWorkspaceRatio(options, "STAGING", "MEM", &stagingMemSubscribeRatio)
+	p.getWorkspaceRatio(options, "STAGING", "CPU", &stagingCpuSubscribeRatio)
+
+	cpuNumQuota := float64(0)
+	if cpuNumQuotaValue, ok := options[CPU_NUM_QUOTA]; ok && len(cpuNumQuotaValue) > 0 {
+		if num, err := strconv.ParseFloat(cpuNumQuotaValue, 64); err == nil && (num >= 0 || num == -1.0) {
+			cpuNumQuota = num
+			logrus.Debugf("cpuNumQuota set to %v", cpuNumQuota)
+		}
+	}
+	return &provider{
+		cpuSubscribeRatio:        cpuSubscribeRatio,
+		memSubscribeRatio:        memSubscribeRatio,
+		devCpuSubscribeRatio:     devCpuSubscribeRatio,
+		devMemSubscribeRatio:     devMemSubscribeRatio,
+		testCpuSubscribeRatio:    testCpuSubscribeRatio,
+		testMemSubscribeRatio:    testMemSubscribeRatio,
+		stagingCpuSubscribeRatio: stagingCpuSubscribeRatio,
+		stagingMemSubscribeRatio: stagingMemSubscribeRatio,
+	}
+}
+
 // getWorkspaceRatio
-func getWorkspaceRatio(options map[string]string, workspace string, t string, value *float64) {
+func (p *provider) getWorkspaceRatio(options map[string]string, workspace string, t string, value *float64) {
 	// Default subscribe ratio
 	*value = DefaultRatio
 
@@ -62,7 +142,7 @@ func getWorkspaceRatio(options map[string]string, workspace string, t string, va
 	f(workspace + "_" + t + SUBSCRIBE_RATIO_SUFFIX)
 }
 
-func (k *Kubernetes) calcFineGrainedCPU(requestCPU, maxCPU, ratio float64) (float64, float64, error) {
+func (p *provider) calcFineGrainedCPU(requestCPU, maxCPU, ratio float64) (float64, float64, error) {
 	// 1, Processing request cpu value
 	actualCPU := requestCPU
 
@@ -97,7 +177,7 @@ func (k *Kubernetes) calcFineGrainedCPU(requestCPU, maxCPU, ratio float64) (floa
 	return actualCPU, maxCPU, nil
 }
 
-func (k *Kubernetes) calcFineGrainedMemory(requestMem, maxMem, memSubscribeRatio float64) (float64, float64, error) {
+func (p *provider) calcFineGrainedMemory(requestMem, maxMem, memSubscribeRatio float64) (float64, float64, error) {
 	if requestMem < MIN_MEM_SIZE {
 		return 0, 0, errors.Errorf("invalid request mem, value: %v, (which is lower than min mem(%vMi))",
 			requestMem, MIN_MEM_SIZE)
@@ -117,32 +197,15 @@ func (k *Kubernetes) calcFineGrainedMemory(requestMem, maxMem, memSubscribeRatio
 	return requestMem, maxMem, nil
 }
 
-func (k *Kubernetes) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoData, error) {
-	r, err := k.resourceInfo.Get(brief)
-	if err != nil {
-		return r, err
-	}
-	r.ProdCPUOverCommit = k.cpuSubscribeRatio
-	r.DevCPUOverCommit = k.devCpuSubscribeRatio
-	r.TestCPUOverCommit = k.testCpuSubscribeRatio
-	r.StagingCPUOverCommit = k.stagingCpuSubscribeRatio
-	r.ProdMEMOverCommit = k.memSubscribeRatio
-	r.DevMEMOverCommit = k.devMemSubscribeRatio
-	r.TestMEMOverCommit = k.testMemSubscribeRatio
-	r.StagingMEMOverCommit = k.stagingMemSubscribeRatio
-
-	return r, nil
-}
-
 // getSubscribeRationsByWorkspace
 // Args: workspace
 // Return: cpu subscribe ratio, memory subscribe ratio
-func (k *Kubernetes) getSubscribeRationsByWorkspace(workspace apistructs.DiceWorkspace) (float64, float64) {
+func (p *provider) getSubscribeRationsByWorkspace(workspace apistructs.DiceWorkspace) (float64, float64) {
 	subscribeRatios := map[apistructs.DiceWorkspace]OverSubscribeRatios{
-		apistructs.DevWorkspace:     {CPURatio: k.devCpuSubscribeRatio, MemRatio: k.devMemSubscribeRatio},
-		apistructs.TestWorkspace:    {CPURatio: k.testCpuSubscribeRatio, MemRatio: k.testMemSubscribeRatio},
-		apistructs.StagingWorkspace: {CPURatio: k.stagingCpuSubscribeRatio, MemRatio: k.stagingMemSubscribeRatio},
-		apistructs.ProdWorkspace:    {CPURatio: k.cpuSubscribeRatio, MemRatio: k.memSubscribeRatio},
+		apistructs.DevWorkspace:     {CPURatio: p.devCpuSubscribeRatio, MemRatio: p.devMemSubscribeRatio},
+		apistructs.TestWorkspace:    {CPURatio: p.testCpuSubscribeRatio, MemRatio: p.testMemSubscribeRatio},
+		apistructs.StagingWorkspace: {CPURatio: p.stagingCpuSubscribeRatio, MemRatio: p.stagingMemSubscribeRatio},
+		apistructs.ProdWorkspace:    {CPURatio: p.cpuSubscribeRatio, MemRatio: p.memSubscribeRatio},
 	}
 
 	subscribeRatio, ok := subscribeRatios[workspace]
@@ -153,17 +216,17 @@ func (k *Kubernetes) getSubscribeRationsByWorkspace(workspace apistructs.DiceWor
 	return subscribeRatio.CPURatio, subscribeRatio.MemRatio
 }
 
-func (k *Kubernetes) ResourceOverCommit(workspace apistructs.DiceWorkspace, r apistructs.Resources) (corev1.ResourceRequirements, error) {
+func (p *provider) ResourceOverCommit(workspace apistructs.DiceWorkspace, r apistructs.Resources) (corev1.ResourceRequirements, error) {
 	// If workspace is "", use default ratio -> 1;
-	// Get subscribe rations by workspace
-	cpuRatio, memRatio := k.getSubscribeRationsByWorkspace(workspace)
+	// Get subscribe ratios by workspace
+	cpuRatio, memRatio := p.getSubscribeRationsByWorkspace(workspace)
 
-	requestCPU, limitCPU, err := k.calcFineGrainedCPU(r.Cpu, r.MaxCPU, cpuRatio)
+	requestCPU, limitCPU, err := p.calcFineGrainedCPU(r.Cpu, r.MaxCPU, cpuRatio)
 	if err != nil {
 		return corev1.ResourceRequirements{}, err
 	}
 
-	requestMem, limitMem, err := k.calcFineGrainedMemory(r.Mem, r.MaxMem, memRatio)
+	requestMem, limitMem, err := p.calcFineGrainedMemory(r.Mem, r.MaxMem, memRatio)
 	if err != nil {
 		return corev1.ResourceRequirements{}, err
 	}

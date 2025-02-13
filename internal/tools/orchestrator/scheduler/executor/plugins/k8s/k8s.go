@@ -18,7 +18,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -50,6 +49,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/oversubscriberatio"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolume"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/pod"
@@ -73,19 +73,6 @@ import (
 
 const (
 	kind = "K8S"
-
-	// SUBSCRIBE_RATIO_SUFFIX the key suffix of the super ratio
-	SUBSCRIBE_RATIO_SUFFIX = "_SUBSCRIBE_RATIO"
-
-	// CPU_NUM_QUOTA cpu limit key
-	CPU_NUM_QUOTA = "CPU_NUM_QUOTA"
-	// CPU_CFS_PERIOD_US 100000  /sys/fs/cgroup/cpu/cpu.cfs_period_us default value
-	CPU_CFS_PERIOD_US int = 100000
-	// MIN_CPU_SIZE Minimum application cpu value
-	MIN_CPU_SIZE = 0.1
-
-	// MIN_MEM_SIZE Minimum application mem value
-	MIN_MEM_SIZE = 10
 
 	// ProjectNamespace Env
 	LabelServiceGroupID = "servicegroup-id"
@@ -169,44 +156,33 @@ func init() {
 
 // Kubernetes is the Executor struct for k8s cluster
 type Kubernetes struct {
-	name         executortypes.Name
-	clusterName  string
-	cluster      *apistructs.ClusterInfo
-	options      map[string]string
-	addr         string
-	client       *httpclient.HTTPClient
-	k8sClient    *k8sclient.K8sClient
-	bdl          *bundle.Bundle
-	evCh         chan *eventtypes.StatusEvent
-	deploy       *deployment.Deployment
-	job          *job.Job
-	ds           *ds.Daemonset
-	namespace    *namespace.Namespace
-	service      *k8sservice.Service
-	pvc          *persistentvolumeclaim.PersistentVolumeClaim
-	pv           *persistentvolume.PersistentVolume
-	scaledObject *scaledobject.ErdaScaledObject
-	hpa          *erdahpa.ErdaHPA
-	sts          *statefulset.StatefulSet
-	pod          *pod.Pod
-	secret       *secret.Secret
-	storageClass *storageclass.StorageClass
-	sa           *serviceaccount.ServiceAccount
-	ClusterInfo  *clusterinfo.ClusterInfo
-	resourceInfo *resourceinfo.ResourceInfo
-	event        *event.Event
-	// Divide the CPU actually set by the upper layer by a ratio and pass it to the cluster scheduling, the default is 1
-	cpuSubscribeRatio        float64
-	memSubscribeRatio        float64
-	devCpuSubscribeRatio     float64
-	devMemSubscribeRatio     float64
-	testCpuSubscribeRatio    float64
-	testMemSubscribeRatio    float64
-	stagingCpuSubscribeRatio float64
-	stagingMemSubscribeRatio float64
-	// Set the cpu quota value to cpuNumQuota cpu quota, the default is 0, that is, the cpu quota is not limited
-	// When the value is -1, it means that the actual number of cpus is used to set the cpu quota (quota may also be modified by other parameters, such as the number of cpus that pop up)
-	cpuNumQuota float64
+	name               executortypes.Name
+	clusterName        string
+	cluster            *apistructs.ClusterInfo
+	options            map[string]string
+	addr               string
+	client             *httpclient.HTTPClient
+	k8sClient          *k8sclient.K8sClient
+	bdl                *bundle.Bundle
+	evCh               chan *eventtypes.StatusEvent
+	deploy             *deployment.Deployment
+	job                *job.Job
+	ds                 *ds.Daemonset
+	namespace          *namespace.Namespace
+	service            *k8sservice.Service
+	pvc                *persistentvolumeclaim.PersistentVolumeClaim
+	pv                 *persistentvolume.PersistentVolume
+	scaledObject       *scaledobject.ErdaScaledObject
+	hpa                *erdahpa.ErdaHPA
+	sts                *statefulset.StatefulSet
+	pod                *pod.Pod
+	secret             *secret.Secret
+	storageClass       *storageclass.StorageClass
+	sa                 *serviceaccount.ServiceAccount
+	ClusterInfo        *clusterinfo.ClusterInfo
+	resourceInfo       *resourceinfo.ResourceInfo
+	event              *event.Event
+	overSubscribeRatio oversubscriberatio.Interface
 
 	// operators
 	elasticsearchoperator addon.AddonOperator
@@ -279,40 +255,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	logrus.Infof("cluster %s init client success, addr: %s", clusterName, addr)
 
-	//Get the value of the super-scoring ratio for different environments
-	var (
-		// Global SubscribeRatio
-		// 1. If the SubscribeRatio isn't configured in the non-production workspace, we'll go with the global settings.
-		//	  Otherwise, we'll stick to the workspace-specific configuration.
-		// 2. Also affects in the production workspace.
-		memSubscribeRatio,
-		cpuSubscribeRatio,
-		// SubscribeRatio for different non-production workspace
-		devMemSubscribeRatio,
-		devCpuSubscribeRatio,
-		testMemSubscribeRatio,
-		testCpuSubscribeRatio,
-		stagingMemSubscribeRatio,
-		stagingCpuSubscribeRatio float64
-	)
-
-	getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
-	getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
-	getWorkspaceRatio(options, "DEV", "MEM", &devMemSubscribeRatio)
-	getWorkspaceRatio(options, "DEV", "CPU", &devCpuSubscribeRatio)
-	getWorkspaceRatio(options, "TEST", "MEM", &testMemSubscribeRatio)
-	getWorkspaceRatio(options, "TEST", "CPU", &testCpuSubscribeRatio)
-	getWorkspaceRatio(options, "STAGING", "MEM", &stagingMemSubscribeRatio)
-	getWorkspaceRatio(options, "STAGING", "CPU", &stagingCpuSubscribeRatio)
-
-	cpuNumQuota := float64(0)
-	if cpuNumQuotaValue, ok := options[CPU_NUM_QUOTA]; ok && len(cpuNumQuotaValue) > 0 {
-		if num, err := strconv.ParseFloat(cpuNumQuotaValue, 64); err == nil && (num >= 0 || num == -1.0) {
-			cpuNumQuota = num
-			logrus.Debugf("executor(%s) cpuNumQuota set to %v", name, cpuNumQuota)
-		}
-	}
-
 	deploy := deployment.New(deployment.WithClientSet(k8sClient.ClientSet))
 	job := job.New(job.WithCompleteParams(addr, client))
 	ds := ds.New(ds.WithClientSet(k8sClient.ClientSet))
@@ -355,64 +297,59 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
+	// Over subscribe ratios
+	osr := oversubscriberatio.New(options)
+
 	// Synchronize cluster info to ETCD (every 10m)
 	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
 	k := &Kubernetes{
-		name:                     name,
-		clusterName:              clusterName,
-		cluster:                  cluster,
-		options:                  options,
-		addr:                     addr,
-		client:                   client,
-		k8sClient:                k8sClient,
-		bdl:                      bdl,
-		evCh:                     evCh,
-		deploy:                   deploy,
-		job:                      job,
-		ds:                       ds,
-		namespace:                ns,
-		service:                  svc,
-		pvc:                      pvc,
-		pv:                       pv,
-		scaledObject:             scaleObj,
-		hpa:                      hpa,
-		sts:                      sts,
-		pod:                      k8spod,
-		secret:                   k8ssecret,
-		storageClass:             k8sstorageclass,
-		sa:                       sa,
-		ClusterInfo:              clusterInfo,
-		resourceInfo:             resourceInfo,
-		event:                    event,
-		cpuSubscribeRatio:        cpuSubscribeRatio,
-		memSubscribeRatio:        memSubscribeRatio,
-		devCpuSubscribeRatio:     devCpuSubscribeRatio,
-		devMemSubscribeRatio:     devMemSubscribeRatio,
-		testCpuSubscribeRatio:    testCpuSubscribeRatio,
-		testMemSubscribeRatio:    testMemSubscribeRatio,
-		stagingCpuSubscribeRatio: stagingCpuSubscribeRatio,
-		stagingMemSubscribeRatio: stagingMemSubscribeRatio,
-		cpuNumQuota:              cpuNumQuota,
-		dbclient:                 dbclient,
+		name:               name,
+		clusterName:        clusterName,
+		cluster:            cluster,
+		options:            options,
+		addr:               addr,
+		client:             client,
+		k8sClient:          k8sClient,
+		bdl:                bdl,
+		evCh:               evCh,
+		deploy:             deploy,
+		job:                job,
+		ds:                 ds,
+		namespace:          ns,
+		service:            svc,
+		pvc:                pvc,
+		pv:                 pv,
+		scaledObject:       scaleObj,
+		hpa:                hpa,
+		sts:                sts,
+		pod:                k8spod,
+		secret:             k8ssecret,
+		storageClass:       k8sstorageclass,
+		sa:                 sa,
+		ClusterInfo:        clusterInfo,
+		resourceInfo:       resourceInfo,
+		event:              event,
+		dbclient:           dbclient,
+		overSubscribeRatio: osr,
 	}
 
 	if istioEngine != nil {
 		k.istioEngine = istioEngine
 	}
 
-	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, k, k8ssecret, k, client)
+	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, osr, k8ssecret, k, client)
 	k.elasticsearchoperator = elasticsearchoperator
-	redisoperator := redis.New(k, deploy, sts, svc, ns, k, k8ssecret, client)
+	redisoperator := redis.New(k, deploy, sts, svc, ns, osr, k8ssecret, client)
 	k.redisoperator = redisoperator
-	mysqloperator := mysql.New(k, ns, k, k8ssecret, pvc, client)
+	mysqloperator := mysql.New(k, ns, osr, k8ssecret, pvc, client)
 	k.mysqloperator = mysqloperator
-	canaloperator := canal.New(k, ns, k, k8ssecret, pvc, client)
+	canaloperator := canal.New(k, ns, osr, k8ssecret, pvc, client)
 	k.canaloperator = canaloperator
-	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
+	daemonsetoperator := daemonset.New(k, ns, k, k, ds, osr)
 	k.daemonsetoperator = daemonsetoperator
-	k.sourcecovoperator = sourcecov.New(k, client, k, ns)
-	rocketmqoperator := rocketmq.New(k, ns, client, k, sts)
+	k.sourcecovoperator = sourcecov.New(k, client, osr, ns)
+	rocketmqoperator := rocketmq.New(k, ns, client, osr, sts)
 	k.rocketmqoperator = rocketmqoperator
 	return k, nil
 }

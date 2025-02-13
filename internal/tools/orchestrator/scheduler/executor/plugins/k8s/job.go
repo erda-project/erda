@@ -108,7 +108,7 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 	}
 
 	// set container resource with over commit
-	resources, err := k.ResourceOverCommit(workspace, service.Resources)
+	resources, err := k.overSubscribeRatio.ResourceOverCommit(workspace, service.Resources)
 	if err != nil {
 		errMsg := fmt.Sprintf("set container resource err: %v", err)
 		logrus.Errorf(errMsg)
