@@ -30,7 +30,7 @@ const (
 	DefaultRatio = 1.0
 )
 
-type SubscribeRatios struct {
+type OverSubscribeRatios struct {
 	CPURatio float64
 	MemRatio float64
 }
@@ -138,7 +138,7 @@ func (k *Kubernetes) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoDat
 // Args: workspace
 // Return: cpu subscribe ratio, memory subscribe ratio
 func (k *Kubernetes) getSubscribeRationsByWorkspace(workspace apistructs.DiceWorkspace) (float64, float64) {
-	subscribeRatios := map[apistructs.DiceWorkspace]SubscribeRatios{
+	subscribeRatios := map[apistructs.DiceWorkspace]OverSubscribeRatios{
 		apistructs.DevWorkspace:     {CPURatio: k.devCpuSubscribeRatio, MemRatio: k.devMemSubscribeRatio},
 		apistructs.TestWorkspace:    {CPURatio: k.testCpuSubscribeRatio, MemRatio: k.testMemSubscribeRatio},
 		apistructs.StagingWorkspace: {CPURatio: k.stagingCpuSubscribeRatio, MemRatio: k.stagingMemSubscribeRatio},
