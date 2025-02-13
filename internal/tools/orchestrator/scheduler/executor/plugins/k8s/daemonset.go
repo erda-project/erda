@@ -196,32 +196,23 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
 	}
 
-	//Set the over-score ratio according to the environment
-	cpuSubscribeRatio := k.cpuSubscribeRatio
-	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
-	case "DEV":
-		cpuSubscribeRatio = k.devCpuSubscribeRatio
-		memSubscribeRatio = k.devMemSubscribeRatio
-	case "TEST":
-		cpuSubscribeRatio = k.testCpuSubscribeRatio
-		memSubscribeRatio = k.testMemSubscribeRatio
-	case "STAGING":
-		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
-		memSubscribeRatio = k.stagingMemSubscribeRatio
-	}
-
-	// Set fine-grained CPU based on the oversold ratio
-	if err := k.SetFineGrainedCPU(&container, sg.Extra, cpuSubscribeRatio); err != nil {
+	// get workspace from service envs
+	workspace, err := util.GetDiceWorkspaceFromEnvs(service.Env)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := k.SetOverCommitMem(&container, memSubscribeRatio); err != nil {
+	resources, err := k.overSubscribeRatio.ResourceOverCommit(workspace, service.Resources)
+	if err != nil {
 		return nil, err
 	}
+	container.Resources = resources
 
 	// Generate sidecars container configuration
-	sidecars := k.generateSidecarContainers(service.SideCars)
+	sidecars, err := k.generateSidecarContainers(workspace, service.SideCars)
+	if err != nil {
+		return nil, err
+	}
 
 	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)

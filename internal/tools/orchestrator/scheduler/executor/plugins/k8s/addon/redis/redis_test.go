@@ -17,16 +17,23 @@ package redis
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/mock"
 )
 
 func Test_convertRedis(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	svc := apistructs.Service{
 		Env: map[string]string{
-			"DICE_ORG_ID": "1",
+			apistructs.DiceWorkspaceEnvKey: apistructs.WORKSPACE_DEV,
+			"DICE_ORG_ID":                  "1",
 		},
 		Image: "redis:6.2.10",
 		Resources: apistructs.Resources{
@@ -39,20 +46,26 @@ func Test_convertRedis(t *testing.T) {
 	affinity := &corev1.Affinity{
 		NodeAffinity: &corev1.NodeAffinity{},
 	}
-	ro := &RedisOperator{
-		overcommit: &mockOverCommitUtil{},
+
+	containerResource := corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("0.1"),
+			corev1.ResourceMemory: resource.MustParse("1024Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("0.1"),
+			corev1.ResourceMemory: resource.MustParse("1024Mi"),
+		},
 	}
-	redis := ro.convertRedis(svc, affinity)
+
+	overCommitUtil := mock.NewMockOverCommitUtil(ctrl)
+	overCommitUtil.EXPECT().ResourceOverCommit(apistructs.DevWorkspace, svc.Resources).
+		Return(containerResource, nil).AnyTimes()
+
+	ro := &RedisOperator{
+		overcommit: overCommitUtil,
+	}
+	redis := ro.convertRedis(svc, affinity, containerResource)
 	assert.Equal(t, redisExporterImage, redis.Exporter.Image)
 	assert.Equal(t, "ignore-warnings ARM64-COW-BUG", redis.CustomConfig[0])
-}
-
-type mockOverCommitUtil struct{}
-
-func (m *mockOverCommitUtil) CPUOvercommit(limit float64) float64 {
-	return limit
-}
-
-func (m *mockOverCommitUtil) MemoryOvercommit(limit int) int {
-	return limit
 }

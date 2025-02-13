@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/deployment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/oversubscriberatio"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
@@ -295,7 +296,8 @@ func TestParseJobSpecTemplate(t *testing.T) {
 
 func Test_scaleStatefulSet(t *testing.T) {
 	k := &Kubernetes{
-		sts: &statefulset.StatefulSet{},
+		sts:                &statefulset.StatefulSet{},
+		overSubscribeRatio: oversubscriberatio.New(map[string]string{}),
 	}
 
 	sg := &apistructs.ServiceGroup{

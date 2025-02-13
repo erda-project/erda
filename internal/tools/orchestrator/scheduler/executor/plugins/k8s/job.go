@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
@@ -100,12 +101,20 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 		Image: service.Image,
 	}
 
-	err = k.setContainerResources(*service, &container)
+	// get workspace from env
+	workspace, err := util.GetDiceWorkspaceFromEnvs(service.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	// set container resource with over commit
+	resources, err := k.overSubscribeRatio.ResourceOverCommit(workspace, service.Resources)
 	if err != nil {
 		errMsg := fmt.Sprintf("set container resource err: %v", err)
 		logrus.Errorf(errMsg)
 		return nil, fmt.Errorf(errMsg)
 	}
+	container.Resources = resources
 
 	logrus.Debugf("container name: %s, container resource spec: %+v", container.Name, container.Resources)
 

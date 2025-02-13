@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -206,6 +207,57 @@ func Test_ParseAnnotationFromEnv(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := ParseAnnotationFromEnv(test.key)
 			assert.Equal(t, got, test.want)
+		})
+	}
+}
+
+func TestResourceFormatters(t *testing.T) {
+	testCases := []struct {
+		name      string
+		value     interface{}
+		formatter func(interface{}) resource.Quantity
+		expected  string
+	}{
+		{
+			name:  "CPU Formatter with int",
+			value: 1000,
+			formatter: func(v interface{}) resource.Quantity {
+				return ResourceCPUFormatter(v.(int))
+			},
+			expected: "1",
+		},
+		{
+			name:  "CPU Formatter with float",
+			value: 1000.5,
+			formatter: func(v interface{}) resource.Quantity {
+				return ResourceCPUFormatter(v.(float64))
+			},
+			expected: "1000500u",
+		},
+		{
+			name:  "Memory Formatter with int",
+			value: 512,
+			formatter: func(v interface{}) resource.Quantity {
+				return ResourceMemoryFormatter(v.(int))
+			},
+			expected: "512Mi",
+		},
+		{
+			name:  "Memory Formatter with float",
+			value: 512.5,
+			formatter: func(v interface{}) resource.Quantity {
+				return ResourceMemoryFormatter(v.(float64))
+			},
+			expected: "524800Ki",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.formatter(tc.value)
+			if result.String() != tc.expected {
+				t.Errorf("expected %s, got %s", tc.expected, result.String())
+			}
 		})
 	}
 }

@@ -22,13 +22,15 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
+//go:generate mockgen -source=interface.go -destination=./mock/interface_mock.go -package=mock
+
 type AddonOperator interface {
 	// Determine whether this cluster supports addon operator
 	IsSupported() bool
 	// Verify the legality of sg converted from diceyml
 	Validate(*apistructs.ServiceGroup) error
 	// Convert sg to cr. Because of the different definitions of cr, use interface() here
-	Convert(*apistructs.ServiceGroup) interface{}
+	Convert(*apistructs.ServiceGroup) (any, error)
 	// the cr converted by Convert in k8s deploying
 	Create(interface{}) error
 	// Check running status
@@ -99,7 +101,9 @@ type HealthcheckUtil interface {
 type PVCUtil interface {
 	Create(pvc *corev1.PersistentVolumeClaim) error
 }
-type OvercommitUtil interface {
-	CPUOvercommit(limit float64) float64
-	MemoryOvercommit(limit int) int
+
+type OverCommitUtil interface {
+	// ResourceOverCommit
+	// cpu,memory field type source: apistructs/service.go.Resources
+	ResourceOverCommit(workspace apistructs.DiceWorkspace, resources apistructs.Resources) (corev1.ResourceRequirements, error)
 }

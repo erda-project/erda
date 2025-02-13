@@ -32,9 +32,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
@@ -78,13 +78,6 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 
 	// Take one of the services
 	service := &info.Sg.Services[0]
-
-	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
-	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
-
-	maxCpu := fmt.Sprintf("%.fm", service.Resources.MaxCPU*1000)
-	maxMem := fmt.Sprintf("%.fMi", service.Resources.MaxMem)
-
 	affinity := constraintbuilders.K8S(&info.Sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{
 			PodLabels: map[string]string{"addon_id": info.Sg.Dice.ID},
@@ -136,27 +129,26 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 		return err
 	}
 	set.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
+
+	// get workspace from env
+	// Sts addon may cluster addon, ignore none workspace.
+	workspace, _ := util.GetDiceWorkspaceFromEnvs(service.Env)
+
+	// set container resource with over commit
+	resources, err := k.overSubscribeRatio.ResourceOverCommit(workspace, service.Resources)
+	if err != nil {
+		errMsg := fmt.Sprintf("set container resource err: %v", err)
+		logrus.Errorf(errMsg)
+		return fmt.Errorf(errMsg)
+	}
+
 	// Currently only one business container is set in our Pod
 	container := &apiv1.Container{
-		Name:  statefulName,
-		Image: service.Image,
-		Resources: apiv1.ResourceRequirements{
-			Requests: apiv1.ResourceList{
-				apiv1.ResourceCPU:              resource.MustParse(cpu),
-				apiv1.ResourceMemory:           resource.MustParse(memory),
-				apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeRequest),
-			},
-			Limits: apiv1.ResourceList{
-				apiv1.ResourceCPU:              resource.MustParse(maxCpu),
-				apiv1.ResourceMemory:           resource.MustParse(maxMem),
-				apiv1.ResourceEphemeralStorage: resource.MustParse(k8sapi.EphemeralStorageSizeLimit),
-			},
-		},
+		Name:      statefulName,
+		Image:     service.Image,
+		Resources: resources,
 	}
-	if service.Resources.EphemeralStorageCapacity > 1 {
-		maxEphemeral := fmt.Sprintf("%dGi", service.Resources.EphemeralStorageCapacity)
-		container.Resources.Limits[corev1.ResourceEphemeralStorage] = resource.MustParse(maxEphemeral)
-	}
+
 	// Forced to pull the image
 	//container.ImagePullPolicy = apiv1.PullAlways
 
@@ -172,32 +164,9 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info types.Statefuls
 		container.Command = []string{"sh", "-c", service.Cmd}
 	}
 
-	// Set the over-score ratio according to the environment
-	cpuSubscribeRatio := k.cpuSubscribeRatio
-	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env[types.DiceWorkSpace]) {
-	case "DEV":
-		cpuSubscribeRatio = k.devCpuSubscribeRatio
-		memSubscribeRatio = k.devMemSubscribeRatio
-	case "TEST":
-		cpuSubscribeRatio = k.testCpuSubscribeRatio
-		memSubscribeRatio = k.testMemSubscribeRatio
-	case "STAGING":
-		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
-		memSubscribeRatio = k.stagingMemSubscribeRatio
-	}
-
-	// Set fine-grained CPU based on the oversold ratio
-	if err := k.SetFineGrainedCPU(container, info.Sg.Extra, cpuSubscribeRatio); err != nil {
-		return err
-	}
-	if err := k.SetOverCommitMem(container, memSubscribeRatio); err != nil {
-		return err
-	}
-
 	set.Spec.Template.Spec.Containers = []apiv1.Container{*container}
-	sidecars := k.generateSidecarContainers(service.SideCars)
-	set.Spec.Template.Spec.Containers = append(set.Spec.Template.Spec.Containers, sidecars...)
+	//sidecars := k.generateSidecarContainers(service.SideCars)
+	//set.Spec.Template.Spec.Containers = append(set.Spec.Template.Spec.Containers, sidecars...)
 
 	// ECI Pod inject fluent-bit sidecar container
 	useECI := UseECI(set.Labels, set.Spec.Template.Labels)
@@ -681,15 +650,21 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 		sts.Spec.Replicas = func(i int32) *int32 { return &i }(int32(len(sg.Services)))
 	}
 
+	_, projectID, workspace, runtimeID := extractContainerEnvs(sts.Spec.Template.Spec.Containers)
+
 	// only support one container on Erda currently
 	for index := range sts.Spec.Template.Spec.Containers {
 		container := sts.Spec.Template.Spec.Containers[index]
 
-		err = k.setContainerResources(scalingService, &container)
+		resources, err := k.overSubscribeRatio.ResourceOverCommit(
+			apistructs.DiceWorkspace(strings.ToUpper(workspace)),
+			scalingService.Resources,
+		)
 		if err != nil {
 			setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
 			return setContainerErr
 		}
+		container.Resources = resources
 
 		k.UpdateContainerResourceEnv(scalingService.Resources, &container)
 
@@ -701,7 +676,6 @@ func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.Servic
 	newCPU *= int64(*sts.Spec.Replicas)
 	newMem *= int64(*sts.Spec.Replicas)
 
-	_, projectID, workspace, runtimeID := extractContainerEnvs(sts.Spec.Template.Spec.Containers)
 	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, newCPU-oldCPU, newMem-oldMem, "scale", scalingService.Name)
 	if err != nil {
 		return err

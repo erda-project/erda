@@ -102,6 +102,35 @@ func max(a, b int64) int64 {
 	return b
 }
 
+func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.ServiceGroup) (bool, string, error) {
+	var cpuTotal, memTotal float64
+	for _, svc := range runtime.Services {
+		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
+		memTotal += svc.Resources.Mem * float64(svc.Scale<<20)
+	}
+	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
+
+	osr := k.overSubscribeRatio.GetOverSubscribeRatios()
+
+	_, projectID, runtimeId, workspace := extractServicesEnvs(runtime)
+	switch strings.ToLower(workspace) {
+	case "dev":
+		cpuTotal /= osr.DevSubscribeRatio.CPURatio
+		memTotal /= osr.DevSubscribeRatio.MemRatio
+	case "test":
+		cpuTotal /= osr.TestSubscribeRatio.CPURatio
+		memTotal /= osr.TestSubscribeRatio.MemRatio
+	case "staging":
+		cpuTotal /= osr.StagingSubscribeRatio.CPURatio
+		memTotal /= osr.StagingSubscribeRatio.MemRatio
+	default:
+		cpuTotal /= osr.SubscribeRatio.CPURatio
+		memTotal /= osr.SubscribeRatio.MemRatio
+	}
+
+	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
+}
+
 func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64, kind, serviceName string) (bool, string, error) {
 	if projectID == "" || workspace == "" {
 		return true, "", nil

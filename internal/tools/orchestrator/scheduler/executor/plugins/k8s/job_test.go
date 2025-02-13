@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/job"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/oversubscriberatio"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/secret"
 )
 
@@ -42,7 +43,9 @@ func TestNewJob(t *testing.T) {
 			Cpu: 0.1,
 			Mem: 512,
 		},
-		Env:                nil,
+		Env: map[string]string{
+			apistructs.DiceWorkspaceEnvKey: apistructs.WORKSPACE_DEV,
+		},
 		Labels:             nil,
 		DeploymentLabels:   nil,
 		Selectors:          nil,
@@ -71,7 +74,8 @@ func TestNewJob(t *testing.T) {
 	}
 
 	k := &Kubernetes{
-		secret: &secret.Secret{},
+		secret:             &secret.Secret{},
+		overSubscribeRatio: oversubscriberatio.New(map[string]string{}),
 	}
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(k.secret), "Get", func(sec *secret.Secret, namespace, name string) (*apiv1.Secret, error) {
