@@ -70,7 +70,7 @@ type provider struct {
 }
 
 func (p *provider) GetOverSubscribeRatios() *OverSubscribeRatios {
-	return &OverSubscribeRatios{}
+	return p.overSubscribeRatios
 }
 
 func New(options map[string]string) Interface {
