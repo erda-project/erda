@@ -824,14 +824,6 @@ func (k *Kubernetes) tryDelete(namespace, name string) error {
 	return nil
 }
 
-func (k *Kubernetes) getClusterIP(namespace, name string) (string, error) {
-	svc, err := k.GetService(namespace, name)
-	if err != nil {
-		return "", err
-	}
-	return svc.Spec.ClusterIP, nil
-}
-
 // The creation operation needs to be completed before the update operation, because the newly created service may be a dependency of the service to be updated
 // TODO: The updateOne function will be abstracted later
 func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceGroup) error {
@@ -1203,65 +1195,6 @@ func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName
 	return nil
 }
 
-func runtimeIDMatch(podRuntimeID string, pod apiv1.Pod) bool {
-	if podRuntimeID == "" {
-		return true
-	}
-	runtimeIDFromPod := ""
-	runtimeIDFromPod, ok := pod.Labels["DICE_RUNTIME"]
-	if !ok {
-		runtimeIDFromPod, ok = pod.Labels["DICE_RUNTIME_ID"]
-	}
-
-	if runtimeIDFromPod == "" {
-		for _, v := range pod.Spec.Containers[0].Env {
-			if v.Name == "DICE_RUNTIME" || v.Name == "DICE_RUNTIME_ID" {
-				runtimeIDFromPod = v.Value
-				break
-			}
-		}
-	}
-
-	if runtimeIDFromPod != "" && runtimeIDFromPod == podRuntimeID {
-		return true
-	}
-	return false
-}
-
-func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error) {
-	switch operator {
-	case "elasticsearch":
-		return k.elasticsearchoperator, nil
-	case "redis":
-		return k.redisoperator, nil
-	case "mysql":
-		return k.mysqloperator, nil
-	case "canal":
-		return k.canaloperator, nil
-	case "daemonset":
-		return k.daemonsetoperator, nil
-	case apistructs.AddonSourcecov:
-		return k.sourcecovoperator, nil
-	case apistructs.AddonRocketMQ:
-		return k.rocketmqoperator, nil
-	}
-	return nil, fmt.Errorf("not found")
-}
-func (k *Kubernetes) setProjectServiceName(sg *apistructs.ServiceGroup) {
-	for index, service := range sg.Services {
-		service.ProjectServiceName = k.composeNewKey([]string{service.Name, "-", sg.ID})
-		sg.Services[index] = service
-	}
-}
-
-func (k *Kubernetes) composeNewKey(keys []string) string {
-	var newKey = strings.Builder{}
-	for _, key := range keys {
-		newKey.WriteString(key)
-	}
-	return newKey.String()
-}
-
 // Scale implements update the replica and resources for one service
 func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
 	sg, ok := spec.(apistructs.ServiceGroup)
@@ -1325,18 +1258,4 @@ func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectR
 		}
 	}
 	return secrets, nil
-}
-
-func (k *Kubernetes) DeployInEdgeCluster() bool {
-	clusterInfo, err := k.ClusterInfo.Get()
-	if err != nil {
-		logrus.Warningf("failed to get cluster info, error: %v", err)
-		return false
-	}
-
-	if clusterInfo[string(apistructs.DICE_IS_EDGE)] != "true" {
-		return false
-	}
-
-	return true
 }
