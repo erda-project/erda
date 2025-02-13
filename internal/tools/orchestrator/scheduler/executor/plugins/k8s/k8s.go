@@ -70,7 +70,6 @@ import (
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
-	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
@@ -254,23 +253,6 @@ func (k *Kubernetes) CleanUpBeforeDelete() {
 // Addr return kubernetes addr
 func (k *Kubernetes) Addr() string {
 	return k.addr
-}
-
-func getIstioEngine(clusterName string, info apistructs.ClusterInfoData) (istioctl.IstioEngine, error) {
-	istioInfo := info.GetIstioInfo()
-	if !istioInfo.Installed {
-		return istioctl.EmptyEngine, nil
-	}
-	// TODO: Take asm's kubeconfig to create the corresponding engine
-	if istioInfo.IsAliyunASM {
-		return istioctl.EmptyEngine, nil
-	}
-	// TODO: Combine version to choose
-	localEngine, err := engines.NewLocalEngine(clusterName)
-	if err != nil {
-		return istioctl.EmptyEngine, errors.Errorf("create local istio engine failed, cluster:%s, err:%v", clusterName, err)
-	}
-	return localEngine, nil
 }
 
 // New new kubernetes executor struct
