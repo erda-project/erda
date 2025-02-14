@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/pkg/discover"
 )
 
+const DiceOrgNameFilterKey = "dice_org_name"
+
 func (p *provider) syncCreateOrgMonitorConfig() error {
 	allOrgs, err := p.Org.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.ListOrgRequest{
 		PageSize: 9999,
@@ -134,7 +136,7 @@ func (p *provider) isEmptyConfig(register *db.SpMonitorConfigRegister, org *orgp
 			p.Log.Errorf("failed to get org name, err: %v", err)
 			return false
 		}
-		filters["dice_org_name"] = orgName
+		filters[DiceOrgNameFilterKey] = orgName
 		for _, name := range names {
 			return len(p.LogRetention.GetConfigKey(name, filters)) == 0
 		}
