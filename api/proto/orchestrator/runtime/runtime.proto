@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package erda.orchestrator.runtime;
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
@@ -109,6 +110,226 @@ message CheckRuntimeExistResp {
   bool ok = 1;
 }
 
+message StringMap {
+  map<string, string> data = 1;
+}
+
+message StringArray {
+  repeated string data = 1;
+}
+
+message RuntimeCreateRequestExtra {
+  uint64 orgId = 1;
+  uint64 projectId = 2;
+  uint64 applicationId = 3;
+  string applicationName = 4;
+  string workspace = 5;
+  uint64 buildId = 6;
+  string deployType = 7;
+  string instanceId = 8;
+  string clusterId = 9;
+  map<string, google.protobuf.Any> addonActions = 10;
+}
+
+message RuntimeCreateRequest {
+  string name = 1;
+  string releaseId = 2;
+  string operator = 3;
+  string clusterName = 4;
+  string source = 5;
+  RuntimeCreateRequestExtra extra = 6;
+  bool skipPushByOrch = 7;
+  string param = 8;
+  string deploymentOrderId = 9;
+  string releaseVersion = 10;
+  string extraParams = 11;
+}
+
+message DeploymentCreateResponse {
+  uint64 deploymentId = 1;
+  uint64 applicationId = 2;
+  uint64 runtimeId = 3;
+}
+
+message RuntimeReleaseCreateRequest {
+  string releaseId = 1;
+  string workspace = 2;
+  uint64 projectId = 3;
+  uint64 applicationId = 4;
+}
+
+message ListRuntimesRequest {
+  string applicationID = 1;
+  string workSpace = 2;
+  string name = 3;
+}
+
+message RuntimeServiceResource {
+  double cpu = 1;
+  int64 mem = 2;
+  int64 disk = 3;
+}
+
+message RuntimeServiceDeployments {
+  int32 replicas = 1;
+}
+
+message RuntimeInspectService {
+  string status = 1;
+  string hpaEnabled = 2;
+  string vpaEnabled = 3;
+  string type = 4;
+  RuntimeServiceDeployments deployments = 5;
+  RuntimeServiceResource resources = 6;
+  map<string, string> envs = 7;
+  repeated string addrs = 8;
+  repeated string expose = 9;
+  repeated ErrorResponse errors = 10;
+}
+
+message RuntimeSummary {
+  uint64 id = 1;
+  string name = 2;
+  string serviceGroupName = 3;
+  string serviceGroupNamespace = 4;
+  string source = 5;
+  string status = 6;
+  string deployStatus = 7;
+  string deleteStatus = 8;
+  string releaseId = 9;
+  uint64 clusterId = 10;
+  string clusterName = 11;
+  string clusterType = 12;
+  RuntimeServiceResource resources = 13;
+  map<string, google.protobuf.Any> extra = 14;
+  uint64 projectId = 15;
+  map<string, RuntimeInspectService> services = 16;
+  map<string, StringMap> moduleErrMsg = 17;
+  google.protobuf.Timestamp timeCreated = 18;
+  google.protobuf.Timestamp createdAt = 19;
+  google.protobuf.Timestamp updatedAt = 20;
+  google.protobuf.Timestamp deployAt = 21;
+  repeated ErrorResponse errors = 22;
+  string creator = 23;
+  uint64 applicationId = 24;
+  string applicationName = 25;
+  string deploymentOrderId = 26;
+  string deploymentOrderName = 27;
+  string releaseVersion = 28;
+  string rawStatus = 29;
+  string rawDeploymentStatus = 30;
+  string lastOperator = 31;
+  string lastOperatorName = 32;
+  string lastOperatorAvatar = 33;
+  google.protobuf.Timestamp lastOperatorTime = 34;
+  uint64 lastOperatorId = 35;
+}
+
+message RuntimeStopRequest {
+  string runtimeID = 1;
+}
+
+message ReDeployRuntimeActionRequest {
+  string runtimeID = 1;
+}
+
+message RollBackRuntimeActionRequest {
+  string runtimeID = 1;
+}
+
+message epBulkGetRuntimeStatusDetailRequest {
+  string runtimeIDs = 1;
+}
+
+message epBulkGetRuntimeStatusDetailResponse {
+  map<uint64, google.protobuf.Any> data = 1;
+}
+
+message PreDiceDTO {
+  string name = 1;
+  map<string, string> envs = 2;
+  map<string, RuntimeInspectService> services = 3;
+}
+
+message RuntimeScaleRecord {
+  uint64 applicationId = 1;
+  string workspace = 2;
+  string name = 3;
+  uint64 runtimeId = 4;
+  PreDiceDTO payload = 5;
+  string errMsg = 6;
+}
+
+message RuntimeScaleRecords {
+  repeated RuntimeScaleRecord runtimes = 1;
+  repeated uint64 ids = 2;
+}
+
+message BatchRuntimeScaleResults {
+  int32 total = 1;
+  int32 succeeded = 2;
+  int32 failed = 3;
+  repeated PreDiceDTO succeededScales = 4;
+  repeated uint64 succeededIds = 5;
+  repeated RuntimeScaleRecord failedScales = 6;
+  repeated uint64 failedIds = 7;
+}
+
+message ReferClusterRequest {
+  string cluster = 1;
+}
+
+message ReferClusterResponse {
+  bool data = 1;
+}
+
+message RuntimeLogsRequest {
+  string source = 1;
+  string id = 2;
+}
+
+message DashboardSpotLogLine {
+  string id = 1;
+  string source = 2;
+  string stream = 3;
+  string timestamp = 4;
+  string content = 5;
+  int64 offset = 6;
+  string level = 7;
+  string requestId = 8;
+}
+
+message DashboardSpotLogData {
+  repeated DashboardSpotLogLine lines = 1;
+  bool isFallback = 2;
+}
+
+message ListRuntimeByAppsRequest {
+  string applicationID = 1;
+  string workSpace = 2;
+}
+
+message ListMyRuntimesRequest {
+  string projectID = 1;
+  string workSpace = 2;
+  string appID = 3;
+}
+
+message CountPRByWorkspaceRequest {
+  string projectID = 1;
+  string appID = 2;
+  string workSpace = 3;
+}
+
+message CountPRByWorkspaceResponse {
+  map<string, uint64> data = 1;
+}
+
+message BatchRuntimeServiceRequest {
+  string runtimeID = 1;
+}
+
+
 service RuntimeService {
   rpc GetRuntime (GetRuntimeRequest) returns (RuntimeInspect) {
     option (google.api.http) = {
@@ -121,6 +342,96 @@ service RuntimeService {
   rpc DelRuntime (DelRuntimeRequest) returns (Runtime) {
     option (google.api.http) = {
       delete: "/api/runtimes/{id}",
+    };
+  }
+
+  rpc CreateRuntime(RuntimeCreateRequest) returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes",
+    };
+  }
+
+  rpc CreateRuntimeByReleaseAction(RuntimeReleaseCreateRequest) returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/deploy-release-action",
+    };
+  }
+
+  rpc ListRuntimes(ListRuntimesRequest) returns(RuntimeSummary) {
+    option (google.api.http) = {
+      get: "/api/runtimes",
+    };
+  }
+
+  rpc StopRuntime(RuntimeStopRequest) returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/{runtimeID}/actions/stop"
+    };
+  }
+
+  rpc ReDeployRuntimeAction(ReDeployRuntimeActionRequest)returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/{runtimeID}/actions/redeploy"
+    };
+  }
+
+  rpc RollBackRuntimeAction(RollBackRuntimeActionRequest)returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/{runtimeID}/actions/rollback-action"
+    };
+  }
+
+  rpc epBulkGetRuntimeStatusDetail(epBulkGetRuntimeStatusDetailRequest) returns (epBulkGetRuntimeStatusDetailResponse) {
+    option (google.api.http) = {
+      get: "/api/runtimes/actions/bulk-get-status"
+    };
+  }
+
+  rpc BatchUpdateOverlay(RuntimeScaleRecords) returns (BatchRuntimeScaleResults) {
+    option (google.api.http) = {
+      put: "/api/runtimes/actions/batch-update-pre-overlay"
+    };
+  }
+
+  rpc FullGC(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/full-gc"
+    };
+  }
+
+  rpc ReferCluster(ReferClusterRequest) returns (ReferClusterResponse) {
+    option (google.api.http) = {
+      get: "/api/runtimes/actions/refer-cluster"
+    };
+  }
+
+  rpc RuntimeLogs(RuntimeLogsRequest) returns (DashboardSpotLogData) {
+    option (google.api.http) = {
+      get: "/api/runtimes/deploy/logs"
+    };
+  }
+
+  rpc ListRuntimeByApps(ListRuntimeByAppsRequest) returns (RuntimeSummary) {
+    option (google.api.http) = {
+      get: "/api/runtimes/actions/group-by-apps"
+    };
+  }
+
+  rpc ListMyRuntimes(ListMyRuntimesRequest) returns (RuntimeSummary) {
+    option (google.api.http) = {
+      get: "/api/runtimes/actions/list-my-runtimes"
+    };
+  }
+
+  rpc CountPRByWorkspace(CountPRByWorkspaceRequest) returns (CountPRByWorkspaceResponse) {
+    option (google.api.http) = {
+      get: "/api/countProjectRuntime"
+    };
+  }
+
+  rpc BatchRuntimeService(BatchRuntimeServiceRequest) returns (RuntimeSummary) {
+    option (google.api.http) = {
+      get: "/api/runtimesServices"
     };
   }
 }
