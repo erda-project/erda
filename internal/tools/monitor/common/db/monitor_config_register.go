@@ -32,7 +32,7 @@ func (m *MonitorConfigRegisterDB) ListRegisterByOrgId(orgId string) ([]SpMonitor
 	var res = make([]SpMonitorConfigRegister, 0)
 	if err := m.Model(&SpMonitorConfigRegister{}).Where("scope = 'org' and scope_id = ?", orgId).Find(&res).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return make([]SpMonitorConfigRegister, 0), nil
+			return res, nil
 		}
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (m *MonitorConfigRegisterDB) ListRegisterByType(tpy string) ([]SpMonitorCon
 	var res = make([]SpMonitorConfigRegister, 0)
 	if err := m.Model(&SpMonitorConfigRegister{}).Where("type = ?", tpy).Find(&res).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return make([]SpMonitorConfigRegister, 0), nil
+			return res, nil
 		}
 		return nil, err
 	}
