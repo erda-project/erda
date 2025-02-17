@@ -16,16 +16,19 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-
-	"google.golang.org/protobuf/types/known/structpb"
+	"strconv"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
-	"github.com/erda-project/erda/internal/tools/monitor/oap/collector/lib"
+	"github.com/erda-project/erda/internal/tools/monitor/common/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 )
+
+const DiceOrgNameFilterKey = "dice_org_name"
 
 func (p *provider) syncCreateOrgMonitorConfig() error {
 	allOrgs, err := p.Org.ListOrg(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), &orgpb.ListOrgRequest{
@@ -35,92 +38,115 @@ func (p *provider) syncCreateOrgMonitorConfig() error {
 	if err != nil {
 		return err
 	}
-	defCfg := p.settingsService.getDefaultConfig(apis.Language(context.Background()), "")
+	client := db.New(p.DB)
+	defaultConfig := p.settingsService.getDefaultConfig(apis.Language(context.Background()), "")
 	for _, org := range allOrgs.List {
-		defSetting := &pb.PutSettingsRequest{
-			Data: make(map[string]*pb.ConfigGroups),
+		var registers []db.SpMonitorConfigRegister
+		monitorRegisters, err := client.MonitorConfigRegister.ListRegisterByOrgId(strconv.FormatUint(org.ID, 10))
+		if err != nil {
+			p.Log.Errorf("failed to get monitor config register by orgId: %d, err: %v", org.ID, err)
+			return err
 		}
-		for ns, cfg := range defCfg {
-			if ns == "general" {
+
+		logRegisters, err := client.MonitorConfigRegister.ListRegisterByType("log")
+		if err != nil {
+			p.Log.Errorf("failed to get monitor config register by type: log, err: %v", err)
+			return err
+		}
+		registers = make([]db.SpMonitorConfigRegister, 0, len(logRegisters)+len(monitorRegisters))
+		registers = append(registers, monitorRegisters...)
+		registers = append(registers, logRegisters...)
+
+		for _, register := range registers {
+			if !p.isEmptyConfig(&register, org) {
 				continue
 			}
-			for _, monitorType := range p.Cfg.SyncMonitorTypes {
-				isEmpty := p.isEmptyConfig(monitorType, ns, org)
-				if !isEmpty {
-					continue
-				}
-				monitorTTL := p.getTTL(monitorType, cfg)
-				if monitorTTL == nil {
-					continue
-				}
-				if defSetting.Data[ns] == nil {
-					defSetting.Data[ns] = &pb.ConfigGroups{
-						Groups: []*pb.ConfigGroup{
-							{
-								Key: "monitor",
-								Items: []*pb.ConfigItem{
-									{
-										Key:   fmt.Sprintf("%s_ttl", monitorType),
-										Value: monitorTTL,
-									},
-								},
-							},
-						},
-					}
-				} else {
-					defSetting.Data[ns].Groups[0].Items = append(defSetting.Data[ns].Groups[0].Items, &pb.ConfigItem{
-						Key:   fmt.Sprintf("%s_ttl", monitorType),
-						Value: monitorTTL,
-					})
-				}
+
+			nsConfig := defaultConfig[register.Namespace]
+			defConfig := nsConfig["monitor"]
+
+			req := &pb.PutSettingsWithTypeRequest{
+				OrgID: int64(org.ID),
+				Data: &pb.ConfigGroup{
+					Key:   "monitor",
+					Items: make([]*pb.ConfigItem, 0),
+				},
+				Namespace:   register.Namespace,
+				MonitorType: register.Type,
 			}
-		}
-		if len(defSetting.Data) > 0 {
-			defSetting.OrgID = int64(org.ID)
-			if _, err := p.settingsService.PutSettings(apis.WithInternalClientContext(context.Background(), discover.SvcMonitor), defSetting); err != nil {
-				p.Log.Errorf("failed to create default monitor config for org: %s, err: %v", org.Name, err)
+
+			var ttlItem *pb.ConfigItem
+			var hotTTLItem *pb.ConfigItem
+
+			switch register.Type {
+			case "log":
+				ttlItem = defConfig[LogsTTLKey]
+				hotTTLItem = defConfig[LogsHotTTLKey]
+			case "metric":
+				ttlItem = defConfig[MetricsTTLKey]
+				hotTTLItem = defConfig[MetricsHotTTLKey]
+			}
+
+			if ttlItem == nil {
+				err = fmt.Errorf("ttl item is nil, monitor type: %s", register.Type)
+				p.Log.Error(err)
+				return err
+			}
+			if hotTTLItem == nil {
+				err = fmt.Errorf("hot_ttl item is nil, monitor type: %s", register.Type)
+				p.Log.Error(err)
+				return err
+			}
+
+			req.Data.Items = append(req.Data.Items, ttlItem)
+			req.Data.Items = append(req.Data.Items, hotTTLItem)
+
+			if _, err := p.settingsService.PutSettingsWithType(context.Background(), req); err != nil {
+				p.Log.Errorf("failed to put settings with monitor type: %s, err: %v", register.Type, err)
+				return err
 			}
 		}
 	}
+
 	return nil
 }
 
-func (p *provider) isEmptyConfig(monitorType string, ns string, org *orgpb.Org) bool {
-	var key string
-	switch monitorType {
-	case "logs":
-		tags := map[string]string{
-			lib.DiceOrgNameKey: org.Name,
-			lib.DiceWorkspace:  ns,
+type KeyValue struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func (p *provider) isEmptyConfig(register *db.SpMonitorConfigRegister, org *orgpb.Org) bool {
+	var kvs []KeyValue
+	if err := json.Unmarshal([]byte(register.Filters), &kvs); err != nil {
+		p.Log.Errorf("failed to unmarshal filters, filters: %s, err: %v", register.Filters, err)
+		return false
+	}
+	filters := make(map[string]string)
+	for _, kv := range kvs {
+		filters[kv.Key] = kv.Value
+	}
+
+	names := strings.Split(register.Names, ",")
+
+	switch register.Type {
+	case "log":
+		orgName, err := p.settingsService.getOrgName(int64(org.ID))
+		if err != nil {
+			p.Log.Errorf("failed to get org name, err: %v", err)
+			return false
 		}
-		key = p.LogRetention.GetConfigKey("container", tags)
-	case "metrics":
-		tags := map[string]string{
-			lib.OrgNameKey:    org.Name,
-			lib.DiceWorkspace: ns,
+		filters[DiceOrgNameFilterKey] = orgName
+		for _, name := range names {
+			return len(p.LogRetention.GetConfigKey(name, filters)) == 0
 		}
-		key = p.MetricRetention.GetConfigKey("docker_container_summary", tags)
+
+	case "metric":
+		for _, name := range names {
+			return len(p.MetricRetention.GetConfigKey(name, filters)) == 0
+		}
 	default:
 		return false
 	}
-	return len(key) == 0
-}
-
-func (p *provider) getTTL(monitorType string, cfg map[string]map[string]*pb.ConfigItem) *structpb.Value {
-	if cfg == nil {
-		return nil
-	}
-	monitorCfg := cfg["monitor"]
-	if monitorCfg == nil {
-		return nil
-	}
-	ttl := monitorCfg[fmt.Sprintf("%s_ttl", monitorType)]
-	return ttl.Value
-}
-
-func (p *provider) autoCreateOrgMonitorConfig(orgID uint64) error {
-	p.settingsService.PutSettings(context.Background(), &pb.PutSettingsRequest{
-		OrgID: int64(orgID),
-	})
-	return nil
+	return false
 }
