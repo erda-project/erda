@@ -18,8 +18,9 @@ import "time"
 
 // table name
 const (
-	InstanceTenantTable = "tb_tmc_instance_tenant"
-	MonitorTable        = "sp_monitor"
+	InstanceTenantTable          = "tb_tmc_instance_tenant"
+	MonitorTable                 = "sp_monitor"
+	SpMonitorConfigRegisterTable = `sp_monitor_config_register`
 )
 
 type (
@@ -49,6 +50,20 @@ type (
 		Created     time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
 		Updated     time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
 	}
+
+	SpMonitorConfigRegister struct {
+		ID         int       `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+		Scope      string    `gorm:"column:scope;not null" json:"scope"`                  // org
+		ScopeID    string    `gorm:"column:scope_id;not null;default:''" json:"scope_id"` // org_id
+		Namespace  string    `gorm:"column:namespace;not null" json:"namespace"`          // dev,test,staging,prod,other
+		Type       string    `gorm:"column:type;not null" json:"type"`                    // metric、log
+		Names      string    `gorm:"column:names;not null" json:"names"`
+		Filters    string    `gorm:"column:filters;not null;default:''" json:"filters"`
+		Enable     bool      `gorm:"column:enable;not null;default:1" json:"enable"`
+		UpdateTime time.Time `gorm:"column:update_time;not null" json:"update_time"`
+		Desc       string    `gorm:"column:desc;not null;default:''" json:"desc"`
+		Hash       string    `gorm:"column:hash;not null;unique" json:"hash"`
+	}
 )
 
 func (InstanceTenant) TableName() string {
@@ -57,4 +72,8 @@ func (InstanceTenant) TableName() string {
 
 func (Monitor) TableName() string {
 	return MonitorTable
+}
+
+func (*SpMonitorConfigRegister) TableName() string {
+	return SpMonitorConfigRegisterTable
 }

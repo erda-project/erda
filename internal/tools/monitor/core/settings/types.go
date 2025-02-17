@@ -12,29 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package db
+package settings
 
-import "github.com/jinzhu/gorm"
-
-// DB .
-type DB struct {
-	*gorm.DB
-	Monitor               MonitorDb
-	InstanceTenant        InstanceTenantDb
-	MonitorConfigRegister *MonitorConfigRegisterDB
-}
-
-// New .
-func New(db *gorm.DB) *DB {
-	return &DB{
-		DB:                    db,
-		Monitor:               MonitorDb{db},
-		InstanceTenant:        InstanceTenantDb{db},
-		MonitorConfigRegister: NewMonitorConfigRegisterDB(db),
-	}
-}
-
-// Begin .
-func (db *DB) Begin() *DB {
-	return New(db.DB.Begin())
-}
+const (
+	LogsTTLKey       = `logs_ttl`
+	LogsHotTTLKey    = `logs_hot_ttl`
+	MetricsTTLKey    = `metrics_ttl`
+	MetricsHotTTLKey = `metrics_hot_ttl`
+)
