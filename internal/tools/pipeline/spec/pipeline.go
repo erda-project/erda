@@ -263,7 +263,10 @@ func (p *Pipeline) GetConfigManageNamespaces() []string {
 func (p *Pipeline) EnsureGC() {
 	gc := &p.Extra.GC
 	if gc.DatabaseGC == nil {
-		gc.DatabaseGC = &pb.PipelineDatabaseGC{}
+		gc.DatabaseGC = &pb.PipelineDatabaseGC{
+			Analyzed: &pb.PipelineDBGCItem{},
+			Finished: &pb.PipelineDBGCItem{},
+		}
 	}
 	if gc.ResourceGC == nil {
 		gc.ResourceGC = &pb.PipelineResourceGC{}
