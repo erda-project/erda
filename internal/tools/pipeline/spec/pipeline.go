@@ -26,6 +26,8 @@ import (
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 	"github.com/erda-project/erda/pkg/strutil"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 // Pipeline
@@ -261,6 +263,12 @@ func (p *Pipeline) GetConfigManageNamespaces() []string {
 // EnsureGC without nil field
 func (p *Pipeline) EnsureGC() {
 	gc := &p.Extra.GC
+	if gc.DatabaseGC == nil {
+		gc.DatabaseGC = &pb.PipelineDatabaseGC{}
+	}
+	if gc.ResourceGC == nil {
+		gc.ResourceGC = &pb.PipelineResourceGC{}
+	}
 	// resource
 	if gc.ResourceGC.SuccessTTLSecond == nil {
 		gc.ResourceGC.SuccessTTLSecond = &[]uint64{conf.SuccessPipelineDefaultResourceGCTTLSec()}[0]
