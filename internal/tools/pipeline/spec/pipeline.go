@@ -21,13 +21,12 @@ import (
 	"time"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 // Pipeline
