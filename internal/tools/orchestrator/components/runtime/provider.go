@@ -38,7 +38,7 @@ type provider struct {
 	DB           *gorm.DB                       `autowired:"mysql-client"`
 	EventManager *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
 	ClusterSvc   clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-
+	//Perm           perm.Interface                 `autowired:"permission"`
 	runtimeService pb.RuntimeServiceServer
 }
 
@@ -52,6 +52,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 
 	if p.Register != nil {
+		// TODO：在这里配置权限控制的策略，暂时还不知道怎么配置所以，暂时不配置。
 		pb.RegisterRuntimeServiceImp(p.Register, p.runtimeService, apis.Options())
 	}
 	return nil

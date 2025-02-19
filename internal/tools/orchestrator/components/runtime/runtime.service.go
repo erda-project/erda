@@ -17,8 +17,14 @@ package runtime
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,12 +37,15 @@ import (
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/pkg/user"
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -46,13 +55,330 @@ import (
 
 // Service implements pb.RuntimeServiceServer
 type Service struct {
-	logger logs.Logger
-
+	logger           logs.Logger
+	bdl              *bundle.Bundle // 这个是否应该引入，因为下面已经存在一个 bundle
 	bundle           BundleService
-	db               DBService
+	db               *dbclient.DBClient
 	evMgr            EventManagerService
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterSvc       clusterpb.ClusterServiceServer
+	runtime          *runtime.Runtime
+	scheduler        *scheduler.Scheduler
+}
+
+func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateRequest) (*pb.DeploymentCreateResponse, error) {
+	projectInfo, err := r.bdl.GetProject(req.Extra.ProjectId)
+	if err != nil {
+		return nil, apierrors.ErrCreateRuntime.InternalError(err)
+	}
+	clusterName, ok := projectInfo.ClusterConfig[req.Extra.Workspace]
+	if !ok {
+		return nil, apierrors.ErrCreateRuntime.InternalError(errors.New("cluster not found"))
+	}
+	req.ClusterName = clusterName
+	data, err := r.runtime.Create(user.ID(req.Operator), ConvertCreateRuntimePbToDTO(req))
+
+	if err != nil {
+		return nil, apierrors.ErrCreateRuntime.InternalError(err)
+	}
+	return ConvertDeploymentCreateResponseDTOToPb(data), nil
+}
+
+func (r *Service) CreateRuntimeByReleaseAction(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
+	operator := apis.GetUserID(ctx)
+	data, err := r.runtime.CreateByReleaseID(ctx, user.ID(operator), ConvertRuntimeReleaseCreateRequestToDTO(req))
+	if err != nil {
+		return nil, errorresp.New().InternalError(err)
+	}
+	return ConvertDeploymentCreateResponseDTOToPb(data), nil
+}
+
+func (r *Service) ListRuntimes(ctx context.Context, req *pb.ListRuntimesRequest) (*pb.ListRuntimeResponse, error) {
+	orgID, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InvalidParameter(err)
+	}
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, apierrors.ErrGetRuntime.NotLogin()
+	}
+
+	v := req.ApplicationID
+	appID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrListRuntime.InvalidParameter(strutil.Concat("applicationID: ", v))
+	}
+
+	workSpace := req.WorkSpace
+	name := req.Name
+
+	data, err := r.runtime.List(user.ID(userID), uint64(orgID), appID, workSpace, name)
+	if err != nil {
+		return nil, errorresp.New().InternalError(err)
+	}
+
+	userIDs := make([]string, 0, len(data))
+	for i := range data {
+		userIDs = append(userIDs, data[i].LastOperator)
+	}
+	return &pb.ListRuntimeResponse{
+		Data:    ConvertRuntimeSummaryToList(data),
+		UserIDs: userIDs,
+	}, nil
+}
+
+func (r *Service) StopRuntime(ctx context.Context, req *pb.RuntimeStopRequest) (*pb.DeploymentCreateResponse, error) {
+	orgID, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, apierrors.ErrDeployRuntime.InvalidParameter(err)
+	}
+	operator := apis.GetUserID(ctx)
+	if operator == "" {
+		return nil, apierrors.ErrDeployRuntime.NotLogin()
+	}
+	v := req.RuntimeID
+	runtimeID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrDeployRuntime.InvalidParameter(strutil.Concat("runtimeID: ", v))
+	}
+	data, err := r.runtime.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	if err != nil {
+		return nil, errorresp.New().InternalError(err)
+	}
+	return ConvertDeploymentCreateResponseDTOToPb(data), nil
+}
+
+func (r *Service) ReDeployRuntimeAction(ctx context.Context, req *pb.ReDeployRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+	orgID, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, apierrors.ErrDeployRuntime.InvalidParameter(err)
+	}
+	operator := apis.GetUserID(ctx)
+	if operator == "" {
+		return nil, apierrors.ErrDeployRuntime.NotLogin()
+	}
+	v := req.RuntimeID
+	runtimeID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrDeployRuntime.InvalidParameter(strutil.Concat("runtimeID: ", v))
+	}
+	data, err := r.runtime.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	if err != nil {
+		return nil, errorresp.New().InternalError(err)
+	}
+	return ConvertDeploymentCreateResponseDTOToPb(data), nil
+}
+
+func (r *Service) RollBackRuntimeAction(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+	orgID, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, apierrors.ErrRollbackRuntime.InvalidParameter(err)
+	}
+	operator := apis.GetUserID(ctx)
+	if operator == "" {
+		return nil, apierrors.ErrRollbackRuntime.NotLogin()
+	}
+	if req.DeploymentID <= 0 {
+		return nil, apierrors.ErrRollbackRuntime.InvalidParameter("deploymentID")
+	}
+	v := req.RuntimeID
+	runtimeID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrRollbackRuntime.InvalidParameter(strutil.Concat("runtimeID: ", v))
+	}
+	data, err := r.runtime.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	if err != nil {
+		return nil, errorresp.New().InternalError(err)
+	}
+	return ConvertDeploymentCreateResponseDTOToPb(data), nil
+}
+
+func (r *Service) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBulkGetRuntimeStatusDetailRequest) (*pb.EpBulkGetRuntimeStatusDetailResponse, error) {
+	rs_ := req.RuntimeIDs
+	rs := strings.Split(rs_, ",")
+	var runtimeIds []uint64
+	for _, r := range rs {
+		runtimeId, err := strconv.ParseUint(r, 10, 64)
+		if err != nil {
+			// TODO: 这里返回的错误类型不知道如何操作
+			return nil, errorresp.New().InternalError(err)
+		}
+		runtimeIds = append(runtimeIds, runtimeId)
+	}
+	//funcErrMsg := fmt.Sprintf("failed to bulk get runtime StatusDetail, runtimeIds: %v", runtimeIds)
+	runtimes, err := r.db.FindRuntimesByIds(runtimeIds)
+	if err != nil {
+		// TODO: 这里返回的错误类型不知道如何操作
+		return nil, errorresp.New().InternalError(err)
+	}
+	userId := apis.GetUserID(ctx)
+	if userId == "" {
+		return nil, apierrors.ErrGetRuntime.NotLogin()
+	}
+	data := make(map[uint64]interface{})
+	for _, rt := range runtimes {
+		vars := map[string]string{
+			"namespace": rt.ScheduleName.Namespace,
+			"name":      rt.ScheduleName.Name,
+		}
+		if status, err := r.scheduler.EpGetRuntimeStatus(context.Background(), vars); err != nil {
+			// TODO: 这里返回的错误类型不知道如何操作
+			return nil, errorresp.New().InternalError(err)
+		} else {
+			data[rt.ID] = status
+		}
+	}
+	return ConvertEpBulkGetRuntimeStatusDetailToPb(data), nil
+}
+
+func (r *Service) BatchUpdateOverlay(ctx context.Context, req *pb.RuntimeScaleRecords) (*pb.BatchRuntimeScaleResults, error) {
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, apierrors.ErrUpdateRuntime.NotLogin()
+	}
+
+	if len(req.Runtimes) == 0 && len(req.Ids) == 0 {
+		// TODO: 这里返回的错误类型不知道如何操作
+		return nil, apierrors.ErrUpdateRuntime.InvalidParameter(fmt.Sprintf("failed get diceyml.Object in table ps_v2_pre_builds for runtime ids %#v", req.Ids))
+	}
+
+	if len(req.Runtimes) != 0 && len(req.Ids) != 0 {
+		return nil, apierrors.ErrUpdateRuntime.InvalidParameter("failed to batch update Overlay, runtimeRecords and ids must only one wtih non-empty values in request body")
+	}
+
+	var runtimes []dbclient.Runtime
+	if len(req.Runtimes) == 0 {
+		runtimes, req.Runtimes, err := r.getRuntimeScaleRecordByRuntimeIds(req.Ids)
+		if err!= nil {
+			// TODO: 这里返回的错误类型不知道如何操作
+			logrus.Errorf("[batch redeploy] find runtimes by ids in ps_v2_project_runtimes failed, err: %v", err)
+			return nil, apierrors.ErrUpdateRuntime.InternalError(err)
+		}
+	}
+
+	for _, rsr := range req.Runtimes {
+		perm, err := r.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   userID,
+			Scope:    apistructs.AppScope,
+			ScopeID:  rsr.ApplicationId,
+			Resource: "runtime-" + strutil.ToLower(rsr.Workspace),
+			Action:   apistructs.OperateAction,
+		})
+		if err != nil {
+			return nil, apierrors.ErrUpdateRuntime.InternalError(err)
+		}
+		if !perm.Access {
+			return nil, apierrors.ErrUpdateRuntime.AccessDenied()
+		}
+	}
+
+	action := req.ScaleAction
+
+	// 根据 action 的取值执行相应操作
+	switch action {
+	// 批量重新部署
+	case apistructs.ScaleActionReDeploy:
+		logrus.Infof("[batch redeploy] do batch runtimes redeploy")
+		batchRuntimeReDeployResult := r.batchRuntimeReDeploy(ctx, userID, runtimes, req)
+		if batchRuntimeReDeployResult.Failed > 0 {
+			return nil, httpserver.NotOkResp(batchRuntimeReDeployResult, http.StatusInternalServerError)
+		}
+		logrus.Infof("[batch redeploy] redeploy all runtimes successfully")
+		return nil, httpserver.OkResp(batchRuntimeReDeployResult)
+
+	// 批量恢复
+	case apistructs.ScaleActionUp:
+		logrus.Infof("[batch recovery] do batch runtimes recover scale up from replicas 0 to last non-zero, will get non-zero from table ps_v2_pre_builds filed dice_overlay")
+		r.batchRuntimeRecovery(&req)
+
+	// 批量停止
+	case apistructs.ScaleActionDown:
+		logrus.Infof("[batch scale] do batch runtimes scale down to replicas 0")
+		r.batchRuntimeScaleAddRuntimeIDs(&req, apistructs.ScaleActionDown)
+
+	// 批量删除
+	case apistructs.ScaleActionDelete:
+		logrus.Infof("[batch delete] do batch runtimes delete")
+		batchRuntimeDeleteResult := r.batchRuntimeDelete(userID, runtimes, req)
+		if batchRuntimeDeleteResult.Failed > 0 {
+			return nil, httpserver.NotOkResp(batchRuntimeDeleteResult, http.StatusInternalServerError)
+		}
+		logrus.Infof("[batch delete] delete all runtimes successfully")
+		return nil, httpserver.OkResp(batchRuntimeDeleteResult)
+
+	// 请求字符串指定 scale_action	参数,但对应的值为无效值
+	default:
+		return apierrors.ErrUpdateRuntime.InvalidParameter("invalid parameter value for parameter " + apistructs.ScaleAction + ", valid value is [scaleUp] [scaleDown] [delete] [reDeploy]").ToResp(), nil
+	}
+
+	// scale runtime
+	//oldOverlayDataForAudits := make([]apistructs.PreDiceDTO,0)
+	oldOverlayDataForAudits := apistructs.BatchRuntimeScaleResults{
+		Total:           len(req.Runtimes),
+		Successed:       0,
+		Faild:           0,
+		FailedScales:    make([]apistructs.RuntimeScaleRecord, 0),
+		FailedIds:       make([]uint64, 0),
+		SuccessedScales: make([]apistructs.PreDiceDTO, 0),
+		SuccessedIds:    make([]uint64, 0),
+	}
+	for _, rsr := range req.Runtimes {
+		rsrDto := ConvertRuntimeScaleRecordToDTO(rsr)
+		oldOverlayDataForAudit, err, errMsg := r.processRuntimeScaleRecord(rsr, action)
+		if err != nil {
+			logrus.Errorf(errMsg)
+			oldOverlayDataForAudits.Faild++
+			rsr.ErrMsg = errMsg
+			oldOverlayDataForAudits.FailedIds = append(oldOverlayDataForAudits.FailedIds, rsr.RuntimeId)
+			oldOverlayDataForAudits.FailedScales = append(oldOverlayDataForAudits.FailedScales, rsrDto)
+		} else {
+			oldOverlayDataForAudits.Successed++
+			oldOverlayDataForAudits.SuccessedIds = append(oldOverlayDataForAudits.SuccessedIds, rsrDto.RuntimeID)
+			oldOverlayDataForAudits.SuccessedScales = append(oldOverlayDataForAudits.SuccessedScales, oldOverlayDataForAudit)
+		}
+	}
+
+	if oldOverlayDataForAudits.Faild > 0 {
+		return httpserver.NotOkResp(oldOverlayDataForAudits, http.StatusInternalServerError)
+	}
+	logrus.Infof("[batch scale] scale all runtimes successfully")
+	return httpserver.OkResp(oldOverlayDataForAudits)
+
+}
+
+func (r *Service) FullGC(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Service) ReferCluster(ctx context.Context, req *pb.ReferClusterRequest) (*pb.ReferClusterResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Service) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (*pb.DashboardSpotLogData, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Service) ListRuntimeByApps(ctx context.Context, req *pb.ListRuntimeByAppsRequest) (*pb.RuntimeSummary, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequest) (*pb.RuntimeSummary, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorkspaceRequest) (*pb.CountPRByWorkspaceResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Service) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeServiceRequest) (*pb.RuntimeSummary, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
@@ -561,9 +887,9 @@ func WithBundleService(s BundleService) ServiceOption {
 	}
 }
 
-func WithDBService(db DBService) ServiceOption {
+func WithDBService(db dbclient.DBClient) ServiceOption {
 	return func(service *Service) *Service {
-		service.db = db
+		service.db = &db
 		return service
 	}
 }
@@ -588,6 +914,8 @@ func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) ServiceOption {
 		return service
 	}
 }
+
+var server pb.RuntimeServiceServer = &Service{}
 
 func NewRuntimeService(options ...ServiceOption) pb.RuntimeServiceServer {
 	s := &Service{}

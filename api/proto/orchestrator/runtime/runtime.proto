@@ -54,7 +54,7 @@ message Extra {
 message ErrorResponse {
   string code = 1;
   string msg = 2;
-  string ctx = 3;
+  google.protobuf.Any ctx = 3;
 }
 
 message RuntimeInspect {
@@ -164,6 +164,11 @@ message ListRuntimesRequest {
   string name = 3;
 }
 
+message ListRuntimeResponse {
+  repeated RuntimeSummary data = 1;
+  repeated string userIDs = 2;
+}
+
 message RuntimeServiceResource {
   double cpu = 1;
   int64 mem = 2;
@@ -171,7 +176,7 @@ message RuntimeServiceResource {
 }
 
 message RuntimeServiceDeployments {
-  int32 replicas = 1;
+  int64 replicas = 1;
 }
 
 message RuntimeInspectService {
@@ -234,7 +239,8 @@ message ReDeployRuntimeActionRequest {
 }
 
 message RollBackRuntimeActionRequest {
-  string runtimeID = 1;
+  uint64 deploymentID = 1;
+  string runtimeID = 2;
 }
 
 message epBulkGetRuntimeStatusDetailRequest {
@@ -263,6 +269,7 @@ message RuntimeScaleRecord {
 message RuntimeScaleRecords {
   repeated RuntimeScaleRecord runtimes = 1;
   repeated uint64 ids = 2;
+  string scaleAction = 3;
 }
 
 message BatchRuntimeScaleResults {
@@ -357,9 +364,9 @@ service RuntimeService {
     };
   }
 
-  rpc ListRuntimes(ListRuntimesRequest) returns(RuntimeSummary) {
+  rpc ListRuntimes(ListRuntimesRequest) returns(ListRuntimeResponse) {
     option (google.api.http) = {
-      get: "/api/runtimes",
+      get: "/api/runtimes?applicationId={applicationID}&workspace={workSpace}&name={name}",
     };
   }
 
