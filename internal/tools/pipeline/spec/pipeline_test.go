@@ -79,16 +79,7 @@ func TestPipeline_EnsureGC(t *testing.T) {
 							SuccessTTLSecond: &ttl,
 							FailedTTLSecond:  nil,
 						},
-						DatabaseGC: &basepb.PipelineDatabaseGC{
-							Analyzed: &basepb.PipelineDBGCItem{
-								NeedArchive: nil,
-								TTLSecond:   &ttl,
-							},
-							Finished: &basepb.PipelineDBGCItem{
-								NeedArchive: &archive,
-								TTLSecond:   nil,
-							},
-						},
+						DatabaseGC: nil,
 					},
 				},
 			},
