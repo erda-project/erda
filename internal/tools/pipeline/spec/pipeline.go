@@ -21,6 +21,7 @@ import (
 	"time"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
@@ -261,6 +262,15 @@ func (p *Pipeline) GetConfigManageNamespaces() []string {
 // EnsureGC without nil field
 func (p *Pipeline) EnsureGC() {
 	gc := &p.Extra.GC
+	if gc.DatabaseGC == nil {
+		gc.DatabaseGC = &pb.PipelineDatabaseGC{
+			Analyzed: &pb.PipelineDBGCItem{},
+			Finished: &pb.PipelineDBGCItem{},
+		}
+	}
+	if gc.ResourceGC == nil {
+		gc.ResourceGC = &pb.PipelineResourceGC{}
+	}
 	// resource
 	if gc.ResourceGC.SuccessTTLSecond == nil {
 		gc.ResourceGC.SuccessTTLSecond = &[]uint64{conf.SuccessPipelineDefaultResourceGCTTLSec()}[0]
