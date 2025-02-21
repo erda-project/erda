@@ -42,7 +42,7 @@ func (m *ModelProvider) ToProtobuf() *pb.ModelProvider {
 		DeletedAt: timestamppb.New(m.DeletedAt.Time),
 		Name:      m.Name,
 		Desc:      m.Desc,
-		Type:      pb.ModelProviderType(pb.ModelProviderType_value[string(m.Type)]),
+		Type:      string(m.Type),
 		ApiKey:    m.APIKey,
 		Metadata:  m.Metadata.ToProtobuf(),
 	}

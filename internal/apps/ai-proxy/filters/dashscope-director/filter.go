@@ -56,5 +56,5 @@ func (f *DashScopeDirector) MultiResponseWriter(ctx context.Context) []io.ReadWr
 
 func (f *DashScopeDirector) Enable(ctx context.Context, req *http.Request) bool {
 	prov, ok := ctxhelper.GetModelProvider(ctx)
-	return ok && prov.Type == modelproviderpb.ModelProviderType_AliyunDashScope
+	return ok && prov.Type == modelproviderpb.ModelProviderType_AliyunDashScope.String()
 }

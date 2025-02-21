@@ -87,7 +87,7 @@ func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok {
 		return false
 	}
-	return prov.Type == modelproviderpb.ModelProviderType_Azure
+	return prov.Type == modelproviderpb.ModelProviderType_Azure.String()
 }
 
 func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {

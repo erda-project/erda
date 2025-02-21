@@ -81,7 +81,7 @@ func (f *OpenaiDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok {
 		return false
 	}
-	return prov.Type == modelproviderpb.ModelProviderType_OpenAI
+	return prov.Type == modelproviderpb.ModelProviderType_OpenAI.String()
 }
 
 func (f *OpenaiDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
