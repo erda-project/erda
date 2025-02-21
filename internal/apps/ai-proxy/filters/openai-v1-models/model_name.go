@@ -23,14 +23,25 @@ import (
 func GenerateModelDisplayName(model *richclientpb.RichModel) string {
 	s := model.Model.Name
 	attrs := []string{}
-	// provider type
-	attrs = append(attrs, "T:"+model.Provider.Type.String())
-	// provider location
+
+	// provider type & location
+	providerType := model.Provider.Type
+	location := ""
+
 	if model.Provider.Metadata != nil && model.Provider.Metadata.Public != nil {
 		if loc := model.Provider.Metadata.Public["location"]; loc != "" {
-			attrs = append(attrs, "L:"+loc)
+			location = loc
+		}
+		if displayProviderType := model.Provider.Metadata.Public["displayProviderType"]; displayProviderType != "" {
+			providerType = displayProviderType
 		}
 	}
+
+	attrs = append(attrs, "T:"+providerType)
+	if location != "" {
+		attrs = append(attrs, "L:"+location)
+	}
+
 	// model id at last
 	attrs = append(attrs, "ID:"+model.Model.Id)
 

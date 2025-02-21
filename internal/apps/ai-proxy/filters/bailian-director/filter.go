@@ -64,7 +64,7 @@ func (f *BailianDirector) MultiResponseWriter(ctx context.Context) []io.ReadWrit
 
 func (f *BailianDirector) Enable(ctx context.Context, req *http.Request) bool {
 	prov, ok := ctxhelper.GetModelProvider(ctx)
-	return ok && prov.Type == modelproviderpb.ModelProviderType_AliyunBailian
+	return ok && prov.Type == modelproviderpb.ModelProviderType_AliyunBailian.String()
 }
 
 func (f *BailianDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
