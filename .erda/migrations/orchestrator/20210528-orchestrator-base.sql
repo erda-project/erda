@@ -88,7 +88,7 @@ CREATE TABLE `ps_v2_domains`
     `created_at`    timestamp NULL DEFAULT NULL,
     `updated_at`    timestamp NULL DEFAULT NULL,
     `runtime_id`    bigint(20) unsigned NOT NULL,
-    `domain`        varchar(255) DEFAULT NULL,
+    `domain`        varchar(191) DEFAULT NULL,
     `domain_type`   varchar(255) DEFAULT NULL,
     `endpoint_name` varchar(255) DEFAULT NULL,
     `use_https`     tinyint(1) DEFAULT NULL,
