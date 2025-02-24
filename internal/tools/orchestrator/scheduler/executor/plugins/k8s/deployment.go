@@ -698,6 +698,8 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		return nil, err
 	}
 	logrus.Debugf("show k8s deployment, name: %s, deployment: %+v", deploymentName, deployment)
+
+	k.runAsDefaultUser(&deployment.Spec.Template.Spec)
 	return deployment, nil
 }
 
