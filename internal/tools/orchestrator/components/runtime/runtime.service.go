@@ -58,7 +58,7 @@ type Service struct {
 	logger           logs.Logger
 	bdl              *bundle.Bundle // 这个是否应该引入，因为下面已经存在一个 bundle
 	bundle           BundleService
-	db               *dbclient.DBClient
+	db               DBService
 	evMgr            EventManagerService
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterSvc       clusterpb.ClusterServiceServer
@@ -232,31 +232,33 @@ func (r *Service) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBu
 }
 
 func (r *Service) BatchUpdateOverlay(ctx context.Context, req *pb.RuntimeScaleRecords) (*pb.BatchRuntimeScaleResults, error) {
+	request := ConvertRuntimeScaleRecordsToDTO(req)
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, apierrors.ErrUpdateRuntime.NotLogin()
 	}
 
-	if len(req.Runtimes) == 0 && len(req.Ids) == 0 {
+	if len(request.Runtimes) == 0 && len(request.IDs) == 0 {
 		// TODO: 这里返回的错误类型不知道如何操作
-		return nil, apierrors.ErrUpdateRuntime.InvalidParameter(fmt.Sprintf("failed get diceyml.Object in table ps_v2_pre_builds for runtime ids %#v", req.Ids))
+		return nil, apierrors.ErrUpdateRuntime.InvalidParameter(fmt.Sprintf("failed get diceyml.Object in table ps_v2_pre_builds for runtime ids %#v", request.IDs))
 	}
 
-	if len(req.Runtimes) != 0 && len(req.Ids) != 0 {
+	if len(request.Runtimes) != 0 && len(request.IDs) != 0 {
 		return nil, apierrors.ErrUpdateRuntime.InvalidParameter("failed to batch update Overlay, runtimeRecords and ids must only one wtih non-empty values in request body")
 	}
 
+	var err error
 	var runtimes []dbclient.Runtime
-	if len(req.Runtimes) == 0 {
-		runtimes, req.Runtimes, err := r.getRuntimeScaleRecordByRuntimeIds(req.Ids)
-		if err!= nil {
+	if len(request.Runtimes) == 0 {
+		runtimes, request.Runtimes, err = r.getRuntimeScaleRecordByRuntimeIds(request.IDs)
+		if err != nil {
 			// TODO: 这里返回的错误类型不知道如何操作
 			logrus.Errorf("[batch redeploy] find runtimes by ids in ps_v2_project_runtimes failed, err: %v", err)
 			return nil, apierrors.ErrUpdateRuntime.InternalError(err)
 		}
 	}
 
-	for _, rsr := range req.Runtimes {
+	for _, rsr := range request.Runtimes {
 		perm, err := r.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   userID,
 			Scope:    apistructs.AppScope,
@@ -279,8 +281,9 @@ func (r *Service) BatchUpdateOverlay(ctx context.Context, req *pb.RuntimeScaleRe
 	// 批量重新部署
 	case apistructs.ScaleActionReDeploy:
 		logrus.Infof("[batch redeploy] do batch runtimes redeploy")
-		batchRuntimeReDeployResult := r.batchRuntimeReDeploy(ctx, userID, runtimes, req)
+		batchRuntimeReDeployResult := r.batchRuntimeReDeploy(ctx, user.ID(userID), runtimes, *request)
 		if batchRuntimeReDeployResult.Failed > 0 {
+			return nil, apierrors.ErrUpdateRuntime.InternalError()
 			return nil, httpserver.NotOkResp(batchRuntimeReDeployResult, http.StatusInternalServerError)
 		}
 		logrus.Infof("[batch redeploy] redeploy all runtimes successfully")
@@ -289,17 +292,17 @@ func (r *Service) BatchUpdateOverlay(ctx context.Context, req *pb.RuntimeScaleRe
 	// 批量恢复
 	case apistructs.ScaleActionUp:
 		logrus.Infof("[batch recovery] do batch runtimes recover scale up from replicas 0 to last non-zero, will get non-zero from table ps_v2_pre_builds filed dice_overlay")
-		r.batchRuntimeRecovery(&req)
+		r.batchRuntimeRecovery(request)
 
 	// 批量停止
 	case apistructs.ScaleActionDown:
 		logrus.Infof("[batch scale] do batch runtimes scale down to replicas 0")
-		r.batchRuntimeScaleAddRuntimeIDs(&req, apistructs.ScaleActionDown)
+		r.batchRuntimeScaleAddRuntimeIDs(request, apistructs.ScaleActionDown)
 
 	// 批量删除
 	case apistructs.ScaleActionDelete:
 		logrus.Infof("[batch delete] do batch runtimes delete")
-		batchRuntimeDeleteResult := r.batchRuntimeDelete(userID, runtimes, req)
+		batchRuntimeDeleteResult := r.batchRuntimeDelete(user.ID(userID), runtimes, *request)
 		if batchRuntimeDeleteResult.Failed > 0 {
 			return nil, httpserver.NotOkResp(batchRuntimeDeleteResult, http.StatusInternalServerError)
 		}
@@ -314,7 +317,7 @@ func (r *Service) BatchUpdateOverlay(ctx context.Context, req *pb.RuntimeScaleRe
 	// scale runtime
 	//oldOverlayDataForAudits := make([]apistructs.PreDiceDTO,0)
 	oldOverlayDataForAudits := apistructs.BatchRuntimeScaleResults{
-		Total:           len(req.Runtimes),
+		Total:           len(request.Runtimes),
 		Successed:       0,
 		Faild:           0,
 		FailedScales:    make([]apistructs.RuntimeScaleRecord, 0),
@@ -322,24 +325,24 @@ func (r *Service) BatchUpdateOverlay(ctx context.Context, req *pb.RuntimeScaleRe
 		SuccessedScales: make([]apistructs.PreDiceDTO, 0),
 		SuccessedIds:    make([]uint64, 0),
 	}
-	for _, rsr := range req.Runtimes {
-		rsrDto := ConvertRuntimeScaleRecordToDTO(rsr)
+	for _, rsr := range request.Runtimes {
 		oldOverlayDataForAudit, err, errMsg := r.processRuntimeScaleRecord(rsr, action)
 		if err != nil {
 			logrus.Errorf(errMsg)
 			oldOverlayDataForAudits.Faild++
 			rsr.ErrMsg = errMsg
-			oldOverlayDataForAudits.FailedIds = append(oldOverlayDataForAudits.FailedIds, rsr.RuntimeId)
-			oldOverlayDataForAudits.FailedScales = append(oldOverlayDataForAudits.FailedScales, rsrDto)
+			oldOverlayDataForAudits.FailedIds = append(oldOverlayDataForAudits.FailedIds, rsr.RuntimeID)
+			oldOverlayDataForAudits.FailedScales = append(oldOverlayDataForAudits.FailedScales, rsr)
 		} else {
 			oldOverlayDataForAudits.Successed++
-			oldOverlayDataForAudits.SuccessedIds = append(oldOverlayDataForAudits.SuccessedIds, rsrDto.RuntimeID)
+			oldOverlayDataForAudits.SuccessedIds = append(oldOverlayDataForAudits.SuccessedIds, rsr.RuntimeID)
 			oldOverlayDataForAudits.SuccessedScales = append(oldOverlayDataForAudits.SuccessedScales, oldOverlayDataForAudit)
 		}
 	}
 
 	if oldOverlayDataForAudits.Faild > 0 {
-		return httpserver.NotOkResp(oldOverlayDataForAudits, http.StatusInternalServerError)
+		return nil, nil
+		return nil, httpserver.NotOkResp(oldOverlayDataForAudits, http.StatusInternalServerError)
 	}
 	logrus.Infof("[batch scale] scale all runtimes successfully")
 	return httpserver.OkResp(oldOverlayDataForAudits)
@@ -347,18 +350,59 @@ func (r *Service) BatchUpdateOverlay(ctx context.Context, req *pb.RuntimeScaleRe
 }
 
 func (r *Service) FullGC(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
-	//TODO implement me
-	panic("implement me")
+	go r.runtime.FullGC()
+	return nil, nil
 }
 
 func (r *Service) ReferCluster(ctx context.Context, req *pb.ReferClusterRequest) (*pb.ReferClusterResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	identity := apis.GetIdentityInfo(ctx)
+	if identity == nil {
+		return nil, apierrors.ErrReferRuntime.NotLogin()
+	}
+
+	v := apis.GetOrgID(ctx)
+	orgID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrReferRuntime.InvalidParameter(err)
+	}
+
+	clusterName := req.Cluster
+	referred := r.runtime.ReferCluster(clusterName, orgID)
+
+	return ConvertReferClusterResponseToPb(referred), nil
+
 }
 
 func (r *Service) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (*pb.DashboardSpotLogData, error) {
-	//TODO implement me
-	panic("implement me")
+	v := apis.GetOrgID(ctx)
+	orgID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InvalidParameter(err)
+	}
+
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, apierrors.ErrCreateAddon.NotLogin()
+	}
+
+	source := req.Source
+	id := req.Id
+	if source == "" {
+		return nil, apierrors.ErrGetRuntime.MissingParameter("source")
+	}
+	if id == "" {
+		return nil, apierrors.ErrGetRuntime.MissingParameter("id")
+	}
+	deploymentID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id))
+	}
+	request := ConvertRuntimeLogsRequestToDTO(req)
+	result, err := r.runtime.RuntimeDeployLogs(user.ID(userID), orgID, apis.GetOrg(ctx), deploymentID, request)
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id))
+	}
+	return ConvertDashboardSpotLogDataToPb(result), nil
 }
 
 func (r *Service) ListRuntimeByApps(ctx context.Context, req *pb.ListRuntimeByAppsRequest) (*pb.RuntimeSummary, error) {
@@ -366,19 +410,186 @@ func (r *Service) ListRuntimeByApps(ctx context.Context, req *pb.ListRuntimeByAp
 	panic("implement me")
 }
 
-func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequest) (*pb.RuntimeSummary, error) {
-	//TODO implement me
-	panic("implement me")
+func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequest) (*pb.ListMyRuntimesResponse, error) {
+	var (
+		appIDs     []uint64
+		env        string
+		appID2Name = make(map[uint64]string)
+	)
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, apierrors.ErrListRuntime.NotLogin()
+	}
+	v := apis.GetOrgID(ctx)
+	orgID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrListRuntime.NotLogin()
+	}
+
+	projectIDStr := req.ProjectID
+	if projectIDStr == "" {
+		return nil, apierrors.ErrListRuntime.MissingParameter("projectID")
+	}
+
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrListRuntime.InvalidParameter("projectID")
+	}
+
+	appIDStrs := req.AppID
+	for _, str := range appIDStrs {
+		id, err := strconv.ParseUint(str, 10, 64)
+		if err != nil {
+			return nil, apierrors.ErrGetRuntime.InvalidState("appID")
+		}
+		appIDs = append(appIDs, id)
+	}
+
+	envParam := req.WorkSpace
+	if len(envParam) == 0 {
+		env = ""
+	} else {
+		env = envParam[0]
+	}
+
+	var myAppIDs []uint64
+	myApps, err := r.bdl.GetMyAppsByProject(userID, orgID, projectID, "")
+	for i := range myApps.List {
+		myAppIDs = append(myAppIDs, myApps.List[i].ID)
+		appID2Name[myApps.List[i].ID] = myApps.List[i].Name
+	}
+
+	var targetAppIDs []uint64
+	if len(appIDs) == 0 {
+		targetAppIDs = myAppIDs
+	} else {
+		for _, id := range appIDs {
+			if _, ok := appID2Name[id]; ok {
+				targetAppIDs = append(targetAppIDs, id)
+			}
+		}
+	}
+
+	runtimes, err := r.runtime.ListGroupByApps(targetAppIDs, env)
+	if err != nil {
+		return nil, apierrors.ErrListRuntime.InternalError(err)
+	}
+
+	var res *pb.ListMyRuntimesResponse
+	for _, runtimeSummaryList := range runtimes {
+		for _, runtimeSummary := range runtimeSummaryList {
+			res.Data = append(res.Data, ConvertRuntimeSummaryDTOToPb(runtimeSummary))
+		}
+	}
+
+	return res, nil
 }
 
 func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorkspaceRequest) (*pb.CountPRByWorkspaceResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var (
+		l          = logrus.WithField("func", "*Endpoints.CountPRByWorkspace")
+		resp       = make(map[string]uint64)
+		defaultEnv = []string{"STAGING", "DEV", "PROD", "TEST"}
+	)
+
+	userId := apis.GetUserID(ctx)
+	if userId == "" {
+		return nil, errors.New("invalid user id")
+	}
+
+	v := apis.GetOrgID(ctx)
+	orgId, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	projectIDStr := req.ProjectID
+	if projectIDStr == "" {
+		return nil, apierrors.ErrGetRuntime.InvalidParameter("projectId")
+	}
+
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InvalidParameter("projectId")
+	}
+
+	appIDStr := req.AppID
+	envParam := req.WorkSpace
+	if appIDStr != "" {
+		appId, err := strconv.ParseUint(appIDStr, 10, 64)
+		if err != nil {
+			return nil, apierrors.ErrGetRuntime.InvalidParameter("appId")
+		}
+		if len(envParam) == 0 || envParam[0] == "" {
+			for i := 0; i < len(defaultEnv); i++ {
+				cnt, err := r.runtime.CountARByWorkspace(appId, defaultEnv[i])
+				if err != nil {
+					l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
+				}
+				resp[defaultEnv[i]] = cnt
+			}
+		} else {
+			env := envParam[0]
+			cnt, err := r.runtime.CountARByWorkspace(appId, env)
+			if err != nil {
+				l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+			}
+			resp[env] = cnt
+		}
+	} else {
+		apps, err := r.bdl.GetMyApps(userId, orgId)
+		if err != nil {
+			return nil, err
+		}
+		appIdMap := make(map[uint64]bool)
+		for i := 0; i < len(apps.List); i++ {
+			if apps.List[i].ProjectID == projectID {
+				appIdMap[apps.List[i].ID] = true
+			}
+		}
+		if len(envParam) == 0 || envParam[0] == "" {
+			for i := 0; i < len(defaultEnv); i++ {
+				for aid := range appIdMap {
+					cnt, err := r.runtime.CountARByWorkspace(aid, defaultEnv[i])
+					if err != nil {
+						l.WithError(err).Warnf("count runtimes of app %s failed", defaultEnv[i])
+					}
+					resp[defaultEnv[i]] += cnt
+				}
+			}
+		} else {
+			env := envParam[0]
+			for aid := range appIdMap {
+				cnt, err := r.runtime.CountARByWorkspace(aid, env)
+				if err != nil {
+					l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+				}
+				resp[env] += cnt
+			}
+		}
+	}
+	return ConvertCountPRByWorkspaceResponse(resp), nil
 }
 
-func (r *Service) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeServiceRequest) (*pb.RuntimeSummary, error) {
-	//TODO implement me
-	panic("implement me")
+func (r *Service) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeServiceRequest) (*pb.BatchRuntimeServiceResponse, error) {
+	var (
+		l          = logrus.WithField("func", "*Endpoints.BatchRuntimeServices")
+		runtimeIDs []uint64
+	)
+
+	for _, runtimeID := range req.RuntimeID {
+		id, err := strconv.ParseUint(runtimeID, 10, 64)
+		if err != nil {
+			l.WithError(err).Warnf("failed to parse applicationID: failed to ParseUint: %s", runtimeID)
+		}
+		runtimeIDs = append(runtimeIDs, id)
+	}
+
+	serviceMap, err := r.runtime.GetServiceByRuntime(runtimeIDs)
+	if err != nil {
+		return nil, apierrors.ErrListRuntime.InternalError(err)
+	}
+	return ConvertBatchRuntimeServiceResponse(serviceMap), nil
 }
 
 func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
@@ -887,9 +1098,9 @@ func WithBundleService(s BundleService) ServiceOption {
 	}
 }
 
-func WithDBService(db dbclient.DBClient) ServiceOption {
+func WithDBService(db DBService) ServiceOption {
 	return func(service *Service) *Service {
-		service.db = &db
+		service.db = db
 		return service
 	}
 }

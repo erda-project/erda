@@ -6,6 +6,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
 )
 
 func ConvertCreateRuntimePbToDTO(req *pb.RuntimeCreateRequest) *apistructs.RuntimeCreateRequest {
@@ -244,4 +245,75 @@ func ConvertRuntimeScaleRecordToDTO(req *pb.RuntimeScaleRecord) apistructs.Runti
 		PayLoad:       ConvertPreDiceToDTO(req.Payload),
 		ErrMsg:        req.ErrMsg,
 	}
+}
+
+func ConvertRuntimeScaleRecordsToDTO(req *pb.RuntimeScaleRecords) *apistructs.RuntimeScaleRecords {
+	runtimes := make([]apistructs.RuntimeScaleRecord, len(req.Runtimes))
+	for _, v := range req.Runtimes {
+		runtimes = append(runtimes, ConvertRuntimeScaleRecordToDTO(v))
+	}
+	return &apistructs.RuntimeScaleRecords{
+		Runtimes: runtimes,
+		IDs:      req.Ids,
+	}
+}
+
+func ConvertReferClusterResponseToPb(req bool) *pb.ReferClusterResponse {
+	return &pb.ReferClusterResponse{
+		Data: req,
+	}
+}
+
+func ConvertRuntimeLogsRequestToDTO(req *pb.RuntimeLogsRequest) *apistructs.DashboardSpotLogRequest {
+	return &apistructs.DashboardSpotLogRequest{
+		ID:          req.Id,
+		Source:      apistructs.DashboardSpotLogSource(req.Source),
+		Stream:      apistructs.DashboardSpotLogStream(req.Stream),
+		Count:       req.Count,
+		Start:       time.Duration(req.Start),
+		End:         time.Duration(req.End),
+		Debug:       req.Debug,
+		ClusterName: req.ClusterName,
+		PipelineID:  req.PipelineID,
+	}
+}
+
+func ConvertDashboardSpotLogLineToPb(req *apistructs.DashboardSpotLogLine) *pb.DashboardSpotLogLine {
+	return &pb.DashboardSpotLogLine{
+		Id:        req.ID,
+		Source:    req.Source,
+		Stream:    req.Stream,
+		Timestamp: req.TimeStamp,
+		Content:   req.Content,
+		Offset:    req.Offset,
+		Level:     req.Level,
+		RequestId: req.RequestID,
+	}
+}
+
+func ConvertDashboardSpotLogLineListToPb(req []apistructs.DashboardSpotLogLine) []*pb.DashboardSpotLogLine {
+	data := make([]*pb.DashboardSpotLogLine, 0, len(req))
+	for _, v := range req {
+		data = append(data, ConvertDashboardSpotLogLineToPb(&v))
+	}
+	return data
+}
+
+func ConvertDashboardSpotLogDataToPb(req *apistructs.DashboardSpotLogData) *pb.DashboardSpotLogData {
+	return &pb.DashboardSpotLogData{
+		Lines:      ConvertDashboardSpotLogLineListToPb(req.Lines),
+		IsFallback: req.IsFallBack,
+	}
+}
+
+func ConvertCountPRByWorkspaceResponse(req map[string]uint64) *pb.CountPRByWorkspaceResponse {
+	return &pb.CountPRByWorkspaceResponse{Data: req}
+}
+
+func ConvertBatchRuntimeServiceResponse(req map[uint64]*apistructs.RuntimeSummaryDTO) *pb.BatchRuntimeServiceResponse {
+	var data *pb.BatchRuntimeServiceResponse
+	for key, value := range req {
+		data.Data[key] = ConvertRuntimeSummaryDTOToPb(value)
+	}
+	return data
 }

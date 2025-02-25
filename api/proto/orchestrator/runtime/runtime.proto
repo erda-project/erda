@@ -293,6 +293,13 @@ message ReferClusterResponse {
 message RuntimeLogsRequest {
   string source = 1;
   string id = 2;
+  string stream = 3;
+  int64 count = 4;
+  int64 start = 5;
+  int64 end = 6;
+  bool debug = 7;
+  string clusterName = 8;
+  string pipelineID = 9;
 }
 
 message DashboardSpotLogLine {
@@ -318,14 +325,18 @@ message ListRuntimeByAppsRequest {
 
 message ListMyRuntimesRequest {
   string projectID = 1;
-  string workSpace = 2;
-  string appID = 3;
+  repeated string workSpace = 2;
+  repeated string appID = 3;
+}
+
+message ListMyRuntimesResponse {
+  repeated RuntimeSummary data = 1;
 }
 
 message CountPRByWorkspaceRequest {
   string projectID = 1;
   string appID = 2;
-  string workSpace = 3;
+  repeated string workSpace = 3;
 }
 
 message CountPRByWorkspaceResponse {
@@ -333,7 +344,11 @@ message CountPRByWorkspaceResponse {
 }
 
 message BatchRuntimeServiceRequest {
-  string runtimeID = 1;
+  repeated string runtimeID = 1;
+}
+
+message BatchRuntimeServiceResponse {
+  map<uint64, RuntimeSummary> data = 1;
 }
 
 
@@ -424,7 +439,7 @@ service RuntimeService {
     };
   }
 
-  rpc ListMyRuntimes(ListMyRuntimesRequest) returns (RuntimeSummary) {
+  rpc ListMyRuntimes(ListMyRuntimesRequest) returns (ListMyRuntimesResponse) {
     option (google.api.http) = {
       get: "/api/runtimes/actions/list-my-runtimes"
     };
@@ -436,7 +451,7 @@ service RuntimeService {
     };
   }
 
-  rpc BatchRuntimeService(BatchRuntimeServiceRequest) returns (RuntimeSummary) {
+  rpc BatchRuntimeService(BatchRuntimeServiceRequest) returns (BatchRuntimeServiceResponse) {
     option (google.api.http) = {
       get: "/api/runtimesServices"
     };
