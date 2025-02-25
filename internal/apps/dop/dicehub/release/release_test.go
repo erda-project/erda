@@ -27,6 +27,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"gopkg.in/stretchr/testify.v1/assert"
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -569,6 +571,89 @@ version: "2.0"
 			p.Unpatch()
 			mock.ExpectClose()
 			_ = conn.Close()
+		})
+	}
+}
+
+func TestReleaseServiceGC(t *testing.T) {
+	testCase := []struct {
+		name     string
+		dbDir    string
+		dbPath   string
+		dbEngine string
+		releases []db.Release
+	}{
+		{
+			name:     "baseTest",
+			dbDir:    "./testdata",
+			dbPath:   "./testdata/test.db",
+			dbEngine: "sqlite3",
+			releases: []db.Release{
+				{
+					ReleaseID:        "1",
+					ReleaseName:      "chenhaiqing",
+					Desc:             "",
+					Dice:             "",
+					Addon:            "",
+					Changelog:        "",
+					IsStable:         false,
+					IsFormal:         false,
+					IsProjectRelease: false,
+					Modes:            "",
+					Labels:           "",
+					GitBranch:        "",
+					Version:          "",
+					OrgID:            0,
+					ProjectID:        1,
+					ApplicationID:    2,
+					ProjectName:      "chenhaiqing",
+					ApplicationName:  "chenhaiqing",
+					UserID:           "",
+					ClusterName:      "",
+					Resources:        "",
+					Reference:        0,
+					CrossCluster:     false,
+					CreatedAt:        time.Time{},
+					UpdatedAt:        time.Time{},
+					IsLatest:         false,
+				},
+			},
+		},
+	}
+	for _, tt := range testCase {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := os.Stat(tt.dbDir); os.IsNotExist(err) {
+				err = os.Mkdir(tt.dbDir, 0755)
+				assert.NoError(t, err)
+			}
+			if _, err := os.Stat(tt.dbPath); os.IsNotExist(err) {
+				_, err = os.Create(tt.dbPath)
+				assert.NoError(t, err)
+			}
+			dbClient, err := gorm.Open("sqlite3", "./testdata/test.db")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !dbClient.HasTable(&db.Release{}) {
+				dbClient.CreateTable(db.Release{})
+			}
+			rs := ReleaseService{
+				db: &db.ReleaseConfigDB{
+					DB: dbClient,
+				},
+				Config: &releaseConfig{MaxTimeReserved: "72"},
+			}
+			// insert data into db to test
+			for _, release := range tt.releases {
+				rs.db.Create(&release)
+			}
+			now := time.Now()
+			err = rs.RemoveDeprecatedsReleases(now)
+			assert.NoError(t, err)
+			dbClient.Exec("delete from dice_release")
+			// delete db dir
+			err = os.RemoveAll(tt.dbDir)
+			assert.NoError(t, err)
 		})
 	}
 }

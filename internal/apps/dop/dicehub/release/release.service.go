@@ -1055,6 +1055,60 @@ func (s *ReleaseService) GetLatestReleasesByProjectAndVersion(projectID int64, v
 	return &latests, nil
 }
 
+func (s *ReleaseService) FindExpiredReleaseBefore(now time.Time) ([]db.Release, error) {
+	d, err := time.ParseDuration(strutil.Concat("-", s.Config.MaxTimeVersionedRelease, "h"))
+	before := now.Add(d)
+	releasesWithIDs, err := s.db.GetGroupRelease()
+	if err != nil {
+		return nil, err
+	}
+	// Save all releases that need to be deleted
+	deleteReleases := make([]db.Release, 0)
+	for _, releaseWithID := range releasesWithIDs {
+		// All release of current application
+		releases, err := s.db.ListReleaseByAppAndProject(releaseWithID.ProjectID, releaseWithID.ApplicationID)
+		if err != nil {
+			return nil, err
+		}
+		// expired release of current application
+		expiredReleases, err := s.db.ListExpireReleaseWithVersion(releaseWithID.ProjectID, releaseWithID.ApplicationID, before)
+
+		if err != nil {
+			return nil, err
+		}
+
+		releaseCount := int32(len(releases))
+		expiredCount := int32(len(expiredReleases))
+
+		minReleaseLimit := s.Config.MinReleaseLimit
+		maxReleaseLimit := s.Config.MaxReleaseLimit
+
+		if releaseCount <= minReleaseLimit {
+			// If the quantity of release is less than minReleaseLimit, there is no need to delete
+			continue
+		} else if releaseCount < maxReleaseLimit {
+			// delete releases utils the quantity of release is minReleaseLimit
+			if releaseCount-expiredCount < minReleaseLimit {
+				ableToDeleteCount := releaseCount - minReleaseLimit
+				deleteReleases = append(deleteReleases, expiredReleases[:ableToDeleteCount]...)
+			} else {
+				deleteReleases = append(deleteReleases, expiredReleases...)
+			}
+		} else {
+			// delete releases utils the quantity of release is minReleaseLimit~maxReleaseLimit
+			if releaseCount-expiredCount < minReleaseLimit {
+				deleteReleases = append(deleteReleases, expiredReleases[:releaseCount-minReleaseLimit]...)
+			} else {
+				deleteReleases = append(deleteReleases, expiredReleases...)
+				if releaseCount-expiredCount > maxReleaseLimit {
+					deleteReleases = append(deleteReleases, releases[:releaseCount-expiredCount-maxReleaseLimit]...)
+				}
+			}
+		}
+	}
+	return deleteReleases, nil
+}
+
 // RemoveDeprecatedsReleases Recycling expired release
 func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 	d, err := time.ParseDuration(strutil.Concat("-", s.Config.MaxTimeReserved, "h"))
@@ -1071,13 +1125,25 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 	logrus.Infof("found %d releases that had no references before %s",
 		len(releases), before.Format("2006-01-02 15:04:05"))
 
+	// version is None will be deleted
+	var versionNoneRelease []db.Release
 	for i := range releases {
 		release := releases[i]
 		if release.Version != "" {
 			logrus.Debugf("release %s have been tagged, can't be recycled", release.ReleaseID)
 			continue
 		}
+		versionNoneRelease = append(versionNoneRelease, release)
+	}
+	// list of release with version need to be deleted
+	versionRelease, err := s.FindExpiredReleaseBefore(now)
+	if err != nil {
+		return err
+	}
 
+	deleteRelease := append(versionRelease, versionNoneRelease...)
+
+	for _, release := range deleteRelease {
 		images, err := s.imageDB.GetImagesByRelease(release.ReleaseID)
 		if err != nil {
 			logrus.Warnf(err.Error())
@@ -1118,6 +1184,7 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 			logrus.Infof("deleted release: %s", release.ReleaseID)
 		}
 	}
+
 	return nil
 }
 
