@@ -40,7 +40,10 @@ func (p *provider) Ensure(ctx context.Context, tenant, key string, ttlDays int64
 	writeTableName = fmt.Sprintf("%s_%s_%s", p.Cfg.TablePrefix, table.NormalizeKey(tenant), table.NormalizeKey(key))
 	searchTableName := fmt.Sprintf("%s_%s", p.Cfg.TablePrefix, table.NormalizeKey(tenant))
 
-	if _, ok := p.created.Load(writeTableName); ok {
+	_, createdWriteTable := p.created.Load(writeTableName)
+	_, createdWriteTableAll := p.created.Load(writeTableName + "_all")
+	_, createdSearchTable := p.created.Load(searchTableName + "_search")
+	if createdWriteTable && createdWriteTableAll && createdSearchTable {
 		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, writeTableName)
 	}
 
@@ -78,6 +81,8 @@ func (p *provider) Run(ctx context.Context) error {
 					err = p.createTable(ctx, req.TableName, req.AliasName, req.TTLDays)
 					if err == nil {
 						p.created.Store(req.TableName, true)
+						p.created.Store(req.TableName+"_all", true)
+						p.created.Store(req.AliasName+"_search", true)
 						return
 					}
 					p.Log.Error(err)

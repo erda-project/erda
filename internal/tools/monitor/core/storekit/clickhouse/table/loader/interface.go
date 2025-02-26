@@ -33,11 +33,21 @@ type Interface interface {
 
 func (p *provider) ExistsWriteTable(tenant, key string) (ok bool, writeTableName string) {
 	writeTableName = fmt.Sprintf("%s.%s_%s_%s", p.Cfg.Database, p.Cfg.TablePrefix, table.NormalizeKey(tenant), table.NormalizeKey(key))
+	writeTableNameAll := fmt.Sprintf("%s.%s_%s_%s_all", p.Cfg.Database, p.Cfg.TablePrefix, table.NormalizeKey(tenant), table.NormalizeKey(key))
+	searchTableName := fmt.Sprintf("%s.%s_%s_search", p.Cfg.Database, p.Cfg.TablePrefix, table.NormalizeKey(tenant))
 	tables, ok := p.tables.Load().(map[string]*TableMeta)
 	if !ok {
 		return false, writeTableName
 	}
-	_, ok = tables[writeTableName]
+	if _, ok = tables[writeTableName]; !ok {
+		return
+	}
+	if _, ok = tables[writeTableNameAll]; !ok {
+		return
+	}
+	if _, ok = tables[searchTableName]; !ok {
+		return
+	}
 	return ok, writeTableName
 }
 
