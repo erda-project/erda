@@ -114,7 +114,7 @@ func (p *provider) AlterTableTTL(tableName string, meta *loader.TableMeta, ttl *
 		"materialize_ttl_after_modify": 0,
 	})), sql)
 	if err != nil {
-		p.Log.Warnf("failed to change ttl of table[%s] to %v day, sql: %s", tableName, meta, sql)
+		p.Log.Warnf("failed to change ttl of table[%s] to %v day, sql: %s, error: %s", tableName, meta, sql, err)
 	} else {
 		p.Log.Infof("finish change ttl of table[%s] to %v day", tableName, meta)
 	}
