@@ -2160,7 +2160,7 @@ func (r *Runtime) markOutdated(deployment *dbclient.Deployment) {
 }
 
 // RuntimeDeployLogs deploy发布日志接口
-func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string, deploymentID uint64, paramValues *apistructs.DashboardSpotLogRequest) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string, deploymentID uint64, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	deployment, err := r.db.GetDeployment(deploymentID)
 	if err != nil {
 		return nil, apierrors.ErrGetRuntime.InternalError(err)
@@ -2240,8 +2240,12 @@ func (r *Runtime) checkOrgScopePermission(userID user.ID, orgID uint64) error {
 }
 
 // requestMonitorLog 调用bundle monitor log接口获取数据
-func (r *Runtime) requestMonitorLog(requestID string, orgName string, logReq *apistructs.DashboardSpotLogRequest, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) requestMonitorLog(requestID string, orgName string, paramValues url.Values, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
 	// 获取日志
+	var logReq apistructs.DashboardSpotLogRequest
+	if err := queryStringDecoder.Decode(&logReq, paramValues); err != nil {
+		return nil, err
+	}
 	logReq.ID = requestID
 	logReq.Source = source
 
