@@ -28,4 +28,10 @@ type DBService interface {
 	GetRuntimeVPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeVPA, error)
 	GetRuntime(id uint64) (*dbclient.Runtime, error)
 	UpdateRuntime(runtime *dbclient.Runtime) error
+	FindPreDeployment(uniqueId spec.RuntimeUniqueId) (*dbclient.PreDeployment, error)
+	FindRuntimesByIds(ids []uint64) ([]dbclient.Runtime, error)
+	GetUnDeletableAttachMentsByRuntimeID(orgID, runtimeID uint64) (*[]dbclient.AddonAttachment, error)
+	GetInstanceRouting(id string) (*dbclient.AddonInstanceRouting, error)
+	UpdateAttachment(addonAttachment *dbclient.AddonAttachment) error
+	UpdatePreDeployment(pre *dbclient.PreDeployment) error
 }
