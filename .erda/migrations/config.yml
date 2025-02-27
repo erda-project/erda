@@ -722,7 +722,7 @@
     - scriptName: 20210528-addon-platform-base.sql
       checksum: b9cc3c85abfe1bcf509167b58ad7f27685862bbe4dbc62f84dded8ba86aea032
     - scriptName: 20210528-orchestrator-base.sql
-      checksum: 4fd3320d8a99d4d02805ab3f840ff813965f5472c0c9e79f865d0e81e19f5510
+      checksum: 9a7acaad4d087e1165d34df6ccc950d5193b8b2ca10e32a24b84ccfbb7164b1f
     - scriptName: 20210604-orchestrator-base.sql
       checksum: 71f1cf7089f0344e9b78f4caca46e03fad2cd05c79f79121f9646c8c42244cf8
     - scriptName: 20210528-pipeline-base.sql
