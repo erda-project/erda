@@ -23,6 +23,18 @@ type bundleServiceImpl struct {
 	bdl *bundle.Bundle
 }
 
+func (b *bundleServiceImpl) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
+	return b.bdl.GetProject(id)
+}
+
+func (b *bundleServiceImpl) GetMyAppsByProject(userid string, orgid, projectID uint64, appName string) (*apistructs.ApplicationListResponseData, error) {
+	return b.bdl.GetMyAppsByProject(userid, orgid, projectID, appName)
+}
+
+func (b *bundleServiceImpl) GetMyApps(userid string, orgid uint64) (*apistructs.ApplicationListResponseData, error) {
+	return b.bdl.GetMyApps(userid, orgid)
+}
+
 func (b *bundleServiceImpl) GetApp(id uint64) (*apistructs.ApplicationDTO, error) {
 	return b.bdl.GetApp(id)
 }

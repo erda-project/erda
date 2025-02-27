@@ -23,4 +23,7 @@ type BundleService interface {
 	GetCluster(name string) (*apistructs.ClusterInfo, error)
 	InspectServiceGroupWithTimeout(namespace string, name string) (*apistructs.ServiceGroup, error)
 	GetApp(id uint64) (*apistructs.ApplicationDTO, error)
+	GetProject(id uint64) (*apistructs.ProjectDTO, error)
+	GetMyAppsByProject(userid string, orgid, projectID uint64, appName string) (*apistructs.ApplicationListResponseData, error)
+	GetMyApps(userid string, orgid uint64) (*apistructs.ApplicationListResponseData, error)
 }
