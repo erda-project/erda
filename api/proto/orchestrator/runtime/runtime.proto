@@ -266,20 +266,17 @@ message RuntimeScaleRecord {
   string errMsg = 6;
 }
 
-message RuntimeScaleRecords {
-  repeated RuntimeScaleRecord runtimes = 1;
-  repeated uint64 ids = 2;
-  string scaleAction = 3;
-}
-
-message BatchRuntimeScaleResults {
-  int32 total = 1;
-  int32 succeeded = 2;
-  int32 failed = 3;
-  repeated PreDiceDTO succeededScales = 4;
-  repeated uint64 succeededIds = 5;
-  repeated RuntimeScaleRecord failedScales = 6;
-  repeated uint64 failedIds = 7;
+message RuntimeDeploy {
+  uint64 pipelineID = 1;         
+  string workspace = 2;          
+  string clusterName = 3;       
+  uint64 applicationID = 4;     
+  string application_name = 5;   
+  uint64 projectID = 6;         
+  string projectName = 7;       
+  uint64 orgID = 8;             
+  string orgName = 9;           
+  repeated string servicesNames = 10; 
 }
 
 message ReferClusterRequest {
@@ -351,7 +348,6 @@ message BatchRuntimeServiceResponse {
   map<uint64, RuntimeSummary> data = 1;
 }
 
-
 service RuntimeService {
   rpc GetRuntime (GetRuntimeRequest) returns (RuntimeInspect) {
     option (google.api.http) = {
@@ -409,12 +405,6 @@ service RuntimeService {
     };
   }
 
-  rpc BatchUpdateOverlay(RuntimeScaleRecords) returns (BatchRuntimeScaleResults) {
-    option (google.api.http) = {
-      put: "/api/runtimes/actions/batch-update-pre-overlay"
-    };
-  }
-
   rpc FullGC(google.protobuf.Empty) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/runtimes/actions/full-gc"
@@ -456,4 +446,5 @@ service RuntimeService {
       get: "/api/runtimesServices"
     };
   }
+
 }
