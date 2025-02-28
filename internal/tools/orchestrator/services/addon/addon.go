@@ -3154,13 +3154,17 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		logrus.Errorf("can't find register-center instance : %v", err)
 		return err
 	}
+	configInstance, err := a.db.GetAddonInstanceByNameAndCluster(ConfigCenterAddon, req.ClusterName)
+	if err != nil {
+		logrus.Errorf("can't find config-center instance : %v", err)
+		return err
+	}
 	if registerInstance != nil {
 		regVersion = registerInstance.Version
 		confVersion = a.mappingConfigCenterVersion(registerInstance.Version)
-	} else if confVersion != "" && regVersion == "" {
-		err := errors.New(i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), NoRegisterCenterFound))
-		logrus.Errorf("%v", err)
-		return err
+	} else if configInstance != nil {
+		regVersion = configInstance.Version
+		confVersion = configInstance.Version
 	}
 
 	for index, v := range deploys {
