@@ -3146,7 +3146,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	}
 
 	if regVersion != "" {
-		confVersion = a.mappingConfigCenterVersion(regVersion)
+		confVersion = a.relateClusterAddonVersion(regVersion, RegisterCenterAddon, ConfigCenterAddon)
 	}
 
 	registerInstance, err := a.db.GetAddonInstanceByNameAndCluster(RegisterCenterAddon, req.ClusterName)
@@ -3161,21 +3161,25 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	}
 	if registerInstance != nil {
 		regVersion = registerInstance.Version
-		confVersion = a.mappingConfigCenterVersion(registerInstance.Version)
+		confVersion = a.relateClusterAddonVersion(registerInstance.Version, RegisterCenterAddon, ConfigCenterAddon)
 	} else if configInstance != nil {
-		regVersion = configInstance.Version
+		regVersion = a.relateClusterAddonVersion(configInstance.Version, ConfigCenterAddon, RegisterCenterAddon)
 		confVersion = configInstance.Version
+	}
+
+	if regVersion == "" || confVersion == "" {
+		return errors.Errorf("can't mapping register-center:[%s] or config-center[%s] version", regVersion, confVersion)
 	}
 
 	for index, v := range deploys {
 		createItem := needDeployAddons[index]
 		switch v.AddonName {
 		case RegisterCenterAddon:
-			logrus.Infof("register-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], regVersion, req.ClusterName)
 			createItem.Options["version"] = regVersion
+			a.pushLog(fmt.Sprintf("register-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], regVersion, req.ClusterName), &createItem)
 		case ConfigCenterAddon:
-			logrus.Infof("config-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], confVersion, req.ClusterName)
 			createItem.Options["version"] = confVersion
+			a.pushLog(fmt.Sprintf("config-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], confVersion, req.ClusterName), &createItem)
 		}
 		instanceRes, err := a.AttachAndCreate(&createItem)
 		if err != nil {
@@ -3193,8 +3197,29 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 }
 
 // one-to-one correspondence
-func (a *Addon) mappingConfigCenterVersion(registerVersion string) string {
-	return registerVersion
+type convertVersionFunc func(string) string
+
+var addonVersionMapping = map[string]map[string]convertVersionFunc{
+	// register-center -> config-center
+	RegisterCenterAddon: {
+		ConfigCenterAddon: func(version string) string { return version },
+	},
+	// config-center -> register-center
+	ConfigCenterAddon: {
+		RegisterCenterAddon: func(version string) string { return version },
+	},
+}
+
+func (a *Addon) relateClusterAddonVersion(version string, sourceType, targetType string) string {
+	if addonVersionMapping == nil || addonVersionMapping[sourceType] == nil {
+		return version
+	}
+	if f, ok := addonVersionMapping[sourceType][targetType]; ok && f != nil {
+		targetVersion := f(version)
+		logrus.Infof("addon version mapping: [%s:%s]->[%s:%s]", sourceType, version, targetType, targetVersion)
+		return targetVersion
+	}
+	return version
 }
 
 // PrepareCheckProjectLastResource 计算项目预留资源，是否满足发布徐局
