@@ -56,7 +56,7 @@ type provider struct {
 	ClusterSvc        clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
 	runtimeService    pb.RuntimeServiceServer
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
-	org               org.ClientInterface
+	Org               org.ClientInterface
 	TenantSvc         tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 	//Perm              perm.Interface                   `autowired:"permission"`
 	PipelineSvc pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
@@ -108,7 +108,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		addon.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 		addon.WithClusterSvc(p.ClusterSvc),
 		addon.WithTenantSvc(p.TenantSvc),
-		addon.WithOrg(p.org),
+		addon.WithOrg(p.Org),
 	)
 
 	p.runtimeService = NewRuntimeService(
@@ -118,7 +118,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		WithServiceGroupImpl(servicegroup.NewServiceGroupImplInit()),
 		WithClusterSvc(p.ClusterSvc),
 		WithReleaseSvc(p.DicehubReleaseSvc),
-		WithOrg(p.org),
+		WithOrg(p.Org),
 		WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 		WithScheduler(scheduler),
 		WithAddon(a),
