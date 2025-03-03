@@ -15,8 +15,10 @@
 package runtime
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 type DBService interface {
@@ -34,4 +36,23 @@ type DBService interface {
 	GetInstanceRouting(id string) (*dbclient.AddonInstanceRouting, error)
 	UpdateAttachment(addonAttachment *dbclient.AddonAttachment) error
 	UpdatePreDeployment(pre *dbclient.PreDeployment) error
+	FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
+		clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId,
+		releaseVersion, extraParams string) (*dbclient.Runtime, bool, error)
+	FindPreDeploymentOrCreate(uniqueId spec.RuntimeUniqueId, dice *diceyml.DiceYaml) (*dbclient.PreDeployment, error)
+	CreateOrUpdateRuntimeService(service *dbclient.RuntimeService, overrideStatus bool) error
+	CreateDeployment(deployment *dbclient.Deployment) error
+	FindRuntimesByAppId(appId uint64) ([]dbclient.Runtime, error)
+	FindLastSuccessDeployment(runtimeId uint64) (*dbclient.Deployment, error)
+	FindRuntimesNewerThan(minId uint64, limit int) ([]dbclient.Runtime, error)
+	ListRuntimeByOrgCluster(clusterName string, orgID uint64) ([]dbclient.Runtime, error)
+	ListRoutingInstanceByOrgCluster(clusterName string, orgID uint64) ([]dbclient.AddonInstanceRouting, error)
+	GetDeployment(id uint64) (*dbclient.Deployment, error)
+	FindRuntimesInApps(appIDs []uint64, env string) (map[uint64][]*dbclient.Runtime, []uint64, error)
+	FindLastDeploymentIDsByRutimeIDs(runtimeIDs []uint64) ([]uint64, error)
+	FindDeploymentsByIDs(ids []uint64) (map[uint64]dbclient.Deployment, error)
+	GetAppRuntimeNumberByWorkspace(projectId uint64, env string) (uint64, error)
+	FindTopDeployments(runtimeId uint64, limit int) ([]dbclient.Deployment, error)
+	FindNotOutdatedOlderThan(runtimeId uint64, maxId uint64) ([]dbclient.Deployment, error)
+	UpdateDeployment(deployment *dbclient.Deployment) error
 }

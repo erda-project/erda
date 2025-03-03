@@ -16,6 +16,7 @@ package runtime
 
 import (
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
@@ -26,6 +27,73 @@ import (
 
 type dbServiceImpl struct {
 	db *dbclient.DBClient
+}
+
+func (d *dbServiceImpl) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource, clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId, releaseVersion, extraParams string) (*dbclient.Runtime, bool, error) {
+	return d.db.FindRuntimeOrCreate(uniqueId, operator, source, clusterName, clusterId, gitRepoAbbrev, projectID, orgID, deploymentOrderId, releaseVersion, extraParams)
+}
+
+func (d *dbServiceImpl) FindPreDeploymentOrCreate(uniqueId spec.RuntimeUniqueId, dice *diceyml.DiceYaml) (*dbclient.PreDeployment, error) {
+	return d.db.FindPreDeploymentOrCreate(uniqueId, dice)
+}
+
+func (d *dbServiceImpl) CreateOrUpdateRuntimeService(service *dbclient.RuntimeService, overrideStatus bool) error {
+	return d.db.CreateOrUpdateRuntimeService(service, overrideStatus)
+}
+
+func (d *dbServiceImpl) CreateDeployment(deployment *dbclient.Deployment) error {
+	return d.db.CreateDeployment(deployment)
+}
+
+func (d *dbServiceImpl) FindRuntimesByAppId(appId uint64) ([]dbclient.Runtime, error) {
+	return d.db.FindRuntimesByAppId(appId)
+}
+
+func (d *dbServiceImpl) FindLastSuccessDeployment(runtimeId uint64) (*dbclient.Deployment, error) {
+	return d.db.FindLastSuccessDeployment(runtimeId)
+}
+
+func (d *dbServiceImpl) FindRuntimesNewerThan(minId uint64, limit int) ([]dbclient.Runtime, error) {
+	return d.db.FindRuntimesNewerThan(minId, limit)
+}
+
+func (d *dbServiceImpl) ListRuntimeByOrgCluster(clusterName string, orgID uint64) ([]dbclient.Runtime, error) {
+	return d.db.ListRuntimeByOrgCluster(clusterName, orgID)
+}
+
+func (d *dbServiceImpl) ListRoutingInstanceByOrgCluster(clusterName string, orgID uint64) ([]dbclient.AddonInstanceRouting, error) {
+	return d.db.ListRoutingInstanceByOrgCluster(clusterName, orgID)
+}
+
+func (d *dbServiceImpl) GetDeployment(id uint64) (*dbclient.Deployment, error) {
+	return d.db.GetDeployment(id)
+}
+
+func (d *dbServiceImpl) FindRuntimesInApps(appIDs []uint64, env string) (map[uint64][]*dbclient.Runtime, []uint64, error) {
+	return d.db.FindRuntimesInApps(appIDs, env)
+}
+
+func (d *dbServiceImpl) FindLastDeploymentIDsByRutimeIDs(runtimeIDs []uint64) ([]uint64, error) {
+	return d.db.FindLastDeploymentIDsByRutimeIDs(runtimeIDs)
+}
+
+func (d *dbServiceImpl) FindDeploymentsByIDs(ids []uint64) (map[uint64]dbclient.Deployment, error) {
+	return d.db.FindDeploymentsByIDs(ids)
+}
+
+func (d *dbServiceImpl) GetAppRuntimeNumberByWorkspace(projectId uint64, env string) (uint64, error) {
+	return d.db.GetAppRuntimeNumberByWorkspace(projectId, env)
+}
+func (d *dbServiceImpl) FindTopDeployments(runtimeId uint64, limit int) ([]dbclient.Deployment, error) {
+	return d.db.FindTopDeployments(runtimeId, limit)
+}
+
+func (d *dbServiceImpl) FindNotOutdatedOlderThan(runtimeId uint64, maxId uint64) ([]dbclient.Deployment, error) {
+	return d.db.FindNotOutdatedOlderThan(runtimeId, maxId)
+}
+
+func (d *dbServiceImpl) UpdateDeployment(deployment *dbclient.Deployment) error {
+	return d.db.UpdateDeployment(deployment)
 }
 
 func (d *dbServiceImpl) FindPreDeployment(uniqueId spec.RuntimeUniqueId) (*dbclient.PreDeployment, error) {
