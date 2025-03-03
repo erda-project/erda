@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	cpb "github.com/erda-project/erda-proto-go/common/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -40,7 +41,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
 	errors "github.com/erda-project/erda/pkg/common/errors"
@@ -63,7 +63,6 @@ type Service struct {
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterSvc       clusterpb.ClusterServiceServer
 	clusterinfoImpl  clusterinfo.ClusterInfo
-	runtime          *runtime.Runtime
 	scheduler        *scheduler.Scheduler
 	org              org.ClientInterface
 	Addon            *addon.Addon
@@ -1028,6 +1027,41 @@ func WithServiceGroupImpl(serviceGroupImpl servicegroup.ServiceGroup) ServiceOpt
 func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) ServiceOption {
 	return func(service *Service) *Service {
 		service.clusterSvc = clusterSvc
+		return service
+	}
+}
+
+func WithReleaseSvc(releaseSvc dicehubpb.ReleaseServiceServer) ServiceOption {
+	return func(service *Service) *Service {
+		service.releaseSvc = releaseSvc
+		return service
+	}
+}
+
+func WithOrg(org org.ClientInterface) ServiceOption {
+	return func(service *Service) *Service {
+		service.org = org
+		return service
+	}
+}
+
+func WithClusterInfoImpl(clusterInfo clusterinfo.ClusterInfo) ServiceOption {
+	return func(service *Service) *Service {
+		service.clusterinfoImpl = clusterInfo
+		return service
+	}
+}
+
+func WithScheduler(scheduler *scheduler.Scheduler) ServiceOption {
+	return func(service *Service) *Service {
+		service.scheduler = scheduler
+		return service
+	}
+}
+
+func WithAddon(addon *addon.Addon) ServiceOption {
+	return func(service *Service) *Service {
+		service.Addon = addon
 		return service
 	}
 }

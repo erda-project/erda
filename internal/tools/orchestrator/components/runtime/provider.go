@@ -15,8 +15,21 @@
 package runtime
 
 import (
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/instanceinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
+	perm "github.com/erda-project/erda/pkg/common/permission"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/jinzhu/gorm"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -33,14 +46,17 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg          *config
-	Logger       logs.Logger
-	Register     transport.Register
-	DB           *gorm.DB                       `autowired:"mysql-client"`
-	EventManager *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
-	ClusterSvc   clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	//Perm           perm.Interface                 `autowired:"permission"`
-	runtimeService pb.RuntimeServiceServer
+	Cfg               *config
+	Logger            logs.Logger
+	Register          transport.Register
+	DB                *gorm.DB                       `autowired:"mysql-client"`
+	EventManager      *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
+	ClusterSvc        clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	runtimeService    pb.RuntimeServiceServer
+	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
+	org               org.ClientInterface
+	TenantSvc         tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
+	Perm              perm.Interface               `autowired:"permission"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -51,12 +67,53 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 	db := NewDBService(p.DB)
 
+	instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
+	scheduler := scheduler.NewScheduler(instanceinfoImpl, p.ClusterSvc)
+
+	encrypt := encryption.New(
+		encryption.WithRSAScrypt(encryption.NewRSAScrypt(encryption.RSASecret{
+			PublicKey:          conf.PublicKey(),
+			PublicKeyDataType:  encryption.Base64,
+			PrivateKey:         conf.PrivateKey(),
+			PrivateKeyType:     encryption.PKCS1,
+			PrivateKeyDataType: encryption.Base64,
+		})))
+
+	resource := resource.New(
+		resource.WithDBClient(db),
+		resource.WithBundle(bdl),
+	)
+
+	// init addon
+	a := addon.New(
+		addon.WithDBClient(db),
+		addon.WithBundle(bdl),
+		addon.WithResource(resource),
+		addon.WithEnvEncrypt(encrypt),
+		addon.WithKMSWrapper(mysql.NewKMSWrapper(bdl)),
+		addon.WithHTTPClient(httpclient.New(
+			httpclient.WithTimeout(time.Second, time.Second*60),
+		)),
+		addon.WithCap(scheduler.Httpendpoints.Cap),
+		addon.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
+		addon.WithInstanceinfoImpl(instanceinfoImpl),
+		addon.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
+		addon.WithClusterSvc(p.ClusterSvc),
+		addon.WithTenantSvc(p.TenantSvc),
+		addon.WithOrg(p.org),
+	)
+
 	p.runtimeService = NewRuntimeService(
 		WithBundleService(bdl),
 		WithDBService(db),
 		WithEventManagerService(p.EventManager),
 		WithServiceGroupImpl(servicegroup.NewServiceGroupImplInit()),
 		WithClusterSvc(p.ClusterSvc),
+		WithReleaseSvc(p.DicehubReleaseSvc),
+		WithOrg(p.org),
+		WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
+		WithScheduler(scheduler),
+		WithAddon(a),
 	)
 
 	if p.Register != nil {
