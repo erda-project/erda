@@ -15,6 +15,7 @@
 package runtime
 
 import (
+	"github.com/erda-project/erda/bundle"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -43,9 +44,16 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	bdl := bundle.New(
+		bundle.WithErdaServer(),
+		bundle.WithClusterManager(),
+		bundle.WithScheduler(),
+	)
+	db := NewDBService(p.DB)
+
 	p.runtimeService = NewRuntimeService(
-		WithBundleService(NewBundleService()),
-		WithDBService(NewDBService(p.DB)),
+		WithBundleService(bdl),
+		WithDBService(db),
 		WithEventManagerService(p.EventManager),
 		WithServiceGroupImpl(servicegroup.NewServiceGroupImplInit()),
 		WithClusterSvc(p.ClusterSvc),
