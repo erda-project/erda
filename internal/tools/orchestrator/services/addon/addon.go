@@ -3167,10 +3167,6 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		confVersion = configInstance.Version
 	}
 
-	if regVersion == "" || confVersion == "" {
-		return errors.Errorf("can't mapping register-center:[%s] or config-center[%s] version", regVersion, confVersion)
-	}
-
 	for index, v := range deploys {
 		createItem := needDeployAddons[index]
 		switch v.AddonName {
