@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/internal/pkg/user"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -148,7 +147,7 @@ func (r *Service) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runt
 	// 根据请求 RuntimeScaleRecords.IDs  执行重新部署
 	if len(runtimeScaleRecords.IDs) > 0 {
 		for _, runtime := range runtimes {
-			redep, err := r.runtime.RedeployPipeline(ctx, userID, runtime.OrgID, runtime.ID)
+			redep, err := r.RedeployPipeline(ctx, userID, runtime.OrgID, runtime.ID)
 			if err != nil {
 				logrus.Errorf("[batch redeploy] redeploy failed for runtime %s for runtime instance: %#v, error: %v", runtime.Name, runtime, err)
 				errMsg := fmt.Sprintf("redeploy redeploy failed for runtime %s for runtime instance: %#v, error: %v", runtime.Name, runtime, err)
@@ -204,7 +203,7 @@ func (r *Service) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runt
 				continue
 			}
 
-			redep, err := r.runtime.RedeployPipeline(ctx, userID, runtime.OrgID, runtime.ID)
+			redep, err := r.RedeployPipeline(ctx, userID, runtime.OrgID, runtime.ID)
 			if err != nil {
 				logrus.Errorf("[batch redeploy] redeploy failed for runtime %s for %#v", uniqueId.Name, uniqueId)
 				errMsg := fmt.Sprintf("redeploy failed for runtime %s for %#v", uniqueId.Name, uniqueId)
@@ -331,7 +330,7 @@ func (r *Service) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runtime
 	if len(runtimeScaleRecords.IDs) > 0 {
 		for _, runtime := range runtimes {
 			logrus.Debugf("[batch delete] deleting runtime %d, operator %s", runtime.ID, userID)
-			runtimedto, err := r.runtime.Delete(userID, runtime.OrgID, runtime.ID)
+			runtimedto, err := r.DeleteRuntime(userID, runtime.OrgID, runtime.ID)
 			if err != nil {
 				logrus.Errorf("[batch delete] delete runtime Id %v  runtime %#v failed, error: %v", runtime.ID, runtime, err)
 				errMsg := fmt.Sprintf("delete runtime Id %v  runtime %#v failed, error: %v", runtime.ID, runtime, err)
@@ -381,7 +380,7 @@ func (r *Service) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runtime
 			}
 
 			logrus.Debugf("[batch delete] deleting runtime %d, operator %s", runtime.ID, userID)
-			runtimedto, err := r.runtime.Delete(userID, runtime.OrgID, runtime.ID)
+			runtimedto, err := r.DeleteRuntime(userID, runtime.OrgID, runtime.ID)
 			if err != nil {
 				logrus.Errorf("[batch delete] runtime %s is delete failed %#v, error: %v", uniqueId.Name, uniqueId, err)
 				errMsg := fmt.Sprintf("runtime %s is delete failed %#v, error: %v", uniqueId.Name, uniqueId, err)
@@ -410,7 +409,7 @@ func (r *Service) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord, a
 	serviceManualScale := false
 	logrus.Errorf("process runtime scale for runtime %#v", uniqueId)
 
-	appliedScaledObjects, vpaObjects, err := r.runtime.AppliedScaledObjects(uniqueId)
+	appliedScaledObjects, vpaObjects, err := r.AppliedScaledObjects(uniqueId)
 	if err != nil {
 		logrus.Warnf("get applied hpa rules for RuntimeUniqueId %#v failed: %v", uniqueId, err)
 	}

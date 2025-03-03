@@ -4,11 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
-	"github.com/erda-project/erda/internal/pkg/gitflowutil"
-	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
-	"github.com/erda-project/erda/pkg/database/dbengine"
-	"github.com/gorilla/schema"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	"gopkg.in/yaml.v3"
 	"net/url"
 	"runtime/debug"
 	"strconv"
@@ -18,22 +15,31 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
-
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/pkg/gitflowutil"
 	"github.com/erda-project/erda/internal/pkg/user"
+	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
-
+	"github.com/gorilla/schema"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
@@ -65,6 +71,20 @@ type DeployContext struct {
 	// deployment order
 	DeploymentOrderId string
 	Param             string
+}
+
+// Runtime 应用实例对象封装
+type Runtime struct {
+	db               *dbclient.DBClient
+	evMgr            *events.EventManager
+	bdl              *bundle.Bundle
+	Addon            *addon.Addon
+	releaseSvc       pb.ReleaseServiceServer
+	serviceGroupImpl servicegroup.ServiceGroup
+	clusterinfoImpl  clusterinfo.ClusterInfo
+	clusterSvc       clusterpb.ClusterServiceServer
+	pipelineSvc      pipelinepb.PipelineServiceServer
+	org              org.ClientInterface
 }
 
 func (r *Service) Create(operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
@@ -239,7 +259,7 @@ func (r *Service) PreCheck(dice *diceyml.DiceYaml, workspace string) error {
 		for _, addOn := range group {
 			go func(addOn *diceyml.AddOn) {
 				defer wg.Done()
-				addonName, addonPlan, err := r.runtime.Addon.ParseAddonFullPlan(addOn.Plan)
+				addonName, addonPlan, err := r.Addon.ParseAddonFullPlan(addOn.Plan)
 				if err != nil {
 					errCh <- errors.Errorf("addon %s: %v", addonName, err)
 					return
@@ -1333,4 +1353,212 @@ func (r *Service) markOutdated(deployment *dbclient.Deployment) {
 				deployment.ReleaseId, err)
 		}
 	}
+}
+
+func (r *Service) RedeployPipeline(ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, err
+	}
+	yml := utils.GenRedeployPipelineYaml(runtimeID)
+	app, err := r.bundle.GetApp(runtime.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+	deployment, err := r.db.FindLastDeployment(runtimeID)
+	if err != nil {
+		return nil, err
+	}
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: deployment.ReleaseId})
+	if err != nil {
+		return nil, err
+	}
+	commitid := releaseResp.Data.Labels["gitCommitId"]
+	detail := apistructs.CommitDetail{
+		CommitID: "",
+		Repo:     app.GitRepo,
+		RepoAbbr: app.GitRepoAbbrev,
+		Author:   "",
+		Email:    "",
+		Time:     nil,
+		Comment:  "",
+	}
+	if commitid != "" {
+		commit, err := r.bundle.GetGittarCommit(app.GitRepoAbbrev, commitid, string(operator))
+		if err != nil {
+			return nil, err
+		}
+		detail = apistructs.CommitDetail{
+			CommitID: commitid,
+			Repo:     app.GitRepo,
+			RepoAbbr: app.GitRepoAbbrev,
+			Author:   commit.Committer.Name,
+			Email:    commit.Committer.Email,
+			Time:     &commit.Committer.When,
+			Comment:  commit.CommitMessage,
+		}
+	}
+	commitdetail, err := json.Marshal(detail)
+	if err != nil {
+		return nil, err
+	}
+	b, err := yaml.Marshal(yml)
+	if err != nil {
+		errstr := fmt.Sprintf("failed to marshal pipelineyml: %v", err)
+		logrus.Errorf(errstr)
+		return nil, err
+	}
+	if err := r.setClusterName(runtime); err != nil {
+		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
+	}
+	dto, err := r.pipelineSvc.PipelineCreateV2(apis.WithInternalClientContext(context.Background(), discover.Orchestrator()), &pipelinepb.PipelineCreateRequestV2{
+		UserID:      operator.String(),
+		PipelineYml: string(b),
+		Labels: map[string]string{
+			apistructs.LabelBranch:        runtime.Name,
+			apistructs.LabelOrgID:         strconv.FormatUint(orgID, 10),
+			apistructs.LabelProjectID:     strconv.FormatUint(runtime.ProjectID, 10),
+			apistructs.LabelAppID:         strconv.FormatUint(runtime.ApplicationID, 10),
+			apistructs.LabelDiceWorkspace: runtime.Workspace,
+			apistructs.LabelCommitDetail:  string(commitdetail),
+			apistructs.LabelAppName:       app.Name,
+			apistructs.LabelProjectName:   app.ProjectName,
+		},
+		PipelineYmlName: getRedeployPipelineYmlName(*runtime),
+		ClusterName:     runtime.ClusterName,
+		PipelineSource:  apistructs.PipelineSourceDice.String(),
+		AutoRunAtOnce:   true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return convertRuntimeDeployDto(app, releaseResp.Data, dto.Data)
+}
+
+func (r *Service) setClusterName(rt *dbclient.Runtime) error {
+	clusterInfo, err := r.clusterinfoImpl.Info(rt.ClusterName)
+	if err != nil {
+		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", rt.ClusterName, err)
+		return err
+	}
+	jobCluster := clusterInfo.Get(apistructs.JOB_CLUSTER)
+	if jobCluster != "" {
+		rt.ClusterName = jobCluster
+	}
+	return nil
+}
+
+func getRedeployPipelineYmlName(runtime dbclient.Runtime) string {
+	return fmt.Sprintf("%d/%s/%s/pipeline.yml", runtime.ApplicationID, runtime.Workspace, runtime.Name)
+}
+
+func convertRuntimeDeployDto(app *apistructs.ApplicationDTO, release *pb.ReleaseGetResponseData, dto *basepb.PipelineDTO) (*apistructs.RuntimeDeployDTO, error) {
+	names, err := getServicesNames(release.Diceyml)
+	if err != nil {
+		return nil, err
+	}
+	return &apistructs.RuntimeDeployDTO{
+		ApplicationID:   app.ID,
+		ApplicationName: app.Name,
+		ProjectID:       app.ProjectID,
+		ProjectName:     app.ProjectName,
+		OrgID:           app.OrgID,
+		OrgName:         app.OrgName,
+		PipelineID:      dto.ID,
+		ServicesNames:   names,
+	}, nil
+}
+
+// getServicesNames get servicesNames by diceYml
+func getServicesNames(diceYml string) ([]string, error) {
+	yml, err := diceyml.New([]byte(diceYml), false)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0)
+	for k := range yml.Obj().Services {
+		names = append(names, k)
+	}
+	return names, nil
+}
+
+// DeleteRuntime 标记应用实例删除
+func (r *Service) DeleteRuntime(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
+	}
+	// TODO: do not query app
+	app, err := r.bundle.GetApp(runtime.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   operator.String(),
+		Scope:    apistructs.AppScope,
+		ScopeID:  app.ID,
+		Resource: "runtime-" + strutil.ToLower(runtime.Workspace),
+		Action:   apistructs.DeleteAction,
+	})
+	if err != nil {
+		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
+	}
+	if !perm.Access {
+		return nil, apierrors.ErrDeleteRuntime.AccessDenied()
+	}
+	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
+		// already marked
+		return dbclient.ConvertRuntimeDTO(runtime, app), nil
+	}
+	if runtime.FileToken != "" {
+		if _, err = r.bundle.InvalidateOAuth2Token(apistructs.OAuth2TokenInvalidateRequest{AccessToken: runtime.FileToken}); err != nil {
+			logrus.Errorf("failed to invalidate openapi oauth2 token of runtime %v, token: %v, err: %v",
+				runtime.ID, runtime.FileToken, err)
+		}
+	}
+	// set status to DELETING
+	runtime.LegacyStatus = dbclient.LegacyStatusDeleting
+	if err := r.db.UpdateRuntime(runtime); err != nil {
+		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
+	}
+
+	event := events.RuntimeEvent{
+		EventName: events.RuntimeDeleting,
+		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
+		Operator:  operator.String(),
+	}
+	r.evMgr.EmitEvent(&event)
+	// TODO: should emit RuntimeDeleted after really deleted or RuntimeDeleteFailed if failed
+	return dbclient.ConvertRuntimeDTO(runtime, app), nil
+}
+
+// AppliedScaledObjects get pod autoscaler rules in k8s, include hpa and vpa
+func (r *Service) AppliedScaledObjects(uniqueID spec.RuntimeUniqueId) (map[string]string, map[string]string, error) {
+	hpaRules, err := r.db.GetRuntimeHPAByServices(uniqueID, nil)
+	if err != nil {
+		return nil, nil, errors.Errorf("get runtime HPA rules by RuntimeUniqueId %#v failed: %v", uniqueID, err)
+	}
+	hpaScaledRules := make(map[string]string)
+	for _, rule := range hpaRules {
+		// only applied rules need to delete
+		if rule.IsApplied == pstypes.RuntimePARuleApplied {
+			hpaScaledRules[rule.ServiceName] = rule.Rules
+		}
+	}
+
+	vpaRules, err := r.db.GetRuntimeVPAByServices(uniqueID, nil)
+	if err != nil {
+		return nil, nil, errors.Errorf("get runtime VPA rules by RuntimeUniqueId %#v failed: %v", uniqueID, err)
+	}
+	vpaScaledRules := make(map[string]string)
+	for _, rule := range vpaRules {
+		// only applied rules need to delete
+		if rule.IsApplied == pstypes.RuntimePARuleApplied {
+			vpaScaledRules[rule.ServiceName] = rule.Rules
+		}
+	}
+
+	return hpaScaledRules, vpaScaledRules, nil
 }
