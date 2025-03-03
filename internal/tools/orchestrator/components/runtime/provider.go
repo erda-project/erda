@@ -21,12 +21,13 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
+	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/jinzhu/gorm"
 	"time"
@@ -38,6 +39,7 @@ import (
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -66,6 +68,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithScheduler(),
 	)
 	db := NewDBService(p.DB)
+	dbClient := &dbclient.DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: p.DB,
+		},
+	}
 
 	instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
 	scheduler := scheduler.NewScheduler(instanceinfoImpl, p.ClusterSvc)
@@ -80,13 +87,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		})))
 
 	resource := resource.New(
-		resource.WithDBClient(db),
+		resource.WithDBClient(dbClient),
 		resource.WithBundle(bdl),
 	)
 
 	// init addon
 	a := addon.New(
-		addon.WithDBClient(db),
+		addon.WithDBClient(dbClient),
 		addon.WithBundle(bdl),
 		addon.WithResource(resource),
 		addon.WithEnvEncrypt(encrypt),
