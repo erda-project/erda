@@ -79,7 +79,9 @@ func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateReques
 		return nil, errors.NewInternalServerErrorMessage("cluster not found")
 	}
 	req.ClusterName = clusterName
-	data, err := r.Create(user.ID(req.Operator), ConvertCreateRuntimePbToDTO(req))
+	var tmp *apistructs.RuntimeCreateRequest
+	tmp = cputil.MustObjJSONTransfer(req, tmp).(*apistructs.RuntimeCreateRequest)
+	data, err := r.Create(user.ID(req.Operator), tmp)
 
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -91,7 +93,9 @@ func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateReques
 
 func (r *Service) CreateRuntimeByReleaseAction(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
 	operator := apis.GetUserID(ctx)
-	data, err := r.CreateByReleaseID(ctx, user.ID(operator), ConvertRuntimeReleaseCreateRequestToDTO(req))
+	var release *apistructs.RuntimeReleaseCreateRequest
+	release = cputil.MustObjJSONTransfer(req, release).(*apistructs.RuntimeReleaseCreateRequest)
+	data, err := r.CreateByReleaseID(ctx, user.ID(operator), release)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -244,7 +248,9 @@ func (r *Service) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBu
 			data[rt.ID] = status
 		}
 	}
-	return ConvertEpBulkGetRuntimeStatusDetailToPb(data), nil
+	var resp *pb.EpBulkGetRuntimeStatusDetailResponse
+	resp = cputil.MustObjJSONTransfer(data, resp).(*pb.EpBulkGetRuntimeStatusDetailResponse)
+	return resp, nil
 }
 
 func (r *Service) FullGC(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
@@ -383,7 +389,9 @@ func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequ
 	resp = cputil.MustObjJSONTransfer(req, &resp).(*pb.ListMyRuntimesResponse)
 	for _, runtimeSummaryList := range runtimes {
 		for _, runtimeSummary := range runtimeSummaryList {
-			resp.Data = append(resp.Data, ConvertRuntimeSummaryDTOToPb(runtimeSummary))
+			var data *pb.RuntimeSummary
+			data = cputil.MustObjJSONTransfer(runtimeSummary, data).(*pb.RuntimeSummary)
+			resp.Data = append(resp.Data, data)
 		}
 	}
 
@@ -473,7 +481,9 @@ func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorks
 			}
 		}
 	}
-	return ConvertCountPRByWorkspaceResponse(resp), nil
+	var data *pb.CountPRByWorkspaceResponse
+	data = cputil.MustObjJSONTransfer(resp, data).(*pb.CountPRByWorkspaceResponse)
+	return data, nil
 }
 
 func (r *Service) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeServiceRequest) (*pb.BatchRuntimeServiceResponse, error) {
@@ -494,7 +504,9 @@ func (r *Service) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeS
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return ConvertBatchRuntimeServiceResponse(serviceMap), nil
+	var resp *pb.BatchRuntimeServiceResponse
+	resp = cputil.MustObjJSONTransfer(serviceMap, &resp).(*pb.BatchRuntimeServiceResponse)
+	return resp, nil
 }
 
 func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
