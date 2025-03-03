@@ -29,6 +29,18 @@ type dbServiceImpl struct {
 	db *dbclient.DBClient
 }
 
+func (d *dbServiceImpl) GetRuntimeByProjectIDs(projectIDs []uint64) (*[]dbclient.Runtime, error) {
+	return d.db.GetRuntimeByProjectIDs(projectIDs)
+}
+
+func (d *dbServiceImpl) ListAddonInstancesByProjectIDs(projectIDs []uint64, exclude ...string) (*[]dbclient.AddonInstance, error) {
+	return d.db.ListAddonInstancesByProjectIDs(projectIDs, exclude...)
+}
+
+func (d *dbServiceImpl) GetAddonNodesByInstanceIDs(instanceIDs []string) (*[]dbclient.AddonNode, error) {
+	return d.db.GetAddonNodesByInstanceIDs(instanceIDs)
+}
+
 func (d *dbServiceImpl) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource, clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId, releaseVersion, extraParams string) (*dbclient.Runtime, bool, error) {
 	return d.db.FindRuntimeOrCreate(uniqueId, operator, source, clusterName, clusterId, gitRepoAbbrev, projectID, orgID, deploymentOrderId, releaseVersion, extraParams)
 }

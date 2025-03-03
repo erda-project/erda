@@ -55,4 +55,7 @@ type DBService interface {
 	FindTopDeployments(runtimeId uint64, limit int) ([]dbclient.Deployment, error)
 	FindNotOutdatedOlderThan(runtimeId uint64, maxId uint64) ([]dbclient.Deployment, error)
 	UpdateDeployment(deployment *dbclient.Deployment) error
+	GetRuntimeByProjectIDs(projectIDs []uint64) (*[]dbclient.Runtime, error)
+	ListAddonInstancesByProjectIDs(projectIDs []uint64, exclude ...string) (*[]dbclient.AddonInstance, error)
+	GetAddonNodesByInstanceIDs(instanceIDs []string) (*[]dbclient.AddonNode, error)
 }
