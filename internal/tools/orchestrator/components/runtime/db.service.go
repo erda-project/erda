@@ -58,4 +58,6 @@ type DBService interface {
 	GetRuntimeByProjectIDs(projectIDs []uint64) (*[]dbclient.Runtime, error)
 	ListAddonInstancesByProjectIDs(projectIDs []uint64, exclude ...string) (*[]dbclient.AddonInstance, error)
 	GetAddonNodesByInstanceIDs(instanceIDs []string) (*[]dbclient.AddonNode, error)
+	GetRuntimeHPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeHPA, error)
+	GetRuntimeVPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error)
 }

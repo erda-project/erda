@@ -167,6 +167,13 @@ func (d *dbServiceImpl) UpdatePreDeployment(pre *dbclient.PreDeployment) error {
 	return nil
 }
 
+func (d *dbServiceImpl) GetRuntimeHPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeHPA, error) {
+	return d.db.GetRuntimeHPAByServices(id, services)
+}
+func (d *dbServiceImpl) GetRuntimeVPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error) {
+	return d.db.GetRuntimeVPAByServices(id, services)
+}
+
 func (d *dbServiceImpl) UpdateRuntime(runtime *dbclient.Runtime) error {
 	return d.db.UpdateRuntime(runtime)
 }
