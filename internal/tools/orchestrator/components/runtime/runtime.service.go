@@ -17,26 +17,29 @@ package runtime
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	cpb "github.com/erda-project/erda-proto-go/common/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/user"
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
+	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -44,18 +47,27 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
+
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Service implements pb.RuntimeServiceServer
 type Service struct {
 	logger           logs.Logger
-	bundle           BundleService
+	bundle           *bundle.Bundle
 	db               DBService
 	evMgr            EventManagerService
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterSvc       clusterpb.ClusterServiceServer
+	clusterinfoImpl  clusterinfo.ClusterInfo
 	runtime          *runtime.Runtime
 	scheduler        *scheduler.Scheduler
+	org              org.ClientInterface
+	Addon            *addon.Addon
+	releaseSvc       releasepb.ReleaseServiceServer
 }
 
 func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateRequest) (*pb.DeploymentCreateResponse, error) {
@@ -68,7 +80,7 @@ func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateReques
 		return nil, errors.NewInternalServerErrorMessage("cluster not found")
 	}
 	req.ClusterName = clusterName
-	data, err := r.runtime.Create(user.ID(req.Operator), ConvertCreateRuntimePbToDTO(req))
+	data, err := r.Create(user.ID(req.Operator), ConvertCreateRuntimePbToDTO(req))
 
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -80,7 +92,7 @@ func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateReques
 
 func (r *Service) CreateRuntimeByReleaseAction(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
 	operator := apis.GetUserID(ctx)
-	data, err := r.runtime.CreateByReleaseID(ctx, user.ID(operator), ConvertRuntimeReleaseCreateRequestToDTO(req))
+	data, err := r.CreateByReleaseID(ctx, user.ID(operator), ConvertRuntimeReleaseCreateRequestToDTO(req))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -108,7 +120,7 @@ func (r *Service) ListRuntimes(ctx context.Context, req *pb.ListRuntimesRequest)
 	workSpace := req.WorkSpace
 	name := req.Name
 
-	data, err := r.runtime.List(user.ID(userID), uint64(orgID), appID, workSpace, name)
+	data, err := r.List(user.ID(userID), uint64(orgID), appID, workSpace, name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -139,7 +151,7 @@ func (r *Service) StopRuntime(ctx context.Context, req *pb.RuntimeStopRequest) (
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("runtimeID", v)
 	}
-	data, err := r.runtime.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	data, err := r.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -163,7 +175,7 @@ func (r *Service) ReDeployRuntimeAction(ctx context.Context, req *pb.ReDeployRun
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("runtimeID", v)
 	}
-	data, err := r.runtime.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	data, err := r.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -190,7 +202,7 @@ func (r *Service) RollBackRuntimeAction(ctx context.Context, req *pb.RollBackRun
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("runtimeID", v)
 	}
-	data, err := r.runtime.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	data, err := r.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -201,46 +213,43 @@ func (r *Service) RollBackRuntimeAction(ctx context.Context, req *pb.RollBackRun
 }
 
 func (r *Service) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBulkGetRuntimeStatusDetailRequest) (*pb.EpBulkGetRuntimeStatusDetailResponse, error) {
-	panic("not implemented")
-	//rs_ := req.RuntimeIDs
-	//rs := strings.Split(rs_, ",")
-	//var runtimeIds []uint64
-	//for _, r := range rs {
-	//	runtimeId, err := strconv.ParseUint(r, 10, 64)
-	//	if err != nil {
-	//		// TODO: 这里返回的错误类型不知道如何操作
-	//		return nil, errorresp.New().InternalError(err)
-	//	}
-	//	runtimeIds = append(runtimeIds, runtimeId)
-	//}
-	////funcErrMsg := fmt.Sprintf("failed to bulk get runtime StatusDetail, runtimeIds: %v", runtimeIds)
-	//runtimes, err := r.db.FindRuntimesByIds(runtimeIds)
-	//if err != nil {
-	//	// TODO: 这里返回的错误类型不知道如何操作
-	//	return nil, errorresp.New().InternalError(err)
-	//}
-	//userId := apis.GetUserID(ctx)
-	//if userId == "" {
-	//	return nil, apierrors.ErrGetRuntime.NotLogin()
-	//}
-	//data := make(map[uint64]interface{})
-	//for _, rt := range runtimes {
-	//	vars := map[string]string{
-	//		"namespace": rt.ScheduleName.Namespace,
-	//		"name":      rt.ScheduleName.Name,
-	//	}
-	//	if status, err := r.scheduler.EpGetRuntimeStatus(context.Background(), vars); err != nil {
-	//		// TODO: 这里返回的错误类型不知道如何操作
-	//		return nil, errorresp.New().InternalError(err)
-	//	} else {
-	//		data[rt.ID] = status
-	//	}
-	//}
-	//return ConvertEpBulkGetRuntimeStatusDetailToPb(data), nil
+	rs_ := req.RuntimeIDs
+	rs := strings.Split(rs_, ",")
+	var runtimeIds []uint64
+	for _, r := range rs {
+		runtimeId, err := strconv.ParseUint(r, 10, 64)
+		if err != nil {
+			// TODO: 这里返回的错误类型不知道如何操作
+			return nil, errors.NewInvalidParameterError("runtimeid", fmt.Sprintf("failed to bulk get runtime StatusDetail, invalid runtimeIds: %s", rs_))
+		}
+		runtimeIds = append(runtimeIds, runtimeId)
+	}
+	runtimes, err := r.db.FindRuntimesByIds(runtimeIds)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	userId := apis.GetUserID(ctx)
+	if userId == "" {
+		return nil, errors.NewUnauthorizedError("not Login")
+	}
+	data := make(map[uint64]interface{})
+	for _, rt := range runtimes {
+		vars := map[string]string{
+			"namespace": rt.ScheduleName.Namespace,
+			"name":      rt.ScheduleName.Name,
+		}
+		if status, err := r.scheduler.EpGetRuntimeStatus(context.Background(), vars); err != nil {
+			// TODO: 这里返回的错误类型不知道如何操作
+			return nil, errors.NewInternalServerError(err)
+		} else {
+			data[rt.ID] = status
+		}
+	}
+	return ConvertEpBulkGetRuntimeStatusDetailToPb(data), nil
 }
 
 func (r *Service) FullGC(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
-	go r.runtime.FullGC()
+	go r.FullGCService()
 	return nil, nil
 }
 
@@ -257,7 +266,7 @@ func (r *Service) ReferCluster(ctx context.Context, req *pb.ReferClusterRequest)
 	}
 
 	clusterName := req.Cluster
-	referred := r.runtime.ReferCluster(clusterName, orgID)
+	referred := r.ReferClusterService(clusterName, orgID)
 
 	var resp *pb.ReferClusterResponse
 	cputil.MustObjJSONTransfer(referred, resp)
@@ -291,7 +300,7 @@ func (r *Service) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (
 
 	var paramValues url.Values
 	cputil.MustObjJSONTransfer(req, &paramValues)
-	result, err := r.runtime.RuntimeDeployLogs(user.ID(userID), orgID, apis.GetOrg(ctx), deploymentID, paramValues)
+	result, err := r.RuntimeDeployLogs(user.ID(userID), orgID, apis.GetOrg(ctx), deploymentID, paramValues)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("deploymentID", id)
 	}
@@ -366,7 +375,7 @@ func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequ
 		}
 	}
 
-	runtimes, err := r.runtime.ListGroupByApps(targetAppIDs, env)
+	runtimes, err := r.ListGroupByApps(targetAppIDs, env)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -419,7 +428,7 @@ func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorks
 		}
 		if len(envParam) == 0 || envParam[0] == "" {
 			for i := 0; i < len(defaultEnv); i++ {
-				cnt, err := r.runtime.CountARByWorkspace(appId, defaultEnv[i])
+				cnt, err := r.CountARByWorkspace(appId, defaultEnv[i])
 				if err != nil {
 					l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
 				}
@@ -427,7 +436,7 @@ func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorks
 			}
 		} else {
 			env := envParam[0]
-			cnt, err := r.runtime.CountARByWorkspace(appId, env)
+			cnt, err := r.CountARByWorkspace(appId, env)
 			if err != nil {
 				l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
 			}
@@ -447,7 +456,7 @@ func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorks
 		if len(envParam) == 0 || envParam[0] == "" {
 			for i := 0; i < len(defaultEnv); i++ {
 				for aid := range appIdMap {
-					cnt, err := r.runtime.CountARByWorkspace(aid, defaultEnv[i])
+					cnt, err := r.CountARByWorkspace(aid, defaultEnv[i])
 					if err != nil {
 						l.WithError(err).Warnf("count runtimes of app %s failed", defaultEnv[i])
 					}
@@ -457,7 +466,7 @@ func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorks
 		} else {
 			env := envParam[0]
 			for aid := range appIdMap {
-				cnt, err := r.runtime.CountARByWorkspace(aid, env)
+				cnt, err := r.CountARByWorkspace(aid, env)
 				if err != nil {
 					l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
 				}
@@ -482,7 +491,7 @@ func (r *Service) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeS
 		runtimeIDs = append(runtimeIDs, id)
 	}
 
-	serviceMap, err := r.runtime.GetServiceByRuntime(runtimeIDs)
+	serviceMap, err := r.GetServiceByRuntime(runtimeIDs)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -518,7 +527,7 @@ func (r *Service) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*pb.
 		return nil, err
 	}
 
-	err = r.checkRuntimeScopePermission(operator, runtime, apistructs.DeleteAction)
+	err = r.CheckRuntimeScopePermission(operator, runtime, apistructs.DeleteAction)
 	if err != nil {
 		return nil, err
 	}
@@ -612,7 +621,7 @@ func (r *Service) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID ui
 	return
 }
 
-func (r *Service) checkRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string) error {
+func (r *Service) CheckRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string) error {
 	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.AppScope,
@@ -696,7 +705,7 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	if err != nil {
 		logrus.Warnf("[GetRuntime] get vpa rules for runtimeId %d failed.", runtime.ID)
 	}
-	if err = r.checkRuntimeScopePermission(userID, runtime, apistructs.GetAction); err != nil {
+	if err = r.CheckRuntimeScopePermission(userID, runtime, apistructs.GetAction); err != nil {
 		return nil, err
 	}
 
@@ -988,7 +997,7 @@ func updatePARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, vpaRules
 
 type ServiceOption func(*Service) *Service
 
-func WithBundleService(s BundleService) ServiceOption {
+func WithBundleService(s *bundle.Bundle) ServiceOption {
 	return func(service *Service) *Service {
 		service.bundle = s
 		return service
