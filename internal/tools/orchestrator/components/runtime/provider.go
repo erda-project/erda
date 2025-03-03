@@ -16,6 +16,7 @@ package runtime
 
 import (
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
@@ -25,7 +26,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
-	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -58,7 +58,8 @@ type provider struct {
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
 	org               org.ClientInterface
 	TenantSvc         tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
-	Perm              perm.Interface               `autowired:"permission"`
+	//Perm              perm.Interface                   `autowired:"permission"`
+	PipelineSvc pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -121,6 +122,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 		WithScheduler(scheduler),
 		WithAddon(a),
+		WithPipelineSvc(p.PipelineSvc),
 	)
 
 	if p.Register != nil {

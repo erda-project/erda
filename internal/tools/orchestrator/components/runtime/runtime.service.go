@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
+	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"net/url"
 	"strconv"
 	"strings"
@@ -36,7 +38,6 @@ import (
 	"github.com/erda-project/erda/internal/pkg/user"
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
@@ -67,6 +68,7 @@ type Service struct {
 	org              org.ClientInterface
 	Addon            *addon.Addon
 	releaseSvc       releasepb.ReleaseServiceServer
+	pipelineSvc      pipelinepb.PipelineServiceServer
 }
 
 func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateRequest) (*pb.DeploymentCreateResponse, error) {
@@ -1074,6 +1076,13 @@ func WithScheduler(scheduler *scheduler.Scheduler) ServiceOption {
 func WithAddon(addon *addon.Addon) ServiceOption {
 	return func(service *Service) *Service {
 		service.Addon = addon
+		return service
+	}
+}
+
+func WithPipelineSvc(pipelineSvc pipelinepb.PipelineServiceServer) ServiceOption {
+	return func(service *Service) *Service {
+		service.pipelineSvc = pipelineSvc
 		return service
 	}
 }
