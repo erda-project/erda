@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -57,9 +58,9 @@ type provider struct {
 	runtimeService    pb.RuntimeServiceServer
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
 	Org               org.ClientInterface
-	TenantSvc         tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
-	//Perm              perm.Interface                   `autowired:"permission"`
-	PipelineSvc pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
+	TenantSvc         tenantpb.TenantServiceServer     `autowired:"erda.msp.tenant.TenantService"`
+	Perm              perm.Interface                   `autowired:"permission"`
+	PipelineSvc       pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

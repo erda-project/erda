@@ -17,6 +17,8 @@ grpc-client@erda.core.pipeline.pipeline:
 
 profile-agent:
 
+permission:
+
 http-server:
   addr: "${LISTEN_ADDR:0.0.0.0:8081}"
 grpc-server:
