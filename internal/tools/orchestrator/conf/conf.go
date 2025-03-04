@@ -16,6 +16,7 @@
 package conf
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -54,12 +55,15 @@ type Conf struct {
 	// Conf for scheduler
 	DefaultRuntimeExecutor string `env:"DEFAULT_RUNTIME_EXECUTOR" default:"MARATHON"`
 	// TraceLogEnv shows the key of environment variable defined for tracing log
-	TraceLogEnv           string `env:"TRACELOGENV" default:"TERMINUS_DEFINE_TAG"`
-	WsDiceRootDomain      string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
-	TerminalSecurity      bool   `env:"TERMINAL_SECURITY" default:"false"`
-	ExecutorClientTimeout int    `env:"EXECUTOR_CLIENT_TIMEOUT" default:"10"`
-	CustomRegCredSecret   string `env:"CUSTOM_REGCRED_SECRET" default:"regcred"`
-	ErdaNamespace         string `env:"DICE_NAMESPACE" default:"default"`
+	TraceLogEnv               string `env:"TRACELOGENV" default:"TERMINUS_DEFINE_TAG"`
+	WsDiceRootDomain          string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
+	TerminalSecurity          bool   `env:"TERMINAL_SECURITY" default:"false"`
+	TerminalMasking           bool   `env:"TERMINAL_MASKING" default:"false"`
+	TerminalSensitiveKeywords string `env:"TERMINAL_SENSITIVE_KEYWORDS" default:""`
+	TerminalMaskKeepFirstChar bool   `env:"TERMINAL_MASK_KEEP_FIRST_CHAR" default:"false"`
+	ExecutorClientTimeout     int    `env:"EXECUTOR_CLIENT_TIMEOUT" default:"10"`
+	CustomRegCredSecret       string `env:"CUSTOM_REGCRED_SECRET" default:"regcred"`
+	ErdaNamespace             string `env:"DICE_NAMESPACE" default:"default"`
 }
 
 var cfg Conf
@@ -196,6 +200,17 @@ func TraceLogEnv() string {
 // TerminalSecurity return cfg.TerminalSecurity
 func TerminalSecurity() bool {
 	return cfg.TerminalSecurity
+}
+func TerminalMasking() bool {
+	return cfg.TerminalMasking
+}
+
+func TerminalSensitiveKeywords() []string {
+	return strings.Split(cfg.TerminalSensitiveKeywords, ",")
+}
+
+func TerminalMaskKeepFirstChar() bool {
+	return cfg.TerminalMaskKeepFirstChar
 }
 
 func ExecutorClientTimeout() time.Duration {
