@@ -54,7 +54,7 @@ message Extra {
 message ErrorResponse {
   string code = 1;
   string msg = 2;
-  google.protobuf.Any ctx = 3;
+  google.protobuf.Value ctx = 3;
 }
 
 message RuntimeInspect {
@@ -128,7 +128,7 @@ message RuntimeCreateRequestExtra {
   string deployType = 7;
   string instanceId = 8;
   string clusterId = 9;
-  map<string, google.protobuf.Any> addonActions = 10;
+  map<string, google.protobuf.Value> addonActions = 10;
 }
 
 message RuntimeCreateRequest {
@@ -206,7 +206,7 @@ message RuntimeSummary {
   string clusterName = 11;
   string clusterType = 12;
   RuntimeServiceResource resources = 13;
-  map<string, google.protobuf.Any> extra = 14;
+  map<string, google.protobuf.Value> extra = 14;
   uint64 projectId = 15;
   map<string, RuntimeInspectService> services = 16;
   map<string, StringMap> moduleErrMsg = 17;
@@ -248,7 +248,7 @@ message epBulkGetRuntimeStatusDetailRequest {
 }
 
 message epBulkGetRuntimeStatusDetailResponse {
-  map<uint64, google.protobuf.Any> data = 1;
+  map<uint64, google.protobuf.Value> data = 1;
 }
 
 message PreDiceDTO {
