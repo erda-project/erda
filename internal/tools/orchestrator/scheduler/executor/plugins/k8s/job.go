@@ -196,6 +196,8 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 	k.AddSpotEmptyDir(&job.Spec.Template.Spec, service.Resources.EmptyDirCapacity)
 
 	job.Spec.Template.Spec.RestartPolicy = apiv1.RestartPolicyNever
+
+	k.runAsDefaultUser(&job.Spec.Template.Spec)
 	return job, nil
 }
 
