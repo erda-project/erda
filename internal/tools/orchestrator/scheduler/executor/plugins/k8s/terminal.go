@@ -212,7 +212,7 @@ func (k *Kubernetes) Terminal(namespace, podname, containername string, upperCon
 				return
 			}
 			m[0] = Output
-			if conf.TerminalSecurity() {
+			if conf.TerminalSecurity() || conf.TerminalMasking() {
 				m = hidePassEnv(m)
 			}
 			if err := upperConn.WriteMessage(tp, m); err != nil {
