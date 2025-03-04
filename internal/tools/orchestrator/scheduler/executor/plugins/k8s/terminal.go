@@ -25,7 +25,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -35,6 +34,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/clusterdialer"
+	"github.com/erda-project/erda/pkg/security/mask"
 )
 
 const (
@@ -48,24 +48,27 @@ const (
 	SetSize = '8'
 )
 
+// maskSensitiveOutput:
+// TODO: Support more data. Currently only environment variable key-value pairs are masked.
+var maskSensitiveOutput *mask.SensitiveEnv
+
+func init() {
+	maskingOptions := []mask.SensitiveEnvOption{
+		mask.WithStripANSIEscapes(),
+		mask.WithKeywords(conf.TerminalSensitiveKeywords()),
+	}
+	if conf.TerminalMaskKeepFirstChar() {
+		maskingOptions = append(maskingOptions, mask.WithKeepFirstChar())
+	}
+
+	maskSensitiveOutput = mask.NewSensitiveEnv(maskingOptions...)
+}
+
 type Winsize struct {
 	Rows uint16 // ws_row: Number of rows (in cells)
 	Cols uint16 // ws_col: Number of columns (in cells)
 	X    uint16 // ws_xpixel: Width in pixels
 	Y    uint16 // ws_ypixel: Height in pixels
-}
-
-var passRegexp = regexp.MustCompile(`(?i)(?:pass|secret)[^\s\0]*=([^\s\0]+)`)
-
-func hidePassEnv(b []byte) []byte {
-	return passRegexp.ReplaceAllFunc(b, func(a []byte) []byte {
-		if i := bytes.IndexByte(a, '='); i != -1 {
-			for i += 2; i < len(a); i++ { // keep first
-				a[i] = '*'
-			}
-		}
-		return a
-	})
 }
 
 func (k *Kubernetes) Terminal(namespace, podname, containername string, upperConn *websocket.Conn, auditor executortypes.TerminalCommandAuditor) {
@@ -212,8 +215,8 @@ func (k *Kubernetes) Terminal(namespace, podname, containername string, upperCon
 				return
 			}
 			m[0] = Output
-			if conf.TerminalSecurity() {
-				m = hidePassEnv(m)
+			if conf.TerminalMasking() || conf.TerminalSecurity() {
+				m = maskSensitiveOutput.Process(m)
 			}
 			if err := upperConn.WriteMessage(tp, m); err != nil {
 				return
