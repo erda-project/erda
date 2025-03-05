@@ -19,17 +19,12 @@ import (
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
 	"github.com/erda-project/erda/internal/pkg/gitflowutil"
 	"github.com/erda-project/erda/internal/pkg/user"
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
@@ -71,20 +66,6 @@ type DeployContext struct {
 	// deployment order
 	DeploymentOrderId string
 	Param             string
-}
-
-// Runtime 应用实例对象封装
-type Runtime struct {
-	db               *dbclient.DBClient
-	evMgr            *events.EventManager
-	bdl              *bundle.Bundle
-	Addon            *addon.Addon
-	releaseSvc       pb.ReleaseServiceServer
-	serviceGroupImpl servicegroup.ServiceGroup
-	clusterinfoImpl  clusterinfo.ClusterInfo
-	clusterSvc       clusterpb.ClusterServiceServer
-	pipelineSvc      pipelinepb.PipelineServiceServer
-	org              org.ClientInterface
 }
 
 func (r *Service) Create(operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
