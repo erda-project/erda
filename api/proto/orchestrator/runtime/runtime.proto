@@ -375,6 +375,12 @@ service RuntimeService {
     };
   }
 
+  rpc CreateRuntimeByRelease(RuntimeReleaseCreateRequest) returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/deploy-release",
+    };
+  }
+
   rpc ListRuntimes(ListRuntimesRequest) returns(ListRuntimeResponse) {
     option (google.api.http) = {
       get: "/api/runtimes?applicationId={applicationID}&workspace={workSpace}&name={name}",

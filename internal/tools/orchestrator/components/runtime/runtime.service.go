@@ -71,6 +71,31 @@ type Service struct {
 	pipelineSvc      pipelinepb.PipelineServiceServer
 }
 
+func (r *Service) CreateRuntimeByRelease(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
+	operator := apis.GetUserID(ctx)
+	if operator == "" {
+		return nil, errors.NewUnauthorizedError("not Login")
+	}
+
+	release := &apistructs.RuntimeReleaseCreateRequest{
+		ReleaseID:     req.ReleaseId,
+		Workspace:     req.Workspace,
+		ProjectID:     req.ProjectId,
+		ApplicationID: req.ApplicationId,
+	}
+
+	data, err := r.CreateByReleaseID(ctx, user.ID(operator), release)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	return &pb.DeploymentCreateResponse{
+		DeploymentId:  data.DeploymentID,
+		ApplicationId: data.ApplicationID,
+		RuntimeId:     data.RuntimeID,
+	}, nil
+}
+
 func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateRequest) (*pb.DeploymentCreateResponse, error) {
 	if req.Extra == nil {
 		return nil, errors.NewInvalidParameterError("extra", "extra is nil")
