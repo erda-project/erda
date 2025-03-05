@@ -316,8 +316,16 @@ message DashboardSpotLogData {
 }
 
 message ListRuntimeByAppsRequest {
-  string applicationID = 1;
-  string workSpace = 2;
+  repeated string applicationID = 1;
+  repeated string workSpace = 2;
+}
+
+message ListRuntimeSummary {
+  repeated RuntimeSummary data = 1;
+}
+
+message ListRuntimeByAppsResponse {
+  map<uint64, ListRuntimeSummary> data = 1;
 }
 
 message ListMyRuntimesRequest {
@@ -346,6 +354,22 @@ message BatchRuntimeServiceRequest {
 
 message BatchRuntimeServiceResponse {
   map<uint64, RuntimeSummary> data = 1;
+}
+
+message StartRuntimeRequest {
+  string runtimeID = 1;
+}
+
+message StartRuntimeResponse {
+
+}
+
+message RestartRuntimeRequest {
+  string runtimeID = 1;
+}
+
+message RestartRuntimeResponse {
+
 }
 
 service RuntimeService {
@@ -441,9 +465,9 @@ service RuntimeService {
     };
   }
 
-  rpc ListRuntimeByApps(ListRuntimeByAppsRequest) returns (RuntimeSummary) {
+  rpc ListRuntimesGroupByApps(ListRuntimeByAppsRequest) returns (ListRuntimeByAppsResponse) {
     option (google.api.http) = {
-      get: "/api/runtimes/actions/group-by-apps"
+      get: "/api/runtimes/actions/group-by-apps?applicationID={applicationID}&workSpace={workSpace}"
     };
   }
 
@@ -464,5 +488,18 @@ service RuntimeService {
       get: "/api/runtimesServices"
     };
   }
+
+  rpc StartRuntime(StartRuntimeRequest)returns (StartRuntimeResponse){
+    option(google.api.http) = {
+      post: "/api_test/runtimes/{runtimeID}/actions/start"
+    };
+  }
+
+  rpc RestartRuntime(RestartRuntimeRequest)returns (RestartRuntimeResponse){
+    option(google.api.http) = {
+      post: "/api_test/runtimes/{runtimeID}/actions/restart"
+    };
+  }
+
 
 }

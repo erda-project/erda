@@ -71,6 +71,14 @@ type Service struct {
 	pipelineSvc      pipelinepb.PipelineServiceServer
 }
 
+func (r *Service) StartRuntime(ctx context.Context, request *pb.StartRuntimeRequest) (*pb.StartRuntimeResponse, error) {
+	return nil, nil
+}
+
+func (r *Service) RestartRuntime(ctx context.Context, request *pb.RestartRuntimeRequest) (*pb.RestartRuntimeResponse, error) {
+	return nil, nil
+}
+
 func (r *Service) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
@@ -428,9 +436,53 @@ func (r *Service) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (
 	return resp, nil
 }
 
-func (r *Service) ListRuntimeByApps(ctx context.Context, req *pb.ListRuntimeByAppsRequest) (*pb.RuntimeSummary, error) {
-	//TODO implement me
-	panic("implement me")
+func (r *Service) ListRuntimesGroupByApps(ctx context.Context, req *pb.ListRuntimeByAppsRequest) (*pb.ListRuntimeByAppsResponse, error) {
+	var (
+		l      = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
+		appIDs []uint64
+		env    string
+	)
+
+	for _, appID := range req.ApplicationID {
+		id, err := strconv.ParseUint(appID, 10, 64)
+		if err != nil {
+			l.WithError(err).Warnf("failed to parse applicationID: failed to ParseUint: %s", appID)
+		}
+		appIDs = append(appIDs, id)
+	}
+	envParam := req.WorkSpace
+
+	if len(envParam) == 0 {
+		env = ""
+	} else {
+		env = envParam[0]
+	}
+	runtimes, err := r.ListGroupByApps(appIDs, env)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	resp := &pb.ListRuntimeByAppsResponse{}
+	for i, runtimeList := range runtimes {
+		data := make([]*pb.RuntimeSummary, len(runtimes[i]))
+		for _, runtime := range runtimeList {
+			v := &pb.RuntimeSummary{}
+			runtimeBytes, err := json.Marshal(runtime)
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			if err := json.Unmarshal(runtimeBytes, v); err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			data = append(data, v)
+		}
+		listRuntimeSummary := &pb.ListRuntimeSummary{
+			Data: data,
+		}
+		resp.Data[i] = listRuntimeSummary
+	}
+
+	return resp, nil
 }
 
 func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequest) (*pb.ListMyRuntimesResponse, error) {
