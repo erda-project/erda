@@ -395,6 +395,12 @@ service RuntimeService {
 
   rpc ReDeployRuntimeAction(ReDeployRuntimeActionRequest)returns (DeploymentCreateResponse) {
     option (google.api.http) = {
+      post: "/api/runtimes/{runtimeID}/actions/redeploy-action"
+    };
+  }
+
+  rpc ReDeployRuntime(ReDeployRuntimeActionRequest)returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
       post: "/api/runtimes/{runtimeID}/actions/redeploy"
     };
   }
@@ -402,6 +408,12 @@ service RuntimeService {
   rpc RollBackRuntimeAction(RollBackRuntimeActionRequest)returns (DeploymentCreateResponse) {
     option (google.api.http) = {
       post: "/api/runtimes/{runtimeID}/actions/rollback-action"
+    };
+  }
+
+  rpc RollBackRuntime(RollBackRuntimeActionRequest)returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/{runtimeID}/actions/rollback"
     };
   }
 

@@ -71,6 +71,61 @@ type Service struct {
 	pipelineSvc      pipelinepb.PipelineServiceServer
 }
 
+func (r *Service) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+	orgID, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("org-id", "not found org-id")
+	}
+	operator := apis.GetUserID(ctx)
+	if operator == "" {
+		return nil, errors.NewUnauthorizedError("not Login")
+	}
+	if req.DeploymentID <= 0 {
+		return nil, errors.NewInvalidParameterError("deploymentID", "not found deploymentID")
+	}
+	v := req.RuntimeID
+	runtimeID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("runtimeID", v)
+	}
+	data, err := r.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	return &pb.DeploymentCreateResponse{
+		DeploymentId:  data.DeploymentID,
+		ApplicationId: data.ApplicationID,
+		RuntimeId:     data.RuntimeID,
+	}, nil
+}
+
+func (r *Service) ReDeployRuntime(ctx context.Context, req *pb.ReDeployRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+	orgID, err := apis.GetIntOrgID(ctx)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("org-id", "not found org-id")
+	}
+	operator := apis.GetUserID(ctx)
+	if operator == "" {
+		return nil, errors.NewUnauthorizedError("not Login")
+	}
+	v := req.RuntimeID
+	runtimeID, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("runtimeID", v)
+	}
+	data, err := r.Redeploy(user.ID(operator), uint64(orgID), runtimeID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	return &pb.DeploymentCreateResponse{
+		DeploymentId:  data.DeploymentID,
+		ApplicationId: data.ApplicationID,
+		RuntimeId:     data.RuntimeID,
+	}, nil
+}
+
 func (r *Service) CreateRuntimeByRelease(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
 	operator := apis.GetUserID(ctx)
 	if operator == "" {
