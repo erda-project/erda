@@ -15,11 +15,7 @@
 package runtime
 
 import (
-	"context"
-	"fmt"
-	"reflect"
-	"strconv"
-	"strings"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -67,9 +63,11 @@ type provider struct {
 	TenantSvc         tenantpb.TenantServiceServer     `autowired:"erda.msp.tenant.TenantService"`
 	Perm              perm.Interface                   `autowired:"permission"`
 	PipelineSvc       pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
+	audit             audit.Auditor
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
 	bdl := bundle.New(
 		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
@@ -134,80 +132,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	if p.Register != nil {
 		type RuntimeService = pb.RuntimeServiceHandler
-		pb.RegisterRuntimeServiceImp(p.Register, p.runtimeService, apis.Options(),
-			p.Perm.Check(
-				perm.Method(RuntimeService.GetRuntime, perm.ScopeApp, "runtime-dev", perm.ActionGet, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.ListRuntimes, perm.ScopeApp, "runtime-dev", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-dev", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListMyRuntimes, perm.ScopeApp, "runtime-dev", perm.ActionList, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.CreateRuntime, perm.ScopeApp, "runtime-dev", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
-				perm.Method(RuntimeService.DelRuntime, perm.ScopeApp, "runtime-dev", perm.ActionDelete, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CreateRuntimeByRelease, perm.ScopeApp, "runtime-dev", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-dev", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.StopRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntimeAction, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntimeAction, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RuntimeLogs, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CountPRByWorkspace, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.StartRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RestartRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.FieldValue("RuntimeID")),
-
-				perm.Method(RuntimeService.GetRuntime, perm.ScopeApp, "runtime-test", perm.ActionGet, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.ListRuntimes, perm.ScopeApp, "runtime-test", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-test", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListMyRuntimes, perm.ScopeApp, "runtime-test", perm.ActionList, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.CreateRuntime, perm.ScopeApp, "runtime-test", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
-				perm.Method(RuntimeService.DelRuntime, perm.ScopeApp, "runtime-test", perm.ActionDelete, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CreateRuntimeByRelease, perm.ScopeApp, "runtime-test", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-test", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.StopRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntimeAction, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntimeAction, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RuntimeLogs, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CountPRByWorkspace, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.StartRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RestartRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.FieldValue("RuntimeID")),
-
-				perm.Method(RuntimeService.GetRuntime, perm.ScopeApp, "runtime-staging", perm.ActionGet, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.ListRuntimes, perm.ScopeApp, "runtime-staging", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-staging", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListMyRuntimes, perm.ScopeApp, "runtime-staging", perm.ActionList, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.CreateRuntime, perm.ScopeApp, "runtime-staging", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
-				perm.Method(RuntimeService.DelRuntime, perm.ScopeApp, "runtime-staging", perm.ActionDelete, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CreateRuntimeByRelease, perm.ScopeApp, "runtime-staging", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-staging", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.StopRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntimeAction, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntimeAction, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RuntimeLogs, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CountPRByWorkspace, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.StartRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RestartRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.FieldValue("RuntimeID")),
-
-				perm.Method(RuntimeService.GetRuntime, perm.ScopeApp, "runtime-prod", perm.ActionGet, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.ListRuntimes, perm.ScopeApp, "runtime-prod", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-prod", perm.ActionList, p.FieldValue("ApplicationID")),
-				perm.Method(RuntimeService.ListMyRuntimes, perm.ScopeApp, "runtime-prod", perm.ActionList, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.CreateRuntime, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
-				perm.Method(RuntimeService.DelRuntime, perm.ScopeApp, "runtime-prod", perm.ActionDelete, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CreateRuntimeByRelease, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.FieldValue("ApplicationId")),
-				perm.Method(RuntimeService.StopRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntimeAction, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.ReDeployRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntimeAction, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RollBackRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RuntimeLogs, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("Id")),
-				perm.Method(RuntimeService.CountPRByWorkspace, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("AppID")),
-				perm.Method(RuntimeService.StartRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("RuntimeID")),
-				perm.Method(RuntimeService.RestartRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.FieldValue("RuntimeID")),
-			))
+		pb.RegisterRuntimeServiceImp(p.Register, p.runtimeService, apis.Options())
 	}
 	return nil
 }
@@ -219,57 +144,6 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 	}
 
 	return p
-}
-
-// FieldValue 从请求体中获取到appID，或 applicationID
-func (p *provider) FieldValue(field string) func(ctx context.Context, req interface{}) (string, error) {
-	fields := strings.Split(field, ".")
-	last := len(fields) - 1
-
-	result := func(ctx context.Context, req interface{}) (string, error) {
-		if value := req; value != nil {
-			for i, field := range fields {
-				val := reflect.ValueOf(value)
-				fmt.Printf("val: %v\n", val)
-				for val.Kind() == reflect.Ptr {
-					val = val.Elem()
-				}
-				if val.Kind() != reflect.Struct {
-					return "", fmt.Errorf("invalid request type")
-				}
-				val = val.FieldByName(field)
-				if !val.IsValid() {
-					break
-				}
-				value = val.Interface()
-
-				if value == nil {
-					break
-				}
-
-				// 如果是ID，需要从数据库中获取到appID
-				if field == "Id" || field == "RuntimeID" {
-					var runtime dbclient.Runtime
-					if err := p.DB.Where("id = ?", value).First(&runtime).Error; err != nil {
-						if gorm.IsRecordNotFoundError(err) {
-							return "", nil
-						}
-					}
-					appId := strconv.FormatUint(runtime.ApplicationID, 10)
-					fmt.Printf("appId: %v\n", appId)
-					return appId, nil
-				}
-
-				if i == last {
-					fmt.Printf("value: %v\n", value)
-					return fmt.Sprint(value), nil
-				}
-			}
-		}
-		return "", fmt.Errorf("not found id for permission")
-	}
-
-	return result
 }
 
 func init() {
