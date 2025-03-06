@@ -229,7 +229,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		//{Path: "/api/runtimes/{idOrName}", Method: http.MethodGet, Handler: e.GetRuntime},
 		//{Path: "/api/runtimes/{runtimeID}", Method: http.MethodDelete, Handler: e.DeleteRuntime},
 		//// TODO: change configuration -> spec
-		//{Path: "/api/runtimes/{runtimeID}/configuration", Method: http.MethodGet, Handler: e.GetRuntimeSpec},
+		{Path: "/api/runtimes/{runtimeID}/configuration", Method: http.MethodGet, Handler: e.GetRuntimeSpec},
 		//{Path: "/api/runtimes/{runtimeID}/actions/stop", Method: http.MethodPost, Handler: e.StopRuntime},
 		//{Path: "/api/runtimes/{runtimeID}/actions/start", Method: http.MethodPost, Handler: e.StartRuntime},
 		//{Path: "/api/runtimes/{runtimeID}/actions/restart", Method: http.MethodPost, Handler: e.RestartRuntime},
