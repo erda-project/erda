@@ -33,7 +33,6 @@ import (
 	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/user"
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
@@ -58,7 +57,7 @@ import (
 // Service implements pb.RuntimeServiceServer
 type Service struct {
 	logger           logs.Logger
-	bundle           *bundle.Bundle
+	bundle           BundleService
 	db               DBService
 	evMgr            EventManagerService
 	serviceGroupImpl servicegroup.ServiceGroup
@@ -1237,7 +1236,7 @@ func updatePARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, vpaRules
 
 type ServiceOption func(*Service) *Service
 
-func WithBundleService(s *bundle.Bundle) ServiceOption {
+func WithBundleService(s BundleService) ServiceOption {
 	return func(service *Service) *Service {
 		service.bundle = s
 		return service

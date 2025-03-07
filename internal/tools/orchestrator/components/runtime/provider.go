@@ -117,7 +117,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 
 	p.runtimeService = NewRuntimeService(
-		WithBundleService(bdl),
+		WithBundleService(NewBundleService()),
 		WithDBService(db),
 		WithEventManagerService(p.EventManager),
 		WithServiceGroupImpl(servicegroup.NewServiceGroupImplInit()),
