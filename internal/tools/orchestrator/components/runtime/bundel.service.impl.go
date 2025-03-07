@@ -17,10 +17,55 @@ package runtime
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 type bundleServiceImpl struct {
 	bdl *bundle.Bundle
+}
+
+func (b *bundleServiceImpl) GetProjectBranchRules(projectId uint64) ([]*apistructs.BranchRule, error) {
+	return b.bdl.GetProjectBranchRules(projectId)
+}
+
+func (b *bundleServiceImpl) GetDiceYAML(releaseID string, workspace ...string) (*diceyml.DiceYaml, error) {
+	return b.bdl.GetDiceYAML(releaseID, workspace...)
+}
+
+func (b *bundleServiceImpl) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Member, error) {
+	return b.bdl.ListMembers(req)
+}
+
+func (b *bundleServiceImpl) ListUsers(req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
+	return b.bdl.ListUsers(req)
+}
+
+func (b *bundleServiceImpl) CreateMboxNotify(templatename string, params map[string]string, locale string, orgid uint64, users []string) error {
+	return b.bdl.CreateMboxNotify(templatename, params, locale, orgid, users)
+}
+
+func (b *bundleServiceImpl) CreateEmailNotify(templatename string, params map[string]string, locale string, orgid uint64, emailaddrs []string) error {
+	return b.bdl.CreateEmailNotify(templatename, params, locale, orgid, emailaddrs)
+}
+
+func (b *bundleServiceImpl) GetAllValidBranchWorkspace(appId uint64, userID string) ([]apistructs.ValidBranch, error) {
+	return b.bdl.GetAllValidBranchWorkspace(appId, userID)
+}
+
+func (b *bundleServiceImpl) GetAllProjects() ([]apistructs.ProjectDTO, error) {
+	return b.bdl.GetAllProjects()
+}
+
+func (b *bundleServiceImpl) GetLog(orgName string, req apistructs.DashboardSpotLogRequest) (*apistructs.DashboardSpotLogData, error) {
+	return b.bdl.GetLog(orgName, req)
+}
+
+func (b *bundleServiceImpl) GetGittarCommit(repo, ref, userID string) (*apistructs.Commit, error) {
+	return b.bdl.GetGittarCommit(repo, ref, userID)
+}
+
+func (b *bundleServiceImpl) InvalidateOAuth2Token(req apistructs.OAuth2TokenInvalidateRequest) (*apistructs.OAuth2Token, error) {
+	return b.bdl.InvalidateOAuth2Token(req)
 }
 
 func (b *bundleServiceImpl) GetProject(id uint64) (*apistructs.ProjectDTO, error) {

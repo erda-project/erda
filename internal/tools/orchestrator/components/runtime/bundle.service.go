@@ -16,6 +16,7 @@ package runtime
 
 import (
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 type BundleService interface {
@@ -26,4 +27,15 @@ type BundleService interface {
 	GetProject(id uint64) (*apistructs.ProjectDTO, error)
 	GetMyAppsByProject(userid string, orgid, projectID uint64, appName string) (*apistructs.ApplicationListResponseData, error)
 	GetMyApps(userid string, orgid uint64) (*apistructs.ApplicationListResponseData, error)
+	GetProjectBranchRules(projectId uint64) ([]*apistructs.BranchRule, error)
+	GetDiceYAML(releaseID string, workspace ...string) (*diceyml.DiceYaml, error)
+	ListMembers(req apistructs.MemberListRequest) ([]apistructs.Member, error)
+	ListUsers(req apistructs.UserListRequest) (*apistructs.UserListResponseData, error)
+	CreateMboxNotify(templatename string, params map[string]string, locale string, orgid uint64, users []string) error
+	CreateEmailNotify(templatename string, params map[string]string, locale string, orgid uint64, emailaddrs []string) error
+	GetAllValidBranchWorkspace(appId uint64, userID string) ([]apistructs.ValidBranch, error)
+	GetAllProjects() ([]apistructs.ProjectDTO, error)
+	GetLog(orgName string, req apistructs.DashboardSpotLogRequest) (*apistructs.DashboardSpotLogData, error)
+	GetGittarCommit(repo, ref, userID string) (*apistructs.Commit, error)
+	InvalidateOAuth2Token(req apistructs.OAuth2TokenInvalidateRequest) (*apistructs.OAuth2Token, error)
 }
