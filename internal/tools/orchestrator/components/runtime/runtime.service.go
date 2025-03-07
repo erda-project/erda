@@ -61,7 +61,7 @@ type Service struct {
 	db               DBService
 	evMgr            EventManagerService
 	serviceGroupImpl servicegroup.ServiceGroup
-	clusterSvc       clusterpb.ClusterServiceServer
+	clusterSvc       ClusterService
 	clusterinfoImpl  clusterinfo.ClusterInfo
 	scheduler        *scheduler.Scheduler
 	org              org.ClientInterface
@@ -1264,7 +1264,7 @@ func WithServiceGroupImpl(serviceGroupImpl servicegroup.ServiceGroup) ServiceOpt
 	}
 }
 
-func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) ServiceOption {
+func WithClusterSvc(clusterSvc ClusterService) ServiceOption {
 	return func(service *Service) *Service {
 		service.clusterSvc = clusterSvc
 		return service
