@@ -167,7 +167,7 @@ func (r *Service) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 		DeploymentOrderId: req.DeploymentOrderId,
 	}
 
-	return r.doDeployRuntime(&deployContext)
+	return r.DoDeployRuntime(&deployContext)
 }
 
 func (r *Service) GetOrg(orgID uint64) (*orgpb.Org, error) {
@@ -303,7 +303,7 @@ func (r *Service) syncRuntimeServices(runtimeID uint64, dice *diceyml.DiceYaml) 
 	return nil
 }
 
-func (r *Service) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+func (r *Service) DoDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
 	// fetch & parse diceYml
 	dice, err := r.bundle.GetDiceYAML(ctx.ReleaseID, ctx.Runtime.Workspace)
 	if err != nil {
@@ -887,7 +887,7 @@ func (r *Service) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*a
 		Operator:       operator.String(),
 		SkipPushByOrch: false,
 	}
-	return r.doDeployRuntime(&deployContext)
+	return r.DoDeployRuntime(&deployContext)
 }
 
 // FullGCService 定时全量 GC 过期的部署单

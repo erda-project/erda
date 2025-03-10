@@ -1315,7 +1315,7 @@ func WithPipelineSvc(pipelineSvc pipelinepb.PipelineServiceServer) ServiceOption
 
 var server pb.RuntimeServiceServer = &Service{}
 
-func NewRuntimeService(options ...ServiceOption) pb.RuntimeServiceServer {
+func NewRuntimeService(options ...ServiceOption) *Service {
 	s := &Service{}
 
 	for _, option := range options {
