@@ -601,7 +601,7 @@ func IsDeploying(status apistructs.DeploymentStatus) bool {
 	}
 }
 
-// Create 创建应用实例
+// CreateByReleaseID Create 创建应用实例
 func (r *Service) CreateByReleaseID(ctx context.Context, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: releaseReq.ReleaseID})

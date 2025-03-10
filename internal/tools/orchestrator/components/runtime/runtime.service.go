@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/bundle"
 	"net/url"
 	"strconv"
 	"strings"
@@ -57,11 +58,11 @@ import (
 // Service implements pb.RuntimeServiceServer
 type Service struct {
 	logger           logs.Logger
-	bundle           BundleService
+	bundle           *bundle.Bundle
 	db               DBService
 	evMgr            EventManagerService
 	serviceGroupImpl servicegroup.ServiceGroup
-	clusterSvc       ClusterService
+	clusterSvc       clusterpb.ClusterServiceServer
 	clusterinfoImpl  clusterinfo.ClusterInfo
 	scheduler        *scheduler.Scheduler
 	org              org.ClientInterface
@@ -1236,7 +1237,7 @@ func updatePARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, vpaRules
 
 type ServiceOption func(*Service) *Service
 
-func WithBundleService(s BundleService) ServiceOption {
+func WithBundleService(s *bundle.Bundle) ServiceOption {
 	return func(service *Service) *Service {
 		service.bundle = s
 		return service
@@ -1264,7 +1265,7 @@ func WithServiceGroupImpl(serviceGroupImpl servicegroup.ServiceGroup) ServiceOpt
 	}
 }
 
-func WithClusterSvc(clusterSvc ClusterService) ServiceOption {
+func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) ServiceOption {
 	return func(service *Service) *Service {
 		service.clusterSvc = clusterSvc
 		return service
