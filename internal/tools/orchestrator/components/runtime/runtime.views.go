@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"gopkg.in/yaml.v3"
 	"net/url"
 	"runtime/debug"
@@ -13,10 +12,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/schema"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/erda-project/erda-infra/pkg/transport"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/diceworkspace"
@@ -34,10 +39,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/gorilla/schema"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/metadata"
 )
 
 // DeployContext 部署上下文

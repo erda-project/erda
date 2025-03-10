@@ -15,8 +15,10 @@
 package runtime
 
 import (
-	"github.com/erda-project/erda/internal/pkg/audit"
 	"time"
+
+	"github.com/erda-project/erda/internal/pkg/audit"
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -42,8 +44,6 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-
-	"github.com/jinzhu/gorm"
 )
 
 type config struct {

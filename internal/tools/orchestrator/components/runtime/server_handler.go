@@ -4,13 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func (r *Service) getRuntimeScaleRecordByRuntimeIds(ids []uint64) ([]dbclient.Runtime, []apistructs.RuntimeScaleRecord, error) {
