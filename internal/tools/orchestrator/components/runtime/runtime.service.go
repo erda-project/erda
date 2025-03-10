@@ -60,7 +60,7 @@ type Service struct {
 	logger           logs.Logger
 	bundle           *bundle.Bundle
 	db               DBService
-	evMgr            EventManagerService
+	evMgr            *events.EventManager
 	serviceGroupImpl servicegroup.ServiceGroup
 	clusterSvc       clusterpb.ClusterServiceServer
 	clusterinfoImpl  clusterinfo.ClusterInfo
@@ -1251,7 +1251,7 @@ func WithDBService(db DBService) ServiceOption {
 	}
 }
 
-func WithEventManagerService(evMgr EventManagerService) ServiceOption {
+func WithEventManagerService(evMgr *events.EventManager) ServiceOption {
 	return func(service *Service) *Service {
 		service.evMgr = evMgr
 		return service
