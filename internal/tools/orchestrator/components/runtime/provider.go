@@ -17,7 +17,6 @@ package runtime
 import (
 	"time"
 
-	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -30,6 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/pkg/audit"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"

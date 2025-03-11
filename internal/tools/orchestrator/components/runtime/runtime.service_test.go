@@ -15,10 +15,8 @@
 package runtime
 
 import (
-	"bou.ke/monkey"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -31,17 +29,25 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
+	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	orgpb "github.com/erda-project/erda-proto-go/core/org/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/apps/dop/dicehub/release"
 	"github.com/erda-project/erda/internal/core/org"
+	"github.com/erda-project/erda/internal/pkg/diceworkspace"
+	"github.com/erda-project/erda/internal/pkg/gitflowutil"
 	org_mock "github.com/erda-project/erda/internal/pkg/mock"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/internal/tools/cluster-manager/cluster"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
+	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
@@ -160,8 +166,6 @@ func TestPreCheck(t *testing.T) {
 		diceYaml  string
 		workspace string
 	}
-
-	defer monkey.UnpatchAll()
 
 	gomonkey.ApplyMethod(reflect.TypeOf(a), "GetAddonExtention", func(a *addon.Addon, params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
 		addonName := params.AddonName
@@ -1560,3 +1564,321 @@ func TestBatchRuntimeDelete(t *testing.T) {
 	}
 
 }
+
+func TestService_CreateByReleaseID(t *testing.T) {
+	ctx := context.Background()
+	assert := require.New(t)
+
+	releaseReq := &apistructs.RuntimeReleaseCreateRequest{
+		ProjectID:     1,
+		ApplicationID: 12,
+		Workspace:     "dev",
+	}
+
+	releaseSvc := &release.ReleaseService{}
+	service := NewRuntimeService(WithReleaseSvc(releaseSvc), WithBundleService(bundle.New()))
+
+	m1 := gomonkey.ApplyMethod(reflect.TypeOf(releaseSvc), "GetRelease", func(rt *release.ReleaseService, ctx context.Context, req *releasepb.ReleaseGetRequest) (*releasepb.ReleaseGetResponse, error) {
+		return &releasepb.ReleaseGetResponse{
+			Data: &releasepb.ReleaseGetResponseData{
+				ProjectID:     1,
+				ApplicationID: 12,
+				ClusterName:   "test",
+			},
+			UserIDs: nil,
+		}, nil
+	})
+	defer m1.Reset()
+
+	m2 := gomonkey.ApplyMethod(reflect.TypeOf(service.bundle), "GetAllValidBranchWorkspace", func(bundle *bundle.Bundle, appId uint64, userID string) ([]apistructs.ValidBranch, error) {
+		return []apistructs.ValidBranch{
+			{
+				Workspace: "DEV",
+			},
+		}, nil
+	})
+	defer m2.Reset()
+
+	m3 := gomonkey.ApplyMethod(reflect.TypeOf(service.bundle), "GetProjectWithSetter", func(bundle *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
+		return &apistructs.ProjectDTO{
+			ClusterConfig: map[string]string{
+				"dev": "test",
+			},
+		}, nil
+	})
+	defer m3.Reset()
+
+	m4 := gomonkey.ApplyFunc(gitflowutil.IsValidBranchWorkspace, func(_ []apistructs.ValidBranch, _ apistructs.DiceWorkspace) (bool, bool) {
+		// 这里直接返回你想要的测试值
+		return true, true // 第一个返回值，第二个返回值
+	})
+	defer m4.Reset()
+
+	m5 := gomonkey.ApplyMethod(reflect.TypeOf(service), "Create", func(rt *Service, operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+		return nil, nil
+	})
+	defer m5.Reset()
+
+	_, err := service.CreateByReleaseID(ctx, user.ID("1"), releaseReq)
+	assert.Nil(err)
+}
+
+func TestService_checkRuntimeCreateReq(t *testing.T) {
+	assert := require.New(t)
+	testcases := []struct {
+		name string
+		req  *apistructs.RuntimeCreateRequest
+		want error
+	}{
+		{
+			name: "not name",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "",
+				ReleaseID:   "1",
+				Operator:    "1",
+				ClusterName: "jicheng-newb",
+				Source:      apistructs.PIPELINE,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:         1,
+					Workspace:     "master",
+					ProjectID:     1,
+					ApplicationID: 1,
+				},
+			},
+			want: errors.New("runtime name is not specified"),
+		},
+		{
+			name: "not releaseId",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "test",
+				ReleaseID:   "",
+				Operator:    "1",
+				ClusterName: "jicheng-newb",
+				Source:      apistructs.PIPELINE,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:         1,
+					Workspace:     "master",
+					ProjectID:     1,
+					ApplicationID: 1,
+				},
+			},
+			want: errors.New("releaseId is not specified"),
+		},
+		{
+			name: "not operator",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "test",
+				ReleaseID:   "1",
+				Operator:    "",
+				ClusterName: "jicheng-newb",
+				Source:      apistructs.PIPELINE,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:         1,
+					Workspace:     "master",
+					ProjectID:     1,
+					ApplicationID: 1,
+				},
+			},
+			want: errors.New("operator is not specified"),
+		},
+		{
+			name: "not clusterName",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "test",
+				ReleaseID:   "1",
+				Operator:    "1",
+				ClusterName: "",
+				Source:      apistructs.PIPELINE,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:         1,
+					Workspace:     "master",
+					ProjectID:     1,
+					ApplicationID: 1,
+				},
+			},
+			want: errors.New("clusterName is not specified"),
+		},
+		{
+			name: "not source",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "test",
+				ReleaseID:   "1",
+				Operator:    "1",
+				ClusterName: "jicheng-newb",
+				Source:      "default",
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:         1,
+					Workspace:     "master",
+					ProjectID:     1,
+					ApplicationID: 1,
+				},
+			},
+			want: errors.New("source is unknown"),
+		},
+		{
+			name: "PIPELINE",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "test",
+				ReleaseID:   "1",
+				Operator:    "1",
+				ClusterName: "jicheng-newb",
+				Source:      apistructs.PIPELINE,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:         1,
+					Workspace:     "master",
+					ProjectID:     1,
+					ApplicationID: 1,
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "RUNTIMEADDON",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "test",
+				ReleaseID:   "1",
+				Operator:    "1",
+				ClusterName: "jicheng-newb",
+				Source:      apistructs.RUNTIMEADDON,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:         1,
+					Workspace:     "master",
+					ProjectID:     1,
+					ApplicationID: 1,
+					InstanceID:    "1",
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "ABILITY",
+			req: &apistructs.RuntimeCreateRequest{
+				Name:        "test",
+				ReleaseID:   "1",
+				Operator:    "1",
+				ClusterName: "jicheng-newb",
+				Source:      apistructs.ABILITY,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:           1,
+					Workspace:       "master",
+					ProjectID:       1,
+					ApplicationID:   1,
+					ApplicationName: "jicheng-newb",
+				},
+			},
+			want: nil,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkRuntimeCreateReq(tc.req)
+			if tc.want != nil {
+				assert.EqualError(tc.want, err.Error())
+			} else {
+				assert.Nil(err)
+			}
+		})
+	}
+
+}
+
+func TestService_Create(t *testing.T) {
+	assert := require.New(t)
+	req := &apistructs.RuntimeCreateRequest{
+		Name:        "test",
+		ReleaseID:   "1",
+		Operator:    "1",
+		ClusterName: "jicheng-newb",
+		Source:      apistructs.PIPELINE,
+		Extra: apistructs.RuntimeCreateRequestExtra{
+			OrgID:         1,
+			Workspace:     "master",
+			ProjectID:     1,
+			ApplicationID: 1,
+		},
+	}
+
+	mdb, _, err := dbclient.InitMysqlMock()
+	mdb = mdb.Debug()
+	dbSvc := dbServiceImpl{db: &dbclient.DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: mdb,
+		},
+	}}
+
+	eventSvc := &events.EventManager{}
+	clusterSvc := &cluster.ClusterService{}
+	service := NewRuntimeService(WithBundleService(bundle.New()), WithClusterSvc(clusterSvc), WithDBService(&dbSvc), WithEventManagerService(eventSvc))
+
+	m1 := gomonkey.ApplyMethod(reflect.TypeOf(service.bundle), "GetApp", func(bundle *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+		return &apistructs.ApplicationDTO{
+			ProjectID: 1,
+		}, nil
+	})
+	defer m1.Reset()
+
+	m2 := gomonkey.ApplyMethod(reflect.TypeOf(service.bundle), "GetProjectBranchRules", func(bundle *bundle.Bundle, projectId uint64) ([]*apistructs.BranchRule, error) {
+		return []*apistructs.BranchRule{
+			{},
+		}, nil
+	})
+	defer m2.Reset()
+
+	m3 := gomonkey.ApplyFunc(diceworkspace.GetValidBranchByGitReference, func(ref string, branchRules []*apistructs.BranchRule) *apistructs.ValidBranch {
+		return &apistructs.ValidBranch{IsProtect: true}
+	})
+	defer m3.Reset()
+
+	m4 := gomonkey.ApplyMethod(reflect.TypeOf(service.bundle), "CheckPermission", func(bundle *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return &apistructs.PermissionCheckResponseData{Access: true}, nil
+	})
+	defer m4.Reset()
+
+	m5 := gomonkey.ApplyMethod(reflect.TypeOf(service.clusterSvc), "GetCluster", func(clusterSvc *cluster.ClusterService, ctx context.Context,
+		req *clusterpb.GetClusterRequest) (*clusterpb.GetClusterResponse, error) {
+		return &clusterpb.GetClusterResponse{
+			Data: &clusterpb.ClusterInfo{
+				Id: 1,
+			},
+		}, nil
+	})
+	defer m5.Reset()
+
+	m6 := gomonkey.ApplyMethod(reflect.TypeOf(&dbServiceImpl{}), "FindRuntimeOrCreate", func(db *dbServiceImpl, uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
+		clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId,
+		releaseVersion, extraParams string) (*dbclient.Runtime, bool, error) {
+		return &dbclient.Runtime{
+			Name: "test",
+		}, true, nil
+	})
+	defer m6.Reset()
+
+	m7 := gomonkey.ApplyMethod(reflect.TypeOf(&dbServiceImpl{}), "FindLastDeployment", func(db *dbServiceImpl, id uint64) (*dbclient.Deployment, error) {
+		return &dbclient.Deployment{
+			Status: apistructs.DeploymentStatusOK,
+		}, nil
+	})
+	defer m7.Reset()
+
+	m8 := gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "DoDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+		return nil, nil
+	})
+	defer m8.Reset()
+
+	_, err = service.Create(user.ID("1"), req)
+	assert.Nil(err)
+}
+
+//func TestService_DoDeployRuntime(t *testing.T) {
+//	assert := require.New(t)
+//
+//	m1 := gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "PreCheck", func(service *Service, dice *diceyml.DiceYaml, workspace string) error {
+//		return nil
+//	})
+//	defer m1.Reset()
+//
+//	service := NewRuntimeService(WithBundleService(bundle.New()))
+//	_, err := service.DoDeployRuntime()
+//	assert.Nil(err)
+//}
