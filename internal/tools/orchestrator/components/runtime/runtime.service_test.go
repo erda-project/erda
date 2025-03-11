@@ -365,7 +365,6 @@ func TestGetRollbackConfig(t *testing.T) {
 			}, nil
 		},
 	)
-	defer monkey.UnpatchAll()
 
 	r := NewRuntimeService(WithBundleService(bdl))
 	cfg, err := r.getRollbackConfig()
