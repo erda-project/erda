@@ -110,7 +110,7 @@ func TestServiceRedeploy(t *testing.T) {
 		}, nil
 	})
 
-	gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "DoDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+	gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "doDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return nil, nil
 	})
 
@@ -1798,7 +1798,7 @@ func TestService_Create(t *testing.T) {
 		},
 	}
 
-	mdb, _, err := dbclient.InitMysqlMock()
+	mdb, mock, err := dbclient.InitMysqlMock()
 	mdb = mdb.Debug()
 	dbSvc := dbServiceImpl{db: &dbclient.DBClient{
 		DBEngine: &dbengine.DBEngine{
@@ -1844,6 +1844,9 @@ func TestService_Create(t *testing.T) {
 	})
 	defer m5.Reset()
 
+	rows := sqlmock.NewRows([]string{"id"}).AddRow(1)
+	mock.ExpectQuery(regexp.QuoteMeta("")).WithArgs().WillReturnRows(rows)
+
 	m6 := gomonkey.ApplyMethod(reflect.TypeOf(&dbServiceImpl{}), "FindRuntimeOrCreate", func(db *dbServiceImpl, uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
 		clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId,
 		releaseVersion, extraParams string) (*dbclient.Runtime, bool, error) {
@@ -1860,7 +1863,7 @@ func TestService_Create(t *testing.T) {
 	})
 	defer m7.Reset()
 
-	m8 := gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "DoDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+	m8 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "doDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return nil, nil
 	})
 	defer m8.Reset()
@@ -1869,15 +1872,86 @@ func TestService_Create(t *testing.T) {
 	assert.Nil(err)
 }
 
-//func TestService_DoDeployRuntime(t *testing.T) {
-//	assert := require.New(t)
-//
-//	m1 := gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "PreCheck", func(service *Service, dice *diceyml.DiceYaml, workspace string) error {
-//		return nil
-//	})
-//	defer m1.Reset()
-//
-//	service := NewRuntimeService(WithBundleService(bundle.New()))
-//	_, err := service.DoDeployRuntime()
-//	assert.Nil(err)
-//}
+func TestService_doDeployRuntime(t *testing.T) {
+	assert := require.New(t)
+
+	deployCtx := &DeployContext{
+		Runtime: &dbclient.Runtime{
+			ApplicationID: 1,
+			Workspace:     "DEV",
+			Name:          "test",
+		},
+		App: &apistructs.ApplicationDTO{
+			ProjectID: 1,
+		},
+	}
+
+	mdb, _, err := dbclient.InitMysqlMock()
+	mdb = mdb.Debug()
+	dbSvc := dbServiceImpl{db: &dbclient.DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: mdb,
+		},
+	}}
+
+	eventSvc := &events.EventManager{}
+
+	m1 := gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "GetDiceYAML", func(bundle *bundle.Bundle, releaseID string, workspace ...string) (*diceyml.DiceYaml, error) {
+		return &diceyml.DiceYaml{}, nil
+	})
+	defer m1.Reset()
+
+	m2 := gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "PreCheck", func(service *Service, dice *diceyml.DiceYaml, workspace string) error {
+		return nil
+	})
+	defer m2.Reset()
+
+	m3 := gomonkey.ApplyMethod(reflect.TypeOf(&dbServiceImpl{}), "FindPreDeploymentOrCreate", func(db *dbServiceImpl, uniqueId spec.RuntimeUniqueId, dice *diceyml.DiceYaml) (*dbclient.PreDeployment, error) {
+		return &dbclient.PreDeployment{}, nil
+	})
+	defer m3.Reset()
+
+	m4 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "syncRuntimeServices", func(service *Service, runtimeID uint64, dice *diceyml.DiceYaml) error {
+		return nil
+	})
+	defer m4.Reset()
+
+	m5 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "checkOrgDeployBlocked", func(service *Service, orgID uint64, runtime *dbclient.Runtime) (bool, error) {
+		return false, nil
+	})
+	defer m5.Reset()
+
+	m6 := gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "GetProjectBranchRules", func(bundle *bundle.Bundle, projectId uint64) ([]*apistructs.BranchRule, error) {
+		return []*apistructs.BranchRule{}, nil
+	})
+	defer m6.Reset()
+
+	m7 := gomonkey.ApplyFunc(diceworkspace.GetValidBranchByGitReference, func(ref string, branchRules []*apistructs.BranchRule) *apistructs.ValidBranch {
+		return &apistructs.ValidBranch{NeedApproval: true}
+	})
+	defer m7.Reset()
+
+	m8 := gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "ListMembers", func(bundle *bundle.Bundle, req apistructs.MemberListRequest) ([]apistructs.Member, error) {
+		return []apistructs.Member{}, nil
+	})
+	defer m8.Reset()
+
+	m9 := gomonkey.ApplyMethod(reflect.TypeOf(&dbServiceImpl{}), "CreateDeployment", func(db *dbServiceImpl, deployment *dbclient.Deployment) error {
+		return nil
+	})
+	defer m9.Reset()
+
+	m10 := gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "ListUsers", func(bundle *bundle.Bundle, req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
+		return &apistructs.UserListResponseData{}, nil
+	})
+	defer m10.Reset()
+
+	m11 := gomonkey.ApplyMethod(reflect.TypeOf(&events.EventManager{}), "EmitEvent", func(eventManager *events.EventManager, e *events.RuntimeEvent) {
+
+	})
+	defer m11.Reset()
+
+	service := NewRuntimeService(WithBundleService(bundle.New()), WithDBService(&dbSvc), WithEventManagerService(eventSvc))
+	_, err = service.doDeployRuntime(deployCtx)
+	assert.Nil(err)
+}
