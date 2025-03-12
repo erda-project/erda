@@ -98,21 +98,24 @@ func TestServiceRedeploy(t *testing.T) {
 	bdl := bundle.New(bundle.WithErdaServer(), bundle.WithClusterManager(), bundle.WithScheduler())
 	runtimeSvc := NewRuntimeService(WithBundleService(bdl), WithDBService(&dbSvc))
 
-	gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "GetApp", func(s *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
+	m1 := gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "GetApp", func(s *bundle.Bundle, id uint64) (*apistructs.ApplicationDTO, error) {
 		return &apistructs.ApplicationDTO{
 			ID: 1,
 		}, nil
 	})
+	defer m1.Reset()
 
-	gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "CheckPermission", func(s *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+	m2 := gomonkey.ApplyMethod(reflect.TypeOf(&bundle.Bundle{}), "CheckPermission", func(s *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
 		return &apistructs.PermissionCheckResponseData{
 			Access: true,
 		}, nil
 	})
+	defer m2.Reset()
 
-	gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "doDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+	m3 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "doDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return nil, nil
 	})
+	defer m3.Reset()
 
 	_, err = runtimeSvc.Redeploy(user.ID("1"), 1, uint64(2))
 	assert.Nil(err)
@@ -1885,6 +1888,8 @@ func TestService_doDeployRuntime(t *testing.T) {
 			ProjectID: 1,
 		},
 	}
+
+	t.Logf("deployCtx: %v", deployCtx)
 
 	mdb, _, err := dbclient.InitMysqlMock()
 	mdb = mdb.Debug()
