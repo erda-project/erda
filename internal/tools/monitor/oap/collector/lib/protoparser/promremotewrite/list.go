@@ -16,11 +16,12 @@ package promremotewrite
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
-	"github.com/recallsong/go-utils/encoding/md5x"
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
+	"github.com/recallsong/go-utils/encoding/md5x"
 )
 
 func MapHash(m map[string]string) string {

@@ -15,12 +15,13 @@
 package promremotewrite
 
 import (
-	"math"
-	"testing"
-
+	"context"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
+	"math"
+	"testing"
+	"time"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
@@ -36,6 +37,94 @@ func Test_parseWriteRequest(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
+		{
+			args: args{
+				wr: &prompb.WriteRequest{
+					Timeseries: []*prompb.TimeSeries{
+						{
+							Labels: []*prompb.Label{
+								{
+									Name:  "n1",
+									Value: "v1",
+								},
+								{
+									Name:  pmodel.MetricNameLabel,
+									Value: "cpu_user_request",
+								},
+								{
+									Name:  pmodel.JobLabel,
+									Value: "cpu",
+								},
+								{
+									Name:  "collector_group",
+									Value: "cpu-0",
+								},
+							},
+							Samples: []*prompb.Sample{
+								{
+									Value:     1,
+									Timestamp: 1658904849000,
+								},
+								{
+									Value:     math.NaN(),
+									Timestamp: 1658904849001,
+								},
+							},
+						},
+					},
+				},
+				callback: func(record *metric.Metric) error {
+					ass.Equal(int64(1658904849000*1000000), record.Timestamp)
+					ass.Equal("cpu", record.Name)
+					ass.Equal(1, len(record.Fields))
+					return nil
+				},
+			},
+		},
+		{
+			args: args{
+				wr: &prompb.WriteRequest{
+					Timeseries: []*prompb.TimeSeries{
+						{
+							Labels: []*prompb.Label{
+								{
+									Name:  "n1",
+									Value: "v1",
+								},
+								{
+									Name:  pmodel.MetricNameLabel,
+									Value: "cpu_user_total",
+								},
+								{
+									Name:  pmodel.JobLabel,
+									Value: "cpu",
+								},
+								{
+									Name:  "collector_group",
+									Value: "cpu-0",
+								},
+							},
+							Samples: []*prompb.Sample{
+								{
+									Value:     1,
+									Timestamp: 1658904849000,
+								},
+								{
+									Value:     math.NaN(),
+									Timestamp: 1658904849001,
+								},
+							},
+						},
+					},
+				},
+				callback: func(record *metric.Metric) error {
+					ass.Equal(int64(1658904849000*1000000), record.Timestamp)
+					ass.Equal("cpu", record.Name)
+					ass.Equal(1, len(record.Fields))
+					return nil
+				},
+			},
+		},
 		{
 			args: args{
 				wr: &prompb.WriteRequest{
@@ -153,11 +242,23 @@ func Test_parseWriteRequest(t *testing.T) {
 			wantErr: true,
 		},
 	}
+	metrics := make(chan *metric.Metric, 1000)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := parseWriteRequest(tt.args.wr, nil, tt.args.callback); (err != nil) != tt.wantErr {
+			if err := parseWriteRequest(tt.args.wr, metrics); (err != nil) != tt.wantErr {
 				t.Errorf("parseWriteRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 65*time.Second)
+	_ = cancelFunc
+	DealGroupMetrics(ctx, GroupMetricsOptions{
+		MinSize:        0,
+		RetentionRatio: 0,
+		GroupTagName:   "collector_group",
+		MetricsChan:    metrics,
+		Callback: func(record *metric.Metric) error {
+			return nil
+		},
+	})
 }

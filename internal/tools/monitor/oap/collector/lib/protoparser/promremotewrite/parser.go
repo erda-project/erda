@@ -32,7 +32,7 @@ import (
 
 const CollectorGroupTag = "collector_group"
 
-func ParseStream(r io.Reader, metricsChan chan *metric.Metric, callback func(record *metric.Metric) error) error {
+func ParseStream(r io.Reader, metricsChan chan *metric.Metric) error {
 	buf, err := io.ReadAll(r)
 	if err != nil {
 		return err
@@ -48,12 +48,12 @@ func ParseStream(r io.Reader, metricsChan chan *metric.Metric, callback func(rec
 		return fmt.Errorf("unmarshal WriteRequest: %w", err)
 	}
 
-	return parseWriteRequest(wr, metricsChan, callback)
+	return parseWriteRequest(wr, metricsChan)
 }
 
 type MetricTagHash string
 
-func parseWriteRequest(wr *prompb.WriteRequest, metricsChan chan *metric.Metric, callback func(record *metric.Metric) error) error {
+func parseWriteRequest(wr *prompb.WriteRequest, metricsChan chan *metric.Metric) error {
 	now := time.Now() // receive time
 	for _, ts := range wr.Timeseries {
 		tags := map[string]string{}
@@ -92,14 +92,6 @@ func parseWriteRequest(wr *prompb.WriteRequest, metricsChan chan *metric.Metric,
 				Tags:      tags,
 				Fields:    fields,
 			}
-
-			if _, ok := tags[CollectorGroupTag]; !ok {
-				err := callback(m)
-				if err != nil {
-					return fmt.Errorf("callback: %w", err)
-				}
-				continue
-			}
 			metricsChan <- m
 
 			//err := callback(&m)
@@ -115,6 +107,7 @@ func parseWriteRequest(wr *prompb.WriteRequest, metricsChan chan *metric.Metric,
 type GroupMetricsOptions struct {
 	MinSize        int
 	RetentionRatio float64
+	GroupTagName   string
 	MetricsChan    chan *metric.Metric
 	Callback       func(record *metric.Metric) error
 }
@@ -166,6 +159,13 @@ func DealGroupMetrics(ctx context.Context, options GroupMetricsOptions) {
 			return
 		case m := <-options.MetricsChan:
 			if m != nil {
+				if _, ok := m.Tags[options.GroupTagName]; !ok || options.GroupTagName == "" {
+					if err := options.Callback(m); err != nil {
+						logrus.Errorf("metric callback error: %v", err)
+					}
+					continue
+				}
+
 				metricTagGroup.Append(m)
 				continue
 			}

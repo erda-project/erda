@@ -75,12 +75,14 @@ erda.oap.collector.receiver.prometheus-remote-write@prometheus:
   group_metrics:
     min_size: "${GROUP_METRIC_MIN_SIZE:0}"
     retention_ratio: "${GROUP_METRIC_RETENTION_RATIO:0}"
+    group_tag_name: "${GROUP_METRIC_TAG_NAME:collector_group}"
 
 erda.oap.collector.receiver.prometheus-remote-write@external_metrics:
   remote_write_url: "${EXTERNAL_METRIC_REMOTE_WRITE_URL:/api/v1/external-prometheus-remote-write}"
   group_metrics:
     min_size: "${GROUP_METRIC_MIN_SIZE:0}"
     retention_ratio: "${GROUP_METRIC_RETENTION_RATIO:0}"
+    group_tag_name: "${GROUP_METRIC_TAG_NAME:collector_group}"
 
 erda.oap.collector.receiver.jaeger:
 
