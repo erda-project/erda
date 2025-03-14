@@ -55,8 +55,8 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// Service implements pb.RuntimeServiceServer
-type Service struct {
+// RuntimeService implements pb.RuntimeServiceServer
+type RuntimeService struct {
 	logger           logs.Logger
 	bundle           *bundle.Bundle
 	db               DBService
@@ -71,15 +71,15 @@ type Service struct {
 	pipelineSvc      pipelinepb.PipelineServiceServer
 }
 
-func (r *Service) StartRuntime(ctx context.Context, request *pb.StartRuntimeRequest) (*pb.StartRuntimeResponse, error) {
+func (r *RuntimeService) StartRuntime(ctx context.Context, request *pb.StartRuntimeRequest) (*pb.StartRuntimeResponse, error) {
 	return nil, nil
 }
 
-func (r *Service) RestartRuntime(ctx context.Context, request *pb.RestartRuntimeRequest) (*pb.RestartRuntimeResponse, error) {
+func (r *RuntimeService) RestartRuntime(ctx context.Context, request *pb.RestartRuntimeRequest) (*pb.RestartRuntimeResponse, error) {
 	return nil, nil
 }
 
-func (r *Service) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("org-id", "not found org-id")
@@ -108,7 +108,7 @@ func (r *Service) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeAc
 	}, nil
 }
 
-func (r *Service) ReDeployRuntime(ctx context.Context, req *pb.ReDeployRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) ReDeployRuntime(ctx context.Context, req *pb.ReDeployRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("org-id", "not found org-id")
@@ -134,7 +134,7 @@ func (r *Service) ReDeployRuntime(ctx context.Context, req *pb.ReDeployRuntimeAc
 	}, nil
 }
 
-func (r *Service) CreateRuntimeByRelease(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) CreateRuntimeByRelease(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
 	operator := apis.GetUserID(ctx)
 	if operator == "" {
 		return nil, errors.NewUnauthorizedError("not Login")
@@ -159,7 +159,7 @@ func (r *Service) CreateRuntimeByRelease(ctx context.Context, req *pb.RuntimeRel
 	}, nil
 }
 
-func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateRequest) (*pb.DeploymentCreateResponse, error) {
 	if req.Extra == nil {
 		return nil, errors.NewInvalidParameterError("extra", "extra is nil")
 	}
@@ -191,7 +191,7 @@ func (r *Service) CreateRuntime(ctx context.Context, req *pb.RuntimeCreateReques
 	}, nil
 }
 
-func (r *Service) CreateRuntimeByReleaseAction(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) CreateRuntimeByReleaseAction(ctx context.Context, req *pb.RuntimeReleaseCreateRequest) (*pb.DeploymentCreateResponse, error) {
 	operator := apis.GetUserID(ctx)
 	if operator == "" {
 		return nil, errors.NewUnauthorizedError("not Login")
@@ -216,7 +216,7 @@ func (r *Service) CreateRuntimeByReleaseAction(ctx context.Context, req *pb.Runt
 	}, nil
 }
 
-func (r *Service) ListRuntimes(ctx context.Context, req *pb.ListRuntimesRequest) (*pb.ListRuntimeResponse, error) {
+func (r *RuntimeService) ListRuntimes(ctx context.Context, req *pb.ListRuntimesRequest) (*pb.ListRuntimeResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("org-id", "")
@@ -247,7 +247,7 @@ func (r *Service) ListRuntimes(ctx context.Context, req *pb.ListRuntimesRequest)
 	return ConvertListRuntimeResponse(data, userIDs), nil
 }
 
-func (r *Service) StopRuntime(ctx context.Context, req *pb.RuntimeStopRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) StopRuntime(ctx context.Context, req *pb.RuntimeStopRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("org-id", "not found org-id")
@@ -273,7 +273,7 @@ func (r *Service) StopRuntime(ctx context.Context, req *pb.RuntimeStopRequest) (
 	}, nil
 }
 
-func (r *Service) ReDeployRuntimeAction(ctx context.Context, req *pb.ReDeployRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) ReDeployRuntimeAction(ctx context.Context, req *pb.ReDeployRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("org-id", "not found org-id")
@@ -299,7 +299,7 @@ func (r *Service) ReDeployRuntimeAction(ctx context.Context, req *pb.ReDeployRun
 	}, nil
 }
 
-func (r *Service) RollBackRuntimeAction(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
+func (r *RuntimeService) RollBackRuntimeAction(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("org-id", "not found org-id")
@@ -328,7 +328,7 @@ func (r *Service) RollBackRuntimeAction(ctx context.Context, req *pb.RollBackRun
 	}, nil
 }
 
-func (r *Service) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBulkGetRuntimeStatusDetailRequest) (*pb.EpBulkGetRuntimeStatusDetailResponse, error) {
+func (r *RuntimeService) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBulkGetRuntimeStatusDetailRequest) (*pb.EpBulkGetRuntimeStatusDetailResponse, error) {
 	rs_ := req.RuntimeIDs
 	rs := strings.Split(rs_, ",")
 	var runtimeIds []uint64
@@ -370,12 +370,12 @@ func (r *Service) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBu
 	return resp, nil
 }
 
-func (r *Service) FullGC(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+func (r *RuntimeService) FullGC(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
 	go r.FullGCService()
 	return nil, nil
 }
 
-func (r *Service) ReferCluster(ctx context.Context, req *pb.ReferClusterRequest) (*pb.ReferClusterResponse, error) {
+func (r *RuntimeService) ReferCluster(ctx context.Context, req *pb.ReferClusterRequest) (*pb.ReferClusterResponse, error) {
 	identity := apis.GetIdentityInfo(ctx)
 	if identity == nil {
 		return nil, errors.NewUnauthorizedError("not Login")
@@ -393,7 +393,7 @@ func (r *Service) ReferCluster(ctx context.Context, req *pb.ReferClusterRequest)
 	return &pb.ReferClusterResponse{Data: referred}, nil
 }
 
-func (r *Service) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (*pb.DashboardSpotLogData, error) {
+func (r *RuntimeService) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (*pb.DashboardSpotLogData, error) {
 	v := apis.GetOrgID(ctx)
 	orgID, err := strconv.ParseUint(v, 10, 64)
 	if err != nil {
@@ -436,7 +436,7 @@ func (r *Service) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (
 	return resp, nil
 }
 
-func (r *Service) ListRuntimesGroupByApps(ctx context.Context, req *pb.ListRuntimeByAppsRequest) (*pb.ListRuntimeByAppsResponse, error) {
+func (r *RuntimeService) ListRuntimesGroupByApps(ctx context.Context, req *pb.ListRuntimeByAppsRequest) (*pb.ListRuntimeByAppsResponse, error) {
 	var (
 		l      = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
 		appIDs []uint64
@@ -485,7 +485,7 @@ func (r *Service) ListRuntimesGroupByApps(ctx context.Context, req *pb.ListRunti
 	return resp, nil
 }
 
-func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequest) (*pb.ListMyRuntimesResponse, error) {
+func (r *RuntimeService) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequest) (*pb.ListMyRuntimesResponse, error) {
 	var (
 		appIDs     []uint64
 		env        string
@@ -569,7 +569,7 @@ func (r *Service) ListMyRuntimes(ctx context.Context, req *pb.ListMyRuntimesRequ
 	return resp, nil
 }
 
-func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorkspaceRequest) (*pb.CountPRByWorkspaceResponse, error) {
+func (r *RuntimeService) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorkspaceRequest) (*pb.CountPRByWorkspaceResponse, error) {
 	var (
 		l          = logrus.WithField("func", "*Endpoints.CountPRByWorkspace")
 		resp       = make(map[string]uint64)
@@ -655,7 +655,7 @@ func (r *Service) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorks
 	return &pb.CountPRByWorkspaceResponse{Data: resp}, nil
 }
 
-func (r *Service) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeServiceRequest) (*pb.BatchRuntimeServiceResponse, error) {
+func (r *RuntimeService) BatchRuntimeService(ctx context.Context, req *pb.BatchRuntimeServiceRequest) (*pb.BatchRuntimeServiceResponse, error) {
 	var (
 		l          = logrus.WithField("func", "*Endpoints.BatchRuntimeServices")
 		runtimeIDs []uint64
@@ -756,7 +756,7 @@ func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDT
 }
 
 // Delete turn status of runtime to be Deleting
-func (r *Service) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*pb.Runtime, error) {
+func (r *RuntimeService) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*pb.Runtime, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -791,7 +791,7 @@ func (r *Service) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*pb.
 	return convertRuntimeToPB(runtime, app), nil
 }
 
-func (r *Service) DelRuntime(ctx context.Context, req *pb.DelRuntimeRequest) (*pb.Runtime, error) {
+func (r *RuntimeService) DelRuntime(ctx context.Context, req *pb.DelRuntimeRequest) (*pb.Runtime, error) {
 	var (
 		userID    user.ID
 		orgID     uint64
@@ -812,7 +812,7 @@ func (r *Service) DelRuntime(ctx context.Context, req *pb.DelRuntimeRequest) (*p
 	return r.Delete(userID, orgID, runtimeID)
 }
 
-func (r *Service) findByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient.Runtime, error) {
+func (r *RuntimeService) findByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient.Runtime, error) {
 	runtimeID, err := strconv.ParseUint(idOrName, 10, 64)
 	if err == nil {
 		// parse int success, idOrName is an id
@@ -843,7 +843,7 @@ func (r *Service) findByIDOrName(idOrName string, appIDStr string, workspace str
 	return runtime, err
 }
 
-func (r *Service) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID uint64, err error) {
+func (r *RuntimeService) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID uint64, err error) {
 	orgIntID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		err = errors.NewInvalidParameterError("org-id", "invalid org-id")
@@ -861,7 +861,7 @@ func (r *Service) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID ui
 	return
 }
 
-func (r *Service) CheckRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string) error {
+func (r *RuntimeService) CheckRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string) error {
 	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.AppScope,
@@ -881,7 +881,7 @@ func (r *Service) CheckRuntimeScopePermission(userID user.ID, runtime *dbclient.
 	return nil
 }
 
-func (r *Service) getRuntimeByRequest(request *pb.GetRuntimeRequest) (*dbclient.Runtime, error) {
+func (r *RuntimeService) getRuntimeByRequest(request *pb.GetRuntimeRequest) (*dbclient.Runtime, error) {
 	runtime, err := r.findByIDOrName(request.NameOrID, request.AppID, request.Workspace)
 
 	if err != nil {
@@ -895,7 +895,7 @@ func (r *Service) getRuntimeByRequest(request *pb.GetRuntimeRequest) (*dbclient.
 	return runtime, nil
 }
 
-func (r *Service) getDeployment(runtimeID uint64) (*dbclient.Deployment, error) {
+func (r *RuntimeService) getDeployment(runtimeID uint64) (*dbclient.Deployment, error) {
 	deployment, err := r.db.FindLastDeployment(runtimeID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -909,7 +909,7 @@ func (r *Service) getDeployment(runtimeID uint64) (*dbclient.Deployment, error) 
 }
 
 // GetRuntime Get detail information of a single runtime
-func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest) (*pb.RuntimeInspect, error) {
+func (r *RuntimeService) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest) (*pb.RuntimeInspect, error) {
 	var (
 		err        error
 		userID     user.ID
@@ -989,7 +989,11 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	return ri, nil
 }
 
-func (r *Service) CheckRuntimeExist(ctx context.Context, req *pb.CheckRuntimeExistReq) (*pb.CheckRuntimeExistResp, error) {
+func (r *RuntimeService) GetRuntimeWorkspaceByID(RuntimeId uint64) (*dbclient.Runtime, error) {
+	return nil, nil
+}
+
+func (r *RuntimeService) CheckRuntimeExist(ctx context.Context, req *pb.CheckRuntimeExistReq) (*pb.CheckRuntimeExistResp, error) {
 	runtime, err := r.db.GetRuntimeAllowNil(req.GetId())
 	if err != nil {
 		return nil, err
@@ -1010,6 +1014,7 @@ func updateStatusWhenDeploying(runtime *pb.RuntimeInspect) {
 		}
 	}
 }
+
 func updateStatusToDisplay(runtime *pb.RuntimeInspect) {
 	if runtime == nil {
 		return
@@ -1191,11 +1196,11 @@ func fillInspectBase(data *pb.RuntimeInspect, runtime *dbclient.Runtime, sg *api
 	}
 }
 
-func (r *Service) Healthz(ctx context.Context, req *cpb.VoidRequest) (*cpb.VoidResponse, error) {
+func (r *RuntimeService) Healthz(ctx context.Context, req *cpb.VoidRequest) (*cpb.VoidResponse, error) {
 	return &cpb.VoidResponse{}, nil
 }
 
-func (r *Service) inspectDomains(id uint64) (map[string][]string, error) {
+func (r *RuntimeService) inspectDomains(id uint64) (map[string][]string, error) {
 	domains, err := r.db.FindDomainsByRuntimeId(id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -1235,89 +1240,89 @@ func updatePARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, vpaRules
 	}
 }
 
-type ServiceOption func(*Service) *Service
+type ServiceOption func(*RuntimeService) *RuntimeService
 
 func WithBundleService(s *bundle.Bundle) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.bundle = s
 		return service
 	}
 }
 
 func WithDBService(db DBService) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.db = db
 		return service
 	}
 }
 
 func WithEventManagerService(evMgr *events.EventManager) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.evMgr = evMgr
 		return service
 	}
 }
 
 func WithServiceGroupImpl(serviceGroupImpl servicegroup.ServiceGroup) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.serviceGroupImpl = serviceGroupImpl
 		return service
 	}
 }
 
 func WithClusterSvc(clusterSvc clusterpb.ClusterServiceServer) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.clusterSvc = clusterSvc
 		return service
 	}
 }
 
 func WithReleaseSvc(releaseSvc dicehubpb.ReleaseServiceServer) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.releaseSvc = releaseSvc
 		return service
 	}
 }
 
 func WithOrg(org org.ClientInterface) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.org = org
 		return service
 	}
 }
 
 func WithClusterInfoImpl(clusterInfo clusterinfo.ClusterInfo) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.clusterinfoImpl = clusterInfo
 		return service
 	}
 }
 
 func WithScheduler(scheduler *scheduler.Scheduler) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.scheduler = scheduler
 		return service
 	}
 }
 
 func WithAddon(addon *addon.Addon) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.Addon = addon
 		return service
 	}
 }
 
 func WithPipelineSvc(pipelineSvc pipelinepb.PipelineServiceServer) ServiceOption {
-	return func(service *Service) *Service {
+	return func(service *RuntimeService) *RuntimeService {
 		service.pipelineSvc = pipelineSvc
 		return service
 	}
 }
 
-var server pb.RuntimeServiceServer = &Service{}
+var server pb.RuntimeServiceServer = &RuntimeService{}
 
-func NewRuntimeService(options ...ServiceOption) *Service {
-	s := &Service{}
+func NewRuntimeService(options ...ServiceOption) *RuntimeService {
+	s := &RuntimeService{}
 
 	for _, option := range options {
 		option(s)

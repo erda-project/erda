@@ -112,7 +112,7 @@ func TestServiceRedeploy(t *testing.T) {
 	})
 	defer m2.Reset()
 
-	m3 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "doDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+	m3 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&RuntimeService{}), "doDeployRuntime", func(s *RuntimeService, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return nil, nil
 	})
 	defer m3.Reset()
@@ -597,7 +597,7 @@ func TestRuntimeGetOrg(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &Service{
+			r := &RuntimeService{
 				org: tt.fields.org,
 			}
 			got, err := r.GetOrg(tt.args.orgID)
@@ -886,7 +886,7 @@ func TestBatchRuntimeReDeploy(t *testing.T) {
 		}
 	})
 
-	gomonkey.ApplyMethod(reflect.TypeOf(s), "RedeployPipeline", func(rt *Service, ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
+	gomonkey.ApplyMethod(reflect.TypeOf(s), "RedeployPipeline", func(rt *RuntimeService, ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
 		if runtimeID == 128 {
 			ret := &apistructs.RuntimeDeployDTO{
 				PipelineID:      10000260,
@@ -1057,7 +1057,7 @@ func TestGenOverlayDataForAudit(t *testing.T) {
 
 func TestGetRuntimeScaleRecordByRuntimeIds(t *testing.T) {
 
-	s := &Service{
+	s := &RuntimeService{
 		db: &dbclient.DBClient{},
 	}
 
@@ -1388,7 +1388,7 @@ func TestBatchRuntimeDelete(t *testing.T) {
 		Runtimes: []apistructs.RuntimeScaleRecord{rsr1, rsr2},
 	}
 
-	gomonkey.ApplyMethod(reflect.TypeOf(s), "DeleteRuntime", func(rt *Service, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
+	gomonkey.ApplyMethod(reflect.TypeOf(s), "DeleteRuntime", func(rt *RuntimeService, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
 		if runtimeID == 128 {
 			ret := &apistructs.RuntimeDTO{
 				ID:              128,
@@ -1616,7 +1616,7 @@ func TestService_CreateByReleaseID(t *testing.T) {
 	})
 	defer m4.Reset()
 
-	m5 := gomonkey.ApplyMethod(reflect.TypeOf(service), "Create", func(rt *Service, operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+	m5 := gomonkey.ApplyMethod(reflect.TypeOf(service), "Create", func(rt *RuntimeService, operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return nil, nil
 	})
 	defer m5.Reset()
@@ -1866,7 +1866,7 @@ func TestService_Create(t *testing.T) {
 	})
 	defer m7.Reset()
 
-	m8 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "doDeployRuntime", func(s *Service, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+	m8 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&RuntimeService{}), "doDeployRuntime", func(s *RuntimeService, ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return nil, nil
 	})
 	defer m8.Reset()
@@ -1906,7 +1906,7 @@ func TestService_doDeployRuntime(t *testing.T) {
 	})
 	defer m1.Reset()
 
-	m2 := gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "PreCheck", func(service *Service, dice *diceyml.DiceYaml, workspace string) error {
+	m2 := gomonkey.ApplyMethod(reflect.TypeOf(&RuntimeService{}), "PreCheck", func(service *RuntimeService, dice *diceyml.DiceYaml, workspace string) error {
 		return nil
 	})
 	defer m2.Reset()
@@ -1916,12 +1916,12 @@ func TestService_doDeployRuntime(t *testing.T) {
 	})
 	defer m3.Reset()
 
-	m4 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "syncRuntimeServices", func(service *Service, runtimeID uint64, dice *diceyml.DiceYaml) error {
+	m4 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&RuntimeService{}), "syncRuntimeServices", func(service *RuntimeService, runtimeID uint64, dice *diceyml.DiceYaml) error {
 		return nil
 	})
 	defer m4.Reset()
 
-	m5 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&Service{}), "checkOrgDeployBlocked", func(service *Service, orgID uint64, runtime *dbclient.Runtime) (bool, error) {
+	m5 := gomonkey.ApplyPrivateMethod(reflect.TypeOf(&RuntimeService{}), "checkOrgDeployBlocked", func(service *RuntimeService, orgID uint64, runtime *dbclient.Runtime) (bool, error) {
 		return false, nil
 	})
 	defer m5.Reset()

@@ -83,7 +83,7 @@ type DeployContext struct {
 	Param             string
 }
 
-func (r *Service) Create(operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+func (r *RuntimeService) Create(operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
 	// TODO: 需要等 pipeline action 调用走内网后，再从 header 中取 User-ID (operator)
 	// TODO: should not assign like this
 	//req.Operator = operator.String()
@@ -185,7 +185,7 @@ func (r *Service) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	return r.doDeployRuntime(&deployContext)
 }
 
-func (r *Service) GetOrg(orgID uint64) (*orgpb.Org, error) {
+func (r *RuntimeService) GetOrg(orgID uint64) (*orgpb.Org, error) {
 	if orgID == 0 {
 		return nil, fmt.Errorf("the orgID is 0")
 	}
@@ -198,7 +198,7 @@ func (r *Service) GetOrg(orgID uint64) (*orgpb.Org, error) {
 	return orgResp.Data, nil
 }
 
-func (r *Service) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime) (bool, error) {
+func (r *RuntimeService) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime) (bool, error) {
 	org, err := r.GetOrg(orgID)
 	if err != nil {
 		return false, err
@@ -230,7 +230,7 @@ func (r *Service) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime)
 	return blocked, nil
 }
 
-func (r *Service) PreCheck(dice *diceyml.DiceYaml, workspace string) error {
+func (r *RuntimeService) PreCheck(dice *diceyml.DiceYaml, workspace string) error {
 	defaultGroup := 10
 
 	addonLi := make([]*diceyml.AddOn, 0, len(dice.Obj().AddOns))
@@ -289,7 +289,7 @@ func (r *Service) PreCheck(dice *diceyml.DiceYaml, workspace string) error {
 	return nil
 }
 
-func (r *Service) syncRuntimeServices(runtimeID uint64, dice *diceyml.DiceYaml) error {
+func (r *RuntimeService) syncRuntimeServices(runtimeID uint64, dice *diceyml.DiceYaml) error {
 	for name, service := range dice.Obj().Services {
 		var envs string
 		envsStr, err := json.Marshal(service.Envs)
@@ -318,7 +318,7 @@ func (r *Service) syncRuntimeServices(runtimeID uint64, dice *diceyml.DiceYaml) 
 	return nil
 }
 
-func (r *Service) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
+func (r *RuntimeService) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCreateResponseDTO, error) {
 	// fetch & parse diceYml
 	dice, err := r.bundle.GetDiceYAML(ctx.ReleaseID, ctx.Runtime.Workspace)
 	if err != nil {
@@ -602,7 +602,7 @@ func IsDeploying(status apistructs.DeploymentStatus) bool {
 }
 
 // CreateByReleaseID Create 创建应用实例
-func (r *Service) CreateByReleaseID(ctx context.Context, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+func (r *RuntimeService) CreateByReleaseID(ctx context.Context, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: releaseReq.ReleaseID})
 	if err != nil {
@@ -673,7 +673,7 @@ func (r *Service) CreateByReleaseID(ctx context.Context, operator user.ID, relea
 }
 
 // List 查询应用实例列表
-func (r *Service) List(userID user.ID, orgID uint64, appID uint64, workspace, name string) ([]apistructs.RuntimeSummaryDTO, error) {
+func (r *RuntimeService) List(userID user.ID, orgID uint64, appID uint64, workspace, name string) ([]apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.List")
 	var runtimes []dbclient.Runtime
 	if len(workspace) > 0 && len(name) > 0 {
@@ -751,7 +751,7 @@ func (r *Service) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 	return data, nil
 }
 
-func (r *Service) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime, deployment *dbclient.Deployment) error {
+func (r *RuntimeService) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime, deployment *dbclient.Deployment) error {
 	var l = logrus.WithField("func", "Runtime.convertRuntimeInspectDTOFromRuntimeModel")
 
 	if d == nil {
@@ -854,7 +854,7 @@ func UpdateStatusWhenDeploying(runtime *apistructs.RuntimeInspectDTO) {
 }
 
 // Redeploy 重新部署
-func (r *Service) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.DeploymentCreateResponseDTO, error) {
+func (r *RuntimeService) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.DeploymentCreateResponseDTO, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
@@ -906,7 +906,7 @@ func (r *Service) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*a
 }
 
 // FullGCService 定时全量 GC 过期的部署单
-func (r *Service) FullGCService() {
+func (r *RuntimeService) FullGCService() {
 	defer func() {
 		if err := recover(); err != nil {
 			debug.PrintStack()
@@ -945,7 +945,7 @@ func (r *Service) FullGCService() {
 
 // getRollbackConfig return the number of rollback record for each project and workspace
 // key1: project_id, key2: workspace, value: the limit of rollback record
-func (r *Service) getRollbackConfig() (map[uint64]map[string]int, error) {
+func (r *RuntimeService) getRollbackConfig() (map[uint64]map[string]int, error) {
 	result := make(map[uint64]map[string]int, 0)
 	// TODO: use cache to get project info
 	projects, err := r.bundle.GetAllProjects()
@@ -959,7 +959,7 @@ func (r *Service) getRollbackConfig() (map[uint64]map[string]int, error) {
 }
 
 // ReferClusterService 查看 runtime & addon 是否有使用集群
-func (r *Service) ReferClusterService(clusterName string, orgID uint64) bool {
+func (r *RuntimeService) ReferClusterService(clusterName string, orgID uint64) bool {
 	runtimes, err := r.db.ListRuntimeByOrgCluster(clusterName, orgID)
 	if err != nil {
 		logrus.Warnf("failed to list runtime, %v", err)
@@ -982,7 +982,7 @@ func (r *Service) ReferClusterService(clusterName string, orgID uint64) bool {
 }
 
 // RuntimeDeployLogs deploy发布日志接口
-func (r *Service) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string, deploymentID uint64, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
+func (r *RuntimeService) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string, deploymentID uint64, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	deployment, err := r.db.GetDeployment(deploymentID)
 	if err != nil {
 		return nil, apierrors.ErrGetRuntime.InternalError(err)
@@ -997,7 +997,7 @@ func (r *Service) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string
 }
 
 // checkRuntimeScopePermission 检测runtime级别的权限
-func (r *Service) checkRuntimeScopePermission(userID user.ID, runtimeID uint64) error {
+func (r *RuntimeService) checkRuntimeScopePermission(userID user.ID, runtimeID uint64) error {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return err
@@ -1020,7 +1020,7 @@ func (r *Service) checkRuntimeScopePermission(userID user.ID, runtimeID uint64) 
 }
 
 // requestMonitorLog 调用bundle monitor log接口获取数据
-func (r *Service) requestMonitorLog(requestID string, orgName string, paramValues url.Values, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
+func (r *RuntimeService) requestMonitorLog(requestID string, orgName string, paramValues url.Values, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
 	// 获取日志
 	var logReq apistructs.DashboardSpotLogRequest
 	if err := queryStringDecoder.Decode(&logReq, paramValues); err != nil {
@@ -1045,7 +1045,7 @@ func init() {
 
 // ListGroupByApps lists all runtimes for given apps.
 // The key in the returned result map is appID.
-func (r *Service) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
+func (r *RuntimeService) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
 	runtimes, ids, err := r.db.FindRuntimesInApps(appIDs, env)
 	if err != nil {
@@ -1076,7 +1076,7 @@ func (r *Service) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*ap
 	return result.m, nil
 }
 
-func (r *Service) generateListGroupAppResult(result *struct {
+func (r *RuntimeService) generateListGroupAppResult(result *struct {
 	sync.RWMutex
 	m map[uint64][]*apistructs.RuntimeSummaryDTO
 }, appID uint64,
@@ -1094,7 +1094,7 @@ func (r *Service) generateListGroupAppResult(result *struct {
 }
 
 // CountARByWorkspace count appliaction runtimes by workspace .
-func (r *Service) CountARByWorkspace(appId uint64, env string) (uint64, error) {
+func (r *RuntimeService) CountARByWorkspace(appId uint64, env string) (uint64, error) {
 	var l = logrus.WithField("func", "*Runtime.CountPRByWorkspace")
 	cnt, err := r.db.GetAppRuntimeNumberByWorkspace(appId, env)
 	if err != nil {
@@ -1104,7 +1104,7 @@ func (r *Service) CountARByWorkspace(appId uint64, env string) (uint64, error) {
 	return cnt, nil
 }
 
-func (r *Service) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistructs.RuntimeSummaryDTO, error) {
+func (r *RuntimeService) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistructs.RuntimeSummaryDTO, error) {
 	logrus.Debug("get services started")
 	var l = logrus.WithField("func", "*Runtime.GetServiceByRuntime")
 	runtimes, err := r.db.FindRuntimesByIds(runtimeIDs)
@@ -1298,7 +1298,7 @@ func UpdatePARuleEnabledStatusToDisplay(hpaRules []dbclient.RuntimeHPA, vpaRules
 	}
 }
 
-func (r *Service) fullGCForSingleRuntime(runtimeID uint64, keep int) {
+func (r *RuntimeService) fullGCForSingleRuntime(runtimeID uint64, keep int) {
 	top, err := r.db.FindTopDeployments(runtimeID, keep)
 	if err != nil {
 		logrus.Errorf("[alert] failed to find top %d deployments for gc, (%v)", keep, err)
@@ -1329,7 +1329,7 @@ func (r *Service) fullGCForSingleRuntime(runtimeID uint64, keep int) {
 	}
 }
 
-func (r *Service) markOutdated(deployment *dbclient.Deployment) {
+func (r *RuntimeService) markOutdated(deployment *dbclient.Deployment) {
 	if deployment.Outdated {
 		// already outdated
 		return
@@ -1351,7 +1351,7 @@ func (r *Service) markOutdated(deployment *dbclient.Deployment) {
 	}
 }
 
-func (r *Service) RedeployPipeline(ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
+func (r *RuntimeService) RedeployPipeline(ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return nil, err
@@ -1433,7 +1433,7 @@ func (r *Service) RedeployPipeline(ctx context.Context, operator user.ID, orgID 
 	return convertRuntimeDeployDto(app, releaseResp.Data, dto.Data)
 }
 
-func (r *Service) setClusterName(rt *dbclient.Runtime) error {
+func (r *RuntimeService) setClusterName(rt *dbclient.Runtime) error {
 	clusterInfo, err := r.clusterinfoImpl.Info(rt.ClusterName)
 	if err != nil {
 		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", rt.ClusterName, err)
@@ -1481,7 +1481,7 @@ func getServicesNames(diceYml string) ([]string, error) {
 }
 
 // DeleteRuntime 标记应用实例删除
-func (r *Service) DeleteRuntime(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
+func (r *RuntimeService) DeleteRuntime(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
@@ -1531,7 +1531,7 @@ func (r *Service) DeleteRuntime(operator user.ID, orgID uint64, runtimeID uint64
 }
 
 // AppliedScaledObjects get pod autoscaler rules in k8s, include hpa and vpa
-func (r *Service) AppliedScaledObjects(uniqueID spec.RuntimeUniqueId) (map[string]string, map[string]string, error) {
+func (r *RuntimeService) AppliedScaledObjects(uniqueID spec.RuntimeUniqueId) (map[string]string, map[string]string, error) {
 	hpaRules, err := r.db.GetRuntimeHPAByServices(uniqueID, nil)
 	if err != nil {
 		return nil, nil, errors.Errorf("get runtime HPA rules by RuntimeUniqueId %#v failed: %v", uniqueID, err)
@@ -1559,7 +1559,7 @@ func (r *Service) AppliedScaledObjects(uniqueID spec.RuntimeUniqueId) (map[strin
 	return hpaScaledRules, vpaScaledRules, nil
 }
 
-func (r *Service) getRuntimeScaleRecordByRuntimeIds(ids []uint64) ([]dbclient.Runtime, []apistructs.RuntimeScaleRecord, error) {
+func (r *RuntimeService) getRuntimeScaleRecordByRuntimeIds(ids []uint64) ([]dbclient.Runtime, []apistructs.RuntimeScaleRecord, error) {
 	rsrs := make([]apistructs.RuntimeScaleRecord, 0)
 
 	runtimes, err := r.db.FindRuntimesByIds(ids)
@@ -1678,7 +1678,7 @@ func getPreDeploymentDiceOverlay(pre *dbclient.PreDeployment) (diceyml.Object, e
 }
 
 // batchRuntimeReDeploy 批量重新部署
-func (r *Service) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeReDeployResults {
+func (r *RuntimeService) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeReDeployResults {
 	batchRuntimeReDeployResult := apistructs.BatchRuntimeReDeployResults{
 		Total:           len(runtimeScaleRecords.Runtimes),
 		Success:         0,
@@ -1770,7 +1770,7 @@ func (r *Service) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runt
 }
 
 // batchRuntimeRecovery 批量恢复（副本数 0 ----> N）
-func (r *Service) batchRuntimeRecovery(runtimeScaleRecords *apistructs.RuntimeScaleRecords) {
+func (r *RuntimeService) batchRuntimeRecovery(runtimeScaleRecords *apistructs.RuntimeScaleRecords) {
 	// len(runtimeScaleRecords.IDs) > 0, 则已经在 getRuntimeScaleRecordByRuntimeIds 逻辑中构建了 runtimeScaleRecords.Runtimes，此处无需重新构建
 
 	// 根据请求 RuntimeScaleRecords.IDs  执行重新部署
@@ -1831,7 +1831,7 @@ func (r *Service) batchRuntimeRecovery(runtimeScaleRecords *apistructs.RuntimeSc
 }
 
 // batchRuntimeScaleDownAddRuntimeIDs 为 RuntimeScaleRecord 对象加入 runtimeID
-func (r *Service) batchRuntimeScaleAddRuntimeIDs(runtimeScaleRecords *apistructs.RuntimeScaleRecords, action string) {
+func (r *RuntimeService) batchRuntimeScaleAddRuntimeIDs(runtimeScaleRecords *apistructs.RuntimeScaleRecords, action string) {
 	for index := range runtimeScaleRecords.Runtimes {
 
 		if action == apistructs.ScaleActionDown {
@@ -1860,7 +1860,7 @@ func (r *Service) batchRuntimeScaleAddRuntimeIDs(runtimeScaleRecords *apistructs
 	}
 }
 
-func (r *Service) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeDeleteResults {
+func (r *RuntimeService) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeDeleteResults {
 	batchRuntimeDeleteResult := apistructs.BatchRuntimeDeleteResults{
 		Total:        len(runtimeScaleRecords.Runtimes),
 		Success:      0,
@@ -1946,7 +1946,7 @@ func (r *Service) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runtime
 }
 
 // processRuntimeScaleRecord 处理单个 runtime 对应的 scale 操作
-func (r *Service) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord, action string) (apistructs.PreDiceDTO, error, string) {
+func (r *RuntimeService) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord, action string) (apistructs.PreDiceDTO, error, string) {
 	uniqueId := spec.RuntimeUniqueId{
 		ApplicationId: rsc.ApplicationId,
 		Workspace:     rsc.Workspace,
