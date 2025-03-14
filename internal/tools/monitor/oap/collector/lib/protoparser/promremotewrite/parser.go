@@ -15,19 +15,24 @@
 package promremotewrite
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/golang/snappy"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/tools/monitor/core/metric"
 )
 
-func ParseStream(r io.Reader, callback func(record *metric.Metric) error) error {
+const CollectorGroupTag = "collector_group"
+
+func ParseStream(r io.Reader, metricsChan chan *metric.Metric, callback func(record *metric.Metric) error) error {
 	buf, err := io.ReadAll(r)
 	if err != nil {
 		return err
@@ -43,10 +48,12 @@ func ParseStream(r io.Reader, callback func(record *metric.Metric) error) error 
 		return fmt.Errorf("unmarshal WriteRequest: %w", err)
 	}
 
-	return parseWriteRequest(wr, callback)
+	return parseWriteRequest(wr, metricsChan, callback)
 }
 
-func parseWriteRequest(wr *prompb.WriteRequest, callback func(record *metric.Metric) error) error {
+type MetricTagHash string
+
+func parseWriteRequest(wr *prompb.WriteRequest, metricsChan chan *metric.Metric, callback func(record *metric.Metric) error) error {
 	now := time.Now() // receive time
 	for _, ts := range wr.Timeseries {
 		tags := map[string]string{}
@@ -78,17 +85,115 @@ func parseWriteRequest(wr *prompb.WriteRequest, callback func(record *metric.Met
 			if s.Timestamp > 0 {
 				t = time.Unix(0, s.Timestamp*time.Millisecond.Nanoseconds())
 			}
-			m := metric.Metric{
+
+			m := &metric.Metric{
 				Name:      job,
 				Timestamp: t.UnixNano(),
 				Tags:      tags,
 				Fields:    fields,
 			}
-			err := callback(&m)
-			if err != nil {
-				return fmt.Errorf("callback: %w", err)
+
+			if _, ok := tags[CollectorGroupTag]; !ok {
+				err := callback(m)
+				if err != nil {
+					return fmt.Errorf("callback: %w", err)
+				}
+				continue
+			}
+			metricsChan <- m
+
+			//err := callback(&m)
+			//if err != nil {
+			//	return fmt.Errorf("callback: %w", err)
+			//}
+		}
+	}
+	metricsChan <- nil
+	return nil
+}
+
+type GroupMetricsOptions struct {
+	MinSize        int
+	RetentionRatio float64
+	MetricsChan    chan *metric.Metric
+	Callback       func(record *metric.Metric) error
+}
+
+func DealGroupMetrics(ctx context.Context, options GroupMetricsOptions) {
+	var (
+		metricTagGroup = NewGroupMetricList()
+		lastDealTime   = time.Now()
+		lock           sync.Mutex
+	)
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+	go func(ctx context.Context) {
+		ticker := time.NewTicker(time.Minute)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				lock.Lock()
+				flag := time.Since(lastDealTime) > time.Minute
+				lock.Unlock()
+				logrus.Infof("deal by ticker, flag: %v", flag)
+				if flag {
+					lock.Lock()
+					lastDealTime = time.Now()
+					lock.Unlock()
+					metrics := metricTagGroup.PopAllMetrics()
+					for i := range metrics {
+						if err := options.Callback(metrics[i]); err != nil {
+							logrus.Errorf("deal group metric error %v", err)
+						}
+					}
+				}
+			}
+		}
+	}(cancelCtx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			logrus.Infof("deal group metric done")
+			metrics := metricTagGroup.PopAllMetrics()
+			for i := range metrics {
+				if err := options.Callback(metrics[i]); err != nil {
+					logrus.Errorf("deal group metric error %v", err)
+				}
+			}
+			return
+		case m := <-options.MetricsChan:
+			if m != nil {
+				metricTagGroup.Append(m)
+				continue
+			}
+
+			length := metricTagGroup.Length()
+			retentionNum := int(float64(length) * options.RetentionRatio)
+			// don't deal any metric, leave it to a timed task.
+			if retentionNum >= length {
+				retentionNum = length
+				continue
+			}
+
+			if length < options.MinSize {
+				retentionNum = 1
+			}
+
+			lock.Lock()
+			lastDealTime = time.Now()
+			lock.Unlock()
+
+			for i := 0; i < length-retentionNum; i++ {
+				metrics := metricTagGroup.PopMetrics()
+				for j := range metrics {
+					if err := options.Callback(metrics[j]); err != nil {
+						logrus.Errorf("deal group metric error %v", err)
+					}
+				}
 			}
 		}
 	}
-	return nil
 }

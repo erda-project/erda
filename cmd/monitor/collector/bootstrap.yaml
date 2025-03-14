@@ -72,9 +72,15 @@ erda.oap.collector.receiver.dummy:
   metric_sample: '{"name":"kubelet_cadvisor","timestamp":1640936985459000000,"tags":{"container":"POD","container_name":"go-demo","host_ip":"10.118.177.94","id":"/kubepods/burstable/podff0b8bf8-4b48-4092-8f78-0bb9fffd75b4/67f7e9a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49d","image":"sha256:4a72b6f8d32bed5550174f75ba10f753e46eb04b8b9af8a96332030b7cdc9682","instance":"virtual-kubelet-cn-hangzhou-k","name":"67f7e9a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49d","namespace":"project-387-dev","pod":"telegraf-app-6fc3aaf6af-8bf72","pod_name":"telegraf-app-6fc3aaf6af-8bf72","prometheus":"default/prometheus","prometheus_replica":"prometheus-prometheus-0"},"fields":{"container_cpu_usage_seconds_total":500,"container_fs_usage_bytes":51200}}'
 
 erda.oap.collector.receiver.prometheus-remote-write@prometheus:
+  group_metrics:
+    min_size: "${GROUP_METRIC_MIN_SIZE:0}"
+    retention_ratio: "${GROUP_METRIC_RETENTION_RATIO:0}"
 
 erda.oap.collector.receiver.prometheus-remote-write@external_metrics:
   remote_write_url: "${EXTERNAL_METRIC_REMOTE_WRITE_URL:/api/v1/external-prometheus-remote-write}"
+  group_metrics:
+    min_size: "${GROUP_METRIC_MIN_SIZE:0}"
+    retention_ratio: "${GROUP_METRIC_RETENTION_RATIO:0}"
 
 erda.oap.collector.receiver.jaeger:
 

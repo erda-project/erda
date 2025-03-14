@@ -155,7 +155,7 @@ func Test_parseWriteRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := parseWriteRequest(tt.args.wr, tt.args.callback); (err != nil) != tt.wantErr {
+			if err := parseWriteRequest(tt.args.wr, nil, tt.args.callback); (err != nil) != tt.wantErr {
 				t.Errorf("parseWriteRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

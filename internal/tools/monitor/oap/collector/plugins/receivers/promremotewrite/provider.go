@@ -37,6 +37,10 @@ var providerName = plugins.WithPrefixReceiver("prometheus-remote-write")
 
 type config struct {
 	RemoteWriteUrl string `file:"remote_write_url" default:"/api/v1/prometheus-remote-write" desc:"remote write url"`
+	GroupMetrics   struct {
+		MinSize        int     `file:"min_size" default:"10" desc:"min size of group metrics"`
+		RetentionRatio float64 `file:"retention_ratio" default:"0.5" desc:"retention ratio of group metrics"`
+	} `file:"group_metrics"`
 }
 
 var _ model.Receiver = (*provider)(nil)
@@ -47,7 +51,8 @@ type provider struct {
 	Log    logs.Logger
 	Router httpserver.Router `autowired:"http-router"`
 
-	consumerFunc model.ObservableDataConsumerFunc
+	consumerFunc     model.ObservableDataConsumerFunc
+	groupMetricsChan chan *metric.Metric
 }
 
 func (p *provider) ComponentClose() error {
@@ -56,13 +61,23 @@ func (p *provider) ComponentClose() error {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.Log.Infof("group metric min_size: %v, retention_ratio: %v", p.Cfg.GroupMetrics.MinSize, p.Cfg.GroupMetrics.RetentionRatio)
+	p.groupMetricsChan = make(chan *metric.Metric, 1000)
+	go promremotewrite.DealGroupMetrics(ctx, promremotewrite.GroupMetricsOptions{
+		MinSize:        p.Cfg.GroupMetrics.MinSize,
+		RetentionRatio: p.Cfg.GroupMetrics.RetentionRatio,
+		MetricsChan:    p.groupMetricsChan,
+		Callback: func(record *metric.Metric) error {
+			return p.consumerFunc(record)
+		},
+	})
 	p.Router.POST(p.Cfg.RemoteWriteUrl, p.prwHandler)
 	return nil
 }
 
 func (p *provider) prwHandler(ctx echo.Context) error {
 	err := receivercurrentlimiter.Do(func() error {
-		return promremotewrite.ParseStream(ctx.Request().Body, func(record *metric.Metric) error {
+		return promremotewrite.ParseStream(ctx.Request().Body, p.groupMetricsChan, func(record *metric.Metric) error {
 			return p.consumerFunc(record)
 		})
 	})
