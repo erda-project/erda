@@ -4,15 +4,18 @@ package erda.apps.aiproxy.mcp_server;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb";
 
 import "google/api/annotations.proto";
-import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 
 message MCPServer {
-  string name = 1;
-  string version = 2;
-  string description = 3;
-  string endpoint = 4;
-  repeated MCPServerTool tools = 5;
+  string id = 1 [(validate.rules).string = {len: 36}];
+  string name = 2;
+  string version = 3;
+  string description = 4;
+  string endpoint = 5;
+  repeated MCPServerTool tools = 6;
+  bool isDefaultVersion = 7;
+  bool isPublished = 8;
 }
 
 message MCPServerConfig {
@@ -28,7 +31,7 @@ message MCPServerTool {
 // TODO: Clarify the schema by providing more specific fields, documentation, and constraints.
 message MCPServerToolInputSchema {
   string type = 1;
-  map<string, google.protobuf.Any> properties = 2;
+  map<string, google.protobuf.Struct> properties = 2;
   repeated string required = 3;
 }
 
@@ -75,7 +78,7 @@ message MCPServerListRequest {
 
 message MCPServerListResponse {
   int64 total = 1;
-  repeated MCPServer data = 2;
+  repeated MCPServer list = 2;
 }
 
 message MCPServerRegisterRequest {
@@ -87,6 +90,7 @@ message MCPServerRegisterRequest {
 }
 
 message MCPServerRegisterResponse {
+  MCPServer data = 1;
 }
 
 message MCPServerActionPublishRequest {
