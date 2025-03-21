@@ -19,6 +19,7 @@ import (
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp-server/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -85,4 +86,9 @@ var CheckClientTokenPerm = CheckPermissions(
 
 var CheckRichClientPerm = CheckPermissions(
 	&MethodPermission{Method: richclientpb.RichClientServiceServer.GetByAccessKeyId, AdminOrAk: true},
+)
+
+var CheckMCPPerm = CheckPermissions(
+	&MethodPermission{Method: pb.MCPServerServiceServer.Get, AdminOrAk: true},
+	&MethodPermission{Method: pb.MCPServerServiceServer.List, AdminOrAk: true},
 )

@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.mcp_server;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp-server/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+message MCPServer {
+  string name = 1;
+  string version = 2;
+  string description = 3;
+  string endpoint = 4;
+  repeated MCPServerTool tools = 5;
+}
+
+message MCPServerConfig {
+  repeated MCPServerTool tools = 1;
+}
+
+message MCPServerTool {
+  string name = 1;
+  string description = 2;
+  MCPServerToolInputSchema inputSchema = 3;
+}
+
+// TODO: Clarify the schema by providing more specific fields, documentation, and constraints.
+message MCPServerToolInputSchema {
+  string type = 1;
+  map<string, google.protobuf.Any> properties = 2;
+  repeated string required = 3;
+}
+
+service MCPServerService {
+  rpc Get(MCPServerGetRequest) returns (MCPServerGetResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/servers/{name}?version={version}"
+    };
+  }
+  rpc List(MCPServerListRequest) returns (MCPServerListResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/servers"
+    };
+  }
+  rpc Register(MCPServerRegisterRequest) returns (MCPServerRegisterResponse) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/mcp/servers"
+      body: "*"
+    };
+  }
+  rpc Publish(MCPServerActionPublishRequest) returns (MCPServerActionPublishResponse) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/mcp/servers/actions/publish"
+      body: "*"
+    };
+  }
+}
+
+message MCPServerGetRequest {
+  string name = 1;
+  string version = 2;
+}
+
+message MCPServerGetResponse {
+  MCPServer data = 1;
+}
+
+message MCPServerListRequest {
+  uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+  uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+  string name = 3;
+  bool includeUnpublished = 4;
+}
+
+message MCPServerListResponse {
+  int64 total = 1;
+  repeated MCPServer data = 2;
+}
+
+message MCPServerRegisterRequest {
+  string name = 1;
+  string description = 2;
+  string version = 3;
+  string endpoint = 4;
+  repeated MCPServerTool tools = 5;
+}
+
+message MCPServerRegisterResponse {
+}
+
+message MCPServerActionPublishRequest {
+  string name = 1;
+  string version = 2;
+  MCPServerActionPublishType action = 3;
+}
+
+message MCPServerActionPublishResponse {
+}
+
+enum MCPServerActionPublishType {
+  PUT_ON = 0;
+  PUT_OFF = 1;
+}
