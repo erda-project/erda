@@ -212,5 +212,5 @@ func (w *instanceWriter) Update(s InstanceInfo) error {
 	return w.db.Model(&s).Updates(s).Update("updated_at", time.Now()).Error
 }
 func (w *instanceWriter) Delete(ids ...uint64) error {
-	return w.db.Delete(InstanceInfo{}, "id in (?)", ids).Error
+	return w.db.Debug().Delete(InstanceInfo{}, "id in (?)", ids).Error
 }
