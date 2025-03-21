@@ -17,7 +17,7 @@ package handler_mcp
 import (
 	"context"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp-server/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 

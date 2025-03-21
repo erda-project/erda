@@ -23,7 +23,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp-server/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 )
 
 type DBClient struct {

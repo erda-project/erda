@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp-server/pb"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 )
 
 type MCPServer struct {
