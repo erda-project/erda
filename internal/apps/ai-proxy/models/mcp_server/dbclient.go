@@ -16,7 +16,6 @@ package mcp_server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -35,15 +34,15 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		Tools: req.Tools,
 	}
 
-	rawConfig, err := json.Marshal(&mcpServerConfig)
+	rawConfig, err := mcpServerConfig.MarshalJSON()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal mcp server config: %v", err)
 	}
 
+	var mcpServer MCPServer
 	if err = c.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var server MCPServer
 		if err = tx.Where("name = ? AND version = ?", req.Name, req.Version).
-			First(&server).Error; err != nil {
+			First(&mcpServer).Error; err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return fmt.Errorf("failed to query mcp server: %v", err)
 			}
@@ -62,11 +61,11 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		}
 
 		// update server
-		server.Endpoint = req.Endpoint
-		server.Description = req.Description
-		server.Config = string(rawConfig)
+		mcpServer.Endpoint = req.Endpoint
+		mcpServer.Description = req.Description
+		mcpServer.Config = string(rawConfig)
 
-		if err = tx.Save(&server).Error; err != nil {
+		if err = tx.Save(&mcpServer).Error; err != nil {
 			return fmt.Errorf("failed to update mcp server: %v", err)
 		}
 		return nil
@@ -74,7 +73,14 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		return nil, err
 	}
 
-	return &pb.MCPServerRegisterResponse{}, nil
+	pbMCPServer, err := mcpServer.ToProtobuf()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.MCPServerRegisterResponse{
+		Data: pbMCPServer,
+	}, nil
 }
 
 func (c *DBClient) Publish(ctx context.Context, req *pb.MCPServerActionPublishRequest) (*pb.MCPServerActionPublishResponse, error) {
@@ -127,9 +133,6 @@ func (c *DBClient) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MC
 }
 
 func (c *DBClient) Paging(ctx context.Context, req *pb.MCPServerListRequest) (*pb.MCPServerListResponse, error) {
-	var total int64
-	var servers []MCPServer
-
 	tx := c.DB.Model(&MCPServer{}).WithContext(ctx)
 	if req.Name != "" {
 		tx = tx.Where("name = ?", req.Name)
@@ -139,26 +142,34 @@ func (c *DBClient) Paging(ctx context.Context, req *pb.MCPServerListRequest) (*p
 		tx = tx.Where("is_published = ?", true)
 	}
 
+	var (
+		total int64
+		list  MCPServers
+	)
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
+
+	offset := (req.PageNum - 1) * req.PageSize
+	err := tx.Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Count(&total).Error; err != nil {
 		return nil, fmt.Errorf("failed to count mcp servers: %v", err)
 	}
 
-	if err := tx.Offset(int(req.PageNum * req.PageSize)).
-		Limit(int(req.PageSize)).Find(&servers).Error; err != nil {
-		return nil, fmt.Errorf("failed to query mcp servers: %v", err)
-	}
-
-	var items []*pb.MCPServer
-	for _, server := range servers {
-		pbMCPServer, err := server.ToProtobuf()
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, pbMCPServer)
+	servers, err := list.ToProtobuf()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert mcp servers to protobuf: %v", err)
 	}
 
 	return &pb.MCPServerListResponse{
 		Total: total,
-		Data:  items,
+		List:  servers,
 	}, nil
 }
