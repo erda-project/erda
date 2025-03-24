@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -27,6 +28,13 @@ import (
 
 type DBClient struct {
 	DB *gorm.DB
+}
+
+type ListOptions struct {
+	PageNum            int
+	PageSize           int
+	Name               string
+	IncludeUnpublished bool
 }
 
 func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegisterRequest) (*pb.MCPServerRegisterResponse, error) {
@@ -39,33 +47,57 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		return nil, fmt.Errorf("failed to marshal mcp server config: %v", err)
 	}
 
-	var mcpServer MCPServer
+	var dbServer MCPServer
 	if err = c.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err = tx.Where("name = ? AND version = ?", req.Name, req.Version).
-			First(&mcpServer).Error; err != nil {
+			First(&dbServer).Error; err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return fmt.Errorf("failed to query mcp server: %v", err)
 			}
+
+			dbServer = MCPServer{
+				ID:               uuid.New().String(),
+				Name:             req.Name,
+				Version:          req.Version,
+				Endpoint:         req.Endpoint,
+				Config:           string(rawConfig),
+				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
+				IsDefaultVersion: req.IsDefaultVersion != nil && req.IsDefaultVersion.Value,
+			}
+
 			// create new server
-			if err = tx.Create(&MCPServer{
-				ID:          uuid.New().String(),
-				Name:        req.Name,
-				Version:     req.Version,
-				Endpoint:    req.Endpoint,
-				Config:      string(rawConfig),
-				IsPublished: false,
-			}).Error; err != nil {
+			if err = tx.Create(&dbServer).Error; err != nil {
 				return fmt.Errorf("failed to create mcp server: %v", err)
+			}
+
+			// set current version to default.
+			if dbServer.IsDefaultVersion {
+				if err = tx.Model(&MCPServer{}).
+					Where("name = ? and version != ?", req.Name, req.Version).
+					Update("is_default_version", false).Error; err != nil {
+					return fmt.Errorf("failed to update mcp server: %v", err)
+				}
 			}
 			return nil
 		}
 
 		// update server
-		mcpServer.Endpoint = req.Endpoint
-		mcpServer.Description = req.Description
-		mcpServer.Config = string(rawConfig)
+		dbServer.Endpoint = req.Endpoint
+		dbServer.Description = req.Description
+		dbServer.Config = string(rawConfig)
+		dbServer.IsPublished = req.IsPublished != nil && req.IsPublished.Value
+		dbServer.IsDefaultVersion = req.IsDefaultVersion != nil && req.IsDefaultVersion.Value
 
-		if err = tx.Save(&mcpServer).Error; err != nil {
+		// set current version to default.
+		if dbServer.IsDefaultVersion {
+			if err = tx.Model(&MCPServer{}).
+				Where("name = ? and version != ?", req.Name, req.Version).
+				Update("is_default_version", false).Error; err != nil {
+				return fmt.Errorf("failed to update mcp server: %v", err)
+			}
+		}
+
+		if err = tx.Save(&dbServer).Error; err != nil {
 			return fmt.Errorf("failed to update mcp server: %v", err)
 		}
 		return nil
@@ -73,35 +105,35 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		return nil, err
 	}
 
-	pbMCPServer, err := mcpServer.ToProtobuf()
+	server, err := dbServer.ToProtobuf()
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.MCPServerRegisterResponse{
-		Data: pbMCPServer,
+		Data: server,
 	}, nil
 }
 
 func (c *DBClient) Publish(ctx context.Context, req *pb.MCPServerActionPublishRequest) (*pb.MCPServerActionPublishResponse, error) {
 	if err := c.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var server MCPServer
+		var dbServer MCPServer
 		if err := tx.Where("name = ? AND version = ?", req.Name, req.Version).
-			First(&server).Error; err != nil {
+			First(&dbServer).Error; err != nil {
 			return fmt.Errorf("failed to query mcp server: %v", err)
 		}
 
 		switch req.Action {
 		case pb.MCPServerActionPublishType_PUT_ON:
-			server.IsPublished = true
+			dbServer.IsPublished = true
 		case pb.MCPServerActionPublishType_PUT_OFF:
-			server.IsPublished = false
+			dbServer.IsPublished = false
 		default:
 			return fmt.Errorf("invalid action: %v", req.Action)
 		}
 
-		if err := tx.Save(&server).Error; err != nil {
-			return fmt.Errorf("failed to update mcp server publish status: %v", err)
+		if err := tx.Save(&dbServer).Error; err != nil {
+			return fmt.Errorf("failed to update mcp dbServer publish status: %v", err)
 		}
 		return nil
 	}); err != nil {
@@ -112,64 +144,134 @@ func (c *DBClient) Publish(ctx context.Context, req *pb.MCPServerActionPublishRe
 }
 
 func (c *DBClient) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
-	tx := c.DB.WithContext(ctx).Where("name = ? and is_published = ?", req.Name, true)
+	tx := c.DB.WithContext(ctx).
+		Where("name = ? and is_published = ?", req.Name, true)
+
 	if req.Version != "" {
 		tx = tx.Where("version = ?", req.Version)
+	} else {
+		tx = tx.Where("is_default_version = ?", true)
 	}
 
-	var server MCPServer
-	if err := tx.First(&server).Error; err != nil {
-		return nil, fmt.Errorf("failed to query mcp server: %v", err)
+	var dbMCPServer MCPServer
+	if err := tx.First(&dbMCPServer).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("failed to query mcp server: %v", err)
+		}
+
+		var versions []string
+		if err := c.DB.WithContext(ctx).Model(&MCPServer{}).
+			Select("version").
+			Where("name = ? and is_published = ?", req.Name, true).
+			Order("created_at").
+			Find(&versions).Error; err != nil {
+			return nil, fmt.Errorf("failed to query mcp server versions: %v", err)
+		}
+
+		if req.Version == "" {
+			return nil, fmt.Errorf("mcp server %s default version not found, support version: [%s]",
+				req.Name, strings.Join(versions, ","))
+		}
+
+		return nil, fmt.Errorf("mcp server %s not found, supported version: [%s]",
+			req.Name, strings.Join(versions, ","))
 	}
 
-	pbMCPServer, err := server.ToProtobuf()
+	server, err := dbMCPServer.ToProtobuf()
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert mcp server to protobuf: %v", err)
 	}
 
 	return &pb.MCPServerGetResponse{
-		Data: pbMCPServer,
+		Data: server,
 	}, nil
 }
 
-func (c *DBClient) Paging(ctx context.Context, req *pb.MCPServerListRequest) (*pb.MCPServerListResponse, error) {
-	tx := c.DB.Model(&MCPServer{}).WithContext(ctx)
-	if req.Name != "" {
-		tx = tx.Where("name = ?", req.Name)
-	}
-
-	if !req.IncludeUnpublished {
-		tx = tx.Where("is_published = ?", true)
-	}
-
+func (c *DBClient) List(ctx context.Context, options *ListOptions) (int64, []*pb.MCPServer, error) {
 	var (
 		total int64
 		list  MCPServers
 	)
-	if req.PageNum == 0 {
-		req.PageNum = 1
+	if options.PageNum == 0 {
+		options.PageNum = 1
 	}
-	if req.PageSize == 0 {
-		req.PageSize = 20
+	if options.PageSize == 0 {
+		options.PageSize = 20
 	}
 
-	offset := (req.PageNum - 1) * req.PageSize
-	err := tx.Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	tx := c.DB.WithContext(ctx).Model(&MCPServer{})
+	if options.Name != "" {
+		tx = tx.Where("name = ?", options.Name)
+	}
+
+	if !options.IncludeUnpublished {
+		tx = tx.Where("is_published = ?", true)
+	}
+
+	offset := (options.PageNum - 1) * options.PageSize
+	err := tx.Order("created_at DESC").Limit(options.PageSize).Offset(offset).Find(&list).Error
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
-	if err := tx.Count(&total).Error; err != nil {
-		return nil, fmt.Errorf("failed to count mcp servers: %v", err)
+	if err = tx.Count(&total).Error; err != nil {
+		return 0, nil, fmt.Errorf("failed to count mcp servers: %v", err)
 	}
 
 	servers, err := list.ToProtobuf()
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert mcp servers to protobuf: %v", err)
+		return 0, nil, fmt.Errorf("failed to convert mcp servers to protobuf: %v", err)
 	}
 
-	return &pb.MCPServerListResponse{
-		Total: total,
-		List:  servers,
+	return total, servers, nil
+}
+
+func (c *DBClient) Delete(ctx context.Context, req *pb.MCPServerDeleteRequest) (*pb.MCPServerDeleteResponse, error) {
+	tx := c.DB.WithContext(ctx).Where("name = ?", req.Name)
+	if req.Version != "" {
+		tx = tx.Where("version = ?", req.Version)
+	}
+	if err := tx.Delete(&MCPServer{}).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete mcp server: %v", err)
+	}
+	return &pb.MCPServerDeleteResponse{}, nil
+}
+
+func (c *DBClient) Update(ctx context.Context, req *pb.MCPServerUpdateRequest) (*pb.MCPServerUpdateResponse, error) {
+	var dbMcpServer MCPServer
+
+	if err := c.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("name = ? and version = ?", req.Name, req.Version).
+			Find(&dbMcpServer).Error; err != nil {
+			return err
+		}
+		dbMcpServer.Description = req.Description
+		if req.IsPublished != nil {
+			dbMcpServer.IsPublished = req.IsPublished.Value
+		}
+
+		if req.IsDefaultVersion != nil {
+			dbMcpServer.IsDefaultVersion = req.IsDefaultVersion.Value
+		}
+
+		if dbMcpServer.IsDefaultVersion {
+			if err := tx.Model(&MCPServer{}).
+				Where("name = ? and version != ?", req.Name, req.Version).
+				Update("is_default_version", false).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Save(&dbMcpServer).Error
+	}); err != nil {
+		return nil, err
+	}
+
+	pbServer, err := dbMcpServer.ToProtobuf()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.MCPServerUpdateResponse{
+		Data: pbServer,
 	}, nil
 }
