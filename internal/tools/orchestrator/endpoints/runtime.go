@@ -148,16 +148,6 @@ func (e *Endpoints) StopRuntime(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(data)
 }
 
-// StartRuntime 启动应用实例
-func (e *Endpoints) StartRuntime(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	return nil, nil
-}
-
-// RestartRuntime 重启应用实例
-func (e *Endpoints) RestartRuntime(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	return nil, nil
-}
-
 // RedeployRuntime 重新部署, 给 action 调用的 endpoint
 func (e *Endpoints) RedeployRuntimeAction(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	orgID, err := getOrgID(r)
@@ -590,36 +580,6 @@ func (e *Endpoints) ReferCluster(ctx context.Context, r *http.Request, vars map[
 	referred := e.runtime.ReferCluster(clusterName, orgID)
 
 	return httpserver.OkResp(referred)
-}
-
-// runtimeLogs 包装runtime部署日志
-func (e *Endpoints) RuntimeLogs(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	orgID, err := getOrgID(r)
-	if err != nil {
-		return apierrors.ErrGetRuntime.InvalidParameter(err).ToResp(), nil
-	}
-	userID, err := user.GetUserID(r)
-	if err != nil {
-		return apierrors.ErrCreateAddon.NotLogin().ToResp(), nil
-	}
-	source := r.URL.Query().Get("source")
-	if source == "" {
-		return apierrors.ErrGetRuntime.MissingParameter("source").ToResp(), nil
-	}
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		return apierrors.ErrGetRuntime.MissingParameter("id").ToResp(), nil
-	}
-	deploymentID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id)).ToResp(), nil
-	}
-	result, err := e.runtime.RuntimeDeployLogs(userID, orgID, r.Header.Get("org"), deploymentID, r.URL.Query())
-	if err != nil {
-		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id)).ToResp(), nil
-	}
-	return httpserver.OkResp(result)
-
 }
 
 // OrgcenterJobLogs 包装数据中心--->任务列表 日志
