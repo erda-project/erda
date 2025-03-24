@@ -239,16 +239,8 @@ message ReDeployRuntimeActionRequest {
 }
 
 message RollBackRuntimeActionRequest {
-  uint64 deploymentID = 1;
+  uint64 deploymentId = 1;
   string runtimeID = 2;
-}
-
-message epBulkGetRuntimeStatusDetailRequest {
-  string runtimeIDs = 1;
-}
-
-message epBulkGetRuntimeStatusDetailResponse {
-  map<uint64, google.protobuf.Value> data = 1;
 }
 
 message PreDiceDTO {
@@ -297,6 +289,7 @@ message RuntimeLogsRequest {
   bool debug = 7;
   string clusterName = 8;
   string pipelineID = 9;
+  string applicationId = 10;
 }
 
 message DashboardSpotLogLine {
@@ -317,15 +310,11 @@ message DashboardSpotLogData {
 
 message ListRuntimeByAppsRequest {
   repeated string applicationID = 1;
-  repeated string workSpace = 2;
-}
-
-message ListRuntimeSummary {
-  repeated RuntimeSummary data = 1;
+  repeated string workspace = 2;
 }
 
 message ListRuntimeByAppsResponse {
-  map<uint64, ListRuntimeSummary> data = 1;
+  map<uint64, google.protobuf.Value> data = 1;
 }
 
 message ListMyRuntimesRequest {
@@ -339,7 +328,7 @@ message ListMyRuntimesResponse {
 }
 
 message CountPRByWorkspaceRequest {
-  string projectID = 1;
+  string projectId = 1;
   string appID = 2;
   repeated string workSpace = 3;
 }
@@ -441,12 +430,6 @@ service RuntimeService {
     };
   }
 
-  rpc epBulkGetRuntimeStatusDetail(epBulkGetRuntimeStatusDetailRequest) returns (epBulkGetRuntimeStatusDetailResponse) {
-    option (google.api.http) = {
-      get: "/api/runtimes/actions/bulk-get-status"
-    };
-  }
-
   rpc FullGC(google.protobuf.Empty) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/runtimes/actions/full-gc"
@@ -467,7 +450,7 @@ service RuntimeService {
 
   rpc ListRuntimesGroupByApps(ListRuntimeByAppsRequest) returns (ListRuntimeByAppsResponse) {
     option (google.api.http) = {
-      get: "/api/runtimes/actions/group-by-apps?applicationID={applicationID}&workSpace={workSpace}"
+      get: "/api/runtimes/actions/group-by-apps?applicationID={applicationID}&workSpace={workspace}"
     };
   }
 
