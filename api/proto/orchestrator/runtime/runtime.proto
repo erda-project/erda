@@ -345,22 +345,6 @@ message BatchRuntimeServiceResponse {
   map<uint64, RuntimeSummary> data = 1;
 }
 
-message StartRuntimeRequest {
-  string runtimeID = 1;
-}
-
-message StartRuntimeResponse {
-
-}
-
-message RestartRuntimeRequest {
-  string runtimeID = 1;
-}
-
-message RestartRuntimeResponse {
-
-}
-
 service RuntimeService {
   rpc GetRuntime (GetRuntimeRequest) returns (RuntimeInspect) {
     option (google.api.http) = {
@@ -471,18 +455,4 @@ service RuntimeService {
       get: "/api/runtimesServices"
     };
   }
-
-  rpc StartRuntime(StartRuntimeRequest)returns (StartRuntimeResponse){
-    option(google.api.http) = {
-      post: "/api_test/runtimes/{runtimeID}/actions/start"
-    };
-  }
-
-  rpc RestartRuntime(RestartRuntimeRequest)returns (RestartRuntimeResponse){
-    option(google.api.http) = {
-      post: "/api_test/runtimes/{runtimeID}/actions/restart"
-    };
-  }
-
-
 }
