@@ -90,7 +90,9 @@ var CheckRichClientPerm = CheckPermissions(
 
 var CheckMCPPerm = CheckPermissions(
 	&MethodPermission{Method: pb.MCPServerServiceServer.Get, OnlyAdmin: true},
-	&MethodPermission{Method: pb.MCPServerServiceServer.Register, OnlyAdmin: true},
 	&MethodPermission{Method: pb.MCPServerServiceServer.List, OnlyAdmin: true},
+	&MethodPermission{Method: pb.MCPServerServiceServer.Delete, OnlyAdmin: true},
+	&MethodPermission{Method: pb.MCPServerServiceServer.Update, OnlyAdmin: true},
+	&MethodPermission{Method: pb.MCPServerServiceServer.Register, OnlyAdmin: true},
 	&MethodPermission{Method: pb.MCPServerServiceServer.Publish, OnlyAdmin: true},
 )
