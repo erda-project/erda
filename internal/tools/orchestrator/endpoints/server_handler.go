@@ -36,7 +36,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// Deprecated
+// Deprecated https://github.com/erda-project/erda-ui/blob/ec3b437ea40569bb2856310997b4b11ceece1f21/shell/app/modules/dcos/services/service.ts#L31
 func (s *Endpoints) epBulkGetRuntimeStatusDetail(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	rs_ := r.URL.Query().Get("runtimeIds")
 	rs := strings.Split(rs_, ",")
