@@ -4,6 +4,7 @@ CREATE TABLE `ai_proxy_mcp_server`
     `name`               VARCHAR(64)  NOT NULL COMMENT 'MCP Server 名称',
     `version`            VARCHAR(64)  NOT NULL COMMENT 'MCP Server 版本',
     `description`        TEXT COMMENT '描述信息',
+    `instruction`        TEXT COMMENT 'Agent Instruction',
     `endpoint`           VARCHAR(191) NOT NULL COMMENT 'MCP Server URL',
     `config`             TEXT         NOT NULL COMMENT '配置信息，JSON 结构',
     `is_published`       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否发布',
