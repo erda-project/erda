@@ -82,7 +82,6 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 				return h(ctx, req)
 			}
 			if perm != nil {
-				fmt.Printf("perm: %+v\n", perm)
 				if perm.resource != nil {
 					scope, err := perm.scope(ctx, req)
 					if err != nil {
@@ -154,7 +153,6 @@ func (p *provider) CheckRuntimeID(perms ...*Permission) transport.ServiceOption 
 			info := transport.ContextServiceInfo(ctx)
 
 			runtimeID := p.GetRuntimeID(req)
-			fmt.Printf("GET runtimeID: %s\n", runtimeID)
 
 			var runtime dbclient.Runtime
 			runtimeIDInt, _ := strconv.ParseUint(runtimeID, 10, 64)
@@ -163,7 +161,6 @@ func (p *provider) CheckRuntimeID(perms ...*Permission) transport.ServiceOption 
 			}
 
 			workspace := runtime.Workspace
-			fmt.Printf("workspace: %s\n", workspace)
 
 			resource := GetRuntimeResource(workspace)
 
@@ -172,7 +169,6 @@ func (p *provider) CheckRuntimeID(perms ...*Permission) transport.ServiceOption 
 				return h(ctx, req)
 			}
 			if perm != nil {
-				fmt.Printf("perm: %+v\n", perm)
 				if perm.resource != nil {
 					scope, err := perm.scope(ctx, req)
 					if err != nil {
@@ -434,7 +430,6 @@ func (p *provider) GetAppIDByRuntimeID(field string) func(ctx context.Context, r
 		if value := req; value != nil {
 			for _, field := range fields {
 				val := reflect.ValueOf(value)
-				fmt.Printf("val: %+v\n", val)
 				for val.Kind() == reflect.Ptr {
 					val = val.Elem()
 				}

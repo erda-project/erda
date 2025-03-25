@@ -316,7 +316,7 @@ message BatchRuntimeServiceRequest {
 }
 
 message BatchRuntimeServiceResponse {
-  map<uint64, RuntimeSummary> data = 1;
+  map<uint64, google.protobuf.Value> data = 1;
 }
 
 service RuntimePrimaryService {

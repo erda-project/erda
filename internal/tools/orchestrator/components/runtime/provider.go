@@ -15,6 +15,8 @@
 package runtime
 
 import (
+	"context"
+	"github.com/erda-project/erda/apistructs"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 	"time"
 
@@ -166,7 +168,69 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
-		))
+		),
+			p.audit.Audit(
+				audit.Method(RuntimeServiceHandle.DelRuntime, audit.AppScope, string(apistructs.DeleteRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.Runtime)
+						return r.ApplicationID, map[string]interface{}{
+							"applicationName": r.ApplicationName,
+							"workspace":       r.Workspace,
+							"runtimeName":     r.Name,
+						}, nil
+					},
+				),
+
+				audit.Method(RuntimeServiceHandle.ReDeployRuntime, audit.AppScope, string(apistructs.RedeployRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeploymentCreateResponse)
+						return r.ApplicationId, map[string]interface{}{}, nil
+					},
+				),
+
+				audit.Method(RuntimeServiceHandle.ReDeployRuntimeAction, audit.AppScope, string(apistructs.RedeployRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeploymentCreateResponse)
+						return r.ApplicationId, map[string]interface{}{}, nil
+					},
+				),
+
+				audit.Method(RuntimeServiceHandle.RollBackRuntime, audit.AppScope, string(apistructs.RollbackRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeploymentCreateResponse)
+						return r.ApplicationId, map[string]interface{}{}, nil
+					},
+				),
+
+				audit.Method(RuntimeServiceHandle.RollBackRuntimeAction, audit.AppScope, string(apistructs.RollbackRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeploymentCreateResponse)
+						return r.ApplicationId, map[string]interface{}{}, nil
+					},
+				),
+
+				audit.Method(RuntimeServiceHandle.CreateRuntime, audit.AppScope, string(apistructs.DeployRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeploymentCreateResponse)
+						return r.ApplicationId, map[string]interface{}{}, nil
+					},
+				),
+
+				audit.Method(RuntimeServiceHandle.CreateRuntimeByRelease, audit.AppScope, string(apistructs.DeployRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeploymentCreateResponse)
+						return r.ApplicationId, map[string]interface{}{}, nil
+					},
+				),
+
+				audit.Method(RuntimeServiceHandle.CreateRuntimeByReleaseAction, audit.AppScope, string(apistructs.DeployRuntimeTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeploymentCreateResponse)
+						return r.ApplicationId, map[string]interface{}{}, nil
+					},
+				),
+			),
+		)
 
 		pb.RegisterRuntimeSecondaryServiceImp(p.Register, p.RuntimeService, apis.Options(), p.CheckRuntimeIDs(
 			p.Method(RuntimeServiceHandle.ListMyRuntimes, perm.ScopeApp, "runtime-dev", perm.ActionGet, p.FieldValue("AppID")),

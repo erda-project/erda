@@ -601,17 +601,19 @@ func (r *RuntimeService) BatchRuntimeService(ctx context.Context, req *pb.BatchR
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp := &pb.BatchRuntimeServiceResponse{}
+	resp := &pb.BatchRuntimeServiceResponse{
+		Data: make(map[uint64]*structpb.Value),
+	}
 	for k, v := range serviceMap {
-		data := &pb.RuntimeSummary{}
+		var structValue structpb.Value
 		vBytes, err := json.Marshal(v)
 		if err != nil {
 			return nil, errors.NewInternalServerErrorMessage("Marshal failed")
 		}
-		if err := json.Unmarshal(vBytes, data); err != nil {
+		if err := json.Unmarshal(vBytes, &structValue); err != nil {
 			return nil, errors.NewInternalServerErrorMessage("UnMarshal failed")
 		}
-		resp.Data[k] = data
+		resp.Data[k] = &structValue
 	}
 
 	return resp, nil
