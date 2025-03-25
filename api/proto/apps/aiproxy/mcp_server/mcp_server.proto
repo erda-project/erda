@@ -13,10 +13,11 @@ message MCPServer {
   string name = 2 [(validate.rules).string = {min_len: 1}];
   string version = 3 [(validate.rules).string = {min_len: 1}];
   string description = 4;
-  string endpoint = 5 [(validate.rules).string = {min_len: 1}];
-  repeated MCPServerTool tools = 6;
-  bool isDefaultVersion = 7;
-  bool isPublished = 8;
+  string instruction = 5;
+  string endpoint = 6 [(validate.rules).string = {min_len: 1}];
+  repeated MCPServerTool tools = 7;
+  bool isDefaultVersion = 8;
+  bool isPublished = 9;
 }
 
 message MCPServerConfig {
@@ -101,8 +102,9 @@ message MCPServerUpdateRequest {
   string name = 1 [(validate.rules).string = {min_len: 1}];
   string version = 2 [(validate.rules).string = {min_len: 1}];
   string description = 3;
-  google.protobuf.BoolValue isDefaultVersion = 4;
-  google.protobuf.BoolValue isPublished = 5;
+  string instruction = 4;
+  google.protobuf.BoolValue isDefaultVersion = 5;
+  google.protobuf.BoolValue isPublished = 6;
 }
 
 message MCPServerUpdateResponse {
@@ -132,11 +134,12 @@ message MCPServerVersionResponse {
 message MCPServerRegisterRequest {
   string name = 1 [(validate.rules).string = {min_len: 1}];
   string description = 2;
-  string version = 3 [(validate.rules).string = {min_len: 1}];
-  string endpoint = 4 [(validate.rules).string = {min_len: 1}];
-  repeated MCPServerTool tools = 5;
-  google.protobuf.BoolValue isDefaultVersion = 6;
-  google.protobuf.BoolValue isPublished = 7;
+  string instruction = 3;
+  string version = 4 [(validate.rules).string = {min_len: 1}];
+  string endpoint = 5 [(validate.rules).string = {min_len: 1}];
+  repeated MCPServerTool tools = 6;
+  google.protobuf.BoolValue isDefaultVersion = 7;
+  google.protobuf.BoolValue isPublished = 8;
 }
 
 message MCPServerRegisterResponse {

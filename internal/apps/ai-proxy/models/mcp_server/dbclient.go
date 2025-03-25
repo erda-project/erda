@@ -58,6 +58,8 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 			dbServer = MCPServer{
 				ID:               uuid.New().String(),
 				Name:             req.Name,
+				Description:      req.Description,
+				Instruction:      req.Instruction,
 				Version:          req.Version,
 				Endpoint:         req.Endpoint,
 				Config:           string(rawConfig),
@@ -84,6 +86,7 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		// update server
 		dbServer.Endpoint = req.Endpoint
 		dbServer.Description = req.Description
+		dbServer.Instruction = req.Instruction
 		dbServer.Config = string(rawConfig)
 		dbServer.IsPublished = req.IsPublished != nil && req.IsPublished.Value
 		dbServer.IsDefaultVersion = req.IsDefaultVersion != nil && req.IsDefaultVersion.Value
@@ -242,10 +245,18 @@ func (c *DBClient) Update(ctx context.Context, req *pb.MCPServerUpdateRequest) (
 
 	if err := c.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("name = ? and version = ?", req.Name, req.Version).
-			Find(&dbMcpServer).Error; err != nil {
+			First(&dbMcpServer).Error; err != nil {
 			return err
 		}
-		dbMcpServer.Description = req.Description
+
+		if req.Description != "" {
+			dbMcpServer.Description = req.Description
+		}
+
+		if req.Instruction != "" {
+			dbMcpServer.Instruction = req.Instruction
+		}
+
 		if req.IsPublished != nil {
 			dbMcpServer.IsPublished = req.IsPublished.Value
 		}
