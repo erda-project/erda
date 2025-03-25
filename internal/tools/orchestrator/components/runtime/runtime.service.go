@@ -18,18 +18,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"net/url"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	cpb "github.com/erda-project/erda-proto-go/common/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
@@ -50,6 +48,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/common/apis"
 	errors "github.com/erda-project/erda/pkg/common/errors"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -71,14 +70,6 @@ type RuntimeService struct {
 	pipelineSvc      pipelinepb.PipelineServiceServer
 }
 
-func (r *RuntimeService) StartRuntime(ctx context.Context, request *pb.StartRuntimeRequest) (*pb.StartRuntimeResponse, error) {
-	return nil, nil
-}
-
-func (r *RuntimeService) RestartRuntime(ctx context.Context, request *pb.RestartRuntimeRequest) (*pb.RestartRuntimeResponse, error) {
-	return nil, nil
-}
-
 func (r *RuntimeService) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
@@ -88,7 +79,7 @@ func (r *RuntimeService) RollBackRuntime(ctx context.Context, req *pb.RollBackRu
 	if operator == "" {
 		return nil, errors.NewUnauthorizedError("not Login")
 	}
-	if req.DeploymentID <= 0 {
+	if req.DeploymentId <= 0 {
 		return nil, errors.NewInvalidParameterError("deploymentID", "not found deploymentID")
 	}
 	v := req.RuntimeID
@@ -308,7 +299,7 @@ func (r *RuntimeService) RollBackRuntimeAction(ctx context.Context, req *pb.Roll
 	if operator == "" {
 		return nil, errors.NewUnauthorizedError("not Login")
 	}
-	if req.DeploymentID <= 0 {
+	if req.DeploymentId <= 0 {
 		return nil, errors.NewInvalidParameterError("deploymentID", "not found deploymentID")
 	}
 	v := req.RuntimeID
@@ -328,112 +319,9 @@ func (r *RuntimeService) RollBackRuntimeAction(ctx context.Context, req *pb.Roll
 	}, nil
 }
 
-func (r *RuntimeService) EpBulkGetRuntimeStatusDetail(ctx context.Context, req *pb.EpBulkGetRuntimeStatusDetailRequest) (*pb.EpBulkGetRuntimeStatusDetailResponse, error) {
-	rs_ := req.RuntimeIDs
-	rs := strings.Split(rs_, ",")
-	var runtimeIds []uint64
-	for _, r := range rs {
-		runtimeId, err := strconv.ParseUint(r, 10, 64)
-		if err != nil {
-			return nil, errors.NewInvalidParameterError("runtimeid", fmt.Sprintf("failed to bulk get runtime StatusDetail, invalid runtimeIds: %s", rs_))
-		}
-		runtimeIds = append(runtimeIds, runtimeId)
-	}
-	runtimes, err := r.db.FindRuntimesByIds(runtimeIds)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	userId := apis.GetUserID(ctx)
-	if userId == "" {
-		return nil, errors.NewUnauthorizedError("not Login")
-	}
-	data := make(map[uint64]interface{})
-	for _, rt := range runtimes {
-		vars := map[string]string{
-			"namespace": rt.ScheduleName.Namespace,
-			"name":      rt.ScheduleName.Name,
-		}
-		if status, err := r.scheduler.EpGetRuntimeStatus(context.Background(), vars); err != nil {
-			return nil, errors.NewInternalServerError(err)
-		} else {
-			data[rt.ID] = status
-		}
-	}
-	resp := &pb.EpBulkGetRuntimeStatusDetailResponse{}
-	dataBytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	if err := json.Unmarshal(dataBytes, &resp.Data); err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	return resp, nil
-}
-
 func (r *RuntimeService) FullGC(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
 	go r.FullGCService()
 	return nil, nil
-}
-
-func (r *RuntimeService) ReferCluster(ctx context.Context, req *pb.ReferClusterRequest) (*pb.ReferClusterResponse, error) {
-	identity := apis.GetIdentityInfo(ctx)
-	if identity == nil {
-		return nil, errors.NewUnauthorizedError("not Login")
-	}
-
-	v := apis.GetOrgID(ctx)
-	orgID, err := strconv.ParseUint(v, 10, 64)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("orgId", v)
-	}
-
-	clusterName := req.Cluster
-	referred := r.ReferClusterService(clusterName, orgID)
-
-	return &pb.ReferClusterResponse{Data: referred}, nil
-}
-
-func (r *RuntimeService) RuntimeLogs(ctx context.Context, req *pb.RuntimeLogsRequest) (*pb.DashboardSpotLogData, error) {
-	v := apis.GetOrgID(ctx)
-	orgID, err := strconv.ParseUint(v, 10, 64)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("orgId", v)
-	}
-
-	userID := apis.GetUserID(ctx)
-	if userID == "" {
-		return nil, errors.NewUnauthorizedError("not Login")
-	}
-
-	source := req.Source
-	id := req.Id
-	if source == "" {
-		return nil, errors.NewMissingParameterError("source")
-	}
-	if id == "" {
-		return nil, errors.NewMissingParameterError("id")
-	}
-	deploymentID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("deploymentID", id)
-	}
-
-	var paramValues url.Values
-	cputil.MustObjJSONTransfer(req, &paramValues)
-	result, err := r.RuntimeDeployLogs(user.ID(userID), orgID, apis.GetOrg(ctx), deploymentID, paramValues)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("deploymentID", id)
-	}
-
-	var resp *pb.DashboardSpotLogData
-	dataBytes, err := json.Marshal(result)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	if err := json.Unmarshal(dataBytes, &resp); err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	return resp, nil
 }
 
 func (r *RuntimeService) ListRuntimesGroupByApps(ctx context.Context, req *pb.ListRuntimeByAppsRequest) (*pb.ListRuntimeByAppsResponse, error) {
@@ -450,7 +338,7 @@ func (r *RuntimeService) ListRuntimesGroupByApps(ctx context.Context, req *pb.Li
 		}
 		appIDs = append(appIDs, id)
 	}
-	envParam := req.WorkSpace
+	envParam := req.Workspace
 
 	if len(envParam) == 0 {
 		env = ""
@@ -462,24 +350,23 @@ func (r *RuntimeService) ListRuntimesGroupByApps(ctx context.Context, req *pb.Li
 		return nil, errors.NewInternalServerError(err)
 	}
 
-	resp := &pb.ListRuntimeByAppsResponse{}
+	resp := &pb.ListRuntimeByAppsResponse{
+		Data: make(map[uint64]*structpb.Value),
+	}
 	for i, runtimeList := range runtimes {
-		data := make([]*pb.RuntimeSummary, len(runtimes[i]))
-		for _, runtime := range runtimeList {
-			v := &pb.RuntimeSummary{}
-			runtimeBytes, err := json.Marshal(runtime)
-			if err != nil {
-				return nil, errors.NewInternalServerError(err)
-			}
-			if err := json.Unmarshal(runtimeBytes, v); err != nil {
-				return nil, errors.NewInternalServerError(err)
-			}
-			data = append(data, v)
+
+		runtimeListBytes, err := json.Marshal(runtimeList)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
 		}
-		listRuntimeSummary := &pb.ListRuntimeSummary{
-			Data: data,
+
+		var structValue structpb.Value
+
+		if err := json.Unmarshal(runtimeListBytes, &structValue); err != nil {
+			return nil, errors.NewInternalServerError(err)
 		}
-		resp.Data[i] = listRuntimeSummary
+
+		resp.Data[i] = &structValue
 	}
 
 	return resp, nil
@@ -569,6 +456,27 @@ func (r *RuntimeService) ListMyRuntimes(ctx context.Context, req *pb.ListMyRunti
 	return resp, nil
 }
 
+func (r *RuntimeService) CheckCountPRByWorkspacePerm(userID string, applicationId uint64, resources []string) error {
+	scope := perm.ScopeApp
+	for _, resource := range resources {
+		// 鉴权
+		resp, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   userID,
+			Scope:    perm.ScopeApp,
+			ScopeID:  applicationId,
+			Resource: resource,
+			Action:   perm.ActionGet,
+		})
+		if err != nil {
+			return errors.NewServiceInvokingError("CheckPermission", err)
+		}
+		if !resp.Access {
+			return errors.NewPermissionError(fmt.Sprintf("user/%s/%s/%s/resource/%s", userID, scope, applicationId, resource), perm.ActionGet, "")
+		}
+	}
+	return nil
+}
+
 func (r *RuntimeService) CountPRByWorkspace(ctx context.Context, req *pb.CountPRByWorkspaceRequest) (*pb.CountPRByWorkspaceResponse, error) {
 	var (
 		l          = logrus.WithField("func", "*Endpoints.CountPRByWorkspace")
@@ -582,12 +490,15 @@ func (r *RuntimeService) CountPRByWorkspace(ctx context.Context, req *pb.CountPR
 	}
 
 	v := apis.GetOrgID(ctx)
+	if v == "" {
+		return nil, errors.NewInvalidParameterError("orgId", "invalid orgId")
+	}
 	orgId, err := strconv.ParseUint(v, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
-	projectIDStr := req.ProjectID
+	projectIDStr := req.ProjectId
 	if projectIDStr == "" {
 		return nil, errors.NewMissingParameterError("projectID")
 	}
@@ -605,6 +516,11 @@ func (r *RuntimeService) CountPRByWorkspace(ctx context.Context, req *pb.CountPR
 			return nil, errors.NewInvalidParameterError("appID", appIDStr)
 		}
 		if len(envParam) == 0 || envParam[0] == "" {
+			// 鉴权
+			if err := r.CheckCountPRByWorkspacePerm(userId, appId, []string{"runtime-staging", "runtime-dev", "runtime-prod", "runtime-test"}); err != nil {
+				return nil, err
+			}
+
 			for i := 0; i < len(defaultEnv); i++ {
 				cnt, err := r.CountARByWorkspace(appId, defaultEnv[i])
 				if err != nil {
@@ -613,6 +529,10 @@ func (r *RuntimeService) CountPRByWorkspace(ctx context.Context, req *pb.CountPR
 				resp[defaultEnv[i]] = cnt
 			}
 		} else {
+			// 鉴权
+			if err := r.CheckCountPRByWorkspacePerm(userId, appId, []string{GetRuntimeResource(envParam[0])}); err != nil {
+				return nil, err
+			}
 			env := envParam[0]
 			cnt, err := r.CountARByWorkspace(appId, env)
 			if err != nil {
@@ -634,6 +554,10 @@ func (r *RuntimeService) CountPRByWorkspace(ctx context.Context, req *pb.CountPR
 		if len(envParam) == 0 || envParam[0] == "" {
 			for i := 0; i < len(defaultEnv); i++ {
 				for aid := range appIdMap {
+					// 鉴权
+					if err := r.CheckCountPRByWorkspacePerm(userId, aid, []string{GetRuntimeResource(defaultEnv[i])}); err != nil {
+						return nil, err
+					}
 					cnt, err := r.CountARByWorkspace(aid, defaultEnv[i])
 					if err != nil {
 						l.WithError(err).Warnf("count runtimes of app %s failed", defaultEnv[i])
@@ -644,6 +568,10 @@ func (r *RuntimeService) CountPRByWorkspace(ctx context.Context, req *pb.CountPR
 		} else {
 			env := envParam[0]
 			for aid := range appIdMap {
+				// 鉴权
+				if err := r.CheckCountPRByWorkspacePerm(userId, aid, []string{GetRuntimeResource(env)}); err != nil {
+					return nil, err
+				}
 				cnt, err := r.CountARByWorkspace(aid, env)
 				if err != nil {
 					l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
@@ -767,11 +695,6 @@ func (r *RuntimeService) Delete(operator user.ID, orgID uint64, runtimeID uint64
 		return nil, err
 	}
 
-	err = r.CheckRuntimeScopePermission(operator, runtime, apistructs.DeleteAction)
-	if err != nil {
-		return nil, err
-	}
-
 	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		// already marked
 		return convertRuntimeToPB(runtime, app), nil
@@ -861,26 +784,6 @@ func (r *RuntimeService) getUserAndOrgID(ctx context.Context) (userID user.ID, o
 	return
 }
 
-func (r *RuntimeService) CheckRuntimeScopePermission(userID user.ID, runtime *dbclient.Runtime, action string) error {
-	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   userID.String(),
-		Scope:    apistructs.AppScope,
-		ScopeID:  runtime.ApplicationID,
-		Resource: "runtime-" + strutil.ToLower(runtime.Workspace),
-		Action:   action,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	if !perm.Access {
-		return errors.NewUnauthorizedError("")
-	}
-
-	return nil
-}
-
 func (r *RuntimeService) getRuntimeByRequest(request *pb.GetRuntimeRequest) (*dbclient.Runtime, error) {
 	runtime, err := r.findByIDOrName(request.NameOrID, request.AppID, request.Workspace)
 
@@ -912,7 +815,6 @@ func (r *RuntimeService) getDeployment(runtimeID uint64) (*dbclient.Deployment, 
 func (r *RuntimeService) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest) (*pb.RuntimeInspect, error) {
 	var (
 		err        error
-		userID     user.ID
 		runtime    *dbclient.Runtime
 		deployment *dbclient.Deployment
 		domainMap  map[string][]string
@@ -928,10 +830,6 @@ func (r *RuntimeService) GetRuntime(ctx context.Context, request *pb.GetRuntimeR
 		LastMessage: make(map[string]*pb.StatusMap),
 	}
 
-	if userID, _, err = r.getUserAndOrgID(ctx); err != nil {
-		return nil, err
-	}
-
 	if runtime, err = r.getRuntimeByRequest(request); err != nil {
 		return nil, err
 	}
@@ -944,9 +842,6 @@ func (r *RuntimeService) GetRuntime(ctx context.Context, request *pb.GetRuntimeR
 	vpaRules, err := r.db.GetRuntimeVPARulesByRuntimeId(runtime.ID)
 	if err != nil {
 		logrus.Warnf("[GetRuntime] get vpa rules for runtimeId %d failed.", runtime.ID)
-	}
-	if err = r.CheckRuntimeScopePermission(userID, runtime, apistructs.GetAction); err != nil {
-		return nil, err
 	}
 
 	if deployment, err = r.getDeployment(runtime.ID); err != nil {
@@ -1318,8 +1213,6 @@ func WithPipelineSvc(pipelineSvc pipelinepb.PipelineServiceServer) ServiceOption
 		return service
 	}
 }
-
-var server pb.RuntimeServiceServer = &RuntimeService{}
 
 func NewRuntimeService(options ...ServiceOption) *RuntimeService {
 	s := &RuntimeService{}

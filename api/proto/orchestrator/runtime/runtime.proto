@@ -271,27 +271,6 @@ message RuntimeDeploy {
   repeated string servicesNames = 10; 
 }
 
-message ReferClusterRequest {
-  string cluster = 1;
-}
-
-message ReferClusterResponse {
-  bool data = 1;
-}
-
-message RuntimeLogsRequest {
-  string source = 1;
-  string id = 2;
-  string stream = 3;
-  int64 count = 4;
-  int64 start = 5;
-  int64 end = 6;
-  bool debug = 7;
-  string clusterName = 8;
-  string pipelineID = 9;
-  string applicationId = 10;
-}
-
 message DashboardSpotLogLine {
   string id = 1;
   string source = 2;
@@ -301,11 +280,6 @@ message DashboardSpotLogLine {
   int64 offset = 6;
   string level = 7;
   string requestId = 8;
-}
-
-message DashboardSpotLogData {
-  repeated DashboardSpotLogLine lines = 1;
-  bool isFallback = 2;
 }
 
 message ListRuntimeByAppsRequest {
@@ -345,42 +319,16 @@ message BatchRuntimeServiceResponse {
   map<uint64, RuntimeSummary> data = 1;
 }
 
-service RuntimeService {
+service RuntimePrimaryService {
   rpc GetRuntime (GetRuntimeRequest) returns (RuntimeInspect) {
     option (google.api.http) = {
       get: "/api/runtimes/{nameOrID}?applicationId={appID}&workspace={workspace}",
     };
   }
 
-  rpc CheckRuntimeExist (CheckRuntimeExistReq) returns (CheckRuntimeExistResp) {}
-
   rpc DelRuntime (DelRuntimeRequest) returns (Runtime) {
     option (google.api.http) = {
       delete: "/api/runtimes/{id}",
-    };
-  }
-
-  rpc CreateRuntime(RuntimeCreateRequest) returns (DeploymentCreateResponse) {
-    option (google.api.http) = {
-      post: "/api/runtimes",
-    };
-  }
-
-  rpc CreateRuntimeByReleaseAction(RuntimeReleaseCreateRequest) returns (DeploymentCreateResponse) {
-    option (google.api.http) = {
-      post: "/api/runtimes/actions/deploy-release-action",
-    };
-  }
-
-  rpc CreateRuntimeByRelease(RuntimeReleaseCreateRequest) returns (DeploymentCreateResponse) {
-    option (google.api.http) = {
-      post: "/api/runtimes/actions/deploy-release",
-    };
-  }
-
-  rpc ListRuntimes(ListRuntimesRequest) returns(ListRuntimeResponse) {
-    option (google.api.http) = {
-      get: "/api/runtimes?applicationId={applicationID}&workspace={workSpace}&name={name}",
     };
   }
 
@@ -414,21 +362,13 @@ service RuntimeService {
     };
   }
 
-  rpc FullGC(google.protobuf.Empty) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      post: "/api/runtimes/actions/full-gc"
-    };
-  }
 
-  rpc ReferCluster(ReferClusterRequest) returns (ReferClusterResponse) {
-    option (google.api.http) = {
-      get: "/api/runtimes/actions/refer-cluster"
-    };
-  }
+}
 
-  rpc RuntimeLogs(RuntimeLogsRequest) returns (DashboardSpotLogData) {
+service RuntimeSecondaryService {
+  rpc ListMyRuntimes(ListMyRuntimesRequest) returns (ListMyRuntimesResponse) {
     option (google.api.http) = {
-      get: "/api/runtimes/deploy/logs"
+      get: "/api/runtimes/actions/list-my-runtimes"
     };
   }
 
@@ -437,10 +377,39 @@ service RuntimeService {
       get: "/api/runtimes/actions/group-by-apps?applicationID={applicationID}&workSpace={workspace}"
     };
   }
+}
 
-  rpc ListMyRuntimes(ListMyRuntimesRequest) returns (ListMyRuntimesResponse) {
+service RuntimeTertiaryService {
+
+  rpc CheckRuntimeExist (CheckRuntimeExistReq) returns (CheckRuntimeExistResp) {}
+
+  rpc CreateRuntime(RuntimeCreateRequest) returns (DeploymentCreateResponse) {
     option (google.api.http) = {
-      get: "/api/runtimes/actions/list-my-runtimes"
+      post: "/api/runtimes",
+    };
+  }
+
+  rpc CreateRuntimeByReleaseAction(RuntimeReleaseCreateRequest) returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/deploy-release-action",
+    };
+  }
+
+  rpc CreateRuntimeByRelease(RuntimeReleaseCreateRequest) returns (DeploymentCreateResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/deploy-release",
+    };
+  }
+
+  rpc ListRuntimes(ListRuntimesRequest) returns(ListRuntimeResponse) {
+    option (google.api.http) = {
+      get: "/api/runtimes?applicationId={applicationID}&workspace={workSpace}&name={name}",
+    };
+  }
+
+  rpc FullGC(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/full-gc"
     };
   }
 
