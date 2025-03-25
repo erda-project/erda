@@ -107,27 +107,6 @@ func (r *RuntimeService) Create(operator user.ID, req *apistructs.RuntimeCreateR
 	//	return nil, apierrors.ErrCreateRuntime.InvalidParameter("Non-business applications cannot be published.")
 	//}
 
-	resource := apistructs.NormalBranchResource
-	rules, err := r.bundle.GetProjectBranchRules(app.ProjectID)
-	if err != nil {
-		return nil, apierrors.ErrCreateRuntime.InternalError(err)
-	}
-	if diceworkspace.GetValidBranchByGitReference(req.Name, rules).IsProtect {
-		resource = apistructs.ProtectedBranchResource
-	}
-	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   operator.String(),
-		Scope:    apistructs.AppScope,
-		ScopeID:  app.ID,
-		Resource: resource,
-		Action:   apistructs.OperateAction,
-	})
-	if err != nil {
-		return nil, apierrors.ErrCreateRuntime.InternalError(err)
-	}
-	if !perm.Access {
-		return nil, apierrors.ErrCreateRuntime.AccessDenied()
-	}
 	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
 	resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: req.ClusterName})
 	if err != nil {
@@ -863,19 +842,7 @@ func (r *RuntimeService) Redeploy(operator user.ID, orgID uint64, runtimeID uint
 	if err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
 	}
-	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   operator.String(),
-		Scope:    apistructs.AppScope,
-		ScopeID:  app.ID,
-		Resource: "runtime-" + strutil.ToLower(runtime.Workspace),
-		Action:   apistructs.OperateAction,
-	})
-	if err != nil {
-		return nil, apierrors.ErrDeployRuntime.InternalError(err)
-	}
-	if !perm.Access {
-		return nil, apierrors.ErrDeployRuntime.AccessDenied()
-	}
+
 	deployment, err := r.db.FindLastSuccessDeployment(runtimeID)
 	if err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
@@ -1490,19 +1457,6 @@ func (r *RuntimeService) DeleteRuntime(operator user.ID, orgID uint64, runtimeID
 	app, err := r.bundle.GetApp(runtime.ApplicationID)
 	if err != nil {
 		return nil, err
-	}
-	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   operator.String(),
-		Scope:    apistructs.AppScope,
-		ScopeID:  app.ID,
-		Resource: "runtime-" + strutil.ToLower(runtime.Workspace),
-		Action:   apistructs.DeleteAction,
-	})
-	if err != nil {
-		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
-	}
-	if !perm.Access {
-		return nil, apierrors.ErrDeleteRuntime.AccessDenied()
 	}
 	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		// already marked

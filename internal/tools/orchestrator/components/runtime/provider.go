@@ -15,6 +15,7 @@
 package runtime
 
 import (
+	perm "github.com/erda-project/erda/pkg/common/permission"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -40,7 +41,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
 	"github.com/erda-project/erda/pkg/common/apis"
-	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -57,18 +57,18 @@ type provider struct {
 	DB                *gorm.DB                       `autowired:"mysql-client"`
 	EventManager      *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
 	ClusterSvc        clusterpb.ClusterServiceServer `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	runtimeService    pb.RuntimeServiceServer
+	RuntimeService    *RuntimeService
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
 	Org               org.ClientInterface
 	TenantSvc         tenantpb.TenantServiceServer     `autowired:"erda.msp.tenant.TenantService"`
-	Perm              perm.Interface                   `autowired:"permission"`
 	PipelineSvc       pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
 	audit             audit.Auditor
+	Bundle            *bundle.Bundle
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.audit = audit.GetAuditor(ctx)
-	bdl := bundle.New(
+	p.Bundle = bundle.New(
 		bundle.WithErdaServer(),
 		bundle.WithClusterManager(),
 		bundle.WithScheduler(),
@@ -94,16 +94,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	resource := resource.New(
 		resource.WithDBClient(dbClient),
-		resource.WithBundle(bdl),
+		resource.WithBundle(p.Bundle),
 	)
 
 	// init addon
 	a := addon.New(
 		addon.WithDBClient(dbClient),
-		addon.WithBundle(bdl),
+		addon.WithBundle(p.Bundle),
 		addon.WithResource(resource),
 		addon.WithEnvEncrypt(encrypt),
-		addon.WithKMSWrapper(mysql.NewKMSWrapper(bdl)),
+		addon.WithKMSWrapper(mysql.NewKMSWrapper(p.Bundle)),
 		addon.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*60),
 		)),
@@ -116,8 +116,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		addon.WithOrg(p.Org),
 	)
 
-	p.runtimeService = NewRuntimeService(
-		WithBundleService(bdl),
+	p.RuntimeService = NewRuntimeService(
+		WithBundleService(p.Bundle),
 		WithDBService(db),
 		WithEventManagerService(p.EventManager),
 		WithServiceGroupImpl(servicegroup.NewServiceGroupImplInit()),
@@ -131,19 +131,95 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 
 	if p.Register != nil {
-		type RuntimeService = pb.RuntimeServiceHandler
-		pb.RegisterRuntimeServiceImp(p.Register, p.runtimeService, apis.Options())
+		type RuntimeServiceHandle = *RuntimeService
+		pb.RegisterRuntimePrimaryServiceImp(p.Register, p.RuntimeService, apis.Options(), p.CheckRuntimeID(
+			p.Method(RuntimeServiceHandle.GetRuntime, perm.ScopeApp, "runtime-dev", perm.ActionGet, p.GetAppIDByRuntimeID("NameOrID")),
+			p.Method(RuntimeServiceHandle.DelRuntime, perm.ScopeApp, "runtime-dev", perm.ActionDelete, p.GetAppIDByRuntimeID("Id")),
+			p.Method(RuntimeServiceHandle.StopRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntimeAction, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+
+			p.Method(RuntimeServiceHandle.GetRuntime, perm.ScopeApp, "runtime-test", perm.ActionGet, p.GetAppIDByRuntimeID("NameOrID")),
+			p.Method(RuntimeServiceHandle.DelRuntime, perm.ScopeApp, "runtime-test", perm.ActionDelete, p.GetAppIDByRuntimeID("Id")),
+			p.Method(RuntimeServiceHandle.StopRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntimeAction, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+
+			p.Method(RuntimeServiceHandle.GetRuntime, perm.ScopeApp, "runtime-staging", perm.ActionGet, p.GetAppIDByRuntimeID("NameOrID")),
+			p.Method(RuntimeServiceHandle.DelRuntime, perm.ScopeApp, "runtime-staging", perm.ActionDelete, p.GetAppIDByRuntimeID("Id")),
+			p.Method(RuntimeServiceHandle.StopRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntimeAction, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+
+			p.Method(RuntimeServiceHandle.GetRuntime, perm.ScopeApp, "runtime-prod", perm.ActionGet, p.GetAppIDByRuntimeID("NameOrID")),
+			p.Method(RuntimeServiceHandle.DelRuntime, perm.ScopeApp, "runtime-prod", perm.ActionDelete, p.GetAppIDByRuntimeID("Id")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByRelease, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.GetAppIDByRuntimeID("ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.GetAppIDByRuntimeID("ApplicationId")),
+			p.Method(RuntimeServiceHandle.StopRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntimeAction, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+		))
+
+		pb.RegisterRuntimeSecondaryServiceImp(p.Register, p.RuntimeService, apis.Options(), p.CheckRuntimeIDs(
+			p.Method(RuntimeServiceHandle.ListMyRuntimes, perm.ScopeApp, "runtime-dev", perm.ActionGet, p.FieldValue("AppID")),
+			p.Method(RuntimeServiceHandle.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-dev", perm.ActionGet, p.FieldValue("ApplicationID"), func(permission *Permission) {
+				permission.skipPermInternalClient = true
+			}),
+
+			p.Method(RuntimeServiceHandle.ListMyRuntimes, perm.ScopeApp, "runtime-test", perm.ActionGet, p.FieldValue("AppID")),
+			p.Method(RuntimeServiceHandle.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-test", perm.ActionGet, p.FieldValue("ApplicationID"), func(permission *Permission) {
+				permission.skipPermInternalClient = true
+			}),
+
+			p.Method(RuntimeServiceHandle.ListMyRuntimes, perm.ScopeApp, "runtime-staging", perm.ActionGet, p.FieldValue("AppID")),
+			p.Method(RuntimeServiceHandle.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-staging", perm.ActionGet, p.FieldValue("ApplicationID"), func(permission *Permission) {
+				permission.skipPermInternalClient = true
+			}),
+
+			p.Method(RuntimeServiceHandle.ListMyRuntimes, perm.ScopeApp, "runtime-prod", perm.ActionGet, p.FieldValue("AppID")),
+			p.Method(RuntimeServiceHandle.ListRuntimesGroupByApps, perm.ScopeApp, "runtime-prod", perm.ActionGet, p.FieldValue("ApplicationID"), func(permission *Permission) {
+				permission.skipPermInternalClient = true
+			}),
+		))
+
+		pb.RegisterRuntimeTertiaryServiceImp(p.Register, p.RuntimeService, apis.Options(), p.Check(
+			p.Method(RuntimeServiceHandle.ListRuntimes, perm.ScopeApp, "runtime-dev", perm.ActionGet, p.FieldValue("ApplicationID")),
+			p.Method(RuntimeServiceHandle.CreateRuntime, perm.ScopeApp, "runtime-dev", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByRelease, perm.ScopeApp, "runtime-dev", perm.ActionCreate, p.FieldValue("ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-dev", perm.ActionCreate, p.FieldValue("ApplicationId")),
+
+			p.Method(RuntimeServiceHandle.ListRuntimes, perm.ScopeApp, "runtime-test", perm.ActionGet, p.FieldValue("ApplicationID")),
+			p.Method(RuntimeServiceHandle.CreateRuntime, perm.ScopeApp, "runtime-test", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByRelease, perm.ScopeApp, "runtime-test", perm.ActionCreate, p.FieldValue("ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-test", perm.ActionCreate, p.FieldValue("ApplicationId")),
+
+			p.Method(RuntimeServiceHandle.ListRuntimes, perm.ScopeApp, "runtime-staging", perm.ActionGet, p.FieldValue("ApplicationID")),
+			p.Method(RuntimeServiceHandle.CreateRuntime, perm.ScopeApp, "runtime-staging", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByRelease, perm.ScopeApp, "runtime-staging", perm.ActionCreate, p.FieldValue("ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-staging", perm.ActionCreate, p.FieldValue("ApplicationId")),
+
+			p.Method(RuntimeServiceHandle.ListRuntimes, perm.ScopeApp, "runtime-prod", perm.ActionGet, p.FieldValue("ApplicationID")),
+			p.Method(RuntimeServiceHandle.CreateRuntime, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.FieldValue("Extra.ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByRelease, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.FieldValue("ApplicationId")),
+			p.Method(RuntimeServiceHandle.CreateRuntimeByReleaseAction, perm.ScopeApp, "runtime-prod", perm.ActionCreate, p.FieldValue("ApplicationId")),
+
+			p.Method(RuntimeServiceHandle.BatchRuntimeService, perm.ScopeApp, "", perm.ActionGet, p.FieldValue(""), func(permission *Permission) {
+				permission.skipPermInternalClient = true
+			}),
+			p.Method(RuntimeServiceHandle.FullGC, perm.ScopeApp, "", perm.ActionGet, p.FieldValue(""), func(permission *Permission) {
+				permission.skipPermInternalClient = true
+			}),
+		))
 	}
 	return nil
-}
-
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	switch {
-	case ctx.Service() == "erda.orchestrator.runtime.RuntimeService" || ctx.Type() == pb.RuntimeServiceServerType() || ctx.Type() == pb.RuntimeServiceHandlerType():
-		return p.runtimeService
-	}
-
-	return p
 }
 
 func init() {
