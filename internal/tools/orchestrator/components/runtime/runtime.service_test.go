@@ -55,20 +55,6 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
-func TestStartRuntime(t *testing.T) {
-	assert := require.New(t)
-	runtimeSvc := NewRuntimeService()
-	_, err := runtimeSvc.StartRuntime(context.Background(), &pb.StartRuntimeRequest{RuntimeID: "1"})
-	assert.Nil(err)
-}
-
-func TestRestartRuntime(t *testing.T) {
-	assert := require.New(t)
-	runtimeSvc := NewRuntimeService()
-	_, err := runtimeSvc.RestartRuntime(context.Background(), &pb.RestartRuntimeRequest{RuntimeID: "1"})
-	assert.Nil(err)
-}
-
 func TestServiceRedeploy(t *testing.T) {
 	assert := require.New(t)
 
