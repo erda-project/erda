@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
@@ -43,7 +44,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/instance"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/migration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -58,7 +58,7 @@ type Endpoints struct {
 	bdl              *bundle.Bundle
 	pool             *goroutinepool.GoroutinePool
 	evMgr            *events.EventManager
-	runtime          *runtime.Runtime
+	runtime          *runtime.RuntimeService
 	deployment       *deployment.Deployment
 	deploymentOrder  *deployment_order.DeploymentOrder
 	domain           *domain.Domain
@@ -122,7 +122,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithRuntime 设置 runtime 对象.
-func WithRuntime(runtime *runtime.Runtime) Option {
+func WithRuntime(runtime *runtime.RuntimeService) Option {
 	return func(e *Endpoints) {
 		e.runtime = runtime
 	}
@@ -484,7 +484,7 @@ func (e *Endpoints) FullGCLoop(ctx context.Context) {
 		select {
 		case t := <-ticker.C:
 			logrus.Infof("start full GC at: %v", t)
-			e.runtime.FullGC()
+			e.runtime.FullGCService()
 			logrus.Infof("end full GC at: %v, started at: %v", time.Now(), t)
 		case <-ctx.Done():
 			return

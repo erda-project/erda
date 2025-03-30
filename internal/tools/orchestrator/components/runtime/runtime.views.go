@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
+	"math"
 	"net/url"
 	"runtime/debug"
 	"strconv"
@@ -81,6 +83,257 @@ type DeployContext struct {
 	// deployment order
 	DeploymentOrderId string
 	Param             string
+}
+
+func (r *RuntimeService) GetRuntimeServiceCurrentPods(runtimeID uint64, serviceName string) (*apistructs.ServiceGroup, error) {
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, err
+	}
+
+	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || serviceName == "" {
+		return nil, errors.New("empty namespace or name or serviceName")
+	}
+
+	return r.serviceGroupImpl.InspectRuntimeServicePods(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, serviceName, fmt.Sprintf("%d", runtimeID))
+}
+
+func (r *RuntimeService) deleteRuntimePA(uniqueID spec.RuntimeUniqueId, runtimeId uint64) error {
+	hpaRules, err := r.db.GetRuntimeHPAByServices(uniqueID, nil)
+	if err != nil {
+		return err
+	}
+	for _, rule := range hpaRules {
+		// only applied rules need to delete
+		if err = r.db.DeleteRuntimeHPAByRuleId(rule.ID); err != nil {
+			return errors.Errorf("delete runtime hpa rule by rule_id %s failed: %v", rule.ID, err)
+		}
+	}
+
+	vpaRules, err := r.db.GetRuntimeVPAByServices(uniqueID, nil)
+	if err != nil {
+		return err
+	}
+	for _, rule := range vpaRules {
+		// only applied rules need to delete
+		if err = r.db.DeleteRuntimeVPAByRuleId(rule.ID); err != nil {
+			return errors.Errorf("delete runtime hpa rule by rule_id %s failed: %v", rule.ID, err)
+		}
+	}
+
+	err = r.db.DeleteRuntimeVPARecommendationsByRuntimeId(runtimeId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Destroy 摧毁应用实例
+func (r *RuntimeService) Destroy(runtimeID uint64) error {
+	// 调用hepa完成runtime删除
+	logrus.Infof("delete runtime and request hepa, runtimeId is %d", runtimeID)
+	if err := r.bundle.DeleteRuntimeService(runtimeID); err != nil {
+		logrus.Errorf("failed to request hepa, (%v)", err)
+	}
+	logrus.Debugf("do delete runtime %d", runtimeID)
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return err
+	}
+	app, err := r.bundle.GetApp(runtime.ApplicationID)
+	if err != nil {
+		return err
+	}
+	if err := r.db.DeleteDomainsByRuntimeId(runtimeID); err != nil {
+		return err
+	}
+	if err := r.Addon.RuntimeAddonRemove(strconv.FormatUint(runtimeID, 10), runtime.Workspace, runtime.Creator, app.ProjectID); err != nil {
+		// TODO: need addon-platform to fix the 405 error
+		//return err
+		logrus.Infof("failed to delete addons when delete runtimes: %v", err)
+	}
+	// TODO: delete alert rules
+	uniqueID := spec.RuntimeUniqueId{
+		ApplicationId: runtime.ApplicationID,
+		Workspace:     runtime.Workspace,
+		Name:          runtime.Name,
+	}
+	if err := r.db.ResetPreDice(uniqueID); err != nil {
+		return err
+	}
+	// clear reference
+	r.MarkOutdatedForDelete(runtimeID)
+	if runtime.Source == apistructs.ABILITY {
+		// TODO: delete ability info
+	}
+	if runtime.ScheduleName.Name != "" {
+		// delete scheduler group
+		var req apistructs.ServiceGroupDeleteRequest
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+		resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: runtime.ClusterName})
+		if err != nil {
+			logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
+			return err
+		}
+		cInfo := resp.Data
+		if cInfo != nil && cInfo.OpsConfig != nil && cInfo.OpsConfig.Status == apistructs.ClusterStatusOffline {
+			req.Force = true
+		}
+		req.Namespace = runtime.ScheduleName.Namespace
+		req.Name = runtime.ScheduleName.Name
+		forceDelete := req.Force
+		delHPAObjects, delVPAObjects, err := r.AppliedScaledObjects(uniqueID)
+		if err != nil {
+			logrus.Warnf("[alert] failed delete group, error in get runtime hpa and vpa rules: %v, (%v)",
+				runtime.ScheduleName, err)
+		}
+		extra := make(map[string]string)
+		for svcName, ruleJson := range delHPAObjects {
+			extra[pstypes.ErdaHPAPrefix+svcName] = ruleJson
+		}
+		for svcName, ruleJson := range delVPAObjects {
+			extra[pstypes.ErdaVPAPrefix+svcName] = ruleJson
+		}
+		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete, extra); err != nil && err != servicegroup.DeleteNotFound {
+			// TODO: we should return err if delete failed (even if err is group not exist?)
+			logrus.Errorf("[alert] failed delete group in scheduler: %v, (%v)",
+				runtime.ScheduleName, err)
+			return err
+		}
+
+		// delete runtime hpa/vpa rule
+		if err := r.deleteRuntimePA(uniqueID, runtimeID); err != nil {
+			logrus.Errorf("[alert] failed delete group, error in delete runtime hpa rules: %v, (%v)",
+				runtime.ScheduleName, err)
+		}
+	}
+	// TODO: delete services & instances table
+
+	// do delete runtime table
+	if err := r.db.DeleteRuntime(runtimeID); err != nil {
+		return err
+	}
+	event := events.RuntimeEvent{
+		EventName: events.RuntimeDeleted,
+		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
+		// TODO: no activity yet, so operator useless currently
+		//Operator:  operator,
+	}
+	r.evMgr.EmitEvent(&event)
+	return nil
+}
+
+// MarkOutdatedForDelete 将删除的应用实例，他们的所有部署单，标记为废弃
+func (r *RuntimeService) MarkOutdatedForDelete(runtimeID uint64) {
+	deployments, err := r.db.FindNotOutdatedOlderThan(runtimeID, math.MaxUint32)
+	if err != nil {
+		logrus.Errorf("[alert] failed to query all not outdated deployment before delete runtime: %v, (%v)",
+			runtimeID, err)
+	}
+	for i := range deployments {
+		r.markOutdated(&deployments[i])
+	}
+}
+
+// GetSpec 查询应用实例规格
+func (r *RuntimeService) GetSpec(userID user.ID, orgID uint64, runtimeID uint64) (*apistructs.ServiceGroup, error) {
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InternalError(err)
+	}
+	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID.String(),
+		Scope:    apistructs.OrgScope,
+		ScopeID:  runtime.OrgID,
+		Resource: "runtime-config",
+		Action:   apistructs.GetAction,
+	})
+	if err != nil {
+		return nil, apierrors.ErrGetRuntime.InternalError(err)
+	}
+	if !perm.Access {
+		return nil, apierrors.ErrGetRuntime.AccessDenied()
+	}
+	return r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
+}
+
+// ReferCluster 查看 runtime & addon 是否有使用集群
+func (r *RuntimeService) ReferCluster(clusterName string, orgID uint64) bool {
+	runtimes, err := r.db.ListRuntimeByOrgCluster(clusterName, orgID)
+	if err != nil {
+		logrus.Warnf("failed to list runtime, %v", err)
+		return true
+	}
+	if len(runtimes) > 0 {
+		return true
+	}
+
+	routingInstances, err := r.db.ListRoutingInstanceByOrgCluster(clusterName, orgID)
+	if err != nil {
+		logrus.Warnf("failed to list addon, %v", err)
+		return true
+	}
+	if len(routingInstances) > 0 {
+		return true
+	}
+
+	return false
+}
+
+// OrgJobLogs 数据中心--->任务列表 日志接口
+func (r *RuntimeService) OrgJobLogs(ctx context.Context, userID user.ID, orgID uint64,
+	orgName string, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
+	if clusterName == "" {
+		logrus.Errorf("job instance infos without cluster, jobID is: %s", jobID)
+		return nil, apierrors.ErrOrgLog.AccessDenied()
+	}
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "cmp"}))
+	resp, err := r.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
+	if err != nil {
+		return nil, err
+	}
+	clusterInfo := resp.Data
+	if clusterInfo == nil {
+		logrus.Errorf("can not find cluster info, clusterName: %s", clusterName)
+		return nil, apierrors.ErrOrgLog.AccessDenied()
+	}
+	orgID = uint64(clusterInfo.OrgID)
+	if err := r.checkOrgScopePermission(userID, orgID); err != nil {
+		return nil, err
+	}
+	return r.requestMonitorLog(jobID, orgName, paramValues, apistructs.DashboardSpotLogSourceJob)
+}
+
+// checkOrgScopePermission 检测org级别的权限
+func (r *RuntimeService) checkOrgScopePermission(userID user.ID, orgID uint64) error {
+	perm, err := r.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID.String(),
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: "monitor_org_alert",
+		Action:   apistructs.GetAction,
+	})
+	if err != nil {
+		return err
+	}
+	if !perm.Access {
+		return apierrors.ErrGetRuntime.AccessDenied()
+	}
+
+	return nil
+}
+
+func (r *RuntimeService) KillPod(runtimeID uint64, podname string) error {
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return err
+	}
+
+	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || podname == "" {
+		return errors.New("empty namespace or name or podname")
+	}
+	return r.serviceGroupImpl.KillPod(context.Background(), runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, podname)
 }
 
 func (r *RuntimeService) Create(operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {

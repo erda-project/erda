@@ -29,6 +29,30 @@ type dbServiceImpl struct {
 	db *dbclient.DBClient
 }
 
+func (d *dbServiceImpl) DeleteRuntime(runtimeId uint64) error {
+	return d.db.DeleteRuntime(runtimeId)
+}
+
+func (d *dbServiceImpl) DeleteRuntimeHPAByRuleId(ruleId string) error {
+	return d.db.DeleteRuntimeHPAByRuleId(ruleId)
+}
+
+func (d *dbServiceImpl) DeleteRuntimeVPAByRuleId(ruleId string) error {
+	return d.db.DeleteRuntimeVPAByRuleId(ruleId)
+}
+
+func (d *dbServiceImpl) DeleteRuntimeVPARecommendationsByRuntimeId(runtimeId uint64) error {
+	return d.db.DeleteRuntimeVPARecommendationsByRuntimeId(runtimeId)
+}
+
+func (d *dbServiceImpl) DeleteDomainsByRuntimeId(runtimeId uint64) error {
+	return d.db.DeleteDomainsByRuntimeId(runtimeId)
+}
+
+func (d *dbServiceImpl) ResetPreDice(uniqueId spec.RuntimeUniqueId) error {
+	return d.db.ResetPreDice(uniqueId)
+}
+
 func (d *dbServiceImpl) GetRuntimeByProjectIDs(projectIDs []uint64) (*[]dbclient.Runtime, error) {
 	return d.db.GetRuntimeByProjectIDs(projectIDs)
 }

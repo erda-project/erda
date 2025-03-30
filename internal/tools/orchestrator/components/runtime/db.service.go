@@ -60,4 +60,10 @@ type DBService interface {
 	GetAddonNodesByInstanceIDs(instanceIDs []string) (*[]dbclient.AddonNode, error)
 	GetRuntimeHPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeHPA, error)
 	GetRuntimeVPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error)
+	DeleteRuntimeHPAByRuleId(ruleId string) error
+	DeleteRuntimeVPAByRuleId(ruleId string) error
+	DeleteRuntimeVPARecommendationsByRuntimeId(runtimeId uint64) error
+	DeleteDomainsByRuntimeId(runtimeId uint64) error
+	ResetPreDice(uniqueId spec.RuntimeUniqueId) error
+	DeleteRuntime(runtimeId uint64) error
 }

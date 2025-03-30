@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/internal/core/org"
 	orgCache "github.com/erda-project/erda/internal/tools/orchestrator/cache/org"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/addon/mysql"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	ecpednpoints "github.com/erda-project/erda/internal/tools/orchestrator/ecp/endpoints"
@@ -44,7 +45,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/instance"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/migration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/goroutinepool"
@@ -183,14 +183,14 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 	)
 
 	// init runtime service
-	rt := runtime.New(
-		runtime.WithDBClient(db),
-		runtime.WithEventManager(p.EventManager),
-		runtime.WithBundle(bdl),
+	rt := runtime.NewRuntimeService(
+		runtime.WithDBService(db),
+		runtime.WithEventManagerService(p.EventManager),
+		runtime.WithBundleService(bdl),
 		runtime.WithAddon(a),
 		runtime.WithReleaseSvc(p.DicehubReleaseSvc),
-		runtime.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
-		runtime.WithClusterInfo(scheduler.Httpendpoints.ClusterinfoImpl),
+		runtime.WithServiceGroupImpl(scheduler.Httpendpoints.ServiceGroupImpl),
+		runtime.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 		runtime.WithClusterSvc(p.ClusterSvc),
 		runtime.WithOrg(p.Org),
 		runtime.WithPipelineSvc(p.PipelineSvc),

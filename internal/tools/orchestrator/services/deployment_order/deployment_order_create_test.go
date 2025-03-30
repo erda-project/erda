@@ -29,8 +29,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	dicehubRelease "github.com/erda-project/erda/internal/apps/dop/dicehub/release"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -190,7 +190,7 @@ func TestParseAppsInfoWithRelease(t *testing.T) {
 func TestContinueDeployOrder(t *testing.T) {
 	order := New()
 	bdl := bundle.New()
-	rt := runtime.New()
+	rt := runtime.NewRuntimeService()
 	releaseSvc := &dicehubRelease.ReleaseService{}
 	order.releaseSvc = releaseSvc
 
@@ -233,7 +233,7 @@ func TestContinueDeployOrder(t *testing.T) {
 			return &apistructs.ProjectDTO{ClusterConfig: map[string]string{"PROD": "fake-cluster"}}, nil
 		},
 	)
-	monkey.PatchInstanceMethod(reflect.TypeOf(rt), "Create", func(*runtime.Runtime, user.ID, *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(rt), "Create", func(*runtime.RuntimeService, user.ID, *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
 		return &apistructs.DeploymentCreateResponseDTO{}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppIDByNames", func(*bundle.Bundle, uint64, string, []string) (*apistructs.GetAppIDByNamesResponseData, error) {

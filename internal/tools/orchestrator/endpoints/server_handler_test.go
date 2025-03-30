@@ -28,8 +28,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -270,7 +270,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 
 	s := &Endpoints{
 		db:      &dbclient.DBClient{},
-		runtime: &runtime.Runtime{},
+		runtime: &runtime.RuntimeService{},
 	}
 
 	userID := user.ID("2")
@@ -531,7 +531,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		}
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "RedeployPipeline", func(rt *runtime.Runtime, ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "RedeployPipeline", func(rt *runtime.RuntimeService, ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
 		if runtimeID == 128 {
 			ret := &apistructs.RuntimeDeployDTO{
 				PipelineID:      10000260,
@@ -683,7 +683,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 
 	s := &Endpoints{
 		db:      &dbclient.DBClient{},
-		runtime: &runtime.Runtime{},
+		runtime: &runtime.RuntimeService{},
 	}
 
 	userID := user.ID("2")
@@ -793,7 +793,7 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		Runtimes: []apistructs.RuntimeScaleRecord{rsr1, rsr2},
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "Delete", func(rt *runtime.Runtime, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "Delete", func(rt *runtime.RuntimeService, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
 		if runtimeID == 128 {
 			ret := &apistructs.RuntimeDTO{
 				ID:              128,
