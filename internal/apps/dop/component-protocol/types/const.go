@@ -33,4 +33,5 @@ const (
 	GuideService           = "guide"
 	OrgService             = "org"
 	IdentitiyService       = "identity"
+	RuntimeService         = "runtime"
 )

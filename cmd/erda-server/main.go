@@ -95,6 +95,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/project/client"
 	_ "github.com/erda-project/erda-proto-go/oap/entity/client"
 	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
+	_ "github.com/erda-project/erda-proto-go/orchestrator/runtime/client"
 
 	// openapi
 	_ "github.com/erda-project/erda/internal/core/openapi/legacy"

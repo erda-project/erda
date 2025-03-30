@@ -15,6 +15,7 @@
 package page
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -25,29 +26,34 @@ import (
 
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	runtimepb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/app-runtime/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type List struct {
 	base.DefaultProvider
 	impl.DefaultList
-	PageNo   uint64
-	PageSize uint64
-	Total    uint64
-	State    cptype.ExtraMap
-	Bdl      *bundle.Bundle
-	Sdk      *cptype.SDK
+	PageNo     uint64
+	PageSize   uint64
+	Total      uint64
+	State      cptype.ExtraMap
+	Bdl        *bundle.Bundle
+	runtimeSvc runtimepb.RuntimeSecondaryServiceServer
+	Sdk        *cptype.SDK
 }
 
 func (p *List) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
@@ -153,6 +159,7 @@ func (p *List) BeforeHandleOp(sdk *cptype.SDK) {
 	p.Bdl = p.Sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.PageNo = 1
 	p.PageSize = 10
+	p.runtimeSvc = p.Sdk.Ctx.Value(types.RuntimeService).(runtimepb.RuntimeSecondaryServiceServer)
 }
 
 func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
@@ -268,7 +275,7 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("parse oid failed,%v", err)
 			return data
 		}
-		appIds := make([]uint64, 0)
+		appIds := make([]string, 0)
 
 		appIdStr, ok := p.Sdk.InParams["appId"].(string)
 		if !ok {
@@ -280,7 +287,7 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("failed to parse appid")
 			return data
 		}
-		appIds = append(appIds, appId)
+		appIds = append(appIds, appIdStr)
 		if err != nil {
 			logrus.Errorf("get my app failed,%v", err)
 			return data
@@ -300,8 +307,12 @@ func (p *List) getData() *list.Data {
 		}
 
 		logrus.Infof("start load runtimes by app %v", time.Now())
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true", httputil.UserHeader: p.Sdk.Identity.UserID}))
+		runtimesByApp, err := p.runtimeSvc.ListRuntimesGroupByApps(ctx, &runtimepb.ListRuntimeByAppsRequest{
+			ApplicationID: appIds,
+			Workspace:     []string{getEnv},
+		})
 
-		runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds, getEnv)
 		if err != nil {
 			logrus.Errorf("get my app failed,%v", err)
 			return data
@@ -309,8 +320,15 @@ func (p *List) getData() *list.Data {
 		logrus.Infof("finish load runtimes by app %v", time.Now())
 
 		runtimeIdToAppNameMap = make(map[uint64]string)
-		for _, v := range runtimesByApp {
-			for _, appRuntime := range v {
+		for _, v := range runtimesByApp.Data {
+			vBytes, err := json.Marshal(v)
+			if err != nil {
+				logrus.Errorf("marshal runtime failed,%v", err)
+				return data
+			}
+			var summary []*bundle.GetApplicationRuntimesDataEle
+			err = json.Unmarshal(vBytes, &summary)
+			for _, appRuntime := range summary {
 				if getEnv == appRuntime.Extra.Workspace {
 					runtimes = append(runtimes, *appRuntime)
 					runtimeIdToAppNameMap[appRuntime.ID] = appIdToName[appRuntime.ApplicationID]

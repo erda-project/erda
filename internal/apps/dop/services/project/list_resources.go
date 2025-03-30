@@ -23,11 +23,16 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	cmpPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.ApplicationsResourcesRequest) (
@@ -113,13 +118,23 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		return &data, nil
 	}
 
+	appidsStr := []string{}
+	for _, appid := range applicationsIDs {
+		appidsStr = append(appidsStr, strconv.FormatUint(appid, 10))
+	}
+
 	// query runtimes list from orchestrator
-	runtimesM, err := p.bdl.ListRuntimesGroupByApps(orgID, req.UserID, applicationsIDs, "")
+	runtimesM, err := p.runtimeSvc.ListRuntimesGroupByApps(transport.WithHeader(
+		context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true", httputil.UserHeader: req.UserID})),
+		&runtimePb.ListRuntimeByAppsRequest{
+			ApplicationID: appidsStr,
+			Workspace:     []string{},
+		})
 	if err != nil {
 		l.WithError(err).Errorln("failed to ListRuntimesGroupByApps")
 		return nil, apierrors.ErrApplicationsResources.InternalError(err)
 	}
-	if len(runtimesM) == 0 {
+	if len(runtimesM.Data) == 0 {
 		l.Warnln("runtime record not found")
 	}
 	runtimeMContent, _ := json.Marshal(runtimesM)
@@ -130,16 +145,28 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		// {applicationID: {workspace: []serviceGroupID}}
 		applicationWorkspaceServiceGroups = make(map[uint64]map[string][]string)
 	)
-	for applicationID, runtimes := range runtimesM {
+	for applicationID, runtimes := range runtimesM.Data {
+		vBytes, err := json.Marshal(runtimes)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return nil, apierrors.ErrApplicationsResources.InternalError(err)
+		}
+		var summary []*bundle.GetApplicationRuntimesDataEle
+		err = json.Unmarshal(vBytes, &summary)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return nil, apierrors.ErrApplicationsResources.InternalError(err)
+		}
+
 		l := l.WithField("applicationID", applicationID)
 		workspaceServiceGroups, ok := applicationWorkspaceServiceGroups[applicationID]
 		if !ok {
 			workspaceServiceGroups = make(map[string][]string)
 		}
-		if len(runtimes) == 0 {
+		if len(summary) == 0 {
 			l.Warnln("len(runtimes) == 0")
 		}
-		for _, runtime := range runtimes {
+		for _, runtime := range summary {
 			if runtime.Extra == nil {
 				runtimeContent, _ := json.Marshal(runtime)
 				l.WithField("runtime", string(runtimeContent)).Warnln("runtime.Extra == nil")
