@@ -1259,6 +1259,7 @@ github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e h1:04gD21EY
 github.com/erda-project/pyroscope v0.0.0-20240606092854-2db59554165e/go.mod h1:oKtFRQJCxy228zqyG5fwPGzo3Fbbj0g+3PVT0C4JJqo=
 github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1 h1:CLdzGplB9VRtYXFleMrPka71u4xjMw8Ayd+8WTwZjDI=
 github.com/erda-project/remotedialer v0.2.6-0.20240718060406-84946a1d17b1/go.mod h1:dbzn9NF1JWbGEHL6Q/1KG4KFROILiY/j6wmfF1Np3fk=
+github.com/erda-project/remotedialer v0.2.6-0.20250107054043-004305a8e459/go.mod h1:GZY/PguKGR5i9vKB0VOzzm6hJqB5CHG20kmb/T5quiw=
 github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23 h1:A2cod4X3yK1YIBbTIf7q1b8+/S6iLwyNVtQ/SOYflQo=
 github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23/go.mod h1:NOglgj931lh7myfNFa00hb3UIiRlxhbMjCv/Ek5RJA8=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 h1:Yzb9+7DPaBjB8zlTR87/ElzFsnQfuHnVUVqpZZIcV5Y=
