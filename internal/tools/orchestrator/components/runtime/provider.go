@@ -16,8 +16,6 @@ package runtime
 
 import (
 	"context"
-	"github.com/erda-project/erda/apistructs"
-	perm "github.com/erda-project/erda/pkg/common/permission"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -30,6 +28,7 @@ import (
 	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/core/org"
 	"github.com/erda-project/erda/internal/pkg/audit"
@@ -43,6 +42,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
 	"github.com/erda-project/erda/pkg/common/apis"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
