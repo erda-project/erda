@@ -483,6 +483,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
+require github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
+
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.4
