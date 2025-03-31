@@ -30,6 +30,12 @@ type (
 		Host     string `json:"host,omitempty"`
 		Location string `json:"location,omitempty"`
 		Region   string `json:"region,omitempty"`
+
+		RewritePath string `json:"rewritePath,omitempty"`
+
+		// for display.
+		// xxx-hosted-ollama: provider_type=Ollama, display_provider_type=xxx
+		DisplayProviderType string `json:"displayProviderType,omitempty"`
 	}
 	ModelProviderMetaSecret struct {
 		AnotherAPIKey string `json:"anotherApiKey,omitempty"`

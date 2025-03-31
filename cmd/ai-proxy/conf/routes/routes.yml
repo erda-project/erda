@@ -25,7 +25,11 @@ routes:
             - DefaultQueries("api-version=2023-07-01-preview")
             - RewriteScheme
             - RewriteHost
+            # here is azure openai format
+            # for azure ai services, using provider-level rewritePath config.
+            # See: https://learn.microsoft.com/zh-cn/azure/ai-foundry/model-inference/concepts/endpoints?tabs=rest#routing
             - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/chat/completions")
+            - RewriteBodyModelName
             - AddContextMessages
       - name: openai-director
         config:

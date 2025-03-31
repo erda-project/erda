@@ -42,6 +42,14 @@ const (
 	DiceWorkSpace             = "DICE_WORKSPACE"
 )
 
+type ResourceUnitType string
+
+const (
+	CPUUnitMilli  ResourceUnitType = "m"
+	MemUnitMi     ResourceUnitType = "Mi"
+	StorageUnitMi ResourceUnitType = "Gi"
+)
+
 var EnvReg = regexp.MustCompile(`\$\{([^}]+?)\}`)
 
 type StatefulsetInfo struct {

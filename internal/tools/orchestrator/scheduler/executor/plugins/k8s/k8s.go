@@ -17,28 +17,13 @@ package k8s
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 
-	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
-	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apitypes "k8s.io/apimachinery/pkg/types"
-	vpatypes "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	vpa_clientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	papb "github.com/erda-project/erda-proto-go/orchestrator/podscaler/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
@@ -64,6 +49,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/namespace"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/oversubscriberatio"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolume"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/pod"
@@ -73,36 +59,20 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/storageclass"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/util"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
-	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 	"github.com/erda-project/erda/pkg/k8sclient/scheme"
-	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
 	kind = "K8S"
-
-	// SUBSCRIBE_RATIO_SUFFIX the key suffix of the super ratio
-	SUBSCRIBE_RATIO_SUFFIX = "_SUBSCRIBE_RATIO"
-
-	// CPU_NUM_QUOTA cpu limit key
-	CPU_NUM_QUOTA = "CPU_NUM_QUOTA"
-	// CPU_CFS_PERIOD_US 100000  /sys/fs/cgroup/cpu/cpu.cfs_period_us default value
-	CPU_CFS_PERIOD_US int = 100000
-	// MIN_CPU_SIZE Minimum application cpu value
-	MIN_CPU_SIZE = 0.1
-
-	// MIN_MEM_SIZE Minimum application mem value
-	MIN_MEM_SIZE = 10
 
 	// ProjectNamespace Env
 	LabelServiceGroupID = "servicegroup-id"
@@ -186,44 +156,33 @@ func init() {
 
 // Kubernetes is the Executor struct for k8s cluster
 type Kubernetes struct {
-	name         executortypes.Name
-	clusterName  string
-	cluster      *apistructs.ClusterInfo
-	options      map[string]string
-	addr         string
-	client       *httpclient.HTTPClient
-	k8sClient    *k8sclient.K8sClient
-	bdl          *bundle.Bundle
-	evCh         chan *eventtypes.StatusEvent
-	deploy       *deployment.Deployment
-	job          *job.Job
-	ds           *ds.Daemonset
-	namespace    *namespace.Namespace
-	service      *k8sservice.Service
-	pvc          *persistentvolumeclaim.PersistentVolumeClaim
-	pv           *persistentvolume.PersistentVolume
-	scaledObject *scaledobject.ErdaScaledObject
-	hpa          *erdahpa.ErdaHPA
-	sts          *statefulset.StatefulSet
-	pod          *pod.Pod
-	secret       *secret.Secret
-	storageClass *storageclass.StorageClass
-	sa           *serviceaccount.ServiceAccount
-	ClusterInfo  *clusterinfo.ClusterInfo
-	resourceInfo *resourceinfo.ResourceInfo
-	event        *event.Event
-	// Divide the CPU actually set by the upper layer by a ratio and pass it to the cluster scheduling, the default is 1
-	cpuSubscribeRatio        float64
-	memSubscribeRatio        float64
-	devCpuSubscribeRatio     float64
-	devMemSubscribeRatio     float64
-	testCpuSubscribeRatio    float64
-	testMemSubscribeRatio    float64
-	stagingCpuSubscribeRatio float64
-	stagingMemSubscribeRatio float64
-	// Set the cpu quota value to cpuNumQuota cpu quota, the default is 0, that is, the cpu quota is not limited
-	// When the value is -1, it means that the actual number of cpus is used to set the cpu quota (quota may also be modified by other parameters, such as the number of cpus that pop up)
-	cpuNumQuota float64
+	name               executortypes.Name
+	clusterName        string
+	cluster            *apistructs.ClusterInfo
+	options            map[string]string
+	addr               string
+	client             *httpclient.HTTPClient
+	k8sClient          *k8sclient.K8sClient
+	bdl                *bundle.Bundle
+	evCh               chan *eventtypes.StatusEvent
+	deploy             *deployment.Deployment
+	job                *job.Job
+	ds                 *ds.Daemonset
+	namespace          *namespace.Namespace
+	service            *k8sservice.Service
+	pvc                *persistentvolumeclaim.PersistentVolumeClaim
+	pv                 *persistentvolume.PersistentVolume
+	scaledObject       *scaledobject.ErdaScaledObject
+	hpa                *erdahpa.ErdaHPA
+	sts                *statefulset.StatefulSet
+	pod                *pod.Pod
+	secret             *secret.Secret
+	storageClass       *storageclass.StorageClass
+	sa                 *serviceaccount.ServiceAccount
+	ClusterInfo        *clusterinfo.ClusterInfo
+	resourceInfo       *resourceinfo.ResourceInfo
+	event              *event.Event
+	overSubscribeRatio oversubscriberatio.Interface
 
 	// operators
 	elasticsearchoperator addon.AddonOperator
@@ -240,10 +199,6 @@ type Kubernetes struct {
 	dbclient *instanceinfo.Client
 
 	istioEngine istioctl.IstioEngine
-}
-
-func (k *Kubernetes) SetCpuQuota(quota float64) {
-	k.cpuNumQuota = quota
 }
 
 func (k *Kubernetes) GetK8SAddr() string {
@@ -264,43 +219,6 @@ func (k *Kubernetes) CleanUpBeforeDelete() {
 	if k.instanceinfoSyncCancelFunc != nil {
 		k.instanceinfoSyncCancelFunc()
 	}
-}
-
-// Addr return kubernetes addr
-func (k *Kubernetes) Addr() string {
-	return k.addr
-}
-
-func getWorkspaceRatio(options map[string]string, workspace string, t string, value *float64) {
-	var subscribeRatioKey string
-	if workspace == "PROD" {
-		subscribeRatioKey = t + SUBSCRIBE_RATIO_SUFFIX
-	} else {
-		subscribeRatioKey = workspace + "_" + t + SUBSCRIBE_RATIO_SUFFIX
-	}
-	*value = 1.0
-	if ratioValue, ok := options[subscribeRatioKey]; ok && len(ratioValue) > 0 {
-		if ratio, err := strconv.ParseFloat(ratioValue, 64); err == nil && ratio >= 1.0 {
-			*value = ratio
-		}
-	}
-}
-
-func getIstioEngine(clusterName string, info apistructs.ClusterInfoData) (istioctl.IstioEngine, error) {
-	istioInfo := info.GetIstioInfo()
-	if !istioInfo.Installed {
-		return istioctl.EmptyEngine, nil
-	}
-	// TODO: Take asm's kubeconfig to create the corresponding engine
-	if istioInfo.IsAliyunASM {
-		return istioctl.EmptyEngine, nil
-	}
-	// TODO: Combine version to choose
-	localEngine, err := engines.NewLocalEngine(clusterName)
-	if err != nil {
-		return istioctl.EmptyEngine, errors.Errorf("create local istio engine failed, cluster:%s, err:%v", clusterName, err)
-	}
-	return localEngine, nil
 }
 
 // New new kubernetes executor struct
@@ -336,35 +254,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 
 	logrus.Infof("cluster %s init client success, addr: %s", clusterName, addr)
-
-	//Get the value of the super-scoring ratio for different environments
-	var (
-		memSubscribeRatio,
-		cpuSubscribeRatio,
-		devMemSubscribeRatio,
-		devCpuSubscribeRatio,
-		testMemSubscribeRatio,
-		testCpuSubscribeRatio,
-		stagingMemSubscribeRatio,
-		stagingCpuSubscribeRatio float64
-	)
-
-	getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
-	getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
-	getWorkspaceRatio(options, "DEV", "MEM", &devMemSubscribeRatio)
-	getWorkspaceRatio(options, "DEV", "CPU", &devCpuSubscribeRatio)
-	getWorkspaceRatio(options, "TEST", "MEM", &testMemSubscribeRatio)
-	getWorkspaceRatio(options, "TEST", "CPU", &testCpuSubscribeRatio)
-	getWorkspaceRatio(options, "STAGING", "MEM", &stagingMemSubscribeRatio)
-	getWorkspaceRatio(options, "STAGING", "CPU", &stagingCpuSubscribeRatio)
-
-	cpuNumQuota := float64(0)
-	if cpuNumQuotaValue, ok := options[CPU_NUM_QUOTA]; ok && len(cpuNumQuotaValue) > 0 {
-		if num, err := strconv.ParseFloat(cpuNumQuotaValue, 64); err == nil && (num >= 0 || num == -1.0) {
-			cpuNumQuota = num
-			logrus.Debugf("executor(%s) cpuNumQuota set to %v", name, cpuNumQuota)
-		}
-	}
 
 	deploy := deployment.New(deployment.WithClientSet(k8sClient.ClientSet))
 	job := job.New(job.WithCompleteParams(addr, client))
@@ -408,64 +297,59 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
+	// Over subscribe ratios
+	osr := oversubscriberatio.New(options)
+
 	// Synchronize cluster info to ETCD (every 10m)
 	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
 	k := &Kubernetes{
-		name:                     name,
-		clusterName:              clusterName,
-		cluster:                  cluster,
-		options:                  options,
-		addr:                     addr,
-		client:                   client,
-		k8sClient:                k8sClient,
-		bdl:                      bdl,
-		evCh:                     evCh,
-		deploy:                   deploy,
-		job:                      job,
-		ds:                       ds,
-		namespace:                ns,
-		service:                  svc,
-		pvc:                      pvc,
-		pv:                       pv,
-		scaledObject:             scaleObj,
-		hpa:                      hpa,
-		sts:                      sts,
-		pod:                      k8spod,
-		secret:                   k8ssecret,
-		storageClass:             k8sstorageclass,
-		sa:                       sa,
-		ClusterInfo:              clusterInfo,
-		resourceInfo:             resourceInfo,
-		event:                    event,
-		cpuSubscribeRatio:        cpuSubscribeRatio,
-		memSubscribeRatio:        memSubscribeRatio,
-		devCpuSubscribeRatio:     devCpuSubscribeRatio,
-		devMemSubscribeRatio:     devMemSubscribeRatio,
-		testCpuSubscribeRatio:    testCpuSubscribeRatio,
-		testMemSubscribeRatio:    testMemSubscribeRatio,
-		stagingCpuSubscribeRatio: stagingCpuSubscribeRatio,
-		stagingMemSubscribeRatio: stagingMemSubscribeRatio,
-		cpuNumQuota:              cpuNumQuota,
-		dbclient:                 dbclient,
+		name:               name,
+		clusterName:        clusterName,
+		cluster:            cluster,
+		options:            options,
+		addr:               addr,
+		client:             client,
+		k8sClient:          k8sClient,
+		bdl:                bdl,
+		evCh:               evCh,
+		deploy:             deploy,
+		job:                job,
+		ds:                 ds,
+		namespace:          ns,
+		service:            svc,
+		pvc:                pvc,
+		pv:                 pv,
+		scaledObject:       scaleObj,
+		hpa:                hpa,
+		sts:                sts,
+		pod:                k8spod,
+		secret:             k8ssecret,
+		storageClass:       k8sstorageclass,
+		sa:                 sa,
+		ClusterInfo:        clusterInfo,
+		resourceInfo:       resourceInfo,
+		event:              event,
+		dbclient:           dbclient,
+		overSubscribeRatio: osr,
 	}
 
 	if istioEngine != nil {
 		k.istioEngine = istioEngine
 	}
 
-	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, k, k8ssecret, k, client)
+	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, osr, k8ssecret, k, client)
 	k.elasticsearchoperator = elasticsearchoperator
-	redisoperator := redis.New(k, deploy, sts, svc, ns, k, k8ssecret, client)
+	redisoperator := redis.New(k, deploy, sts, svc, ns, osr, k8ssecret, client)
 	k.redisoperator = redisoperator
-	mysqloperator := mysql.New(k, ns, k8ssecret, pvc, client)
+	mysqloperator := mysql.New(k, ns, osr, k8ssecret, pvc, client)
 	k.mysqloperator = mysqloperator
-	canaloperator := canal.New(k, ns, k8ssecret, pvc, client)
+	canaloperator := canal.New(k, ns, osr, k8ssecret, pvc, client)
 	k.canaloperator = canaloperator
-	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
+	daemonsetoperator := daemonset.New(k, ns, k, k, ds, osr)
 	k.daemonsetoperator = daemonsetoperator
-	k.sourcecovoperator = sourcecov.New(k, client, k, ns)
-	rocketmqoperator := rocketmq.New(k, ns, client, k, sts)
+	k.sourcecovoperator = sourcecov.New(k, client, osr, ns)
+	rocketmqoperator := rocketmq.New(k, ns, client, osr, sts)
 	k.rocketmqoperator = rocketmqoperator
 	return k, nil
 }
@@ -511,33 +395,6 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		return nil, err
 	}
 	return nil, nil
-}
-
-func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.ServiceGroup) (bool, string, error) {
-	var cpuTotal, memTotal float64
-	for _, svc := range runtime.Services {
-		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
-		memTotal += svc.Resources.Mem * float64(svc.Scale<<20)
-	}
-	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
-
-	_, projectID, runtimeId, workspace := extractServicesEnvs(runtime)
-	switch strings.ToLower(workspace) {
-	case "dev":
-		cpuTotal /= k.devCpuSubscribeRatio
-		memTotal /= k.devMemSubscribeRatio
-	case "test":
-		cpuTotal /= k.testCpuSubscribeRatio
-		memTotal /= k.testMemSubscribeRatio
-	case "staging":
-		cpuTotal /= k.stagingCpuSubscribeRatio
-		memTotal /= k.stagingMemSubscribeRatio
-	default:
-		cpuTotal /= k.cpuSubscribeRatio
-		memTotal /= k.memSubscribeRatio
-	}
-
-	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
 }
 
 // Destroy implements deleting servicegroup based on k8s api
@@ -732,23 +589,6 @@ func (k *Kubernetes) CapacityInfo() apistructs.CapacityInfoData {
 	return r
 }
 
-func (k *Kubernetes) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoData, error) {
-	r, err := k.resourceInfo.Get(brief)
-	if err != nil {
-		return r, err
-	}
-	r.ProdCPUOverCommit = k.cpuSubscribeRatio
-	r.DevCPUOverCommit = k.devCpuSubscribeRatio
-	r.TestCPUOverCommit = k.testCpuSubscribeRatio
-	r.StagingCPUOverCommit = k.stagingCpuSubscribeRatio
-	r.ProdMEMOverCommit = k.memSubscribeRatio
-	r.DevMEMOverCommit = k.devMemSubscribeRatio
-	r.TestMEMOverCommit = k.testMemSubscribeRatio
-	r.StagingMEMOverCommit = k.stagingMemSubscribeRatio
-
-	return r, nil
-}
-
 func (*Kubernetes) JobVolumeCreate(ctx context.Context, spec interface{}) (string, error) {
 	return "", fmt.Errorf("not support for kubernetes")
 }
@@ -766,632 +606,6 @@ func (k *Kubernetes) KillPod(podname string) error {
 	}
 	pod := pods[0]
 	return k.killPod(pod.K8sNamespace, podname)
-}
-
-// Two interfaces may call this function
-// 1, Create
-// 2, Update
-func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
-	if service == nil {
-		return errors.Errorf("service empty")
-	}
-	// Step 1. Firstly create service
-	// Only create k8s service for services with exposed ports
-	if len(service.Ports) > 0 {
-		if err := k.updateService(service, nil); err != nil {
-			return err
-		}
-	}
-	if service.ProjectServiceName != "" && len(service.Ports) > 0 {
-		err := k.createProjectService(service, sg.ID)
-		if err != nil {
-			return err
-		}
-	}
-	var err error
-	switch service.WorkLoad {
-	case types.ServicePerNode:
-		err = k.createDaemonSet(ctx, service, sg)
-	case types.ServiceJob:
-		err = k.createJob(ctx, service, sg)
-	default:
-		// Step 2. Create related deployment
-		err = k.createDeployment(ctx, service, sg)
-	}
-	if err != nil {
-		return err
-	}
-
-	// TODO: Wait for the deployment running well ?
-	// status, err := m.getDeployment(service)
-
-	if k.istioEngine != istioctl.EmptyEngine {
-		if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, service); err != nil {
-			return err
-		}
-		if service.ProjectServiceName != "" {
-			if projectService, ok := deepcopy.Copy(service).(*apistructs.Service); ok {
-				projectService.Name = service.ProjectServiceName
-				if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, projectService); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// not sure with whether this service exists
-// bool The variable indicates whether it is really deleted
-// Occurs in the following situations,
-// 1, If the update interface analyzes the deletion, it is impossible to ensure the existence of k8s resources at this time
-func (k *Kubernetes) tryDelete(namespace, name string) error {
-	var (
-		wg         sync.WaitGroup
-		err1, err2 error
-	)
-	if k.istioEngine != istioctl.EmptyEngine {
-		svc := &apistructs.Service{Namespace: namespace, Name: name}
-		if err := k.istioEngine.OnServiceOperator(istioctl.ServiceDelete, svc); err != nil {
-			return err
-		}
-	}
-	wg.Add(2)
-	go func() {
-		err1 = k.deleteDeployment(namespace, name)
-		wg.Done()
-	}()
-	go func() {
-		err2 = k.deleteDaemonSet(namespace, name)
-		wg.Done()
-	}()
-	wg.Wait()
-
-	if err1 != nil && !util.IsNotFound(err1) {
-		return errors.Errorf("failed to delete deployment, namespace: %s, name: %s, (%v)",
-			namespace, name, err2)
-	}
-
-	if err2 != nil && !util.IsNotFound(err2) {
-		return errors.Errorf("failed to delete daemonset, namespace: %s, name: %s, (%v)",
-			namespace, name, err2)
-	}
-
-	return nil
-}
-
-func (k *Kubernetes) getClusterIP(namespace, name string) (string, error) {
-	svc, err := k.GetService(namespace, name)
-	if err != nil {
-		return "", err
-	}
-	return svc.Spec.ClusterIP, nil
-}
-
-// The creation operation needs to be completed before the update operation, because the newly created service may be a dependency of the service to be updated
-// TODO: The updateOne function will be abstracted later
-func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceGroup) error {
-	labelSelector := make(map[string]string)
-	var ns = sg.ProjectNamespace
-	if ns == "" {
-		ns = MakeNamespace(sg)
-	} else {
-		labelSelector[LabelServiceGroupID] = sg.ID
-	}
-
-	runtimeServiceMap, err := k.getRuntimeServiceMap(ns, labelSelector)
-	if err != nil {
-		//TODO:
-		errMsg := fmt.Sprintf("list runtime service name err %v", err)
-		logrus.Errorf(errMsg)
-		return fmt.Errorf(errMsg)
-	}
-
-	if err := k.createImageSecretIfNotExist(ns); err != nil {
-		return fmt.Errorf("create image secret when update one by one, err %v", err)
-	}
-
-	registryInfos := k.composeRegistryInfos(sg)
-	if len(registryInfos) > 0 {
-		err = k.UpdateImageSecret(ns, registryInfos)
-		if err != nil {
-			errMsg := fmt.Sprintf("failed to update secret %s on namespace %s, err: %v", conf.CustomRegCredSecret(), ns, err)
-			logrus.Errorf(errMsg)
-			return fmt.Errorf(errMsg)
-		}
-	}
-
-	for _, svc := range sg.Services {
-		svc.Namespace = ns
-		runtimeServiceName := util.GetDeployName(&svc)
-		// Existing in the old service collection, do the put operation
-		// The visited record has been updated service
-		if _, ok := runtimeServiceMap[runtimeServiceName]; ok {
-			// firstly update the service
-			// service is not the same as deployment, service is only created for services with exposed ports
-			if err := k.updateService(&svc, nil); err != nil {
-				return err
-			}
-			if err := k.updateProjectService(&svc, sg.ID); err != nil {
-				return err
-			}
-			switch svc.WorkLoad {
-			case types.ServicePerNode:
-				desireDaemonSet, err := k.newDaemonSet(&svc, sg)
-				if err != nil {
-					return err
-				}
-				if err = k.updateDaemonSet(ctx, desireDaemonSet, &svc); err != nil {
-					logrus.Debugf("failed to update daemonset in update interface, name: %s, (%v)", svc.Name, err)
-					return err
-				}
-			case types.ServiceJob:
-				err = k.createJob(ctx, &svc, sg)
-			default:
-				// then update the deployment
-				desiredDeployment, err := k.newDeployment(&svc, sg)
-				if err != nil {
-					return err
-				}
-				if err = k.putDeployment(ctx, desiredDeployment, &svc); err != nil {
-					logrus.Debugf("failed to update deployment in update interface, name: %s, (%v)", svc.Name, err)
-					return err
-				}
-			}
-			if k.istioEngine != istioctl.EmptyEngine {
-				if err := k.istioEngine.OnServiceOperator(istioctl.ServiceUpdate, &svc); err != nil {
-					return err
-				}
-			}
-			runtimeServiceMap[runtimeServiceName] = RuntimeServiceRetain
-		} else {
-			// Does not exist in the old service collection, do the create operation
-			// TODO: what to do if errors in Create ? before k8s create deployment ?
-			// logrus.Debugf("in Update interface, going to create service(%s/%s)", ns, svc.Name)
-			if err := k.createOne(ctx, &svc, sg); err != nil {
-				logrus.Errorf("failed to create service in update interface, name: %s, (%v)", svc.Name, err)
-				return err
-			}
-			runtimeServiceMap[runtimeServiceName] = RuntimeServiceRetain
-		}
-	}
-
-	for svcName, operator := range runtimeServiceMap {
-		if operator == RuntimeServiceDelete {
-			if err := k.tryDelete(ns, svcName); err != nil {
-				if !util.IsNotFound(err) {
-					logrus.Errorf("failed to delete service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
-					return err
-				}
-			}
-			svc, err := k.service.Get(ns, svcName)
-			if err != nil {
-				if !util.IsNotFound(err) {
-					logrus.Errorf("failed to get k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
-					return err
-				}
-			}
-			if err = k.service.Delete(ns, svcName); err != nil {
-				if !util.IsNotFound(err) {
-					logrus.Errorf("failed to delete k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
-					return err
-				}
-			}
-			appLabelValue := svc.Spec.Selector["app"]
-			deploys, err := k.deploy.List(ns, map[string]string{"app": appLabelValue})
-			if err != nil {
-				logrus.Errorf("failed to get deploys in ns %s", ns)
-				return err
-			}
-			remainCount := 0
-			for _, deploy := range deploys.Items {
-				if deploy.DeletionTimestamp == nil {
-					remainCount++
-				}
-			}
-			if remainCount < 1 {
-				err = k.service.Delete(ns, appLabelValue)
-				if err != nil {
-					if !util.IsNotFound(err) {
-						logrus.Errorf("failed to delete global service %s in ns %s", svc.Name, ns)
-						return err
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.ServiceGroup) (apistructs.StatusDesc, error) {
-	var (
-		failedReason string
-		resultStatus apistructs.StatusDesc
-		deploys      []appsv1.Deployment
-		dsMap        map[string]appsv1.DaemonSet
-		err          error
-	)
-	// init "unknown" status for each service
-	for i := range sg.Services {
-		sg.Services[i].Status = apistructs.StatusUnknown
-		sg.Services[i].LastMessage = ""
-	}
-
-	var ns = MakeNamespace(sg)
-	if sg.ProjectNamespace != "" {
-		ns = sg.ProjectNamespace
-		k.setProjectServiceName(sg)
-	}
-	isReady := true
-	isFailed := false
-
-	if sg.ProjectNamespace != "" {
-		deployList, err := k.deploy.List(ns, map[string]string{
-			LabelServiceGroupID: sg.ID,
-		})
-		if err != nil {
-			return apistructs.StatusDesc{}, fmt.Errorf("list deploy in ns %s err: %v", ns, err)
-		}
-		deploys = deployList.Items
-
-		daemonsetExist := false
-
-		for _, svc := range sg.Services {
-			if svc.WorkLoad == types.ServicePerNode {
-				daemonsetExist = true
-				break
-			}
-		}
-		if daemonsetExist {
-			daemonsets, err := k.ds.List(ns, map[string]string{
-				LabelServiceGroupID: sg.ID,
-			})
-			if err != nil {
-				return apistructs.StatusDesc{}, fmt.Errorf("list daemonset in ns %s err: %v", ns, err)
-			}
-
-			dsMap = make(map[string]appsv1.DaemonSet, len(daemonsets.Items))
-			for _, ds := range daemonsets.Items {
-				dsMap[ds.Name] = ds
-			}
-		}
-
-	} else {
-		for _, svc := range sg.Services {
-			deployList, err := k.deploy.List(ns, map[string]string{
-				"app": svc.Name,
-			})
-			if err != nil {
-				return apistructs.StatusDesc{}, fmt.Errorf("list deploy in ns %s err: %v", ns, err)
-			}
-			deploys = append(deploys, deployList.Items...)
-		}
-	}
-
-	deployMap := make(map[string]appsv1.Deployment, len(deploys))
-	for _, deploy := range deploys {
-		deployMap[deploy.Name] = deploy
-	}
-
-	pods, err := k.pod.ListNamespacePods(ns)
-	if err != nil {
-		return apistructs.StatusDesc{}, err
-	}
-
-	for i := range sg.Services {
-		var (
-			status apistructs.StatusDesc
-			err    error
-		)
-		switch sg.Services[i].WorkLoad {
-		case types.ServicePerNode:
-			status, err = k.getDaemonSetStatusFromMap(&sg.Services[i], dsMap)
-		case types.ServiceJob:
-			status, err = k.getJobStatusFromMap(&sg.Services[i], ns)
-
-		default:
-			// To distinguish the following exceptions：
-			// 1, An error occurred during the creation process, and the entire runtime is deleted and then come back to query
-			// 2, Others
-			status, err = k.getDeploymentStatusFromMap(&sg.Services[i], deployMap)
-		}
-		if err != nil {
-			// TODO: the state can be chanded to "Error"..
-			status.Status = apistructs.StatusUnknown
-
-			if !k8serror.NotFound(err) {
-				return status, err
-			}
-			notfound, err := k.NotfoundNamespace(ns)
-			if err != nil {
-				errMsg := fmt.Sprintf("failed to get namespace existed info, namespace:%s, (%v)", ns, err)
-				logrus.Errorf(errMsg)
-				status.LastMessage = errMsg
-				return status, err
-			}
-
-			// The namespace does not exist, indicating that there was an error during creation, and the runtime has been deleted by the scheduler
-			if notfound {
-				status.Status = apistructs.StatusErrorAndDeleted
-				status.LastMessage = fmt.Sprintf("namespace not found, probably deleted, namespace: %s", ns)
-			} else {
-				// In theory, it will only appear in the process of deleting the namespace. A deployment has been deleted and the namespace is in terminating state and is about to be deleted.
-				status.Status = apistructs.StatusUnknown
-				status.LastMessage = fmt.Sprintf("found namespace exists but deployment not found,"+
-					" namespace: %s, deployment: %s", sg.Services[i].Namespace, util.GetDeployName(&sg.Services[i]))
-			}
-
-			return status, err
-		}
-		sg.Services[i].ReadyReplicas = status.ReadyReplicas
-		sg.Services[i].DesiredReplicas = status.DesiredReplicas
-		if status.Status == apistructs.StatusFailed {
-			isReady = false
-			isFailed = true
-			failedReason = status.Reason
-			continue
-		}
-		if status.Status != apistructs.StatusReady {
-			isReady = false
-			resultStatus.Status = apistructs.StatusProgressing
-			sg.Services[i].Status = apistructs.StatusProgressing
-			podstatuses, err := k.pod.GetNamespacedPodsStatus(pods.Items, sg.Services[i].Name)
-			if err != nil {
-				logrus.Errorf("failed to get pod unready reasons, namespace: %v, name: %s, %v",
-					sg.Services[i].Namespace,
-					util.GetDeployName(&sg.Services[i]), err)
-			}
-			if len(podstatuses) != 0 {
-				sg.Services[i].LastMessage = podstatuses[0].Message
-				sg.Services[i].Reason = string(podstatuses[0].Reason)
-			}
-			continue
-		}
-
-		sg.Services[i].Status = apistructs.StatusHealthy
-	}
-
-	if isReady {
-		resultStatus.Status = apistructs.StatusHealthy
-	}
-	if isFailed {
-		resultStatus.Status = apistructs.StatusFailed
-		resultStatus.LastMessage = failedReason
-	}
-	return resultStatus, nil
-}
-
-func (k *Kubernetes) getStatelessPodsStatus(sg *apistructs.ServiceGroup, svcName string) error {
-
-	var ns = MakeNamespace(sg)
-	if sg.ProjectNamespace != "" {
-		ns = sg.ProjectNamespace
-		k.setProjectServiceName(sg)
-	}
-
-	pods, err := k.pod.ListNamespacePods(ns)
-	if err != nil {
-		return fmt.Errorf("list pods in ns %s err: %v", ns, err)
-	}
-
-	podRuntimeID := ""
-	if runtimeID, ok := sg.Labels["GET_RUNTIME_STATELESS_SERVICE_POD_RUNTIME_ID"]; ok {
-		podRuntimeID = runtimeID
-	}
-	serviceToPods := make(map[string][]apiv1.Pod)
-	for i := range sg.Services {
-		if sg.Services[i].Name != svcName {
-			continue
-		}
-
-		for _, pod := range pods.Items {
-			if pod.Labels == nil {
-				continue
-			}
-
-			if !runtimeIDMatch(podRuntimeID, pod) {
-				continue
-			}
-
-			serviceName := ""
-			if _, ok := pod.Labels["DICE_SERVICE_NAME"]; !ok {
-				serviceName = pod.Labels["DICE_SERVICE"]
-			} else {
-				serviceName = pod.Labels["DICE_SERVICE_NAME"]
-			}
-
-			if serviceName == "" {
-				for _, v := range pod.Spec.Containers[0].Env {
-					if v.Name == "DICE_SERVICE" || v.Name == "DICE_SERVICE_NAME" {
-						serviceName = v.Value
-						break
-					}
-				}
-			}
-
-			if serviceName == "" {
-				continue
-			}
-
-			if serviceName == sg.Services[i].Name {
-				if _, ok := serviceToPods[serviceName]; !ok {
-					serviceToPods[serviceName] = make([]apiv1.Pod, 0)
-				}
-				serviceToPods[serviceName] = append(serviceToPods[serviceName], pod)
-			}
-		}
-
-		if _, ok := serviceToPods[sg.Services[i].Name]; ok {
-			if sg.Extra == nil {
-				sg.Extra = make(map[string]string)
-			}
-			podsBytes, err := json.Marshal(serviceToPods[sg.Services[i].Name])
-			if err != nil {
-				return fmt.Errorf("json marshall service pods in ns %s for service %s err: %v", ns, sg.Services[i].Name, err)
-			}
-
-			sg.Extra[sg.Services[i].Name] = string(podsBytes)
-		}
-
-		break
-	}
-
-	return nil
-}
-
-func runtimeIDMatch(podRuntimeID string, pod apiv1.Pod) bool {
-	if podRuntimeID == "" {
-		return true
-	}
-	runtimeIDFromPod := ""
-	runtimeIDFromPod, ok := pod.Labels["DICE_RUNTIME"]
-	if !ok {
-		runtimeIDFromPod, ok = pod.Labels["DICE_RUNTIME_ID"]
-	}
-
-	if runtimeIDFromPod == "" {
-		for _, v := range pod.Spec.Containers[0].Env {
-			if v.Name == "DICE_RUNTIME" || v.Name == "DICE_RUNTIME_ID" {
-				runtimeIDFromPod = v.Value
-				break
-			}
-		}
-	}
-
-	if runtimeIDFromPod != "" && runtimeIDFromPod == podRuntimeID {
-		return true
-	}
-	return false
-}
-
-func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
-	requestMem := float64(container.Resources.Requests.Memory().Value() / 1024 / 1024)
-	maxMem := float64(container.Resources.Limits.Memory().Value() / 1024 / 1024)
-
-	if requestMem < MIN_MEM_SIZE {
-		return errors.Errorf("invalid request mem, value: %v, (which is lower than min mem(%vMi))",
-			requestMem, MIN_MEM_SIZE)
-	}
-
-	// max_mem set but smaller than request mem
-	if maxMem != 0 && maxMem < requestMem {
-		return errors.Errorf("invalid max mem, value: %v, (which is lower than request mem(%v))", maxMem, requestMem)
-	}
-
-	// if max_mem not set, use [mem/ratio, mem]; else use [mem, max_mem]
-	if maxMem == 0 {
-		maxMem = requestMem
-		requestMem = requestMem / memSubscribeRatio
-	}
-
-	container.Resources.Requests[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(requestMem)))
-	container.Resources.Limits[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(maxMem)))
-
-	return nil
-}
-
-// SetFineGrainedCPU Set proper cpu ratio & quota
-func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[string]string, cpuSubscribeRatio float64) error {
-	// 1, Processing request cpu value
-	requestCPU := float64(container.Resources.Requests.Cpu().MilliValue()) / 1000
-	maxCPU := float64(container.Resources.Limits.Cpu().MilliValue()) / 1000
-	actualCPU := requestCPU
-
-	if requestCPU < MIN_CPU_SIZE {
-		return errors.Errorf("invalid request cpu, value: %v, (which is lower than min cpu(%v))",
-			requestCPU, MIN_CPU_SIZE)
-	}
-
-	// max_cpu set but smaller than request cpu
-	if maxCPU != 0 && maxCPU < requestCPU {
-		return errors.Errorf("invalid max cpu, value: %v, (which is lower than request cpu(%v))", maxCPU, requestCPU)
-	}
-
-	// 2, Dealing with cpu oversold
-	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
-
-	// if max_cpu not set, use [cpu/ratio, cpu]; else use [cpu, max_cpu]
-	if maxCPU == 0 {
-		maxCPU = requestCPU
-		actualCPU = requestCPU / ratio
-	}
-
-	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(actualCPU*1000)))
-
-	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
-	quota := k.cpuNumQuota
-
-	// Set the maximum cpu according to the requested cpu
-	if k.cpuNumQuota == -1.0 {
-		quota = cpupolicy.AdjustCPUSize(requestCPU)
-	}
-
-	if quota >= requestCPU {
-		container.Resources.Limits[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(maxCPU*1000)))
-	}
-
-	logrus.Infof("set container cpu: name: %s, request cpu: %v, actual cpu: %vm, max cpu: %vm, subscribe ratio: %v, cpu quota: %v",
-		container.Name, requestCPU, container.Resources.Requests.Cpu().MilliValue(), container.Resources.Limits.Cpu().MilliValue(), ratio, quota)
-	return nil
-}
-
-func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error) {
-	switch operator {
-	case "elasticsearch":
-		return k.elasticsearchoperator, nil
-	case "redis":
-		return k.redisoperator, nil
-	case "mysql":
-		return k.mysqloperator, nil
-	case "canal":
-		return k.canaloperator, nil
-	case "daemonset":
-		return k.daemonsetoperator, nil
-	case apistructs.AddonSourcecov:
-		return k.sourcecovoperator, nil
-	case apistructs.AddonRocketMQ:
-		return k.rocketmqoperator, nil
-	}
-	return nil, fmt.Errorf("not found")
-}
-
-func (k *Kubernetes) CPUOvercommit(limit float64) float64 {
-	return limit / k.cpuSubscribeRatio
-}
-
-func (k *Kubernetes) MemoryOvercommit(limit int) int {
-	return int(float64(limit) / k.memSubscribeRatio)
-}
-
-func GenTolerations() []apiv1.Toleration {
-	return []apiv1.Toleration{
-		{
-			Key:      "node-role.kubernetes.io/lb",
-			Operator: "Exists",
-			Effect:   "NoSchedule",
-		},
-		{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: "Exists",
-			Effect:   "NoSchedule",
-		},
-	}
-}
-
-func (k *Kubernetes) setProjectServiceName(sg *apistructs.ServiceGroup) {
-	for index, service := range sg.Services {
-		service.ProjectServiceName = k.composeNewKey([]string{service.Name, "-", sg.ID})
-		sg.Services[index] = service
-	}
-}
-
-func (k *Kubernetes) composeNewKey(keys []string) string {
-	var newKey = strings.Builder{}
-	for _, key := range keys {
-		newKey.WriteString(key)
-	}
-	return newKey.String()
 }
 
 // Scale implements update the replica and resources for one service
@@ -1424,637 +638,4 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 	default:
 		return nil, errors.Errorf("unknown task scale action")
 	}
-}
-
-func (k *Kubernetes) applyErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
-	for svc, sc := range sg.Extra {
-		scaledObject := papb.ScaledConfig{}
-		err := json.Unmarshal([]byte(sc), &scaledObject)
-		if err != nil {
-			return sg, errors.Errorf("apply hpa for serviceGroup service %s failed: %v", svc, err)
-		}
-
-		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" || scaledObject.ScaleTargetRef.Name == "" {
-			return sg, errors.Errorf("apply hpa for serviceGroup service %s failed: [rule name: %s] or [namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
-		}
-
-		scaledObj := convertToKedaScaledObject(scaledObject)
-		if err = k.k8sClient.CRClient.Create(context.Background(), scaledObj); err != nil {
-			return sg, err
-		}
-	}
-
-	return sg, nil
-}
-
-func (k *Kubernetes) applyErdaVPARules(sg apistructs.ServiceGroup) (interface{}, error) {
-	for svc, sc := range sg.Extra {
-		scaledObject := papb.RuntimeServiceVPAConfig{}
-		err := json.Unmarshal([]byte(sc), &scaledObject)
-		if err != nil {
-			return sg, errors.Errorf("apply vpa for serviceGroup service %s failed: %v", svc, err)
-		}
-
-		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" || scaledObject.ScaleTargetRef.Name == "" {
-			return sg, errors.Errorf("apply vpa for serviceGroup service %s failed: [rule name: %s] or [namespace: %s] or [targetRef.Name:%s] not set ", svc, scaledObject.RuleName, scaledObject.RuleNameSpace, scaledObject.ScaleTargetRef.Name)
-		}
-
-		scaledObj := convertToVPAObject(scaledObject)
-		if err = k.scaledObject.CreateVPA(scaledObj); err != nil {
-			return sg, err
-		}
-	}
-
-	return sg, nil
-}
-
-func convertToVPAObject(scaledObject papb.RuntimeServiceVPAConfig) *vpatypes.VerticalPodAutoscaler {
-	orgID := fmt.Sprintf("%d", scaledObject.OrgID)
-	updateMode := vpatypes.UpdateModeAuto
-	switch scaledObject.UpdateMode {
-	case pstypes.ErdaVPAUpdaterModeRecreate:
-		updateMode = vpatypes.UpdateModeRecreate
-	case pstypes.ErdaVPAUpdaterModeInitial:
-		updateMode = vpatypes.UpdateModeInitial
-	case pstypes.ErdaVPAUpdaterModeOff:
-		updateMode = vpatypes.UpdateModeOff
-	default:
-		updateMode = vpatypes.UpdateModeAuto
-	}
-
-	maxCpu := fmt.Sprintf("%.fm", scaledObject.MaxResources.Cpu*1000)
-	maxMemory := fmt.Sprintf("%.dMi", scaledObject.MaxResources.Mem)
-
-	minCpu := fmt.Sprintf("%.fm", pstypes.ErdaVPAMinResourceCPU*1000)
-	minMemory := fmt.Sprintf("%.dMi", pstypes.ErdaVPAMinResourceMemory)
-
-	crps := make([]vpatypes.ContainerResourcePolicy, 0)
-	crps = append(crps, vpatypes.ContainerResourcePolicy{
-		ContainerName: "*",
-		MinAllowed: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(minCpu),
-			apiv1.ResourceMemory: resource.MustParse(minMemory),
-		},
-		MaxAllowed: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(maxCpu),
-			apiv1.ResourceMemory: resource.MustParse(maxMemory),
-		},
-		ControlledResources: &[]apiv1.ResourceName{apiv1.ResourceCPU, apiv1.ResourceMemory},
-	})
-
-	return &vpatypes.VerticalPodAutoscaler{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "VerticalPodAutoscaler",
-			APIVersion: "autoscaling.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      scaledObject.RuleName + "-" + strutil.ToLower(scaledObject.ScaleTargetRef.Kind) + "-" + scaledObject.ScaleTargetRef.Name,
-			Namespace: scaledObject.RuleNameSpace,
-			Labels: map[string]string{
-				pstypes.ErdaPAObjectRuntimeServiceNameLabel: scaledObject.ServiceName,
-				pstypes.ErdaPAObjectRuntimeIDLabel:          fmt.Sprintf("%d", scaledObject.RuntimeID),
-				pstypes.ErdaPAObjectRuleIDLabel:             scaledObject.RuleID,
-				pstypes.ErdaPAObjectOrgIDLabel:              orgID,
-				pstypes.ErdaPALabelKey:                      "yes",
-			},
-		},
-		Spec: vpatypes.VerticalPodAutoscalerSpec{
-			TargetRef: &autoscaling.CrossVersionObjectReference{
-				Name:       scaledObject.ScaleTargetRef.Name,
-				APIVersion: scaledObject.ScaleTargetRef.ApiVersion,
-				Kind:       scaledObject.ScaleTargetRef.Kind,
-			},
-			UpdatePolicy: &vpatypes.PodUpdatePolicy{
-				UpdateMode: &updateMode,
-			},
-			ResourcePolicy: &vpatypes.PodResourcePolicy{
-				ContainerPolicies: crps,
-			},
-		},
-	}
-}
-
-func (k *Kubernetes) cancelErdaVPARules(sg apistructs.ServiceGroup) (interface{}, error) {
-	for svc, sc := range sg.Extra {
-		scaledObject := papb.RuntimeServiceVPAConfig{}
-		err := json.Unmarshal([]byte(sc), &scaledObject)
-		if err != nil {
-			return sg, errors.Errorf("cancel vpa for serviceGroup service %s failed: %v", svc, err)
-		}
-
-		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("cancel vpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
-		}
-
-		_, err = k.scaledObject.GetVPA(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name)
-		if err == k8serror.ErrNotFound {
-			logrus.Warnf("No need to cancel vpa rule for svc %s, not found scaledObjects for this service", svc)
-			continue
-		}
-
-		if err = k.scaledObject.DeleteVPA(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name); err != nil {
-			return sg, err
-		}
-	}
-
-	return sg, nil
-}
-
-func (k *Kubernetes) reApplyErdaVPARules(sg apistructs.ServiceGroup) (interface{}, error) {
-	for svc, sc := range sg.Extra {
-		scaledObject := papb.RuntimeServiceVPAConfig{}
-		err := json.Unmarshal([]byte(sc), &scaledObject)
-		if err != nil {
-			return sg, errors.Errorf("re-apply vpa for sg %#v service %s failed: %v", sg, svc, err)
-		}
-
-		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("re-apply vpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
-		}
-
-		scaledObj := convertToVPAObject(scaledObject)
-
-		err = k.scaledObject.PatchVPA(scaledObj.Namespace, scaledObj.Name, scaledObj)
-		if err != nil {
-			return sg, err
-		}
-	}
-
-	return sg, nil
-}
-
-func convertToKedaScaledObject(scaledObject papb.ScaledConfig) *kedav1alpha1.ScaledObject {
-	var stabilizationWindowSeconds int32 = 300
-	selectPolicy := autoscalingv2.MaxChangePolicySelect
-
-	orgID := fmt.Sprintf("%d", scaledObject.OrgID)
-	triggers := make([]kedav1alpha1.ScaleTriggers, 0)
-	for _, trigger := range scaledObject.Triggers {
-		triggers = append(triggers, kedav1alpha1.ScaleTriggers{
-			Type: trigger.Type,
-			//Name:     "",
-			Metadata: trigger.Metadata,
-			// TODO: Retains for Authentication
-			/*
-				AuthenticationRef: &kedav1alpha1.ScaledObjectAuthRef{
-					Name: "",
-					Kind: "",
-				},
-				MetricType: "",
-			*/
-		})
-	}
-
-	return &kedav1alpha1.ScaledObject{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ScaledObject",
-			APIVersion: "keda.sh/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      scaledObject.RuleName + "-" + strutil.ToLower(scaledObject.ScaleTargetRef.Kind) + "-" + scaledObject.ScaleTargetRef.Name,
-			Namespace: scaledObject.RuleNameSpace,
-			Labels: map[string]string{
-				pstypes.ErdaPAObjectRuntimeServiceNameLabel: scaledObject.ServiceName,
-				pstypes.ErdaPAObjectRuntimeIDLabel:          fmt.Sprintf("%d", scaledObject.RuntimeID),
-				pstypes.ErdaPAObjectRuleIDLabel:             scaledObject.RuleID,
-				pstypes.ErdaPAObjectOrgIDLabel:              orgID,
-				pstypes.ErdaPALabelKey:                      "yes",
-			},
-		},
-		Spec: kedav1alpha1.ScaledObjectSpec{
-			ScaleTargetRef: &kedav1alpha1.ScaleTarget{
-				Name:       scaledObject.ScaleTargetRef.Name,
-				APIVersion: scaledObject.ScaleTargetRef.ApiVersion,
-				Kind:       scaledObject.ScaleTargetRef.Kind,
-				//EnvSourceContainerName:  "containerName",
-			},
-			// +optional
-			PollingInterval: &scaledObject.PollingInterval,
-			// +optional
-			CooldownPeriod: &scaledObject.CooldownPeriod,
-			// +optional
-			//IdleReplicaCount: &scaledObject.PollingInterval,
-			MinReplicaCount: &scaledObject.MinReplicaCount,
-			MaxReplicaCount: &scaledObject.MaxReplicaCount,
-			Advanced: &kedav1alpha1.AdvancedConfig{
-				// +optional
-				HorizontalPodAutoscalerConfig: &kedav1alpha1.HorizontalPodAutoscalerConfig{
-					Behavior: &autoscalingv2.HorizontalPodAutoscalerBehavior{
-						ScaleUp: &autoscalingv2.HPAScalingRules{
-							StabilizationWindowSeconds: &stabilizationWindowSeconds,
-							SelectPolicy:               &selectPolicy,
-							Policies: []autoscalingv2.HPAScalingPolicy{
-								{
-									Type:          autoscalingv2.PodsScalingPolicy,
-									Value:         2,
-									PeriodSeconds: 30,
-								},
-								{
-									Type:          autoscalingv2.PercentScalingPolicy,
-									Value:         50,
-									PeriodSeconds: 30,
-								},
-							},
-						},
-						ScaleDown: &autoscalingv2.HPAScalingRules{
-							StabilizationWindowSeconds: &stabilizationWindowSeconds,
-							SelectPolicy:               &selectPolicy,
-							Policies: []autoscalingv2.HPAScalingPolicy{
-								{
-									Type:          autoscalingv2.PodsScalingPolicy,
-									Value:         2,
-									PeriodSeconds: 30,
-								},
-								{
-									Type:          autoscalingv2.PercentScalingPolicy,
-									Value:         50,
-									PeriodSeconds: 30,
-								},
-							},
-						},
-					},
-				},
-				// +optional
-				RestoreToOriginalReplicaCount: scaledObject.Advanced.RestoreToOriginalReplicaCount,
-			},
-
-			Triggers: triggers,
-			Fallback: &kedav1alpha1.Fallback{
-				FailureThreshold: 3,
-				Replicas:         scaledObject.Fallback.Replicas,
-			},
-		},
-	}
-}
-
-func (k *Kubernetes) cancelErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
-	for svc, sc := range sg.Extra {
-		scaledObject := papb.ScaledConfig{}
-		err := json.Unmarshal([]byte(sc), &scaledObject)
-		if err != nil {
-			return sg, errors.Errorf("cancel hpa for serviceGroup service %s failed: %v", svc, err)
-		}
-
-		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("cancel hpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
-		}
-
-		_, err = k.scaledObject.Get(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name)
-		if err == k8serror.ErrNotFound {
-			logrus.Warnf("No need to cancel hpa rule for svc %s, not found scaledObjects for this service", svc)
-			continue
-		}
-
-		if err = k.scaledObject.Delete(scaledObject.RuleNameSpace, scaledObject.RuleName+"-"+strutil.ToLower(scaledObject.ScaleTargetRef.Kind)+"-"+scaledObject.ScaleTargetRef.Name); err != nil {
-			return sg, err
-		}
-	}
-
-	return sg, nil
-}
-
-// only call by when delete runtime
-func (k *Kubernetes) cancelErdaPARules(sg apistructs.ServiceGroup) error {
-	hpaSg := make(map[string]string)
-	vpaSg := make(map[string]string)
-
-	for svcName, sc := range sg.Extra {
-		if strings.HasPrefix(svcName, pstypes.ErdaHPAPrefix) {
-			subStr := strings.Split(svcName, pstypes.ErdaHPAServiceSepStr)
-			if len(subStr) == 2 {
-				hpaSg[subStr[1]] = sc
-				continue
-			}
-		}
-
-		if strings.HasPrefix(svcName, pstypes.ErdaVPAPrefix) {
-			subStr := strings.Split(svcName, pstypes.ErdaVPAServiceSepStr)
-			if len(subStr) == 2 {
-				vpaSg[subStr[1]] = sc
-			}
-		}
-	}
-
-	sg.Extra = hpaSg
-	_, err := k.cancelErdaHPARules(sg)
-	if err != nil {
-		logrus.Infof("delete HPA error: %v", err)
-		return err
-	}
-
-	sg.Extra = vpaSg
-	_, err = k.cancelErdaVPARules(sg)
-	if err != nil {
-		logrus.Infof("delete VPA error: %v", err)
-		return err
-	}
-
-	return nil
-}
-
-func (k *Kubernetes) reApplyErdaHPARules(sg apistructs.ServiceGroup) (interface{}, error) {
-	for svc, sc := range sg.Extra {
-		scaledObject := papb.ScaledConfig{}
-		err := json.Unmarshal([]byte(sc), &scaledObject)
-		if err != nil {
-			return sg, errors.Errorf("reapply hpa for sg %#v service %s failed: %v", sg, svc, err)
-		}
-
-		if scaledObject.RuleName == "" || scaledObject.RuleNameSpace == "" {
-			return sg, errors.Errorf("reapply hpa for sg %#v service %s failed: [name: %s] or [namespace: %s] not set ", sg, svc, scaledObject.RuleName, scaledObject.RuleNameSpace)
-		}
-
-		scaledObj := convertToKedaScaledObject(scaledObject)
-
-		if scaledObj == nil {
-			return nil, errors.New("keda scaled object is nil")
-		}
-
-		old := &kedav1alpha1.ScaledObject{}
-
-		err = k.k8sClient.CRClient.Get(context.Background(), client.ObjectKey{
-			Namespace: scaledObj.Namespace,
-			Name:      scaledObj.Name,
-		}, old)
-
-		if err != nil {
-			return nil, err
-		}
-
-		spec := types.ScaledPatchStruct{}
-
-		spec.Spec.ScaleTargetRef = scaledObj.Spec.ScaleTargetRef
-		if scaledObj.Spec.MinReplicaCount != nil && scaledObj.Spec.MaxReplicaCount != nil {
-
-			var minCount = *scaledObj.Spec.MinReplicaCount
-			var maxCount = *scaledObj.Spec.MaxReplicaCount
-
-			if minCount > 0 && maxCount > 0 && minCount < maxCount {
-				spec.Spec.MinReplicaCount = scaledObj.Spec.MinReplicaCount
-				spec.Spec.MaxReplicaCount = scaledObj.Spec.MaxReplicaCount
-			}
-		}
-
-		if len(scaledObj.Spec.Triggers) > 0 {
-			spec.Spec.Triggers = scaledObj.Spec.Triggers
-		}
-
-		patchBytes, err := json.Marshal(spec)
-		if err != nil {
-			return nil, err
-		}
-		patch := client.RawPatch(apitypes.MergePatchType, patchBytes)
-
-		err = k.k8sClient.CRClient.Patch(context.Background(), old, patch)
-		if err != nil {
-			return sg, err
-		}
-	}
-
-	return sg, nil
-}
-
-func (k *Kubernetes) manualScale(ctx context.Context, spec interface{}) (interface{}, error) {
-	sg, err := ValidateRuntime(spec, "TaskScale")
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !IsGroupStateful(sg) && sg.ProjectNamespace != "" {
-		k.setProjectServiceName(sg)
-	}
-
-	// only support scale one service resources
-	if len(sg.Services) != 1 {
-		logrus.Infof("the scaling service count is not equal 1 for sg.Services: %#v", sg.Services)
-		//	return nil, fmt.Errorf("the scaling service count is not equal 1")
-	}
-
-	// scale operator use addon update
-	operator, ok := sg.Labels["USE_OPERATOR"]
-	if ok {
-		op, err := k.whichOperator(operator)
-		if err != nil {
-			return nil, fmt.Errorf("not found addonoperator: %v", operator)
-		}
-		return sg, addon.Update(op, sg)
-	}
-
-	if IsGroupStateful(sg) {
-		// statefulset application
-		// Judge the group from the label, each group is a statefulset
-		groups, err := groupStatefulset(sg)
-		if err != nil {
-			logrus.Infof(err.Error())
-			return sg, err
-		}
-
-		for _, groupedSG := range groups {
-			// 每个  groupedSG 对应一个 statefulSet，其中 Services 数量表示副本数
-			if err = k.scaleStatefulSet(ctx, groupedSG); err != nil {
-				logrus.Error(err)
-				return sg, err
-			}
-		}
-	} else {
-		// stateless application
-		for index, svc := range sg.Services {
-			switch svc.WorkLoad {
-			case types.ServicePerNode:
-				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
-				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
-				logrus.Error(errs)
-				return sg, errs
-			default:
-				// Scale deployment
-				if err = k.scaleDeployment(ctx, sg, index); err != nil {
-					logrus.Error(err)
-					return sg, err
-				}
-			}
-		}
-	}
-
-	return sg, nil
-}
-
-func (k *Kubernetes) createErdaHPARules(spec interface{}) (interface{}, error) {
-	hpaObjects := make(map[string]pstypes.ErdaHPAObject)
-	sg, err := ValidateRuntime(spec, "TaskScale")
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !IsGroupStateful(sg) && sg.ProjectNamespace != "" {
-		k.setProjectServiceName(sg)
-	}
-
-	if IsGroupStateful(sg) {
-		// statefulset application
-		// Judge the group from the label, each group is a statefulset
-		groups, err := groupStatefulset(sg)
-		if err != nil {
-			logrus.Infof(err.Error())
-			return nil, err
-		}
-
-		for _, groupedSG := range groups {
-			// 每个  groupedSG 对应一个 statefulSet，其中 Services 数量表示副本数
-			// Scale statefulset
-			sts, err := k.getStatefulSetAbstract(groupedSG)
-			if err != nil {
-				logrus.Error(err)
-				return nil, err
-			}
-			hpaObjects[groupedSG.Services[0].Name] = pstypes.ErdaHPAObject{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: sts.APIVersion,
-					Kind:       sts.Kind,
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: sts.Namespace,
-					Name:      sts.Name,
-				},
-			}
-		}
-	} else {
-		// stateless application
-		for index, svc := range sg.Services {
-			switch svc.WorkLoad {
-			case types.ServicePerNode:
-				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
-				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
-				logrus.Error(errs)
-				return nil, errs
-			default:
-				// Scale deployment
-				dp, err := k.getDeploymentAbstract(sg, index)
-				if err != nil {
-					logrus.Error(err)
-					return nil, err
-				}
-				hpaObjects[sg.Services[index].Name] = pstypes.ErdaHPAObject{
-					TypeMeta: metav1.TypeMeta{
-						APIVersion: dp.APIVersion,
-						Kind:       dp.Kind,
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: dp.Namespace,
-						Name:      dp.Name,
-					},
-				}
-			}
-		}
-	}
-
-	return hpaObjects, nil
-}
-
-func (k *Kubernetes) composeNodeAntiAffinityPreferredWithWorkspace(workspace string) []apiv1.PreferredSchedulingTerm {
-	var (
-		workspaceKeys           = []string{"dev", "test", "staging", "prod"}
-		weightMap               = map[string]int32{"dev": 60, "test": 60, "staging": 80, "prod": 100}
-		preferredSchedulerTerms = make([]apiv1.PreferredSchedulingTerm, 0, len(workspaceKeys))
-	)
-
-	for index, key := range workspaceKeys {
-		if strings.ToLower(workspace) == key {
-			workspaceKeys = append(workspaceKeys[:index], workspaceKeys[index+1:]...)
-			break
-		}
-	}
-
-	for _, key := range workspaceKeys {
-		preferredSchedulerTerms = append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
-			Weight: weightMap[key],
-			Preference: apiv1.NodeSelectorTerm{
-				MatchExpressions: []apiv1.NodeSelectorRequirement{
-					{
-						Key:      fmt.Sprintf("dice/workspace-%s", key),
-						Operator: apiv1.NodeSelectorOpDoesNotExist,
-					},
-				},
-			},
-		})
-	}
-	return preferredSchedulerTerms
-}
-
-func (k *Kubernetes) composeDeploymentNodeAntiAffinityPreferred(workspace string) []apiv1.PreferredSchedulingTerm {
-	preferredSchedulerTerms := k.composeNodeAntiAffinityPreferredWithWorkspace(workspace)
-	return append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
-		Weight: 100,
-		Preference: apiv1.NodeSelectorTerm{
-			MatchExpressions: []apiv1.NodeSelectorRequirement{
-				{
-					Key:      "dice/stateful-service",
-					Operator: apiv1.NodeSelectorOpDoesNotExist,
-				},
-			},
-		},
-	})
-}
-
-func (k *Kubernetes) composeStatefulSetNodeAntiAffinityPreferred(workspace string) []apiv1.PreferredSchedulingTerm {
-	preferredSchedulerTerms := k.composeNodeAntiAffinityPreferredWithWorkspace(workspace)
-	return append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
-		Weight: 100,
-		Preference: apiv1.NodeSelectorTerm{
-			MatchExpressions: []apiv1.NodeSelectorRequirement{
-				{
-					Key:      "dice/stateless-service",
-					Operator: apiv1.NodeSelectorOpDoesNotExist,
-				},
-			},
-		},
-	})
-}
-
-func (k *Kubernetes) composeRegistryInfos(sg *apistructs.ServiceGroup) []apistructs.RegistryInfo {
-	registryInfos := []apistructs.RegistryInfo{}
-
-	for _, service := range sg.Services {
-		if service.ImageUsername != "" {
-			registryInfo := apistructs.RegistryInfo{}
-			registryInfo.Host = strings.Split(service.Image, "/")[0]
-			registryInfo.UserName = service.ImageUsername
-			registryInfo.Password = service.ImagePassword
-			registryInfos = append(registryInfos, registryInfo)
-		}
-	}
-	return registryInfos
-}
-
-func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectReference, error) {
-	secrets := make([]apiv1.LocalObjectReference, 0, 1)
-	secretName := conf.CustomRegCredSecret()
-
-	_, err := k.secret.Get(namespace, secretName)
-	if err == nil {
-		secrets = append(secrets,
-			apiv1.LocalObjectReference{
-				Name: secretName,
-			})
-	} else {
-		if !k8serror.NotFound(err) {
-			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", secretName, namespace, err)
-		}
-	}
-	return secrets, nil
-}
-
-func (k *Kubernetes) DeployInEdgeCluster() bool {
-	clusterInfo, err := k.ClusterInfo.Get()
-	if err != nil {
-		logrus.Warningf("failed to get cluster info, error: %v", err)
-		return false
-	}
-
-	if clusterInfo[string(apistructs.DICE_IS_EDGE)] != "true" {
-		return false
-	}
-
-	return true
 }

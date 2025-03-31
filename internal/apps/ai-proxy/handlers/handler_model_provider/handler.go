@@ -43,5 +43,23 @@ func (h *ModelProviderHandler) Update(ctx context.Context, req *pb.ModelProvider
 }
 
 func (h *ModelProviderHandler) Paging(ctx context.Context, req *pb.ModelProviderPagingRequest) (*pb.ModelProviderPagingResponse, error) {
-	return h.DAO.ModelProviderClient().Paging(ctx, req)
+	pagingResult, err := h.DAO.ModelProviderClient().Paging(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// handle for display
+	for _, provider := range pagingResult.List {
+		Handle_for_display(provider)
+	}
+	return pagingResult, nil
+}
+
+func Handle_for_display(p *pb.ModelProvider) *pb.ModelProvider {
+	if p.Metadata == nil || p.Metadata.Public == nil {
+		return p
+	}
+	if displayProviderType := p.Metadata.Public["displayProviderType"]; displayProviderType != "" {
+		p.Type = displayProviderType
+	}
+	return p
 }

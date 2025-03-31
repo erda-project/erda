@@ -29,29 +29,65 @@ import (
 func TestPipeline_EnsureGC(t *testing.T) {
 	var ttl uint64 = 10
 	var archive bool = true
-	p := Pipeline{
-		PipelineExtra: PipelineExtra{
-			Extra: PipelineExtraInfo{
-				GC: basepb.PipelineGC{
-					ResourceGC: &basepb.PipelineResourceGC{
-						SuccessTTLSecond: &ttl,
-						FailedTTLSecond:  nil,
-					},
-					DatabaseGC: &basepb.PipelineDatabaseGC{
-						Analyzed: &basepb.PipelineDBGCItem{
-							NeedArchive: nil,
-							TTLSecond:   &ttl,
+	pipelines := []Pipeline{
+		{
+			PipelineExtra: PipelineExtra{
+				Extra: PipelineExtraInfo{
+					GC: basepb.PipelineGC{
+						ResourceGC: &basepb.PipelineResourceGC{
+							SuccessTTLSecond: &ttl,
+							FailedTTLSecond:  nil,
 						},
-						Finished: &basepb.PipelineDBGCItem{
-							NeedArchive: &archive,
-							TTLSecond:   nil,
+						DatabaseGC: &basepb.PipelineDatabaseGC{
+							Analyzed: &basepb.PipelineDBGCItem{
+								NeedArchive: nil,
+								TTLSecond:   &ttl,
+							},
+							Finished: &basepb.PipelineDBGCItem{
+								NeedArchive: &archive,
+								TTLSecond:   nil,
+							},
 						},
 					},
 				},
 			},
 		},
+		{
+			PipelineExtra: PipelineExtra{
+				Extra: PipelineExtraInfo{
+					GC: basepb.PipelineGC{
+						ResourceGC: nil,
+						DatabaseGC: &basepb.PipelineDatabaseGC{
+							Analyzed: &basepb.PipelineDBGCItem{
+								NeedArchive: nil,
+								TTLSecond:   &ttl,
+							},
+							Finished: &basepb.PipelineDBGCItem{
+								NeedArchive: &archive,
+								TTLSecond:   nil,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			PipelineExtra: PipelineExtra{
+				Extra: PipelineExtraInfo{
+					GC: basepb.PipelineGC{
+						ResourceGC: &basepb.PipelineResourceGC{
+							SuccessTTLSecond: &ttl,
+							FailedTTLSecond:  nil,
+						},
+						DatabaseGC: nil,
+					},
+				},
+			},
+		},
 	}
-	p.EnsureGC()
+	for _, pipeline := range pipelines {
+		pipeline.EnsureGC()
+	}
 }
 
 func TestCanSkipRunningCheck(t *testing.T) {

@@ -106,7 +106,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 
 	// force set model for openai
 	modelProvider, _ := ctxhelper.GetModelProvider(ctx)
-	if modelProvider.Type == modelproviderpb.ModelProviderType_OpenAI {
+	if modelProvider.Type == modelproviderpb.ModelProviderType_OpenAI.String() {
 		r.MultipartForm.Value[formBodyFieldModel] = []string{f.Config.DefaultOpenAIAudioModel}
 	}
 

@@ -275,7 +275,8 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("parse oid failed,%v", err)
 			return data
 		}
-		appIds := make([]string, 0)
+		appIds := make([]uint64, 0)
+		appIdsStr := make([]string, 0)
 
 		appIdStr, ok := p.Sdk.InParams["appId"].(string)
 		if !ok {
@@ -287,11 +288,8 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("failed to parse appid")
 			return data
 		}
-		appIds = append(appIds, appIdStr)
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
+		appIds = append(appIds, appId)
+		appIdsStr = append(appIdsStr, appIdStr)
 
 		apps, err := p.Bdl.GetMyApps(p.Sdk.Identity.UserID, oid)
 		if err != nil {
@@ -309,7 +307,7 @@ func (p *List) getData() *list.Data {
 		logrus.Infof("start load runtimes by app %v", time.Now())
 		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true", httputil.UserHeader: p.Sdk.Identity.UserID}))
 		runtimesByApp, err := p.runtimeSvc.ListRuntimesGroupByApps(ctx, &runtimepb.ListRuntimeByAppsRequest{
-			ApplicationID: appIds,
+			ApplicationID: appIdsStr,
 			Workspace:     []string{getEnv},
 		})
 

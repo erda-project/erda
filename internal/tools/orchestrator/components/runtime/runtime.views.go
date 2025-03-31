@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"math"
 	"net/url"
 	"runtime/debug"
@@ -46,6 +45,7 @@ import (
 	pstypes "github.com/erda-project/erda/internal/tools/orchestrator/components/podscaler/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
 	"github.com/erda-project/erda/internal/tools/orchestrator/utils"
@@ -1389,7 +1389,7 @@ func (r *RuntimeService) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*a
 				servicesMap.Lock()
 				servicesMap.m[rt.ID] = &d
 				servicesMap.Unlock()
-				wg.Done()
+				defer wg.Done()
 			}(runtime, &wg, &servicesMap, deployment, runtimeHPARules, runtimeVPARules)
 		}
 	}

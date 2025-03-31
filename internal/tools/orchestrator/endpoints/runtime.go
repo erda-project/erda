@@ -197,8 +197,8 @@ func (e *Endpoints) KillPod(ctx context.Context, r *http.Request, vars map[strin
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrKillPod.InvalidParameter("req body").ToResp(), nil
 	}
-	err := e.runtime.KillPod(req.RuntimeID, req.PodName)
-	if err != nil {
+
+	if err := e.runtime.KillPod(req.RuntimeID, req.PodName); err != nil {
 		return apierrors.ErrKillPod.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp(nil)

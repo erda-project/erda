@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
@@ -80,7 +81,7 @@ func (f *OpenaiDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok {
 		return false
 	}
-	return prov.Type == modelproviderpb.ModelProviderType_OpenAI
+	return prov.Type == modelproviderpb.ModelProviderType_OpenAI.String()
 }
 
 func (f *OpenaiDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -138,8 +139,14 @@ func (f *OpenaiDirector) TransAuthorization(ctx context.Context) error {
 	}
 	prov := value.(*modelproviderpb.ModelProvider)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.Header.Del("Authorization")
-		req.Header.Set("Authorization", vars.ConcatBearer(prov.ApiKey))
+		req.Header.Del(httputil.HeaderKeyAuthorization)
+		// ensure auth type
+		authValue := prov.ApiKey
+		if !strings.Contains(authValue, " ") {
+			// if not contains space, treat as no auth type specified, use Bearer as default for backward compatibility
+			authValue = vars.ConcatBearer(authValue)
+		}
+		req.Header.Set(httputil.HeaderKeyAuthorization, authValue)
 	})
 	return nil
 }

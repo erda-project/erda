@@ -17,6 +17,7 @@ package azure_director
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -86,7 +87,7 @@ func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok {
 		return false
 	}
-	return prov.Type == modelproviderpb.ModelProviderType_Azure
+	return prov.Type == modelproviderpb.ModelProviderType_Azure.String()
 }
 
 func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -262,7 +263,17 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 
 	rewrite, err := strconv.Unquote(f.processorArgs["RewritePath"])
 	if err != nil {
-		return errors.Errorf("failed to get RewritePath args, err: %v", err)
+		return fmt.Errorf("failed to get RewritePath args, err: %v", err)
+	}
+	// override rewrite path at provider metadata
+	provider := ctxhelper.MustGetModelProvider(ctx)
+	providerMetaPb := metadata.FromProtobuf(provider.Metadata)
+	providerMeta, err := providerMetaPb.ToModelProviderMeta()
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal provider metadata: %v", err)
+	}
+	if providerMeta.Public.RewritePath != "" {
+		rewrite = providerMeta.Public.RewritePath
 	}
 	if rewrite == "" {
 		return nil
@@ -296,6 +307,30 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.URL.Path = rewrite
+	})
+	return nil
+}
+
+func (f *AzureDirector) RewriteBodyModelName(ctx context.Context) error {
+	model := ctxhelper.MustGetModel(ctx)
+	customModelName, ok := model.Metadata.Public["model_name"]
+	if !ok {
+		return nil
+	}
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		if req.Body == nil {
+			return
+		}
+		var body map[string]interface{}
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			return
+		}
+		body["model"] = customModelName
+		b, err := json.Marshal(body)
+		if err != nil {
+			return
+		}
+		req.Body = io.NopCloser(strings.NewReader(string(b)))
 	})
 	return nil
 }
