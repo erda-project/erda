@@ -26,6 +26,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
 	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
@@ -793,39 +794,39 @@ func TestEndpoints_batchRuntimeDelete(t *testing.T) {
 		Runtimes: []apistructs.RuntimeScaleRecord{rsr1, rsr2},
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "Delete", func(rt *runtime.RuntimeService, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDTO, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "Delete", func(rt *runtime.RuntimeService, operator user.ID, orgID uint64, runtimeID uint64) (*pb.Runtime, error) {
 		if runtimeID == 128 {
-			ret := &apistructs.RuntimeDTO{
-				ID:              128,
+			ret := &pb.Runtime{
+				Id:              128,
 				Name:            "feature/develop",
 				GitBranch:       "feature/develop",
 				Workspace:       "DEV",
 				ClusterName:     "test",
-				ClusterId:       1,
+				ClusterID:       1,
 				Status:          "Healthy",
 				ApplicationID:   1,
 				ApplicationName: "test01",
 				ProjectID:       1,
 				ProjectName:     "test",
 				OrgID:           1,
-				Errors:          []apistructs.ErrorResponse{},
+				Errors:          []*pb.ErrorResponse{},
 			}
 			return ret, nil
 		} else {
-			ret := &apistructs.RuntimeDTO{
-				ID:              129,
+			ret := &pb.Runtime{
+				Id:              129,
 				Name:            "feature/develop",
 				GitBranch:       "feature/develop",
 				Workspace:       "DEV",
 				ClusterName:     "test",
-				ClusterId:       1,
+				ClusterID:       1,
 				Status:          "Healthy",
 				ApplicationID:   21,
 				ApplicationName: "test02",
 				ProjectID:       1,
 				ProjectName:     "test",
 				OrgID:           1,
-				Errors:          []apistructs.ErrorResponse{},
+				Errors:          []*pb.ErrorResponse{},
 			}
 			return ret, nil
 		}
