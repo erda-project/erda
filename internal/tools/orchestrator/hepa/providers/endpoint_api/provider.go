@@ -165,7 +165,7 @@ func init() {
 			"erda.core.hepa.domain.DomainService",
 			"erda.core.hepa.global.GlobalService",
 			"erda.core.project.Project",
-			"erda.orchestrator.runtime.RuntimeService",
+			"erda.orchestrator.runtime.RuntimeTertiaryService",
 		},
 		Description: "",
 		ConfigFunc: func() interface{} {

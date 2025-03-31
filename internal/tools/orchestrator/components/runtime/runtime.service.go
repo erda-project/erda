@@ -487,7 +487,7 @@ func (r *RuntimeService) CheckCountPRByWorkspacePerm(userID string, applicationI
 			return errors.NewServiceInvokingError("CheckPermission", err)
 		}
 		if !resp.Access {
-			return errors.NewPermissionError(fmt.Sprintf("user/%s/%s/%s/resource/%s", userID, scope, applicationId, resource), perm.ActionGet, "")
+			return errors.NewPermissionError(fmt.Sprintf("user/%s/%s/%s/resource/%s", userID, scope, strconv.FormatUint(applicationId, 10), resource), perm.ActionGet, "")
 		}
 	}
 	return nil
