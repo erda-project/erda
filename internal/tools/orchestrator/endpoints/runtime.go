@@ -16,7 +16,6 @@ package endpoints
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -190,16 +189,4 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 	}
 
 	return httpserver.OkResp(result)
-}
-
-func (e *Endpoints) KillPod(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	var req apistructs.RuntimeKillPodRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return apierrors.ErrKillPod.InvalidParameter("req body").ToResp(), nil
-	}
-
-	if err := e.runtime.KillPod(req.RuntimeID, req.PodName); err != nil {
-		return apierrors.ErrKillPod.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp(nil)
 }

@@ -70,6 +70,13 @@ type RuntimeService struct {
 	pipelineSvc      pipelinepb.PipelineServiceServer
 }
 
+func (r *RuntimeService) KillPodService(ctx context.Context, req *pb.KillPodRequest) (*pb.KillPodResponse, error) {
+	if err := r.KillPod(req.RuntimeID, req.PodName); err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return &pb.KillPodResponse{}, nil
+}
+
 func (r *RuntimeService) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {

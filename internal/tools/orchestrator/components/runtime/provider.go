@@ -142,6 +142,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.KillPodService, perm.ScopeApp, "runtime-dev", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 
 			p.Method(RuntimeServiceHandle.GetRuntime, perm.ScopeApp, "runtime-test", perm.ActionGet, p.GetAppIDByRuntimeID("NameOrID")),
 			p.Method(RuntimeServiceHandle.DelRuntime, perm.ScopeApp, "runtime-test", perm.ActionDelete, p.GetAppIDByRuntimeID("Id")),
@@ -150,6 +151,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.KillPodService, perm.ScopeApp, "runtime-test", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 
 			p.Method(RuntimeServiceHandle.GetRuntime, perm.ScopeApp, "runtime-staging", perm.ActionGet, p.GetAppIDByRuntimeID("NameOrID")),
 			p.Method(RuntimeServiceHandle.DelRuntime, perm.ScopeApp, "runtime-staging", perm.ActionDelete, p.GetAppIDByRuntimeID("Id")),
@@ -158,6 +160,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.KillPodService, perm.ScopeApp, "runtime-staging", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 
 			p.Method(RuntimeServiceHandle.GetRuntime, perm.ScopeApp, "runtime-prod", perm.ActionGet, p.GetAppIDByRuntimeID("NameOrID")),
 			p.Method(RuntimeServiceHandle.DelRuntime, perm.ScopeApp, "runtime-prod", perm.ActionDelete, p.GetAppIDByRuntimeID("Id")),
@@ -168,6 +171,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.Method(RuntimeServiceHandle.ReDeployRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntimeAction, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 			p.Method(RuntimeServiceHandle.RollBackRuntime, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
+			p.Method(RuntimeServiceHandle.KillPodService, perm.ScopeApp, "runtime-prod", perm.ActionOperate, p.GetAppIDByRuntimeID("RuntimeID")),
 		),
 			p.audit.Audit(
 				audit.Method(RuntimeServiceHandle.DelRuntime, audit.AppScope, string(apistructs.DeleteRuntimeTemplate),

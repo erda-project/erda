@@ -319,6 +319,15 @@ message BatchRuntimeServiceResponse {
   map<uint64, google.protobuf.Value> data = 1;
 }
 
+message KillPodRequest {
+  uint64 RuntimeID = 1;
+  string podName = 2;
+}
+
+message KillPodResponse {
+
+}
+
 service RuntimePrimaryService {
   rpc GetRuntime (GetRuntimeRequest) returns (RuntimeInspect) {
     option (google.api.http) = {
@@ -359,6 +368,12 @@ service RuntimePrimaryService {
   rpc RollBackRuntime(RollBackRuntimeActionRequest)returns (DeploymentCreateResponse) {
     option (google.api.http) = {
       post: "/api/runtimes/{runtimeID}/actions/rollback"
+    };
+  }
+
+  rpc KillPodService(KillPodRequest) returns (KillPodResponse) {
+    option (google.api.http) = {
+      post: "/api/runtimes/actions/killpod"
     };
   }
 
