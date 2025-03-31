@@ -325,7 +325,12 @@ message KillPodRequest {
 }
 
 message KillPodResponse {
-
+  string applicationID = 1;
+  string workspace = 2;
+  string podName = 3;
+  string appName = 4;
+  string runtime = 5;
+  string projectName = 6;
 }
 
 service RuntimePrimaryService {

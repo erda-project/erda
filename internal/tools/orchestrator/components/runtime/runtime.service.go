@@ -72,10 +72,18 @@ type RuntimeService struct {
 }
 
 func (r *RuntimeService) KillPodService(ctx context.Context, req *pb.KillPodRequest) (*pb.KillPodResponse, error) {
-	if err := r.KillPod(req.RuntimeID, req.PodName); err != nil {
+	auditData, err := r.KillPod(req.RuntimeID, req.PodName)
+	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return &pb.KillPodResponse{}, nil
+	return &pb.KillPodResponse{
+		ApplicationID: auditData["applicationID"],
+		Workspace:     auditData["workspace"],
+		Runtime:       auditData["runtime"],
+		PodName:       auditData["podName"],
+		ProjectName:   auditData["projectName"],
+		AppName:       auditData["appName"],
+	}, nil
 }
 
 func (r *RuntimeService) RollBackRuntime(ctx context.Context, req *pb.RollBackRuntimeActionRequest) (*pb.DeploymentCreateResponse, error) {

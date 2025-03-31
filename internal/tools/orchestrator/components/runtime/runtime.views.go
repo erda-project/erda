@@ -324,16 +324,28 @@ func (r *RuntimeService) checkOrgScopePermission(userID user.ID, orgID uint64) e
 	return nil
 }
 
-func (r *RuntimeService) KillPod(runtimeID uint64, podname string) error {
+func (r *RuntimeService) KillPod(runtimeID uint64, podname string) (map[string]string, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	app, err := r.bundle.GetApp(runtime.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+	auditData := map[string]string{
+		"applicationID": strconv.FormatUint(runtime.ApplicationID, 10),
+		"workspace":     runtime.Workspace,
+		"runtime":       runtime.Name,
+		"podName":       podname,
+		"projectName":   app.ProjectName,
+		"appName":       app.Name,
 	}
 
 	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || podname == "" {
-		return errors.New("empty namespace or name or podname")
+		return nil, errors.New("empty namespace or name or podname")
 	}
-	return r.serviceGroupImpl.KillPod(context.Background(), runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, podname)
+	return auditData, r.serviceGroupImpl.KillPod(context.Background(), runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, podname)
 }
 
 func (r *RuntimeService) Create(operator user.ID, req *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {

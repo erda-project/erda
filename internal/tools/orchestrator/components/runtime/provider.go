@@ -233,6 +233,18 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						return r.ApplicationId, map[string]interface{}{}, nil
 					},
 				),
+
+				audit.Method(RuntimeServiceHandle.KillPodService, audit.AppScope, string(apistructs.KillPodTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.KillPodResponse)
+						return r.ApplicationID, map[string]interface{}{
+							"workspace":   r.Workspace,
+							"runtime":     r.Runtime,
+							"podName":     r.PodName,
+							"projectName": r.ProjectName,
+							"appName":     r.AppName,
+						}, nil
+					}),
 			),
 		)
 
