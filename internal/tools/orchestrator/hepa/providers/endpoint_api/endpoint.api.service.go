@@ -64,7 +64,7 @@ var (
 // endpointApiService implements pb.EndpointApiServiceServer
 type endpointApiService struct {
 	projCli               projPb.ProjectServer
-	runtimeCli            runtimePb.RuntimeServiceServer
+	runtimeCli            runtimePb.RuntimeTertiaryServiceServer
 	runtimeService        repositoryService.GatewayRuntimeServiceService
 	gatewayRouteService   repositoryService.GatewayRouteService
 	gatewayServiceService repositoryService.GatewayServiceService

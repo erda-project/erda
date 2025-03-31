@@ -46,10 +46,10 @@ type provider struct {
 	Log                logs.Logger
 	Register           transport.Register
 	endpointApiService *endpointApiService
-	Perm               perm.Interface                 `autowired:"permission"`
-	ProjCli            projPb.ProjectServer           `autowired:"erda.core.project.Project"`
-	RuntimeCli         runtimePb.RuntimeServiceServer `autowired:"erda.orchestrator.runtime.RuntimeService"`
-	Cron               cron.Interface                 `autowired:"easy-cron-client"`
+	Perm               perm.Interface                         `autowired:"permission"`
+	ProjCli            projPb.ProjectServer                   `autowired:"erda.core.project.Project"`
+	RuntimeCli         runtimePb.RuntimeTertiaryServiceServer `autowired:"erda.orchestrator.runtime.RuntimeTertiaryService"`
+	Cron               cron.Interface                         `autowired:"easy-cron-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
