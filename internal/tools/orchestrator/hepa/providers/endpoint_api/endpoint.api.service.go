@@ -16,6 +16,9 @@ package endpoint_api
 
 import (
 	"context"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda/pkg/http/httputil"
+	"google.golang.org/grpc/metadata"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -603,6 +606,7 @@ func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, cluste
 				}
 				if runtimeService != nil {
 					if runtimeID, err := strconv.ParseUint(runtimeService.RuntimeId, 10, 32); err == nil && runtimeID != 0 {
+						ctx := transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 						if resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID}); err != nil && resp != nil && !resp.GetOk() {
 							item := &pb.ListInvalidEndpointApiItem{
 								InvalidReason: invalidReasonPackageRuntimeIsInvalid,
@@ -633,6 +637,7 @@ func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, cluste
 					}
 					if runtimeService != nil {
 						if runtimeID, err := strconv.ParseUint(runtimeService.RuntimeId, 10, 32); err == nil && runtimeID != 0 {
+							ctx := transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 							if resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID}); err != nil && resp != nil && !resp.GetOk() {
 								item := s.adjustInvalidPackageAPIItem(pkg, packageApi, invalidReasonPackageAPIRuntimeIsInvalid)
 								f(item)

@@ -297,6 +297,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.Method(RuntimeServiceHandle.FullGC, perm.ScopeApp, "", perm.ActionGet, p.FieldValue(""), func(permission *Permission) {
 				permission.skipPermInternalClient = true
 			}),
+			p.Method(RuntimeServiceHandle.CheckRuntimeExist, perm.ScopeApp, "", perm.ActionGet, p.FieldValue(""), func(permission *Permission) {
+				permission.skipPermInternalClient = true
+			}),
 		))
 	}
 	return nil
