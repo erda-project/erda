@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 	"gopkg.in/yaml.v3"
 
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -93,9 +94,21 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	var requestedMessages message.Messages
 
 	var chatCompletionRequest openai.ChatCompletionRequest
+
+	chatCompletionRequest.ResponseFormat = &openai.ChatCompletionResponseFormat{
+		JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+			Schema: &jsonschema.Definition{},
+		},
+	}
 	if err := json.NewDecoder(infor.BodyBuffer()).Decode(&chatCompletionRequest); err != nil {
 		l.Errorf("failed to decode request body, err: %v", err)
 		return reverseproxy.Intercept, err
+	}
+	if chatCompletionRequest.ResponseFormat.Type == "" {
+		chatCompletionRequest.ResponseFormat.Type = openai.ChatCompletionResponseFormatTypeText
+	}
+	if chatCompletionRequest.ResponseFormat.Type != openai.ChatCompletionResponseFormatTypeJSONSchema {
+		chatCompletionRequest.ResponseFormat.JSONSchema = nil
 	}
 	for _, msg := range chatCompletionRequest.Messages {
 		// handle user message, wrap by '|start| your question here |end|'
