@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/conf"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/instanceinfo"
 )
 
@@ -31,7 +32,9 @@ func gcDeadInstancesInDB(dbclient *instanceinfo.Client, clusterName string) erro
 	// list instance info in database with limit 3000
 	r.Limit(3000)
 
-	instances, err := r.ByCluster(clusterName).ByPhase(instanceinfo.InstancePhaseDead).ByFinishedTime(7).Do()
+	instances, err := r.ByCluster(clusterName).
+		ByPhase(instanceinfo.InstancePhaseDead).
+		ByFinishedTime(conf.PodInstanceGCRecentDays()).Do()
 	if err != nil {
 		return err
 	}
