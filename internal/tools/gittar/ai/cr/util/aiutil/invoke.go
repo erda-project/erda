@@ -51,8 +51,9 @@ func getOpenAIClient(user *models.User, aiSessionID string) *openai.Client {
 	// config
 	clientConfig := openai.DefaultConfig(aiproxyclient.Instance.Config().ClientAK)
 	clientConfig.BaseURL = strings.TrimSuffix(aiproxyclient.Instance.Config().URL, "/") + "/v1"
-	clientConfig.HTTPClient = http.DefaultClient
-	clientConfig.HTTPClient.Transport = &transport{RoundTripper: http.DefaultTransport, User: user, AISessionID: aiSessionID, ClusterName: conf.DiceCluster()}
+	httpClient := http.DefaultClient
+	httpClient.Transport = &transport{RoundTripper: http.DefaultTransport, User: user, AISessionID: aiSessionID, ClusterName: conf.DiceCluster()}
+	clientConfig.HTTPClient = httpClient
 	client := openai.NewClientWithConfig(clientConfig)
 	return client
 }

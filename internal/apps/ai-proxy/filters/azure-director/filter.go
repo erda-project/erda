@@ -29,6 +29,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -401,10 +402,24 @@ func (f *AzureDirector) AddContextMessages(ctx context.Context) error {
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		infor := reverseproxy.NewInfor(ctx, req)
 		var openaiReq openai.ChatCompletionRequest
+
+		// init `JSONSchema.Schema` for `json.Decode`, otherwise, it will report an error
+		openaiReq.ResponseFormat = &openai.ChatCompletionResponseFormat{
+			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Schema: &jsonschema.Definition{},
+			},
+		}
 		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&openaiReq); err != nil && err != io.EOF {
 			ctxhelper.GetLogger(ctx).Errorf("failed to decode request body, err: %v", err)
 			return
 		}
+		if openaiReq.ResponseFormat.Type == "" {
+			openaiReq.ResponseFormat.Type = openai.ChatCompletionResponseFormatTypeText
+		}
+		if openaiReq.ResponseFormat.Type != openai.ChatCompletionResponseFormatTypeJSONSchema {
+			openaiReq.ResponseFormat.JSONSchema = nil
+		}
+
 		openaiReq.Messages = messageGroup.AllMessages
 		b, err := json.Marshal(&openaiReq)
 		if err != nil {
