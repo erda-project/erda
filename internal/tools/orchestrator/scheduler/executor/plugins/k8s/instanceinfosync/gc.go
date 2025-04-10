@@ -15,7 +15,6 @@
 package instanceinfosync
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -43,9 +42,9 @@ func gcDeadInstancesInDB(dbclient *instanceinfo.Client, clusterName string) erro
 
 	startTime := time.Now()
 	logrus.Infof("gonna to gc instance, count: %d", len(instances))
-	
+
 	if err := w.Delete(ids...); err != nil {
-		return fmt.Errorf("failed to gc, %v", err)
+		return err
 	}
 
 	logrus.Infof("instance gc done, cost: %v", time.Since(startTime).String())
