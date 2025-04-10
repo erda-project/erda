@@ -15,7 +15,12 @@
 package azure_director_test
 
 import (
+	"encoding/json"
+	"os"
 	"testing"
+
+	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 
 	azure_director "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
 )
@@ -70,3 +75,34 @@ func TestAzureDirector_Processors(t *testing.T) {
 //	}
 //	_ = request
 //}
+
+func TestReq(t *testing.T) {
+	reqBytes, _ := os.ReadFile("req_test.json")
+	tests := []struct {
+		Req     openai.ChatCompletionRequest `json:"req"`
+		WantErr bool
+	}{
+		{
+			Req: openai.ChatCompletionRequest{
+				ResponseFormat: &openai.ChatCompletionResponseFormat{
+					JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+						Schema: &jsonschema.Definition{},
+					},
+				},
+			},
+			WantErr: false,
+		},
+		{
+			Req:     openai.ChatCompletionRequest{},
+			WantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		err := json.Unmarshal(reqBytes, &tt.Req)
+		if (err != nil) != tt.WantErr {
+			t.Errorf("On() error = %v, wantErr %v", err, tt.WantErr)
+			return
+		}
+	}
+}
