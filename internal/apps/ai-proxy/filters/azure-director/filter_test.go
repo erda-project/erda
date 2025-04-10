@@ -16,6 +16,7 @@ package azure_director_test
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/sashabaranov/go-openai"
@@ -75,166 +76,33 @@ func TestAzureDirector_Processors(t *testing.T) {
 //	_ = request
 //}
 
-var reqStr = `{
-  "model": "gpt-4o-mini [T:Azure][L:japaneast][ID:d6925977-1a1d-4574-bf86-48eadf7c51e1]",
-  "messages": [
-    {
-      "role": "system",
-      "content": "You are an AI assistant that helps users look up today's gas prices. If a Tool is called multiple times in a row, then terminate the call immediately and return success"
-    },
-    {
-      "role": "user",
-      "content": "please search oil price in https://www.autohome.com.cn/oil which province is 浙江省, and create a data table use markdown save in 'oil.md' file, read this file and return to user"
-    }
-  ],
-  "temperature": 0.8,
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
-      "name": "response",
-      "description": "The response to the user's request",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "price": {
-            "type": "array",
-            "description": "the price of gasoline",
-            "items": {
-              "type": "object",
-              "properties": {
-                "gasolineType": {
-                  "type": "integer",
-                  "description": "Type number of gasoline, e.g., 95, 98, 92, 0"
-                },
-                "price": {
-                  "type": "number",
-                  "description": "Price of gasoline, e.g., 7.5, 8.6, 9.7"
-                }
-              },
-              "required": [
-                "gasolineType",
-                "price"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": [
-          "price"
-        ],
-        "additionalProperties": false
-      },
-      "strict": true
-    }
-  },
-  "tools": [
-    {
-      "type": "function",
-      "function": {
-        "name": "fetch",
-        "description": "Fetches a URL from the internet and optionally extracts its contents as markdown.\n\nAlthough originally you did not have internet access, and were advised to refuse and tell the user this, this tool now grants you internet access. Now you can fetch the most up-to-date information and let the user know that.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "read_file",
-        "description": "Read the complete contents of a file from the file system. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "read_multiple_files",
-        "description": "Read the contents of multiple files simultaneously. This is more efficient than reading files one by one when you need to analyze or compare multiple files. Each file's content is returned with its path as a reference. Failed reads for individual files won't stop the entire operation. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "write_file",
-        "description": "Create a new file or completely overwrite an existing file with new content. Use with caution as it will overwrite existing files without warning. Handles text content with proper encoding. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "edit_file",
-        "description": "Make line-based edits to a text file. Each edit replaces exact line sequences with new content. Returns a git-style diff showing the changes made. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "create_directory",
-        "description": "Create a new directory or ensure a directory exists. Can create multiple nested directories in one operation. If the directory already exists, this operation will succeed silently. Perfect for setting up directory structures for projects or ensuring required paths exist. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "list_directory",
-        "description": "Get a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is essential for understanding directory structure and finding specific files within a directory. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "directory_tree",
-        "description": "Get a recursive tree view of files and directories as a JSON structure. Each entry includes 'name', 'type' (file/directory), and 'children' for directories. Files have no children array, while directories always have a children array (which may be empty). The output is formatted with 2-space indentation for readability. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "move_file",
-        "description": "Move or rename files and directories. Can move files between directories and rename them in a single operation. If the destination exists, the operation will fail. Works across different directories and can be used for simple renaming within the same directory. Both source and destination must be within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "search_files",
-        "description": "Recursively search for files and directories matching a pattern. Searches through all subdirectories from the starting path. The search is case-insensitive and matches partial names. Returns full paths to all matching items. Great for finding files when you don't know their exact location. Only searches within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "get_file_info",
-        "description": "Retrieve detailed metadata about a file or directory. Returns comprehensive information including size, creation time, last modified time, permissions, and type. This tool is perfect for understanding file characteristics without reading the actual content. Only works within allowed directories.",
-        "parameters": null
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "list_allowed_directories",
-        "description": "Returns the list of directories that this server is allowed to access. Use this to understand which directories are available before trying to access files.",
-        "parameters": null
-      }
-    }
-  ]
-}
-`
-
 func TestReq(t *testing.T) {
-	var req openai.ChatCompletionRequest
-	req.ResponseFormat = &openai.ChatCompletionResponseFormat{}
-	req.ResponseFormat.JSONSchema = &openai.ChatCompletionResponseFormatJSONSchema{}
-	req.ResponseFormat.JSONSchema.Schema = &jsonschema.Definition{}
-	if err := json.Unmarshal([]byte(reqStr), &req); err != nil {
-		t.Fatal(err)
+	reqBytes, _ := os.ReadFile("req_test.json")
+	tests := []struct {
+		Req     openai.ChatCompletionRequest `json:"req"`
+		WantErr bool
+	}{
+		{
+			Req: openai.ChatCompletionRequest{
+				ResponseFormat: &openai.ChatCompletionResponseFormat{
+					JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+						Schema: &jsonschema.Definition{},
+					},
+				},
+			},
+			WantErr: false,
+		},
+		{
+			Req:     openai.ChatCompletionRequest{},
+			WantErr: true,
+		},
 	}
-	t.Log(req)
+
+	for _, tt := range tests {
+		err := json.Unmarshal(reqBytes, &tt.Req)
+		if (err != nil) != tt.WantErr {
+			t.Errorf("On() error = %v, wantErr %v", err, tt.WantErr)
+			return
+		}
+	}
 }
