@@ -227,6 +227,8 @@ func (f *OpenaiDirector) AddContextMessages(ctx context.Context) error {
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		infor := reverseproxy.NewInfor(ctx, req)
 		var openaiReq openai.ChatCompletionRequest
+
+		// init `JSONSchema.Schema` for `json.Decode`, otherwise, it will report an error
 		openaiReq.ResponseFormat = &openai.ChatCompletionResponseFormat{
 			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
 				Schema: &jsonschema.Definition{},

@@ -95,6 +95,7 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 
 	var chatCompletionRequest openai.ChatCompletionRequest
 
+	// init `JSONSchema.Schema` for `json.Decode`, otherwise, it will report an error
 	chatCompletionRequest.ResponseFormat = &openai.ChatCompletionResponseFormat{
 		JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
 			Schema: &jsonschema.Definition{},
