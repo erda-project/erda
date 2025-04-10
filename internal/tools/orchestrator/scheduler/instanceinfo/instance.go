@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -132,13 +134,13 @@ func (r *InstanceReader) ByPhases(phases ...string) *InstanceReader {
 	r.values = append(r.values, phases)
 	return r
 }
-func (r *InstanceReader) ByFinishedTime(beforeNday int) *InstanceReader {
-	r.conditions = append(r.conditions, "finished_at < now() - interval ？ day")
-	r.values = append(r.values, strconv.Itoa(beforeNday))
+func (r *InstanceReader) ByFinishedTime(beforehand int) *InstanceReader {
+	r.conditions = append(r.conditions, "finished_at < now() - interval ? day")
+	r.values = append(r.values, strconv.Itoa(beforehand))
 	return r
 }
 func (r *InstanceReader) ByUpdatedTime(beforeNSecs int) *InstanceReader {
-	// Use scheduler time query to avoid the inconsistency between sceduler and database time and cause the instance to GC by mistake
+	// Use scheduler time query to avoid the inconsistency between scheduler and database time and cause the instance to GC by mistake
 	now := time.Now().Format("2006-01-02 15:04:05")
 	r.conditions = append(r.conditions, fmt.Sprintf("updated_at < '%s' - interval ? second", now))
 	r.values = append(r.values, strconv.Itoa(beforeNSecs))
@@ -185,21 +187,26 @@ func (r *InstanceReader) Limit(n int) *InstanceReader {
 	return r
 }
 func (r *InstanceReader) Do() ([]InstanceInfo, error) {
-	instanceinfo := []InstanceInfo{}
-	expr := r.db.Order("started_at desc")
-	for k := range r.conditions {
-		expr = expr.Where(r.conditions[k], r.values[k])
+	defer func() {
+		r.conditions = make([]string, 0)
+		r.values = make([]interface{}, 0)
+	}()
+
+	var results []InstanceInfo
+	query := r.db.Order("started_at desc")
+
+	for i, cond := range r.conditions {
+		query = query.Where(cond, r.values[i])
 	}
-	if r.limit != 0 {
-		expr = expr.Limit(r.limit)
+
+	if r.limit > 0 {
+		query = query.Limit(r.limit)
 	}
-	if err := expr.Find(&instanceinfo).Error; err != nil {
-		r.conditions = []string{}
+
+	if err := query.Find(&results).Error; err != nil {
 		return nil, err
 	}
-	r.conditions = []string{}
-	r.values = []interface{}{}
-	return instanceinfo, nil
+	return results, nil
 }
 
 func (c *Client) InstanceWriter() *instanceWriter {
@@ -212,5 +219,24 @@ func (w *instanceWriter) Update(s InstanceInfo) error {
 	return w.db.Model(&s).Updates(s).Update("updated_at", time.Now()).Error
 }
 func (w *instanceWriter) Delete(ids ...uint64) error {
-	return w.db.Delete(InstanceInfo{}, "id in (?)", ids).Error
+	const batchSize = 1000
+	if len(ids) == 0 {
+		return nil
+	}
+
+	return w.db.Transaction(func(tx *gorm.DB) error {
+		for start := 0; start < len(ids); start += batchSize {
+			end := start + batchSize
+			if end > len(ids) {
+				end = len(ids)
+			}
+			batch := ids[start:end]
+			if err := tx.
+				Where("id IN (?)", batch).
+				Delete(&InstanceInfo{}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

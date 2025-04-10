@@ -54,13 +54,14 @@ type Conf struct {
 	// Conf for scheduler
 	DefaultRuntimeExecutor string `env:"DEFAULT_RUNTIME_EXECUTOR" default:"MARATHON"`
 	// TraceLogEnv shows the key of environment variable defined for tracing log
-	TraceLogEnv           string `env:"TRACELOGENV" default:"TERMINUS_DEFINE_TAG"`
-	WsDiceRootDomain      string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
-	TerminalSecurity      bool   `env:"TERMINAL_SECURITY" default:"false"`
-	TerminalMasking       bool   `env:"TERMINAL_MASKING" default:"false"`
-	ExecutorClientTimeout int    `env:"EXECUTOR_CLIENT_TIMEOUT" default:"10"`
-	CustomRegCredSecret   string `env:"CUSTOM_REGCRED_SECRET" default:"regcred"`
-	ErdaNamespace         string `env:"DICE_NAMESPACE" default:"default"`
+	TraceLogEnv             string `env:"TRACELOGENV" default:"TERMINUS_DEFINE_TAG"`
+	WsDiceRootDomain        string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
+	TerminalSecurity        bool   `env:"TERMINAL_SECURITY" default:"false"`
+	TerminalMasking         bool   `env:"TERMINAL_MASKING" default:"false"`
+	ExecutorClientTimeout   int    `env:"EXECUTOR_CLIENT_TIMEOUT" default:"10"`
+	CustomRegCredSecret     string `env:"CUSTOM_REGCRED_SECRET" default:"regcred"`
+	ErdaNamespace           string `env:"DICE_NAMESPACE" default:"default"`
+	PodInstanceGCRecentDays int    `env:"POD_INSTANCE_GC_RECENT_DAYS" default:"7"`
 }
 
 var cfg Conf
@@ -221,4 +222,8 @@ func CollectorPublicURL() string {
 
 func OpenAPIPublicURL() string {
 	return cfg.OpenAPIPublicURL
+}
+
+func PodInstanceGCRecentDays() int {
+	return cfg.PodInstanceGCRecentDays
 }
