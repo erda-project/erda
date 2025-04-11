@@ -21,12 +21,12 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/addon"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/deployment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/environment"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 type DeploymentOrder struct {
 	db         *dbclient.DBClient
 	bdl        *bundle.Bundle
-	rt         *runtime.Runtime
+	rt         *runtime.RuntimeService
 	addon      *addon.Addon
 	deploy     *deployment.Deployment
 	queue      *queue.PusherQueue
@@ -70,7 +70,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithRuntime with runtime service
-func WithRuntime(rt *runtime.Runtime) Option {
+func WithRuntime(rt *runtime.RuntimeService) Option {
 	return func(d *DeploymentOrder) {
 		d.rt = rt
 	}

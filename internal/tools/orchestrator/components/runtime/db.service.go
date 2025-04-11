@@ -15,8 +15,10 @@
 package runtime
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/spec"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 type DBService interface {
@@ -28,4 +30,40 @@ type DBService interface {
 	GetRuntimeVPARulesByRuntimeId(runtimeID uint64) ([]dbclient.RuntimeVPA, error)
 	GetRuntime(id uint64) (*dbclient.Runtime, error)
 	UpdateRuntime(runtime *dbclient.Runtime) error
+	FindPreDeployment(uniqueId spec.RuntimeUniqueId) (*dbclient.PreDeployment, error)
+	FindRuntimesByIds(ids []uint64) ([]dbclient.Runtime, error)
+	GetUnDeletableAttachMentsByRuntimeID(orgID, runtimeID uint64) (*[]dbclient.AddonAttachment, error)
+	GetInstanceRouting(id string) (*dbclient.AddonInstanceRouting, error)
+	UpdateAttachment(addonAttachment *dbclient.AddonAttachment) error
+	UpdatePreDeployment(pre *dbclient.PreDeployment) error
+	FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
+		clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId,
+		releaseVersion, extraParams string) (*dbclient.Runtime, bool, error)
+	FindPreDeploymentOrCreate(uniqueId spec.RuntimeUniqueId, dice *diceyml.DiceYaml) (*dbclient.PreDeployment, error)
+	CreateOrUpdateRuntimeService(service *dbclient.RuntimeService, overrideStatus bool) error
+	CreateDeployment(deployment *dbclient.Deployment) error
+	FindRuntimesByAppId(appId uint64) ([]dbclient.Runtime, error)
+	FindLastSuccessDeployment(runtimeId uint64) (*dbclient.Deployment, error)
+	FindRuntimesNewerThan(minId uint64, limit int) ([]dbclient.Runtime, error)
+	ListRuntimeByOrgCluster(clusterName string, orgID uint64) ([]dbclient.Runtime, error)
+	ListRoutingInstanceByOrgCluster(clusterName string, orgID uint64) ([]dbclient.AddonInstanceRouting, error)
+	GetDeployment(id uint64) (*dbclient.Deployment, error)
+	FindRuntimesInApps(appIDs []uint64, env string) (map[uint64][]*dbclient.Runtime, []uint64, error)
+	FindLastDeploymentIDsByRutimeIDs(runtimeIDs []uint64) ([]uint64, error)
+	FindDeploymentsByIDs(ids []uint64) (map[uint64]dbclient.Deployment, error)
+	GetAppRuntimeNumberByWorkspace(projectId uint64, env string) (uint64, error)
+	FindTopDeployments(runtimeId uint64, limit int) ([]dbclient.Deployment, error)
+	FindNotOutdatedOlderThan(runtimeId uint64, maxId uint64) ([]dbclient.Deployment, error)
+	UpdateDeployment(deployment *dbclient.Deployment) error
+	GetRuntimeByProjectIDs(projectIDs []uint64) (*[]dbclient.Runtime, error)
+	ListAddonInstancesByProjectIDs(projectIDs []uint64, exclude ...string) (*[]dbclient.AddonInstance, error)
+	GetAddonNodesByInstanceIDs(instanceIDs []string) (*[]dbclient.AddonNode, error)
+	GetRuntimeHPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeHPA, error)
+	GetRuntimeVPAByServices(id spec.RuntimeUniqueId, services []string) ([]dbclient.RuntimeVPA, error)
+	DeleteRuntimeHPAByRuleId(ruleId string) error
+	DeleteRuntimeVPAByRuleId(ruleId string) error
+	DeleteRuntimeVPARecommendationsByRuntimeId(runtimeId uint64) error
+	DeleteDomainsByRuntimeId(runtimeId uint64) error
+	ResetPreDice(uniqueId spec.RuntimeUniqueId) error
+	DeleteRuntime(runtimeId uint64) error
 }

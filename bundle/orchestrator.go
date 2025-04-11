@@ -193,6 +193,8 @@ func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID 
 
 	return dataBytes, nil
 }
+
+// Deprecated
 func (b *Bundle) RuntimesClusterReferred(userID, orgID, clusterName string) (referred bool, err error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {

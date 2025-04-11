@@ -21,6 +21,7 @@ import (
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/dbclient"
@@ -30,13 +31,13 @@ import (
 )
 
 type Project struct {
-	db         *dbclient.DBClient
-	bdl        *bundle.Bundle
-	trans      i18n.Translator
-	cmp        dashboardPb.ClusterResourceServer
-	namespace  *namespace.Namespace
-	clusterSvc clusterpb.ClusterServiceServer
-
+	db               *dbclient.DBClient
+	bdl              *bundle.Bundle
+	trans            i18n.Translator
+	cmp              dashboardPb.ClusterResourceServer
+	namespace        *namespace.Namespace
+	clusterSvc       clusterpb.ClusterServiceServer
+	runtimeSvc       runtimePb.RuntimeSecondaryServiceServer
 	appOwnerCache    *cache.Cache
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error

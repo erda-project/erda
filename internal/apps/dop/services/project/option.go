@@ -19,6 +19,7 @@ import (
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	clusterpb "github.com/erda-project/erda-proto-go/core/clustermanager/cluster/pb"
 	tokenpb "github.com/erda-project/erda-proto-go/core/token/pb"
+	runtimePb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/services/namespace"
 	"github.com/erda-project/erda/internal/core/org"
@@ -31,6 +32,12 @@ type Option func(project *Project)
 func WithBundle(bundle *bundle.Bundle) Option {
 	return func(p *Project) {
 		p.bdl = bundle
+	}
+}
+
+func WithRuntimeSvc(svc runtimePb.RuntimeSecondaryServiceServer) Option {
+	return func(p *Project) {
+		p.runtimeSvc = svc
 	}
 }
 

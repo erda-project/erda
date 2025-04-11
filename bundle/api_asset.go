@@ -25,8 +25,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-const listRuntimesGroupByAppsAPI = "/api/runtimes/actions/group-by-apps"
-
 func GetApplicationRuntimesAPI() string {
 	return "/api/runtimes"
 }
@@ -130,41 +128,6 @@ func (b *Bundle) GetApplicationRuntimes(applicationID uint64, orgID uint64, user
 	if err != nil {
 		return nil, err
 	}
-	if !resp.IsOK() || !fetchResp.Success {
-		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
-	}
-
-	return fetchResp.Data, nil
-}
-
-// ListRuntimesGroupByApps queries the runtimes for the given applications ids
-// if workspace not specified ,return all runtimes.
-func (b *Bundle) ListRuntimesGroupByApps(orgID uint64, userID string, applicationsIDs []uint64, workspace string) (map[uint64][]*GetApplicationRuntimesDataEle, error) {
-	l := logrus.WithField("func", "*Bundle.ListRuntimesGroupByApps")
-	host, err := b.urls.Orchestrator()
-	if err != nil {
-		return nil, err
-	}
-
-	type response struct {
-		apistructs.Header
-		Data map[uint64][]*GetApplicationRuntimesDataEle `json:"data"`
-	}
-	var fetchResp response
-	request := b.hc.Get(host).
-		Path(listRuntimesGroupByAppsAPI).
-		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", userID).
-		Header("Org-ID", strconv.FormatUint(orgID, 10))
-	for _, appID := range applicationsIDs {
-		request.Param("applicationID", strconv.FormatUint(appID, 10))
-	}
-	request.Param("workspace", workspace)
-	resp, err := request.Do().JSON(&fetchResp)
-	if err != nil {
-		return nil, err
-	}
-	l.Debugf("body: %s", string(resp.Body()))
 	if !resp.IsOK() || !fetchResp.Success {
 		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
 	}

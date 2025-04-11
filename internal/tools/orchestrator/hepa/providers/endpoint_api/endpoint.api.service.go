@@ -24,7 +24,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
 	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
@@ -44,6 +46,7 @@ import (
 	endpointApiImpl "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
@@ -64,7 +67,7 @@ var (
 // endpointApiService implements pb.EndpointApiServiceServer
 type endpointApiService struct {
 	projCli               projPb.ProjectServer
-	runtimeCli            runtimePb.RuntimeServiceServer
+	runtimeCli            runtimePb.RuntimeTertiaryServiceServer
 	runtimeService        repositoryService.GatewayRuntimeServiceService
 	gatewayRouteService   repositoryService.GatewayRouteService
 	gatewayServiceService repositoryService.GatewayServiceService
@@ -603,6 +606,7 @@ func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, cluste
 				}
 				if runtimeService != nil {
 					if runtimeID, err := strconv.ParseUint(runtimeService.RuntimeId, 10, 32); err == nil && runtimeID != 0 {
+						ctx := transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 						if resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID}); err != nil && resp != nil && !resp.GetOk() {
 							item := &pb.ListInvalidEndpointApiItem{
 								InvalidReason: invalidReasonPackageRuntimeIsInvalid,
@@ -633,6 +637,7 @@ func (s *endpointApiService) rangeInvalidEndpointApi(ctx context.Context, cluste
 					}
 					if runtimeService != nil {
 						if runtimeID, err := strconv.ParseUint(runtimeService.RuntimeId, 10, 32); err == nil && runtimeID != 0 {
+							ctx := transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 							if resp, err := s.runtimeCli.CheckRuntimeExist(ctx, &runtimePb.CheckRuntimeExistReq{Id: runtimeID}); err != nil && resp != nil && !resp.GetOk() {
 								item := s.adjustInvalidPackageAPIItem(pkg, packageApi, invalidReasonPackageAPIRuntimeIsInvalid)
 								f(item)

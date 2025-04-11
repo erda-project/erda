@@ -37,6 +37,7 @@ import (
 )
 
 // Deprecated
+// https://github.com/erda-project/erda-ui/blob/ec3b437ea40569bb2856310997b4b11ceece1f21/shell/app/modules/dcos/services/service.ts#L31
 func (s *Endpoints) epBulkGetRuntimeStatusDetail(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	rs_ := r.URL.Query().Get("runtimeIds")
 	rs := strings.Split(rs_, ",")
@@ -703,7 +704,10 @@ func (s *Endpoints) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runti
 	if len(runtimeScaleRecords.IDs) > 0 {
 		for _, runtime := range runtimes {
 			logrus.Debugf("[batch delete] deleting runtime %d, operator %s", runtime.ID, userID)
-			runtimedto, err := s.runtime.Delete(userID, runtime.OrgID, runtime.ID)
+			runtimepb, err := s.runtime.Delete(userID, runtime.OrgID, runtime.ID)
+			var runtimedto *apistructs.RuntimeDTO
+			runtimepbByte, err := json.Marshal(runtimepb)
+			err = json.Unmarshal(runtimepbByte, &runtimedto)
 			if err != nil {
 				logrus.Errorf("[batch delete] delete runtime Id %v  runtime %#v failed, error: %v", runtime.ID, runtime, err)
 				errMsg := fmt.Sprintf("delete runtime Id %v  runtime %#v failed, error: %v", runtime.ID, runtime, err)
@@ -712,7 +716,6 @@ func (s *Endpoints) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runti
 				batchRuntimeDeleteResult.UnDeletedIds = append(batchRuntimeDeleteResult.UnDeletedIds, runtime.ID)
 				continue
 			}
-
 			batchRuntimeDeleteResult.Success++
 			batchRuntimeDeleteResult.DeletedIds = append(batchRuntimeDeleteResult.DeletedIds, runtime.ID)
 			batchRuntimeDeleteResult.Deleted = append(batchRuntimeDeleteResult.Deleted, *runtimedto)
@@ -753,7 +756,10 @@ func (s *Endpoints) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runti
 			}
 
 			logrus.Debugf("[batch delete] deleting runtime %d, operator %s", runtime.ID, userID)
-			runtimedto, err := s.runtime.Delete(userID, runtime.OrgID, runtime.ID)
+			runtimepb, err := s.runtime.Delete(userID, runtime.OrgID, runtime.ID)
+			var runtimedto *apistructs.RuntimeDTO
+			runtimepbByte, err := json.Marshal(runtimepb)
+			err = json.Unmarshal(runtimepbByte, &runtimedto)
 			if err != nil {
 				logrus.Errorf("[batch delete] runtime %s is delete failed %#v, error: %v", uniqueId.Name, uniqueId, err)
 				errMsg := fmt.Sprintf("runtime %s is delete failed %#v, error: %v", uniqueId.Name, uniqueId, err)

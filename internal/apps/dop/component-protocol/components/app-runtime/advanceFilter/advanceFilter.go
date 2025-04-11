@@ -15,22 +15,27 @@
 package page
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	runtimepb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/components/app-runtime/common"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/standard-components/condition"
 	"github.com/erda-project/erda/internal/apps/dop/component-protocol/types"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // todo placeholder
@@ -46,8 +51,9 @@ type AdvanceFilter struct {
 	base.DefaultProvider
 	bdl *bundle.Bundle
 	impl.DefaultFilter
-	Values cptype.ExtraMap
-	State  State
+	Values     cptype.ExtraMap
+	State      State
+	runtimeSvc runtimepb.RuntimeSecondaryServiceServer
 }
 type State struct {
 	Title               string   `json:"title,omitempty"`
@@ -166,6 +172,7 @@ func (af *AdvanceFilter) flushOptsByFilter(filterEntity string) error {
 }
 func (af *AdvanceFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	af.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	af.runtimeSvc = sdk.Ctx.Value(types.RuntimeService).(runtimepb.RuntimeSecondaryServiceServer)
 }
 
 func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
@@ -213,7 +220,11 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 			break
 		}
 	}
-	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds, getEnv)
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true", httputil.UserHeader: sdk.Identity.UserID}))
+	runtimesByApp, err := af.runtimeSvc.ListRuntimesGroupByApps(ctx, &runtimepb.ListRuntimeByAppsRequest{
+		ApplicationID: []string{appIdStr},
+		Workspace:     []string{getEnv},
+	})
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
 		return data
@@ -226,8 +237,15 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	runtimeIdToAppNameMap := make(map[uint64]string)
 	selectRuntimes := make([]bundle.GetApplicationRuntimesDataEle, 0)
 
-	for _, v := range runtimesByApp {
-		for _, appRuntime := range v {
+	for _, v := range runtimesByApp.Data {
+		vBytes, err := json.Marshal(v)
+		if err != nil {
+			logrus.Errorf("marshal runtime failed,%v", err)
+			return data
+		}
+		var summary []*bundle.GetApplicationRuntimesDataEle
+		err = json.Unmarshal(vBytes, &summary)
+		for _, appRuntime := range summary {
 			if getEnv == appRuntime.Extra.Workspace {
 				if appRuntime.DeploymentOrderName != "" {
 					deploymentOrderNameMap[appRuntime.DeploymentOrderName] = true

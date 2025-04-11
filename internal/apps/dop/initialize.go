@@ -27,11 +27,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	pipelinepb "github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
@@ -141,6 +140,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.GuideService, p.GuideSvc)
 	p.Protocol.WithContextValue(types.OrgService, p.Org)
 	p.Protocol.WithContextValue(types.IdentitiyService, p.Identity)
+	p.Protocol.WithContextValue(types.RuntimeService, p.RuntimeSvc)
 
 	p.Queue.InjectQueueManager(p.PipelineQueue)
 
@@ -576,6 +576,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithTokenSvc(p.TokenService),
 		project.WithClusterSvc(p.ClusterSvc),
 		project.WithOrg(p.Org),
+		project.WithRuntimeSvc(p.RuntimeSvc),
 	)
 	proj.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	proj.CreateFileRecord = testCaseSvc.CreateFileRecord

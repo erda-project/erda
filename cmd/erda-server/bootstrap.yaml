@@ -295,6 +295,12 @@ erda.dop.qa.unittest: { }
 project-management-report: { }
 efficiency-measure: { }
 erda.dop.search: { }
+
+# runtime service
+grpc-client@erda.orchestrator.runtime:
+  addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
+  block: false
+erda.orchestrator.runtime-client:
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"

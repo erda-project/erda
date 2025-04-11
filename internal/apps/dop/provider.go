@@ -47,6 +47,7 @@ import (
 	userpb "github.com/erda-project/erda-proto-go/core/user/pb"
 	rulepb "github.com/erda-project/erda-proto-go/dop/rule/pb"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
+	runtimepb "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/internal/apps/devflow/flow"
 	"github.com/erda-project/erda/internal/apps/dop/bdl"
@@ -102,12 +103,13 @@ type provider struct {
 	CICDCmsSvc            *cms.CICDCmsService                     `autowired:"erda.dop.cms.CICDCmsService"`
 	UnitTestService       *unittest.UnitTestService               `autowired:"erda.dop.qa.unittest.UnitTestService"`
 	DevFlowRule           devflowrule.Interface
-	TokenService          tokenpb.TokenServiceServer       `autowired:"erda.core.token.TokenService"`
-	ClusterSvc            clusterpb.ClusterServiceServer   `autowired:"erda.core.clustermanager.cluster.ClusterService"`
-	DevFlowSvc            *flow.Service                    `autowired:"erda.apps.devflow.flow.FlowService"`
-	IssueCoreSvc          *core.IssueService               `autowired:"erda.dop.issue.core.IssueCoreService"`
-	GraphSvc              graphpb.GraphServiceServer       `autowired:"erda.core.pipeline.graph.GraphService"`
-	PipelineSvc           pipelinepb.PipelineServiceServer `autowired:"erda.core.pipeline.pipeline.PipelineService"`
+	TokenService          tokenpb.TokenServiceServer              `autowired:"erda.core.token.TokenService"`
+	ClusterSvc            clusterpb.ClusterServiceServer          `autowired:"erda.core.clustermanager.cluster.ClusterService"`
+	DevFlowSvc            *flow.Service                           `autowired:"erda.apps.devflow.flow.FlowService"`
+	IssueCoreSvc          *core.IssueService                      `autowired:"erda.dop.issue.core.IssueCoreService"`
+	GraphSvc              graphpb.GraphServiceServer              `autowired:"erda.core.pipeline.graph.GraphService"`
+	PipelineSvc           pipelinepb.PipelineServiceServer        `autowired:"erda.core.pipeline.pipeline.PipelineService"`
+	RuntimeSvc            runtimepb.RuntimeSecondaryServiceServer `autowired:"erda.orchestrator.runtime.RuntimeSecondaryService"`
 	Query                 issuequery.Interface
 	Org                   org.Interface `required:"true"`
 	Identity              userpb.UserServiceServer

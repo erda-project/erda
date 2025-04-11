@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/internal/tools/orchestrator/components/runtime"
 	"github.com/erda-project/erda/internal/tools/orchestrator/dbclient"
 	"github.com/erda-project/erda/internal/tools/orchestrator/events"
 	"github.com/erda-project/erda/internal/tools/orchestrator/queue"
@@ -43,7 +44,6 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/instance"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/migration"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/resource"
-	"github.com/erda-project/erda/internal/tools/orchestrator/services/runtime"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -58,7 +58,7 @@ type Endpoints struct {
 	bdl              *bundle.Bundle
 	pool             *goroutinepool.GoroutinePool
 	evMgr            *events.EventManager
-	runtime          *runtime.Runtime
+	runtime          *runtime.RuntimeService
 	deployment       *deployment.Deployment
 	deploymentOrder  *deployment_order.DeploymentOrder
 	domain           *domain.Domain
@@ -122,7 +122,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithRuntime 设置 runtime 对象.
-func WithRuntime(runtime *runtime.Runtime) Option {
+func WithRuntime(runtime *runtime.RuntimeService) Option {
 	return func(e *Endpoints) {
 		e.runtime = runtime
 	}
@@ -222,31 +222,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/info", Method: http.MethodGet, Handler: e.Info},
 
 		// runtime endpoints
-		{Path: "/api/runtimes", Method: http.MethodPost, Handler: e.CreateRuntime},
-		{Path: "/api/runtimes/actions/deploy-release", Method: http.MethodPost, Handler: e.CreateRuntimeByReleaseAction},
-		{Path: "/api/runtimes/actions/deploy-release-action", Method: http.MethodPost, Handler: e.CreateRuntimeByReleaseAction},
-		{Path: "/api/runtimes", Method: http.MethodGet, Handler: e.ListRuntimes},
-		{Path: "/api/runtimes/{idOrName}", Method: http.MethodGet, Handler: e.GetRuntime},
-		{Path: "/api/runtimes/{runtimeID}", Method: http.MethodDelete, Handler: e.DeleteRuntime},
-		// TODO: change configuration -> spec
 		{Path: "/api/runtimes/{runtimeID}/configuration", Method: http.MethodGet, Handler: e.GetRuntimeSpec},
-		{Path: "/api/runtimes/{runtimeID}/actions/stop", Method: http.MethodPost, Handler: e.StopRuntime},
-		{Path: "/api/runtimes/{runtimeID}/actions/start", Method: http.MethodPost, Handler: e.StartRuntime},
-		{Path: "/api/runtimes/{runtimeID}/actions/restart", Method: http.MethodPost, Handler: e.RestartRuntime},
-		{Path: "/api/runtimes/{runtimeID}/actions/redeploy", Method: http.MethodPost, Handler: e.RedeployRuntimeAction},
-		{Path: "/api/runtimes/{runtimeID}/actions/redeploy-action", Method: http.MethodPost, Handler: e.RedeployRuntimeAction},
-		{Path: "/api/runtimes/{runtimeID}/actions/rollback", Method: http.MethodPost, Handler: e.RollbackRuntimeAction},
-		{Path: "/api/runtimes/{runtimeID}/actions/rollback-action", Method: http.MethodPost, Handler: e.RollbackRuntimeAction},
 		{Path: "/api/runtimes/actions/bulk-get-status", Method: http.MethodGet, Handler: e.epBulkGetRuntimeStatusDetail},
 		{Path: "/api/runtimes/actions/batch-update-pre-overlay", Method: http.MethodPut, Handler: e.BatchUpdateOverlay},
-		{Path: "/api/runtimes/actions/full-gc", Method: http.MethodPost, Handler: e.FullGC},
 		{Path: "/api/runtimes/actions/refer-cluster", Method: http.MethodGet, Handler: e.ReferCluster},
-		{Path: "/api/runtimes/deploy/logs", Method: http.MethodGet, Handler: e.RuntimeLogs},
 		{Path: "/api/runtimes/actions/get-app-workspace-releases", Method: http.MethodGet, Handler: e.GetAppWorkspaceReleases},
-		{Path: "/api/runtimes/actions/group-by-apps", Method: http.MethodGet, Handler: e.ListRuntimesGroupByApps},
-		{Path: "/api/runtimes/actions/list-my-runtimes", Method: http.MethodGet, Handler: e.ListMyRuntimes},
-		{Path: "/api/countProjectRuntime", Method: http.MethodGet, Handler: e.CountPRByWorkspace},
-		{Path: "/api/runtimesServices", Method: http.MethodGet, Handler: e.BatchRuntimeServices},
 
 		{Path: "/api/deployment-orders/{deploymentOrderID}", Method: http.MethodGet, Handler: e.GetDeploymentOrder},
 		{Path: "/api/deployment-orders", Method: http.MethodGet, Handler: e.ListDeploymentOrder},
@@ -254,9 +234,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/deploy", Method: http.MethodPost, Handler: e.DeployDeploymentOrder},
 		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/cancel", Method: http.MethodPost, Handler: e.CancelDeploymentOrder},
 		{Path: "/api/deployment-orders/actions/render-detail", Method: http.MethodGet, Handler: httpserver.Wrap(e.RenderDeploymentOrderDetail, httpserver.WithI18nCodes)},
-
-		// kill pod (only k8s)
-		{Path: "/api/runtimes/actions/killpod", Method: http.MethodPost, Handler: e.KillPod},
 
 		// deployment endpoints
 		{Path: "/api/deployments", Method: http.MethodGet, Handler: e.ListDeployments},
@@ -504,7 +481,7 @@ func (e *Endpoints) FullGCLoop(ctx context.Context) {
 		select {
 		case t := <-ticker.C:
 			logrus.Infof("start full GC at: %v", t)
-			e.runtime.FullGC()
+			e.runtime.FullGCService()
 			logrus.Infof("end full GC at: %v, started at: %v", time.Now(), t)
 		case <-ctx.Done():
 			return
