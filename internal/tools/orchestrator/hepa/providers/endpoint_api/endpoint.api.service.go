@@ -16,9 +16,6 @@ package endpoint_api
 
 import (
 	"context"
-	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda/pkg/http/httputil"
-	"google.golang.org/grpc/metadata"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -27,7 +24,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
 	commonPb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
 	projPb "github.com/erda-project/erda-proto-go/core/project/pb"
@@ -47,6 +46,7 @@ import (
 	endpointApiImpl "github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api/impl"
 	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
