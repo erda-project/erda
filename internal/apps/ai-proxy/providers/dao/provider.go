@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/prompt"
@@ -65,6 +66,7 @@ type DAO interface {
 	SessionClient() *session.DBClient
 	ClientTokenClient() *client_token.DBClient
 	AuditClient() *audit.DBClient
+	MCPServerClient() *mcp_server.DBClient
 }
 
 type provider struct {
@@ -113,4 +115,8 @@ func (p *provider) ClientTokenClient() *client_token.DBClient {
 
 func (p *provider) AuditClient() *audit.DBClient {
 	return &audit.DBClient{DB: p.DB}
+}
+
+func (p *provider) MCPServerClient() *mcp_server.DBClient {
+	return &mcp_server.DBClient{DB: p.DB}
 }
