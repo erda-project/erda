@@ -336,6 +336,14 @@ func (f *AzureDirector) RewriteBodyModelName(ctx context.Context) error {
 	return nil
 }
 
+func (f *AzureDirector) ResetContentLength(ctx context.Context) error {
+	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+		req.Header.Del("Content-Length")
+		req.ContentLength = -1
+	})
+	return nil
+}
+
 func (f *AzureDirector) AllDirectors() map[string]func(ctx context.Context) error {
 	if len(f.funcs) > 0 {
 		return f.funcs

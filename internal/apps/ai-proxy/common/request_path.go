@@ -31,6 +31,7 @@ const (
 	RequestPathPrefixV1Files = "/v1/files"
 
 	RequestPathPrefixV1Assistants    = "/v1/assistants"
+	RequestPathPrefixV1Responses     = "/v1/responses"
 	RequestPathPrefixV1Threads       = "/v1/threads"
 	RequestPathV1ThreadCreateMessage = "/v1/threads/{thread_id}/messages"
 )
