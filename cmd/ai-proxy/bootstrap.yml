@@ -8,6 +8,7 @@ erda.app.ai-proxy:
   routes_refs:
     - conf/routes/routes.yml
     - conf/routes/assistant.yml
+    - conf/routes/responses.yml
     - conf/routes/file.yml
     - conf/routes/openai_format.yml
     - conf/routes/internal_apis.yml

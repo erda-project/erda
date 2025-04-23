@@ -68,14 +68,6 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		m = ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
 	)
 
-	// check body
-	body := infor.BodyBuffer()
-	if body == nil {
-		err = fmt.Errorf("missing body")
-		l.Error(err)
-		return reverseproxy.Intercept, err
-	}
-
 	// find client
 	var client *clientpb.Client
 	ak := vars.TrimBearer(infor.Header().Get(httputil.HeaderKeyAuthorization))
@@ -144,6 +136,14 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		type Model struct {
 			ModelID string `json:"model"`
 		}
+		// check body
+		body := infor.BodyBuffer()
+		if body == nil {
+			err = fmt.Errorf("missing body")
+			l.Error(err)
+			return reverseproxy.Intercept, err
+		}
+
 		var m Model
 		if err := json.NewDecoder(body).Decode(&m); err == nil {
 			if m.ModelID != "" {
