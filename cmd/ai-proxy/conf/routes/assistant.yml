@@ -14,7 +14,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/assistants")
@@ -38,7 +38,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/assistants")
@@ -59,7 +59,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/assistants/${ path.assistant_id }")
@@ -80,7 +80,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/assistants/${ path.assistant_id }/files")
@@ -107,7 +107,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads")
@@ -137,7 +137,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/messages")
@@ -162,7 +162,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/messages")
@@ -185,7 +185,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/messages/${ path.message_id }")
@@ -213,7 +213,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/runs")
@@ -243,7 +243,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/runs")
@@ -268,7 +268,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/runs")
@@ -291,7 +291,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }")
@@ -314,7 +314,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }/steps")
@@ -337,7 +337,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }/steps/${ path.step_id }")
@@ -360,7 +360,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2024-02-15-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/threads/${ path.thread_id }/runs/${ path.run_id }/submit_tool_outputs")

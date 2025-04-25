@@ -23,7 +23,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2023-07-01-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             # here is azure openai format
@@ -61,7 +61,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2023-07-01-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/embeddings")
@@ -94,7 +94,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2023-09-01-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/audio/transcriptions")
@@ -125,7 +125,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2023-12-01-preview")
-            - DropQueries("api-version=-1")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/images/generations")

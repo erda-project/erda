@@ -215,8 +215,8 @@ func (f *AzureDirector) DefaultQueries(ctx context.Context) error {
 	return f.handleQueries(ctx, "DefaultQueries")
 }
 
-func (f *AzureDirector) DropQueries(ctx context.Context) error {
-	return f.handleQueries(ctx, "DropQueries")
+func (f *AzureDirector) DropQueriesIf(ctx context.Context) error {
+	return f.handleQueries(ctx, "DropQueriesIf")
 }
 
 func (f *AzureDirector) RewriteScheme(ctx context.Context) error {
@@ -398,7 +398,7 @@ func (f *AzureDirector) handleQueries(ctx context.Context, funcName string) erro
 					if !queries.Has(k) {
 						queries.Add(k, v)
 					}
-				case "DropQueries":
+				case "DropQueriesIf":
 					if queries.Get(k) == v {
 						queries.Del(k)
 					}
