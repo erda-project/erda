@@ -215,6 +215,10 @@ func (f *AzureDirector) DefaultQueries(ctx context.Context) error {
 	return f.handleQueries(ctx, "DefaultQueries")
 }
 
+func (f *AzureDirector) DropQueries(ctx context.Context) error {
+	return f.handleQueries(ctx, "DropQueries")
+}
+
 func (f *AzureDirector) RewriteScheme(ctx context.Context) error {
 	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
 	if !ok || value == nil {
@@ -393,6 +397,10 @@ func (f *AzureDirector) handleQueries(ctx context.Context, funcName string) erro
 				case "DefaultQueries":
 					if !queries.Has(k) {
 						queries.Add(k, v)
+					}
+				case "DropQueries":
+					if queries.Get(k) == v {
+						queries.Del(k)
 					}
 				}
 			}

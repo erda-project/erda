@@ -15,6 +15,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueries("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/files")
@@ -42,6 +43,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueries("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/files")
@@ -69,6 +71,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueries("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/files/${ path.file_id }")
@@ -96,6 +99,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueries("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/files/${ path.file_id }")
@@ -123,6 +127,7 @@ routes:
           directors:
             - TransAuthorization
             - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueries("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/files/${ path.file_id }/content")
