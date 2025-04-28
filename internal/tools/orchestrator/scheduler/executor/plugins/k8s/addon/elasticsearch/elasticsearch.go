@@ -53,6 +53,7 @@ type ElasticsearchOperator struct {
 	service     addon.ServiceUtil
 	overcommit  addon.OverCommitUtil
 	secret      addon.SecretUtil
+	configmap   addon.ConfigMapUtil
 	imageSecret addon.ImageSecretUtil
 	client      *httpclient.HTTPClient
 }
@@ -64,6 +65,7 @@ func New(k8s addon.K8SUtil,
 	overcommit addon.OverCommitUtil,
 	secret addon.SecretUtil,
 	imageSecret addon.ImageSecretUtil,
+	configmap addon.ConfigMapUtil,
 	client *httpclient.HTTPClient) *ElasticsearchOperator {
 	return &ElasticsearchOperator{
 		k8s:         k8s,
@@ -72,6 +74,7 @@ func New(k8s addon.K8SUtil,
 		service:     service,
 		overcommit:  overcommit,
 		secret:      secret,
+		configmap:   configmap,
 		imageSecret: imageSecret,
 		client:      client,
 	}
@@ -123,6 +126,9 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, erro
 	svc0.Env["ES_PASSWORD"] = svc0.Env["requirepass"]
 	svc0.Env["SELF_PORT"] = "9200"
 
+	extDict := svc0.Env["EXT_DICT"]
+	extStopDict := svc0.Env["EXT_STOP_DICT"]
+
 	scheinfo := sg.ScheduleInfo2
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity.NodeAffinity
@@ -171,7 +177,33 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, erro
 		},
 	}
 
-	return ElasticsearchAndSecret{Elasticsearch: es, Secret: secret}, nil
+	var configmap corev1.ConfigMap
+	if nodeSets.PodTemplate.Spec.Volumes != nil {
+		// ConfigMap 数据
+		configMapData := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+  <comment>IK Analyzer 扩展配置</comment>
+  <entry key="ext_dict"></entry>
+  <entry key="ext_stopwords"></entry>
+  <entry key="remote_ext_dict">%s</entry>
+  <entry key="remote_ext_stopwords">%s</entry>
+</properties>`, extDict, extStopDict)
+
+		configmap = corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-es-config", sg.ID),
+				Namespace: genK8SNamespace(sg.Type, sg.ID),
+			},
+			Data: map[string]string{
+				"IKAnalyzer.cfg.xml": configMapData,
+			},
+		}
+	}
+
+	esAndSecret := ElasticsearchAndSecret{Elasticsearch: es, Secret: secret, ConfigMap: configmap}
+
+	return esAndSecret, nil
 }
 
 func (eo *ElasticsearchOperator) Create(k8syml interface{}) error {
@@ -181,8 +213,14 @@ func (eo *ElasticsearchOperator) Create(k8syml interface{}) error {
 	}
 	elasticsearch := elasticsearchAndSecret.Elasticsearch
 	secret := elasticsearchAndSecret.Secret
+	configmap := elasticsearchAndSecret.ConfigMap
 	if err := eo.ns.Exists(elasticsearch.Namespace); err != nil {
 		if err := eo.ns.Create(elasticsearch.Namespace, nil); err != nil {
+			return err
+		}
+	}
+	if configmap.Data != nil {
+		if err := eo.configmap.Create(&configmap); err != nil {
 			return err
 		}
 	}
@@ -352,68 +390,155 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 		return elasticsearchv1.NodeSet{}, fmt.Errorf("failed to calc container resources, err: %v", err)
 	}
 
-	nodeSets := elasticsearchv1.NodeSet{
-		Name:   "addon",
-		Count:  int32(svc.Scale),
-		Config: config,
-		PodTemplate: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   "es",
-				Labels: labels,
-			},
-			Spec: corev1.PodSpec{
-				Affinity: &corev1.Affinity{NodeAffinity: affinity},
-				SecurityContext: &corev1.PodSecurityContext{
-					FSGroup:      &[]int64{1000}[0],
-					RunAsUser:    &[]int64{1000}[0],
-					RunAsNonRoot: &[]bool{true}[0],
-					RunAsGroup:   &[]int64{1000}[0],
-				},
-				Containers: []corev1.Container{
-					{
-						Name:      "elasticsearch",
-						Env:       envs(svc.Env),
-						Resources: containerResources,
-					}, {
-						Name:    "es-exporter",
-						Image:   esExporterImage,
-						Command: []string{"/bin/elasticsearch_exporter", esUri},
-						Ports: []corev1.ContainerPort{
-							{
-								Name:          "metrics",
-								ContainerPort: 9114,
-							},
-						},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "ES_USERNAME",
-								Value: "elastic",
-							},
-							{
-								Name:  "ES_PASSWORD",
-								Value: svc.Env["requirepass"],
-							},
-						},
-					},
-				},
-			},
-		},
-		VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
-			{
+	var nodeSets elasticsearchv1.NodeSet
+	if sg.Services[0].Env["EXT_DICT"] == "" || sg.Services[0].Env["EXT_STOP_DICT"] == "" {
+		nodeSets = elasticsearchv1.NodeSet{
+			Name:   "addon",
+			Count:  int32(svc.Scale),
+			Config: config,
+			PodTemplate: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "elasticsearch-data",
+					Name:   "es",
+					Labels: labels,
 				},
-				Spec: corev1.PersistentVolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							"storage": resource.MustParse(capacity),
+				Spec: corev1.PodSpec{
+					Affinity: &corev1.Affinity{NodeAffinity: affinity},
+					SecurityContext: &corev1.PodSecurityContext{
+						FSGroup:      &[]int64{1000}[0],
+						RunAsUser:    &[]int64{1000}[0],
+						RunAsNonRoot: &[]bool{true}[0],
+						RunAsGroup:   &[]int64{1000}[0],
+					},
+					Containers: []corev1.Container{
+						{
+							Name:      "elasticsearch",
+							Env:       envs(svc.Env),
+							Resources: containerResources,
+						}, {
+							Name:    "es-exporter",
+							Image:   esExporterImage,
+							Command: []string{"/bin/elasticsearch_exporter", esUri},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "metrics",
+									ContainerPort: 9114,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "ES_USERNAME",
+									Value: "elastic",
+								},
+								{
+									Name:  "ES_PASSWORD",
+									Value: svc.Env["requirepass"],
+								},
+							},
 						},
 					},
-					StorageClassName: &scname,
 				},
 			},
-		},
+			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "elasticsearch-data",
+					},
+					Spec: corev1.PersistentVolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								"storage": resource.MustParse(capacity),
+							},
+						},
+						StorageClassName: &scname,
+					},
+				},
+			},
+		}
+	} else {
+		nodeSets = elasticsearchv1.NodeSet{
+			Name:   "addon",
+			Count:  int32(svc.Scale),
+			Config: config,
+			PodTemplate: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "es",
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Affinity: &corev1.Affinity{NodeAffinity: affinity},
+					SecurityContext: &corev1.PodSecurityContext{
+						FSGroup:      &[]int64{1000}[0],
+						RunAsUser:    &[]int64{1000}[0],
+						RunAsNonRoot: &[]bool{true}[0],
+						RunAsGroup:   &[]int64{1000}[0],
+					},
+					Containers: []corev1.Container{
+						{
+							Name:      "elasticsearch",
+							Env:       envs(svc.Env),
+							Resources: containerResources,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "ik-config-volume",
+									MountPath: "/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml",
+									SubPath:   "IKAnalyzer.cfg.xml",
+									ReadOnly:  true,
+								},
+							},
+						}, {
+							Name:    "es-exporter",
+							Image:   esExporterImage,
+							Command: []string{"/bin/elasticsearch_exporter", esUri},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "metrics",
+									ContainerPort: 9114,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "ES_USERNAME",
+									Value: "elastic",
+								},
+								{
+									Name:  "ES_PASSWORD",
+									Value: svc.Env["requirepass"],
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "ik-config-volume",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: fmt.Sprintf("%s-es-config", sg.ID),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "elasticsearch-data",
+					},
+					Spec: corev1.PersistentVolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								"storage": resource.MustParse(capacity),
+							},
+						},
+						StorageClassName: &scname,
+					},
+				},
+			},
+		}
 	}
 
 	// set pvc annotations for snapshot

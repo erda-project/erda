@@ -1136,12 +1136,16 @@ func (a *Addon) BuildESOperatorServiceItem(params *apistructs.AddonHandlerCreate
 	for _, v := range addonDice.Services {
 		if len(v.Envs) == 0 {
 			v.Envs = map[string]string{
-				"ADDON_ID":    addonIns.ID,
-				"requirepass": password,
+				"ADDON_ID":      addonIns.ID,
+				"requirepass":   password,
+				"EXT_DICT":      params.Options["ext_dict"],
+				"EXT_STOP_DICT": params.Options["ext_stop_dict"],
 			}
 		} else {
 			v.Envs["ADDON_ID"] = addonIns.ID
 			v.Envs["requirepass"] = password
+			v.Envs["EXT_DICT"] = params.Options["ext_dict"]
+			v.Envs["EXT_STOP_DICT"] = params.Options["ext_stop_dict"]
 		}
 		// set options for label
 		if len(v.Labels) == 0 {

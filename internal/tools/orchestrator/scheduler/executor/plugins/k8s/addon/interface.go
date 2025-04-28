@@ -107,3 +107,7 @@ type OverCommitUtil interface {
 	// cpu,memory field type source: apistructs/service.go.Resources
 	ResourceOverCommit(workspace apistructs.DiceWorkspace, resources apistructs.Resources) (corev1.ResourceRequirements, error)
 }
+
+type ConfigMapUtil interface {
+	Create(cm *corev1.ConfigMap) error
+}

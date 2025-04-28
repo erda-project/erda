@@ -18,6 +18,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	configmap2 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/configmap"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -267,6 +268,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	sts := statefulset.New(statefulset.WithCompleteParams(addr, client))
 	k8spod := pod.New(pod.WithK8sClient(k8sClient.ClientSet))
 	k8ssecret := secret.New(secret.WithCompleteParams(addr, client))
+	configmap := configmap2.New(configmap2.WithCompleteParams(addr, client))
 	k8sstorageclass := storageclass.New(storageclass.WithCompleteParams(addr, client))
 	sa := serviceaccount.New(serviceaccount.WithCompleteParams(addr, client))
 	event := event.New(event.WithKubernetesClient(k8sClient.ClientSet))
@@ -338,7 +340,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		k.istioEngine = istioEngine
 	}
 
-	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, osr, k8ssecret, k, client)
+	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, osr, k8ssecret, k, configmap, client)
 	k.elasticsearchoperator = elasticsearchoperator
 	redisoperator := redis.New(k, deploy, sts, svc, ns, osr, k8ssecret, client)
 	k.redisoperator = redisoperator
