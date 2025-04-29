@@ -1,12 +1,28 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package elasticsearch
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/oversubscriberatio"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	"testing"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/oversubscriberatio"
 )
 
 func TestValidate(t *testing.T) {
@@ -77,8 +93,9 @@ func TestNodeSetsConvert(t *testing.T) {
 	}
 
 	testcases := []struct {
-		name string
-		sg   *apistructs.ServiceGroup
+		name   string
+		sg     *apistructs.ServiceGroup
+		scname string
 	}{
 		{
 			name: "no custom ik configure",
@@ -114,6 +131,7 @@ func TestNodeSetsConvert(t *testing.T) {
 					},
 				},
 			},
+			scname: "dice-local-volume",
 		},
 		{
 			name: "custom ik configure",
@@ -153,6 +171,47 @@ func TestNodeSetsConvert(t *testing.T) {
 					},
 				},
 			},
+			scname: "dice-local-volume",
+		},
+		{
+			name: "custom ik configure",
+			sg: &apistructs.ServiceGroup{
+				Dice: apistructs.Dice{
+					Services: []apistructs.Service{
+						{
+							Name: "test",
+							Volumes: []apistructs.Volume{
+								{
+									SCVolume: apistructs.SCVolume{
+										Capacity:         int32(50),
+										StorageClassName: "sc",
+										Snapshot: &apistructs.VolumeSnapshot{
+											MaxHistory: 2,
+										},
+									},
+								},
+							},
+							DeploymentLabels: map[string]string{
+								"USE_OPERATOR": "elasticsearch",
+							},
+							Env: map[string]string{
+								"DICE_WORKSPACE": "test",
+								"EXT_DICT":       "https://test.com",
+								"EXT_STOP_DICT":  "https://test.com",
+							},
+							Resources: apistructs.Resources{
+								Cpu: 0.2,
+								Mem: 2000,
+							},
+						},
+					},
+
+					Labels: map[string]string{
+						"dice.test": "test",
+					},
+				},
+			},
+			scname: "alicloud-disk-ssd-on-erda",
 		},
 	}
 
