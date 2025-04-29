@@ -18,7 +18,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	configmap2 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/configmap"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -41,6 +40,7 @@ import (
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/rocketmq"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/addon/sourcecov"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/clusterinfo"
+	configmap2 "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/configmap"
 	ds "github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/daemonset"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/deployment"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/event"
