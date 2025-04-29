@@ -30,7 +30,6 @@ func Create(op AddonOperator, sg *apistructs.ServiceGroup) error {
 	if err != nil {
 		return err
 	}
-
 	return op.Create(k8syml)
 }
 
