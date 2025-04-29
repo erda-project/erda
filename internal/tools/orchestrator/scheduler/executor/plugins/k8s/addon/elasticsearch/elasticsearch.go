@@ -126,8 +126,8 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, erro
 	svc0.Env["ES_PASSWORD"] = svc0.Env["requirepass"]
 	svc0.Env["SELF_PORT"] = "9200"
 
-	extDict := svc0.Env["EXT_DICT"]
-	extStopDict := svc0.Env["EXT_STOP_DICT"]
+	extDict := svc0.Env["REMOTE_DICT"]
+	extStopDict := svc0.Env["REMOTE_STOP_DICT"]
 
 	scheinfo := sg.ScheduleInfo2
 	scheinfo.Stateful = true
