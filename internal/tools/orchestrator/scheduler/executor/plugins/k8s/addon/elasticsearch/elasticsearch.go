@@ -395,151 +395,88 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 		return elasticsearchv1.NodeSet{}, fmt.Errorf("failed to calc container resources, err: %v", err)
 	}
 
-	var nodeSets elasticsearchv1.NodeSet
-	if svc.Env["REMOTE_EXT_DICT"] == "" || svc.Env["REMOTE_EXT_STOP_WORDS"] == "" {
-		nodeSets = elasticsearchv1.NodeSet{
-			Name:   "addon",
-			Count:  int32(svc.Scale),
-			Config: config,
-			PodTemplate: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   "es",
-					Labels: labels,
+	nodeSets := elasticsearchv1.NodeSet{
+		Name:   "addon",
+		Count:  int32(svc.Scale),
+		Config: config,
+		PodTemplate: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "es",
+				Labels: labels,
+			},
+			Spec: corev1.PodSpec{
+				Affinity: &corev1.Affinity{NodeAffinity: affinity},
+				SecurityContext: &corev1.PodSecurityContext{
+					FSGroup:      &[]int64{1000}[0],
+					RunAsUser:    &[]int64{1000}[0],
+					RunAsNonRoot: &[]bool{true}[0],
+					RunAsGroup:   &[]int64{1000}[0],
 				},
-				Spec: corev1.PodSpec{
-					Affinity: &corev1.Affinity{NodeAffinity: affinity},
-					SecurityContext: &corev1.PodSecurityContext{
-						FSGroup:      &[]int64{1000}[0],
-						RunAsUser:    &[]int64{1000}[0],
-						RunAsNonRoot: &[]bool{true}[0],
-						RunAsGroup:   &[]int64{1000}[0],
-					},
-					Containers: []corev1.Container{
-						{
-							Name:      "elasticsearch",
-							Env:       envs(svc.Env),
-							Resources: containerResources,
-						}, {
-							Name:    "es-exporter",
-							Image:   esExporterImage,
-							Command: []string{"/bin/elasticsearch_exporter", esUri},
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "metrics",
-									ContainerPort: 9114,
-								},
+				Containers: []corev1.Container{
+					{
+						Name:      "elasticsearch",
+						Env:       envs(svc.Env),
+						Resources: containerResources,
+					}, {
+						Name:    "es-exporter",
+						Image:   esExporterImage,
+						Command: []string{"/bin/elasticsearch_exporter", esUri},
+						Ports: []corev1.ContainerPort{
+							{
+								Name:          "metrics",
+								ContainerPort: 9114,
 							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "ES_USERNAME",
-									Value: "elastic",
-								},
-								{
-									Name:  "ES_PASSWORD",
-									Value: svc.Env["requirepass"],
-								},
+						},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "ES_USERNAME",
+								Value: "elastic",
+							},
+							{
+								Name:  "ES_PASSWORD",
+								Value: svc.Env["requirepass"],
 							},
 						},
 					},
 				},
 			},
-			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "elasticsearch-data",
-					},
-					Spec: corev1.PersistentVolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								"storage": resource.MustParse(capacity),
-							},
-						},
-						StorageClassName: &scname,
-					},
+		},
+		VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "elasticsearch-data",
 				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.VolumeResourceRequirements{
+						Requests: corev1.ResourceList{
+							"storage": resource.MustParse(capacity),
+						},
+					},
+					StorageClassName: &scname,
+				},
+			},
+		},
+	}
+
+	if svc.Env["REMOTE_EXT_DICT"] != "" && svc.Env["REMOTE_EXT_STOP_WORDS"] != "" {
+		nodeSets.PodTemplate.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "ik-config-volume",
+				MountPath: "/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml",
+				SubPath:   "IKAnalyzer.cfg.xml",
+				ReadOnly:  true,
 			},
 		}
-	} else {
-		nodeSets = elasticsearchv1.NodeSet{
-			Name:   "addon",
-			Count:  int32(svc.Scale),
-			Config: config,
-			PodTemplate: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   "es",
-					Labels: labels,
-				},
-				Spec: corev1.PodSpec{
-					Affinity: &corev1.Affinity{NodeAffinity: affinity},
-					SecurityContext: &corev1.PodSecurityContext{
-						FSGroup:      &[]int64{1000}[0],
-						RunAsUser:    &[]int64{1000}[0],
-						RunAsNonRoot: &[]bool{true}[0],
-						RunAsGroup:   &[]int64{1000}[0],
-					},
-					Containers: []corev1.Container{
-						{
-							Name:      "elasticsearch",
-							Env:       envs(svc.Env),
-							Resources: containerResources,
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "ik-config-volume",
-									MountPath: "/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml",
-									SubPath:   "IKAnalyzer.cfg.xml",
-									ReadOnly:  true,
-								},
-							},
-						}, {
-							Name:    "es-exporter",
-							Image:   esExporterImage,
-							Command: []string{"/bin/elasticsearch_exporter", esUri},
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "metrics",
-									ContainerPort: 9114,
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "ES_USERNAME",
-									Value: "elastic",
-								},
-								{
-									Name:  "ES_PASSWORD",
-									Value: svc.Env["requirepass"],
-								},
-							},
+
+		nodeSets.PodTemplate.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "ik-config-volume",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "ik-plugin-config",
 						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "ik-config-volume",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: "ik-plugin-config",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "elasticsearch-data",
-					},
-					Spec: corev1.PersistentVolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								"storage": resource.MustParse(capacity),
-							},
-						},
-						StorageClassName: &scname,
 					},
 				},
 			},

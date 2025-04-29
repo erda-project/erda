@@ -1138,8 +1138,8 @@ func (a *Addon) BuildESOperatorServiceItem(params *apistructs.AddonHandlerCreate
 			v.Envs = map[string]string{
 				"ADDON_ID":              addonIns.ID,
 				"requirepass":           password,
-				"REMOTE_EXT_DICT":       params.Options["remote_dict"],
-				"REMOTE_EXT_STOP_WORDS": params.Options["remote_stop_dict"],
+				"REMOTE_EXT_DICT":       params.Options["remote_ext_dict"],
+				"REMOTE_EXT_STOP_WORDS": params.Options["remote_ext_stop_words"],
 			}
 		} else {
 			v.Envs["ADDON_ID"] = addonIns.ID
