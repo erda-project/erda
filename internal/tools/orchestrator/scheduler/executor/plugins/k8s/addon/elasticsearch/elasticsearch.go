@@ -391,7 +391,7 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 	}
 
 	var nodeSets elasticsearchv1.NodeSet
-	if sg.Services[0].Env["EXT_DICT"] == "" || sg.Services[0].Env["EXT_STOP_DICT"] == "" {
+	if svc.Env["REMOTE_DICT"] == "" || svc.Env["REMOTE_STOP_DICT"] == "" {
 		nodeSets = elasticsearchv1.NodeSet{
 			Name:   "addon",
 			Count:  int32(svc.Scale),
