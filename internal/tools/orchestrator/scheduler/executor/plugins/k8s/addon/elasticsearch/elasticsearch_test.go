@@ -155,9 +155,9 @@ func TestNodeSetsConvert(t *testing.T) {
 								"USE_OPERATOR": "elasticsearch",
 							},
 							Env: map[string]string{
-								"DICE_WORKSPACE":   "test",
-								"REMOTE_DICT":      "https://test.com",
-								"REMOTE_STOP_DICT": "https://test.com",
+								"DICE_WORKSPACE":        "test",
+								"REMOTE_EXT_DICT":       "https://test.com",
+								"REMOTE_EXT_STOP_WORDS": "https://test.com",
 							},
 							Resources: apistructs.Resources{
 								Cpu: 0.2,
@@ -195,9 +195,9 @@ func TestNodeSetsConvert(t *testing.T) {
 								"USE_OPERATOR": "elasticsearch",
 							},
 							Env: map[string]string{
-								"DICE_WORKSPACE":   "test",
-								"REMOTE_DICT":      "https://test.com",
-								"REMOTE_STOP_DICT": "https://test.com",
+								"DICE_WORKSPACE":        "test",
+								"REMOTE_EXT_DICT":       "https://test.com",
+								"REMOTE_EXT_STOP_WORDS": "https://test.com",
 							},
 							Resources: apistructs.Resources{
 								Cpu: 0.2,

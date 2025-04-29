@@ -150,8 +150,8 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, erro
 	svc0.Env["ES_PASSWORD"] = svc0.Env["requirepass"]
 	svc0.Env["SELF_PORT"] = "9200"
 
-	remoteDict := svc0.Env["REMOTE_DICT"]
-	remoteStopDict := svc0.Env["REMOTE_STOP_DICT"]
+	remoteDict := svc0.Env["REMOTE_EXT_DICT"]
+	remoteStopDict := svc0.Env["REMOTE_EXT_STOP_WORDS"]
 
 	scheinfo := sg.ScheduleInfo2
 	scheinfo.Stateful = true
@@ -396,7 +396,7 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 	}
 
 	var nodeSets elasticsearchv1.NodeSet
-	if svc.Env["REMOTE_DICT"] == "" || svc.Env["REMOTE_STOP_DICT"] == "" {
+	if svc.Env["REMOTE_EXT_DICT"] == "" || svc.Env["REMOTE_EXT_STOP_WORDS"] == "" {
 		nodeSets = elasticsearchv1.NodeSet{
 			Name:   "addon",
 			Count:  int32(svc.Scale),
