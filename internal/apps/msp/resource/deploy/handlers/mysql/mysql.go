@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	conf "github.com/erda-project/erda/cmd/erda-server/conf/msp"
@@ -32,7 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/sirupsen/logrus"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
