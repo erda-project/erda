@@ -62,9 +62,10 @@ import (
 const ErdaEncryptedValue string = "ERDA_ENCRYPTED"
 
 const (
-	ConfigCenterAddon   = "config-center"
-	RegisterCenterAddon = "registercenter"
-	NacosAddon          = "nacos"
+	ConfigCenterAddon    = "config-center"
+	RegisterCenterAddon  = "registercenter"
+	TerminusZkProxyAddon = "terminus-zkproxy"
+	NacosAddon           = "nacos"
 )
 
 var (
@@ -320,8 +321,13 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 		existBuildMap[strutil.Concat(v.RuntimeID, v.AddonName, v.InstanceName)] = v
 	}
 
-	var hasRegister, hasConfig bool
+	var hasRegister, hasConfig, isZKProxy bool
 	for i, addon := range req.Addons {
+		if addon.Type == TerminusZkProxyAddon {
+			hasRegister = true
+			isZKProxy = true
+			continue
+		}
 		if addon.Type == RegisterCenterAddon {
 			hasRegister = true
 			err = a.injectVersion(&req.Addons[i])
@@ -334,7 +340,7 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 		}
 	}
 
-	if hasRegister && !hasConfig {
+	if hasRegister && !hasConfig && !isZKProxy {
 		err = a.appendAddon(req, ConfigCenterAddon, apistructs.AddonBasic)
 	} else if !hasRegister && hasConfig {
 		err = a.appendAddon(req, RegisterCenterAddon, apistructs.AddonBasic)
@@ -3172,9 +3178,11 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		switch v.AddonName {
 		case RegisterCenterAddon:
 			createItem.Options["version"] = regVersion
+			logrus.Infof("register-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], regVersion, req.ClusterName)
 			a.pushLog(fmt.Sprintf("register-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], regVersion, req.ClusterName), &createItem)
 		case ConfigCenterAddon:
 			createItem.Options["version"] = confVersion
+			logrus.Infof("config-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], confVersion, req.ClusterName)
 			a.pushLog(fmt.Sprintf("config-center version: [%s]->[%s] in cluster: %s", createItem.Options["version"], confVersion, req.ClusterName), &createItem)
 		}
 		instanceRes, err := a.AttachAndCreate(&createItem)
