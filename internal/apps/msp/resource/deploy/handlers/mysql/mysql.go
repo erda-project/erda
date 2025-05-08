@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	conf "github.com/erda-project/erda/cmd/erda-server/conf/msp"
@@ -147,6 +148,10 @@ func (h *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, r
 		"az":         req.Az,
 		"status":     handlers.TmcInstanceStatusRunning,
 		"is_deleted": apistructs.AddonNotDeleted,
+	}
+	if resourceInfo.TmcVersion.Version != "" {
+		where["version"] = resourceInfo.TmcVersion.Version
+		logrus.Infof("[mysql] check if need tmc instance, version: %s", where["version"])
 	}
 	instance, ok, err := h.InstanceDb.First(where)
 	if err != nil {
