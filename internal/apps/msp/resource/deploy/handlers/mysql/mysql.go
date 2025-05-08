@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/sirupsen/logrus"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
@@ -147,6 +148,10 @@ func (h *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, r
 		"az":         req.Az,
 		"status":     handlers.TmcInstanceStatusRunning,
 		"is_deleted": apistructs.AddonNotDeleted,
+	}
+	if resourceInfo.TmcVersion.Version != "" {
+		where["version"] = resourceInfo.TmcVersion.Version
+		logrus.Infof("[mysql] check if need tmc instance, version: %s", where["version"])
 	}
 	instance, ok, err := h.InstanceDb.First(where)
 	if err != nil {
