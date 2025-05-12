@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/pipeline/conf"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/dbgcconfig"
 	definitiondb "github.com/erda-project/erda/internal/tools/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/internal/tools/pipeline/providers/source/db"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -262,12 +263,6 @@ func (p *Pipeline) GetConfigManageNamespaces() []string {
 // EnsureGC without nil field
 func (p *Pipeline) EnsureGC() {
 	gc := &p.Extra.GC
-	if gc.DatabaseGC == nil {
-		gc.DatabaseGC = &pb.PipelineDatabaseGC{
-			Analyzed: &pb.PipelineDBGCItem{},
-			Finished: &pb.PipelineDBGCItem{},
-		}
-	}
 	if gc.ResourceGC == nil {
 		gc.ResourceGC = &pb.PipelineResourceGC{}
 	}
@@ -279,18 +274,7 @@ func (p *Pipeline) EnsureGC() {
 		gc.ResourceGC.FailedTTLSecond = &[]uint64{conf.FailedPipelineDefaultResourceGCTTLSec()}[0]
 	}
 	// database
-	if gc.DatabaseGC.Analyzed.NeedArchive == nil {
-		gc.DatabaseGC.Analyzed.NeedArchive = &[]bool{false}[0]
-	}
-	if gc.DatabaseGC.Analyzed.TTLSecond == nil {
-		gc.DatabaseGC.Analyzed.TTLSecond = &[]uint64{conf.AnalyzedPipelineDefaultDatabaseGCTTLSec()}[0]
-	}
-	if gc.DatabaseGC.Finished.NeedArchive == nil {
-		gc.DatabaseGC.Finished.NeedArchive = &[]bool{true}[0]
-	}
-	if gc.DatabaseGC.Finished.TTLSecond == nil {
-		gc.DatabaseGC.Finished.TTLSecond = &[]uint64{conf.FinishedPipelineDefaultDatabaseGCTTLSec()}[0]
-	}
+	dbgcconfig.EnsureGCConfig(&gc.DatabaseGC)
 }
 
 func (p *Pipeline) GetResourceGCTTL() uint64 {

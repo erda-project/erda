@@ -99,9 +99,6 @@ type Conf struct {
 	// cron interrupt compensate identification failure time second
 	CronFailureCreateIntervalCompensateTimeSecond int64 `env:"CRON_FAILURE_CREATE_INTERVAL_COMPENSATE_TIME_SECOND" default:"300"`
 
-	// database gc
-	AnalyzedPipelineDefaultDatabaseGCTTLSec uint64 `env:"ANALYZED_PIPELINE_DEFAULT_DATABASE_GC_TTL_SEC" default:"86400"`   // 60 * 60 * 24 analyzed pipeline db record default retains 1 day
-	FinishedPipelineDefaultDatabaseGCTTLSec uint64 `env:"FINISHED_PIPELINE_DEFAULT_DATABASE_GC_TTL_SEC" default:"5184000"` // 60 * 60 * 24 * 30 * 2 finished pipeline db record default retains 2 month
 	// resource gc
 	SuccessPipelineDefaultResourceGCTTLSec uint64 `env:"SUCCESS_PIPELINE_DEFAULT_RESOURCE_GC_TTL_SEC" default:"1800"` // 60 * 30 success pipeline resources default retains 30 min
 	FailedPipelineDefaultResourceGCTTLSec  uint64 `env:"FAILED_PIPELINE_DEFAULT_RESOURCE_GC_TTL_SEC" default:"1800"`  // 60 * 30 failed pipeline resources default retains 30 min
@@ -334,16 +331,6 @@ func CronCompensateConcurrentNumber() int64 {
 
 func CronFailureCreateIntervalCompensateTimeSecond() int64 {
 	return cfg.CronFailureCreateIntervalCompensateTimeSecond
-}
-
-// AnalyzedPipelineDefaultDatabaseGCTTLSec return default database gc ttl for analyzed pipeline record
-func AnalyzedPipelineDefaultDatabaseGCTTLSec() uint64 {
-	return cfg.AnalyzedPipelineDefaultDatabaseGCTTLSec
-}
-
-// FinishedPipelineDefaultDatabaseGCTTLSec return default database gc ttl for finished pipeline record
-func FinishedPipelineDefaultDatabaseGCTTLSec() uint64 {
-	return cfg.FinishedPipelineDefaultDatabaseGCTTLSec
 }
 
 // SuccessPipelineDefaultResourceGCTTLSec return default resource gc for success pipeline
