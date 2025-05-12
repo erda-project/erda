@@ -36,6 +36,11 @@ type config struct {
 	AnalyzedPipelineArchiveDefaultRetainHour time.Duration `file:"analyzed_pipeline_archive_default_retain_hour" env:"ANALYZED_PIPELINE_ARCHIVE_RETAIN_HOUR" default:"24h"`
 	// default 30 day
 	FinishedPipelineArchiveDefaultRetainHour time.Duration `file:"finished_pipeline_archive_default_retain_hour" env:"FINISHED_PIPELINE_ARCHIVE_RETAIN_HOUR" default:"720h"`
+
+	// default database gc ttl for analyzed pipeline record: 1 day
+	AnalyzedPipelineDefaultDatabaseGCTTLDuration time.Duration `file:"analyzed_pipeline_default_database_gc_ttl_duration" env:"ANALYZED_PIPELINE_DEFAULT_DATABASE_GC_TTL_DURATION" default:"24h"`
+	// default database gc ttl for finished pipeline record: 60 day
+	FinishedPipelineDefaultDatabaseGCTTLDuration time.Duration `file:"finished_pipeline_default_database_gc_ttl_duration" env:"FINISHED_PIPELINE_DEFAULT_DATABASE_GC_TTL_DURATION" default:"1440h"`
 }
 
 type provider struct {

@@ -28,7 +28,6 @@ import (
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/internal/tools/pipeline/conf"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/internal/tools/pipeline/spec"
@@ -114,7 +113,7 @@ func (p *provider) doAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippetPi
 	req.Status = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
 	req.AscCols = []string{"id"}
-	req.EndTimeCreated = timestamppb.New(time.Now().Add(-time.Second * time.Duration(conf.AnalyzedPipelineDefaultDatabaseGCTTLSec())))
+	req.EndTimeCreated = timestamppb.New(time.Now().Add(-p.Cfg.AnalyzedPipelineDefaultDatabaseGCTTLDuration))
 	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
@@ -136,7 +135,7 @@ func (p *provider) doNotAnalyzedPipelineDatabaseGC(ctx context.Context, isSnippe
 	req.NotStatus = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
 	req.AscCols = []string{"id"}
-	req.EndTimeCreated = timestamppb.New(time.Now().Add(-time.Second * time.Duration(conf.FinishedPipelineDefaultDatabaseGCTTLSec())))
+	req.EndTimeCreated = timestamppb.New(time.Now().Add(-p.Cfg.FinishedPipelineDefaultDatabaseGCTTLDuration))
 	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
