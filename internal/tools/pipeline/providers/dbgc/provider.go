@@ -17,29 +17,20 @@ package dbgc
 import (
 	"context"
 	"reflect"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/internal/tools/pipeline/dbclient"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/db"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/dbgc/dbgcconfig"
 	"github.com/erda-project/erda/internal/tools/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
-type config struct {
-	// default 2h
-	PipelineDBGCDuration time.Duration `file:"pipeline_dbgc_duration" env:"PIPELINE_DBGC_DURATION" default:"2h"`
-	// default 1 day
-	AnalyzedPipelineArchiveDefaultRetainHour time.Duration `file:"analyzed_pipeline_archive_default_retain_hour" env:"ANALYZED_PIPELINE_ARCHIVE_RETAIN_HOUR" default:"24h"`
-	// default 30 day
-	FinishedPipelineArchiveDefaultRetainHour time.Duration `file:"finished_pipeline_archive_default_retain_hour" env:"FINISHED_PIPELINE_ARCHIVE_RETAIN_HOUR" default:"720h"`
-}
-
 type provider struct {
-	Cfg      *config
+	Cfg      *dbgcconfig.Config
 	Log      logs.Logger
 	js       jsonstore.JsonStore
 	etcd     *etcd.Store
@@ -62,6 +53,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.etcd = etcdStore
 
 	p.dbClient = &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}}
+
+	p.Log.Debugf("dbgc config: %+v", p.Cfg)
+
 	return nil
 }
 
@@ -76,7 +70,7 @@ func init() {
 		Types:        []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
 		Dependencies: nil,
 		Description:  "pipeline dbgc",
-		ConfigFunc:   func() interface{} { return &config{} },
+		ConfigFunc:   func() interface{} { return dbgcconfig.Cfg },
 		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }
