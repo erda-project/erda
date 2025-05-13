@@ -14,6 +14,7 @@ routes:
             - TransAuthorization
             - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2025-03-01-preview")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/responses")
@@ -30,7 +31,9 @@ routes:
         config:
           directors:
             - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2025-03-01-preview")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/responses/${ path.response_id }")
@@ -43,7 +46,9 @@ routes:
         config:
           directors:
             - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2025-03-01-preview")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/responses/${ path.response_id }")
@@ -56,7 +61,9 @@ routes:
         config:
           directors:
             - TransAuthorization
+            - SetModelAPIVersionIfNotSpecified
             - DefaultQueries("api-version=2025-03-01-preview")
+            - DropQueriesIf("api-version=-1")
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/responses/${ path.response_id }/input_items")
