@@ -22,4 +22,5 @@ import (
 type ElasticsearchAndSecret struct {
 	elasticsearchv1.Elasticsearch
 	corev1.Secret
+	corev1.ConfigMap
 }
