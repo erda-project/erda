@@ -165,6 +165,8 @@ openapi-auth-uc:
   platform_protocol: "${DICE_PROTOCOL:https}"
   weight: 100
   redirect_after_login: "${UI_PUBLIC_ADDR}"
+  platform_domain: "${UI_PUBLIC_ADDR}"
+  allowed_referrers: "${ALLOWED_REFERRERS}"
   client_id: "${UC_CLIENT_ID:dice}"
   uc_addr: "${UC_PUBLIC_ADDR}"
   uc_redirect_addrs: "${SELF_PUBLIC_ADDR}"
@@ -178,7 +180,7 @@ openapi-auth-password:
 openapi-over-permission-org-name:
   _enable: ${AUTH_OVER_PERMISSION:true}
   weight: 30
-  default_match_org: ["query:scope","query:scopeId"]
+  default_match_org: [ "query:scope","query:scopeId" ]
 openapi-over-permission-org-id:
   _enable: ${AUTH_OVER_PERMISSION:true}
 openapi-auth-token:
