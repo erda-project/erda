@@ -12,24 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package types
 
 import (
-	_ "embed"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	_ "github.com/erda-project/erda-infra/providers/etcd"
-	_ "github.com/erda-project/erda-infra/providers/etcd-election"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy"
-	_ "github.com/erda-project/erda/internal/pkg/cloud-storage/oss"
-	"github.com/erda-project/erda/pkg/common"
+	"time"
 )
 
-//go:embed bootstrap.yml
-var bootstrap string
+type PutObjectResult struct {
+	// Content-Md5 for the uploaded object.
+	ContentMD5 string
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrap,
-	})
+	// Entity tag for the uploaded object.
+	ETag string
+
+	// The 64-bit CRC value of the object.
+	// This value is calculated based on the ECMA-182 standard.
+	HashCRC64 string
+
+	// Version of the object.
+	VersionId string
+
+	Bucket string
+
+	ObjectName string
+	Region     string
+}
+
+type FileObject struct {
+	Key          string
+	Type         *string    `xml:"Type"`
+	Size         int64      `xml:"Size"`
+	LastModified *time.Time `xml:"LastModified"`
 }

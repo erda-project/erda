@@ -19,6 +19,7 @@ import (
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	mfpb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/filesystem/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -85,4 +86,9 @@ var CheckClientTokenPerm = CheckPermissions(
 
 var CheckRichClientPerm = CheckPermissions(
 	&MethodPermission{Method: richclientpb.RichClientServiceServer.GetByAccessKeyId, AdminOrAk: true},
+)
+
+var CheckMCPFileSystemPerm = CheckPermissions(
+	&MethodPermission{Method: mfpb.FileSystemServiceServer.UploadFile, AdminOrAk: true},
+	&MethodPermission{Method: mfpb.FileSystemServiceServer.DeleteFile, AdminOrAk: true},
 )
