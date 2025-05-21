@@ -139,7 +139,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
 	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
 	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm)
-	mcppb.RegisterMCPServerServiceImp(p, &handler_mcp.MCPHandler{DAO: p.Dao}, apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
+	mcppb.RegisterMCPServerServiceImp(p, &handler_mcp_server.MCPHandler{DAO: p.Dao}, apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
