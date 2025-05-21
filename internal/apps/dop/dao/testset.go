@@ -173,6 +173,12 @@ func (db *DBClient) ListTestSets(req apistructs.TestSetListRequest) ([]TestSet, 
 		sql = sql.Where("`id` IN (?)", strutil.DedupUint64Slice(req.TestSetIDs, true))
 	}
 
+	// Sort by latest updated time in descending order when viewing the first-level directory in the Recycle Bin
+	if req.Recycled && req.ParentID != nil && *req.ParentID == 0 {
+		sql = sql.Order("`updated_at` DESC")
+	}
+
+	// After applying root-level sorting, further sort by `order_num`
 	sql = sql.Order("`order_num` DESC")
 
 	if err := sql.Find(&testsets).Error; err != nil {
