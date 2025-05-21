@@ -19,15 +19,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_filesystem"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	cloudstorage "github.com/erda-project/erda/internal/pkg/cloud-storage"
 	"github.com/erda-project/erda/internal/pkg/cloud-storage/types"
-
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 type mockCloudStorage struct {

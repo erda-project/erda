@@ -21,15 +21,15 @@ import (
 	http1 "net/http"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/filesystem/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_filesystem"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	cloudstorage "github.com/erda-project/erda/internal/pkg/cloud-storage"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
-
-	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MCPFileHandler struct {

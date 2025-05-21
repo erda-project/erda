@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/erda-project/erda/internal/pkg/cloud-storage/types"
-
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
+
+	"github.com/erda-project/erda/internal/pkg/cloud-storage/types"
 )
 
 func (p *provider) WhoIAm() string {
