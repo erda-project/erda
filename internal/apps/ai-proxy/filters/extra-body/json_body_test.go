@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
 
@@ -44,11 +46,19 @@ func Test_unmarshalJSONFromString(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "empty {}",
+			name: "{}",
 			args: args{
 				s: `{}`,
 			},
 			want:    map[string]any{},
+			wantErr: false,
+		},
+		{
+			name: "empty string",
+			args: args{
+				s: "",
+			},
+			want:    nil,
 			wantErr: false,
 		},
 		{
@@ -188,4 +198,12 @@ func TestFulfillExtraJSONBody(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRangeNilMap(t *testing.T) {
+	body := map[string]any{}
+	assert.Nil(t, body["not_exist"])
+
+	body = nil
+	assert.Nil(t, body["not_exist"])
 }
