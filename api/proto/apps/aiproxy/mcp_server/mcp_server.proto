@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.mcp_server;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+message MCPServer {
+  string id = 1 [(validate.rules).string = {len: 36}];
+  string name = 2 [(validate.rules).string = {min_len: 1}];
+  string version = 3 [(validate.rules).string = {min_len: 1}];
+  string description = 4;
+  string instruction = 5;
+  string endpoint = 6 [(validate.rules).string = {min_len: 1}];
+  repeated MCPServerTool tools = 7;
+  bool isDefaultVersion = 8;
+  bool isPublished = 9;
+}
+
+message MCPServerConfig {
+  repeated MCPServerTool tools = 1;
+}
+
+message MCPServerTool {
+  string name = 1 [(validate.rules).string = {min_len: 1}];
+  string description = 2;
+  MCPServerToolInputSchema inputSchema = 3;
+}
+
+// TODO: Clarify the schema by providing more specific fields, documentation, and constraints.
+message MCPServerToolInputSchema {
+  string type = 1;
+  map<string, google.protobuf.Struct> properties = 2;
+  repeated string required = 3;
+}
+
+service MCPServerService {
+  rpc Get(MCPServerGetRequest) returns (MCPServerGetResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/servers/{name}?version={version}"
+    };
+  }
+  rpc List(MCPServerListRequest) returns (MCPServerListResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/servers"
+    };
+  }
+  rpc Update(MCPServerUpdateRequest) returns (MCPServerUpdateResponse) {
+    option(google.api.http) = {
+      put: "/api/ai-proxy/mcp/servers/{name}?version={version}"
+      body: "*"
+    };
+  }
+  rpc Delete(MCPServerDeleteRequest) returns (MCPServerDeleteResponse) {
+    option(google.api.http) = {
+      delete: "/api/ai-proxy/mcp/servers/{name}?version={version}"
+    };
+  }
+  rpc Version(MCPServerVersionRequest) returns(MCPServerVersionResponse) {
+    option(google.api.http) = {
+      get: "/api/ai-proxy/mcp/servers/{name}/versions"
+    };
+  }
+  rpc Register(MCPServerRegisterRequest) returns (MCPServerRegisterResponse) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/mcp/servers/{name}/actions/register"
+      body: "*"
+    };
+  }
+  rpc Publish(MCPServerActionPublishRequest) returns (MCPServerActionPublishResponse) {
+    option(google.api.http) = {
+      post: "/api/ai-proxy/mcp/servers/{name}/actions/publish"
+      body: "*"
+    };
+  }
+}
+
+message MCPServerGetRequest {
+  string name = 1 [(validate.rules).string = {min_len: 1}];
+  string version = 2;
+}
+
+message MCPServerGetResponse {
+  MCPServer data = 1;
+}
+
+message MCPServerListRequest {
+  uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+  uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+  bool includeUnpublished = 3;
+}
+
+message MCPServerListResponse {
+  int64 total = 1;
+  repeated MCPServer list = 2;
+}
+
+message MCPServerUpdateRequest {
+  string name = 1 [(validate.rules).string = {min_len: 1}];
+  string version = 2 [(validate.rules).string = {min_len: 1}];
+  string description = 3;
+  string instruction = 4;
+  google.protobuf.BoolValue isDefaultVersion = 5;
+  google.protobuf.BoolValue isPublished = 6;
+}
+
+message MCPServerUpdateResponse {
+  MCPServer data = 1;
+}
+
+message MCPServerDeleteRequest {
+  string name = 1 [(validate.rules).string = {min_len: 1}];
+  string version = 2;
+}
+
+message MCPServerDeleteResponse {
+}
+
+message MCPServerVersionRequest {
+  uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+  uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+  string name = 3 [(validate.rules).string = {min_len: 1}];
+  bool includeUnpublished = 4;
+}
+
+message MCPServerVersionResponse {
+  int64 total = 1;
+  repeated MCPServer list = 2;
+}
+
+message MCPServerRegisterRequest {
+  string name = 1 [(validate.rules).string = {min_len: 1}];
+  string description = 2;
+  string instruction = 3;
+  string version = 4 [(validate.rules).string = {min_len: 1}];
+  string endpoint = 5 [(validate.rules).string = {min_len: 1}];
+  repeated MCPServerTool tools = 6;
+  google.protobuf.BoolValue isDefaultVersion = 7;
+  google.protobuf.BoolValue isPublished = 8;
+}
+
+message MCPServerRegisterResponse {
+  MCPServer data = 1;
+}
+
+message MCPServerActionPublishRequest {
+  string name = 1;
+  string version = 2;
+  MCPServerActionPublishType action = 3;
+}
+
+message MCPServerActionPublishResponse {
+  MCPServer data = 1;
+}
+
+enum MCPServerActionPublishType {
+  PUT_ON = 0;
+  PUT_OFF = 1;
+}
