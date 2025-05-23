@@ -23,6 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/filesystem/pb"
@@ -40,6 +41,11 @@ type MCPFileHandler struct {
 func (m *MCPFileHandler) DeleteFile(ctx context.Context, request *pb.DeleteFileRequest) (*pb.DeleteFileResponse, error) {
 	file, err := m.DAO.McpFilesystemClient().GetFileById(request.FileId)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &pb.DeleteFileResponse{
+				Msg: fmt.Sprintf("no file Id:%v found, no need to delete", request.FileId),
+			}, nil
+		}
 		logrus.Errorf("failed to get file by id: %v", err)
 		return nil, errors.New("failed to get file by id")
 	}
@@ -93,11 +99,20 @@ func (m *MCPFileHandler) UploadFile(ctx context.Context, request *pb.FileUploadR
 		return nil, fmt.Errorf("failed to put object")
 	}
 
+	var endpoint, relationId string
+	relation, err := m.DAO.McpFilesystemClient().GetRelationByBucketAndRegion(result.Bucket, result.Region)
+	if err != nil || relation == nil {
+		endpoint = defaultEndPoint(m.Cs.WhoIAm(), result.Bucket, result.ObjectName, result.Region)
+		logrus.Warningf("failed to get relation by bucket: %v, use default endpoint: %s", err, endpoint)
+	} else {
+		relationId = relation.ID
+		endpoint = fmt.Sprintf("https://%s", filepath.Join(relation.Domain, result.ObjectName))
+	}
+
 	id := uuid.New()
 	if err = m.DAO.McpFilesystemClient().InsertFile(mcp_filesystem.McpFile{
 		ID:          id,
 		StorageType: m.Cs.WhoIAm(),
-		Bucket:      result.Bucket,
 		ObjectKey:   result.ObjectName,
 		FileName:    header.Filename,
 		FileSize:    header.Size,
@@ -106,17 +121,9 @@ func (m *MCPFileHandler) UploadFile(ctx context.Context, request *pb.FileUploadR
 		VersionID:   result.VersionId,
 		Keep:        keep,
 		IsDeleted:   "N",
+		RelationId:  relationId,
 	}); err != nil {
 		logrus.Errorf("failed to save file info: %v", err)
-	}
-
-	var endpoint string
-	relation, err := m.DAO.McpFilesystemClient().GetRelationByBucket(result.Bucket)
-	if err != nil || relation == nil {
-		endpoint = defaultEndPoint(m.Cs.WhoIAm(), result.Bucket, result.ObjectName, result.Region)
-		logrus.Warningf("failed to get relation by bucket: %v, use default endpoint: %s", err, endpoint)
-	} else {
-		endpoint = fmt.Sprintf("https://%s", filepath.Join(relation.Domain, result.ObjectName))
 	}
 
 	return &pb.FileUploadResponse{

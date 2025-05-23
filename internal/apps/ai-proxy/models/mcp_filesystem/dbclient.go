@@ -24,9 +24,12 @@ func (d *DBClient) CreateOrUpdateBucketDomainRelation(relation BucketDomainRelat
 	return d.DB.Model(&BucketDomainRelation{}).Save(relation).Error
 }
 
-func (d *DBClient) GetRelationByBucket(bucket string) (*BucketDomainRelation, error) {
+func (d *DBClient) GetRelationByBucketAndRegion(bucket string, region string) (*BucketDomainRelation, error) {
 	var relation BucketDomainRelation
-	if err := d.DB.Model(&BucketDomainRelation{}).Where("bucket_name = ?", bucket).First(&relation).Error; err != nil {
+	if err := d.DB.Model(&BucketDomainRelation{}).
+		Where("bucket_name = ?", bucket).
+		Where("area = ?", region).
+		First(&relation).Error; err != nil {
 		return nil, err
 	}
 	return &relation, nil

@@ -42,7 +42,6 @@ type McpFile struct {
 	DeletedAt *time.Time `gorm:"type:datetime;comment:删除时间" json:"deleted_at" gorm:"index"`
 
 	StorageType string `gorm:"type:varchar(32);not null;comment:存储类型，如：oss, s3" json:"storage_type"`
-	Bucket      string `gorm:"type:varchar(128);not null;comment:存储桶名称" json:"bucket"`
 	ObjectKey   string `gorm:"type:varchar(512);not null;comment:存储对象 key" json:"object_key"`
 	FileName    string `gorm:"type:varchar(512);not null;comment:文件名称" json:"file_name"`
 	FileSize    int64  `gorm:"type:bigint;not null;comment:文件大小，单位：字节" json:"file_size"`
@@ -51,6 +50,7 @@ type McpFile struct {
 	Keep        string `gorm:"type:char(1);not null;comment:是否保留文件" json:"keep"`
 	ETag        string `gorm:"type:varchar(512);not null;comment:文件 etag" json:"e_tag"`
 	IsDeleted   string `gorm:"type:char(1);not null;comment:是否删除" json:"is_deleted"`
+	RelationId  string `gorm:"type:char(36);not null;comment:bucket关联id" json:"relation_id"`
 }
 
 // TableName sets the insert table name for this struct type
