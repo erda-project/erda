@@ -43,6 +43,7 @@ routes:
       - name: bailian-director
       - name: dashscope-director
       - name: openai-director
+      - name: extra-body
       - name: audit-after-llm-director
       - name: finalize
   - path: /v1/embeddings
