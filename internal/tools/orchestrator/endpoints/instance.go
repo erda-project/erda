@@ -16,8 +16,6 @@ package endpoints
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -27,10 +25,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/pkg/user"
+	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/internal/tools/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -44,37 +42,6 @@ const (
 	INSTANCE_REQUEST_TYPE_APPLICATION InstanceRequestType = "application"
 	INSTANCE_REQUEST_TYPE_SERVICE     InstanceRequestType = "service"
 	INSTANCE_REQUEST_TYPE_RUNTIME     InstanceRequestType = "runtime"
-
-	PodStatusHealthy    string = "Healthy"
-	PodStatusUnHealthy  string = "Unhealthy"
-	PodStatusCreating   string = "Creating"
-	PodStatusTerminated string = "Terminated"
-
-	PodConditionFalse                     string = "False"
-	PodDefaultMessage                     string = "Ok"
-	PodPendingDefaultMessage              string = "Waiting for scheduling"
-	PodPendingReasonUnSchedulable         string = "Unschedulable"
-	PodUnHealthyReasonErrImagePull        string = "ErrImagePull"
-	PodUnHealthyReasonUnSchedulable       string = "Failed to Schedule Pod"
-	ContainerStateReasonImagePullBackOff  string = "ImagePullBackOff"
-	PodUnHealthyReasonImagePullBackOff    string = "Failed to pull image"
-	ContainerStateReasonRunContainerError string = "RunContainerError"
-	PodUnHealthyReasonRunContainerError   string = "Failed to start container"
-	ContainerStateReasonCrashLoopBackOff  string = "CrashLoopBackOff"
-	PodUnHealthyReasonCrashLoopBackOff    string = "Failed to run command"
-
-	messageContainsImageNotFound                string = "not found"
-	messageContainsImagePullBackoff             string = "Back-off pulling image"
-	messageContainsImagePullFailedTrans         string = "image not found or can not pull"
-	messageContainsNodeAffinity                 string = "didn't match Pod's node affinity"
-	messageContainsInsufficientCPU              string = "Insufficient cpu"
-	messageContainsInsufficientMemory           string = "Insufficient memory"
-	messageContainsInsufficientCPUAndMemory     string = "Insufficient memory and memory"
-	messageContainsNoSuchFileOrDirectory        string = "no such file or directory"
-	messageContainsNoSuchFileOrDirectoryTrans   string = "some file or directory not found"
-	messageContainsBackOff                      string = "back-off"
-	messageContainsBackOffRestartConatiner      string = "restarting failed container"
-	messageContainsBackOffRestartConatinerTrans string = "container process exit"
 )
 
 // ListServiceInstance 获取runtime 下服务实例列表
@@ -195,7 +162,16 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 		}
 	}
 
-	currPods, err := e.getPodStatusFromK8s(runtimeID, serviceName)
+	runtimeId, err := strconv.ParseUint(runtimeID, 10, 64)
+	if err != nil {
+		return nil, errors.Errorf("failed to parse runtime id %s: %v", runtimeID, err)
+	}
+	sg, err := e.runtime.GetRuntimeServiceCurrentPods(runtimeId, serviceName)
+	if err != nil {
+		return nil, errors.Errorf("failed to get runtime %d service %s, %v", runtimeId, serviceName, err)
+	}
+
+	currPods, err := e.instanceinfoImpl.GetInstancePodFromK8s(sg, serviceName)
 	if err != nil {
 		logrus.Warnf("get pod status from kubernetes failed, runtime: %s, service: %s, err: %v",
 			runtimeID, serviceName, err)
@@ -234,21 +210,24 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 	}
 	pods := make(apistructs.Pods, 0, len(podList))
 	for _, v := range podList {
-		startat := ""
-		updateat := ""
-		podHealthy := PodStatusUnHealthy
+		var (
+			startedAt,
+			updatedAt string
+			podHealthy = instanceinfo.PodStatusUnHealthy
+		)
+
 		switch v.Phase {
 		case string(corev1.PodRunning):
-			podHealthy = PodStatusHealthy
+			podHealthy = instanceinfo.PodStatusHealthy
 		case string(corev1.PodPending):
-			podHealthy = PodStatusCreating
+			podHealthy = instanceinfo.PodStatusCreating
 		case string(corev1.PodFailed), string(corev1.PodUnknown):
-			podHealthy = PodStatusUnHealthy
+			podHealthy = instanceinfo.PodStatusUnHealthy
 		case string(corev1.PodSucceeded):
-			podHealthy = PodStatusTerminated
+			podHealthy = instanceinfo.PodStatusTerminated
 		}
 		if v.StartedAt != nil {
-			startat = v.StartedAt.Format(time.RFC3339Nano)
+			startedAt = v.StartedAt.Format(time.RFC3339Nano)
 		}
 		containersResource := make([]apistructs.PodContainer, 0)
 		for _, cInstance := range instances {
@@ -264,7 +243,7 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 						CpuLimit:   v.CpuLimit,
 					},
 				})
-				updateat = cInstance.StartedAt
+				updatedAt = cInstance.StartedAt
 				break
 			}
 		}
@@ -275,8 +254,8 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 			Host:          v.HostIP,
 			Phase:         podHealthy,
 			Message:       v.Message,
-			StartedAt:     startat,
-			UpdatedAt:     updateat,
+			StartedAt:     startedAt,
+			UpdatedAt:     updatedAt,
 			Service:       v.ServiceName,
 			ClusterName:   v.Cluster,
 			PodName:       v.PodName,
@@ -288,242 +267,6 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 	// 按时间降序排列
 	sort.Sort(sort.Reverse(&pods))
 	return httpserver.OkResp(pods)
-}
-
-// getPodStatusFromK8s TODO: move all logic to the implementation.
-func (e *Endpoints) getPodStatusFromK8s(runtimeID, serviceName string) ([]apistructs.Pod, error) {
-	currPods := make([]apistructs.Pod, 0)
-	runtimeId, _ := strconv.ParseUint(runtimeID, 10, 64)
-	sg, err := e.runtime.GetRuntimeServiceCurrentPods(runtimeId, serviceName)
-	if err != nil {
-		return currPods, errors.Errorf("get runtimeId %d service %s current pods GetRuntimeServiceCurrentPods failed:%v", runtimeId, serviceName, err)
-	}
-
-	if _, ok := sg.Extra[serviceName]; !ok {
-		return currPods, errors.Errorf("get runtimeId %d service %s current pods failed: no pods found in sg.Extra for service", runtimeId, serviceName)
-	}
-
-	var k8sPods []corev1.Pod
-	err = json.Unmarshal([]byte(sg.Extra[serviceName]), &k8sPods)
-	if err != nil {
-		return currPods, errors.Errorf("get runtimeId %d service %s current pods failed: %v", runtimeId, serviceName, err)
-	}
-
-	for _, pod := range k8sPods {
-		if pod.Status.Phase != corev1.PodPending && pod.Status.Phase != corev1.PodRunning {
-			logrus.Warnf("Pod %s/%s had Status in terminated or unknown, ignoring it.", pod.Namespace, pod.Name)
-			continue
-		}
-
-		// TODO change `DICE_CLUSTER_NAME` to  `core.erda.cloud/cluster-name`
-		clusterName := ""
-		for _, container := range pod.Spec.Containers {
-			if clusterName != "" {
-				break
-			}
-			for _, env := range container.Env {
-				if env.Name == apistructs.DICE_CLUSTER_NAME.String() {
-					clusterName = env.Value
-					break
-				}
-			}
-		}
-		message := PodDefaultMessage
-		if pod.Status.Message != "" {
-			message = pod.Status.Message
-		}
-
-		podRestartCount := int32(0)
-		containersResource := make([]apistructs.PodContainer, 0)
-		podHealthy := PodStatusHealthy
-		switch pod.Status.Phase {
-		case corev1.PodPending:
-			podHealthy = PodStatusCreating
-			containerResource := apistructs.ContainerResource{}
-			nameToIndex := make(map[string]int)
-			for idx, container := range pod.Spec.Containers {
-				requestmem, _ := container.Resources.Requests.Memory().AsInt64()
-				limitmem, _ := container.Resources.Limits.Memory().AsInt64()
-				containerResource = apistructs.ContainerResource{
-					MemRequest: int(requestmem / 1024 / 1024),
-					MemLimit:   int(limitmem / 1024 / 1024),
-					CpuRequest: (container.Resources.Requests.Cpu().AsApproximateFloat64() * 1000) / 1000,
-					CpuLimit:   (container.Resources.Limits.Cpu().AsApproximateFloat64() * 1000) / 1000,
-				}
-				containersResource = append(containersResource, apistructs.PodContainer{
-					ContainerName: container.Name,
-					Image:         container.Image,
-					Resource:      containerResource,
-				})
-				nameToIndex[container.Name] = idx
-			}
-			message = PodPendingDefaultMessage
-			if len(pod.Status.ContainerStatuses) > 0 {
-				for _, podContainerStatus := range pod.Status.ContainerStatuses {
-					if podContainerStatus.Ready != true {
-						message = getPodContainerMessage(podContainerStatus.State)
-						if _, ok := nameToIndex[podContainerStatus.Name]; ok {
-							containersResource[nameToIndex[podContainerStatus.Name]].Message = message
-						} else {
-							containersResource[0].Message = message
-						}
-					}
-				}
-			} else {
-				for _, podCondition := range pod.Status.Conditions {
-					if string(podCondition.Status) == PodConditionFalse {
-						message = convertReasonMessageToHumanReadableMessage(podCondition.Reason, podCondition.Message)
-						containersResource[0].Message = message
-						break
-					}
-				}
-			}
-
-		default:
-			for _, podCondition := range pod.Status.Conditions {
-				if podCondition.Status != corev1.ConditionTrue {
-					podHealthy = PodStatusUnHealthy
-					break
-				}
-			}
-
-			for _, podContainerStatus := range pod.Status.ContainerStatuses {
-				if podContainerStatus.RestartCount > podRestartCount {
-					podRestartCount = podContainerStatus.RestartCount
-				}
-				containerID := ""
-				if len(strings.Split(podContainerStatus.ContainerID, "://")) <= 1 {
-					return currPods, errors.Errorf("Pod status containerStatuses no containerID, neew pod for service %s is creating, please wait", serviceName)
-				} else {
-					containerID = strings.Split(podContainerStatus.ContainerID, "://")[1]
-				}
-
-				if podContainerStatus.Ready != true {
-					podHealthy = PodStatusUnHealthy
-					message = getPodContainerMessage(podContainerStatus.State)
-				}
-
-				containerResource := apistructs.ContainerResource{}
-				for _, container := range pod.Spec.Containers {
-					if container.Name == podContainerStatus.Name {
-						requestmem, _ := container.Resources.Requests.Memory().AsInt64()
-						limitmem, _ := container.Resources.Limits.Memory().AsInt64()
-						containerResource = apistructs.ContainerResource{
-							MemRequest: int(requestmem / 1024 / 1024),
-							MemLimit:   int(limitmem / 1024 / 1024),
-							CpuRequest: (container.Resources.Requests.Cpu().AsApproximateFloat64() * 1000) / 1000,
-							CpuLimit:   (container.Resources.Limits.Cpu().AsApproximateFloat64() * 1000) / 1000,
-						}
-						break
-					}
-				}
-
-				containersResource = append(containersResource, apistructs.PodContainer{
-					ContainerID:   containerID,
-					ContainerName: podContainerStatus.Name,
-					Image:         podContainerStatus.Image,
-					Resource:      containerResource,
-					Message:       message,
-				})
-			}
-
-			containersResource = sortContainers(containersResource,
-				getMainContainerNameByServiceName(pod.Spec.Containers, serviceName),
-			)
-
-			if pod.UID == "" || pod.Status.PodIP == "" || pod.Status.HostIP == "" ||
-				pod.Status.Phase == "" || pod.Status.StartTime == nil || len(containersResource) == 0 {
-				return currPods, errors.Errorf("Pod status have no enough info for pod, pod for service %s is creating, please wait", serviceName)
-			}
-		}
-
-		if pod.Status.StartTime == nil {
-			pod.Status.StartTime = &pod.CreationTimestamp
-		}
-
-		var updateTime *metav1.Time
-		for _, v := range pod.Status.Conditions {
-			if v.Type == corev1.PodReady {
-				lt := v.LastTransitionTime
-				updateTime = &lt
-			}
-		}
-		if updateTime == nil {
-			updateTime = pod.Status.StartTime
-		}
-
-		currPods = append(currPods, apistructs.Pod{
-			Uid:           string(pod.UID),
-			IPAddress:     pod.Status.PodIP,
-			Host:          pod.Status.HostIP,
-			Phase:         podHealthy,
-			Message:       containersResource[0].Message,
-			StartedAt:     pod.Status.StartTime.Format(time.RFC3339Nano),
-			UpdatedAt:     updateTime.Format(time.RFC3339Nano),
-			Service:       serviceName,
-			ClusterName:   clusterName,
-			PodName:       pod.Name,
-			K8sNamespace:  pod.Namespace,
-			RestartCount:  podRestartCount,
-			PodContainers: containersResource,
-		})
-	}
-
-	if len(currPods) == 0 {
-		return currPods, errors.Errorf("No pods get for service %s, pod may be is creating, please wait", serviceName)
-	}
-	return currPods, nil
-}
-
-func getPodContainerMessage(containerState corev1.ContainerState) string {
-	message := ""
-	switch {
-	case containerState.Waiting != nil:
-		message = convertReasonMessageToHumanReadableMessage(containerState.Waiting.Reason, containerState.Waiting.Message)
-	case containerState.Terminated != nil:
-		message = convertReasonMessageToHumanReadableMessage(containerState.Terminated.Reason, containerState.Terminated.Message)
-	}
-	return message
-}
-
-func convertReasonMessageToHumanReadableMessage(containerReason, containerMessage string) string {
-
-	extractMessage := ""
-	switch {
-	case strings.Contains(containerMessage, messageContainsImageNotFound), strings.Contains(containerMessage, messageContainsImagePullBackoff):
-		extractMessage = messageContainsImagePullFailedTrans
-	case strings.Contains(containerMessage, messageContainsNodeAffinity):
-		extractMessage = messageContainsNodeAffinity
-	case strings.Contains(containerMessage, messageContainsInsufficientCPU), strings.Contains(containerMessage, messageContainsInsufficientMemory):
-		if strings.Contains(containerMessage, messageContainsInsufficientCPU) {
-			extractMessage = messageContainsInsufficientCPU
-		}
-		if strings.Contains(containerMessage, messageContainsInsufficientMemory) {
-			extractMessage = messageContainsInsufficientMemory
-		}
-		if strings.Contains(containerMessage, messageContainsInsufficientCPU) && strings.Contains(containerMessage, messageContainsInsufficientMemory) {
-			extractMessage = messageContainsInsufficientCPUAndMemory
-		}
-	case strings.Contains(containerMessage, messageContainsNoSuchFileOrDirectory):
-		extractMessage = messageContainsNoSuchFileOrDirectoryTrans
-	case strings.Contains(containerMessage, messageContainsBackOff) || strings.Contains(containerMessage, messageContainsBackOffRestartConatiner):
-		extractMessage = messageContainsBackOffRestartConatinerTrans
-	default:
-		extractMessage = containerMessage
-	}
-
-	switch containerReason {
-	case ContainerStateReasonImagePullBackOff, PodUnHealthyReasonErrImagePull:
-		return fmt.Sprintf("%s: %s", PodUnHealthyReasonImagePullBackOff, extractMessage)
-	case PodPendingReasonUnSchedulable:
-		return fmt.Sprintf("%s: %s", PodUnHealthyReasonUnSchedulable, extractMessage)
-	case ContainerStateReasonRunContainerError:
-		return fmt.Sprintf("%s: %s", PodUnHealthyReasonRunContainerError, extractMessage)
-	case ContainerStateReasonCrashLoopBackOff:
-		return fmt.Sprintf("%s: %s", PodUnHealthyReasonCrashLoopBackOff, extractMessage)
-	default:
-		return fmt.Sprintf("%s: %s", containerReason, extractMessage)
-	}
 }
 
 func buildInstanceUsageParams(instances apistructs.InstanceInfoDataList) (
@@ -705,42 +448,4 @@ func parseInstanceMeta(meta string) apistructs.K8sInstanceMetaInfo {
 	}
 
 	return info
-}
-
-// sortContainers
-// TODO: move all logic to the implementation.
-func sortContainers(containers []apistructs.PodContainer, mainServiceName string) []apistructs.PodContainer {
-	var sortedContainers []apistructs.PodContainer
-
-	if len(containers) < 2 {
-		return containers
-	}
-
-	for _, container := range containers {
-		if container.ContainerName == mainServiceName {
-			sortedContainers = append([]apistructs.PodContainer{container}, sortedContainers...)
-		} else {
-			sortedContainers = append(sortedContainers, container)
-		}
-	}
-
-	return sortedContainers
-}
-
-// getMainContainerNameByServiceName
-// TODO: move all logic to the implementation.
-func getMainContainerNameByServiceName(containers []corev1.Container, serviceName string) string {
-	if serviceName == "" || len(containers) == 1 {
-		return containers[0].Name
-	}
-
-	for _, c := range containers {
-		for _, e := range c.Env {
-			if e.Name == apistructs.EnvDiceServiceName && e.Value == serviceName {
-				return c.Name
-			}
-		}
-	}
-
-	return containers[0].Name
 }
