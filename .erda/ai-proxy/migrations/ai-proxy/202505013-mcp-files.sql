@@ -1,9 +1,9 @@
 CREATE TABLE `ai_proxy_mcp_files`
 (
     `id`           CHAR(36)                           NOT NULL primary key COMMENT 'primary key',
-    created_at     datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    updated_at     datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    deleted_at     datetime null comment '删除时间',
+    `created_at`   DATETIME default CURRENT_TIMESTAMP not null comment '创建时间',
+    `updated_at`   DATETIME default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    `deleted_at`   DATETIME                           NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '删除时间, 1970-01-01 00:00:00 表示未删除',
 
     `storage_type` varchar(32)                        not null comment '存储类型，如：oss, s3',
     `object_key`   varchar(512)                       not null comment '存储对象 key',
