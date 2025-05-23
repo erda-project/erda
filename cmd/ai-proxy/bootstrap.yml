@@ -14,9 +14,26 @@ erda.app.ai-proxy:
     - conf/routes/internal_apis.yml
   log_level: ${LOG_LEVEL:info}
   open_on_erda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
+  max_file_size: ${MAX_FILE_SIZE:1073741824}
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}
+
+oss-provider:
+  bucket: ${OSS_BUCKET:erda-tmp}
+  region: ${OSS_REGION:cn-hangzhou}
+  prefix: ${OSS_PREFIX:ai-mcp}
+  maxKey: ${OSS_ONCE_LIST_MAX_KEY:1000}
+
+etcd-election@mcp-file-manager:
+  root_path: "/erda/component-leader/ai-proxy/action/gc-mcp-file"
+
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:http://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
 erda.apps.ai-proxy.dao:
 erda.app.ai-proxy.metrics:

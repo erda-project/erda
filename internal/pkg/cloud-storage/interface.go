@@ -12,24 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cloud_storage
 
 import (
-	_ "embed"
+	"context"
+	"io"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
-	_ "github.com/erda-project/erda-infra/providers/etcd"
-	_ "github.com/erda-project/erda-infra/providers/etcd-election"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy"
-	_ "github.com/erda-project/erda/internal/pkg/cloud-storage/oss"
-	"github.com/erda-project/erda/pkg/common"
+	"github.com/erda-project/erda/internal/pkg/cloud-storage/types"
 )
 
-//go:embed bootstrap.yml
-var bootstrap string
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		Content: bootstrap,
-	})
+type Interface interface {
+	WhoIAm() string
+	PutObject(ctx context.Context, localFilepath string, filename string) (*types.PutObjectResult, error)
+	PutObjectWithReader(ctx context.Context, reader io.Reader, filename string) (*types.PutObjectResult, error)
+	ListObjects(ctx context.Context) ([]types.FileObject, error)
+	DeleteObject(ctx context.Context, key string) error
+	DeleteObjects(ctx context.Context, keys []string) error
 }

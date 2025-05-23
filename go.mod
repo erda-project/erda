@@ -234,6 +234,7 @@ require (
 	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect
 	github.com/alibabacloud-go/tea-utils v1.3.9 // indirect
 	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.2
 	github.com/aliyun/credentials-go v1.1.2 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
@@ -290,6 +291,8 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/frankban/quicktest v1.14.6 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/gammazero/deque v0.2.0 // indirect
+	github.com/gammazero/workerpool v1.1.3
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
@@ -483,6 +486,8 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
+
+require gotest.tools/v3 v3.5.0
 
 replace (
 	erda.cloud/rocketmq => github.com/erda-project/rocketmq-operator v0.0.0-20221222075906-f28c42d7bf23

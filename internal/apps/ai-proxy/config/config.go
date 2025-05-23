@@ -34,8 +34,9 @@ type Config struct {
 
 	Exporter configPromExporter
 
-	RoutesRefs []string     `file:"routes_refs"`
-	Routes     route.Routes `json:"-" yaml:"-"`
+	RoutesRefs  []string     `file:"routes_refs"`
+	Routes      route.Routes `json:"-" yaml:"-"`
+	MaxFileSize uint64       `file:"max_file_size"`
 }
 
 type configPromExporter struct {

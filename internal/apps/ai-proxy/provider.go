@@ -24,6 +24,7 @@ import (
 	"path"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -33,11 +34,13 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/grpcserver"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	mfpb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/filesystem/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
@@ -51,6 +54,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_filesystem"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_prompt"
@@ -59,7 +63,9 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	cloudstorage "github.com/erda-project/erda/internal/pkg/cloud-storage"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
+	"github.com/erda-project/erda/internal/tools/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -115,6 +121,8 @@ type provider struct {
 	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
 	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
 	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
+	CloudStorage   cloudstorage.Interface               `autowired:"oss-provider"`
+	Election       election.Interface                   `autowired:"etcd-election@mcp-file-manager"`
 	ErdaOpenapis   map[string]*url.URL
 
 	richClientHandler *handler_rich_client.ClientHandler
@@ -137,6 +145,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
 	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
 	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm)
+	mfpb.RegisterFileSystemServiceImp(p, &handler_mcp_filesystem.MCPFileHandler{DAO: p.Dao, Cs: p.CloudStorage}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckMCPFileSystemPerm)
 
 	// ai-proxy prometheus metrics
 	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
@@ -156,6 +165,25 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 	}
 
+	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	p.Election.OnLeader(func(ctx context.Context) {
+		rutil.ContinueWorking(ctx, p.L, func(ctx context.Context) rutil.WaitDuration {
+
+			if err := p.CleanupFile(ctx); err != nil {
+				p.L.Errorf("failed to cleanup file: %v", err)
+			}
+
+			now := time.Now()
+			next := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+
+			interval := time.Until(next)
+			p.L.Infof("Next run in %v", interval)
+			return rutil.ContinueWorkingWithCustomInterval(interval)
+		})
+	})
 	return nil
 }
 
