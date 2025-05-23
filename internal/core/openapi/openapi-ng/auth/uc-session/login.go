@@ -78,6 +78,11 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(rw, cookie)
+	if !p.referMatcher.Match(referer) {
+		http.Error(rw, "invalid referer", http.StatusBadRequest)
+		return
+	}
+
 	http.Redirect(rw, r, referer, http.StatusFound)
 }
 

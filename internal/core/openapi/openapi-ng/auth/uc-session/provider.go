@@ -33,6 +33,8 @@ type config struct {
 	Weight               int64         `file:"weight" default:"100"`
 	PlatformProtocol     string        `file:"platform_protocol" default:"https"`
 	RedirectAfterLogin   string        `file:"redirect_after_login"`
+	PlatformDomain       string        `file:"platform_domain"`
+	AllowedReferrers     []string      `file:"allowed_referrers"`
 	ClientID             string        `file:"client_id"`
 	UCAddr               string        `file:"uc_addr"`
 	UCRedirectAddrs      []string      `file:"uc_redirect_addrs"`
@@ -50,10 +52,15 @@ type provider struct {
 	Router openapi.Interface `autowired:"openapi-router"`
 	Redis  *redis.Client     `autowired:"redis-client"`
 	Org    org.Interface
+
+	referMatcher *referMatcher
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.Cfg.RedirectAfterLogin = strings.TrimLeft(p.Cfg.RedirectAfterLogin, "/")
+
+	// build refer matcher
+	p.referMatcher = p.buildReferMatcher()
 
 	router := p.Router
 	router.Add(http.MethodGet, "/api/openapi/login", p.LoginURL)
