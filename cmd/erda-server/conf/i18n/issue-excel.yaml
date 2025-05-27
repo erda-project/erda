@@ -43,6 +43,7 @@ zh:
   issue_type:REQUIREMENT: 需求
   issue_type:TASK: 任务
   issue_type:BUG: 缺陷
+  issue_type:TICKET: 工单
 
   # supported priority
   priority:LOW: 低
@@ -74,7 +75,8 @@ zh:
   # template
   Template.RequirementContent: 这是一个需求，包含一个任务
   Template.TaskContent: 这是一个任务，被需求包含
-  Template.BugContent: 这是一个bug，关联到任务
+  Template.BugContent: 这是一个缺陷，关联到任务
+  Template.TicketContent: 这是一个工单
 
   # template - IterationName
   Template.BacklogIteration: 待规划
@@ -87,6 +89,7 @@ en: # use key directly
   issue_type:REQUIREMENT: REQUIREMENT
   issue_type:TASK: TASK
   issue_type:BUG: BUG
+  issue_type:TICKET: TICKET
 
   # supported priority
   priority:LOW: LOW
@@ -119,6 +122,7 @@ en: # use key directly
   Template.RequirementContent: This is a requirement which contains a task
   Template.TaskContent: This is a task which covered by the requirement
   Template.BugContent: This is a bug which related to the task
+  Template.TicketContent: This is a ticket
 
   # template - IterationName
   Template.BacklogIteration: Backlog

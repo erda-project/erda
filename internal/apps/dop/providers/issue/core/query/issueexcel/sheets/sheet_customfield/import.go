@@ -192,6 +192,9 @@ func polishPropertyValueEnumeratesForCreate(enumerates []*pb.Enumerate) {
 func CreateIssueCustomFieldRelation(data *vars.DataForFulfill, issues []*issuedao.Issue, issueModelMapByIssueID map[uint64]*vars.IssueSheetModel) error {
 	ctx := apis.WithInternalClientContext(context.Background(), "issue-import")
 	for _, issue := range issues {
+		if issue.Type == pb.IssueTypeEnum_TICKET.String() { // ticket does not support custom fields
+			continue
+		}
 		model, ok := issueModelMapByIssueID[issue.ID]
 		if !ok {
 			return fmt.Errorf("failed to find issue model by issue id, issue id: %d", issue.ID)
@@ -333,6 +336,8 @@ func GetIssuePropertyEnumTypeByIssueType(issueType pb.IssueTypeEnum_Type) (pb.Pr
 		return pb.PropertyIssueTypeEnum_TASK, nil
 	case pb.IssueTypeEnum_BUG:
 		return pb.PropertyIssueTypeEnum_BUG, nil
+	case pb.IssueTypeEnum_TICKET:
+		return pb.PropertyIssueTypeEnum_TICKET, nil
 	default:
 		return 0, fmt.Errorf("unknown issue type: %s", issueType.String())
 	}
