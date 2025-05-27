@@ -828,7 +828,8 @@ message PropertyIssueTypeEnum {
     TASK = 1;
     BUG = 2;
     EPIC = 3;
-    COMMON = 4;
+    TICKET = 4;
+    COMMON = 5;
   }
 }
 
