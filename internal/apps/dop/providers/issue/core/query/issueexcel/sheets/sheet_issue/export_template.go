@@ -27,6 +27,7 @@ const (
 	TemplateRequirementContent = "Template.RequirementContent"
 	TemplateTaskContent        = "Template.TaskContent"
 	TemplateBugContent         = "Template.BugContent"
+	TemplateTicketContent      = "Template.TicketContent"
 )
 
 // GenerateSampleIssueSheetModels
@@ -125,6 +126,20 @@ func GenerateSampleIssueSheetModels(data *vars.DataForFulfill) []vars.IssueSheet
 			CustomFields: vars.FormatIssueCustomFields(&pb.Issue{Id: int64(bugCommon.ID)}, pb.PropertyIssueTypeEnum_BUG, data),
 		},
 	}
+	// ticket
+	ticketCommon := common
+	ticketCommon.ID = 0
+	ticketCommon.IssueType = pb.IssueTypeEnum_TICKET
+	ticketCommon.Content = data.I18n(TemplateTicketContent)
+	ticketCommon.PlanStartedAt = nil
+	ticketCommon.PlanFinishedAt = nil
+	ticketCommon.StartAt = nil
+	ticketCommon.State = "待处理"
+	ticketCommon.ConnectionIssueIDs = []int64{2}
+	ticketCommon.Labels = []string{"label2"}
+	ticket := vars.IssueSheetModel{
+		Common: ticketCommon,
+	}
 
-	return []vars.IssueSheetModel{requirement, task, bug}
+	return []vars.IssueSheetModel{requirement, task, bug, ticket}
 }

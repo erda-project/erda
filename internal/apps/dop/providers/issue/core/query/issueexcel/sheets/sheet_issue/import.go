@@ -679,7 +679,7 @@ func parseStringIssueID(s string) (*int64, error) {
 	return &i, nil
 }
 
-var supportedIssueTypes = []pb.IssueTypeEnum_Type{pb.IssueTypeEnum_REQUIREMENT, pb.IssueTypeEnum_TASK, pb.IssueTypeEnum_BUG}
+var supportedIssueTypes = []pb.IssueTypeEnum_Type{pb.IssueTypeEnum_REQUIREMENT, pb.IssueTypeEnum_TASK, pb.IssueTypeEnum_BUG, pb.IssueTypeEnum_TICKET}
 var (
 	i18nKeyPrefixOfIssueType  = "issue_type:"
 	i18nKeyPrefixOfPriority   = "priority:"
@@ -818,16 +818,20 @@ func parseStringIssueType(data *vars.DataForFulfill, input string) (*pb.IssueTyp
 		matchedType pb.IssueTypeEnum_Type
 	}{
 		{
-			i18nKeys:    append(data.AllI18nValuesByKey(makeI18nKey(fieldIssueType, pb.IssueTypeEnum_REQUIREMENT.String())), pb.PropertyIssueTypeEnum_REQUIREMENT.String()),
+			i18nKeys:    append(data.AllI18nValuesByKey(makeI18nKey(fieldIssueType, pb.IssueTypeEnum_REQUIREMENT.String())), pb.IssueTypeEnum_REQUIREMENT.String()),
 			matchedType: pb.IssueTypeEnum_REQUIREMENT,
 		},
 		{
-			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.IssueTypeEnum_TASK.String()), pb.PropertyIssueTypeEnum_TASK.String()),
+			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.IssueTypeEnum_TASK.String()), pb.IssueTypeEnum_TASK.String()),
 			matchedType: pb.IssueTypeEnum_TASK,
 		},
 		{
-			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.PropertyIssueTypeEnum_BUG.String()), pb.PropertyIssueTypeEnum_BUG.String()),
+			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.IssueTypeEnum_BUG.String()), pb.IssueTypeEnum_BUG.String()),
 			matchedType: pb.IssueTypeEnum_BUG,
+		},
+		{
+			i18nKeys:    append(data.AllI18nValuesByKey(i18nKeyPrefixOfIssueType+pb.IssueTypeEnum_TICKET.String()), pb.IssueTypeEnum_TICKET.String()),
+			matchedType: pb.IssueTypeEnum_TICKET,
 		},
 	}
 	for _, kv := range kvs {
