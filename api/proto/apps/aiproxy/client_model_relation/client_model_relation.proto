@@ -66,7 +66,7 @@ message PagingRequest {
     uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
     repeated string clientIds = 3 [(validate.rules).repeated = {unique: true, items: {string: {len: 36}}}];
     repeated string modelIds = 4 [(validate.rules).repeated = {unique: true, items: {string: {len: 36}}}];
-    repeated string orderBy = 5 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+    repeated string orderBys = 5 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
 }
 
 message PagingResponse {

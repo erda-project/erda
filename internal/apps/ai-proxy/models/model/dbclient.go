@@ -16,17 +16,15 @@ package model
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_type"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/sqlutil"
 )
 
 type DBClient struct {
@@ -99,20 +97,9 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 	c.ProviderID = req.ProviderId
 	sql = sql.Where(c)
 	// order by
-	if len(req.OrderBy) == 0 {
-		sql = sql.Order("updated_at desc")
-	} else {
-		for _, orderBy := range req.OrderBy {
-			// get is desc or asc
-			parts := strings.Split(orderBy, " ")
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid order by: %s", orderBy)
-			}
-			sql = sql.Order(clause.OrderByColumn{
-				Column: clause.Column{Name: parts[0], Raw: false},
-				Desc:   strings.EqualFold(parts[1], "desc"),
-			})
-		}
+	sql, err := sqlutil.HandleOrderBy(sql, req.OrderBys)
+	if err != nil {
+		return nil, err
 	}
 	var (
 		total int64
@@ -125,7 +112,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 		req.PageSize = 10
 	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err = sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}

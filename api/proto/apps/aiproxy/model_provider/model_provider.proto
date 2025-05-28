@@ -94,7 +94,7 @@ message ModelProviderPagingRequest {
     string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     string type = 4 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     repeated string ids = 5 [(validate.rules).repeated.items.string = {len: 36}];
-    repeated string orderBy = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+    repeated string orderBys = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
 }
 
 message ModelProviderPagingResponse {
