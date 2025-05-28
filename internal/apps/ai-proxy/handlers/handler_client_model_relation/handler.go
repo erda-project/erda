@@ -37,3 +37,7 @@ func (h *ClientModelRelationHandler) UnAllocate(ctx context.Context, req *pb.All
 func (h *ClientModelRelationHandler) ListClientModels(ctx context.Context, req *pb.ListClientModelsRequest) (*pb.ListAllocatedModelsResponse, error) {
 	return h.DAO.ClientModelRelationClient().ListClientModels(ctx, req)
 }
+
+func (h *ClientModelRelationHandler) Paging(ctx context.Context, req *pb.PagingRequest) (*pb.PagingResponse, error) {
+	return h.DAO.ClientModelRelationClient().Paging(ctx, req)
+}

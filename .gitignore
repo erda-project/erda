@@ -97,3 +97,6 @@ cmd/gittar/repository*
 
 # testdata
 testdata/
+
+# cursor editor
+/.cursor/

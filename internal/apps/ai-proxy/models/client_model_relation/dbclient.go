@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/sqlutil"
 )
 
 type DBClient struct {
@@ -102,6 +103,41 @@ func (dbClient *DBClient) ListClientModels(ctx context.Context, req *pb.ListClie
 	return &pb.ListAllocatedModelsResponse{
 		ClientId: req.ClientId,
 		ModelIds: modelIds,
+	}, nil
+}
+
+func (dbClient *DBClient) Paging(ctx context.Context, req *pb.PagingRequest) (*pb.PagingResponse, error) {
+	relationTableName := (&ClientModelRelation{}).TableName()
+	sql := dbClient.DB.Table(relationTableName)
+	if len(req.ClientIds) > 0 {
+		sql = sql.Where("client_id in (?)", req.ClientIds)
+	}
+	if len(req.ModelIds) > 0 {
+		sql = sql.Where("model_id in (?)", req.ModelIds)
+	}
+	// order by
+	sql, err := sqlutil.HandleOrderBy(sql, req.OrderBys)
+	if err != nil {
+		return nil, err
+	}
+	var (
+		total int64
+		list  ClientModelRelations
+	)
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+	offset := (req.PageNum - 1) * req.PageSize
+	err = sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to paging client model relations: %v", err)
+	}
+	return &pb.PagingResponse{
+		Total: total,
+		List:  list.ToProtobuf(),
 	}, nil
 }
 

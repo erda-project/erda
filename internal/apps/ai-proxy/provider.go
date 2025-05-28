@@ -47,7 +47,6 @@ import (
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
@@ -182,7 +181,7 @@ func (p *provider) ServeAIProxy() {
 }
 
 func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {
-	p.HTTP.Handle(path, method, http.HandlerFunc(h))
+	p.HTTP.Handle(path, method, http.HandlerFunc(h), mux.SetXRequestId, mux.CORS)
 }
 
 func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
@@ -205,16 +204,6 @@ func (p *provider) openAPIsOnErda() error {
 			BackendPath: rout.Path,
 			Auth:        auth,
 		}); err != nil {
-			return err
-		}
-	}
-
-	// register admin APIs
-	for _, api := range handlers.APIs {
-		api.Upstream = p.Config.SelfURL
-		api.Path = api.BackendPath
-		api.Auth = auth
-		if _, err := p.DynamicOpenapi.Register(context.Background(), api); err != nil {
 			return err
 		}
 	}

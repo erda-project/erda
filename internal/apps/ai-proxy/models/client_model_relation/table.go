@@ -15,6 +15,9 @@
 package client_model_relation
 
 import (
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 )
 
@@ -25,3 +28,24 @@ type ClientModelRelation struct {
 }
 
 func (*ClientModelRelation) TableName() string { return "ai_proxy_client_model_relation" }
+
+func (c *ClientModelRelation) ToProtobuf() *pb.ClientModelRelation {
+	return &pb.ClientModelRelation{
+		Id:        c.ID.String,
+		CreatedAt: timestamppb.New(c.CreatedAt),
+		UpdatedAt: timestamppb.New(c.UpdatedAt),
+		DeletedAt: timestamppb.New(c.DeletedAt.Time),
+		ClientId:  c.ClientID,
+		ModelId:   c.ModelID,
+	}
+}
+
+type ClientModelRelations []*ClientModelRelation
+
+func (c *ClientModelRelations) ToProtobuf() []*pb.ClientModelRelation {
+	var pbRelations []*pb.ClientModelRelation
+	for _, relation := range *c {
+		pbRelations = append(pbRelations, relation.ToProtobuf())
+	}
+	return pbRelations
+}

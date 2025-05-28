@@ -86,6 +86,7 @@ message ClientPagingRequest {
     repeated string ids = 3 [(validate.rules).repeated.items.string = {len: 36}];
     string name = 4;
     repeated string accessKeyIds = 5;
+    repeated string orderBys = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
 }
 
 message ClientPagingResponse {

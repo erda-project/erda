@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider_type"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/sqlutil"
 )
 
 type DBClient struct {
@@ -85,12 +86,16 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagin
 	if req.Name != "" {
 		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
 	}
-	if req.Type != pb.ModelProviderType_MODEL_PROVIDER_TYPE_UNSPECIFIED {
-		c.Type = model_provider_type.GetModelProviderTypeFromProtobuf(req.Type)
-		sql = sql.Where("type = ?", c.Type)
+	if req.Type != "" {
+		sql = sql.Where("type = ?", req.Type)
 	}
 	if len(req.Ids) > 0 {
 		sql = sql.Where("id in (?)", req.Ids)
+	}
+	// order by
+	sql, err := sqlutil.HandleOrderBy(sql, req.OrderBys)
+	if err != nil {
+		return nil, err
 	}
 	var (
 		total int64
@@ -103,7 +108,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelProviderPagin
 		req.PageSize = 10
 	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err = sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}
