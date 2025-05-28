@@ -118,7 +118,7 @@ func (d *Daemonset) Patch(namespace string, daemonsetName string, containerName 
 
 	spec := types.PatchStruct{
 		Spec: types.Spec{
-			Template: types.PodTemplateSpec{
+			Template: &types.PodTemplateSpec{
 				Spec: types.PodSpec{
 					Containers: []corev1.Container{
 						snippet,

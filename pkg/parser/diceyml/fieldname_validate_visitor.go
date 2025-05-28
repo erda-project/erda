@@ -230,8 +230,8 @@ func (o *FieldnameValidateVisitor) VisitK8SSnippet(v DiceYmlVisitor, obj *K8SSni
 	for k := range res {
 		switch i := k.(type) {
 		case string:
-			if !contain(i, []string{"container"}) {
-				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName, "k8s_snippet"}, i)] = fmt.Errorf(`[%s]/[k8s_snippet] field '%s' not one of [ container ]`, o.currentServiceName, i)
+			if !contain(i, []string{"container", "workload"}) {
+				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName, "k8s_snippet"}, i)] = fmt.Errorf(`[%s]/[k8s_snippet] field '%s' not one of [ container workload ]`, o.currentServiceName, i)
 			}
 		default:
 			o.collectErrors[yamlHeaderRegex("_"+strconv.Itoa(len(o.collectErrors)))] = fmt.Errorf("[%s]/[k8s_snippet] %v not string type", o.currentServiceName, k)
