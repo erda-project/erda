@@ -15,7 +15,6 @@
 package mux
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
