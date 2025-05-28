@@ -17,8 +17,10 @@ package client_model_relation
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
@@ -102,6 +104,52 @@ func (dbClient *DBClient) ListClientModels(ctx context.Context, req *pb.ListClie
 	return &pb.ListAllocatedModelsResponse{
 		ClientId: req.ClientId,
 		ModelIds: modelIds,
+	}, nil
+}
+
+func (dbClient *DBClient) Paging(ctx context.Context, req *pb.PagingRequest) (*pb.PagingResponse, error) {
+	relationTableName := (&ClientModelRelation{}).TableName()
+	sql := dbClient.DB.Table(relationTableName)
+	if len(req.ClientIds) > 0 {
+		sql = sql.Where("client_id in (?)", req.ClientIds)
+	}
+	if len(req.ModelIds) > 0 {
+		sql = sql.Where("model_id in (?)", req.ModelIds)
+	}
+	// order by
+	if len(req.OrderBy) == 0 {
+		sql = sql.Order("updated_at desc")
+	} else {
+		for _, orderBy := range req.OrderBy {
+			// get is desc or asc
+			parts := strings.Split(orderBy, " ")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("invalid order by: %s", orderBy)
+			}
+			sql = sql.Order(clause.OrderByColumn{
+				Column: clause.Column{Name: parts[0], Raw: false},
+				Desc:   strings.EqualFold(parts[1], "desc"),
+			})
+		}
+	}
+	var (
+		total int64
+		list  ClientModelRelations
+	)
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+	offset := (req.PageNum - 1) * req.PageSize
+	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to paging client model relations: %v", err)
+	}
+	return &pb.PagingResponse{
+		Total: total,
+		List:  list.ToProtobuf(),
 	}, nil
 }
 

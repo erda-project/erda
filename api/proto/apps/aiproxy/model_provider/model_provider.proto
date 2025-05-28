@@ -92,8 +92,9 @@ message ModelProviderPagingRequest {
     uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
     uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
     string name = 3 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
-    ModelProviderType type = 4 [(validate.rules).enum = {defined_only: true}];
+    string type = 4 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
     repeated string ids = 5 [(validate.rules).repeated.items.string = {len: 36}];
+    repeated string orderBy = 6 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
 }
 
 message ModelProviderPagingResponse {

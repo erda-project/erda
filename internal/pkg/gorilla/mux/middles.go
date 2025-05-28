@@ -15,6 +15,7 @@
 package mux
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -46,9 +47,9 @@ var SetXRequestId Middle = func(h http.Handler) http.Handler {
 var CORS Middle = func(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodOptions {
-			h.ServeHTTP(w, r)
 			w.Header().Set(echo.HeaderVary, echo.HeaderOrigin)
 			w.Header().Set(echo.HeaderAccessControlAllowOrigin, "*")
+			h.ServeHTTP(w, r)
 			return
 		}
 

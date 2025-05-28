@@ -16,8 +16,11 @@ package model
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
@@ -58,7 +61,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelUpdateRequest
 		BaseModel:  common.BaseModelWithID(req.Id),
 		Name:       req.Name,
 		Desc:       req.Desc,
-		Type:       model_type.ModelType(req.Type),
+		Type:       model_type.GetModelTypeFromProtobuf(req.Type),
 		ProviderID: req.ProviderId,
 		APIKey:     req.ApiKey,
 		Metadata:   metadata.FromProtobuf(req.Metadata),
@@ -95,6 +98,22 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 	}
 	c.ProviderID = req.ProviderId
 	sql = sql.Where(c)
+	// order by
+	if len(req.OrderBy) == 0 {
+		sql = sql.Order("updated_at desc")
+	} else {
+		for _, orderBy := range req.OrderBy {
+			// get is desc or asc
+			parts := strings.Split(orderBy, " ")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("invalid order by: %s", orderBy)
+			}
+			sql = sql.Order(clause.OrderByColumn{
+				Column: clause.Column{Name: parts[0], Raw: false},
+				Desc:   strings.EqualFold(parts[1], "desc"),
+			})
+		}
+	}
 	var (
 		total int64
 		list  Models

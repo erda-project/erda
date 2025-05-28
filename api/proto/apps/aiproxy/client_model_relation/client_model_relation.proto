@@ -28,6 +28,12 @@ service ClientModelRelationService {
             get: "/api/ai-proxy/clients/{clientId}/actions/list-models"
         };
     }
+
+    rpc Paging(PagingRequest) returns (PagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/client-model-relations"
+        };
+    }
 }
 
 message ClientModelRelation {
@@ -53,4 +59,17 @@ message ListAllocatedModelsResponse {
 message ListClientModelsRequest {
     string clientId = 1 [(validate.rules).string = {len: 36}];
     repeated model.ModelType modelTypes = 2;
+}
+
+message PagingRequest {
+    uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+    uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
+    repeated string clientIds = 3 [(validate.rules).repeated = {unique: true, items: {string: {len: 36}}}];
+    repeated string modelIds = 4 [(validate.rules).repeated = {unique: true, items: {string: {len: 36}}}];
+    repeated string orderBy = 5 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+}
+
+message PagingResponse {
+    int64 total = 1;
+    repeated ClientModelRelation list = 2;
 }
