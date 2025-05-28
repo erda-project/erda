@@ -54,6 +54,7 @@ var CheckClientModelRelationPerm = CheckPermissions(
 	&MethodPermission{Method: clientmodelrelationpb.ClientModelRelationServiceServer.ListClientModels, AdminOrAk: true},
 	&MethodPermission{Method: clientmodelrelationpb.ClientModelRelationServiceServer.Allocate, OnlyAdmin: true},
 	&MethodPermission{Method: clientmodelrelationpb.ClientModelRelationServiceServer.UnAllocate, OnlyAdmin: true},
+	&MethodPermission{Method: clientmodelrelationpb.ClientModelRelationServiceServer.Paging, OnlyAdmin: true},
 )
 
 var CheckPromptPerm = CheckPermissions(

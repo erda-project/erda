@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_type"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/sqlutil"
 )
 
 type DBClient struct {
@@ -58,7 +59,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelUpdateRequest
 		BaseModel:  common.BaseModelWithID(req.Id),
 		Name:       req.Name,
 		Desc:       req.Desc,
-		Type:       model_type.ModelType(req.Type),
+		Type:       model_type.GetModelTypeFromProtobuf(req.Type),
 		ProviderID: req.ProviderId,
 		APIKey:     req.ApiKey,
 		Metadata:   metadata.FromProtobuf(req.Metadata),
@@ -95,6 +96,11 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 	}
 	c.ProviderID = req.ProviderId
 	sql = sql.Where(c)
+	// order by
+	sql, err := sqlutil.HandleOrderBy(sql, req.OrderBys)
+	if err != nil {
+		return nil, err
+	}
 	var (
 		total int64
 		list  Models
@@ -106,7 +112,7 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 		req.PageSize = 10
 	}
 	offset := (req.PageNum - 1) * req.PageSize
-	err := sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
+	err = sql.Count(&total).Limit(int(req.PageSize)).Offset(int(offset)).Find(&list).Error
 	if err != nil {
 		return nil, err
 	}
