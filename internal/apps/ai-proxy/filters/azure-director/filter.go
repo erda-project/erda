@@ -27,8 +27,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/erda-project/erda/pkg/http/httputil"
-
 	"github.com/pkg/errors"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
@@ -90,7 +88,8 @@ func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok {
 		return false
 	}
-	return prov.Type == modelproviderpb.ModelProviderType_Azure.String()
+	_, hasAPIConfig := prov.Metadata.Public["api"]
+	return prov.Type == modelproviderpb.ModelProviderType_Azure.String() && !hasAPIConfig
 }
 
 func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -158,21 +157,6 @@ func (f *AzureDirector) SetAuthorizationIfNotSpecified(ctx context.Context) erro
 // TransAuthorization 将
 func (f *AzureDirector) TransAuthorization(ctx context.Context) error {
 	provider := ctxhelper.MustGetModelProvider(ctx)
-	providerMetaPb := metadata.FromProtobuf(provider.Metadata)
-	providerMeta, err := providerMetaPb.ToModelProviderMeta()
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal provider metadata: %v", err)
-	}
-	if providerMeta.Public.NeedCustomAuthorization != "" {
-		needCustomAuthorization, _ := strconv.ParseBool(providerMeta.Public.NeedCustomAuthorization)
-		if !needCustomAuthorization {
-			reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-				req.Header.Set(httputil.HeaderKeyAuthorization, vars.ConcatBearer(provider.ApiKey))
-			})
-			return nil
-		}
-	}
-	// default need transfer authorization
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.Header.Set("Api-Key", provider.ApiKey)
 		req.Header.Del("Authorization")

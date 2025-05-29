@@ -25,25 +25,25 @@ type (
 		Secret ModelProviderMetaSecret `json:"secret,omitempty"`
 	}
 	ModelProviderMetaPublic struct {
-		Scheme   string `json:"scheme,omitempty"`
-		Endpoint string `json:"endpoint,omitempty"`
-		Host     string `json:"host,omitempty"`
+		Scheme   string `json:"scheme,omitempty"`   // deprecated, use @APIStyleConfig
+		Endpoint string `json:"endpoint,omitempty"` // deprecated, use @APIStyleConfig
+		Host     string `json:"host,omitempty"`     // deprecated, use @APIStyleConfig
 		Location string `json:"location,omitempty"`
-		Region   string `json:"region,omitempty"`
 
 		RewritePath string `json:"rewritePath,omitempty"`
 
-		NeedCustomAuthorization   string `json:"needCustomAuthorization,omitempty"`
-		CustomAuthorizationHeader string `json:"authorizationMethod,omitempty"` // API-Key
-
-		// for display.
-		// xxx-hosted-ollama: provider_type=Ollama, display_provider_type=xxx
-		DisplayProviderType string `json:"displayProviderType,omitempty"`
+		// API Related configs
+		API *API `json:"api,omitempty"`
 	}
 	ModelProviderMetaSecret struct {
 		AnotherAPIKey string `json:"anotherApiKey,omitempty"`
 	}
 )
+
+type API struct {
+	APIStyle       APIStyle        `json:"apiStyle,omitempty"`
+	APIStyleConfig *APIStyleConfig `json:"apiStyleConfig,omitempty"`
+}
 
 func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {
 	b, err := json.Marshal(m)
@@ -55,4 +55,12 @@ func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {
 		return nil, fmt.Errorf("failed to unmarshal string to ModelProviderMeta: %v", err)
 	}
 	return &result, nil
+}
+
+func (m *Metadata) MustToModelProviderMeta() *ModelProviderMeta {
+	meta, err := m.ToModelProviderMeta()
+	if err != nil {
+		panic(fmt.Sprintf("failed to convert Metadata to ModelProviderMeta: %v", err))
+	}
+	return meta
 }

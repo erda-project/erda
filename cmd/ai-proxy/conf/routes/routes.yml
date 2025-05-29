@@ -40,9 +40,9 @@ routes:
             - RewriteHost
             - AddModelInRequestBody
             - AddContextMessages
-      - name: bailian-director
       - name: dashscope-director
       - name: openai-director
+      - name: openai-compatible-director
       - name: extra-body
       - name: audit-after-llm-director
       - name: finalize
