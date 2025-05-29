@@ -312,30 +312,6 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 	return nil
 }
 
-func (f *AzureDirector) RewriteBodyModelName(ctx context.Context) error {
-	model := ctxhelper.MustGetModel(ctx)
-	customModelName, ok := model.Metadata.Public["model_name"]
-	if !ok {
-		return nil
-	}
-	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		if req.Body == nil {
-			return
-		}
-		var body map[string]interface{}
-		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
-			return
-		}
-		body["model"] = customModelName
-		b, err := json.Marshal(body)
-		if err != nil {
-			return
-		}
-		req.Body = io.NopCloser(strings.NewReader(string(b)))
-	})
-	return nil
-}
-
 func (f *AzureDirector) ResetContentLength(ctx context.Context) error {
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.Header.Del("Content-Length")

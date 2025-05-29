@@ -192,13 +192,6 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	ctxhelper.PutUserPrompt(ctx, getPromptFromOpenAIMessage(chatCompletionRequest.Messages[len(chatCompletionRequest.Messages)-1]))
 	ctxhelper.PutIsStream(ctx, chatCompletionRequest.Stream)
 
-	// update model name
-	var reqBody map[string]any
-	json.NewDecoder(infor.Body()).Decode(&reqBody)
-	reqBody["model"] = ctxhelper.MustGetModel(ctx).Name
-	b, _ := json.Marshal(&reqBody)
-	infor.SetBody2(b)
-
 	return reverseproxy.Continue, nil
 }
 

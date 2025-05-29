@@ -21,14 +21,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 
-	"github.com/pkg/errors"
-
-	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
@@ -211,31 +206,6 @@ func headersDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyle
 				// if the operation is not recognized, we can just ignore it
 			}
 		}
-	})
-	return nil
-}
-
-func (f *OpenaiCompatibleDirector) AddModelInRequestBody(ctx context.Context) error {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModel{})
-	if !ok || value == nil {
-		return errors.New("model not set in context map")
-	}
-	model := value.(*modelpb.Model)
-	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		infor := reverseproxy.NewInfor(ctx, req)
-		// read body to json, then add a `model` field, then write back to body
-		var body map[string]interface{}
-		if err := json.NewDecoder(infor.BodyBuffer()).Decode(&body); err != nil && err != io.EOF {
-			ctxhelper.GetLogger(ctx).Errorf("failed to decode request body, err: %v", err)
-			return
-		}
-		body["model"] = model.Name
-		b, err := json.Marshal(body)
-		if err != nil {
-			ctxhelper.GetLogger(ctx).Errorf("failed to marshal request body, err: %v", err)
-			return
-		}
-		infor.SetBody(io.NopCloser(strings.NewReader(string(b))), int64(len(b)))
 	})
 	return nil
 }
