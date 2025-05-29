@@ -19,8 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/parser/diceyml"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +27,8 @@ import (
 	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/utils/pointer"
+
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func Test_Patch(t *testing.T) {
