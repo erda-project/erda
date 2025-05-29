@@ -15,16 +15,16 @@
 package deployment
 
 import (
-	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/utils/pointer"
