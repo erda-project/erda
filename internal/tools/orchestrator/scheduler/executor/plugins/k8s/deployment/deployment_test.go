@@ -15,6 +15,8 @@
 package deployment
 
 import (
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 	"strings"
 	"testing"
@@ -37,9 +39,11 @@ func Test_Patch(t *testing.T) {
 		name          string
 		namespace     string
 		containerName string
-		patch         corev1.Container
+		patch         *diceyml.K8SSnippet
 	}
 
+	percent := intstr.FromString("20%")
+	var minReadySeconds int32 = 60
 	tests := []struct {
 		name string
 		args args
@@ -51,10 +55,12 @@ func Test_Patch(t *testing.T) {
 				name:          "hello",
 				namespace:     "test-namespace",
 				containerName: "container-1",
-				patch: corev1.Container{
-					ImagePullPolicy: corev1.PullNever,
-					SecurityContext: &corev1.SecurityContext{
-						Privileged: pointer.Bool(true),
+				patch: &diceyml.K8SSnippet{
+					Container: &diceyml.ContainerSnippet{
+						ImagePullPolicy: corev1.PullNever,
+						SecurityContext: &corev1.SecurityContext{
+							Privileged: pointer.Bool(true),
+						},
 					},
 				},
 			},
@@ -62,6 +68,37 @@ func Test_Patch(t *testing.T) {
 				d.Spec.Template.Spec.Containers[0].ImagePullPolicy = corev1.PullNever
 				d.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
 					Privileged: pointer.Bool(true),
+				}
+			},
+		}, {
+			name: "case 2",
+			args: args{
+				name:          "hello",
+				namespace:     "test-namespace",
+				containerName: "container-2",
+				patch: &diceyml.K8SSnippet{
+					Workload: &diceyml.WorkloadSnippet{
+						Deployment: &diceyml.DeploymentSnippet{
+							MinReadySeconds: &minReadySeconds,
+							Strategy: &appsv1.DeploymentStrategy{
+								Type: appsv1.RollingUpdateDeploymentStrategyType,
+								RollingUpdate: &appsv1.RollingUpdateDeployment{
+									MaxUnavailable: &percent,
+									MaxSurge:       &percent,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: func(d *appsv1.Deployment) {
+				d.Spec.MinReadySeconds = 60
+				d.Spec.Strategy = appsv1.DeploymentStrategy{
+					Type: appsv1.RollingUpdateDeploymentStrategyType,
+					RollingUpdate: &appsv1.RollingUpdateDeployment{
+						MaxUnavailable: &percent,
+						MaxSurge:       &percent,
+					},
 				}
 			},
 		},
