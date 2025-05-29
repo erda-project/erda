@@ -27,6 +27,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/erda-project/erda/pkg/http/httputil"
+
 	"github.com/pkg/errors"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
@@ -155,13 +157,24 @@ func (f *AzureDirector) SetAuthorizationIfNotSpecified(ctx context.Context) erro
 
 // TransAuthorization 将
 func (f *AzureDirector) TransAuthorization(ctx context.Context) error {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
-	if !ok || value == nil {
-		return errors.New("provider not set in context map")
+	provider := ctxhelper.MustGetModelProvider(ctx)
+	providerMetaPb := metadata.FromProtobuf(provider.Metadata)
+	providerMeta, err := providerMetaPb.ToModelProviderMeta()
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal provider metadata: %v", err)
 	}
-	prov := value.(*modelproviderpb.ModelProvider)
+	if providerMeta.Public.NeedCustomAuthorization != "" {
+		needCustomAuthorization, _ := strconv.ParseBool(providerMeta.Public.NeedCustomAuthorization)
+		if !needCustomAuthorization {
+			reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
+				req.Header.Set(httputil.HeaderKeyAuthorization, vars.ConcatBearer(provider.ApiKey))
+			})
+			return nil
+		}
+	}
+	// default need transfer authorization
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.Header.Set("Api-Key", prov.ApiKey)
+		req.Header.Set("Api-Key", provider.ApiKey)
 		req.Header.Del("Authorization")
 	})
 	return nil
@@ -289,8 +302,7 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 	if !ok || model == nil {
 		return errors.New("model not set in context map")
 	}
-	metaPb := metadata.FromProtobuf(model.(*modelpb.Model).Metadata)
-	m := metaPb.MergeMap()
+	meta := metadata.FromProtobuf(model.(*modelpb.Model).Metadata)
 	for {
 		expr, start, end, err := strutil.FirstCustomExpression(rewrite, "${", "}", func(s string) bool {
 			s = strings.TrimSpace(s)
@@ -302,8 +314,8 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 		if strings.HasPrefix(expr, "env.") {
 			rewrite = strutil.Replace(rewrite, os.Getenv(strings.TrimPrefix(expr, "env.")), start, end)
 		}
-		if strings.HasPrefix(expr, "provider.metadata") && len(m) > 0 {
-			rewrite = strutil.Replace(rewrite, m[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
+		if strings.HasPrefix(expr, "provider.metadata") && len(meta.MergeMap()) > 0 {
+			rewrite = strutil.Replace(rewrite, meta.MustGetValueByKey(strings.TrimPrefix(expr, "provider.metadata.")), start, end)
 		}
 		if strings.HasPrefix(expr, "path.") {
 			rewrite = strutil.Replace(rewrite, values[strings.TrimPrefix(expr, "path.")], start, end)

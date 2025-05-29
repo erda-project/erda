@@ -17,6 +17,8 @@ package openai_v1_models
 import (
 	"regexp"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 )
 
@@ -28,14 +30,9 @@ func GenerateModelDisplayName(model *richclientpb.RichModel) string {
 	providerType := model.Provider.Type
 	location := ""
 
-	if model.Provider.Metadata != nil && model.Provider.Metadata.Public != nil {
-		if loc := model.Provider.Metadata.Public["location"]; loc != "" {
-			location = loc
-		}
-		if displayProviderType := model.Provider.Metadata.Public["displayProviderType"]; displayProviderType != "" {
-			providerType = displayProviderType
-		}
-	}
+	providerMeta := metadata.FromProtobuf(model.Provider.Metadata)
+
+	location, _ = providerMeta.GetPublicValueByKey("location")
 
 	attrs = append(attrs, "T:"+providerType)
 	if location != "" {

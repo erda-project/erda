@@ -33,6 +33,9 @@ type (
 
 		RewritePath string `json:"rewritePath,omitempty"`
 
+		NeedCustomAuthorization   string `json:"needCustomAuthorization,omitempty"`
+		CustomAuthorizationHeader string `json:"authorizationMethod,omitempty"` // API-Key
+
 		// for display.
 		// xxx-hosted-ollama: provider_type=Ollama, display_provider_type=xxx
 		DisplayProviderType string `json:"displayProviderType,omitempty"`

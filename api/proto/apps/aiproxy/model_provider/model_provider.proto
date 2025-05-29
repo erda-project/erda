@@ -49,7 +49,7 @@ message ModelProvider {
 
     string name = 5;
     string desc = 6;
-    string type = 7; // not use Enum ModelProviderType, for custom display reason
+    string type = 7; // Company/Manufacturer/Vendor Name, such as: OpenAI, Azure, Aliyun, Terminus, etc.
     string apiKey = 8;
     metadata.Metadata metadata = 9;
 }
