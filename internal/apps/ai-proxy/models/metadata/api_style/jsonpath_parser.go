@@ -40,15 +40,35 @@ type JSONPathParser struct {
 	MultiChoiceSplitter string
 }
 
-const defaultRegexpPattern = `\$\{([^{}]+)\}`
-const defaultMultiChoiceSplitter = `||`
+const DefaultRegexpPattern = `\$\{([^{}]+)\}`
+const DefaultMultiChoiceSplitter = `||`
 
-func NewJSONTemplateParser(regexpPattern string, multiChoiceSplitter string) (*JSONPathParser, error) {
-	re, err := regexp.Compile(regexpPattern)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse regexp pattern %q: %w", regexpPattern, err)
+var defaultRegexpPatternRe = regexp.MustCompile(DefaultRegexpPattern)
+
+func NewJSONPathParser(regexpPattern string, multiChoiceSplitter string) (*JSONPathParser, error) {
+	var re *regexp.Regexp
+	var err error
+	if regexpPattern == DefaultRegexpPattern {
+		re = defaultRegexpPatternRe
+	} else {
+		re, err = regexp.Compile(regexpPattern)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse regexp pattern %q: %w", regexpPattern, err)
+		}
 	}
 	return &JSONPathParser{RegexpPattern: regexpPattern, re: re, MultiChoiceSplitter: multiChoiceSplitter}, nil
+}
+
+func MustNewJSONPathParser(regexpPattern string, multiChoiceSplitter string) *JSONPathParser {
+	parser, err := NewJSONPathParser(regexpPattern, multiChoiceSplitter)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create JSONPathParser: %v", err))
+	}
+	return parser
+}
+
+func (p *JSONPathParser) NeedDoReplace(s string) bool {
+	return len(p.Search(s)) > 0
 }
 
 // Search return all matched keys. e.g.,

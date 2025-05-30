@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
@@ -109,6 +110,7 @@ func methodDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleC
 	if method == "" {
 		method = http.MethodPost
 	}
+	method = handleJSONPathTemplate(ctx, method)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.Method = method
 	})
@@ -120,6 +122,7 @@ func schemaDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleC
 	if apiStyleConfig.Scheme != "" {
 		schema = apiStyleConfig.Scheme
 	}
+	schema = handleJSONPathTemplate(ctx, schema)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.URL.Scheme = schema
 	})
@@ -131,6 +134,7 @@ func hostDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	if host == "" {
 		return fmt.Errorf("host is empty in APIStyleConfig")
 	}
+	host = handleJSONPathTemplate(ctx, host)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.Host = host
 		req.URL.Host = host
@@ -145,6 +149,7 @@ func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	if apiStyleConfig.Path != "" {
 		path = apiStyleConfig.Path
 	}
+	path = handleJSONPathTemplate(ctx, path)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.URL.Path = path
 	})
@@ -165,10 +170,12 @@ func queryParamsDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiS
 			switch op {
 			case "add":
 				for _, value := range values[1:] {
+					value = handleJSONPathTemplate(ctx, value)
 					query.Add(key, value)
 				}
 			case "set":
 				for _, value := range values[1:] {
+					value = handleJSONPathTemplate(ctx, value)
 					query.Set(key, value)
 				}
 			case "delete", "del", "remove":
@@ -195,10 +202,12 @@ func headersDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyle
 			switch op {
 			case "add":
 				for _, value := range values[1:] {
+					value = handleJSONPathTemplate(ctx, value)
 					req.Header.Add(key, value)
 				}
 			case "set":
 				for _, value := range values[1:] {
+					value = handleJSONPathTemplate(ctx, value)
 					req.Header.Set(key, value)
 				}
 			case "delete", "del", "remove":
@@ -209,4 +218,21 @@ func headersDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyle
 		}
 	})
 	return nil
+}
+
+func handleJSONPathTemplate(ctx context.Context, s string) string {
+	parser := api_style.MustNewJSONPathParser(api_style.DefaultRegexpPattern, api_style.DefaultMultiChoiceSplitter)
+	if !parser.NeedDoReplace(s) {
+		return s
+	}
+	provider := ctxhelper.MustGetModelProvider(ctx)
+	model := ctxhelper.MustGetModel(ctx)
+	availableObjects := map[string]any{
+		"provider": provider,
+		"model":    model,
+	}
+	var jsonMap map[string]any
+	cputil.MustObjJSONTransfer(&availableObjects, &jsonMap)
+	result := parser.SearchAndReplace(s, jsonMap)
+	return result
 }

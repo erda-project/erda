@@ -27,7 +27,7 @@ import (
 )
 
 func TestJSONPathParser_search(t *testing.T) {
-	parser, err := NewJSONTemplateParser(defaultRegexpPattern, defaultMultiChoiceSplitter)
+	parser, err := NewJSONPathParser(DefaultRegexpPattern, DefaultMultiChoiceSplitter)
 	assert.NoError(t, err)
 	s := `api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}`
 	result := parser.Search(s)
@@ -58,8 +58,8 @@ func TestJSONPathParser_SearchAndReplace(t *testing.T) {
 		{
 			name: "no context",
 			fields: fields{
-				RegexpPattern:       defaultRegexpPattern,
-				MultiChoiceSplitter: defaultMultiChoiceSplitter,
+				RegexpPattern:       DefaultRegexpPattern,
+				MultiChoiceSplitter: DefaultMultiChoiceSplitter,
 			},
 			args: args{
 				s:               `api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}`,
@@ -70,8 +70,8 @@ func TestJSONPathParser_SearchAndReplace(t *testing.T) {
 		{
 			name: "context: multi-choice, only first has value",
 			fields: fields{
-				RegexpPattern:       defaultRegexpPattern,
-				MultiChoiceSplitter: defaultMultiChoiceSplitter,
+				RegexpPattern:       DefaultRegexpPattern,
+				MultiChoiceSplitter: DefaultMultiChoiceSplitter,
 			},
 			args: args{
 				s: `api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}`,
@@ -84,8 +84,8 @@ func TestJSONPathParser_SearchAndReplace(t *testing.T) {
 		{
 			name: "context: multi-choice, only second has value",
 			fields: fields{
-				RegexpPattern:       defaultRegexpPattern,
-				MultiChoiceSplitter: defaultMultiChoiceSplitter,
+				RegexpPattern:       DefaultRegexpPattern,
+				MultiChoiceSplitter: DefaultMultiChoiceSplitter,
 			},
 			args: args{
 				s: `api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}`,
@@ -98,8 +98,8 @@ func TestJSONPathParser_SearchAndReplace(t *testing.T) {
 		{
 			name: "context: multi-choice, all has value",
 			fields: fields{
-				RegexpPattern:       defaultRegexpPattern,
-				MultiChoiceSplitter: defaultMultiChoiceSplitter,
+				RegexpPattern:       DefaultRegexpPattern,
+				MultiChoiceSplitter: DefaultMultiChoiceSplitter,
 			},
 			args: args{
 				s: `api-version=${@model.metadata.public.api_version||@provider.metadata.public.api_version||2025-03-01-preview}`,
@@ -113,7 +113,7 @@ func TestJSONPathParser_SearchAndReplace(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := NewJSONTemplateParser(tt.fields.RegexpPattern, tt.fields.MultiChoiceSplitter)
+			p, err := NewJSONPathParser(tt.fields.RegexpPattern, tt.fields.MultiChoiceSplitter)
 			assert.NoError(t, err)
 			assert.Equalf(t, tt.want, p.SearchAndReplace(tt.args.s, tt.args.availableValues), "SearchAndReplace(%v, %v)", tt.args.s, tt.args.availableValues)
 		})
@@ -121,7 +121,7 @@ func TestJSONPathParser_SearchAndReplace(t *testing.T) {
 }
 
 func TestGetByJSONPath(t *testing.T) {
-	parser, err := NewJSONTemplateParser(defaultRegexpPattern, defaultMultiChoiceSplitter)
+	parser, err := NewJSONPathParser(DefaultRegexpPattern, DefaultMultiChoiceSplitter)
 	assert.NoError(t, err)
 
 	// Test with a valid JSON path
