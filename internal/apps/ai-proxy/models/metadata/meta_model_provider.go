@@ -17,6 +17,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
 )
 
 type (
@@ -41,8 +42,8 @@ type (
 )
 
 type API struct {
-	APIStyle       APIStyle        `json:"apiStyle,omitempty"`
-	APIStyleConfig *APIStyleConfig `json:"apiStyleConfig,omitempty"`
+	APIStyle       api_style.APIStyle        `json:"apiStyle,omitempty"`
+	APIStyleConfig *api_style.APIStyleConfig `json:"apiStyleConfig,omitempty"`
 }
 
 func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {

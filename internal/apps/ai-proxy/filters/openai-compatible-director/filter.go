@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
@@ -56,7 +57,7 @@ func (f *OpenaiCompatibleDirector) Enable(ctx context.Context, _ *http.Request) 
 	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
 	providerMeta := providerNormalMeta.MustToModelProviderMeta()
 	return providerMeta.Public.API != nil &&
-		strings.EqualFold(string(providerMeta.Public.API.APIStyle), string(metadata.APIStyleOpenAICompatible))
+		strings.EqualFold(string(providerMeta.Public.API.APIStyle), string(api_style.APIStyleOpenAICompatible))
 }
 
 func (f *OpenaiCompatibleDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -103,7 +104,7 @@ func (f *OpenaiCompatibleDirector) OnRequest(ctx context.Context, w http.Respons
 	return reverseproxy.Continue, nil
 }
 
-func methodDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig metadata.APIStyleConfig) error {
+func methodDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
 	method := apiStyleConfig.Method
 	if method == "" {
 		method = http.MethodPost
@@ -114,7 +115,7 @@ func methodDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleC
 	return nil
 }
 
-func schemaDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig metadata.APIStyleConfig) error {
+func schemaDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
 	schema := "https"
 	if apiStyleConfig.Scheme != "" {
 		schema = apiStyleConfig.Scheme
@@ -125,7 +126,7 @@ func schemaDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleC
 	return nil
 }
 
-func hostDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig metadata.APIStyleConfig) error {
+func hostDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
 	host := apiStyleConfig.Host
 	if host == "" {
 		return fmt.Errorf("host is empty in APIStyleConfig")
@@ -139,7 +140,7 @@ func hostDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	return nil
 }
 
-func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig metadata.APIStyleConfig) error {
+func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
 	path := "/v1/chat/completions"
 	if apiStyleConfig.Path != "" {
 		path = apiStyleConfig.Path
@@ -150,7 +151,7 @@ func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	return nil
 }
 
-func queryParamsDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig metadata.APIStyleConfig) error {
+func queryParamsDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
 	if len(apiStyleConfig.QueryParams) == 0 {
 		return nil
 	}
@@ -181,7 +182,7 @@ func queryParamsDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiS
 	return nil
 }
 
-func headersDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig metadata.APIStyleConfig) error {
+func headersDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
 	if len(apiStyleConfig.Headers) == 0 {
 		return nil
 	}
