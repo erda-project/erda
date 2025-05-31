@@ -23,10 +23,12 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
 	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -149,6 +151,20 @@ func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	if apiStyleConfig.Path != "" {
 		path = apiStyleConfig.Path
 	}
+	// adjust by model type
+	model := ctxhelper.MustGetModel(ctx)
+	pathWithoutCompletionSuffix := strutil.TrimSuffixes(path, "/chat/completions", "/completions")
+	switch model.Type {
+	case pb.ModelType_embedding:
+		path = pathWithoutCompletionSuffix + "/embeddings"
+	case pb.ModelType_audio:
+		path = pathWithoutCompletionSuffix + "/audio/transcriptions"
+	case pb.ModelType_image:
+		path = pathWithoutCompletionSuffix + "/images/generations"
+	default:
+		// use completions suffix
+	}
+	// TODO custom directly setting
 	path = handleJSONPathTemplate(ctx, path)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.URL.Path = path

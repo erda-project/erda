@@ -72,6 +72,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
   - path: /v1/audio/transcriptions
@@ -105,6 +106,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
   - path: /v1/images/generations
@@ -136,5 +138,6 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
