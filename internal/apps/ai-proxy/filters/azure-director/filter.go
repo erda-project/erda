@@ -89,7 +89,7 @@ func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 		return false
 	}
 	_, hasAPIConfig := prov.Metadata.Public["api"]
-	return prov.Type == modelproviderpb.ModelProviderType_Azure.String() && !hasAPIConfig
+	return strings.EqualFold(prov.Type, "Azure") && !hasAPIConfig
 }
 
 func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {

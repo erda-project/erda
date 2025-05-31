@@ -83,7 +83,7 @@ func (f *OpenaiDirector) Enable(ctx context.Context, req *http.Request) bool {
 		return false
 	}
 	_, hasAPIConfig := prov.Metadata.Public["api"]
-	return prov.Type == modelproviderpb.ModelProviderType_OpenAI.String() && !hasAPIConfig
+	return strings.EqualFold(prov.Type, "OpenAI") && !hasAPIConfig
 }
 
 func (f *OpenaiDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {

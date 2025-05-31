@@ -28,8 +28,8 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 	"sigs.k8s.io/yaml"
 
-	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style_checker"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -105,8 +105,7 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 	}
 
 	// force set model for openai
-	modelProvider, _ := ctxhelper.GetModelProvider(ctx)
-	if modelProvider.Type == modelproviderpb.ModelProviderType_OpenAI.String() {
+	if api_style_checker.CheckIsOpenAICompatibleByProvider(ctxhelper.MustGetModelProvider(ctx)) {
 		r.MultipartForm.Value[formBodyFieldModel] = []string{f.Config.DefaultOpenAIAudioModel}
 	}
 

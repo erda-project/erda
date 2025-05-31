@@ -23,7 +23,6 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider_type"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/sqlutil"
 )
 
@@ -35,7 +34,7 @@ func (dbClient *DBClient) Create(ctx context.Context, req *pb.ModelProviderCreat
 	c := &ModelProvider{
 		Name:     req.Name,
 		Desc:     req.Desc,
-		Type:     model_provider_type.GetModelProviderTypeFromProtobuf(req.Type),
+		Type:     req.Type,
 		APIKey:   req.ApiKey,
 		Metadata: metadata.FromProtobuf(req.Metadata),
 	}
@@ -70,7 +69,7 @@ func (dbClient *DBClient) Update(ctx context.Context, req *pb.ModelProviderUpdat
 		BaseModel: common.BaseModelWithID(req.Id),
 		Name:      req.Name,
 		Desc:      req.Desc,
-		Type:      model_provider_type.GetModelProviderTypeFromProtobuf(req.Type),
+		Type:      req.Type,
 		APIKey:    req.ApiKey,
 		Metadata:  metadata.FromProtobuf(req.Metadata),
 	}

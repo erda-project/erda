@@ -54,19 +54,10 @@ message ModelProvider {
     metadata.Metadata metadata = 9;
 }
 
-enum ModelProviderType {
-    MODEL_PROVIDER_TYPE_UNSPECIFIED = 0;
-    OpenAI = 1;
-    Azure = 2;
-    AliyunBailian = 3;
-    AliyunDashScope = 4;
-    Ollama = 5;
-}
-
 message ModelProviderCreateRequest {
     string name = 1 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 2 [(validate.rules).string = {min_len: 0, max_len: 1024}];
-    ModelProviderType type = 3 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+    string type = 3 [(validate.rules).string = {min_len: 2, max_len: 191}];
     string apiKey = 4 [(validate.rules).string = {min_len: 0, max_len: 128}];
     metadata.Metadata metadata = 5;
 }
@@ -83,7 +74,7 @@ message ModelProviderUpdateRequest {
     string id = 1 [(validate.rules).string = {len: 36}];
     string name = 2 [(validate.rules).string = {min_len: 4, max_len: 191}];
     string desc = 3 [(validate.rules).string = {min_len: 0, max_len: 1024}];
-    ModelProviderType type = 4 [(validate.rules).enum = {defined_only: true, not_in: [0]}];
+    string type = 4 [(validate.rules).string = {min_len: 2, max_len: 191}];
     string apiKey = 5 [(validate.rules).string = {min_len: 0, max_len: 128}];
     metadata.Metadata metadata = 6;
 }
