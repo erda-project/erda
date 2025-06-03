@@ -80,10 +80,10 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 	if err != nil {
 		return errors.Errorf("failed to create deployment, name: %s, (%v)", service.Name, err)
 	}
-	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
+	if service.K8SSnippet == nil {
 		return nil
 	}
-	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
+	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, service.K8SSnippet)
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
@@ -168,10 +168,10 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 	if err != nil {
 		return errors.Errorf("failed to update deployment, name: %s, (%v)", service.Name, err)
 	}
-	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
+	if service.K8SSnippet == nil {
 		return nil
 	}
-	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (corev1.Container)(*service.K8SSnippet.Container))
+	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, service.K8SSnippet)
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}

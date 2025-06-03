@@ -7,7 +7,9 @@ package mock
 import (
 	reflect "reflect"
 
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	apistructs "github.com/erda-project/erda/apistructs"
+
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/apps/v1"
 	v10 "k8s.io/api/core/v1"
@@ -255,7 +257,7 @@ func (mr *MockDeploymentUtilMockRecorder) List(namespace, labelSelector interfac
 }
 
 // Patch mocks base method.
-func (m *MockDeploymentUtil) Patch(namespace, deployName, containerName string, snippet v10.Container) error {
+func (m *MockDeploymentUtil) Patch(namespace, deployName, containerName string, snippet *diceyml.K8SSnippet) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Patch", namespace, deployName, containerName, snippet)
 	ret0, _ := ret[0].(error)

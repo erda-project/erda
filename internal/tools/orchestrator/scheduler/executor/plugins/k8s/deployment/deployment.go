@@ -38,6 +38,7 @@ import (
 
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/k8s/types"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 // Deployment is the object to manipulate k8s api of deployment
@@ -67,20 +68,25 @@ func WithClientSet(c kubernetes.Interface) Option {
 }
 
 // Patch  the k8s deployment object
-func (d *Deployment) Patch(namespace, deploymentName, containerName string, snippet corev1.Container) error {
-	// patch container with kubernetes snippet
-	snippet.Name = containerName
+func (d *Deployment) Patch(namespace, deploymentName, containerName string, snippet *diceyml.K8SSnippet) error {
+	var spec = types.PatchStruct{Spec: types.Spec{}}
 
-	spec := types.PatchStruct{
-		Spec: types.Spec{
-			Template: types.PodTemplateSpec{
-				Spec: types.PodSpec{
-					Containers: []corev1.Container{
-						snippet,
-					},
+	// patch container with kubernetes snippet
+	if snippet.Container != nil {
+
+		snippet.Container.Name = containerName
+		spec.Spec.Template = &types.PodTemplateSpec{
+			Spec: types.PodSpec{
+				Containers: []corev1.Container{
+					(corev1.Container)(*snippet.Container),
 				},
 			},
-		},
+		}
+	}
+
+	if snippet.Workload != nil && snippet.Workload.Deployment != nil {
+		spec.Spec.Strategy = snippet.Workload.Deployment.Strategy
+		spec.Spec.MinReadySeconds = snippet.Workload.Deployment.MinReadySeconds
 	}
 
 	pathData, err := json.Marshal(spec)
