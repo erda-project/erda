@@ -18,29 +18,32 @@ import (
 	"encoding/json"
 	"strings"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type Metadata struct {
-	Public map[string]string `json:"public,omitempty"`
-	Secret map[string]string `json:"secret,omitempty"`
+	Public map[string]any `json:"public,omitempty"`
+	Secret map[string]any `json:"secret,omitempty"`
 }
 
 func (m *Metadata) FromProtobuf(pb *pb.Metadata) {
 	*m = Metadata{
-		Public: make(map[string]string),
-		Secret: make(map[string]string),
+		Public: make(map[string]any),
+		Secret: make(map[string]any),
 	}
 	if pb == nil {
 		return
 	}
-	// public
-	for k, v := range pb.Public {
-		m.Public[k] = v
+	cputil.MustObjJSONTransfer(pb, m)
+	if m.Public == nil {
+		m.Public = make(map[string]any)
 	}
-	// secret
-	for k, v := range pb.Secret {
-		m.Secret[k] = v
+	if m.Secret == nil {
+		m.Secret = make(map[string]any)
 	}
 }
 
@@ -52,11 +55,11 @@ func (m *Metadata) ToJson() (string, error) {
 	return string(b), nil
 }
 
-func (m *Metadata) MergeMap() map[string]string {
+func (m *Metadata) MergeMap() map[string]any {
 	if m == nil {
 		return nil
 	}
-	result := make(map[string]string)
+	result := make(map[string]any)
 	for k, v := range m.Public {
 		result[k] = v
 	}
@@ -77,11 +80,11 @@ func (m *Metadata) GetPublicValueByKey(key string, ignoreCaseOpt ...bool) (strin
 	for k, v := range m.Public {
 		if ignoreCase {
 			if strings.EqualFold(key, k) {
-				return v, true
+				return strutil.String(v), true
 			}
 		} else {
 			if key == k {
-				return v, true
+				return strutil.String(v), true
 			}
 		}
 	}
@@ -99,11 +102,11 @@ func (m *Metadata) GetSecretValueByKey(key string, ignoreCaseOpt ...bool) (strin
 	for k, v := range m.Secret {
 		if ignoreCase {
 			if strings.EqualFold(key, k) {
-				return v, true
+				return strutil.String(v), true
 			}
 		} else {
 			if key == k {
-				return v, true
+				return strutil.String(v), true
 			}
 		}
 	}
@@ -161,13 +164,9 @@ func (m *Metadata) ToProtobuf() *pb.Metadata {
 		return nil
 	}
 	result := new(pb.Metadata)
-	result.Public = make(map[string]string)
-	result.Secret = make(map[string]string)
-	for k, v := range m.Public {
-		result.Public[k] = v
-	}
-	for k, v := range m.Secret {
-		result.Secret[k] = v
-	}
+	result.Public = make(map[string]*structpb.Value)
+	result.Secret = make(map[string]*structpb.Value)
+	cputil.MustObjJSONTransfer(m.Public, &result.Public)
+	cputil.MustObjJSONTransfer(m.Secret, &result.Secret)
 	return result
 }

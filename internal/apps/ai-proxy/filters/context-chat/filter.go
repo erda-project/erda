@@ -114,17 +114,17 @@ func (c *SessionContext) OnRequest(ctx context.Context, _ http.ResponseWriter, i
 	for _, msg := range chatCompletionRequest.Messages {
 		// handle user message, wrap by '|start| your question here |end|'
 		// to avoid from content-filter
-		if msg.Role == openai.ChatMessageRoleUser {
-			if msg.Content != "" {
-				msg.Content = vars.WrapUserPrompt(msg.Content)
-			} else {
-				for i, part := range msg.MultiContent {
-					if part.Text != "" {
-						msg.MultiContent[i].Text = vars.WrapUserPrompt(part.Text)
-					}
-				}
-			}
-		}
+		//if msg.Role == openai.ChatMessageRoleUser {
+		//	if msg.Content != "" {
+		//		msg.Content = vars.WrapUserPrompt(msg.Content)
+		//	} else {
+		//		for i, part := range msg.MultiContent {
+		//			if part.Text != "" {
+		//				msg.MultiContent[i].Text = vars.WrapUserPrompt(part.Text)
+		//			}
+		//		}
+		//	}
+		//}
 		requestedMessages = append(requestedMessages, msg)
 	}
 

@@ -34,7 +34,7 @@ func GetExtraJSONBody(m *metadata.Metadata, isStream bool) (map[string]any, erro
 	if isStream {
 		key = MetadataPublicKeyExtraJSONBodyForStream
 	}
-	return unmarshalJSONFromString(m.Public[key])
+	return unmarshalJSONFromString(m.MustGetValueByKey(key))
 }
 
 func FulfillExtraJSONBody(m *metadata.Metadata, isStream bool, body map[string]any) error {

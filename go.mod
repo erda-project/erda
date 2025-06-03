@@ -14,7 +14,6 @@ require (
 	github.com/agiledragon/gomonkey/v2 v2.12.0
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
-	github.com/alibabacloud-go/bailian-20230601 v1.0.0
 	github.com/alibabacloud-go/darabonba-openapi v0.1.9
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2
 	github.com/alibabacloud-go/dingtalk v1.2.1
@@ -381,6 +380,7 @@ require (
 	github.com/mwitkow/go-proto-validators v0.3.2 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
+	github.com/ohler55/ojg v1.26.6
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc6 // indirect
 	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect

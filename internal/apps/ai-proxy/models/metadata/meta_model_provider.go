@@ -17,6 +17,8 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
 )
 
 type (
@@ -25,22 +27,25 @@ type (
 		Secret ModelProviderMetaSecret `json:"secret,omitempty"`
 	}
 	ModelProviderMetaPublic struct {
-		Scheme   string `json:"scheme,omitempty"`
-		Endpoint string `json:"endpoint,omitempty"`
-		Host     string `json:"host,omitempty"`
+		Scheme   string `json:"scheme,omitempty"`   // deprecated, use @APIStyleConfig
+		Endpoint string `json:"endpoint,omitempty"` // deprecated, use @APIStyleConfig
+		Host     string `json:"host,omitempty"`     // deprecated, use @APIStyleConfig
 		Location string `json:"location,omitempty"`
-		Region   string `json:"region,omitempty"`
 
 		RewritePath string `json:"rewritePath,omitempty"`
 
-		// for display.
-		// xxx-hosted-ollama: provider_type=Ollama, display_provider_type=xxx
-		DisplayProviderType string `json:"displayProviderType,omitempty"`
+		// API Related configs
+		API *API `json:"api,omitempty"`
 	}
 	ModelProviderMetaSecret struct {
 		AnotherAPIKey string `json:"anotherApiKey,omitempty"`
 	}
 )
+
+type API struct {
+	APIStyle       api_style.APIStyle        `json:"apiStyle,omitempty"`
+	APIStyleConfig *api_style.APIStyleConfig `json:"apiStyleConfig,omitempty"`
+}
 
 func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {
 	b, err := json.Marshal(m)
@@ -52,4 +57,12 @@ func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {
 		return nil, fmt.Errorf("failed to unmarshal string to ModelProviderMeta: %v", err)
 	}
 	return &result, nil
+}
+
+func (m *Metadata) MustToModelProviderMeta() *ModelProviderMeta {
+	meta, err := m.ToModelProviderMeta()
+	if err != nil {
+		panic(fmt.Sprintf("failed to convert Metadata to ModelProviderMeta: %v", err))
+	}
+	return meta
 }
