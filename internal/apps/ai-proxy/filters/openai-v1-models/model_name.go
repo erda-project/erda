@@ -17,9 +17,8 @@ package openai_v1_models
 import (
 	"regexp"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
 
 func GenerateModelDisplayName(model *richclientpb.RichModel) string {

@@ -91,7 +91,6 @@ func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClien
 	}
 	providerMapById := make(map[string]*modelproviderpb.ModelProvider)
 	for _, provider := range providerPagingResp.List {
-		//providerMapById[provider.Id] = handler_model_provider.Handle_for_display(provider)
 		providerMapById[provider.Id] = provider
 	}
 
