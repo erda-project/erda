@@ -22,7 +22,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 
-	azure_director "github.com/erda-project/erda/internal/apps/ai-proxy/filters/azure-director"
+	azure_director "github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/azure-director"
 )
 
 func TestAzureDirector_Processors(t *testing.T) {
