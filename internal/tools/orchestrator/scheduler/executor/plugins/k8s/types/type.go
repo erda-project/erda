@@ -80,11 +80,13 @@ type (
 	}
 
 	Spec struct {
-		Template PodTemplateSpec `json:"template"`
+		Template        *PodTemplateSpec           `json:"template,omitempty"`
+		MinReadySeconds *int32                     `json:"minReadySeconds,omitempty"`
+		Strategy        *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 	}
 
 	PodTemplateSpec struct {
-		Spec PodSpec `json:"spec"`
+		Spec PodSpec `json:"spec,omitempty"`
 	}
 
 	PodSpec struct {

@@ -23,9 +23,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/utils/pointer"
+
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func Test_Patch(t *testing.T) {
@@ -37,9 +40,11 @@ func Test_Patch(t *testing.T) {
 		name          string
 		namespace     string
 		containerName string
-		patch         corev1.Container
+		patch         *diceyml.K8SSnippet
 	}
 
+	percent := intstr.FromString("20%")
+	var minReadySeconds int32 = 60
 	tests := []struct {
 		name string
 		args args
@@ -51,10 +56,12 @@ func Test_Patch(t *testing.T) {
 				name:          "hello",
 				namespace:     "test-namespace",
 				containerName: "container-1",
-				patch: corev1.Container{
-					ImagePullPolicy: corev1.PullNever,
-					SecurityContext: &corev1.SecurityContext{
-						Privileged: pointer.Bool(true),
+				patch: &diceyml.K8SSnippet{
+					Container: &diceyml.ContainerSnippet{
+						ImagePullPolicy: corev1.PullNever,
+						SecurityContext: &corev1.SecurityContext{
+							Privileged: pointer.Bool(true),
+						},
 					},
 				},
 			},
@@ -62,6 +69,37 @@ func Test_Patch(t *testing.T) {
 				d.Spec.Template.Spec.Containers[0].ImagePullPolicy = corev1.PullNever
 				d.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
 					Privileged: pointer.Bool(true),
+				}
+			},
+		}, {
+			name: "case 2",
+			args: args{
+				name:          "hello",
+				namespace:     "test-namespace",
+				containerName: "container-2",
+				patch: &diceyml.K8SSnippet{
+					Workload: &diceyml.WorkloadSnippet{
+						Deployment: &diceyml.DeploymentSnippet{
+							MinReadySeconds: &minReadySeconds,
+							Strategy: &appsv1.DeploymentStrategy{
+								Type: appsv1.RollingUpdateDeploymentStrategyType,
+								RollingUpdate: &appsv1.RollingUpdateDeployment{
+									MaxUnavailable: &percent,
+									MaxSurge:       &percent,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: func(d *appsv1.Deployment) {
+				d.Spec.MinReadySeconds = 60
+				d.Spec.Strategy = appsv1.DeploymentStrategy{
+					Type: appsv1.RollingUpdateDeploymentStrategyType,
+					RollingUpdate: &appsv1.RollingUpdateDeployment{
+						MaxUnavailable: &percent,
+						MaxSurge:       &percent,
+					},
 				}
 			},
 		},

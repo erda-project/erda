@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	appv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
@@ -200,8 +201,18 @@ type Service struct {
 
 type ContainerSnippet apiv1.Container
 
+type WorkloadSnippet struct {
+	Deployment *DeploymentSnippet `yaml:"deployment,omitempty" json:"deployment,omitempty"`
+}
+
+type DeploymentSnippet struct {
+	MinReadySeconds *int32                    `yaml:"minReadySeconds,omitempty" json:"minReadySeconds,omitempty"`
+	Strategy        *appv1.DeploymentStrategy `yaml:"strategy,omitempty" json:"strategy,omitempty"`
+}
+
 type K8SSnippet struct {
 	Container *ContainerSnippet `yaml:"container,omitempty" json:"container,omitempty"`
+	Workload  *WorkloadSnippet  `yaml:"workload,omitempty" json:"workload,omitempty"`
 }
 
 type ServicePort struct {
