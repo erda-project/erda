@@ -6,6 +6,6 @@ option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata
 import "google/protobuf/struct.proto";
 
 message Metadata {
-  map<string, google.protobuf.Value> public = 1;
-  map<string, google.protobuf.Value> secret = 2;
+    map<string, google.protobuf.Value> public = 1;
+    map<string, google.protobuf.Value> secret = 2;
 }
