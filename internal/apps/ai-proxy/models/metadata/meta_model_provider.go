@@ -17,6 +17,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
 )
 
