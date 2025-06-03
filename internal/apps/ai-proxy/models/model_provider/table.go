@@ -20,16 +20,15 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/model_provider_type"
 )
 
 type ModelProvider struct {
 	common.BaseModel
-	Name     string                                `gorm:"column:name;type:varchar(191)" json:"name" yaml:"name"`
-	Desc     string                                `gorm:"column:desc;type:varchar(1024)" json:"desc" yaml:"desc"`
-	Type     model_provider_type.ModelProviderType `gorm:"column:type;type:varchar(191)" json:"type" yaml:"type"`
-	APIKey   string                                `gorm:"column:api_key;type:varchar(191)" json:"aPIKey" yaml:"aPIKey"`
-	Metadata metadata.Metadata                     `gorm:"column:metadata;type:mediumtext" json:"metadata" yaml:"metadata"`
+	Name     string            `gorm:"column:name;type:varchar(191)" json:"name" yaml:"name"`
+	Desc     string            `gorm:"column:desc;type:varchar(1024)" json:"desc" yaml:"desc"`
+	Type     string            `gorm:"column:type;type:varchar(191)" json:"type" yaml:"type"`
+	APIKey   string            `gorm:"column:api_key;type:varchar(191)" json:"aPIKey" yaml:"aPIKey"`
+	Metadata metadata.Metadata `gorm:"column:metadata;type:mediumtext" json:"metadata" yaml:"metadata"`
 }
 
 func (*ModelProvider) TableName() string { return "ai_proxy_model_provider" }
@@ -42,7 +41,7 @@ func (m *ModelProvider) ToProtobuf() *pb.ModelProvider {
 		DeletedAt: timestamppb.New(m.DeletedAt.Time),
 		Name:      m.Name,
 		Desc:      m.Desc,
-		Type:      string(m.Type),
+		Type:      m.Type,
 		ApiKey:    m.APIKey,
 		Metadata:  m.Metadata.ToProtobuf(),
 	}

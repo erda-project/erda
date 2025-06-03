@@ -24,7 +24,6 @@ import (
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/auth"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -92,7 +91,7 @@ func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClien
 	}
 	providerMapById := make(map[string]*modelproviderpb.ModelProvider)
 	for _, provider := range providerPagingResp.List {
-		providerMapById[provider.Id] = handler_model_provider.Handle_for_display(provider)
+		providerMapById[provider.Id] = provider
 	}
 
 	// assign rich models

@@ -280,6 +280,9 @@ func (f *Context) saveContextToAudit(ctx context.Context, w http.ResponseWriter,
 	// operation id
 	updateReq.OperationId = infor.Method() + " " + infor.URL().Path
 
+	// try set model name
+	trySetJSONBodyModelName(ctx, infor)
+
 	// set from client token
 	setUserInfoFromClientToken(ctx, infor, &updateReq)
 
@@ -291,6 +294,27 @@ func (f *Context) saveContextToAudit(ctx context.Context, w http.ResponseWriter,
 		l.Errorf("failed to update audit: %v", err)
 	}
 	return reverseproxy.Continue, nil
+}
+
+func trySetJSONBodyModelName(ctx context.Context, infor reverseproxy.HttpInfor) {
+	if !strings.HasPrefix(infor.Header().Get(httputil.HeaderKeyContentType), string(httputil.ApplicationJson)) {
+		return
+	}
+	// update model name
+	var reqBody map[string]any
+	if err := json.NewDecoder(infor.Body()).Decode(&reqBody); err != nil {
+		l := ctxhelper.GetLogger(ctx)
+		l.Errorf("failed to decode req body for set json body model name")
+		return
+	}
+	model := ctxhelper.MustGetModel(ctx)
+	var modelName any = model.Name
+	if customModelName := model.Metadata.Public["model_name"]; customModelName != nil {
+		modelName = customModelName
+	}
+	reqBody["model"] = modelName
+	b, _ := json.Marshal(&reqBody)
+	infor.SetBody2(b)
 }
 
 func setUserInfoFromClientToken(ctx context.Context, infor reverseproxy.HttpInfor, updateReq *pb.AuditUpdateRequestAfterBasicContextParsed) {

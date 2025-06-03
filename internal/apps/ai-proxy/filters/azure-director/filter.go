@@ -88,7 +88,8 @@ func (f *AzureDirector) Enable(ctx context.Context, req *http.Request) bool {
 	if !ok {
 		return false
 	}
-	return prov.Type == modelproviderpb.ModelProviderType_Azure.String()
+	_, hasAPIConfig := prov.Metadata.Public["api"]
+	return strings.EqualFold(prov.Type, "Azure") && !hasAPIConfig
 }
 
 func (f *AzureDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
@@ -155,13 +156,9 @@ func (f *AzureDirector) SetAuthorizationIfNotSpecified(ctx context.Context) erro
 
 // TransAuthorization 将
 func (f *AzureDirector) TransAuthorization(ctx context.Context) error {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyModelProvider{})
-	if !ok || value == nil {
-		return errors.New("provider not set in context map")
-	}
-	prov := value.(*modelproviderpb.ModelProvider)
+	provider := ctxhelper.MustGetModelProvider(ctx)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.Header.Set("Api-Key", prov.ApiKey)
+		req.Header.Set("Api-Key", provider.ApiKey)
 		req.Header.Del("Authorization")
 	})
 	return nil
@@ -289,8 +286,7 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 	if !ok || model == nil {
 		return errors.New("model not set in context map")
 	}
-	metaPb := metadata.FromProtobuf(model.(*modelpb.Model).Metadata)
-	m := metaPb.MergeMap()
+	meta := metadata.FromProtobuf(model.(*modelpb.Model).Metadata)
 	for {
 		expr, start, end, err := strutil.FirstCustomExpression(rewrite, "${", "}", func(s string) bool {
 			s = strings.TrimSpace(s)
@@ -302,8 +298,8 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 		if strings.HasPrefix(expr, "env.") {
 			rewrite = strutil.Replace(rewrite, os.Getenv(strings.TrimPrefix(expr, "env.")), start, end)
 		}
-		if strings.HasPrefix(expr, "provider.metadata") && len(m) > 0 {
-			rewrite = strutil.Replace(rewrite, m[strings.TrimPrefix(expr, "provider.metadata.")], start, end)
+		if strings.HasPrefix(expr, "provider.metadata") && len(meta.MergeMap()) > 0 {
+			rewrite = strutil.Replace(rewrite, meta.MustGetValueByKey(strings.TrimPrefix(expr, "provider.metadata.")), start, end)
 		}
 		if strings.HasPrefix(expr, "path.") {
 			rewrite = strutil.Replace(rewrite, values[strings.TrimPrefix(expr, "path.")], start, end)
@@ -312,30 +308,6 @@ func (f *AzureDirector) RewritePath(ctx context.Context) error {
 
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.URL.Path = rewrite
-	})
-	return nil
-}
-
-func (f *AzureDirector) RewriteBodyModelName(ctx context.Context) error {
-	model := ctxhelper.MustGetModel(ctx)
-	customModelName, ok := model.Metadata.Public["model_name"]
-	if !ok {
-		return nil
-	}
-	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		if req.Body == nil {
-			return
-		}
-		var body map[string]interface{}
-		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
-			return
-		}
-		body["model"] = customModelName
-		b, err := json.Marshal(body)
-		if err != nil {
-			return
-		}
-		req.Body = io.NopCloser(strings.NewReader(string(b)))
 	})
 	return nil
 }

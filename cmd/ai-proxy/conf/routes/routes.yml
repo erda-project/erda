@@ -30,7 +30,6 @@ routes:
             # for azure ai services, using provider-level rewritePath config.
             # See: https://learn.microsoft.com/zh-cn/azure/ai-foundry/model-inference/concepts/endpoints?tabs=rest#routing
             - RewritePath("/openai/deployments/${ provider.metadata.deployment_id }/chat/completions")
-            - RewriteBodyModelName
             - AddContextMessages
       - name: openai-director
         config:
@@ -40,9 +39,9 @@ routes:
             - RewriteHost
             - AddModelInRequestBody
             - AddContextMessages
-      - name: bailian-director
       - name: dashscope-director
       - name: openai-director
+      - name: openai-compatible-director
       - name: extra-body
       - name: audit-after-llm-director
       - name: finalize
@@ -73,6 +72,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
   - path: /v1/audio/transcriptions
@@ -106,6 +106,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
   - path: /v1/images/generations
@@ -137,5 +138,6 @@ routes:
             - RewriteScheme
             - RewriteHost
             - AddModelInRequestBody
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
