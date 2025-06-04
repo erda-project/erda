@@ -85,6 +85,7 @@ func (f *LogHttp) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 }
 
 func (f *LogHttp) OnResponseChunkImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) (signal reverseproxy.Signal, err error) {
+	f.DefaultResponseFilter.Write(copiedChunk)
 	if !f.headerPrinted {
 		var l = ctxhelper.GetLogger(ctx)
 		var m = map[string]any{
