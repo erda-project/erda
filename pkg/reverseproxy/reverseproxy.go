@@ -374,6 +374,7 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.getErrorHandler()(rw, outreq, err)
 		return
 	}
+	res.Request = res.Request.WithContext(p.Context) // inject context for ModifyResponse use
 
 	// Deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {

@@ -24,4 +24,6 @@ type (
 	MapKeyDirectors struct{ CtxKeyDirectors any }
 
 	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
+
+	CtxKeyModifyResponse struct{ CtxKeyModifyResponse any }
 )
