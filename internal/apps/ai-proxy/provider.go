@@ -58,7 +58,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style_checker"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style_checker"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"

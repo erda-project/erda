@@ -23,8 +23,8 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/custom-http-director"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_segment_getter"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
@@ -53,9 +53,7 @@ func (f *OpenaiCompatibleDirector) MultiResponseWriter(ctx context.Context) []io
 }
 
 func (f *OpenaiCompatibleDirector) Enable(ctx context.Context, _ *http.Request) bool {
-	provider := ctxhelper.MustGetModelProvider(ctx)
-	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
-	providerMeta := providerNormalMeta.MustToModelProviderMeta()
-	return providerMeta.Public.API != nil &&
-		strings.EqualFold(string(providerMeta.Public.API.APIStyle), string(api_style.APIStyleOpenAICompatible))
+	apiSegment := api_segment_getter.GetAPISegment(ctx)
+	return apiSegment != nil &&
+		strings.EqualFold(string(apiSegment.APIStyle), string(api_style.APIStyleOpenAICompatible))
 }

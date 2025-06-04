@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -149,6 +149,7 @@ func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	path = handleJSONPathTemplate(ctx, path)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.URL.Path = path
+		req.URL.RawPath = ""
 	})
 	return nil
 }

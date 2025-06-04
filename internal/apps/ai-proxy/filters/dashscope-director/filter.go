@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
@@ -56,7 +56,7 @@ func (f *DashScopeDirector) MultiResponseWriter(ctx context.Context) []io.ReadWr
 }
 
 func (f *DashScopeDirector) Enable(ctx context.Context, req *http.Request) bool {
-	prov, ok := ctxhelper.GetModelProvider(ctx)
+	prov := ctxhelper.MustGetModelProvider(ctx)
 	_, hasAPIConfig := prov.Metadata.Public["api"]
-	return ok && strings.EqualFold(prov.Type, string(api_style.APIStyleAliyunDashScope)) && !hasAPIConfig
+	return strings.EqualFold(prov.Type, string(api_style.APIStyleAliyunDashScope)) && !hasAPIConfig
 }

@@ -28,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-image"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/context-responses"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/dashscope-director"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/azure-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/openai-compatible-director"
 	_ "github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/openai-director"
