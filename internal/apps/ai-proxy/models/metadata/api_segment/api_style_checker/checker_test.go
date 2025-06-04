@@ -22,7 +22,7 @@ import (
 
 	metadatapb "github.com/erda-project/erda-proto-go/apps/aiproxy/metadata/pb"
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 )
 
 func TestCheckIsOpenAICompatible(t *testing.T) {
