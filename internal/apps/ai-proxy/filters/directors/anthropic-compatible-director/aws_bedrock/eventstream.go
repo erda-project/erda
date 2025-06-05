@@ -23,9 +23,10 @@ import (
 	"io"
 	"time"
 
+	"github.com/aws/aws-sdk-go/private/protocol/eventstream"
 	"github.com/sashabaranov/go-openai"
 
-	"github.com/aws/aws-sdk-go/private/protocol/eventstream"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
 // BedrockChunkPayload is AWS Bedrock Claude Streaming chunk.
@@ -42,7 +43,7 @@ type BytesRaw struct {
 }
 
 // pipe：Bedrock EventStream →  OpenAI SSE
-func (f *BedrockDirector) pipeClaudeStream(ctx context.Context, awsChunkBody io.ReadCloser, w io.Writer) ([]openai.ChatCompletionStreamResponse, error) {
+func (f *BedrockDirector) pipeBedrockStream(ctx context.Context, awsChunkBody io.ReadCloser, w io.Writer) ([]openai.ChatCompletionStreamResponse, error) {
 	defer awsChunkBody.Close()
 
 	decoder := eventstream.NewDecoder(bufio.NewReader(awsChunkBody))
@@ -60,6 +61,10 @@ func (f *BedrockDirector) pipeClaudeStream(ctx context.Context, awsChunkBody io.
 		}
 
 		et := msg.Headers.Get(":event-type")
+		if et == nil {
+			return nil, fmt.Errorf("invalid event-type, chunk: %s", string(chunk))
+		}
+		ctxhelper.GetLogger(ctx).Infof("et: %v", et.String())
 		if et.String() != "chunk" {
 			continue
 		}

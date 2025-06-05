@@ -47,7 +47,8 @@ type AnthropicCompatibleDirector struct {
 	CustomHTTPDirector *custom_http_director.CustomHTTPDirector
 
 	*reverseproxy.DefaultResponseFilter
-	BedrockDirector *aws_bedrock.BedrockDirector
+	BedrockDirector   *aws_bedrock.BedrockDirector
+	AnthropicDirector *anthropic_official.AnthropicDirector
 }
 
 func New(_ json.RawMessage) (reverseproxy.Filter, error) {
@@ -55,6 +56,7 @@ func New(_ json.RawMessage) (reverseproxy.Filter, error) {
 		CustomHTTPDirector:    custom_http_director.New(),
 		DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter(),
 		BedrockDirector:       aws_bedrock.NewDirector(),
+		AnthropicDirector:     anthropic_official.NewDirector(),
 	}, nil
 }
 
@@ -79,10 +81,12 @@ func (f *AnthropicCompatibleDirector) OnRequest(ctx context.Context, w http.Resp
 	switch strings.ToLower(string(apiSegment.APIVendor)) {
 	case strings.ToLower(string(aws_bedrock.APIVendor)):
 		if err := f.BedrockDirector.AwsBedrockDirector(ctx, infor, *apiSegment.APIStyleConfig); err != nil {
-			return reverseproxy.Intercept, fmt.Errorf("failed to handle anthropic compatible director: %v", err)
+			return reverseproxy.Intercept, fmt.Errorf("failed to handle aws bedrock director: %v", err)
 		}
 	case strings.ToLower(string(anthropic_official.APIVendor)):
-	// TODO
+		if err := f.AnthropicDirector.OfficialDirector(ctx, infor, *apiSegment.APIStyleConfig); err != nil {
+			return reverseproxy.Intercept, fmt.Errorf("failed to handle anthropic director: %v", err)
+		}
 	default:
 		return reverseproxy.Intercept, fmt.Errorf("unsupported anthropic-compatible api vendor: %s", apiSegment.APIVendor)
 	}
@@ -95,11 +99,10 @@ func (f *AnthropicCompatibleDirector) OnResponseChunk(ctx context.Context, infor
 	case strings.ToLower(string(aws_bedrock.APIVendor)):
 		return f.BedrockDirector.OnResponseChunk(ctx, infor, w, chunk)
 	case strings.ToLower(string(anthropic_official.APIVendor)):
-	// TODO
+		return f.AnthropicDirector.OnResponseChunk(ctx, infor, w, chunk)
 	default:
 		return reverseproxy.Intercept, fmt.Errorf("unsupported anthropic-compatible api vendor: %s", apiSegment.APIVendor)
 	}
-	return reverseproxy.Continue, nil
 }
 
 func (f *AnthropicCompatibleDirector) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
@@ -108,9 +111,8 @@ func (f *AnthropicCompatibleDirector) OnResponseEOF(ctx context.Context, infor r
 	case strings.ToLower(string(aws_bedrock.APIVendor)):
 		return f.BedrockDirector.OnResponseEOF(ctx, infor, w, chunk)
 	case strings.ToLower(string(anthropic_official.APIVendor)):
-	// TODO
+		return f.AnthropicDirector.OnResponseEOF(ctx, infor, w, chunk)
 	default:
 		return fmt.Errorf("unsupported anthropic-compatible api vendor: %s", apiSegment.APIVendor)
 	}
-	return nil
 }

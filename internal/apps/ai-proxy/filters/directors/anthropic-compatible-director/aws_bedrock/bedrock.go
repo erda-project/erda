@@ -223,11 +223,11 @@ func (f *BedrockDirector) OnResponseChunk(ctx context.Context, infor reverseprox
 	// non-stream
 	if !ctxhelper.GetIsStream(ctx) {
 		f.DefaultResponseFilter.Buffer.Write(chunk) // write to buffer, so we can get allChunks later
-		return reverseproxy.Intercept, nil
+		return reverseproxy.Continue, nil
 	}
 	// stream
 	var chunkWriter bytes.Buffer
-	openaiChunks, err := f.pipeClaudeStream(ctx, io.NopCloser(bytes.NewBuffer(chunk)), &chunkWriter)
+	openaiChunks, err := f.pipeBedrockStream(ctx, io.NopCloser(bytes.NewBuffer(chunk)), &chunkWriter)
 	if err != nil {
 		return reverseproxy.Intercept, fmt.Errorf("failed to parse bedrock eventstream, err: %v", err)
 	}

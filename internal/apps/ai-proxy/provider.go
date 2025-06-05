@@ -162,13 +162,18 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-var modifyResponseFunc = func(response *http.Response) error {
+func needDeleteContentLengthHeader(response *http.Response) bool {
+	// If the response is from an OpenAI-compatible provider, no response body rewrite
 	provider := ctxhelper.MustGetModelProvider(response.Request.Context())
-	if api_style_checker.CheckIsOpenAICompatibleByProvider(provider) {
-		return nil
+	return !api_style_checker.CheckIsOpenAICompatibleByProvider(provider)
+}
+
+var modifyResponseFunc = func(response *http.Response) error {
+	// handle content length header
+	if needDeleteContentLengthHeader(response) {
+		response.Header.Del("Content-Length")
+		response.ContentLength = -1
 	}
-	response.Header.Del("Content-Length") // Clear Content-Length header to avoid conflicts
-	response.ContentLength = -1
 	return nil
 }
 
