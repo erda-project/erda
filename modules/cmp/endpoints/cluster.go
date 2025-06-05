@@ -556,6 +556,17 @@ func (e *Endpoints) InitClusterRetry(ctx context.Context, r *http.Request, vars 
 }
 
 func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		return fmt.Errorf("failed to get User-ID or Org-ID from request header")
+	}
+
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.GetAction)
+	if err != nil {
+		return err
+	}
+
 	clusterName := r.URL.Query().Get("clusterName")
 	accessKey := r.URL.Query().Get("accessKey")
 	orgName := r.URL.Query().Get("orgName")
