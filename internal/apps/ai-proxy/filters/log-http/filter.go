@@ -23,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/decompress"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -102,7 +101,7 @@ func (f *LogHttp) OnResponseChunkImmutable(ctx context.Context, infor reversepro
 func (f *LogHttp) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.HttpInfor, copiedChunk []byte) error {
 	var l = ctxhelper.GetLogger(ctx)
 	if httputil.HeaderContains(infor.Header(), httputil.ApplicationJson) || f.Len() <= 1024 {
-		l.Debugf("received response content: %s", decompress.TryDecompressBody(infor.Header(), f.Buffer))
+		l.Debugf("received response content: %s", f.Buffer.String())
 		return nil
 	}
 	var content = f.Buffer.String()
