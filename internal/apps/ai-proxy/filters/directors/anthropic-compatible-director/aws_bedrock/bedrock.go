@@ -34,6 +34,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -48,20 +49,15 @@ const (
 )
 
 type BedrockRequest struct {
-	System           string           `json:"system,omitempty"`
-	Messages         []BedrockMessage `json:"messages"`
-	MaxTokens        int              `json:"max_tokens"`
-	Temperature      float32          `json:"temperature"`
-	TopP             float32          `json:"top_p,omitempty"`
-	Tools            any              `json:"tools,omitempty"`
-	ToolChoice       any              `json:"tool_choice,omitempty"`
-	StopSequences    []string         `json:"stop_sequences,omitempty"`
-	AnthropicVersion string           `json:"anthropic_version"`
-}
-
-type BedrockMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	System           string                    `json:"system,omitempty"`
+	Messages         []common.AnthropicMessage `json:"messages"`
+	MaxTokens        int                       `json:"max_tokens"`
+	Temperature      float32                   `json:"temperature"`
+	TopP             float32                   `json:"top_p,omitempty"`
+	Tools            any                       `json:"tools,omitempty"`
+	ToolChoice       any                       `json:"tool_choice,omitempty"`
+	StopSequences    []string                  `json:"stop_sequences,omitempty"`
+	AnthropicVersion string                    `json:"anthropic_version"`
 }
 
 type BedrockResponse struct {
@@ -114,7 +110,6 @@ func (f *BedrockDirector) AwsBedrockDirector(ctx context.Context, infor reversep
 		// handle path for stream
 		if ctxhelper.GetIsStream(ctx) {
 			req.URL.Path = strings.ReplaceAll(req.URL.Path, "/invoke", "/invoke-with-response-stream")
-			//req.Header.Set("Accept-Encoding", "identity")
 		}
 		// openai format request
 		var openaiReq openai.ChatCompletionRequest
@@ -149,7 +144,11 @@ func (f *BedrockDirector) AwsBedrockDirector(ctx context.Context, infor reversep
 			case openai.ChatMessageRoleSystem:
 				systemPrompts = append(systemPrompts, msg.Content)
 			default:
-				bedrockReq.Messages = append(bedrockReq.Messages, BedrockMessage{Role: msg.Role, Content: msg.Content})
+				bedrockMsg, err := common.ConvertOneOpenAIMessage(msg)
+				if err != nil {
+					panic(fmt.Errorf("failed to convert openai message to bedrock message: %v", err))
+				}
+				bedrockReq.Messages = append(bedrockReq.Messages, *bedrockMsg)
 			}
 		}
 		if len(systemPrompts) > 0 {

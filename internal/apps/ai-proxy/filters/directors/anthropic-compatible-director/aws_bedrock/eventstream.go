@@ -62,7 +62,7 @@ func (f *BedrockDirector) pipeBedrockStream(ctx context.Context, awsChunkBody io
 
 		et := msg.Headers.Get(":event-type")
 		if et == nil {
-			return nil, fmt.Errorf("invalid event-type, chunk: %s", string(chunk))
+			return nil, fmt.Errorf("invalid nil event-type, chunk: %s, msg: %s", string(chunk), msg.Payload)
 		}
 		ctxhelper.GetLogger(ctx).Infof("et: %v", et.String())
 		if et.String() != "chunk" {

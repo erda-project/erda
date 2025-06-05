@@ -27,6 +27,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -41,21 +42,16 @@ const (
 )
 
 type AnthropicRequest struct {
-	Model         string             `json:"model"`
-	Messages      []AnthropicMessage `json:"messages"`
-	MaxTokens     int                `json:"max_tokens"`
-	StopSequences []string           `json:"stop_sequences,omitempty"`
-	Stream        bool               `json:"stream"`
-	System        string             `json:"system,omitempty"`
-	Temperature   float32            `json:"temperature"`
-	ToolChoice    any                `json:"tool_choice,omitempty"`
-	Tools         any                `json:"tools,omitempty"`
-	TopP          float32            `json:"top_p,omitempty"`
-}
-
-type AnthropicMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Model         string                    `json:"model"`
+	Messages      []common.AnthropicMessage `json:"messages"`
+	MaxTokens     int                       `json:"max_tokens"`
+	StopSequences []string                  `json:"stop_sequences,omitempty"`
+	Stream        bool                      `json:"stream"`
+	System        string                    `json:"system,omitempty"`
+	Temperature   float32                   `json:"temperature"`
+	ToolChoice    any                       `json:"tool_choice,omitempty"`
+	Tools         any                       `json:"tools,omitempty"`
+	TopP          float32                   `json:"top_p,omitempty"`
 }
 
 type AnthropicResponse struct {
@@ -143,7 +139,11 @@ func (f *AnthropicDirector) OfficialDirector(ctx context.Context, infor reversep
 			case openai.ChatMessageRoleSystem:
 				systemPrompts = append(systemPrompts, msg.Content)
 			default:
-				anthropicReq.Messages = append(anthropicReq.Messages, AnthropicMessage{Role: msg.Role, Content: msg.Content})
+				bedrockMsg, err := common.ConvertOneOpenAIMessage(msg)
+				if err != nil {
+					panic(fmt.Errorf("failed to convert openai message to bedrock message: %v", err))
+				}
+				anthropicReq.Messages = append(anthropicReq.Messages, *bedrockMsg)
 			}
 		}
 		if len(systemPrompts) > 0 {
