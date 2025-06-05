@@ -545,7 +545,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 	}
 
 	// decode nr by Content-Encoding
-	src, err := DecompressBody(response.Header, src)
+	src, err := NewBodyDecompressor(response.Header, src)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decompress response body, err: %v", err)
 	}

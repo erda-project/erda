@@ -42,7 +42,7 @@ func (nwc nopWriteCloser) Close() error {
 	return nil
 }
 
-func DecompressBody(header http.Header, body io.Reader) (io.ReadCloser, error) {
+func NewBodyDecompressor(header http.Header, body io.Reader) (io.ReadCloser, error) {
 	ce := header.Get("Content-Encoding")
 	switch ce {
 	case "gzip":
@@ -68,7 +68,7 @@ func DecompressBody(header http.Header, body io.Reader) (io.ReadCloser, error) {
 	}
 }
 
-func CompressBody(header http.Header, body io.Writer) (io.WriteCloser, error) {
+func NewBodyCompressor(header http.Header, body io.Writer) (io.WriteCloser, error) {
 	ce := header.Get("Content-Encoding")
 	switch ce {
 	case "gzip":
