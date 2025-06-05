@@ -180,12 +180,8 @@ func (f *BedrockDirector) AwsBedrockDirector(ctx context.Context, infor reversep
 
 		// payload hash
 		var payloadHash string
-		//if ctxhelper.GetIsStream(ctx) {
-		//	payloadHash = "UNSIGNED-PAYLOAD"
-		//} else {
 		sum := sha256.Sum256(anthropicReqBytes)
 		payloadHash = hex.EncodeToString(sum[:])
-		//}
 		req.Header.Set("X-Amz-Content-Sha256", payloadHash)
 
 		// remove headers not required for AWS SigV4 signing
@@ -244,7 +240,6 @@ func (f *BedrockDirector) OnResponseChunk(ctx context.Context, infor reverseprox
 	return reverseproxy.Continue, nil
 }
 
-// OnResponseEOF .
 func (f *BedrockDirector) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (err error) {
 	// only stream style need append [DONE] chunk
 	if !ctxhelper.GetIsStream(ctx) {

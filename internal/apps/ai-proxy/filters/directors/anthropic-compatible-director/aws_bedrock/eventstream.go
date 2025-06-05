@@ -119,7 +119,6 @@ func (f *BedrockDirector) pipeBedrockStream(ctx context.Context, awsChunkBody io
 	}
 }
 
-// raw:
 // raw: {"type":"message_start","message":{"id":"msg_bdrk_01UwU6zwRiDXiYpdxPZSSHyq","type":"message","role":"assistant","model":"claude-3-sonnet-20240229","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":8,"output_tokens":1}}}
 // raw: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
 // raw: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"I"}}

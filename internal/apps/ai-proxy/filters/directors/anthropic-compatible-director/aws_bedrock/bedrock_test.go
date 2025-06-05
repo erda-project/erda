@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	netutil "net/http/httputil"
+	"net/http/httputil"
 	"os"
 	"strconv"
 	"testing"
@@ -41,7 +41,7 @@ func TestSignV4(t *testing.T) {
 	sum := sha256.Sum256([]byte(payload))
 	h := hex.EncodeToString(sum[:])
 
-	//modelID := "anthropic.claude-3-7-sonnet-20250219-v1:0"
+	//modelID := "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
 	modelID := "anthropic.claude-3-sonnet-20240229-v1:0"
 	req, _ := http.NewRequest(http.MethodPost,
 		fmt.Sprintf("https://bedrock-runtime.us-east-1.amazonaws.com/model/%s/invoke-with-response-stream", modelID),
@@ -81,7 +81,7 @@ func TestSignV4(t *testing.T) {
 type DumpTransport struct{}
 
 func (t *DumpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	raw, _ := netutil.DumpRequestOut(req, true)
+	raw, _ := httputil.DumpRequestOut(req, true)
 	fmt.Printf("url.path: %s\n", req.URL.Path)
 	fmt.Printf("url.rawpath: %s\n", req.URL.RawPath)
 	fmt.Printf("\n--- OUTBOUND REQUEST (%d bytes) ---\n%s", len(raw), raw)

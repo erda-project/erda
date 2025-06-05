@@ -114,8 +114,6 @@ func (f *AnthropicDirector) OfficialDirector(ctx context.Context, infor reversep
 		if err := json.NewDecoder(infor.Body()).Decode(&openaiReq); err != nil {
 			panic(fmt.Errorf("failed to decode request body as openai format, err: %v", err))
 		}
-		// TODO delete
-		//req.Header.Set("Accept-Encoding", "deflate") // disable gzip, because anthropic does not support gzip encoding
 		// convert to: anthropic format request
 		anthropicReq := AnthropicRequest{
 			Model:         model.Metadata.Public["model_name"].GetStringValue(),
@@ -186,7 +184,6 @@ func (f *AnthropicDirector) OnResponseChunk(ctx context.Context, infor reversepr
 	return reverseproxy.Continue, nil
 }
 
-// OnResponseEOF .
 func (f *AnthropicDirector) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (err error) {
 	// only stream style need append [DONE] chunk
 	if !ctxhelper.GetIsStream(ctx) {

@@ -237,6 +237,10 @@ require (
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/andybalholm/brotli v1.1.1
 	github.com/armon/go-radix v1.0.0 // indirect
+	github.com/aws/aws-sdk-go v1.51.16
+	github.com/aws/aws-sdk-go-v2 v1.30.3
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.27
+	github.com/aws/smithy-go v1.20.3
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -482,13 +486,6 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
-)
-
-require (
-	github.com/aws/aws-sdk-go v1.51.16
-	github.com/aws/aws-sdk-go-v2 v1.30.3
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.27
-	github.com/aws/smithy-go v1.20.3
 )
 
 replace (
