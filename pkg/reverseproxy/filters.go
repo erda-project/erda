@@ -17,6 +17,7 @@ package reverseproxy
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 )
@@ -84,7 +85,15 @@ func (r *responseBodyWriter) OnResponseChunkImmutable(ctx context.Context, infor
 // 因为它已经没有下一个 filter 了.
 // 它直接将数据写入 r.dst, 这个 r.dst 即最终的 response body.
 func (r *responseBodyWriter) OnResponseEOF(ctx context.Context, infor HttpInfor, writer Writer, chunk []byte) error {
-	return r.write(chunk)
+	// compress body by header
+	dstCompressor, err := CompressBody(infor.Header(), r.dst)
+	if err != nil {
+		return fmt.Errorf("failed to compress body: %v", err)
+	}
+	defer dstCompressor.Close()
+
+	_, err = dstCompressor.Write(chunk)
+	return err
 }
 func (r *responseBodyWriter) OnResponseEOFImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) error {
 	return nil
