@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 )
 
 var (
@@ -75,7 +76,7 @@ type responseBodyWriter struct {
 }
 
 func (r *responseBodyWriter) OnResponseChunk(ctx context.Context, infor HttpInfor, writer Writer, chunk []byte) (signal Signal, err error) {
-	return Intercept, r.write(chunk)
+	return Intercept, r.compressWrite(infor.Header(), chunk)
 }
 func (r *responseBodyWriter) OnResponseChunkImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) (signal Signal, err error) {
 	return Continue, nil
@@ -85,18 +86,22 @@ func (r *responseBodyWriter) OnResponseChunkImmutable(ctx context.Context, infor
 // 因为它已经没有下一个 filter 了.
 // 它直接将数据写入 r.dst, 这个 r.dst 即最终的 response body.
 func (r *responseBodyWriter) OnResponseEOF(ctx context.Context, infor HttpInfor, writer Writer, chunk []byte) error {
+	return r.compressWrite(infor.Header(), chunk)
+}
+func (r *responseBodyWriter) OnResponseEOFImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) error {
+	return nil
+}
+
+func (r *responseBodyWriter) compressWrite(header http.Header, in []byte) error {
 	// compress body by header
-	dstCompressor, err := CompressBody(infor.Header(), r.dst)
+	dstCompressor, err := CompressBody(header, r.dst)
 	if err != nil {
 		return fmt.Errorf("failed to compress body: %v", err)
 	}
 	defer dstCompressor.Close()
 
-	_, err = dstCompressor.Write(chunk)
+	_, err = dstCompressor.Write(in)
 	return err
-}
-func (r *responseBodyWriter) OnResponseEOFImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) error {
-	return nil
 }
 
 func (r *responseBodyWriter) write(in []byte) error {
