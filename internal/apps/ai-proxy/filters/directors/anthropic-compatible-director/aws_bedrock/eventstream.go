@@ -25,8 +25,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/private/protocol/eventstream"
 	"github.com/sashabaranov/go-openai"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
 // BedrockChunkPayload is AWS Bedrock Claude Streaming chunk.
@@ -64,7 +62,6 @@ func (f *BedrockDirector) pipeBedrockStream(ctx context.Context, awsChunkBody io
 		if et == nil {
 			return nil, fmt.Errorf("invalid nil event-type, chunk: %s, msg: %s", string(chunk), msg.Payload)
 		}
-		ctxhelper.GetLogger(ctx).Infof("et: %v", et.String())
 		if et.String() != "chunk" {
 			continue
 		}
