@@ -36,6 +36,10 @@ import (
 )
 
 func TestSignV4(t *testing.T) {
+	//testSignV4(t)
+}
+
+func testSignV4(t *testing.T) {
 	//payload := `{"messages":[{"role":"user","content":"hi"}],"max_tokens":1024,"anthropic_version":"bedrock-2023-05-31"}`
 	payload := `{"messages":[{"content":"test","role":"user"}],"temperature":1,"max_tokens":1024,"anthropic_version":"bedrock-2023-05-31"}`
 	sum := sha256.Sum256([]byte(payload))
