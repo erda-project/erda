@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package api_segment_getter
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
-	CtxKeyPath        struct{ CtxKeyPath any }
+import (
+	"context"
 
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
-
-	CtxKeyModifyResponse struct{ CtxKeyModifyResponse any }
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment"
 )
+
+func GetAPISegment(ctx context.Context) *api_segment.API {
+	provider := ctxhelper.MustGetModelProvider(ctx)
+	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
+	providerMeta := providerNormalMeta.MustToModelProviderMeta()
+	return providerMeta.Public.API
+}

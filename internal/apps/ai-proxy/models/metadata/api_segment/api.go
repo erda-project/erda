@@ -12,18 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reverseproxy
+package api_segment
 
-type (
-	CtxKeyMap         struct{ CtxKeyMap any }
-	LoggerCtxKey      struct{ LoggerCtxKey any }
-	MutexCtxKey       struct{ MutexCtxKey any }
-	CtxKeyPathMatcher struct{ CtxKeyPathVars any }
-	CtxKeyPath        struct{ CtxKeyPath any }
-
-	MapKeyDirectors struct{ CtxKeyDirectors any }
-
-	CtxKeyHandleFuncForActualRequest struct{ CtxKeyHandleFuncForActualRequest any }
-
-	CtxKeyModifyResponse struct{ CtxKeyModifyResponse any }
+import (
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 )
+
+type API struct {
+	APIStyle       api_style.APIStyle        `json:"apiStyle,omitempty"`
+	APIVendor      api_style.APIVendor       `json:"apiVendor,omitempty"`
+	APIStyleConfig *api_style.APIStyleConfig `json:"apiStyleConfig,omitempty"`
+}

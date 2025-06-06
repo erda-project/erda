@@ -24,11 +24,15 @@ const (
 
 	// see: https://help.aliyun.com/zh/model-studio/use-qwen-by-calling-api
 	APIStyleAliyunDashScope APIStyle = "AliyunDashScope"
+
+	// see: https://docs.anthropic.com/en/api/messages
+	// see: https://docs.aws.amazon.com/zh_cn/bedrock/latest/APIReference/API_runtime_InvokeModel.html
+	APIStyleAnthropicCompatible APIStyle = "Anthropic-Compatible"
 )
 
 func (s APIStyle) IsValid() bool {
 	switch s {
-	case APIStyleOpenAICompatible, APIStyleAliyunDashScope:
+	case APIStyleOpenAICompatible, APIStyleAliyunDashScope, APIStyleAnthropicCompatible:
 		return true
 	default:
 		return false
@@ -39,6 +43,7 @@ func AllAPIStyles() []APIStyle {
 	return []APIStyle{
 		APIStyleOpenAICompatible,
 		APIStyleAliyunDashScope,
+		APIStyleAnthropicCompatible,
 	}
 }
 
@@ -77,3 +82,13 @@ type APIStyleConfig struct {
 	//   -> Api-Key: []string{"Add", "provider.api_key"}
 	Headers map[string][]string `json:"headers,omitempty"`
 }
+
+// APIVendor based on the APIStyle, indicates the vendor of the API.
+//
+// For some reason, although the APIStyle is same, the body detail maybe a bit different, e.g.,
+// - APIStyle: Anthropic-Compatible
+//   - APIVendor: Anthropic vs AWS-Bedrock
+//   - different: bedrock set model name in path, while Anthropic set model name in body
+//
+// So, this field is necessary to distinguish the implementation details inside one APIStyle director.
+type APIVendor string

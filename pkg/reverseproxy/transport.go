@@ -122,6 +122,7 @@ var BaseTransport http.RoundTripper = &http.Transport{
 	IdleConnTimeout:       90 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
 	ForceAttemptHTTP2:     true,
+	DisableCompression:    false,
 }
 
 func GenCurl(infor HttpInfor) string {
