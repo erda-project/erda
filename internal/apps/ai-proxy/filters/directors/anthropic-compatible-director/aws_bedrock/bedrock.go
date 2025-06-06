@@ -34,7 +34,9 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/message_converter"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/openai_extended"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/openai_extended/thinking"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -43,21 +45,23 @@ import (
 const (
 	APIVendor api_style.APIVendor = "aws-bedrock"
 
-	defaultMaxTokens      = 1024
+	defaultMaxTokens      = 10240
 	defaultTemperature    = 1.0
 	defaultBedrockVersion = "bedrock-2023-05-31"
 )
 
 type BedrockRequest struct {
-	System           string                    `json:"system,omitempty"`
-	Messages         []common.AnthropicMessage `json:"messages"`
-	MaxTokens        int                       `json:"max_tokens"`
-	Temperature      float32                   `json:"temperature"`
-	TopP             float32                   `json:"top_p,omitempty"`
-	Tools            any                       `json:"tools,omitempty"`
-	ToolChoice       any                       `json:"tool_choice,omitempty"`
-	StopSequences    []string                  `json:"stop_sequences,omitempty"`
-	AnthropicVersion string                    `json:"anthropic_version"`
+	System           string                               `json:"system,omitempty"`
+	Messages         []message_converter.AnthropicMessage `json:"messages"`
+	MaxTokens        int                                  `json:"max_tokens"`
+	Temperature      float32                              `json:"temperature"`
+	TopP             float32                              `json:"top_p,omitempty"`
+	Tools            any                                  `json:"tools,omitempty"`
+	ToolChoice       any                                  `json:"tool_choice,omitempty"`
+	StopSequences    []string                             `json:"stop_sequences,omitempty"`
+	AnthropicVersion string                               `json:"anthropic_version"`
+
+	*thinking.AnthropicThinking
 }
 
 type BedrockResponse struct {
@@ -76,18 +80,16 @@ func (r BedrockResponse) ConvertToOpenAIFormat(modelID string) (openai.ChatCompl
 	}
 	// choices
 	var choices []openai.ChatCompletionChoice
-	for _, contentPart := range r.Content {
-		switch contentPart["type"].(string) {
-		case "text":
-			choice := openai.ChatCompletionChoice{
-				Message: openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleAssistant,
-					Content: contentPart["text"].(string),
-				}}
-			choices = append(choices, choice)
-		default:
-			return openaiResp, fmt.Errorf("unsupported content type: %s", contentPart["type"].(string))
+	for _, anthropicContentPart := range r.Content {
+		anthropicMsg := message_converter.AnthropicResponseMessage{
+			Role:    r.Role,
+			Content: anthropicContentPart,
 		}
+		openaiMsg, err := message_converter.ConvertAnthropicResponseMessageToOpenAIFormat(anthropicMsg)
+		if err != nil {
+			return openaiResp, fmt.Errorf("failed to convert anthropic response message to openai format: %v", err)
+		}
+		choices = append(choices, openai.ChatCompletionChoice{Message: openaiMsg})
 	}
 	openaiResp.Choices = choices
 	return openaiResp, nil
@@ -112,7 +114,7 @@ func (f *BedrockDirector) AwsBedrockDirector(ctx context.Context, infor reversep
 			req.URL.Path = strings.ReplaceAll(req.URL.Path, "/invoke", "/invoke-with-response-stream")
 		}
 		// openai format request
-		var openaiReq openai.ChatCompletionRequest
+		var openaiReq openai_extended.OpenAIRequestExtended
 		if err := json.NewDecoder(infor.Body()).Decode(&openaiReq); err != nil {
 			panic(fmt.Errorf("failed to decode request body as openai format, err: %v", err))
 		}
@@ -144,7 +146,7 @@ func (f *BedrockDirector) AwsBedrockDirector(ctx context.Context, infor reversep
 			case openai.ChatMessageRoleSystem:
 				systemPrompts = append(systemPrompts, msg.Content)
 			default:
-				bedrockMsg, err := common.ConvertOneOpenAIMessage(msg)
+				bedrockMsg, err := message_converter.ConvertOneOpenAIMessage(msg)
 				if err != nil {
 					panic(fmt.Errorf("failed to convert openai message to bedrock message: %v", err))
 				}
@@ -154,6 +156,9 @@ func (f *BedrockDirector) AwsBedrockDirector(ctx context.Context, infor reversep
 		if len(systemPrompts) > 0 {
 			bedrockReq.System = strings.Join(systemPrompts, "\n")
 		}
+		// thinking
+		bedrockReq.AnthropicThinking = thinking.UnifiedGetThinkingConfigs(openaiReq).ToAnthropicThinking()
+
 		anthropicReqBytes, err := json.Marshal(&bedrockReq)
 		if err != nil {
 			panic(fmt.Errorf("failed to marshal anthropic request: %v", err))
@@ -249,7 +254,7 @@ func (f *BedrockDirector) OnResponseEOF(ctx context.Context, infor reverseproxy.
 		}
 		openaiResp, err := bedrockResp.ConvertToOpenAIFormat(ctxhelper.MustGetModel(ctx).Metadata.Public["model_id"].GetStringValue())
 		if err != nil {
-			return fmt.Errorf("failed to convert anthropic response body to openai format, err: %v", err)
+			return fmt.Errorf("failed to convert bedrock anthropic response body to openai format, err: %v", err)
 		}
 		b, err := json.Marshal(openaiResp)
 		if err != nil {

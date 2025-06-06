@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package message_converter
 
 import (
 	"strings"
@@ -48,6 +48,7 @@ func ConvertOneOpenAIMessage(openaiMsg openai.ChatCompletionMessage) (*Anthropic
 			contentParts = append(contentParts, bedrockPart)
 		case openai.ChatMessagePartTypeImageURL:
 			// get media_type and base64 content from url
+			// url format: data:image/${media_type};base64,${base64_content}
 			ss := strings.SplitN(part.ImageURL.URL, ";", 2)
 			mediaType := strings.TrimPrefix(ss[0], "data:")
 			base64Content := strings.TrimPrefix(ss[1], "base64,")

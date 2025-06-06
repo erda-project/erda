@@ -28,7 +28,7 @@ func TestUnifiedGetThinkingConfigs(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *Thinking
+		want *UnifiedThinking
 	}{
 		{
 			name: "anthropic style: enabled",
@@ -42,7 +42,7 @@ func TestUnifiedGetThinkingConfigs(t *testing.T) {
 					},
 				},
 			},
-			want: &Thinking{
+			want: &UnifiedThinking{
 				Thinking: &AnthropicThinkingInternal{
 					Type:         "enabled",
 					BudgetTokens: 100,
@@ -61,7 +61,7 @@ func TestUnifiedGetThinkingConfigs(t *testing.T) {
 					},
 				},
 			},
-			want: &Thinking{
+			want: &UnifiedThinking{
 				Thinking: &AnthropicThinkingInternal{
 					Type:         "disabled",
 					BudgetTokens: 100,
@@ -78,7 +78,7 @@ func TestUnifiedGetThinkingConfigs(t *testing.T) {
 					},
 				},
 			},
-			want: &Thinking{
+			want: &UnifiedThinking{
 				Thinking: &AnthropicThinkingInternal{
 					Type:         "enabled",
 					BudgetTokens: 1000,
@@ -95,7 +95,7 @@ func TestUnifiedGetThinkingConfigs(t *testing.T) {
 					},
 				},
 			},
-			want: &Thinking{
+			want: &UnifiedThinking{
 				Thinking: &AnthropicThinkingInternal{
 					Type:         "disabled",
 					BudgetTokens: 1000,

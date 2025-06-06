@@ -14,12 +14,27 @@
 
 package thinking
 
-// Thinking is the unified thinking configs.
+// UnifiedThinking is the unified thinking configs.
 // Distinguish:
 // - not-set
 // - enable
 // - disable
-type Thinking AnthropicThinking
+type UnifiedThinking AnthropicThinking
+
+func (t *UnifiedThinking) ToAnthropicThinking() *AnthropicThinking {
+	if t == nil || t.Thinking == nil {
+		return nil
+	}
+	return &AnthropicThinking{Thinking: t.Thinking}
+}
+
+func (t *UnifiedThinking) ToQwenThinking() *QwenThinking {
+	if t == nil || t.Thinking == nil {
+		return nil
+	}
+	enableThinking := t.Thinking.Type == "enabled"
+	return &QwenThinking{EnableThinking: &enableThinking, ThinkingBudget: t.Thinking.BudgetTokens}
+}
 
 type (
 	// Anthropic Thinking Style:
@@ -33,11 +48,11 @@ type (
 	//	  }
 	//	}
 	AnthropicThinking struct {
-		Thinking *AnthropicThinkingInternal `json:"thinking"`
+		Thinking *AnthropicThinkingInternal `json:"thinking,omitempty"`
 	}
 	AnthropicThinkingInternal struct {
-		Type         string `json:"type"`          // enabled | disabled
-		BudgetTokens int    `json:"budget_tokens"` // should be small than max_tokens
+		Type         string `json:"type,omitempty"`          // enabled | disabled
+		BudgetTokens int    `json:"budget_tokens,omitempty"` // should be small than max_tokens
 	}
 )
 
@@ -50,6 +65,6 @@ type (
 //	  "thinking_budget": 1000
 //	}
 type QwenThinking struct {
-	EnableThinking *bool `json:"enable_thinking"`
-	ThinkingBudget int   `json:"thinking_budget"`
+	EnableThinking *bool `json:"enable_thinking,omitempty"`
+	ThinkingBudget int   `json:"thinking_budget,omitempty"`
 }

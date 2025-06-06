@@ -23,7 +23,7 @@ import (
 // Currently, we support below styles:
 // - Anthropic Thinking
 // - Qwen
-func UnifiedGetThinkingConfigs(req openai_extended.OpenAIRequestExtended) *Thinking {
+func UnifiedGetThinkingConfigs(req openai_extended.OpenAIRequestExtended) *UnifiedThinking {
 	if len(req.ExtraFields) == 0 {
 		return nil
 	}
@@ -42,24 +42,24 @@ func UnifiedGetThinkingConfigs(req openai_extended.OpenAIRequestExtended) *Think
 	return nil
 }
 
-type ThinkingGetter func(req openai_extended.OpenAIRequestExtended) *Thinking
+type ThinkingGetter func(req openai_extended.OpenAIRequestExtended) *UnifiedThinking
 
-var getThinkingFromAnthropicStyle = func(req openai_extended.OpenAIRequestExtended) *Thinking {
+var getThinkingFromAnthropicStyle = func(req openai_extended.OpenAIRequestExtended) *UnifiedThinking {
 	var anthropicThinking AnthropicThinking
 	cputil.MustObjJSONTransfer(req.ExtraFields, &anthropicThinking)
 	if anthropicThinking.Thinking == nil {
 		return nil
 	}
-	return &Thinking{Thinking: anthropicThinking.Thinking}
+	return &UnifiedThinking{Thinking: anthropicThinking.Thinking}
 }
 
-var getThinkingFromQwenStyle = func(req openai_extended.OpenAIRequestExtended) *Thinking {
+var getThinkingFromQwenStyle = func(req openai_extended.OpenAIRequestExtended) *UnifiedThinking {
 	var qwenThinking QwenThinking
 	cputil.MustObjJSONTransfer(req.ExtraFields, &qwenThinking)
 	if qwenThinking.EnableThinking == nil {
 		return nil
 	}
-	return &Thinking{Thinking: &AnthropicThinkingInternal{
+	return &UnifiedThinking{Thinking: &AnthropicThinkingInternal{
 		Type: func() string {
 			if *qwenThinking.EnableThinking {
 				return "enabled"
