@@ -19,7 +19,7 @@ import (
 
 	providerpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 )
 
 func CheckIsOpenAICompatibleByProvider(provider *providerpb.ModelProvider) bool {

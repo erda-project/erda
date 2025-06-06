@@ -23,7 +23,6 @@ import (
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/decompress"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
@@ -45,7 +44,7 @@ func (f *Filter) OnResponseEOFImmutable(ctx context.Context, infor reverseproxy.
 		AuditId:            auditRecID,
 		ResponseAt:         timestamppb.New(f.firstResponseAt),
 		Status:             int32(infor.StatusCode()),
-		ActualResponseBody: string(decompress.TryDecompressBody(infor.Header(), f.DefaultResponseFilter.Buffer)),
+		ActualResponseBody: f.DefaultResponseFilter.Buffer.String(),
 		ActualResponseHeader: func() string {
 			if actualHeader, err := json.Marshal(infor.Header()); err != nil {
 				return err.Error()

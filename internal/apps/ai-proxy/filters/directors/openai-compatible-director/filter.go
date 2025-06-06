@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dashscope_director
+package openai_compatible_director
 
 import (
 	"context"
@@ -22,41 +22,38 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/custom-http-director"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_segment_getter"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 const (
-	Name = "dashscope-director"
+	Name = "openai-compatible-director"
 )
 
 var (
-	_ reverseproxy.RequestFilter = (*DashScopeDirector)(nil)
+	_ reverseproxy.RequestFilter = (*OpenaiCompatibleDirector)(nil)
 )
 
 func init() {
 	reverseproxy.RegisterFilterCreator(Name, New)
 }
 
-type DashScopeDirector struct {
-	*reverseproxy.DefaultResponseFilter
-
-	lastCompletionDataLineIndex int
-	lastCompletionDataLineText  string
+type OpenaiCompatibleDirector struct {
+	*custom_http_director.CustomHTTPDirector
 }
 
-func New(config json.RawMessage) (reverseproxy.Filter, error) {
-	return &DashScopeDirector{
-		DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter(),
-	}, nil
+func New(_ json.RawMessage) (reverseproxy.Filter, error) {
+	return &OpenaiCompatibleDirector{CustomHTTPDirector: custom_http_director.New()}, nil
 }
 
-func (f *DashScopeDirector) MultiResponseWriter(ctx context.Context) []io.ReadWriter {
+func (f *OpenaiCompatibleDirector) MultiResponseWriter(ctx context.Context) []io.ReadWriter {
 	return []io.ReadWriter{ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)}
 }
 
-func (f *DashScopeDirector) Enable(ctx context.Context, req *http.Request) bool {
-	prov := ctxhelper.MustGetModelProvider(ctx)
-	_, hasAPIConfig := prov.Metadata.Public["api"]
-	return strings.EqualFold(prov.Type, string(api_style.APIStyleAliyunDashScope)) && !hasAPIConfig
+func (f *OpenaiCompatibleDirector) Enable(ctx context.Context, _ *http.Request) bool {
+	apiSegment := api_segment_getter.GetAPISegment(ctx)
+	return apiSegment != nil &&
+		strings.EqualFold(string(apiSegment.APIStyle), string(api_style.APIStyleOpenAICompatible))
 }

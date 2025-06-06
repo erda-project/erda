@@ -118,6 +118,9 @@ func (r *Route) HandlerWith(ctx context.Context, kvs ...any) http.HandlerFunc {
 				Logger: l,
 			},
 		},
+		ModifyResponse: func() func(response *http.Response) (err error) {
+			return ctx.Value(reverseproxy.CtxKeyModifyResponse{}).(func(*http.Response) error)
+		}(),
 		FlushInterval: time.Millisecond * 100,
 		BufferPool:    reverseproxy.DefaultBufferPool,
 		Filters:       nil,

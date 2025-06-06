@@ -58,6 +58,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style_checker"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
@@ -161,6 +162,21 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
+func needDeleteContentLengthHeader(response *http.Response) bool {
+	// If the response is from an OpenAI-compatible provider, no response body rewrite
+	provider := ctxhelper.MustGetModelProvider(response.Request.Context())
+	return !api_style_checker.CheckIsOpenAICompatibleByProvider(provider)
+}
+
+var modifyResponseFunc = func(response *http.Response) error {
+	// handle content length header
+	if needDeleteContentLengthHeader(response) {
+		response.Header.Del("Content-Length")
+		response.ContentLength = -1
+	}
+	return nil
+}
+
 func (p *provider) ServeAIProxy() {
 	for _, r := range p.Config.Routes {
 		p.L.Infof("handle route %s %s", r.Path, r.Method)
@@ -172,6 +188,7 @@ func (p *provider) ServeAIProxy() {
 			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get(vars.XRequestId)),
 			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
 			reverseproxy.CtxKeyMap{}, new(sync.Map),
+			reverseproxy.CtxKeyModifyResponse{}, modifyResponseFunc,
 			vars.CtxKeyDAO{}, p.Dao,
 			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,
 			vars.CtxKeyRichClientHandler{}, p.richClientHandler,

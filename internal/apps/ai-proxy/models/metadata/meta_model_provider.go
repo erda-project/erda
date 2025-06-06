@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment"
 )
 
 type (
@@ -35,17 +35,12 @@ type (
 		RewritePath string `json:"rewritePath,omitempty"`
 
 		// API Related configs
-		API *API `json:"api,omitempty"`
+		API *api_segment.API `json:"api,omitempty"`
 	}
 	ModelProviderMetaSecret struct {
 		AnotherAPIKey string `json:"anotherApiKey,omitempty"`
 	}
 )
-
-type API struct {
-	APIStyle       api_style.APIStyle        `json:"apiStyle,omitempty"`
-	APIStyleConfig *api_style.APIStyleConfig `json:"apiStyleConfig,omitempty"`
-}
 
 func (m *Metadata) ToModelProviderMeta() (*ModelProviderMeta, error) {
 	b, err := json.Marshal(m)

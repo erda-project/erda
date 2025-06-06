@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package openai_compatible_director
+package custom_http_director
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,44 +25,26 @@ import (
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_style"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/pkg/reverseproxy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const (
-	Name = "openai-compatible-director"
-)
-
-var (
-	_ reverseproxy.RequestFilter = (*OpenaiCompatibleDirector)(nil)
-)
-
-func init() {
-	reverseproxy.RegisterFilterCreator(Name, New)
-}
-
-type OpenaiCompatibleDirector struct {
+type CustomHTTPDirector struct {
 	*reverseproxy.DefaultResponseFilter
 }
 
-func New(_ json.RawMessage) (reverseproxy.Filter, error) {
-	return &OpenaiCompatibleDirector{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}, nil
+func New() *CustomHTTPDirector {
+	return &CustomHTTPDirector{
+		DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter(),
+	}
 }
 
-func (f *OpenaiCompatibleDirector) MultiResponseWriter(ctx context.Context) []io.ReadWriter {
+func (f *CustomHTTPDirector) MultiResponseWriter(ctx context.Context) []io.ReadWriter {
 	return []io.ReadWriter{ctxhelper.GetLLMDirectorActualResponseBuffer(ctx)}
 }
 
-func (f *OpenaiCompatibleDirector) Enable(ctx context.Context, _ *http.Request) bool {
-	provider := ctxhelper.MustGetModelProvider(ctx)
-	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
-	providerMeta := providerNormalMeta.MustToModelProviderMeta()
-	return providerMeta.Public.API != nil &&
-		strings.EqualFold(string(providerMeta.Public.API.APIStyle), string(api_style.APIStyleOpenAICompatible))
-}
-
-func (f *OpenaiCompatibleDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
+func (f *CustomHTTPDirector) OnRequest(ctx context.Context, w http.ResponseWriter, infor reverseproxy.HttpInfor) (signal reverseproxy.Signal, err error) {
 	provider := ctxhelper.MustGetModelProvider(ctx)
 	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
 	providerMeta := providerNormalMeta.MustToModelProviderMeta()
@@ -168,6 +149,7 @@ func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	path = handleJSONPathTemplate(ctx, path)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		req.URL.Path = path
+		req.URL.RawPath = ""
 	})
 	return nil
 }

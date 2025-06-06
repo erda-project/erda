@@ -374,6 +374,7 @@ func (p *ReverseProxy) serveHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.getErrorHandler()(rw, outreq, err)
 		return
 	}
+	res.Request = res.Request.WithContext(p.Context) // inject context for ModifyResponse use
 
 	// Deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
@@ -542,6 +543,13 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte, resp
 	if logger_, ok := p.Context.Value(LoggerCtxKey{}).(logs.Logger); ok {
 		logger = logger_
 	}
+
+	// decode nr by Content-Encoding
+	src, err := NewBodyDecompressor(response.Header, src)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decompress response body, err: %v", err)
+	}
+	defer src.(io.Closer).Close()
 
 	var nextWriter bytes.Buffer
 	for {

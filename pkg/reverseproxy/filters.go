@@ -17,8 +17,10 @@ package reverseproxy
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
 )
 
 var (
@@ -71,10 +73,12 @@ func (d *DefaultResponseFilter) multiWrite(w io.Writer, in []byte) error {
 type responseBodyWriter struct {
 	written int64
 	dst     io.Writer
+
+	bodyCompressor io.WriteCloser
 }
 
 func (r *responseBodyWriter) OnResponseChunk(ctx context.Context, infor HttpInfor, writer Writer, chunk []byte) (signal Signal, err error) {
-	return Intercept, r.write(chunk)
+	return Intercept, r.compressWrite(infor.Header(), chunk, false)
 }
 func (r *responseBodyWriter) OnResponseChunkImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) (signal Signal, err error) {
 	return Continue, nil
@@ -84,10 +88,27 @@ func (r *responseBodyWriter) OnResponseChunkImmutable(ctx context.Context, infor
 // 因为它已经没有下一个 filter 了.
 // 它直接将数据写入 r.dst, 这个 r.dst 即最终的 response body.
 func (r *responseBodyWriter) OnResponseEOF(ctx context.Context, infor HttpInfor, writer Writer, chunk []byte) error {
-	return r.write(chunk)
+	return r.compressWrite(infor.Header(), chunk, true)
 }
 func (r *responseBodyWriter) OnResponseEOFImmutable(ctx context.Context, infor HttpInfor, copiedChunk []byte) error {
 	return nil
+}
+
+func (r *responseBodyWriter) compressWrite(header http.Header, in []byte, autoClose bool) error {
+	// compress body by header, have to reuse compressor to ensure content correct (multi-time-write, OnResponseChunk & OnResponseEOF)
+	if r.bodyCompressor == nil {
+		dstCompressor, err := NewBodyCompressor(header, r.dst)
+		if err != nil {
+			return fmt.Errorf("failed to create new body compressor: %v", err)
+		}
+		r.bodyCompressor = dstCompressor
+	}
+	if autoClose {
+		defer r.bodyCompressor.Close()
+	}
+
+	_, err := r.bodyCompressor.Write(in)
+	return err
 }
 
 func (r *responseBodyWriter) write(in []byte) error {
