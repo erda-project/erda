@@ -21,13 +21,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
-	"time"
-
-	"github.com/sashabaranov/go-openai"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/message_converter"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/openai_extended"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/reverseproxy"
@@ -35,67 +32,18 @@ import (
 
 const (
 	APIVendor api_style.APIVendor = "anthropic"
-
-	defaultMaxTokens      = 1024
-	defaultTemperature    = 1.0
-	defaultBedrockVersion = "bedrock-2023-05-31"
 )
 
 type AnthropicRequest struct {
-	Model         string                               `json:"model"`
-	Messages      []message_converter.AnthropicMessage `json:"messages"`
-	MaxTokens     int                                  `json:"max_tokens"`
-	StopSequences []string                             `json:"stop_sequences,omitempty"`
-	Stream        bool                                 `json:"stream"`
-	System        string                               `json:"system,omitempty"`
-	Temperature   float32                              `json:"temperature"`
-	ToolChoice    any                                  `json:"tool_choice,omitempty"`
-	Tools         any                                  `json:"tools,omitempty"`
-	TopP          float32                              `json:"top_p,omitempty"`
-}
-
-type AnthropicResponse struct {
-	ID           string           `json:"id"`
-	Type         string           `json:"type"` // always "message"
-	Role         string           `json:"role"` // always "assistant"
-	Model        string           `json:"model"`
-	Content      []map[string]any `json:"content"`
-	StopReason   string           `json:"stop_reason"`
-	StopSequence string           `json:"stop_sequence,omitempty"`
-}
-
-func (r AnthropicResponse) ConvertToOpenAIFormat(modelID string) (openai.ChatCompletionResponse, error) {
-	openaiResp := openai.ChatCompletionResponse{
-		ID:      r.ID,
-		Object:  "chat.completions", // always
-		Created: time.Now().Unix(),
-		Model:   modelID,
-	}
-	// choices
-	var choices []openai.ChatCompletionChoice
-	for _, contentPart := range r.Content {
-		switch contentPart["type"].(string) {
-		case "text":
-			choice := openai.ChatCompletionChoice{
-				Message: openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleAssistant,
-					Content: contentPart["text"].(string),
-				}}
-			choices = append(choices, choice)
-		default:
-			return openaiResp, fmt.Errorf("unsupported content type: %s", contentPart["type"].(string))
-		}
-	}
-	openaiResp.Choices = choices
-	return openaiResp, nil
+	message_converter.BaseAnthropicRequest
+	Model  string `json:"model"`
+	Stream bool   `json:"stream"`
 }
 
 type AnthropicDirector struct {
 	*reverseproxy.DefaultResponseFilter
 
-	StreamMessageID    string
-	StreamMessageModel string
-	StreamMessageRole  string
+	StreamMessageInfo message_converter.AnthropicStreamMessageInfo
 }
 
 func NewDirector() *AnthropicDirector {
@@ -106,49 +54,18 @@ func (f *AnthropicDirector) OfficialDirector(ctx context.Context, infor reversep
 	model := ctxhelper.MustGetModel(ctx)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
 		// openai format request
-		var openaiReq openai.ChatCompletionRequest
+		var openaiReq openai_extended.OpenAIRequestExtended
 		if err := json.NewDecoder(infor.Body()).Decode(&openaiReq); err != nil {
 			panic(fmt.Errorf("failed to decode request body as openai format, err: %v", err))
 		}
 		// convert to: anthropic format request
+		baseAnthropicReq := message_converter.ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq)
 		anthropicReq := AnthropicRequest{
-			Model:         model.Metadata.Public["model_name"].GetStringValue(),
-			MaxTokens:     openaiReq.MaxTokens,
-			StopSequences: openaiReq.Stop,
-			Stream:        openaiReq.Stream,
-			Temperature:   openaiReq.Temperature,
-			TopP:          openaiReq.TopP,
+			BaseAnthropicRequest: baseAnthropicReq,
+			Model:                model.Metadata.Public["model_name"].GetStringValue(),
+			Stream:               openaiReq.Stream,
 		}
-		if openaiReq.Temperature <= 0 {
-			anthropicReq.Temperature = defaultTemperature
-		}
-		if openaiReq.MaxTokens <= 1 {
-			anthropicReq.MaxTokens = defaultMaxTokens
-		}
-		// tool
-		if len(openaiReq.Tools) > 0 {
-			anthropicReq.Tools = openaiReq.Tools
-		}
-		if openaiReq.ToolChoice != nil {
-			anthropicReq.ToolChoice = openaiReq.ToolChoice
-		}
-		// split system prompt out, keep user / assistant messages
-		var systemPrompts []string
-		for _, msg := range openaiReq.Messages {
-			switch msg.Role {
-			case openai.ChatMessageRoleSystem:
-				systemPrompts = append(systemPrompts, msg.Content)
-			default:
-				bedrockMsg, err := message_converter.ConvertOneOpenAIMessage(msg)
-				if err != nil {
-					panic(fmt.Errorf("failed to convert openai message to bedrock message: %v", err))
-				}
-				anthropicReq.Messages = append(anthropicReq.Messages, *bedrockMsg)
-			}
-		}
-		if len(systemPrompts) > 0 {
-			anthropicReq.System = strings.Join(systemPrompts, "\n")
-		}
+
 		anthropicReqBytes, err := json.Marshal(&anthropicReq)
 		if err != nil {
 			panic(fmt.Errorf("failed to marshal anthropic request: %v", err))
@@ -188,7 +105,7 @@ func (f *AnthropicDirector) OnResponseEOF(ctx context.Context, infor reverseprox
 	// only stream style need append [DONE] chunk
 	if !ctxhelper.GetIsStream(ctx) {
 		// convert all at once
-		var anthropicResp AnthropicResponse
+		var anthropicResp message_converter.AnthropicResponse
 		if err := json.Unmarshal(f.DefaultResponseFilter.Buffer.Bytes(), &anthropicResp); err != nil {
 			return fmt.Errorf("failed to unmarshal response body: %s, err: %v", string(chunk), err)
 		}

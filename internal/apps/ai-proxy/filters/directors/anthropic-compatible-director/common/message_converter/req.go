@@ -15,10 +15,75 @@
 package message_converter
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/openai_extended"
+
 	"github.com/sashabaranov/go-openai"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/openai_extended/thinking"
 )
+
+const (
+	defaultMaxTokens   = 10240
+	defaultTemperature = 1.0
+)
+
+type BaseAnthropicRequest struct {
+	Messages      []AnthropicMessage `json:"messages"`
+	MaxTokens     int                `json:"max_tokens"`
+	StopSequences []string           `json:"stop_sequences,omitempty"`
+	System        string             `json:"system,omitempty"`
+	Temperature   float32            `json:"temperature"`
+	ToolChoice    any                `json:"tool_choice,omitempty"`
+	Tools         any                `json:"tools,omitempty"`
+
+	*thinking.AnthropicThinking
+}
+
+func ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq openai_extended.OpenAIRequestExtended) BaseAnthropicRequest {
+	// convert to: anthropic format request
+	baseAnthropicReq := BaseAnthropicRequest{
+		MaxTokens:     openaiReq.MaxTokens,
+		Temperature:   openaiReq.Temperature,
+		StopSequences: openaiReq.Stop,
+	}
+	if openaiReq.Temperature <= 0 {
+		baseAnthropicReq.Temperature = defaultTemperature
+	}
+	if openaiReq.MaxTokens <= 1 {
+		baseAnthropicReq.MaxTokens = defaultMaxTokens
+	}
+	// tool
+	if len(openaiReq.Tools) > 0 {
+		baseAnthropicReq.Tools = openaiReq.Tools
+	}
+	if openaiReq.ToolChoice != nil {
+		baseAnthropicReq.ToolChoice = openaiReq.ToolChoice
+	}
+	// split system prompt out, keep user / assistant messages
+	var systemPrompts []string
+	for _, msg := range openaiReq.Messages {
+		switch msg.Role {
+		case openai.ChatMessageRoleSystem:
+			systemPrompts = append(systemPrompts, msg.Content)
+		default:
+			bedrockMsg, err := ConvertOneOpenAIMessage(msg)
+			if err != nil {
+				panic(fmt.Errorf("failed to convert openai message to bedrock message: %v", err))
+			}
+			baseAnthropicReq.Messages = append(baseAnthropicReq.Messages, *bedrockMsg)
+		}
+	}
+	if len(systemPrompts) > 0 {
+		baseAnthropicReq.System = strings.Join(systemPrompts, "\n")
+	}
+	// thinking
+	baseAnthropicReq.AnthropicThinking = thinking.UnifiedGetThinkingConfigs(openaiReq).ToAnthropicThinking()
+
+	return baseAnthropicReq
+}
 
 type AnthropicMessage struct {
 	Role    string `json:"role"`
