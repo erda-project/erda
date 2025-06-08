@@ -174,6 +174,9 @@ var modifyResponseFunc = func(response *http.Response) error {
 		response.Header.Del("Content-Length")
 		response.ContentLength = -1
 	}
+	// cors, set at outside, delete to avoid duplicated `Access-Control-Allow-Origin` header
+	response.Header.Del("Vary")
+	response.Header.Del("Access-Control-Allow-Origin")
 	return nil
 }
 

@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -96,4 +97,25 @@ func (t *DumpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	d := http.DefaultTransport
 	d.(*http.Transport).ForceAttemptHTTP2 = true
 	return d.RoundTrip(req)
+}
+
+func TestBedrockRequestThinkingUnmarshal(t *testing.T) {
+	payload := `{}`
+	var bedrockReq BedrockRequest
+	err := json.Unmarshal([]byte(payload), &bedrockReq)
+	assert.NoError(t, err)
+	assert.Nil(t, bedrockReq.AnthropicThinking)
+
+	payload = `{"thinking": {"type": "enabled", "budget_tokens": 1000}}`
+	err = json.Unmarshal([]byte(payload), &bedrockReq)
+	assert.NoError(t, err)
+	assert.NotNil(t, bedrockReq.AnthropicThinking)
+	assert.Equal(t, "enabled", bedrockReq.AnthropicThinking.Thinking.Type)
+	assert.Equal(t, 1000, bedrockReq.AnthropicThinking.Thinking.BudgetTokens)
+
+	// payload = `{"thinking": {"type": "disabled"}}`
+	// err = json.Unmarshal([]byte(payload), &bedrockReq)
+	// assert.NoError(t, err)
+	// assert.NotNil(t, bedrockReq.AnthropicThinking)
+	// assert.Equal(t, "disabled", bedrockReq.AnthropicThinking.Thinking.Type)
 }

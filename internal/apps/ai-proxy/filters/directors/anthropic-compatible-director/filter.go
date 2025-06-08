@@ -94,6 +94,9 @@ func (f *AnthropicCompatibleDirector) OnRequest(ctx context.Context, w http.Resp
 }
 
 func (f *AnthropicCompatibleDirector) OnResponseChunk(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) (signal reverseproxy.Signal, err error) {
+	if infor.StatusCode() != http.StatusOK {
+		return reverseproxy.Continue, nil
+	}
 	apiSegment := api_segment_getter.GetAPISegment(ctx)
 	switch strings.ToLower(string(apiSegment.APIVendor)) {
 	case strings.ToLower(string(aws_bedrock.APIVendor)):
@@ -106,6 +109,9 @@ func (f *AnthropicCompatibleDirector) OnResponseChunk(ctx context.Context, infor
 }
 
 func (f *AnthropicCompatibleDirector) OnResponseEOF(ctx context.Context, infor reverseproxy.HttpInfor, w reverseproxy.Writer, chunk []byte) error {
+	if infor.StatusCode() != http.StatusOK {
+		return nil
+	}
 	apiSegment := api_segment_getter.GetAPISegment(ctx)
 	switch strings.ToLower(string(apiSegment.APIVendor)) {
 	case strings.ToLower(string(aws_bedrock.APIVendor)):

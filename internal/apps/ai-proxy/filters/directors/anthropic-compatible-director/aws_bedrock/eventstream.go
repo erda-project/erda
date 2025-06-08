@@ -21,10 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/aws/aws-sdk-go/private/protocol/eventstream"
 	"github.com/sashabaranov/go-openai"
+
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/message_converter"
 )
 
 // BedrockChunkPayload is AWS Bedrock Claude Streaming chunk.
@@ -78,40 +79,15 @@ func (f *BedrockDirector) pipeBedrockStream(ctx context.Context, awsChunkBody io
 			return nil, fmt.Errorf("base64 decode: %w", err)
 		}
 
-		var rawObj map[string]any
-		if err := json.Unmarshal(raw, &rawObj); err != nil {
-			return nil, fmt.Errorf("failed to parse raw, err: %v", err)
+		gotStreamMsgInfo, openaiChunk, err := message_converter.ConvertStreamChunkDataToOpenAIChunk(raw, f.StreamMessageInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert anthropic stream chunk to openai chunk, err: %w", err)
 		}
-
-		switch rawObj["type"].(string) {
-		case "message_start":
-			// get message id and model
-			f.StreamMessageID = rawObj["message"].(map[string]any)["id"].(string)
-			f.StreamMessageModel = rawObj["message"].(map[string]any)["model"].(string)
-			f.StreamMessageRole = rawObj["message"].(map[string]any)["role"].(string)
-		case "content_block_delta":
-			// get delta
-			deltaObj := rawObj["delta"].(map[string]any)
-			if deltaObj["type"] != "text_delta" {
-				continue
-			}
-			deltaText := deltaObj["text"].(string)
-			openaiChunk := openai.ChatCompletionStreamResponse{
-				ID:      f.StreamMessageID,
-				Object:  "chat.completion.chunk", // fixed
-				Created: time.Now().Unix(),
-				Model:   f.StreamMessageModel,
-				Choices: []openai.ChatCompletionStreamChoice{
-					{
-						Index: 0,
-						Delta: openai.ChatCompletionStreamChoiceDelta{
-							Content: deltaText,
-							Role:    f.StreamMessageRole,
-						},
-					},
-				},
-			}
-			openaiChunks = append(openaiChunks, openaiChunk)
+		if gotStreamMsgInfo != nil {
+			f.StreamMessageInfo = *gotStreamMsgInfo
+		}
+		if openaiChunk != nil {
+			openaiChunks = append(openaiChunks, *openaiChunk)
 		}
 	}
 }
