@@ -17,14 +17,13 @@ package anthropic_official
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/directors/anthropic-compatible-director/common/message_converter"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -41,42 +40,17 @@ func (f *AnthropicDirector) pipeAnthropicStream(ctx context.Context, chunkBody i
 		if !strings.HasPrefix(line, "data:") {
 			continue
 		}
-		dataLine := string(vars.TrimChunkDataPrefix([]byte(line)))
+		dataLine := vars.TrimChunkDataPrefix([]byte(line))
 
-		var rawObj map[string]any
-		if err := json.Unmarshal([]byte(dataLine), &rawObj); err != nil {
-			return nil, fmt.Errorf("failed to parse raw, err: %v", err)
+		gotStreamMsgInfo, openaiChunk, err := message_converter.ConvertStreamChunkDataToOpenAIChunk(dataLine, f.StreamMessageInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert anthropic stream chunk to openai chunk, err: %w", err)
 		}
-
-		switch rawObj["type"].(string) {
-		case "message_start":
-			// get message id and model
-			f.StreamMessageID = rawObj["message"].(map[string]any)["id"].(string)
-			f.StreamMessageModel = rawObj["message"].(map[string]any)["model"].(string)
-			f.StreamMessageRole = rawObj["message"].(map[string]any)["role"].(string)
-		case "content_block_delta":
-			// get delta
-			deltaObj := rawObj["delta"].(map[string]any)
-			if deltaObj["type"] != "text_delta" {
-				continue
-			}
-			deltaText := deltaObj["text"].(string)
-			openaiChunk := openai.ChatCompletionStreamResponse{
-				ID:      f.StreamMessageID,
-				Object:  "chat.completion.chunk", // fixed
-				Created: time.Now().Unix(),
-				Model:   f.StreamMessageModel,
-				Choices: []openai.ChatCompletionStreamChoice{
-					{
-						Index: 0,
-						Delta: openai.ChatCompletionStreamChoiceDelta{
-							Content: deltaText,
-							Role:    f.StreamMessageRole,
-						},
-					},
-				},
-			}
-			openaiChunks = append(openaiChunks, openaiChunk)
+		if gotStreamMsgInfo != nil {
+			f.StreamMessageInfo = *gotStreamMsgInfo
+		}
+		if openaiChunk != nil {
+			openaiChunks = append(openaiChunks, *openaiChunk)
 		}
 	}
 
