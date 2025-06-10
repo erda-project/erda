@@ -68,6 +68,7 @@ type provider struct {
 	SteveAggregator *steve.Aggregator
 	Org             org.Interface
 	Cfg             *config
+	bdl             *bundle.Bundle
 }
 
 type config struct {
@@ -100,6 +101,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	pb2.RegisterClusterResourceImp(p.Register, p, apis.Options())
 	alertpb.RegisterAlertServiceImp(p.Register, p, apis.Options())
+
+	p.bdl = bundle.New(
+		bundle.WithHTTPClient(httpclient.New(
+			httpclient.WithTimeout(time.Second*30, time.Second*90),
+		)),
+		bundle.WithErdaServer(),
+	)
 
 	return nil
 }
