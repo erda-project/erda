@@ -53,6 +53,7 @@ message Model {
     string providerId = 8;
     string apiKey = 9;
     metadata.Metadata metadata = 10;
+    string publisher = 11; // set at metadata.public.publisher; promoted to first-level when display
 }
 
 enum ModelType {
