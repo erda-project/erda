@@ -102,6 +102,7 @@ message ModelPagingRequest {
     string providerId = 5 [(validate.rules).string = {ignore_empty: true, len: 36}];
     repeated string ids = 6 [(validate.rules).repeated.items.string = {len: 36}];
     repeated string orderBys = 7 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+    string nameFull = 8 [(validate.rules).string = {ignore_empty: true, min_len: 2, max_len: 191}];
 }
 
 message ModelPagingResponse {
