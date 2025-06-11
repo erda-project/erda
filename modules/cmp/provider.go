@@ -58,6 +58,7 @@ type provider struct {
 	Resource        *resource.Resource
 	CPTran          i18n.I18n       `autowired:"i18n@cp"`
 	Tran            i18n.Translator `translator:"common"`
+	bdl             *bundle.Bundle
 	SteveAggregator *steve.Aggregator
 }
 
@@ -85,6 +86,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	pb2.RegisterClusterResourceImp(p.Register, p, apis.Options())
 	alertpb.RegisterAlertServiceImp(p.Register, p, apis.Options())
+	hc := httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))
+	p.bdl = bundle.New(
+		bundle.WithHTTPClient(hc),
+		bundle.WithCoreServices(),
+	)
 
 	return nil
 }
