@@ -53,6 +53,7 @@ type ElasticsearchOperator struct {
 	service     addon.ServiceUtil
 	overcommit  addon.OverCommitUtil
 	secret      addon.SecretUtil
+	configmap   addon.ConfigMapUtil
 	imageSecret addon.ImageSecretUtil
 	client      *httpclient.HTTPClient
 }
@@ -64,6 +65,7 @@ func New(k8s addon.K8SUtil,
 	overcommit addon.OverCommitUtil,
 	secret addon.SecretUtil,
 	imageSecret addon.ImageSecretUtil,
+	configmap addon.ConfigMapUtil,
 	client *httpclient.HTTPClient) *ElasticsearchOperator {
 	return &ElasticsearchOperator{
 		k8s:         k8s,
@@ -72,6 +74,7 @@ func New(k8s addon.K8SUtil,
 		service:     service,
 		overcommit:  overcommit,
 		secret:      secret,
+		configmap:   configmap,
 		imageSecret: imageSecret,
 		client:      client,
 	}
@@ -112,6 +115,30 @@ func (eo *ElasticsearchOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
+func (eo *ElasticsearchOperator) generateIkConfigmap(remoteDict string, remoteStopDict string, sg *apistructs.ServiceGroup) corev1.ConfigMap {
+	// ConfigMap 数据
+	configMapData := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+  <comment>IK Analyzer 扩展配置</comment>
+  <entry key="ext_dict"></entry>
+  <entry key="ext_stopwords"></entry>
+  <entry key="remote_ext_dict">%s</entry>
+  <entry key="remote_ext_stopwords">%s</entry>
+</properties>`, remoteDict, remoteStopDict)
+
+	configmap := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ik-plugin-config",
+			Namespace: genK8SNamespace(sg.Type, sg.ID),
+		},
+		Data: map[string]string{
+			"IKAnalyzer.cfg.xml": configMapData,
+		},
+	}
+	return configmap
+}
+
 // Convert sg to cr, which is kubernetes yaml
 func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 	svc0 := sg.Services[0]
@@ -122,6 +149,9 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, erro
 	svc0.Env["ES_USER"] = "elastic"
 	svc0.Env["ES_PASSWORD"] = svc0.Env["requirepass"]
 	svc0.Env["SELF_PORT"] = "9200"
+
+	remoteDict := svc0.Env["REMOTE_EXT_DICT"]
+	remoteStopDict := svc0.Env["REMOTE_EXT_STOP_WORDS"]
 
 	scheinfo := sg.ScheduleInfo2
 	scheinfo.Stateful = true
@@ -171,7 +201,14 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) (any, erro
 		},
 	}
 
-	return ElasticsearchAndSecret{Elasticsearch: es, Secret: secret}, nil
+	var configmap corev1.ConfigMap
+	if nodeSets.PodTemplate.Spec.Volumes != nil {
+		configmap = eo.generateIkConfigmap(remoteDict, remoteStopDict, sg)
+	}
+
+	esAndSecret := ElasticsearchAndSecret{Elasticsearch: es, Secret: secret, ConfigMap: configmap}
+
+	return esAndSecret, nil
 }
 
 func (eo *ElasticsearchOperator) Create(k8syml interface{}) error {
@@ -181,8 +218,14 @@ func (eo *ElasticsearchOperator) Create(k8syml interface{}) error {
 	}
 	elasticsearch := elasticsearchAndSecret.Elasticsearch
 	secret := elasticsearchAndSecret.Secret
+	configmap := elasticsearchAndSecret.ConfigMap
 	if err := eo.ns.Exists(elasticsearch.Namespace); err != nil {
 		if err := eo.ns.Create(elasticsearch.Namespace, nil); err != nil {
+			return err
+		}
+	}
+	if configmap.Data != nil {
+		if err := eo.configmap.Create(&configmap); err != nil {
 			return err
 		}
 	}
@@ -414,6 +457,30 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(sg *apistructs.ServiceGroup, sc
 				},
 			},
 		},
+	}
+
+	if svc.Env["REMOTE_EXT_DICT"] != "" && svc.Env["REMOTE_EXT_STOP_WORDS"] != "" {
+		nodeSets.PodTemplate.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "ik-config-volume",
+				MountPath: "/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml",
+				SubPath:   "IKAnalyzer.cfg.xml",
+				ReadOnly:  true,
+			},
+		}
+
+		nodeSets.PodTemplate.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "ik-config-volume",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "ik-plugin-config",
+						},
+					},
+				},
+			},
+		}
 	}
 
 	// set pvc annotations for snapshot
