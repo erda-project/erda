@@ -36,6 +36,7 @@ type Model struct {
 func (*Model) TableName() string { return "ai_proxy_model" }
 
 func (m *Model) ToProtobuf() *pb.Model {
+	pbMetadata := m.Metadata.ToProtobuf()
 	return &pb.Model{
 		Id:         m.ID.String,
 		CreatedAt:  timestamppb.New(m.CreatedAt),
@@ -46,16 +47,17 @@ func (m *Model) ToProtobuf() *pb.Model {
 		Type:       pb.ModelType(pb.ModelType_value[string(m.Type)]),
 		ProviderId: m.ProviderID,
 		ApiKey:     m.APIKey,
-		Metadata:   m.Metadata.ToProtobuf(),
+		Metadata:   pbMetadata,
+		Publisher:  pbMetadata.Public["publisher"].GetStringValue(),
 	}
 }
 
 type Models []*Model
 
 func (models Models) ToProtobuf() []*pb.Model {
-	var pbClients []*pb.Model
+	var pbModels []*pb.Model
 	for _, c := range models {
-		pbClients = append(pbClients, c.ToProtobuf())
+		pbModels = append(pbModels, c.ToProtobuf())
 	}
-	return pbClients
+	return pbModels
 }

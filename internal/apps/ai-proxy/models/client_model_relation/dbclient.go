@@ -107,8 +107,8 @@ func (dbClient *DBClient) ListClientModels(ctx context.Context, req *pb.ListClie
 }
 
 func (dbClient *DBClient) Paging(ctx context.Context, req *pb.PagingRequest) (*pb.PagingResponse, error) {
-	relationTableName := (&ClientModelRelation{}).TableName()
-	sql := dbClient.DB.Table(relationTableName)
+	c := &ClientModelRelations{}
+	sql := dbClient.DB.Model(c)
 	if len(req.ClientIds) > 0 {
 		sql = sql.Where("client_id in (?)", req.ClientIds)
 	}

@@ -34,9 +34,11 @@ const (
 	XAiProxyErdaOpenapiSession = "X-Ai-Proxy-Erda-Openapi-Session"
 	XRequestId                 = "X-Request-Id"
 
-	XAIProxyModelId   = "X-AI-Proxy-Model-Id"
-	XAIProxySessionId = "X-AI-Proxy-Session-Id"
-	XAIProxyPromptId  = "X-AI-Proxy-Prompt-Id"
+	XAIProxyModelId        = "X-AI-Proxy-Model-Id"
+	XAIProxySessionId      = "X-AI-Proxy-Session-Id"
+	XAIProxyPromptId       = "X-AI-Proxy-Prompt-Id"
+	XAIProxyModelName      = "X-AI-Proxy-Model-Name"
+	XAIProxyModelPublisher = "X-AI-Proxy-Model-Publisher"
 
 	UIValueUndefined = "undefined"
 )
