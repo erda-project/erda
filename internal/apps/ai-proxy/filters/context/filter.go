@@ -17,7 +17,6 @@ package context
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -32,7 +31,6 @@ import (
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	openai_v1_models "github.com/erda-project/erda/internal/apps/ai-proxy/filters/openai-v1-models"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
@@ -109,15 +107,9 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 		client = clientPagingResult.List[0]
 	}
 
-	// find model
-	var model *modelpb.Model
-	var modelProvider *modelproviderpb.ModelProvider
+	// session
 	var session *sessionpb.Session
-	// get from session if exists
 	headerSessionId := infor.Header().Get(vars.XAIProxySessionId)
-	headerModelId := infor.Header().Get(vars.XAIProxyModelId)
-	var allModelIDsByPriority []string
-	allModelIDsByPriority = append(allModelIDsByPriority, headerModelId)
 	if headerSessionId != "" && headerSessionId != vars.UIValueUndefined {
 		_session, err := q.SessionClient().Get(ctx, &sessionpb.SessionGetRequest{Id: headerSessionId})
 		if err != nil {
@@ -126,81 +118,18 @@ func (f *Context) OnRequest(ctx context.Context, w http.ResponseWriter, infor re
 			return reverseproxy.Intercept, err
 		}
 		session = _session
-		if session.ModelId != "" {
-			allModelIDsByPriority = append(allModelIDsByPriority, session.ModelId)
-		}
 	}
-	allModelIDsByPriority = strutil.DedupSlice(allModelIDsByPriority, true)
-	// if no model id found, respect 'model' field in request body
-	if len(allModelIDsByPriority) == 0 {
-		type Model struct {
-			ModelID string `json:"model"`
-		}
-		// check body
-		body := infor.BodyBuffer()
-		if body == nil {
-			err = fmt.Errorf("missing body")
-			l.Error(err)
-			return reverseproxy.Intercept, err
-		}
 
-		var m Model
-		if err := json.NewDecoder(body).Decode(&m); err == nil {
-			if m.ModelID != "" {
-				// parse truly model uuid, which is generated at api `/v1/models`/, see: internal/apps/ai-proxy/filters/openai-v1-models/filter.go#generateModelDisplayName
-				uuid := openai_v1_models.ParseModelUUIDFromDisplayName(m.ModelID)
-				if uuid != "" {
-					allModelIDsByPriority = append(allModelIDsByPriority, uuid)
-				}
-			}
-		}
-	}
-	for _, modelID := range allModelIDsByPriority {
-		if modelID == "" {
-			continue
-		}
-		_model, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: modelID})
-		// do not skip error, because modelId must be valid or be empty
-		if err != nil {
-			l.Errorf("failed to get model, id: %s, err: %v", modelID, err)
-			http.Error(w, fmt.Sprintf("ModelId %s is invalid", modelID), http.StatusBadRequest)
-			return reverseproxy.Intercept, err
-		}
-		model = _model
-		break
-	}
-	if model == nil {
-		// get client default model
-		clientPbMeta := metadata.FromProtobuf(client.Metadata)
-		clientMeta, err := clientPbMeta.ToClientMeta()
-		if err != nil {
-			l.Errorf("failed to get client meta, err: %v", err)
-			http.Error(w, "Client meta is invalid", http.StatusBadRequest)
-			return reverseproxy.Intercept, err
-		}
-		// judge by model type
-		modelType, ok := getModelTypeByRequest(common.GetRequestRoutePath(ctx))
-		if !ok {
-			l.Errorf("failed to judge model type by request path: %s", infor.URL().Path)
-			http.Error(w, fmt.Sprintf("please add http header `X-AI-Proxy-Model-ID` explicitly for path: %s", infor.URL().Path), http.StatusBadRequest)
-			return reverseproxy.Intercept, err
-		}
-		defaultModelId, ok := clientMeta.Public.GetDefaultModelIdByModelType(modelType)
-		if !ok {
-			l.Errorf("failed to get client's default model, modelType: %s", modelType.String())
-			http.Error(w, "Client's default model is invalid", http.StatusBadRequest)
-			return reverseproxy.Intercept, err
-		}
-		defaultModel, err := q.ModelClient().Get(ctx, &modelpb.ModelGetRequest{Id: defaultModelId})
-		if err != nil {
-			l.Errorf("failed to get model, id: %s, err: %v", defaultModelId, err)
-			http.Error(w, "ModelId is invalid", http.StatusBadRequest)
-			return reverseproxy.Intercept, err
-		}
-		model = defaultModel
+	// find model
+	model, err := findModel(ctx, infor, client)
+	if err != nil {
+		l.Errorf("failed to request model, err: %v", err)
+		http.Error(w, "Model is invalid", http.StatusBadRequest)
+		return reverseproxy.Intercept, err
 	}
 
 	// find provider
+	var modelProvider *modelproviderpb.ModelProvider
 	modelProvider, err = q.ModelProviderClient().Get(ctx, &modelproviderpb.ModelProviderGetRequest{Id: model.ProviderId})
 	if err != nil {
 		l.Errorf("failed to get model provider, id: %s, err: %v", model.ProviderId, err)
