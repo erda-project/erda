@@ -15,9 +15,10 @@
 package instanceinfo
 
 import (
-	"github.com/jinzhu/gorm"
 	"strconv"
 	"time"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
