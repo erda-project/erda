@@ -94,6 +94,6 @@ var CheckMCPPerm = CheckPermissions(
 	&MethodPermission{Method: pb.MCPServerServiceServer.List, AdminOrAk: true},
 	&MethodPermission{Method: pb.MCPServerServiceServer.Delete, OnlyAdmin: true},
 	&MethodPermission{Method: pb.MCPServerServiceServer.Update, OnlyAdmin: true},
-	&MethodPermission{Method: pb.MCPServerServiceServer.Register, OnlyAdmin: true},
+	&MethodPermission{Method: pb.MCPServerServiceServer.Register, AdminOrAk: true},
 	&MethodPermission{Method: pb.MCPServerServiceServer.Publish, OnlyAdmin: true},
 )
