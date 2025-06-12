@@ -25,6 +25,13 @@ func (p *provider) IsMatch(tmc *db.Tmc) bool {
 	return tmc.Engine == handlers.ResourceLogExporter
 }
 
+func (p *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, _ *handlers.ResourceInfo) (*db.Instance, bool, error) {
+	instance, ok, err := p.InstanceDb.First(map[string]any{
+		"id": req.Uuid,
+	})
+	return instance, !ok, err
+}
+
 func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo, tmcInstance *db.Instance, clusterConfig map[string]string) interface{} {
 	req := p.DefaultDeployHandler.BuildServiceGroupRequest(resourceInfo, tmcInstance, clusterConfig).(*apistructs.ServiceGroupCreateV2Request)
 
