@@ -17,13 +17,13 @@ package cmp
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"strconv"
 
 	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
