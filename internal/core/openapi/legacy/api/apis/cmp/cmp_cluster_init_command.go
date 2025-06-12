@@ -24,5 +24,6 @@ var CMP_CLUSTER_INIT_COMMAND = apis.ApiSpec{
 	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:      "http",
 	Method:      "GET",
+	CheckLogin:  true,
 	Doc:         "summary: 获取集群初始化命令",
 }

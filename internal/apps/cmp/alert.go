@@ -17,14 +17,31 @@ package cmp
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/monitor/utils"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 func (p *provider) GetAlertConditions(ctx context.Context, request *alertpb.GetAlertConditionsRequest) (*alertpb.GetAlertConditionsResponse, error) {
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.ParseInt(orgIdStr, 10, 64)
+	userIdStr := apis.GetUserID(ctx)
+
+	_, err = p.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userIdStr,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  uint64(orgId),
+		Action:   apistructs.ListAction,
+		Resource: apistructs.NotifyResource,
+	})
+	if err != nil {
+		return nil, errors.NewPermissionError(apistructs.NotifyResource, apistructs.ListAction, err.Error())
+	}
 	conditionReq := &monitor.GetAlertConditionsRequest{
 		ScopeType: request.ScopeType,
 	}
