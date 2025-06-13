@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -302,19 +303,21 @@ func (c *DBClient) Update(ctx context.Context, req *pb.MCPServerUpdateRequest) (
 func buildConstraint(target string) (*semver.Constraints, error) {
 	parts := strings.Split(target, ".")
 	switch len(parts) {
-	case 1: // e.g. "1"
+	case 1: // e.g. 1.0.0 >= version < 2.0.0
 		major := parts[0]
-		return semver.NewConstraint(fmt.Sprintf(">= %s.0.0, < %d.0.0", major, atoi(major)+1))
-	case 2: // e.g. "1.2"
+		n, err := strconv.Atoi(major)
+		if err != nil {
+			return nil, err
+		}
+		return semver.NewConstraint(fmt.Sprintf(">= %s.0.0, < %d.0.0", major, n+1))
+	case 2: // e.g. 1.1.0 >= version < 1.2.0
 		major, minor := parts[0], parts[1]
-		return semver.NewConstraint(fmt.Sprintf(">= %s.%s.0, < %s.%d.0", major, minor, major, atoi(minor)+1))
+		n, err := strconv.Atoi(minor)
+		if err != nil {
+			return nil, err
+		}
+		return semver.NewConstraint(fmt.Sprintf(">= %s.%s.0, < %s.%d.0", major, minor, major, n+1))
 	default:
 		return semver.NewConstraint(fmt.Sprintf("= %s", target))
 	}
-}
-
-func atoi(s string) int {
-	var n int
-	fmt.Sscanf(s, "%d", &n)
-	return n
 }
