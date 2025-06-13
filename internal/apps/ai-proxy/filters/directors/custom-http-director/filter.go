@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
@@ -50,9 +49,11 @@ func (f *CustomHTTPDirector) OnRequest(ctx context.Context, w http.ResponseWrite
 	providerMeta := providerNormalMeta.MustToModelProviderMeta()
 
 	// handle api style config
-	apiStyleConfig := providerMeta.Public.API.APIStyleConfig
+	method := infor.Method()
+	pathMatcher := ctx.Value(reverseproxy.CtxKeyPath{}).(string)
+	apiStyleConfig := providerMeta.Public.API.GetAPIStyleConfigByMethodAndPathMatcher(method, pathMatcher)
 	if apiStyleConfig == nil {
-		return reverseproxy.Intercept, fmt.Errorf("APIStyleConfig is nil, please check the model provider metadata")
+		return reverseproxy.Intercept, fmt.Errorf("no APIStyleConfig found, method: %s, path: %s", method, pathMatcher)
 	}
 
 	// method
@@ -61,7 +62,7 @@ func (f *CustomHTTPDirector) OnRequest(ctx context.Context, w http.ResponseWrite
 	}
 
 	// schema
-	if err := schemaDirector(ctx, infor, *apiStyleConfig); err != nil {
+	if err := schemeDirector(ctx, infor, *apiStyleConfig); err != nil {
 		return reverseproxy.Intercept, fmt.Errorf("failed to set schema director, err: %v", err)
 	}
 
@@ -89,9 +90,10 @@ func (f *CustomHTTPDirector) OnRequest(ctx context.Context, w http.ResponseWrite
 }
 
 func methodDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
-	method := apiStyleConfig.Method
-	if method == "" {
-		method = http.MethodPost
+	// default use request method
+	method := infor.Method()
+	if apiStyleConfig.Method != "" {
+		method = apiStyleConfig.Method
 	}
 	method = handleJSONPathTemplate(ctx, method)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
@@ -100,19 +102,21 @@ func methodDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleC
 	return nil
 }
 
-func schemaDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
-	schema := "https"
+func schemeDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
+	// default use https
+	scheme := "https"
 	if apiStyleConfig.Scheme != "" {
-		schema = apiStyleConfig.Scheme
+		scheme = apiStyleConfig.Scheme
 	}
-	schema = handleJSONPathTemplate(ctx, schema)
+	scheme = handleJSONPathTemplate(ctx, scheme)
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.URL.Scheme = schema
+		req.URL.Scheme = scheme
 	})
 	return nil
 }
 
 func hostDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
+	// host must be set, otherwise we don't know where to proxy.
 	host := apiStyleConfig.Host
 	if host == "" {
 		return fmt.Errorf("host is empty in APIStyleConfig")
@@ -127,28 +131,49 @@ func hostDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleCon
 	return nil
 }
 
-func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
-	path := "/v1/chat/completions"
-	if apiStyleConfig.Path != "" {
-		path = apiStyleConfig.Path
-	}
-	// adjust by model type
-	model := ctxhelper.MustGetModel(ctx)
-	pathWithoutCompletionSuffix := strutil.TrimSuffixes(path, "/chat/completions", "/completions")
-	switch model.Type {
-	case pb.ModelType_embedding:
-		path = pathWithoutCompletionSuffix + "/embeddings"
-	case pb.ModelType_audio:
-		path = pathWithoutCompletionSuffix + "/audio/transcriptions"
-	case pb.ModelType_image:
-		path = pathWithoutCompletionSuffix + "/images/generations"
+func handlePathToPathOp(inputPath any) ([]string, error) {
+	switch v := inputPath.(type) {
+	case string:
+		return []string{"set", v}, nil
+	case []byte:
+		return []string{"set", string(v)}, nil
+	case []string:
+		return v, nil
+	case []any:
+		pathOp := make([]string, 0, len(v))
+		for _, item := range v {
+			pathOp = append(pathOp, strutil.String(item))
+		}
+		return pathOp, nil
 	default:
-		// use completions suffix
+		return nil, fmt.Errorf("invalid path: %v", inputPath)
 	}
-	// TODO custom directly setting
-	path = handleJSONPathTemplate(ctx, path)
+}
+
+func pathDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
+	// default use request path
+	pathOp := []string{"set", infor.URL().Path}
+	if apiStyleConfig.Path != nil {
+		_pathOp, err := handlePathToPathOp(apiStyleConfig.Path)
+		if err != nil {
+			return err
+		}
+		pathOp = _pathOp
+	}
 	reverseproxy.AppendDirectors(ctx, func(req *http.Request) {
-		req.URL.Path = path
+		var newPath string
+		op := strings.ToLower(pathOp[0])
+		switch op {
+		case "set":
+			newPath = pathOp[1]
+		case "replace":
+			oldnews := pathOp[1:]
+			newPath = strings.NewReplacer(oldnews...).Replace(req.URL.Path)
+		default:
+			// if the operation is not recognized, we can just ignore it
+		}
+		newPath = handleJSONPathTemplate(ctx, newPath)
+		req.URL.Path = newPath
 		req.URL.RawPath = ""
 	})
 	return nil
