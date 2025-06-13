@@ -18,11 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
