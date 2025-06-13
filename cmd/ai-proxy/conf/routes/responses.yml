@@ -20,6 +20,7 @@ routes:
             - RewritePath("/openai/responses")
             - RewriteBodyModelName
             - ResetContentLength
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
 
@@ -37,6 +38,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/responses/${ path.response_id }")
+      - name: openai-compatible-director
 
   - path: /v1/responses/{response_id}
     method: DELETE
@@ -52,6 +54,7 @@ routes:
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/responses/${ path.response_id }")
+      - name: openai-compatible-director
 
   - path: /v1/responses/{response_id}/input_items
     method: GET
@@ -67,3 +70,4 @@ routes:
             - RewriteScheme
             - RewriteHost
             - RewritePath("/openai/responses/${ path.response_id }/input_items")
+      - name: openai-compatible-director
