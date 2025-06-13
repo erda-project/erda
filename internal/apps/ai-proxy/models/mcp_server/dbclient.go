@@ -171,7 +171,10 @@ func (c *DBClient) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MC
 			logrus.Errorf("failed to build constraint: %v", err)
 			return nil, fmt.Errorf("invalid version: %s", req.Version)
 		}
+		var exist bool
+		var supportVersions = make([]string, 0, len(mcpServers))
 		for i, server := range mcpServers {
+			supportVersions = append(supportVersions, server.Version)
 			version, err := semver.NewVersion(server.Version)
 			if err != nil {
 				logrus.Errorf("failed to new version: %v", err)
@@ -179,8 +182,13 @@ func (c *DBClient) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MC
 			}
 			if constraint.Check(version) {
 				dbMCPServer = mcpServers[i]
+				exist = true
 				break
 			}
+		}
+
+		if !exist {
+			return nil, fmt.Errorf("mcp server %s not found, support versions [%s]", req.Name, strings.Join(supportVersions, ","))
 		}
 	}
 
