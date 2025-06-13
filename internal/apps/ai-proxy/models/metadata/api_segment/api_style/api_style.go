@@ -49,7 +49,7 @@ func AllAPIStyles() []APIStyle {
 
 type APIStyleConfig struct {
 	// Method for the API, e.g., POST, GET.
-	// default is POST.
+	// default is empty, means to use request method.
 	Method string `json:"method,omitempty"` // e.g., POST, GET
 
 	// e.g., https, http
@@ -62,7 +62,13 @@ type APIStyleConfig struct {
 	// - openai: /v1/chat/completions;
 	// - volcano: /api/v3/chat/completions;
 	// - azure openai: /openai/deployments/${@model.metadata.public.deployment_id}/chat/completions
-	Path string `json:"path,omitempty"`
+	// host should be []string format, support op, see: PathOp
+	// - set, ${full-path}
+	// - replace, ${old}, ${new}
+	// To be compatible with old data (set string), use type: any and auto convert to [set, ${full-path}]
+	Path any `json:"path,omitempty"`
+	// Supported Path Op: set, replace
+	PathOp []string `json:"-"`
 
 	// Custom query parameters for the API.
 	// the first element of a key is the operation type, support: "Add", "Set", "Delete".

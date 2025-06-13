@@ -25,6 +25,7 @@ routes:
             - TransAuthorization
             - RewriteScheme
             - RewriteHost
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
 
@@ -53,6 +54,7 @@ routes:
             - TransAuthorization
             - RewriteScheme
             - RewriteHost
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
 
@@ -81,6 +83,7 @@ routes:
             - TransAuthorization
             - RewriteScheme
             - RewriteHost
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
 
@@ -109,6 +112,7 @@ routes:
             - TransAuthorization
             - RewriteScheme
             - RewriteHost
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
 
@@ -137,5 +141,6 @@ routes:
             - TransAuthorization
             - RewriteScheme
             - RewriteHost
+      - name: openai-compatible-director
       - name: audit-after-llm-director
       - name: finalize
