@@ -63,6 +63,7 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 				Version:          req.Version,
 				Endpoint:         req.Endpoint,
 				Config:           string(rawConfig),
+				ServerConfig:     req.ServerConfig,
 				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
 				IsDefaultVersion: req.IsDefaultVersion != nil && req.IsDefaultVersion.Value,
 			}
@@ -88,6 +89,7 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		dbServer.Description = req.Description
 		dbServer.Instruction = req.Instruction
 		dbServer.Config = string(rawConfig)
+		dbServer.ServerConfig = req.ServerConfig
 		dbServer.IsPublished = req.IsPublished != nil && req.IsPublished.Value
 		dbServer.IsDefaultVersion = req.IsDefaultVersion != nil && req.IsDefaultVersion.Value
 
