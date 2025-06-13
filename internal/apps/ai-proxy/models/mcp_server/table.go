@@ -29,6 +29,7 @@ type MCPServer struct {
 	Instruction      string     `gorm:"type:text"`
 	Endpoint         string     `gorm:"type:varchar(191);not null"`
 	Config           string     `gorm:"type:text;not null"`
+	ServerConfig     string     `gorm:"type:server_config;not null;default:''"`
 	IsPublished      bool       `gorm:"type:boolean;not null;default:false"`
 	IsDefaultVersion bool       `gorm:"type:boolean;not null;default:false"`
 	CreatedAt        time.Time  `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
@@ -52,6 +53,7 @@ func (m *MCPServer) ToProtobuf() (*pb.MCPServer, error) {
 		Instruction:      m.Instruction,
 		Endpoint:         m.Endpoint,
 		Tools:            mcpServerConfig.Tools,
+		ServerConfig:     m.ServerConfig,
 		IsPublished:      m.IsPublished,
 		IsDefaultVersion: m.IsDefaultVersion,
 	}, nil
