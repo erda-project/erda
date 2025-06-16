@@ -28,6 +28,7 @@ type MCPServer struct {
 	Description      string     `gorm:"type:text"`
 	Instruction      string     `gorm:"type:text"`
 	Endpoint         string     `gorm:"type:varchar(191);not null"`
+	TransportType    string     `gorm:"type:varchar(64);not null"`
 	Config           string     `gorm:"type:text;not null"`
 	ServerConfig     string     `gorm:"type:server_config;not null;default:''"`
 	IsPublished      bool       `gorm:"type:boolean;not null;default:false"`
@@ -52,6 +53,7 @@ func (m *MCPServer) ToProtobuf() (*pb.MCPServer, error) {
 		Description:      m.Description,
 		Instruction:      m.Instruction,
 		Endpoint:         m.Endpoint,
+		TransportType:    m.TransportType,
 		Tools:            mcpServerConfig.Tools,
 		ServerConfig:     m.ServerConfig,
 		IsPublished:      m.IsPublished,
