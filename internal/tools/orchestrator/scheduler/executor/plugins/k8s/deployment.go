@@ -598,7 +598,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	if err != nil {
 		return nil, err
 	}
-	containers := append(sidecars, container)
+	containers := append([]corev1.Container{container}, sidecars...)
 	deployment.Spec.Template.Spec.Containers = containers
 
 	// Generate init container configuration
