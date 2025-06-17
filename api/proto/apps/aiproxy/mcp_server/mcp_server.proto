@@ -12,13 +12,14 @@ message MCPServer {
   string id = 1 [(validate.rules).string = {len: 36}];
   string name = 2 [(validate.rules).string = {min_len: 1}];
   string version = 3 [(validate.rules).string = {min_len: 1}];
-  string description = 4;
-  string instruction = 5;
-  string serverConfig = 6;
-  string endpoint = 7 [(validate.rules).string = {min_len: 1}];
-  repeated MCPServerTool tools = 8;
-  bool isDefaultVersion = 9;
-  bool isPublished = 10;
+  string transport_type = 4;
+  string description = 5;
+  string instruction = 6;
+  string serverConfig = 7;
+  string endpoint = 8 [(validate.rules).string = {min_len: 1}];
+  repeated MCPServerTool tools = 9;
+  bool isDefaultVersion = 10;
+  bool isPublished = 11;
 }
 
 message MCPServerConfig {
@@ -138,10 +139,11 @@ message MCPServerRegisterRequest {
   string instruction = 3;
   string version = 4 [(validate.rules).string = {min_len: 1}];
   string endpoint = 5 [(validate.rules).string = {min_len: 1}];
-  string serverConfig = 6;
-  repeated MCPServerTool tools = 7;
-  google.protobuf.BoolValue isDefaultVersion = 8;
-  google.protobuf.BoolValue isPublished = 9;
+  string transport_type = 6;
+  string serverConfig = 7;
+  repeated MCPServerTool tools = 8;
+  google.protobuf.BoolValue isDefaultVersion = 9;
+  google.protobuf.BoolValue isPublished = 10;
 }
 
 message MCPServerRegisterResponse {

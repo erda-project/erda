@@ -42,6 +42,11 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 		Tools: req.Tools,
 	}
 
+	transportType := req.TransportType
+	if transportType == "" {
+		transportType = "sse"
+	}
+
 	rawConfig, err := mcpServerConfig.MarshalJSON()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal mcp server config: %v", err)
@@ -62,6 +67,7 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 				Instruction:      req.Instruction,
 				Version:          req.Version,
 				Endpoint:         req.Endpoint,
+				TransportType:    transportType,
 				Config:           string(rawConfig),
 				ServerConfig:     req.ServerConfig,
 				IsPublished:      req.IsPublished != nil && req.IsPublished.Value,
@@ -86,12 +92,12 @@ func (c *DBClient) CreateOrUpdate(ctx context.Context, req *pb.MCPServerRegister
 
 		// update server
 		dbServer.Endpoint = req.Endpoint
+		dbServer.TransportType = transportType
 		dbServer.Description = req.Description
 		dbServer.Instruction = req.Instruction
 		dbServer.Config = string(rawConfig)
 		dbServer.ServerConfig = req.ServerConfig
 		dbServer.IsPublished = req.IsPublished != nil && req.IsPublished.Value
-		dbServer.IsDefaultVersion = req.IsDefaultVersion != nil && req.IsDefaultVersion.Value
 
 		// set current version to default.
 		if dbServer.IsDefaultVersion {
