@@ -18,9 +18,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
@@ -158,34 +161,44 @@ func (c *DBClient) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MC
 	tx := c.DB.WithContext(ctx).
 		Where("name = ? and is_published = ?", req.Name, true)
 
-	if req.Version != "" {
-		tx = tx.Where("version = ?", req.Version)
-	} else {
-		tx = tx.Where("is_default_version = ?", true)
-	}
-
-	var dbMCPServer MCPServer
-	if err := tx.First(&dbMCPServer).Error; err != nil {
+	var mcpServers []MCPServer
+	if err := tx.Order("version desc").Find(&mcpServers).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("failed to query mcp server: %v", err)
 		}
+		return nil, fmt.Errorf("mcp server %s not found", req.Name)
+	}
+	if len(mcpServers) == 0 {
+		return nil, fmt.Errorf("mcp server %s not found, result length is zero", req.Name)
+	}
 
-		var versions []string
-		if err := c.DB.WithContext(ctx).Model(&MCPServer{}).
-			Select("version").
-			Where("name = ? and is_published = ?", req.Name, true).
-			Order("created_at").
-			Find(&versions).Error; err != nil {
-			return nil, fmt.Errorf("failed to query mcp server versions: %v", err)
+	var dbMCPServer MCPServer = mcpServers[0]
+
+	if req.Version != "" {
+		constraint, err := buildConstraint(req.Version)
+		if err != nil {
+			logrus.Errorf("failed to build constraint: %v", err)
+			return nil, fmt.Errorf("invalid version: %s", req.Version)
+		}
+		var exist bool
+		var supportVersions = make([]string, 0, len(mcpServers))
+		for i, server := range mcpServers {
+			supportVersions = append(supportVersions, server.Version)
+			version, err := semver.NewVersion(server.Version)
+			if err != nil {
+				logrus.Errorf("failed to new version: %v", err)
+				return nil, fmt.Errorf("invalid version: %s", server.Version)
+			}
+			if constraint.Check(version) {
+				dbMCPServer = mcpServers[i]
+				exist = true
+				break
+			}
 		}
 
-		if req.Version == "" {
-			return nil, fmt.Errorf("mcp server %s default version not found, support version: [%s]",
-				req.Name, strings.Join(versions, ","))
+		if !exist {
+			return nil, fmt.Errorf("mcp server %s not found, support versions [%s]", req.Name, strings.Join(supportVersions, ","))
 		}
-
-		return nil, fmt.Errorf("mcp server %s not found, supported version: [%s]",
-			req.Name, strings.Join(versions, ","))
 	}
 
 	server, err := dbMCPServer.ToProtobuf()
@@ -293,4 +306,26 @@ func (c *DBClient) Update(ctx context.Context, req *pb.MCPServerUpdateRequest) (
 	return &pb.MCPServerUpdateResponse{
 		Data: pbServer,
 	}, nil
+}
+
+func buildConstraint(target string) (*semver.Constraints, error) {
+	parts := strings.Split(target, ".")
+	switch len(parts) {
+	case 1: // e.g. 1.0.0 >= version < 2.0.0
+		major := parts[0]
+		n, err := strconv.Atoi(major)
+		if err != nil {
+			return nil, err
+		}
+		return semver.NewConstraint(fmt.Sprintf(">= %s.0.0, < %d.0.0", major, n+1))
+	case 2: // e.g. 1.1.0 >= version < 1.2.0
+		major, minor := parts[0], parts[1]
+		n, err := strconv.Atoi(minor)
+		if err != nil {
+			return nil, err
+		}
+		return semver.NewConstraint(fmt.Sprintf(">= %s.%s.0, < %s.%d.0", major, minor, major, n+1))
+	default:
+		return semver.NewConstraint(fmt.Sprintf("= %s", target))
+	}
 }
