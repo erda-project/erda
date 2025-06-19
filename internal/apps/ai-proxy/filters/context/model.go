@@ -61,13 +61,12 @@ func findModel(ctx context.Context, infor reverseproxy.HttpInfor, client *client
 		return nil, fmt.Errorf("missing required model field in request body")
 	}
 	requiredModelPublisher := r.Header.Get(vars.XAIProxyModelPublisher)
-	clientMatchedModels, err := getClientModelsByNameAndPublisher(ctx, client.Id, reqForModelName.Model, requiredModelPublisher)
+	oneModel, err := getOneModelByNameAndPublisher(ctx, reqForModelName.Model, requiredModelPublisher, client.Id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get client models by name and publisher: %v", err)
+		return nil, err
 	}
-	// if there are multiple, take the first one, default is sorted by updated_at desc
-	if len(clientMatchedModels) > 0 {
-		return clientMatchedModels[0], nil
+	if oneModel != nil {
+		return oneModel, nil
 	}
 	// model not found, construct friendly error
 	return nil, constructFriendlyError(ctx, reqForModelName.Model, requiredModelPublisher)
@@ -99,68 +98,197 @@ func findModelID(infor reverseproxy.HttpInfor) (string, error) {
 	return "", nil
 }
 
-func getClientModelsByNameAndPublisher(ctx context.Context, clientID string, modelName string, publisher string) ([]*modelpb.Model, error) {
-	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
-	clientModelsResp, err := q.ClientModelRelationClient().ListClientModels(ctx, &clientmodelrelationpb.ListClientModelsRequest{
-		ClientId: clientID,
-	})
+func getOneModelByNameAndPublisher(ctx context.Context, inputModelName string, inputModelPublisher string, clientID string) (*modelpb.Model, error) {
+	allClientModels, err := listAllClientModels(ctx, clientID)
 	if err != nil {
 		return nil, err
+	}
+	modelsByKey := getMapOfAvailableNameWithModels(allClientModels)
+	var inputKeysInOrder []string
+	if inputModelPublisher != "" {
+		inputKeysInOrder = append(inputKeysInOrder, fmt.Sprintf("%s/%s", inputModelPublisher, inputModelName))
+	} else {
+		inputKeysInOrder = append(inputKeysInOrder, inputModelName)
+	}
+	for _, inputKey := range inputKeysInOrder {
+		foundModel := modelGetter(ctx, modelsByKey[inputKey])
+		if foundModel != nil {
+			return foundModel, nil
+		}
+	}
+	return nil, nil
+}
+
+// modelGetter get one model, always return the last-updated model.
+// TODO get best model (load balance, price, etc.)
+func modelGetter(ctx context.Context, models []*modelpb.Model) *modelpb.Model {
+	if len(models) == 0 {
+		return nil
+	}
+	// sort models by updated_at desc
+	var latestModel *modelpb.Model
+	for _, model := range models {
+		if latestModel == nil || model.UpdatedAt.AsTime().After(latestModel.UpdatedAt.AsTime()) {
+			latestModel = model
+		}
+	}
+	return latestModel
+}
+
+// getMapOfAvailableNameWithModels.
+// availableName rules: (priority: high -> low)
+// - ${publisher}/${model.name}
+// - ${publisher}/${model.metadata.public.model_id}
+// - ${publisher}/${model.metadata.public.model_name}
+// - ${model.name}
+func getMapOfAvailableNameWithModels(clientModels []*modelpb.Model) map[string][]*modelpb.Model {
+	modelsMap := make(map[string][]*modelpb.Model)
+	for _, model := range clientModels {
+		publisher := model.Metadata.Public["publisher"].GetStringValue()
+		modelIDInMetadata := model.Metadata.Public["model_id"].GetStringValue()
+		modelNameInMetadata := model.Metadata.Public["model_name"].GetStringValue()
+		keys := append([]string{},
+			fmt.Sprintf("%s/%s", publisher, model.Name),
+			fmt.Sprintf("%s/%s", publisher, modelIDInMetadata),
+			fmt.Sprintf("%s/%s", publisher, modelNameInMetadata),
+			model.Name,
+		)
+		for _, key := range keys {
+			if key == "" || key == "/" {
+				continue
+			}
+			if _, ok := modelsMap[key]; !ok {
+				modelsMap[key] = []*modelpb.Model{}
+			}
+			modelsMap[key] = append(modelsMap[key], model)
+		}
+	}
+	return modelsMap
+}
+
+func listAllModels(ctx context.Context) ([]*modelpb.Model, error) {
+	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+	pagingModelResp, err := q.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
+		PageNum:  1,
+		PageSize: 999,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to paging all models, err: %v", err)
+	}
+	return pagingModelResp.List, nil
+}
+
+func listAllClientModels(ctx context.Context, clientID string) ([]*modelpb.Model, error) {
+	// find client model relations
+	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+	clientModelsResp, err := q.ClientModelRelationClient().ListClientModels(ctx, &clientmodelrelationpb.ListClientModelsRequest{ClientId: clientID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list client models, err: %v", err)
 	}
 	if len(clientModelsResp.ModelIds) == 0 {
 		return nil, nil
 	}
-	// list models by name & ids
-	pagingModelResp, err := q.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
-		PageNum:  1,
-		PageSize: 999,
-		NameFull: modelName,
-		Ids:      clientModelsResp.ModelIds,
-	})
+	// filter from all models
+	allModels, err := listAllModels(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to paging models by name and modelIDs, name: %s, err: %v", modelName, err)
+		return nil, fmt.Errorf("failed to list all models, err: %v", err)
 	}
-	// filter by publisher
-	return filterModelsByPublisher(pagingModelResp.List, publisher), nil
-}
-
-func filterModelsByPublisher(in []*modelpb.Model, publisher string) (out []*modelpb.Model) {
-	if publisher == "" {
-		return in
-	}
-	for _, model := range in {
-		modelPublisher := model.Metadata.Public["publisher"].GetStringValue()
-		if modelPublisher == publisher {
-			out = append(out, model)
+	var clientModels []*modelpb.Model
+	for _, model := range allModels {
+		for _, modelID := range clientModelsResp.ModelIds {
+			if model.Id == modelID {
+				clientModels = append(clientModels, model)
+				break
+			}
 		}
 	}
-	return
+	return clientModels, nil
 }
 
-func getModelsByNameAndPublisher(ctx context.Context, modelName string, requiredModelPublisher string) ([]*modelpb.Model, error) {
-	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
-	sameNameModelsResp, err := q.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
-		PageNum:  1,
-		PageSize: 999,
-		NameFull: modelName,
-	})
+//func getClientModelsByNameAndPublisher(ctx context.Context, clientID string, modelName string, publisher string) ([]*modelpb.Model, error) {
+//	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+//	clientModelsResp, err := q.ClientModelRelationClient().ListClientModels(ctx, &clientmodelrelationpb.ListClientModelsRequest{
+//		ClientId: clientID,
+//	})
+//	if err != nil {
+//		return nil, err
+//	}
+//	if len(clientModelsResp.ModelIds) == 0 {
+//		return nil, nil
+//	}
+//	// list models by name & ids
+//	pagingModelResp, err := q.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
+//		PageNum:  1,
+//		PageSize: 999,
+//		NameFull: modelName,
+//		Ids:      clientModelsResp.ModelIds,
+//	})
+//	if err != nil {
+//		return nil, fmt.Errorf("failed to paging models by name and modelIDs, name: %s, err: %v", modelName, err)
+//	}
+//	// filter by publisher
+//	return filterModelsByPublisher(pagingModelResp.List, publisher), nil
+//}
+//
+//func filterModelsByPublisher(in []*modelpb.Model, publisher string) (out []*modelpb.Model) {
+//	if publisher == "" {
+//		return in
+//	}
+//	for _, model := range in {
+//		modelPublisher := model.Metadata.Public["publisher"].GetStringValue()
+//		if modelPublisher == publisher {
+//			out = append(out, model)
+//		}
+//	}
+//	return
+//}
+//
+//func getModelsByNameAndPublisher(ctx context.Context, modelName string, requiredModelPublisher string) ([]*modelpb.Model, error) {
+//	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+//	sameNameModelsResp, err := q.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
+//		PageNum:  1,
+//		PageSize: 999,
+//		NameFull: modelName,
+//	})
+//	if err != nil {
+//		return nil, fmt.Errorf("failed to get models by model name: %s, err: %v", modelName, err)
+//	}
+//	// filter by publisher
+//	return filterModelsByPublisher(sameNameModelsResp.List, requiredModelPublisher), nil
+//}
+
+func constructFriendlyError(ctx context.Context, inputModelName string, inputModelPublisher string) error {
+	allModels, err := listAllModels(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get models by model name: %s, err: %v", modelName, err)
+		return err
 	}
-	// filter by publisher
-	return filterModelsByPublisher(sameNameModelsResp.List, requiredModelPublisher), nil
-}
-
-func constructFriendlyError(ctx context.Context, modelName string, requiredModelPublisher string) error {
-	models, _ := getModelsByNameAndPublisher(ctx, modelName, requiredModelPublisher)
-	var errMsg string
-	if len(models) == 0 {
-		errMsg = fmt.Sprintf("model not exist: %s", modelName)
+	modelsByKey := getMapOfAvailableNameWithModels(allModels)
+	//inputKeys := []string{
+	//	fmt.Sprintf("%s/%s", inputModelName, inputModelPublisher),
+	//	inputModelName,
+	//}
+	var inputKeysInOrder []string
+	if inputModelPublisher != "" {
+		inputKeysInOrder = append(inputKeysInOrder, fmt.Sprintf("%s/%s", inputModelPublisher, inputModelName))
 	} else {
-		errMsg = fmt.Sprintf("you don't have permission to access the model: %s", modelName)
+		inputKeysInOrder = append(inputKeysInOrder, inputModelName)
 	}
-	if requiredModelPublisher != "" {
-		errMsg += fmt.Sprintf(", publisher: %s", requiredModelPublisher)
+	foundModelWithoutPermission := false
+	for _, inputKey := range inputKeysInOrder {
+		_, ok := modelsByKey[inputKey]
+		if ok {
+			foundModelWithoutPermission = true
+			break
+		}
+	}
+	var errMsg string
+	if !foundModelWithoutPermission {
+		errMsg = fmt.Sprintf("model not exist: %s", inputModelName)
+	} else {
+		errMsg = fmt.Sprintf("you don't have permission to access the model: %s", inputModelName)
+	}
+	if inputModelPublisher != "" {
+		errMsg += fmt.Sprintf(", publisher: %s", inputModelPublisher)
 	}
 	return fmt.Errorf(errMsg)
 }
