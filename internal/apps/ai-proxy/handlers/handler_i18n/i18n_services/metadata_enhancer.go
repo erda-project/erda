@@ -127,6 +127,7 @@ func (s *MetadataEnhancerService) enhancePublisherInfo(meta metadata.Metadata, l
 		publisherLocaleValue = config.Value
 	}
 	meta.Public[publisherLocaleKey] = publisherLocaleValue
+	meta.Public["publisher_i18n"] = publisherLocaleValue
 }
 
 // enhanceAbilitiesInfo enhance abilities information
@@ -158,6 +159,7 @@ func (s *MetadataEnhancerService) enhanceAbilitiesInfo(meta metadata.Metadata, l
 
 	localeAbilitiesKey := "abilities_" + locale
 	meta.Public["abilities"].(map[string]any)[localeAbilitiesKey] = localeAbilities
+	meta.Public["abilities"].(map[string]any)["abilities_i18n"] = localeAbilities
 }
 
 // setModelLogo set model logo
