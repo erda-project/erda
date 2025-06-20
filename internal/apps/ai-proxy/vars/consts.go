@@ -53,6 +53,7 @@ type (
 	CtxKeyIsAdmin     struct{ CtxKeyIsAdmin bool }
 	CtxKeyClientId    struct{ CtxKeyClientId string }
 	CtxKeyClient      struct{ CtxKeyClient any }
+	CtxKeyAccessLang  struct{ CtxKeyAccessLang string }
 
 	CtxKeyRichClientHandler struct{ CtxKeyRichClientHandler any }
 
