@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package erda.apps.aiproxy.i18n;
+option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+import "common/http.proto";
+
+service I18nService {
+    rpc Create(I18nCreateRequest) returns (I18nConfig) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/i18n"
+        };
+    }
+
+    rpc Get(I18nGetRequest) returns (I18nConfig) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/i18n/{id}"
+        };
+    }
+
+    rpc Delete(I18nDeleteRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            delete: "/api/ai-proxy/i18n/{id}"
+        };
+    }
+
+    rpc Update(I18nUpdateRequest) returns (I18nConfig) {
+        option(google.api.http) = {
+            put: "/api/ai-proxy/i18n/{id}"
+        };
+    }
+
+    rpc Paging(I18nPagingRequest) returns (I18nPagingResponse) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/i18n"
+        };
+    }
+
+    rpc BatchCreate(I18nBatchCreateRequest) returns (I18nBatchCreateResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/i18n/batch"
+        };
+    }
+
+    rpc GetByConfig(I18nGetByConfigRequest) returns (I18nConfig) {
+        option(google.api.http) = {
+            get: "/api/ai-proxy/i18n/config"
+        };
+    }
+}
+
+message I18nConfig {
+    string id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp updatedAt = 3;
+    google.protobuf.Timestamp deletedAt = 4;
+
+    string category = 5 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string itemKey = 6 [(validate.rules).string = {min_len: 1, max_len: 100}];
+    string fieldName = 7 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string locale = 8 [(validate.rules).string = {min_len: 1, max_len: 10}];
+    string value = 9 [(validate.rules).string.min_len = 0];
+}
+
+message I18nCreateRequest {
+    string category = 1 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string itemKey = 2 [(validate.rules).string = {min_len: 1, max_len: 100}];
+    string fieldName = 3 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string locale = 4 [(validate.rules).string = {min_len: 1, max_len: 10}];
+    string value = 5 [(validate.rules).string.min_len = 0];
+}
+
+message I18nGetRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message I18nDeleteRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+}
+
+message I18nUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    string category = 2 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string itemKey = 3 [(validate.rules).string = {min_len: 1, max_len: 100}];
+    string fieldName = 4 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string locale = 5 [(validate.rules).string = {min_len: 1, max_len: 10}];
+    string value = 6 [(validate.rules).string.min_len = 0];
+}
+
+message I18nPagingRequest {
+    int64 pageNum = 1;
+    int64 pageSize = 2;
+
+    repeated string ids = 3 [(validate.rules).repeated.items.string = {len: 36}];
+    string category = 4 [(validate.rules).string.max_len = 50];
+    string itemKey = 5 [(validate.rules).string.max_len = 100];
+    string fieldName = 6 [(validate.rules).string.max_len = 50];
+    string locale = 7 [(validate.rules).string.max_len = 10];
+    repeated string orderBys = 8 [(validate.rules).repeated.items.string = {ignore_empty: true, min_len: 2, max_len: 32}];
+}
+
+message I18nPagingResponse {
+    int64 total = 1;
+    repeated I18nConfig list = 2;
+}
+
+message I18nBatchCreateRequest {
+    repeated I18nCreateRequest configs = 1 [(validate.rules).repeated = {min_items: 1, max_items: 100}];
+}
+
+message I18nBatchCreateResponse {
+    repeated I18nConfig configs = 1;
+}
+
+message I18nGetByConfigRequest {
+    string category = 1 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string itemKey = 2 [(validate.rules).string = {min_len: 1, max_len: 100}];
+    string fieldName = 3 [(validate.rules).string = {min_len: 1, max_len: 50}];
+    string locale = 4 [(validate.rules).string = {min_len: 1, max_len: 10}];
+}

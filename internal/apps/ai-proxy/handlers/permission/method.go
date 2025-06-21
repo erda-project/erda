@@ -19,6 +19,7 @@ import (
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
@@ -96,4 +97,14 @@ var CheckMCPPerm = CheckPermissions(
 	&MethodPermission{Method: pb.MCPServerServiceServer.Update, OnlyAdmin: true},
 	&MethodPermission{Method: pb.MCPServerServiceServer.Register, AdminOrAk: true},
 	&MethodPermission{Method: pb.MCPServerServiceServer.Publish, OnlyAdmin: true},
+)
+
+var CheckI18nPerm = CheckPermissions(
+	&MethodPermission{Method: i18npb.I18NServiceServer.Create, OnlyAdmin: true},
+	&MethodPermission{Method: i18npb.I18NServiceServer.Get, OnlyAdmin: true},
+	&MethodPermission{Method: i18npb.I18NServiceServer.Update, OnlyAdmin: true},
+	&MethodPermission{Method: i18npb.I18NServiceServer.Delete, OnlyAdmin: true},
+	&MethodPermission{Method: i18npb.I18NServiceServer.Paging, OnlyAdmin: true},
+	&MethodPermission{Method: i18npb.I18NServiceServer.BatchCreate, OnlyAdmin: true},
+	&MethodPermission{Method: i18npb.I18NServiceServer.GetByConfig, OnlyAdmin: true},
 )
