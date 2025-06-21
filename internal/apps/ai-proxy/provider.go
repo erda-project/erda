@@ -38,6 +38,7 @@ import (
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
+	i18npb "github.com/erda-project/erda-proto-go/apps/aiproxy/i18n/pb"
 	mcppb "github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
@@ -51,6 +52,7 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_model_relation"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client_token"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_model_provider"
@@ -104,6 +106,17 @@ var (
 			}
 		})
 	}
+	trySetLang = func() transport.ServiceOption {
+		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+			return func(ctx context.Context, req interface{}) (interface{}, error) {
+				lang := apis.GetHeader(ctx, httputil.HeaderKeyAcceptLanguage)
+				if len(lang) > 0 {
+					ctx = context.WithValue(ctx, vars.CtxKeyAccessLang{}, lang)
+				}
+				return h(ctx, req)
+			}
+		})
+	}
 )
 
 func init() {
@@ -137,8 +150,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	promptpb.RegisterPromptServiceImp(p, &handler_prompt.PromptHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckPromptPerm)
 	sessionpb.RegisterSessionServiceImp(p, &handler_session.SessionHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckSessionPerm)
 	clienttokenpb.RegisterClientTokenServiceImp(p, &handler_client_token.ClientTokenHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckClientTokenPerm)
+	i18npb.RegisterI18NServiceImp(p, &handler_i18n.I18nHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckI18nPerm)
 	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
-	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm)
+	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm, trySetLang())
 	mcppb.RegisterMCPServerServiceImp(p, &handler_mcp_server.MCPHandler{DAO: p.Dao}, apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
 
 	// ai-proxy prometheus metrics

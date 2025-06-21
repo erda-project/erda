@@ -32,7 +32,7 @@ update-gohub:
 
 build-use-docker-image:
 	proj_root=$$(cd ../../ && pwd) && \
-	docker run --rm -ti \
+	docker run --rm \
 		-v $${proj_root}:/go/src/github.com/erda-project/erda \
 		-v $$(go env GOMODCACHE):/go/pkg/mod \
 		-e target_proj_root=$${target_proj_root} \
