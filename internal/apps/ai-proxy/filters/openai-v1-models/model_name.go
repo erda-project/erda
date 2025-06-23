@@ -15,11 +15,35 @@
 package openai_v1_models
 
 import (
+	"fmt"
 	"regexp"
 
 	richclientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/rich_client/pb"
+	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
 )
+
+func GenerateModelNameWithPublisher(model *modelpb.Model) string {
+	publisher := GetModelPublisher(model)
+	modelID := GetModelID(model)
+	return fmt.Sprintf("%s/%s", publisher, modelID)
+}
+
+func GetModelDisplayName(model *modelpb.Model) string {
+	displayName := model.Metadata.Public["display_name"].GetStringValue()
+	if displayName != "" {
+		return displayName
+	}
+	return GenerateModelNameWithPublisher(model)
+}
+
+func GetModelID(model *modelpb.Model) string {
+	modelID := model.Metadata.Public["model_id"].GetStringValue()
+	if modelID != "" {
+		return modelID
+	}
+	return model.Name
+}
 
 func GenerateModelDisplayName(model *richclientpb.RichModel) string {
 	s := model.Model.Name

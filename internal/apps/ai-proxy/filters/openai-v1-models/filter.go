@@ -72,20 +72,33 @@ func (f *Filter) OnRequest(ctx context.Context, w http.ResponseWriter, infor rev
 		return reverseproxy.Intercept, nil
 	}
 	// convert to openai /v1/models response, see: https://platform.openai.com/docs/api-reference/models/list
-	var oaiFormatModels openai.ModelsList
+	var oaiFormatModels []ExtendedOpenAIModelForList
 	for _, m := range richClient.Models {
-		oaiFormatModels.Models = append(oaiFormatModels.Models, openai.Model{
-			ID:        GenerateModelDisplayName(m),
-			CreatedAt: m.Model.CreatedAt.Seconds, // seconds
-			Object:    "model",                   // always "model"
-			OwnedBy:   m.Provider.Name,
+		oaiFormatModels = append(oaiFormatModels, ExtendedOpenAIModelForList{
+			Model: openai.Model{
+				ID:        GenerateModelNameWithPublisher(m.Model),
+				CreatedAt: m.Model.CreatedAt.Seconds, // seconds
+				Object:    "model",                   // always "model"
+				OwnedBy:   GetModelPublisher(m.Model),
+			},
+			Name: GetModelDisplayName(m.Model),
 		})
 	}
 	// write response
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(oaiFormatModels); err != nil {
+	if err := json.NewEncoder(w).Encode(&ModelListResponse{Data: oaiFormatModels}); err != nil {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		return reverseproxy.Intercept, nil
 	}
 	return reverseproxy.Continue, nil
+}
+
+type ModelListResponse struct {
+	Data []ExtendedOpenAIModelForList `json:"data"`
+}
+
+type ExtendedOpenAIModelForList struct {
+	openai.Model
+
+	Name string `json:"name"`
 }

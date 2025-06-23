@@ -100,3 +100,6 @@ testdata/
 
 # cursor editor
 /.cursor/
+
+# claude code
+CLAUDE.md
