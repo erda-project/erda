@@ -309,7 +309,6 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 	p.Log.Infof("[%s/%s] to get the ETCD Mutex", req.Engine, req.Az)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*12)
 	defer cancel()
-
 	var err error
 	var mu mutex.Mutex
 
@@ -319,12 +318,17 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 		mu, err = p.Mutex.New(ctx, strings.Join([]string{req.Engine, req.Az}, "/"))
 	}
 	if err != nil {
+		//  callback to orchestrator
+		p.defaultHandler.Callback(req.Callback, req.Uuid, false, nil, req.Options, err.Error())
+
 		p.Log.Errorf("[%s/%s] failed to New a global distributed lock (ETCD Mutex) before deploying: %v\n", req.Engine, req.Az, err)
 		return nil, errors.Wrapf(err, "failed to New ETCD Mutex for %s/%s", req.Engine, req.Az)
 	}
 	defer func() {
 		if mu != nil {
 			p.Log.Infof("[%s/%s] to release ETCD Mutex\n", req.Engine, req.Az)
+			ctx, cancelFunc := context.WithTimeout(context.TODO(), time.Minute*2)
+			defer cancelFunc()
 			if err := mu.Unlock(ctx); err != nil {
 				p.Log.Errorf("[%s/%s] failed to Unlock the global distributed lock (ETCD Mutex) after deployed: %v\n", req.Engine, req.Az, err)
 			}
@@ -333,7 +337,14 @@ func (p *provider) mutexDeploy(deploy func(request handlers.ResourceDeployReques
 			}
 		}
 	}()
+
+	ctx, cancelFunc := context.WithTimeout(context.TODO(), time.Minute*12)
+	defer cancelFunc()
+
 	if err = mu.Lock(ctx); err != nil {
+		//  callback to orchestrator
+		p.defaultHandler.Callback(req.Callback, req.Uuid, false, nil, req.Options, err.Error())
+
 		p.Log.Errorf("[%s/%s] failed to Lock: %v\n", req.Engine, req.Az, err)
 		return nil, errors.Wrapf(err, "failed to Lock for %s/%s", req.Engine, req.Az)
 	}
