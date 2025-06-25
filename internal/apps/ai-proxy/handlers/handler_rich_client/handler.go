@@ -112,14 +112,15 @@ func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClien
 	for _, model := range modelPagingResp.List {
 		// enhance model
 		enhancedModel := metadataEnhancerService.EnhanceModelMetadata(ctx, model, locale)
+		provider := providerMapById[model.ProviderId]
 		richModels = append(richModels, &pb.RichModel{
-			Model:    enhancedModel,
-			Provider: providerMapById[model.ProviderId],
+			Model:    desensitiveModel(enhancedModel),
+			Provider: desensitiveProvider(provider),
 		})
 	}
 	// assign rich client
 	richClient := &pb.RichClient{
-		Client: client,
+		Client: desensitiveClient(client),
 		Models: richModels,
 	}
 
