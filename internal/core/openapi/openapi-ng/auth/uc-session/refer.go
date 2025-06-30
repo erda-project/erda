@@ -31,6 +31,7 @@ func (p *provider) buildReferMatcher() *referMatcher {
 		allowedSuffixes: make([]string, 0),
 		exactDomains: map[string]struct{}{
 			p.Cfg.PlatformDomain: {},
+			p.Cfg.UCAddr:         {},
 		},
 	}
 	for _, refer := range p.Cfg.AllowedReferrers {

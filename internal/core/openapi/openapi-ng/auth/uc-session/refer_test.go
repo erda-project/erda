@@ -20,6 +20,7 @@ func TestReferValidate(t *testing.T) {
 	p := provider{
 		Cfg: &config{
 			PlatformDomain: "erda.cloud",
+			UCAddr:         "uc.erda.cloud",
 		},
 	}
 
@@ -29,6 +30,11 @@ func TestReferValidate(t *testing.T) {
 		allowList  []string
 		wantResult bool
 	}{
+		{
+			name:       "Matching referer from uc",
+			refer:      "https://uc.erda.cloud/login",
+			wantResult: true,
+		},
 		{
 			name:       "Matching referer with allowList",
 			refer:      "https://sub.erda.cloud/login",
