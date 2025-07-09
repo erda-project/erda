@@ -49,6 +49,7 @@ var CheckModelPerm = CheckPermissions(
 	&MethodPermission{Method: modelpb.ModelServiceServer.Update, OnlyAdmin: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.Delete, OnlyAdmin: true},
 	&MethodPermission{Method: modelpb.ModelServiceServer.Paging, OnlyAdmin: true},
+	&MethodPermission{Method: modelpb.ModelServiceServer.UpdateModelAbilitiesInfo, OnlyAdmin: true},
 )
 
 var CheckClientModelRelationPerm = CheckPermissions(

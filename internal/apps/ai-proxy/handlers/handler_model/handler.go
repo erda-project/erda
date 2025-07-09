@@ -45,3 +45,7 @@ func (h *ModelHandler) Delete(ctx context.Context, req *pb.ModelDeleteRequest) (
 func (h *ModelHandler) Paging(ctx context.Context, req *pb.ModelPagingRequest) (*pb.ModelPagingResponse, error) {
 	return h.DAO.ModelClient().Paging(ctx, req)
 }
+
+func (h *ModelHandler) UpdateModelAbilitiesInfo(ctx context.Context, req *pb.ModelAbilitiesInfoUpdateRequest) (*commonpb.VoidResponse, error) {
+	return h.DAO.ModelClient().UpdateModelAbilitiesInfo(ctx, req)
+}

@@ -4,9 +4,11 @@ package erda.apps.aiproxy.model;
 option go_package = "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb";
 
 import "google/api/annotations.proto";
-import "apps/aiproxy/metadata/metadata.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+import "apps/aiproxy/metadata/metadata.proto";
 import "common/http.proto";
 
 service ModelService {
@@ -37,6 +39,12 @@ service ModelService {
     rpc Paging(ModelPagingRequest) returns (ModelPagingResponse) {
         option(google.api.http) = {
             get: "/api/ai-proxy/models?type={type}"
+        };
+    }
+
+    rpc UpdateModelAbilitiesInfo(ModelAbilitiesInfoUpdateRequest) returns (common.VoidResponse) {
+        option(google.api.http) = {
+            post: "/api/ai-proxy/models/{id}/actions/update-abilities-info"
         };
     }
 }
@@ -108,4 +116,11 @@ message ModelPagingRequest {
 message ModelPagingResponse {
     int64 total = 1;
     repeated Model list = 2;
+}
+
+message ModelAbilitiesInfoUpdateRequest {
+    string id = 1 [(validate.rules).string = {len: 36}];
+    map<string, google.protobuf.Value> abilities = 2;
+    map<string, google.protobuf.Value> context = 3;
+    map<string, google.protobuf.Value> pricing = 4;
 }
