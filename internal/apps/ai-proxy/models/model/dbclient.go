@@ -124,3 +124,26 @@ func (dbClient *DBClient) Paging(ctx context.Context, req *pb.ModelPagingRequest
 		List:  list.ToProtobuf(),
 	}, nil
 }
+
+func (dbClient *DBClient) UpdateModelAbilitiesInfo(ctx context.Context, req *pb.ModelAbilitiesInfoUpdateRequest) (*commonpb.VoidResponse, error) {
+	m, err := dbClient.Get(ctx, &pb.ModelGetRequest{Id: req.Id})
+	if err != nil {
+		return nil, err
+	}
+	meta := metadata.FromProtobuf(m.Metadata)
+	publicMeta := meta.Public
+	if publicMeta == nil {
+		publicMeta = make(map[string]any)
+	}
+	publicMeta["abilities"] = req.Abilities
+	publicMeta["context"] = req.Context
+	publicMeta["pricing"] = req.Pricing
+
+	meta.Public = publicMeta
+
+	c := &Model{BaseModel: common.BaseModelWithID(req.Id)}
+	if err := dbClient.DB.Model(c).UpdateColumn("metadata", meta).Error; err != nil {
+		return nil, err
+	}
+	return &commonpb.VoidResponse{}, nil
+}
