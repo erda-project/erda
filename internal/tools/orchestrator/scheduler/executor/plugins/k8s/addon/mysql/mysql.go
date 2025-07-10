@@ -167,6 +167,8 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) (any, error) {
 		Spec: mysqlv1.MysqlSpec{
 			Version: v,
 
+			Image: mysql.Image,
+
 			PrimaryMode: mysqlv1.ModeClassic,
 			Primaries:   1,
 			Replicas:    pointer.Int(replicas),
