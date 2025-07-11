@@ -30,7 +30,7 @@ type GatewayGlobalService interface {
 	GetGatewayProvider(string) (string, error)
 	GetDiceHealth() dto.DiceHealthDto
 	GenTenantGroup(projectId, env, clusterName string) (string, error)
-	GetGatewayFeatures(clusterName string) map[string]string
+	GetGatewayFeatures(ctx context.Context, clusterName string) (map[string]string, error)
 	GetTenantGroup(projectId, env string) (string, error)
 	GetOrgId(string) (string, error)
 	GetClusterUIType(string, string, string) *common.StandardResult
