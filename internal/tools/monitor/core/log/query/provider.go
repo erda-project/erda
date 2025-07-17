@@ -37,6 +37,8 @@ type config struct {
 	DownloadAPIThrottling struct {
 		CurrentLimit int64 `file:"current_limit"`
 	} `file:"download_api_throttling"`
+
+	LogDownloadMaxRangeHour int64 `file:"log_download_max_range_hour" env:"LOG_DOWNLOAD_MAX_RANGE_HOUR" default:"1"`
 }
 
 type provider struct {
@@ -52,6 +54,8 @@ type provider struct {
 
 	logQueryService *logQueryService
 	Org             org.ClientInterface
+
+	logDownloadMaxRangeHour int64
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -66,6 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Cfg.DownloadAPIThrottling.CurrentLimit > 0 {
 		p.logQueryService.currentDownloadLimit = &p.Cfg.DownloadAPIThrottling.CurrentLimit
 	}
+	p.logDownloadMaxRangeHour = p.Cfg.LogDownloadMaxRangeHour
 	if p.Register != nil {
 		pb.RegisterLogQueryServiceImp(p.Register, p.logQueryService, apis.Options(), p.Perm.Check(
 			perm.NoPermMethod(pb.LogQueryServiceServer.GetLog),
@@ -80,6 +85,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.initRoutes(p.Router)
 	return nil
+}
+
+// 获取最大下载时长（小时）
+func (p *provider) GetLogDownloadMaxRangeHour() int64 {
+	return p.logDownloadMaxRangeHour
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
