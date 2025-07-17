@@ -191,6 +191,10 @@ var modifyResponseFunc = func(response *http.Response) error {
 	// cors, set at outside, delete to avoid duplicated `Access-Control-Allow-Origin` header
 	response.Header.Del("Vary")
 	response.Header.Del("Access-Control-Allow-Origin")
+	// ensure content-type to text/event-stream for stream response
+	if ctxhelper.GetIsStream(response.Request.Context()) {
+		response.Header.Set("Content-Type", "text/event-stream")
+	}
 	return nil
 }
 
