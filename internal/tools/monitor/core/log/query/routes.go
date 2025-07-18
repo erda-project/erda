@@ -34,6 +34,7 @@ import (
 
 func (p *provider) initRoutes(routes httpserver.Router) {
 	routes.GET("/api/logs/actions/download", p.downloadLog)
+	routes.GET("/api/logs/download/max-range", p.getLogDownloadMaxRange)
 
 	// runtime
 	routes.GET("/api/runtime/logs/actions/download", p.downloadRuntimeLog, permission.Intercepter(
@@ -85,8 +86,6 @@ func (r *LogRequest) GetDebug() bool       { return r.Debug }
 
 var lineBreak = []byte("\n")
 
-const maxDownloadTimeRange = 1 * int64(time.Hour)
-
 func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogRequest) interface{} {
 	filename := getFilename(req)
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -104,7 +103,8 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 	var count int
 	err := p.logQueryService.walkLogItems(r.Context(), req,
 		func(sel *storage.Selector) (*storage.Selector, error) {
-			if sel.End-sel.Start > maxDownloadTimeRange {
+			maxRange := p.logDownloadMaxRangeHour * int64(time.Hour)
+			if sel.End-sel.Start > maxRange {
 				return sel, errors.NewInvalidParameterError("(start,end]", "time range is too large for download")
 			}
 			if len(req.ClusterName) > 0 && len(req.ID) == 0 {
@@ -161,6 +161,13 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 		flusher.Flush()
 	}
 	return nil
+}
+
+// 新增API: 获取最大可下载日志时长（小时）
+func (p *provider) getLogDownloadMaxRange(w http.ResponseWriter, r *http.Request) interface{} {
+	return api.Success(map[string]interface{}{
+		"maxRangeHour": p.GetLogDownloadMaxRangeHour(),
+	})
 }
 
 func (p *provider) downloadRuntimeLog(w http.ResponseWriter, r *http.Request, req *LogRequest) interface{} {
