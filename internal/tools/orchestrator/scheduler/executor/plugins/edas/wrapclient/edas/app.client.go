@@ -261,7 +261,10 @@ func (c *wrapEDAS) InsertK8sApp(spec *types.ServiceSpec) (string, error) {
 	// InsertK8sApplication
 	resp, err := c.client.InsertK8sApplication(req)
 	if err != nil {
-		return "", errors.Errorf("edas insert app, response http context: %s, error: %v", resp.GetHttpContentString(), err)
+		if resp != nil {
+			return "", errors.Errorf("edas insert app, response http context: %s, error: %v", resp.GetHttpContentString(), err)
+		}
+		return "", errors.Errorf("edas insert app, error: %v", err)
 	}
 
 	l.Info("request id: ", resp.RequestId)
@@ -341,7 +344,10 @@ func (c *wrapEDAS) DeployApp(appID string, spec *types.ServiceSpec) error {
 
 	resp, err := c.client.DeployK8sApplication(req)
 	if err != nil {
-		return errors.Errorf("response http context: %s, error: %v", resp.GetHttpContentString(), err)
+		if resp != nil {
+			return errors.Errorf("response http context: %s, error: %v", resp.GetHttpContentString(), err)
+		}
+		return errors.Errorf("error: %v", err)
 	}
 
 	l.Info("request id: ", resp.RequestId)

@@ -24,8 +24,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
-
-	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/types"
 )
 
 func TestCreateOrUpdateK8sService(t *testing.T) {
@@ -38,17 +36,20 @@ func TestCreateOrUpdateK8sService(t *testing.T) {
 	}
 
 	appName := "test-app"
-	appID := "test-app-id"
+	sgID := "test-sg-id"
+	serviceName := "test-service"
 	ports := []int{80, 8080}
 
 	args := struct {
-		appName string
-		appID   string
-		ports   []int
+		appName     string
+		sgID        string
+		serviceName string
+		ports       []int
 	}{
-		appName: appName,
-		appID:   appID,
-		ports:   ports,
+		appName:     appName,
+		sgID:        sgID,
+		serviceName: serviceName,
+		ports:       ports,
 	}
 
 	tests := []struct {
@@ -71,10 +72,10 @@ func TestCreateOrUpdateK8sService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if test.existingSvc {
-				_ = kubernetesWrapper.CreateK8sService(appName, appID, ports)
+				_ = kubernetesWrapper.CreateK8sService(appName, sgID, serviceName, ports)
 			}
 
-			err := kubernetesWrapper.CreateOrUpdateK8sService(context.Background(), args.appName, args.appID, args.ports)
+			err := kubernetesWrapper.CreateOrUpdateK8sService(context.Background(), args.appName, args.sgID, args.serviceName, args.ports)
 
 			if test.expectedError && err == nil {
 				t.Error("Expected an error, but got nil.")
@@ -89,7 +90,8 @@ func TestCombineK8sService(t *testing.T) {
 	wrapCs := wrapKubernetes{}
 	// Test case 1
 	appName := "my-app"
-	appID := "123"
+	sgID := "123"
+	serviceName := "test-service"
 	ports := []int{8080, 9090}
 
 	expectedService := &corev1.Service{
@@ -99,24 +101,25 @@ func TestCombineK8sService(t *testing.T) {
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				types.EDASAppIDLabel: appID,
+				"app":             serviceName,
+				"servicegroup-id": sgID,
 			},
 			Ports: []corev1.ServicePort{
 				{
-					Name:       "http-0",
+					Name:       "tcp-0",
 					Port:       int32(8080),
-					TargetPort: intstr.FromInt(8080),
+					TargetPort: intstr.FromInt32(8080),
 				},
 				{
-					Name:       "http-1",
+					Name:       "tcp-1",
 					Port:       int32(9090),
-					TargetPort: intstr.FromInt(9090),
+					TargetPort: intstr.FromInt32(9090),
 				},
 			},
 		},
 	}
 
-	service := wrapCs.combineK8sService(appName, appID, ports)
+	service := wrapCs.combineK8sService(appName, sgID, serviceName, ports)
 
 	// Compare the expected service with the actual service
 	if !reflect.DeepEqual(service, expectedService) {

@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
+	"github.com/agiledragon/gomonkey/v2"
 	api "github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -83,16 +83,10 @@ var fakeServiceSpec = &types.ServiceSpec{
 	Annotations: "{\"annotation-name-1\":\"annotation-value-1\",\"annotation-name-2\":\"annotation-value-2\"}",
 }
 
-func newTestWrapEDASClient() Interface {
-	client := &api.Client{}
-	c := New(logrus.WithField("unit-test", "test"), client, "addr", "cluster-a",
-		"cn-hangzhou", "cn-hangzhou:erda", "true")
-	mock(client)
-	return c
-}
+func mock(c *api.Client) *gomonkey.Patches {
+	patches := gomonkey.NewPatches()
 
-func mock(c *api.Client) {
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "ListApplication", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "ListApplication", func(c *api.Client,
 		req *api.ListApplicationRequest) (*api.ListApplicationResponse, error) {
 		var apps []api.ApplicationInListApplication
 
@@ -110,7 +104,7 @@ func mock(c *api.Client) {
 		}, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "StopK8sApplication", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "StopK8sApplication", func(c *api.Client,
 		req *api.StopK8sApplicationRequest) (*api.StopK8sApplicationResponse, error) {
 		resp := &api.StopK8sApplicationResponse{
 			RequestId: uuid.New(),
@@ -123,7 +117,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "ListRecentChangeOrder", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "ListRecentChangeOrder", func(c *api.Client,
 		req *api.ListRecentChangeOrderRequest) (*api.ListRecentChangeOrderResponse, error) {
 		resp := &api.ListRecentChangeOrderResponse{
 			RequestId: uuid.New(),
@@ -144,7 +138,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "AbortChangeOrder", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "AbortChangeOrder", func(c *api.Client,
 		req *api.AbortChangeOrderRequest) (*api.AbortChangeOrderResponse, error) {
 		resp := &api.AbortChangeOrderResponse{
 			RequestId: uuid.New(),
@@ -152,7 +146,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteK8sApplication", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "DeleteK8sApplication", func(c *api.Client,
 		req *api.DeleteK8sApplicationRequest) (*api.DeleteK8sApplicationResponse, error) {
 		resp := &api.DeleteK8sApplicationResponse{
 			RequestId: uuid.New(),
@@ -160,7 +154,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetChangeOrderInfo", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "GetChangeOrderInfo", func(c *api.Client,
 		req *api.GetChangeOrderInfoRequest) (*api.GetChangeOrderInfoResponse, error) {
 		resp := &api.GetChangeOrderInfoResponse{
 			RequestId: uuid.New(),
@@ -176,7 +170,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetAppDeployment", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "GetAppDeployment", func(c *api.Client,
 		req *api.GetAppDeploymentRequest) (*api.GetAppDeploymentResponse, error) {
 		resp := &api.GetAppDeploymentResponse{
 			RequestId: uuid.New(),
@@ -193,7 +187,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "ScaleK8sApplication", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "ScaleK8sApplication", func(c *api.Client,
 		req *api.ScaleK8sApplicationRequest) (*api.ScaleK8sApplicationResponse, error) {
 		resp := &api.ScaleK8sApplicationResponse{
 			RequestId: uuid.New(),
@@ -206,7 +200,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeployK8sApplication", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "DeployK8sApplication", func(c *api.Client,
 		req *api.DeployK8sApplicationRequest) (*api.DeployK8sApplicationResponse, error) {
 		resp := &api.DeployK8sApplicationResponse{
 			RequestId:     uuid.New(),
@@ -220,7 +214,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "InsertK8sApplication", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "InsertK8sApplication", func(c *api.Client,
 		req *api.InsertK8sApplicationRequest) (*api.InsertK8sApplicationResponse, error) {
 		resp := api.CreateInsertK8sApplicationResponse()
 		resp.RequestId = uuid.New()
@@ -236,7 +230,7 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(c), "QueryApplicationStatus", func(c *api.Client,
+	patches.ApplyMethod(reflect.TypeOf(c), "QueryApplicationStatus", func(c *api.Client,
 		req *api.QueryApplicationStatusRequest) (*api.QueryApplicationStatusResponse, error) {
 		resp := api.CreateQueryApplicationStatusResponse()
 		resp.RequestId = uuid.New()
@@ -258,12 +252,20 @@ func mock(c *api.Client) {
 		return resp, nil
 	})
 
+	return patches
+}
+
+func newTestWrapEDASClient() (Interface, *gomonkey.Patches) {
+	client := &api.Client{}
+	c := New(logrus.WithField("unit-test", "test"), client, "addr", "cluster-a",
+		"cn-hangzhou", "cn-hangzhou:erda", "true")
+	patches := mock(client)
+	return c, patches
 }
 
 func TestGetAppID(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	c := newTestWrapEDASClient()
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
 
 	type args struct {
 		appName string
@@ -306,9 +308,8 @@ func TestGetAppID(t *testing.T) {
 }
 
 func TestDeleteAppByName(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	c := newTestWrapEDASClient()
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
 
 	type args struct {
 		appName string
@@ -346,9 +347,8 @@ func TestDeleteAppByName(t *testing.T) {
 }
 
 func TestGetAppDeployment(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	c := newTestWrapEDASClient()
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
 
 	type args struct {
 		appName string
@@ -392,9 +392,8 @@ func TestGetAppDeployment(t *testing.T) {
 }
 
 func TestScaleK8sApplication(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	c := newTestWrapEDASClient()
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
 
 	type args struct {
 		appId    string
@@ -434,9 +433,8 @@ func TestScaleK8sApplication(t *testing.T) {
 }
 
 func TestDeployK8sApplication(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	c := newTestWrapEDASClient()
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
 
 	type args struct {
 		appId string
@@ -490,9 +488,8 @@ func TestDeployK8sApplication(t *testing.T) {
 }
 
 func TestInsertK8sApplicationResponse(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	c := newTestWrapEDASClient()
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
 
 	type args struct {
 		spec *types.ServiceSpec
@@ -528,9 +525,8 @@ func TestInsertK8sApplicationResponse(t *testing.T) {
 }
 
 func TestQueryAppStatus(t *testing.T) {
-	defer monkey.UnpatchAll()
-
-	c := newTestWrapEDASClient()
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
 
 	type args struct {
 		appName string
