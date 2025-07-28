@@ -67,24 +67,23 @@ func (e *EDAS) runAppFlow(ctx context.Context, flows [][]*apistructs.Service, ru
 	return nil
 }
 
-func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGroup, s *apistructs.Service) error {
+func (e *EDAS) createService(ctx context.Context, sg *apistructs.ServiceGroup, s *apistructs.Service) error {
 	l := e.l.WithField("func", "createService")
 
-	serviceSpec, err := e.fillServiceSpec(s, runtime, false)
+	serviceSpec, err := e.fillServiceSpec(s, sg, false)
 	if err != nil {
 		return errors.Wrap(err, "fill service spec")
 	}
 
 	// Create application
-	appID, err := e.wrapEDASClient.InsertK8sApp(serviceSpec)
-	if err != nil {
+	if _, err = e.wrapEDASClient.InsertK8sApp(serviceSpec); err != nil {
 		return errors.Wrap(err, "edas create app")
 	}
 
-	appName := utils.CombineEDASAppName(runtime.Type, runtime.ID, s.Name)
+	appName := utils.CombineEDASAppName(sg.Type, sg.ID, s.Name)
 
 	//create k8s service
-	if err = e.wrapClientSet.CreateK8sService(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+	if err = e.wrapClientSet.CreateK8sService(appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 		l.Errorf("failed to create k8s service, appName: %s, error: %v", appName, err)
 		return errors.Wrap(err, "edas create k8s service")
 	}
@@ -92,16 +91,16 @@ func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGro
 	return nil
 }
 
-func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGroup, s *apistructs.Service) error {
+func (e *EDAS) updateService(ctx context.Context, sg *apistructs.ServiceGroup, s *apistructs.Service) error {
 	l := e.l.WithField("func", "updateService")
 
-	appName := utils.CombineEDASAppName(runtime.Type, runtime.ID, s.Name)
+	appName := utils.CombineEDASAppName(sg.Type, sg.ID, s.Name)
 
 	// Check whether the service exists, if it does not exist, create a new one; otherwise, update it
 	if appID, err := e.wrapEDASClient.GetAppID(appName); err != nil {
 		if err.Error() == notFound {
 			l.Warningf("app(%s) is not found via edas api, will create it ", appName)
-			if err = e.createService(ctx, runtime, s); err != nil {
+			if err = e.createService(ctx, sg, s); err != nil {
 				l.Errorf("failed to create service(%s): %v", appName, err)
 				return err
 			}
@@ -116,7 +115,7 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			e.wrapEDASClient.AbortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
 		}
 
-		svcSpec, err := e.fillServiceSpec(s, runtime, true)
+		svcSpec, err := e.fillServiceSpec(s, sg, true)
 		if err != nil {
 			return errors.Wrap(err, "fill service spec")
 		}
@@ -126,7 +125,7 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return err
 		}
 
-		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
+		if err := e.wrapClientSet.CreateOrUpdateK8sService(ctx, appName, sg.ID, s.Name, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 			l.Errorf("failed to update k8s service, appName: %s, error: %v", appName, err)
 			return errors.Wrap(err, "edas update k8s service")
 		}
@@ -402,13 +401,13 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 	return envs, nil
 }
 
-func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.ServiceGroup, isUpdate bool) (*types.ServiceSpec, error) {
+func (e *EDAS) fillServiceSpec(s *apistructs.Service, sg *apistructs.ServiceGroup, isUpdate bool) (*types.ServiceSpec, error) {
 	var envs map[string]string
 	var err error
 
 	l := e.l.WithField("func", "fillServiceSpec")
 
-	appName := utils.CombineEDASAppName(runtime.Type, runtime.ID, s.Name)
+	appName := utils.CombineEDASAppName(sg.Type, sg.ID, s.Name)
 
 	l.Debugf("start to fill service spec: %s", appName)
 
@@ -494,7 +493,7 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 		svcSpec.Args = string(argBody)
 	}
 
-	if envs, err = e.generateServiceEnvs(s, runtime); err != nil {
+	if envs, err = e.generateServiceEnvs(s, sg); err != nil {
 		l.Errorf("failed to generate service envs: %s, error: %s", appName, err)
 		return nil, err
 	}
@@ -511,6 +510,10 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 	// annotations: {"annotation-name-1":"annotation-value-1","annotation-name-2":"annotation-value-2"}
 	if err = setAnnotations(svcSpec, envs); err != nil {
 		return nil, errors.Wrapf(err, "failed to set annotations, service name: %s", appName)
+	}
+
+	if err = setLabels(svcSpec, sg.ID, s.Name); err != nil {
+		return nil, errors.Wrapf(err, "failed to set labels, service name: %s", appName)
 	}
 
 	if err = setHealthCheck(s, svcSpec); err != nil {
@@ -614,5 +617,23 @@ func setAnnotations(svcSpec *types.ServiceSpec, envs map[string]string) error {
 		return err
 	}
 	svcSpec.Annotations = string(ret)
+	return nil
+}
+
+func setLabels(svcSpec *types.ServiceSpec, sgID, serviceName string) error {
+	if svcSpec == nil {
+		return errors.New("service spec is nil")
+	}
+
+	targetLabels := map[string]string{
+		"app":             serviceName,
+		"servicegroup-id": sgID,
+	}
+
+	ret, err := json.Marshal(targetLabels)
+	if err != nil {
+		return err
+	}
+	svcSpec.Labels = string(ret)
 	return nil
 }
