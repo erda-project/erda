@@ -65,10 +65,10 @@ func (e *wrapKubernetes) GetK8sService(name string) (*corev1.Service, error) {
 
 // CreateK8sService create kubernetes service
 // TODO: Currently, it is injected by the controller; however, it is advisable to replace this with the 'CreateK8sService' interface provided by edas in the future.
-func (e *wrapKubernetes) CreateK8sService(appName string, appID string, ports []int) error {
+func (e *wrapKubernetes) CreateK8sService(appName, sgID, serviceName string, ports []int) error {
 	l := e.l.WithField("func", "CreateK8sService")
 
-	k8sService := e.combineK8sService(appName, appID, ports)
+	k8sService := e.combineK8sService(appName, sgID, serviceName, ports)
 
 	l.Infof("start to create k8s svc, appName: %s", appName)
 	_, err := e.cs.CoreV1().Services(e.namespace).Create(context.TODO(), k8sService, metav1.CreateOptions{})
@@ -76,19 +76,19 @@ func (e *wrapKubernetes) CreateK8sService(appName string, appID string, ports []
 }
 
 // CreateOrUpdateK8sService create or update kubernetes service
-func (e *wrapKubernetes) CreateOrUpdateK8sService(ctx context.Context, appName string, appID string, ports []int) error {
+func (e *wrapKubernetes) CreateOrUpdateK8sService(ctx context.Context, appName, sgID, serviceName string, ports []int) error {
 	l := e.l.WithField("func", "CreateOrUpdateK8sService")
 
 	currentSvc, err := e.cs.CoreV1().Services(e.namespace).Get(ctx, appName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			return e.CreateK8sService(appName, appID, ports)
+			return e.CreateK8sService(appName, sgID, serviceName, ports)
 		}
 		return err
 	}
 
 	l.Infof("start to update k8s svc, appname: %s", appName)
-	newSvc := e.combineK8sService(appName, appID, ports)
+	newSvc := e.combineK8sService(appName, sgID, serviceName, ports)
 
 	currentSvc.Spec = newSvc.Spec
 	currentSvc.Labels = newSvc.Labels
@@ -112,9 +112,10 @@ func (e *wrapKubernetes) DeleteK8sService(appName string) error {
 	return nil
 }
 
-func (e *wrapKubernetes) combineK8sService(appName string, appID string, ports []int) *corev1.Service {
+func (e *wrapKubernetes) combineK8sService(appName, sgID, serviceName string, ports []int) *corev1.Service {
 	var (
-		serviceNamePrefix = "http-"
+		// TODO：support more protocol
+		serviceNamePrefix = "tcp-"
 		servicePorts      = make([]corev1.ServicePort, 0, len(ports))
 	)
 
@@ -123,7 +124,7 @@ func (e *wrapKubernetes) combineK8sService(appName string, appID string, ports [
 			// TODO: name?
 			Name:       strutil.Concat(serviceNamePrefix, strconv.Itoa(i)),
 			Port:       int32(port),
-			TargetPort: intstr.FromInt(port),
+			TargetPort: intstr.FromInt32(int32(port)),
 		})
 	}
 
@@ -135,9 +136,9 @@ func (e *wrapKubernetes) combineK8sService(appName string, appID string, ports [
 		},
 		Spec: corev1.ServiceSpec{
 			// TODO: type?
-			//Type: ServiceTypeLoadBalancer,
 			Selector: map[string]string{
-				types.EDASAppIDLabel: appID,
+				"app":             serviceName,
+				"servicegroup-id": sgID,
 			},
 			Ports: servicePorts,
 		},

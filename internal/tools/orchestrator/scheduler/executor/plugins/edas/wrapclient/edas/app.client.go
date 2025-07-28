@@ -25,12 +25,80 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/types"
 	"github.com/erda-project/erda/internal/tools/orchestrator/scheduler/executor/plugins/edas/utils"
 )
 
 // k8s min ready seconds
 var minReadySeconds = 30
+
+const (
+	// LabelKeyPrefix prefix for labels that should be converted to annotations
+	LabelKeyPrefix = "annotations/"
+)
+
+// extractPodLabels extracts pod labels from service group for EDAS applications
+func extractPodLabels(spec *types.ServiceSpec, sg *apistructs.ServiceGroup) map[string]string {
+	labels := make(map[string]string)
+
+	// If no service group provided, return empty map
+	if sg == nil {
+		return labels
+	}
+
+	// Find the service in the service group that matches our spec
+	var targetService *apistructs.Service
+	for _, service := range sg.Services {
+		if service.Name == spec.Name {
+			targetService = &service
+			break
+		}
+	}
+
+	// If we can't find the service or it has no labels, return empty map
+	if targetService == nil {
+		return labels
+	}
+
+	// Add service labels
+	for key, value := range targetService.Labels {
+		// Skip labels that should be converted to annotations
+		if strings.HasPrefix(key, LabelKeyPrefix) {
+			continue
+		}
+		// Validate label value length (max 63 characters)
+		if len(value) <= 63 {
+			labels[key] = value
+		}
+	}
+
+	// Add deployment labels
+	for key, value := range targetService.DeploymentLabels {
+		// Skip labels that should be converted to annotations
+		if strings.HasPrefix(key, LabelKeyPrefix) {
+			continue
+		}
+		// Validate label value length (max 63 characters)
+		if len(value) <= 63 {
+			labels[key] = value
+		}
+	}
+
+	// Add group labels
+	for key, value := range sg.Labels {
+		// Skip labels that should be converted to annotations
+		if strings.HasPrefix(key, LabelKeyPrefix) {
+			continue
+		}
+		// Validate label value length (max 63 characters)
+		if len(value) <= 63 {
+			labels[key] = value
+		}
+	}
+
+	return labels
+}
 
 // GetAppID get application by id
 func (c *wrapEDAS) GetAppID(appName string) (string, error) {
@@ -244,6 +312,7 @@ func (c *wrapEDAS) InsertK8sApp(spec *types.ServiceSpec) (string, error) {
 	req.Liveness = spec.Liveness
 	req.Readiness = spec.Readiness
 	req.Annotations = spec.Annotations
+	req.Labels = spec.Labels
 	req.Replicas = requests.NewInteger(spec.Instances)
 	if c.unLimitCPU == "true" {
 		req.RequestsCpu = requests.NewInteger(spec.CPU)
@@ -255,7 +324,7 @@ func (c *wrapEDAS) InsertK8sApp(spec *types.ServiceSpec) (string, error) {
 	req.RequestsMem = requests.NewInteger(spec.Mem)
 	req.LimitMem = requests.NewInteger(spec.Mem)
 
-	l.Debugf("insert k8s application, request body: %+v", req)
+	l.Infof("insert k8s application, request body: %+v", req)
 
 	// InsertK8sApplication
 	resp, err := c.client.InsertK8sApplication(req)
@@ -319,6 +388,7 @@ func (c *wrapEDAS) DeployApp(appID string, spec *types.ServiceSpec) error {
 	req.Liveness = spec.Liveness
 	req.Readiness = spec.Readiness
 	req.Annotations = spec.Annotations
+	req.Labels = spec.Labels
 	req.Replicas = requests.NewInteger(spec.Instances)
 	if c.unLimitCPU == "true" {
 		req.CpuRequest = requests.NewInteger(spec.CPU)
