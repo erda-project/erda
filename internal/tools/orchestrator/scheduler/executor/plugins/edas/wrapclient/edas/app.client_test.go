@@ -81,6 +81,7 @@ var fakeServiceSpec = &types.ServiceSpec{
 	Liveness:    "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":8080}}",
 	Readiness:   "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"httpGet\": {\"path\": \"/consumer\",\"port\": 8080,\"scheme\": \"HTTP\",\"httpHeaders\": [{\"name\": \"test\",\"value\": \"testvalue\"}]}}",
 	Annotations: "{\"annotation-name-1\":\"annotation-value-1\",\"annotation-name-2\":\"annotation-value-2\"}",
+	Labels:      "{\"app\":\"test-service\",\"servicegroup-id\":\"test-sg-id\"}",
 }
 
 func mock(c *api.Client) *gomonkey.Patches {
@@ -464,6 +465,7 @@ func TestDeployK8sApplication(t *testing.T) {
 					Liveness:    "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":8080}}",
 					Readiness:   "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"httpGet\": {\"path\": \"/consumer\",\"port\": 8080,\"scheme\": \"HTTP\",\"httpHeaders\": [{\"name\": \"test\",\"value\": \"testvalue\"}]}}",
 					Annotations: "{\"annotation-name-1\":\"annotation-value-1\",\"annotation-name-2\":\"annotation-value-2\"}",
+					Labels:      "{\"app\":\"test-service\",\"servicegroup-id\":\"test-sg-id\",\"environment\":\"test\"}",
 				},
 			},
 			wantErr: false,
@@ -551,6 +553,169 @@ func TestQueryAppStatus(t *testing.T) {
 			_, err := c.QueryAppStatus(tt.args.appName)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("QueryAppStatus error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestInsertK8sApplicationWithLabels(t *testing.T) {
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
+
+	type args struct {
+		spec *types.ServiceSpec
+	}
+
+	tests := []struct {
+		name     string
+		args     args
+		expected string
+		wantErr  bool
+	}{
+		{
+			name: "Test successful case with labels",
+			args: args{
+				spec: fakeServiceSpec,
+			},
+			expected: fakeAppId,
+			wantErr:  false,
+		},
+		{
+			name: "Test case with empty labels",
+			args: args{
+				spec: &types.ServiceSpec{
+					Name:        fakeAppName,
+					Image:       "busybox",
+					Cmd:         "sh",
+					Args:        "-c \"sleep 1000\"",
+					Instances:   1,
+					CPU:         1,
+					Mcpu:        1,
+					Mem:         128,
+					Ports:       []int{8080},
+					Envs:        "[{\"name\":\"testkey\",\"value\":\"testValue\"}]",
+					Liveness:    "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":8080}}",
+					Readiness:   "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"httpGet\": {\"path\": \"/consumer\",\"port\": 8080,\"scheme\": \"HTTP\",\"httpHeaders\": [{\"name\": \"test\",\"value\": \"testvalue\"}]}}",
+					Annotations: "{\"annotation-name-1\":\"annotation-value-1\",\"annotation-name-2\":\"annotation-value-2\"}",
+					Labels:      "",
+				},
+			},
+			expected: fakeAppId,
+			wantErr:  false,
+		},
+		{
+			name: "Test case with valid JSON labels",
+			args: args{
+				spec: &types.ServiceSpec{
+					Name:        fakeAppName,
+					Image:       "busybox",
+					Cmd:         "sh",
+					Args:        "-c \"sleep 1000\"",
+					Instances:   1,
+					CPU:         1,
+					Mcpu:        1,
+					Mem:         128,
+					Ports:       []int{8080},
+					Envs:        "[{\"name\":\"testkey\",\"value\":\"testValue\"}]",
+					Liveness:    "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":8080}}",
+					Readiness:   "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"httpGet\": {\"path\": \"/consumer\",\"port\": 8080,\"scheme\": \"HTTP\",\"httpHeaders\": [{\"name\": \"test\",\"value\": \"testvalue\"}]}}",
+					Annotations: "{\"annotation-name-1\":\"annotation-value-1\",\"annotation-name-2\":\"annotation-value-2\"}",
+					Labels:      "{\"version\":\"1.0.0\",\"tier\":\"backend\"}",
+				},
+			},
+			expected: fakeAppId,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := c.InsertK8sApp(tt.args.spec)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("InsertK8sApp error, got: %v", err)
+			}
+			if got != tt.expected {
+				t.Fatalf("InsertK8sApp error, got: %v, want: %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDeployK8sApplicationWithLabels(t *testing.T) {
+	c, patches := newTestWrapEDASClient()
+	defer patches.Reset()
+
+	type args struct {
+		appId string
+		spec  *types.ServiceSpec
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test successful case with labels",
+			args: args{
+				appId: fakeAppId,
+				spec:  fakeServiceSpec,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test case with empty labels",
+			args: args{
+				appId: fakeAppId,
+				spec: &types.ServiceSpec{
+					Name:        "service-a",
+					Image:       "busybox",
+					Cmd:         "sh",
+					Args:        "-c \"sleep 1000\"",
+					Instances:   1,
+					CPU:         1,
+					Mcpu:        1,
+					Mem:         128,
+					Ports:       []int{8080},
+					Envs:        "[{\"name\":\"testkey\",\"value\":\"testValue\"}]",
+					Liveness:    "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":8080}}",
+					Readiness:   "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"httpGet\": {\"path\": \"/consumer\",\"port\": 8080,\"scheme\": \"HTTP\",\"httpHeaders\": [{\"name\": \"test\",\"value\": \"testvalue\"}]}}",
+					Annotations: "{\"annotation-name-1\":\"annotation-value-1\",\"annotation-name-2\":\"annotation-value-2\"}",
+					Labels:      "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test case with complex labels",
+			args: args{
+				appId: fakeAppId,
+				spec: &types.ServiceSpec{
+					Name:        "service-a",
+					Image:       "busybox",
+					Cmd:         "sh",
+					Args:        "-c \"sleep 1000\"",
+					Instances:   1,
+					CPU:         1,
+					Mcpu:        1,
+					Mem:         128,
+					Ports:       []int{8080},
+					Envs:        "[{\"name\":\"testkey\",\"value\":\"testValue\"}]",
+					Liveness:    "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":8080}}",
+					Readiness:   "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"httpGet\": {\"path\": \"/consumer\",\"port\": 8080,\"scheme\": \"HTTP\",\"httpHeaders\": [{\"name\": \"test\",\"value\": \"testvalue\"}]}}",
+					Annotations: "{\"annotation-name-1\":\"annotation-value-1\",\"annotation-name-2\":\"annotation-value-2\"}",
+					Labels:      "{\"app\":\"service-a\",\"servicegroup-id\":\"sg-123\",\"version\":\"v1.2.3\",\"environment\":\"production\"}",
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := c.DeployApp(tt.args.appId, tt.args.spec)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("DeployApp error, got: %v", err)
 			}
 		})
 	}
