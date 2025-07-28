@@ -15,6 +15,7 @@
 package message_converter
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -56,23 +57,45 @@ func ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq openai_extended.OpenAI
 	}
 	// tool
 	if len(openaiReq.Tools) > 0 {
-		baseAnthropicReq.Tools = openaiReq.Tools
+		var aTools []AnthropicTool
+		for _, oTool := range openaiReq.Tools {
+			aTool, err := ConvertOneOpenAITool(oTool)
+			if err != nil {
+				panic(fmt.Errorf("failed to convert openai tool to anthropic tool: %v, oTool: %#v", err, oTool))
+			}
+			aTools = append(aTools, *aTool)
+		}
+		baseAnthropicReq.Tools = aTools
 	}
 	if openaiReq.ToolChoice != nil {
 		baseAnthropicReq.ToolChoice = openaiReq.ToolChoice
 	}
 	// split system prompt out, keep user / assistant messages
 	var systemPrompts []string
-	for _, msg := range openaiReq.Messages {
+	for i, msg := range openaiReq.Messages {
 		switch msg.Role {
 		case openai.ChatMessageRoleSystem:
 			systemPrompts = append(systemPrompts, msg.Content)
-		default:
-			bedrockMsg, err := ConvertOneOpenAIMessage(msg)
-			if err != nil {
-				panic(fmt.Errorf("failed to convert openai message to bedrock message: %v", err))
+		case openai.ChatMessageRoleUser:
+			bedrockMsg, err := ConvertOneOpenAIUserMessage(msg)
+			if err != nil || bedrockMsg.Content == nil {
+				panic(fmt.Errorf("failed to convert openai user message to bedrock message: %v, index: %d, msg: %#v", err, i, msg))
 			}
 			baseAnthropicReq.Messages = append(baseAnthropicReq.Messages, *bedrockMsg)
+		case openai.ChatMessageRoleTool:
+			bedrockMsg, err := ConvertOneOpenAIToolMessage(msg)
+			if err != nil {
+				panic(fmt.Errorf("failed to convert openai tool message to bedrock message: %v, index: %d, msg: %#v", err, i, msg))
+			}
+			baseAnthropicReq.Messages = append(baseAnthropicReq.Messages, *bedrockMsg)
+		case openai.ChatMessageRoleAssistant:
+			bedrockMsg, err := ConvertOneOpenAIAssistantMessage(msg)
+			if err != nil {
+				panic(fmt.Errorf("failed to convert openai assistant message to bedrock message: %v, index: %d, msg: %#v", err, i, msg))
+			}
+			baseAnthropicReq.Messages = append(baseAnthropicReq.Messages, *bedrockMsg)
+		default:
+			panic(fmt.Errorf("unsupported msg role: %v, message index: %d", msg.Role, i))
 		}
 	}
 	if len(systemPrompts) > 0 {
@@ -81,35 +104,111 @@ func ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq openai_extended.OpenAI
 	// thinking
 	baseAnthropicReq.AnthropicThinking = thinking.UnifiedGetThinkingConfigs(openaiReq).ToAnthropicThinking()
 
+	// split anthropic messages
+	splitAnthropicMessages(baseAnthropicReq)
+
 	return baseAnthropicReq
 }
 
 type AnthropicMessage struct {
-	Role    string `json:"role"`
-	Content any    `json:"content"`
+	Role    string           `json:"role"`
+	Content []map[string]any `json:"content"`
 }
 
-func ConvertOneOpenAIMessage(openaiMsg openai.ChatCompletionMessage) (*AnthropicMessage, error) {
+func ConvertOneOpenAIUserMessage(openaiMsg openai.ChatCompletionMessage) (*AnthropicMessage, error) {
 	var anthropicMsg AnthropicMessage
-	anthropicMsg.Role = openaiMsg.Role
+	anthropicMsg.Role = openai.ChatMessageRoleUser
 
 	// only text content
 	if openaiMsg.Content != "" {
-		anthropicMsg.Content = openaiMsg.Content
-		return &anthropicMsg, nil
+		anthropicMsg.Content = []map[string]any{
+			{
+				"type": "text",
+				"text": openaiMsg.Content,
+			},
+		}
 	}
 
-	var contentParts []map[string]any
+	// multi content
+	anthropicMsg.Content = append(anthropicMsg.Content, convertOpenAIMultiContent(openaiMsg.MultiContent)...)
+
+	return &anthropicMsg, nil
+}
+
+func ConvertOneOpenAIToolMessage(openaiMsg openai.ChatCompletionMessage) (*AnthropicMessage, error) {
+	var anthropicMsg AnthropicMessage
+	anthropicMsg.Role = openai.ChatMessageRoleUser
+
+	anthropicMsg.Content = []map[string]any{
+		{
+			"type":        "tool_result",
+			"tool_use_id": openaiMsg.ToolCallID,
+			"content": []map[string]any{
+				func() map[string]any {
+					// try to unmarshal the tool_result content as JSON
+					var jsonObj map[string]any
+					if err := json.Unmarshal([]byte(openaiMsg.Content), &jsonObj); err != nil {
+						// if unmarshal fails, treat it as a string
+						return map[string]any{
+							"type": "text",
+							"text": openaiMsg.Content,
+						}
+					}
+					return jsonObj
+				}(),
+			},
+		},
+	}
+
+	return &anthropicMsg, nil
+}
+
+func ConvertOneOpenAIAssistantMessage(openaiMsg openai.ChatCompletionMessage) (*AnthropicMessage, error) {
+	var anthropicMsg AnthropicMessage
+	anthropicMsg.Role = openai.ChatMessageRoleAssistant
+
+	// only text content
+	if openaiMsg.Content != "" {
+		anthropicMsg.Content = []map[string]any{
+			{
+				"type": "text",
+				"text": openaiMsg.Content,
+			},
+		}
+	}
 
 	// multi content
-	for _, part := range openaiMsg.MultiContent {
+	anthropicMsg.Content = append(anthropicMsg.Content, convertOpenAIMultiContent(openaiMsg.MultiContent)...)
+
+	// tool_use
+	for _, toolCall := range openaiMsg.ToolCalls {
+		anthropicMsg.Content = append(anthropicMsg.Content, map[string]any{
+			"type": "tool_use",
+			"id":   toolCall.ID,
+			"name": toolCall.Function.Name,
+			"input": func() map[string]any {
+				var input map[string]any
+				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
+					panic(fmt.Errorf("failed to unmarshal tool call arguments: %v, arguments: %s", err, toolCall.Function.Arguments))
+				}
+				return input
+			}(),
+		})
+	}
+
+	return &anthropicMsg, nil
+}
+
+func convertOpenAIMultiContent(openaiMultiContent []openai.ChatMessagePart) []map[string]any {
+	var anthropicContent []map[string]any
+	for _, part := range openaiMultiContent {
 		switch part.Type {
 		case openai.ChatMessagePartTypeText:
 			bedrockPart := map[string]any{
 				"type": "text",
 				"text": part.Text,
 			}
-			contentParts = append(contentParts, bedrockPart)
+			anthropicContent = append(anthropicContent, bedrockPart)
 		case openai.ChatMessagePartTypeImageURL:
 			// get media_type and base64 content from url
 			// url format: data:image/${media_type};base64,${base64_content}
@@ -124,11 +223,76 @@ func ConvertOneOpenAIMessage(openaiMsg openai.ChatCompletionMessage) (*Anthropic
 					"data":       base64Content,
 				},
 			}
-			contentParts = append(contentParts, bedrockPart)
+			anthropicContent = append(anthropicContent, bedrockPart)
 		}
 	}
+	return anthropicContent
+}
 
-	anthropicMsg.Content = contentParts
+type AnthropicTool struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	InputSchema any    `json:"input_schema"`
+}
 
-	return &anthropicMsg, nil
+func ConvertOneOpenAITool(openaiTool openai.Tool) (*AnthropicTool, error) {
+	if openaiTool.Type != openai.ToolTypeFunction {
+		return nil, fmt.Errorf("unsupported tool type: %s", openaiTool.Type)
+	}
+	if openaiTool.Function == nil {
+		return nil, fmt.Errorf("tool function is nil")
+	}
+	aTool := AnthropicTool{
+		Name:        openaiTool.Function.Name,
+		Description: openaiTool.Function.Description,
+		InputSchema: openaiTool.Function.Parameters,
+	}
+	return &aTool, nil
+}
+
+// splitAnthropicMessages split some message into multiples.
+// For Example:
+// -> tips: 'image' blocks are not permitted within assistant turns.
+// so we have to change this assistant image content part into a user message.
+func splitAnthropicMessages(req BaseAnthropicRequest) {
+	var newMessages []AnthropicMessage
+	for _, oldMessage := range req.Messages {
+		if oldMessage.Role != openai.ChatMessageRoleAssistant {
+			newMessages = append(newMessages, oldMessage)
+			continue
+		}
+		// split image content part into a single user message
+		var previousNonImageContentParts []map[string]any
+		var continuousImageParts []map[string]any
+		for _, contentPart := range oldMessage.Content {
+			partType := contentPart["type"].(string)
+			// store content part to construct a message
+			if partType != "image" {
+				// check if there are continuous image parts, construct to one user message firstly
+				if len(continuousImageParts) > 0 {
+					// construct a new message using this image block
+					newImageMessage := AnthropicMessage{
+						Role:    openai.ChatMessageRoleUser, // must be user
+						Content: continuousImageParts,
+					}
+					newMessages = append(newMessages, newImageMessage)
+					// reset flag
+					continuousImageParts = nil
+				}
+				previousNonImageContentParts = append(previousNonImageContentParts, contentPart)
+				continue
+			}
+			// construct a message if previous non-image content parts exists
+			if len(previousNonImageContentParts) > 0 {
+				previousMessage := AnthropicMessage{
+					Role:    openai.ChatMessageRoleAssistant,
+					Content: previousNonImageContentParts,
+				}
+				newMessages = append(newMessages, previousMessage)
+				// reset flag
+				previousNonImageContentParts = nil
+			}
+		}
+	}
+	req.Messages = newMessages
 }
