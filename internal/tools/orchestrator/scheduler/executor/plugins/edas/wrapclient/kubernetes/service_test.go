@@ -101,8 +101,8 @@ func TestCombineK8sService(t *testing.T) {
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				"app":             serviceName,
-				"servicegroup-id": sgID,
+				"core.erda.cloud/service-name":    serviceName,
+				"core.erda.cloud/servicegroup-id": sgID,
 			},
 			Ports: []corev1.ServicePort{
 				{

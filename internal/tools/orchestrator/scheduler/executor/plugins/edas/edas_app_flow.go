@@ -626,8 +626,8 @@ func setLabels(svcSpec *types.ServiceSpec, sgID, serviceName string) error {
 	}
 
 	targetLabels := map[string]string{
-		"app":             serviceName,
-		"servicegroup-id": sgID,
+		types.LabelServiceName:    serviceName,
+		types.LabelServiceGroupID: sgID,
 	}
 
 	ret, err := json.Marshal(targetLabels)

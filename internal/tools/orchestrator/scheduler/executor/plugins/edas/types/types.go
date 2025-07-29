@@ -30,8 +30,8 @@ const (
 )
 
 const (
-	// EDASAppIDLabel TODO: instead of EDAS API
-	EDASAppIDLabel = "edas.appid"
+	LabelServiceName    = "core.erda.cloud/service-name"
+	LabelServiceGroupID = "core.erda.cloud/servicegroup-id"
 )
 
 // ChangeOrderStatus change orderId status

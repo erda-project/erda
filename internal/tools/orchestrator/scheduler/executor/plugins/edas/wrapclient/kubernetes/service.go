@@ -137,8 +137,8 @@ func (e *wrapKubernetes) combineK8sService(appName, sgID, serviceName string, po
 		Spec: corev1.ServiceSpec{
 			// TODO: type?
 			Selector: map[string]string{
-				"app":             serviceName,
-				"servicegroup-id": sgID,
+				types.LabelServiceName:    serviceName,
+				types.LabelServiceGroupID: sgID,
 			},
 			Ports: servicePorts,
 		},
