@@ -41,8 +41,8 @@ func TestSetLabels(t *testing.T) {
 			sgID:        "test-sg-id",
 			serviceName: "test-service",
 			expected: map[string]string{
-				"app":             "test-service",
-				"servicegroup-id": "test-sg-id",
+				"core.erda.cloud/service-name":    "test-service",
+				"core.erda.cloud/servicegroup-id": "test-sg-id",
 			},
 			expectError: false,
 		},
@@ -61,8 +61,8 @@ func TestSetLabels(t *testing.T) {
 			sgID:        "",
 			serviceName: "test-service",
 			expected: map[string]string{
-				"app":             "test-service",
-				"servicegroup-id": "",
+				"core.erda.cloud/service-name":    "test-service",
+				"core.erda.cloud/servicegroup-id": "",
 			},
 			expectError: false,
 		},
@@ -74,8 +74,8 @@ func TestSetLabels(t *testing.T) {
 			sgID:        "test-sg-id",
 			serviceName: "",
 			expected: map[string]string{
-				"app":             "",
-				"servicegroup-id": "test-sg-id",
+				"core.erda.cloud/service-name":    "",
+				"core.erda.cloud/servicegroup-id": "test-sg-id",
 			},
 			expectError: false,
 		},
@@ -87,8 +87,8 @@ func TestSetLabels(t *testing.T) {
 			sgID:        "test-sg-id-with-dashes_and_underscores",
 			serviceName: "test-service-with-dashes",
 			expected: map[string]string{
-				"app":             "test-service-with-dashes",
-				"servicegroup-id": "test-sg-id-with-dashes_and_underscores",
+				"core.erda.cloud/service-name":    "test-service-with-dashes",
+				"core.erda.cloud/servicegroup-id": "test-sg-id-with-dashes_and_underscores",
 			},
 			expectError: false,
 		},
@@ -130,11 +130,11 @@ func TestSetLabels_JSONMarshaling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify specific labels are set
-	assert.Equal(t, "test-service", labels["app"])
-	assert.Equal(t, "test-sg-id", labels["servicegroup-id"])
+	assert.Equal(t, "test-service", labels["core.erda.cloud/service-name"])
+	assert.Equal(t, "test-sg-id", labels["core.erda.cloud/servicegroup-id"])
 
 	// Verify JSON structure
-	expectedJSON := `{"app":"test-service","servicegroup-id":"test-sg-id"}`
+	expectedJSON := `{"core.erda.cloud/service-name":"test-service","core.erda.cloud/servicegroup-id":"test-sg-id"}`
 	var expectedLabels map[string]string
 	err = json.Unmarshal([]byte(expectedJSON), &expectedLabels)
 	require.NoError(t, err)
