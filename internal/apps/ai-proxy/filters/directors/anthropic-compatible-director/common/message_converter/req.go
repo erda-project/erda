@@ -105,7 +105,7 @@ func ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq openai_extended.OpenAI
 	baseAnthropicReq.AnthropicThinking = thinking.UnifiedGetThinkingConfigs(openaiReq).ToAnthropicThinking()
 
 	// split anthropic messages
-	splitAnthropicMessages(baseAnthropicReq)
+	splitAnthropicMessages(&baseAnthropicReq)
 
 	return baseAnthropicReq
 }
@@ -254,45 +254,76 @@ func ConvertOneOpenAITool(openaiTool openai.Tool) (*AnthropicTool, error) {
 // For Example:
 // -> tips: 'image' blocks are not permitted within assistant turns.
 // so we have to change this assistant image content part into a user message.
-func splitAnthropicMessages(req BaseAnthropicRequest) {
+func splitAnthropicMessages(req *BaseAnthropicRequest) {
 	var newMessages []AnthropicMessage
+
 	for _, oldMessage := range req.Messages {
 		if oldMessage.Role != openai.ChatMessageRoleAssistant {
 			newMessages = append(newMessages, oldMessage)
 			continue
 		}
-		// split image content part into a single user message
-		var previousNonImageContentParts []map[string]any
-		var continuousImageParts []map[string]any
-		for _, contentPart := range oldMessage.Content {
-			partType := contentPart["type"].(string)
-			// store content part to construct a message
-			if partType != "image" {
-				// check if there are continuous image parts, construct to one user message firstly
-				if len(continuousImageParts) > 0 {
-					// construct a new message using this image block
-					newImageMessage := AnthropicMessage{
-						Role:    openai.ChatMessageRoleUser, // must be user
-						Content: continuousImageParts,
-					}
-					newMessages = append(newMessages, newImageMessage)
-					// reset flag
-					continuousImageParts = nil
-				}
-				previousNonImageContentParts = append(previousNonImageContentParts, contentPart)
+
+		var textBuf []map[string]any  // accumulate non‑image parts
+		var imageBuf []map[string]any // accumulate consecutive image parts
+
+		flushText := func() {
+			if len(textBuf) == 0 {
+				return
+			}
+			newMessages = append(newMessages, AnthropicMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: textBuf,
+			})
+			textBuf = nil
+		}
+		flushImage := func() {
+			if len(imageBuf) == 0 {
+				return
+			}
+			newMessages = append(newMessages, AnthropicMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: imageBuf,
+			})
+			imageBuf = nil
+		}
+
+		for _, part := range oldMessage.Content {
+			if part["type"] == "image" {
+				// image block：先把之前的文本 flush，再累积 image
+				flushText()
+				imageBuf = append(imageBuf, part)
 				continue
 			}
-			// construct a message if previous non-image content parts exists
-			if len(previousNonImageContentParts) > 0 {
-				previousMessage := AnthropicMessage{
-					Role:    openai.ChatMessageRoleAssistant,
-					Content: previousNonImageContentParts,
-				}
-				newMessages = append(newMessages, previousMessage)
-				// reset flag
-				previousNonImageContentParts = nil
-			}
+			// non‑image block：先把之前的 image flush，再累积文本
+			flushImage()
+			textBuf = append(textBuf, part)
+		}
+		// flush any remaining buffers
+		flushText()
+		flushImage()
+	}
+	// ------------------------------------------------------------------
+	// Ensure the final role alternates correctly:
+	// If the original last message was assistant *but* splitting makes
+	// the new last message user (image), append a dummy assistant reply.
+	// ------------------------------------------------------------------
+	if len(req.Messages) > 0 && len(newMessages) > 0 {
+		origLastRole := req.Messages[len(req.Messages)-1].Role
+		newLastRole := newMessages[len(newMessages)-1].Role
+
+		if origLastRole == openai.ChatMessageRoleAssistant &&
+			newLastRole == openai.ChatMessageRoleUser {
+			newMessages = append(newMessages, AnthropicMessage{
+				Role: openai.ChatMessageRoleAssistant,
+				Content: []map[string]any{
+					{
+						"type": "text",
+						"text": "copy that",
+					},
+				},
+			})
 		}
 	}
+
 	req.Messages = newMessages
 }

@@ -108,7 +108,7 @@ func ConvertAnthropicResponseMessageToOpenAIFormat(role string, anthropicContent
 		openaiMsg.ToolCalls = []openai.ToolCall{
 			{
 				ID:   anthropicContentPart["id"].(string),
-				Type: "tool_use", // always "tool_use" for anthropic tool use
+				Type: openai.ToolTypeFunction,
 				Function: openai.FunctionCall{
 					Name:      anthropicContentPart["name"].(string),
 					Arguments: string(inputJSON),
