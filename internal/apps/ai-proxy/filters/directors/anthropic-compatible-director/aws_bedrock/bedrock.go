@@ -15,9 +15,11 @@
 package aws_bedrock
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -55,10 +57,60 @@ type BedrockDirector struct {
 	*reverseproxy.DefaultResponseFilter
 
 	StreamMessageInfo message_converter.AnthropicStreamMessageInfo
+	streamBuffer      bytes.Buffer
+	bufReader         *bufio.Reader
 }
 
 func NewDirector() *BedrockDirector {
 	return &BedrockDirector{DefaultResponseFilter: reverseproxy.NewDefaultResponseFilter()}
+}
+
+func (f *BedrockDirector) processBufferedChunks(ctx context.Context, w reverseproxy.Writer) error {
+	data := f.streamBuffer.Bytes()
+	processed := 0
+
+	for {
+		remaining := len(data) - processed
+		if remaining < 8 {
+			break
+		}
+
+		total := binary.BigEndian.Uint32(data[processed : processed+4])
+		frameSize := int(total)
+
+		if remaining < frameSize {
+			break
+		}
+
+		frame := data[processed : processed+frameSize]
+
+		openaiChunks, err := f.pipeBedrockStream(ctx, io.NopCloser(bytes.NewBuffer(frame)), nil)
+		if err != nil {
+			return fmt.Errorf("failed to parse bedrock eventstream, err: %v", err)
+		}
+
+		for _, openaiChunk := range openaiChunks {
+			b, err := json.Marshal(openaiChunk)
+			if err != nil {
+				return fmt.Errorf("failed to marshal openai chunk, err: %v", err)
+			}
+			chunkData := vars.ConcatChunkDataPrefix(b)
+			if _, err := w.Write(chunkData); err != nil {
+				return fmt.Errorf("failed to write openai chunk, err: %v", err)
+			}
+		}
+
+		processed += frameSize
+	}
+
+	if processed > 0 {
+		remaining := data[processed:]
+		f.streamBuffer.Reset()
+		f.streamBuffer.Write(remaining)
+		f.bufReader = nil
+	}
+
+	return nil
 }
 
 func (f *BedrockDirector) AwsBedrockDirector(ctx context.Context, infor reverseproxy.HttpInfor, apiStyleConfig api_style.APIStyleConfig) error {
@@ -145,22 +197,15 @@ func (f *BedrockDirector) OnResponseChunk(ctx context.Context, infor reverseprox
 		f.DefaultResponseFilter.Buffer.Write(chunk) // write to buffer, so we can get allChunks later
 		return reverseproxy.Continue, nil
 	}
-	// stream
-	var chunkWriter bytes.Buffer
-	openaiChunks, err := f.pipeBedrockStream(ctx, io.NopCloser(bytes.NewBuffer(chunk)), &chunkWriter)
-	if err != nil {
-		return reverseproxy.Intercept, fmt.Errorf("failed to parse bedrock eventstream, err: %v", err)
+
+	// stream: append chunk to buffer for packet stitching
+	f.streamBuffer.Write(chunk)
+
+	// process all complete frames in the buffer
+	if err := f.processBufferedChunks(ctx, w); err != nil {
+		return reverseproxy.Intercept, err
 	}
-	for _, openaiChunk := range openaiChunks {
-		b, err := json.Marshal(openaiChunk)
-		if err != nil {
-			return reverseproxy.Intercept, fmt.Errorf("failed to marshal openai chunk, err: %v", err)
-		}
-		chunkData := vars.ConcatChunkDataPrefix(b)
-		if _, err := w.Write(chunkData); err != nil {
-			return reverseproxy.Intercept, fmt.Errorf("failed to write openai chunk, err: %v", err)
-		}
-	}
+
 	return reverseproxy.Continue, nil
 }
 
@@ -183,6 +228,15 @@ func (f *BedrockDirector) OnResponseEOF(ctx context.Context, infor reverseproxy.
 		infor.Header().Del("Content-Length") // remove content-length header, because we will write chunked response
 		return f.DefaultResponseFilter.OnResponseEOF(ctx, nil, w, b)
 	}
+
+	// stream: add final chunk to buffer and process remaining data
+	if len(chunk) > 0 {
+		f.streamBuffer.Write(chunk)
+		if err := f.processBufferedChunks(ctx, w); err != nil {
+			return err
+		}
+	}
+
 	// append [DONE] chunk
 	doneChunk := vars.ConcatChunkDataPrefix([]byte("[DONE]"))
 	if _, err := w.Write(doneChunk); err != nil {
