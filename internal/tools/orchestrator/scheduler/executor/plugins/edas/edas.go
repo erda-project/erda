@@ -572,7 +572,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 					errString <- err.Error()
 				}
 			} else {
-				spec, err := e.fillServiceSpec(&destService, &sg, false)
+				spec, err := e.fillServiceSpec(&destService, &sg, true)
 				if err != nil {
 					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
 					l.Errorf(errMsg)
