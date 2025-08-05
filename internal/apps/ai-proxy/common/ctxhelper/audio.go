@@ -22,7 +22,6 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 type AudioInfo struct {
@@ -32,7 +31,7 @@ type AudioInfo struct {
 }
 
 func GetAudioInfo(ctx context.Context) (*AudioInfo, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyAudioInfo{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyAudioInfo{})
 	if !ok || value == nil {
 		return nil, false
 	}
@@ -44,6 +43,6 @@ func GetAudioInfo(ctx context.Context) (*AudioInfo, bool) {
 }
 
 func PutAudioInfo(ctx context.Context, info AudioInfo) {
-	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
+	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
 	m.Store(vars.MapKeyAudioInfo{}, &info)
 }

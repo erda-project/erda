@@ -15,17 +15,22 @@
 package main
 
 import (
-	_ "embed"
+	"embed"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	_ "github.com/erda-project/erda/internal/apps/ai-proxy"
+	_ "github.com/erda-project/erda/internal/apps/ai-proxy" // import service hub dependencies
+	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/pkg/common"
 )
 
 //go:embed bootstrap.yml
 var bootstrap string
 
+//go:embed conf/routes
+var routesFS embed.FS
+
 func main() {
+	config.InjectEmbedRoutesFS(routesFS)
 	common.Run(&servicehub.RunOptions{
 		Content: bootstrap,
 	})

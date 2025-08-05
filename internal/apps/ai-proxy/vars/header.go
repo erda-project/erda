@@ -14,11 +14,11 @@
 
 package vars
 
-import "github.com/erda-project/erda/pkg/reverseproxy"
+import "net/http"
 
-func GetFromHeader(infor reverseproxy.HttpInfor, keys ...string) string {
+func GetFromHeader(header http.Header, keys ...string) string {
 	for _, key := range keys {
-		if v := TryUnwrapBase64(infor.Header().Get(key)); v != "" {
+		if v := TryUnwrapBase64(header.Get(key)); v != "" {
 			return v
 		}
 	}

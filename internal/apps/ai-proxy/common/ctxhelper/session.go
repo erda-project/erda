@@ -20,11 +20,10 @@ import (
 
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func GetSession(ctx context.Context) (*sessionpb.Session, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeySession{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeySession{})
 	if !ok || value == nil {
 		return nil, false
 	}

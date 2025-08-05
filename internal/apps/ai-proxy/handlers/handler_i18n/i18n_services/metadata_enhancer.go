@@ -52,7 +52,7 @@ func NewMetadataEnhancerService(ctx context.Context, dao dao.DAO) *MetadataEnhan
 		},
 	}
 	if err := s.PreloadI18nConfigs(); err != nil {
-		ctxhelper.GetLogger(ctx).Warnf("failed to preload i18n configs: %v", err)
+		ctxhelper.MustGetLogger(ctx).Warnf("failed to preload i18n configs: %v", err)
 	}
 	return s
 }

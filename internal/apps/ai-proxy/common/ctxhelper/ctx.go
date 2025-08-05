@@ -15,5 +15,5 @@
 package ctxhelper
 
 type (
-	CtxKeyOfConfig struct{ CtxKeyOfConfig any }
+	CtxKeyMap struct{ CtxKeyMap any }
 )

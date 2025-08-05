@@ -20,11 +20,10 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func GetMessageGroup(ctx context.Context) (*message.Group, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyMessageGroup{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyMessageGroup{})
 	if !ok || value == nil {
 		return nil, false
 	}
@@ -36,6 +35,6 @@ func GetMessageGroup(ctx context.Context) (*message.Group, bool) {
 }
 
 func PutMessageGroup(ctx context.Context, mg message.Group) {
-	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
+	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
 	m.Store(vars.MapKeyMessageGroup{}, &mg)
 }
