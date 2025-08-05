@@ -48,8 +48,11 @@ import (
 	db "github.com/erda-project/erda/internal/tools/orchestrator/hepa/repository/service"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/services/global"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
+
+const RuntimeRegisterConfigMapKey = "HEPA_RUNTIME_REGISTER_ENABLE"
 
 type GatewayGlobalServiceImpl struct {
 	azDb       db.GatewayAzInfoService
@@ -565,8 +568,25 @@ func (impl GatewayGlobalServiceImpl) GetRuntimeServicePrefix(dao *orm.GatewayRun
 	return "/" + dao.Id, nil
 }
 
-func (impl GatewayGlobalServiceImpl) GetGatewayFeatures(clusterName string) map[string]string {
-	return map[string]string{
-		"runtime-register": "on",
+func (impl GatewayGlobalServiceImpl) GetGatewayFeatures(ctx context.Context, clusterName string) (map[string]string, error) {
+	ctx = apis.WithInternalClientContext(ctx, "hepa-server")
+	cluster, err := impl.clusterSvc.GetCluster(ctx, &clusterpb.GetClusterRequest{IdOrName: clusterName})
+	if err != nil {
+		return nil, err
 	}
+
+	if cluster.Data == nil {
+		return nil, errors.New("cluster data is nil")
+	}
+
+	state, ok := cluster.Data.Cm[RuntimeRegisterConfigMapKey]
+	if !ok {
+		return map[string]string{
+			"runtime-register": "on",
+		}, nil
+	}
+
+	return map[string]string{
+		"runtime-register": state,
+	}, nil
 }

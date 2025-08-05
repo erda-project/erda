@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/global/pb"
 	"github.com/erda-project/erda/internal/tools/orchestrator/hepa/common/vars"
@@ -86,7 +87,16 @@ func (s *globalService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 }
 func (s *globalService) GetFeatures(ctx context.Context, req *pb.GetFeaturesRequest) (resp *pb.GetFeaturesResponse, err error) {
 	service := global.Service.Clone(ctx)
-	features := service.GetGatewayFeatures(req.ClusterName)
+	features, err := service.GetGatewayFeatures(ctx, req.ClusterName)
+	if err != nil {
+		logrus.Errorf("failed to get features for cluster %s with error: %v\n", req.ClusterName, err)
+		// use default
+		return &pb.GetFeaturesResponse{
+			Data: map[string]string{
+				"runtime-register": "on",
+			},
+		}, nil
+	}
 	resp = &pb.GetFeaturesResponse{
 		Data: features,
 	}
