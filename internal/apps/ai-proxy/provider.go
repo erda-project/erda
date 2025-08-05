@@ -17,15 +17,10 @@ package ai_proxy
 import (
 	"context"
 	_ "embed"
-	"encoding/json"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"reflect"
-	"sync"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -44,9 +39,7 @@ import (
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
-	common "github.com/erda-project/erda-proto-go/common/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
@@ -60,13 +53,12 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_rich_client"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_session"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/permission"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style_checker"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/gorilla/mux"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/reverseproxy"
+	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
 var (
@@ -88,7 +80,7 @@ var (
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
 				// check admin key first
-				adminKey := vars.TrimBearer(apis.GetHeader(ctx, httputil.HeaderKeyAuthorization))
+				adminKey := vars.TrimBearer(apis.GetHeader(ctx, httperrorutil.HeaderKeyAuthorization))
 				if len(adminKey) > 0 && adminKey == os.Getenv(vars.EnvAIProxyAdminAuthKey) {
 					ctx = context.WithValue(ctx, vars.CtxKeyIsAdmin{}, true)
 					return h(ctx, req)
@@ -109,7 +101,7 @@ var (
 	trySetLang = func() transport.ServiceOption {
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
-				lang := apis.GetHeader(ctx, httputil.HeaderKeyAcceptLanguage)
+				lang := apis.GetHeader(ctx, httperrorutil.HeaderKeyAcceptLanguage)
 				if len(lang) > 0 {
 					ctx = context.WithValue(ctx, vars.CtxKeyAccessLang{}, lang)
 				}
@@ -130,15 +122,30 @@ type provider struct {
 	GRPC           grpcserver.Interface                 `autowired:"grpc-server@ai"`
 	Dao            dao.DAO                              `autowired:"erda.apps.ai-proxy.dao"`
 	DynamicOpenapi dynamic.DynamicOpenapiRegisterServer `autowired:"erda.core.openapi.dynamic_register.DynamicOpenapiRegister"`
-	ErdaOpenapis   map[string]*url.URL
 
 	richClientHandler *handler_rich_client.ClientHandler
+
+	Routes []*router_define.Route
+	Router *router_define.Router
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// config
 	if err := p.Config.DoPost(); err != nil {
 		return err
+	}
+
+	// load route configs
+	yamlFile, err := router_define.LoadRoutesFromEmbeddedDir(p.Config.EmbedRoutesFS)
+	if err != nil {
+		return err
+	}
+	// create rout
+	p.Routes = yamlFile.Routes
+	p.Router = router_define.NewRouter()
+	for _, route := range p.Routes {
+		p.Router.AddRoute(route)
+		p.L.Infof("register route from yaml: %s", route)
 	}
 
 	// register gRPC and http handler
@@ -155,67 +162,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm, trySetLang())
 	mcppb.RegisterMCPServerServiceImp(p, &handler_mcp_server.MCPHandler{DAO: p.Dao}, apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
 
-	// ai-proxy prometheus metrics
-	p.HTTP.Handle("/metrics", http.MethodGet, promhttp.Handler())
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	// reverse proxy to AI provider's server
-	p.ServeAIProxy()
-
-	// openapi on Erda
-	if len(p.ErdaOpenapis) == 0 {
-		p.ErdaOpenapis = make(map[string]*url.URL)
-	}
-	if p.Config.OpenOnErda {
-		if err := p.openAPIsOnErda(); err != nil {
-			p.L.Errorf("failed to open APIs on Erda, err: %v", err)
-			// TODO: return err in next PR
-			//return err
-		}
-	}
+	p.ServeAIProxyV2()
 
 	return nil
 }
 
-func needDeleteContentLengthHeader(response *http.Response) bool {
-	// If the response is from an OpenAI-compatible provider, no response body rewrite
-	provider := ctxhelper.MustGetModelProvider(response.Request.Context())
-	return !api_style_checker.CheckIsOpenAICompatibleByProvider(provider)
-}
-
-var modifyResponseFunc = func(response *http.Response) error {
-	// handle content length header
-	if needDeleteContentLengthHeader(response) {
-		response.Header.Del("Content-Length")
-		response.ContentLength = -1
-	}
-	// cors, set at outside, delete to avoid duplicated `Access-Control-Allow-Origin` header
-	response.Header.Del("Vary")
-	response.Header.Del("Access-Control-Allow-Origin")
-	// ensure content-type to text/event-stream for stream response
-	if ctxhelper.GetIsStream(response.Request.Context()) {
-		response.Header.Set("Content-Type", "text/event-stream")
-	}
-	return nil
-}
-
-func (p *provider) ServeAIProxy() {
-	for _, r := range p.Config.Routes {
-		p.L.Infof("handle route %s %s", r.Path, r.Method)
-	}
-	var f http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
-		p.Config.Routes.FindRoute(r).HandlerWith(
-			context.Background(),
-			ctxhelper.CtxKeyOfConfig{}, p.Config,
-			reverseproxy.LoggerCtxKey{}, p.L.Sub(r.Header.Get(vars.XRequestId)),
-			reverseproxy.MutexCtxKey{}, new(sync.Mutex),
-			reverseproxy.CtxKeyMap{}, new(sync.Map),
-			reverseproxy.CtxKeyModifyResponse{}, modifyResponseFunc,
-			vars.CtxKeyDAO{}, p.Dao,
-			vars.CtxKeyErdaOpenapi{}, p.ErdaOpenapis,
-			vars.CtxKeyRichClientHandler{}, p.richClientHandler,
-		).ServeHTTP(w, r)
-	}
-	p.HTTP.HandlePrefix("/", "*", f, mux.SetXRequestId, mux.CORS)
+func (p *provider) ServeAIProxyV2() {
+	p.HTTP.HandlePrefix("/", "*", p.HandleReverseProxyAPI(), mux.CORS)
 }
 
 func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {
@@ -224,55 +179,4 @@ func (p *provider) Add(method, path string, h transhttp.HandlerFunc) {
 
 func (p *provider) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
 	p.GRPC.RegisterService(desc, impl)
-}
-
-// openAPIsOnErda opens the ai-proxy APIs on Erda
-func (p *provider) openAPIsOnErda() error {
-	auth := &common.APIAuth{
-		CheckLogin: true,
-		CheckToken: true,
-	}
-
-	// register openai APis
-	for _, rout := range p.Config.Routes {
-		if _, err := p.DynamicOpenapi.Register(context.Background(), &dynamic.API{
-			Upstream:    p.Config.SelfURL,
-			Method:      rout.Method,
-			Path:        path.Join("/api/ai-proxy/openai", rout.Path),
-			BackendPath: rout.Path,
-			Auth:        auth,
-		}); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (p *provider) responseNoSuchRoute(w http.ResponseWriter, path, method string) {
-	w.Header().Set("Server", "AI Service on Erda")
-	w.WriteHeader(http.StatusNotFound)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error":  "no such route",
-		"path":   path,
-		"method": method,
-	})
-}
-
-func (p *provider) responseNoSuchFilter(w http.ResponseWriter, filterName string) {
-	w.Header().Set("Server", "AI Service on Erda")
-	w.WriteHeader(http.StatusNotImplemented)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error":  "no such filter",
-		"filter": filterName,
-	})
-}
-
-func (p *provider) responseInstantiateFilterError(w http.ResponseWriter, filterName string) {
-	w.Header().Set("Server", "AI Service on Erda")
-	w.WriteHeader(http.StatusInternalServerError)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"error":  "failed to instantiate filter",
-		"filter": filterName,
-	})
 }

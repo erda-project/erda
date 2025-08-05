@@ -1,0 +1,6 @@
+routes:
+  - path: /v1/models
+    method: GET
+    request_filters:
+      - name: openai-v1-models
+      - name: set-response-chunk-splitter

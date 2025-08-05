@@ -19,11 +19,10 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func GetIsStream(ctx context.Context) bool {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyIsStream{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyIsStream{})
 	if !ok || value == nil {
 		return false
 	}
@@ -35,6 +34,6 @@ func GetIsStream(ctx context.Context) bool {
 }
 
 func PutIsStream(ctx context.Context, isStream bool) {
-	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
+	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
 	m.Store(vars.MapKeyIsStream{}, isStream)
 }

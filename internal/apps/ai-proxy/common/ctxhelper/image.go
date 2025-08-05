@@ -19,7 +19,6 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 type ImageInfo struct {
@@ -29,7 +28,7 @@ type ImageInfo struct {
 }
 
 func GetImageInfo(ctx context.Context) (*ImageInfo, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyImageInfo{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyImageInfo{})
 	if !ok || value == nil {
 		return nil, false
 	}
@@ -41,6 +40,6 @@ func GetImageInfo(ctx context.Context) (*ImageInfo, bool) {
 }
 
 func PutImageInfo(ctx context.Context, info ImageInfo) {
-	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
+	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
 	m.Store(vars.MapKeyImageInfo{}, &info)
 }

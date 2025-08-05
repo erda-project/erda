@@ -1,0 +1,35 @@
+routes:
+  - path: /v1/chat/completions
+    method: POST
+    request_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: rate-limit
+      - name: audit # save audit after rate limit
+        config: { stage: in-create-audit }
+      - name: context
+      - name: context-chat
+      - name: audit
+        config: { stage: in-context-parsed }
+      - name: reserved-header
+      - name: extra-body
+      - name: openai-compatible-director
+      - name: anthropic-compatible-director
+      - name: set-response-chunk-splitter
+      - name: audit
+        config: { stage: out-log }
+      - name: audit
+        config: { stage: out-update }
+    response_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: audit
+        config: { stage: in-update }
+      - name: anthropic-compatible-director
+      - name: set-ai-proxy-header
+      - name: ensure-content-type
+      - name: audit
+        config: { stage: in-parsed }
+      - name: audit
+        config: { stage: out-log }
+      - name: error-status-handler

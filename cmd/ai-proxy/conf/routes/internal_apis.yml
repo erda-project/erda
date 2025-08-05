@@ -1,5 +1,0 @@
-routes:
-  - path: /api/ai-proxy/assets/{uuid}
-    method: GET
-    filters:
-      - name: assets

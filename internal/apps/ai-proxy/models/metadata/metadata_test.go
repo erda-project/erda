@@ -22,7 +22,7 @@ import (
 
 func TestMetadata_FromProtobuf(t *testing.T) {
 	// nil metadata
-	var m *Metadata
+	m := &Metadata{}
 	m.FromProtobuf(nil)
 	assert.NotNil(t, m)
 }
