@@ -2104,6 +2104,16 @@ func (r *Runtime) fullGCForSingleRuntime(runtimeID uint64, keep int) {
 		return
 	}
 	oldestID := top[len(top)-1].ID
+
+	var unMarked = make(map[string]struct{})
+	for i, deployment := range top {
+		if i < keep {
+			unMarked[deployment.ReleaseId] = struct{}{}
+			continue
+		}
+		break
+	}
+
 	var hasSuccess bool
 	for _, deployment := range top {
 		if deployment.Status == apistructs.DeploymentStatusOK {
@@ -2118,6 +2128,9 @@ func (r *Runtime) fullGCForSingleRuntime(runtimeID uint64, keep int) {
 		for i := range deployments {
 			if !hasSuccess && deployments[i].Status == apistructs.DeploymentStatusOK {
 				hasSuccess = true
+				continue
+			}
+			if _, ok := unMarked[deployments[i].ReleaseId]; ok {
 				continue
 			}
 			r.markOutdated(&deployments[i])
