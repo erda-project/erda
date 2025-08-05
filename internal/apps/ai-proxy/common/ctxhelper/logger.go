@@ -16,11 +16,36 @@ package ctxhelper
 
 import (
 	"context"
+	"sync"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/pkg/reverseproxy"
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-func GetLogger(ctx context.Context) logs.Logger {
-	return ctx.Value(reverseproxy.LoggerCtxKey{}).(logs.Logger)
+func MustGetLogger(ctx context.Context) logs.Logger {
+	logger, ok := GetLogger(ctx)
+	if ok {
+		return logger
+	}
+	logger = logrusx.New()
+	PutLogger(ctx, logger)
+	return logger
+}
+
+func GetLogger(ctx context.Context) (logs.Logger, bool) {
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyLogger{})
+	if !ok || value == nil {
+		return nil, false
+	}
+	logger, ok := value.(logs.Logger)
+	if !ok {
+		return nil, false
+	}
+	return logger, true
+}
+
+func PutLogger(ctx context.Context, logger logs.Logger) {
+	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
+	m.Store(vars.MapKeyLogger{}, logger)
 }

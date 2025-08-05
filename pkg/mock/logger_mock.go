@@ -242,6 +242,20 @@ func (mr *MockLoggerMockRecorder) Sub(name interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sub", reflect.TypeOf((*MockLogger)(nil).Sub), name)
 }
 
+// Set mocks base method.
+func (m *MockLogger) Set(k, v string) logs.Logger {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Set", k, v)
+	ret0, _ := ret[0].(logs.Logger)
+	return ret0
+}
+
+// Set indicates an expected call of Set.
+func (mr *MockLoggerMockRecorder) Set(k, v interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockLogger)(nil).Set), k, v)
+}
+
 // Warn mocks base method.
 func (m *MockLogger) Warn(args ...interface{}) {
 	m.ctrl.T.Helper()

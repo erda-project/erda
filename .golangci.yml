@@ -70,3 +70,6 @@ issues:
     - linters:
         - gosec
       text: "G601:" # G601: Implicit memory aliasing in for loop. (gosec)
+    - linters:
+        - gosec
+      text: "G115:" # G115: Potential integer overflow conversion (gosec)

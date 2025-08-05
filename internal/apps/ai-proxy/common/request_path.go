@@ -14,12 +14,6 @@
 
 package common
 
-import (
-	"context"
-
-	"github.com/erda-project/erda/pkg/reverseproxy"
-)
-
 const (
 	RequestPathPrefixV1ChatCompletions = "/v1/chat/completions"
 	RequestPathPrefixV1Completions     = "/v1/completions"
@@ -30,12 +24,7 @@ const (
 
 	RequestPathPrefixV1Files = "/v1/files"
 
-	RequestPathPrefixV1Assistants    = "/v1/assistants"
-	RequestPathPrefixV1Responses     = "/v1/responses"
-	RequestPathPrefixV1Threads       = "/v1/threads"
-	RequestPathV1ThreadCreateMessage = "/v1/threads/{thread_id}/messages"
+	RequestPathPrefixV1Assistants = "/v1/assistants"
+	RequestPathPrefixV1Responses  = "/v1/responses"
+	RequestPathPrefixV1Threads    = "/v1/threads"
 )
-
-func GetRequestRoutePath(ctx context.Context) string {
-	return ctx.Value(reverseproxy.CtxKeyPath{}).(string)
-}

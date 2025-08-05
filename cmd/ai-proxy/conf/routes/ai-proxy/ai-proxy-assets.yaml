@@ -1,0 +1,6 @@
+routes:
+  - path: /api/ai-proxy/assets/{uuid}
+    method: GET
+    request_filters:
+      - name: temp-assets
+      - name: set-response-chunk-splitter

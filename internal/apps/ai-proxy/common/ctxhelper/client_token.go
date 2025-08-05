@@ -20,11 +20,10 @@ import (
 
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func GetClientToken(ctx context.Context) (*clienttokenpb.ClientToken, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyClientToken{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyClientToken{})
 	if !ok || value == nil {
 		return nil, false
 	}

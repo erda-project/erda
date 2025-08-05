@@ -20,11 +20,10 @@ import (
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func GetClient(ctx context.Context) (*clientpb.Client, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyClient{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyClient{})
 	if !ok || value == nil {
 		return nil, false
 	}

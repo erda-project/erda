@@ -33,10 +33,13 @@ const (
 	XAIProxyMetadata           = "X-Ai-Proxy-Metadata"
 	XAiProxyErdaOpenapiSession = "X-Ai-Proxy-Erda-Openapi-Session"
 	XRequestId                 = "X-Request-Id"
+	XRequestIdLLMBackend       = "X-Request-Id-LLM-Backend"
+	XAIProxyGeneratedCallId    = "X-AI-Proxy-Generated-Call-Id"
 
 	XAIProxyModelId        = "X-AI-Proxy-Model-Id"
 	XAIProxySessionId      = "X-AI-Proxy-Session-Id"
 	XAIProxyPromptId       = "X-AI-Proxy-Prompt-Id"
+	XAIProxyModel          = "X-AI-Proxy-Model"
 	XAIProxyModelName      = "X-AI-Proxy-Model-Name"
 	XAIProxyModelPublisher = "X-AI-Proxy-Model-Publisher"
 
@@ -56,20 +59,26 @@ type (
 	CtxKeyAccessLang  struct{ CtxKeyAccessLang string }
 
 	CtxKeyRichClientHandler struct{ CtxKeyRichClientHandler any }
+	CtxKeyPathMatcher       struct{ CtxKeyPathMatcher any }
 
-	MapKeyClient         struct{ MapKeyClient any }
-	MapKeyModel          struct{ MapKeyModel any }
-	MapKeyModelProvider  struct{ MapKeyModelProvider any }
-	MapKeyPromptTemplate struct{ MapKeyPromptTemplate any }
-	MapKeySession        struct{ MapKeySession any }
-	MapKeyClientToken    struct{ MapKeyClientToken any }
-	MapKeyMessageGroup   struct{ MapKeyMessageGroup any }
-	MapKeyUserPrompt     struct{ MapKeyUserPrompt any }
-	MapKeyIsStream       struct{ MapKeyIsStream any }
-	MapKeyAudit          struct{ MapKeyAudit any }
-	MapKeyAudioInfo      struct{ MapKeyAudioInfo any }
-	MapKeyImageInfo      struct{ MapKeyImageInfo any }
+	MapKeyClient             struct{ MapKeyClient any }
+	MapKeyModel              struct{ MapKeyModel any }
+	MapKeyModelProvider      struct{ MapKeyModelProvider any }
+	MapKeyPromptTemplate     struct{ MapKeyPromptTemplate any }
+	MapKeySession            struct{ MapKeySession any }
+	MapKeyClientToken        struct{ MapKeyClientToken any }
+	MapKeyMessageGroup       struct{ MapKeyMessageGroup any }
+	MapKeyUserPrompt         struct{ MapKeyUserPrompt any }
+	MapKeyIsStream           struct{ MapKeyIsStream any }
+	MapKeyAudit              struct{ MapKeyAudit any }
+	MapKeyRequestID          struct{ MapKeyRequestID any }
+	MapKeyGeneratedCallID    struct{ MapKeyGeneratedCallID any }
+	MapKeyResponseChunkIndex struct{ MapKeyResponseChunkIndex any }
+	MapKeyAudioInfo          struct{ MapKeyAudioInfo any }
+	MapKeyImageInfo          struct{ MapKeyImageInfo any }
 
 	MapKeyLLMDirectorPassedOnRequest      struct{ MapKeyLLMDirectorPassedOnRequest any }
 	MapKeyLLMDirectorActualResponseWriter struct{ MapKeyLLMDirectorActualResponseWriter any }
+
+	MapKeyLogger struct{ MapKeyLogger any }
 )

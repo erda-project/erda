@@ -19,11 +19,10 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-	"github.com/erda-project/erda/pkg/reverseproxy"
 )
 
 func GetUserPrompt(ctx context.Context) (string, bool) {
-	value, ok := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyUserPrompt{})
+	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyUserPrompt{})
 	if !ok || value == nil {
 		return "", false
 	}
@@ -35,6 +34,6 @@ func GetUserPrompt(ctx context.Context) (string, bool) {
 }
 
 func PutUserPrompt(ctx context.Context, prompt string) {
-	m := ctx.Value(reverseproxy.CtxKeyMap{}).(*sync.Map)
+	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
 	m.Store(vars.MapKeyUserPrompt{}, prompt)
 }
