@@ -48,5 +48,8 @@ func (f *OpenaiCompatibleDirector) Enable(pr *httputil.ProxyRequest) bool {
 }
 
 func (f *OpenaiCompatibleDirector) OnProxyRequest(pr *httputil.ProxyRequest) error {
+	if !f.Enable(pr) {
+		return nil
+	}
 	return f.CustomHTTPDirector.OnProxyRequest(pr)
 }
