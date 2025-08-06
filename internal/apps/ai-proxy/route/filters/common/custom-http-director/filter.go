@@ -117,7 +117,6 @@ func hostDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) erro
 	r.Host = host
 	r.URL.Host = host
 	r.Header.Set("Host", host)
-	r.Header.Set("X-Forwarded-Host", host)
 	return nil
 }
 
