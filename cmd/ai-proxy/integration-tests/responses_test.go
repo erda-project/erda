@@ -396,6 +396,12 @@ func createNonStreamResponse(t *testing.T, client *common.Client, ctx context.Co
 		t.Fatalf("✗ Create non-stream response failed with status %d: %s", resp.StatusCode, string(resp.Body))
 	}
 
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
+	}
+
 	// Parse response
 	var responseData map[string]any
 	if err := resp.GetJSON(&responseData); err != nil {
@@ -451,6 +457,12 @@ func createChainedNonStreamResponse(t *testing.T, client *common.Client, ctx con
 		t.Fatalf("✗ Create chained non-stream response failed with status %d: %s", resp.StatusCode, string(resp.Body))
 	}
 
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
+	}
+
 	// Parse response
 	var responseData map[string]any
 	if err := resp.GetJSON(&responseData); err != nil {
@@ -502,6 +514,12 @@ func createResponse(t *testing.T, client *common.Client, ctx context.Context, mo
 
 	if !resp.IsSuccess() {
 		t.Fatalf("✗ Create response failed with status %d: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
 	}
 
 	// Parse response
@@ -558,6 +576,12 @@ func createChainedResponse(t *testing.T, client *common.Client, ctx context.Cont
 		t.Fatalf("✗ Create chained response failed with status %d: %s", resp.StatusCode, string(resp.Body))
 	}
 
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
+	}
+
 	// Parse response
 	var responseData map[string]any
 	if err := resp.GetJSON(&responseData); err != nil {
@@ -604,6 +628,12 @@ func getResponse(t *testing.T, client *common.Client, ctx context.Context, respo
 
 	if !resp.IsSuccess() {
 		t.Fatalf("✗ Get response failed with status %d: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
 	}
 
 	var responseData map[string]any
@@ -659,6 +689,12 @@ func getResponseInputItems(t *testing.T, client *common.Client, ctx context.Cont
 		t.Fatalf("✗ Get response input items failed with status %d: %s", resp.StatusCode, string(resp.Body))
 	}
 
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
+	}
+
 	var inputItemsData map[string]any
 	if err := resp.GetJSON(&inputItemsData); err != nil {
 		t.Fatalf("✗ Failed to parse input items response: %v", err)
@@ -710,6 +746,12 @@ func deleteResponse(t *testing.T, client *common.Client, ctx context.Context, re
 
 	if !resp.IsSuccess() {
 		t.Fatalf("✗ Delete response failed with status %d: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
 	}
 
 	var deleteResult map[string]any

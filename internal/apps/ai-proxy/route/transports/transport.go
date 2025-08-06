@@ -29,7 +29,6 @@ import (
 
 	"golang.org/x/net/http/httpproxy"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/body_util"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -66,8 +65,7 @@ func (d *DoNothingTransport) RoundTrip(req *http.Request) (*http.Response, error
 }
 
 type TimerTransport struct {
-	Logger logs.Logger
-	Inner  http.RoundTripper
+	Inner http.RoundTripper
 }
 
 func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -76,8 +74,8 @@ func (t *TimerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		t.Inner = BaseTransport
 	}
 	res, err := t.Inner.RoundTrip(req)
-	t.Logger.Sub(reflect.TypeOf(t).String()).
-		Debugf("RoundTrip costs: %s", time.Now().Sub(start).String())
+	ctxhelper.MustGetLogger(req.Context()).Sub(reflect.TypeOf(t).String()).
+		Infof("RoundTrip costs: %s", time.Now().Sub(start).String())
 	return res, err
 }
 

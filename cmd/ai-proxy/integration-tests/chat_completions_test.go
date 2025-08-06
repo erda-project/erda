@@ -98,6 +98,12 @@ func testChatCompletionNonStreamForModel(t *testing.T, client *common.Client, mo
 		t.Fatalf("✗ Request failed with status %d: %s", resp.StatusCode, string(resp.Body))
 	}
 
+	// Check if response header contains application/json
+	contentType := resp.Headers.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("✗ Expected Content-Type to contain 'application/json', got: %s", contentType)
+	}
+
 	var chatResp openai.ChatCompletionResponse
 	if err := resp.GetJSON(&chatResp); err != nil {
 		t.Fatalf("✗ Failed to parse response: %v", err)
@@ -252,6 +258,163 @@ func analyzeStreamingTiming(t *testing.T, chunkTimes []time.Time, model string) 
 		intervalsMs[i] = fmt.Sprintf("%.3fms", float64(intervals[i].Nanoseconds())/1000000.0)
 	}
 	t.Logf("   First %d intervals: [%s]", maxShow, strings.Join(intervalsMs, " "))
+}
+
+// TestContentTypeHeaders tests content-type headers for both streaming and non-streaming responses
+func TestContentTypeHeaders(t *testing.T) {
+	cfg := config.Get()
+	client := common.NewClient()
+
+	// Test messages
+	testMessages := []openai.ChatCompletionMessage{
+		{Role: "user", Content: "Hello, return a simple greeting"},
+	}
+
+	// Get chat models for testing
+	chatModels := cfg.ChatModels
+	if len(chatModels) == 0 {
+		t.Skip("No chat models configured for testing")
+	}
+
+	for _, model := range chatModels {
+		t.Run(fmt.Sprintf("ContentType_Model_%s", model), func(t *testing.T) {
+			testContentTypeForModel(t, client, model, testMessages)
+		})
+	}
+}
+
+// testContentTypeForModel tests content-type headers for specific model
+func testContentTypeForModel(t *testing.T, client *common.Client, model string, messages []openai.ChatCompletionMessage) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.Get().Timeout)
+	defer cancel()
+
+	// Test 1: Non-streaming response should have application/json; charset=utf-8
+	t.Run("NonStream_ContentType", func(t *testing.T) {
+		request := openai.ChatCompletionRequest{
+			Model:       model,
+			Messages:    messages,
+			MaxTokens:   50,
+			Temperature: 0.1,
+			Stream:      false,
+		}
+
+		resp := client.PostJSON(ctx, "/v1/chat/completions", request)
+
+		if resp.Error != nil {
+			t.Fatalf("✗ Non-stream request failed: %v", resp.Error)
+		}
+
+		if !resp.IsSuccess() {
+			t.Fatalf("✗ Non-stream request failed with status %d: %s", resp.StatusCode, string(resp.Body))
+		}
+
+		// Validate content-type header
+		contentType := resp.Headers.Get("Content-Type")
+		if !strings.Contains(contentType, "application/json") {
+			t.Errorf("✗ Non-stream: Expected Content-Type to contain 'application/json', got: %s", contentType)
+		} else {
+			t.Logf("✓ Non-stream: Correct Content-Type: %s", contentType)
+		}
+
+		// Validate response can be parsed as JSON
+		var chatResp openai.ChatCompletionResponse
+		if err := resp.GetJSON(&chatResp); err != nil {
+			t.Errorf("✗ Failed to parse non-stream JSON response: %v", err)
+		} else {
+			t.Logf("✓ Non-stream: JSON response parsed successfully")
+		}
+	})
+
+	// Test 2: Streaming response should have text/event-stream
+	t.Run("Stream_ContentType", func(t *testing.T) {
+		request := openai.ChatCompletionRequest{
+			Model:       model,
+			Messages:    messages,
+			MaxTokens:   50,
+			Temperature: 0.1,
+			Stream:      true,
+		}
+
+		var streamCount int
+		resp := client.PostJSONStream(ctx, "/v1/chat/completions", request, func(data []byte) error {
+			streamCount++
+			// Just count chunks, don't need to process content for this test
+			return nil
+		})
+
+		if resp.Error != nil {
+			t.Fatalf("✗ Streaming request failed: %v", resp.Error)
+		}
+
+		if !resp.IsSuccess() {
+			t.Fatalf("✗ Streaming request failed with status %d", resp.StatusCode)
+		}
+
+		// Validate content-type header for streaming
+		contentType := resp.Headers.Get("Content-Type")
+		expectedContentType := "text/event-stream"
+		if contentType != expectedContentType {
+			// Some implementations may include charset, so check prefix
+			if !strings.HasPrefix(contentType, expectedContentType) {
+				t.Errorf("✗ Streaming: Expected Content-Type starting with: %s, got: %s", expectedContentType, contentType)
+			} else {
+				t.Logf("✓ Streaming: Correct Content-Type prefix: %s", contentType)
+			}
+		} else {
+			t.Logf("✓ Streaming: Correct Content-Type: %s", contentType)
+		}
+
+		if streamCount == 0 {
+			t.Error("✗ No streaming chunks received")
+		} else {
+			t.Logf("✓ Streaming: Received %d chunks", streamCount)
+		}
+	})
+
+	// Test 3: Validate other common headers are present
+	t.Run("Common_Headers", func(t *testing.T) {
+		request := openai.ChatCompletionRequest{
+			Model:       model,
+			Messages:    messages,
+			MaxTokens:   30,
+			Temperature: 0.1,
+			Stream:      false,
+		}
+
+		resp := client.PostJSON(ctx, "/v1/chat/completions", request)
+
+		if resp.Error != nil {
+			t.Fatalf("✗ Request failed: %v", resp.Error)
+		}
+
+		if !resp.IsSuccess() {
+			t.Fatalf("✗ Request failed with status %d: %s", resp.StatusCode, string(resp.Body))
+		}
+
+		// Log all response headers for debugging
+		t.Logf("✓ Response headers:")
+		for key, values := range resp.Headers {
+			for _, value := range values {
+				t.Logf("   %s: %s", key, value)
+			}
+		}
+
+		// Check for common headers that should be present
+		if date := resp.Headers.Get("Date"); date == "" {
+			t.Logf("⚠ Date header is missing")
+		} else {
+			t.Logf("✓ Date header: %s", date)
+		}
+
+		if server := resp.Headers.Get("Server"); server != "" {
+			t.Logf("✓ Server header: %s", server)
+		}
+
+		// Content-Length should be present for non-chunked responses
+		if contentLength := resp.Headers.Get("Content-Length"); contentLength != "" {
+			t.Logf("✓ Content-Length header: %s", contentLength)
+		}
+	})
 }
 
 // truncateString truncates string to specified length

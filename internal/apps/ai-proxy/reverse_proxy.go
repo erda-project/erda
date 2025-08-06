@@ -113,7 +113,10 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 		proxy := httputil.ReverseProxy{
 			Rewrite: myRewrite(w, filters),
 			Transport: &transports.RequestFilterGeneratedResponseTransport{
-				Inner: &transports.CurlPrinterTransport{}},
+				Inner: &transports.CurlPrinterTransport{
+					Inner: &transports.TimerTransport{},
+				},
+			},
 			FlushInterval:  -1,
 			ErrorLog:       nil,
 			BufferPool:     nil,
@@ -259,14 +262,6 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 
 		go func() {
 			defer upstream.Close()
-
-			//// 3.1 If there's Content-Encoding:gzip/deflate... decompress first
-			//reader, derr := reverseproxy.NewBodyDecompressor(resp.Header, upstream)
-			//if derr != nil {
-			//	pw.CloseWithError(derr)
-			//	return
-			//}
-			//defer reader.(io.Closer).Close()
 
 			if len(filters) == 0 {
 				// If no Modifiers, directly write upstream content to downstream as-is

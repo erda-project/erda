@@ -53,7 +53,7 @@ type BodyModelFinder interface {
 type JSONBodyFinder struct{}
 
 func (f *JSONBodyFinder) FindModelName(req *http.Request, fieldKey string) (string, error) {
-	if req.Header.Get(httperrorutil.HeaderKeyContentType) != string(httperrorutil.ApplicationJson) {
+	if !strings.HasPrefix(req.Header.Get(httperrorutil.HeaderKeyContentType), string(httperrorutil.ApplicationJson)) {
 		return "", nil
 	}
 

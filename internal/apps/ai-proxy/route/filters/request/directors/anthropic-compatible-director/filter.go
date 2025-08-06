@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http/httputil"
+	"os"
 	"strings"
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_segment_getter"
@@ -81,5 +82,11 @@ func (f *AnthropicCompatibleDirectorRequest) OnProxyRequest(pr *httputil.ProxyRe
 	default:
 		return fmt.Errorf("unsupported anthropic-compatible api vendor: %s", apiSegment.APIVendor)
 	}
+
+	// force set internal pod ip as xff for anthropic region restriction
+	if podIP := os.Getenv("POD_IP"); podIP != "" {
+		pr.Out.Header.Set("X-Forwarded-For", podIP)
+	}
+
 	return nil
 }
