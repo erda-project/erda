@@ -25,8 +25,6 @@ type API struct {
 	APIStyle  api_style.APIStyle  `json:"apiStyle,omitempty"`
 	APIVendor api_style.APIVendor `json:"apiVendor,omitempty"`
 
-	// APIStyleConfig is the default APIStyleConfig.
-	APIStyleConfig *api_style.APIStyleConfig `json:"apiStyleConfig,omitempty"`
 	// APIStyleConfigs is route-level APIStyleConfig.
 	// Each map value is a completed APIStyleConfig, not patch to default APIStyleConfig.
 	// Key can be multiple concatenated strings to share configs, like: `*:/v1/files;*:/v1/files/{file_id};*:/v1/files/{file_id}/content`.
@@ -63,6 +61,5 @@ func (api *API) GetAPIStyleConfigByMethodAndPathMatcher(method string, pathMatch
 			return &v
 		}
 	}
-	// TODO return nil after all APIStyleConfig are migrated.
-	return api.APIStyleConfig
+	return nil
 }

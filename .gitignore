@@ -62,6 +62,8 @@ tools/cli/generated_cmd
 tools/cli/command/generate/collectCMDs.go
 # apistructs
 apistructs/generated_desc.go
+# ai-proxy
+internal/apps/ai-proxy/route/filters/all/all.go
 
 # temp data of quickstart
 quick-start/data

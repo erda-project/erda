@@ -19,14 +19,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http/httputil"
-	"os"
 	"strings"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_segment_getter"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/anthropic-compatible-director/anthropic_official"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/anthropic-compatible-director/aws_bedrock"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/anthropic-compatible-director/common/xff"
 	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
 )
 
@@ -70,13 +71,19 @@ func (f *AnthropicCompatibleDirectorRequest) OnProxyRequest(pr *httputil.ProxyRe
 	}
 	// handle the specific anthropic compatible API style
 	apiSegment := api_segment_getter.GetAPISegment(pr.In.Context())
+	method := pr.In.Method
+	pathMatcher := ctxhelper.MustGetPathMatcher(pr.In.Context())
+	apiStyleConfig := apiSegment.GetAPIStyleConfigByMethodAndPathMatcher(method, pathMatcher.Pattern)
+	if apiStyleConfig == nil {
+		return fmt.Errorf("no APIStyleConfig found, method: %s, path: %s", method, pathMatcher.Pattern)
+	}
 	switch strings.ToLower(string(apiSegment.APIVendor)) {
 	case strings.ToLower(string(aws_bedrock.APIVendor)):
-		if err := f.BedrockDirector.AwsBedrockDirector(pr, *apiSegment.APIStyleConfig); err != nil {
+		if err := f.BedrockDirector.AwsBedrockDirector(pr, *apiStyleConfig); err != nil {
 			return fmt.Errorf("failed to handle aws bedrock director: %v", err)
 		}
 	case strings.ToLower(string(anthropic_official.APIVendor)):
-		if err := f.AnthropicDirector.OfficialDirector(pr, *apiSegment.APIStyleConfig); err != nil {
+		if err := f.AnthropicDirector.OfficialDirector(pr, *apiStyleConfig); err != nil {
 			return fmt.Errorf("failed to handle anthropic director: %v", err)
 		}
 	default:
@@ -84,9 +91,7 @@ func (f *AnthropicCompatibleDirectorRequest) OnProxyRequest(pr *httputil.ProxyRe
 	}
 
 	// force set internal pod ip as xff for anthropic region restriction
-	if podIP := os.Getenv("POD_IP"); podIP != "" {
-		pr.Out.Header.Set("X-Forwarded-For", podIP)
-	}
+	xff.InjectPodIPXFF(pr)
 
 	return nil
 }
