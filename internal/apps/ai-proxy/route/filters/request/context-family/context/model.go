@@ -112,19 +112,13 @@ func modelGetter(ctx context.Context, models []*modelpb.Model) *modelpb.Model {
 // getMapOfAvailableNameWithModels.
 // availableName rules: (priority: high -> low)
 // - ${publisher}/${model.name}
-// - ${publisher}/${model.metadata.public.model_id}
-// - ${publisher}/${model.metadata.public.model_name}
 // - ${model.name}
 func getMapOfAvailableNameWithModels(clientModels []*modelpb.Model) map[string][]*modelpb.Model {
 	modelsMap := make(map[string][]*modelpb.Model)
 	for _, model := range clientModels {
 		publisher := model.Metadata.Public["publisher"].GetStringValue()
-		modelIDInMetadata := model.Metadata.Public["model_id"].GetStringValue()
-		modelNameInMetadata := model.Metadata.Public["model_name"].GetStringValue()
 		keys := append([]string{},
 			fmt.Sprintf("%s/%s", publisher, model.Name),
-			fmt.Sprintf("%s/%s", publisher, modelIDInMetadata),
-			fmt.Sprintf("%s/%s", publisher, modelNameInMetadata),
 			model.Name,
 		)
 		for _, key := range keys {
