@@ -73,7 +73,7 @@ func GenerateModelDisplayName(model *richclientpb.RichModel) string {
 }
 
 func ParseModelUUIDFromDisplayName(s string) string {
-	regex := regexp.MustCompile(`\[ID:([^]]*)]`)
+	regex := regexp.MustCompile(`(?i)\[ID:([^]]*)]`)
 	matches := regex.FindAllStringSubmatch(s, 1)
 	if len(matches) == 0 {
 		return ""
