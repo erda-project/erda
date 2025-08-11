@@ -22,7 +22,7 @@ import (
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -31,7 +31,7 @@ type RequestForModel struct {
 }
 
 func findModel(req *http.Request, requestCtx interface{}, client *clientpb.Client) (*modelpb.Model, error) {
-	q := req.Context().Value(vars.CtxKeyDAO{}).(dao.DAO)
+	q := ctxhelper.MustGetDBClient(req.Context())
 
 	// Use unified lookup function
 	identifier, err := findModelIdentifier(req, requestCtx)
@@ -135,7 +135,7 @@ func getMapOfAvailableNameWithModels(clientModels []*modelpb.Model) map[string][
 }
 
 func listAllModels(ctx context.Context) ([]*modelpb.Model, error) {
-	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+	q := ctxhelper.MustGetDBClient(ctx)
 	pagingModelResp, err := q.ModelClient().Paging(ctx, &modelpb.ModelPagingRequest{
 		PageNum:  1,
 		PageSize: 999,
@@ -148,7 +148,7 @@ func listAllModels(ctx context.Context) ([]*modelpb.Model, error) {
 
 func listAllClientModels(ctx context.Context, clientID string) ([]*modelpb.Model, error) {
 	// find client model relations
-	q := ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
+	q := ctxhelper.MustGetDBClient(ctx)
 	clientModelsResp, err := q.ClientModelRelationClient().ListClientModels(ctx, &clientmodelrelationpb.ListClientModelsRequest{ClientId: clientID})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list client models, err: %v", err)

@@ -42,7 +42,7 @@ func (f *AuditResponse) inParsedOnBodyChunk(resp *http.Response, chunk []byte) (
 	}
 	f.inParsed.allChunks = append(f.inParsed.allChunks, chunk...)
 
-	if ctxhelper.GetIsStream(resp.Request.Context()) {
+	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		completion, responseFunctionCallName := ExtractEventStreamCompletionAndFcName(string(chunk))
 		f.inParsed.completion += completion
 		f.inParsed.responseFunctionCallName = f.inParsed.responseFunctionCallName + responseFunctionCallName + " "
@@ -56,7 +56,7 @@ func (f *AuditResponse) inParsedOnComplete(resp *http.Response) (out []byte, err
 		return nil, nil
 	}
 
-	if !ctxhelper.GetIsStream(resp.Request.Context()) {
+	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		var completion, responseFunctionCallName string
 		// routing by model type
 		model := ctxhelper.MustGetModel(resp.Request.Context())

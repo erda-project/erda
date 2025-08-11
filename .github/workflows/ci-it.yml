@@ -136,7 +136,8 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.49.0
-          args: --timeout=30m
+          # Use both GitHub annotations and plain log output with filenames
+          args: --out-format=tab,github-actions --timeout=30m
           #skip-go-installation: true # not available in v1.49.0
           #skip-cache: true # not available in v1.49.0
           skip-pkg-cache: true

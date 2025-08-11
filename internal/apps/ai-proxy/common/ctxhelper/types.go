@@ -15,21 +15,21 @@
 package ctxhelper
 
 import (
-	"context"
-	"sync"
+	"net/textproto"
 
-	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/pyroscope-io/pyroscope/pkg/util/bytesize"
 )
 
-func GetSession(ctx context.Context) (*sessionpb.Session, bool) {
-	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeySession{})
-	if !ok || value == nil {
-		return nil, false
-	}
-	session, ok := value.(*sessionpb.Session)
-	if !ok {
-		return nil, false
-	}
-	return session, true
+// AudioInfo represents audio file information
+type AudioInfo struct {
+	FileName    string               `json:"fileName"`
+	FileSize    bytesize.ByteSize    `json:"fileSize"`
+	FileHeaders textproto.MIMEHeader `json:"fileHeaders"`
+}
+
+// ImageInfo represents image generation parameters
+type ImageInfo struct {
+	ImageQuality string `json:"imageQuality"`
+	ImageSize    string `json:"imageSize"`
+	ImageStyle   string `json:"imageStyle"`
 }

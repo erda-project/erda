@@ -20,13 +20,11 @@ import (
 	"net/http/httputil"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"gopkg.in/yaml.v3"
 
-	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/message"
@@ -67,14 +65,9 @@ func (c *SessionContext) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	)
 
 	// judge use session-id or prompt-id
-	sessionValue, sessionOk := pr.In.Context().Value(ctxhelper.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeySession{})
-	promptValue, promptOk := pr.In.Context().Value(ctxhelper.CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyPromptTemplate{})
+	session, sessionOk := ctxhelper.GetSession(pr.In.Context())
+	prompt, promptOk := ctxhelper.GetPromptTemplate(pr.In.Context())
 
-	if !sessionOk && !promptOk {
-		return nil
-	}
-	session, sessionOk := sessionValue.(*sessionpb.Session)
-	prompt, promptOk := promptValue.(*promptpb.Prompt)
 	if !sessionOk && !promptOk {
 		return nil
 	}

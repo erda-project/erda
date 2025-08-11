@@ -43,7 +43,7 @@ func GetSplitterByResp(resp *http.Response) ChunkSplitter {
 
 	// 0) Prefer splitter already stored in context, if compatible
 	if resp != nil && resp.Request != nil {
-		if sp := ctxhelper.GetRespBodyChunkSplitter(resp.Request.Context()); sp != nil {
+		if sp, ok := ctxhelper.GetRespBodyChunkSplitter(resp.Request.Context()); ok && sp != nil {
 			ct := resp.Header.Get("Content-Type")
 			if isCompatible(sp, ct) {
 				underlying = sp

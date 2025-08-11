@@ -62,7 +62,7 @@ func NewDirector() *BedrockDirector {
 
 func (f *BedrockDirector) AwsBedrockDirector(pr *httputil.ProxyRequest, apiStyleConfig api_style.APIStyleConfig) error {
 	// handle path for stream
-	if ctxhelper.GetIsStream(pr.Out.Context()) {
+	if ctxhelper.MustGetIsStream(pr.Out.Context()) {
 		pr.Out.URL.Path = strings.ReplaceAll(pr.Out.URL.Path, "/invoke", "/invoke-with-response-stream")
 		// use bedrock stream splitter
 		ctxhelper.PutRespBodyChunkSplitter(pr.Out.Context(), &set_resp_body_chunk_splitter.BedrockStreamSplitter{})
@@ -150,7 +150,7 @@ func SignAwsRequest(pr *httputil.ProxyRequest, bodyBytes []byte) error {
 
 func (f *BedrockDirector) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
 	// non-stream
-	if !ctxhelper.GetIsStream(resp.Request.Context()) {
+	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		// convert all at once
 		var bedrockResp message_converter.AnthropicResponse
 		if err := json.Unmarshal(chunk, &bedrockResp); err != nil {
@@ -182,7 +182,7 @@ func (f *BedrockDirector) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte
 }
 
 func (f *BedrockDirector) OnComplete(resp *http.Response) ([]byte, error) {
-	if ctxhelper.GetIsStream(resp.Request.Context()) {
+	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		// append [DONE] chunk
 		doneChunk := vars.ConcatChunkDataPrefix([]byte("[DONE]"))
 		return doneChunk, nil

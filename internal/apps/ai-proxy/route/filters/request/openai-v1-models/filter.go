@@ -16,7 +16,6 @@ package openai_v1_models
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,7 +31,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 const (
@@ -57,9 +55,7 @@ var Creator filter_define.RequestRewriterCreator = func(_ string, _ json.RawMess
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// Set context for client handling
 	ctx := pr.In.Context()
-	var (
-		richClientHandler = ctx.Value(vars.CtxKeyRichClientHandler{}).(*handler_rich_client.ClientHandler)
-	)
+	richClientHandler := ctxhelper.MustGetRichClientHandler(ctx).(*handler_rich_client.ClientHandler)
 	// try set clientId by ak
 	client, err := akutil.CheckAkOrToken(ctx, pr.In, ctxhelper.MustGetDBClient(ctx))
 	if err != nil {
@@ -68,12 +64,15 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	if client == nil {
 		return http_error.NewHTTPError(http.StatusUnauthorized, "Client not found")
 	}
-	ctx = context.WithValue(ctx, vars.CtxKeyClient{}, client)
-	ctx = context.WithValue(ctx, vars.CtxKeyClientId{}, client.Id)
+	ctxhelper.PutClient(ctx, client)
+	ctxhelper.PutClientId(ctx, client.Id)
 
 	richClient, err := richClientHandler.GetByAccessKeyId(ctx, &richclientpb.GetByClientAccessKeyIdRequest{AccessKeyId: client.AccessKeyId})
 	if err != nil {
 		return http_error.NewHTTPError(http.StatusInternalServerError, "Failed to get rich client")
+	}
+	if richClient == nil {
+		return http_error.NewHTTPError(http.StatusUnauthorized, "Client not found")
 	}
 	// convert to openai /v1/models response, see: https://platform.openai.com/docs/api-reference/models/list
 	var oaiFormatModels []ExtendedOpenAIModelForList

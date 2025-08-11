@@ -42,7 +42,7 @@ func init() {
 
 func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
 	// Only handle non-streaming responses with Content-Type as application/json
-	if ctxhelper.GetIsStream(resp.Request.Context()) {
+	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		return chunk, nil
 	}
 
