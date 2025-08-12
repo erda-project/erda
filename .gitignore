@@ -64,6 +64,7 @@ tools/cli/command/generate/collectCMDs.go
 apistructs/generated_desc.go
 # ai-proxy
 internal/apps/ai-proxy/route/filters/all/all.go
+internal/apps/ai-proxy/common/ctxhelper/generated.go
 
 # temp data of quickstart
 quick-start/data
@@ -105,3 +106,7 @@ testdata/
 
 # claude code
 CLAUDE.md
+
+# go cache
+.gocache/
+.gomodcache/

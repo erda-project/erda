@@ -23,7 +23,6 @@ import (
 	"net/http/httputil"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 
@@ -36,7 +35,6 @@ import (
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 type FilterWithName struct {
@@ -48,8 +46,8 @@ type FilterWithName struct {
 func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// inject context
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, ctxhelper.CtxKeyMap{}, new(sync.Map))
+		ctx := ctxhelper.InitCtxMapIfNeed(r.Context())
+		r = r.WithContext(ctx)
 
 		// create a request-level Logger
 		logger := logrusx.New().Sub("reverse-proxy-api")
@@ -103,11 +101,9 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 			filters = append(filters, FilterWithName{Name: filterConfig.Name, Stage: "response", Instance: f})
 		}
 
-		ctx = context.WithValue(ctx, vars.CtxKeyDAO{}, p.Dao)
-		ctx = context.WithValue(ctx, vars.CtxKeyRichClientHandler{}, p.richClientHandler)
-		ctx = context.WithValue(ctx, vars.CtxKeyPathMatcher{}, matchedRoute.GetPathMatcher())
-
-		r = r.WithContext(ctx)
+		ctxhelper.PutDBClient(ctx, p.Dao)
+		ctxhelper.PutRichClientHandler(ctx, p.richClientHandler)
+		ctxhelper.PutPathMatcher(ctx, matchedRoute.GetPathMatcher())
 
 		// reverse proxy
 		proxy := httputil.ReverseProxy{
@@ -123,13 +119,12 @@ func (p *provider) HandleReverseProxyAPI() http.HandlerFunc {
 			ModifyResponse: myResponseModify(w, filters),
 			ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 				// check error at rewrite stage
-				rewriteErr := ctxhelper.TryGetProxyErrorAtRewriteStage(r.Context())
-				if rewriteErr != nil {
+				if rewriteErr, _ := ctxhelper.GetReverseProxyAtRewriteStage(r.Context()); rewriteErr != nil {
 					err = rewriteErr
 				}
 
 				// Check if error is from response modifier
-				if responseErr := ctxhelper.GetResponseModifierError(r.Context()); responseErr != nil {
+				if responseErr, _ := ctxhelper.GetResponseModifierError(r.Context()); responseErr != nil {
 					err = responseErr
 				}
 
@@ -155,7 +150,7 @@ var myRewrite = func(w http.ResponseWriter, filters []FilterWithName) func(*http
 			if brokenInErr == nil {
 				return
 			}
-			ctxhelper.PutProxyErrorAtRewriteStage(pr.In.Context(), brokenInErr)
+			ctxhelper.PutReverseProxyAtRewriteStage(pr.In.Context(), brokenInErr)
 			// force make RoundTrip failed and handle error at ErrorHandler
 			pr.Out.URL.Host = ""
 			pr.Out.URL.Scheme = ""
@@ -253,7 +248,7 @@ var myResponseModify = func(w http.ResponseWriter, filters []FilterWithName) fun
 
 		// Force chunked transfer, worry-free
 		resp.Header.Del("Content-Length")
-		if ctxhelper.GetIsStream(resp.Request.Context()) && resp.Header.Get("Content-Type") == "" {
+		if ctxhelper.MustGetIsStream(resp.Request.Context()) && resp.Header.Get("Content-Type") == "" {
 			resp.Header.Set("Content-Type", "text/event-stream; charset=utf-8")
 		}
 

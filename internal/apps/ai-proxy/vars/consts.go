@@ -49,36 +49,3 @@ const (
 const (
 	EnvAIProxyAdminAuthKey = "AI_PROXY_ADMIN_AUTH_KEY"
 )
-
-type (
-	CtxKeyDAO         struct{ CtxKeyDAO any }
-	CtxKeyErdaOpenapi struct{ CtxKeyErdaOpenapi any }
-	CtxKeyIsAdmin     struct{ CtxKeyIsAdmin bool }
-	CtxKeyClientId    struct{ CtxKeyClientId string }
-	CtxKeyClient      struct{ CtxKeyClient any }
-	CtxKeyAccessLang  struct{ CtxKeyAccessLang string }
-
-	CtxKeyRichClientHandler struct{ CtxKeyRichClientHandler any }
-	CtxKeyPathMatcher       struct{ CtxKeyPathMatcher any }
-
-	MapKeyClient             struct{ MapKeyClient any }
-	MapKeyModel              struct{ MapKeyModel any }
-	MapKeyModelProvider      struct{ MapKeyModelProvider any }
-	MapKeyPromptTemplate     struct{ MapKeyPromptTemplate any }
-	MapKeySession            struct{ MapKeySession any }
-	MapKeyClientToken        struct{ MapKeyClientToken any }
-	MapKeyMessageGroup       struct{ MapKeyMessageGroup any }
-	MapKeyUserPrompt         struct{ MapKeyUserPrompt any }
-	MapKeyIsStream           struct{ MapKeyIsStream any }
-	MapKeyAudit              struct{ MapKeyAudit any }
-	MapKeyRequestID          struct{ MapKeyRequestID any }
-	MapKeyGeneratedCallID    struct{ MapKeyGeneratedCallID any }
-	MapKeyResponseChunkIndex struct{ MapKeyResponseChunkIndex any }
-	MapKeyAudioInfo          struct{ MapKeyAudioInfo any }
-	MapKeyImageInfo          struct{ MapKeyImageInfo any }
-
-	MapKeyLLMDirectorPassedOnRequest      struct{ MapKeyLLMDirectorPassedOnRequest any }
-	MapKeyLLMDirectorActualResponseWriter struct{ MapKeyLLMDirectorActualResponseWriter any }
-
-	MapKeyLogger struct{ MapKeyLogger any }
-)

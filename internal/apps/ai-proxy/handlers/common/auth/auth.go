@@ -18,11 +18,11 @@ import (
 	"context"
 
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 )
 
 func IsAdmin(ctx context.Context) bool {
-	isAdmin, ok := ctx.Value(vars.CtxKeyIsAdmin{}).(bool)
+	isAdmin, ok := ctxhelper.GetIsAdmin(ctx)
 	if !ok {
 		return false
 	}
@@ -30,7 +30,7 @@ func IsAdmin(ctx context.Context) bool {
 }
 
 func IsClient(ctx context.Context) bool {
-	clientId, ok := ctx.Value(vars.CtxKeyClientId{}).(string)
+	clientId, ok := ctxhelper.GetClientId(ctx)
 	if !ok {
 		return false
 	}
@@ -38,11 +38,13 @@ func IsClient(ctx context.Context) bool {
 }
 
 func GetClientId(ctx context.Context) string {
-	return ctx.Value(vars.CtxKeyClientId{}).(string)
+	clientId, _ := ctxhelper.GetClientId(ctx)
+	return clientId
 }
 
 func GetClient(ctx context.Context) *clientpb.Client {
-	return ctx.Value(vars.CtxKeyClient{}).(*clientpb.Client)
+	client, _ := ctxhelper.GetClient(ctx)
+	return client
 }
 
 func Valid(ctx context.Context) bool {

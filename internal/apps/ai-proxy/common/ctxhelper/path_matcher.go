@@ -16,28 +16,10 @@ package ctxhelper
 
 import (
 	"context"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define/path_matcher"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
-func MustGetPathMatcher(ctx context.Context) *path_matcher.PathMatcher {
-	pm, ok := GetPathMatcher(ctx)
-	if !ok {
-		panic("path matcher not found in context")
-	}
-	return pm
-}
-
-func GetPathMatcher(ctx context.Context) (*path_matcher.PathMatcher, bool) {
-	v := ctx.Value(vars.CtxKeyPathMatcher{})
-	if v == nil {
-		return nil, false
-	}
-	pm, ok := v.(*path_matcher.PathMatcher)
-	return pm, ok
-}
-
+// GetPathParam retrieves a path parameter by key from the PathMatcher in context
+// This is a convenience function that combines PathMatcher retrieval with parameter lookup
 func GetPathParam(ctx context.Context, key string) (string, bool) {
 	pm, ok := GetPathMatcher(ctx)
 	if !ok {

@@ -15,9 +15,7 @@
 package set_ai_proxy_header
 
 import (
-	"context"
 	"net/http"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,7 +63,7 @@ func TestFilter_OnHeaders_RequestIdHandling(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Create context and sync.Map, set both IDs
-			ctx := context.WithValue(req.Context(), ctxhelper.CtxKeyMap{}, new(sync.Map))
+			ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
 			req = req.WithContext(ctx)
 			ctxhelper.PutRequestID(ctx, tt.requestID)
 			ctxhelper.PutGeneratedCallID(ctx, tt.generatedCallID)
@@ -149,7 +147,7 @@ func TestFilter_handleRequestIdHeaders(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Create context and sync.Map, set both IDs
-			ctx := context.WithValue(req.Context(), ctxhelper.CtxKeyMap{}, new(sync.Map))
+			ctx := ctxhelper.InitCtxMapIfNeed(req.Context())
 			req = req.WithContext(ctx)
 			ctxhelper.PutRequestID(ctx, tt.requestID)
 			ctxhelper.PutGeneratedCallID(ctx, tt.generatedCallID)

@@ -136,12 +136,6 @@ func getCustomBodyModelNameFinderByMethodAndPath(method, path string) BodyModelF
 // Currently returns empty string, indicating use of default "model" field
 func getCustomBodyModelFieldByPathAndMethod(method, path string) string {
 	// Currently no special cases require APIs using non-"model" fields
-
-	// anthropic
-	if method == http.MethodPost && strings.HasPrefix(path, "/proxy/v1/anthropic") {
-		return "model"
-	}
-
 	return ""
 }
 

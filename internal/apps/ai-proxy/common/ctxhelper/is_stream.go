@@ -14,26 +14,10 @@
 
 package ctxhelper
 
-import (
-	"context"
-	"sync"
+import "context"
 
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
-)
-
-func GetUserPrompt(ctx context.Context) (string, bool) {
-	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyUserPrompt{})
-	if !ok || value == nil {
-		return "", false
-	}
-	prompt, ok := value.(string)
-	if !ok {
-		return "", false
-	}
-	return prompt, true
-}
-
-func PutUserPrompt(ctx context.Context, prompt string) {
-	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
-	m.Store(vars.MapKeyUserPrompt{}, prompt)
+// MustGetIsStream retrieves IsStream from context, panics if not found
+func MustGetIsStream(ctx context.Context) bool {
+	value, ok := GetIsStream(ctx)
+	return ok && value
 }

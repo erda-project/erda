@@ -40,7 +40,7 @@ func init() {
 
 func (f *Filter) OnHeaders(resp *http.Response) error {
 	if resp.StatusCode == http.StatusOK {
-		if ctxhelper.GetIsStream(resp.Request.Context()) {
+		if ctxhelper.MustGetIsStream(resp.Request.Context()) {
 			resp.Header.Set("Content-Type", "text/event-stream")
 		}
 	}

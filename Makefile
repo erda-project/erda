@@ -200,9 +200,15 @@ ifeq "$(SKIP_PREPARE)" ""
 	${GO_BUILD_ENV} go generate ./apistructs && \
 	${GO_BUILD_ENV} go generate ./internal/core/openapi/legacy/api/generate && \
 	${GO_BUILD_ENV} go generate ./internal/core/openapi/legacy/component-protocol/generate && \
-	${GO_BUILD_ENV} go generate ./internal/apps/ai-proxy/route/filters/all/generate
-	make prepare-cli
+	make prepare-cli && \
+	make prepare-ai-proxy
 endif
+
+.PHONY: prepare-ai-proxy
+prepare-ai-proxy:
+	cd "${PROJ_PATH}" && \
+	${GO_BUILD_ENV} go generate ./internal/apps/ai-proxy/common/ctxhelper && \
+	${GO_BUILD_ENV} go generate ./internal/apps/ai-proxy/route/filters/all/generate
 
 proto-go-in-ci:
 	cd api/proto-go && \

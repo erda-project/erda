@@ -8,6 +8,8 @@ run:
     - tools/cli/generated_cmd
     - tools/cli/command/generate
     - internal/core/openapi/legacy/api/generate
+    - internal/apps/ai-proxy/common/ctxhelper/generated.go
+    - internal/apps/ai-proxy/route/filters/all/all.go
     - pkg/parser/pipelineyml/pipelineymlv1
     - third_party
     - pkg/mock

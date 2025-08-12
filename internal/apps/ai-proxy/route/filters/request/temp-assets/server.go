@@ -23,11 +23,10 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define/path_matcher"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/transports"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -60,7 +59,7 @@ var Creator filter_define.RequestRewriterCreator = func(_ string, _ json.RawMess
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.Out.Context()
 	// get uuid from path
-	pathMatcher := ctx.Value(vars.CtxKeyPathMatcher{}).(*path_matcher.PathMatcher)
+	pathMatcher := ctxhelper.MustGetPathMatcher(ctx)
 	uuid := pathMatcher.Values["uuid"]
 	if uuid == "" {
 		return http_error.NewHTTPError(http.StatusBadRequest, "missing uuid in path")

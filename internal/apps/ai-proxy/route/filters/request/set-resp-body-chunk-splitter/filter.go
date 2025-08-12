@@ -36,12 +36,12 @@ func init() {
 }
 
 func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
-	splitter := ctxhelper.GetRespBodyChunkSplitter(pr.Out.Context())
+	splitter, _ := ctxhelper.GetRespBodyChunkSplitter(pr.Out.Context())
 	if splitter != nil {
 		return nil
 	}
 	// set default splitter based on streaming or not
-	if ctxhelper.GetIsStream(pr.Out.Context()) {
+	if ctxhelper.MustGetIsStream(pr.Out.Context()) {
 		ctxhelper.PutRespBodyChunkSplitter(pr.Out.Context(), &SSESplitter{})
 	} else {
 		ctxhelper.PutRespBodyChunkSplitter(pr.Out.Context(), &WholeStreamSplitter{})

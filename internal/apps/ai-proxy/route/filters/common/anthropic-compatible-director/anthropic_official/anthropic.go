@@ -76,7 +76,7 @@ func (f *AnthropicDirector) OfficialDirector(pr *httputil.ProxyRequest, apiStyle
 
 func (f *AnthropicDirector) OnBodyChunk(resp *http.Response, chunk []byte) ([]byte, error) {
 	// non-stream
-	if !ctxhelper.GetIsStream(resp.Request.Context()) {
+	if !ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		// convert all at once
 		var anthropicResp message_converter.AnthropicResponse
 		if err := json.Unmarshal(chunk, &anthropicResp); err != nil {
@@ -108,7 +108,7 @@ func (f *AnthropicDirector) OnBodyChunk(resp *http.Response, chunk []byte) ([]by
 }
 
 func (f *AnthropicDirector) OnComplete(resp *http.Response) ([]byte, error) {
-	if ctxhelper.GetIsStream(resp.Request.Context()) {
+	if ctxhelper.MustGetIsStream(resp.Request.Context()) {
 		// append [DONE] chunk
 		doneChunk := vars.ConcatChunkDataPrefix([]byte("[DONE]"))
 		return doneChunk, nil

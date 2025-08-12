@@ -16,11 +16,10 @@ package ctxhelper
 
 import (
 	"context"
-	"sync"
-
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
+// MustGetResponseChunkIndex retrieves ResponseChunkIndex from context, returns -1 if not found
+// This overrides the generated MustGetResponseChunkIndex to provide special fallback logic
 func MustGetResponseChunkIndex(ctx context.Context) int {
 	index, ok := GetResponseChunkIndex(ctx)
 	if !ok {
@@ -29,37 +28,14 @@ func MustGetResponseChunkIndex(ctx context.Context) int {
 	return index
 }
 
-func GetResponseChunkIndex(ctx context.Context) (int, bool) {
-	value, ok := ctx.Value(CtxKeyMap{}).(*sync.Map).Load(vars.MapKeyResponseChunkIndex{})
-	if !ok || value == nil {
-		return 0, false
-	}
-	index, ok := value.(int)
-	if !ok {
-		return 0, false
-	}
-	return index, true
-}
-
-func PutResponseChunkIndex(ctx context.Context, index int) {
-	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
-	m.Store(vars.MapKeyResponseChunkIndex{}, index)
-}
-
 func IncrementResponseChunkIndex(ctx context.Context) int {
-	m := ctx.Value(CtxKeyMap{}).(*sync.Map)
-	value, ok := m.Load(vars.MapKeyResponseChunkIndex{})
-	if !ok || value == nil {
-		m.Store(vars.MapKeyResponseChunkIndex{}, 1)
-		return 1
-	}
-	index, ok := value.(int)
+	index, ok := GetResponseChunkIndex(ctx)
 	if !ok {
-		m.Store(vars.MapKeyResponseChunkIndex{}, 1)
+		PutResponseChunkIndex(ctx, 1)
 		return 1
 	}
 	newIndex := index + 1
-	m.Store(vars.MapKeyResponseChunkIndex{}, newIndex)
+	PutResponseChunkIndex(ctx, newIndex)
 	return newIndex
 }
 
