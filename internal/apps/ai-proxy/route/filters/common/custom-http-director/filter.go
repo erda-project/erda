@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata/api_segment/api_style"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -43,11 +44,20 @@ func (f *CustomHTTPDirector) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	provider := ctxhelper.MustGetModelProvider(ctx)
 	providerNormalMeta := metadata.FromProtobuf(provider.Metadata)
 	providerMeta := providerNormalMeta.MustToModelProviderMeta()
+	// merge model & provider api segment
+	var modelAPISegment *api_segment.API
+	modelPublicAPISegmentValue, ok := ctxhelper.MustGetModel(ctx).Metadata.Public["api"]
+	if ok {
+		modelAPISegment = &api_segment.API{}
+		cputil.MustObjJSONTransfer(modelPublicAPISegmentValue, modelAPISegment)
+	}
 
-	// handle api style config
+	// handle api style config - merge provider and model configs
 	method := pr.In.Method
 	pathMatcher := ctxhelper.MustGetPathMatcher(ctx)
-	apiStyleConfig := providerMeta.Public.API.GetAPIStyleConfigByMethodAndPathMatcher(method, pathMatcher.Pattern)
+
+	// Merge configs with priority: provider (lower) -> model (higher)
+	apiStyleConfig := api_segment.MergeAPIStyleConfig(method, pathMatcher.Pattern, providerMeta.Public.API, modelAPISegment)
 	if apiStyleConfig == nil {
 		return fmt.Errorf("no APIStyleConfig found, method: %s, path: %s", method, pathMatcher.Pattern)
 	}
@@ -80,6 +90,11 @@ func (f *CustomHTTPDirector) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	// headers
 	if err := headersDirector(r, *apiStyleConfig); err != nil {
 		return fmt.Errorf("failed to set headers director, err: %v", err)
+	}
+
+	// body
+	if err := bodyDirector(r, *apiStyleConfig); err != nil {
+		return fmt.Errorf("failed to set body director, err: %v", err)
 	}
 
 	return nil
@@ -241,4 +256,19 @@ func handleJSONPathTemplate(ctx context.Context, s string) string {
 	cputil.MustObjJSONTransfer(&availableObjects, &jsonMap)
 	result := parser.SearchAndReplace(s, jsonMap)
 	return result
+}
+
+func bodyDirector(r *http.Request, apiStyleConfig api_style.APIStyleConfig) error {
+	if apiStyleConfig.Body == nil {
+		return nil
+	}
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "" {
+		return nil
+	}
+	transformer := getBodyTransformerByContentType(contentType)
+	if transformer == nil {
+		return nil
+	}
+	return transformer.Transform(r, apiStyleConfig.Body)
 }
