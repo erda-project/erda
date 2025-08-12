@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	custom_http_director "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/common/custom-http-director"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
@@ -51,6 +52,7 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 	}
 
 	f.handleRequestIdHeaders(resp)
+	f.handleRequestBodyTransformHeaders(resp)
 
 	return nil
 }
@@ -67,4 +69,19 @@ func (f *Filter) handleRequestIdHeaders(resp *http.Response) {
 	// Set two independent IDs to response headers
 	resp.Header.Set(vars.XRequestId, ctxhelper.MustGetRequestID(resp.Request.Context()))                    // Client-controllable Request ID
 	resp.Header.Set(vars.XAIProxyGeneratedCallId, ctxhelper.MustGetGeneratedCallID(resp.Request.Context())) // System-generated Call ID
+}
+
+// handleRequestBodyTransformHeaders handles body transformation related headers
+func (f *Filter) handleRequestBodyTransformHeaders(resp *http.Response) {
+	bodyTransformChanges, ok := ctxhelper.GetRequestBodyTransformChanges(resp.Request.Context())
+	if !ok || bodyTransformChanges == nil {
+		return
+	}
+	v, ok := bodyTransformChanges.(*[]custom_http_director.BodyTransformChange)
+	if !ok {
+		return
+	}
+	if changesJSON, err := json.Marshal(v); err == nil {
+		resp.Header.Set(vars.XAIProxyRequestBodyTransform, string(changesJSON))
+	}
 }

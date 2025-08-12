@@ -86,10 +86,32 @@ func testChatCompletionNonStreamForModel(t *testing.T, client *common.Client, mo
 		Stream:      false,
 	}
 
+	// Set reasoning_effort to "low" for OpenAI reasoning models to save tokens
+	if strings.HasPrefix(model, "openai/gpt-5") {
+		// Use a map to set custom fields that aren't in the struct
+		requestMap := map[string]interface{}{
+			"model":            model,
+			"messages":         messages,
+			"max_tokens":       5000,
+			"temperature":      0.7,
+			"stream":           false,
+			"reasoning_effort": "low",
+		}
+		startTime := time.Now()
+		resp := client.PostJSON(ctx, "/v1/chat/completions", requestMap)
+		responseTime := time.Since(startTime)
+		validateNonStreamResponse(t, resp, model, responseTime)
+		return
+	}
+
 	startTime := time.Now()
 	resp := client.PostJSON(ctx, "/v1/chat/completions", request)
 	responseTime := time.Since(startTime)
 
+	validateNonStreamResponse(t, resp, model, responseTime)
+}
+
+func validateNonStreamResponse(t *testing.T, resp *common.APIResponse, model string, responseTime time.Duration) {
 	if resp.Error != nil {
 		t.Fatalf("✗ Request failed: %v", resp.Error)
 	}
@@ -119,8 +141,10 @@ func testChatCompletionNonStreamForModel(t *testing.T, client *common.Client, mo
 	if len(chatResp.Choices) == 0 {
 		t.Error("✗ No choices in response")
 	}
-	if chatResp.Choices[0].Message.Content == "" {
-		t.Error("✗ Empty message content")
+	// Allow empty content if reasoning tokens are present (for GPT-5)
+	if chatResp.Choices[0].Message.Content == "" &&
+		(chatResp.Usage.CompletionTokensDetails == nil || chatResp.Usage.CompletionTokensDetails.ReasoningTokens == 0) {
+		t.Error("✗ Empty message content and no reasoning tokens")
 	}
 	if chatResp.Choices[0].FinishReason == "" {
 		t.Error("✗ Empty finish reason")
@@ -141,42 +165,73 @@ func testChatCompletionStreamingForModel(t *testing.T, client *common.Client, mo
 		Stream:      true,
 	}
 
+	// For OpenAI reasoning models, use low-level request with reasoning_effort
+	if strings.HasPrefix(model, "openai/gpt-5") {
+		requestMap := map[string]interface{}{
+			"model":            model,
+			"messages":         messages,
+			"max_tokens":       5000, // Set high max tokens to allow full response
+			"temperature":      0.7,
+			"stream":           true,
+			"reasoning_effort": "low",
+		}
+
+		var content strings.Builder
+		var streamCount int
+		var chunkTimes []time.Time
+
+		resp := client.PostJSONStream(ctx, "/v1/chat/completions", requestMap, func(data []byte) error {
+			return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
+		})
+
+		validateStreamResponse(t, resp, &content, streamCount, chunkTimes, model)
+		return
+	}
+
 	var content strings.Builder
 	var streamCount int
-	var chunkTimes []time.Time // Record arrival time of each chunk
+	var chunkTimes []time.Time
 
 	resp := client.PostJSONStream(ctx, "/v1/chat/completions", request, func(data []byte) error {
-		chunkTimes = append(chunkTimes, time.Now()) // Record chunk arrival time
-		var streamResp openai.ChatCompletionStreamResponse
-		if err := json.Unmarshal(data, &streamResp); err != nil {
-			return fmt.Errorf("failed to parse stream response: %w", err)
-		}
-
-		streamCount++
-
-		// Validate streaming response
-		// When choices length is 0, allow other fields to be empty, e.g., first chunk of gpt-4o only has prompt_filter_results field with value
-		if len(streamResp.Choices) == 0 && len(streamResp.PromptFilterResults) == 0 && streamResp.Usage == nil {
-			return fmt.Errorf("stream response has no choices, prompt_filter_results, or usage")
-		}
-		if len(streamResp.Choices) > 0 {
-			if len(streamResp.ID) == 0 {
-				return fmt.Errorf("stream response ID is empty")
-			}
-			if streamResp.Object != "chat.completion.chunk" {
-				return fmt.Errorf("expected object 'chat.completion.chunk', got '%s'", streamResp.Object)
-			}
-			// Model name may change, only do basic validation
-			if streamResp.Model == "" {
-				return fmt.Errorf("stream response model is empty")
-			}
-			// Accumulate content
-			content.WriteString(streamResp.Choices[0].Delta.Content)
-		}
-
-		return nil
+		return handleStreamChunk(data, &content, &streamCount, &chunkTimes)
 	})
 
+	validateStreamResponse(t, resp, &content, streamCount, chunkTimes, model)
+}
+
+func handleStreamChunk(data []byte, content *strings.Builder, streamCount *int, chunkTimes *[]time.Time) error {
+	*chunkTimes = append(*chunkTimes, time.Now()) // Record chunk arrival time
+	var streamResp openai.ChatCompletionStreamResponse
+	if err := json.Unmarshal(data, &streamResp); err != nil {
+		return fmt.Errorf("failed to parse stream response: %w", err)
+	}
+
+	*streamCount++
+
+	// Validate streaming response
+	// When choices length is 0, allow other fields to be empty, e.g., first chunk of gpt-4o only has prompt_filter_results field with value
+	if len(streamResp.Choices) == 0 && len(streamResp.PromptFilterResults) == 0 && streamResp.Usage == nil {
+		return fmt.Errorf("stream response has no choices, prompt_filter_results, or usage")
+	}
+	if len(streamResp.Choices) > 0 {
+		if len(streamResp.ID) == 0 {
+			return fmt.Errorf("stream response ID is empty")
+		}
+		if streamResp.Object != "chat.completion.chunk" {
+			return fmt.Errorf("expected object 'chat.completion.chunk', got '%s'", streamResp.Object)
+		}
+		// Model name may change, only do basic validation
+		if streamResp.Model == "" {
+			return fmt.Errorf("stream response model is empty")
+		}
+		// Accumulate content
+		content.WriteString(streamResp.Choices[0].Delta.Content)
+	}
+
+	return nil
+}
+
+func validateStreamResponse(t *testing.T, resp *common.APIResponse, content *strings.Builder, streamCount int, chunkTimes []time.Time, model string) {
 	if resp.Error != nil {
 		t.Fatalf("✗ Streaming request failed: %v", resp.Error)
 	}

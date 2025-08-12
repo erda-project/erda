@@ -47,6 +47,16 @@ func AllAPIStyles() []APIStyle {
 	}
 }
 
+// APIVendor based on the APIStyle, indicates the vendor of the API.
+//
+// For some reason, although the APIStyle is same, the body detail maybe a bit different, e.g.,
+// - APIStyle: Anthropic-Compatible
+//   - APIVendor: Anthropic vs AWS-Bedrock
+//   - different: bedrock set model name in path, while Anthropic set model name in body
+//
+// So, this field is necessary to distinguish the implementation details inside one APIStyle director.
+type APIVendor string
+
 type APIStyleConfig struct {
 	// Method for the API, e.g., POST, GET.
 	// default is empty, means to use request method.
@@ -87,14 +97,38 @@ type APIStyleConfig struct {
 	//   -> Authorization: []string{"Delete"}
 	//   -> Api-Key: []string{"Add", "provider.api_key"}
 	Headers map[string][]string `json:"headers,omitempty"`
+
+	// Body transformation rules for the API request.
+	// Currently only supports JSON body transformation.
+	Body *BodyTransform `json:"body,omitempty"`
 }
 
-// APIVendor based on the APIStyle, indicates the vendor of the API.
-//
-// For some reason, although the APIStyle is same, the body detail maybe a bit different, e.g.,
-// - APIStyle: Anthropic-Compatible
-//   - APIVendor: Anthropic vs AWS-Bedrock
-//   - different: bedrock set model name in path, while Anthropic set model name in body
-//
-// So, this field is necessary to distinguish the implementation details inside one APIStyle director.
-type APIVendor string
+// BodyTransform defines the transformation rules for request body.
+// Operations are executed in a fixed order: rename -> default -> force -> drop -> clamp
+// This structure is content-type agnostic - the same operations apply to JSON, FormData, etc.
+type BodyTransform struct {
+	// Rename: parameter name mapping, e.g., {"max_tokens": "max_completion_tokens"}
+	// If both old and new names exist in request, new name takes precedence and old name is removed
+	Rename map[string]string `json:"rename,omitempty"`
+
+	// Default: set default values for missing parameters, e.g., {"temperature": 1}
+	// Only sets value if the key doesn't exist in the request
+	Default map[string]any `json:"default,omitempty"`
+
+	// Force: force set values, overriding existing ones, e.g., {"temperature": 1}
+	// Always sets the value regardless of whether the key exists
+	Force map[string]any `json:"force,omitempty"`
+
+	// Drop: explicitly drop parameters, e.g., ["top_p", "frequency_penalty"]
+	Drop []string `json:"drop,omitempty"`
+
+	// Clamp: apply min/max constraints to numeric values
+	// e.g., {"max_completion_tokens": {"min": 1, "max": 8192}}
+	Clamp map[string]NumericClamp `json:"clamp,omitempty"`
+}
+
+// NumericClamp defines min/max constraints for numeric values
+type NumericClamp struct {
+	Min *float64 `json:"min,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+}
