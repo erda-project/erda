@@ -69,7 +69,7 @@ func (f *ExtraBody) setExtraJSONBody(pr *httputil.ProxyRequest) error {
 		return fmt.Errorf("failed to decode request body, err: %v", err)
 	}
 	commonModelMeta := metadata.FromProtobuf(ctxhelper.MustGetModel(pr.Out.Context()).Metadata)
-	if err := FulfillExtraJSONBody(&commonModelMeta, ctxhelper.GetIsStream(pr.Out.Context()), jsonBody); err != nil {
+	if err := FulfillExtraJSONBody(&commonModelMeta, ctxhelper.MustGetIsStream(pr.Out.Context()), jsonBody); err != nil {
 		return fmt.Errorf("failed to fulfill extra json body, err: %v", err)
 	}
 	b, err := json.Marshal(jsonBody)

@@ -44,7 +44,7 @@ func (d *DecompressingChunkSplitter) NextChunk(r io.Reader) ([]byte, error) {
 		d.initialized = true
 
 		// Get original Content-Encoding value from context
-		ce := ctxhelper.GetResponseContentEncoding(d.resp.Request.Context())
+		ce, _ := ctxhelper.GetResponseContentEncoding(d.resp.Request.Context())
 		if ce != "" && ce != "identity" {
 			d.decompressNeeded = true
 			// Create a temporary header to pass to decompressor

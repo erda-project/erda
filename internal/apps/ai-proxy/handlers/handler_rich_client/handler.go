@@ -23,11 +23,11 @@ import (
 	clientmodelrelationpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_model_relation/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/auth"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_i18n/i18n_services"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/i18n"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -103,10 +103,8 @@ func (h *ClientHandler) GetByAccessKeyId(ctx context.Context, req *pb.GetByClien
 
 	// get from ctx
 	inputLang := string(i18n.LocaleDefault)
-	if v := ctx.Value(vars.CtxKeyAccessLang{}); v != nil {
-		if vv, ok := v.(string); ok {
-			inputLang = vv
-		}
+	if lang, ok := ctxhelper.GetAccessLang(ctx); ok {
+		inputLang = lang
 	}
 	locale := i18n_services.GetLocaleFromContext(inputLang)
 	for _, model := range modelPagingResp.List {

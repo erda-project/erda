@@ -21,10 +21,10 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/auth"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/internal/pkg/audit"
 )
 
@@ -100,7 +100,7 @@ var checkAndSetClientId = func(methods map[string]*MethodPermission) interceptor
 				logrus.Errorf("[reject] permission undefined, method: %s", fullMethodName)
 				return nil, handlers.ErrNoPermission
 			}
-			clientId, ok := ctx.Value(vars.CtxKeyClientId{}).(string)
+			clientId, ok := ctxhelper.GetClientId(ctx)
 			if !ok || clientId == "" {
 				return h(ctx, req)
 			}

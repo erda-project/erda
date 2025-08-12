@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/router_define/path_matcher"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
@@ -111,31 +112,34 @@ func TestPathFinder_Find(t *testing.T) {
 		{
 			name: "find model from path parameter",
 			setupContext: func() context.Context {
-				ctx := context.Background()
-				// Create path matcher and set it in context
+				ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
+				// Create path matcher and set it in context using ctxhelper
 				pm := path_matcher.NewPathMatcher("/test/{model}")
 				pm.SetValue("model", "gpt-4")
-				return context.WithValue(ctx, vars.CtxKeyPathMatcher{}, pm)
+				ctxhelper.PutPathMatcher(ctx, pm)
+				return ctx
 			},
 			expectedResult: &ModelIdentifier{Name: "gpt-4"},
 		},
 		{
 			name: "find model with UUID format from path",
 			setupContext: func() context.Context {
-				ctx := context.Background()
+				ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 				pm := path_matcher.NewPathMatcher("/test/{model}")
 				pm.SetValue("model", "gpt-4 [ID:uuid-789]")
-				return context.WithValue(ctx, vars.CtxKeyPathMatcher{}, pm)
+				ctxhelper.PutPathMatcher(ctx, pm)
+				return ctx
 			},
 			expectedResult: &ModelIdentifier{ID: "uuid-789", Name: "gpt-4 [ID:uuid-789]"},
 		},
 		{
 			name: "no model in path parameters",
 			setupContext: func() context.Context {
-				ctx := context.Background()
+				ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 				pm := path_matcher.NewPathMatcher("/test/{other}")
 				pm.SetValue("other", "value")
-				return context.WithValue(ctx, vars.CtxKeyPathMatcher{}, pm)
+				ctxhelper.PutPathMatcher(ctx, pm)
+				return ctx
 			},
 			expectedResult: nil,
 		},
@@ -435,10 +439,10 @@ func TestFindModelIdentifier(t *testing.T) {
 		{
 			name: "find model from path when no header",
 			setupRequest: func() *http.Request {
-				ctx := context.Background()
+				ctx := ctxhelper.InitCtxMapIfNeed(context.Background())
 				pm := path_matcher.NewPathMatcher("/test/{model}")
 				pm.SetValue("model", "path-model")
-				ctx = context.WithValue(ctx, vars.CtxKeyPathMatcher{}, pm)
+				ctxhelper.PutPathMatcher(ctx, pm)
 
 				req := httptest.NewRequest("POST", "/test", strings.NewReader(`{"model": "body-model"}`))
 				req.Header.Set("Content-Type", "application/json")

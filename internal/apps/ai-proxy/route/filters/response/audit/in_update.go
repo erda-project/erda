@@ -66,7 +66,7 @@ func (f *AuditResponse) inUpdateOnComplete(resp *http.Response) (out []byte, err
 		}(),
 		ResponseContentType: resp.Header.Get(httputil.HeaderKeyContentType),
 		ResponseStreamDoneAt: func() *timestamppb.Timestamp {
-			if ctxhelper.GetIsStream(resp.Request.Context()) {
+			if ctxhelper.MustGetIsStream(resp.Request.Context()) {
 				return timestamppb.New(time.Now())
 			}
 			return nil

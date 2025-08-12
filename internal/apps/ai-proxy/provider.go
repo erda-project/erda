@@ -40,6 +40,7 @@ import (
 	promptpb "github.com/erda-project/erda-proto-go/apps/aiproxy/prompt/pb"
 	sessionpb "github.com/erda-project/erda-proto-go/apps/aiproxy/session/pb"
 	dynamic "github.com/erda-project/erda-proto-go/core/openapi/dynamic-register/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/config"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/common/akutil"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/handlers/handler_client"
@@ -79,10 +80,11 @@ var (
 	trySetAuth = func(dao dao.DAO) transport.ServiceOption {
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
+				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
 				// check admin key first
 				adminKey := vars.TrimBearer(apis.GetHeader(ctx, httperrorutil.HeaderKeyAuthorization))
 				if len(adminKey) > 0 && adminKey == os.Getenv(vars.EnvAIProxyAdminAuthKey) {
-					ctx = context.WithValue(ctx, vars.CtxKeyIsAdmin{}, true)
+					ctxhelper.PutIsAdmin(ctx, true)
 					return h(ctx, req)
 				}
 				// try set clientId by ak
@@ -91,8 +93,8 @@ var (
 					return nil, err
 				}
 				if client != nil {
-					ctx = context.WithValue(ctx, vars.CtxKeyClient{}, client)
-					ctx = context.WithValue(ctx, vars.CtxKeyClientId{}, client.Id)
+					ctxhelper.PutClient(ctx, client)
+					ctxhelper.PutClientId(ctx, client.Id)
 				}
 				return h(ctx, req)
 			}
@@ -101,9 +103,10 @@ var (
 	trySetLang = func() transport.ServiceOption {
 		return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
 			return func(ctx context.Context, req interface{}) (interface{}, error) {
+				ctx = ctxhelper.InitCtxMapIfNeed(ctx)
 				lang := apis.GetHeader(ctx, httperrorutil.HeaderKeyAcceptLanguage)
 				if len(lang) > 0 {
-					ctx = context.WithValue(ctx, vars.CtxKeyAccessLang{}, lang)
+					ctxhelper.PutAccessLang(ctx, lang)
 				}
 				return h(ctx, req)
 			}

@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
-	"sync"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
@@ -33,7 +32,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/client_token"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/metadata"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
@@ -60,9 +58,8 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	ctx := pr.Out.Context()
 
 	var (
-		l = ctxhelper.MustGetLogger(pr.In.Context())
-		q = ctx.Value(vars.CtxKeyDAO{}).(dao.DAO)
-		m = ctx.Value(ctxhelper.CtxKeyMap{}).(*sync.Map)
+		l = ctxhelper.MustGetLogger(ctx)
+		q = ctxhelper.MustGetDBClient(ctx)
 	)
 
 	// find client
@@ -88,7 +85,7 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 			return http_error.NewHTTPError(http.StatusForbidden, "Authorization is invalid")
 		}
 		client = clientResp
-		m.Store(vars.MapKeyClientToken{}, token)
+		ctxhelper.PutClientToken(ctx, token)
 	} else {
 		clientPagingResult, err := q.ClientClient().Paging(ctx, &clientpb.ClientPagingRequest{
 			AccessKeyIds: []string{ak},
@@ -142,11 +139,11 @@ func (f *Context) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	}
 
 	// store data to context
-	m.Store(vars.MapKeyClient{}, client)
-	m.Store(vars.MapKeyModel{}, model)
-	m.Store(vars.MapKeyModelProvider{}, modelProvider)
-	m.Store(vars.MapKeyPromptTemplate{}, prompt)
-	m.Store(vars.MapKeySession{}, session)
+	ctxhelper.PutClient(ctx, client)
+	ctxhelper.PutModel(ctx, model)
+	ctxhelper.PutModelProvider(ctx, modelProvider)
+	ctxhelper.PutPromptTemplate(ctx, prompt)
+	ctxhelper.PutSession(ctx, session)
 
 	// model name will be set by specific context-xxx filters
 
