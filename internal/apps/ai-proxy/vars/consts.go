@@ -43,6 +43,8 @@ const (
 	XAIProxyModelName      = "X-AI-Proxy-Model-Name"
 	XAIProxyModelPublisher = "X-AI-Proxy-Model-Publisher"
 
+	XAIProxyRequestBodyTransform = "X-AI-Proxy-Request-Body-Transform"
+
 	UIValueUndefined = "undefined"
 )
 
