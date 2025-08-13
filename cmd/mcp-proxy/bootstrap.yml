@@ -5,35 +5,16 @@ grpc-server@ai:
   addr: ":8082"
 
 erda.app.ai-proxy:
-  routes_refs:
-    - conf/routes/routes.yml
-    - conf/routes/responses.yml
-    - conf/routes/file.yml
-    - conf/routes/openai_format.yml
-    - conf/routes/internal_apis.yml
   log_level: ${LOG_LEVEL:info}
-  open_on_erda: ${OPEN_ON_ERDA:true} # 是否将 API 通过 Erda Openapi 暴露出来
+  mcp_proxy_addr: ${MCP_PROXY_ADDR:""}
 
 gorm.v2:
   debug: ${MYSQL_DEBUG:false}
 
 erda.apps.ai-proxy.dao:
-erda.app.ai-proxy.metrics:
 
 # gRPC clients
 grpc-client@erda.core.openapi.dynamic_register:
   addr: ${ERDA_SERVER_GRPC_ADDR:erda-server:8096}
   block: false
 erda.core.openapi.dynamic_register-client: { }
-
-redis:
-  addr: ${REDIS_ADDR}
-  master_name: ${MASTER_NAME}
-  sentinels_addr: ${REDIS_SENTINELS}
-  password: ${REDIS_PASSWORD}
-  dial_timeout: 60s
-  read_timeout: 60s
-  write_timeout: 60s
-  pool_size: ${REDIS_POOL_SIZE:10}
-  pool_timeout: 60s
-  idle_timeout: 60s

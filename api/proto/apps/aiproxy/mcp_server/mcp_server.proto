@@ -42,12 +42,12 @@ message MCPServerToolInputSchema {
 service MCPServerService {
   rpc Get(MCPServerGetRequest) returns (MCPServerGetResponse) {
     option(google.api.http) = {
-      get: "/api/ai-proxy/mcp/servers/{name}?version={version}"
+      get: "/api/ai-proxy/mcp/servers/{name}?version={version}&raw_endpoint={raw_endpoint}"
     };
   }
   rpc List(MCPServerListRequest) returns (MCPServerListResponse) {
     option(google.api.http) = {
-      get: "/api/ai-proxy/mcp/servers"
+      get: "/api/ai-proxy/mcp/servers?raw_endpoint={raw_endpoint}"
     };
   }
   rpc Update(MCPServerUpdateRequest) returns (MCPServerUpdateResponse) {
@@ -63,7 +63,7 @@ service MCPServerService {
   }
   rpc Version(MCPServerVersionRequest) returns(MCPServerVersionResponse) {
     option(google.api.http) = {
-      get: "/api/ai-proxy/mcp/servers/{name}/versions"
+      get: "/api/ai-proxy/mcp/servers/{name}/versions?raw_endpoint={raw_endpoint}"
     };
   }
   rpc Register(MCPServerRegisterRequest) returns (MCPServerRegisterResponse) {
@@ -83,6 +83,7 @@ service MCPServerService {
 message MCPServerGetRequest {
   string name = 1 [(validate.rules).string = {min_len: 1}];
   string version = 2;
+  bool raw_endpoint = 3;
 }
 
 message MCPServerGetResponse {
@@ -93,6 +94,7 @@ message MCPServerListRequest {
   uint64 pageNum = 1 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
   uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
   bool includeUnpublished = 3;
+  bool raw_endpoint = 4;
 }
 
 message MCPServerListResponse {
@@ -126,6 +128,7 @@ message MCPServerVersionRequest {
   uint64 pageSize = 2 [(validate.rules).uint64 = {ignore_empty: true, gte: 1, lte: 1000}];
   string name = 3 [(validate.rules).string = {min_len: 1}];
   bool includeUnpublished = 4;
+  bool raw_endpoint = 5;
 }
 
 message MCPServerVersionResponse {
