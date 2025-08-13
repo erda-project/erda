@@ -1,15 +1,54 @@
 # see: internal/pkg/ai-proxy/route/route.go#Routes
 
 routes:
-  - path: /connect/mcp-server/{mcpMame}/{mcpTag}/{transportType}
-    method: any
-    router: null
-    filters:
-#      - name: audit-mcp-server
-      - name: mcp-server-director
-  - path: /message
+  - path: /proxy/connect/{mcpMame}/{mcpTag}
+    method: GET
+    request_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: audit
+        config: { stage: in-create-audit }
+      - name: context-mcp-server
+      - name: mcp-server-request
+      - name: audit
+        config: { stage: out-log }
+    response_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: mcp-server-response
+      - name: audit
+        config: { stage: out-log }
+  - path: /proxy/connect/{mcpMame}/{mcpTag}
     method: POST
-    router: null
-    filters:
-#      - name: audit-mcp-server
-      - name: mcp-server-director
+    request_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: audit
+        config: { stage: in-create-audit }
+      - name: context-mcp-server
+      - name: mcp-server-request
+      - name: audit
+        config: { stage: out-log }
+    response_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: mcp-server-response
+      - name: audit
+        config: { stage: out-log }
+  - path: /proxy/message/{mcpMame}/{mcpTag}/*
+    method: POST
+    request_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: audit
+        config: { stage: in-create-audit }
+      - name: context-mcp-server
+      - name: mcp-server-request
+      - name: audit
+        config: { stage: out-log }
+    response_filters:
+      - name: audit
+        config: { stage: in-log }
+      - name: mcp-server-response
+      - name: audit
+        config: { stage: out-log }
