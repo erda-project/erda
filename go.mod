@@ -138,7 +138,7 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/afero v1.11.0
-	github.com/spf13/cast v1.6.0
+	github.com/spf13/cast v1.7.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spotify/flink-on-k8s-operator v0.5.1-alpha.3
 	github.com/stretchr/testify v1.10.0
@@ -486,6 +486,7 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
+	github.com/mark3labs/mcp-go v0.37.0 // indirect
 )
 
 replace (

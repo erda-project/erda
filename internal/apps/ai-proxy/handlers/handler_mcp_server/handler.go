@@ -15,82 +15,29 @@
 package handler_mcp_server
 
 import (
+	"bytes"
 	"context"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/cache"
-	"github.com/sirupsen/logrus"
-	"time"
-
+	"errors"
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
+var addrRegex = regexp.MustCompile(`^https?://([^:/]+)(?::(\d+))?$`)
+
 type MCPHandler struct {
-	DAO      dao.DAO
-	listener *cache.EventListener
+	DAO          dao.DAO
+	McpProxyAddr string
 }
 
-func NewMCPHandler(d dao.DAO) *MCPHandler {
+func NewMCPHandler(d dao.DAO, addr string) *MCPHandler {
 	handler := MCPHandler{
-		DAO:      d,
-		listener: cache.NewEventListener(),
+		DAO:          d,
+		McpProxyAddr: strings.TrimSuffix(addr, "/"),
 	}
-	taskFunc := func() {
-		logrus.Infof("will sync mcp server from database to cache")
-
-		mcpServers, err := handler.DAO.MCPServerClient().ListAll(context.Background(), false)
-		if err != nil {
-			logrus.Errorf("mcp server list error: %v", err)
-			return
-		}
-
-		// clean cache
-		handler.listener.Send(context.Background(), &cache.Event{
-			Method: cache.EventMethodClear,
-		})
-		time.Sleep(1 * time.Second)
-
-		for _, server := range mcpServers {
-			logrus.Infof("load mcp server %+v, endpoint: %+v", server.Name, server.Endpoint)
-			handler.listener.Send(context.Background(), &cache.Event{
-				Method: cache.EventMethodSet,
-				Name:   server.Name,
-				Tag:    server.Version,
-				Data: &cache.McpServerInfo{
-					Endpoint:      server.Endpoint,
-					Tag:           server.Version,
-					Name:          server.Name,
-					Version:       server.Version,
-					TransportType: server.TransportType,
-				},
-			})
-		}
-		logrus.Infof("sync mcp server done")
-	}
-	// first time run task
-	taskFunc()
-
-	go func() {
-		// run task every 1:00 am
-		now := time.Now()
-		next := time.Date(now.Year(), now.Month(), now.Day(), 1, 0, 0, 0, now.Location())
-
-		if now.After(next) {
-			next = next.Add(24 * time.Hour)
-		}
-
-		duration := next.Sub(now)
-		logrus.Infof("sync task will run after: %+v", duration)
-
-		time.AfterFunc(duration, func() {
-			ticker := time.NewTicker(24 * time.Hour)
-			for range ticker.C {
-				taskFunc()
-			}
-		})
-	}()
-
-	handler.listener.OnEvent(context.Background())
 	return &handler
 }
 
@@ -113,6 +60,16 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 		return nil, err
 	}
 
+	if !req.RawEndpoint {
+		if err := VerifyAddr(m.McpProxyAddr); err != nil {
+			return nil, err
+		}
+
+		for i := range servers {
+			servers[i].Endpoint = m.buildEndpoint(servers[i])
+		}
+	}
+
 	return &pb.MCPServerVersionResponse{
 		Total: total,
 		List:  servers,
@@ -128,7 +85,17 @@ func (m *MCPHandler) Publish(ctx context.Context, req *pb.MCPServerActionPublish
 }
 
 func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.MCPServerGetResponse, error) {
-	return m.DAO.MCPServerClient().Get(ctx, req)
+	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
+	mcpServer := resp.GetData()
+
+	if !req.RawEndpoint {
+		if err := VerifyAddr(m.McpProxyAddr); err != nil {
+			return nil, err
+		}
+		mcpServer.Endpoint = m.buildEndpoint(mcpServer)
+	}
+
+	return resp, err
 }
 
 func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*pb.MCPServerListResponse, error) {
@@ -141,8 +108,50 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 		return nil, err
 	}
 
+	if !req.RawEndpoint {
+		if err := VerifyAddr(m.McpProxyAddr); err != nil {
+			return nil, err
+		}
+
+		for i := range servers {
+			servers[i].Endpoint = m.buildEndpoint(servers[i])
+		}
+	}
+
 	return &pb.MCPServerListResponse{
 		Total: total,
 		List:  servers,
 	}, nil
+}
+
+func (m *MCPHandler) buildEndpoint(server *pb.MCPServer) string {
+	// http://127.0.0.1:8081/proxy/connect/demo/1.0.0
+	buffer := bytes.Buffer{}
+	buffer.WriteString(m.McpProxyAddr)
+	buffer.WriteString("/proxy/connect/")
+	buffer.WriteString(server.Name)
+	buffer.WriteString("/")
+	buffer.WriteString(server.Version)
+	return buffer.String()
+}
+
+func VerifyAddr(addr string) error {
+	if addr == "" {
+		return errors.New("mcp proxy addr is empty")
+	}
+
+	matches := addrRegex.FindStringSubmatch(addr)
+	if matches == nil {
+		return errors.New("mcp proxy addr is invalid")
+	}
+
+	// matches[1] 是 host，matches[2] 是 port（可选）
+	if matches[2] != "" {
+		port, err := strconv.Atoi(matches[2])
+		if err != nil || port < 1 || port > 65535 {
+			return errors.New("mcp proxy addr port is invalid")
+		}
+	}
+
+	return nil
 }
