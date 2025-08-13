@@ -11,6 +11,7 @@ help:
 	@echo ""
 	@echo "Main targets:"
 	@echo "  test                   - Run all tests (chat completions + responses)"
+	@echo "  test-except-images     - Run all tests except image generation (faster)"
 	@echo "  setup                  - Set up test environment (copy .env.example to .env)"
 	@echo "  check                  - Check compilation and syntax"
 	@echo "  clean                  - Clean test cache"
@@ -26,6 +27,7 @@ help:
 	@echo "  test-responses-nonstream - Run responses non-stream tests"
 	@echo "  test-responses-stream  - Run responses stream tests"
 	@echo "  test-openai-v1-models  - Run OpenAI v1/models tests"
+	@echo "  test-rich-client       - Run rich client API tests"
 	@echo "  test-chat              - Alias for test-chat-completions"
 	@echo ""
 	@echo "Utility targets:"
@@ -43,8 +45,12 @@ setup:
 	fi
 
 ## Run all tests
-test: test-chat-completions test-audio test-images test-embeddings test-responses test-openai-v1-models
+test: test-chat-completions test-audio test-images test-embeddings test-responses test-openai-v1-models test-rich-client
 	@echo "✓ All tests completed!"
+
+## Run all tests except image generation (faster execution)
+test-except-images: test-chat-completions test-audio test-embeddings test-responses test-openai-v1-models test-rich-client
+	@echo "✓ All tests completed (excluding image generation)!"
 
 
 ## ===== Individual API type test targets =====
@@ -101,6 +107,12 @@ test-openai-v1-models: setup mod-init
 	@echo "Running OpenAI v1/models tests..."
 	go test -v -count=1 -timeout 300s -failfast -run "^TestV1Models" ./...
 	@echo "✓ All OpenAI v1/models tests completed!"
+
+## Run rich client API tests
+test-rich-client: setup mod-init
+	@echo "Running Rich Client API tests..."
+	go test -v -count=1 -timeout 300s -failfast -run "^TestRichClientAPI" ./...
+	@echo "✓ All Rich Client API tests completed!"
 
 ## ===== Utility test targets =====
 
