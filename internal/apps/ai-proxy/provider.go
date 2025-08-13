@@ -168,7 +168,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	i18npb.RegisterI18NServiceImp(p, &handler_i18n.I18nHandler{DAO: p.Dao}, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckI18nPerm)
 	p.richClientHandler = &handler_rich_client.ClientHandler{DAO: p.Dao}
 	richclientpb.RegisterRichClientServiceImp(p, p.richClientHandler, apis.Options(), encoderOpts, trySetAuth(p.Dao), permission.CheckRichClientPerm, trySetLang())
-	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
+	mcppb.RegisterMCPServerServiceImp(p, handler_mcp_server.NewMCPHandler(p.Dao, p.Config.McpProxyAddr), apis.Options(), trySetAuth(p.Dao), permission.CheckMCPPerm)
 
 	p.HTTP.Handle("/health", http.MethodGet, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	// reverse proxy to AI provider's server
