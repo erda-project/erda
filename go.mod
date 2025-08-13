@@ -1,8 +1,6 @@
 module github.com/erda-project/erda
 
-go 1.23
-
-toolchain go1.24.4
+go 1.24
 
 require (
 	bou.ke/monkey v1.0.2
