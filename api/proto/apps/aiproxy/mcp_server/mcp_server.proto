@@ -42,11 +42,13 @@ message MCPServerToolInputSchema {
 service MCPServerService {
   rpc Get(MCPServerGetRequest) returns (MCPServerGetResponse) {
     option(google.api.http) = {
+      // if `raw_endpoint` is false show mcp proxy endpoint, default is mcp raw endpoint
       get: "/api/ai-proxy/mcp/servers/{name}?version={version}&raw_endpoint={raw_endpoint}"
     };
   }
   rpc List(MCPServerListRequest) returns (MCPServerListResponse) {
     option(google.api.http) = {
+      // if `raw_endpoint` is false show mcp proxy endpoint, default is mcp raw endpoint
       get: "/api/ai-proxy/mcp/servers?raw_endpoint={raw_endpoint}"
     };
   }
@@ -63,6 +65,7 @@ service MCPServerService {
   }
   rpc Version(MCPServerVersionRequest) returns(MCPServerVersionResponse) {
     option(google.api.http) = {
+      // if `raw_endpoint` is false show mcp proxy endpoint, default is mcp raw endpoint
       get: "/api/ai-proxy/mcp/servers/{name}/versions?raw_endpoint={raw_endpoint}"
     };
   }
