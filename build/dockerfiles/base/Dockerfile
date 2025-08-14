@@ -1,5 +1,5 @@
 # syntax = registry.erda.cloud/retag/dockerfile:latest
-FROM m.daocloud.io/docker.io/bitnami/git:latest AS git-from
+FROM bitnami/git:latest AS git-from
 
 FROM --platform=$TARGETPLATFORM m.daocloud.io/docker.io/golang:1.24.6-bookworm
 ARG TARGETPLATFORM
