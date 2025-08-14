@@ -62,8 +62,8 @@ func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte) (out []byte, err
 	if err != nil {
 		return chunk, nil
 	}
-	info, ok := ctxhelper.GetMcpInfo(resp.Request.Context())
-	if !ok || info == nil {
+	info, ok := ctxhelper.GetmcpMcpInfo(resp.Request.Context())
+	if !ok {
 		return nil, fmt.Errorf("[Proxy Error] mcp info fail")
 	}
 
@@ -73,7 +73,7 @@ func (f *Filter) OnBodyChunk(resp *http.Response, chunk []byte) (out []byte, err
 
 	logger.Infof("[Proxy Info] mcp server connect success %v", sessionId)
 
-	return buildMessage(info, sessionId, router), nil
+	return buildMessage(&info, sessionId, router), nil
 }
 
 func buildMessage(info *ctxhelper.McpInfo, id string, router string) []byte {

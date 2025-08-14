@@ -59,7 +59,7 @@ func TestProxyConnectGET(t *testing.T) {
 
 	startTime := time.Now()
 
-	sseClient, err := client.NewSSEMCPClient(cfg.Host+fmt.Sprintf("/proxy/connect/%s/%s", "mcp-fetch", "1.0.0"), transport.WithHeaders(map[string]string{
+	sseClient, err := client.NewSSEMCPClient(cfg.Host+fmt.Sprintf("/proxy/connect/%s/%s", cfg.TestMCPName, cfg.TestMCPTag), transport.WithHeaders(map[string]string{
 		"Authorization": cfg.Token,
 	}))
 	if err != nil {

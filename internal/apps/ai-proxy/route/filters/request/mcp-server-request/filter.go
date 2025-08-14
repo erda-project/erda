@@ -98,7 +98,7 @@ func (f *Filter) OnConnect(logger logs.Logger, ctx context.Context, name, versio
 
 	endpoint := fmt.Sprintf("%s:%s", parsedEndpoint.Host, parsedEndpoint.Port)
 
-	ctxhelper.PutMcpInfo(ctx, &ctxhelper.McpInfo{
+	ctxhelper.PutmcpMcpInfo(ctx, ctxhelper.McpInfo{
 		Name:    name,
 		Version: version,
 		Host:    endpoint,
