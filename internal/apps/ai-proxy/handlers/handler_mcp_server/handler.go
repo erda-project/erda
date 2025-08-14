@@ -145,7 +145,7 @@ func VerifyAddr(addr string) error {
 		return errors.New("mcp proxy addr is invalid")
 	}
 
-	// matches[1] 是 host，matches[2] 是 port（可选）
+	// matches[1] is host, matches[2] is port（optional）
 	if matches[2] != "" {
 		port, err := strconv.Atoi(matches[2])
 		if err != nil || port < 1 || port > 65535 {
