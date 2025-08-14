@@ -1,0 +1,146 @@
+# https://platform.openai.com/docs/api-reference/files
+routes:
+  # Upload file
+  - path: /v1/files
+    method: POST
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-file
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueriesIf("api-version=-1")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/files")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+      - name: openai-compatible-director
+      - name: audit-after-llm-director
+      - name: finalize
+
+  # List files
+  - path: /v1/files
+    method: GET
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-file
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueriesIf("api-version=-1")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/files")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+      - name: openai-compatible-director
+      - name: audit-after-llm-director
+      - name: finalize
+
+  # Retrieve file
+  - path: /v1/files/{file_id}
+    method: GET
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-file
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueriesIf("api-version=-1")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/files/${ path.file_id }")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+      - name: openai-compatible-director
+      - name: audit-after-llm-director
+      - name: finalize
+
+  # Delete file
+  - path: /v1/files/{file_id}
+    method: DELETE
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-file
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueriesIf("api-version=-1")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/files/${ path.file_id }")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+      - name: openai-compatible-director
+      - name: audit-after-llm-director
+      - name: finalize
+
+  # Retrieve file content
+  - path: /v1/files/{file_id}/content
+    method: GET
+    filters:
+      - name: initialize
+      - name: log-http
+      - name: rate-limit
+      - name: context
+      - name: context-file
+      - name: audit-before-llm-director
+      - name: azure-director
+        config:
+          directors:
+            - TransAuthorization
+            - DefaultQueries("api-version=2024-02-15-preview")
+            - DropQueriesIf("api-version=-1")
+            - RewriteScheme
+            - RewriteHost
+            - RewritePath("/openai/files/${ path.file_id }/content")
+      - name: openai-director
+        config:
+          directors:
+            - TransAuthorization
+            - RewriteScheme
+            - RewriteHost
+      - name: openai-compatible-director
+      - name: audit-after-llm-director
+      - name: finalize
