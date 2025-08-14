@@ -1,7 +1,7 @@
 # see: internal/pkg/ai-proxy/route/route.go#Routes
 
 routes:
-  - path: /proxy/connect/{mcpMame}/{mcpTag}
+  - path: /proxy/connect/{mcpName}/{mcpTag}
     method: GET
     request_filters:
       - name: audit
@@ -18,7 +18,7 @@ routes:
       - name: mcp-server-response
       - name: audit
         config: { stage: out-log }
-  - path: /proxy/connect/{mcpMame}/{mcpTag}
+  - path: /proxy/connect/{mcpName}/{mcpTag}
     method: POST
     request_filters:
       - name: audit
@@ -35,7 +35,7 @@ routes:
       - name: mcp-server-response
       - name: audit
         config: { stage: out-log }
-  - path: /proxy/message/{mcpMame}/{mcpTag}/*
+  - path: /proxy/message/{mcpName}/{mcpTag}/*
     method: POST
     request_filters:
       - name: audit
