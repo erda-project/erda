@@ -20,17 +20,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/mcp-server-request/request"
-	set_resp_body_chunk_splitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"regexp"
 	"strings"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/mcp-server-request/request"
+	setrespbodychunksplitter "github.com/erda-project/erda/internal/apps/ai-proxy/route/filters/request/set-resp-body-chunk-splitter"
 )
 
 const Name = "mcp-server-request"
@@ -57,7 +58,7 @@ func (f *Filter) OnProxyRequest(pr *httputil.ProxyRequest) error {
 	logger := ctxhelper.MustGetLogger(req.Context())
 	logger.Debugf("%s", routePath)
 
-	ctxhelper.PutRespBodyChunkSplitter(req.Context(), &set_resp_body_chunk_splitter.NewLineSplitter{})
+	ctxhelper.PutRespBodyChunkSplitter(req.Context(), &setrespbodychunksplitter.NewLineSplitter{})
 
 	if strings.HasPrefix(routePath, "/proxy/connect") {
 		name, version, err := parseMcpPath(routePath)
