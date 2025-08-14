@@ -143,20 +143,7 @@ func ConvertOneOpenAIToolMessage(openaiMsg openai.ChatCompletionMessage) (*Anthr
 		{
 			"type":        "tool_result",
 			"tool_use_id": openaiMsg.ToolCallID,
-			"content": []map[string]any{
-				func() map[string]any {
-					// try to unmarshal the tool_result content as JSON
-					var jsonObj map[string]any
-					if err := json.Unmarshal([]byte(openaiMsg.Content), &jsonObj); err != nil {
-						// if unmarshal fails, treat it as a string
-						return map[string]any{
-							"type": "text",
-							"text": openaiMsg.Content,
-						}
-					}
-					return jsonObj
-				}(),
-			},
+			"content":     openaiMsg.Content,
 		},
 	}
 
