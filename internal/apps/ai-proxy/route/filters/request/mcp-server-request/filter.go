@@ -161,9 +161,14 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 	return nil
 }
 
+var (
+	mcpPathRegexp        = regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
+	sseMessagePathRegexp = regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
+	endpointRegexp       = regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
+)
+
 func parseMcpPath(path string) (name, version string, err error) {
-	re := regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
-	matches := re.FindStringSubmatch(path)
+	matches := mcpPathRegexp.FindStringSubmatch(path)
 
 	if len(matches) != 3 {
 		return "", "", fmt.Errorf("path does not match expected format")
@@ -173,8 +178,7 @@ func parseMcpPath(path string) (name, version string, err error) {
 }
 
 func parseSseMessagePath(path string) (name, tag, messagePath, sessionId string, err error) {
-	re := regexp.MustCompile(`^/proxy/message/([^/]+)/([^/]+)(?P<sub_path>/[^?]+)\?sessionId=(?P<sessionId>[0-9a-fA-F-]+)$`)
-	matches := re.FindStringSubmatch(path)
+	matches := sseMessagePathRegexp.FindStringSubmatch(path)
 	if matches == nil || len(matches) < 5 {
 		return "", "", "", "", fmt.Errorf("failed to parse sessionId")
 	}
@@ -190,13 +194,12 @@ type ParsedEndpoint struct {
 }
 
 func parseEndpoint(endpoint string) (*ParsedEndpoint, error) {
-	re := regexp.MustCompile(`^(?P<scheme>https?)://(?P<host>[^/:]+)(?::(?P<port>\d+))?(?P<path>/.*)?$`)
-	matches := re.FindStringSubmatch(endpoint)
+	matches := endpointRegexp.FindStringSubmatch(endpoint)
 	if matches == nil {
 		return nil, fmt.Errorf("failed to parse endpoint %s", endpoint)
 	}
 
-	names := re.SubexpNames()
+	names := endpointRegexp.SubexpNames()
 	result := map[string]string{}
 	for i, name := range names {
 		if i != 0 && name != "" {

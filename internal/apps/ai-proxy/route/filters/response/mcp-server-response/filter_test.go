@@ -1,8 +1,9 @@
 package mcp_server_response
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseSessionId(t *testing.T) {
