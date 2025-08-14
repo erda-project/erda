@@ -25,8 +25,8 @@ type Config struct {
 	LogLevelStr string       `file:"log_level" default:"info" env:"LOG_LEVEL"`
 	LogLevel    logrus.Level `json:"-" yaml:"-"`
 
-	SelfURL      string `file:"self_url" env:"SELF_URL" required:"true"`
-	McpProxyAddr string `file:"mcp_proxy_addr" env:"MCP_PROXY_ADDR"`
+	SelfURL           string `file:"self_url" env:"SELF_URL" required:"true"`
+	McpProxyPublicURL string `file:"mcp_proxy_public_url" env:"McpProxyPublicURL"`
 
 	EmbedRoutesFS embed.FS
 }

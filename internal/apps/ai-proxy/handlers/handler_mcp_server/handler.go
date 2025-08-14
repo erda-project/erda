@@ -29,14 +29,14 @@ import (
 var addrRegex = regexp.MustCompile(`^https?://([^:/]+)(?::(\d+))?$`)
 
 type MCPHandler struct {
-	DAO          dao.DAO
-	McpProxyAddr string
+	DAO               dao.DAO
+	McpProxyPublicURL string
 }
 
 func NewMCPHandler(d dao.DAO, addr string) *MCPHandler {
 	handler := MCPHandler{
-		DAO:          d,
-		McpProxyAddr: strings.TrimSuffix(addr, "/"),
+		DAO:               d,
+		McpProxyPublicURL: strings.TrimSuffix(addr, "/"),
 	}
 	return &handler
 }
@@ -61,7 +61,7 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 	}
 
 	if !req.RawEndpoint {
-		if err := VerifyAddr(m.McpProxyAddr); err != nil {
+		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
 			return nil, err
 		}
 
@@ -89,7 +89,7 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 	mcpServer := resp.GetData()
 
 	if !req.RawEndpoint {
-		if err := VerifyAddr(m.McpProxyAddr); err != nil {
+		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
 			return nil, err
 		}
 		mcpServer.Endpoint = m.buildEndpoint(mcpServer)
@@ -109,7 +109,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 	}
 
 	if !req.RawEndpoint {
-		if err := VerifyAddr(m.McpProxyAddr); err != nil {
+		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
 			return nil, err
 		}
 
@@ -127,7 +127,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 func (m *MCPHandler) buildEndpoint(server *pb.MCPServer) string {
 	// http://127.0.0.1:8081/proxy/connect/demo/1.0.0
 	buffer := bytes.Buffer{}
-	buffer.WriteString(m.McpProxyAddr)
+	buffer.WriteString(m.McpProxyPublicURL)
 	buffer.WriteString("/proxy/connect/")
 	buffer.WriteString(server.Name)
 	buffer.WriteString("/")
