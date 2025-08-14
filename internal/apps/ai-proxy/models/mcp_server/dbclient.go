@@ -308,6 +308,20 @@ func (c *DBClient) Update(ctx context.Context, req *pb.MCPServerUpdateRequest) (
 	}, nil
 }
 
+func (c *DBClient) ListAll(ctx context.Context, needDeleted bool) ([]*MCPServer, error) {
+	var mcpServers []*MCPServer
+	err := c.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if !needDeleted {
+			tx.Where("deleted_at is not null")
+		}
+		return tx.Model(&MCPServer{}).Find(&mcpServers).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mcpServers, nil
+}
+
 func buildConstraint(target string) (*semver.Constraints, error) {
 	parts := strings.Split(target, ".")
 	switch len(parts) {

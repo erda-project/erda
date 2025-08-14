@@ -16,6 +16,9 @@ package handler_mcp_server
 
 import (
 	"context"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/filters/cache"
+	"github.com/sirupsen/logrus"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
@@ -23,7 +26,72 @@ import (
 )
 
 type MCPHandler struct {
-	DAO dao.DAO
+	DAO      dao.DAO
+	listener *cache.EventListener
+}
+
+func NewMCPHandler(d dao.DAO) *MCPHandler {
+	handler := MCPHandler{
+		DAO:      d,
+		listener: cache.NewEventListener(),
+	}
+	taskFunc := func() {
+		logrus.Infof("will sync mcp server from database to cache")
+
+		mcpServers, err := handler.DAO.MCPServerClient().ListAll(context.Background(), false)
+		if err != nil {
+			logrus.Errorf("mcp server list error: %v", err)
+			return
+		}
+
+		// clean cache
+		handler.listener.Send(context.Background(), &cache.Event{
+			Method: cache.EventMethodClear,
+		})
+		time.Sleep(1 * time.Second)
+
+		for _, server := range mcpServers {
+			logrus.Infof("load mcp server %+v, endpoint: %+v", server.Name, server.Endpoint)
+			handler.listener.Send(context.Background(), &cache.Event{
+				Method: cache.EventMethodSet,
+				Name:   server.Name,
+				Tag:    server.Version,
+				Data: &cache.McpServerInfo{
+					Endpoint:      server.Endpoint,
+					Tag:           server.Version,
+					Name:          server.Name,
+					Version:       server.Version,
+					TransportType: server.TransportType,
+				},
+			})
+		}
+		logrus.Infof("sync mcp server done")
+	}
+	// first time run task
+	taskFunc()
+
+	go func() {
+		// run task every 1:00 am
+		now := time.Now()
+		next := time.Date(now.Year(), now.Month(), now.Day(), 1, 0, 0, 0, now.Location())
+
+		if now.After(next) {
+			next = next.Add(24 * time.Hour)
+		}
+
+		duration := next.Sub(now)
+		logrus.Infof("sync task will run after: %+v", duration)
+
+		time.AfterFunc(duration, func() {
+			ticker := time.NewTicker(24 * time.Hour)
+			for range ticker.C {
+				taskFunc()
+			}
+		})
+	}()
+
+	handler.listener.OnEvent(context.Background())
+	return &handler
 }
 
 func (m *MCPHandler) Update(ctx context.Context, req *pb.MCPServerUpdateRequest) (*pb.MCPServerUpdateResponse, error) {

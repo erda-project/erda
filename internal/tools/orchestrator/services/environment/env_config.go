@@ -15,6 +15,7 @@
 package environment
 
 import (
+	"github.com/sirupsen/logrus"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -108,6 +109,8 @@ func (e *EnvConfig) GetDeployConfigs(namespace string) ([]apistructs.EnvConfig, 
 			configItems = append(configItems, envCongigs...)
 		}
 	}
+
+	logrus.Infof("configItems ======> namespace: %s,namespace ID: %v,items: %+v", namespace, ns.ID, configItems)
 
 	newConfigsItem, err := filterDeployEnvFormat(configItems)
 	if err != nil {

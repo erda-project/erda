@@ -1,0 +1,15 @@
+# see: internal/pkg/ai-proxy/route/route.go#Routes
+
+routes:
+  - path: /connect/mcp-server/{mcpMame}/{mcpTag}/{transportType}
+    method: any
+    router: null
+    filters:
+#      - name: audit-mcp-server
+      - name: mcp-server-director
+  - path: /message
+    method: POST
+    router: null
+    filters:
+#      - name: audit-mcp-server
+      - name: mcp-server-director
