@@ -56,6 +56,7 @@ func NewPathMatcher(pattern string) *PathMatcher {
 		quotedPattern := regexp.QuoteMeta(pattern)
 		quotedPattern = strings.ReplaceAll(quotedPattern, `\{`, `(?P<`)
 		quotedPattern = strings.ReplaceAll(quotedPattern, `\}`, `>[^/]+)`)
+		quotedPattern = strings.ReplaceAll(quotedPattern, `\*`, `.*`)
 		re := regexp.MustCompile("^" + quotedPattern + "$")
 
 		matches := re.FindStringSubmatch(path)

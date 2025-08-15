@@ -1,0 +1,20 @@
+gorilla-mux@ai:
+  addr: :8081
+
+grpc-server@ai:
+  addr: ":8082"
+
+erda.app.ai-proxy:
+  log_level: ${LOG_LEVEL:info}
+  mcp_proxy_addr: ${MCP_PROXY_ADDR:""}
+
+gorm.v2:
+  debug: ${MYSQL_DEBUG:false}
+
+erda.apps.ai-proxy.dao:
+
+# gRPC clients
+grpc-client@erda.core.openapi.dynamic_register:
+  addr: ${ERDA_SERVER_GRPC_ADDR:erda-server:8096}
+  block: false
+erda.core.openapi.dynamic_register-client: { }

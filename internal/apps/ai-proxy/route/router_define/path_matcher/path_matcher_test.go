@@ -89,6 +89,18 @@ func TestNewPathMatcher(t *testing.T) {
 			path:    "/api/v1.0/files/123",
 			want:    true,
 			params:  map[string]string{"file_id": "123"},
+		}, {
+			name:    "pattern with dots and special chars",
+			pattern: "/proxy/message/{mcpName}/{mcpTag}/*",
+			path:    "/proxy/message/mcp-fetch/1.0.0/api/sse/message",
+			want:    true,
+			params:  map[string]string{"mcpName": "mcp-fetch", "mcpTag": "1.0.0"},
+		}, {
+			name:    "pattern with dots and special chars",
+			pattern: "/*",
+			path:    "/proxy/message/mcp-fetch/1.0.0/api/sse/message",
+			want:    true,
+			params:  map[string]string{},
 		},
 	}
 
