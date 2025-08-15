@@ -1,7 +1,7 @@
 # syntax = registry.erda.cloud/retag/dockerfile:latest
 FROM bitnami/git:latest AS git-from
 
-FROM --platform=$TARGETPLATFORM m.daocloud.io/docker.io/golang:1.24.6-bookworm
+FROM --platform=$TARGETPLATFORM golang:1.24.6-bookworm
 ARG TARGETPLATFORM
 
 # fetch latest git (which is not available in debian stable repo now) at first for later use
