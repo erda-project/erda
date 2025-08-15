@@ -21,9 +21,13 @@ package thinking
 // - disable
 type UnifiedThinking AnthropicThinking
 
-func (t *UnifiedThinking) ToAnthropicThinking() *AnthropicThinking {
+func (t *UnifiedThinking) ToAnthropicThinking(maxTokens int) *AnthropicThinking {
 	if t == nil || t.Thinking == nil {
 		return nil
+	}
+	// check budget_tokens
+	if t.Thinking.BudgetTokens <= 0 {
+		t.Thinking.BudgetTokens = maxTokens / 2
 	}
 	return &AnthropicThinking{Thinking: t.Thinking}
 }
