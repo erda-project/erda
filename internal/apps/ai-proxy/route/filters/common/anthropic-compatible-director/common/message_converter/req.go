@@ -15,8 +15,11 @@
 package message_converter
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
@@ -77,7 +80,7 @@ func ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq openai_extended.OpenAI
 		case openai.ChatMessageRoleSystem:
 			systemPrompts = append(systemPrompts, msg.Content)
 		case openai.ChatMessageRoleUser:
-			bedrockMsg, err := ConvertOneOpenAIUserMessage(msg)
+			bedrockMsg, err := ConvertOneOpenAIUserMessage(msg, openaiReq.Options.GetFlagImageURLForceBase64())
 			if err != nil || bedrockMsg.Content == nil {
 				panic(fmt.Errorf("failed to convert openai user message to bedrock message: %v, index: %d, msg: %#v", err, i, msg))
 			}
@@ -115,7 +118,7 @@ type AnthropicMessage struct {
 	Content []map[string]any `json:"content"`
 }
 
-func ConvertOneOpenAIUserMessage(openaiMsg openai.ChatCompletionMessage) (*AnthropicMessage, error) {
+func ConvertOneOpenAIUserMessage(openaiMsg openai.ChatCompletionMessage, imageURLForceBase64 bool) (*AnthropicMessage, error) {
 	var anthropicMsg AnthropicMessage
 	anthropicMsg.Role = openai.ChatMessageRoleUser
 
@@ -130,7 +133,7 @@ func ConvertOneOpenAIUserMessage(openaiMsg openai.ChatCompletionMessage) (*Anthr
 	}
 
 	// multi content
-	anthropicMsg.Content = append(anthropicMsg.Content, convertOpenAIMultiContent(openaiMsg.MultiContent)...)
+	anthropicMsg.Content = append(anthropicMsg.Content, convertOpenAIMultiContent(openaiMsg.MultiContent, imageURLForceBase64)...)
 
 	return &anthropicMsg, nil
 }
@@ -165,7 +168,7 @@ func ConvertOneOpenAIAssistantMessage(openaiMsg openai.ChatCompletionMessage) (*
 	}
 
 	// multi content
-	anthropicMsg.Content = append(anthropicMsg.Content, convertOpenAIMultiContent(openaiMsg.MultiContent)...)
+	anthropicMsg.Content = append(anthropicMsg.Content, convertOpenAIMultiContent(openaiMsg.MultiContent, false)...)
 
 	// tool_use
 	for _, toolCall := range openaiMsg.ToolCalls {
@@ -186,7 +189,7 @@ func ConvertOneOpenAIAssistantMessage(openaiMsg openai.ChatCompletionMessage) (*
 	return &anthropicMsg, nil
 }
 
-func convertOpenAIMultiContent(openaiMultiContent []openai.ChatMessagePart) []map[string]any {
+func convertOpenAIMultiContent(openaiMultiContent []openai.ChatMessagePart, imageURLForceBase64 bool) []map[string]any {
 	var anthropicContent []map[string]any
 	for _, part := range openaiMultiContent {
 		switch part.Type {
@@ -198,18 +201,72 @@ func convertOpenAIMultiContent(openaiMultiContent []openai.ChatMessagePart) []ma
 			anthropicContent = append(anthropicContent, bedrockPart)
 		case openai.ChatMessagePartTypeImageURL:
 			// get media_type and base64 content from url
-			// url format: data:image/${media_type};base64,${base64_content}
-			ss := strings.SplitN(part.ImageURL.URL, ";", 2)
-			mediaType := strings.TrimPrefix(ss[0], "data:")
-			base64Content := strings.TrimPrefix(ss[1], "base64,")
-			bedrockPart := map[string]any{
-				"type": "image",
-				"source": map[string]any{
-					"type":       "base64",
-					"media_type": mediaType,
-					"data":       base64Content,
-				},
+			// base64 url format: data:image/${media_type};base64,${base64_content}
+			// direct url format: url
+			var bedrockPart map[string]any
+			if strings.HasPrefix(part.Text, "data:image/") && strings.Contains(part.Text, ";base64,") {
+				ss := strings.SplitN(part.ImageURL.URL, ";", 2)
+				mediaType := strings.TrimPrefix(ss[0], "data:")
+				base64Content := strings.TrimPrefix(ss[1], "base64,")
+				bedrockPart = map[string]any{
+					"type": "image",
+					"source": map[string]any{
+						"type":       "base64",
+						"media_type": mediaType,
+						"data":       base64Content,
+					},
+				}
+			} else {
+				// check if need to convert image url to base64
+				if imageURLForceBase64 {
+					bedrockPart = map[string]any{
+						"type": "image",
+						"source": map[string]any{
+							"type": "base64",
+							"media_type": func() string {
+								// get from url suffix
+								ext := strings.ToLower(part.ImageURL.URL[strings.LastIndex(part.ImageURL.URL, ".")+1:])
+								// supported image types: (https://docs.anthropic.com/en/api/messages#body-messages-content-source-media-type)
+								// image/jpeg, image/png, image/gif, image/webp
+								switch ext {
+								case "jpg", "jpeg":
+									return "image/jpeg"
+								case "png":
+									return "image/png"
+								case "gif":
+									return "image/gif"
+								case "webp":
+									return "image/webp"
+								default:
+									panic(fmt.Errorf("unknown ext from image url: %s", part.ImageURL.URL))
+								}
+							}(),
+							"data": func() string {
+								// download image from url and convert to base64
+								resp, err := http.DefaultClient.Get(part.ImageURL.URL)
+								if err != nil {
+									panic(fmt.Errorf("failed to download image from url: %v, url: %s", err, part.ImageURL.URL))
+								}
+								imageBytes, err := io.ReadAll(resp.Body)
+								if err != nil {
+									panic(fmt.Errorf("failed to read image response body: %v, url: %s", err, part.ImageURL.URL))
+								}
+								imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
+								return imageBase64
+							}(),
+						},
+					}
+				} else {
+					bedrockPart = map[string]any{
+						"type": "image",
+						"source": map[string]any{
+							"type": "url",
+							"url":  part.ImageURL.URL,
+						},
+					}
+				}
 			}
+
 			anthropicContent = append(anthropicContent, bedrockPart)
 		}
 	}

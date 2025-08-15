@@ -72,6 +72,10 @@ func (f *BedrockDirector) AwsBedrockDirector(pr *httputil.ProxyRequest, apiStyle
 	if err := json.NewDecoder(pr.Out.Body).Decode(&openaiReq); err != nil {
 		panic(fmt.Errorf("failed to decode request body as openai format, err: %v", err))
 	}
+	// set options for bedrock
+	openaiReq.Options = openai_extended.Options{
+		ImageURLForceBase64: &[]bool{true}[0], // force convert http image url to base64
+	}
 	// convert to: anthropic format request
 	baseAnthropicReq := message_converter.ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq)
 	bedrockReq := BedrockRequest{

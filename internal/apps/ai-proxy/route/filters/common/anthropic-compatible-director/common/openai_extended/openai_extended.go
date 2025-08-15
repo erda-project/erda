@@ -27,6 +27,18 @@ type OpenAIRequestExtended struct {
 
 	// ExtraFields is used to store extra fields that are not part of the original OpenAI request.
 	ExtraFields map[string]any `json:"extra_fields,omitempty"` // used to store extra fields that are not part of the original OpenAI request
+
+	// Options used to pass additional options dynamically.
+	// Like: image_url_force_base64: true
+	Options Options `json:"-"`
+}
+
+type Options struct {
+	ImageURLForceBase64 *bool // force convert http image url to base64
+}
+
+func (opt *Options) GetFlagImageURLForceBase64() bool {
+	return opt != nil && opt.ImageURLForceBase64 != nil && *opt.ImageURLForceBase64
 }
 
 func (m *OpenAIRequestExtended) UnmarshalJSON(data []byte) error {
