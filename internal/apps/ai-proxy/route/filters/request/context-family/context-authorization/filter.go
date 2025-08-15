@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package context_mcp_server
+package context_authorization
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ import (
 	"strings"
 )
 
-const Name = "context-mcp-server"
+const Name = "context-authorization"
 
 var (
 	_ filter_define.ProxyRequestRewriter = (*Context)(nil)

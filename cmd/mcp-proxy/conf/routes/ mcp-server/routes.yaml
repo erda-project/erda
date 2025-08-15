@@ -8,7 +8,7 @@ routes:
         config: { stage: in-log }
       - name: audit
         config: { stage: in-create-audit }
-      - name: context-mcp-server
+      - name: context-authorization
       - name: mcp-server-request
       - name: audit
         config: { stage: out-log }
@@ -25,7 +25,7 @@ routes:
         config: { stage: in-log }
       - name: audit
         config: { stage: in-create-audit }
-      - name: context-mcp-server
+      - name: context-authorization
       - name: mcp-server-request
       - name: audit
         config: { stage: out-log }
@@ -42,7 +42,7 @@ routes:
         config: { stage: in-log }
       - name: audit
         config: { stage: in-create-audit }
-      - name: context-mcp-server
+      - name: context-authorization
       - name: mcp-server-request
       - name: audit
         config: { stage: out-log }
