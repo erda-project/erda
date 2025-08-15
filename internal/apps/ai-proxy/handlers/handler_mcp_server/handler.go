@@ -18,12 +18,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
-	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/erda-project/erda-proto-go/apps/aiproxy/mcp_server/pb"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/models/mcp_server"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/providers/dao"
 )
 
 var addrRegex = regexp.MustCompile(`^https?://([^:/]+)(?::(\d+))?$`)
