@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/erda-project/erda/internal/apps/ai-proxy/common/ctxhelper"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/filter_define"
 	httperror "github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
+	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 )
 
 type Filter struct {
@@ -80,8 +82,13 @@ func (f *Filter) OnComplete(resp *http.Response) ([]byte, error) {
 			"LLM Backend Error",
 			errCtx,
 		)
+		httpErr.AIProxyMeta = map[string]any{
+			vars.XAIProxyModel:           ctxhelper.MustGetModel(resp.Request.Context()).Name,
+			vars.XRequestId:              ctxhelper.MustGetRequestID(resp.Request.Context()),
+			vars.XAIProxyGeneratedCallId: ctxhelper.MustGetGeneratedCallID(resp.Request.Context()),
+		}
 
-		errBody, err := json.Marshal(httpErr)
+		errBody, err := json.MarshalIndent(httpErr, "", "  ")
 		if err != nil {
 			errBody = []byte(fmt.Sprintf(`{"message": %#v}`, httpErr))
 		}
