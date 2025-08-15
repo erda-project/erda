@@ -163,8 +163,8 @@ func (f *Filter) OnMessage(logger logs.Logger, ctx context.Context, name string,
 
 var (
 	mcpPathRegexp        = regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
-	sseMessagePathRegexp = regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
-	endpointRegexp       = regexp.MustCompile(`^/proxy/connect/([^/]+)/([^/]+)$`)
+	sseMessagePathRegexp = regexp.MustCompile(`^/proxy/message/([^/]+)/([^/]+)(?P<sub_path>/[^?]+)\?sessionId=(?P<sessionId>[0-9a-fA-F-]+)$`)
+	endpointRegexp       = regexp.MustCompile(`^(?P<scheme>https?)://(?P<host>[^/:]+)(?::(?P<port>\d+))?(?P<path>/.*)?$`)
 )
 
 func parseMcpPath(path string) (name, version string, err error) {

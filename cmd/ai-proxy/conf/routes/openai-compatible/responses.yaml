@@ -7,6 +7,7 @@ routes:
       - name: rate-limit
       - name: audit # save audit after rate limit
         config: { stage: in-create-audit }
+      - name: context-authorization
       - name: context
       - name: context-responses
       - name: audit
@@ -37,6 +38,7 @@ routes:
     request_filters:
       - name: audit
         config: { stage: in-log }
+      - name: context-authorization
       - name: context
       - name: openai-compatible-director
       - name: audit
@@ -56,6 +58,7 @@ routes:
     request_filters:
       - name: audit
         config: { stage: in-log }
+      - name: context-authorization
       - name: context
       - name: openai-compatible-director
       - name: audit
@@ -75,6 +78,7 @@ routes:
     request_filters:
       - name: audit
         config: { stage: in-log }
+      - name: context-authorization
       - name: context
       - name: openai-compatible-director
       - name: audit
