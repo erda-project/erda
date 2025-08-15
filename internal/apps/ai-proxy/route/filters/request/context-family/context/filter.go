@@ -17,6 +17,9 @@ package context
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httputil"
+
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	modelpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model/pb"
 	modelproviderpb "github.com/erda-project/erda-proto-go/apps/aiproxy/model_provider/pb"
@@ -29,8 +32,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	"github.com/erda-project/erda/pkg/strutil"
-	"net/http"
-	"net/http/httputil"
 )
 
 var (
