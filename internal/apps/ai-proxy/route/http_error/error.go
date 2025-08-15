@@ -21,9 +21,10 @@ import (
 )
 
 type HTTPError struct {
-	StatusCode int            `json:"-"`
-	Message    string         `json:"message"`
-	ErrorCtx   map[string]any `json:"error,omitempty"`
+	StatusCode  int            `json:"-"`
+	Message     string         `json:"message"`
+	ErrorCtx    map[string]any `json:"error,omitempty"`
+	AIProxyMeta map[string]any `json:"ai_proxy_meta,omitempty"`
 }
 
 func (he *HTTPError) Error() string {
