@@ -105,7 +105,7 @@ func ConvertOpenAIRequestToBaseAnthropicRequest(openaiReq openai_extended.OpenAI
 		baseAnthropicReq.System = strings.Join(systemPrompts, "\n")
 	}
 	// thinking
-	baseAnthropicReq.AnthropicThinking = thinking.UnifiedGetThinkingConfigs(openaiReq).ToAnthropicThinking()
+	baseAnthropicReq.AnthropicThinking = thinking.UnifiedGetThinkingConfigs(openaiReq).ToAnthropicThinking(baseAnthropicReq.MaxTokens)
 
 	// split anthropic messages
 	splitAnthropicMessages(&baseAnthropicReq)
