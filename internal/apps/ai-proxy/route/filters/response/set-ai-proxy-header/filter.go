@@ -53,6 +53,7 @@ func (f *Filter) OnHeaders(resp *http.Response) error {
 
 	f.handleRequestIdHeaders(resp)
 	f.handleRequestBodyTransformHeaders(resp)
+	f.handleRequestThinkingTransformHeaders(resp)
 
 	return nil
 }
@@ -83,5 +84,19 @@ func (f *Filter) handleRequestBodyTransformHeaders(resp *http.Response) {
 	}
 	if changesJSON, err := json.Marshal(v); err == nil {
 		resp.Header.Set(vars.XAIProxyRequestBodyTransform, string(changesJSON))
+	}
+}
+
+func (f *Filter) handleRequestThinkingTransformHeaders(resp *http.Response) {
+	thinkingTransformChanges, ok := ctxhelper.GetRequestThinkingTransformChanges(resp.Request.Context())
+	if !ok || thinkingTransformChanges == nil {
+		return
+	}
+	v, ok := thinkingTransformChanges.(map[string]any)
+	if !ok {
+		return
+	}
+	if changesJSON, err := json.Marshal(v); err == nil {
+		resp.Header.Set(vars.XAIProxyRequestThinkingTransform, string(changesJSON))
 	}
 }

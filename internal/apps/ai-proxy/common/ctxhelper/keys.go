@@ -74,7 +74,8 @@ type (
 	mapKeyAccessLang        struct{ string }
 	mapKeyRichClientHandler struct{ any }
 
-	mapKeyRequestBodyTransformChanges struct{ any }
+	mapKeyRequestBodyTransformChanges     struct{ any }
+	mapKeyRequestThinkingTransformChanges struct{ any }
 )
 
 // KeysWithCustomMustGet defines keys with custom MustGet implementations (should not generate default MustGet)
