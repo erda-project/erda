@@ -16,6 +16,10 @@ package context_authorization
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httputil"
+	"strings"
+
 	"github.com/erda-project/erda-proto-go/apps/aiproxy/audit/pb"
 	clientpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client/pb"
 	clienttokenpb "github.com/erda-project/erda-proto-go/apps/aiproxy/client_token/pb"
@@ -26,9 +30,6 @@ import (
 	"github.com/erda-project/erda/internal/apps/ai-proxy/route/http_error"
 	"github.com/erda-project/erda/internal/apps/ai-proxy/vars"
 	httperrorutil "github.com/erda-project/erda/pkg/http/httputil"
-	"net/http"
-	"net/http/httputil"
-	"strings"
 )
 
 const Name = "context-authorization"
