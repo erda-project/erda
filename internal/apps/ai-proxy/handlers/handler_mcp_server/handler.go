@@ -61,7 +61,7 @@ func (m *MCPHandler) Version(ctx context.Context, req *pb.MCPServerVersionReques
 		return nil, err
 	}
 
-	if !req.RawEndpoint {
+	if !req.UseRawEndpoint {
 		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (m *MCPHandler) Get(ctx context.Context, req *pb.MCPServerGetRequest) (*pb.
 	resp, err := m.DAO.MCPServerClient().Get(ctx, req)
 	mcpServer := resp.GetData()
 
-	if !req.RawEndpoint {
+	if !req.UseRawEndpoint {
 		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func (m *MCPHandler) List(ctx context.Context, req *pb.MCPServerListRequest) (*p
 		return nil, err
 	}
 
-	if !req.RawEndpoint {
+	if !req.UseRawEndpoint {
 		if err := VerifyAddr(m.McpProxyPublicURL); err != nil {
 			return nil, err
 		}
